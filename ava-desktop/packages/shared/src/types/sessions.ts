@@ -65,7 +65,7 @@ export type SessionDetail = SessionSummary & {
    * `compactions`. Restored by the runtime on load. */
   compaction?: ContextCompactionRecord;
   /** Every durable checkpoint, oldest first: the transcript shows one row per
-   * compaction, the way Codex emits one `ContextCompaction` turn item each. */
+   * compaction, the way Ava emits one `ContextCompaction` turn item each. */
   compactions?: ContextCompactionRecord[];
 };
 
@@ -103,7 +103,7 @@ export type ContextCompactionStatus = {
 };
 
 /**
- * One compaction, as the transcript renders it — Codex emits a
+ * One compaction, as the transcript renders it — Ava emits a
  * `ContextCompaction` turn item per compaction and this is its equivalent.
  *
  * Both the durable record and the live `compaction_end` event carry a mark

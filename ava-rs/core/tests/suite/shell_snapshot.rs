@@ -1,41 +1,41 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
+use ava_core::TurnInputRequest;
 #[cfg(unix)]
-use codex_core::config::Constrained;
+use ava_core::config::Constrained;
 #[cfg(unix)]
-use codex_core::config::NetworkProxySpec;
+use ava_core::config::NetworkProxySpec;
 #[cfg(unix)]
-use codex_core::shell::get_shell_by_model_provided_path;
+use ava_core::shell::get_shell_by_model_provided_path;
 #[cfg(unix)]
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_features::Feature;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_features::Feature;
 #[cfg(unix)]
-use codex_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::NetworkProxyConfig;
 #[cfg(unix)]
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
 #[cfg(unix)]
-use codex_protocol::config_types::TrustLevel;
+use ava_protocol::config_types::TrustLevel;
 #[cfg(unix)]
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
 #[cfg(unix)]
-use codex_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::models::PermissionProfileSnapshot;
 #[cfg(unix)]
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
 #[cfg(unix)]
-use codex_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::EnvironmentConfig;
 #[cfg(unix)]
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandBeginEvent;
-use codex_protocol::protocol::ExecCommandEndEvent;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandBeginEvent;
+use ava_protocol::protocol::ExecCommandEndEvent;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 #[cfg(unix)]
 use core_test_support::hooks::trust_discovered_hooks;
 use core_test_support::responses::ev_assistant_message;
@@ -49,11 +49,11 @@ use core_test_support::responses::sse;
 #[cfg(unix)]
 use core_test_support::skip_if_remote;
 #[cfg(unix)]
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::TestCodexHarness;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::TestAvaHarness;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -74,12 +74,12 @@ struct SnapshotRun {
     end: ExecCommandEndEvent,
     snapshot_path: PathBuf,
     snapshot_content: String,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
 }
 
-const POLICY_PATH_FOR_TEST: &str = "/codex/policy/path";
-const SNAPSHOT_PATH_FOR_TEST: &str = "/codex/snapshot/path";
-const SNAPSHOT_MARKER_VAR: &str = "CODEX_SNAPSHOT_POLICY_MARKER";
+const POLICY_PATH_FOR_TEST: &str = "/ava/policy/path";
+const SNAPSHOT_PATH_FOR_TEST: &str = "/ava/snapshot/path";
+const SNAPSHOT_MARKER_VAR: &str = "AVA_SNAPSHOT_POLICY_MARKER";
 const SNAPSHOT_MARKER_VALUE: &str = "from_snapshot";
 const POLICY_SUCCESS_OUTPUT: &str = "policy-after-snapshot";
 
@@ -88,8 +88,8 @@ struct SnapshotRunOptions {
     shell_environment_set: HashMap<String, String>,
 }
 
-async fn wait_for_snapshot(codex_home: &Path) -> Result<PathBuf> {
-    let snapshot_dir = codex_home.join("shell_snapshots");
+async fn wait_for_snapshot(ava_home: &Path) -> Result<PathBuf> {
+    let snapshot_dir = ava_home.join("shell_snapshots");
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
         if let Ok(mut entries) = fs::read_dir(&snapshot_dir).await {
@@ -157,14 +157,14 @@ async fn run_snapshot_command_with_options(
     let SnapshotRunOptions {
         shell_environment_set,
     } = options;
-    let builder = test_codex().with_config(move |config| {
+    let builder = test_ava().with_config(move |config| {
         config
             .features
             .enable(Feature::ShellSnapshot)
             .expect("test config should allow feature update");
         config.permissions.shell_environment_policy.r#set = shell_environment_set;
     });
-    let harness = TestCodexHarness::with_builder(builder).await?;
+    let harness = TestAvaHarness::with_builder(builder).await?;
     let args = json!({
         "cmd": command,
         "yield_time_ms": 1000,
@@ -185,14 +185,14 @@ async fn run_snapshot_command_with_options(
     mount_sse_sequence(harness.server(), responses).await;
 
     let test = harness.test();
-    let codex = test.codex.clone();
-    let codex_home = test.home.path().to_path_buf();
+    let ava = test.ava-code.clone();
+    let ava_home = test.home.path().to_path_buf();
     let session_model = test.session_configured.model.clone();
     let cwd = test.config.cwd.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run unified exec with shell snapshot".into(),
@@ -216,33 +216,33 @@ async fn run_snapshot_command_with_options(
         )
         .await?;
 
-    let begin = wait_for_event_match(&codex, |ev| match ev {
+    let begin = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
         _ => None,
     })
     .await;
-    let snapshot_path = wait_for_snapshot(&codex_home).await?;
+    let snapshot_path = wait_for_snapshot(&ava_home).await?;
     let snapshot_content = fs::read_to_string(&snapshot_path).await?;
 
-    let end = wait_for_event_match(&codex, |ev| match ev {
+    let end = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ExecCommandEnd(ev) if ev.call_id == call_id => Some(ev.clone()),
         _ => None,
     })
     .await;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     Ok(SnapshotRun {
         begin,
         end,
         snapshot_path,
         snapshot_content,
-        codex_home,
+        ava_home,
     })
 }
 
 async fn run_tool_turn_on_harness(
-    harness: &TestCodexHarness,
+    harness: &TestAvaHarness,
     prompt: &str,
     call_id: &str,
     tool_name: &str,
@@ -263,12 +263,12 @@ async fn run_tool_turn_on_harness(
     mount_sse_sequence(harness.server(), responses).await;
 
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let session_model = test.session_configured.model.clone();
     let cwd = test.config.cwd.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -292,17 +292,17 @@ async fn run_tool_turn_on_harness(
         )
         .await?;
 
-    wait_for_event_match(&codex, |ev| match ev {
+    wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
         _ => None,
     })
     .await;
-    let end = wait_for_event_match(&codex, |ev| match ev {
+    let end = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ExecCommandEnd(ev) if ev.call_id == call_id => Some(ev.clone()),
         _ => None,
     })
     .await;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     Ok(end)
 }
 
@@ -322,10 +322,10 @@ fn assert_posix_snapshot_sections(snapshot: &str) {
 }
 
 #[cfg(unix)]
-fn shell_snapshot_v2_prewarm_builder(profile_home: &Path) -> TestCodexBuilder {
+fn shell_snapshot_v2_prewarm_builder(profile_home: &Path) -> TestAvaBuilder {
     let configured_home = profile_home.to_string_lossy().into_owned();
     let shell = get_shell_by_model_provided_path(&PathBuf::from("/bin/bash"));
-    test_codex()
+    test_ava()
         .with_user_shell(shell)
         .with_config(move |config| {
             config
@@ -350,7 +350,7 @@ fn shell_snapshot_v2_prewarm_builder(profile_home: &Path) -> TestCodexBuilder {
 }
 
 #[cfg(unix)]
-async fn run_no_shell_turn(harness: &TestCodexHarness) -> Result<()> {
+async fn run_no_shell_turn(harness: &TestAvaHarness) -> Result<()> {
     let response = mount_sse_once(
         harness.server(),
         sse(vec![
@@ -360,14 +360,14 @@ async fn run_no_shell_turn(harness: &TestCodexHarness) -> Result<()> {
         ]),
     )
     .await;
-    let codex = &harness.test().codex;
-    codex
+    let ava = &harness.test().ava-code;
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(codex, |event| {
+    wait_for_event(ava, |event| {
         assert!(
             !matches!(event, EventMsg::ExecApprovalRequest(_) | EventMsg::Error(_)),
             "unexpected event: {event:?}"
@@ -400,7 +400,7 @@ async fn shell_snapshot_v2_warms_after_hooks_without_blocking_the_model() -> Res
             }).to_string()).expect("write startup hook");
         })
         .with_config(trust_discovered_hooks);
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
 
     // The model can finish a text-only turn while the profile is still blocked.
     run_no_shell_turn(&harness).await?;
@@ -450,7 +450,7 @@ async fn shell_snapshot_v2_recovers_after_failed_prewarm() -> Result<()> {
             let policy = &mut config.permissions.shell_environment_policy;
             policy.r#set.insert("BASH_ENV".to_string(), bash_env);
         });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     run_no_shell_turn(&harness).await?;
     wait_for_file_contents(&profile_home.path().join("failed"), "x").await?;
 
@@ -478,7 +478,7 @@ async fn shell_snapshot_v2_recovers_after_failed_prewarm() -> Result<()> {
         fs::read_to_string(profile_home.path().join("captures")).await?,
         "x"
     );
-    harness.test().codex.shutdown_and_wait().await?;
+    harness.test().ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -512,7 +512,7 @@ async fn shell_snapshot_v2_prewarm_preserves_the_sandbox() -> Result<()> {
                 .shell_environment_policy
                 .r#set
                 .insert("OUTSIDE".to_string(), forbidden_path);
-            let rules = config.codex_home.join("rules");
+            let rules = config.ava_home.join("rules");
             std::fs::create_dir_all(&rules).expect("create rules directory");
             std::fs::write(
                 rules.join("default.rules"),
@@ -520,10 +520,10 @@ async fn shell_snapshot_v2_prewarm_preserves_the_sandbox() -> Result<()> {
             )
             .expect("allow the former warm-up sentinel");
         });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     run_no_shell_turn(&harness).await?;
     wait_for_file_contents(&profile_home.path().join("captures"), "done").await?;
-    harness.test().codex.shutdown_and_wait().await?;
+    harness.test().ava-code.shutdown_and_wait().await?;
     assert!(
         !forbidden.exists(),
         "profile startup must stay sandboxed even when true is allowed"
@@ -540,7 +540,7 @@ async fn shell_snapshot_v2_prewarm_stops_on_shutdown() -> Result<()> {
         profile_home.path().join(".bashrc"),
         "printf '%s' \"$$\" > \"$HOME/pid\"\nprintf x > \"$HOME/captures\"\nwhile :; do /bin/sleep 0.01; done\n",
     ).await?;
-    let harness = TestCodexHarness::with_auto_env_builder(shell_snapshot_v2_prewarm_builder(
+    let harness = TestAvaHarness::with_auto_env_builder(shell_snapshot_v2_prewarm_builder(
         profile_home.path(),
     ))
     .await?;
@@ -548,9 +548,9 @@ async fn shell_snapshot_v2_prewarm_stops_on_shutdown() -> Result<()> {
     wait_for_file_contents(&profile_home.path().join("captures"), "x").await?;
     let pid = fs::read_to_string(profile_home.path().join("pid")).await?;
 
-    let codex = &harness.test().codex;
-    codex.submit(Op::Shutdown {}).await?;
-    wait_for_event(codex, |event| matches!(event, EventMsg::ShutdownComplete)).await;
+    let ava = &harness.test().ava-code;
+    ava.submit(Op::Shutdown {}).await?;
+    wait_for_event(ava, |event| matches!(event, EventMsg::ShutdownComplete)).await;
     tokio::time::timeout(Duration::from_secs(2), async {
         while tokio::process::Command::new("/bin/kill")
             .args(["-0", &pid])
@@ -581,7 +581,7 @@ async fn shell_snapshot_v2_prewarm_stops_on_shutdown() -> Result<()> {
 }; "managed network")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn shell_snapshot_v2_prewarm_skips_ineligible_sessions(
-    configure: fn(&mut codex_core::config::Config),
+    configure: fn(&mut ava_core::config::Config),
 ) -> Result<()> {
     skip_if_remote!(Ok(()), "profile fixture uses a host-local HOME directory");
     let profile_home = tempfile::tempdir()?;
@@ -591,9 +591,9 @@ async fn shell_snapshot_v2_prewarm_skips_ineligible_sessions(
     )
     .await?;
     let builder = shell_snapshot_v2_prewarm_builder(profile_home.path()).with_config(configure);
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     run_no_shell_turn(&harness).await?;
-    harness.test().codex.shutdown_and_wait().await?;
+    harness.test().ava-code.shutdown_and_wait().await?;
     assert!(!profile_home.path().join("captures").exists());
     Ok(())
 }
@@ -622,9 +622,9 @@ async fn shell_snapshot_v2_does_not_warm_a_hook_stopped_turn(hook_event: &str) -
             }).to_string()).expect("write stopping hook");
             })
             .with_config(trust_discovered_hooks);
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     harness.submit("do not start the model or shell").await?;
-    harness.test().codex.shutdown_and_wait().await?;
+    harness.test().ava-code.shutdown_and_wait().await?;
     assert!(harness.request_bodies().await.is_empty());
     assert!(!profile_home.path().join("captures").exists());
     Ok(())
@@ -641,7 +641,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
     let profile_home = tempfile::tempdir()?;
     fs::write(
         profile_home.path().join(".bashrc"),
-        "printf capture > \"$HOME/$CODEX_THREAD_ID\"\n",
+        "printf capture > \"$HOME/$AVA_THREAD_ID\"\n",
     )
     .await?;
     let builder =
@@ -652,7 +652,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
                 .expect("set parent permissions");
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
-            let rules = config.codex_home.join("rules");
+            let rules = config.ava_home.join("rules");
             std::fs::create_dir_all(&rules).expect("create rules directory");
             std::fs::write(
                 rules.join("default.rules"),
@@ -660,7 +660,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
             )
             .expect("require review even for an unrestricted owner environment");
         });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let test = harness.test();
     let responses = mount_sse_sequence(
         harness.server(),
@@ -707,7 +707,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
         network_policy: None,
         selected_capability_roots: Vec::new(),
     });
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run the reviewed command".to_string(),
@@ -719,7 +719,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         assert!(
             !matches!(event, EventMsg::ExecApprovalRequest(_) | EventMsg::Error(_)),
             "unexpected event: {event:?}"
@@ -727,7 +727,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     let requests = responses.requests();
     let guardian_requests = requests
         .iter()
@@ -769,7 +769,7 @@ async fn shell_snapshot_v2_filters_profile_secrets_without_creating_files() -> R
     .await?;
     let configured_home = profile_home.path().to_string_lossy().into_owned();
     let shell = get_shell_by_model_provided_path(&PathBuf::from("/bin/sh"));
-    let builder = test_codex()
+    let builder = test_ava()
         .with_user_shell(shell)
         .with_config(move |config| {
             config
@@ -789,7 +789,7 @@ async fn shell_snapshot_v2_filters_profile_secrets_without_creating_files() -> R
                 ("PROFILE_ALLOWED".to_string(), "policy".to_string()),
             ]);
         });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
 
     for attempt in 0..2 {
         let end = run_tool_turn_on_harness(
@@ -824,7 +824,7 @@ async fn shell_snapshot_v2_filters_profile_secrets_without_creating_files() -> R
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn shell_snapshot_v2_preserves_legacy_snapshots_for_user_shell() -> Result<()> {
     skip_if_remote!(Ok(()), "legacy shell snapshots require a local environment");
-    let builder = test_codex().with_config(|config| {
+    let builder = test_ava().with_config(|config| {
         config
             .features
             .disable(Feature::ShellTool)
@@ -838,17 +838,17 @@ async fn shell_snapshot_v2_preserves_legacy_snapshots_for_user_shell() -> Result
             .enable(Feature::ShellSnapshotV2)
             .expect("test config should enable in-memory snapshots");
     });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let snapshot_path = wait_for_snapshot(harness.test().home.path()).await?;
     assert_posix_snapshot_sections(&fs::read_to_string(snapshot_path).await?);
-    let codex = &harness.test().codex;
-    codex
+    let ava = &harness.test().ava-code;
+    ava
         .submit(Op::RunUserShellCommand {
             command: "printf legacy".to_string(),
             timeout_ms: None,
         })
         .await?;
-    let end = wait_for_event_match(codex, |event| match event {
+    let end = wait_for_event_match(ava, |event| match event {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
     })
@@ -869,7 +869,7 @@ async fn linux_unified_exec_uses_shell_snapshot() -> Result<()> {
     assert_eq!(run.begin.command.get(1).map(String::as_str), Some("-lc"));
     assert_eq!(run.begin.command.get(2).map(String::as_str), Some(command));
     assert_eq!(run.begin.command.len(), 3);
-    assert!(run.snapshot_path.starts_with(&run.codex_home));
+    assert!(run.snapshot_path.starts_with(&run.ava_home));
     assert_posix_snapshot_sections(&run.snapshot_content);
     assert_eq!(run.end.exit_code, 0);
     assert!(
@@ -883,15 +883,15 @@ async fn linux_unified_exec_uses_shell_snapshot() -> Result<()> {
 #[cfg_attr(target_os = "windows", ignore)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn unified_exec_snapshot_preserves_shell_environment_policy_set() -> Result<()> {
-    let builder = test_codex().with_config(|config| {
+    let builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::ShellSnapshot)
             .expect("test config should allow feature update");
         config.permissions.shell_environment_policy.r#set = policy_set_path_for_test();
     });
-    let harness = TestCodexHarness::with_builder(builder).await?;
-    let codex_home = harness.test().home.path().to_path_buf();
+    let harness = TestAvaHarness::with_builder(builder).await?;
+    let ava_home = harness.test().home.path().to_path_buf();
     run_tool_turn_on_harness(
         &harness,
         "warm up unified exec shell snapshot",
@@ -903,7 +903,7 @@ async fn unified_exec_snapshot_preserves_shell_environment_policy_set() -> Resul
         }),
     )
     .await?;
-    let snapshot_path = wait_for_snapshot(&codex_home).await?;
+    let snapshot_path = wait_for_snapshot(&ava_home).await?;
     fs::write(&snapshot_path, snapshot_override_content_for_policy_test()).await?;
 
     let command = command_asserting_policy_after_snapshot();
@@ -924,7 +924,7 @@ async fn unified_exec_snapshot_preserves_shell_environment_policy_set() -> Resul
         POLICY_SUCCESS_OUTPUT
     );
     assert_eq!(end.exit_code, 0);
-    assert!(snapshot_path.starts_with(codex_home));
+    assert!(snapshot_path.starts_with(ava_home));
 
     Ok(())
 }
@@ -932,18 +932,18 @@ async fn unified_exec_snapshot_preserves_shell_environment_policy_set() -> Resul
 #[cfg_attr(target_os = "windows", ignore)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn unified_exec_snapshot_still_intercepts_apply_patch() -> Result<()> {
-    let builder = test_codex().with_config(|config| {
+    let builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::ShellSnapshot)
             .expect("test config should allow feature update");
     });
-    let harness = TestCodexHarness::with_builder(builder).await?;
+    let harness = TestAvaHarness::with_builder(builder).await?;
 
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let cwd = test.config.cwd.clone();
-    let codex_home = test.home.path().to_path_buf();
+    let ava_home = test.home.path().to_path_buf();
     let target = cwd.join("snapshot-apply.txt");
 
     let script = "apply_patch <<'EOF'\n*** Begin Patch\n*** Add File: snapshot-apply.txt\n+hello from snapshot\n*** End Patch\nEOF\n";
@@ -972,7 +972,7 @@ async fn unified_exec_snapshot_still_intercepts_apply_patch() -> Result<()> {
     let model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "apply patch via unified_exec with snapshot".into(),
@@ -998,7 +998,7 @@ async fn unified_exec_snapshot_still_intercepts_apply_patch() -> Result<()> {
 
     let mut saw_patch_begin = false;
     let mut patch_end = None;
-    wait_for_event(&codex, |ev| match ev {
+    wait_for_event(&ava, |ev| match ev {
         EventMsg::PatchApplyBegin(begin) if begin.call_id == call_id => {
             saw_patch_begin = true;
             false
@@ -1012,7 +1012,7 @@ async fn unified_exec_snapshot_still_intercepts_apply_patch() -> Result<()> {
     })
     .await;
 
-    let snapshot_path = wait_for_snapshot(&codex_home).await?;
+    let snapshot_path = wait_for_snapshot(&ava_home).await?;
     let snapshot_content = fs::read_to_string(&snapshot_path).await?;
     assert_posix_snapshot_sections(&snapshot_content);
 
@@ -1035,24 +1035,24 @@ async fn unified_exec_snapshot_still_intercepts_apply_patch() -> Result<()> {
 #[cfg_attr(target_os = "windows", ignore)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn shell_snapshot_deleted_after_shutdown_with_skills() -> Result<()> {
-    let builder = test_codex().with_config(|config| {
+    let builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::ShellSnapshot)
             .expect("test config should allow feature update");
     });
-    let harness = TestCodexHarness::with_builder(builder).await?;
+    let harness = TestAvaHarness::with_builder(builder).await?;
     let home = harness.test().home.clone();
-    let codex_home = home.path().to_path_buf();
-    let codex = harness.test().codex.clone();
+    let ava_home = home.path().to_path_buf();
+    let ava = harness.test().ava-code.clone();
 
-    let snapshot_path = wait_for_snapshot(&codex_home).await?;
+    let snapshot_path = wait_for_snapshot(&ava_home).await?;
     assert!(snapshot_path.exists());
 
-    codex.submit(Op::Shutdown {}).await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+    ava.submit(Op::Shutdown {}).await?;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
 
-    drop(codex);
+    drop(ava);
     drop(harness);
     sleep(Duration::from_millis(150)).await;
 
@@ -1072,7 +1072,7 @@ async fn shell_snapshot_deleted_after_shutdown_with_skills() -> Result<()> {
 async fn macos_unified_exec_resolves_command_from_tied_path_snapshot(
     disabled_proxy: bool,
 ) -> Result<()> {
-    let builder = test_codex()
+    let builder = test_ava()
         .with_user_shell(get_shell_by_model_provided_path(&PathBuf::from("/bin/zsh")))
         .with_config(move |config| {
             config
@@ -1080,13 +1080,13 @@ async fn macos_unified_exec_resolves_command_from_tied_path_snapshot(
                 .enable(Feature::ShellSnapshot)
                 .expect("test config should allow feature update");
             if disabled_proxy {
-                let mut network = codex_network_proxy::NetworkProxyConfig {
+                let mut network = ava_network_proxy::NetworkProxyConfig {
                     enabled: false,
                     ..Default::default()
                 };
                 network.set_credential_broker_enabled(/*enabled*/ true);
                 config.permissions.network = Some(
-                    codex_core::config::NetworkProxySpec::from_config_and_constraints(
+                    ava_core::config::NetworkProxySpec::from_config_and_constraints(
                         network,
                         Some(Default::default()),
                         config.permissions.permission_profile(),
@@ -1095,7 +1095,7 @@ async fn macos_unified_exec_resolves_command_from_tied_path_snapshot(
                 );
             }
         });
-    let harness = TestCodexHarness::with_builder(builder).await?;
+    let harness = TestAvaHarness::with_builder(builder).await?;
     let command_dir = harness
         .test()
         .config
@@ -1177,7 +1177,7 @@ async fn macos_unified_exec_uses_shell_snapshot() -> Result<()> {
     assert_eq!(run.begin.command.get(5).map(String::as_str), Some("-c"));
     assert_eq!(run.begin.command.last(), Some(&command.to_string()));
 
-    assert!(run.snapshot_path.starts_with(&run.codex_home));
+    assert!(run.snapshot_path.starts_with(&run.ava_home));
     assert_posix_snapshot_sections(&run.snapshot_content);
     assert_eq!(normalize_newlines(&run.end.stdout).trim(), "snapshot-macos");
     assert_eq!(run.end.exit_code, 0);
@@ -1208,7 +1208,7 @@ async fn windows_unified_exec_uses_shell_snapshot() -> Result<()> {
     assert!(snapshot_index > 0);
     assert_eq!(run.begin.command.last(), Some(&command.to_string()));
 
-    assert!(run.snapshot_path.starts_with(&run.codex_home));
+    assert!(run.snapshot_path.starts_with(&run.ava_home));
     assert!(run.snapshot_content.contains("# Snapshot file"));
     assert!(run.snapshot_content.contains("# aliases "));
     assert!(run.snapshot_content.contains("# exports "));

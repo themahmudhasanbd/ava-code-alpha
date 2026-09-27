@@ -18,77 +18,77 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-use codex_config::types::McpServerAuth;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerEnvVar;
-use codex_config::types::McpServerTransportConfig;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_core::EnvironmentConfig;
-use codex_core::EnvironmentMcpPolicy;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::Environment;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestParams;
-use codex_features::Feature;
-use codex_http_client::HttpClientBuilder;
-use codex_login::CodexAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::MCP_SANDBOX_STATE_META_CAPABILITY;
-use codex_mcp::SandboxState;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_config::types::McpServerAuth;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerEnvVar;
+use ava_config::types::McpServerTransportConfig;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_core::EnvironmentConfig;
+use ava_core::EnvironmentMcpPolicy;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::Environment;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestParams;
+use ava_features::Feature;
+use ava_http_client::HttpClientBuilder;
+use ava_login::AvaAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::MCP_SANDBOX_STATE_META_CAPABILITY;
+use ava_mcp::SandboxState;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_utils_path_uri::LegacyAppPathString;
 
-use codex_history::RolloutItem;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::mcp_policy::McpServerIdentity;
-use codex_protocol::mcp_policy::McpServerRequirement;
-use codex_protocol::mcp_policy::PluginMcpRequirements;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ConfirmationPolicies;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::McpInvocation;
-use codex_protocol::protocol::McpStartupFailureReason;
-use codex_protocol::protocol::McpStartupStatus;
-use codex_protocol::protocol::McpToolCallBeginEvent;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::protocol::TurnSettingsUpdate;
-use codex_protocol::protocol::TurnSettingsUpdateOutcome;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::turn_input::TurnInput;
-use codex_protocol::user_input::UserInput;
-use codex_utils_cargo_bin::cargo_bin;
-use codex_utils_path_uri::PathUri;
+use ava_history::RolloutItem;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::mcp_policy::McpServerIdentity;
+use ava_protocol::mcp_policy::McpServerRequirement;
+use ava_protocol::mcp_policy::PluginMcpRequirements;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ConfirmationPolicies;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::McpInvocation;
+use ava_protocol::protocol::McpStartupFailureReason;
+use ava_protocol::protocol::McpStartupStatus;
+use ava_protocol::protocol::McpToolCallBeginEvent;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::protocol::TurnSettingsUpdate;
+use ava_protocol::protocol::TurnSettingsUpdateOutcome;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::turn_input::TurnInput;
+use ava_protocol::user_input::UserInput;
+use ava_utils_cargo_bin::cargo_bin;
+use ava_utils_path_uri::PathUri;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::assert_regex_match;
 use core_test_support::is_remote_test_environment;
@@ -101,10 +101,10 @@ use core_test_support::skip_if_no_remote_env;
 use core_test_support::skip_if_wine_exec;
 use core_test_support::stdio_server_bin;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::test_env;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::test_env;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::test_docker_container_name;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
@@ -152,19 +152,19 @@ fn assert_wall_time_header(output: &str) {
     assert_eq!(marker, "Output:");
 }
 
-fn read_only_user_turn(fixture: &TestCodex, text: impl Into<String>) -> TurnInputRequest {
+fn read_only_user_turn(fixture: &TestAva, text: impl Into<String>) -> TurnInputRequest {
     read_only_user_turn_with_model(fixture, text, fixture.session_configured.model.clone())
 }
 
 fn read_only_user_turn_with_model(
-    fixture: &TestCodex,
+    fixture: &TestAva,
     text: impl Into<String>,
     model: String,
 ) -> TurnInputRequest {
     user_turn_with_permission_profile(fixture, text, model, PermissionProfile::read_only())
 }
 
-fn auto_approved_user_turn(fixture: &TestCodex, text: impl Into<String>) -> TurnInputRequest {
+fn auto_approved_user_turn(fixture: &TestAva, text: impl Into<String>) -> TurnInputRequest {
     user_turn_with_permission_profile(
         fixture,
         text,
@@ -174,7 +174,7 @@ fn auto_approved_user_turn(fixture: &TestCodex, text: impl Into<String>) -> Turn
 }
 
 fn user_turn_with_permission_profile(
-    fixture: &TestCodex,
+    fixture: &TestAva,
     text: impl Into<String>,
     model: String,
     permission_profile: PermissionProfile,
@@ -214,7 +214,7 @@ pub(super) fn remote_aware_environment_id() -> String {
     if is_remote_test_environment() {
         REMOTE_MCP_ENVIRONMENT.to_string()
     } else {
-        codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string()
+        ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string()
     }
 }
 
@@ -247,7 +247,7 @@ pub(super) fn remote_aware_stdio_server_bin() -> anyhow::Result<String> {
 fn unique_remote_path(binary_name: &str) -> anyhow::Result<String> {
     let unique_suffix = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     Ok(format!(
-        "/tmp/codex-remote-env/{binary_name}-{}-{unique_suffix}",
+        "/tmp/ava-remote-env/{binary_name}-{}-{unique_suffix}",
         std::process::id()
     ))
 }
@@ -265,7 +265,7 @@ fn copy_binary_to_remote_env(
             container_name,
             "mkdir",
             "-p",
-            "/tmp/codex-remote-env",
+            "/tmp/ava-remote-env",
         ])
         .output()
         .context("create remote MCP test binary directory")?;
@@ -319,7 +319,7 @@ struct TestMcpServerOptions {
 impl Default for TestMcpServerOptions {
     fn default() -> Self {
         Self {
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             auth: McpServerAuth::default(),
             supports_parallel_tool_calls: false,
             tool_timeout_sec: None,
@@ -395,7 +395,7 @@ fn insert_mcp_server(
 
 async fn call_cwd_tool(
     server: &MockServer,
-    fixture: &TestCodex,
+    fixture: &TestAva,
     server_name: &str,
     call_id: &str,
 ) -> anyhow::Result<Value> {
@@ -404,7 +404,7 @@ async fn call_cwd_tool(
 
 async fn call_structured_tool(
     server: &MockServer,
-    fixture: &TestCodex,
+    fixture: &TestAva,
     server_name: &str,
     tool_name: &str,
     call_id: &str,
@@ -429,15 +429,15 @@ async fn call_structured_tool(
     .await;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(fixture, "call the requested rmcp tool"))
         .await?;
 
-    wait_for_event(&fixture.codex, |ev| {
+    wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -453,7 +453,7 @@ async fn call_structured_tool(
         .expect("structured content")
         .clone();
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     Ok(structured_content)
 }
 
@@ -476,7 +476,7 @@ async fn assert_openai_form_capability_advertisement(expected: bool) -> anyhow::
     let server = start_mock_server().await;
     let server_name = "capabilities";
     let command = stdio_server_bin()?;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         insert_mcp_server(
             config,
             server_name,
@@ -488,7 +488,7 @@ async fn assert_openai_form_capability_advertisement(expected: bool) -> anyhow::
         builder = builder.with_openai_form_elicitation();
     }
     let fixture = builder.build(&server).await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     let structured = call_structured_tool(
         &server,
@@ -554,7 +554,7 @@ async fn mcp_namespace_instructions_are_preserved_without_hiding_tools() -> anyh
     )
     .await;
     let command = remote_aware_stdio_server_bin()?;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             insert_mcp_server(
@@ -576,13 +576,13 @@ async fn mcp_namespace_instructions_are_preserved_without_hiding_tools() -> anyh
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, "bounded").await?;
+    wait_for_mcp_server(&fixture.ava-code, "bounded").await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(&fixture, "show the bounded MCP tools"))
         .await?;
-    wait_for_event(&fixture.codex, |event| {
+    wait_for_event(&fixture.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -644,7 +644,7 @@ async fn text_only_mcp_content_uses_content_items() -> anyhow::Result<()> {
     .await;
 
     let command = remote_aware_stdio_server_bin()?;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             insert_mcp_server(
@@ -659,13 +659,13 @@ async fn text_only_mcp_content_uses_content_items() -> anyhow::Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(&fixture, "return content items"))
         .await?;
-    wait_for_event(&fixture.codex, |event| {
+    wait_for_event(&fixture.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -717,11 +717,11 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
     .await;
     let command = remote_aware_stdio_server_bin()?;
     let allowed_command = command.clone();
-    let codex_home = Arc::new(tempdir()?);
+    let ava_home = Arc::new(tempdir()?);
     let test_env = test_env().await?;
     if from_plugin {
         let plugin_root =
-            super::plugins::write_sample_plugin_manifest_and_config(codex_home.as_ref());
+            super::plugins::write_sample_plugin_manifest_and_config(ava_home.as_ref());
         let plugin_server = json!({
             "command": command,
             "environment_id": remote_aware_environment_id(),
@@ -737,8 +737,8 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
             }))?,
         )?;
     }
-    let fixture = test_codex()
-        .with_home(codex_home)
+    let fixture = test_ava()
+        .with_home(ava_home)
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             if !from_plugin {
@@ -768,14 +768,14 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
         .await?;
 
     let selection = fixture
-        .codex
+        .ava-code
         .environment_selections()
         .await
         .into_iter()
         .next()
         .expect("thread should select its executor environment");
     submit_thread_settings(
-        &fixture.codex,
+        &fixture.ava-code,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 fixture.config.cwd.clone(),
@@ -791,7 +791,7 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
     fixture
         .submit_text_turn("start with pending environment configuration")
         .await?;
-    let (pending_config, _) = fixture.codex.current_mcp_config_and_runtime_context().await;
+    let (pending_config, _) = fixture.ava-code.current_mcp_config_and_runtime_context().await;
     let pending_servers = pending_config.mcp_server_catalog.configured_servers();
     assert!(!pending_servers["allowed"].enabled);
     assert!(!pending_servers["unselected"].enabled);
@@ -822,7 +822,7 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
     };
 
     fixture
-        .codex
+        .ava-code
         .environment_ready(
             &selection,
             EnvironmentConfig {
@@ -843,12 +843,12 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
         )
         .await?;
 
-    let (runtime_config, _) = fixture.codex.current_mcp_config_and_runtime_context().await;
+    let (runtime_config, _) = fixture.ava-code.current_mcp_config_and_runtime_context().await;
     let runtime_servers = runtime_config.mcp_server_catalog.configured_servers();
     assert!(!runtime_servers["blocked"].enabled);
     assert!(!runtime_servers["unselected"].enabled);
     fixture
-        .codex
+        .ava-code
         .call_mcp_tool(
             "allowed",
             "echo",
@@ -874,10 +874,10 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
     assert!(responses::namespace_child_tool(&body, "mcp__blocked", "echo").is_none());
 
     fixture
-        .codex
+        .ava-code
         .environment_failed(&selection, "environment policy unavailable".to_string())
         .await?;
-    let (failed_config, _) = fixture.codex.current_mcp_config_and_runtime_context().await;
+    let (failed_config, _) = fixture.ava-code.current_mcp_config_and_runtime_context().await;
     let failed_servers = failed_config.mcp_server_catalog.configured_servers();
     assert!(!failed_servers["allowed"].enabled);
     Ok(())
@@ -921,7 +921,7 @@ async fn future_environment_mcp_policy_applies_on_the_next_turn() -> anyhow::Res
     .await;
     let command = remote_aware_stdio_server_bin()?;
     let allowed_command = command.clone();
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             config
@@ -940,8 +940,8 @@ async fn future_environment_mcp_policy_applies_on_the_next_turn() -> anyhow::Res
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, "environment_policy").await?;
-    let selection = fixture.codex.environment_selections().await.remove(0);
+    wait_for_mcp_server(&fixture.ava-code, "environment_policy").await?;
+    let selection = fixture.ava-code.environment_selections().await.remove(0);
     let mut config = EnvironmentConfig {
         allow_login_shell: fixture.config.permissions.allow_login_shell,
         workspace_roots: selection.workspace_roots.clone(),
@@ -977,15 +977,15 @@ async fn future_environment_mcp_policy_applies_on_the_next_turn() -> anyhow::Res
         )),
         ..Default::default()
     };
-    submit_thread_settings(&fixture.codex, settings(config.clone())).await?;
+    submit_thread_settings(&fixture.ava-code, settings(config.clone())).await?;
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "pause before continuing".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let EventMsg::RequestUserInput(request) = wait_for_event(&fixture.codex, |event| {
+    let EventMsg::RequestUserInput(request) = wait_for_event(&fixture.ava-code, |event| {
         matches!(event, EventMsg::RequestUserInput(_))
     })
     .await
@@ -994,9 +994,9 @@ async fn future_environment_mcp_policy_applies_on_the_next_turn() -> anyhow::Res
     };
 
     config.mcp_policy.as_mut().unwrap().servers = Some(BTreeMap::new());
-    submit_thread_settings(&fixture.codex, settings(config)).await?;
+    submit_thread_settings(&fixture.ava-code, settings(config)).await?;
     fixture
-        .codex
+        .ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -1009,7 +1009,7 @@ async fn future_environment_mcp_policy_applies_on_the_next_turn() -> anyhow::Res
             },
         })
         .await?;
-    wait_for_event(&fixture.codex, |event| {
+    wait_for_event(&fixture.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1085,7 +1085,7 @@ async fn stdio_server_round_trip(server_name: &'static str, namespace: &str) -> 
     let instructions = expected_description.clone();
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -1106,14 +1106,14 @@ async fn stdio_server_round_trip(server_name: &'static str, namespace: &str) -> 
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
         .await?;
 
-    let begin_event = wait_for_event(&fixture.codex, |ev| {
+    let begin_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
@@ -1124,7 +1124,7 @@ async fn stdio_server_round_trip(server_name: &'static str, namespace: &str) -> 
     assert_eq!(begin.invocation.server, server_name);
     assert_eq!(begin.invocation.tool, "echo");
 
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -1160,7 +1160,7 @@ async fn stdio_server_round_trip(server_name: &'static str, namespace: &str) -> 
         .expect("env snapshot inserted");
     assert_eq!(env_value, expected_env_value);
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let search_request = search_mock.single_request().body_json();
     let search_description = search_request
@@ -1266,10 +1266,10 @@ async fn stdio_mcp_tool_names_respect_selected_servers() -> anyhow::Result<()> {
     .await;
 
     let command = remote_aware_stdio_server_bin()?;
-    let fixture = test_codex()
-        .with_pre_build_hook(move |codex_home| {
+    let fixture = test_ava()
+        .with_pre_build_hook(move |ava_home| {
             fs::write(
-                codex_home.join("config.toml"),
+                ava_home.join("config.toml"),
                 r#"
 [features.non_prefixed_mcp_tool_names]
 enabled = true
@@ -1293,7 +1293,7 @@ server_names = ["history", "notes"]
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, "history").await?;
+    wait_for_mcp_server(&fixture.ava-code, "history").await?;
 
     fixture
         .submit_turn_with_permission_profile(
@@ -1352,7 +1352,7 @@ async fn modern_mcp_pagination_preserves_valid_tools_and_rejects_oversized_curso
     )
     .await;
     let command = remote_aware_stdio_server_bin()?;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             config
@@ -1369,7 +1369,7 @@ async fn modern_mcp_pagination_preserves_valid_tools_and_rejects_oversized_curso
                         command.clone(),
                         Some(HashMap::from([
                             (
-                                "CODEX_MCP_PROTOCOL_VERSION".to_string(),
+                                "AVA_MCP_PROTOCOL_VERSION".to_string(),
                                 "2026-07-28".to_string(),
                             ),
                             (
@@ -1390,7 +1390,7 @@ async fn modern_mcp_pagination_preserves_valid_tools_and_rejects_oversized_curso
         .await?;
 
     let startup = loop {
-        let event = fixture.codex.next_event().await?;
+        let event = fixture.ava-code.next_event().await?;
         if let EventMsg::McpStartupComplete(startup) = event.msg {
             break startup;
         }
@@ -1410,13 +1410,13 @@ async fn modern_mcp_pagination_preserves_valid_tools_and_rejects_oversized_curso
     );
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "show the paginated MCP tools",
         ))
         .await?;
-    wait_for_event(&fixture.codex, |event| {
+    wait_for_event(&fixture.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1454,8 +1454,8 @@ async fn apps_enabled_turn_skips_pending_optional_mcp_without_cached_tools() -> 
     let pending_mcp_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let pending_mcp_url = format!("http://{}/mcp", pending_mcp_listener.local_addr()?);
 
-    let fixture = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let fixture = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config
                 .features
@@ -1485,12 +1485,12 @@ async fn apps_enabled_turn_skips_pending_optional_mcp_without_cached_tools() -> 
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             let event = fixture
-                .codex
+                .ava-code
                 .next_event()
                 .await
-                .context("event stream ended before Codex Apps became ready")?;
+                .context("event stream ended before Ava Apps became ready")?;
             if let EventMsg::McpStartupUpdate(update) = event.msg
-                && update.server == CODEX_APPS_MCP_SERVER_NAME
+                && update.server == AVA_APPS_MCP_SERVER_NAME
                 && matches!(update.status, McpStartupStatus::Ready)
             {
                 break Ok::<(), anyhow::Error>(());
@@ -1498,7 +1498,7 @@ async fn apps_enabled_turn_skips_pending_optional_mcp_without_cached_tools() -> 
         }
     })
     .await
-    .context("Codex Apps should finish starting before the first turn")??;
+    .context("Ava Apps should finish starting before the first turn")??;
 
     tokio::time::timeout(Duration::from_secs(5), fixture.submit_turn("hello"))
         .await
@@ -1513,7 +1513,7 @@ async fn apps_enabled_turn_skips_pending_optional_mcp_without_cached_tools() -> 
             .is_none_or(|name| !name.starts_with("mcp__pending_optional"))
     }));
 
-    tokio::time::timeout(Duration::from_secs(2), fixture.codex.shutdown_and_wait())
+    tokio::time::timeout(Duration::from_secs(2), fixture.ava-code.shutdown_and_wait())
         .await
         .context("shutdown should cancel pending optional MCP startup")??;
     Ok(())
@@ -1531,7 +1531,7 @@ async fn shutdown_cancels_startup_prewarm_waiting_for_mcp_startup() -> anyhow::R
     let pending_mcp_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let pending_mcp_url = format!("http://{}/mcp", pending_mcp_listener.local_addr()?);
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -1553,7 +1553,7 @@ async fn shutdown_cancels_startup_prewarm_waiting_for_mcp_startup() -> anyhow::R
         tokio::time::timeout(Duration::from_secs(5), pending_mcp_listener.accept())
             .await
             .context("startup prewarm should start the MCP connection")??;
-    tokio::time::timeout(Duration::from_secs(2), fixture.codex.shutdown_and_wait())
+    tokio::time::timeout(Duration::from_secs(2), fixture.ava-code.shutdown_and_wait())
         .await
         .context("shutdown should not wait for startup prewarm MCP startup")??;
     tokio::time::sleep(Duration::from_millis(100)).await;
@@ -1586,7 +1586,7 @@ async fn interrupt_during_mcp_startup_preserves_user_input_in_history(
     let pending_mcp_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let pending_mcp_url = format!("http://{}/mcp", pending_mcp_listener.local_addr()?);
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.use_responses_lite = false;
             model.supports_image_detail_original = false;
@@ -1648,15 +1648,15 @@ async fn interrupt_during_mcp_startup_preserves_user_input_in_history(
         },
         detail: Some(ImageDetail::High),
     });
-    fixture.codex.start_or_steer_turn(input).await?;
-    let turn_id = core_test_support::wait_for_event_match(&fixture.codex, |event| match event {
+    fixture.ava-code.start_or_steer_turn(input).await?;
+    let turn_id = core_test_support::wait_for_event_match(&fixture.ava-code, |event| match event {
         EventMsg::TurnStarted(started) => Some(started.turn_id.clone()),
         _ => None,
     })
     .await;
     let (reply, outcome) = tokio::sync::oneshot::channel();
     fixture
-        .codex
+        .ava-code
         .submit(Op::TurnSettings {
             turn_id,
             update: TurnSettingsUpdate {
@@ -1671,14 +1671,14 @@ async fn interrupt_during_mcp_startup_preserves_user_input_in_history(
         TurnSettingsUpdateOutcome::Applied
     );
 
-    fixture.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&fixture.codex, |event| {
+    fixture.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&fixture.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
 
     let history = fixture
-        .codex
+        .ava-code
         .load_history(/*include_archived*/ false)
         .await?;
     let user_prompt_index = history
@@ -1752,7 +1752,7 @@ async fn stdio_server_uses_configured_cwd_before_runtime_fallback() -> anyhow::R
     let expected_cwd_for_config = Arc::clone(&expected_cwd);
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_workspace_setup(|cwd, fs| async move {
             let configured_cwd = cwd.join("mcp-configured-cwd");
             let configured_cwd_uri = PathUri::from_host_native_path(&configured_cwd)?;
@@ -1792,7 +1792,7 @@ async fn stdio_server_uses_configured_cwd_before_runtime_fallback() -> anyhow::R
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     let expected_cwd = expected_cwd
         .lock()
@@ -1825,7 +1825,7 @@ async fn local_stdio_server_uses_runtime_fallback_cwd_when_config_omits_cwd() ->
     );
     let relative_command = relative_server_path.to_string_lossy().into_owned();
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             *expected_cwd_for_config
                 .lock()
@@ -1855,7 +1855,7 @@ async fn local_stdio_server_uses_runtime_fallback_cwd_when_config_omits_cwd() ->
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     let expected_cwd = expected_cwd
         .lock()
@@ -1905,7 +1905,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
     let call_id = "sandbox-meta-call";
     let restricted_call_id = "owner-restricted-call";
     let namespace = format!("mcp__{server_name}");
-    let mut models = codex_models_manager::bundled_models_response()?;
+    let mut models = ava_models_manager::bundled_models_response()?;
     let model = models
         .models
         .iter_mut()
@@ -1961,8 +1961,8 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
     .await;
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
-    let fixture = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let fixture = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("gpt-5.5")
         .with_config(move |config| {
             insert_mcp_server(
@@ -1978,7 +1978,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
         .build_with_auto_env(&server)
         .await?;
 
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
     let owner_permission_profile = if attachment_owned_permissions {
         PermissionProfile::from_runtime_permissions(
             &FileSystemSandboxPolicy::restricted(vec![
@@ -2008,7 +2008,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
     };
     let owner_workspace_roots = if attachment_owned_permissions {
         let selection = fixture
-            .codex
+            .ava-code
             .environment_selections()
             .await
             .into_iter()
@@ -2020,7 +2020,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
             "file:///C:/workspace"
         })?];
         submit_thread_settings(
-            &fixture.codex,
+            &fixture.ava-code,
             ThreadSettingsOverrides {
                 environments: Some(TurnEnvironmentSelections::new(
                     fixture.config.cwd.clone(),
@@ -2034,7 +2034,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
         )
         .await?;
         fixture
-            .codex
+            .ava-code
             .environment_ready(
                 &selection,
                 EnvironmentConfig {
@@ -2063,7 +2063,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
         .get_models_manager()
         .list_models(
             RefreshStrategy::Online,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(models_mock.requests().len(), 1);
@@ -2081,7 +2081,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
 
     let initial_request = initial_mock.single_request().body_json();
     let response_metadata: Value = serde_json::from_str(
-        initial_request["client_metadata"]["x-codex-turn-metadata"]
+        initial_request["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("responses request should include turn metadata"),
     )?;
@@ -2119,11 +2119,11 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
         .as_object()
         .expect("sandbox_meta should return metadata object");
     assert_eq!(
-        output_json.pointer("/x-codex-turn-metadata/node_repl_auto_review_required"),
+        output_json.pointer("/x-ava-turn-metadata/node_repl_auto_review_required"),
         Some(&json!(node_repl_auto_review_required))
     );
     assert_eq!(
-        output_json.pointer("/x-codex-turn-metadata/node_repl_disabled"),
+        output_json.pointer("/x-ava-turn-metadata/node_repl_disabled"),
         Some(&json!(node_repl_disabled))
     );
     let expected_policies = match server_name {
@@ -2171,7 +2171,7 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
         SandboxState {
             permission_profile: owner_permission_profile
                 .materialize_project_roots_with_path_uris(&owner_workspace_roots),
-            codex_linux_sandbox_exe: fixture.config.codex_linux_sandbox_exe.clone(),
+            ava_linux_sandbox_exe: fixture.config.ava_linux_sandbox_exe.clone(),
             sandbox_cwd: PathUri::from_abs_path(&fixture.config.cwd),
             use_legacy_landlock: false,
         }
@@ -2220,7 +2220,7 @@ async fn stdio_mcp_parallel_tool_calls_default_false_runs_serially() -> anyhow::
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -2235,10 +2235,10 @@ async fn stdio_mcp_parallel_tool_calls_default_false_runs_serially() -> anyhow::
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         // Keep this baseline on the mutable sync tool so read-only hints do not
         // make the call parallel-safe. Bypass read-only turn permissions so
         // approval behavior does not block the scheduling assertion.
@@ -2250,7 +2250,7 @@ async fn stdio_mcp_parallel_tool_calls_default_false_runs_serially() -> anyhow::
 
     let mut call_events = Vec::new();
     while call_events.len() < 4 {
-        let event = wait_for_event(&fixture.codex, |ev| {
+        let event = wait_for_event(&fixture.ava-code, |ev| {
             matches!(
                 ev,
                 EventMsg::McpToolCallBegin(_) | EventMsg::McpToolCallEnd(_)
@@ -2283,7 +2283,7 @@ async fn stdio_mcp_parallel_tool_calls_default_false_runs_serially() -> anyhow::
         "default MCP tool calls should run serially; saw events: {call_events:?}"
     );
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = final_mock.single_request();
     for call_id in [first_call_id, second_call_id] {
@@ -2361,7 +2361,7 @@ async fn stdio_mcp_read_only_tool_calls_run_concurrently_without_server_opt_in()
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -2376,17 +2376,17 @@ async fn stdio_mcp_read_only_tool_calls_run_concurrently_without_server_opt_in()
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "call the rmcp sync_readonly tool twice",
         ))
         .await?;
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = final_mock.single_request();
     for call_id in [first_call_id, second_call_id] {
@@ -2450,7 +2450,7 @@ async fn stdio_mcp_parallel_tool_calls_opt_in_runs_concurrently() -> anyhow::Res
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -2466,10 +2466,10 @@ async fn stdio_mcp_parallel_tool_calls_opt_in_runs_concurrently() -> anyhow::Res
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         // Exercise the server opt-in with the mutable sync tool rather than the
         // read-only sync_readonly tool. Bypass read-only turn permissions so
         // approval behavior does not block the scheduling assertion.
@@ -2479,7 +2479,7 @@ async fn stdio_mcp_parallel_tool_calls_opt_in_runs_concurrently() -> anyhow::Res
         ))
         .await?;
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = final_mock.single_request();
     for call_id in [first_call_id, second_call_id] {
@@ -2535,7 +2535,7 @@ async fn stdio_encrypted_content_responses_round_trip() -> anyhow::Result<()> {
     .await;
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -2549,16 +2549,16 @@ async fn stdio_encrypted_content_responses_round_trip() -> anyhow::Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "call the rmcp encrypted output tool",
         ))
         .await?;
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
     let output = output_item["output"]
@@ -2626,7 +2626,7 @@ async fn stdio_image_responses_round_trip() -> anyhow::Result<()> {
     // Build the stdio rmcp server and pass the image as data URL so it can construct ImageContent.
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model("gpt-5.2")
         .with_config(move |config| {
             insert_mcp_server(
@@ -2648,21 +2648,21 @@ async fn stdio_image_responses_round_trip() -> anyhow::Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp image tool"))
         .await?;
 
-    let turn_id = core_test_support::wait_for_event_match(&fixture.codex, |event| match event {
+    let turn_id = core_test_support::wait_for_event_match(&fixture.ava-code, |event| match event {
         EventMsg::TurnStarted(started) => Some(started.turn_id.clone()),
         _ => None,
     })
     .await;
 
     // Wait for tool begin/end and final completion.
-    let begin_event = wait_for_event(&fixture.codex, |ev| {
+    let begin_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
@@ -2690,7 +2690,7 @@ async fn stdio_image_responses_round_trip() -> anyhow::Result<()> {
         },
     );
 
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -2718,7 +2718,7 @@ async fn stdio_image_responses_round_trip() -> anyhow::Result<()> {
     assert_eq!(entry.get("mimeType"), Some(&json!("image/png")));
     assert_eq!(entry.get("data"), Some(&json!(base64_only)));
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
     assert_eq!(output_item["type"], "function_call_output");
@@ -2800,7 +2800,7 @@ async fn stdio_image_responses_resize_large_image() -> anyhow::Result<()> {
     .await;
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -2814,16 +2814,16 @@ async fn stdio_image_responses_resize_large_image() -> anyhow::Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "call the rmcp image_scenario tool",
         ))
         .await?;
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
     assert_eq!(output_item["call_id"], call_id);
@@ -2887,7 +2887,7 @@ async fn stdio_image_responses_preserve_original_detail_metadata() -> anyhow::Re
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model("gpt-5.4")
         .with_config(move |config| {
             insert_mcp_server(
@@ -2902,17 +2902,17 @@ async fn stdio_image_responses_preserve_original_detail_metadata() -> anyhow::Re
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "call the rmcp image_scenario tool",
         ))
         .await?;
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
     let output = output_item["output"]
@@ -2963,7 +2963,7 @@ async fn stdio_image_responses_are_sanitized_for_text_only_model() -> anyhow::Re
                 description: Some("Test model without image input support".to_string()),
                 default_reasoning_level: None,
                 supported_reasoning_levels: vec![ReasoningEffortPreset {
-                    effort: codex_protocol::openai_models::ReasoningEffort::Medium,
+                    effort: ava_protocol::openai_models::ReasoningEffort::Medium,
                     description: "Medium".to_string(),
                 }],
                 shell_type: ConfigShellToolType::UnifiedExec,
@@ -3035,8 +3035,8 @@ async fn stdio_image_responses_are_sanitized_for_text_only_model() -> anyhow::Re
 
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let fixture = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -3057,20 +3057,20 @@ async fn stdio_image_responses_are_sanitized_for_text_only_model() -> anyhow::Re
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
         .thread_manager
         .get_models_manager()
         .list_models(
             RefreshStrategy::Online,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(models_mock.requests().len(), 1);
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn_with_model(
             &fixture,
             "call the rmcp image tool",
@@ -3078,15 +3078,15 @@ async fn stdio_image_responses_are_sanitized_for_text_only_model() -> anyhow::Re
         ))
         .await?;
 
-    wait_for_event(&fixture.codex, |ev| {
+    wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    wait_for_event(&fixture.codex, |ev| {
+    wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
     let header = output_item["output"][0]["text"]
@@ -3150,7 +3150,7 @@ async fn stdio_server_propagates_whitelisted_env_vars() -> anyhow::Result<()> {
     let _guard = EnvVarGuard::set("MCP_TEST_VALUE", OsStr::new(expected_env_value));
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -3168,14 +3168,14 @@ async fn stdio_server_propagates_whitelisted_env_vars() -> anyhow::Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
         .await?;
 
-    let begin_event = wait_for_event(&fixture.codex, |ev| {
+    let begin_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
@@ -3186,7 +3186,7 @@ async fn stdio_server_propagates_whitelisted_env_vars() -> anyhow::Result<()> {
     assert_eq!(begin.invocation.server, server_name);
     assert_eq!(begin.invocation.tool, "echo");
 
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -3222,7 +3222,7 @@ async fn stdio_server_propagates_whitelisted_env_vars() -> anyhow::Result<()> {
         .expect("env snapshot inserted");
     assert_eq!(env_value, expected_env_value);
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     server.verify().await;
 
@@ -3272,7 +3272,7 @@ async fn stdio_server_propagates_explicit_local_env_var_source() -> anyhow::Resu
     let _guard = EnvVarGuard::set(env_name, OsStr::new(expected_env_value));
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -3293,18 +3293,18 @@ async fn stdio_server_propagates_explicit_local_env_var_source() -> anyhow::Resu
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
         .await?;
 
-    wait_for_event(&fixture.codex, |ev| {
+    wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -3320,7 +3320,7 @@ async fn stdio_server_propagates_explicit_local_env_var_source() -> anyhow::Resu
         .expect("structured content");
     assert_eq!(structured["env"], expected_env_value);
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     server.verify().await;
     Ok(())
 }
@@ -3368,7 +3368,7 @@ async fn remote_stdio_env_var_source_does_not_copy_local_env() -> anyhow::Result
     let _guard = EnvVarGuard::set(env_name, OsStr::new("local-value-should-not-cross"));
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -3389,18 +3389,18 @@ async fn remote_stdio_env_var_source_does_not_copy_local_env() -> anyhow::Result
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
         .await?;
 
-    wait_for_event(&fixture.codex, |ev| {
+    wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -3416,13 +3416,13 @@ async fn remote_stdio_env_var_source_does_not_copy_local_env() -> anyhow::Result
         .expect("structured content");
     assert_eq!(structured["env"], Value::Null);
 
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     server.verify().await;
     Ok(())
 }
 
 /// Remote runtime websocket URL used by remote-aware MCP integration tests.
-const REMOTE_EXEC_SERVER_URL_ENV_VAR: &str = "CODEX_TEST_REMOTE_EXEC_SERVER_URL";
+const REMOTE_EXEC_SERVER_URL_ENV_VAR: &str = "AVA_TEST_REMOTE_EXEC_SERVER_URL";
 /// OAuth metadata path served by the Streamable HTTP MCP test server.
 const STREAMABLE_HTTP_METADATA_PATH: &str = "/.well-known/oauth-authorization-server/mcp";
 
@@ -3469,7 +3469,7 @@ impl RemoteStreamableHttpServer {
 }
 
 impl StreamableHttpTestServer {
-    /// Returns the MCP endpoint URL that Codex should connect to.
+    /// Returns the MCP endpoint URL that Ava should connect to.
     fn url(&self) -> &str {
         &self.server_url
     }
@@ -3506,7 +3506,7 @@ enum HeadersHelperMode {
     RotatingAuthorization,
 }
 
-/// What this tests: Codex can discover and call a Streamable HTTP MCP tool in
+/// What this tests: Ava can discover and call a Streamable HTTP MCP tool in
 /// both local and remote-aware placements, and the tool observes the expected
 /// environment value from the server process that actually handled the request.
 #[test_case(HeadersHelperMode::None; "plain")]
@@ -3526,7 +3526,7 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
         return Ok(());
     }
 
-    // Phase 1: script the model responses so Codex will call the MCP echo tool
+    // Phase 1: script the model responses so Ava will call the MCP echo tool
     // and then complete the turn after the tool result is returned.
     let server = responses::start_mock_server().await;
 
@@ -3597,10 +3597,10 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
         }
     });
 
-    // Phase 3: configure Codex with the Streamable HTTP MCP server and build a
+    // Phase 3: configure Ava with the Streamable HTTP MCP server and build a
     // fixture that selects remote MCP placement only when the remote test
     // environment is active.
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -3620,7 +3620,7 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, server_name).await?;
+    wait_for_mcp_server(&fixture.ava-code, server_name).await?;
 
     if refresh_rejected_call {
         let control_url = http_server
@@ -3638,15 +3638,15 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
 
     // Phase 4: submit the user turn that should trigger the MCP tool call.
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "call the rmcp streamable http echo tool",
         ))
         .await?;
 
-    // Phase 5: assert Codex begins the expected tool invocation.
-    let begin_event = wait_for_event(&fixture.codex, |ev| {
+    // Phase 5: assert Ava begins the expected tool invocation.
+    let begin_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
@@ -3659,7 +3659,7 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
 
     // Phase 6: assert the tool result proves the server handled the request and
     // propagated the expected environment value.
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -3699,7 +3699,7 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
     }
     // Phase 7: verify the scripted model calls were consumed and clean up the
     // placement-aware MCP server.
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     server.verify().await;
 
@@ -3724,8 +3724,8 @@ async fn streamable_http_configured_auth_precedes_chatgpt_auth() -> anyhow::Resu
     };
     let configured_auth_url = configured_auth_server.url().to_string();
 
-    let configured_auth_fixture = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let configured_auth_fixture = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             insert_mcp_server(
                 config,
@@ -3750,7 +3750,7 @@ async fn streamable_http_configured_auth_precedes_chatgpt_auth() -> anyhow::Resu
         .build_with_auto_env(&server)
         .await?;
 
-    wait_for_mcp_server(&configured_auth_fixture.codex, "configured_auth").await?;
+    wait_for_mcp_server(&configured_auth_fixture.ava-code, "configured_auth").await?;
     drop(configured_auth_fixture);
     configured_auth_server.shutdown().await;
 
@@ -3764,11 +3764,11 @@ async fn streamable_http_chatgpt_auth_is_not_sent_to_configured_origin() -> anyh
     let server = responses::start_mock_server().await;
     let untrusted_server = MockServer::start().await;
     let untrusted_apps = AppsTestServer::mount(&untrusted_server).await?;
-    let untrusted_mcp_url = format!("{}/api/codex/ps/mcp", untrusted_apps.chatgpt_base_url);
+    let untrusted_mcp_url = format!("{}/api/ava/ps/mcp", untrusted_apps.chatgpt_base_url);
     let untrusted_chatgpt_base_url = untrusted_apps.chatgpt_base_url;
 
-    let fixture = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let fixture = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.chatgpt_base_url = untrusted_chatgpt_base_url;
             insert_mcp_server(
@@ -3790,13 +3790,13 @@ async fn streamable_http_chatgpt_auth_is_not_sent_to_configured_origin() -> anyh
         .build(&server)
         .await?;
 
-    wait_for_mcp_server(&fixture.codex, "untrusted_origin").await?;
+    wait_for_mcp_server(&fixture.ava-code, "untrusted_origin").await?;
     let observed_requests = untrusted_server
         .received_requests()
         .await
         .expect("mock server should capture MCP startup requests")
         .into_iter()
-        .filter(|request| request.url.path() == "/api/codex/ps/mcp")
+        .filter(|request| request.url.path() == "/api/ava/ps/mcp")
         .filter_map(|request| {
             let body: Value = serde_json::from_slice(&request.body).ok()?;
             let method = body.get("method")?.as_str()?.to_string();
@@ -3828,14 +3828,14 @@ async fn configured_chatgpt_base_url_does_not_grant_mcp_chatgpt_auth() -> anyhow
     let server = responses::start_mock_server().await;
     let untrusted_server = MockServer::start().await;
     let untrusted_apps = AppsTestServer::mount(&untrusted_server).await?;
-    let untrusted_mcp_url = format!("{}/api/codex/ps/mcp", untrusted_apps.chatgpt_base_url);
+    let untrusted_mcp_url = format!("{}/api/ava/ps/mcp", untrusted_apps.chatgpt_base_url);
     let untrusted_chatgpt_base_url = untrusted_apps.chatgpt_base_url;
 
-    let fixture = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
-        .with_pre_build_hook(move |codex_home| {
+    let fixture = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_pre_build_hook(move |ava_home| {
             fs::write(
-                codex_home.join("config.toml"),
+                ava_home.join("config.toml"),
                 format!(
                     r#"
 chatgpt_base_url = "{untrusted_chatgpt_base_url}"
@@ -3851,13 +3851,13 @@ auth = "chatgpt"
         .build(&server)
         .await?;
 
-    wait_for_mcp_server(&fixture.codex, "untrusted_origin").await?;
+    wait_for_mcp_server(&fixture.ava-code, "untrusted_origin").await?;
     let observed_requests = untrusted_server
         .received_requests()
         .await
         .expect("mock server should capture MCP startup requests")
         .into_iter()
-        .filter(|request| request.url.path() == "/api/codex/ps/mcp")
+        .filter(|request| request.url.path() == "/api/ava/ps/mcp")
         .filter_map(|request| {
             let body: Value = serde_json::from_slice(&request.body).ok()?;
             let method = body.get("method")?.as_str()?.to_string();
@@ -3882,10 +3882,10 @@ auth = "chatgpt"
     Ok(())
 }
 
-/// This test writes to a fallback credentials file in CODEX_HOME.
-/// Ideally, we wouldn't need to serialize the test but it's much more cumbersome to wire CODEX_HOME through the code.
+/// This test writes to a fallback credentials file in AVA_HOME.
+/// Ideally, we wouldn't need to serialize the test but it's much more cumbersome to wire AVA_HOME through the code.
 #[test]
-#[serial(codex_home)]
+#[serial(ava_home)]
 fn streamable_http_with_oauth_round_trip() -> anyhow::Result<()> {
     const TEST_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;
 
@@ -3911,7 +3911,7 @@ fn streamable_http_with_oauth_round_trip() -> anyhow::Result<()> {
 async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
     skip_if_no_network!(Ok(()));
 
-    // Phase 1: script the model responses so Codex will call the OAuth-backed
+    // Phase 1: script the model responses so Ava will call the OAuth-backed
     // MCP echo tool and then finish the turn after receiving the result.
     let server = responses::start_mock_server().await;
 
@@ -3982,12 +3982,12 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
     };
     let server_url = http_server.url().to_string();
 
-    // Phase 3: seed an isolated CODEX_HOME with fallback OAuth tokens for this
+    // Phase 3: seed an isolated AVA_HOME with fallback OAuth tokens for this
     // server so the test does not share credentials with other suite cases.
     let temp_home = Arc::new(tempdir()?);
-    let _codex_home_guard = EnvVarGuard::set("CODEX_HOME", temp_home.path().as_os_str());
+    let _ava_home_guard = EnvVarGuard::set("AVA_HOME", temp_home.path().as_os_str());
     let unset_authorization_env_var = format!(
-        "CODEX_TEST_UNSET_MCP_OAUTH_AUTHORIZATION_{}",
+        "AVA_TEST_UNSET_MCP_OAUTH_AUTHORIZATION_{}",
         std::process::id()
     );
     assert!(std::env::var_os(&unset_authorization_env_var).is_none());
@@ -4018,9 +4018,9 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
     )
     .await?;
 
-    // Phase 4: configure Codex with the OAuth-backed Streamable HTTP MCP
+    // Phase 4: configure Ava with the OAuth-backed Streamable HTTP MCP
     // server and build the fixture in the active local or remote-aware mode.
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_home(temp_home.clone())
         .with_config(move |config| {
@@ -4052,7 +4052,7 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
         .await?;
     // Phase 5: replace rejected credentials as an external OAuth login would.
     let recovery_hint = if credential_config.is_local_environment() {
-        format!("Run `codex mcp login {server_name}`.")
+        format!("Run `ava mcp login {server_name}`.")
     } else {
         "Use your client's MCP OAuth sign-in flow.".to_string()
     };
@@ -4061,7 +4061,7 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
         Some(McpStartupFailureReason::ReauthenticationRequired),
     );
     let mut failure = None;
-    let startup = wait_for_event(&fixture.codex, |event| {
+    let startup = wait_for_event(&fixture.ava-code, |event| {
         if let EventMsg::McpStartupUpdate(update) = event
             && update.server == server_name
             && let McpStartupStatus::Failed { error, reason } = &update.status
@@ -4084,7 +4084,7 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
         .open(temp_home.path().join("mcp-oauth-locks/file-store.lock"))?;
     store_lock.try_lock()?;
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "continue while OAuth credentials are locked",
@@ -4100,7 +4100,7 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
                 || refreshed_failure.is_none()
                 || refreshed_failed_servers.is_none()
             {
-                match fixture.codex.next_event().await?.msg {
+                match fixture.ava-code.next_event().await?.msg {
                     EventMsg::McpStartupUpdate(update) if update.server == server_name => {
                         match update.status {
                             McpStartupStatus::Starting => refreshed_starting = true,
@@ -4157,18 +4157,18 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
         .expect("test MCP servers should accept the discovered OAuth server");
     let discovered_turn = tokio::time::timeout(Duration::from_secs(5), async {
         fixture
-            .codex
+            .ava-code
             .refresh_runtime_config(refreshed_config.clone())
             .await;
         fixture
-            .codex
+            .ava-code
             .start_or_steer_turn(read_only_user_turn(
                 &fixture,
                 "continue while a newly discovered OAuth server is starting",
             ))
             .await?;
         loop {
-            if let EventMsg::TurnComplete(turn) = fixture.codex.next_event().await?.msg {
+            if let EventMsg::TurnComplete(turn) = fixture.ava-code.next_event().await?.msg {
                 return Ok::<_, anyhow::Error>(turn);
             }
         }
@@ -4188,24 +4188,24 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
 
     tokio::time::timeout(
         Duration::from_secs(5),
-        wait_for_mcp_server(&fixture.codex, discovered_server_name),
+        wait_for_mcp_server(&fixture.ava-code, discovered_server_name),
     )
     .await
     .context("the newly discovered OAuth server did not recover after its store was unlocked")??;
 
     assert!(
-        codex_rmcp_client::delete_oauth_tokens(
+        ava_rmcp_client::delete_oauth_tokens(
             discovered_credential_name.as_ref(),
             http_server.url(),
             OAuthCredentialsStoreMode::File,
-            codex_config::types::AuthKeyringBackendKind::default(),
+            ava_config::types::AuthKeyringBackendKind::default(),
         )
         .await?
     );
-    fixture.codex.refresh_runtime_config(refreshed_config).await;
+    fixture.ava-code.refresh_runtime_config(refreshed_config).await;
     let logged_out_startup = tokio::time::timeout(
         Duration::from_secs(5),
-        wait_for_event(&fixture.codex, |event| {
+        wait_for_event(&fixture.ava-code, |event| {
             matches!(event, EventMsg::McpStartupComplete(_))
         }),
     )
@@ -4234,15 +4234,15 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
 
     // Phase 6: submit the user turn that should invoke the OAuth-backed tool.
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(read_only_user_turn(
             &fixture,
             "call the rmcp streamable http oauth echo tool",
         ))
         .await?;
 
-    // Phase 7: assert Codex begins the expected tool invocation.
-    let begin_event = wait_for_event(&fixture.codex, |ev| {
+    // Phase 7: assert Ava begins the expected tool invocation.
+    let begin_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(
             ev,
             EventMsg::McpToolCallBegin(_)
@@ -4261,7 +4261,7 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
 
     // Phase 8: assert the tool result proves the authenticated request reached
     // the server and preserved the expected environment value.
-    let end_event = wait_for_event(&fixture.codex, |ev| {
+    let end_event = wait_for_event(&fixture.ava-code, |ev| {
         matches!(ev, EventMsg::McpToolCallEnd(_))
     })
     .await;
@@ -4299,7 +4299,7 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
 
     // Phase 9: verify the scripted model calls were consumed and clean up the
     // placement-aware MCP server.
-    wait_for_event(&fixture.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&fixture.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = response_mock.single_request().body_json();
     assert!(
@@ -4428,7 +4428,7 @@ async fn start_remote_streamable_http_test_server(
     let server_url = format!("http://{}:{}/mcp", container_ip, remote_bind_addr.port());
     // The orchestrator can see the Docker container IP, but the behavior under
     // test is whether the remote-side MCP client can reach it. Probe through
-    // remote HTTP before handing the URL to the Codex fixture.
+    // remote HTTP before handing the URL to the Ava fixture.
     wait_for_remote_streamable_http_server(&server_url, Duration::from_secs(5)).await?;
     if expected_token.is_some() {
         wait_for_streamable_http_metadata(&server_url, Duration::from_secs(5)).await?;
@@ -4702,11 +4702,11 @@ async fn write_fallback_oauth_tokens(
         "expires_at": expires_at,
     }))?;
 
-    codex_rmcp_client::save_oauth_tokens(
+    ava_rmcp_client::save_oauth_tokens(
         server_name,
         &tokens,
         OAuthCredentialsStoreMode::File,
-        codex_config::types::AuthKeyringBackendKind::default(),
+        ava_config::types::AuthKeyringBackendKind::default(),
     )
     .await
 }

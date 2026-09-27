@@ -7,8 +7,8 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_install_context::CodexPackageManifest;
-use codex_install_context::InstallContext;
+use ava_install_context::AvaPackageManifest;
+use ava_install_context::InstallContext;
 
 use crate::Daemon;
 use crate::install_lock::acquire_install_lock;
@@ -63,16 +63,16 @@ pub async fn update_from_cli(
     {
         return Ok(None);
     }
-    let managed_codex_path = daemon.current_managed_codex_bin()?;
+    let managed_ava_path = daemon.current_managed_ava_bin()?;
     Ok(Some(crate::UpdateOutput {
         status: crate::UpdateStatus::Updated,
-        installed_version: Some(managed_install::managed_codex_version(&managed_codex_path).await?),
+        installed_version: Some(managed_install::managed_ava_version(&managed_ava_path).await?),
         running_version: crate::client::probe(&daemon.socket_path)
             .await
             .ok()
             .map(|info| info.app_server_version),
-        managed_codex_path,
-        message: "The CLI package is selected and pinned. Run `codex app-server daemon update` to return to production updates.".to_string(),
+        managed_ava_path,
+        message: "The CLI package is selected and pinned. Run `ava app-server daemon update` to return to production updates.".to_string(),
     }))
 }
 
@@ -94,11 +94,11 @@ async fn prepare_from_package(
         .settings_file
         .parent()
         .and_then(Path::parent)
-        .context("daemon settings path has no Codex home")?;
+        .context("daemon settings path has no Ava home")?;
     let previous_root = managed_install::package_root(home);
     let root = home.join("packages/app-server-daemon");
     anyhow::ensure!(
-        daemon.managed_codex_bin.starts_with(&previous_root),
+        daemon.managed_ava_bin.starts_with(&previous_root),
         "daemon package location changed; retry the command"
     );
     if mode == InstallMode::Missing {
@@ -112,13 +112,13 @@ async fn prepare_from_package(
             || ["daemon.pid", "daemon.stderr.log", "daemon-updater.pid", "daemon-updater.stderr.log"]
                 .iter().any(|name| !matches!(home.join("app-server-daemon").join(name).symlink_metadata(), Err(error) if error.kind() == std::io::ErrorKind::NotFound))
         {
-            daemon.ensure_managed_codex_bin()?;
+            daemon.ensure_managed_ava_bin()?;
             return Ok(true);
         }
     } else {
         anyhow::ensure!(
             previous_root.join("current").symlink_metadata().is_ok(),
-            "no daemon package is selected; run `codex app-server daemon start` first"
+            "no daemon package is selected; run `ava app-server daemon start` first"
         );
     }
     std::fs::create_dir_all(&root)?;
@@ -129,9 +129,9 @@ async fn prepare_from_package(
     let backend = daemon.running_backend_instance(settings).await?;
     anyhow::ensure!(
         backend.is_some() || crate::client::probe(&daemon.socket_path).await.is_err(),
-        "app server is running but is not managed by codex app-server daemon"
+        "app server is running but is not managed by ava app-server daemon"
     );
-    let selected = managed_install::managed_codex_bin(home);
+    let selected = managed_install::managed_ava_bin(home);
     let previous_release = previous_root.join("current").canonicalize().ok();
     if mode == InstallMode::Missing {
         if selected.is_file() {
@@ -144,21 +144,21 @@ async fn prepare_from_package(
         );
     }
     let source = source.context(
-        "this CLI has no complete local package; install a packaged Codex CLI or use the standalone installer",
+        "this CLI has no complete local package; install a packaged Ava CLI or use the standalone installer",
     )?;
     anyhow::ensure!(
         !root.canonicalize()?.starts_with(source.canonicalize()?),
-        "CODEX_HOME must be outside the source CLI package"
+        "AVA_HOME must be outside the source CLI package"
     );
-    let manifest_bytes = std::fs::read(source.join("codex-package.json"))?;
-    let manifest: CodexPackageManifest = serde_json::from_slice(&manifest_bytes)?;
+    let manifest_bytes = std::fs::read(source.join("ava-package.json"))?;
+    let manifest: AvaPackageManifest = serde_json::from_slice(&manifest_bytes)?;
     let version = manifest.version.to_string();
     let target = platform_target()?;
     let metadata: serde_json::Value = serde_json::from_slice(&manifest_bytes)?;
     let entrypoint = if cfg!(windows) {
-        "bin/codex.exe"
+        "bin/ava.exe"
     } else {
-        "bin/codex"
+        "bin/ava"
     };
     anyhow::ensure!(
         metadata["target"] == target && metadata["entrypoint"] == entrypoint,
@@ -174,7 +174,7 @@ async fn prepare_from_package(
             destination: root.clone(),
             installed_version: tokio::time::timeout(
                 std::time::Duration::from_secs(5),
-                managed_install::managed_codex_version(&selected),
+                managed_install::managed_ava_version(&selected),
             )
             .await
             .ok()
@@ -207,7 +207,7 @@ async fn prepare_from_package(
         managed_install::package_root(home) == previous_root,
         "daemon package location changed; retry the command"
     );
-    if mode == InstallMode::Missing && managed_install::managed_codex_bin(home).is_file() {
+    if mode == InstallMode::Missing && managed_install::managed_ava_bin(home).is_file() {
         return Ok(true);
     }
     anyhow::ensure!(
@@ -228,19 +228,19 @@ async fn prepare_from_package(
         .tempdir_in(&releases)?;
     let digest = package_tree(source, Some(stage.path()))?;
     validate_package(stage.path())?;
-    let staged_exe = if cfg!(target_os = "macos") && stage.path().join("CodexCLI.app").is_dir() {
-        stage.path().join("CodexCLI.app/Contents/MacOS/codex")
+    let staged_exe = if cfg!(target_os = "macos") && stage.path().join("AvaCLI.app").is_dir() {
+        stage.path().join("AvaCLI.app/Contents/MacOS/ava")
     } else {
         stage.path().join(entrypoint)
     };
     anyhow::ensure!(
         package_tree(source, /*destination*/ None)? == digest
-            && std::fs::read(stage.path().join("codex-package.json"))? == manifest_bytes
+            && std::fs::read(stage.path().join("ava-package.json"))? == manifest_bytes
             && managed_install::executable_identity(&staged_exe).await? == running_identity,
         "the CLI package changed while preparing the daemon or differs from the running executable"
     );
     let binary_version =
-        managed_install::managed_codex_version(&stage.path().join(entrypoint)).await?;
+        managed_install::managed_ava_version(&stage.path().join(entrypoint)).await?;
     anyhow::ensure!(
         !stable || version == binary_version,
         "the CLI package version does not match its executable"
@@ -259,8 +259,8 @@ async fn prepare_from_package(
         );
     } else {
         #[cfg(unix)]
-        if !stage.path().join("codex").exists() {
-            std::os::unix::fs::symlink("bin/codex", stage.path().join("codex"))?;
+        if !stage.path().join("ava").exists() {
+            std::os::unix::fs::symlink("bin/ava", stage.path().join("ava"))?;
         }
         std::fs::rename(stage.path(), &release)?;
     }
@@ -347,11 +347,11 @@ async fn prepare_from_package(
             update_pid_file: daemon
                 .update_pid_file
                 .with_file_name(crate::DAEMON_UPDATE_PID_FILE_NAME),
-            managed_codex_bin: root.join("current").join(entrypoint),
+            managed_ava_bin: root.join("current").join(entrypoint),
             ..daemon.clone()
         };
         selected.start_managed_backend(settings).await.context(
-            "daemon package selected but could not start; retry with `codex app-server daemon start`",
+            "daemon package selected but could not start; retry with `ava app-server daemon start`",
         )?;
         selected.wait_until_ready().await?;
     }
@@ -368,8 +368,8 @@ fn package_tree(root: &Path, destination: Option<&Path>) -> Result<String> {
         let relative = path.strip_prefix(root)?;
         // The Unix installer adds this alias outside the package layout.
         if cfg!(unix)
-            && relative == Path::new("codex")
-            && std::fs::read_link(&path).ok().as_deref() == Some(Path::new("bin/codex"))
+            && relative == Path::new("ava")
+            && std::fs::read_link(&path).ok().as_deref() == Some(Path::new("bin/ava"))
         {
             continue;
         }
@@ -426,43 +426,43 @@ fn stable_version(value: &str) -> Option<semver::Version> {
 
 fn validate_package(root: &Path) -> Result<()> {
     let mut names = vec![
-        "codex-package.json",
+        "ava-package.json",
         if cfg!(windows) {
-            "bin/codex.exe"
+            "bin/ava.exe"
         } else {
-            "bin/codex"
+            "bin/ava"
         },
         if cfg!(windows) {
-            "bin/codex-code-mode-host.exe"
+            "bin/ava-code-mode-host.exe"
         } else {
-            "bin/codex-code-mode-host"
+            "bin/ava-code-mode-host"
         },
         if cfg!(windows) {
-            "codex-path/rg.exe"
+            "ava-path/rg.exe"
         } else {
-            "codex-path/rg"
+            "ava-path/rg"
         },
     ];
     if cfg!(windows) {
         names.extend([
-            "codex-resources/codex-command-runner.exe",
-            "codex-resources/codex-windows-sandbox-setup.exe",
+            "ava-resources/ava-command-runner.exe",
+            "ava-resources/ava-windows-sandbox-setup.exe",
         ]);
     } else if cfg!(target_os = "linux") {
-        names.push("codex-resources/bwrap");
+        names.push("ava-resources/bwrap");
     }
     for name in names {
         if !root.join(name).is_file() {
             return Err(anyhow!(
-                "local Codex package is missing {name}; reinstall the CLI or use the standalone installer"
+                "local Ava package is missing {name}; reinstall the CLI or use the standalone installer"
             ));
         }
         #[cfg(unix)]
-        if name != "codex-package.json" {
+        if name != "ava-package.json" {
             use std::os::unix::fs::PermissionsExt;
             if std::fs::metadata(root.join(name))?.permissions().mode() & 0o111 == 0 {
                 return Err(anyhow!(
-                    "local Codex package file {name} is not executable; reinstall the CLI or use the standalone installer"
+                    "local Ava package file {name} is not executable; reinstall the CLI or use the standalone installer"
                 ));
             }
         }

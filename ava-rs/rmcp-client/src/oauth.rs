@@ -14,7 +14,7 @@
 //! keystore that always encrypts secrets when they are transferred across the bus. If DBus isn't installed the keystore will fall back to the json
 //! file because we don't use the "vendored" feature.
 //!
-//! If the keyring is not available or fails, we fall back to CODEX_HOME/.credentials.json which is consistent with other coding CLI agents.
+//! If the keyring is not available or fails, we fall back to AVA_HOME/.credentials.json which is consistent with other coding CLI agents.
 
 mod credential_store;
 mod ema_identity;
@@ -33,13 +33,13 @@ pub(crate) mod test_support;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_secrets::LocalSecretsNamespace;
-use codex_secrets::SecretName;
-use codex_secrets::SecretScope;
-use codex_secrets::SecretsBackendKind;
-use codex_secrets::SecretsManager;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_secrets::LocalSecretsNamespace;
+use ava_secrets::SecretName;
+use ava_secrets::SecretScope;
+use ava_secrets::SecretsBackendKind;
+use ava_secrets::SecretsManager;
 use oauth2::AccessToken;
 use oauth2::RefreshToken;
 use oauth2::Scope;
@@ -68,12 +68,12 @@ use self::store_lock::OAuthStore;
 use self::store_lock::OAuthStoreLock;
 use self::store_lock::OAuthStoreLockFailure;
 
-use codex_keyring_store::DefaultKeyringStore;
-use codex_keyring_store::KeyringStore;
+use ava_keyring_store::DefaultKeyringStore;
+use ava_keyring_store::KeyringStore;
 use rmcp::transport::auth::AuthorizationManager;
 use tokio::sync::Mutex;
 
-use codex_utils_home_dir::find_codex_home;
+use ava_utils_home_dir::find_ava_home;
 
 pub(crate) use self::credential_store::OAuthCredentialStore;
 pub(crate) use self::ema_identity::stored_oidc_identity;
@@ -89,7 +89,7 @@ pub(crate) use self::resolved_store::resolve_oauth_tokens_from_store_policy;
 use self::resolved_store::try_resolve_oauth_tokens_from_store_policy;
 pub(crate) use self::runtime::OAuthRuntime;
 
-const KEYRING_SERVICE: &str = "Codex MCP Credentials";
+const KEYRING_SERVICE: &str = "Ava MCP Credentials";
 const MCP_OAUTH_SECRET_PREFIX: &str = "MCP_OAUTH";
 const REFRESH_SKEW_MILLIS: u64 = 30_000;
 
@@ -410,9 +410,9 @@ fn load_oauth_tokens_from_secrets_keyring_with_lock_held<K: KeyringStore + Clone
     server_name: &str,
     url: &str,
 ) -> std::result::Result<Option<StoredOAuthTokens>, OAuthKeyringLoadError> {
-    let codex_home = find_codex_home().map_err(anyhow::Error::from)?;
+    let ava_home = find_ava_home().map_err(anyhow::Error::from)?;
     let manager = SecretsManager::new_with_keyring_store_and_namespace(
-        codex_home.to_path_buf(),
+        ava_home.to_path_buf(),
         SecretsBackendKind::Local,
         Arc::new(keyring_store.clone()),
         LocalSecretsNamespace::McpOAuth,
@@ -541,9 +541,9 @@ fn save_oauth_tokens_to_secrets_keyring_with_lock_held<K: KeyringStore + Clone +
     tokens: &StoredOAuthTokens,
     serialized: &str,
 ) -> Result<()> {
-    let codex_home = find_codex_home()?;
+    let ava_home = find_ava_home()?;
     let manager = SecretsManager::new_with_keyring_store_and_namespace(
-        codex_home.to_path_buf(),
+        ava_home.to_path_buf(),
         SecretsBackendKind::Local,
         Arc::new(keyring_store.clone()),
         LocalSecretsNamespace::McpOAuth,
@@ -693,9 +693,9 @@ fn delete_oauth_tokens_from_secrets_keyring<K: KeyringStore + Clone + 'static>(
     url: &str,
 ) -> Result<bool> {
     let _store_lock = OAuthStoreLock::acquire_for_write(OAuthStore::Secrets)?;
-    let codex_home = find_codex_home()?;
+    let ava_home = find_ava_home()?;
     let manager = SecretsManager::new_with_keyring_store_and_namespace(
-        codex_home.to_path_buf(),
+        ava_home.to_path_buf(),
         SecretsBackendKind::Local,
         Arc::new(keyring_store.clone()),
         LocalSecretsNamespace::McpOAuth,
@@ -1022,12 +1022,12 @@ fn compute_store_key(server_name: &str, server_url: &str) -> Result<String> {
     payload.insert("headers".to_string(), Value::Object(JsonMap::new()));
     let payload = if enterprise_owned {
         // The OS keyring is shared across homes. Keep enterprise sessions
-        // isolated by Codex profile as well as authenticated user and workspace.
-        let codex_home = find_codex_home()?;
-        fs::create_dir_all(&codex_home)?;
+        // isolated by Ava profile as well as authenticated user and workspace.
+        let ava_home = find_ava_home()?;
+        fs::create_dir_all(&ava_home)?;
         payload.insert(
-            "codex_home".to_string(),
-            serde_json::to_value(codex_home.as_path().canonicalize()?)?,
+            "ava_home".to_string(),
+            serde_json::to_value(ava_home.as_path().canonicalize()?)?,
         );
         // Different binaries can enable different serde_json ordering features.
         serde_json::to_value(payload.into_iter().collect::<BTreeMap<_, _>>())?
@@ -1055,7 +1055,7 @@ fn compute_secret_name(server_name: &str, server_url: &str) -> Result<SecretName
 }
 
 fn fallback_file_path() -> Result<PathBuf> {
-    Ok(find_codex_home()?.join(FALLBACK_FILENAME).to_path_buf())
+    Ok(find_ava_home()?.join(FALLBACK_FILENAME).to_path_buf())
 }
 
 fn read_fallback_file_unlocked() -> Result<Option<FallbackFile>> {
@@ -1147,8 +1147,8 @@ fn sha_256_prefix(value: &Value) -> Result<String> {
 mod tests {
     use super::*;
     use anyhow::Result;
-    use codex_keyring_store::tests::MockKeyringStore;
-    use codex_secrets::compute_keyring_account;
+    use ava_keyring_store::tests::MockKeyringStore;
+    use ava_secrets::compute_keyring_account;
     use keyring::Error as KeyringError;
     use pretty_assertions::assert_eq;
     use std::sync::Arc;
@@ -1157,11 +1157,11 @@ mod tests {
     #[path = "persistor_tests.rs"]
     mod persistor_tests;
 
-    use super::test_support::TempCodexHome;
+    use super::test_support::TempAvaHome;
 
     #[test]
     fn stored_oauth_credentials_ignore_derived_expiration_and_track_token_changes() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let mut tokens = sample_tokens();
         let credentials = super::normalized_oauth_credentials(Some(&tokens));
         tokens
@@ -1202,7 +1202,7 @@ mod tests {
 
     #[test]
     fn resolve_oauth_tokens_from_store_policy_uses_keyring_when_available() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let expected = tokens.clone();
@@ -1228,7 +1228,7 @@ mod tests {
 
     #[test]
     fn load_oauth_tokens_falls_back_when_missing_in_keyring() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let expected = tokens.clone();
@@ -1250,7 +1250,7 @@ mod tests {
 
     #[test]
     fn load_oauth_tokens_falls_back_when_keyring_errors() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let expected = tokens.clone();
@@ -1274,7 +1274,7 @@ mod tests {
 
     #[test]
     fn exact_store_operations_do_not_adopt_or_mutate_the_other_store() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let file_tokens = sample_tokens();
         let mut keyring_tokens = file_tokens.clone();
@@ -1303,7 +1303,7 @@ mod tests {
 
     #[test]
     fn save_oauth_tokens_prefers_keyring_when_available() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let key = super::compute_store_key(&tokens.server_name, &tokens.url)?;
@@ -1326,7 +1326,7 @@ mod tests {
 
     #[test]
     fn save_oauth_tokens_writes_fallback_when_keyring_fails() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let key = super::compute_store_key(&tokens.server_name, &tokens.url)?;
@@ -1359,7 +1359,7 @@ mod tests {
     #[test]
     fn fallback_file_is_private_at_creation() -> Result<()> {
         use std::os::unix::fs::PermissionsExt;
-        const CHILD: &str = "CODEX_TEST_OAUTH_PERMISSIVE_UMASK";
+        const CHILD: &str = "AVA_TEST_OAUTH_PERMISSIVE_UMASK";
 
         if std::env::var_os(CHILD).is_none() {
             // Change umask only in the child running this one test.
@@ -1376,7 +1376,7 @@ mod tests {
             return Ok(());
         }
 
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let path = fallback_file_path()?;
         let file = open_fallback_file_for_write(&path)?;
         assert_eq!(file.metadata()?.permissions().mode() & 0o777, 0o600);
@@ -1388,7 +1388,7 @@ mod tests {
         #[cfg(unix)]
         use std::os::unix::fs::PermissionsExt;
 
-        let env = TempCodexHome::new();
+        let env = TempAvaHome::new();
         save_oauth_tokens_to_file(&sample_tokens())?;
         let path = fallback_file_path()?;
         let original = env.path().join("original-file");
@@ -1418,7 +1418,7 @@ mod tests {
         #[cfg(windows)]
         use std::os::windows::fs::symlink_file as symlink;
 
-        let env = TempCodexHome::new();
+        let env = TempAvaHome::new();
         let path = fallback_file_path()?;
         let target = env.path().join("symlink-target");
         fs::write(&target, "synthetic credentials")?;
@@ -1442,7 +1442,7 @@ mod tests {
 
     #[test]
     fn save_oauth_tokens_with_secrets_backend_writes_encrypted_storage() -> Result<()> {
-        let env = TempCodexHome::new();
+        let env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let key = super::compute_store_key(&tokens.server_name, &tokens.url)?;
@@ -1477,7 +1477,7 @@ mod tests {
 
     #[test]
     fn load_oauth_tokens_with_secrets_backend_reads_encrypted_storage() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let expected = tokens.clone();
@@ -1502,7 +1502,7 @@ mod tests {
 
     #[test]
     fn load_oauth_tokens_with_secrets_backend_ignores_direct_entry() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let key = super::compute_store_key(&tokens.server_name, &tokens.url)?;
@@ -1523,7 +1523,7 @@ mod tests {
     #[test]
     fn save_oauth_tokens_with_secrets_backend_falls_back_to_file_when_keyring_fails() -> Result<()>
     {
-        let env = TempCodexHome::new();
+        let env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         store.set_error(
             &compute_keyring_account(env.path(), LocalSecretsNamespace::McpOAuth),
@@ -1546,7 +1546,7 @@ mod tests {
 
     #[test]
     fn delete_oauth_tokens_with_secrets_backend_removes_secrets_and_file() -> Result<()> {
-        let env = TempCodexHome::new();
+        let env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let serialized = serde_json::to_string(&tokens)?;
@@ -1585,7 +1585,7 @@ mod tests {
 
     #[test]
     fn delete_oauth_tokens_removes_all_storage() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let serialized = serde_json::to_string(&tokens)?;
@@ -1608,7 +1608,7 @@ mod tests {
 
     #[test]
     fn delete_oauth_tokens_file_mode_removes_keyring_only_entry() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let serialized = serde_json::to_string(&tokens)?;
@@ -1631,7 +1631,7 @@ mod tests {
 
     #[test]
     fn delete_oauth_tokens_propagates_keyring_errors() -> Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let store = MockKeyringStore::default();
         let tokens = sample_tokens();
         let key = super::compute_store_key(&tokens.server_name, &tokens.url)?;

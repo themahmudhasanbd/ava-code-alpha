@@ -4,21 +4,21 @@ use std::time::Duration;
 use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::to_response;
-use codex_app_server_protocol::CapabilityRootLocation;
-use codex_app_server_protocol::GrantedPermissionProfile;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::PermissionGrantScope;
-use codex_app_server_protocol::PermissionsRequestApprovalResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SelectedCapabilityRoot;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::WarningNotification;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_protocol::CapabilityRootLocation;
+use ava_app_server_protocol::GrantedPermissionProfile;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::PermissionGrantScope;
+use ava_app_server_protocol::PermissionsRequestApprovalResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SelectedCapabilityRoot;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
+use ava_app_server_protocol::WarningNotification;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_utils_path_uri::PathUri;
 use core_test_support::responses;
 use core_test_support::skip_if_remote;
 use core_test_support::skip_if_target_windows;
@@ -95,7 +95,7 @@ async fn exercise_executor_skill(scenario: ExecutorSkillScenario) -> Result<()> 
     }
 
     let server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let (sandbox_config, permission_profile) = if restricted {
         (
             "default_permissions = \"workspace\"",
@@ -119,7 +119,7 @@ async fn exercise_executor_skill(scenario: ExecutorSkillScenario) -> Result<()> 
         String::new()
     };
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 model = "mock-model"
@@ -144,9 +144,9 @@ stream_max_retries = 0
         ),
     )?;
     if scenario == ExecutorSkillScenario::ExplicitOnly {
-        mount_analytics_capture(&server, codex_home.path()).await?;
+        mount_analytics_capture(&server, ava_home.path()).await?;
     }
-    let local_skill_dir = codex_home.path().join("skills/local-deploy");
+    let local_skill_dir = ava_home.path().join("skills/local-deploy");
     std::fs::create_dir_all(&local_skill_dir)?;
     std::fs::write(
         local_skill_dir.join("SKILL.md"),
@@ -155,13 +155,13 @@ stream_max_retries = 0
         ),
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     let auto_env = app_server.auto_env()?;
     let environment_id = auto_env.selection().environment_id.clone();
     let plugin_dir = auto_env.selection().cwd.join("plugin")?;
-    let manifest_dir = plugin_dir.join(".codex-plugin")?;
+    let manifest_dir = plugin_dir.join(".ava-plugin")?;
     let skill_dir = plugin_dir.join("skills/deploy")?;
     let agents_dir = skill_dir.join("agents")?;
     let reference_dir = skill_dir.join("references")?;
@@ -223,7 +223,7 @@ stream_max_retries = 0
     )?;
     #[cfg(unix)]
     if scenario == ExecutorSkillScenario::RestrictedDeniedReference {
-        let external_reference_dir = codex_home.path().join("external-reference");
+        let external_reference_dir = ava_home.path().join("external-reference");
         std::fs::create_dir_all(&external_reference_dir)?;
         let external_reference = external_reference_dir.join("details.md");
         std::fs::write(
@@ -239,7 +239,7 @@ stream_max_retries = 0
     }
     #[cfg(unix)]
     if scenario == ExecutorSkillScenario::RestrictedVisible && !auto_env.environment().is_remote() {
-        let denied_skill_dir = codex_home.path().join("denied-skill");
+        let denied_skill_dir = ava_home.path().join("denied-skill");
         std::fs::create_dir_all(&denied_skill_dir)?;
         std::fs::write(
             denied_skill_dir.join("SKILL.md"),
@@ -346,7 +346,7 @@ stream_max_retries = 0
         ]),
     ];
     if scenario == ExecutorSkillScenario::RestrictedDeniedReference {
-        let external_reference_dir = codex_home.path().join("external-reference");
+        let external_reference_dir = ava_home.path().join("external-reference");
         model_responses.insert(
             3,
             responses::sse(vec![

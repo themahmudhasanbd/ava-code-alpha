@@ -55,14 +55,14 @@ use crate::success_page::jwt_auth_claims;
 use crate::token_data::TokenData;
 use crate::token_data::parse_chatgpt_jwt_claims;
 use chrono::Utc;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClient;
-use codex_http_client::HttpClientBuilder;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_protocol::auth::AuthMode;
-use codex_utils_template::Template;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClient;
+use ava_http_client::HttpClientBuilder;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_protocol::auth::AuthMode;
+use ava_utils_template::Template;
 use serde_json::Value as JsonValue;
 use tiny_http::Header;
 use tiny_http::Request;
@@ -75,7 +75,7 @@ use tracing::warn;
 
 pub(super) const DEFAULT_ISSUER: &str = "https://auth.openai.com";
 const DEFAULT_PORT: u16 = 1455;
-// Keep in sync with the Codex CLI Hydra redirect URI allow-list.
+// Keep in sync with the Ava CLI Hydra redirect URI allow-list.
 const FALLBACK_PORT: u16 = 1457;
 static LOGIN_ERROR_PAGE_TEMPLATE: LazyLock<Template> = LazyLock::new(|| {
     Template::parse(include_str!("assets/error.html"))
@@ -85,14 +85,14 @@ static LOGIN_ERROR_PAGE_TEMPLATE: LazyLock<Template> = LazyLock::new(|| {
 /// Options for launching the local login callback server.
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
-    pub codex_home: PathBuf,
+    pub ava_home: PathBuf,
     pub client_id: String,
     pub issuer: String,
     pub port: u16,
     pub open_browser: bool,
     pub force_state: Option<String>,
     pub forced_chatgpt_workspace_id: Option<Vec<String>>,
-    pub codex_streamlined_login: bool,
+    pub ava_streamlined_login: bool,
     pub login_success_page: LoginSuccessPage,
     pub cli_auth_credentials_store_mode: AuthCredentialsStoreMode,
     pub auth_keyring_backend_kind: AuthKeyringBackendKind,
@@ -102,7 +102,7 @@ pub struct ServerOptions {
 impl ServerOptions {
     /// Creates a server configuration with the default issuer and port.
     pub fn new(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         client_id: String,
         forced_chatgpt_workspace_id: Option<Vec<String>>,
         cli_auth_credentials_store_mode: AuthCredentialsStoreMode,
@@ -110,14 +110,14 @@ impl ServerOptions {
         auth_route_config: AuthRouteConfig,
     ) -> Self {
         Self {
-            codex_home,
+            ava_home,
             client_id,
             issuer: DEFAULT_ISSUER.to_string(),
             port: DEFAULT_PORT,
             open_browser: true,
             force_state: None,
             forced_chatgpt_workspace_id,
-            codex_streamlined_login: false,
+            ava_streamlined_login: false,
             login_success_page: LoginSuccessPage::default(),
             cli_auth_credentials_store_mode,
             auth_keyring_backend_kind,
@@ -443,7 +443,7 @@ async fn process_request(
                             .await
                             .ok();
                     if let Err(err) = persist_tokens_async(
-                        &opts.codex_home,
+                        &opts.ava_home,
                         api_key.clone(),
                         tokens.id_token.clone(),
                         tokens.access_token.clone(),
@@ -467,7 +467,7 @@ async fn process_request(
                         &opts.issuer,
                         &tokens.id_token,
                         &tokens.access_token,
-                        opts.codex_streamlined_login,
+                        opts.ava_streamlined_login,
                         &opts.login_success_page,
                     );
                     let url = match &redirect {
@@ -485,7 +485,7 @@ async fn process_request(
                             },
                         },
                         Err(_) => login_error_response(
-                            "Sign-in completed but redirecting back to Codex failed.",
+                            "Sign-in completed but redirecting back to Ava failed.",
                             io::ErrorKind::Other,
                             Some("redirect_failed"),
                             /*error_description*/ None,
@@ -507,7 +507,7 @@ async fn process_request(
         "/success" => {
             let use_streamlined_success = parsed_url
                 .query_pairs()
-                .any(|(key, value)| key == "codex_streamlined_login" && value == "true");
+                .any(|(key, value)| key == "ava_streamlined_login" && value == "true");
             let body = if use_streamlined_success {
                 include_str!("assets/success.html")
             } else {
@@ -593,7 +593,7 @@ fn build_authorize_url(
     let workspace_ids = forced_chatgpt_workspace_ids.map(|ids| ids.join(","));
     let mut extra_parameters = vec![
         ("id_token_add_organizations", "true"),
-        ("codex_cli_simplified_flow", "true"),
+        ("ava_cli_simplified_flow", "true"),
         ("originator", originator.as_str()),
     ];
     if let Some(workspace_ids) = workspace_ids.as_deref() {
@@ -829,7 +829,7 @@ async fn send_code_exchange_request(
 
 /// Persists exchanged credentials using the configured local auth store.
 pub(crate) async fn persist_tokens_async(
-    codex_home: &Path,
+    ava_home: &Path,
     api_key: Option<String>,
     id_token: String,
     access_token: String,
@@ -838,7 +838,7 @@ pub(crate) async fn persist_tokens_async(
     keyring_backend_kind: AuthKeyringBackendKind,
 ) -> io::Result<()> {
     // Reuse existing synchronous logic but run it off the async runtime.
-    let codex_home = codex_home.to_path_buf();
+    let ava_home = ava_home.to_path_buf();
     tokio::task::spawn_blocking(move || {
         let mut tokens = TokenData {
             id_token: parse_chatgpt_jwt_claims(&id_token).map_err(io::Error::other)?,
@@ -863,7 +863,7 @@ pub(crate) async fn persist_tokens_async(
             bedrock_access_keys: None,
         };
         save_auth(
-            &codex_home,
+            &ava_home,
             &auth,
             auth_credentials_store_mode,
             keyring_backend_kind,
@@ -930,20 +930,20 @@ fn login_error_response(
     }
 }
 
-/// Returns true when the OAuth callback represents a missing Codex entitlement.
-fn is_missing_codex_entitlement_error(error_code: &str, error_description: Option<&str>) -> bool {
+/// Returns true when the OAuth callback represents a missing Ava entitlement.
+fn is_missing_ava_entitlement_error(error_code: &str, error_description: Option<&str>) -> bool {
     error_code == "access_denied"
         && error_description.is_some_and(|description| {
             description
                 .to_ascii_lowercase()
-                .contains("missing_codex_entitlement")
+                .contains("missing_ava_entitlement")
         })
 }
 
 /// Converts OAuth callback errors into a user-facing message.
 fn oauth_callback_error_message(error_code: &str, error_description: Option<&str>) -> String {
-    if is_missing_codex_entitlement_error(error_code, error_description) {
-        return "Codex is not enabled for your workspace. Contact your workspace administrator to request access to Codex.".to_string();
+    if is_missing_ava_entitlement_error(error_code, error_description) {
+        return "Ava is not enabled for your workspace. Contact your workspace administrator to request access to Ava.".to_string();
     }
 
     if let Some(description) = error_description
@@ -963,13 +963,13 @@ fn render_login_error_page(
 ) -> Vec<u8> {
     let code = error_code.unwrap_or("unknown_error");
     let (title, display_message, display_description, help_text) =
-        if is_missing_codex_entitlement_error(code, error_description) {
+        if is_missing_ava_entitlement_error(code, error_description) {
             (
-                "You do not have access to Codex".to_string(),
-                "This account is not currently authorized to use Codex in this workspace."
+                "You do not have access to Ava".to_string(),
+                "This account is not currently authorized to use Ava in this workspace."
                     .to_string(),
-                "Contact your workspace administrator to request access to Codex.".to_string(),
-                "Contact your workspace administrator to get access to Codex, then return to Codex and try again."
+                "Contact your workspace administrator to request access to Ava.".to_string(),
+                "Contact your workspace administrator to get access to Ava, then return to Ava and try again."
                     .to_string(),
             )
         } else {
@@ -977,7 +977,7 @@ fn render_login_error_page(
                 "Sign-in could not be completed".to_string(),
                 message.to_string(),
                 error_description.unwrap_or(message).to_string(),
-                "Return to Codex to retry, switch accounts, or contact your workspace admin if access is restricted."
+                "Return to Ava to retry, switch accounts, or contact your workspace admin if access is restricted."
                     .to_string(),
             )
         };
@@ -1048,7 +1048,7 @@ pub(crate) async fn obtain_api_key(
 #[cfg(test)]
 mod tests {
     use super::html_escape;
-    use super::is_missing_codex_entitlement_error;
+    use super::is_missing_ava_entitlement_error;
     use super::render_login_error_page;
 
     #[test]
@@ -1068,8 +1068,8 @@ mod tests {
 
     #[test]
     fn render_login_error_page_uses_entitlement_copy() {
-        let error_description = Some("missing_codex_entitlement");
-        assert!(is_missing_codex_entitlement_error(
+        let error_description = Some("missing_ava_entitlement");
+        assert!(is_missing_ava_entitlement_error(
             "access_denied",
             error_description
         ));
@@ -1081,8 +1081,8 @@ mod tests {
         ))
         .expect("login error page should be utf-8");
 
-        assert!(body.contains("You do not have access to Codex"));
+        assert!(body.contains("You do not have access to Ava"));
         assert!(body.contains("Contact your workspace administrator"));
-        assert!(!body.contains("missing_codex_entitlement"));
+        assert!(!body.contains("missing_ava_entitlement"));
     }
 }

@@ -1,25 +1,25 @@
 use anyhow::Result;
-use codex_context_fragments::RenderedFragment;
-use codex_extension_api::ContextualUserFragment;
-use codex_extension_api::ExtensionMetrics;
-use codex_guardian_context::PreviousReviews;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::AgentIdentityAuthPolicy;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_prompts::GuardianClassifierInstructions;
-use codex_protocol::ResponseItemId;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::SessionSource;
+use ava_context_fragments::RenderedFragment;
+use ava_extension_api::ContextualUserFragment;
+use ava_extension_api::ExtensionMetrics;
+use ava_guardian_context::PreviousReviews;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AgentIdentityAuthPolicy;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_prompts::GuardianClassifierInstructions;
+use ava_protocol::ResponseItemId;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::SessionSource;
 use core_test_support::responses;
 use core_test_support::responses::WebSocketConnectionConfig;
 use core_test_support::responses::ev_assistant_message;
@@ -75,7 +75,7 @@ fn assert_connection_metadata(
         [
             handshake.header("x-client-request-id"),
             handshake.header("x-openai-subagent"),
-            handshake.header("x-codex-window-id"),
+            handshake.header("x-ava-window-id"),
         ],
         [
             Some(thread_id.clone()),
@@ -93,8 +93,8 @@ fn assert_connection_metadata(
             .to_owned();
         assert_eq!(Uuid::parse_str(&turn_id)?.get_version_num(), 7);
         assert_ne!(turn_id.as_str(), *parent_turn_id);
-        metadata["x-codex-turn-metadata"] = serde_json::from_str(
-            metadata["x-codex-turn-metadata"]
+        metadata["x-ava-turn-metadata"] = serde_json::from_str(
+            metadata["x-ava-turn-metadata"]
                 .as_str()
                 .expect("serialized turn metadata"),
         )?;
@@ -104,9 +104,9 @@ fn assert_connection_metadata(
             "turn_id": turn_id,
             "parent_turn_id": parent_turn_id,
             "x-openai-subagent": "guardian",
-            "x-codex-window-id": format!("{thread_id}:0"),
-            "ws_request_header_x_openai_internal_codex_responses_lite": "true",
-            "x-codex-turn-metadata": {
+            "x-ava-window-id": format!("{thread_id}:0"),
+            "ws_request_header_x_openai_internal_ava_responses_lite": "true",
+            "x-ava-turn-metadata": {
                 "session_id": "session-1",
                 "thread_id": thread_id,
                 "guardian_classifier_source_thread_id": "thread-1",
@@ -118,7 +118,7 @@ fn assert_connection_metadata(
         });
         if let Some(root_turn_id) = root_turn_id {
             expected["root_turn_id"] = json!(root_turn_id);
-            expected["x-codex-turn-metadata"]["root_turn_id"] = json!(root_turn_id);
+            expected["x-ava-turn-metadata"]["root_turn_id"] = json!(root_turn_id);
         }
         assert_eq!(metadata, expected);
     }
@@ -198,7 +198,7 @@ pub(super) fn sampler_config(base_url: String) -> LunaSamplerConfig {
     LunaSamplerConfig {
         provider: create_model_provider(
             ModelProviderInfo::create_openai_provider(Some(base_url)),
-            Some(AuthManager::from_auth_for_testing(CodexAuth::from_api_key(
+            Some(AuthManager::from_auth_for_testing(AvaAuth::from_api_key(
                 "test-api-key",
             ))),
         ),
@@ -211,7 +211,7 @@ pub(super) fn sampler_config(base_url: String) -> LunaSamplerConfig {
 
         service_tier: None,
         luna_compaction_hash: None,
-        max_input_tokens: codex_guardian_context::DEFAULT_MAX_INPUT_TOKENS,
+        max_input_tokens: ava_guardian_context::DEFAULT_MAX_INPUT_TOKENS,
         metrics: None,
     }
 }
@@ -285,7 +285,7 @@ impl ExtensionMetrics for RecordingMetrics {
     fn counter(&self, _name: &str, _inc: i64, _tags: &[(&str, &str)]) {}
 
     fn histogram(&self, name: &str, value: i64, tags: &[(&str, &str)]) {
-        if name == "codex.guardian_v2.connection.duration_ms" {
+        if name == "ava.guardian_v2.connection.duration_ms" {
             return;
         }
         self.0.lock().unwrap().push((
@@ -368,10 +368,10 @@ async fn sampler_records_token_usage_after_returning_an_early_classification() -
     let input: Vec<ResponseItem> = serde_json::from_value(request["input"].clone())?;
     let estimated = input
         .iter()
-        .map(codex_guardian_context::estimate_input_tokens)
+        .map(ava_guardian_context::estimate_input_tokens)
         .sum::<usize>();
     assert!(metrics.0.lock().unwrap().contains(&(
-        codex_guardian_context::REQUEST_TOKENS_METRIC.to_owned(),
+        ava_guardian_context::REQUEST_TOKENS_METRIC.to_owned(),
         i64::try_from(estimated)?,
         vec![
             ("target".to_owned(), "async".to_owned()),
@@ -384,34 +384,34 @@ async fn sampler_records_token_usage_after_returning_an_early_classification() -
 
 struct RefreshableAuth(std::sync::Mutex<&'static str>);
 impl ExternalAuth for RefreshableAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
-        Box::pin(async { Ok(CodexAuth::from_api_key(*self.0.lock().expect("auth"))) })
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
+        Box::pin(async { Ok(AvaAuth::from_api_key(*self.0.lock().expect("auth"))) })
     }
-    fn refresh(&self, _: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         *self.0.lock().expect("auth") = "refreshed";
         self.resolve()
     }
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn classifier_sends_guardian_header_only_with_codex_backend_auth() -> Result<()> {
+async fn classifier_sends_guardian_header_only_with_ava_backend_auth() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     for (auth, base_path, expected_header, expected_service_tier) in [
         (
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
-            "/backend-api/codex",
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
+            "/backend-api/ava",
             Some("classifier"),
             None,
         ),
         (
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
             "/v1",
             None,
             Some("priority"),
         ),
         (
-            CodexAuth::from_api_key("test-api-key"),
+            AvaAuth::from_api_key("test-api-key"),
             "/v1",
             None,
             Some("priority"),
@@ -440,10 +440,10 @@ async fn classifier_sends_guardian_header_only_with_codex_backend_auth() -> Resu
         for handshake in server.handshakes() {
             assert_eq!(handshake.uri(), format!("{base_path}/responses"));
             assert_eq!(
-                handshake.header("x-codex-guardian").as_deref(),
+                handshake.header("x-ava-guardian").as_deref(),
                 expected_header
             );
-            assert_eq!(handshake.header("x-codex-routing-hint"), None);
+            assert_eq!(handshake.header("x-ava-routing-hint"), None);
         }
         let request = server
             .wait_for_request(
@@ -494,7 +494,7 @@ async fn preconnected_sampler_reuses_authenticated_websocket_for_classifications
         },
     )
     .await?;
-    let manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("test-api-key"));
+    let manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("test-api-key"));
     manager
         .set_external_auth(Arc::new(RefreshableAuth(std::sync::Mutex::new(
             "test-api-key",
@@ -516,7 +516,7 @@ async fn preconnected_sampler_reuses_authenticated_websocket_for_classifications
 
         service_tier: None,
         luna_compaction_hash: None,
-        max_input_tokens: codex_guardian_context::DEFAULT_MAX_INPUT_TOKENS,
+        max_input_tokens: ava_guardian_context::DEFAULT_MAX_INPUT_TOKENS,
         metrics: None,
     })
     .await?;
@@ -538,7 +538,7 @@ async fn preconnected_sampler_reuses_authenticated_websocket_for_classifications
         Some("responses_websockets=2026-02-06".to_owned())
     );
     assert_eq!(
-        handshake.header("x-openai-internal-codex-responses-lite"),
+        handshake.header("x-openai-internal-ava-responses-lite"),
         Some("true".to_owned())
     );
     assert_eq!(handshake.header("session-id"), Some("session-1".to_owned()));
@@ -746,7 +746,7 @@ async fn sampler_returns_classification_token_before_terminal_response_events() 
     let base_url = proxy_websocket_servers(&[&idle_server, &server]).await?;
     let provider = create_model_provider(
         ModelProviderInfo::create_openai_provider(Some(base_url)),
-        Some(AuthManager::from_auth_for_testing(CodexAuth::from_api_key(
+        Some(AuthManager::from_auth_for_testing(AvaAuth::from_api_key(
             "test-api-key",
         ))),
     );
@@ -761,7 +761,7 @@ async fn sampler_returns_classification_token_before_terminal_response_events() 
 
         service_tier: None,
         luna_compaction_hash: None,
-        max_input_tokens: codex_guardian_context::DEFAULT_MAX_INPUT_TOKENS,
+        max_input_tokens: ava_guardian_context::DEFAULT_MAX_INPUT_TOKENS,
         metrics: None,
     })
     .await?;
@@ -979,7 +979,7 @@ async fn sampler_retries_expired_websockets_on_another_warm_connection() -> Resu
     );
     request.input.insert(
         /*index*/ 1,
-        ContextualUserFragment::into(codex_guardian_context::TrustedSkills {
+        ContextualUserFragment::into(ava_guardian_context::TrustedSkills {
             paths: vec!["/skills/review/SKILL.md".to_owned()],
         }),
     );
@@ -1170,7 +1170,7 @@ async fn sampler_limits_transient_recovery_attempts() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn parent_response_id_survives_classifier_transport_retry() -> Result<()> {
     skip_if_no_network!(Ok(()));
-    for uses_codex_backend in [false, true] {
+    for uses_ava_backend in [false, true] {
         let healthy = responses::start_websocket_server(vec![vec![vec![
             ev_assistant_message("resp-review", "low"),
             ev_completed("resp-review"),
@@ -1182,14 +1182,14 @@ async fn parent_response_id_survives_classifier_transport_retry() -> Result<()> 
         })]]]).await;
         let base_url = proxy_websocket_servers(&[&healthy, &expired]).await?;
         let mut config = sampler_config(base_url.clone());
-        if uses_codex_backend {
+        if uses_ava_backend {
             config.provider = create_model_provider(
                 ModelProviderInfo::create_openai_provider(Some(format!(
-                    "{}/backend-api/codex",
+                    "{}/backend-api/ava",
                     base_url.trim_end_matches("/v1")
                 ))),
                 Some(AuthManager::from_auth_for_testing(
-                    CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+                    AvaAuth::create_dummy_chatgpt_auth_for_testing(),
                 )),
             );
         }
@@ -1207,7 +1207,7 @@ async fn parent_response_id_survives_classifier_transport_retry() -> Result<()> 
                     body["client_metadata"].get("parent_response_id").cloned(),
                     body["client_metadata"].get("guardian_credits_requested"),
                 ),
-                (uses_codex_backend.then(|| json!(parent_response_id)), None)
+                (uses_ava_backend.then(|| json!(parent_response_id)), None)
             );
             assert!(!body["input"].to_string().contains(parent_response_id));
         }

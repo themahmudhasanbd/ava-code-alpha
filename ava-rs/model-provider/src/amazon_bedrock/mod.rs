@@ -10,24 +10,24 @@ mod runtime_catalog;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codex_api::ApiError;
-use codex_api::Provider;
-use codex_api::SharedAuthProvider;
-use codex_api::TransportError;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_6_LUNA_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_6_TERRA_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_GLOBAL_GPT_5_6_LUNA_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_GLOBAL_GPT_5_6_TERRA_MODEL_ID;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_models_manager::manager::StaticModelsManager;
-use codex_protocol::account::ProviderAccount;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
-use codex_protocol::openai_models::ModelsResponse;
+use ava_api::ApiError;
+use ava_api::Provider;
+use ava_api::SharedAuthProvider;
+use ava_api::TransportError;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_6_LUNA_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_6_TERRA_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_RUNTIME_GLOBAL_GPT_5_6_LUNA_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_RUNTIME_GLOBAL_GPT_5_6_TERRA_MODEL_ID;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_models_manager::manager::StaticModelsManager;
+use ava_protocol::account::ProviderAccount;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
+use ava_protocol::openai_models::ModelsResponse;
 
 use crate::auth::auth_manager_for_provider;
 use crate::auth::resolve_provider_auth as resolve_configured_provider_auth;
@@ -118,7 +118,7 @@ impl AmazonBedrockModelProvider {
         auth::auth_source(&self.info, self.auth_manager.as_deref(), std::env::var)
     }
 
-    fn managed_auth(&self) -> Option<CodexAuth> {
+    fn managed_auth(&self) -> Option<AvaAuth> {
         let source = self.auth_source();
         self.auth_manager
             .as_deref()
@@ -128,10 +128,10 @@ impl AmazonBedrockModelProvider {
                     (source, auth),
                     (
                         auth::BedrockAuthSource::ManagedBearerToken,
-                        CodexAuth::BedrockApiKey(_)
+                        AvaAuth::BedrockApiKey(_)
                     ) | (
                         auth::BedrockAuthSource::ManagedAccessKeys,
-                        CodexAuth::BedrockAccessKeys(_)
+                        AvaAuth::BedrockAccessKeys(_)
                     )
                 )
             })
@@ -147,7 +147,7 @@ impl AmazonBedrockModelProvider {
                 ))
     }
 
-    async fn auth(&self) -> Option<CodexAuth> {
+    async fn auth(&self) -> Option<AvaAuth> {
         match self.auth_source() {
             auth::BedrockAuthSource::CommandBearerToken => match self.auth_manager.as_ref() {
                 Some(auth_manager) => auth_manager.auth().await,
@@ -307,23 +307,23 @@ impl ModelProvider for AmazonBedrockModelProvider {
                         | std::io::ErrorKind::NotFound
                         | std::io::ErrorKind::PermissionDenied
                 ) {
-                    CodexErr::InvalidRequest(error.to_string())
+                    AvaErr::InvalidRequest(error.to_string())
                 } else {
-                    CodexErr::Io(error)
+                    AvaErr::Io(error)
                 }
             })?;
             Ok(ProviderUnauthorizedRecovery::Recovered)
         })
     }
 
-    fn auth(&self) -> ModelProviderFuture<'_, Option<CodexAuth>> {
+    fn auth(&self) -> ModelProviderFuture<'_, Option<AvaAuth>> {
         Box::pin(AmazonBedrockModelProvider::auth(self))
     }
 
     fn account_state(&self) -> ProviderAccountResult {
         Ok(ProviderAccountState {
             account: Some(ProviderAccount::AmazonBedrock {
-                uses_codex_managed_credentials: matches!(
+                uses_ava_managed_credentials: matches!(
                     self.auth_source(),
                     auth::BedrockAuthSource::ManagedBearerToken
                         | auth::BedrockAuthSource::ManagedAccessKeys
@@ -333,7 +333,7 @@ impl ModelProvider for AmazonBedrockModelProvider {
         })
     }
 
-    fn map_api_error(&self, error: ApiError) -> CodexErr {
+    fn map_api_error(&self, error: ApiError) -> AvaErr {
         error::map_api_error(error)
     }
 
@@ -351,7 +351,7 @@ impl ModelProvider for AmazonBedrockModelProvider {
 
     fn models_manager(
         &self,
-        _codex_home: PathBuf,
+        _ava_home: PathBuf,
         config_model_catalog: Option<ModelsResponse>,
     ) -> SharedModelsManager {
         Arc::new(StaticModelsManager::new(
@@ -381,10 +381,10 @@ mod error_tests;
 mod tests {
     use std::num::NonZeroU64;
 
-    use codex_login::auth::BedrockAccessKeysAuth;
-    use codex_login::auth::BedrockApiKeyAuth;
-    use codex_model_provider_info::AwsAuthRefreshConfig;
-    use codex_protocol::config_types::ModelProviderAuthInfo;
+    use ava_login::auth::BedrockAccessKeysAuth;
+    use ava_login::auth::BedrockApiKeyAuth;
+    use ava_model_provider_info::AwsAuthRefreshConfig;
+    use ava_protocol::config_types::ModelProviderAuthInfo;
     use http::HeaderValue;
     use pretty_assertions::assert_eq;
 
@@ -454,7 +454,7 @@ mod tests {
             provider.account_state(),
             Ok(ProviderAccountState {
                 account: Some(ProviderAccount::AmazonBedrock {
-                    uses_codex_managed_credentials: false,
+                    uses_ava_managed_credentials: false,
                 }),
                 requires_openai_auth: false,
             })
@@ -486,7 +486,7 @@ mod tests {
             region: "us-east-1".to_string(),
         };
         let auth_manager =
-            AuthManager::from_auth_for_testing(CodexAuth::BedrockApiKey(managed_auth.clone()));
+            AuthManager::from_auth_for_testing(AvaAuth::BedrockApiKey(managed_auth.clone()));
         let aws = ModelProviderAwsAuthInfo {
             profile: None,
             region: Some("us-west-2".to_string()),
@@ -510,13 +510,13 @@ mod tests {
         ));
         assert_eq!(
             provider.auth().await,
-            Some(CodexAuth::BedrockApiKey(managed_auth))
+            Some(AvaAuth::BedrockApiKey(managed_auth))
         );
         assert_eq!(
             provider.account_state(),
             Ok(ProviderAccountState {
                 account: Some(ProviderAccount::AmazonBedrock {
-                    uses_codex_managed_credentials: true,
+                    uses_ava_managed_credentials: true,
                 }),
                 requires_openai_auth: false,
             })
@@ -540,7 +540,7 @@ mod tests {
         assert!(!provider.uses_aws_auth_recovery());
 
         let access_keys_auth_manager = AuthManager::from_auth_for_testing(
-            CodexAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
+            AvaAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
                 access_key_id: "managed-access-key-id".to_string(),
                 secret_access_key: "managed-secret-access-key".to_string(),
                 session_token: None,
@@ -562,7 +562,7 @@ mod tests {
                 configured_profile_provider.account_state(),
                 Ok(ProviderAccountState {
                     account: Some(ProviderAccount::AmazonBedrock {
-                        uses_codex_managed_credentials: false,
+                        uses_ava_managed_credentials: false,
                     }),
                     requires_openai_auth: false,
                 })
@@ -591,7 +591,7 @@ mod tests {
     async fn openai_auth_is_not_exposed_to_bedrock() {
         let provider = AmazonBedrockModelProvider::new(
             ModelProviderInfo::create_amazon_bedrock_provider(/*aws*/ None),
-            Some(AuthManager::from_auth_for_testing(CodexAuth::from_api_key(
+            Some(AuthManager::from_auth_for_testing(AvaAuth::from_api_key(
                 "openai-api-key",
             ))),
         );
@@ -602,7 +602,7 @@ mod tests {
             provider.account_state(),
             Ok(ProviderAccountState {
                 account: Some(ProviderAccount::AmazonBedrock {
-                    uses_codex_managed_credentials: false,
+                    uses_ava_managed_credentials: false,
                 }),
                 requires_openai_auth: false,
             })
@@ -654,7 +654,7 @@ mod tests {
             region: "eu-west-1".to_string(),
         };
         let auth_manager =
-            AuthManager::from_auth_for_testing(CodexAuth::BedrockApiKey(managed_auth));
+            AuthManager::from_auth_for_testing(AvaAuth::BedrockApiKey(managed_auth));
         let provider = AmazonBedrockModelProvider::new(
             ModelProviderInfo::create_amazon_bedrock_runtime_provider(/*aws*/ None),
             Some(auth_manager),

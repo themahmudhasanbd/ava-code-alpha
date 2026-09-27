@@ -4,22 +4,22 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use anyhow::bail;
-use codex_api::SharedAuthProvider;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::Environment;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::McpOAuthRefreshMode;
+use ava_api::SharedAuthProvider;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::Environment;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::McpOAuthRefreshMode;
 use rmcp::model::ElicitationAction;
 use rmcp::model::ElicitationCapability;
 use serde_json::Map;
 use serde_json::Value;
 use tokio::sync::watch;
 
-use crate::CODEX_APPS_MCP_SERVER_NAME;
+use crate::AVA_APPS_MCP_SERVER_NAME;
 use crate::EffectiveMcpServer;
 use crate::McpEventStream;
 use crate::McpProtocolMode;
@@ -37,7 +37,7 @@ pub(crate) struct EventStreamConnectionSettings {
     pub resolved_environment: std::result::Result<Option<Arc<Environment>>, String>,
     pub auth_provider: Option<SharedAuthProvider>,
     pub auth_manager: Option<Arc<AuthManager>>,
-    pub auth: Option<CodexAuth>,
+    pub auth: Option<AvaAuth>,
     pub protocol_mode: McpProtocolMode,
     pub client_mcp_extensions: ClientMcpExtensions,
 }
@@ -79,7 +79,7 @@ impl McpEventStreamOpener {
                 let startup_timeout = connection.server.config().startup_timeout_sec
                     .unwrap_or(DEFAULT_STARTUP_TIMEOUT);
                 let client = Arc::new(tokio::time::timeout(startup_timeout, make_rmcp_client(
-                    CODEX_APPS_MCP_SERVER_NAME,
+                    AVA_APPS_MCP_SERVER_NAME,
                     connection.server.clone(),
                     connection.store_mode,
                     connection.keyring_backend_kind,
@@ -137,12 +137,12 @@ impl McpEventStreamOpener {
         }
     }
 
-    fn matches_auth(&self, current: Option<&CodexAuth>) -> bool {
+    fn matches_auth(&self, current: Option<&AvaAuth>) -> bool {
         match (self.connection.auth.as_ref(), current) {
-            (Some(CodexAuth::AgentIdentity(expected)), Some(CodexAuth::AgentIdentity(current))) => {
+            (Some(AvaAuth::AgentIdentity(expected)), Some(AvaAuth::AgentIdentity(current))) => {
                 expected.record() == current.record()
             }
-            (Some(CodexAuth::AgentIdentity(_)), _) | (_, Some(CodexAuth::AgentIdentity(_))) => {
+            (Some(AvaAuth::AgentIdentity(_)), _) | (_, Some(AvaAuth::AgentIdentity(_))) => {
                 false
             }
             (Some(expected), Some(current)) => {

@@ -10,15 +10,15 @@ use crate::test_support::TEST_CURATED_PLUGIN_SHA;
 use crate::test_support::write_curated_plugin_sha_with;
 use crate::test_support::write_openai_api_curated_marketplace;
 use crate::test_support::write_openai_curated_marketplace;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::LOCAL_FS;
-use codex_exec_server::NoiseChannelPublicKey;
-use codex_exec_server::NoiseRendezvousConnectBundle;
-use codex_exec_server::NoiseRendezvousConnectProvider;
-use codex_exec_server_test_support::environment_manager_without_environments;
-use codex_plugin::PluginLoadOutcome;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::SkillDiscoveryMode;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::LOCAL_FS;
+use ava_exec_server::NoiseChannelPublicKey;
+use ava_exec_server::NoiseRendezvousConnectBundle;
+use ava_exec_server::NoiseRendezvousConnectProvider;
+use ava_exec_server_test_support::environment_manager_without_environments;
+use ava_plugin::PluginLoadOutcome;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::SkillDiscoveryMode;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use pretty_assertions::assert_eq;
@@ -54,8 +54,8 @@ fn loaded_plugin(config_name: &str, root: &Path, enabled: bool) -> LoadedPlugin 
         error: None,
     }
 }
-fn synced_plugin_root(codex_home: &Path, marketplace: &str, plugin_name: &str) -> AbsolutePathBuf {
-    let synced_root = curated_plugins_repo_path(codex_home);
+fn synced_plugin_root(ava_home: &Path, marketplace: &str, plugin_name: &str) -> AbsolutePathBuf {
+    let synced_root = curated_plugins_repo_path(ava_home);
     match marketplace {
         OPENAI_CURATED_MARKETPLACE_NAME => {
             write_openai_curated_marketplace(&synced_root, &[plugin_name])
@@ -67,31 +67,31 @@ fn synced_plugin_root(codex_home: &Path, marketplace: &str, plugin_name: &str) -
     }
     let plugin_id =
         PluginId::new(plugin_name.to_string(), marketplace.to_string()).expect("plugin id");
-    let root = PluginStore::new(codex_home.to_path_buf()).plugin_root(
+    let root = PluginStore::new(ava_home.to_path_buf()).plugin_root(
         &plugin_id,
         &curated_plugin_cache_version(TEST_CURATED_PLUGIN_SHA),
     );
     fs::create_dir_all(root.as_path()).expect("create cached plugin root");
     root
 }
-fn cached_remote_plugin_root(codex_home: &Path, plugin_name: &str) -> AbsolutePathBuf {
+fn cached_remote_plugin_root(ava_home: &Path, plugin_name: &str) -> AbsolutePathBuf {
     let plugin_id = PluginId::new(
         plugin_name.to_string(),
         REMOTE_GLOBAL_MARKETPLACE_NAME.to_string(),
     )
     .expect("plugin id");
-    let root = PluginStore::new(codex_home.to_path_buf()).plugin_root(&plugin_id, "1.2.3");
+    let root = PluginStore::new(ava_home.to_path_buf()).plugin_root(&plugin_id, "1.2.3");
     fs::create_dir_all(root.as_path()).expect("create cached remote plugin root");
     root
 }
-fn installed_remote_plugin_root(codex_home: &Path, plugin_name: &str) -> AbsolutePathBuf {
-    let root = cached_remote_plugin_root(codex_home, plugin_name);
+fn installed_remote_plugin_root(ava_home: &Path, plugin_name: &str) -> AbsolutePathBuf {
+    let root = cached_remote_plugin_root(ava_home, plugin_name);
     let plugin_id = PluginId::new(
         plugin_name.to_string(),
         REMOTE_GLOBAL_MARKETPLACE_NAME.to_string(),
     )
     .expect("plugin id");
-    PluginStore::new(codex_home.to_path_buf())
+    PluginStore::new(ava_home.to_path_buf())
         .write_remote_plugin_id(&plugin_id, "plugins~Plugin_sample")
         .expect("write remote plugin id");
     root
@@ -112,9 +112,9 @@ fn resolves_primary_runtime_scripts_from_the_installed_plugin_cache() {
     let temp = TempDir::new().expect("temp dir");
     let marketplace_root = temp.path().join("openai-primary-runtime");
     let source_root = marketplace_root.join("plugins/presentations");
-    fs::create_dir_all(source_root.join(".codex-plugin")).expect("create manifest directory");
+    fs::create_dir_all(source_root.join(".ava-plugin")).expect("create manifest directory");
     fs::write(
-        source_root.join(".codex-plugin/plugin.json"),
+        source_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"presentations","version":"0.1.29"}"#,
     )
     .expect("write plugin manifest");
@@ -182,10 +182,10 @@ fn resolves_primary_runtime_scripts_from_the_installed_plugin_cache() {
         })
     );
 }
-fn roots_for(codex_home: &Path, plugins: Vec<LoadedPlugin>) -> TrustedPluginRoots {
+fn roots_for(ava_home: &Path, plugins: Vec<LoadedPlugin>) -> TrustedPluginRoots {
     TrustedPluginRoots::from_plugin_load_outcome(
         &PluginLoadOutcome::from_plugins(plugins),
-        codex_home,
+        ava_home,
     )
 }
 
@@ -249,7 +249,7 @@ fn recognizes_windows_executor_plugin_cache_root() {
     };
     let relative_path = "skills/presentations/container_tools/mark_artifact_operation_started.mjs";
     let script = PathUri::parse(
-        "file:///C:/Users/user/.codex/plugins/cache/openai-primary-runtime/presentations/0.1.29/skills/presentations/container_tools/mark_artifact_operation_started.mjs",
+        "file:///C:/Users/user/.ava-code/plugins/cache/openai-primary-runtime/presentations/0.1.29/skills/presentations/container_tools/mark_artifact_operation_started.mjs",
     )
     .expect("Windows script URI");
 
@@ -260,7 +260,7 @@ fn recognizes_windows_executor_plugin_cache_root() {
         PluginVersionMatch::Exact,
     ));
     let wrong_version = PathUri::parse(
-        "file:///C:/Users/user/.codex/plugins/cache/openai-primary-runtime/presentations/0.1.28/skills/presentations/container_tools/mark_artifact_operation_started.mjs",
+        "file:///C:/Users/user/.ava-code/plugins/cache/openai-primary-runtime/presentations/0.1.28/skills/presentations/container_tools/mark_artifact_operation_started.mjs",
     )
     .expect("other-version Windows script URI");
     assert!(!executor_plugin_root_matches(
@@ -270,10 +270,10 @@ fn recognizes_windows_executor_plugin_cache_root() {
         PluginVersionMatch::Exact,
     ));
 }
-fn assert_invalid_metrics_manifest(codex_home: &Path, root: &AbsolutePathBuf, manifest: &str) {
+fn assert_invalid_metrics_manifest(ava_home: &Path, root: &AbsolutePathBuf, manifest: &str) {
     fs::write(root.join("analytics.yaml"), manifest).expect("write analytics manifest");
     let roots = roots_for(
-        codex_home,
+        ava_home,
         vec![loaded_plugin(
             "sample@openai-curated",
             root.as_path(),
@@ -288,9 +288,9 @@ fn assert_invalid_metrics_manifest(codex_home: &Path, root: &AbsolutePathBuf, ma
         None
     );
 }
-fn assert_untrusted(codex_home: &Path, config_name: &str, root: &Path) {
+fn assert_untrusted(ava_home: &Path, config_name: &str, root: &Path) {
     assert!(
-        roots_for(codex_home, vec![loaded_plugin(config_name, root, ENABLED)])
+        roots_for(ava_home, vec![loaded_plugin(config_name, root, ENABLED)])
             .roots
             .is_empty()
     );
@@ -643,7 +643,7 @@ fn only_emits_safe_normalized_relative_script_paths() {
     );
     assert_eq!(
         normalized_relative_script_path(Path::new(
-            "/home/user/.codex/plugins/cache/openai-curated/sample/scripts/run.py"
+            "/home/user/.ava-code/plugins/cache/openai-curated/sample/scripts/run.py"
         )),
         None
     );
@@ -821,7 +821,7 @@ fn executor_cache_identity_obeys_windows_and_posix_case_conventions() {
     let (_reference, roots) =
         reference_fixture(&[("sites", "2.0.0-RC1", "selected", "printf shared\\n\n")]);
     let plugin_id = PluginId::parse("sites@openai-curated-remote").expect("plugin id");
-    for prefix in ["file:///C:/Users/user/.codex", "file://server/share/.codex"] {
+    for prefix in ["file:///C:/Users/user/.ava-code", "file://server/share/.ava-code"] {
         let script = PathUri::parse(&format!(
             "{prefix}/PLUGINS/CACHE/OPENAI-CURATED-REMOTE/SITES/2.0.0-rc1/{REFERENCE_HELPER}"
         ))
@@ -859,16 +859,16 @@ fn executor_cache_identity_obeys_windows_and_posix_case_conventions() {
     }
     for script in [
         format!(
-            "file:///home/user/.codex/PLUGINS/CACHE/OPENAI-CURATED-REMOTE/SITES/2.0.0-rc1/{REFERENCE_HELPER}"
+            "file:///home/user/.ava-code/PLUGINS/CACHE/OPENAI-CURATED-REMOTE/SITES/2.0.0-rc1/{REFERENCE_HELPER}"
         ),
         format!(
-            "file:///home/user/.codex/plugins/cache/openai-curated-remote/SITES/2.0.0-RC1/{REFERENCE_HELPER}"
+            "file:///home/user/.ava-code/plugins/cache/openai-curated-remote/SITES/2.0.0-RC1/{REFERENCE_HELPER}"
         ),
         format!(
-            "file:///C:/Users/user/.codex/PLUGINS/CACHE/OPENAI-CURATED-REMOTE/SITES/2.0.0-rc2/{REFERENCE_HELPER}"
+            "file:///C:/Users/user/.ava-code/PLUGINS/CACHE/OPENAI-CURATED-REMOTE/SITES/2.0.0-rc2/{REFERENCE_HELPER}"
         ),
         format!(
-            "file:///C:/Users/user/.codex/PLUGINS/CACHE/OPENAI-CURATED-REMOTE/OTHER/2.0.0-rc1/{REFERENCE_HELPER}"
+            "file:///C:/Users/user/.ava-code/PLUGINS/CACHE/OPENAI-CURATED-REMOTE/OTHER/2.0.0-rc1/{REFERENCE_HELPER}"
         ),
     ] {
         let script = PathUri::parse(&script).expect("script");
@@ -896,7 +896,7 @@ fn executor_cache_identity_obeys_windows_and_posix_case_conventions() {
     }
     for version in ["2.0.0-RC1", "2.0.0-rc1"] {
         let script = PathUri::parse(&format!(
-            "file:///home/user/.codex/plugins/cache/openai-curated-remote/sites/{version}/{REFERENCE_HELPER}"
+            "file:///home/user/.ava-code/plugins/cache/openai-curated-remote/sites/{version}/{REFERENCE_HELPER}"
         ))
         .expect("POSIX script");
         let target =
@@ -1133,7 +1133,7 @@ async fn measurement_target_rejects_inline_commands_and_local_versions() -> anyh
     let cwd = PathUri::from_host_native_path(root.as_path())?;
     for args in [&["node", "-e", "42"][..], &["sh", REFERENCE_HELPER][..]] {
         let command = command(args);
-        let fs = codex_exec_server::LOCAL_FS.as_ref();
+        let fs = ava_exec_server::LOCAL_FS.as_ref();
         assert_eq!(
             PluginMeasurementTarget::from_command(&command, &cwd, fs).await,
             None

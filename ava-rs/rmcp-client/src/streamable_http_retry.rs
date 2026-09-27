@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_exec_server::ExecServerError;
+use ava_exec_server::ExecServerError;
 use http::StatusCode;
 use rmcp::service::RoleClient;
 use rmcp::service::RunningService;

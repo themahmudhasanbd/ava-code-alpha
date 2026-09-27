@@ -16,7 +16,7 @@ use crate::render::renderable::RenderableItem;
 use crate::tui::FrameRequester;
 use crate::tui::Tui;
 use crate::tui::TuiEvent;
-use codex_config::types::ResumeCwdMode;
+use ava_config::types::ResumeCwdMode;
 use color_eyre::Result;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -515,7 +515,7 @@ mod tests {
     async fn cwd_prompt_remembered_choices_select_and_persist_matching_directory() -> Result<()> {
         let temp_dir = TempDir::new()?;
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await?;
         let current_cwd = Path::new("/Users/example/current");
@@ -562,7 +562,7 @@ mod tests {
     async fn cwd_prompt_persistence_failure_snapshot() -> Result<()> {
         let temp_dir = TempDir::new()?;
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await?;
         let config_path = temp_dir.path().join("config.toml");

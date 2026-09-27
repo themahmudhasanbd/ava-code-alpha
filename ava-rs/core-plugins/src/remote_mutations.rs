@@ -14,12 +14,12 @@ use crate::remote::RemotePluginCatalogError;
 use crate::remote::RemotePluginDetail;
 use crate::remote_bundle;
 use crate::remote_bundle::RemotePluginBundleInstallError;
-use codex_app_server_protocol::PluginAuthPolicy;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginInstallPolicy;
-use codex_login::CodexAuth;
-use codex_plugin::PluginId;
-use codex_plugin::PluginTelemetryMetadata;
+use ava_app_server_protocol::PluginAuthPolicy;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginInstallPolicy;
+use ava_login::AvaAuth;
+use ava_plugin::PluginId;
+use ava_plugin::PluginTelemetryMetadata;
 use std::sync::Arc;
 
 #[cfg(test)]
@@ -85,7 +85,7 @@ impl PluginsManager {
     pub async fn install_remote_plugin(
         self: &Arc<Self>,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         request: RemotePluginInstallRequest,
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
     ) -> Result<RemotePluginInstallOutcome, RemotePluginOperationError> {
@@ -155,14 +155,14 @@ impl PluginsManager {
                 })
             })?;
         let cache_mutation = remote::mark_remote_plugin_cache_mutation_in_flight(
-            &self.codex_home,
+            &self.ava_home,
             &detail.marketplace_name,
             &detail.summary.name,
         );
         // Materialize first: a failed download must never leave a backend installation behind.
         let installed = remote_bundle::download_and_install_remote_plugin_bundle(
             &service,
-            self.codex_home.clone(),
+            self.ava_home.clone(),
             bundle,
         )
         .await
@@ -216,7 +216,7 @@ impl PluginsManager {
     pub async fn uninstall_remote_plugin(
         self: &Arc<Self>,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         remote_plugin_id: &str,
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
     ) -> Result<RemotePluginUninstallOutcome, RemotePluginOperationError> {
@@ -266,12 +266,12 @@ impl PluginsManager {
                 })
             })?;
         let _cache_mutation = remote::mark_remote_plugin_cache_mutation_in_flight(
-            &self.codex_home,
+            &self.ava_home,
             &plugin_id.marketplace_name,
             &plugin_id.plugin_name,
         );
         let cache_removal_error =
-            match remote::uninstall_remote_plugin(&service, auth, self.codex_home.clone(), target)
+            match remote::uninstall_remote_plugin(&service, auth, self.ava_home.clone(), target)
                 .await
             {
                 Ok(()) => None,

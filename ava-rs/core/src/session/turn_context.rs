@@ -13,33 +13,33 @@ use crate::shell_snapshot::ShellSnapshotSandbox;
 use crate::tools::sandboxing::configured_windows_sandbox_selection;
 use crate::tools::sandboxing::executor_windows_sandbox_selection;
 use arc_swap::ArcSwap;
-use codex_core_plugins::PluginCommandAttribution;
-use codex_core_plugins::ResolvedPluginMetricsOperation;
-use codex_core_plugins::TrustedPluginRoots;
-use codex_exec_server::ExecutorFileSystem;
-use codex_extension_api::SelectedPluginSnapshot;
-use codex_file_system::FileSystemSandboxContext;
-use codex_model_provider::SharedModelProvider;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::openai_models::MODEL_SPECIALTY_CYBER;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::permissions::RawFileSystemSandboxPolicy;
-use codex_protocol::protocol::EnvironmentConfig;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::turn_input::CyberAccessProgram;
-use codex_sandboxing::policy_transforms::effective_permission_profile;
-use codex_skills_extension::HostSkillsSnapshot;
-use codex_skills_extension::SkillLoadOutcome;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::PluginIdentity;
+use ava_core_plugins::PluginCommandAttribution;
+use ava_core_plugins::ResolvedPluginMetricsOperation;
+use ava_core_plugins::TrustedPluginRoots;
+use ava_exec_server::ExecutorFileSystem;
+use ava_extension_api::SelectedPluginSnapshot;
+use ava_file_system::FileSystemSandboxContext;
+use ava_model_provider::SharedModelProvider;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::openai_models::MODEL_SPECIALTY_CYBER;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::permissions::RawFileSystemSandboxPolicy;
+use ava_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::turn_input::CyberAccessProgram;
+use ava_sandboxing::policy_transforms::effective_permission_profile;
+use ava_skills_extension::HostSkillsSnapshot;
+use ava_skills_extension::SkillLoadOutcome;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::PluginIdentity;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use futures::future::Shared;
@@ -243,7 +243,7 @@ impl TurnEnvironment {
 
     pub(crate) fn windows_sandbox_selection_for_turn_metadata(
         &self,
-    ) -> codex_file_system::WindowsSandboxSelection {
+    ) -> ava_file_system::WindowsSandboxSelection {
         let config = self.config();
         if self.environment.is_remote() {
             executor_windows_sandbox_selection(
@@ -352,7 +352,7 @@ pub struct TurnContext {
     pub(crate) final_output_json_schema: Option<Value>,
     pub(crate) dynamic_tools: Vec<DynamicToolSpec>,
     pub(crate) turn_metadata_state: Arc<TurnMetadataState>,
-    pub(crate) extension_data: Arc<codex_extension_api::ExtensionData>,
+    pub(crate) extension_data: Arc<ava_extension_api::ExtensionData>,
     pub(crate) turn_timing_state: Arc<TurnTimingState>,
     pub(crate) terminal_error: Arc<Mutex<Option<ErrorEvent>>>,
     pub(crate) server_model_warning_emitted: AtomicBool,
@@ -445,13 +445,13 @@ impl TurnContext {
         for identity in identities {
             let id = match identity.remote_plugin_id {
                 Some(remote_id) => {
-                    if !codex_core_plugins::remote::is_valid_remote_plugin_id(&remote_id) {
+                    if !ava_core_plugins::remote::is_valid_remote_plugin_id(&remote_id) {
                         return None;
                     }
                     remote_id
                 }
                 None => {
-                    if codex_plugin::PluginId::parse(&identity.plugin_id).is_err() {
+                    if ava_plugin::PluginId::parse(&identity.plugin_id).is_err() {
                         return None;
                     }
                     identity.plugin_id
@@ -567,7 +567,7 @@ impl TurnContext {
 
     pub(crate) fn sandbox_policy(&self) -> SandboxPolicy {
         #[allow(deprecated)]
-        codex_sandboxing::compatibility_sandbox_policy_for_permission_profile(
+        ava_sandboxing::compatibility_sandbox_policy_for_permission_profile(
             &self.permission_profile(),
             &self.cwd,
         )
@@ -617,13 +617,13 @@ impl TurnContext {
     }
 
     pub(crate) fn apps_enabled(&self) -> bool {
-        let uses_codex_backend = self
+        let uses_ava_backend = self
             .auth_manager
             .as_deref()
-            .is_some_and(AuthManager::current_auth_uses_codex_backend);
+            .is_some_and(AuthManager::current_auth_uses_ava_backend);
         self.config
             .features
-            .apps_enabled_for_auth(uses_codex_backend)
+            .apps_enabled_for_auth(uses_ava_backend)
             && self.config.orchestrator_mcp_enabled
     }
 
@@ -819,12 +819,12 @@ impl TurnContext {
             allowed_domains: network
                 .domains
                 .as_ref()
-                .and_then(codex_config::NetworkDomainPermissionsToml::allowed_domains)
+                .and_then(ava_config::NetworkDomainPermissionsToml::allowed_domains)
                 .unwrap_or_default(),
             denied_domains: network
                 .domains
                 .as_ref()
-                .and_then(codex_config::NetworkDomainPermissionsToml::denied_domains)
+                .and_then(ava_config::NetworkDomainPermissionsToml::denied_domains)
                 .unwrap_or_default(),
         })
     }
@@ -997,7 +997,7 @@ impl Session {
         turn_metadata_state
             .set_responses_api_metadata(per_turn_config.responses_api_metadata.clone());
         let (current_date, timezone) = local_time_context();
-        let extension_data = Arc::new(codex_extension_api::ExtensionData::new(sub_id.clone()));
+        let extension_data = Arc::new(ava_extension_api::ExtensionData::new(sub_id.clone()));
         extension_data.insert(skills_snapshot);
         TurnContext {
             sub_id,
@@ -1050,7 +1050,7 @@ impl Session {
         sub_id: String,
         updates: SessionSettingsUpdate,
         options: NewTurnContextOptions,
-    ) -> CodexResult<(Arc<TurnContext>, ThreadSettingsSnapshot)> {
+    ) -> AvaResult<(Arc<TurnContext>, ThreadSettingsSnapshot)> {
         let Some((turn_context, snapshot)) = self
             .new_turn_with_sub_id_if(sub_id, updates, options, |_, _| true)
             .await?
@@ -1072,23 +1072,23 @@ impl Session {
         updates: SessionSettingsUpdate,
         options: NewTurnContextOptions,
         should_start: impl FnOnce(&SessionConfiguration, &SessionConfiguration) -> bool + Send,
-    ) -> CodexResult<Option<(Arc<TurnContext>, ThreadSettingsSnapshot)>> {
+    ) -> AvaResult<Option<(Arc<TurnContext>, ThreadSettingsSnapshot)>> {
         let service_tier_for_turn = updates.service_tier_for_turn.clone();
         let commit = match self.update_settings_if(updates, should_start).await {
             Ok(Some(commit)) => commit,
             Ok(None) => return Ok(None),
             Err(error) => {
-                let message = CodexErr::InvalidRequest(error.to_string()).to_string();
+                let message = AvaErr::InvalidRequest(error.to_string()).to_string();
                 self.send_event_raw(Event {
                     id: sub_id,
                     msg: EventMsg::Error(ErrorEvent {
                         misalignment: None,
                         message: message.clone(),
-                        codex_error_info: Some(CodexErrorInfo::BadRequest),
+                        ava_error_info: Some(AvaErrorInfo::BadRequest),
                     }),
                 })
                 .await;
-                return Err(CodexErr::InvalidRequest(message));
+                return Err(AvaErr::InvalidRequest(message));
             }
         };
         let mut configuration = commit.configuration;
@@ -1203,7 +1203,7 @@ impl Session {
             .without_plugins(&session_configuration.disabled_plugin_ids);
         let trusted_plugin_roots = TrustedPluginRoots::from_plugin_load_outcome(
             &plugin_outcome,
-            per_turn_config.codex_home.as_path(),
+            per_turn_config.ava_home.as_path(),
         );
         let skills_snapshot = if matches!(build_mode, TurnContextBuildMode::InjectItems)
             || (per_turn_config
@@ -1279,7 +1279,7 @@ impl Session {
         turn_context.realtime_active = self.conversation.running_state().await.is_some();
 
         turn_context.final_output_json_schema = options.final_output_json_schema;
-        if turn_context.config.model_provider_id == codex_model_provider_info::OPENAI_PROVIDER_ID {
+        if turn_context.config.model_provider_id == ava_model_provider_info::OPENAI_PROVIDER_ID {
             turn_context.cyber_access_program = options.cyber_access_program;
         }
         let turn_context = Arc::new(turn_context);
@@ -1307,8 +1307,8 @@ impl Session {
         if !tc.code_mode_available
             && matches!(
                 crate::tools::requested_tool_mode(tc, tc.model_info()),
-                codex_protocol::openai_models::ToolMode::CodeMode
-                    | codex_protocol::openai_models::ToolMode::CodeModeOnly
+                ava_protocol::openai_models::ToolMode::CodeMode
+                    | ava_protocol::openai_models::ToolMode::CodeModeOnly
             )
             && let Some(message) = self
                 .services

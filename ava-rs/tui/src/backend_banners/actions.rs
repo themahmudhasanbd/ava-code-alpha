@@ -1,8 +1,8 @@
 //! Map backend CTA names to existing CLI actions and desktop-equivalent browser destinations.
 
 use super::BackendBanner;
-use codex_app_server_protocol::AddCreditsNudgeCreditType;
-use codex_protocol::account::PlanType;
+use ava_app_server_protocol::AddCreditsNudgeCreditType;
+use ava_protocol::account::PlanType;
 
 const USAGE_URL: &str = "https://chatgpt.com/codex/settings/usage";
 const WORKSPACE_USAGE_URL: &str = "https://chatgpt.com/admin/usage-limits/workspace";

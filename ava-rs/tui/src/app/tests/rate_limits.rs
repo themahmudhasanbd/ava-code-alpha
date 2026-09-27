@@ -1,13 +1,13 @@
 use super::*;
-use codex_app_server_protocol::AccountRateLimitsUpdatedNotification;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::CreditsSnapshot;
-use codex_app_server_protocol::ErrorNotification;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::RateLimitReachedType;
-use codex_app_server_protocol::RateLimitResetCreditsSummary;
-use codex_app_server_protocol::RateLimitSnapshot;
-use codex_app_server_protocol::RateLimitWindow;
+use ava_app_server_protocol::AccountRateLimitsUpdatedNotification;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::CreditsSnapshot;
+use ava_app_server_protocol::ErrorNotification;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::RateLimitReachedType;
+use ava_app_server_protocol::RateLimitResetCreditsSummary;
+use ava_app_server_protocol::RateLimitSnapshot;
+use ava_app_server_protocol::RateLimitWindow;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use pretty_assertions::assert_eq;
@@ -18,7 +18,7 @@ fn rate_limit_snapshot(
     spend_control_reached: Option<bool>,
 ) -> RateLimitSnapshot {
     RateLimitSnapshot {
-        limit_id: Some("codex".to_string()),
+        limit_id: Some("ava".to_string()),
         limit_name: None,
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
@@ -60,7 +60,7 @@ async fn deliver_rolling_rate_limit_snapshot(
 ) {
     app.handle_app_server_event(
         app_server,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::AccountRateLimitsUpdated(AccountRateLimitsUpdatedNotification {
                 rate_limits: snapshot,
             }),
@@ -94,7 +94,7 @@ fn deliver_usage_limit_error(app: &mut App) {
             error: AppServerTurnError {
                 misalignment: None,
                 message: "Usage limit reached.".to_string(),
-                codex_error_info: Some(CodexErrorInfo::UsageLimitExceeded),
+                ava_error_info: Some(AvaErrorInfo::UsageLimitExceeded),
                 additional_details: None,
             },
             will_retry: false,
@@ -279,7 +279,7 @@ async fn stale_rate_limit_reads_preserve_newer_workspace_hard_stop_for_every_ori
             Some(true),
         );
         if origin_name == "reset-picker" {
-            rolling_snapshot.limit_id = Some("codex_other".to_string());
+            rolling_snapshot.limit_id = Some("ava_other".to_string());
         }
         deliver_rolling_rate_limit_snapshot(&mut app, &app_server, rolling_snapshot).await;
         assert_ne!(read_generation, app.rate_limit_hard_stop_generation);

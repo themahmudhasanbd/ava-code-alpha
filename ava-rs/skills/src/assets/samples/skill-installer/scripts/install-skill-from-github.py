@@ -43,23 +43,23 @@ class InstallError(Exception):
     pass
 
 
-def _codex_home() -> str:
+def _ava_home() -> str:
     return (
         os.environ.get("AVA_CODE_HOME")
         or os.environ.get("AVA_HOME")
-        or os.environ.get("CODEX_HOME")
+        or os.environ.get("AVA_HOME")
         or os.path.expanduser("~/.ava-code")
     )
 
 
 def _tmp_root() -> str:
-    base = os.path.join(tempfile.gettempdir(), "codex")
+    base = os.path.join(tempfile.gettempdir(), "ava")
     os.makedirs(base, exist_ok=True)
     return base
 
 
 def _request(url: str) -> bytes:
-    return github_request(url, "codex-skill-install")
+    return github_request(url, "ava-skill-install")
 
 
 def _parse_github_url(url: str, default_ref: str) -> tuple[str, str, str, str | None]:
@@ -293,7 +293,7 @@ def _resolve_source(args: Args) -> Source:
 
 
 def _default_dest() -> str:
-    return os.path.join(_codex_home(), "skills")
+    return os.path.join(_ava_home(), "skills")
 
 
 def _parse_args(argv: list[str]) -> Args:

@@ -11,7 +11,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
+use ava_utils_rustls_provider::ensure_rustls_crypto_provider;
 
 use crate::BuildCustomCaTransportError;
 use crate::BuildRouteAwareHttpClientError;
@@ -250,9 +250,9 @@ impl HttpClientBuilder {
             Ok(inner) => HttpClient::from_parts(inner, request_logging),
             Err(error) => {
                 tracing::event!(
-                    target: "codex_otel.log_only",
+                    target: "ava_otel.log_only",
                     tracing::Level::WARN,
-                    event.name = "codex.http_client.custom_ca_fallback",
+                    event.name = "ava.http_client.custom_ca_fallback",
                     "HTTP client fell back to system root certificates"
                 );
                 tracing::warn!(error = %error, "failed to build HTTP client with custom CA");

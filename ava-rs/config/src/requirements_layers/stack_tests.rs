@@ -8,8 +8,8 @@ use crate::ConfigRequirementsToml;
 use crate::ConfigRequirementsWithSources;
 use crate::RequirementSource;
 use crate::Sourced;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use std::cell::Cell;
 use std::collections::BTreeMap;
@@ -358,13 +358,13 @@ fn provider_auth_missing_command_is_rejected_after_composition() {
 #[test]
 fn composition_strategy_applies_to_non_cloud_layers() {
     let mdm_source = RequirementSource::MdmManagedPreferences {
-        domain: "com.openai.codex".to_string(),
+        domain: "com.openai.ava-code".to_string(),
         key: "requirements_toml_base64".to_string(),
     };
     let system_file = if cfg!(windows) {
         "C:\\requirements.toml"
     } else {
-        "/etc/codex/requirements.toml"
+        "/etc/ava/requirements.toml"
     };
     let system_source = RequirementSource::SystemRequirementsToml {
         file: AbsolutePathBuf::from_absolute_path(system_file).expect("absolute path"),

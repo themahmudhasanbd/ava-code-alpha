@@ -172,9 +172,9 @@ fn vim_insert_cursor_tracks_mode_and_normal_mode_commands() {
     let area = Rect::new(0, 0, 80, 10);
     view.textarea.set_text_clearing_elements("rename");
     view.textarea.set_cursor("rename".len());
-    let mut config = codex_config::types::TuiKeymap::default();
-    config.editor.move_left = Some(codex_config::types::KeybindingsSpec::One(
-        codex_config::types::KeybindingSpec("f2".to_string()),
+    let mut config = ava_config::types::TuiKeymap::default();
+    config.editor.move_left = Some(ava_config::types::KeybindingsSpec::One(
+        ava_config::types::KeybindingSpec("f2".to_string()),
     ));
     let mut keymap = RuntimeKeymap::from_config(&config).expect("valid editor remap");
     keymap.vim_normal.delete_char = vec![key_hint::plain(KeyCode::F(3))];

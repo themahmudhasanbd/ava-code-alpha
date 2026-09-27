@@ -1,28 +1,28 @@
-use codex_config::NetworkConstraints;
-use codex_execpolicy::Policy;
-use codex_network_proxy::BlockedRequestObserver;
-use codex_network_proxy::ConfigReloader;
-use codex_network_proxy::ConfigReloaderFuture;
-use codex_network_proxy::ConfigState;
-use codex_network_proxy::EnvironmentNetworkPolicy;
-use codex_network_proxy::LocalBindingPolicy;
-use codex_network_proxy::ManagedProxyRouting;
-use codex_network_proxy::NetworkDecision;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::NetworkProxyAuditMetadata;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_network_proxy::NetworkProxyConstraints;
-use codex_network_proxy::NetworkProxyHandle;
-use codex_network_proxy::NetworkProxyState;
-use codex_network_proxy::build_config_state;
-use codex_network_proxy::host_and_port_from_network_addr;
+use ava_config::NetworkConstraints;
+use ava_execpolicy::Policy;
+use ava_network_proxy::BlockedRequestObserver;
+use ava_network_proxy::ConfigReloader;
+use ava_network_proxy::ConfigReloaderFuture;
+use ava_network_proxy::ConfigState;
+use ava_network_proxy::EnvironmentNetworkPolicy;
+use ava_network_proxy::LocalBindingPolicy;
+use ava_network_proxy::ManagedProxyRouting;
+use ava_network_proxy::NetworkDecision;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::NetworkProxyAuditMetadata;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::NetworkProxyConstraints;
+use ava_network_proxy::NetworkProxyHandle;
+use ava_network_proxy::NetworkProxyState;
+use ava_network_proxy::build_config_state;
+use ava_network_proxy::host_and_port_from_network_addr;
 #[cfg(any(target_os = "windows", test))]
-use codex_network_proxy::managed_proxy_ports;
-use codex_network_proxy::normalize_host;
-use codex_network_proxy::validate_policy_against_constraints;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_path_uri::Platform;
+use ava_network_proxy::managed_proxy_ports;
+use ava_network_proxy::normalize_host;
+use ava_network_proxy::validate_policy_against_constraints;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_path_uri::Platform;
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -120,13 +120,13 @@ impl NetworkProxySpec {
     pub fn windows_sandbox_proxy_listeners(
         &self,
     ) -> std::io::Result<(
-        codex_windows_sandbox::WindowsSandboxProvisioningSettings,
-        codex_windows_sandbox::WindowsSandboxProxyListeners,
+        ava_windows_sandbox::WindowsSandboxProvisioningSettings,
+        ava_windows_sandbox::WindowsSandboxProxyListeners,
     )> {
         if !self.config.enabled {
             return Ok((
-                codex_windows_sandbox::WindowsSandboxProvisioningSettings::default(),
-                codex_windows_sandbox::WindowsSandboxProxyListeners::default(),
+                ava_windows_sandbox::WindowsSandboxProvisioningSettings::default(),
+                ava_windows_sandbox::WindowsSandboxProxyListeners::default(),
             ));
         }
 
@@ -144,11 +144,11 @@ impl NetworkProxySpec {
                 .unwrap_or(http_port)
         });
         Ok((
-            codex_windows_sandbox::WindowsSandboxProvisioningSettings {
+            ava_windows_sandbox::WindowsSandboxProvisioningSettings {
                 proxy_ports,
                 allow_local_binding: self.config.allow_local_binding(),
             },
-            codex_windows_sandbox::WindowsSandboxProxyListeners {
+            ava_windows_sandbox::WindowsSandboxProxyListeners {
                 http_ports: vec![http_port],
                 socks_ports: socks_port.into_iter().collect(),
             },
@@ -427,14 +427,14 @@ impl NetworkProxySpec {
                 requirements
                     .domains
                     .as_ref()
-                    .and_then(codex_config::NetworkDomainPermissionsToml::allowed_domains)
+                    .and_then(ava_config::NetworkDomainPermissionsToml::allowed_domains)
                     .unwrap_or_default(),
             )
         } else {
             requirements
                 .domains
                 .as_ref()
-                .and_then(codex_config::NetworkDomainPermissionsToml::allowed_domains)
+                .and_then(ava_config::NetworkDomainPermissionsToml::allowed_domains)
         };
         if let Some(managed_allowed_domains) = managed_allowed_domains {
             // Managed requirements seed the baseline allowlist. User additions
@@ -455,7 +455,7 @@ impl NetworkProxySpec {
         let managed_denied_domains = requirements
             .domains
             .as_ref()
-            .and_then(codex_config::NetworkDomainPermissionsToml::denied_domains);
+            .and_then(ava_config::NetworkDomainPermissionsToml::denied_domains);
         if let Some(managed_denied_domains) = managed_denied_domains {
             let effective_denied_domains = if denylist_expansion_enabled {
                 Self::merge_domain_lists(
@@ -473,7 +473,7 @@ impl NetworkProxySpec {
             let allow_unix_sockets = requirements
                 .unix_sockets
                 .as_ref()
-                .map(codex_config::NetworkUnixSocketPermissionsToml::allow_unix_sockets)
+                .map(ava_config::NetworkUnixSocketPermissionsToml::allow_unix_sockets)
                 .unwrap_or_default();
             config.set_allow_unix_sockets(allow_unix_sockets.clone());
             constraints.allow_unix_sockets = Some(allow_unix_sockets);
@@ -531,9 +531,9 @@ fn upsert_network_domains(config: &mut NetworkProxyConfig, hosts: Vec<String>, a
             config.upsert_domain_permission(
                 host,
                 if allow {
-                    codex_network_proxy::NetworkDomainPermission::Allow
+                    ava_network_proxy::NetworkDomainPermission::Allow
                 } else {
-                    codex_network_proxy::NetworkDomainPermission::Deny
+                    ava_network_proxy::NetworkDomainPermission::Deny
                 },
                 normalize_host,
             );

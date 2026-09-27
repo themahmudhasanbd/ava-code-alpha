@@ -1,36 +1,36 @@
 //! Trusted reasoning-effort updates follow surviving history and the next turn's selected settings.
 
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::ForkSnapshot;
-use codex_core::RecoverTurnRequest;
-use codex_core::StartIfIdleSubmission;
-use codex_core::StartThreadOptions;
-use codex_core::SuspendTurnOutcome;
-use codex_core::TurnInput;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_history::ResponseItemEnvelope;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::user_input::UserInput;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::ForkSnapshot;
+use ava_core::RecoverTurnRequest;
+use ava_core::StartIfIdleSubmission;
+use ava_core::StartThreadOptions;
+use ava_core::SuspendTurnOutcome;
+use ava_core::TurnInput;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_history::ResponseItemEnvelope;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ResponsesRequest;
 use core_test_support::skip_if_no_network;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -39,8 +39,8 @@ use std::time::Duration;
 use test_case::test_case;
 use wiremock::ResponseTemplate;
 
-fn override_builder() -> TestCodexBuilder {
-    test_codex()
+fn override_builder() -> TestAvaBuilder {
+    test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.use_responses_lite = true;
             model.supports_reasoning_effort_updates = true;
@@ -123,7 +123,7 @@ async fn worker_reasoning_overrides_follow_effective_client_policy(
         .await?;
     test.submit_text_turn("first parent turn").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -131,7 +131,7 @@ async fn worker_reasoning_overrides_follow_effective_client_policy(
     )
     .await?;
     test.submit_text_turn("second parent turn").await?;
-    let parent = Arc::clone(&test.codex);
+    let parent = Arc::clone(&test.ava-code);
     parent.shutdown_and_wait().await?;
 
     // Fork real parent history while managed requirements keep the feature enabled.
@@ -149,11 +149,11 @@ async fn worker_reasoning_overrides_follow_effective_client_policy(
             parent.rollout_path().expect("parent rollout path"),
         )
         .await?;
-    test.codex = forked.thread;
+    test.ava-code = forked.thread;
     test.session_configured = forked.session_configured;
     for effort in [ReasoningEffort::Low, ReasoningEffort::High] {
         submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 effort: Some(Some(effort)),
                 ..Default::default()
@@ -162,7 +162,7 @@ async fn worker_reasoning_overrides_follow_effective_client_policy(
         .await?;
         test.submit_text_turn("perform the worker task").await?;
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
 
     let requests = mocks
         .iter()
@@ -209,7 +209,7 @@ async fn worker_reasoning_overrides_follow_effective_client_policy(
         .concat(),
     );
     // Fixed-effort workers neither append updates nor erase inherited live or durable history.
-    for (thread, expected) in [(&parent, inherited_updates), (&test.codex, worker_updates)] {
+    for (thread, expected) in [(&parent, inherited_updates), (&test.ava-code, worker_updates)] {
         let context_updates = thread
             .conversation_history_snapshot()
             .await
@@ -259,7 +259,7 @@ async fn reasoning_effort_override_recovery_reuses_trusted_tail_update() -> anyh
     };
     let test = builder().build_with_auto_env(&server).await?;
     let submission = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "recover this turn".to_string(),
             text_elements: Vec::new(),
@@ -268,19 +268,19 @@ async fn reasoning_effort_override_recovery_reuses_trusted_tail_update() -> anyh
     let TurnInputSubmission::Started { turn_id } = submission else {
         panic!("expected a new turn");
     };
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::RawResponseItem(raw)
             if matches!(&raw.item, ResponseItem::ConfigurationUpdate { .. }))
     })
     .await;
-    let thread_settings = test.codex.restorable_thread_settings().await;
+    let thread_settings = test.ava-code.restorable_thread_settings().await;
     assert_eq!(
-        test.codex.suspend_turn_and_shutdown().await?,
+        test.ava-code.suspend_turn_and_shutdown().await?,
         SuspendTurnOutcome::Suspended {
             turn_id: turn_id.clone(),
         },
     );
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     test.thread_manager
         .remove_thread(&test.session_configured.thread_id)
         .await
@@ -301,12 +301,12 @@ async fn reasoning_effort_override_recovery_reuses_trusted_tail_update() -> anyh
         .resume(&recovery_server, Arc::clone(&test.home), rollout_path)
         .await?;
     resumed
-        .codex
+        .ava-code
         .restore_thread_settings(thread_settings)
         .await?;
     assert_eq!(
         resumed
-            .codex
+            .ava-code
             .recover_turn_if_idle(RecoverTurnRequest {
                 turn_id: turn_id.clone(),
                 thread_settings: Default::default(),
@@ -316,7 +316,7 @@ async fn reasoning_effort_override_recovery_reuses_trusted_tail_update() -> anyh
             .await?,
         StartIfIdleSubmission::Started { turn_id },
     );
-    wait_for_event(&resumed.codex, |event| {
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -365,7 +365,7 @@ async fn reasoning_effort_override_persistent_transitions(
         initial_effort,
     ] {
         submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 effort: Some(Some(effort)),
                 ..Default::default()
@@ -420,7 +420,7 @@ async fn reasoning_effort_override_preserves_prefix_and_only_appends_on_change(
         .await?;
     test.submit_text_turn("first message").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -430,7 +430,7 @@ async fn reasoning_effort_override_preserves_prefix_and_only_appends_on_change(
     test.submit_text_turn("second message").await?;
     test.submit_text_turn("third message").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::Low)),
             ..Default::default()
@@ -521,7 +521,7 @@ async fn reasoning_effort_override_normalizes_ultra_before_comparing_updates(
         .await?;
     test.submit_text_turn("ultra selection").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(resolved_effort.clone())),
             ..Default::default()
@@ -614,18 +614,18 @@ async fn reasoning_effort_override_websocket_prewarm_preserves_baseline(
             Some("previous turn"),
         );
         if matches!(startup, PrewarmStartup::Fork) {
-            previous.codex.shutdown_and_wait().await?;
+            previous.ava-code.shutdown_and_wait().await?;
             let mut config = previous.config.clone();
             configure_prewarm(&mut config);
             let forked = previous
                 .thread_manager
                 .fork_thread(
                     ForkSnapshot::Interrupted,
-                    codex_core::StartThreadOptions::new(config.clone()),
-                    previous.codex.rollout_path().expect("rollout path"),
+                    ava_core::StartThreadOptions::new(config.clone()),
+                    previous.ava-code.rollout_path().expect("rollout path"),
                 )
                 .await?;
-            previous.codex = forked.thread;
+            previous.ava-code = forked.thread;
             previous.session_configured = forked.session_configured;
             previous.config = config;
             previous
@@ -643,7 +643,7 @@ async fn reasoning_effort_override_websocket_prewarm_preserves_baseline(
     assert_eq!(warmup.body_json()["generate"], false);
     assert_eq!(warmup.body_json()["reasoning"]["effort"], "medium");
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -720,7 +720,7 @@ async fn reasoning_effort_override_websocket_appends_then_replays_after_reconnec
     assert_eq!(warmup.body_json()["generate"], false);
     test.submit_text_turn("first message").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -843,7 +843,7 @@ enum OverrideUnavailable {
 }
 
 impl OverrideUnavailable {
-    fn builder(self) -> TestCodexBuilder {
+    fn builder(self) -> TestAvaBuilder {
         match self {
             Self::FeatureDisabled => override_builder().with_config(|config| {
                 config
@@ -885,7 +885,7 @@ async fn reasoning_effort_override_unavailable_uses_request_effort(
     let test = unavailable.builder().build_with_auto_env(&server).await?;
     test.submit_text_turn("first").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -943,20 +943,20 @@ async fn reasoning_effort_override_unavailable_recovers_saved_history(
         "content": [{"type": "input_text", "text": "The worker has finished."}],
     }))?;
     let submission = initial
-        .codex
+        .ava-code
         .start_turn_if_idle(TurnInputRequest::new(TurnInput::ResponseItem(
             agent_message,
         )))
         .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     let chatgpt_base_url = format!("{}/backend-api", server.uri());
     let mut builder = unavailable
         .builder()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.model_reasoning_effort = Some(ReasoningEffort::High);
             config.chatgpt_base_url = chatgpt_base_url;
@@ -967,7 +967,7 @@ async fn reasoning_effort_override_unavailable_recovers_saved_history(
     let resumed = builder.restart(&server, &initial).await?;
     resumed.submit_text_turn("after resume").await?;
     let saved_updates = resumed
-        .codex
+        .ava-code
         .load_history(/*include_archived*/ false)
         .await?
         .items
@@ -981,8 +981,8 @@ async fn reasoning_effort_override_unavailable_recovers_saved_history(
         })
         .collect::<Vec<_>>();
     assert_eq!(saved_updates, vec![effort_update(ReasoningEffort::Medium)]);
-    resumed.codex.submit(Op::Compact).await?;
-    wait_for_event(&resumed.codex, |event| {
+    resumed.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1051,7 +1051,7 @@ async fn reasoning_effort_override_model_switch_reestablishes_selected_effort(
         .await?;
     test.submit_text_turn("first model").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some("gpt-5.5".to_string()),
             effort: Some(Some(effort.clone())),
@@ -1133,7 +1133,7 @@ async fn reasoning_effort_override_unsupported_model_round_trip() -> anyhow::Res
         )
         .await;
         submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 model: Some((*model).to_string()),
                 effort: Some(Some(effort.clone())),
@@ -1202,9 +1202,9 @@ async fn reasoning_effort_override_unsupported_model_round_trip() -> anyhow::Res
                 .collect::<Vec<_>>(),
         );
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     let saved_updates = test
-        .codex
+        .ava-code
         .load_history(/*include_archived*/ false)
         .await?
         .items
@@ -1247,7 +1247,7 @@ async fn reasoning_effort_override_resume_refreshes_selected_effort(
     let test = override_builder().build_with_auto_env(&server).await?;
     test.submit_text_turn("medium turn").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -1322,7 +1322,7 @@ async fn reasoning_effort_override_compaction_fallback_uses_each_models_effort()
     .await;
     let chatgpt_base_url = format!("{}/backend-api", server.uri());
     let test = override_builder()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model_info_override("gpt-5.4", |model| {
             model.comp_hash = Some("original".to_string());
         })
@@ -1340,7 +1340,7 @@ async fn reasoning_effort_override_compaction_fallback_uses_each_models_effort()
         .await?;
     test.submit_text_turn("first").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -1349,7 +1349,7 @@ async fn reasoning_effort_override_compaction_fallback_uses_each_models_effort()
     .await?;
     test.submit_text_turn("second").await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some("gpt-5.2".to_string()),
             ..Default::default()

@@ -1,9 +1,9 @@
 //! Composes Guardian prompts and rejection feedback from selected text and runtime inputs.
 //! Callers select policy overrides, output contracts, calibration, and truncation limits.
 
-use codex_context_fragments::ContextualUserFragment;
-use codex_guardian_context::truncate_text;
-use codex_protocol::models::ContentItemKind;
+use ava_context_fragments::ContextualUserFragment;
+use ava_guardian_context::truncate_text;
+use ava_protocol::models::ContentItemKind;
 
 const TENANT_POLICY_CONFIG_PLACEHOLDER: &str = "{{ tenant_policy_config }}";
 

@@ -1,13 +1,13 @@
 use super::*;
 use crate::session::tests::make_session_configuration_for_tests;
 use crate::state::AutoCompactWindowSnapshot;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::CreditsSnapshot;
-use codex_protocol::protocol::RateLimitWindow;
-use codex_protocol::protocol::SpendControlLimitSnapshot;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TokenUsageRecord;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::CreditsSnapshot;
+use ava_protocol::protocol::RateLimitWindow;
+use ava_protocol::protocol::SpendControlLimitSnapshot;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TokenUsageRecord;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -82,7 +82,7 @@ async fn clear_connector_selection_removes_entries() {
 }
 
 #[tokio::test]
-async fn set_rate_limits_defaults_limit_id_to_codex_when_missing() {
+async fn set_rate_limits_defaults_limit_id_to_ava_when_missing() {
     let session_configuration = make_session_configuration_for_tests().await;
     let mut state = SessionState::new(session_configuration);
 
@@ -108,7 +108,7 @@ async fn set_rate_limits_defaults_limit_id_to_codex_when_missing() {
             .latest_rate_limits
             .as_ref()
             .and_then(|v| v.limit_id.clone()),
-        Some("codex".to_string())
+        Some("ava".to_string())
     );
 }
 
@@ -129,13 +129,13 @@ async fn replace_history_clears_auto_compact_window_prefill() {
 }
 
 #[tokio::test]
-async fn set_rate_limits_defaults_to_codex_when_limit_id_missing_after_other_bucket() {
+async fn set_rate_limits_defaults_to_ava_when_limit_id_missing_after_other_bucket() {
     let session_configuration = make_session_configuration_for_tests().await;
     let mut state = SessionState::new(session_configuration);
 
     state.set_rate_limits(RateLimitSnapshot {
-        limit_id: Some("codex_other".to_string()),
-        limit_name: Some("codex_other".to_string()),
+        limit_id: Some("ava_other".to_string()),
+        limit_name: Some("ava_other".to_string()),
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
             used_percent: 20.0,
@@ -171,18 +171,18 @@ async fn set_rate_limits_defaults_to_codex_when_limit_id_missing_after_other_buc
             .latest_rate_limits
             .as_ref()
             .and_then(|v| v.limit_id.clone()),
-        Some("codex".to_string())
+        Some("ava".to_string())
     );
 }
 
 #[tokio::test]
-async fn set_rate_limits_carries_account_metadata_from_codex_to_codex_other() {
+async fn set_rate_limits_carries_account_metadata_from_ava_to_ava_other() {
     let session_configuration = make_session_configuration_for_tests().await;
     let mut state = SessionState::new(session_configuration);
 
     state.set_rate_limits(RateLimitSnapshot {
-        limit_id: Some("codex".to_string()),
-        limit_name: Some("codex".to_string()),
+        limit_id: Some("ava".to_string()),
+        limit_name: Some("ava".to_string()),
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
             used_percent: 10.0,
@@ -202,12 +202,12 @@ async fn set_rate_limits_carries_account_metadata_from_codex_to_codex_other() {
             resets_at: 300,
         }),
         spend_control_reached: Some(true),
-        plan_type: Some(codex_protocol::account::PlanType::Plus),
+        plan_type: Some(ava_protocol::account::PlanType::Plus),
         rate_limit_reached_type: None,
     });
 
     state.set_rate_limits(RateLimitSnapshot {
-        limit_id: Some("codex_other".to_string()),
+        limit_id: Some("ava_other".to_string()),
         limit_name: None,
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
@@ -226,7 +226,7 @@ async fn set_rate_limits_carries_account_metadata_from_codex_to_codex_other() {
     assert_eq!(
         state.latest_rate_limits,
         Some(RateLimitSnapshot {
-            limit_id: Some("codex_other".to_string()),
+            limit_id: Some("ava_other".to_string()),
             limit_name: None,
             normal_model_slug: None,
             primary: Some(RateLimitWindow {
@@ -247,13 +247,13 @@ async fn set_rate_limits_carries_account_metadata_from_codex_to_codex_other() {
                 resets_at: 300,
             }),
             spend_control_reached: Some(true),
-            plan_type: Some(codex_protocol::account::PlanType::Plus),
+            plan_type: Some(ava_protocol::account::PlanType::Plus),
             rate_limit_reached_type: None,
         })
     );
 
     state.set_rate_limits(RateLimitSnapshot {
-        limit_id: Some("codex_other".to_string()),
+        limit_id: Some("ava_other".to_string()),
         limit_name: None,
         normal_model_slug: None,
         primary: None,

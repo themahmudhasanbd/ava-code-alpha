@@ -1,9 +1,9 @@
 //! Approval routing coverage at the policy boundary, without host session setup.
 
 use super::routes_approval_policy_to_guardian;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::GranularApprovalConfig;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::GranularApprovalConfig;
 use pretty_assertions::assert_eq;
 
 #[test]

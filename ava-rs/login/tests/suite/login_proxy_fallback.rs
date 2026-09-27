@@ -7,15 +7,15 @@ use std::time::Duration;
 
 use anyhow::Result;
 use base64::Engine;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_http_client::HttpClientBuilder;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::cache_system_proxy_route_for_test;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::AuthRouteConfig;
-use codex_login::ServerOptions;
-use codex_login::run_login_server;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_http_client::HttpClientBuilder;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::cache_system_proxy_route_for_test;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AuthRouteConfig;
+use ava_login::ServerOptions;
+use ava_login::run_login_server;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
@@ -25,9 +25,9 @@ use wiremock::ResponseTemplate;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-const CHILD_CASE: &str = "CODEX_TOKEN_PROXY_FALLBACK_TEST_CASE";
-const CHILD_PROXY: &str = "CODEX_TOKEN_PROXY_FALLBACK_TEST_PROXY";
-const CHILD_ISSUER: &str = "CODEX_TOKEN_PROXY_FALLBACK_TEST_ISSUER";
+const CHILD_CASE: &str = "AVA_TOKEN_PROXY_FALLBACK_TEST_CASE";
+const CHILD_PROXY: &str = "AVA_TOKEN_PROXY_FALLBACK_TEST_PROXY";
+const CHILD_ISSUER: &str = "AVA_TOKEN_PROXY_FALLBACK_TEST_ISSUER";
 const BLOCKED_ORIGIN: &str = "http://127.0.0.1:0";
 const PROXY_ENV_KEYS: [&str; 8] = [
     "HTTP_PROXY",
@@ -73,7 +73,7 @@ async fn exercise_callback(expected: CallbackOutcome) -> Result<()> {
     let tmp = tempdir()?;
     let mut opts = ServerOptions::new(
         tmp.path().to_path_buf(),
-        codex_login::CLIENT_ID.to_string(),
+        ava_login::CLIENT_ID.to_string(),
         /*forced_chatgpt_workspace_id*/ None,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::Direct,

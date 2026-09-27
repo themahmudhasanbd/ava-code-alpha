@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use std::io;
 use std::path::Path;
 
-use codex_core::path_utils::write_atomically;
+use ava_core::path_utils::write_atomically;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -21,15 +21,15 @@ pub struct InterruptedTurn {
     pub turn_id: String,
     pub output_schema: Option<serde_json::Value>,
     pub service_tier: Option<String>,
-    pub cyber_access_program: Option<codex_protocol::turn_input::CyberAccessProgram>,
+    pub cyber_access_program: Option<ava_protocol::turn_input::CyberAccessProgram>,
     /// Only local execution with thread-owned configuration can continue automatically.
     /// Older snapshots without this identity are reloaded without continuation.
-    pub local_environment: Option<codex_app_server_protocol::ThreadEnvironment>,
+    pub local_environment: Option<ava_app_server_protocol::ThreadEnvironment>,
 }
 
 // Old servers accept the array and skip this non-thread entry during best-effort
 // restoration. Keeping metadata in the same atomic file avoids stale sidecars.
-const INTERRUPTION_PREFIX: &str = "codex-interrupted-v1:";
+const INTERRUPTION_PREFIX: &str = "ava-interrupted-v1:";
 
 pub fn read_snapshot(path: &Path) -> io::Result<RecoverySnapshot> {
     let mut loaded: BTreeSet<String> = match std::fs::read(path) {

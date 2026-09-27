@@ -1,6 +1,6 @@
 /*
   Transcript messages — user/assistant rows, bubbles, edit and revision states,
-  hover action toolbars, permission cards, error notices, and the Codex-style
+  hover action toolbars, permission cards, error notices, and the Ava-style
   tool activity/tool row disclosures.
 */
 
@@ -984,7 +984,7 @@
   }
 }
 
-/* Hover actions under a message: quiet icon chips, WorkBuddy/Codex density. */
+/* Hover actions under a message: quiet icon chips, WorkBuddy/Ava density. */
 .message-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1784,7 +1784,7 @@
 
 /* Thinking prose base tokens — detailed rules live with .prose-chat. */
 
-/* Codex-style tool activity: lightweight disclosure rows, not boxed cards */
+/* Ava-style tool activity: lightweight disclosure rows, not boxed cards */
 .tool-activity-group {
   /* The assistant column aligns children to flex-start, so the group has to
      claim the full width itself — otherwise expanded detail blocks shrink to

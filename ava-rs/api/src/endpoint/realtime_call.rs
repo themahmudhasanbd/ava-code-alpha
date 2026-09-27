@@ -6,10 +6,10 @@ use crate::endpoint::session::EndpointSession;
 use crate::error::ApiError;
 use crate::provider::Provider;
 use bytes::Bytes;
-use codex_client::HttpTransport;
-use codex_client::Request;
-use codex_client::RequestBody;
-use codex_client::RequestTelemetry;
+use ava_client::HttpTransport;
+use ava_client::Request;
+use ava_client::RequestBody;
+use ava_client::RequestTelemetry;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::Method;
@@ -23,8 +23,8 @@ use std::sync::Arc;
 use tracing::instrument;
 use tracing::trace;
 
-const MULTIPART_BOUNDARY: &str = "codex-realtime-call-boundary";
-const MULTIPART_CONTENT_TYPE: &str = "multipart/form-data; boundary=codex-realtime-call-boundary";
+const MULTIPART_BOUNDARY: &str = "ava-realtime-call-boundary";
+const MULTIPART_CONTENT_TYPE: &str = "multipart/form-data; boundary=ava-realtime-call-boundary";
 
 pub struct RealtimeCallClient<T: HttpTransport> {
     session: EndpointSession<T>,
@@ -132,7 +132,7 @@ impl<T: HttpTransport> RealtimeCallClient<T> {
         session_config: RealtimeSessionConfig,
         extra_headers: HeaderMap,
     ) -> Result<RealtimeCallResponse, ApiError> {
-        trace!(target: "codex_api::realtime_websocket::wire", "realtime call request SDP: {sdp}");
+        trace!(target: "ava_api::realtime_websocket::wire", "realtime call request SDP: {sdp}");
         // WebRTC can begin inference as soon as the peer connection comes up, so the initial
         // session payload is sent with call creation. Legacy sidebands still send session.update
         // after joining; Frameless sidebands attach to the session that is already running.
@@ -301,13 +301,13 @@ mod tests {
     use crate::endpoint::realtime_websocket::RealtimeOutputModality;
     use crate::endpoint::realtime_websocket::RealtimeSessionMode;
     use crate::provider::RetryConfig;
-    use codex_client::Request;
-    use codex_client::Response;
-    use codex_client::StreamResponse;
-    use codex_client::TransportError;
-    use codex_protocol::protocol::ConversationTextParams;
-    use codex_protocol::protocol::ConversationTextRole;
-    use codex_protocol::protocol::RealtimeVoice;
+    use ava_client::Request;
+    use ava_client::Response;
+    use ava_client::StreamResponse;
+    use ava_client::TransportError;
+    use ava_protocol::protocol::ConversationTextParams;
+    use ava_protocol::protocol::ConversationTextRole;
+    use ava_protocol::protocol::RealtimeVoice;
     use http::StatusCode;
     use pretty_assertions::assert_eq;
     use std::sync::Mutex;
@@ -540,18 +540,18 @@ mod tests {
         assert_eq!(
             body,
             format!(
-                "--codex-realtime-call-boundary\r\n\
+                "--ava-realtime-call-boundary\r\n\
                  Content-Disposition: form-data; name=\"sdp\"\r\n\
                  Content-Type: application/sdp\r\n\
                  \r\n\
                  v=offer\r\n\
                  \r\n\
-                 --codex-realtime-call-boundary\r\n\
+                 --ava-realtime-call-boundary\r\n\
                  Content-Disposition: form-data; name=\"session\"\r\n\
                  Content-Type: application/json\r\n\
                  \r\n\
                  {session}\r\n\
-                 --codex-realtime-call-boundary--\r\n"
+                 --ava-realtime-call-boundary--\r\n"
             )
         );
     }

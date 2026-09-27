@@ -5,14 +5,14 @@ use pretty_assertions::assert_eq;
 
 #[tokio::test]
 async fn display_refresh_preserves_loaded_skills_and_tool_suggestions() {
-    let codex_home = TempDir::new().unwrap();
-    let marketplace_root = codex_home
+    let ava_home = TempDir::new().unwrap();
+    let marketplace_root = ava_home
         .path()
         .join("plugins/cache/openai-curated-remote");
     write_plugin(&marketplace_root, "sample/local", "sample");
     let plugin_root = marketplace_root.join("sample/local");
     write_file(
-        &codex_home.path().join(CONFIG_TOML_FILE),
+        &ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features]
 plugins = true
 remote_plugin = true
@@ -21,10 +21,10 @@ remote_plugin = true
 enabled = true
 "#,
     );
-    let config = load_config(codex_home.path(), codex_home.path()).await;
+    let config = load_config(ava_home.path(), ava_home.path()).await;
     let manager = test_plugins_manager_with_options(
-        codex_home.path().to_path_buf(),
-        Some(Product::Codex),
+        ava_home.path().to_path_buf(),
+        Some(Product::Ava),
         Some(AuthMode::Chatgpt),
     );
     let mut remote = remote_installed_plugin("sample");

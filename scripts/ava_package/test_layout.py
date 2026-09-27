@@ -23,14 +23,14 @@ class PackageLayoutTest(unittest.TestCase):
             with self.subTest(target=target), tempfile.TemporaryDirectory() as temp:
                 package = Path(temp)
                 files = {
-                    "bin/codex.exe": b"signed CLI",
-                    "bin/codex-code-mode-host.exe": b"signed code mode host",
-                    "codex-resources/codex-command-runner.exe": b"signed runner",
-                    "codex-resources/codex-windows-sandbox-setup.exe": b"signed setup",
-                    "codex-resources/voice/bin/codex-voice-host.exe": b"signed voice host",
-                    "codex-resources/voice/bin/gstreamer-1.0-0.dll": b"signed audio DLL",
-                    "codex-resources/voice/NOTICE.md": b"license notices",
-                    "codex-path/rg.exe": b"ripgrep",
+                    "bin/ava.exe": b"signed CLI",
+                    "bin/ava-code-mode-host.exe": b"signed code mode host",
+                    "ava-resources/ava-command-runner.exe": b"signed runner",
+                    "ava-resources/ava-windows-sandbox-setup.exe": b"signed setup",
+                    "ava-resources/voice/bin/ava-voice-host.exe": b"signed voice host",
+                    "ava-resources/voice/bin/gstreamer-1.0-0.dll": b"signed audio DLL",
+                    "ava-resources/voice/NOTICE.md": b"license notices",
+                    "ava-path/rg.exe": b"ripgrep",
                 }
                 for name, contents in files.items():
                     path = package / name
@@ -39,50 +39,50 @@ class PackageLayoutTest(unittest.TestCase):
                 metadata = {
                     "layoutVersion": 1,
                     "target": target,
-                    "entrypoint": "bin/codex.exe",
+                    "entrypoint": "bin/ava.exe",
                 }
-                (package / "codex-package.json").write_text(json.dumps(metadata))
+                (package / "ava-package.json").write_text(json.dumps(metadata))
                 manifest = {
                     "schemaVersion": 1,
                     "sha256": {
                         name: hashlib.sha256(contents).hexdigest()
                         for name, contents in files.items()
-                        if name == "bin/codex.exe"
-                        or name.startswith("codex-resources/voice/")
+                        if name == "bin/ava.exe"
+                        or name.startswith("ava-resources/voice/")
                     },
                 }
-                manifest_path = package / "codex-resources/voice/manifest.json"
+                manifest_path = package / "ava-resources/voice/manifest.json"
                 manifest_path.write_text(json.dumps(manifest))
                 prepare_winget_package(package)
-                entrypoint = f"codex-{target}.exe"
-                files[entrypoint] = files.pop("bin/codex.exe")
-                files["codex-code-mode-host.exe"] = files.pop(
-                    "bin/codex-code-mode-host.exe"
+                entrypoint = f"ava-{target}.exe"
+                files[entrypoint] = files.pop("bin/ava.exe")
+                files["ava-code-mode-host.exe"] = files.pop(
+                    "bin/ava-code-mode-host.exe"
                 )
                 for helper in (
-                    "codex-command-runner.exe",
-                    "codex-windows-sandbox-setup.exe",
+                    "ava-command-runner.exe",
+                    "ava-windows-sandbox-setup.exe",
                 ):
-                    files[helper] = files[f"codex-resources/{helper}"]
+                    files[helper] = files[f"ava-resources/{helper}"]
                 actual = {
                     str(path.relative_to(package)).replace("\\", "/"): path.read_bytes()
                     for path in package.rglob("*")
                     if path.is_file()
                 }
-                actual_metadata = json.loads(actual.pop("codex-package.json"))
+                actual_metadata = json.loads(actual.pop("ava-package.json"))
                 actual_manifest = json.loads(
-                    actual.pop("codex-resources/voice/manifest.json")
+                    actual.pop("ava-resources/voice/manifest.json")
                 )
                 self.assertEqual(actual, files)
                 metadata["entrypoint"] = entrypoint
                 self.assertEqual(actual_metadata, metadata)
-                manifest["sha256"][entrypoint] = manifest["sha256"].pop("bin/codex.exe")
+                manifest["sha256"][entrypoint] = manifest["sha256"].pop("bin/ava.exe")
                 self.assertEqual(actual_manifest, manifest)
                 for name, digest in actual_manifest["sha256"].items():
                     self.assertEqual(hashlib.sha256(actual[name]).hexdigest(), digest)
 
     def test_macos_package_preserves_prebuilt_resource_binaries(self) -> None:
-        for variant_name in ("codex", "codex-app-server"):
+        for variant_name in ("ava", "ava-app-server"):
             for target in ("aarch64-apple-darwin", "x86_64-apple-darwin"):
                 with self.subTest(variant=variant_name, target=target):
                     with tempfile.TemporaryDirectory() as temp_dir:
@@ -100,13 +100,13 @@ class PackageLayoutTest(unittest.TestCase):
                                 root / variant.executable_stem
                             ),
                             code_mode_host_bin=touch_executable(
-                                root / "codex-code-mode-host"
+                                root / "ava-code-mode-host"
                             ),
                             rg_bin=rg_bin,
                             zsh_bin=zsh_bin,
                             bwrap_bin=None,
-                            codex_command_runner_bin=None,
-                            codex_windows_sandbox_setup_bin=None,
+                            ava_command_runner_bin=None,
+                            ava_windows_sandbox_setup_bin=None,
                         )
 
                         build_package_dir(package_dir, "1.2.3", variant, spec, inputs)
@@ -116,10 +116,10 @@ class PackageLayoutTest(unittest.TestCase):
 
                         self.assertEqual(
                             {
-                                "rg": (package_dir / "codex-path" / "rg").read_bytes(),
+                                "rg": (package_dir / "ava-path" / "rg").read_bytes(),
                                 "zsh": (
                                     package_dir
-                                    / "codex-resources"
+                                    / "ava-resources"
                                     / "zsh"
                                     / "bin"
                                     / "zsh"
@@ -137,30 +137,30 @@ class PackageLayoutTest(unittest.TestCase):
             package_dir = root / "package"
             package_dir.mkdir()
             inputs = PackageInputs(
-                entrypoint_bin=touch_executable(root / "codex-app-server"),
-                code_mode_host_bin=touch_executable(root / "codex-code-mode-host"),
+                entrypoint_bin=touch_executable(root / "ava-app-server"),
+                code_mode_host_bin=touch_executable(root / "ava-code-mode-host"),
                 rg_bin=touch_executable(root / "rg"),
                 zsh_bin=None,
                 bwrap_bin=touch_executable(root / "bwrap"),
-                codex_command_runner_bin=None,
-                codex_windows_sandbox_setup_bin=None,
+                ava_command_runner_bin=None,
+                ava_windows_sandbox_setup_bin=None,
             )
 
             build_package_dir(
                 package_dir,
                 "1.2.3",
-                PACKAGE_VARIANTS["codex-app-server"],
+                PACKAGE_VARIANTS["ava-app-server"],
                 TARGET_SPECS["x86_64-unknown-linux-musl"],
                 inputs,
             )
             validate_package_dir(
                 package_dir,
-                PACKAGE_VARIANTS["codex-app-server"],
+                PACKAGE_VARIANTS["ava-app-server"],
                 TARGET_SPECS["x86_64-unknown-linux-musl"],
                 include_zsh=False,
             )
 
-            self.assertTrue((package_dir / "bin" / "codex-code-mode-host").is_file())
+            self.assertTrue((package_dir / "bin" / "ava-code-mode-host").is_file())
 
 
 def touch_executable(path: Path) -> Path:

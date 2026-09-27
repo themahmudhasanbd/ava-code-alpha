@@ -1,13 +1,13 @@
 use crate::endpoint::realtime_websocket::protocol_frameless_bidi::parse_frameless_bidi_event;
 use crate::endpoint::realtime_websocket::protocol_v1::parse_realtime_event_v1;
 use crate::endpoint::realtime_websocket::protocol_v2::parse_realtime_event_v2;
-use codex_protocol::protocol::ConversationTextParams;
-use codex_protocol::protocol::ConversationTextRole;
-pub use codex_protocol::protocol::RealtimeAudioFrame;
-pub use codex_protocol::protocol::RealtimeEvent;
-pub use codex_protocol::protocol::RealtimeOutputModality;
-pub use codex_protocol::protocol::RealtimeTranscriptEntry;
-pub use codex_protocol::protocol::RealtimeVoice;
+use ava_protocol::protocol::ConversationTextParams;
+use ava_protocol::protocol::ConversationTextRole;
+pub use ava_protocol::protocol::RealtimeAudioFrame;
+pub use ava_protocol::protocol::RealtimeEvent;
+pub use ava_protocol::protocol::RealtimeOutputModality;
+pub use ava_protocol::protocol::RealtimeTranscriptEntry;
+pub use ava_protocol::protocol::RealtimeVoice;
 use serde::Serialize;
 use serde_json::Value;
 

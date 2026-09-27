@@ -1,57 +1,57 @@
 use super::*;
 use crate::ServerNotification;
-use codex_protocol::approvals::ElicitationRequest as CoreElicitationRequest;
-use codex_protocol::approvals::GuardianAssessmentAction as CoreGuardianAssessmentAction;
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::CollabAgentTool as CoreCollabAgentTool;
-use codex_protocol::items::CollabAgentToolCallItem;
-use codex_protocol::items::CollabAgentToolCallStatus as CoreCollabAgentToolCallStatus;
-use codex_protocol::items::CommandExecutionItem;
-use codex_protocol::items::CommandExecutionStatus as CoreCommandExecutionStatus;
-use codex_protocol::items::DynamicToolCallItem;
-use codex_protocol::items::DynamicToolCallStatus as CoreDynamicToolCallStatus;
-use codex_protocol::items::FileChangeItem;
-use codex_protocol::items::ImageViewItem;
-use codex_protocol::items::McpToolCallItem;
-use codex_protocol::items::McpToolCallStatus as CoreMcpToolCallStatus;
-use codex_protocol::items::ReasoningItem;
-use codex_protocol::items::SubAgentActivityItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::items::WebSearchItem as CoreWebSearchItem;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::mcp::McpServerInfo;
-use codex_protocol::memory_citation::MemoryCitation as CoreMemoryCitation;
-use codex_protocol::memory_citation::MemoryCitationEntry as CoreMemoryCitationEntry;
-use codex_protocol::models::AdditionalPermissionProfile as CoreAdditionalPermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::FileSystemPermissions as CoreFileSystemPermissions;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference as CoreImageReference;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::NetworkPermissions as CoreNetworkPermissions;
-use codex_protocol::models::WebSearchAction as CoreWebSearchAction;
-use codex_protocol::permissions::FileSystemAccessMode as CoreFileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath as CoreFileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry as CoreFileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath as CoreFileSystemSpecialPath;
-use codex_protocol::protocol::AgentStatus as CoreAgentStatus;
-use codex_protocol::protocol::AskForApproval as CoreAskForApproval;
-use codex_protocol::protocol::CodexErrorInfo as CoreCodexErrorInfo;
-use codex_protocol::protocol::ConversationTextRole;
-use codex_protocol::protocol::ExecCommandSource as CoreExecCommandSource;
-use codex_protocol::protocol::GranularApprovalConfig as CoreGranularApprovalConfig;
-use codex_protocol::protocol::NetworkAccess as CoreNetworkAccess;
-use codex_protocol::protocol::SubAgentActivityKind as CoreSubAgentActivityKind;
-use codex_protocol::request_permissions::RequestPermissionProfile as CoreRequestPermissionProfile;
-use codex_protocol::user_input::UserInput as CoreUserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::approvals::ElicitationRequest as CoreElicitationRequest;
+use ava_protocol::approvals::GuardianAssessmentAction as CoreGuardianAssessmentAction;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::CollabAgentTool as CoreCollabAgentTool;
+use ava_protocol::items::CollabAgentToolCallItem;
+use ava_protocol::items::CollabAgentToolCallStatus as CoreCollabAgentToolCallStatus;
+use ava_protocol::items::CommandExecutionItem;
+use ava_protocol::items::CommandExecutionStatus as CoreCommandExecutionStatus;
+use ava_protocol::items::DynamicToolCallItem;
+use ava_protocol::items::DynamicToolCallStatus as CoreDynamicToolCallStatus;
+use ava_protocol::items::FileChangeItem;
+use ava_protocol::items::ImageViewItem;
+use ava_protocol::items::McpToolCallItem;
+use ava_protocol::items::McpToolCallStatus as CoreMcpToolCallStatus;
+use ava_protocol::items::ReasoningItem;
+use ava_protocol::items::SubAgentActivityItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::items::WebSearchItem as CoreWebSearchItem;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::McpServerInfo;
+use ava_protocol::memory_citation::MemoryCitation as CoreMemoryCitation;
+use ava_protocol::memory_citation::MemoryCitationEntry as CoreMemoryCitationEntry;
+use ava_protocol::models::AdditionalPermissionProfile as CoreAdditionalPermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::FileSystemPermissions as CoreFileSystemPermissions;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference as CoreImageReference;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::NetworkPermissions as CoreNetworkPermissions;
+use ava_protocol::models::WebSearchAction as CoreWebSearchAction;
+use ava_protocol::permissions::FileSystemAccessMode as CoreFileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath as CoreFileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry as CoreFileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath as CoreFileSystemSpecialPath;
+use ava_protocol::protocol::AgentStatus as CoreAgentStatus;
+use ava_protocol::protocol::AskForApproval as CoreAskForApproval;
+use ava_protocol::protocol::AvaErrorInfo as CoreAvaErrorInfo;
+use ava_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::ExecCommandSource as CoreExecCommandSource;
+use ava_protocol::protocol::GranularApprovalConfig as CoreGranularApprovalConfig;
+use ava_protocol::protocol::NetworkAccess as CoreNetworkAccess;
+use ava_protocol::protocol::SubAgentActivityKind as CoreSubAgentActivityKind;
+use ava_protocol::request_permissions::RequestPermissionProfile as CoreRequestPermissionProfile;
+use ava_protocol::user_input::UserInput as CoreUserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use serde_json::Value as JsonValue;
 use serde_json::json;
@@ -186,7 +186,7 @@ fn thread_sources_round_trip_as_scalar_labels() {
             source
         );
 
-        let core_source: codex_protocol::protocol::ThreadSource = source.clone().into();
+        let core_source: ava_protocol::protocol::ThreadSource = source.clone().into();
         assert_eq!(ThreadSource::from(core_source), source);
     }
 }
@@ -1946,7 +1946,7 @@ fn sandbox_policy_round_trips_external_sandbox_network_access() {
     let core_policy = v2_policy.to_core();
     assert_eq!(
         core_policy,
-        codex_protocol::protocol::SandboxPolicy::ExternalSandbox {
+        ava_protocol::protocol::SandboxPolicy::ExternalSandbox {
             network_access: CoreNetworkAccess::Enabled,
         }
     );
@@ -1964,7 +1964,7 @@ fn sandbox_policy_round_trips_read_only_network_access() {
     let core_policy = v2_policy.to_core();
     assert_eq!(
         core_policy,
-        codex_protocol::protocol::SandboxPolicy::ReadOnly {
+        ava_protocol::protocol::SandboxPolicy::ReadOnly {
             network_access: true,
         }
     );
@@ -2168,9 +2168,9 @@ fn config_requirements_granular_allowed_approval_policy_is_marked_experimental()
 fn config_requirements_read_accepts_foreign_path_uris() {
     let response: ConfigRequirementsReadResponse = serde_json::from_value(json!({
         "requirements": {
-            "sqliteHome": "file:///C:/Users/alice/.codex/state",
-            "logDir": "file:///C:/Users/alice/.codex/logs",
-            "modelCatalogJson": "file:///C:/Users/alice/.codex/models.json"
+            "sqliteHome": "file:///C:/Users/alice/.ava-code/state",
+            "logDir": "file:///C:/Users/alice/.ava-code/logs",
+            "modelCatalogJson": "file:///C:/Users/alice/.ava-code/models.json"
         }
     }))
     .expect("requirements response with foreign paths should deserialize");
@@ -2180,15 +2180,15 @@ fn config_requirements_read_accepts_foreign_path_uris() {
 
     assert_eq!(
         requirements.sqlite_home,
-        Some(PathUri::parse("file:///C:/Users/alice/.codex/state").expect("valid URI"))
+        Some(PathUri::parse("file:///C:/Users/alice/.ava-code/state").expect("valid URI"))
     );
     assert_eq!(
         requirements.log_dir,
-        Some(PathUri::parse("file:///C:/Users/alice/.codex/logs").expect("valid URI"))
+        Some(PathUri::parse("file:///C:/Users/alice/.ava-code/logs").expect("valid URI"))
     );
     assert_eq!(
         requirements.model_catalog_json,
-        Some(PathUri::parse("file:///C:/Users/alice/.codex/models.json").expect("valid URI"))
+        Some(PathUri::parse("file:///C:/Users/alice/.ava-code/models.json").expect("valid URI"))
     );
 }
 
@@ -2766,7 +2766,7 @@ fn sandbox_policy_round_trips_workspace_write_access() {
     let core_policy = v2_policy.to_core();
     assert_eq!(
         core_policy,
-        codex_protocol::protocol::SandboxPolicy::WorkspaceWrite {
+        ava_protocol::protocol::SandboxPolicy::WorkspaceWrite {
             writable_roots: vec![],
             network_access: true,
             exclude_tmpdir_env_var: false,
@@ -3054,7 +3054,7 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
             },
             CoreUserInput::Skill {
                 name: "skill-creator".to_string(),
-                path: PathBuf::from("/repo/.codex/skills/skill-creator/SKILL.md"),
+                path: PathBuf::from("/repo/.ava-code/skills/skill-creator/SKILL.md"),
             },
             CoreUserInput::Mention {
                 name: "Demo App".to_string(),
@@ -3091,7 +3091,7 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
                 },
                 UserInput::Skill {
                     name: "skill-creator".to_string(),
-                    path: PathBuf::from("/repo/.codex/skills/skill-creator/SKILL.md"),
+                    path: PathBuf::from("/repo/.ava-code/skills/skill-creator/SKILL.md"),
                 },
                 UserInput::Mention {
                     name: "Demo App".to_string(),
@@ -3231,7 +3231,7 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
             "push".to_string(),
         ],
         cwd: PathUri::from_abs_path(&test_path_buf("/tmp").abs()),
-        parsed_cmd: vec![codex_protocol::parse_command::ParsedCommand::Unknown {
+        parsed_cmd: vec![ava_protocol::parse_command::ParsedCommand::Unknown {
             cmd: "git -c 'http.extraHeader=Authorization: Bearer example_synthetic_bearer_token_123456' -c http.extraHeader=X-Trace:example push"
                 .to_string(),
         }],
@@ -3276,13 +3276,13 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
         arguments: json!({"id": "123"}),
         status: CoreDynamicToolCallStatus::Completed,
         content_items: Some(vec![
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputText {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputText {
                 text: "ok".to_string(),
             },
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputImage {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputImage {
                 image_url: "data:image/png;base64,AAA".to_string(),
             },
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputAudio {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputAudio {
                 audio_url: "data:audio/wav;base64,YXVkaW8=".to_string(),
             },
         ]),
@@ -3315,8 +3315,8 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
         }
     );
 
-    let sender_thread_id = codex_protocol::ThreadId::default();
-    let receiver_thread_id = codex_protocol::ThreadId::default();
+    let sender_thread_id = ava_protocol::ThreadId::default();
+    let receiver_thread_id = ava_protocol::ThreadId::default();
     let collab_item = TurnItem::CollabAgentToolCall(CollabAgentToolCallItem {
         id: "collab-1".to_string(),
         tool: CoreCollabAgentTool::SendInput,
@@ -3359,7 +3359,7 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
         id: "activity-1".to_string(),
         kind: CoreSubAgentActivityKind::Completed,
         agent_thread_id: receiver_thread_id,
-        agent_path: codex_protocol::AgentPath::root()
+        agent_path: ava_protocol::AgentPath::root()
             .join("worker")
             .expect("worker path"),
     });
@@ -3408,7 +3408,7 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
     );
     assert_eq!(
         ThreadItem::from(TurnItem::Extension(
-            codex_extension_items::ExtensionItem::WebSearch(expected_search_item.clone()),
+            ava_extension_items::ExtensionItem::WebSearch(expected_search_item.clone()),
         )),
         ThreadItem::WebSearch(expected_search_item)
     );
@@ -3430,13 +3430,13 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
         id: "patch-1".to_string(),
         changes: [(
             PathBuf::from("README.md"),
-            codex_protocol::protocol::FileChange::Add {
+            ava_protocol::protocol::FileChange::Add {
                 content: "hello\n".to_string(),
             },
         )]
         .into_iter()
         .collect(),
-        status: Some(codex_protocol::protocol::PatchApplyStatus::Completed),
+        status: Some(ava_protocol::protocol::PatchApplyStatus::Completed),
         auto_approved: None,
         stdout: Some("Done!".to_string()),
         stderr: Some(String::new()),
@@ -3551,7 +3551,7 @@ fn core_turn_item_into_thread_item_converts_supported_variants() {
 fn mcp_tool_call_app_context_serializes_connector_id() {
     let item = ThreadItem::McpToolCall {
         id: "mcp-1".to_string(),
-        server: "codex_apps".to_string(),
+        server: "ava_apps".to_string(),
         tool: "calendar.create_event".to_string(),
         status: McpToolCallStatus::InProgress,
         arguments: json!({}),
@@ -3576,7 +3576,7 @@ fn mcp_tool_call_app_context_serializes_connector_id() {
         json!({
             "type": "mcpToolCall",
             "id": "mcp-1",
-            "server": "codex_apps",
+            "server": "ava_apps",
             "tool": "calendar.create_event",
             "status": "inProgress",
             "arguments": {},
@@ -4379,20 +4379,20 @@ fn plugin_share_params_and_response_serialization_use_camel_case_fields() {
     assert_eq!(
         serde_json::to_value(PluginShareCheckoutResponse {
             remote_plugin_id: "plugins~Plugin_00000000000000000000000000000000".to_string(),
-            plugin_id: "gmail@codex-curated".to_string(),
+            plugin_id: "gmail@ava-curated".to_string(),
             plugin_name: "gmail".to_string(),
             plugin_path,
-            marketplace_name: "codex-curated".to_string(),
+            marketplace_name: "ava-curated".to_string(),
             marketplace_path,
             remote_version: Some("1.2.3".to_string()),
         })
         .unwrap(),
         json!({
             "remotePluginId": "plugins~Plugin_00000000000000000000000000000000",
-            "pluginId": "gmail@codex-curated",
+            "pluginId": "gmail@ava-curated",
             "pluginName": "gmail",
             "pluginPath": plugin_path_json,
-            "marketplaceName": "codex-curated",
+            "marketplaceName": "ava-curated",
             "marketplacePath": marketplace_path_json,
             "remoteVersion": "1.2.3",
         }),
@@ -4651,8 +4651,8 @@ fn marketplace_upgrade_response_serializes_camel_case_fields() {
 }
 
 #[test]
-fn codex_error_info_serializes_http_status_code_in_camel_case() {
-    let value = CodexErrorInfo::ResponseTooManyFailedAttempts {
+fn ava_error_info_serializes_http_status_code_in_camel_case() {
+    let value = AvaErrorInfo::ResponseTooManyFailedAttempts {
         http_status_code: Some(401),
     };
 
@@ -4669,23 +4669,23 @@ fn codex_error_info_serializes_http_status_code_in_camel_case() {
 #[test]
 fn core_error_info_converts_to_camel_case() {
     for (core, expected) in [
-        (CoreCodexErrorInfo::CyberPolicy, json!("cyberPolicy")),
-        (CoreCodexErrorInfo::BioPolicy, json!("other")),
+        (CoreAvaErrorInfo::CyberPolicy, json!("cyberPolicy")),
+        (CoreAvaErrorInfo::BioPolicy, json!("other")),
         (
-            CoreCodexErrorInfo::RateLimitExceeded,
+            CoreAvaErrorInfo::RateLimitExceeded,
             json!("rateLimitExceeded"),
         ),
     ] {
         assert_eq!(
-            serde_json::to_value(CodexErrorInfo::from(core)).unwrap(),
+            serde_json::to_value(AvaErrorInfo::from(core)).unwrap(),
             expected
         );
     }
 }
 
 #[test]
-fn codex_error_info_serializes_active_turn_not_steerable_turn_kind_in_camel_case() {
-    let value = CodexErrorInfo::ActiveTurnNotSteerable {
+fn ava_error_info_serializes_active_turn_not_steerable_turn_kind_in_camel_case() {
+    let value = AvaErrorInfo::ActiveTurnNotSteerable {
         turn_kind: NonSteerableTurnKind::Review,
     };
 
@@ -4943,7 +4943,7 @@ fn turn_start_cyber_access_program_uses_separate_wire_formats() {
             "cyberAccessProgram": app_server_value,
         }))
         .expect("params should deserialize");
-        let core_program: codex_protocol::turn_input::CyberAccessProgram = params
+        let core_program: ava_protocol::turn_input::CyberAccessProgram = params
             .cyber_access_program
             .expect("explicit program")
             .into();
@@ -4970,7 +4970,7 @@ fn turn_start_params_round_trip_multi_agent_mode() {
 
     assert_eq!(
         params.multi_agent_mode,
-        Some(codex_protocol::config_types::MultiAgentMode::Proactive)
+        Some(ava_protocol::config_types::MultiAgentMode::Proactive)
     );
     assert_eq!(
         crate::experimental_api::ExperimentalApi::experimental_reason(&params),
@@ -4991,7 +4991,7 @@ fn thread_start_params_round_trip_multi_agent_mode() {
 
     assert_eq!(
         params.multi_agent_mode,
-        Some(codex_protocol::config_types::MultiAgentMode::Proactive)
+        Some(ava_protocol::config_types::MultiAgentMode::Proactive)
     );
     assert_eq!(
         crate::experimental_api::ExperimentalApi::experimental_reason(&params),
@@ -5058,9 +5058,9 @@ fn thread_settings_update_params_preserve_field_level_experimental_gates() {
 
     let collaboration_mode = ThreadSettingsUpdateParams {
         thread_id: "thread_123".to_string(),
-        collaboration_mode: Some(codex_protocol::config_types::CollaborationMode {
-            mode: codex_protocol::config_types::ModeKind::Plan,
-            settings: codex_protocol::config_types::Settings {
+        collaboration_mode: Some(ava_protocol::config_types::CollaborationMode {
+            mode: ava_protocol::config_types::ModeKind::Plan,
+            settings: ava_protocol::config_types::Settings {
                 model: "mock-model".to_string(),
                 reasoning_effort: None,
                 developer_instructions: None,
@@ -5202,7 +5202,7 @@ fn realtime_start_deserializes_client_handoff_channel_prefixes() {
     let params = serde_json::from_value::<ThreadRealtimeStartParams>(json!({
         "threadId": "thread_123",
         "outputModality": "audio",
-        "codexResponseHandoffChannelPrefixes": {
+        "avaResponseHandoffChannelPrefixes": {
             "analysis": ["[THINKING]"],
             "commentary": ["[PROGRESS]", "[UPDATE]"],
             "final": ["[DONE]"]
@@ -5211,7 +5211,7 @@ fn realtime_start_deserializes_client_handoff_channel_prefixes() {
     .expect("params should deserialize");
 
     assert_eq!(
-        params.codex_response_handoff_channel_prefixes,
+        params.ava_response_handoff_channel_prefixes,
         Some(BTreeMap::from([
             ("analysis".to_string(), vec!["[THINKING]".to_string()]),
             (

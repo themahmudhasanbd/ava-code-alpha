@@ -1,6 +1,6 @@
 use super::*;
 use crate::app_info::app_info_to_api;
-use codex_connectors::AppToolPolicyEvaluator;
+use ava_connectors::AppToolPolicyEvaluator;
 
 mod installed;
 mod read;
@@ -73,7 +73,7 @@ impl AppsRequestProcessor {
         let auth = self.auth_manager.auth().await;
         if !config
             .features
-            .apps_enabled_for_auth(auth.as_ref().is_some_and(CodexAuth::uses_codex_backend))
+            .apps_enabled_for_auth(auth.as_ref().is_some_and(AvaAuth::uses_ava_backend))
         {
             let response = AppsListResponse {
                 data: Vec::new(),
@@ -142,7 +142,7 @@ impl AppsRequestProcessor {
         }
         let should_retry = result
             .as_ref()
-            .is_ok_and(|(_, codex_apps_ready)| !codex_apps_ready);
+            .is_ok_and(|(_, ava_apps_ready)| !ava_apps_ready);
         outgoing
             .send_result(request_id, result.map(|(response, _)| response))
             .await;
@@ -160,7 +160,7 @@ impl AppsRequestProcessor {
             )
             .await
             {
-                warn!("failed to refresh app list after codex-apps readiness retry: {err:?}");
+                warn!("failed to refresh app list after ava-apps readiness retry: {err:?}");
             }
         }
     }
@@ -191,7 +191,7 @@ impl AppsRequestProcessor {
             .plugins_for_config(&config.plugins_config_input())
             .await;
         let connector_snapshot =
-            codex_connectors::ConnectorSnapshot::from_plugin_capability_summaries(
+            ava_connectors::ConnectorSnapshot::from_plugin_capability_summaries(
                 loaded_plugins.capability_summaries(),
             );
         let plugin_apps = connector_snapshot.connector_ids().to_vec();
@@ -233,7 +233,7 @@ impl AppsRequestProcessor {
         let app_list_deadline = tokio::time::Instant::now() + APP_LIST_LOAD_TIMEOUT;
         let mut accessible_loaded = false;
         let mut all_loaded = false;
-        let mut codex_apps_ready = true;
+        let mut ava_apps_ready = true;
         let mut last_notified_apps = None;
         let mut sent_app_list_update = false;
         let app_policy = AppToolPolicyEvaluator::new(&config.config_layer_stack);
@@ -274,7 +274,7 @@ impl AppsRequestProcessor {
                 AppListLoadResult::Accessible(Ok(status)) => {
                     accessible_connectors = Some(status.connectors);
                     accessible_loaded = true;
-                    codex_apps_ready = status.codex_apps_ready;
+                    ava_apps_ready = status.ava_apps_ready;
                 }
                 AppListLoadResult::Accessible(Err(err)) => {
                     return Err(internal_error(err));
@@ -323,7 +323,7 @@ impl AppsRequestProcessor {
 
             if accessible_loaded && all_loaded {
                 let response = paginate_apps(merged.as_slice(), start, limit)?;
-                return Ok((response, codex_apps_ready));
+                return Ok((response, ava_apps_ready));
             }
         }
     }
@@ -331,7 +331,7 @@ impl AppsRequestProcessor {
     async fn load_thread(
         &self,
         thread_id: &str,
-    ) -> Result<(ThreadId, Arc<CodexThread>), JSONRPCErrorError> {
+    ) -> Result<(ThreadId, Arc<AvaThread>), JSONRPCErrorError> {
         let thread_id = ThreadId::from_string(thread_id)
             .map_err(|err| invalid_request(format!("invalid thread id: {err}")))?;
 
@@ -373,11 +373,11 @@ impl AppsRequestProcessor {
 const APP_LIST_LOAD_TIMEOUT: Duration = Duration::from_secs(90);
 // `app/list` is the legacy request-path baseline for the `app/installed` endpoint;
 // `path=legacy` keeps it separate from the new snapshot-backed implementation in dashboards.
-const APPS_INSTALLED_DURATION_METRIC: &str = "codex.apps.installed.duration_ms";
+const APPS_INSTALLED_DURATION_METRIC: &str = "ava.apps.installed.duration_ms";
 
 fn record_legacy_apps_installed_duration(started_at: Instant, reload: bool) {
     let reload = if reload { "true" } else { "false" };
-    if let Some(metrics) = codex_otel::global() {
+    if let Some(metrics) = ava_otel::global() {
         let _ = metrics.record_duration(
             APPS_INSTALLED_DURATION_METRIC,
             started_at.elapsed(),

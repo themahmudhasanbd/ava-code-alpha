@@ -1,17 +1,17 @@
 use anyhow::Result;
-use codex_config::MarketplaceConfigUpdate;
-use codex_config::record_user_marketplace;
-use codex_core_plugins::installed_marketplaces::marketplace_install_root;
-use codex_utils_absolute_path::canonicalize_existing_preserving_symlinks;
+use ava_config::MarketplaceConfigUpdate;
+use ava_config::record_user_marketplace;
+use ava_core_plugins::installed_marketplaces::marketplace_install_root;
+use ava_utils_absolute_path::canonicalize_existing_preserving_symlinks;
 use predicates::str::contains;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::path::Path;
 use tempfile::TempDir;
 
-fn codex_command(codex_home: &Path) -> Result<assert_cmd::Command> {
-    let mut cmd = assert_cmd::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
-    cmd.env("CODEX_HOME", codex_home);
+fn ava_command(ava_home: &Path) -> Result<assert_cmd::Command> {
+    let mut cmd = assert_cmd::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
+    cmd.env("AVA_HOME", ava_home);
     Ok(cmd)
 }
 
@@ -24,8 +24,8 @@ fn configured_marketplace_update() -> MarketplaceConfigUpdate<'static> {
     }
 }
 
-fn write_installed_marketplace(codex_home: &Path, marketplace_name: &str) -> Result<()> {
-    let root = marketplace_install_root(codex_home).join(marketplace_name);
+fn write_installed_marketplace(ava_home: &Path, marketplace_name: &str) -> Result<()> {
+    let root = marketplace_install_root(ava_home).join(marketplace_name);
     std::fs::create_dir_all(root.join(".agents/plugins"))?;
     std::fs::write(root.join(".agents/plugins/marketplace.json"), "{}")?;
     std::fs::write(root.join("marker.txt"), "installed")?;
@@ -34,21 +34,21 @@ fn write_installed_marketplace(codex_home: &Path, marketplace_name: &str) -> Res
 
 #[tokio::test]
 async fn marketplace_remove_deletes_config_and_installed_root() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    record_user_marketplace(codex_home.path(), "debug", &configured_marketplace_update())?;
-    write_installed_marketplace(codex_home.path(), "debug")?;
+    let ava_home = TempDir::new()?;
+    record_user_marketplace(ava_home.path(), "debug", &configured_marketplace_update())?;
+    write_installed_marketplace(ava_home.path(), "debug")?;
 
-    codex_command(codex_home.path())?
+    ava_command(ava_home.path())?
         .args(["plugin", "marketplace", "remove", "debug"])
         .assert()
         .success()
         .stdout(contains("Removed marketplace `debug`."));
 
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(config_path)?;
     assert!(!config.contains("[marketplaces.debug]"));
     assert!(
-        !marketplace_install_root(codex_home.path())
+        !marketplace_install_root(ava_home.path())
             .join("debug")
             .exists()
     );
@@ -57,13 +57,13 @@ async fn marketplace_remove_deletes_config_and_installed_root() -> Result<()> {
 
 #[tokio::test]
 async fn marketplace_remove_json_prints_remove_outcome() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    record_user_marketplace(codex_home.path(), "debug", &configured_marketplace_update())?;
-    write_installed_marketplace(codex_home.path(), "debug")?;
-    let installed_root = marketplace_install_root(codex_home.path()).join("debug");
+    let ava_home = TempDir::new()?;
+    record_user_marketplace(ava_home.path(), "debug", &configured_marketplace_update())?;
+    write_installed_marketplace(ava_home.path(), "debug")?;
+    let installed_root = marketplace_install_root(ava_home.path()).join("debug");
     let normalized_installed_root = canonicalize_existing_preserving_symlinks(&installed_root)?;
 
-    let assert = codex_command(codex_home.path())?
+    let assert = ava_command(ava_home.path())?
         .args(["plugin", "marketplace", "remove", "debug", "--json"])
         .assert()
         .success();
@@ -83,9 +83,9 @@ async fn marketplace_remove_json_prints_remove_outcome() -> Result<()> {
 
 #[tokio::test]
 async fn marketplace_remove_rejects_unknown_marketplace() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    codex_command(codex_home.path())?
+    ava_command(ava_home.path())?
         .args(["plugin", "marketplace", "remove", "debug"])
         .assert()
         .failure()
@@ -98,13 +98,13 @@ async fn marketplace_remove_rejects_unknown_marketplace() -> Result<()> {
 
 #[tokio::test]
 async fn marketplace_remove_preserves_marketplace_referenced_by_session_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    record_user_marketplace(codex_home.path(), "debug", &configured_marketplace_update())?;
-    write_installed_marketplace(codex_home.path(), "debug")?;
-    let config_path = codex_home.path().join("config.toml");
+    let ava_home = TempDir::new()?;
+    record_user_marketplace(ava_home.path(), "debug", &configured_marketplace_update())?;
+    write_installed_marketplace(ava_home.path(), "debug")?;
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
 
-    codex_command(codex_home.path())?
+    ava_command(ava_home.path())?
         .args([
             "plugin", "marketplace",
             "-c", "marketplaces.debug.source_type=\"git\"",
@@ -119,7 +119,7 @@ async fn marketplace_remove_preserves_marketplace_referenced_by_session_config()
     assert_eq!(std::fs::read_to_string(config_path)?, config);
     assert_eq!(
         std::fs::read_to_string(
-            marketplace_install_root(codex_home.path()).join("debug/marker.txt")
+            marketplace_install_root(ava_home.path()).join("debug/marker.txt")
         )?,
         "installed",
     );

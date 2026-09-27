@@ -1,6 +1,6 @@
 //! Source-neutral plugin discovery types.
 
-use codex_utils_path_uri::PathUri;
+use ava_utils_path_uri::PathUri;
 use std::collections::BTreeMap;
 
 /// One source's complete discovery snapshot; no entries means no plugins were found.

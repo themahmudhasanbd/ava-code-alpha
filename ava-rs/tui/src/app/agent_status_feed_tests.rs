@@ -1,8 +1,8 @@
 use super::*;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 #[test]
 fn agent_status_uses_bounded_buffered_activity() {
@@ -12,7 +12,7 @@ fn agent_status_uses_bounded_buffered_activity() {
             item: ThreadItem::CommandExecution {
                 model_context: None,
                 id: "command-1".to_string(),
-                command: "cargo test -p codex-tui".to_string(),
+                command: "cargo test -p ava-tui".to_string(),
                 cwd: AbsolutePathBuf::try_from("/workspace")
                     .expect("absolute path")
                     .into(),
@@ -61,7 +61,7 @@ fn agent_status_uses_bounded_buffered_activity() {
     Sub-agents running
 
       • `/root/reviewer`
-        $ cargo test -p codex-tui
+        $ cargo test -p ava-tui
         Finished checking the focused TUI tests.
     "###);
     assert!(!rendered.contains("unbounded output"));

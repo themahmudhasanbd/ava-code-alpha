@@ -5,18 +5,18 @@ use crate::legacy_core::config::ConfigBuilder;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_rollout;
 use app_test_support::rollout_path;
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
 async fn test_server() -> color_eyre::Result<(TempDir, AppServerSession, String, String)> {
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await?;
     let target = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-02T00-00-00",
         "2026-01-02T00:00:00Z",
         "Persisted test task",
@@ -24,7 +24,7 @@ async fn test_server() -> color_eyre::Result<(TempDir, AppServerSession, String,
         /*git_info*/ None,
     )
     .map_err(|error| color_eyre::eyre::eyre!("failed to create test rollout: {error}"))?;
-    let path = rollout_path(codex_home.path(), "2026-01-02T00-00-00", &target);
+    let path = rollout_path(ava_home.path(), "2026-01-02T00-00-00", &target);
     let mut records = std::fs::read_to_string(&path)?
         .lines()
         .map(serde_json::from_str::<Value>)
@@ -53,7 +53,7 @@ async fn test_server() -> color_eyre::Result<(TempDir, AppServerSession, String,
             "item": {
                 "type": "DynamicToolCall",
                 "id": "persisted-tool",
-                "namespace": "codex_tui",
+                "namespace": "ava_tui",
                 "tool": "list_threads",
                 "arguments": {},
                 "status": "completed",
@@ -67,7 +67,7 @@ async fn test_server() -> color_eyre::Result<(TempDir, AppServerSession, String,
             "last_agent_message": "Persisted assistant output"
         }),
     ] {
-        serde_json::from_value::<codex_protocol::protocol::EventMsg>(payload.clone())?;
+        serde_json::from_value::<ava_protocol::protocol::EventMsg>(payload.clone())?;
         records.push(json!({
             "timestamp": "2026-01-02T00:00:00Z",
             "ordinal": records.len(),
@@ -96,7 +96,7 @@ async fn test_server() -> color_eyre::Result<(TempDir, AppServerSession, String,
             ResumeModelSettings::RestoreFromThread,
         )
         .await?;
-    Ok((codex_home, server, source, target))
+    Ok((ava_home, server, source, target))
 }
 
 async fn call_tool(
@@ -228,7 +228,7 @@ fn oversized_read_pages_preserve_turns_and_pagination() {
                     .map(|item_index| json!({
                         "id": format!("00000000-0000-0000-{turn_index:04}-{item_index:012}"),
                         "type": "dynamicToolCall",
-                        "namespace": "codex_tui",
+                        "namespace": "ava_tui",
                         "tool": "read_thread",
                         "status": "completed"
                     }))
@@ -262,7 +262,7 @@ fn oversized_read_pages_preserve_turns_and_pagination() {
 #[test]
 fn delegated_prompts_match_desktop_xml_contract() {
     let output = FunctionCallOutputBody::Text(delegated_prompt("thread-1", "Check status"));
-    for namespace in ["codex_tui", "codex_app"] {
+    for namespace in ["ava_tui", "ava_app"] {
         assert_eq!(
             parse_delegated_tool_output("send_message_to_thread", Some(namespace), &output),
             Some(("thread-1".to_string(), "Check status".to_string()))
@@ -274,7 +274,7 @@ fn delegated_prompts_match_desktop_xml_contract() {
     );
     assert_eq!(
         delegated_prompt("thread-1", "Check <main> & report > status"),
-        "<codex_delegation>\n  <source_thread_id>thread-1</source_thread_id>\n  <input>Check &lt;main&gt; &amp; report &gt; status</input>\n</codex_delegation>"
+        "<ava_delegation>\n  <source_thread_id>thread-1</source_thread_id>\n  <input>Check &lt;main&gt; &amp; report &gt; status</input>\n</ava_delegation>"
     );
     assert!(
         validate_prompt(
@@ -310,7 +310,7 @@ fn activity_metadata_is_retained_without_including_outputs() -> color_eyre::Resu
                 "revisedPrompt": "a cat", "result": "image bytes"},
             {"type": "enteredReviewMode", "id": "review-1", "review": "review changes"},
             {"type": "functionCallOutput", "id": "delegation-1", "name": "send_message_to_thread",
-                "namespace": "codex_tui", "output": delegated_prompt("source-2", "Follow <up> & report")}
+                "namespace": "ava_tui", "output": delegated_prompt("source-2", "Follow <up> & report")}
         ]
     }))?;
 
@@ -325,7 +325,7 @@ fn activity_metadata_is_retained_without_including_outputs() -> color_eyre::Resu
             {"type": "mcpToolCall", "id": "mcp-1", "server": "docs", "tool": "search", "arguments": {}, "status": "completed", "durationMs": null},
             {"type": "userMessage", "id": "user-1", "content": [
                 {"type": "text", "text": delegated_prompt("source-1", "Check <main> & status"),
-                    "codexDelegation": {"sourceThreadId": "source-1", "input": "Check <main> & status"}},
+                    "avaDelegation": {"sourceThreadId": "source-1", "input": "Check <main> & status"}},
                 {"type": "skill", "name": "debug", "path": "/tmp/SKILL.md"},
                 {"type": "mention", "name": "docs", "path": "app://docs"}
             ]},
@@ -336,7 +336,7 @@ fn activity_metadata_is_retained_without_including_outputs() -> color_eyre::Resu
                 "revisedPrompt": "a cat", "savedPath": null},
             {"type": "enteredReviewMode", "id": "review-1", "review": "review changes"},
             {"type": "functionCallOutput", "id": "delegation-1", "name": "send_message_to_thread",
-                "namespace": "codex_tui", "codexDelegation": {
+                "namespace": "ava_tui", "avaDelegation": {
                     "sourceThreadId": "source-2", "input": "Follow <up> & report"
                 }}
         ])
@@ -377,7 +377,7 @@ fn activity_metadata_is_retained_without_including_outputs() -> color_eyre::Resu
 
 #[tokio::test]
 async fn task_management_tools_use_existing_app_server_operations() -> color_eyre::Result<()> {
-    let (codex_home, server, source, target) = test_server().await?;
+    let (ava_home, server, source, target) = test_server().await?;
 
     let listed = response_json(call_tool(&server, &source, "list_threads", json!({})).await);
     assert!(
@@ -387,7 +387,7 @@ async fn task_management_tools_use_existing_app_server_operations() -> color_eyr
     );
 
     let legacy = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-03T00-00-00",
         "2026-01-03T00:00:00Z",
         "Legacy test task",
@@ -460,7 +460,7 @@ async fn task_management_tools_use_existing_app_server_operations() -> color_eyr
     let mut expected_archived = vec![target.clone()];
     for day in 4..12 {
         let archived_id = create_fake_paginated_rollout(
-            codex_home.path(),
+            ava_home.path(),
             &format!("2026-01-{day:02}T00-00-00"),
             &format!("2026-01-{day:02}T00:00:00Z"),
             "Archived task with a deliberately descriptive pagination title",
@@ -528,7 +528,7 @@ async fn task_management_tools_use_existing_app_server_operations() -> color_eyr
 
 #[tokio::test]
 async fn wait_threads_returns_bounded_snapshots_and_rejects_self_wait() -> color_eyre::Result<()> {
-    let (_codex_home, server, source, target) = test_server().await?;
+    let (_ava_home, server, source, target) = test_server().await?;
 
     let snapshot = response_json(
         call_tool(
@@ -622,7 +622,7 @@ async fn wait_threads_returns_bounded_snapshots_and_rejects_self_wait() -> color
 
 #[tokio::test]
 async fn task_creation_and_followup_start_background_turns() -> color_eyre::Result<()> {
-    let (_codex_home, server, source, target) = test_server().await?;
+    let (_ava_home, server, source, target) = test_server().await?;
 
     for (tool, arguments) in [
         (
@@ -647,7 +647,7 @@ async fn task_creation_and_followup_start_background_turns() -> color_eyre::Resu
         .success
     );
 
-    let ephemeral: codex_app_server_protocol::ThreadStartResponse =
+    let ephemeral: ava_app_server_protocol::ThreadStartResponse =
         request(&server.request_handle(), |request_id| {
             ClientRequest::ThreadStart {
                 request_id,

@@ -1,20 +1,20 @@
 use anyhow::Result;
-use codex_client::RetryOn;
-use codex_client::RetryPolicy;
-use codex_client::run_with_retry;
-use codex_http_client::Request;
-use codex_http_client::TransportError;
-use codex_login::CodexAuth;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::user_input::UserInput;
+use ava_client::RetryOn;
+use ava_client::RetryPolicy;
+use ava_client::run_with_retry;
+use ava_http_client::Request;
+use ava_http_client::TransportError;
+use ava_login::AvaAuth;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use http::Method;
 use http::StatusCode;
@@ -118,18 +118,18 @@ where
     S: Subscriber,
 {
     fn on_event(&self, event: &Event<'_>, _context: Context<'_, S>) {
-        if event.metadata().target() == "codex_http_client::transport" {
+        if event.metadata().target() == "ava_http_client::transport" {
             self.record_request_after_retry();
             return;
         }
 
-        if event.metadata().target() != "codex_otel.trace_safe" {
+        if event.metadata().target() != "ava_otel.trace_safe" {
             return;
         }
 
         let mut visitor = RetryTelemetryVisitor::default();
         event.record(&mut visitor);
-        if visitor.name.as_deref() != Some("codex.retry") {
+        if visitor.name.as_deref() != Some("ava.retry") {
             return;
         }
 
@@ -221,8 +221,8 @@ async fn wait_for_retry(
     elapsed
 }
 
-async fn submit_user_input(test: &TestCodex, text: &str) -> Result<()> {
-    test.codex
+async fn submit_user_input(test: &TestAva, text: &str) -> Result<()> {
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: text.to_string(),
             text_elements: Vec::new(),
@@ -231,8 +231,8 @@ async fn submit_user_input(test: &TestCodex, text: &str) -> Result<()> {
     Ok(())
 }
 
-async fn wait_for_turn_completion(test: &TestCodex) {
-    let EventMsg::TurnComplete(completed) = wait_for_event(&test.codex, |event| {
+async fn wait_for_turn_completion(test: &TestAva) {
+    let EventMsg::TurnComplete(completed) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await
@@ -263,7 +263,7 @@ async fn responses_http_uses_local_backoff_despite_retry_after() -> Result<()> {
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(1);
             config.model_provider.stream_max_retries = Some(0);
@@ -360,7 +360,7 @@ async fn responses_http_overload_without_retry_after_exhausts_request_retries() 
         )
         .mount(&server)
         .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(2);
             config.model_provider.stream_max_retries = Some(2);
@@ -373,12 +373,12 @@ async fn responses_http_overload_without_retry_after_exhausts_request_retries() 
     let mut stream_error_events = 0;
     tokio::time::timeout(Duration::from_secs(10), async {
         loop {
-            match wait_for_event(&test.codex, |_| true).await {
+            match wait_for_event(&test.ava-code, |_| true).await {
                 EventMsg::Error(error) => {
                     error_events += 1;
                     assert_eq!(
-                        error.codex_error_info,
-                        Some(CodexErrorInfo::ServerOverloaded)
+                        error.ava_error_info,
+                        Some(AvaErrorInfo::ServerOverloaded)
                     );
                     assert_eq!(
                         error.message,
@@ -388,8 +388,8 @@ async fn responses_http_overload_without_retry_after_exhausts_request_retries() 
                 EventMsg::StreamError(_) => stream_error_events += 1,
                 EventMsg::TurnComplete(event) => {
                     assert_eq!(
-                        event.error.and_then(|error| error.codex_error_info),
-                        Some(CodexErrorInfo::ServerOverloaded)
+                        event.error.and_then(|error| error.ava_error_info),
+                        Some(AvaErrorInfo::ServerOverloaded)
                     );
                     break;
                 }
@@ -448,8 +448,8 @@ async fn compact_v2_uses_local_backoff_despite_retry_after() -> Result<()> {
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(1);
             config.model_provider.stream_max_retries = Some(0);
@@ -458,7 +458,7 @@ async fn compact_v2_uses_local_backoff_despite_retry_after() -> Result<()> {
         .await?;
     test.submit_turn("seed history for compaction").await?;
 
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
     let retry = telemetry.next_retry().await;
     assert!((FIRST_RETRY_MIN_DELAY..FIRST_RETRY_MAX_DELAY).contains(&retry.delay));
     assert_eq!(
@@ -523,8 +523,8 @@ async fn compact_v2_stream_failure_uses_local_backoff_despite_retry_after() -> R
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -533,7 +533,7 @@ async fn compact_v2_stream_failure_uses_local_backoff_despite_retry_after() -> R
         .await?;
     test.submit_turn("seed history for compaction").await?;
 
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
     let retry = telemetry.next_retry().await;
     assert!((FIRST_RETRY_MIN_DELAY..FIRST_RETRY_MAX_DELAY).contains(&retry.delay));
     assert_eq!(
@@ -592,8 +592,8 @@ async fn compact_v2_stream_failure_without_retry_after_exhausts_stream_retries()
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -602,7 +602,7 @@ async fn compact_v2_stream_failure_without_retry_after_exhausts_stream_retries()
         .await?;
     test.submit_turn("seed history for compaction").await?;
 
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
     let retry = telemetry.next_retry().await;
     assert!((FIRST_RETRY_MIN_DELAY..FIRST_RETRY_MAX_DELAY).contains(&retry.delay));
     assert_eq!(
@@ -619,20 +619,20 @@ async fn compact_v2_stream_failure_without_retry_after_exhausts_stream_retries()
     let mut error_events = 0;
     let mut stream_error_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::RateLimitExceeded)
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::RateLimitExceeded)
                 );
                 assert!(error.message.contains("Rate limit exceeded."));
             }
             EventMsg::StreamError(_) => stream_error_events += 1,
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::RateLimitExceeded)
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::RateLimitExceeded)
                 );
                 break;
             }
@@ -693,8 +693,8 @@ async fn compact_v2_rate_limit_message_uses_server_advised_retry_delay() -> Resu
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -703,7 +703,7 @@ async fn compact_v2_rate_limit_message_uses_server_advised_retry_delay() -> Resu
         .await?;
     test.submit_turn("seed history for compaction").await?;
 
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
     let retry = telemetry.next_retry().await;
     assert_eq!(
         retry,
@@ -767,8 +767,8 @@ async fn compact_v2_rate_limit_message_without_retry_after_uses_server_advised_d
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -777,7 +777,7 @@ async fn compact_v2_rate_limit_message_without_retry_after_uses_server_advised_d
         .await?;
     test.submit_turn("seed history for compaction").await?;
 
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
     let retry = telemetry.next_retry().await;
     assert_eq!(
         retry,
@@ -831,8 +831,8 @@ async fn compact_v2_overload_without_retry_after_exhausts_request_retries() -> R
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(2);
             config.model_provider.stream_max_retries = Some(2);
@@ -841,7 +841,7 @@ async fn compact_v2_overload_without_retry_after_exhausts_request_retries() -> R
         .await?;
     test.submit_turn("seed history for compaction").await?;
 
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
     let first_retry = telemetry.next_retry().await;
     assert!((FIRST_RETRY_MIN_DELAY..FIRST_RETRY_MAX_DELAY).contains(&first_retry.delay));
     assert_eq!(
@@ -869,12 +869,12 @@ async fn compact_v2_overload_without_retry_after_exhausts_request_retries() -> R
     let mut error_events = 0;
     let mut stream_error_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 assert!(
                     error
@@ -885,8 +885,8 @@ async fn compact_v2_overload_without_retry_after_exhausts_request_retries() -> R
             EventMsg::StreamError(_) => stream_error_events += 1,
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 break;
             }
@@ -957,7 +957,7 @@ async fn sse_failure_uses_local_backoff_despite_retry_after() -> Result<()> {
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -1013,7 +1013,7 @@ async fn sse_failure_without_retry_after_exhausts_stream_retries(code: &str) -> 
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -1038,20 +1038,20 @@ async fn sse_failure_without_retry_after_exhausts_stream_retries(code: &str) -> 
     let mut error_events = 0;
     let mut stream_error_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::RateLimitExceeded)
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::RateLimitExceeded)
                 );
                 assert!(error.message.contains("Rate limit exceeded."));
             }
             EventMsg::StreamError(_) => stream_error_events += 1,
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::RateLimitExceeded)
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::RateLimitExceeded)
                 );
                 break;
             }
@@ -1094,7 +1094,7 @@ async fn sse_rate_limit_message_uses_server_advised_retry_delay(code: &str) -> R
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -1149,7 +1149,7 @@ async fn sse_rate_limit_message_with_retry_after_uses_server_advised_retry_delay
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -1198,7 +1198,7 @@ async fn sse_overload_with_retry_after_is_terminal() -> Result<()> {
         .insert_header("Retry-After", "1"),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(2);
             config.model_provider.stream_max_retries = Some(2);
@@ -1211,12 +1211,12 @@ async fn sse_overload_with_retry_after_is_terminal() -> Result<()> {
     let mut error_events = 0;
     let mut stream_error_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 assert_eq!(
                     error.message,
@@ -1226,8 +1226,8 @@ async fn sse_overload_with_retry_after_is_terminal() -> Result<()> {
             EventMsg::StreamError(_) => stream_error_events += 1,
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 break;
             }
@@ -1270,7 +1270,7 @@ async fn sse_overload_without_retry_after_is_terminal() -> Result<()> {
         ),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(2);
             config.model_provider.stream_max_retries = Some(2);
@@ -1283,12 +1283,12 @@ async fn sse_overload_without_retry_after_is_terminal() -> Result<()> {
     let mut error_events = 0;
     let mut stream_error_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 assert_eq!(
                     error.message,
@@ -1298,8 +1298,8 @@ async fn sse_overload_without_retry_after_is_terminal() -> Result<()> {
             EventMsg::StreamError(_) => stream_error_events += 1,
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 break;
             }
@@ -1338,7 +1338,7 @@ async fn connection_failures_increment_retry_telemetry_without_consuming_retry_b
     let unavailable_address = unavailable_listener.local_addr()?;
     drop(unavailable_listener);
 
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.model_provider.base_url = Some(format!("http://{unavailable_address}/v1"));
             config.model_provider.request_max_retries = Some(0);
@@ -1426,7 +1426,7 @@ async fn websocket_connection_limit_retries_with_local_backoff() -> Result<()> {
         ]],
     ])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -1486,7 +1486,7 @@ async fn websocket_rate_limit_with_nested_retry_after_is_terminal() -> Result<()
         })],
     ]])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -1499,12 +1499,12 @@ async fn websocket_rate_limit_with_nested_retry_after_is_terminal() -> Result<()
     let mut error_events = 0;
     let mut stream_error_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::ResponseTooManyFailedAttempts {
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::ResponseTooManyFailedAttempts {
                         http_status_code: Some(429),
                     })
                 );
@@ -1512,8 +1512,8 @@ async fn websocket_rate_limit_with_nested_retry_after_is_terminal() -> Result<()
             EventMsg::StreamError(_) => stream_error_events += 1,
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::ResponseTooManyFailedAttempts {
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::ResponseTooManyFailedAttempts {
                         http_status_code: Some(429),
                     })
                 );
@@ -1558,7 +1558,7 @@ async fn websocket_rate_limit_without_retry_after_is_terminal() -> Result<()> {
         })],
     ]])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
             config.model_provider.stream_max_retries = Some(1);
@@ -1571,12 +1571,12 @@ async fn websocket_rate_limit_without_retry_after_is_terminal() -> Result<()> {
     let mut error_events = 0;
     let mut stream_error_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::ResponseTooManyFailedAttempts {
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::ResponseTooManyFailedAttempts {
                         http_status_code: Some(429),
                     })
                 );
@@ -1584,8 +1584,8 @@ async fn websocket_rate_limit_without_retry_after_is_terminal() -> Result<()> {
             EventMsg::StreamError(_) => stream_error_events += 1,
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::ResponseTooManyFailedAttempts {
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::ResponseTooManyFailedAttempts {
                         http_status_code: Some(429),
                     })
                 );
@@ -1631,7 +1631,7 @@ async fn websocket_overload_with_nested_retry_after_is_terminal() -> Result<()> 
         })],
     ]])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             // Capture inference retries without unrelated startup model-discovery retries.
             config.model_catalog =
@@ -1648,12 +1648,12 @@ async fn websocket_overload_with_nested_retry_after_is_terminal() -> Result<()> 
     let mut stream_error_events = 0;
     let mut fallback_warning_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 assert_eq!(
                     error.message,
@@ -1668,8 +1668,8 @@ async fn websocket_overload_with_nested_retry_after_is_terminal() -> Result<()> 
             }
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 break;
             }
@@ -1715,7 +1715,7 @@ async fn websocket_overload_without_retry_after_is_terminal() -> Result<()> {
         })],
     ]])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             // Capture inference retries without unrelated startup model-discovery retries.
             config.model_catalog =
@@ -1732,12 +1732,12 @@ async fn websocket_overload_without_retry_after_is_terminal() -> Result<()> {
     let mut stream_error_events = 0;
     let mut fallback_warning_events = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
                 assert_eq!(
-                    error.codex_error_info,
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    error.ava_error_info,
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 assert_eq!(
                     error.message,
@@ -1752,8 +1752,8 @@ async fn websocket_overload_without_retry_after_is_terminal() -> Result<()> {
             }
             EventMsg::TurnComplete(event) => {
                 assert_eq!(
-                    event.error.and_then(|error| error.codex_error_info),
-                    Some(CodexErrorInfo::ServerOverloaded)
+                    event.error.and_then(|error| error.ava_error_info),
+                    Some(AvaErrorInfo::ServerOverloaded)
                 );
                 break;
             }

@@ -283,7 +283,7 @@ fn command_and_output_copy_preserve_hard_lines_across_resize() {
             command: vec!["bash".into(), "-lc".into(), command.into()],
             parsed: Vec::new(),
             output: Some(CommandOutput::new(/*exit_code*/ 0, output.into())),
-            source: codex_app_server_protocol::CommandExecutionSource::Agent,
+            source: ava_app_server_protocol::CommandExecutionSource::Agent,
             start_time: None,
             duration: None,
             interaction_input: None,

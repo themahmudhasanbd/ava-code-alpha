@@ -5,9 +5,9 @@ use crate::test_support::load_plugins_config;
 use crate::test_support::write_file;
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::LOCAL_FS;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::LOCAL_FS;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use pretty_assertions::assert_eq;
@@ -32,7 +32,7 @@ const SCRIPT: &str = "console.log('installed');\n";
 const ANALYTICS: &str = "version: 1\noperations:\n  install:\n    path: scripts/install.mjs\n    measurements:\n      duration_ms:\n        dimensions:\n          outcome: [success, error]\n";
 
 fn isolated_bundle_test(name: &str) -> Result<bool> {
-    const CHILD: &str = "CODEX_MEASUREMENT_REFERENCE_TEST";
+    const CHILD: &str = "AVA_MEASUREMENT_REFERENCE_TEST";
     if std::env::var(CHILD).as_deref() == Ok(name) {
         return Ok(true);
     }
@@ -43,7 +43,7 @@ fn isolated_bundle_test(name: &str) -> Result<bool> {
             "--nocapture",
         ])
         .env(CHILD, name)
-        .env("CODEX_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS", "1")
+        .env("AVA_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS", "1")
         .output()?;
     assert!(
         output.status.success(),
@@ -79,7 +79,7 @@ fn archive(plugin_name: &str) -> Result<Vec<u8>> {
     let mut archive = tar::Builder::new(GzEncoder::new(Vec::new(), Compression::default()));
     let manifest = json!({"name": plugin_name, "version": "1.0.0"}).to_string();
     for (name, bytes) in [
-        (".codex-plugin/plugin.json", manifest.as_str()),
+        (".ava-plugin/plugin.json", manifest.as_str()),
         ("scripts/install.mjs", SCRIPT),
         ("analytics.yaml", ANALYTICS),
         // Invalid capability files must not be parsed by measurement preparation.
@@ -149,7 +149,7 @@ struct Fixture {
     home: TempDir,
     executor: TempDir,
     config: PluginsConfigInput,
-    auth: CodexAuth,
+    auth: AvaAuth,
     cache: RemotePluginMeasurementCache,
 }
 
@@ -165,7 +165,7 @@ impl Fixture {
             home,
             executor,
             config,
-            auth: CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            auth: AvaAuth::create_dummy_chatgpt_auth_for_testing(),
             cache: RemotePluginMeasurementCache::new(),
         })
     }
@@ -293,7 +293,7 @@ async fn narrow_preparation_reuses_versions_and_keeps_old_leases_alive() -> Resu
 
     catalog(&f.server, vec![installed(&f.server, "2.0.0")]).await;
     bundle(&f.server, "2.0.0", /*count*/ 1).await?;
-    f.auth = CodexAuth::from_external_chatgpt_tokens(
+    f.auth = AvaAuth::from_external_chatgpt_tokens(
         "header.e30.other",
         "other-account",
         /*chatgpt_plan_type*/ None,
@@ -455,7 +455,7 @@ async fn preparation_requires_enabled_matching_installed_global_plugin() -> Resu
     f.server.reset().await;
     for (enabled, auth) in [
         (false, f.auth.clone()),
-        (true, CodexAuth::from_api_key("test")),
+        (true, AvaAuth::from_api_key("test")),
     ] {
         f.config.remote_plugin_enabled = enabled;
         f.auth = auth;
@@ -469,7 +469,7 @@ async fn preparation_requires_enabled_matching_installed_global_plugin() -> Resu
     );
     f.config = load_plugins_config(f.home.path(), f.executor.path()).await;
     f.config.chatgpt_base_url = f.server.uri();
-    f.auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    f.auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let mut forced = installed(&f.server, "1.0.0");
     forced["installation_policy"] = json!("INSTALLED_BY_DEFAULT");
     catalog(&f.server, vec![forced]).await;

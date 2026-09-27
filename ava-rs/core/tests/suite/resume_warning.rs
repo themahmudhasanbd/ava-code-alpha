@@ -2,28 +2,28 @@
 
 use std::sync::Arc;
 
-use codex_core::NewThread;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnContextItem;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::WarningEvent;
+use ava_core::NewThread;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnContextItem;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::WarningEvent;
 use core::time::Duration;
 use core_test_support::load_default_config_for_test;
 use core_test_support::wait_for_event;
 use tempfile::TempDir;
 
 fn resume_history(
-    config: &codex_core::config::Config,
+    config: &ava_core::config::Config,
     previous_model: &str,
     rollout_path: &std::path::Path,
 ) -> InitialHistory {
@@ -105,12 +105,12 @@ async fn emits_warning_when_resumed_model_differs() {
 
     let initial_history = resume_history(&config, "previous-model", &rollout_path);
 
-    let thread_manager = codex_core::test_support::thread_manager_with_models_provider(
-        CodexAuth::from_api_key("test"),
+    let thread_manager = ava_core::test_support::thread_manager_with_models_provider(
+        AvaAuth::from_api_key("test"),
         config.model_provider.clone(),
     );
     let auth_manager =
-        codex_core::test_support::auth_manager_from_auth(CodexAuth::from_api_key("test"));
+        ava_core::test_support::auth_manager_from_auth(AvaAuth::from_api_key("test"));
 
     // Act: resume the conversation.
     let NewThread {

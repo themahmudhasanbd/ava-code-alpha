@@ -1,23 +1,23 @@
 //! MCP requests keep human input on the root and allow automatic approval in subagents.
 
 use anyhow::Result;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_protocol::approvals::ElicitationAction;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_protocol::approvals::ElicitationAction;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ResponsesRequest;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -26,7 +26,7 @@ use serde_json::json;
 use test_case::test_case;
 use wiremock::matchers::body_partial_json;
 
-const ROOT_ONLY_MESSAGE: &str = codex_mcp::MCP_ELICITATION_HANDOFF_MESSAGE;
+const ROOT_ONLY_MESSAGE: &str = ava_mcp::MCP_ELICITATION_HANDOFF_MESSAGE;
 
 const SERVER: &str = r#"
 import json
@@ -100,7 +100,7 @@ pub(super) async fn mcp_server_elicitation_scenario(
     request_kind: RequestKind,
 ) -> Result<Vec<ResponsesRequest>> {
     let server = responses::start_mock_server().await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let mut elicitation = json!({
         "mode": "form",
         "message": "Provide the requested input.",
@@ -110,7 +110,7 @@ pub(super) async fn mcp_server_elicitation_scenario(
         RequestKind::BrowserAuth => {
             // Browser credentials travel through the browser broker, so the MCP schema is empty.
             elicitation["_meta"] = json!({
-                "codex_approval_kind": "browser_auth",
+                "ava_approval_kind": "browser_auth",
                 "browser_auth_challenge_id": "test_browser_auth_challenge_0123456789",
                 "origin": "https://example.com",
                 "reason": "Sign in to continue browsing.",
@@ -119,10 +119,10 @@ pub(super) async fn mcp_server_elicitation_scenario(
         }
         RequestKind::Permission | RequestKind::StrictReview => {
             elicitation["_meta"] = json!({
-                "codex_request_type": "approval_request",
-                "codex_approval_kind": "mcp_tool_call",
-                "codex_strict_auto_review": matches!(request_kind, RequestKind::StrictReview),
-                "codex_sensitive_action": true,
+                "ava_request_type": "approval_request",
+                "ava_approval_kind": "mcp_tool_call",
+                "ava_strict_auto_review": matches!(request_kind, RequestKind::StrictReview),
+                "ava_sensitive_action": true,
                 "tool_name": "write_record",
                 "tool_params": {"value": 42}
             });
@@ -283,6 +283,6 @@ pub(super) async fn mcp_server_elicitation_scenario(
     }
     requests.extend(follow_up.requests());
     thread.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(requests)
 }

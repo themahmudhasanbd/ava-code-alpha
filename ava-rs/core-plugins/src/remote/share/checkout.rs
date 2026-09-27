@@ -4,12 +4,12 @@ use super::super::REMOTE_WORKSPACE_SHARED_WITH_ME_UNLISTED_MARKETPLACE_NAME;
 use super::super::RemotePluginCatalogError;
 use super::super::RemotePluginServiceConfig;
 use super::local_paths;
-use codex_app_server_protocol::PluginAuthPolicy;
-use codex_app_server_protocol::PluginInstallPolicy;
-use codex_login::CodexAuth;
-use codex_plugin::PluginId;
-use codex_plugin::validate_plugin_segment;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::PluginAuthPolicy;
+use ava_app_server_protocol::PluginInstallPolicy;
+use ava_login::AvaAuth;
+use ava_plugin::PluginId;
+use ava_plugin::validate_plugin_segment;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde_json::Value as JsonValue;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -19,7 +19,7 @@ use std::io::Write;
 use std::path::Component;
 use std::path::Path;
 
-const PERSONAL_MARKETPLACE_NAME: &str = "codex-curated";
+const PERSONAL_MARKETPLACE_NAME: &str = "ava-curated";
 const PERSONAL_MARKETPLACE_DISPLAY_NAME: &str = "Personal";
 const PERSONAL_MARKETPLACE_RELATIVE_PATH: &str = ".agents/plugins/marketplace.json";
 
@@ -36,8 +36,8 @@ pub struct RemotePluginShareCheckoutResult {
 
 pub async fn checkout_remote_plugin_share(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
-    codex_home: &Path,
+    auth: Option<&AvaAuth>,
+    ava_home: &Path,
     remote_plugin_id: &str,
 ) -> Result<RemotePluginShareCheckoutResult, RemotePluginCatalogError> {
     let detail = super::super::fetch_remote_plugin_detail_with_download_urls(
@@ -73,7 +73,7 @@ pub async fn checkout_remote_plugin_share(
         ))
     })?;
 
-    let local_paths = load_share_local_paths_for_checkout(codex_home)?;
+    let local_paths = load_share_local_paths_for_checkout(ava_home)?;
     let (local_plugin_path, already_checked_out) =
         editable_plugin_path_for_checkout(&home, &plugin_name, remote_plugin_id, &local_paths)?;
 
@@ -129,7 +129,7 @@ pub async fn checkout_remote_plugin_share(
     };
 
     if let Err(err) = local_paths::record_plugin_share_local_path(
-        codex_home,
+        ava_home,
         remote_plugin_id,
         local_plugin_path.clone(),
     ) {
@@ -172,9 +172,9 @@ fn is_checkout_supported_share_marketplace(marketplace_name: &str) -> bool {
 }
 
 fn load_share_local_paths_for_checkout(
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> Result<BTreeMap<String, AbsolutePathBuf>, RemotePluginCatalogError> {
-    match local_paths::load_plugin_share_local_paths(codex_home) {
+    match local_paths::load_plugin_share_local_paths(ava_home) {
         Ok(paths) => Ok(paths),
         Err(err) if err.kind() == io::ErrorKind::InvalidData => Ok(BTreeMap::new()),
         Err(err) => Err(RemotePluginCatalogError::UnexpectedResponse(format!(

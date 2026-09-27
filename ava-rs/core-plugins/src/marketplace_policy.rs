@@ -13,17 +13,17 @@ use crate::remote::RemotePluginScope;
 use crate::startup_sync::OPENAI_PLUGINS_GIT_URL;
 use crate::startup_sync::curated_plugins_api_marketplace_path;
 use crate::startup_sync::curated_plugins_repo_path;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirements;
-use codex_config::MarketplaceAllowedSourceKind;
-use codex_config::MarketplaceAllowedSourceToml;
-use codex_config::RequirementSource;
-use codex_config::types::MarketplaceConfig;
-use codex_config::types::MarketplaceSourceType;
-use codex_config::types::PluginConfig;
-use codex_plugin::PluginId;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path::paths_match_after_normalization;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirements;
+use ava_config::MarketplaceAllowedSourceKind;
+use ava_config::MarketplaceAllowedSourceToml;
+use ava_config::RequirementSource;
+use ava_config::types::MarketplaceConfig;
+use ava_config::types::MarketplaceSourceType;
+use ava_config::types::PluginConfig;
+use ava_plugin::PluginId;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path::paths_match_after_normalization;
 use regex::Regex;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -105,12 +105,12 @@ impl MarketplacePolicy {
     pub(crate) fn validate_install(
         &self,
         config_layer_stack: &ConfigLayerStack,
-        codex_home: &Path,
+        ava_home: &Path,
         marketplace_path: &AbsolutePathBuf,
         marketplace_name: &str,
     ) -> Result<(), String> {
         let root = marketplace_root_dir(marketplace_path).map_err(|err| err.to_string())?;
-        if let Some(expected_name) = managed_marketplace_name(codex_home, marketplace_path, &root) {
+        if let Some(expected_name) = managed_marketplace_name(ava_home, marketplace_path, &root) {
             if is_openai_curated_marketplace_name(expected_name) {
                 self.validate_git_source(OPENAI_PLUGINS_GIT_URL, /*ref_name*/ None)?;
             }
@@ -140,7 +140,7 @@ impl MarketplacePolicy {
         let configured_root = resolve_configured_marketplace_root(
             marketplace_name,
             marketplace,
-            &marketplace_install_root(codex_home),
+            &marketplace_install_root(ava_home),
         )
         .ok_or_else(|| {
             format!("configured marketplace `{marketplace_name}` does not have a usable root")
@@ -209,7 +209,7 @@ impl AllowedMarketplaceSource {
 
 pub(crate) fn policy_filtered_plugin_config(
     config_layer_stack: &ConfigLayerStack,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> Option<toml::Value> {
     let mut effective_config = config_layer_stack.effective_config();
     if effective_config.get("plugins").is_none() && effective_config.get("marketplaces").is_none() {
@@ -217,7 +217,7 @@ pub(crate) fn policy_filtered_plugin_config(
     }
     let policy = MarketplacePolicy::from_requirements(config_layer_stack.requirements());
     let allowed_marketplace_names =
-        allowed_configured_marketplace_names_with_policy(&effective_config, &policy, codex_home);
+        allowed_configured_marketplace_names_with_policy(&effective_config, &policy, ava_home);
     let configured_marketplace_names = effective_config
         .get("marketplaces")
         .and_then(toml::Value::as_table)
@@ -256,17 +256,17 @@ pub(crate) fn policy_filtered_plugin_config(
 
 pub fn allowed_configured_marketplace_names(
     config_layer_stack: &ConfigLayerStack,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> HashSet<String> {
     let effective_config = config_layer_stack.effective_config();
     let policy = MarketplacePolicy::from_requirements(config_layer_stack.requirements());
-    allowed_configured_marketplace_names_with_policy(&effective_config, &policy, codex_home)
+    allowed_configured_marketplace_names_with_policy(&effective_config, &policy, ava_home)
 }
 
 fn allowed_configured_marketplace_names_with_policy(
     effective_config: &toml::Value,
     policy: &MarketplacePolicy,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> HashSet<String> {
     let Some(marketplaces) = effective_config
         .get("marketplaces")
@@ -277,7 +277,7 @@ fn allowed_configured_marketplace_names_with_policy(
     marketplaces
         .iter()
         .filter_map(|(marketplace_name, marketplace)| {
-            let allowed = match managed_marketplace_config_name(codex_home, marketplace) {
+            let allowed = match managed_marketplace_config_name(ava_home, marketplace) {
                 Some(expected_name) => expected_name == marketplace_name,
                 None if is_reserved_marketplace_name(marketplace_name) => false,
                 None if !policy.is_restricted() => true,
@@ -292,9 +292,9 @@ fn allowed_configured_marketplace_names_with_policy(
 
 pub(crate) fn configured_plugins_from_stack(
     config_layer_stack: &ConfigLayerStack,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> HashMap<String, PluginConfig> {
-    let Some(effective_config) = policy_filtered_plugin_config(config_layer_stack, codex_home)
+    let Some(effective_config) = policy_filtered_plugin_config(config_layer_stack, ava_home)
     else {
         return HashMap::new();
     };
@@ -311,13 +311,13 @@ pub(crate) fn configured_plugins_from_stack(
 }
 
 pub(crate) fn validate_marketplace_source_for_add(
-    codex_home: &Path,
+    ava_home: &Path,
     requirements: &ConfigRequirements,
     source: &MarketplaceSource,
 ) -> Result<Option<&'static str>, String> {
     let policy = MarketplacePolicy::from_requirements(requirements);
     if let MarketplaceSource::Local { path } = source
-        && let Some(expected_name) = managed_local_marketplace_name(codex_home, path)
+        && let Some(expected_name) = managed_local_marketplace_name(ava_home, path)
     {
         return Ok(Some(expected_name));
     }
@@ -465,25 +465,25 @@ fn is_reserved_marketplace_name(marketplace_name: &str) -> bool {
 }
 
 fn managed_marketplace_name(
-    codex_home: &Path,
+    ava_home: &Path,
     marketplace_path: &AbsolutePathBuf,
     root: &AbsolutePathBuf,
 ) -> Option<&'static str> {
     if is_expected_managed_path(
         marketplace_path.as_path(),
-        &curated_plugins_api_marketplace_path(codex_home),
-    ) && is_expected_managed_path(root.as_path(), &curated_plugins_repo_path(codex_home))
+        &curated_plugins_api_marketplace_path(ava_home),
+    ) && is_expected_managed_path(root.as_path(), &curated_plugins_repo_path(ava_home))
     {
         return Some(OPENAI_API_CURATED_MARKETPLACE_NAME);
     }
-    if is_expected_managed_path(root.as_path(), &curated_plugins_repo_path(codex_home)) {
+    if is_expected_managed_path(root.as_path(), &curated_plugins_repo_path(ava_home)) {
         return Some(OPENAI_CURATED_MARKETPLACE_NAME);
     }
-    managed_local_marketplace_name(codex_home, root.as_path())
+    managed_local_marketplace_name(ava_home, root.as_path())
 }
 
 fn managed_marketplace_config_name(
-    codex_home: &Path,
+    ava_home: &Path,
     marketplace: &toml::Value,
 ) -> Option<&'static str> {
     if marketplace.get("source_type").and_then(toml::Value::as_str) != Some("local") {
@@ -494,15 +494,15 @@ fn managed_marketplace_config_name(
         .and_then(toml::Value::as_str)
         .map(Path::new)
         .filter(|path| path.is_absolute())?;
-    managed_local_marketplace_name(codex_home, path)
+    managed_local_marketplace_name(ava_home, path)
 }
 
-fn managed_local_marketplace_name(codex_home: &Path, root: &Path) -> Option<&'static str> {
+fn managed_local_marketplace_name(ava_home: &Path, root: &Path) -> Option<&'static str> {
     for marketplace_name in [
         OPENAI_BUNDLED_MARKETPLACE_NAME,
         OPENAI_BUNDLED_ALPHA_MARKETPLACE_NAME,
     ] {
-        let expected_root = codex_home
+        let expected_root = ava_home
             .join(".tmp/bundled-marketplaces")
             .join(marketplace_name);
         if is_expected_managed_path(root, &expected_root) {
@@ -530,9 +530,9 @@ fn is_expected_managed_path(path: &Path, expected: &Path) -> bool {
     {
         let path = path.to_string_lossy();
         let expected = expected.to_string_lossy();
-        let path = codex_utils_absolute_path::normalize_windows_device_path(&path)
+        let path = ava_utils_absolute_path::normalize_windows_device_path(&path)
             .unwrap_or_else(|| path.into_owned());
-        let expected = codex_utils_absolute_path::normalize_windows_device_path(&expected)
+        let expected = ava_utils_absolute_path::normalize_windows_device_path(&expected)
             .unwrap_or_else(|| expected.into_owned());
         path.replace('/', "\\")
             .eq_ignore_ascii_case(&expected.replace('/', "\\"))
@@ -546,7 +546,7 @@ fn is_expected_managed_path(path: &Path, expected: &Path) -> bool {
 pub(crate) fn primary_runtime_marketplace_root() -> Option<PathBuf> {
     Some(
         primary_runtime_cache_dir()?
-            .join("codex-runtimes/codex-primary-runtime/plugins")
+            .join("ava-runtimes/ava-primary-runtime/plugins")
             .join(OPENAI_PRIMARY_RUNTIME_MARKETPLACE_NAME),
     )
 }

@@ -1,12 +1,12 @@
 use super::TurnInput as PendingTurnInput;
 use super::session::Session;
 use super::turn_context::TurnContext;
-use codex_analytics::ImagePreparationMetadata;
-use codex_features::Feature;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelInfo;
+use ava_analytics::ImagePreparationMetadata;
+use ava_features::Feature;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelInfo;
 
 impl Session {
     /// Returns the input if there is no active turn to inject into.
@@ -101,7 +101,7 @@ impl Session {
     pub(crate) fn annotate_client_response_item(&self, item: ResponseItem) -> ResponseItemEnvelope {
         let metadata = (self.enabled(Feature::RetainClientDeveloperMessages)
             && matches!(&item, ResponseItem::Message { role, .. } if role == "developer"))
-        .then_some(CodexHarnessMetadata {
+        .then_some(AvaHarnessMetadata {
             client_authored: true,
             ..Default::default()
         });

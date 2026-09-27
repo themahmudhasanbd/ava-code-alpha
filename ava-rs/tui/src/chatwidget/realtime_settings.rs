@@ -1,8 +1,8 @@
 //! Voice selection for subsequent conversations; saving never interrupts live audio.
 
 use super::*;
-use codex_protocol::protocol::RealtimeVoice;
-use codex_protocol::protocol::RealtimeVoicesList;
+use ava_protocol::protocol::RealtimeVoice;
+use ava_protocol::protocol::RealtimeVoicesList;
 
 impl ChatWidget {
     pub(crate) fn open_realtime_settings(

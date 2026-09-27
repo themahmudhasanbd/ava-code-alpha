@@ -7,19 +7,19 @@ use super::SandboxType;
 use super::SandboxablePreference;
 use super::get_platform_sandbox;
 use super::with_managed_mitm_ca_readable_root;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::models::NetworkPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::models::NetworkPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use dunce::canonicalize;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
@@ -379,7 +379,7 @@ fn managed_mitm_ca_bundle_becomes_readable_for_restricted_sandbox() {
 
 #[cfg(target_os = "linux")]
 fn transform_linux_seccomp_request(
-    codex_linux_sandbox_exe: &std::path::Path,
+    ava_linux_sandbox_exe: &std::path::Path,
 ) -> super::SandboxExecRequest {
     let manager = SandboxManager::new();
     let cwd = AbsolutePathBuf::current_dir().expect("current dir");
@@ -401,7 +401,7 @@ fn transform_linux_seccomp_request(
             environment_id: None,
             network: None,
             sandbox_policy_cwd: &cwd_uri,
-            sandbox_exe: Some(codex_linux_sandbox_exe),
+            sandbox_exe: Some(ava_linux_sandbox_exe),
             use_legacy_landlock: false,
             windows_sandbox_level: WindowsSandboxLevel::Disabled,
         })
@@ -482,36 +482,36 @@ fn wsl1_allows_non_bubblewrap_linux_paths() {
 #[cfg(target_os = "linux")]
 #[test]
 fn transform_linux_seccomp_preserves_helper_path_in_arg0_when_available() {
-    let codex_linux_sandbox_exe = std::path::PathBuf::from("/tmp/codex-linux-sandbox");
-    let exec_request = transform_linux_seccomp_request(&codex_linux_sandbox_exe);
+    let ava_linux_sandbox_exe = std::path::PathBuf::from("/tmp/ava-linux-sandbox");
+    let exec_request = transform_linux_seccomp_request(&ava_linux_sandbox_exe);
 
     assert_eq!(
         exec_request.arg0,
-        Some(codex_linux_sandbox_exe.to_string_lossy().into_owned())
+        Some(ava_linux_sandbox_exe.to_string_lossy().into_owned())
     );
 }
 
 #[cfg(target_os = "linux")]
 #[test]
 fn transform_linux_seccomp_uses_helper_alias_when_launcher_is_not_helper_path() {
-    let codex_linux_sandbox_exe = std::path::PathBuf::from("/tmp/codex");
-    let exec_request = transform_linux_seccomp_request(&codex_linux_sandbox_exe);
+    let ava_linux_sandbox_exe = std::path::PathBuf::from("/tmp/ava");
+    let exec_request = transform_linux_seccomp_request(&ava_linux_sandbox_exe);
 
-    assert_eq!(exec_request.arg0, Some("codex-linux-sandbox".to_string()));
+    assert_eq!(exec_request.arg0, Some("ava-linux-sandbox".to_string()));
 }
 
 #[cfg(unix)]
 #[tokio::test]
 async fn linux_unix_socket_grant_uses_effective_managed_policy() -> anyhow::Result<()> {
-    use codex_network_proxy::ConfigReloader;
-    use codex_network_proxy::ConfigReloaderFuture;
-    use codex_network_proxy::ConfigState;
-    use codex_network_proxy::ManagedNetworkSandboxContext;
-    use codex_network_proxy::NetworkProxy;
-    use codex_network_proxy::NetworkProxyConfig;
-    use codex_network_proxy::NetworkProxyConstraints;
-    use codex_network_proxy::NetworkProxyState;
-    use codex_network_proxy::build_config_state;
+    use ava_network_proxy::ConfigReloader;
+    use ava_network_proxy::ConfigReloaderFuture;
+    use ava_network_proxy::ConfigState;
+    use ava_network_proxy::ManagedNetworkSandboxContext;
+    use ava_network_proxy::NetworkProxy;
+    use ava_network_proxy::NetworkProxyConfig;
+    use ava_network_proxy::NetworkProxyConstraints;
+    use ava_network_proxy::NetworkProxyState;
+    use ava_network_proxy::build_config_state;
     use std::sync::Arc;
 
     struct TestConfigReloader;
@@ -536,14 +536,14 @@ async fn linux_unix_socket_grant_uses_effective_managed_policy() -> anyhow::Resu
             ..Default::default()
         },
         NetworkProxyConstraints::default(),
-        codex_utils_path_uri::Platform::native(),
+        ava_utils_path_uri::Platform::native(),
     )?;
     let network = NetworkProxy::builder()
         .state(Arc::new(NetworkProxyState::with_reloader(
             state,
             Arc::new(TestConfigReloader),
         )))
-        .managed_by_codex(/*managed_by_codex*/ false)
+        .managed_by_ava(/*managed_by_ava*/ false)
         .build()
         .await?;
     let prepared =
@@ -610,7 +610,7 @@ async fn linux_unix_socket_grant_uses_effective_managed_policy() -> anyhow::Resu
             environment_id: None,
             network: live_proxy.then_some(&network),
             sandbox_policy_cwd: &cwd_uri,
-            sandbox_exe: Some(std::path::Path::new("/tmp/codex-linux-sandbox")),
+            sandbox_exe: Some(std::path::Path::new("/tmp/ava-linux-sandbox")),
             use_legacy_landlock: false,
             windows_sandbox_level: WindowsSandboxLevel::Disabled,
         })?;
@@ -668,16 +668,16 @@ fn transform_for_direct_spawn_windows_preserves_only_wrapper_setup_environment()
 #[test]
 fn wrapper_runtime_selection_uses_the_parent_not_environment_overrides() {
     for registered_core in [false, true] {
-        let mut env = HashMap::from([("codex_windows_registered_core".into(), "1".into())]);
+        let mut env = HashMap::from([("ava_windows_registered_core".into(), "1".into())]);
         super::add_windows_sandbox_wrapper_setup_env_from_vars(
             &mut env,
-            [("CODEX_WINDOWS_REGISTERED_CORE".into(), "0".into())],
+            [("AVA_WINDOWS_REGISTERED_CORE".into(), "0".into())],
             registered_core,
         );
         assert_eq!(
             env,
             if registered_core {
-                HashMap::from([("CODEX_WINDOWS_REGISTERED_CORE".into(), "1".into())])
+                HashMap::from([("AVA_WINDOWS_REGISTERED_CORE".into(), "1".into())])
             } else {
                 HashMap::new()
             }
@@ -688,9 +688,9 @@ fn wrapper_runtime_selection_uses_the_parent_not_environment_overrides() {
 #[cfg(target_os = "windows")]
 #[test]
 fn transform_for_direct_spawn_windows_materializes_inner_helper() {
-    let codex_home = tempfile::TempDir::new().expect("codex home");
+    let ava_home = tempfile::TempDir::new().expect("ava home");
     let helper_dir = tempfile::TempDir::new().expect("helper dir");
-    let configured_helper = helper_dir.path().join("configured-codex-helper.exe");
+    let configured_helper = helper_dir.path().join("configured-ava-helper.exe");
     std::fs::write(&configured_helper, b"helper").expect("write configured helper");
     let cwd = AbsolutePathBuf::from_absolute_path(helper_dir.path()).expect("absolute cwd");
     let cwd_uri = PathUri::from_abs_path(&cwd);
@@ -726,15 +726,15 @@ fn transform_for_direct_spawn_windows_materializes_inner_helper() {
     let workspace_roots = vec![cwd, other_workspace_root];
     let manager = SandboxManager::new();
     let exec_request = manager
-        .transform_for_direct_spawn_with_codex_home(
+        .transform_for_direct_spawn_with_ava_home(
             SandboxDirectSpawnTransformRequest {
                 workspace_roots: workspace_roots.as_slice(),
                 windows_sandbox_proxy_settings_mode:
-                    codex_windows_sandbox::WindowsSandboxProxySettingsMode::Preserve,
+                    ava_windows_sandbox::WindowsSandboxProxySettingsMode::Preserve,
                 transform: SandboxTransformRequest {
                     command: SandboxCommand {
                         program: configured_helper.as_os_str().to_owned(),
-                        args: vec!["--codex-run-as-fs-helper".to_string()],
+                        args: vec!["--ava-run-as-fs-helper".to_string()],
                         cwd: cwd_uri.clone(),
                         env: HashMap::from([(
                             "Path".to_string(),
@@ -754,7 +754,7 @@ fn transform_for_direct_spawn_windows_materializes_inner_helper() {
                     windows_sandbox_level: WindowsSandboxLevel::RestrictedToken,
                 },
             },
-            codex_home.path(),
+            ava_home.path(),
         )
         .expect("transform for direct spawn");
 
@@ -800,7 +800,7 @@ fn transform_for_direct_spawn_windows_materializes_inner_helper() {
     );
     assert_eq!(
         exec_request.command[separator_index + 2],
-        "--codex-run-as-fs-helper"
+        "--ava-run-as-fs-helper"
     );
     assert_eq!(
         exec_request

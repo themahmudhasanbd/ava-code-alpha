@@ -1,8 +1,8 @@
-use codex_features::Feature;
-use codex_features::Features;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::TUI_VISIBLE_COLLABORATION_MODES;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_features::Feature;
+use ava_features::Features;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::TUI_VISIBLE_COLLABORATION_MODES;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

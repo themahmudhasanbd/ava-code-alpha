@@ -1,86 +1,86 @@
 {
   "outputs": {
-    "codex": {
+    "ava": {
       "platforms": {
         "macos-aarch64": {
-          "regex": "^codex-package-aarch64-apple-darwin\\.tar\\.zst$",
-          "path": "bin/codex"
+          "regex": "^ava-package-aarch64-apple-darwin\\.tar\\.zst$",
+          "path": "bin/ava"
         },
         "macos-x86_64": {
-          "regex": "^codex-package-x86_64-apple-darwin\\.tar\\.zst$",
-          "path": "bin/codex"
+          "regex": "^ava-package-x86_64-apple-darwin\\.tar\\.zst$",
+          "path": "bin/ava"
         },
         "linux-x86_64": {
-          "regex": "^codex-package-x86_64-unknown-linux-musl\\.tar\\.zst$",
-          "path": "bin/codex"
+          "regex": "^ava-package-x86_64-unknown-linux-musl\\.tar\\.zst$",
+          "path": "bin/ava"
         },
         "linux-aarch64": {
-          "regex": "^codex-package-aarch64-unknown-linux-musl\\.tar\\.zst$",
-          "path": "bin/codex"
+          "regex": "^ava-package-aarch64-unknown-linux-musl\\.tar\\.zst$",
+          "path": "bin/ava"
         },
         "windows-x86_64": {
-          "regex": "^codex-package-x86_64-pc-windows-msvc\\.tar\\.zst$",
-          "path": "bin/codex.exe"
+          "regex": "^ava-package-x86_64-pc-windows-msvc\\.tar\\.zst$",
+          "path": "bin/ava.exe"
         },
         "windows-aarch64": {
-          "regex": "^codex-package-aarch64-pc-windows-msvc\\.tar\\.zst$",
-          "path": "bin/codex.exe"
+          "regex": "^ava-package-aarch64-pc-windows-msvc\\.tar\\.zst$",
+          "path": "bin/ava.exe"
         }
       }
     },
-    "codex-app-server": {
+    "ava-app-server": {
       "platforms": {
         "macos-aarch64": {
-          "regex": "^codex-app-server-package-aarch64-apple-darwin\\.tar\\.zst$",
-          "path": "bin/codex-app-server"
+          "regex": "^ava-app-server-package-aarch64-apple-darwin\\.tar\\.zst$",
+          "path": "bin/ava-app-server"
         },
         "macos-x86_64": {
-          "regex": "^codex-app-server-package-x86_64-apple-darwin\\.tar\\.zst$",
-          "path": "bin/codex-app-server"
+          "regex": "^ava-app-server-package-x86_64-apple-darwin\\.tar\\.zst$",
+          "path": "bin/ava-app-server"
         },
         "linux-x86_64": {
-          "regex": "^codex-app-server-package-x86_64-unknown-linux-musl\\.tar\\.zst$",
-          "path": "bin/codex-app-server"
+          "regex": "^ava-app-server-package-x86_64-unknown-linux-musl\\.tar\\.zst$",
+          "path": "bin/ava-app-server"
         },
         "linux-aarch64": {
-          "regex": "^codex-app-server-package-aarch64-unknown-linux-musl\\.tar\\.zst$",
-          "path": "bin/codex-app-server"
+          "regex": "^ava-app-server-package-aarch64-unknown-linux-musl\\.tar\\.zst$",
+          "path": "bin/ava-app-server"
         },
         "windows-x86_64": {
-          "regex": "^codex-app-server-package-x86_64-pc-windows-msvc\\.tar\\.zst$",
-          "path": "bin/codex-app-server.exe"
+          "regex": "^ava-app-server-package-x86_64-pc-windows-msvc\\.tar\\.zst$",
+          "path": "bin/ava-app-server.exe"
         },
         "windows-aarch64": {
-          "regex": "^codex-app-server-package-aarch64-pc-windows-msvc\\.tar\\.zst$",
-          "path": "bin/codex-app-server.exe"
+          "regex": "^ava-app-server-package-aarch64-pc-windows-msvc\\.tar\\.zst$",
+          "path": "bin/ava-app-server.exe"
         }
       }
     },
-    "codex-responses-api-proxy": {
+    "ava-responses-api-proxy": {
       "platforms": {
         "macos-aarch64": {
-          "regex": "^codex-responses-api-proxy-aarch64-apple-darwin\\.zst$",
-          "path": "codex-responses-api-proxy"
+          "regex": "^ava-responses-api-proxy-aarch64-apple-darwin\\.zst$",
+          "path": "ava-responses-api-proxy"
         },
         "macos-x86_64": {
-          "regex": "^codex-responses-api-proxy-x86_64-apple-darwin\\.zst$",
-          "path": "codex-responses-api-proxy"
+          "regex": "^ava-responses-api-proxy-x86_64-apple-darwin\\.zst$",
+          "path": "ava-responses-api-proxy"
         },
         "linux-x86_64": {
-          "regex": "^codex-responses-api-proxy-x86_64-unknown-linux-musl\\.zst$",
-          "path": "codex-responses-api-proxy"
+          "regex": "^ava-responses-api-proxy-x86_64-unknown-linux-musl\\.zst$",
+          "path": "ava-responses-api-proxy"
         },
         "linux-aarch64": {
-          "regex": "^codex-responses-api-proxy-aarch64-unknown-linux-musl\\.zst$",
-          "path": "codex-responses-api-proxy"
+          "regex": "^ava-responses-api-proxy-aarch64-unknown-linux-musl\\.zst$",
+          "path": "ava-responses-api-proxy"
         },
         "windows-x86_64": {
-          "regex": "^codex-responses-api-proxy-x86_64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-responses-api-proxy.exe"
+          "regex": "^ava-responses-api-proxy-x86_64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-responses-api-proxy.exe"
         },
         "windows-aarch64": {
-          "regex": "^codex-responses-api-proxy-aarch64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-responses-api-proxy.exe"
+          "regex": "^ava-responses-api-proxy-aarch64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-responses-api-proxy.exe"
         }
       }
     },
@@ -96,39 +96,39 @@
         }
       }
     },
-    "codex-command-runner": {
+    "ava-command-runner": {
       "platforms": {
         "windows-x86_64": {
-          "regex": "^codex-command-runner-x86_64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-command-runner.exe"
+          "regex": "^ava-command-runner-x86_64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-command-runner.exe"
         },
         "windows-aarch64": {
-          "regex": "^codex-command-runner-aarch64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-command-runner.exe"
+          "regex": "^ava-command-runner-aarch64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-command-runner.exe"
         }
       }
     },
-    "codex-windows-sandbox-setup": {
+    "ava-windows-sandbox-setup": {
       "platforms": {
         "windows-x86_64": {
-          "regex": "^codex-windows-sandbox-setup-x86_64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-windows-sandbox-setup.exe"
+          "regex": "^ava-windows-sandbox-setup-x86_64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-windows-sandbox-setup.exe"
         },
         "windows-aarch64": {
-          "regex": "^codex-windows-sandbox-setup-aarch64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-windows-sandbox-setup.exe"
+          "regex": "^ava-windows-sandbox-setup-aarch64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-windows-sandbox-setup.exe"
         }
       }
     },
-    "codex-windows-sandbox-service": {
+    "ava-windows-sandbox-service": {
       "platforms": {
         "windows-x86_64": {
-          "regex": "^codex-windows-sandbox-service-x86_64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-windows-sandbox-service.exe"
+          "regex": "^ava-windows-sandbox-service-x86_64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-windows-sandbox-service.exe"
         },
         "windows-aarch64": {
-          "regex": "^codex-windows-sandbox-service-aarch64-pc-windows-msvc\\.exe\\.zst$",
-          "path": "codex-windows-sandbox-service.exe"
+          "regex": "^ava-windows-sandbox-service-aarch64-pc-windows-msvc\\.exe\\.zst$",
+          "path": "ava-windows-sandbox-service.exe"
         }
       }
     }

@@ -3,19 +3,19 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerRequestResolvedNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerRequestResolvedNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::openai_models::ReasoningEffort;
 use core_test_support::responses;
 use serde_json::json;
 use tokio::time::timeout;
@@ -70,7 +70,7 @@ async fn request_user_input_round_trip_for_mode(
     enable_default_mode_feature: bool,
     expected_is_blocking: bool,
 ) -> Result<()> {
-    let codex_home = tempfile::TempDir::new()?;
+    let ava_home = tempfile::TempDir::new()?;
     let responses = vec![
         create_request_user_input_sse_response("call1")?,
         create_final_assistant_message_sse_response("done")?,
@@ -78,10 +78,10 @@ async fn request_user_input_round_trip_for_mode(
     let server = create_mock_responses_server_sequence(responses).await;
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 

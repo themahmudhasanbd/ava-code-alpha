@@ -1,16 +1,16 @@
 //! Configured MCP servers cannot activate verification or hold a turn waiting for proof.
 
 use anyhow::Result;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::UserInput;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -72,13 +72,13 @@ async fn mcp_user_verification_rejects_configured_servers(source: CapabilitySour
     skip_if_no_network!(Ok(()));
     skip_if_wine_exec!(Ok(()), "the MCP fixture requires a host Python interpreter");
     let server = responses::start_mock_server().await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let declarations = HashMap::from([(
         OPENAI_ELICITATION_EXTENSION_ID.to_string(),
         json!({"userVerification": {}}),
     )]);
     let client_mcp_extensions = match source {
-        CapabilitySource::HostProjection => codex_mcp::client_mcp_extensions(
+        CapabilitySource::HostProjection => ava_mcp::client_mcp_extensions(
             Some(&declarations),
             /*legacy_openai_form_elicitation*/ false,
         ),
@@ -155,6 +155,6 @@ async fn mcp_user_verification_rejects_configured_servers(source: CapabilitySour
         json!({"code": -32601, "message": "openai/elicitation/create"})
     );
     thread.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

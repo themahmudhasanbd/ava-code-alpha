@@ -1,13 +1,13 @@
 use crate::state::ActiveTurn;
 use crate::state::MailboxDeliveryPhase;
 use crate::state::TurnState;
-use codex_diagnostics::Gauge;
-use codex_diagnostics::GaugeGuard;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::turn_input::TurnStartOptions;
-use codex_protocol::user_input::UserInput;
+use ava_diagnostics::Gauge;
+use ava_diagnostics::GaugeGuard;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::turn_input::TurnStartOptions;
+use ava_protocol::user_input::UserInput;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::VecDeque;
@@ -364,9 +364,9 @@ impl TurnInputQueue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_history::CodexHarnessMetadata;
-    use codex_protocol::AgentPath;
-    use codex_protocol::user_input::UserInput;
+    use ava_history::AvaHarnessMetadata;
+    use ava_protocol::AgentPath;
+    use ava_protocol::user_input::UserInput;
     use pretty_assertions::assert_eq;
 
     #[test_case::test_case("ResponseItem", TurnInput::ResponseItem)]
@@ -384,7 +384,7 @@ mod tests {
 
         let annotated = wrap(ResponseItemEnvelope {
             item: ResponseItem::Other,
-            metadata: Some(CodexHarnessMetadata {
+            metadata: Some(AvaHarnessMetadata {
                 client_authored: true,
                 ..Default::default()
             }),
@@ -612,7 +612,7 @@ mod tests {
 
     #[tokio::test]
     async fn input_queue_uses_latest_followup_choice_and_ignores_queue_only_mail() {
-        use codex_protocol::turn_input::CyberAccessProgram;
+        use ava_protocol::turn_input::CyberAccessProgram;
 
         for latest in [Some(CyberAccessProgram::Standard), None] {
             let input_queue = InputQueue::new();

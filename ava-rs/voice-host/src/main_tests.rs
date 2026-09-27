@@ -10,13 +10,13 @@ use tokio::process::Command;
 use tokio::time::timeout;
 
 const STARTUP_BLOCKED: &[u8] = b"voice startup blocked\n";
-const CHILD_ENV: &str = "CODEX_VOICE_WATCHDOG_TEST_CHILD";
+const CHILD_ENV: &str = "AVA_VOICE_WATCHDOG_TEST_CHILD";
 
 #[test]
 fn queued_privacy_controls_and_close_precede_capture_service() {
     for message in [
         Message::SetAudioControls {
-            controls: codex_realtime_webrtc::AudioControls {
+            controls: ava_realtime_webrtc::AudioControls {
                 microphone_muted: true,
                 speaker_suppressed: true,
             },

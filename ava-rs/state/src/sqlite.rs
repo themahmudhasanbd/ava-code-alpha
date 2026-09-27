@@ -10,7 +10,7 @@ use crate::migrations::repair_legacy_recency_migration_version;
 use crate::runtime::RuntimeDbInitError;
 use crate::telemetry;
 use crate::telemetry::DbKind;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use log::LevelFilter;
 use sqlx::ConnectOptions;
 use sqlx::Error;
@@ -43,8 +43,8 @@ struct RuntimeDbSpec {
 }
 
 impl RuntimeDbSpec {
-    fn path(self, codex_home: &Path) -> PathBuf {
-        codex_home.join(self.filename)
+    fn path(self, ava_home: &Path) -> PathBuf {
+        ava_home.join(self.filename)
     }
 }
 
@@ -118,7 +118,7 @@ pub struct RuntimeDbPath {
     pub path: PathBuf,
 }
 
-/// Resolved configuration shared by all Codex SQLite connections.
+/// Resolved configuration shared by all Ava SQLite connections.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SqliteConfig {
     sqlite_home: AbsolutePathBuf,
@@ -294,7 +294,7 @@ impl SqliteConfig {
         Ok(pool)
     }
 
-    /// Open a writable Codex SQLite database, creating it if necessary.
+    /// Open a writable Ava SQLite database, creating it if necessary.
     pub async fn open_read_write_pool(&self, path: &Path) -> Result<SqlitePool, Error> {
         let options = SqliteConnectOptions::new()
             .filename(path)
@@ -310,7 +310,7 @@ impl SqliteConfig {
             .await
     }
 
-    /// Open an existing Codex SQLite database without creating or modifying it.
+    /// Open an existing Ava SQLite database without creating or modifying it.
     pub async fn open_read_only_pool(
         &self,
         path: &Path,

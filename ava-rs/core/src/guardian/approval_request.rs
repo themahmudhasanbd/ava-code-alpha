@@ -1,16 +1,16 @@
 #[cfg(unix)]
 use std::path::Path;
 
-use codex_analytics::GuardianReviewedAction;
-use codex_protocol::approvals::GuardianAssessmentAction;
-use codex_protocol::approvals::GuardianCommandSource;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionProfile;
+use ava_analytics::GuardianReviewedAction;
+use ava_protocol::approvals::GuardianAssessmentAction;
+use ava_protocol::approvals::GuardianCommandSource;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionProfile;
 #[cfg(unix)]
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -248,7 +248,7 @@ fn command_assessment_action(
 ) -> GuardianAssessmentAction {
     GuardianAssessmentAction::Command {
         source,
-        command: codex_shell_command::parse_command::shlex_join(command),
+        command: ava_shell_command::parse_command::shlex_join(command),
         cwd: cwd.clone(),
     }
 }
@@ -558,7 +558,7 @@ pub(crate) fn format_guardian_action_pretty(
     action: &GuardianApprovalRequest,
 ) -> serde_json::Result<String> {
     let mut value =
-        codex_guardian_context::action_for_review(guardian_approval_request_to_json(action)?);
+        ava_guardian_context::action_for_review(guardian_approval_request_to_json(action)?);
     value.sort_all_objects();
     serde_json::to_string_pretty(&value)
 }

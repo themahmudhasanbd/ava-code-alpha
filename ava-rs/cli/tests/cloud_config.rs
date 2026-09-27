@@ -7,12 +7,12 @@ use anyhow::Result;
 use anyhow::ensure;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_config::ConfigLoadOptions;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::config::load_config_toml_with_layer_stack;
-use codex_core::config::load_global_mcp_servers;
-use codex_core_plugins::installed_marketplaces::marketplace_install_root;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::ConfigLoadOptions;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::config::load_config_toml_with_layer_stack;
+use ava_core::config::load_global_mcp_servers;
+use ava_core_plugins::installed_marketplaces::marketplace_install_root;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -40,7 +40,7 @@ const MOCK_REFRESH_TOKEN: &str = "mock-managed-refresh-token";
 
 struct CloudManagedConfigFixture {
     server: MockServer,
-    codex_home: TempDir,
+    ava_home: TempDir,
     user_config: String,
     mcp_url: String,
 }
@@ -49,15 +49,15 @@ impl CloudManagedConfigFixture {
     async fn new() -> Result<Option<Self>> {
         let server = MockServer::start().await;
         let chatgpt_base_url = format!("{}/backend-api", server.uri());
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let user_config = format!(
             "cli_auth_credentials_store = \"file\"\nchatgpt_base_url = \"{chatgpt_base_url}\"\n"
         );
-        std::fs::write(codex_home.path().join("config.toml"), &user_config)?;
+        std::fs::write(ava_home.path().join("config.toml"), &user_config)?;
 
         let bootstrap_config = load_config_toml_with_layer_stack(
-            codex_home.path(),
-            Some(&AbsolutePathBuf::from_absolute_path(codex_home.path())?),
+            ava_home.path(),
+            Some(&AbsolutePathBuf::from_absolute_path(ava_home.path())?),
             Vec::new(),
             ConfigLoadOptions::default(),
         )
@@ -74,7 +74,7 @@ impl CloudManagedConfigFixture {
         }
 
         write_chatgpt_auth(
-            codex_home.path(),
+            ava_home.path(),
             ChatGptAuthFixture::new("chatgpt-token")
                 .account_id("workspace-123")
                 .chatgpt_account_id("workspace-123")
@@ -115,22 +115,22 @@ impl CloudManagedConfigFixture {
 
         Ok(Some(Self {
             server,
-            codex_home,
+            ava_home,
             user_config,
             mcp_url,
         }))
     }
 
     fn command(&self, args: &[&str]) -> Result<Command> {
-        let mut command = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
+        let mut command = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
         command
             .kill_on_drop(true)
-            .current_dir(self.codex_home.path())
-            .env("CODEX_HOME", self.codex_home.path())
+            .current_dir(self.ava_home.path())
+            .env("AVA_HOME", self.ava_home.path())
             .env("NO_PROXY", "127.0.0.1,localhost")
             .env("no_proxy", "127.0.0.1,localhost")
-            .env_remove("CODEX_ACCESS_TOKEN")
-            .env_remove("CODEX_API_KEY")
+            .env_remove("AVA_ACCESS_TOKEN")
+            .env_remove("AVA_API_KEY")
             .env_remove("OPENAI_API_KEY")
             .args(args);
         Ok(command)
@@ -140,7 +140,7 @@ impl CloudManagedConfigFixture {
         let output = self.command(args)?.output().await?;
         ensure!(
             output.status.success(),
-            "codex {} failed with status {}: stdout={}; stderr={}",
+            "ava {} failed with status {}: stdout={}; stderr={}",
             args.join(" "),
             output.status,
             String::from_utf8_lossy(&output.stdout),
@@ -151,7 +151,7 @@ impl CloudManagedConfigFixture {
 
     fn assert_user_config_unchanged(&self) -> Result<()> {
         assert_eq!(
-            std::fs::read_to_string(self.codex_home.path().join("config.toml"))?,
+            std::fs::read_to_string(self.ava_home.path().join("config.toml"))?,
             self.user_config
         );
         Ok(())
@@ -178,7 +178,7 @@ async fn list_and_get_resolve_cloud_managed_mcp_without_writing_user_config() ->
     assert_eq!(entry["transport"]["url"], fixture.mcp_url);
     assert!(
         fixture
-            .codex_home
+            .ava_home
             .path()
             .join("cloud-config-bundle-cache.json")
             .exists()
@@ -348,7 +348,7 @@ async fn login_and_logout_persist_only_cloud_managed_mcp_oauth_credentials() -> 
     .await
     .context("timed out waiting for the managed MCP login success message")??;
 
-    let credentials_path = fixture.codex_home.path().join(".credentials.json");
+    let credentials_path = fixture.ava_home.path().join(".credentials.json");
     let credentials: Value = serde_json::from_slice(&std::fs::read(&credentials_path)?)?;
     let entries = credentials
         .as_object()
@@ -391,7 +391,7 @@ async fn add_and_remove_preserve_cloud_managed_resources() -> Result<()> {
         return Ok(());
     };
 
-    let installed_root = marketplace_install_root(fixture.codex_home.path()).join("managed");
+    let installed_root = marketplace_install_root(fixture.ava_home.path()).join("managed");
     std::fs::create_dir_all(&installed_root)?;
     let marker = installed_root.join("marker.txt");
     std::fs::write(&marker, "installed")?;
@@ -415,7 +415,7 @@ async fn add_and_remove_preserve_cloud_managed_resources() -> Result<()> {
     fixture
         .output(&["mcp", "add", "local-docs", "--", "echo", "hello"])
         .await?;
-    let local_servers = load_global_mcp_servers(fixture.codex_home.path()).await?;
+    let local_servers = load_global_mcp_servers(fixture.ava_home.path()).await?;
     assert!(local_servers.contains_key("local-docs"));
     assert!(!local_servers.contains_key(MANAGED_SERVER_NAME));
 
@@ -425,13 +425,13 @@ async fn add_and_remove_preserve_cloud_managed_resources() -> Result<()> {
     assert!(
         String::from_utf8(output.stdout)?.contains("No MCP server named 'managed-slack' found.")
     );
-    let local_servers = load_global_mcp_servers(fixture.codex_home.path()).await?;
+    let local_servers = load_global_mcp_servers(fixture.ava_home.path()).await?;
     assert!(local_servers.contains_key("local-docs"));
     assert!(!local_servers.contains_key(MANAGED_SERVER_NAME));
 
     fixture.output(&["mcp", "remove", "local-docs"]).await?;
     assert!(
-        load_global_mcp_servers(fixture.codex_home.path())
+        load_global_mcp_servers(fixture.ava_home.path())
             .await?
             .is_empty()
     );

@@ -1,5 +1,5 @@
 // Forbid accidental stdout/stderr writes in the *library* portion of the TUI.
-// The standalone `codex-tui` binary prints a short help message before the
+// The standalone `ava-tui` binary prints a short help message before the
 // alternate‑screen mode starts; that file opts‑out locally via `allow`.
 #![recursion_limit = "256"]
 #![deny(clippy::print_stdout, clippy::print_stderr)]
@@ -28,50 +28,50 @@ pub use app::ExitReason;
 pub use app::ResumableThread;
 use app_server_session::AppServerSession;
 use app_server_session::ThreadParamsMode;
-use codex_app_server_client::AppServerClient;
-use codex_app_server_client::DEFAULT_IN_PROCESS_CHANNEL_CAPACITY;
-use codex_app_server_client::InProcessAppServerClient;
-use codex_app_server_client::InProcessClientStartArgs;
-use codex_app_server_client::RemoteAppServerClient;
-use codex_app_server_client::RemoteAppServerConnectArgs;
-pub use codex_app_server_client::RemoteAppServerEndpoint;
-use codex_app_server_protocol::Account as AppServerAccount;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::GetAccountResponse;
-use codex_app_server_protocol::Thread as AppServerThread;
+use ava_app_server_client::AppServerClient;
+use ava_app_server_client::DEFAULT_IN_PROCESS_CHANNEL_CAPACITY;
+use ava_app_server_client::InProcessAppServerClient;
+use ava_app_server_client::InProcessClientStartArgs;
+use ava_app_server_client::RemoteAppServerClient;
+use ava_app_server_client::RemoteAppServerConnectArgs;
+pub use ava_app_server_client::RemoteAppServerEndpoint;
+use ava_app_server_protocol::Account as AppServerAccount;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::GetAccountResponse;
+use ava_app_server_protocol::Thread as AppServerThread;
 #[cfg(test)]
-use codex_app_server_protocol::ThreadListCwdFilter;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadSortKey as AppServerThreadSortKey;
-use codex_app_server_protocol::ThreadSourceKind;
-use codex_cloud_config::cloud_config_bundle_loader_for_storage;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::ConfigLoadError;
-use codex_config::LoaderOverrides;
-use codex_config::format_config_error_with_source;
-use codex_config::types::ResumeCwdMode;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_features::Feature;
-use codex_login::AuthConfig;
-use codex_login::default_client::originator;
-use codex_login::default_client::set_default_client_residency_requirement;
-use codex_login::enforce_login_restrictions;
-use codex_login::is_workload_identity_selected;
-use codex_protocol::ThreadId;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::config_types::AltScreenMode;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::config_types::SandboxMode;
-use codex_rollout::StateDbHandle;
-use codex_rollout::state_db;
-use codex_state::log_db;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::canonicalize_existing_preserving_symlinks;
-use codex_utils_home_dir::find_codex_home;
-use codex_utils_oss::ensure_oss_provider_ready;
-use codex_utils_oss::get_default_model_for_oss_provider;
+use ava_app_server_protocol::ThreadListCwdFilter;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadSortKey as AppServerThreadSortKey;
+use ava_app_server_protocol::ThreadSourceKind;
+use ava_cloud_config::cloud_config_bundle_loader_for_storage;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::ConfigLoadError;
+use ava_config::LoaderOverrides;
+use ava_config::format_config_error_with_source;
+use ava_config::types::ResumeCwdMode;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_features::Feature;
+use ava_login::AuthConfig;
+use ava_login::default_client::originator;
+use ava_login::default_client::set_default_client_residency_requirement;
+use ava_login::enforce_login_restrictions;
+use ava_login::is_workload_identity_selected;
+use ava_protocol::ThreadId;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::config_types::AltScreenMode;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::config_types::SandboxMode;
+use ava_rollout::StateDbHandle;
+use ava_rollout::state_db;
+use ava_state::log_db;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::canonicalize_existing_preserving_symlinks;
+use ava_utils_home_dir::find_ava_home;
+use ava_utils_oss::ensure_oss_provider_ready;
+use ava_utils_oss::get_default_model_for_oss_provider;
 use color_eyre::eyre::WrapErr;
 use crossterm::SynchronizedUpdate;
 use cwd_prompt::CwdPromptAction;
@@ -96,7 +96,7 @@ use tracing_subscriber::prelude::*;
 use url::Url;
 use uuid::Uuid;
 
-pub(crate) use codex_app_server_client::legacy_core;
+pub(crate) use ava_app_server_client::legacy_core;
 
 pub(crate) use worktree_startup::ManagedTuiWorktree;
 
@@ -260,13 +260,13 @@ use crate::startup_hooks_review::load_startup_hooks_review_entry;
 use crate::startup_hooks_review::maybe_run_startup_hooks_review;
 use crate::tui::Tui;
 pub use cli::Cli;
-use codex_arg0::Arg0DispatchPaths;
+use ava_arg0::Arg0DispatchPaths;
 pub use markdown_render::render_markdown_text;
 pub use public_widgets::composer_input::ComposerAction;
 pub use public_widgets::composer_input::ComposerInput;
 // (tests access modules directly within the crate)
 
-const TUI_LOG_FILE_NAME: &str = "codex-tui.log";
+const TUI_LOG_FILE_NAME: &str = "ava-tui.log";
 const INTERACTIVE_OTEL_SHUTDOWN_TIMEOUT: Duration = Duration::from_millis(/*millis*/ 500);
 
 const AUTO_CONNECT_DAEMON_CONNECT_TIMEOUT: std::time::Duration =
@@ -280,7 +280,7 @@ async fn start_embedded_app_server(
     loader_overrides: LoaderOverrides,
     strict_config: bool,
     cloud_config_bundle: CloudConfigBundleLoader,
-    feedback: codex_feedback::CodexFeedback,
+    feedback: ava_feedback::AvaFeedback,
     log_db: Option<log_db::LogDbLayer>,
     state_db: Option<StateDbHandle>,
     environment_manager: Arc<EnvironmentManager>,
@@ -344,7 +344,7 @@ async fn init_state_db_for_app_server_target(
 ) -> std::io::Result<Option<StateDbHandle>> {
     match app_server_target {
         AppServerTarget::Embedded => state_db::try_init(config).await.map(Some).map_err(|err| {
-            let database_path = codex_state::runtime_db_path_for_corruption_error(&err)
+            let database_path = ava_state::runtime_db_path_for_corruption_error(&err)
                 .unwrap_or_else(|| config.sqlite_config().state_db_path());
             std::io::Error::other(LocalStateDbStartupError::new(
                 database_path,
@@ -358,10 +358,10 @@ async fn init_state_db_for_app_server_target(
 }
 
 // TODO(jif) delete after 22/11/2026.
-fn remove_legacy_tui_log_file(codex_home: &Path) {
+fn remove_legacy_tui_log_file(ava_home: &Path) {
     // Shared append-only TUI logs could grow without bound. Existing processes
     // may still hold the file open, so startup cleanup is best effort.
-    let _ = std::fs::remove_file(codex_home.join("log").join(TUI_LOG_FILE_NAME));
+    let _ = std::fs::remove_file(ava_home.join("log").join(TUI_LOG_FILE_NAME));
 }
 
 fn remote_addr_has_explicit_port(addr: &str, parsed: &Url) -> bool {
@@ -406,8 +406,8 @@ fn websocket_url_supports_auth_token(parsed: &Url) -> bool {
 pub fn resolve_remote_addr(addr: &str) -> color_eyre::Result<RemoteAppServerEndpoint> {
     if let Some(socket_path) = addr.strip_prefix("unix://") {
         let socket_path = if socket_path.is_empty() {
-            let codex_home = find_codex_home().wrap_err("failed to resolve CODEX_HOME")?;
-            codex_app_server_client::app_server_control_socket_path(&codex_home)
+            let ava_home = find_ava_home().wrap_err("failed to resolve AVA_HOME")?;
+            ava_app_server_client::app_server_control_socket_path(&ava_home)
                 .map_err(color_eyre::Report::new)?
         } else {
             AbsolutePathBuf::relative_to_current_dir(socket_path)
@@ -456,7 +456,7 @@ async fn connect_remote_app_server(
 ) -> color_eyre::Result<AppServerClient> {
     let app_server = RemoteAppServerClient::connect(RemoteAppServerConnectArgs {
         endpoint,
-        client_name: "codex-tui".to_string(),
+        client_name: "ava-tui".to_string(),
         client_version: env!("CARGO_PKG_VERSION").to_string(),
         experimental_api: true,
         mcp_server_openai_form_elicitation: false,
@@ -468,11 +468,11 @@ async fn connect_remote_app_server(
     Ok(AppServerClient::Remote(app_server))
 }
 
-async fn maybe_probe_default_daemon_socket(codex_home: &Path) -> Option<AbsolutePathBuf> {
-    let socket_path = codex_app_server_client::app_server_control_socket_path(codex_home).ok()?;
+async fn maybe_probe_default_daemon_socket(ava_home: &Path) -> Option<AbsolutePathBuf> {
+    let socket_path = ava_app_server_client::app_server_control_socket_path(ava_home).ok()?;
     #[cfg(windows)]
     let (validated_path, _directory) =
-        codex_uds::validate_private_socket_path(socket_path.as_path()).ok()?;
+        ava_uds::validate_private_socket_path(socket_path.as_path()).ok()?;
     #[cfg(windows)]
     let validated_path = AbsolutePathBuf::from_absolute_path_checked(validated_path).ok()?;
     #[cfg(windows)]
@@ -481,7 +481,7 @@ async fn maybe_probe_default_daemon_socket(codex_home: &Path) -> Option<Absolute
     let probe_path = socket_path.as_path();
     match tokio::time::timeout(
         AUTO_CONNECT_DAEMON_CONNECT_TIMEOUT,
-        codex_uds::UnixStream::connect(probe_path),
+        ava_uds::UnixStream::connect(probe_path),
     )
     .await
     {
@@ -514,7 +514,7 @@ async fn start_app_server(
     loader_overrides: LoaderOverrides,
     strict_config: bool,
     cloud_config_bundle: CloudConfigBundleLoader,
-    feedback: codex_feedback::CodexFeedback,
+    feedback: ava_feedback::AvaFeedback,
     log_db: Option<log_db::LogDbLayer>,
     state_db: &mut Option<StateDbHandle>,
     environment_manager: Arc<EnvironmentManager>,
@@ -581,7 +581,7 @@ pub(crate) async fn start_app_server_for_picker(
         LoaderOverrides::default(),
         /*strict_config*/ false,
         CloudConfigBundleLoader::default(),
-        codex_feedback::CodexFeedback::new(),
+        ava_feedback::AvaFeedback::new(),
         /*log_db*/ None,
         &mut state_db,
         environment_manager,
@@ -589,7 +589,7 @@ pub(crate) async fn start_app_server_for_picker(
     .await?;
     Ok(
         AppServerSession::new(app_server, target.thread_params_mode())
-            .with_local_codex_home(&config.codex_home),
+            .with_local_ava_home(&config.ava_home),
     )
 }
 
@@ -607,7 +607,7 @@ pub(crate) async fn start_embedded_app_server_for_picker(
         LoaderOverrides::without_managed_config_for_tests(),
         /*strict_config*/ false,
         CloudConfigBundleLoader::default(),
-        codex_feedback::CodexFeedback::new(),
+        ava_feedback::AvaFeedback::new(),
         /*log_db*/ None,
         &mut state_db,
         Arc::new(EnvironmentManager::default_for_tests()),
@@ -615,7 +615,7 @@ pub(crate) async fn start_embedded_app_server_for_picker(
     .await?;
     Ok(
         AppServerSession::new(app_server, target.thread_params_mode())
-            .with_local_codex_home(&config.codex_home),
+            .with_local_ava_home(&config.ava_home),
     )
 }
 
@@ -627,7 +627,7 @@ async fn start_embedded_app_server_with<F, Fut>(
     loader_overrides: LoaderOverrides,
     strict_config: bool,
     cloud_config_bundle: CloudConfigBundleLoader,
-    feedback: codex_feedback::CodexFeedback,
+    feedback: ava_feedback::AvaFeedback,
     log_db: Option<log_db::LogDbLayer>,
     state_db: Option<StateDbHandle>,
     environment_manager: Arc<EnvironmentManager>,
@@ -661,8 +661,8 @@ where
         config_warnings,
         session_source: serde_json::from_value(serde_json::json!("cli"))
             .unwrap_or_else(|err| panic!("cli session source should deserialize: {err}")),
-        enable_codex_api_key_env: false,
-        client_name: "codex-tui".to_string(),
+        enable_ava_api_key_env: false,
+        client_name: "ava-tui".to_string(),
         client_version: env!("CARGO_PKG_VERSION").to_string(),
         experimental_api: true,
         mcp_server_openai_form_elicitation: false,
@@ -761,7 +761,7 @@ async fn lookup_session_target_with_app_server(
         (!app_server.uses_remote_workspace()).then_some(config.model_provider_id.as_str());
     Ok(named_session_lookup::lookup(
         app_server,
-        config.codex_home.as_path(),
+        config.ava_home.as_path(),
         id_or_name,
         &[named_session_lookup::SessionCollection::Active],
         &[resume_source_kinds(/*include_non_interactive*/ false)],
@@ -841,7 +841,7 @@ fn latest_session_lookup_params(
             resume_picker::repository_cwd_filter(
                 cwd,
                 uses_remote_filesystem,
-                config.features.enabled(codex_features::Feature::Worktrees),
+                config.features.enabled(ava_features::Feature::Worktrees),
             )
         }),
         use_state_db_only: match lookup_mode {
@@ -996,12 +996,12 @@ fn app_server_target_for_launch(
 async fn cloud_config_bundle_for_app_server_target(
     app_server_target: &AppServerTarget,
     bootstrap_config: &ConfigTomlLoadResult,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> std::io::Result<CloudConfigBundleLoader> {
     cloud_config_bundle_loader_for_storage(
         app_server_target
-            .auth_config_for_cloud_loader(bootstrap_auth_config(codex_home, bootstrap_config)?),
-        /*enable_codex_api_key_env*/ false,
+            .auth_config_for_cloud_loader(bootstrap_auth_config(ava_home, bootstrap_config)?),
+        /*enable_ava_api_key_env*/ false,
     )
     .await
 }
@@ -1085,7 +1085,7 @@ async fn run_ratatui_app(
     overrides: ConfigOverrides,
     cli_kv_overrides: Vec<(String, toml::Value)>,
     mut cloud_config_bundle: CloudConfigBundleLoader,
-    feedback: codex_feedback::CodexFeedback,
+    feedback: ava_feedback::AvaFeedback,
     log_db: Option<log_db::LogDbLayer>,
     mut state_db: Option<StateDbHandle>,
     environment_manager: Arc<EnvironmentManager>,
@@ -1161,7 +1161,7 @@ async fn run_ratatui_app(
     let app_server_session = match startup_app_server {
         Ok(Ok(app_server)) => {
             AppServerSession::new(app_server, app_server_target.thread_params_mode())
-                .with_local_codex_home(&initial_config.codex_home)
+                .with_local_ava_home(&initial_config.ava_home)
         }
         Ok(Err(err)) => {
             terminal_restore_guard.restore_silently();
@@ -1304,7 +1304,7 @@ async fn run_ratatui_app(
                 if show_login_screen && !uses_remote_workspace && !workload_identity_selected {
                     cloud_config_bundle = cloud_config_bundle_loader_for_storage(
                         initial_config.auth_config(),
-                        /*enable_codex_api_key_env*/ false,
+                        /*enable_ava_api_key_env*/ false,
                     )
                     .await?;
                 }
@@ -1364,7 +1364,7 @@ async fn run_ratatui_app(
                 disconnect_info: None,
                 update_action: None,
                 exit_reason: ExitReason::Fatal(format!(
-                    "No saved session found with ID {id_str}. Run `codex {action}` without an ID to choose from existing sessions."
+                    "No saved session found with ID {id_str}. Run `ava {action}` without an ID to choose from existing sessions."
                 )),
             })
         };
@@ -1374,7 +1374,7 @@ async fn run_ratatui_app(
     if (cli.resume_picker || cli.fork_picker)
         && let Some(name) = config.tui_theme.as_deref()
         && let Some(theme) =
-            crate::render::highlight::resolve_theme_by_name(name, Some(config.codex_home.as_path()))
+            crate::render::highlight::resolve_theme_by_name(name, Some(config.ava_home.as_path()))
     {
         crate::render::highlight::set_syntax_theme(theme);
     }
@@ -1723,7 +1723,7 @@ async fn run_ratatui_app(
                 // A picker can replace the server; account reads belong to their original session.
                 startup_account = None;
                 AppServerSession::new(app_server, app_server_target.thread_params_mode())
-                    .with_local_codex_home(&config.codex_home)
+                    .with_local_ava_home(&config.ava_home)
                     .with_remote_cwd_override(remote_cwd_override.clone())
             }
             Ok(Err(err)) => {
@@ -1801,7 +1801,7 @@ async fn run_ratatui_app(
                 )
                 .await?;
                 app_server = AppServerSession::new(client, app_server_target.thread_params_mode())
-                    .with_local_codex_home(&config.codex_home);
+                    .with_local_ava_home(&config.ava_home);
             }
             #[cfg(target_os = "windows")]
             {
@@ -1859,7 +1859,7 @@ async fn run_ratatui_app(
     // this must happen after the last possible reload.
     if let Some(w) = crate::render::highlight::set_theme_override(
         local_settings.tui.theme.clone(),
-        find_codex_home().ok().map(AbsolutePathBuf::into_path_buf),
+        find_ava_home().ok().map(AbsolutePathBuf::into_path_buf),
     ) {
         config.startup_warnings.push(w);
     }
@@ -2143,18 +2143,18 @@ async fn load_config_with_worktree_source_policy(
 
 #[allow(clippy::print_stderr)]
 async fn load_bootstrap_config_or_exit(
-    codex_home: &Path,
+    ava_home: &Path,
     cwd: Option<&AbsolutePathBuf>,
-    cli_kv_overrides: Vec<(String, codex_config::TomlValue)>,
+    cli_kv_overrides: Vec<(String, ava_config::TomlValue)>,
     loader_overrides: LoaderOverrides,
     strict_config: bool,
     cloud_config_bundle: CloudConfigBundleLoader,
 ) -> ConfigTomlLoadResult {
     match load_config_toml_with_layer_stack(
-        codex_home,
+        ava_home,
         cwd,
         cli_kv_overrides,
-        codex_config::ConfigLoadOptions {
+        ava_config::ConfigLoadOptions {
             loader_overrides,
             strict_config,
             cloud_config_bundle,
@@ -2240,13 +2240,13 @@ pub(crate) mod tests {
     use crate::legacy_core::config::ConfigBuilder;
     use crate::legacy_core::config::ConfigOverrides;
     use clap::Parser;
-    use codex_app_server_protocol::AskForApproval;
-    use codex_app_server_protocol::ClientRequest;
-    use codex_app_server_protocol::RequestId;
-    use codex_app_server_protocol::ThreadStartParams;
-    use codex_app_server_protocol::ThreadStartResponse;
-    use codex_config::config_toml::ProjectConfig;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_app_server_protocol::AskForApproval;
+    use ava_app_server_protocol::ClientRequest;
+    use ava_app_server_protocol::RequestId;
+    use ava_app_server_protocol::ThreadStartParams;
+    use ava_app_server_protocol::ThreadStartResponse;
+    use ava_config::config_toml::ProjectConfig;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use serial_test::serial;
     use tempfile::TempDir;
@@ -2254,7 +2254,7 @@ pub(crate) mod tests {
     #[test]
     fn tui_startup_future_stays_bounded() {
         let future = run_main(
-            Cli::parse_from(["codex"]),
+            Cli::parse_from(["ava"]),
             Arg0DispatchPaths::default(),
             LoaderOverrides::default(),
             /*explicit_remote_endpoint*/ None,
@@ -2267,7 +2267,7 @@ pub(crate) mod tests {
     async fn build_config(temp_dir: &TempDir) -> std::io::Result<Config> {
         ConfigBuilder::default()
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await
     }
@@ -2373,9 +2373,9 @@ requires_openai_auth = {requires_openai_auth}
                 false,
             ),
         ] {
-            let codex_home = TempDir::new()?;
-            std::fs::write(codex_home.path().join("config.toml"), config_toml)?;
-            let config = build_config(&codex_home).await?;
+            let ava_home = TempDir::new()?;
+            std::fs::write(ava_home.path().join("config.toml"), config_toml)?;
+            let config = build_config(&ava_home).await?;
 
             assert_eq!(
                 should_show_bedrock_setup_wizard(
@@ -2393,7 +2393,7 @@ requires_openai_auth = {requires_openai_auth}
     }
 
     pub(crate) fn write_session_rollout(
-        codex_home: &Path,
+        ava_home: &Path,
         filename_ts: &str,
         meta_rfc3339: &str,
         preview: &str,
@@ -2406,7 +2406,7 @@ requires_openai_auth = {requires_openai_auth}
         let year = &filename_ts[0..4];
         let month = &filename_ts[5..7];
         let day = &filename_ts[8..10];
-        let rollout_path = codex_home
+        let rollout_path = ava_home
             .join("sessions")
             .join(year)
             .join(month)
@@ -2417,18 +2417,18 @@ requires_openai_auth = {requires_openai_auth}
             .ok_or_else(|| color_eyre::eyre::eyre!("rollout path is missing a parent directory"))?;
         std::fs::create_dir_all(parent)?;
 
-        let session_meta = codex_protocol::protocol::SessionMeta {
+        let session_meta = ava_protocol::protocol::SessionMeta {
             session_id: thread_id.into(),
             id: thread_id,
             timestamp: meta_rfc3339.to_string(),
             cwd: cwd.to_path_buf(),
-            originator: "codex".to_string(),
+            originator: "ava".to_string(),
             cli_version: "0.0.0".to_string(),
-            source: codex_protocol::protocol::SessionSource::Cli,
+            source: ava_protocol::protocol::SessionSource::Cli,
             model_provider: Some(model_provider.to_string()),
             ..Default::default()
         };
-        let session_meta = serde_json::to_value(codex_protocol::protocol::SessionMetaLine {
+        let session_meta = serde_json::to_value(ava_protocol::protocol::SessionMetaLine {
             meta: session_meta,
             git: None,
         })?;
@@ -2491,19 +2491,19 @@ requires_openai_auth = {requires_openai_auth}
         for (configured_respect_system_proxy, managed_respect_system_proxy) in
             [(true, false), (false, true)]
         {
-            let codex_home = TempDir::new()?;
+            let ava_home = TempDir::new()?;
             std::fs::write(
-                codex_home.path().join("config.toml"),
+                ava_home.path().join("config.toml"),
                 format!("[features]\nrespect_system_proxy = {configured_respect_system_proxy}\n"),
             )?;
             let prepared_environment_manager =
-                EnvironmentManager::prepare_from_codex_home(codex_home.path()).await?;
+                EnvironmentManager::prepare_from_ava_home(ava_home.path()).await?;
             let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
             let bootstrap_config = load_config_toml_with_layer_stack(
-                codex_home.path(),
+                ava_home.path(),
                 /*cwd*/ None,
                 Vec::new(),
-                codex_config::ConfigLoadOptions {
+                ava_config::ConfigLoadOptions {
                     loader_overrides: loader_overrides.clone(),
                     ..Default::default()
                 },
@@ -2518,18 +2518,18 @@ requires_openai_auth = {requires_openai_auth}
                     .as_ref(),
             )?;
             let cloud_config_bundle =
-                codex_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_requirement(
+                ava_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_requirement(
                     format!("[features]\nrespect_system_proxy = {managed_respect_system_proxy}\n"),
                 );
             let config = ConfigBuilder::default()
-                .codex_home(codex_home.path().to_path_buf())
+                .ava_home(ava_home.path().to_path_buf())
                 .loader_overrides(loader_overrides)
                 .cloud_config_bundle(cloud_config_bundle)
                 .build()
                 .await?;
             let runtime_paths = ExecServerRuntimePaths::new(
                 std::env::current_exe()?,
-                /*codex_linux_sandbox_exe*/ None,
+                /*ava_linux_sandbox_exe*/ None,
             )?;
             let environment_manager = prepared_environment_manager
                 .build(Some(runtime_paths), config.http_client_factory())?;
@@ -2569,7 +2569,7 @@ requires_openai_auth = {requires_openai_auth}
             LoaderOverrides::default(),
             /*strict_config*/ false,
             CloudConfigBundleLoader::default(),
-            codex_feedback::CodexFeedback::new(),
+            ava_feedback::AvaFeedback::new(),
             /*log_db*/ None,
             state_db,
             Arc::new(EnvironmentManager::default_for_tests()),
@@ -2588,21 +2588,21 @@ requires_openai_auth = {requires_openai_auth}
             (CwdPromptAction::Fork, "session", true, "explicit"),
         ] {
             let temp_dir = TempDir::new()?;
-            let codex_home = temp_dir.path().join("codex-home");
+            let ava_home = temp_dir.path().join("ava-home");
             let launch_cwd = temp_dir.path().join("launch");
             let session_cwd = temp_dir.path().join("session");
             let explicit_cwd = temp_dir.path().join("explicit");
-            std::fs::create_dir_all(&codex_home)?;
+            std::fs::create_dir_all(&ava_home)?;
             std::fs::create_dir_all(&launch_cwd)?;
             std::fs::create_dir_all(&session_cwd)?;
             std::fs::create_dir_all(&explicit_cwd)?;
             std::fs::write(
-                codex_home.join("config.toml"),
+                ava_home.join("config.toml"),
                 format!("[tui]\nresume_cwd = \"{configured_mode}\"\n"),
             )?;
             let cwd_override = has_explicit_cwd.then_some(explicit_cwd.as_path());
             let config = ConfigBuilder::default()
-                .codex_home(codex_home.clone())
+                .ava_home(ava_home.clone())
                 .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
                 .harness_overrides(ConfigOverrides {
                     cwd: Some(cwd_override.unwrap_or(launch_cwd.as_path()).to_path_buf()),
@@ -2612,14 +2612,14 @@ requires_openai_auth = {requires_openai_auth}
                 .await?;
             let filename_timestamp = "2025-01-05T12-00-00";
             let thread_id = write_session_rollout(
-                &codex_home,
+                &ava_home,
                 filename_timestamp,
                 "2025-01-05T12:00:00Z",
                 "Saved user message",
                 &config.model_provider_id,
                 &session_cwd,
             )?;
-            let rollout_path = codex_home
+            let rollout_path = ava_home
                 .join("sessions/2025/01/05")
                 .join(format!("rollout-{filename_timestamp}-{thread_id}.jsonl"));
             let state_db =
@@ -2654,7 +2654,7 @@ requires_openai_auth = {requires_openai_auth}
                 ResolveCwdOutcome::Exit => panic!("configured cwd should not exit startup"),
             };
             let final_config = ConfigBuilder::default()
-                .codex_home(codex_home)
+                .ava_home(ava_home)
                 .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
                 .harness_overrides(ConfigOverrides {
                     cwd: cwd_override.map(Path::to_path_buf),
@@ -2715,7 +2715,7 @@ requires_openai_auth = {requires_openai_auth}
             "[tui]\nresume_cwd = \"current\"\n",
         )?;
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .build()
             .await?;
@@ -2771,7 +2771,7 @@ requires_openai_auth = {requires_openai_auth}
             "[tui]\nresume_cwd = \"session\"\n",
         )?;
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .build()
             .await?;
@@ -2858,11 +2858,11 @@ requires_openai_auth = {requires_openai_auth}
 
     #[test]
     fn resolve_remote_addr_accepts_default_socket() -> color_eyre::Result<()> {
-        let codex_home = find_codex_home().wrap_err("failed to resolve CODEX_HOME")?;
+        let ava_home = find_ava_home().wrap_err("failed to resolve AVA_HOME")?;
         assert_eq!(
             resolve_remote_addr("unix://")?,
             RemoteAppServerEndpoint::UnixSocket {
-                socket_path: codex_app_server_client::app_server_control_socket_path(&codex_home)?,
+                socket_path: ava_app_server_client::app_server_control_socket_path(&ava_home)?,
             }
         );
         Ok(())
@@ -2871,9 +2871,9 @@ requires_openai_auth = {requires_openai_auth}
     #[test]
     fn resolve_remote_addr_accepts_relative_socket_path() -> color_eyre::Result<()> {
         assert_eq!(
-            resolve_remote_addr("unix://codex.sock")?,
+            resolve_remote_addr("unix://ava.sock")?,
             RemoteAppServerEndpoint::UnixSocket {
-                socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+                socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
             }
         );
         Ok(())
@@ -2882,7 +2882,7 @@ requires_openai_auth = {requires_openai_auth}
     #[test]
     fn resolve_remote_addr_accepts_absolute_socket_path() -> color_eyre::Result<()> {
         let temp_dir = TempDir::new()?;
-        let socket_path = temp_dir.path().join("codex.sock");
+        let socket_path = temp_dir.path().join("ava.sock");
         assert_eq!(
             resolve_remote_addr(&format!("unix://{}", socket_path.display()))?,
             RemoteAppServerEndpoint::UnixSocket {
@@ -2909,9 +2909,9 @@ requires_openai_auth = {requires_openai_auth}
 
     #[tokio::test]
     async fn default_daemon_auto_connect_skips_missing_socket() -> color_eyre::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         assert!(
-            maybe_probe_default_daemon_socket(codex_home.path())
+            maybe_probe_default_daemon_socket(ava_home.path())
                 .await
                 .is_none()
         );
@@ -2920,27 +2920,27 @@ requires_openai_auth = {requires_openai_auth}
 
     #[tokio::test]
     async fn default_daemon_auto_connect_probes_socket_only() -> color_eyre::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let socket_path =
-            codex_app_server_client::app_server_control_socket_path(codex_home.path())?;
+            ava_app_server_client::app_server_control_socket_path(ava_home.path())?;
         #[cfg(windows)]
         {
             let parent = socket_path.as_path().parent().expect("socket parent");
             std::fs::create_dir_all(parent)?;
-            let listener = codex_uds::UnixListener::bind(socket_path.as_path()).await?;
+            let listener = ava_uds::UnixListener::bind(socket_path.as_path()).await?;
             assert!(
-                maybe_probe_default_daemon_socket(codex_home.path())
+                maybe_probe_default_daemon_socket(ava_home.path())
                     .await
                     .is_none()
             );
             drop(listener);
             std::fs::remove_dir_all(parent)?;
         }
-        codex_uds::prepare_private_socket_directory(
+        ava_uds::prepare_private_socket_directory(
             socket_path.as_path().parent().expect("socket parent"),
         )
         .await?;
-        let _listener = codex_uds::UnixListener::bind(socket_path.as_path()).await?;
+        let _listener = ava_uds::UnixListener::bind(socket_path.as_path()).await?;
 
         let expected = Some(socket_path);
         #[cfg(windows)]
@@ -2958,7 +2958,7 @@ requires_openai_auth = {requires_openai_auth}
             }
         };
         assert_eq!(
-            maybe_probe_default_daemon_socket(codex_home.path()).await,
+            maybe_probe_default_daemon_socket(ava_home.path()).await,
             expected
         );
         Ok(())
@@ -2967,7 +2967,7 @@ requires_openai_auth = {requires_openai_auth}
     #[test]
     fn app_server_target_for_launch_uses_local_daemon_for_default_socket() -> color_eyre::Result<()>
     {
-        let socket_path = AbsolutePathBuf::relative_to_current_dir("codex.sock")?;
+        let socket_path = AbsolutePathBuf::relative_to_current_dir("ava.sock")?;
         let target = app_server_target_for_launch(
             /*explicit_remote_endpoint*/ None,
             Some(socket_path.clone()),
@@ -2990,7 +2990,7 @@ requires_openai_auth = {requires_openai_auth}
 
     #[test]
     fn app_server_target_for_launch_preserves_executor_selection() -> color_eyre::Result<()> {
-        let socket_path = AbsolutePathBuf::relative_to_current_dir("codex.sock")?;
+        let socket_path = AbsolutePathBuf::relative_to_current_dir("ava.sock")?;
         for executor in ["none", "ws://127.0.0.1:4501"] {
             assert_eq!(
                 app_server_target_for_launch(
@@ -3033,7 +3033,7 @@ requires_openai_auth = {requires_openai_auth}
     #[test]
     fn app_server_target_for_launch_skips_local_daemon_when_launch_config_is_not_replayable()
     -> color_eyre::Result<()> {
-        let socket_path = AbsolutePathBuf::relative_to_current_dir("codex.sock")?;
+        let socket_path = AbsolutePathBuf::relative_to_current_dir("ava.sock")?;
         let target = app_server_target_for_launch(
             /*explicit_remote_endpoint*/ None,
             Some(socket_path),
@@ -3083,7 +3083,7 @@ requires_openai_auth = {requires_openai_auth}
         let target = AppServerTarget::LocalDaemon {
             allow_embedded_fallback: true,
             endpoint: RemoteAppServerEndpoint::UnixSocket {
-                socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+                socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
             },
         };
 
@@ -3141,7 +3141,7 @@ requires_openai_auth = {requires_openai_auth}
         let target = AppServerTarget::LocalDaemon {
             allow_embedded_fallback: true,
             endpoint: RemoteAppServerEndpoint::UnixSocket {
-                socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+                socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
             },
         };
 
@@ -3282,7 +3282,7 @@ requires_openai_auth = {requires_openai_auth}
         )?;
 
         let mut config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .harness_overrides(ConfigOverrides {
                 cwd: Some(project_cwd.clone()),
                 ..Default::default()
@@ -3291,7 +3291,7 @@ requires_openai_auth = {requires_openai_auth}
             .await?;
         config
             .features
-            .set_enabled(codex_features::Feature::Worktrees, /*enabled*/ false)?;
+            .set_enabled(ava_features::Feature::Worktrees, /*enabled*/ false)?;
         let model_provider = config.model_provider_id.as_str();
         let project_thread_id = write_session_rollout(
             temp_dir.path(),
@@ -3319,7 +3319,7 @@ requires_openai_auth = {requires_openai_auth}
         )?;
 
         let mut app_server = AppServerSession::new(
-            codex_app_server_client::AppServerClient::InProcess(
+            ava_app_server_client::AppServerClient::InProcess(
                 start_test_embedded_app_server(config.clone()).await?,
             ),
             ThreadParamsMode::Embedded,
@@ -3339,7 +3339,7 @@ requires_openai_auth = {requires_openai_auth}
         .expect("expected current-checkout target with worktrees disabled");
         config
             .features
-            .set_enabled(codex_features::Feature::Worktrees, /*enabled*/ true)?;
+            .set_enabled(ava_features::Feature::Worktrees, /*enabled*/ true)?;
         let filter_cwd = latest_session_cwd_filter(
             /*uses_remote_workspace*/ false, /*remote_cwd_override*/ None, &config,
             /*show_all*/ false,
@@ -3381,7 +3381,7 @@ requires_openai_auth = {requires_openai_auth}
         let project_cwd = temp_dir.path().join("project");
         std::fs::create_dir_all(&project_cwd)?;
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .harness_overrides(ConfigOverrides {
                 cwd: Some(project_cwd.clone()),
                 ..Default::default()
@@ -3389,7 +3389,7 @@ requires_openai_auth = {requires_openai_auth}
             .build()
             .await?;
         let mut app_server = AppServerSession::new(
-            codex_app_server_client::AppServerClient::InProcess(
+            ava_app_server_client::AppServerClient::InProcess(
                 start_test_embedded_app_server(config.clone()).await?,
             ),
             ThreadParamsMode::Embedded,
@@ -3430,7 +3430,7 @@ requires_openai_auth = {requires_openai_auth}
         };
         let target = AppServerTarget::Remote {
             endpoint: RemoteAppServerEndpoint::UnixSocket {
-                socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+                socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
             },
         };
         let environment_manager = EnvironmentManager::default_for_tests();
@@ -3478,7 +3478,7 @@ requires_openai_auth = {requires_openai_auth}
         let target = AppServerTarget::LocalDaemon {
             allow_embedded_fallback: true,
             endpoint: RemoteAppServerEndpoint::UnixSocket {
-                socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+                socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
             },
         };
         let environment_manager = EnvironmentManager::default_for_tests();
@@ -3534,7 +3534,7 @@ requires_openai_auth = {requires_openai_auth}
             Some("ws://127.0.0.1:8765".to_string()),
             Some(ExecServerRuntimePaths::new(
                 std::env::current_exe().expect("current exe"),
-                /*codex_linux_sandbox_exe*/ None,
+                /*ava_linux_sandbox_exe*/ None,
             )?),
         )
         .await;
@@ -3555,7 +3555,7 @@ requires_openai_auth = {requires_openai_auth}
         let local_daemon = AppServerTarget::LocalDaemon {
             allow_embedded_fallback: true,
             endpoint: RemoteAppServerEndpoint::UnixSocket {
-                socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+                socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
             },
         };
         assert!(uses_remote_workspace_or_environment(
@@ -3695,7 +3695,7 @@ requires_openai_auth = {requires_openai_auth}
                         .any(|item| {
                             matches!(
                                 item,
-                                codex_app_server_protocol::ThreadItem::UserMessage { .. }
+                                ava_app_server_protocol::ThreadItem::UserMessage { .. }
                             )
                         })
                 );
@@ -3731,7 +3731,7 @@ requires_openai_auth = {requires_openai_auth}
             LoaderOverrides::default(),
             /*strict_config*/ false,
             CloudConfigBundleLoader::default(),
-            codex_feedback::CodexFeedback::new(),
+            ava_feedback::AvaFeedback::new(),
             /*log_db*/ None,
             /*state_db*/ None,
             Arc::new(EnvironmentManager::default_for_tests()),
@@ -3758,7 +3758,7 @@ requires_openai_auth = {requires_openai_auth}
         let occupied_sqlite_home = temp_dir.path().join("sqlite-home");
         std::fs::write(&occupied_sqlite_home, "occupied")?;
         let sqlite =
-            codex_state::SqliteConfig::new_for_testing(occupied_sqlite_home.as_path().abs());
+            ava_state::SqliteConfig::new_for_testing(occupied_sqlite_home.as_path().abs());
         config.sqlite = sqlite.clone();
 
         let err =
@@ -3791,7 +3791,7 @@ requires_openai_auth = {requires_openai_auth}
         let mut config = build_config(&temp_dir).await?;
         let sqlite_home = temp_dir.path().join("sqlite-home");
         std::fs::create_dir_all(&sqlite_home)?;
-        let sqlite = codex_state::SqliteConfig::new_for_testing(sqlite_home.as_path().abs());
+        let sqlite = ava_state::SqliteConfig::new_for_testing(sqlite_home.as_path().abs());
         let logs_db_path = sqlite.logs_db_path();
         std::fs::write(&logs_db_path, "not a sqlite database")?;
         config.sqlite = sqlite;
@@ -3808,7 +3808,7 @@ requires_openai_auth = {requires_openai_auth}
 
         assert_eq!(startup_error.database_path(), logs_db_path.as_path());
         assert!(
-            codex_state::sqlite_error_detail_is_corruption(startup_error.detail()),
+            ava_state::sqlite_error_detail_is_corruption(startup_error.detail()),
             "startup error should preserve the SQLite corruption cause, got: {}",
             startup_error.detail()
         );
@@ -3839,7 +3839,7 @@ requires_openai_auth = {requires_openai_auth}
     }
     #[tokio::test]
     async fn untrusted_project_skips_trust_prompt() -> std::io::Result<()> {
-        use codex_protocol::config_types::TrustLevel;
+        use ava_protocol::config_types::TrustLevel;
         let temp_dir = TempDir::new()?;
         let mut config = build_config(&temp_dir).await?;
         config.active_project = ProjectConfig {
@@ -3857,7 +3857,7 @@ requires_openai_auth = {requires_openai_auth}
     #[tokio::test]
     async fn config_rebuild_changes_trust_defaults_with_cwd() -> std::io::Result<()> {
         let temp_dir = TempDir::new()?;
-        let codex_home = temp_dir.path().to_path_buf();
+        let ava_home = temp_dir.path().to_path_buf();
         let trusted = temp_dir.path().join("trusted");
         let untrusted = temp_dir.path().join("untrusted");
         std::fs::create_dir_all(&trusted)?;
@@ -3882,7 +3882,7 @@ trust_level = "untrusted"
         };
         let trusted_config = ConfigBuilder::default()
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-            .codex_home(codex_home.clone())
+            .ava_home(ava_home.clone())
             .harness_overrides(trusted_overrides.clone())
             .build()
             .await?;
@@ -3897,7 +3897,7 @@ trust_level = "untrusted"
         };
         let untrusted_config = ConfigBuilder::default()
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-            .codex_home(codex_home)
+            .ava_home(ava_home)
             .harness_overrides(untrusted_overrides)
             .build()
             .await?;

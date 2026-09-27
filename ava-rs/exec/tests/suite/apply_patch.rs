@@ -2,7 +2,7 @@
 
 use anyhow::Context;
 use assert_cmd::prelude::*;
-use codex_apply_patch::CODEX_CORE_APPLY_PATCH_ARG1;
+use ava_apply_patch::AVA_CORE_APPLY_PATCH_ARG1;
 use core_test_support::responses::ev_apply_patch_custom_tool_call;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::mount_sse_sequence;
@@ -12,8 +12,8 @@ use std::fs;
 use std::process::Command;
 use tempfile::tempdir;
 
-/// While we may add an `apply-patch` subcommand to the `codex` CLI multitool
-/// at some point, we must ensure that the smaller `codex-exec` CLI can still
+/// While we may add an `apply-patch` subcommand to the `ava` CLI multitool
+/// at some point, we must ensure that the smaller `ava-exec` CLI can still
 /// emulate the `apply_patch` CLI.
 #[test]
 fn test_standalone_exec_cli_can_use_apply_patch() -> anyhow::Result<()> {
@@ -22,8 +22,8 @@ fn test_standalone_exec_cli_can_use_apply_patch() -> anyhow::Result<()> {
     let absolute_path = tmp.path().join(relative_path);
     fs::write(&absolute_path, "original content\n")?;
 
-    Command::new(codex_utils_cargo_bin::cargo_bin("codex-exec")?)
-        .arg(CODEX_CORE_APPLY_PATCH_ARG1)
+    Command::new(ava_utils_cargo_bin::cargo_bin("ava-exec")?)
+        .arg(AVA_CORE_APPLY_PATCH_ARG1)
         .arg(
             r#"*** Begin Patch
 *** Update File: source.txt
@@ -48,11 +48,11 @@ fn test_standalone_exec_cli_can_use_apply_patch() -> anyhow::Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_apply_patch_tool() -> anyhow::Result<()> {
     use core_test_support::skip_if_no_network;
-    use core_test_support::test_codex_exec::test_codex_exec;
+    use core_test_support::test_ava_exec::test_ava_exec;
 
     skip_if_no_network!(Ok(()));
 
-    let test = test_codex_exec();
+    let test = test_ava_exec();
     let tmp_path = test.cwd_path().to_path_buf();
     let add_patch = r#"*** Begin Patch
 *** Add File: test.md
@@ -96,11 +96,11 @@ async fn test_apply_patch_tool() -> anyhow::Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_apply_patch_freeform_tool() -> anyhow::Result<()> {
     use core_test_support::skip_if_no_network;
-    use core_test_support::test_codex_exec::test_codex_exec;
+    use core_test_support::test_ava_exec::test_ava_exec;
 
     skip_if_no_network!(Ok(()));
 
-    let test = test_codex_exec();
+    let test = test_ava_exec();
     let freeform_add_patch = r#"*** Begin Patch
 *** Add File: app.py
 +class BaseClass:
@@ -149,14 +149,14 @@ async fn test_apply_patch_freeform_tool() -> anyhow::Result<()> {
 #[cfg(not(target_os = "windows"))]
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn shutdown_flushes_completed_turn_and_file_diff() -> anyhow::Result<()> {
-    use codex_login::AuthDotJson;
-    use codex_login::AuthKeyringBackendKind;
-    use codex_login::TokenData;
-    use codex_login::save_auth;
-    use codex_login::token_data::IdTokenInfo;
-    use codex_protocol::auth::AuthMode;
+    use ava_login::AuthDotJson;
+    use ava_login::AuthKeyringBackendKind;
+    use ava_login::TokenData;
+    use ava_login::save_auth;
+    use ava_login::token_data::IdTokenInfo;
+    use ava_protocol::auth::AuthMode;
     use core_test_support::skip_if_no_network;
-    use core_test_support::test_codex_exec::test_codex_exec;
+    use core_test_support::test_ava_exec::test_ava_exec;
     use std::sync::Arc;
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
@@ -167,7 +167,7 @@ async fn shutdown_flushes_completed_turn_and_file_diff() -> anyhow::Result<()> {
 
     skip_if_no_network!(Ok(()));
 
-    let test = test_codex_exec();
+    let test = test_ava_exec();
     let run_dir = test.cwd_path();
     assert!(
         std::process::Command::new("git")
@@ -210,7 +210,7 @@ async fn shutdown_flushes_completed_turn_and_file_diff() -> anyhow::Result<()> {
             bedrock_api_key: None,
             bedrock_access_keys: None,
         },
-        codex_login::AuthCredentialsStoreMode::File,
+        ava_login::AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )?;
 
@@ -244,8 +244,8 @@ async fn shutdown_flushes_completed_turn_and_file_diff() -> anyhow::Result<()> {
     .await;
 
     test.cmd_with_server(&server)
-        .env_remove("CODEX_API_KEY")
-        .env_remove("CODEX_ANALYTICS_EVENTS_CAPTURE_FILE")
+        .env_remove("AVA_API_KEY")
+        .env_remove("AVA_ANALYTICS_EVENTS_CAPTURE_FILE")
         .arg("--skip-git-repo-check")
         .arg("-s")
         .arg("danger-full-access")
@@ -299,13 +299,13 @@ async fn shutdown_flushes_completed_turn_and_file_diff() -> anyhow::Result<()> {
         deliveries.load(Ordering::Acquire)
     );
     assert!(
-        event_types.iter().any(|event| event == "codex_turn_event"),
+        event_types.iter().any(|event| event == "ava_turn_event"),
         "no completed event was delivered; request paths: {request_paths:?}"
     );
     assert!(
         event_types
             .iter()
-            .any(|event| event == "codex_accepted_line_fingerprints"),
+            .any(|event| event == "ava_accepted_line_fingerprints"),
         "no accepted-line event was delivered; request paths: {request_paths:?}"
     );
 

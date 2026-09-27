@@ -13,25 +13,25 @@ use std::sync::Arc;
 use tempfile::TempDir;
 
 fn context_with_fragment(fragment: &str) -> (TempDir, InlineVisualizationContext) {
-    let codex_home = tempfile::tempdir().expect("temp codex home");
+    let ava_home = tempfile::tempdir().expect("temp ava home");
     let thread_id = ThreadId::new();
-    let context = InlineVisualizationContext::new(codex_home.path(), thread_id)
+    let context = InlineVisualizationContext::new(ava_home.path(), thread_id)
         .expect("UUIDv7 thread id should provide a timestamp");
     fs::create_dir_all(&context.thread_dir).expect("create visualization directory");
     fs::write(context.thread_dir.join("chart.html"), fragment).expect("write fragment");
-    (codex_home, context)
+    (ava_home, context)
 }
 
 #[test]
 fn unterminated_visualization_preview_uses_the_stream_context() {
-    let (codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (ava_home, context) = context_with_fragment("<div>chart</div>");
     let mut controller = StreamController::new_with_inline_visualizations(
         Some(80),
-        codex_home.path(),
+        ava_home.path(),
         HistoryRenderMode::Rich,
         Some(context),
     );
-    controller.push("::codex-inline-vis{file=\"chart.html\"}");
+    controller.push("::ava-inline-vis{file=\"chart.html\"}");
     let lines = crate::terminal_hyperlinks::visible_lines(controller.current_tail_lines());
     assert_eq!(
         line_text(&lines[0]),
@@ -42,8 +42,8 @@ fn unterminated_visualization_preview_uses_the_stream_context() {
 
 #[test]
 fn granted_visualization_root_overrides_thread_id_derived_root() {
-    let codex_home = tempfile::tempdir().expect("temp codex home");
-    let granted_context = InlineVisualizationContext::new(codex_home.path(), ThreadId::new())
+    let ava_home = tempfile::tempdir().expect("temp ava home");
+    let granted_context = InlineVisualizationContext::new(ava_home.path(), ThreadId::new())
         .expect("granted context");
     fs::create_dir_all(&granted_context.thread_dir).expect("create granted directory");
     fs::write(
@@ -53,7 +53,7 @@ fn granted_visualization_root_overrides_thread_id_derived_root() {
     .expect("write fragment");
 
     let context = InlineVisualizationContext::new_with_writable_roots(
-        codex_home.path(),
+        ava_home.path(),
         ThreadId::new(),
         [granted_context.thread_dir.as_path()],
     )
@@ -93,10 +93,10 @@ fn buffer_to_text(buffer: &Buffer, width: u16) -> String {
 
 #[test]
 fn rewrites_complete_directive_to_trusted_static_file_placeholder() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
 
     let rewritten = rewrite_inline_visualizations(
-        "Before\n::codex-inline-vis{file=\"chart.html\"}\nAfter",
+        "Before\n::ava-inline-vis{file=\"chart.html\"}\nAfter",
         Some(&context),
     );
 
@@ -133,7 +133,7 @@ fn rewrites_complete_directive_to_trusted_static_file_placeholder() {
 #[test]
 fn hides_incomplete_streaming_directive() {
     let rewritten = rewrite_inline_visualizations(
-        "Before\n::codex-inline-vis{file=\"chart",
+        "Before\n::ava-inline-vis{file=\"chart",
         /*context*/ None,
     );
 
@@ -156,7 +156,7 @@ fn hides_incomplete_streaming_content_reference() {
 
 #[test]
 fn unavailable_or_invalid_content_reference_has_explicit_fallback() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
     let outside = tempfile::tempdir().expect("outside visualization directory");
     let outside_path = outside.path().join("chart.html");
     fs::write(&outside_path, "<div>outside</div>").expect("write outside fragment");
@@ -178,12 +178,12 @@ fn unavailable_or_invalid_content_reference_has_explicit_fallback() {
 
 #[test]
 fn unavailable_artifact_has_explicit_fallback() {
-    let codex_home = tempfile::tempdir().expect("temp codex home");
-    let context = InlineVisualizationContext::new(codex_home.path(), ThreadId::new())
+    let ava_home = tempfile::tempdir().expect("temp ava home");
+    let context = InlineVisualizationContext::new(ava_home.path(), ThreadId::new())
         .expect("UUIDv7 thread id should provide a timestamp");
 
     assert_eq!(
-        rewrite_inline_visualizations("::codex-inline-vis{file=\"missing.html\"}", Some(&context),)
+        rewrite_inline_visualizations("::ava-inline-vis{file=\"missing.html\"}", Some(&context),)
             .markdown,
         "_Visualization unavailable on this device._"
     );
@@ -191,12 +191,12 @@ fn unavailable_artifact_has_explicit_fallback() {
 
 #[test]
 fn rejects_parent_path_and_non_html_file() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
 
     for file in ["../chart.html", "chart.svg"] {
         assert_eq!(
             rewrite_inline_visualizations(
-                &format!("::codex-inline-vis{{file=\"{file}\"}}"),
+                &format!("::ava-inline-vis{{file=\"{file}\"}}"),
                 Some(&context),
             )
             .markdown,
@@ -207,7 +207,7 @@ fn rejects_parent_path_and_non_html_file() {
 
 #[test]
 fn rejects_oversized_fragment() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
     let fragment = fs::OpenOptions::new()
         .write(true)
         .open(context.thread_dir.join("chart.html"))
@@ -217,7 +217,7 @@ fn rejects_oversized_fragment() {
         .expect("enlarge fragment");
 
     assert_eq!(
-        rewrite_inline_visualizations("::codex-inline-vis{file=\"chart.html\"}", Some(&context),)
+        rewrite_inline_visualizations("::ava-inline-vis{file=\"chart.html\"}", Some(&context),)
             .markdown,
         "_Visualization unavailable on this device._"
     );
@@ -225,7 +225,7 @@ fn rejects_oversized_fragment() {
 
 #[test]
 fn viewer_materializes_sandboxed_static_document() {
-    let (_codex_home, context) = context_with_fragment(
+    let (_ava_home, context) = context_with_fragment(
         "<div id=\"widget\"><div class=\"viz-controls\">controls</div><canvas id=\"chart\"></canvas></div><script>globalThis.chartRendered = true;</script>",
     );
     let url = context.link_for("chart.html").expect("visualization link");
@@ -233,7 +233,7 @@ fn viewer_materializes_sandboxed_static_document() {
     let viewer_path = url.to_file_path().expect("viewer file path");
     assert_eq!(
         viewer_path.parent().and_then(Path::file_name),
-        Some(std::ffi::OsStr::new(".codex-viewers"))
+        Some(std::ffi::OsStr::new(".ava-viewers"))
     );
     let document = fs::read_to_string(viewer_path).expect("read static viewer");
 
@@ -259,7 +259,7 @@ fn viewer_materializes_sandboxed_static_document() {
 
 #[test]
 fn viewer_reuses_path_and_refreshes_static_document() {
-    let (_codex_home, context) = context_with_fragment("<div>first</div>");
+    let (_ava_home, context) = context_with_fragment("<div>first</div>");
     let first_url = context.link_for("chart.html").expect("first viewer link");
     let viewer_path = first_url.to_file_path().expect("viewer file path");
     let original_viewer_metadata = fs::metadata(&viewer_path).expect("read viewer metadata");
@@ -304,7 +304,7 @@ fn viewer_reuses_path_and_refreshes_static_document() {
 
 #[test]
 fn finalized_agent_cell_replays_visualization_link() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
     let fragment_path = context.thread_dir.join("chart.html");
     let cell = AgentMarkdownCell::new_with_inline_visualizations(
         format!(
@@ -363,13 +363,13 @@ fn finalized_agent_cell_replays_visualization_link() {
 
 #[test]
 fn transcript_overlay_remeasures_visualization_when_artifact_becomes_available() {
-    let codex_home = tempfile::tempdir().expect("temp codex home");
-    let context = InlineVisualizationContext::new(codex_home.path(), ThreadId::new())
+    let ava_home = tempfile::tempdir().expect("temp ava home");
+    let context = InlineVisualizationContext::new(ava_home.path(), ThreadId::new())
         .expect("UUIDv7 thread id should provide a timestamp");
     fs::create_dir_all(&context.thread_dir).expect("create visualization directory");
 
     let cell = AgentMarkdownCell::new_with_inline_visualizations(
-        "::codex-inline-vis{file=\"chart.html\"}".to_string(),
+        "::ava-inline-vis{file=\"chart.html\"}".to_string(),
         Path::new("/workspace"),
         Some(context.clone()),
     );
@@ -417,9 +417,9 @@ fn transcript_overlay_remeasures_visualization_when_artifact_becomes_available()
 
 #[test]
 fn agent_code_blocks_preserve_visualization_directive_literals() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
     let cell = AgentMarkdownCell::new_with_inline_visualizations(
-        "Fenced:\n\n```text\n::codex-inline-vis{file=\"chart.html\"}\n```\n\nIndented:\n\n    ::codex-inline-vis{file=\"chart.html\"}"
+        "Fenced:\n\n```text\n::ava-inline-vis{file=\"chart.html\"}\n```\n\nIndented:\n\n    ::ava-inline-vis{file=\"chart.html\"}"
             .to_string(),
         Path::new("/workspace"),
         Some(context),
@@ -437,7 +437,7 @@ fn agent_code_blocks_preserve_visualization_directive_literals() {
 
 #[test]
 fn streaming_hides_partial_directive_and_renders_completed_link() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
     let mut controller = StreamController::new_with_inline_visualizations(
         /*width*/ Some(80),
         Path::new("/workspace"),
@@ -445,7 +445,7 @@ fn streaming_hides_partial_directive_and_renders_completed_link() {
         Some(context),
     );
 
-    controller.push("Before\n::codex-inline-vis{file=\"chart");
+    controller.push("Before\n::ava-inline-vis{file=\"chart");
     assert!(
         controller
             .current_tail_lines()
@@ -457,7 +457,7 @@ fn streaming_hides_partial_directive_and_renders_completed_link() {
     let (cell, source) = controller.finalize();
     assert_eq!(
         source.as_deref(),
-        Some("Before\n::codex-inline-vis{file=\"chart.html\"}\n")
+        Some("Before\n::ava-inline-vis{file=\"chart.html\"}\n")
     );
     let cell = cell.expect("final streamed cell");
     let lines = cell.display_hyperlink_lines(/*width*/ 80);
@@ -470,7 +470,7 @@ fn streaming_hides_partial_directive_and_renders_completed_link() {
 
 #[test]
 fn visualization_link_uses_the_artifact_name() {
-    let (_codex_home, context) = context_with_fragment("<div>chart</div>");
+    let (_ava_home, context) = context_with_fragment("<div>chart</div>");
     fs::rename(
         context.thread_dir.join("chart.html"),
         context.thread_dir.join("compound-interest-explorer.html"),
@@ -478,7 +478,7 @@ fn visualization_link_uses_the_artifact_name() {
     .expect("rename fragment");
 
     let rewritten = rewrite_inline_visualizations(
-        "::codex-inline-vis{file=\"compound-interest-explorer.html\"}",
+        "::ava-inline-vis{file=\"compound-interest-explorer.html\"}",
         Some(&context),
     );
 
@@ -501,7 +501,7 @@ fn visualization_link_uses_the_artifact_name() {
 #[test]
 fn user_markdown_keeps_directive_literal() {
     let rendered =
-        crate::markdown_render::render_markdown_text("::codex-inline-vis{file=\"chart.html\"}");
+        crate::markdown_render::render_markdown_text("::ava-inline-vis{file=\"chart.html\"}");
     let text = rendered
         .lines
         .iter()
@@ -509,5 +509,5 @@ fn user_markdown_keeps_directive_literal() {
         .map(|span| span.content.as_ref())
         .collect::<String>();
 
-    assert_eq!(text, "::codex-inline-vis{file=\"chart.html\"}");
+    assert_eq!(text, "::ava-inline-vis{file=\"chart.html\"}");
 }

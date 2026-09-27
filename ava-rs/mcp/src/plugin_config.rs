@@ -1,9 +1,9 @@
-use codex_config::McpServerAuth;
-use codex_config::McpServerConfig;
-use codex_config::McpServerEnvVar;
-use codex_config::McpServerTransportConfig;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_config::McpServerAuth;
+use ava_config::McpServerConfig;
+use ava_config::McpServerEnvVar;
+use ava_config::McpServerTransportConfig;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use serde::Deserialize;
 use serde_json::Map as JsonMap;
 use serde_json::Value as JsonValue;

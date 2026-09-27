@@ -1,23 +1,23 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use codex_config::types::MemoriesConfig;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::NoopTurnItemEmitter;
-use codex_extension_api::PromptSlot;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolCallSource;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolPayload;
-use codex_tools::ToolOutput;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::PathExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
-use codex_utils_output_truncation::TruncationPolicy;
+use ava_config::types::MemoriesConfig;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::NoopTurnItemEmitter;
+use ava_extension_api::PromptSlot;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolCallSource;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolPayload;
+use ava_tools::ToolOutput;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
+use ava_utils_output_truncation::TruncationPolicy;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -63,11 +63,11 @@ fn tools_are_not_contributed_when_disabled() {
     let extension = MemoriesExtension::default();
     let thread_store = ExtensionData::new("thread");
     thread_store.insert(MemoriesExtensionConfig {
-        version: codex_protocol::MemoryVersion::V1,
+        version: ava_protocol::MemoryVersion::V1,
         enabled: false,
         dedicated_tools: true,
-        codex_home: test_path_buf("/tmp/codex-home").abs(),
-        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        ava_home: test_path_buf("/tmp/ava-home").abs(),
+        cwd: test_path_buf("/tmp/ava-cwd").to_path_buf(),
         memories: MemoriesConfig::default(),
     });
 
@@ -83,11 +83,11 @@ fn unified_tool_contributed_when_enabled_without_dedicated_tools() {
     let extension = MemoriesExtension::default();
     let thread_store = ExtensionData::new("thread");
     thread_store.insert(MemoriesExtensionConfig {
-        version: codex_protocol::MemoryVersion::V1,
+        version: ava_protocol::MemoryVersion::V1,
         enabled: true,
         dedicated_tools: false,
-        codex_home: test_path_buf("/tmp/codex-home").abs(),
-        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        ava_home: test_path_buf("/tmp/ava-home").abs(),
+        cwd: test_path_buf("/tmp/ava-cwd").to_path_buf(),
         memories: MemoriesConfig::default(),
     });
 
@@ -105,11 +105,11 @@ fn tools_are_contributed_when_enabled_with_dedicated_tools() {
     let extension = MemoriesExtension::default();
     let thread_store = ExtensionData::new("thread");
     thread_store.insert(MemoriesExtensionConfig {
-        version: codex_protocol::MemoryVersion::V1,
+        version: ava_protocol::MemoryVersion::V1,
         enabled: true,
         dedicated_tools: true,
-        codex_home: test_path_buf("/tmp/codex-home").abs(),
-        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        ava_home: test_path_buf("/tmp/ava-home").abs(),
+        cwd: test_path_buf("/tmp/ava-cwd").to_path_buf(),
         memories: MemoriesConfig::default(),
     });
 
@@ -133,16 +133,16 @@ fn tools_are_contributed_when_enabled_with_dedicated_tools() {
 
 #[test]
 fn install_registers_dedicated_tool_contributor() {
-    let mut builder = ExtensionRegistryBuilder::<codex_core::config::Config>::new();
+    let mut builder = ExtensionRegistryBuilder::<ava_core::config::Config>::new();
     crate::install(&mut builder, /*metrics_client*/ None);
     let registry = builder.build();
     let thread_store = ExtensionData::new("thread");
     thread_store.insert(MemoriesExtensionConfig {
-        version: codex_protocol::MemoryVersion::V1,
+        version: ava_protocol::MemoryVersion::V1,
         enabled: true,
         dedicated_tools: true,
-        codex_home: test_path_buf("/tmp/codex-home").abs(),
-        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        ava_home: test_path_buf("/tmp/ava-home").abs(),
+        cwd: test_path_buf("/tmp/ava-cwd").to_path_buf(),
         memories: MemoriesConfig::default(),
     });
 
@@ -168,7 +168,7 @@ fn install_registers_dedicated_tool_contributor() {
 #[test]
 fn ad_hoc_tool_definition_includes_filename_contract() {
     let tool = memory_tool(
-        Path::new("/tmp/codex-home/memories"),
+        Path::new("/tmp/ava-home/memories"),
         crate::ADD_AD_HOC_NOTE_TOOL_NAME,
     );
     let spec = serde_json::to_value(tool.spec()).expect("serialize tool spec");
@@ -202,10 +202,10 @@ async fn prompt_contribution_uses_memory_summary_when_enabled() {
     let extension = MemoriesExtension::default();
     let thread_store = ExtensionData::new("thread");
     thread_store.insert(MemoriesExtensionConfig {
-        version: codex_protocol::MemoryVersion::V1,
+        version: ava_protocol::MemoryVersion::V1,
         enabled: true,
         dedicated_tools: false,
-        codex_home: tempdir.path().abs(),
+        ava_home: tempdir.path().abs(),
         cwd: tempdir.path().to_path_buf(),
         memories: MemoriesConfig::default(),
     });
@@ -251,10 +251,10 @@ async fn unified_memory_tool_crud_and_search_operations() {
             call_id: "call-save".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: save_payload.clone(),
@@ -288,10 +288,10 @@ async fn unified_memory_tool_crud_and_search_operations() {
             call_id: "call-search".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: search_payload.clone(),
@@ -321,10 +321,10 @@ async fn unified_memory_tool_crud_and_search_operations() {
             call_id: "call-get".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: get_payload.clone(),
@@ -352,10 +352,10 @@ async fn unified_memory_tool_crud_and_search_operations() {
             call_id: "call-stats".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: stats_payload.clone(),
@@ -384,10 +384,10 @@ async fn unified_memory_tool_crud_and_search_operations() {
             call_id: "call-delete".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: delete_payload.clone(),
@@ -427,10 +427,10 @@ async fn unified_memory_tool_session_memory_operations() {
             call_id: "call-sess-save".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: session_save_payload.clone(),
@@ -464,10 +464,10 @@ async fn unified_memory_tool_session_memory_operations() {
             call_id: "call-sess-search".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: session_search_payload.clone(),
@@ -497,10 +497,10 @@ async fn unified_memory_tool_session_memory_operations() {
             call_id: "call-sess-list".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: session_list_payload.clone(),
@@ -529,10 +529,10 @@ async fn unified_memory_tool_session_memory_operations() {
             call_id: "call-sess-get".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: session_get_payload.clone(),
@@ -568,10 +568,10 @@ async fn unified_memory_tool_session_disabled_toggle() {
             call_id: "call-sess-disabled".to_string(),
             tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(4096),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: session_search_payload.clone(),
@@ -610,10 +610,10 @@ async fn add_ad_hoc_note_tool_creates_note_file() {
             call_id: "call-1".to_string(),
             tool_name: memory_tool_name(crate::ADD_AD_HOC_NOTE_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(1024),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: payload.clone(),
@@ -656,10 +656,10 @@ async fn add_ad_hoc_note_tool_rejects_paths_as_filenames() {
             call_id: "call-1".to_string(),
             tool_name: memory_tool_name(crate::ADD_AD_HOC_NOTE_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(1024),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload,
@@ -703,10 +703,10 @@ async fn read_tool_reads_memory_file() {
             call_id: "call-1".to_string(),
             tool_name: memory_tool_name(crate::READ_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(1024),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: payload.clone(),
@@ -820,10 +820,10 @@ async fn search_tool_accepts_multiple_queries() {
             call_id: "call-1".to_string(),
             tool_name: memory_tool_name(crate::SEARCH_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(1024),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: payload.clone(),
@@ -896,10 +896,10 @@ async fn search_tool_accepts_windowed_all_match_mode() {
             call_id: "call-1".to_string(),
             tool_name: memory_tool_name(crate::SEARCH_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(1024),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload: payload.clone(),
@@ -952,10 +952,10 @@ async fn search_tool_rejects_legacy_single_query() {
             call_id: "call-1".to_string(),
             tool_name: memory_tool_name(crate::SEARCH_TOOL_NAME),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(1024),
             source: ToolCallSource::Direct,
-            conversation_history: codex_extension_api::ConversationHistory::default(),
+            conversation_history: ava_extension_api::ConversationHistory::default(),
             turn_item_emitter: Arc::new(NoopTurnItemEmitter),
             environments: Vec::new(),
             payload,

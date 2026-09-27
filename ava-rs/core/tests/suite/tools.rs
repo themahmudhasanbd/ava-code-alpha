@@ -5,27 +5,27 @@ use std::fs;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_core::sandboxing::SandboxPermissions;
-use codex_features::Feature;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_core::sandboxing::SandboxPermissions;
+use ava_features::Feature;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::assert_regex_match;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -42,8 +42,8 @@ use core_test_support::responses::strip_response_item_ids_from_json;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -81,7 +81,7 @@ async fn strict_tool_collisions_fail_the_turn_before_sampling(
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.tool_registry.error_on_tool_collisions = true;
         config.update_plan_enabled = true;
         if pre_compact {
@@ -126,7 +126,7 @@ async fn strict_tool_collisions_fail_the_turn_before_sampling(
             defer_loading: false,
         })]
     };
-    let codex_core::NewThread { thread, .. } = test
+    let ava_core::NewThread { thread, .. } = test
         .thread_manager
         .start_thread(StartThreadOptions {
             dynamic_tools,
@@ -140,7 +140,7 @@ async fn strict_tool_collisions_fail_the_turn_before_sampling(
                 text: "use the planning tool".to_string(),
                 text_elements: Vec::new(),
             }])
-            .on_start(codex_core::TurnStartOptions {
+            .on_start(ava_core::TurnStartOptions {
                 root_turn_id: Some("root-turn".into()),
                 ..Default::default()
             }),
@@ -168,7 +168,7 @@ async fn strict_tool_collisions_fail_the_turn_before_sampling(
     thread.flush_rollout().await?;
     let history = thread.load_history(/*include_archived*/ false).await?;
     let attribution = history.items.iter().find_map(|item| match item {
-        codex_history::RolloutItem::EventMsg(EventMsg::TurnStarted(event))
+        ava_history::RolloutItem::EventMsg(EventMsg::TurnStarted(event))
             if event.turn_id == completed.turn_id =>
         {
             event.root_turn_id.as_deref()
@@ -203,13 +203,13 @@ async fn strict_tool_collisions_do_not_duplicate_unrelated_compaction_errors() -
     });
     let compact_mock =
         mount_response_once(&server, ResponseTemplate::new(400).set_body_json(&error)).await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.tool_registry.error_on_tool_collisions = true;
         config.model_auto_compact_token_limit = Some(0);
     });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "trigger compaction".to_string(),
             text_elements: Vec::new(),
@@ -217,7 +217,7 @@ async fn strict_tool_collisions_do_not_duplicate_unrelated_compaction_errors() -
         .await?;
 
     let mut errors = Vec::new();
-    wait_for_event(&test.codex, |event| match event {
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::Error(error) => {
             errors.push(error.message.clone());
             false
@@ -251,7 +251,7 @@ async fn empty_turn_environments_omits_environment_backed_tools() -> Result<()> 
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.update_plan_enabled = true;
         config
             .features
@@ -293,7 +293,7 @@ async fn turn_environment_selection_keeps_environment_backed_tools() -> Result<(
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::UnifiedExec)
@@ -321,7 +321,7 @@ async fn custom_tool_unknown_returns_custom_output_error() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build(&server).await?;
 
     let call_id = "custom-unsupported";
@@ -374,7 +374,7 @@ async fn namespaced_custom_tool_call_preserves_namespace_through_dispatch_and_re
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     builder = builder.with_config(|config| {
         let _ = config.features.enable(Feature::ExecutedToolCallMetadata);
     });
@@ -499,7 +499,7 @@ async fn namespaced_custom_tool_call_preserves_namespace_through_dispatch_and_re
     let expected_escaped_calls = json!([{
         "name": format!("{namespace}__{tool_name}"),
         "arguments": {
-            "_codex_executed_tool_call_truncated": {
+            "_ava_executed_tool_call_truncated": {
                 "original_bytes": serde_json::to_vec(&escaped_input)?.len(),
                 "max_bytes": 8 * 1024,
             },
@@ -517,7 +517,7 @@ async fn namespaced_custom_tool_call_preserves_namespace_through_dispatch_and_re
             ev_response_created("resp-5"),
             ev_custom_tool_call(
                 direct_exec_call_id,
-                codex_code_mode::PUBLIC_TOOL_NAME,
+                ava_code_mode::PUBLIC_TOOL_NAME,
                 input,
             ),
             ev_completed("resp-5"),
@@ -558,7 +558,7 @@ async fn namespaced_custom_tool_call_preserves_namespace_through_dispatch_and_re
         tool_call_metadata(direct_exec_output),
         json!({
             "executed_tool_calls": [{
-                "name": codex_code_mode::PUBLIC_TOOL_NAME,
+                "name": ava_code_mode::PUBLIC_TOOL_NAME,
                 "arguments": input,
             }],
             "tool_calls_complete": true,
@@ -573,14 +573,14 @@ async fn exec_command_escalated_permissions_rejected_then_ok() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5-ava")
         .with_config(|config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         });
     let test = builder.build(&server).await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             permission_profile: Some(PermissionProfile::Disabled),
@@ -675,7 +675,7 @@ async fn sandbox_denied_exec_command_returns_original_output() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let mut builder = test_ava().with_model("gpt-5.4");
     let fixture = builder.build(&server).await?;
 
     let call_id = "sandbox-denied-exec-command";
@@ -763,7 +763,7 @@ async fn exec_command_enforces_glob_deny_read_policy() -> Result<()> {
     skip_if_sandbox!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.4")
         .with_config(move |config| {
             let mut file_system_sandbox_policy = FileSystemSandboxPolicy::default();
@@ -879,8 +879,8 @@ async fn collect_tools(availability: CommandToolAvailability) -> Result<Vec<Stri
     let mock = mount_sse_sequence(&server, responses).await;
 
     let mut builder = match availability {
-        CommandToolAvailability::Default => test_codex(),
-        CommandToolAvailability::ManagedUnifiedExecDisabled => test_codex()
+        CommandToolAvailability::Default => test_ava(),
+        CommandToolAvailability::ManagedUnifiedExecDisabled => test_ava()
             .with_cloud_config_bundle(
                 CloudConfigBundleFixture::loader_with_enterprise_requirement(
                     r#"
@@ -890,14 +890,14 @@ shell_tool = true
 "#,
                 ),
             ),
-        CommandToolAvailability::ShellToolDisabled => test_codex().with_config(|config| {
+        CommandToolAvailability::ShellToolDisabled => test_ava().with_config(|config| {
             config
                 .features
                 .disable(Feature::ShellTool)
                 .expect("test config should allow feature update");
         }),
         CommandToolAvailability::ModelDisabled => {
-            test_codex().with_model_info_override("gpt-5.4", |model| {
+            test_ava().with_model_info_override("gpt-5.4", |model| {
                 model.shell_type = ConfigShellToolType::Disabled;
             })
         }

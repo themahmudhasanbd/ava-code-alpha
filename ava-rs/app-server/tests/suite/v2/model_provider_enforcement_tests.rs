@@ -3,32 +3,32 @@
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server::in_process;
-use codex_app_server::in_process::InProcessServerEvent;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadQueueAddParams;
-use codex_app_server_protocol::ThreadQueueAddResponse;
-use codex_app_server_protocol::ThreadQueueListParams;
-use codex_app_server_protocol::ThreadQueueListResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::NoopThreadConfigLoader;
-use codex_core::config::ConfigBuilder;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_protocol::protocol::SessionSource;
+use ava_app_server::in_process;
+use ava_app_server::in_process::InProcessServerEvent;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadQueueAddParams;
+use ava_app_server_protocol::ThreadQueueAddResponse;
+use ava_app_server_protocol::ThreadQueueListParams;
+use ava_app_server_protocol::ThreadQueueListResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::NoopThreadConfigLoader;
+use ava_core::config::ConfigBuilder;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_protocol::protocol::SessionSource;
 use core_test_support::responses;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
@@ -64,7 +64,7 @@ async fn provider_requirement_changes_reject_inputs_to_existing_threads(
     let other = MockServer::builder().start().await;
     let home = TempDir::new()?;
     MockResponsesConfig::new(gateway.uri())
-        .enable_feature(codex_features::Feature::Goals)
+        .enable_feature(ava_features::Feature::Goals)
         .write(home.path())?;
     let requirements = format!(
         r#"
@@ -82,7 +82,7 @@ base_url = "{}/v1"
     let requirements_path = home.path().join("requirements.toml");
     std::fs::write(&requirements_path, &requirements)?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .with_json_logging("warn")
         .build_initialized()
         .await?;
@@ -120,7 +120,7 @@ base_url = "{}/v1"
             })),
         )
         .await?;
-    let _: codex_app_server_protocol::ThreadGoalSetResponse = server.read_response(id).await?;
+    let _: ava_app_server_protocol::ThreadGoalSetResponse = server.read_response(id).await?;
 
     let updated = if required_selection == "other" {
         requirements.replace("model_provider = \"gateway\"", "model_provider = \"other\"")
@@ -130,7 +130,7 @@ base_url = "{}/v1"
     std::fs::write(requirements_path, updated)?;
     let expected_error = JSONRPCErrorError {
         code: -32600,
-        message: "failed to load configuration: Your organization's required model provider settings changed. Restart Codex to apply them; this request was not sent".to_string(),
+        message: "failed to load configuration: Your organization's required model provider settings changed. Restart Ava to apply them; this request was not sent".to_string(),
         data: None,
     };
     for (method, params) in [
@@ -168,7 +168,7 @@ base_url = "{}/v1"
             Some(json!({"threadId": started.thread.id})),
         )
         .await?;
-    let goal: codex_app_server_protocol::ThreadGoalGetResponse = server.read_response(id).await?;
+    let goal: ava_app_server_protocol::ThreadGoalGetResponse = server.read_response(id).await?;
     assert_eq!(goal.goal.expect("existing goal").objective, "Original goal");
     let id = server
         .send_raw_request(
@@ -176,14 +176,14 @@ base_url = "{}/v1"
             Some(json!({"threadId": started.thread.id, "status": "paused"})),
         )
         .await?;
-    let _: codex_app_server_protocol::ThreadGoalSetResponse = server.read_response(id).await?;
+    let _: ava_app_server_protocol::ThreadGoalSetResponse = server.read_response(id).await?;
     let id = server
         .send_raw_request(
             "thread/goal/clear",
             Some(json!({"threadId": started.thread.id})),
         )
         .await?;
-    let _: codex_app_server_protocol::ThreadGoalClearResponse = server.read_response(id).await?;
+    let _: ava_app_server_protocol::ThreadGoalClearResponse = server.read_response(id).await?;
     let id = server
         .send_raw_request(
             "thread/queue/start",
@@ -222,7 +222,7 @@ base_url = "{}/v1"
             })),
         )
         .await?;
-    let _: codex_app_server_protocol::ThreadQueueDeleteResponse = server.read_response(id).await?;
+    let _: ava_app_server_protocol::ThreadQueueDeleteResponse = server.read_response(id).await?;
     release_response.send(()).expect("release active response");
     timeout(
         wait,
@@ -265,7 +265,7 @@ async fn local_config_changes_do_not_block_existing_threads() -> Result<()> {
     let home = TempDir::new()?;
     MockResponsesConfig::new(&provider.uri()).write(home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized()
         .await?;
     let started = server.start_thread(ThreadStartParams::default()).await?;
@@ -308,7 +308,7 @@ async fn malformed_system_defaults_do_not_block_existing_thread_turn() -> Result
     overrides.system_config_path = Some(system_config_path.clone());
     let config = Arc::new(
         ConfigBuilder::default()
-            .codex_home(home.path().to_path_buf())
+            .ava_home(home.path().to_path_buf())
             .fallback_cwd(Some(home.path().to_path_buf()))
             .loader_overrides(overrides.clone())
             .build()
@@ -322,16 +322,16 @@ async fn malformed_system_defaults_do_not_block_existing_thread_turn() -> Result
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
         thread_config_loader: Arc::new(NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli,
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },

@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-git-attribution"
+name = "ava-git-attribution"
 version.workspace = true
 
 [lib]
-name = "codex_git_attribution"
+name = "ava_git_attribution"
 path = "src/lib.rs"
 doctest = false
 
@@ -13,10 +13,10 @@ doctest = false
 workspace = true
 
 [dependencies]
-codex-backend-client = { workspace = true }
-codex-extension-api = { workspace = true }
-codex-http-client = { workspace = true }
-codex-login = { workspace = true }
+ava-backend-client = { workspace = true }
+ava-extension-api = { workspace = true }
+ava-http-client = { workspace = true }
+ava-login = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["time"] }
 

@@ -14,35 +14,35 @@ use std::sync::atomic::AtomicBool;
 use tokio_util::sync::CancellationToken;
 
 use crate::inline_visualization::InlineVisualizationContext;
-use codex_app_server_protocol::AddCreditsNudgeCreditType;
-use codex_app_server_protocol::AddCreditsNudgeEmailStatus;
-use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse;
-use codex_app_server_protocol::DynamicToolCallResponse;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::MarketplaceAddResponse;
-use codex_app_server_protocol::MarketplaceRemoveResponse;
-use codex_app_server_protocol::MarketplaceUpgradeResponse;
-use codex_app_server_protocol::McpServerStatus;
-use codex_app_server_protocol::McpServerStatusDetail;
-use codex_app_server_protocol::PluginInstallResponse;
-use codex_app_server_protocol::PluginListResponse;
-use codex_app_server_protocol::PluginMarketplaceEntry;
-use codex_app_server_protocol::PluginReadParams;
-use codex_app_server_protocol::PluginReadResponse;
-use codex_app_server_protocol::PluginUninstallResponse;
-use codex_app_server_protocol::RequestId as AppServerRequestId;
-use codex_app_server_protocol::SkillsListResponse;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadGoalStatus;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_connectors::AppInfo;
-use codex_file_search::FileMatch;
-use codex_message_history::HistoryBatchCursor;
-use codex_protocol::ThreadId;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_approval_presets::ApprovalPreset;
+use ava_app_server_protocol::AddCreditsNudgeCreditType;
+use ava_app_server_protocol::AddCreditsNudgeEmailStatus;
+use ava_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse;
+use ava_app_server_protocol::DynamicToolCallResponse;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::MarketplaceAddResponse;
+use ava_app_server_protocol::MarketplaceRemoveResponse;
+use ava_app_server_protocol::MarketplaceUpgradeResponse;
+use ava_app_server_protocol::McpServerStatus;
+use ava_app_server_protocol::McpServerStatusDetail;
+use ava_app_server_protocol::PluginInstallResponse;
+use ava_app_server_protocol::PluginListResponse;
+use ava_app_server_protocol::PluginMarketplaceEntry;
+use ava_app_server_protocol::PluginReadParams;
+use ava_app_server_protocol::PluginReadResponse;
+use ava_app_server_protocol::PluginUninstallResponse;
+use ava_app_server_protocol::RequestId as AppServerRequestId;
+use ava_app_server_protocol::SkillsListResponse;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadGoalStatus;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_connectors::AppInfo;
+use ava_file_search::FileMatch;
+use ava_message_history::HistoryBatchCursor;
+use ava_protocol::ThreadId;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_approval_presets::ApprovalPreset;
 use strum_macros::IntoStaticStr;
 use uuid::Uuid;
 
@@ -57,13 +57,13 @@ use crate::chatwidget::ThreadUsageOutcome;
 use crate::chatwidget::UserMessage;
 use crate::experimental_features::FeatureWriteResult;
 use crate::goal_files::GoalDraft;
-use codex_app_server_protocol::AskForApproval;
-use codex_config::types::ApprovalsReviewer;
-use codex_features::Feature;
-use codex_plugin::PluginCapabilitySummary;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_realtime_webrtc::StartedRealtimeWebrtcSession;
+use ava_app_server_protocol::AskForApproval;
+use ava_config::types::ApprovalsReviewer;
+use ava_features::Feature;
+use ava_plugin::PluginCapabilitySummary;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_realtime_webrtc::StartedRealtimeWebrtcSession;
 
 use crate::history_cell::HistoryCell;
 
@@ -87,8 +87,8 @@ pub(crate) enum ManagedWorktreeMode {
 pub(crate) struct ManagedWorktreeTransition {
     pub(crate) source_thread_id: ThreadId,
     pub(crate) source_cwd: AbsolutePathBuf,
-    pub(crate) manager: codex_worktree::WorktreeManager,
-    pub(crate) checkout: codex_worktree::ManagedWorktree,
+    pub(crate) manager: ava_worktree::WorktreeManager,
+    pub(crate) checkout: ava_worktree::ManagedWorktree,
     pub(crate) config: Box<crate::legacy_core::config::Config>,
     pub(crate) mode: ManagedWorktreeMode,
     pub(crate) name: Option<String>,
@@ -102,8 +102,8 @@ pub(crate) struct ManagedWorktreeCreated {
     pub(crate) name: Option<String>,
     pub(crate) result: Result<
         (
-            codex_worktree::WorktreeManager,
-            codex_worktree::ManagedWorktree,
+            ava_worktree::WorktreeManager,
+            ava_worktree::ManagedWorktree,
         ),
         String,
     >,
@@ -392,7 +392,7 @@ pub(crate) enum AppEvent {
         server_name: String,
         request_id: AppServerRequestId,
         attempt_id: Uuid,
-        result: Result<codex_app_server_protocol::UserVerificationProof, String>,
+        result: Result<ava_app_server_protocol::UserVerificationProof, String>,
     },
 
     /// Interrupt, fork, and retry a safety-buffered turn with the server-selected model.
@@ -612,7 +612,7 @@ pub(crate) enum AppEvent {
 
     /// Forward a command to the Agent. Using an `AppEvent` for this avoids
     /// bubbling channels through layers of widgets.
-    CodexOp(AppCommand),
+    AvaOp(AppCommand),
 
     /// A blocking image-preparation worker has finished; payload stays with its widget.
     ImagesPrepared(Uuid),
@@ -799,7 +799,7 @@ pub(crate) enum AppEvent {
         url: String,
     },
 
-    /// Open the current thread in Codex Desktop.
+    /// Open the current thread in Ava Desktop.
     OpenDesktopThread {
         thread_id: ThreadId,
     },
@@ -885,7 +885,7 @@ pub(crate) enum AppEvent {
     /// Result of fetching lifecycle hook inventory.
     HooksLoaded {
         cwd: PathBuf,
-        result: Result<codex_app_server_protocol::HooksListResponse, String>,
+        result: Result<ava_app_server_protocol::HooksListResponse, String>,
     },
 
     /// Open the prompt for adding a marketplace source.
@@ -1146,7 +1146,7 @@ pub(crate) enum AppEvent {
     RealtimeWebrtcConnected {
         thread_id: ThreadId,
         attempt_id: u64,
-        result: Result<(), codex_realtime_webrtc::ConnectionError>,
+        result: Result<(), ava_realtime_webrtc::ConnectionError>,
     },
 
     /// Stop voice on its original thread after its chat widget is replaced.
@@ -1185,7 +1185,7 @@ pub(crate) enum AppEvent {
 
     /// Save the voice for subsequent conversations through the app server.
     PersistRealtimeVoiceSelection {
-        voice: codex_protocol::protocol::RealtimeVoice,
+        voice: ava_protocol::protocol::RealtimeVoice,
     },
 
     /// Persist the selected service tier to the appropriate config.
@@ -1310,7 +1310,7 @@ pub(crate) enum AppEvent {
     FetchExperimentalFeatures {
         thread_id: ThreadId,
         response_tx: tokio::sync::oneshot::Sender<
-            Result<Vec<codex_app_server_protocol::ExperimentalFeature>, String>,
+            Result<Vec<ava_app_server_protocol::ExperimentalFeature>, String>,
         >,
     },
 

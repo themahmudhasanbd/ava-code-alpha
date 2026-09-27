@@ -1,5 +1,5 @@
 use super::*;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 use tokio::fs as tokio_fs;
@@ -7,8 +7,8 @@ use tokio::fs as tokio_fs;
 #[tokio::test]
 async fn build_memory_tool_developer_instructions_renders_embedded_template() {
     let temp = tempdir().unwrap();
-    let codex_home = AbsolutePathBuf::from_absolute_path(temp.path()).unwrap();
-    let memories_dir = codex_home.join("memories");
+    let ava_home = AbsolutePathBuf::from_absolute_path(temp.path()).unwrap();
+    let memories_dir = ava_home.join("memories");
     tokio_fs::create_dir_all(&memories_dir).await.unwrap();
     tokio_fs::write(
         memories_dir.join("memory_summary.md"),
@@ -17,7 +17,7 @@ async fn build_memory_tool_developer_instructions_renders_embedded_template() {
     .await
     .unwrap();
 
-    let instructions = build_memory_tool_developer_instructions(&codex_home, MemoryVersion::V1)
+    let instructions = build_memory_tool_developer_instructions(&ava_home, MemoryVersion::V1)
         .await
         .unwrap();
 
@@ -35,25 +35,25 @@ async fn build_memory_tool_developer_instructions_renders_embedded_template() {
 async fn v2_reads_only_its_own_summary_without_falling_back_to_v1()
 -> Result<(), Box<dyn std::error::Error>> {
     let home = tempdir()?;
-    let codex_home = AbsolutePathBuf::from_absolute_path(home.path())?;
-    let v1 = codex_home.join("memories");
-    let v2 = codex_home.join("memories_v2");
+    let ava_home = AbsolutePathBuf::from_absolute_path(home.path())?;
+    let v1 = ava_home.join("memories");
+    let v2 = ava_home.join("memories_v2");
     tokio_fs::create_dir_all(&v1).await?;
     tokio_fs::write(v1.join("memory_summary.md"), "v1\nlegacy content").await?;
     assert_eq!(
-        build_memory_tool_developer_instructions(&codex_home, MemoryVersion::V2).await,
+        build_memory_tool_developer_instructions(&ava_home, MemoryVersion::V2).await,
         None
     );
     tokio_fs::create_dir_all(&v2).await?;
     tokio_fs::write(v2.join("memory_summary.md"), "v1\nnew pipeline content").await?;
-    let instructions = build_memory_tool_developer_instructions(&codex_home, MemoryVersion::V2)
+    let instructions = build_memory_tool_developer_instructions(&ava_home, MemoryVersion::V2)
         .await
         .expect("v2 instructions");
     assert!(instructions.contains("new pipeline content"));
     assert!(!instructions.contains("legacy content"));
     assert!(instructions.contains("Memory & Session Memory"));
     assert!(
-        build_memory_tool_developer_instructions(&codex_home, MemoryVersion::V1)
+        build_memory_tool_developer_instructions(&ava_home, MemoryVersion::V1)
             .await
             .expect("v1 instructions")
             .contains("legacy content")

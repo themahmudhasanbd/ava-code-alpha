@@ -38,16 +38,16 @@ fi
 echo "[$(date)] Binaries found in /tmp/ava-bins:"
 ls -la /tmp/ava-bins
 
-# Locate ava-app-server or codex-app-server
+# Locate ava-app-server or ava-app-server
 APP_SERVER=""
 if [ -f "/tmp/ava-bins/ava-app-server" ]; then
     APP_SERVER="/tmp/ava-bins/ava-app-server"
-elif [ -f "/tmp/ava-bins/codex-app-server" ]; then
-    APP_SERVER="/tmp/ava-bins/codex-app-server"
+elif [ -f "/tmp/ava-bins/ava-app-server" ]; then
+    APP_SERVER="/tmp/ava-bins/ava-app-server"
 elif [ -f "/tmp/ava-bins/dist/ava-app-server" ]; then
     APP_SERVER="/tmp/ava-bins/dist/ava-app-server"
-elif [ -f "/tmp/ava-bins/dist/codex-app-server" ]; then
-    APP_SERVER="/tmp/ava-bins/dist/codex-app-server"
+elif [ -f "/tmp/ava-bins/dist/ava-app-server" ]; then
+    APP_SERVER="/tmp/ava-bins/dist/ava-app-server"
 fi
 
 echo "[$(date)] Target app server binary: $APP_SERVER"
@@ -55,9 +55,9 @@ echo "[$(date)] Target app server binary: $APP_SERVER"
 if [ -n "$APP_SERVER" ]; then
     chmod +x "$APP_SERVER"
     mkdir -p /var/www/ava-code/ava-rs/target/debug /var/www/ava-code/ava-rs/target/release
-    cp "$APP_SERVER" /var/www/ava-code/ava-rs/target/debug/codex-app-server
     cp "$APP_SERVER" /var/www/ava-code/ava-rs/target/debug/ava-app-server
-    cp "$APP_SERVER" /var/www/ava-code/ava-rs/target/release/codex-app-server
+    cp "$APP_SERVER" /var/www/ava-code/ava-rs/target/debug/ava-app-server
+    cp "$APP_SERVER" /var/www/ava-code/ava-rs/target/release/ava-app-server
     cp "$APP_SERVER" /var/www/ava-code/ava-rs/target/release/ava-app-server
     chmod +x /var/www/ava-code/ava-rs/target/debug/* /var/www/ava-code/ava-rs/target/release/*
     echo "[$(date)] Binaries copied to target directories."

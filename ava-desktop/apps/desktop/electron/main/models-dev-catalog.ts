@@ -586,12 +586,12 @@ const KNOWN_PROVIDER_BASE_URLS: Record<string, string[]> = {
 };
 
 const PROVIDER_ALIASES: Record<string, string[]> = {
-  // pi-ai names the ChatGPT subscription adapter `openai-codex`, while
+  // pi-ai names the ChatGPT subscription adapter `openai-ava`, while
   // models.dev publishes its model metadata under `openai`. Keep the
   // transport identity in provider config, but resolve metadata through the
   // corresponding public catalog provider.
-  "openai-codex": ["openai", "openai-codex"],
-  "openai-codex-responses": ["openai", "openai-codex"],
+  "openai-ava": ["openai", "openai-ava"],
+  "openai-ava-responses": ["openai", "openai-ava"],
   together: ["together", "togetherai"],
   "together-ai": ["together", "togetherai"],
   fireworks: ["fireworks", "fireworks-ai"],

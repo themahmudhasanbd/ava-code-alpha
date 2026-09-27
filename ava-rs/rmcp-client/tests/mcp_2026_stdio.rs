@@ -5,15 +5,15 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_exec_server::Environment;
-use codex_rmcp_client::Elicitation;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::ExecutorStdioServerLauncher;
-use codex_rmcp_client::LocalStdioServerLauncher;
-use codex_rmcp_client::McpProtocolMode;
-use codex_rmcp_client::RmcpClient;
-use codex_rmcp_client::StdioServerLauncher;
+use ava_exec_server::Environment;
+use ava_rmcp_client::Elicitation;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::ExecutorStdioServerLauncher;
+use ava_rmcp_client::LocalStdioServerLauncher;
+use ava_rmcp_client::McpProtocolMode;
+use ava_rmcp_client::RmcpClient;
+use ava_rmcp_client::StdioServerLauncher;
 use futures::FutureExt;
 use pretty_assertions::assert_eq;
 use rmcp::model::ClientCapabilities;
@@ -31,7 +31,7 @@ async fn exercise_stdio_server(
     opt_in: bool,
     use_executor: bool,
 ) -> anyhow::Result<()> {
-    let server = codex_utils_cargo_bin::cargo_bin("test_mcp_2026_stdio_server")?;
+    let server = ava_utils_cargo_bin::cargo_bin("test_mcp_2026_stdio_server")?;
     let launcher: Arc<dyn StdioServerLauncher> = if use_executor {
         Arc::new(ExecutorStdioServerLauncher::new(
             Environment::default_for_tests().get_exec_backend(),
@@ -42,7 +42,7 @@ async fn exercise_stdio_server(
     let mut env = HashMap::new();
     if opt_in {
         env.insert(
-            OsString::from("CODEX_MCP_PROTOCOL_VERSION"),
+            OsString::from("AVA_MCP_PROTOCOL_VERSION"),
             OsString::from("2026-07-28"),
         );
     }
@@ -87,7 +87,7 @@ async fn exercise_stdio_server(
         .initialize(
             InitializeRequestParams::new(
                 capabilities,
-                Implementation::new("codex-mcp-client", "0.0.0-test"),
+                Implementation::new("ava-mcp-client", "0.0.0-test"),
             )
             .with_protocol_version(ProtocolVersion::V_2025_06_18),
             Some(Duration::from_secs(5)),

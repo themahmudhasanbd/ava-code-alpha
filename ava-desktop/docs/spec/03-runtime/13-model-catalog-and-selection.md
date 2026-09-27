@@ -462,7 +462,7 @@ manual token entry. The enrichment lookup is:
 
 1. A matching models.dev provider is preferred by `vendorKey`, then by
    normalized provider API URL, including explicit native-adapter aliases
-   such as `openai-codex` → `openai`; its exact model record supplies the fields.
+   such as `openai-ava` → `openai`; its exact model record supplies the fields.
 2. A provider endpoint may add custom/account-specific IDs, but cannot replace
    models.dev metadata. A free-form miss receives the fixed generic defaults
    from `bindingForCustomModel`.

@@ -21,7 +21,7 @@ schema v7, v8, v11, and v14:
 1. **Lossless transcripts** — store the runtime message shape (content blocks),
    not the UI projection; UI shapes are derived at the RPC boundary.
 2. **SQLite is an index, not a payload store (D119)** — message content lives
-   in one JSONL file per session (codex/claude-code style): human-readable,
+   in one JSONL file per session (ava/claude-code style): human-readable,
    greppable, copyable, and the database stays small no matter how much is
    chatted.
 3. **High performance** — O(1) file appends, covering indexes for every hot
@@ -446,7 +446,7 @@ CREATE TABLE sessions (
                                           'high', 'xhigh', 'max', 'omit')),
   permission_mode TEXT NOT NULL DEFAULT 'inherit' -- D115: inherit follows settings
                 CHECK (permission_mode IN ('inherit', 'ask', 'accept-edits', 'auto')),
-  source      TEXT,                            -- import origin: claude-code | codex | opencode | pi
+  source      TEXT,                            -- import origin: claude-code | ava | opencode | pi
   deleted_at  INTEGER,                         -- plugin trash marker; null means active
   pinned      INTEGER NOT NULL DEFAULT 0,
   last_seq    INTEGER NOT NULL DEFAULT 0,      -- current message count / ordinal allocator

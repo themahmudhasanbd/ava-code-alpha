@@ -3,8 +3,8 @@ use crate::agent::status::is_final;
 use crate::session::session::Session;
 use crate::tools::handlers::multi_agents_spec::WaitAgentTimeoutOptions;
 use crate::tools::handlers::multi_agents_spec::create_wait_agent_tool_v1;
-use codex_protocol::error::CodexErrorDetails;
-use codex_tools::ToolSpec;
+use ava_protocol::error::AvaErrorDetails;
+use ava_tools::ToolSpec;
 use futures::FutureExt;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
@@ -43,7 +43,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
         )
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -128,7 +128,7 @@ impl Handler {
                     }
                     status_rxs.push((*id, rx));
                 }
-                Err(err) if matches!(err.details(), CodexErrorDetails::ThreadNotFound(_)) => {
+                Err(err) if matches!(err.details(), AvaErrorDetails::ThreadNotFound(_)) => {
                     initial_final_statuses.push((*id, AgentStatus::NotFound));
                 }
                 Err(err) => {

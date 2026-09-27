@@ -6,27 +6,27 @@ use crate::pager_overlay::TranscriptHistoryState;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::rollout_path;
 use chrono::TimeZone;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::user_input::UserInput as CoreUserInput;
-use codex_state::SqliteConfig;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::user_input::UserInput as CoreUserInput;
+use ava_state::SqliteConfig;
 use pretty_assertions::assert_eq;
 
 pub(super) async fn completed_history_app(
     names: &[&str],
 ) -> Result<(App, tempfile::TempDir, ThreadId)> {
     let mut app = make_test_app().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     // The inline scrollback row cap fixes the page boundary used by this regression.
     app.local_settings.transcript_mode = crate::transcript_mode::TranscriptMode::Terminal;
-    app.local_settings.tui.alternate_screen = codex_config::types::AltScreenMode::Never;
+    app.local_settings.tui.alternate_screen = ava_config::types::AltScreenMode::Never;
     app.local_settings.tui.terminal_resize_reflow_max_rows = Some(2);
     let completed_at = chrono::Local
         .with_ymd_and_hms(
@@ -38,7 +38,7 @@ pub(super) async fn completed_history_app(
     let timestamp = completed_at.to_rfc3339();
     let filename_timestamp = "2000-09-06T14-32-00";
     let thread_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         filename_timestamp,
         &timestamp,
         "completed pagination",
@@ -46,7 +46,7 @@ pub(super) async fn completed_history_app(
         /*git_info*/ None,
     )
     .map_err(|error| color_eyre::eyre::eyre!(error))?;
-    let path = rollout_path(codex_home.path(), filename_timestamp, &thread_id);
+    let path = rollout_path(ava_home.path(), filename_timestamp, &thread_id);
     let thread_id = ThreadId::from_string(&thread_id)?;
     let mut records = std::fs::read_to_string(&path)?
         .lines()
@@ -117,13 +117,13 @@ pub(super) async fn completed_history_app(
         .collect::<Vec<_>>()
         .join("\n");
     std::fs::write(path, format!("{records}\n"))?;
-    Ok((app, codex_home, thread_id))
+    Ok((app, ava_home, thread_id))
 }
 
 #[tokio::test]
 async fn older_pagination_completion_footers_follow_answers_without_overlap_duplicates()
 -> Result<()> {
-    let (mut app, _codex_home, thread_id) =
+    let (mut app, _ava_home, thread_id) =
         completed_history_app(&["Oldest", "Middle", "Newest"]).await?;
     let (mut app_server, _requests, proxy) = start_recording_app_server(
         &app.config,
@@ -185,7 +185,7 @@ async fn older_pagination_completion_footers_follow_answers_without_overlap_dupl
 #[tokio::test]
 async fn beginning_navigation_holds_the_view_until_the_last_page_arrives() -> Result<()> {
     for initial_scroll in [0, -1] {
-        let (mut app, _codex_home, thread_id) =
+        let (mut app, _ava_home, thread_id) =
             completed_history_app(&["Oldest", "Middle", "Newest"]).await?;
         let (mut app_server, _requests, proxy) = start_recording_app_server(
             &app.config,
@@ -310,7 +310,7 @@ async fn beginning_navigation_holds_the_view_until_the_last_page_arrives() -> Re
 #[tokio::test]
 async fn returning_to_latest_retains_pending_pages_without_continuing_to_the_beginning()
 -> Result<()> {
-    let (mut app, _codex_home, thread_id) =
+    let (mut app, _ava_home, thread_id) =
         completed_history_app(&["Oldest", "Middle", "Newest"]).await?;
     let (mut app_server, _requests, proxy) = start_recording_app_server(
         &app.config,
@@ -391,7 +391,7 @@ async fn returning_to_latest_retains_pending_pages_without_continuing_to_the_beg
 #[tokio::test]
 async fn stale_history_completions_preserve_the_current_request_and_failure_can_retry() -> Result<()>
 {
-    let (mut app, _codex_home, thread_id) =
+    let (mut app, _ava_home, thread_id) =
         completed_history_app(&["Oldest", "Middle", "Newest"]).await?;
     let (mut app_server, _requests, proxy) = start_recording_app_server(
         &app.config,

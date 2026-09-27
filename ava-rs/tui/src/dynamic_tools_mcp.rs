@@ -11,16 +11,16 @@ use axum::http::header::AUTHORIZATION;
 use axum::middleware;
 use axum::middleware::Next;
 use axum::response::Response;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::DynamicToolCallOutputContentItem;
-use codex_app_server_protocol::DynamicToolCallParams;
-use codex_app_server_protocol::DynamicToolNamespaceTool;
-use codex_app_server_protocol::DynamicToolSpec;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStatusChangedNotification;
-use codex_config::McpServerConfig;
-use codex_config::McpServerRequirement;
-use codex_config::RawMcpServerConfig;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::DynamicToolCallOutputContentItem;
+use ava_app_server_protocol::DynamicToolCallParams;
+use ava_app_server_protocol::DynamicToolNamespaceTool;
+use ava_app_server_protocol::DynamicToolSpec;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStatusChangedNotification;
+use ava_config::McpServerConfig;
+use ava_config::McpServerRequirement;
+use ava_config::RawMcpServerConfig;
 use rmcp::ErrorData as McpError;
 use rmcp::handler::server::ServerHandler;
 use rmcp::model::CallToolRequestParams;
@@ -250,7 +250,7 @@ impl ServerHandler for DynamicToolMcpHandler {
     ) -> Result<rmcp::model::CallToolResponse, McpError> {
         let metadata = &context.meta.0.0;
         let turn_metadata = metadata
-            .get("x-codex-turn-metadata")
+            .get("x-ava-turn-metadata")
             .and_then(|value| match value {
                 Value::Object(_) => Some(value.clone()),
                 Value::String(value) => serde_json::from_str(value).ok(),

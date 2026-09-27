@@ -7,13 +7,13 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::WriterLockCoordinator;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::WriterLockCoordinator;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -80,14 +80,14 @@ async fn compress(home: &Path) -> TestResult<()> {
     if marker.exists() {
         fs::remove_file(&marker)?;
     }
-    codex_rollout::spawn_rollout_compression_worker(
+    ava_rollout::spawn_rollout_compression_worker(
         home.to_path_buf(),
-        codex_rollout::RolloutCompressionTrigger::Startup,
+        ava_rollout::RolloutCompressionTrigger::Startup,
     );
     // The marker proves startup; the maintenance lock proves every blocking job finished.
     wait_until(|| {
         marker.exists()
-            && codex_rollout::try_acquire_rollout_maintenance_lock(home)
+            && ava_rollout::try_acquire_rollout_maintenance_lock(home)
                 .unwrap()
                 .is_some()
     })
@@ -146,7 +146,7 @@ async fn idle_recorder_retains_stable_thread_ownership_after_store_drop() -> Tes
 async fn metadata_updates_share_ownership_and_resume_compressed_rollouts() -> TestResult<()> {
     let (home, thread_id, path) = fixture()?;
     let config = test_config(home.path());
-    let db = codex_state::StateRuntime::init(
+    let db = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -178,7 +178,7 @@ async fn metadata_updates_share_ownership_and_resume_compressed_rollouts() -> Te
     owner.update_thread_metadata(patch.clone()).await?;
     owner.shutdown_thread(thread_id).await?;
     let (items, _, _) = RolloutRecorder::load_rollout_items(&path).await?;
-    let mut expected = codex_rollout::read_session_meta_line(&path).await?;
+    let mut expected = ava_rollout::read_session_meta_line(&path).await?;
     expected.meta.memory_mode = Some("disabled".into());
     expected.git = None;
     assert_eq!(

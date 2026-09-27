@@ -1,8 +1,8 @@
 //! Distinguishes completed assessments from failures without assigning risk to errors.
 
 use crate::GuardianAssessment;
-use codex_analytics::GuardianReviewFailureReason;
-use codex_protocol::protocol::CodexErrorInfo;
+use ava_analytics::GuardianReviewFailureReason;
+use ava_protocol::protocol::AvaErrorInfo;
 use tokio::time::Instant;
 
 #[derive(Debug)]
@@ -19,7 +19,7 @@ pub enum GuardianReviewError {
     },
     Session {
         message: String,
-        error_info: Option<CodexErrorInfo>,
+        error_info: Option<AvaErrorInfo>,
         retry_at: Option<Instant>,
     },
     Parse {
@@ -45,7 +45,7 @@ impl GuardianReviewError {
     }
 
     #[cfg(test)]
-    pub(crate) fn session_with_error_info(err: anyhow::Error, error_info: CodexErrorInfo) -> Self {
+    pub(crate) fn session_with_error_info(err: anyhow::Error, error_info: AvaErrorInfo) -> Self {
         Self::Session {
             message: err.to_string(),
             error_info: Some(error_info),
@@ -79,7 +79,7 @@ pub enum GuardianReviewSessionOutcome {
     InputBudgetExceeded,
     SessionFailed {
         error: anyhow::Error,
-        error_info: Option<CodexErrorInfo>,
+        error_info: Option<AvaErrorInfo>,
         retry_at: Option<Instant>,
     },
     TimedOut,

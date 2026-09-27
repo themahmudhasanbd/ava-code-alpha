@@ -54,8 +54,8 @@
       ],
       "type": "object"
     },
-    "CodexErrorInfo": {
-      "description": "This translation layer make sure that we expose codex error code in camel case.\n\nWhen an upstream HTTP status is available (for example, from the Responses API or a provider), it is forwarded in `httpStatusCode` on the relevant `codexErrorInfo` variant.",
+    "AvaErrorInfo": {
+      "description": "This translation layer make sure that we expose ava error code in camel case.\n\nWhen an upstream HTTP status is available (for example, from the Responses API or a provider), it is forwarded in `httpStatusCode` on the relevant `avaErrorInfo` variant.",
       "oneOf": [
         {
           "enum": [
@@ -95,7 +95,7 @@
           "required": [
             "httpConnectionFailed"
           ],
-          "title": "HttpConnectionFailedCodexErrorInfo",
+          "title": "HttpConnectionFailedAvaErrorInfo",
           "type": "object"
         },
         {
@@ -119,7 +119,7 @@
           "required": [
             "responseStreamConnectionFailed"
           ],
-          "title": "ResponseStreamConnectionFailedCodexErrorInfo",
+          "title": "ResponseStreamConnectionFailedAvaErrorInfo",
           "type": "object"
         },
         {
@@ -143,7 +143,7 @@
           "required": [
             "responseStreamDisconnected"
           ],
-          "title": "ResponseStreamDisconnectedCodexErrorInfo",
+          "title": "ResponseStreamDisconnectedAvaErrorInfo",
           "type": "object"
         },
         {
@@ -167,7 +167,7 @@
           "required": [
             "responseTooManyFailedAttempts"
           ],
-          "title": "ResponseTooManyFailedAttemptsCodexErrorInfo",
+          "title": "ResponseTooManyFailedAttemptsAvaErrorInfo",
           "type": "object"
         },
         {
@@ -189,7 +189,7 @@
           "required": [
             "activeTurnNotSteerable"
           ],
-          "title": "ActiveTurnNotSteerableCodexErrorInfo",
+          "title": "ActiveTurnNotSteerableAvaErrorInfo",
           "type": "object"
         }
       ]
@@ -1167,7 +1167,7 @@
           "description": "Persisted thread history contract selected when this thread was created."
         },
         "id": {
-          "description": "Identifier for this thread. Codex-generated thread IDs are UUIDv7.",
+          "description": "Identifier for this thread. Ava-generated thread IDs are UUIDv7.",
           "type": "string"
         },
         "model": {
@@ -1270,7 +1270,7 @@
               "$ref": "#/definitions/SessionSource"
             }
           ],
-          "description": "Origin of the thread (CLI, VSCode, codex exec, codex app-server, etc.)."
+          "description": "Origin of the thread (CLI, VSCode, ava exec, ava app-server, etc.)."
         },
         "status": {
           "allOf": [
@@ -2016,7 +2016,7 @@
             },
             "results": {
               "default": null,
-              "description": "Structured search results returned out-of-band by standalone web search.\n\nThese stay as opaque JSON at the extension/app-server boundary so new result fields and result types can pass through without a Codex release.",
+              "description": "Structured search results returned out-of-band by standalone web search.\n\nThese stay as opaque JSON at the extension/app-server boundary so new result fields and result types can pass through without a Ava release.",
               "items": true,
               "type": [
                 "array",
@@ -2378,7 +2378,7 @@
           "description": "Only populated when the Turn's status is failed."
         },
         "id": {
-          "description": "Identifier for this turn. Codex-generated turn IDs are UUIDv7.",
+          "description": "Identifier for this turn. Ava-generated turn IDs are UUIDv7.",
           "type": "string"
         },
         "items": {
@@ -2425,10 +2425,10 @@
             "null"
           ]
         },
-        "codexErrorInfo": {
+        "avaErrorInfo": {
           "anyOf": [
             {
-              "$ref": "#/definitions/CodexErrorInfo"
+              "$ref": "#/definitions/AvaErrorInfo"
             },
             {
               "type": "null"

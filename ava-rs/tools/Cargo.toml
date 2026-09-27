@@ -1,7 +1,7 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-tools"
+name = "ava-tools"
 version.workspace = true
 
 [lints]
@@ -9,15 +9,15 @@ workspace = true
 
 [dependencies]
 bitflags = { workspace = true }
-codex-code-mode = { workspace = true }
-codex-connectors = { workspace = true }
-codex-features = { workspace = true }
-codex-file-system = { workspace = true }
-codex-extension-items = { workspace = true }
-codex-protocol = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-output-truncation = { workspace = true }
-codex-utils-string = { workspace = true }
+ava-code-mode = { workspace = true }
+ava-connectors = { workspace = true }
+ava-features = { workspace = true }
+ava-file-system = { workspace = true }
+ava-extension-items = { workspace = true }
+ava-protocol = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-output-truncation = { workspace = true }
+ava-utils-string = { workspace = true }
 jsonptr = { workspace = true }
 rmcp = { workspace = true, default-features = false, features = [
     "base64",
@@ -32,7 +32,7 @@ tracing = { workspace = true }
 urlencoding = { workspace = true }
 
 [dev-dependencies]
-codex-utils-cargo-bin = { workspace = true }
+ava-utils-cargo-bin = { workspace = true }
 pretty_assertions = { workspace = true }
 
 [lib]

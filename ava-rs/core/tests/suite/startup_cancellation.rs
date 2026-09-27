@@ -7,19 +7,19 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::StartThreadOptions;
-use codex_core::config::Config;
-use codex_core::config::ThreadStoreConfig;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_rollout::RolloutRecorder;
-use codex_thread_store::LocalThreadStore;
+use ava_core::StartThreadOptions;
+use ava_core::config::Config;
+use ava_core::config::ThreadStoreConfig;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_rollout::RolloutRecorder;
+use ava_thread_store::LocalThreadStore;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use tokio::sync::Notify;
 use tokio::time::timeout;
@@ -59,16 +59,16 @@ async fn cancelled_resume_releases_writer_while_mcp_startup_is_pending() -> Resu
     });
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.mcp_server_contributor(barrier.clone());
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| config.experimental_thread_store = ThreadStoreConfig::Local)
         .build_with_auto_env(&server)
         .await?;
     let thread_id = test.session_configured.thread_id;
-    let environments = test.codex.environment_selections().await;
-    test.codex.ensure_rollout_materialized().await;
-    let rollout_path = test.codex.rollout_path().context("thread rollout")?;
-    test.codex.shutdown_and_wait().await?;
+    let environments = test.ava-code.environment_selections().await;
+    test.ava-code.ensure_rollout_materialized().await;
+    let rollout_path = test.ava-code.rollout_path().context("thread rollout")?;
+    test.ava-code.shutdown_and_wait().await?;
     test.thread_manager.remove_thread(&thread_id).await;
     let history = RolloutRecorder::get_rollout_history(&rollout_path).await?;
     let store = test

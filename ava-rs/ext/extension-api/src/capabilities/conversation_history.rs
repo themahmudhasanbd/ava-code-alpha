@@ -1,7 +1,7 @@
-use codex_history::CompactionCheckpoint;
-use codex_history::RetainedContext;
+use ava_history::CompactionCheckpoint;
+use ava_history::RetainedContext;
 
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ResponseItem;
 
 /// Read-only conversation-history snapshot supplied by the extension host.
 ///

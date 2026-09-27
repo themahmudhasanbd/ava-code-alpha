@@ -18,7 +18,7 @@ use windows_sys::Win32::System::Threading::OpenThreadToken;
 #[test]
 fn pipe_server_cannot_impersonate_client() {
     let pipe_path = PathBuf::from(format!(
-        r"\\.\pipe\codex-ide-context-{}",
+        r"\\.\pipe\ava-ide-context-{}",
         uuid::Uuid::new_v4()
     ));
     let wide_path = pipe_path

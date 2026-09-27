@@ -1,6 +1,6 @@
 //! Private analytics display types, independent of the app-server wire protocol.
 
-use codex_protocol::account::PlanType;
+use ava_protocol::account::PlanType;
 
 /// Billing families match the App's consumer, business, and workspace scopes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

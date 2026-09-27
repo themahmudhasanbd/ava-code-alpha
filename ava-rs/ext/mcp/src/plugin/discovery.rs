@@ -1,10 +1,10 @@
-use codex_connectors::parse_plugin_app_config;
-use codex_core_plugins::manifest::parse_plugin_manifest_uri;
-use codex_exec_server::CapabilityRootDiscovery;
-use codex_mcp::parse_executor_plugin_mcp_config;
-use codex_plugin::manifest::PluginManifestMcpServers;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
+use ava_connectors::parse_plugin_app_config;
+use ava_core_plugins::manifest::parse_plugin_manifest_uri;
+use ava_exec_server::CapabilityRootDiscovery;
+use ava_mcp::parse_executor_plugin_mcp_config;
+use ava_plugin::manifest::PluginManifestMcpServers;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
 
 use super::SelectedPluginMetadata;
 
@@ -127,10 +127,10 @@ pub(super) fn metadata_from_discovery(
 
 fn parse_mcp_servers(
     selected_root: &SelectedCapabilityRoot,
-    plugin_root: &codex_utils_path_uri::PathUri,
+    plugin_root: &ava_utils_path_uri::PathUri,
     contents: &str,
     environment_id: &str,
-) -> Vec<(String, codex_config::McpServerConfig)> {
+) -> Vec<(String, ava_config::McpServerConfig)> {
     let parsed = match parse_executor_plugin_mcp_config(plugin_root, contents, environment_id) {
         Ok(parsed) => parsed,
         Err(error) => {

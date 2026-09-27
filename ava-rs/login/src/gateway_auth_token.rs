@@ -5,7 +5,7 @@ use std::io;
 use crate::oauth::OAuthError;
 use crate::oauth::sanitize_url_for_logging;
 use chrono::Utc;
-use codex_secrets::redact_secrets;
+use ava_secrets::redact_secrets;
 use serde::Deserialize;
 use serde::Serialize;
 

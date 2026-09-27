@@ -30,16 +30,16 @@ const [
     read("../src/components/HomeMascotLogo.tsx"),
   ]);
 
-test("renderer surfaces the PI-Desktop brand instead of the Codex shell brand", () => {
+test("renderer surfaces the PI-Desktop brand instead of the Ava shell brand", () => {
   assert.match(english, /shellName:\s*"PI-Desktop"/);
   assert.match(chinese, /shellName:\s*"PI-Desktop"/);
   assert.match(english, /placeholder:\s*"Ask PI-Desktop to help with anything"/);
   assert.match(chinese, /placeholder:\s*"让 PI-Desktop 帮你做任何事"/);
-  assert.doesNotMatch(english, /shellName:\s*"Codex"/);
-  assert.doesNotMatch(chinese, /shellName:\s*"Codex"/);
-  // Codex remains a supported external import source, not the app identity.
-  assert.match(english, /importSourceCodex:\s*"Codex"/);
-  assert.match(chinese, /importSourceCodex:\s*"Codex"/);
+  assert.doesNotMatch(english, /shellName:\s*"Ava"/);
+  assert.doesNotMatch(chinese, /shellName:\s*"Ava"/);
+  // Ava remains a supported external import source, not the app identity.
+  assert.match(english, /importSourceAva:\s*"Ava"/);
+  assert.match(chinese, /importSourceAva:\s*"Ava"/);
 });
 
 test("app chrome uses the shared brand asset without branding the composer input", async () => {
@@ -50,7 +50,7 @@ test("app chrome uses the shared brand asset without branding the composer input
   assert.match(brandLogo, /export function BrandLogo/);
   assert.match(brandLogo, /src=\{.*brandLogoUrl/);
   assert.match(icons, /export const IconNewSession/);
-  assert.doesNotMatch(icons, /IconCodexHome|IconCompose|IconPiMark|IconPiHome/);
+  assert.doesNotMatch(icons, /IconAvaHome|IconCompose|IconPiMark|IconPiHome/);
   await access(new URL("../src/assets/home-mascot-dark.gif", import.meta.url));
   await access(new URL("../src/assets/home-mascot-light.gif", import.meta.url));
   await access(new URL("../src/assets/home-mascot-still-dark.png", import.meta.url));

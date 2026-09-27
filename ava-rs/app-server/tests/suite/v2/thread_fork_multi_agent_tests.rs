@@ -5,21 +5,21 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::write_models_cache_with_models;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_rollout::read_session_meta_line;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_rollout::read_session_meta_line;
 use core_test_support::load_default_config_for_test;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -40,16 +40,16 @@ async fn fork_before_first_turn_preserves_model_selected_multi_agent_version(
     source_state: SourceState,
 ) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .disable_feature(Feature::MultiAgentV2)
-        .write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let mut model = codex_core::test_support::construct_model_info_offline("mock-model", &config);
+        .write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let mut model = ava_core::test_support::construct_model_info_offline("mock-model", &config);
     model.multi_agent_version = Some(MultiAgentVersion::V2);
-    write_models_cache_with_models(codex_home.path(), vec![model]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![model]).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let parent = mcp
@@ -72,7 +72,7 @@ async fn fork_before_first_turn_preserves_model_selected_multi_agent_version(
     if matches!(source_state, SourceState::Unloaded) {
         mcp.shutdown_gracefully().await?;
         mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build_initialized()
             .await?;
     }
@@ -102,7 +102,7 @@ async fn fork_before_first_turn_preserves_model_selected_multi_agent_version(
     // Resume before the child's first turn can persist another version-bearing context.
     mcp.shutdown_gracefully().await?;
     mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let _: ThreadResumeResponse = mcp

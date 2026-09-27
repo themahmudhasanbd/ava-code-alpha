@@ -11,7 +11,7 @@ use crate::outgoing_message::ConnectionId;
 use crate::outgoing_message::QueuedOutgoingMessage;
 use crate::transport::ConnectionOrigin;
 use crate::transport::remote_control::QueuedServerEnvelope;
-use codex_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCMessage;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
 use tokio::sync::watch;
@@ -433,7 +433,7 @@ fn transport_event_name(event: &TransportEvent) -> &'static str {
 fn remote_control_message_starts_connection(message: &JSONRPCMessage) -> bool {
     matches!(
         message,
-        JSONRPCMessage::Request(codex_app_server_protocol::JSONRPCRequest { method, .. })
+        JSONRPCMessage::Request(ava_app_server_protocol::JSONRPCRequest { method, .. })
             if method == "initialize"
     )
 }
@@ -448,11 +448,11 @@ mod tests {
     use crate::outgoing_message::OutgoingMessage;
     use crate::transport::remote_control::protocol::ClientEnvelope;
     use crate::transport::remote_control::protocol::ClientEvent;
-    use codex_app_server_protocol::ConfigWarningNotification;
-    use codex_app_server_protocol::JSONRPCRequest;
-    use codex_app_server_protocol::RequestId;
-    use codex_app_server_protocol::ServerNotification;
-    use codex_app_server_protocol::ServerNotificationEnvelope;
+    use ava_app_server_protocol::ConfigWarningNotification;
+    use ava_app_server_protocol::JSONRPCRequest;
+    use ava_app_server_protocol::RequestId;
+    use ava_app_server_protocol::ServerNotification;
+    use ava_app_server_protocol::ServerNotificationEnvelope;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use tokio::time::timeout;
@@ -487,7 +487,7 @@ mod tests {
     }
 
     fn initialized_notification() -> JSONRPCMessage {
-        JSONRPCMessage::Notification(codex_app_server_protocol::JSONRPCNotification {
+        JSONRPCMessage::Notification(ava_app_server_protocol::JSONRPCNotification {
             method: "initialized".to_string(),
             params: None,
         })
@@ -919,7 +919,7 @@ mod tests {
             .handle_message(ClientEnvelope {
                 event: ClientEvent::ClientMessage {
                     message: JSONRPCMessage::Notification(
-                        codex_app_server_protocol::JSONRPCNotification {
+                        ava_app_server_protocol::JSONRPCNotification {
                             method: "initialized".to_string(),
                             params: None,
                         },

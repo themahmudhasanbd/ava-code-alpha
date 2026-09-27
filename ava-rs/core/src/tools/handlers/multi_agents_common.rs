@@ -4,14 +4,14 @@ use crate::function_tool::FunctionCallError;
 use crate::tools::context::FunctionToolOutput;
 use crate::tools::context::ToolOutput;
 use crate::tools::context::ToolPayload;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::user_input::UserInput;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::user_input::UserInput;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 
@@ -60,27 +60,27 @@ where
     })
 }
 
-pub(crate) fn collab_spawn_error(err: CodexErr) -> FunctionCallError {
+pub(crate) fn collab_spawn_error(err: AvaErr) -> FunctionCallError {
     match err.details() {
-        CodexErrorDetails::UnsupportedOperation(message) if message == "thread manager dropped" => {
+        AvaErrorDetails::UnsupportedOperation(message) if message == "thread manager dropped" => {
             FunctionCallError::RespondToModel("collab manager unavailable".to_string())
         }
-        CodexErrorDetails::UnsupportedOperation(message) => {
+        AvaErrorDetails::UnsupportedOperation(message) => {
             FunctionCallError::RespondToModel(message.clone())
         }
         _ => FunctionCallError::RespondToModel(format!("collab spawn failed: {err}")),
     }
 }
 
-pub(crate) fn collab_agent_error(agent_id: ThreadId, err: CodexErr) -> FunctionCallError {
+pub(crate) fn collab_agent_error(agent_id: ThreadId, err: AvaErr) -> FunctionCallError {
     match err.details() {
-        CodexErrorDetails::ThreadNotFound(id) => {
+        AvaErrorDetails::ThreadNotFound(id) => {
             FunctionCallError::RespondToModel(format!("agent with id {id} not found"))
         }
-        CodexErrorDetails::InternalAgentDied => {
+        AvaErrorDetails::InternalAgentDied => {
             FunctionCallError::RespondToModel(format!("agent with id {agent_id} is closed"))
         }
-        CodexErrorDetails::UnsupportedOperation(_) => {
+        AvaErrorDetails::UnsupportedOperation(_) => {
             FunctionCallError::RespondToModel("collab manager unavailable".to_string())
         }
         _ => FunctionCallError::RespondToModel(format!("collab tool failed: {err}")),

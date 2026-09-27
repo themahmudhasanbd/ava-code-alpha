@@ -1,14 +1,14 @@
 use super::*;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::FileSystemAccessMode;
-use codex_protocol::protocol::FileSystemPath;
-use codex_protocol::protocol::FileSystemSandboxEntry;
-use codex_protocol::protocol::FileSystemSpecialPath;
-use codex_protocol::protocol::GranularApprovalConfig;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::FileSystemAccessMode;
+use ava_protocol::protocol::FileSystemPath;
+use ava_protocol::protocol::FileSystemSandboxEntry;
+use ava_protocol::protocol::FileSystemSpecialPath;
+use ava_protocol::protocol::GranularApprovalConfig;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathExt;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -411,11 +411,11 @@ fn explicit_read_only_subpaths_prevent_auto_approval_for_external_sandbox() {
 }
 
 #[test]
-fn missing_project_dot_codex_config_requires_approval() {
+fn missing_project_dot_ava_config_requires_approval() {
     let tmp = TempDir::new().unwrap();
     let cwd = tmp.path().abs();
     let cwd_uri = PathUri::from_abs_path(&cwd);
-    let config_path = cwd.join(".codex").join("config.toml");
+    let config_path = cwd.join(".ava-code").join("config.toml");
     let action =
         ApplyPatchAction::new_add_for_test(&PathUri::from_abs_path(&config_path), "".to_string());
     let permission_profile = PermissionProfile::workspace_write_with(
@@ -429,7 +429,7 @@ fn missing_project_dot_codex_config_requires_approval() {
         .entries
         .push(FileSystemSandboxEntry {
             path: FileSystemPath::Path {
-                path: cwd.join(".codex").into(),
+                path: cwd.join(".ava-code").into(),
             },
             access: FileSystemAccessMode::Read,
             missing_path_behavior: None,

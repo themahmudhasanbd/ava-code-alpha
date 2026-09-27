@@ -7,26 +7,26 @@ use std::sync::OnceLock;
 
 use arc_swap::ArcSwap;
 use async_channel::Sender;
-use codex_exec_server::Environment;
-use codex_exec_server::EnvironmentConnectionState;
-use codex_exec_server::EnvironmentInfo;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::SelectedCapabilityRootsStatus;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfig;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EnvironmentConnectionEvent;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::Environment;
+use ava_exec_server::EnvironmentConnectionState;
+use ava_exec_server::EnvironmentInfo;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::SelectedCapabilityRootsStatus;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EnvironmentConnectionEvent;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use futures::future::Shared;
@@ -931,7 +931,7 @@ impl TurnEnvironmentSnapshot {
         approval_policy: AskForApproval,
         thread_profile: &PermissionProfile,
     ) -> bool {
-        codex_protocol::protocol::has_full_access(
+        ava_protocol::protocol::has_full_access(
             approval_policy,
             thread_profile,
             self.refresh_readiness()
@@ -1062,7 +1062,7 @@ impl TurnEnvironmentSnapshot {
                 TurnEnvironmentState::Ready(_) => None,
                 TurnEnvironmentState::Starting(environment)
                     if environment.selection.environment_id
-                        == codex_exec_server::LOCAL_ENVIRONMENT_ID =>
+                        == ava_exec_server::LOCAL_ENVIRONMENT_ID =>
                 {
                     environment.selection.cwd.to_abs_path().ok()
                 }
@@ -1071,7 +1071,7 @@ impl TurnEnvironmentSnapshot {
     }
 
     #[cfg(test)]
-    pub(crate) fn primary_environment(&self) -> Option<Arc<codex_exec_server::Environment>> {
+    pub(crate) fn primary_environment(&self) -> Option<Arc<ava_exec_server::Environment>> {
         self.primary()
             .map(|environment| Arc::clone(&environment.environment))
     }
@@ -1126,20 +1126,20 @@ mod tests {
     use std::time::Duration;
 
     use crate::config::PermissionProfileSnapshot;
-    use codex_exec_server::Environment;
-    use codex_exec_server::ExecServerRuntimePaths;
-    use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-    use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-    use codex_exec_server_test_support::environment_manager_without_environments;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
-    use codex_protocol::config_types::WindowsSandboxLevel;
-    use codex_protocol::models::ActivePermissionProfile;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-    use codex_protocol::protocol::TurnEnvironmentSelection;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::PathUri;
+    use ava_exec_server::Environment;
+    use ava_exec_server::ExecServerRuntimePaths;
+    use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+    use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+    use ava_exec_server_test_support::environment_manager_without_environments;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
+    use ava_protocol::config_types::WindowsSandboxLevel;
+    use ava_protocol::models::ActivePermissionProfile;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+    use ava_protocol::protocol::TurnEnvironmentSelection;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::PathUri;
     use futures::SinkExt;
     use futures::StreamExt;
     use pretty_assertions::assert_eq;
@@ -1161,7 +1161,7 @@ mod tests {
             allow_login_shell: true,
             workspace_roots: Vec::new(),
             windows_sandbox_level: WindowsSandboxLevel::Disabled,
-            windows_sandbox_type: codex_protocol::sandbox::SandboxType::None,
+            windows_sandbox_type: ava_protocol::sandbox::SandboxType::None,
             use_legacy_landlock: false,
             permission_profile: PermissionProfileSnapshot::legacy(PermissionProfile::read_only()),
             shell_environment_policy: Default::default(),
@@ -1192,7 +1192,7 @@ mod tests {
     fn test_runtime_paths() -> ExecServerRuntimePaths {
         ExecServerRuntimePaths::new(
             std::env::current_exe().expect("current exe"),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )
         .expect("runtime paths")
     }
@@ -1292,7 +1292,7 @@ url = "ws://127.0.0.1:8765"
         .expect("write environments.toml");
         let cwd = AbsolutePathBuf::current_dir().expect("cwd");
         let cwd_uri = PathUri::from_abs_path(&cwd);
-        let manager = EnvironmentManager::from_codex_home(
+        let manager = EnvironmentManager::from_ava_home(
             temp_dir.path(),
             Some(test_runtime_paths()),
             HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
@@ -1341,7 +1341,7 @@ url = "ws://127.0.0.1:8765"
             allow_login_shell: false,
             workspace_roots: Vec::new(),
             windows_sandbox_level: WindowsSandboxLevel::Disabled,
-            windows_sandbox_type: codex_protocol::sandbox::SandboxType::None,
+            windows_sandbox_type: ava_protocol::sandbox::SandboxType::None,
             use_legacy_landlock: false,
             permission_profile: PermissionProfileSnapshot::active_with_profile_workspace_roots(
                 PermissionProfile::read_only(),
@@ -1605,7 +1605,7 @@ url = "ws://127.0.0.1:8765"
             allow_login_shell: false,
             workspace_roots: Vec::new(),
             windows_sandbox_level: WindowsSandboxLevel::Disabled,
-            windows_sandbox_type: codex_protocol::sandbox::SandboxType::None,
+            windows_sandbox_type: ava_protocol::sandbox::SandboxType::None,
             use_legacy_landlock: false,
             permission_profile: PermissionProfileSnapshot::active_with_profile_workspace_roots(
                 PermissionProfile::read_only(),
@@ -1992,7 +1992,7 @@ url = "ws://127.0.0.1:8765"
             allow_login_shell: false,
             workspace_roots: Vec::new(),
             windows_sandbox_level: WindowsSandboxLevel::Disabled,
-            windows_sandbox_type: codex_protocol::sandbox::SandboxType::None,
+            windows_sandbox_type: ava_protocol::sandbox::SandboxType::None,
             use_legacy_landlock: false,
             permission_profile: PermissionProfileSnapshot::active_with_profile_workspace_roots(
                 PermissionProfile::read_only(),
@@ -2062,7 +2062,7 @@ url = "ws://127.0.0.1:8765"
             allow_login_shell: false,
             workspace_roots: selection.workspace_roots.clone(),
             windows_sandbox_level: WindowsSandboxLevel::Disabled,
-            windows_sandbox_type: codex_protocol::sandbox::SandboxType::None,
+            windows_sandbox_type: ava_protocol::sandbox::SandboxType::None,
             use_legacy_landlock: false,
             permission_profile: PermissionProfileSnapshot::legacy(PermissionProfile::read_only()),
             shell_environment_policy: Default::default(),

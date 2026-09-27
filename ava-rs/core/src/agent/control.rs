@@ -10,7 +10,7 @@ use crate::agent::types::AgentMetadata;
 use crate::agent::types::LiveAgent;
 use crate::agent_communication::AgentCommunicationContext;
 use crate::agent_communication::AgentCommunicationKind;
-use crate::codex_thread::ThreadConfigSnapshot;
+use crate::ava_thread::ThreadConfigSnapshot;
 use crate::config::Config;
 use crate::config::RolloutBudgetConfig;
 use crate::context::SubagentNotification;
@@ -26,36 +26,36 @@ use crate::thread_manager::default_thread_id_generator;
 use crate::thread_rollout_truncation::truncate_rollout_to_last_n_fork_turns;
 use crate::turn_timing::now_unix_timestamp_ms;
 use arc_swap::ArcSwapOption;
-use codex_extension_api::ThreadInstructionsProvider;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_protocol::AgentPath;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::items::SubAgentActivityItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::HasLegacyEvent;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ItemStartedEvent;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::ReadThreadParams;
+use ava_extension_api::ThreadInstructionsProvider;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_protocol::AgentPath;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::items::SubAgentActivityItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::HasLegacyEvent;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ItemStartedEvent;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::ReadThreadParams;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -99,7 +99,7 @@ pub(crate) struct LocalAgentControl {
     session_id: SessionId,
     /// Weak handle back to the global thread registry/state.
     /// This is `Weak` to avoid reference cycles and shadow persistence of the form
-    /// `ThreadManagerState -> CodexThread -> Session -> SessionServices -> ThreadManagerState`.
+    /// `ThreadManagerState -> AvaThread -> Session -> SessionServices -> ThreadManagerState`.
     manager: Weak<ThreadManagerState>,
     /// Captured at construction so delegates retain their manager's allocation policy.
     thread_id_generator: ThreadIdGenerator,
@@ -188,7 +188,7 @@ impl LocalAgentControl {
         agent_id: ThreadId,
         input: Vec<UserInput>,
         start_options: TurnStartOptions,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         let state = self.upgrade()?;
         let thread = state.get_thread(agent_id).await?;
         let result = match thread
@@ -203,7 +203,7 @@ impl LocalAgentControl {
                 // unique without adding a submission receipt back to Core.
                 Ok(Uuid::now_v7().to_string())
             }
-            Ok(TurnInputSubmission::NotSubmitted { reason }) => Err(CodexErr::InvalidRequest(
+            Ok(TurnInputSubmission::NotSubmitted { reason }) => Err(AvaErr::InvalidRequest(
                 format!("turn input was not submitted: {reason:?}"),
             )),
             Err(err) => Err(err),
@@ -218,7 +218,7 @@ impl LocalAgentControl {
         communication: InterAgentCommunication,
         agent_communication_context: AgentCommunicationContext,
         start_options: TurnStartOptions,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         let state = self.upgrade()?;
         if communication.trigger_turn {
             let thread = state.get_thread(agent_id).await?;
@@ -240,7 +240,7 @@ impl LocalAgentControl {
         thread_id: ThreadId,
         turn_id: String,
         item: SubAgentActivityItem,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         let state = self.upgrade()?;
         let thread = state.get_thread(thread_id).await?;
         let started_at_ms = now_unix_timestamp_ms();
@@ -291,7 +291,7 @@ impl LocalAgentControl {
         communication: InterAgentCommunication,
         context: AgentCommunicationContext,
         start_options: TurnStartOptions,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         self.submit_inter_agent_communication(
             agent_id,
             state,
@@ -309,7 +309,7 @@ impl LocalAgentControl {
         communication: InterAgentCommunication,
         context: AgentCommunicationContext,
         start_options: TurnStartOptions,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         let communication_for_log =
             crate::agent_communication::logging_enabled().then(|| communication.clone());
         let (parent_turn_id, root_turn_id) = if communication.trigger_turn {
@@ -351,7 +351,7 @@ impl LocalAgentControl {
     }
 
     /// Interrupt the current task for an existing agent thread.
-    pub(crate) async fn interrupt_agent(&self, agent_id: ThreadId) -> CodexResult<String> {
+    pub(crate) async fn interrupt_agent(&self, agent_id: ThreadId) -> AvaResult<String> {
         let state = self.upgrade()?;
         self.handle_thread_request_result(
             agent_id,
@@ -372,11 +372,11 @@ impl LocalAgentControl {
         &self,
         agent_id: ThreadId,
         state: &Arc<ThreadManagerState>,
-        result: CodexResult<String>,
-    ) -> CodexResult<String> {
+        result: AvaResult<String>,
+    ) -> AvaResult<String> {
         if result
             .as_ref()
-            .is_err_and(|err| matches!(err.details(), CodexErrorDetails::InternalAgentDied))
+            .is_err_and(|err| matches!(err.details(), AvaErrorDetails::InternalAgentDied))
         {
             let _ = state.remove_thread(&agent_id).await;
             self.forget_v2_residency(agent_id);
@@ -411,16 +411,16 @@ impl LocalAgentControl {
         self.state.agent_metadata_for_thread(agent_id)
     }
 
-    pub(crate) fn ensure_agent_known(&self, agent_id: ThreadId) -> CodexResult<AgentMetadata> {
+    pub(crate) fn ensure_agent_known(&self, agent_id: ThreadId) -> AvaResult<AgentMetadata> {
         self.state
             .agent_metadata_for_thread(agent_id)
-            .ok_or_else(|| CodexErr::ThreadNotFound(agent_id))
+            .ok_or_else(|| AvaErr::ThreadNotFound(agent_id))
     }
 
     pub(crate) async fn list_live_agent_subtree_thread_ids(
         &self,
         agent_id: ThreadId,
-    ) -> CodexResult<Vec<ThreadId>> {
+    ) -> AvaResult<Vec<ThreadId>> {
         let mut thread_ids = vec![agent_id];
         thread_ids.extend(self.live_thread_spawn_descendants(agent_id).await?);
         Ok(thread_ids)
@@ -444,17 +444,17 @@ impl LocalAgentControl {
         _current_thread_id: ThreadId,
         current_session_source: &SessionSource,
         agent_reference: &str,
-    ) -> CodexResult<ThreadId> {
+    ) -> AvaResult<ThreadId> {
         let current_agent_path = current_session_source
             .get_agent_path()
             .unwrap_or_else(AgentPath::root);
         let agent_path = current_agent_path
             .resolve(agent_reference)
-            .map_err(CodexErr::UnsupportedOperation)?;
+            .map_err(AvaErr::UnsupportedOperation)?;
         if let Some(thread_id) = self.state.agent_id_for_path(&agent_path) {
             return Ok(thread_id);
         }
-        Err(CodexErr::UnsupportedOperation(format!(
+        Err(AvaErr::UnsupportedOperation(format!(
             "live agent path `{}` not found",
             agent_path.as_str()
         )))
@@ -464,7 +464,7 @@ impl LocalAgentControl {
     pub(crate) async fn subscribe_status(
         &self,
         agent_id: ThreadId,
-    ) -> CodexResult<watch::Receiver<AgentStatus>> {
+    ) -> AvaResult<watch::Receiver<AgentStatus>> {
         let state = self.upgrade()?;
         let thread = state.get_thread(agent_id).await?;
         Ok(thread.subscribe_status())
@@ -543,7 +543,7 @@ impl LocalAgentControl {
         &self,
         current_session_source: &SessionSource,
         path_prefix: Option<&str>,
-    ) -> CodexResult<Vec<LiveAgent>> {
+    ) -> AvaResult<Vec<LiveAgent>> {
         let state = self.upgrade()?;
         let resolved_prefix = path_prefix
             .map(|prefix| {
@@ -551,7 +551,7 @@ impl LocalAgentControl {
                     .get_agent_path()
                     .unwrap_or_else(AgentPath::root)
                     .resolve(prefix)
-                    .map_err(CodexErr::UnsupportedOperation)
+                    .map_err(AvaErr::UnsupportedOperation)
             })
             .transpose()?;
 
@@ -715,7 +715,7 @@ impl LocalAgentControl {
         agent_path: Option<AgentPath>,
         agent_role: Option<String>,
         preferred_agent_nickname: Option<String>,
-    ) -> CodexResult<AgentMetadata> {
+    ) -> AvaResult<AgentMetadata> {
         if let Some(agent_path) = agent_path.as_ref() {
             reservation.reserve_agent_path(agent_path)?;
         }
@@ -743,7 +743,7 @@ impl LocalAgentControl {
         agent_path: Option<AgentPath>,
         agent_role: Option<String>,
         preferred_agent_nickname: Option<String>,
-    ) -> CodexResult<(SessionSource, AgentMetadata)> {
+    ) -> AvaResult<(SessionSource, AgentMetadata)> {
         if depth == 1 {
             self.state.register_root_thread(parent_thread_id);
         }
@@ -764,10 +764,10 @@ impl LocalAgentControl {
         Ok((session_source, agent_metadata))
     }
 
-    fn upgrade(&self) -> CodexResult<Arc<ThreadManagerState>> {
+    fn upgrade(&self) -> AvaResult<Arc<ThreadManagerState>> {
         self.manager
             .upgrade()
-            .ok_or_else(|| CodexErr::UnsupportedOperation("thread manager dropped".to_string()))
+            .ok_or_else(|| AvaErr::UnsupportedOperation("thread manager dropped".to_string()))
     }
 
     async fn inherited_environments_for_source(
@@ -818,7 +818,7 @@ impl LocalAgentControl {
     async fn open_thread_spawn_children(
         &self,
         parent_thread_id: ThreadId,
-    ) -> CodexResult<Vec<(ThreadId, AgentMetadata)>> {
+    ) -> AvaResult<Vec<(ThreadId, AgentMetadata)>> {
         let mut children_by_parent = self.live_thread_spawn_children().await?;
         Ok(children_by_parent
             .remove(&parent_thread_id)
@@ -827,7 +827,7 @@ impl LocalAgentControl {
 
     async fn live_thread_spawn_children(
         &self,
-    ) -> CodexResult<HashMap<ThreadId, Vec<(ThreadId, AgentMetadata)>>> {
+    ) -> AvaResult<HashMap<ThreadId, Vec<(ThreadId, AgentMetadata)>>> {
         let state = self.upgrade()?;
         let mut children_by_parent = HashMap::<ThreadId, Vec<(ThreadId, AgentMetadata)>>::new();
 
@@ -862,7 +862,7 @@ impl LocalAgentControl {
 
     async fn persist_thread_spawn_edge_for_source(
         &self,
-        child_thread: &crate::CodexThread,
+        child_thread: &crate::AvaThread,
         child_thread_id: ThreadId,
         session_source: Option<&SessionSource>,
     ) {
@@ -883,7 +883,7 @@ impl LocalAgentControl {
             .upsert_thread_spawn_edge(
                 parent_thread_id,
                 child_thread_id,
-                codex_agent_graph_store::ThreadSpawnEdgeStatus::Open,
+                ava_agent_graph_store::ThreadSpawnEdgeStatus::Open,
             )
             .await
         {
@@ -894,7 +894,7 @@ impl LocalAgentControl {
     async fn live_thread_spawn_descendants(
         &self,
         root_thread_id: ThreadId,
-    ) -> CodexResult<Vec<ThreadId>> {
+    ) -> AvaResult<Vec<ThreadId>> {
         let mut children_by_parent = self.live_thread_spawn_children().await?;
         let mut descendants = Vec::new();
         let mut stack = children_by_parent

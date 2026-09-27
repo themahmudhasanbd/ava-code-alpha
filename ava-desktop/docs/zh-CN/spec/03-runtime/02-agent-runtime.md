@@ -284,7 +284,7 @@ PI-Desktop 复用 pi-agent-core 的 `buildSessionContext`、`convertToLlm`、
 边界； OpenCode DCP 仅是 AGPL-3.0 行为参考，不是链接或
 复制的依赖关系。
 
-压缩遵循 Codex 的机制 (ADR 0064)：它总是内联发生在
+压缩遵循 Ava 的机制 (ADR 0064)：它总是内联发生在
 回合边界，模型可以通过`new_context`请求，每次compaction
 添加一个转录本行并提出一个警告 toast，并且没有
 任何地方的预计算。

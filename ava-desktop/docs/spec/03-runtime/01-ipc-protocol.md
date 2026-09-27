@@ -1038,9 +1038,9 @@ Import candidates carry `projectPath: string | null` and
 importer's sampled-scan threshold; larger files are sampled (head + tail) so
 scanning a multi-gigabyte archive stays interactive, and their `messageCount`
 is null — the import list renders an em dash for it, while imported sessions
-always compute their real message count at convert time. Codex discovery also
+always compute their real message count at convert time. Ava discovery also
 caps traversal at 250 session files, walking `YYYY/MM/DD` paths newest-first
-(path date, not `updatedAt`). Hitting that cap sets `truncated.codex` to 250
+(path date, not `updatedAt`). Hitting that cap sets `truncated.ava-code` to 250
 so the renderer can say the list is incomplete. Scan titles come
 from the first real user message: known synthetic injections (repo
 instructions, the IDE-context family such as `# Context from my IDE setup:`
@@ -1050,7 +1050,7 @@ source file's mtime, never to the import moment. A successful import
 refreshes both sessions and the durable Projects index.
 
 
-`modelConfig/importScan` reads Claude Code, Codex, OpenCode, Pi, and CC
+`modelConfig/importScan` reads Claude Code, Ava, OpenCode, Pi, and CC
 Switch config files from the user home directory and returns public provider drafts
 (`source`, `externalId`, `name`, `baseUrl`, `apiStyle`, `modelIds`,
 `hasSecret`). Secrets stay in the main-process scan cache and are written
@@ -1246,7 +1246,7 @@ type OAuthLoginEvent = { loginId: string; vendorId: string } & (
 );
 ```
 
-A flow may raise its first event before `start` has replied — OpenAI Codex
+A flow may raise its first event before `start` has replied — OpenAI Ava
 asks browser-or-device-code in the same tick the login begins — so the renderer
 must subscribe to the event channel *before* it invokes `start`, hold what
 arrives while `loginId` is unknown, and release the matching events in order
@@ -1449,7 +1449,7 @@ returns its status to the MCP editor.
 Desktop-only channels scan configuration written by other agent tools on the
 same machine — Claude Desktop (`claude_desktop_config.json` on macOS, Windows
 and Linux), Claude Code (`~/.claude.json` and `~/.claude/settings.json` merged),
-Cursor global and per-project `mcp.json`, Codex (`~/.codex/config.toml`
+Cursor global and per-project `mcp.json`, Ava (`~/.ava-code/config.toml`
 `[mcp_servers.*]`), opencode (`~/.config/opencode/opencode.json` `mcp` map) —
 so the user can review and batch-import into this app's MCP list. ChatGPT
 desktop is listed as a placeholder because it has no public configuration path

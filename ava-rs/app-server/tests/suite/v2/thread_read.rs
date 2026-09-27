@@ -7,83 +7,83 @@ use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::rollout_path;
 use app_test_support::test_absolute_path;
 use app_test_support::to_response;
-use codex_app_server::in_process;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::DeprecationNoticeNotification;
-use codex_app_server_protocol::ImageReference;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadItemsListParams;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadNameUpdatedNotification;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeInitialTurnsPageParams;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSearchOccurrencesParams;
-use codex_app_server_protocol::ThreadSearchOccurrencesResponse;
-use codex_app_server_protocol::ThreadSetNameParams;
-use codex_app_server_protocol::ThreadSetNameResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadTurnsListParams;
-use codex_app_server_protocol::ThreadTurnsListResponse;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_core::ARCHIVED_SESSIONS_SUBDIR;
-use codex_core::config::ConfigBuilder;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::TurnItem as CoreTurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::protocol::AgentMessageEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::SessionSource as ProtocolSessionSource;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::user_input::ByteRange;
-use codex_protocol::user_input::TextElement;
-use codex_rollout::RolloutItem;
-use codex_thread_store::AppendThreadItemsParams;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::LocalThreadStore;
-use codex_thread_store::LocalThreadStoreConfig;
-use codex_thread_store::PersistContext;
-use codex_thread_store::ThreadMetadataPatch;
-use codex_thread_store::ThreadPersistenceMetadata;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::UpdateThreadMetadataParams;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server::in_process;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::DeprecationNoticeNotification;
+use ava_app_server_protocol::ImageReference;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadItemsListParams;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadNameUpdatedNotification;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeInitialTurnsPageParams;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSearchOccurrencesParams;
+use ava_app_server_protocol::ThreadSearchOccurrencesResponse;
+use ava_app_server_protocol::ThreadSetNameParams;
+use ava_app_server_protocol::ThreadSetNameResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadTurnsListParams;
+use ava_app_server_protocol::ThreadTurnsListResponse;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_core::ARCHIVED_SESSIONS_SUBDIR;
+use ava_core::config::ConfigBuilder;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::TurnItem as CoreTurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::protocol::AgentMessageEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::SessionSource as ProtocolSessionSource;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::user_input::ByteRange;
+use ava_protocol::user_input::TextElement;
+use ava_rollout::RolloutItem;
+use ava_thread_store::AppendThreadItemsParams;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::LocalThreadStore;
+use ava_thread_store::LocalThreadStoreConfig;
+use ava_thread_store::PersistContext;
+use ava_thread_store::ThreadMetadataPatch;
+use ava_thread_store::ThreadPersistenceMetadata;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::UpdateThreadMetadataParams;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -103,8 +103,8 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 #[tokio::test]
 async fn thread_read_returns_summary_without_turns() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let preview = "Saved user message";
     let text_elements = [TextElement::new(
@@ -112,7 +112,7 @@ async fn thread_read_returns_summary_without_turns() -> Result<()> {
         Some("<note>".into()),
     )];
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         preview,
@@ -125,7 +125,7 @@ async fn thread_read_returns_summary_without_turns() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -173,8 +173,8 @@ async fn thread_read_returns_summary_without_turns() -> Result<()> {
 #[tokio::test]
 async fn thread_read_can_include_turns() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let preview = "Saved user message";
     let text_elements = vec![TextElement::new(
@@ -182,7 +182,7 @@ async fn thread_read_can_include_turns() -> Result<()> {
         Some("<note>".into()),
     )];
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         preview,
@@ -195,7 +195,7 @@ async fn thread_read_can_include_turns() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -239,11 +239,11 @@ async fn thread_read_can_include_turns() -> Result<()> {
 #[tokio::test]
 async fn thread_read_preserves_file_id_from_completed_turn() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let start_id = mcp
@@ -289,7 +289,7 @@ async fn thread_read_preserves_file_id_from_completed_turn() -> Result<()> {
     drop(mcp);
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let read_id = mcp
@@ -312,11 +312,11 @@ async fn thread_read_preserves_file_id_from_completed_turn() -> Result<()> {
 #[tokio::test]
 async fn paginated_stored_thread_routes_projected_turns() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -325,7 +325,7 @@ async fn paginated_stored_thread_routes_projected_turns() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -422,12 +422,12 @@ async fn paginated_stored_thread_routes_projected_turns() -> Result<()> {
 #[tokio::test]
 async fn thread_turns_list_can_page_backward_and_forward() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let filename_ts = "2025-01-05T12-00-00";
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         "first",
@@ -435,12 +435,12 @@ async fn thread_turns_list_can_page_backward_and_forward() -> Result<()> {
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let rollout_path = rollout_path(codex_home.path(), filename_ts, &conversation_id);
+    let rollout_path = rollout_path(ava_home.path(), filename_ts, &conversation_id);
     append_user_message(rollout_path.as_path(), "2025-01-05T12:01:00Z", "second")?;
     append_user_message(rollout_path.as_path(), "2025-01-05T12:02:00Z", "third")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -501,12 +501,12 @@ async fn thread_turns_list_can_page_backward_and_forward() -> Result<()> {
 #[tokio::test]
 async fn thread_turns_list_supports_requested_items_view() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let filename_ts = "2025-01-05T12-00-00";
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         "first",
@@ -514,12 +514,12 @@ async fn thread_turns_list_supports_requested_items_view() -> Result<()> {
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let rollout_path = rollout_path(codex_home.path(), filename_ts, &conversation_id);
+    let rollout_path = rollout_path(ava_home.path(), filename_ts, &conversation_id);
     append_agent_message(rollout_path.as_path(), "2025-01-05T12:01:00Z", "draft")?;
     append_agent_message(rollout_path.as_path(), "2025-01-05T12:02:00Z", "final")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -572,15 +572,15 @@ async fn thread_turns_list_supports_requested_items_view() -> Result<()> {
 #[tokio::test]
 async fn thread_search_occurrences_reads_paginated_projection() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let thread_id = codex_protocol::ThreadId::default();
-    let sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let thread_id = ava_protocol::ThreadId::default();
+    let sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let state_db =
-        codex_state::StateRuntime::init(sqlite.clone(), "mock_provider".to_string()).await?;
+        ava_state::StateRuntime::init(sqlite.clone(), "mock_provider".to_string()).await?;
     let store = LocalThreadStore::new(
         LocalThreadStoreConfig {
-            codex_home: codex_home.path().to_path_buf(),
+            ava_home: ava_home.path().to_path_buf(),
             sqlite,
             default_model_provider_id: "mock_provider".to_string(),
         },
@@ -600,13 +600,13 @@ async fn thread_search_occurrences_reads_paginated_projection() -> Result<()> {
             dynamic_tools: Vec::new(),
             selected_capability_roots: Vec::new(),
             multi_agent_version: None,
-            history_mode: codex_protocol::protocol::ThreadHistoryMode::Paginated,
+            history_mode: ava_protocol::protocol::ThreadHistoryMode::Paginated,
             history_base: None,
             subagent_history_start_ordinal: None,
             initial_window_id: Uuid::now_v7().to_string(),
             runtime_workspace_roots: None,
             metadata: ThreadPersistenceMetadata {
-                cwd: Some(codex_home.path().to_path_buf()),
+                cwd: Some(ava_home.path().to_path_buf()),
                 model_provider: "mock_provider".to_string(),
                 memory_mode: ThreadMemoryMode::Enabled,
             },
@@ -627,11 +627,11 @@ async fn thread_search_occurrences_reads_paginated_projection() -> Result<()> {
                         id: "user-1".to_string(),
                         client_id: None,
                         content: vec![
-                            codex_protocol::user_input::UserInput::Text {
+                            ava_protocol::user_input::UserInput::Text {
                                 text: "Nee".to_string(),
                                 text_elements: Vec::new(),
                             },
-                            codex_protocol::user_input::UserInput::Text {
+                            ava_protocol::user_input::UserInput::Text {
                                 text: "dle needle needle needle".to_string(),
                                 text_elements: Vec::new(),
                             },
@@ -644,7 +644,7 @@ async fn thread_search_occurrences_reads_paginated_projection() -> Result<()> {
                     CoreTurnItem::UserMessage(UserMessageItem {
                         id: "steer-1".to_string(),
                         client_id: None,
-                        content: vec![codex_protocol::user_input::UserInput::Text {
+                        content: vec![ava_protocol::user_input::UserInput::Text {
                             text: "steer toward needle".to_string(),
                             text_elements: Vec::new(),
                         }],
@@ -685,7 +685,7 @@ async fn thread_search_occurrences_reads_paginated_projection() -> Result<()> {
     store.shutdown_thread(thread_id).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -830,22 +830,22 @@ async fn thread_search_occurrences_reads_paginated_projection() -> Result<()> {
 
 #[tokio::test]
 async fn thread_turns_list_reads_store_history_without_rollout_path() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let thread_id = codex_protocol::ThreadId::from_string("00000000-0000-4000-8000-000000000123")?;
+    let ava_home = TempDir::new()?;
+    let thread_id = ava_protocol::ThreadId::from_string("00000000-0000-4000-8000-000000000123")?;
     let store_id = Uuid::new_v4().to_string();
     MockResponsesConfig::new("http://127.0.0.1:1")
         .with_root_config(&format!(
             r#"experimental_thread_store = {{ type = "in_memory", id = "{store_id}" }}"#
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let store = InMemoryThreadStore::for_id(store_id.clone());
     let _in_memory_store = InMemoryThreadStoreId { store_id };
     seed_pathless_store_thread(&store, thread_id).await?;
 
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(loader_overrides.clone())
         .build()
         .await?;
@@ -856,17 +856,17 @@ async fn thread_turns_list_reads_store_history_without_rollout_path() -> Result<
         loader_overrides,
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
-        thread_config_loader: Arc::new(codex_config::NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        thread_config_loader: Arc::new(ava_config::NoopThreadConfigLoader),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli.into(),
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },
@@ -902,20 +902,20 @@ async fn thread_turns_list_reads_store_history_without_rollout_path() -> Result<
 
 #[tokio::test]
 async fn thread_read_loaded_include_turns_reads_store_history_without_rollout_path() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let store_id = Uuid::new_v4().to_string();
     MockResponsesConfig::new("http://127.0.0.1:1")
         .with_root_config(&format!(
             r#"experimental_thread_store = {{ type = "in_memory", id = "{store_id}" }}"#
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let store = InMemoryThreadStore::for_id(store_id.clone());
     let _in_memory_store = InMemoryThreadStoreId { store_id };
 
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(loader_overrides.clone())
         .build()
         .await?;
@@ -926,17 +926,17 @@ async fn thread_read_loaded_include_turns_reads_store_history_without_rollout_pa
         loader_overrides,
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
-        thread_config_loader: Arc::new(codex_config::NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        thread_config_loader: Arc::new(ava_config::NoopThreadConfigLoader),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli.into(),
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },
@@ -962,7 +962,7 @@ async fn thread_read_loaded_include_turns_reads_store_history_without_rollout_pa
     let ThreadStartResponse { thread, .. } = serde_json::from_value(result)?;
     assert_eq!(thread.path, None);
 
-    let thread_id = codex_protocol::ThreadId::from_string(&thread.id)?;
+    let thread_id = ava_protocol::ThreadId::from_string(&thread.id)?;
     store
         .append_items(AppendThreadItemsParams {
             thread_id,
@@ -1008,22 +1008,22 @@ async fn thread_read_loaded_include_turns_reads_store_history_without_rollout_pa
 
 #[tokio::test]
 async fn thread_list_includes_store_thread_without_rollout_path() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let thread_id = codex_protocol::ThreadId::from_string("00000000-0000-4000-8000-000000000124")?;
+    let ava_home = TempDir::new()?;
+    let thread_id = ava_protocol::ThreadId::from_string("00000000-0000-4000-8000-000000000124")?;
     let store_id = Uuid::new_v4().to_string();
     MockResponsesConfig::new("http://127.0.0.1:1")
         .with_root_config(&format!(
             r#"experimental_thread_store = {{ type = "in_memory", id = "{store_id}" }}"#
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let store = InMemoryThreadStore::for_id(store_id.clone());
     let _in_memory_store = InMemoryThreadStoreId { store_id };
     seed_pathless_store_thread(&store, thread_id).await?;
 
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(loader_overrides.clone())
         .build()
         .await?;
@@ -1034,17 +1034,17 @@ async fn thread_list_includes_store_thread_without_rollout_path() -> Result<()> 
         loader_overrides,
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
-        thread_config_loader: Arc::new(codex_config::NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        thread_config_loader: Arc::new(ava_config::NoopThreadConfigLoader),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli.into(),
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },
@@ -1096,13 +1096,13 @@ async fn thread_list_includes_store_thread_without_rollout_path() -> Result<()> 
 #[tokio::test]
 async fn thread_read_can_return_archived_threads_by_id() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let filename_ts = "2025-01-05T12-00-00";
     let preview = "Archived saved user message";
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         preview,
@@ -1110,15 +1110,15 @@ async fn thread_read_can_return_archived_threads_by_id() -> Result<()> {
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let active_rollout_path = rollout_path(codex_home.path(), filename_ts, &conversation_id);
-    let archived_dir = codex_home.path().join(ARCHIVED_SESSIONS_SUBDIR);
+    let active_rollout_path = rollout_path(ava_home.path(), filename_ts, &conversation_id);
+    let archived_dir = ava_home.path().join(ARCHIVED_SESSIONS_SUBDIR);
     std::fs::create_dir_all(&archived_dir)?;
     let archived_rollout_path =
         archived_dir.join(active_rollout_path.file_name().expect("rollout file name"));
     std::fs::rename(&active_rollout_path, &archived_rollout_path)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1143,12 +1143,12 @@ async fn thread_read_can_return_archived_threads_by_id() -> Result<()> {
 #[tokio::test]
 async fn thread_resume_initial_turns_page_matches_requested_turns_list_page() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let filename_ts = "2025-01-05T12-00-00";
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         "first",
@@ -1156,12 +1156,12 @@ async fn thread_resume_initial_turns_page_matches_requested_turns_list_page() ->
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let rollout_path = rollout_path(codex_home.path(), filename_ts, &conversation_id);
+    let rollout_path = rollout_path(ava_home.path(), filename_ts, &conversation_id);
     append_user_message(rollout_path.as_path(), "2025-01-05T12:01:00Z", "second")?;
     append_user_message(rollout_path.as_path(), "2025-01-05T12:02:00Z", "third")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1203,7 +1203,7 @@ async fn thread_resume_initial_turns_page_matches_requested_turns_list_page() ->
     assert!(thread.turns.is_empty());
     assert_eq!(
         initial_turns_page,
-        Some(codex_app_server_protocol::TurnsPage::from(expected_page))
+        Some(ava_app_server_protocol::TurnsPage::from(expected_page))
     );
 
     Ok(())
@@ -1212,12 +1212,12 @@ async fn thread_resume_initial_turns_page_matches_requested_turns_list_page() ->
 #[tokio::test]
 async fn thread_turns_list_rejects_cursor_when_anchor_turn_is_rolled_back() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let filename_ts = "2025-01-05T12-00-00";
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         "first",
@@ -1225,12 +1225,12 @@ async fn thread_turns_list_rejects_cursor_when_anchor_turn_is_rolled_back() -> R
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let rollout_path = rollout_path(codex_home.path(), filename_ts, &conversation_id);
+    let rollout_path = rollout_path(ava_home.path(), filename_ts, &conversation_id);
     append_user_message(rollout_path.as_path(), "2025-01-05T12:01:00Z", "second")?;
     append_user_message(rollout_path.as_path(), "2025-01-05T12:02:00Z", "third")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1281,11 +1281,11 @@ async fn thread_turns_list_rejects_cursor_when_anchor_turn_is_rolled_back() -> R
 #[tokio::test]
 async fn thread_read_returns_forked_from_id_for_forked_threads() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_rollout_with_text_elements(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1295,7 +1295,7 @@ async fn thread_read_returns_forked_from_id_for_forked_threads() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1326,11 +1326,11 @@ async fn thread_read_returns_forked_from_id_for_forked_threads() -> Result<()> {
 #[tokio::test]
 async fn thread_read_loaded_thread_returns_precomputed_path_before_materialization() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1369,11 +1369,11 @@ async fn thread_read_loaded_thread_returns_precomputed_path_before_materializati
 #[tokio::test]
 async fn paginated_thread_name_set_is_reflected_in_read_list_and_metadata_resume() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1382,7 +1382,7 @@ async fn paginated_thread_name_set_is_reflected_in_read_list_and_metadata_resume
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1530,11 +1530,11 @@ async fn paginated_thread_name_set_is_reflected_in_read_list_and_metadata_resume
 #[tokio::test]
 async fn thread_read_include_turns_rejects_unmaterialized_loaded_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1580,11 +1580,11 @@ async fn thread_read_include_turns_rejects_unmaterialized_loaded_thread() -> Res
 #[tokio::test]
 async fn thread_turns_list_rejects_unmaterialized_loaded_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1632,15 +1632,15 @@ async fn thread_turns_list_rejects_unmaterialized_loaded_thread() -> Result<()> 
 #[tokio::test]
 async fn paginated_history_lists_and_legacy_reads_use_projected_turns_and_items() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let thread_id = codex_protocol::ThreadId::default();
-    let sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let thread_id = ava_protocol::ThreadId::default();
+    let sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let state_db =
-        codex_state::StateRuntime::init(sqlite.clone(), "mock_provider".to_string()).await?;
+        ava_state::StateRuntime::init(sqlite.clone(), "mock_provider".to_string()).await?;
     let store = LocalThreadStore::new(
         LocalThreadStoreConfig {
-            codex_home: codex_home.path().to_path_buf(),
+            ava_home: ava_home.path().to_path_buf(),
             sqlite,
             default_model_provider_id: "mock_provider".to_string(),
         },
@@ -1660,13 +1660,13 @@ async fn paginated_history_lists_and_legacy_reads_use_projected_turns_and_items(
             dynamic_tools: Vec::new(),
             selected_capability_roots: Vec::new(),
             multi_agent_version: None,
-            history_mode: codex_protocol::protocol::ThreadHistoryMode::Paginated,
+            history_mode: ava_protocol::protocol::ThreadHistoryMode::Paginated,
             history_base: None,
             subagent_history_start_ordinal: None,
             initial_window_id: Uuid::now_v7().to_string(),
             runtime_workspace_roots: None,
             metadata: ThreadPersistenceMetadata {
-                cwd: Some(codex_home.path().to_path_buf()),
+                cwd: Some(ava_home.path().to_path_buf()),
                 model_provider: "mock_provider".to_string(),
                 memory_mode: ThreadMemoryMode::Enabled,
             },
@@ -1738,7 +1738,7 @@ async fn paginated_history_lists_and_legacy_reads_use_projected_turns_and_items(
     store.shutdown_thread(thread_id).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -2074,11 +2074,11 @@ async fn paginated_history_lists_and_legacy_reads_use_projected_turns_and_items(
 #[tokio::test]
 async fn thread_items_list_returns_unsupported() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -2115,11 +2115,11 @@ async fn thread_read_reports_system_error_idle_flag_after_failed_turn() -> Resul
         responses::sse_failed("resp-1", "server_error", "simulated failure"),
     )
     .await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2223,7 +2223,7 @@ async fn read_single_turn_items_view(
     mcp: &mut TestAppServer,
     thread_id: &str,
     items_view: Option<TurnItemsView>,
-) -> anyhow::Result<codex_app_server_protocol::Turn> {
+) -> anyhow::Result<ava_app_server_protocol::Turn> {
     let read_id = mcp
         .send_thread_turns_list_request(ThreadTurnsListParams {
             thread_id: thread_id.to_string(),
@@ -2246,7 +2246,7 @@ async fn read_single_turn_items_view(
 
 async fn read_turns_page(
     mcp: &mut TestAppServer,
-    thread_id: codex_protocol::ThreadId,
+    thread_id: ava_protocol::ThreadId,
     cursor: Option<String>,
     limit: Option<u32>,
     sort_direction: SortDirection,
@@ -2271,7 +2271,7 @@ async fn read_turns_page(
 
 async fn read_items_page(
     mcp: &mut TestAppServer,
-    thread_id: codex_protocol::ThreadId,
+    thread_id: ava_protocol::ThreadId,
     turn_id: Option<&str>,
     cursor: Option<String>,
     limit: Option<u32>,
@@ -2318,7 +2318,7 @@ fn paginated_turn_completed(turn_id: &str) -> RolloutItem {
 }
 
 fn paginated_completed_item(
-    thread_id: codex_protocol::ThreadId,
+    thread_id: ava_protocol::ThreadId,
     turn_id: &str,
     item: CoreTurnItem,
 ) -> RolloutItem {
@@ -2331,7 +2331,7 @@ fn paginated_completed_item(
     }))
 }
 
-fn turn_user_texts(turns: &[codex_app_server_protocol::Turn]) -> Vec<&str> {
+fn turn_user_texts(turns: &[ava_app_server_protocol::Turn]) -> Vec<&str> {
     turns
         .iter()
         .filter_map(|turn| match turn.items.first()? {
@@ -2349,7 +2349,7 @@ fn turn_user_texts(turns: &[codex_app_server_protocol::Turn]) -> Vec<&str> {
         .collect()
 }
 
-fn turn_agent_texts(turns: &[codex_app_server_protocol::Turn]) -> Vec<&str> {
+fn turn_agent_texts(turns: &[ava_app_server_protocol::Turn]) -> Vec<&str> {
     turns
         .iter()
         .flat_map(|turn| &turn.items)
@@ -2372,7 +2372,7 @@ impl Drop for InMemoryThreadStoreId {
 
 async fn seed_pathless_store_thread(
     store: &InMemoryThreadStore,
-    thread_id: codex_protocol::ThreadId,
+    thread_id: ava_protocol::ThreadId,
 ) -> Result<()> {
     store
         .create_thread(CreateThreadParams {

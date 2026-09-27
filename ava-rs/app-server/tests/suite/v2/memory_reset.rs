@@ -2,15 +2,15 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use chrono::Utc;
-use codex_app_server_protocol::MemoryResetResponse;
-use codex_features::Feature;
-use codex_protocol::MemoryVersion;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
-use codex_state::Stage1JobClaimOutcome;
-use codex_state::StateRuntime;
-use codex_state::ThreadMetadataBuilder;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::MemoryResetResponse;
+use ava_features::Feature;
+use ava_protocol::MemoryVersion;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
+use ava_state::Stage1JobClaimOutcome;
+use ava_state::StateRuntime;
+use ava_state::ThreadMetadataBuilder;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use std::sync::Arc;
@@ -22,16 +22,16 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 
 #[tokio::test]
 async fn memory_reset_clears_memory_files_and_rows_preserves_threads() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new("http://127.0.0.1:9")
         .with_root_config("suppress_unstable_features_warning = true")
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
-    let state_db = init_state_db(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    let state_db = init_state_db(ava_home.path()).await?;
 
     let mut thread_ids = Vec::new();
     for version in [MemoryVersion::V1, MemoryVersion::V2] {
-        let root = codex_home.path().join(version.directory_name());
+        let root = ava_home.path().join(version.directory_name());
         tokio::fs::create_dir_all(root.join("rollout_summaries")).await?;
         tokio::fs::write(root.join("memory_summary.md"), "v1\nstale memory\n").await?;
         tokio::fs::write(
@@ -39,11 +39,11 @@ async fn memory_reset_clears_memory_files_and_rows_preserves_threads() -> Result
             "stale rollout summary\n",
         )
         .await?;
-        thread_ids.push(seed_stage1_output(&state_db, codex_home.path(), version).await?);
+        thread_ids.push(seed_stage1_output(&state_db, ava_home.path(), version).await?);
     }
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -61,7 +61,7 @@ async fn memory_reset_clears_memory_files_and_rows_preserves_threads() -> Result
             .list_stage1_outputs_for_global(/*n*/ 10)
             .await?;
         assert_eq!(outputs, Vec::new());
-        let root = codex_home.path().join(version.directory_name());
+        let root = ava_home.path().join(version.directory_name());
         assert!(
             tokio::fs::read_dir(root)
                 .await?
@@ -82,7 +82,7 @@ async fn memory_reset_clears_memory_files_and_rows_preserves_threads() -> Result
 
 async fn seed_stage1_output(
     state_db: &Arc<StateRuntime>,
-    codex_home: &Path,
+    ava_home: &Path,
     version: MemoryVersion,
 ) -> Result<ThreadId> {
     let now = Utc::now();
@@ -90,12 +90,12 @@ async fn seed_stage1_output(
     let worker_id = ThreadId::from_string(&Uuid::new_v4().to_string())?;
     let mut builder = ThreadMetadataBuilder::new(
         thread_id,
-        codex_home.join("sessions").join("test.jsonl"),
+        ava_home.join("sessions").join("test.jsonl"),
         now,
         SessionSource::Cli,
     );
     builder.updated_at = Some(now);
-    builder.cwd = codex_home.to_path_buf();
+    builder.cwd = ava_home.to_path_buf();
     let metadata = builder.build("mock_provider");
     state_db.upsert_thread(&metadata).await?;
 
@@ -134,9 +134,9 @@ async fn seed_stage1_output(
     Ok(thread_id)
 }
 
-async fn init_state_db(codex_home: &Path) -> Result<Arc<StateRuntime>> {
+async fn init_state_db(ava_home: &Path) -> Result<Arc<StateRuntime>> {
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.abs()),
         "mock_provider".into(),
     )
     .await?;
@@ -148,8 +148,8 @@ async fn init_state_db(codex_home: &Path) -> Result<Arc<StateRuntime>> {
 
 #[tokio::test]
 async fn memory_status_requires_successful_v2_consolidation_and_resets() -> Result<()> {
-    use codex_app_server_protocol::MemoryStatusResponse;
-    use codex_state::Phase2JobClaimOutcome;
+    use ava_app_server_protocol::MemoryStatusResponse;
+    use ava_state::Phase2JobClaimOutcome;
     let home = TempDir::new()?;
     MockResponsesConfig::new("http://127.0.0.1:9")
         .enable_feature(Feature::Sqlite)
@@ -159,7 +159,7 @@ async fn memory_status_requires_successful_v2_consolidation_and_resets() -> Resu
     let source = seed_stage1_output(&db, home.path(), MemoryVersion::V2).await?;
     seed_stage1_output(&db, home.path(), MemoryVersion::V2).await?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;

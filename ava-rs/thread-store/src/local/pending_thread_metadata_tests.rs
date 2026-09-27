@@ -1,15 +1,15 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_protocol::ThreadId;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutRecorder;
+use ava_protocol::ThreadId;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutRecorder;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -227,11 +227,11 @@ async fn pending_thread_metadata_rejects_rollout_path() {
 async fn store_with_runtime() -> (
     TempDir,
     Arc<LocalThreadStore>,
-    Arc<codex_state::StateRuntime>,
+    Arc<ava_state::StateRuntime>,
 ) {
     let home = TempDir::new().expect("temp dir");
     let config = test_config(home.path());
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )

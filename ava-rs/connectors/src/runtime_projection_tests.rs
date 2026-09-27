@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
-use codex_config::AppRequirementToml;
-use codex_config::AppsRequirementsToml;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
+use ava_config::AppRequirementToml;
+use ava_config::AppsRequirementsToml;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
 use pretty_assertions::assert_eq;
 
 use super::*;

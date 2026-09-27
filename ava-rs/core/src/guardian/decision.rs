@@ -1,8 +1,8 @@
 //! Calls the decision extension for each approval and enforces host constraints.
 //! The synchronous service captures one action; no outcome is stored by tool-call ID.
 
-use codex_async_utils::THREAD_STACK_SIZE_BYTES;
-use codex_protocol::protocol::ReviewDecision;
+use ava_async_utils::THREAD_STACK_SIZE_BYTES;
+use ava_protocol::protocol::ReviewDecision;
 use std::sync::Arc;
 use tokio::sync::oneshot;
 
@@ -27,7 +27,7 @@ pub(crate) fn spawn_approval_decision(
     let (tx, rx) = oneshot::channel();
     let runtime = session.services.runtime_handle.clone();
     let spawn_result = std::thread::Builder::new()
-        .name("codex-approval-review".to_string())
+        .name("ava-approval-review".to_string())
         .stack_size(THREAD_STACK_SIZE_BYTES)
         .spawn(move || {
             let decision = runtime.block_on(decide_approval(
@@ -67,7 +67,7 @@ pub(crate) async fn decide_approval(
         || model_requires_review
         || requirements
             .approvals_reviewer
-            .can_set(&codex_protocol::config_types::ApprovalsReviewer::User)
+            .can_set(&ava_protocol::config_types::ApprovalsReviewer::User)
             .is_err();
     let full_access = context.environments().has_full_access(
         context.approval_policy,
@@ -75,7 +75,7 @@ pub(crate) async fn decide_approval(
     );
     let require_synchronous_review = options.require_synchronous_review;
     let retried = reasons.retry.is_some();
-    let decision = codex_guardian_reviewer::ReviewRequest {
+    let decision = ava_guardian_reviewer::ReviewRequest {
         host: ReviewRuntime {
             session: Arc::clone(&session),
             history_reset: history_reset.clone(),
@@ -108,7 +108,7 @@ pub(crate) async fn decide_approval(
         require_guardian,
         require_synchronous_review,
         model_requires_review,
-        async_enabled: turn.config.features.enabled(codex_features::Feature::GuardianV2),
+        async_enabled: turn.config.features.enabled(ava_features::Feature::GuardianV2),
         retried,
         escalated_exec: matches!(&request.request, Ok(GuardianApprovalRequest::ExecCommand { sandbox_permissions, .. }) if sandbox_permissions.requires_escalated_permissions()),
         full_access,

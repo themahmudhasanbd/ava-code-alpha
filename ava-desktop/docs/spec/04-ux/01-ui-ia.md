@@ -1,6 +1,6 @@
 # 01. UI Information Architecture
 
-> Language: English (per ADR 0009). This describes the shipped Codex-aligned
+> Language: English (per ADR 0009). This describes the shipped Ava-aligned
 > shell (D034+). Component detail: [08-component-spec](08-component-spec.md);
 > visual tokens: [07-ui-design-system](07-ui-design-system.md); behavior:
 > [09-interaction-patterns](09-interaction-patterns.md).
@@ -50,7 +50,7 @@ destination, chat as the home surface, tools and permissions inline.
   brand and Collapse sidebar at the right; activating the
   brand returns the main pane to chat. The macOS expanded sidebar omits the
   logo/title brand and places only Collapse sidebar at the right of
-  the traffic-light row. `Codex` remains only an external import source or a
+  the traffic-light row. `Ava` remains only an external import source or a
   design-reference term.
 - **Main pane**: exactly one destination at a time; destinations replace the
   pane (they are pages, not modals). Once Settings or Extensions is selected,

@@ -1,9 +1,9 @@
 //! Typed, bounded browser context.
 
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
+use ava_protocol::models::ContentItemKind;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
 
 /// Browser-owned model context, capped below 10k tokens.
 pub enum BrowserContextFragment {

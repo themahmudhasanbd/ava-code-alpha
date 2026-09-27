@@ -1,15 +1,15 @@
 use crate::ApplicationRequirementsToml;
-use codex_features::FeatureToml;
-use codex_model_provider_info::ModelProviderInfo;
-pub use codex_model_provider_info::ResidencyRequirement;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::config_types::SandboxMode;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_features::FeatureToml;
+use ava_model_provider_info::ModelProviderInfo;
+pub use ava_model_provider_info::ResidencyRequirement;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::config_types::SandboxMode;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 use serde::de::Error as _;
@@ -709,7 +709,7 @@ impl FilesystemDenyReadPattern {
     }
 
     pub fn from_input(input: &str) -> Result<Self, String> {
-        codex_utils_path_uri::PathUri::validate_config_path_text(
+        ava_utils_path_uri::PathUri::validate_config_path_text(
             input,
             crate::path_context::convention(),
         )
@@ -721,7 +721,7 @@ impl FilesystemDenyReadPattern {
         }
 
         let (directory_prefix, suffix) = split_glob_pattern(input);
-        if crate::path_context::convention() == codex_utils_path_uri::PathConvention::Windows
+        if crate::path_context::convention() == ava_utils_path_uri::PathConvention::Windows
             && matches!(input.as_bytes(), [b'/' | b'\\', b'/' | b'\\', ..])
             && !matches!(
                 directory_prefix.as_bytes(),
@@ -747,7 +747,7 @@ impl FilesystemDenyReadPattern {
         } else {
             format!("{normalized_prefix}/{suffix}")
         };
-        codex_utils_path_uri::PathUri::validate_config_path_text(
+        ava_utils_path_uri::PathUri::validate_config_path_text(
             &normalized,
             crate::path_context::convention(),
         )
@@ -774,7 +774,7 @@ impl<'de> Deserialize<'de> for FilesystemDenyReadPattern {
 
 fn validate_literal_denial_path(path: &str) -> Result<(), String> {
     let convention = crate::path_context::convention();
-    codex_utils_path_uri::LegacyAppPathString::from_string(path)
+    ava_utils_path_uri::LegacyAppPathString::from_string(path)
         .to_path_uri(convention)
         .and_then(|path| path.validate_glob_directory(convention))
         .map_err(|error| error.to_string())
@@ -798,7 +798,7 @@ fn split_glob_pattern(input: &str) -> (&str, &str) {
         Some(0) => ("/", &input[1..]),
         Some(index)
             if crate::path_context::convention()
-                == codex_utils_path_uri::PathConvention::Windows
+                == ava_utils_path_uri::PathConvention::Windows
                 && index == 2
                 && input.as_bytes().get(1) == Some(&b':')
                 && input.as_bytes().get(2).is_some() =>
@@ -811,7 +811,7 @@ fn split_glob_pattern(input: &str) -> (&str, &str) {
 }
 
 fn is_path_separator(ch: char) -> bool {
-    if crate::path_context::convention() == codex_utils_path_uri::PathConvention::Windows {
+    if crate::path_context::convention() == ava_utils_path_uri::PathConvention::Windows {
         ch == '/' || ch == '\\'
     } else {
         ch == '/'
@@ -2151,12 +2151,12 @@ mod tests {
     use crate::McpServerIdentity;
     use crate::McpServerValueMatcher;
     use anyhow::Result;
-    use codex_execpolicy::Decision;
-    use codex_execpolicy::Evaluation;
-    use codex_execpolicy::RuleMatch;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_absolute_path::AbsolutePathBufGuard;
+    use ava_execpolicy::Decision;
+    use ava_execpolicy::Evaluation;
+    use ava_execpolicy::RuleMatch;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::AbsolutePathBufGuard;
     use pretty_assertions::assert_eq;
     use toml::from_str;
 
@@ -2221,7 +2221,7 @@ mod tests {
     #[test]
     fn composite_requirement_source_flattens_and_deduplicates_sources() {
         let mdm_source = RequirementSource::MdmManagedPreferences {
-            domain: "com.openai.codex".to_string(),
+            domain: "com.openai.ava-code".to_string(),
             key: "requirements_toml_base64".to_string(),
         };
         let legacy_source = RequirementSource::LegacyManagedConfigTomlFromMdm;
@@ -2729,7 +2729,7 @@ mod tests {
         for (model, protected) in [
             ("protected-model", true),
             ("protected-model-preview", false),
-            ("openai-codex/protected-model-preview", false),
+            ("openai-ava/protected-model-preview", false),
             ("provider_1/protected-model", true),
             ("protected-modelish", false),
             ("/protected-model", false),
@@ -2955,7 +2955,7 @@ mod tests {
         )?;
 
         let source_location = RequirementSource::MdmManagedPreferences {
-            domain: "com.codex".to_string(),
+            domain: "com.ava-code".to_string(),
             key: "allowed_approval_policies".to_string(),
         };
 
@@ -3016,7 +3016,7 @@ mod tests {
             "#,
         )?;
         let source_location = RequirementSource::MdmManagedPreferences {
-            domain: "com.codex".to_string(),
+            domain: "com.ava-code".to_string(),
             key: "allowed_approval_policies".to_string(),
         };
         populated_target.merge_unset_fields(source_location, source);
@@ -3463,7 +3463,7 @@ allowed_approvals_reviewers = ["user"]
     fn merge_unset_fields_merges_apps_across_sources_with_enabled_evaluation() {
         let higher_source = RequirementSource::LegacyManagedConfigTomlFromMdm;
         let lower_source = RequirementSource::MdmManagedPreferences {
-            domain: "com.openai.codex".to_string(),
+            domain: "com.openai.ava-code".to_string(),
             key: "requirements_toml_base64".to_string(),
         };
         let mut target = ConfigRequirementsWithSources::default();
@@ -3590,7 +3590,7 @@ allowed_approvals_reviewers = ["user"]
 
         let source_location = RequirementSource::composite([
             RequirementSource::MdmManagedPreferences {
-                domain: "com.openai.codex".to_string(),
+                domain: "com.openai.ava-code".to_string(),
                 key: "requirements_toml_base64".to_string(),
             },
             RequirementSource::LegacyManagedConfigTomlFromMdm,
@@ -4347,7 +4347,7 @@ command = "python3 /enterprise/hooks/pre.py"
             path_prefixes = ["/console/v1"]
 
             [experimental_network.header_injections.headers]
-            "x-statsig-change-source" = "codex"
+            "x-statsig-change-source" = "ava"
         "#;
 
         let source = RequirementSource::LegacyManagedConfigTomlFromMdm;
@@ -4413,13 +4413,13 @@ command = "python3 /enterprise/hooks/pre.py"
                 path_prefixes: vec!["/console/v1".to_string()],
                 headers: BTreeMap::from([(
                     "x-statsig-change-source".to_string(),
-                    "codex".to_string(),
+                    "ava".to_string(),
                 )]),
             }])
         );
         let debug = format!("{:?}", sourced_network.value.header_injections);
         assert!(debug.contains("x-statsig-change-source"));
-        assert!(!debug.contains("codex"));
+        assert!(!debug.contains("ava"));
 
         Ok(())
     }
@@ -4593,7 +4593,7 @@ command = "python3 /enterprise/hooks/pre.py"
             description = "ignored legacy field"
 
             [mcp_servers.docs.identity]
-            command = "codex-mcp"
+            command = "ava-mcp"
 
             [mcp_servers.remote.identity]
             url = "https://example.com/mcp"
@@ -4609,7 +4609,7 @@ command = "python3 /enterprise/hooks/pre.py"
                         "docs".to_string(),
                         McpServerRequirement::Identity {
                             identity: McpServerIdentity::Command {
-                                command: "codex-mcp".to_string(),
+                                command: "ava-mcp".to_string(),
                             },
                         },
                     ),

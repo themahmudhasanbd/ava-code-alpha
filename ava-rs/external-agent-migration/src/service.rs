@@ -39,13 +39,13 @@ use crate::utils::invalid_data_error;
 use crate::utils::is_missing_or_empty_text_file;
 pub(super) use crate::utils::read_json_file as read_external_settings;
 use crate::utils::rewrite_external_agent_terms;
-use codex_analytics::AnalyticsEventsClient;
-use codex_core::config::Config;
-use codex_core_plugins::PluginsManager;
-use codex_core_plugins::marketplace::MarketplacePluginInstallPolicy;
-use codex_login::AuthManager;
-use codex_protocol::protocol::Product;
-use codex_rollout::StateDbHandle;
+use ava_analytics::AnalyticsEventsClient;
+use ava_core::config::Config;
+use ava_core_plugins::PluginsManager;
+use ava_core_plugins::marketplace::MarketplacePluginInstallPolicy;
+use ava_login::AuthManager;
+use ava_protocol::protocol::Product;
+use ava_rollout::StateDbHandle;
 use serde_json::Value as JsonValue;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
@@ -62,11 +62,11 @@ const EXTERNAL_AGENT_DIR: &str = crate::ClaSource::CONFIG_DIR;
 #[cfg(test)]
 const EXTERNAL_AGENT_CONFIG_MD: &str = crate::ClaSource::CONFIG_MD;
 
-const EXTERNAL_AGENT_CONFIG_IMPORT_METRIC: &str = "codex.external_agent_config.import";
+const EXTERNAL_AGENT_CONFIG_IMPORT_METRIC: &str = "ava.external_agent_config.import";
 
 #[derive(Clone)]
 pub struct ExternalAgentConfigService {
-    pub(super) codex_home: PathBuf,
+    pub(super) ava_home: PathBuf,
     pub(super) connector_metadata_roots: Vec<PathBuf>,
     pub(crate) external_agent_home: PathBuf,
     pub(crate) analytics_events_client: Option<AnalyticsEventsClient>,
@@ -78,7 +78,7 @@ pub struct ExternalAgentConfigService {
 
 impl ExternalAgentConfigService {
     pub fn new(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         auth_manager: Arc<AuthManager>,
         analytics_events_client: AnalyticsEventsClient,
         state_db: Option<StateDbHandle>,
@@ -87,7 +87,7 @@ impl ExternalAgentConfigService {
         let external_agent_home = default_external_agent_home(source);
         let connector_metadata_roots = source.connector_metadata_roots(&external_agent_home);
         Self {
-            codex_home,
+            ava_home,
             connector_metadata_roots,
             external_agent_home,
             analytics_events_client: Some(analytics_events_client),
@@ -103,7 +103,7 @@ impl ExternalAgentConfigService {
         let external_agent_home = default_external_agent_home(source);
         let connector_metadata_roots = source.connector_metadata_roots(&external_agent_home);
         Self {
-            codex_home: self.codex_home.clone(),
+            ava_home: self.ava_home.clone(),
             connector_metadata_roots,
             external_agent_home,
             analytics_events_client: self.analytics_events_client.clone(),
@@ -150,20 +150,20 @@ impl ExternalAgentConfigService {
         )
     }
 
-    pub fn codex_home(&self) -> &Path {
-        &self.codex_home
+    pub fn ava_home(&self) -> &Path {
+        &self.ava_home
     }
 
     #[cfg(test)]
-    fn new_for_test(codex_home: PathBuf, external_agent_home: PathBuf) -> Self {
+    fn new_for_test(ava_home: PathBuf, external_agent_home: PathBuf) -> Self {
         let source = ExternalAgentSource::default();
         let connector_metadata_roots = source.connector_metadata_roots(&external_agent_home);
         Self {
-            codex_home,
+            ava_home,
             connector_metadata_roots,
             external_agent_home,
             analytics_events_client: None,
-            auth_manager: codex_login::test_support::auth_manager_from_optional_auth(
+            auth_manager: ava_login::test_support::auth_manager_from_optional_auth(
                 /*auth*/ None,
             ),
             source,
@@ -399,7 +399,7 @@ impl ExternalAgentConfigService {
                             .map(|details| details.memory.as_slice())
                             .unwrap_or_default();
                         let memory_outcome = memory_import::import(
-                            &self.codex_home,
+                            &self.ava_home,
                             &self.external_agent_home,
                             self.state_db.as_ref(),
                             selected_memory,
@@ -410,7 +410,7 @@ impl ExternalAgentConfigService {
                             ExternalAgentConfigMigrationItemType::Memory,
                             /*skills_count*/ None,
                         );
-                        let target_path = memory_import::resources_root(&self.codex_home);
+                        let target_path = memory_import::resources_root(&self.ava_home);
                         for project_key in memory_outcome.synchronized_projects {
                             item_result.record_success(
                                 Some(project_key),
@@ -462,7 +462,7 @@ impl ExternalAgentConfigService {
     }
 
     pub(crate) fn home_target_skills_dir(&self) -> PathBuf {
-        self.codex_home
+        self.ava_home
             .parent()
             .map(|parent| parent.join(".agents").join("skills"))
             .unwrap_or_else(|| PathBuf::from(".agents").join("skills"))
@@ -556,8 +556,8 @@ impl ExternalAgentConfigService {
         };
         let source_settings = self.source_settings(&scope);
         let target_config = match &scope {
-            MigrationScope::Home => self.codex_home.join("config.toml"),
-            MigrationScope::Repository { root } => root.join(".codex").join("config.toml"),
+            MigrationScope::Home => self.ava_home.join("config.toml"),
+            MigrationScope::Repository { root } => root.join(".ava-code").join("config.toml"),
         };
         let Some(settings) = self.effective_source_settings(&scope)? else {
             return Ok(None);
@@ -604,8 +604,8 @@ impl ExternalAgentConfigService {
             return Ok(Vec::new());
         };
         let target_config = match &scope {
-            MigrationScope::Home => self.codex_home.join("config.toml"),
-            MigrationScope::Repository { root } => root.join(".codex").join("config.toml"),
+            MigrationScope::Home => self.ava_home.join("config.toml"),
+            MigrationScope::Repository { root } => root.join(".ava-code").join("config.toml"),
         };
         let settings = self.effective_source_settings(&scope)?;
         let migrated = self.build_mcp_config(&scope, settings)?;
@@ -644,11 +644,11 @@ impl ExternalAgentConfigService {
         let (source_agents, target_agents) = match scope {
             MigrationScope::Home => (
                 self.external_agent_home.join("agents"),
-                self.codex_home.join("agents"),
+                self.ava_home.join("agents"),
             ),
             MigrationScope::Repository { root } => (
                 root.join(self.source.config_dir()).join("agents"),
-                root.join(".codex").join("agents"),
+                root.join(".ava-code").join("agents"),
             ),
         };
 
@@ -660,8 +660,8 @@ impl ExternalAgentConfigService {
             return Ok(Vec::new());
         };
         let target_hooks = match &scope {
-            MigrationScope::Home => self.codex_home.join("hooks.json"),
-            MigrationScope::Repository { root } => root.join(".codex").join("hooks.json"),
+            MigrationScope::Home => self.ava_home.join("hooks.json"),
+            MigrationScope::Repository { root } => root.join(".ava-code").join("hooks.json"),
         };
         let source_external_agent_dir = self.source_config_dir(&scope);
 
@@ -766,7 +766,7 @@ impl ExternalAgentConfigService {
                 if source_agents_md.is_empty() {
                     return Ok(None);
                 }
-                (source_agents_md, self.codex_home.join("AGENTS.md"))
+                (source_agents_md, self.ava_home.join("AGENTS.md"))
             }
         };
         if !is_missing_or_empty_text_file(&target_agents_md)? {
@@ -826,7 +826,7 @@ pub(crate) fn configured_marketplace_plugins(
                     .policy
                     .products
                     .as_deref()
-                    .is_none_or(|products| Product::Codex.matches_product_restriction(products))
+                    .is_none_or(|products| Product::Ava.matches_product_restriction(products))
             })
             .map(|plugin| plugin.name)
             .collect::<HashSet<_>>();

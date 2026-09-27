@@ -23,7 +23,7 @@ import {
 } from "@earendil-works/pi-ai/api/github-copilot-headers";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
-import { openAICodexResponsesApi } from "@earendil-works/pi-ai/api/openai-codex-responses.lazy";
+import { openAIAvaResponsesApi } from "@earendil-works/pi-ai/api/openai-ava-responses.lazy";
 import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
 import { googleGenerativeAIApi } from "@earendil-works/pi-ai/api/google-generative-ai.lazy";
 import { piMessagesApi } from "@earendil-works/pi-ai/api/pi-messages.lazy";
@@ -57,7 +57,7 @@ export type RuntimeProviderConfig = {
   modelConfig?: ModelConfig;
   /**
    * Optional outbound HTTP headers. Empty/absent keeps adapter defaults.
-   * Injected last via a fetch wrapper so Codex/Anthropic cannot overwrite them.
+   * Injected last via a fetch wrapper so Ava/Anthropic cannot overwrite them.
    */
   headers?: Record<string, string>;
   /**
@@ -115,12 +115,12 @@ export function apiBindingForStyle(apiStyle?: string): ApiBinding {
         adapter: anthropicMessagesApi,
         defaultBaseUrl: "https://api.anthropic.com",
       };
-    case "openai_codex_responses":
+    case "openai_ava_responses":
       // ChatGPT subscription endpoint. The adapter speaks Responses with the
-      // Codex conversation envelope, which is not the public /v1/responses API.
+      // Ava conversation envelope, which is not the public /v1/responses API.
       return {
-        api: "openai-codex-responses",
-        adapter: openAICodexResponsesApi,
+        api: "openai-ava-responses",
+        adapter: openAIAvaResponsesApi,
         defaultBaseUrl: "https://chatgpt.com/backend-api",
       };
     case "pi_messages":

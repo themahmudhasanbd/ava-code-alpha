@@ -18,15 +18,15 @@ use axum::http::StatusCode;
 use axum::http::header::AUTHORIZATION;
 use axum::routing::any;
 use axum::routing::post;
-use codex_app_server_protocol::AppsReadParams;
-use codex_app_server_protocol::AppsReadResponse;
-use codex_app_server_protocol::ConnectorMetadata;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::AppsReadParams;
+use ava_app_server_protocol::AppsReadResponse;
+use ava_app_server_protocol::ConnectorMetadata;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -115,10 +115,10 @@ async fn app_read_deduplicates_orders_partial_misses_and_reuses_cached_metadata(
         "tpp",
     );
     let (server_url, server_handle) = start_batch_server(state.clone()).await?;
-    let codex_home = TempDir::new()?;
-    write_apps_config(codex_home.path(), &server_url, Some("tpp"))?;
+    let ava_home = TempDir::new()?;
+    write_apps_config(ava_home.path(), &server_url, Some("tpp"))?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .without_managed_config()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -211,18 +211,18 @@ async fn app_read_refetches_metadata_only_cache_entries_when_tools_are_requested
             "apps": [app_response("cached", "Cached", /*icon_url*/ None)]
         }),
         "chatgpt-token",
-        "codex",
+        "ava",
     );
     let (server_url, server_handle) = start_batch_server(state.clone()).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_apps_config(
-        codex_home.path(),
+        ava_home.path(),
         &server_url,
         /*apps_mcp_product_sku*/ None,
     )?;
-    write_auth(codex_home.path())?;
+    write_auth(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .without_managed_config()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -296,18 +296,18 @@ async fn app_read_thread_id_uses_effective_thread_config() -> Result<()> {
             "apps": [app_response("alpha", "Alpha", /*icon_url*/ None)]
         }),
         "chatgpt-token",
-        "codex",
+        "ava",
     );
     let (server_url, server_handle) = start_batch_server(state.clone()).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_apps_config(
-        codex_home.path(),
+        ava_home.path(),
         &server_url,
         /*apps_mcp_product_sku*/ None,
     )?;
-    write_auth(codex_home.path())?;
+    write_auth(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -363,18 +363,18 @@ async fn app_read_backend_failure_preserves_fresh_cached_records() -> Result<()>
             "apps": [app_response("cached", "Cached", /*icon_url*/ None)]
         }),
         "chatgpt-token",
-        "codex",
+        "ava",
     );
     let (server_url, server_handle) = start_batch_server(state.clone()).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_apps_config(
-        codex_home.path(),
+        ava_home.path(),
         &server_url,
         /*apps_mcp_product_sku*/ None,
     )?;
-    write_auth(codex_home.path())?;
+    write_auth(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .without_managed_config()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -430,12 +430,12 @@ async fn app_read_adds_plugin_display_names_without_starting_mcp() -> Result<()>
             ]
         }),
         "chatgpt-token",
-        "codex",
+        "ava",
     );
     let (server_url, server_handle) = start_batch_server(state.clone()).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{server_url}"
@@ -455,18 +455,18 @@ enabled = false
 "#,
         ),
     )?;
-    write_plugin_app(codex_home.path(), "alpha-z", "Alpha Z", "alpha")?;
-    write_plugin_app(codex_home.path(), "alpha-a", "Alpha A", "alpha")?;
+    write_plugin_app(ava_home.path(), "alpha-z", "Alpha Z", "alpha")?;
+    write_plugin_app(ava_home.path(), "alpha-a", "Alpha A", "alpha")?;
     write_plugin_app(
-        codex_home.path(),
+        ava_home.path(),
         "disabled",
         "Disabled Plugin",
         "unclaimed",
     )?;
-    write_auth(codex_home.path())?;
+    write_auth(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -504,9 +504,9 @@ enabled = false
 
 #[tokio::test]
 async fn app_read_rejects_more_than_one_hundred_input_ids() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -641,18 +641,18 @@ fn app_response(id: &str, name: &str, icon_url: Option<&str>) -> Value {
 }
 
 fn write_plugin_app(
-    codex_home: &Path,
+    ava_home: &Path,
     plugin_name: &str,
     display_name: &str,
     connector_id: &str,
 ) -> Result<()> {
-    let plugin_root = codex_home
+    let plugin_root = ava_home
         .join("plugins/cache/test")
         .join(plugin_name)
         .join("local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         serde_json::to_vec(&json!({
             "name": plugin_name,
             "interface": { "displayName": display_name },
@@ -668,7 +668,7 @@ fn write_plugin_app(
 }
 
 fn write_apps_config(
-    codex_home: &Path,
+    ava_home: &Path,
     base_url: &str,
     apps_mcp_product_sku: Option<&str>,
 ) -> std::io::Result<()> {
@@ -676,7 +676,7 @@ fn write_apps_config(
         .map(|product_sku| format!("apps_mcp_product_sku = \"{product_sku}\"\n"))
         .unwrap_or_default();
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{base_url}"
@@ -689,9 +689,9 @@ connectors = true
     )
 }
 
-fn write_auth(codex_home: &Path) -> Result<()> {
+fn write_auth(ava_home: &Path) -> Result<()> {
     write_chatgpt_auth(
-        codex_home,
+        ava_home,
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -750,7 +750,7 @@ async fn start_batch_server(state: BatchServerState) -> Result<(String, JoinHand
     let addr = listener.local_addr()?;
     let router = Router::new()
         .route("/ps/apps/batch", post(batch_apps))
-        .route("/api/codex/ps/mcp", any(unexpected_mcp_request))
+        .route("/api/ava/ps/mcp", any(unexpected_mcp_request))
         .with_state(state);
     let handle = tokio::spawn(async move {
         let _ = axum::serve(listener, router).await;

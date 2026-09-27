@@ -3,21 +3,21 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_protocol::approvals::GuardianAssessmentStatus;
-use codex_protocol::approvals::GuardianReviewReason;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::NetworkPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_protocol::approvals::GuardianAssessmentStatus;
+use ava_protocol::approvals::GuardianReviewReason;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::NetworkPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -27,7 +27,7 @@ use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -148,7 +148,7 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
         .mount(&server)
         .await;
 
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             std::fs::write(
                 home.join("config.toml"),
@@ -175,8 +175,8 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    test.codex.ensure_rollout_materialized().await;
-    test.codex
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the available permissions.".to_owned(),
             text_elements: Vec::new(),
@@ -210,7 +210,7 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
         // public result instead of reading or modifying the private score state.
         timeout(Duration::from_secs(30), async {
             loop {
-                let history = test.codex.load_history(/*include_archived*/ false).await?;
+                let history = test.ava-code.load_history(/*include_archived*/ false).await?;
                 if history.items.into_iter().any(
                     |item| matches!(item, RolloutItem::SecurityRiskScore(score) if score.call_id.as_deref() == Some(call_id)),
                 ) {
@@ -236,7 +236,7 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
 
     let mut review_reasons = Vec::new();
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::GuardianAssessment(event)
                 if event.status == GuardianAssessmentStatus::Denied =>
             {
@@ -282,7 +282,7 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
         );
     }
 
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     parent_server.shutdown().await;
     classifier_server.shutdown().await;
     Ok(())

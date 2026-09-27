@@ -1,6 +1,6 @@
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::LoginAccountParams;
-use codex_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::LoginAccountParams;
+use ava_app_server_protocol::LoginAccountResponse;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::prelude::Widget;
@@ -126,7 +126,7 @@ pub(super) fn render_device_code_login(
         ]));
         lines.push("".into());
         lines.push(
-            "  Continue only if you started this login in Codex. If a website or another person gave you this code, cancel."
+            "  Continue only if you started this login in Ava. If a website or another person gave you this code, cancel."
                 .dim()
                 .into(),
         );

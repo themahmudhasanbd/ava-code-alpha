@@ -2,17 +2,17 @@
 
 use super::*;
 use crate::ResolvedModelMessages;
-use codex_context_fragments::AnnotatedContent;
-use codex_context_fragments::RenderedFragment;
-use codex_protocol::openai_models::ApprovalMessages;
-use codex_protocol::openai_models::PermissionMessages;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_context_fragments::AnnotatedContent;
+use ava_context_fragments::RenderedFragment;
+use ava_protocol::openai_models::ApprovalMessages;
+use ava_protocol::openai_models::PermissionMessages;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use pretty_assertions::assert_eq;
 
 const WORKSPACE_CONTEXT: PermissionsRenderContext<'static> = PermissionsRenderContext {
@@ -72,7 +72,7 @@ fn builds_permissions_from_profile_with_denied_reads() {
         &FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
-                    value: codex_protocol::permissions::FileSystemSpecialPath::Root,
+                    value: ava_protocol::permissions::FileSystemSpecialPath::Root,
                 },
                 access: FileSystemAccessMode::Read,
                 missing_path_behavior: None,

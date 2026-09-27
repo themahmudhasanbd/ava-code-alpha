@@ -1,4 +1,4 @@
-//! Write-path implementation for Codex memories.
+//! Write-path implementation for Ava memories.
 //!
 //! This crate owns the startup memory pipeline, file-backed memory artifact
 //! helpers, Phase 1 and Phase 2 prompt rendering, extension pruning, and
@@ -18,7 +18,7 @@ mod start;
 mod storage;
 pub mod workspace;
 
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -46,7 +46,7 @@ mod extension_resources {
 }
 
 mod guard_limits {
-    pub(super) const CODEX_LIMIT_ID: &str = "codex";
+    pub(super) const AVA_LIMIT_ID: &str = "ava";
 }
 
 mod prompt_blocks {
@@ -78,8 +78,8 @@ signal to remove stale memories derived only from those resources.
 }
 
 mod stage_one {
-    pub(super) const REASONING_EFFORT: codex_protocol::openai_models::ReasoningEffort =
-        codex_protocol::openai_models::ReasoningEffort::Low;
+    pub(super) const REASONING_EFFORT: ava_protocol::openai_models::ReasoningEffort =
+        ava_protocol::openai_models::ReasoningEffort::Low;
     pub(super) const CONCURRENCY_LIMIT: usize = 8;
     pub(super) const JOB_LEASE_SECONDS: i64 = 3_600;
     pub(super) const JOB_RETRY_DELAY_SECONDS: i64 = 3_600;
@@ -102,8 +102,8 @@ mod stage_one {
 }
 
 mod stage_two {
-    pub(super) const REASONING_EFFORT: codex_protocol::openai_models::ReasoningEffort =
-        codex_protocol::openai_models::ReasoningEffort::Medium;
+    pub(super) const REASONING_EFFORT: ava_protocol::openai_models::ReasoningEffort =
+        ava_protocol::openai_models::ReasoningEffort::Medium;
     pub(super) const JOB_LEASE_SECONDS: i64 = 3_600;
     pub(super) const JOB_RETRY_DELAY_SECONDS: i64 = 3_600;
     pub(super) const JOB_HEARTBEAT_SECONDS: u64 = 90;
@@ -115,8 +115,8 @@ mod workspace_diff {
     pub(super) const MAX_BYTES: usize = 4 * 1024 * 1024;
 }
 
-pub fn memory_root(codex_home: &AbsolutePathBuf) -> AbsolutePathBuf {
-    codex_home.join("memories")
+pub fn memory_root(ava_home: &AbsolutePathBuf) -> AbsolutePathBuf {
+    ava_home.join("memories")
 }
 
 pub fn rollout_summaries_dir(root: &Path) -> PathBuf {

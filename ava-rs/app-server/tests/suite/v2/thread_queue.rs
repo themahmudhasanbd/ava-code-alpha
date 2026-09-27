@@ -8,51 +8,51 @@ use app_test_support::create_escalated_command_execution_sse_response;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionRequestApprovalResponse;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::QueuedSubmission;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadQueueAddParams;
-use codex_app_server_protocol::ThreadQueueAddResponse;
-use codex_app_server_protocol::ThreadQueueChangedNotification;
-use codex_app_server_protocol::ThreadQueueDeleteParams;
-use codex_app_server_protocol::ThreadQueueDeleteResponse;
-use codex_app_server_protocol::ThreadQueueListParams;
-use codex_app_server_protocol::ThreadQueueListResponse;
-use codex_app_server_protocol::ThreadQueueReorderParams;
-use codex_app_server_protocol::ThreadQueueReorderResponse;
-use codex_app_server_protocol::ThreadQueueStartParams;
-use codex_app_server_protocol::ThreadQueueStartResponse;
-use codex_app_server_protocol::ThreadQueueUpdateParams;
-use codex_app_server_protocol::ThreadQueueUpdateResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_app_server_protocol::ThreadSettingsUpdateResponse;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionRequestApprovalResponse;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::QueuedSubmission;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadQueueAddParams;
+use ava_app_server_protocol::ThreadQueueAddResponse;
+use ava_app_server_protocol::ThreadQueueChangedNotification;
+use ava_app_server_protocol::ThreadQueueDeleteParams;
+use ava_app_server_protocol::ThreadQueueDeleteResponse;
+use ava_app_server_protocol::ThreadQueueListParams;
+use ava_app_server_protocol::ThreadQueueListResponse;
+use ava_app_server_protocol::ThreadQueueReorderParams;
+use ava_app_server_protocol::ThreadQueueReorderResponse;
+use ava_app_server_protocol::ThreadQueueStartParams;
+use ava_app_server_protocol::ThreadQueueStartResponse;
+use ava_app_server_protocol::ThreadQueueUpdateParams;
+use ava_app_server_protocol::ThreadQueueUpdateResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::ThreadSettingsUpdateResponse;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_protocol::openai_models::ReasoningEffort;
 use core_test_support::skip_if_remote;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -65,14 +65,14 @@ const READ_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 10);
 
 #[tokio::test]
 async fn queue_requires_experimental_handshake() -> Result<()> {
-    let (mut app, codex_home, _server) = queue_app(Vec::new()).await?;
+    let (mut app, ava_home, _server) = queue_app(Vec::new()).await?;
     let thread = app.start_thread(ThreadStartParams::default()).await?.thread;
     let queue = list_queue(&mut app, &thread.id).await?;
     assert!(queue.data.is_empty());
     drop(app);
 
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build()
         .await?;
@@ -125,7 +125,7 @@ async fn queue_crud_preserves_identity_order_and_notifications() -> Result<()> {
         create_final_assistant_message_sse_response("active done")?,
         create_final_assistant_message_sse_response("queued done")?,
     ];
-    let (mut app, _codex_home, _server) = queue_app(responses).await?;
+    let (mut app, _ava_home, _server) = queue_app(responses).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -256,7 +256,7 @@ async fn queue_list_returns_ordered_pages_and_lightweight_notifications() -> Res
         "uses a host-local command and cwd fixture unavailable to remote executors"
     );
 
-    let (mut app, _codex_home, _server) = queue_app(vec![blocked_turn_response()?]).await?;
+    let (mut app, _ava_home, _server) = queue_app(vec![blocked_turn_response()?]).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -331,7 +331,7 @@ async fn queue_rejects_messages_after_reaching_its_capacity() -> Result<()> {
         "uses a host-local command and cwd fixture unavailable to remote executors"
     );
 
-    let (mut app, _codex_home, _server) = queue_app(vec![blocked_turn_response()?]).await?;
+    let (mut app, _ava_home, _server) = queue_app(vec![blocked_turn_response()?]).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -368,7 +368,7 @@ async fn queue_rejects_messages_after_reaching_its_capacity() -> Result<()> {
 #[tokio::test]
 async fn idle_queue_dispatch_preserves_client_id() -> Result<()> {
     let responses = vec![create_final_assistant_message_sse_response("queued done")?];
-    let (mut app, _codex_home, server) = queue_app(responses).await?;
+    let (mut app, _ava_home, server) = queue_app(responses).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -412,8 +412,8 @@ async fn idle_queue_dispatch_preserves_client_id() -> Result<()> {
     assert!(body["input"].to_string().contains("durable queued message"));
     let metadata_header = request
         .headers
-        .get("x-codex-turn-metadata")
-        .context("queued model request is missing its x-codex-turn-metadata header")?
+        .get("x-ava-turn-metadata")
+        .context("queued model request is missing its x-ava-turn-metadata header")?
         .to_str()
         .context("queued turn metadata header is not valid ASCII")?;
     let metadata: Value = serde_json::from_str(metadata_header)?;
@@ -432,7 +432,7 @@ async fn cold_thread_resume_dispatches_a_persisted_queued_submission() -> Result
         create_final_assistant_message_sse_response("materialized thread")?,
         create_final_assistant_message_sse_response("cold-resumed queued message")?,
     ];
-    let (mut first, codex_home, _server) = queue_app(responses).await?;
+    let (mut first, ava_home, _server) = queue_app(responses).await?;
     let thread_id = first
         .start_thread(ThreadStartParams::default())
         .await?
@@ -468,7 +468,7 @@ async fn cold_thread_resume_dispatches_a_persisted_queued_submission() -> Result
     drop(first);
 
     let mut resumed = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -570,7 +570,7 @@ async fn interrupt_preserves_queue_and_queue_start_can_resume_a_non_head_item() 
         create_final_assistant_message_sse_response("message added after interruption done")?,
         create_final_assistant_message_sse_response("message added after cold resume done")?,
     ];
-    let (mut app, codex_home, _server) = queue_app(responses).await?;
+    let (mut app, ava_home, _server) = queue_app(responses).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -646,7 +646,7 @@ async fn interrupt_preserves_queue_and_queue_start_can_resume_a_non_head_item() 
 
     drop(app);
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -710,7 +710,7 @@ async fn queue_start_while_active_returns_busy_and_preserves_the_queue() -> Resu
         create_final_assistant_message_sse_response("queued message done")?,
     ])
     .await;
-    let (mut app, _codex_home, _server) = queue_app_with_server(server).await?;
+    let (mut app, _ava_home, _server) = queue_app_with_server(server).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -783,7 +783,7 @@ async fn queue_start_without_id_starts_the_head_when_idle() -> Result<()> {
         create_final_assistant_message_sse_response("first queued message done")?,
         create_final_assistant_message_sse_response("second queued message done")?,
     ];
-    let (mut app, _codex_home, server) = queue_app(responses).await?;
+    let (mut app, _ava_home, server) = queue_app(responses).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -846,8 +846,8 @@ async fn queue_start_without_id_starts_the_head_when_idle() -> Result<()> {
     for request in &response_requests[1..] {
         let metadata_header = request
             .headers
-            .get("x-codex-turn-metadata")
-            .context("queued model request is missing its x-codex-turn-metadata header")?
+            .get("x-ava-turn-metadata")
+            .context("queued model request is missing its x-ava-turn-metadata header")?
             .to_str()
             .context("queued turn metadata header is not valid ASCII")?;
         let metadata: Value = serde_json::from_str(metadata_header)?;
@@ -870,7 +870,7 @@ async fn a_new_turn_preserves_queued_messages_until_it_completes() -> Result<()>
         create_final_assistant_message_sse_response("first queued message done")?,
         create_final_assistant_message_sse_response("second queued message done")?,
     ];
-    let (mut app, _codex_home, _server) = queue_app(responses).await?;
+    let (mut app, _ava_home, _server) = queue_app(responses).await?;
     let thread_id = app
         .start_thread(ThreadStartParams::default())
         .await?
@@ -949,17 +949,17 @@ async fn queue_app(responses: Vec<String>) -> Result<(TestAppServer, TempDir, Mo
 }
 
 async fn queue_app_with_server(server: MockServer) -> Result<(TestAppServer, TempDir, MockServer)> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
         .with_root_config(r#"approvals_reviewer = "user""#);
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
     let app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
-    Ok((app, codex_home, server))
+    Ok((app, ava_home, server))
 }
 
 fn blocked_turn_response() -> Result<String> {

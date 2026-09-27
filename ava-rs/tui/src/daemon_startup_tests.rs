@@ -30,7 +30,7 @@ fn audited_overrides_allow_daemon_without_allowing_arbitrary_config() {
         ("features={}", false),
         ("model='test'", false),
     ] {
-        let overrides = codex_utils_cli::CliConfigOverrides {
+        let overrides = ava_utils_cli::CliConfigOverrides {
             raw_overrides: vec![raw.to_string()],
         }
         .parse_overrides()
@@ -51,7 +51,7 @@ fn audited_overrides_allow_daemon_without_allowing_arbitrary_config() {
 
 #[test]
 fn monorepo_wrapper_overrides_are_eligible_and_select_only_server_features() {
-    let overrides = codex_utils_cli::CliConfigOverrides {
+    let overrides = ava_utils_cli::CliConfigOverrides {
         raw_overrides: [
             "features.realtime_conversation=true",
             "features.worktrees=true",
@@ -96,7 +96,7 @@ fn monorepo_wrapper_overrides_are_eligible_and_select_only_server_features() {
 
 #[test]
 fn daemon_features_follow_cli_table_replacement_and_last_value() {
-    let overrides = codex_utils_cli::CliConfigOverrides {
+    let overrides = ava_utils_cli::CliConfigOverrides {
         raw_overrides: [
             "features.api_key_model_discovery=true",
             "features={code_mode_host=false}",
@@ -139,7 +139,7 @@ async fn daemon_connection_rejects_unprotected_socket_before_handshake() -> colo
     let parent = home.path().join("control");
     std::fs::create_dir(&parent)?;
     let socket_path = AbsolutePathBuf::from_absolute_path_checked(parent.join("server.sock"))?;
-    let mut listener = codex_uds::UnixListener::bind(socket_path.as_path()).await?;
+    let mut listener = ava_uds::UnixListener::bind(socket_path.as_path()).await?;
     let target = AppServerTarget::LocalDaemon {
         allow_embedded_fallback: true,
         endpoint: RemoteAppServerEndpoint::UnixSocket { socket_path },
@@ -161,7 +161,7 @@ async fn daemon_startup_falls_back_only_for_implicit_endpoints() -> color_eyre::
     ] {
         let home = TempDir::new()?;
         let config = ConfigBuilder::default()
-            .codex_home(home.path().to_path_buf())
+            .ava_home(home.path().to_path_buf())
             .build()
             .await?;
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
@@ -198,7 +198,7 @@ async fn daemon_startup_falls_back_only_for_implicit_endpoints() -> color_eyre::
             LoaderOverrides::default(),
             /*strict_config*/ false,
             CloudConfigBundleLoader::default(),
-            codex_feedback::CodexFeedback::new(),
+            ava_feedback::AvaFeedback::new(),
             /*log_db*/ None,
             &mut state_db,
             Arc::new(EnvironmentManager::default_for_tests()),
@@ -244,7 +244,7 @@ fn daemon_eligibility_preserves_launch_options_and_explains_exclusions() {
             None,
         ),
     ] {
-        let cli = Cli::parse_from(std::iter::once("codex").chain(args.split_whitespace()));
+        let cli = Cli::parse_from(std::iter::once("ava").chain(args.split_whitespace()));
         assert_eq!(
             daemon_startup::exclusion(
                 &cli,
@@ -256,7 +256,7 @@ fn daemon_eligibility_preserves_launch_options_and_explains_exclusions() {
             expected
         );
     }
-    let mut cli = Cli::parse_from(["codex"]);
+    let mut cli = Cli::parse_from(["ava"]);
     let overrides = vec![("web_search".into(), toml::Value::String("live".into()))];
     let loader = LoaderOverrides {
         ignore_user_config: true,
@@ -283,7 +283,7 @@ fn daemon_eligibility_preserves_launch_options_and_explains_exclusions() {
             LoaderOverrides::default(),
             false,
             Some(std::ffi::OsStr::new("executor")),
-            "executor selection (CODEX_EXEC_SERVER_URL)",
+            "executor selection (AVA_EXEC_SERVER_URL)",
         ),
     ] {
         assert_eq!(

@@ -1,21 +1,21 @@
 use std::sync::Arc;
 
-use codex_api::AuthError;
-use codex_api::AuthProvider;
-use codex_api::SharedAuthProvider;
-use codex_aws_auth::AwsAccessKeys;
-use codex_aws_auth::AwsAuthContext;
-use codex_aws_auth::AwsAuthError;
-use codex_aws_auth::AwsRequestToSign;
-use codex_http_client::Request;
-use codex_http_client::RequestBody;
-use codex_http_client::RequestCompression;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
+use ava_api::AuthError;
+use ava_api::AuthProvider;
+use ava_api::SharedAuthProvider;
+use ava_aws_auth::AwsAccessKeys;
+use ava_aws_auth::AwsAuthContext;
+use ava_aws_auth::AwsAuthError;
+use ava_aws_auth::AwsRequestToSign;
+use ava_http_client::Request;
+use ava_http_client::RequestBody;
+use ava_http_client::RequestCompression;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
 use http::HeaderMap;
 
 use crate::BearerAuthProvider;
@@ -71,12 +71,12 @@ pub(super) fn auth_source(
         BedrockAuthSource::ConfiguredAwsProfile
     } else if matches!(
         auth_manager.and_then(AuthManager::auth_cached),
-        Some(CodexAuth::BedrockApiKey(_))
+        Some(AvaAuth::BedrockApiKey(_))
     ) {
         BedrockAuthSource::ManagedBearerToken
     } else if matches!(
         auth_manager.and_then(AuthManager::auth_cached),
-        Some(CodexAuth::BedrockAccessKeys(_))
+        Some(AvaAuth::BedrockAccessKeys(_))
     ) {
         BedrockAuthSource::ManagedAccessKeys
     } else if non_empty_env_var_from(AWS_BEARER_TOKEN_BEDROCK_ENV_VAR, env_var).is_some() {
@@ -92,12 +92,12 @@ pub(super) fn auth_source(
 
 pub(super) async fn resolve_auth_method(
     source: BedrockAuthSource,
-    managed_auth: Option<&CodexAuth>,
+    managed_auth: Option<&AvaAuth>,
     aws: &ModelProviderAwsAuthInfo,
     endpoint: BedrockEndpoint,
 ) -> Result<BedrockAuthMethod> {
     match source {
-        BedrockAuthSource::CommandBearerToken => Err(CodexErr::Fatal(
+        BedrockAuthSource::CommandBearerToken => Err(AvaErr::Fatal(
             "Amazon Bedrock command authentication must be resolved by the model provider"
                 .to_string(),
         )),
@@ -109,20 +109,20 @@ pub(super) async fn resolve_auth_method(
             let credential_export = process_shared_state()
                 .aws_credential_export(aws)
                 .ok_or_else(|| {
-                    CodexErr::Fatal(
+                    AvaErr::Fatal(
                         "selected Amazon Bedrock credential exporter is no longer configured"
                             .to_string(),
                     )
                 })?;
             let context = AwsAuthContext::load_with_credentials_provider(config, credential_export)
                 .await
-                .map_err(aws_auth_error_to_codex_error)?;
+                .map_err(aws_auth_error_to_ava_error)?;
             Ok(BedrockAuthMethod::AwsSdkAuth { context })
         }
         BedrockAuthSource::ManagedBearerToken => {
-            let Some(CodexAuth::BedrockApiKey(auth)) = managed_auth else {
-                return Err(CodexErr::Fatal(
-                    "selected Codex-managed Amazon Bedrock API key is no longer available"
+            let Some(AvaAuth::BedrockApiKey(auth)) = managed_auth else {
+                return Err(AvaErr::Fatal(
+                    "selected Ava-managed Amazon Bedrock API key is no longer available"
                         .to_string(),
                 ));
             };
@@ -134,7 +134,7 @@ pub(super) async fn resolve_auth_method(
         BedrockAuthSource::EnvBearerToken => {
             let token = non_empty_env_var_from(AWS_BEARER_TOKEN_BEDROCK_ENV_VAR, std::env::var)
                 .ok_or_else(|| {
-                    CodexErr::Fatal(
+                    AvaErr::Fatal(
                         "selected `AWS_BEARER_TOKEN_BEDROCK` credential is no longer available"
                             .to_string(),
                     )
@@ -149,13 +149,13 @@ pub(super) async fn resolve_auth_method(
             };
             let context = AwsAuthContext::load_profile(config)
                 .await
-                .map_err(aws_auth_error_to_codex_error)?;
+                .map_err(aws_auth_error_to_ava_error)?;
             Ok(BedrockAuthMethod::AwsSdkAuth { context })
         }
         BedrockAuthSource::ManagedAccessKeys => {
-            let Some(CodexAuth::BedrockAccessKeys(auth)) = managed_auth else {
-                return Err(CodexErr::Fatal(
-                    "selected Codex-managed Amazon Bedrock access keys are no longer available"
+            let Some(AvaAuth::BedrockAccessKeys(auth)) = managed_auth else {
+                return Err(AvaErr::Fatal(
+                    "selected Ava-managed Amazon Bedrock access keys are no longer available"
                         .to_string(),
                 ));
             };
@@ -170,7 +170,7 @@ pub(super) async fn resolve_auth_method(
             };
             let context = AwsAuthContext::load_with_access_keys(config, access_keys)
                 .await
-                .map_err(aws_auth_error_to_codex_error)?;
+                .map_err(aws_auth_error_to_ava_error)?;
             Ok(BedrockAuthMethod::AwsSdkAuth { context })
         }
         BedrockAuthSource::EnvAwsCredentials | BedrockAuthSource::AwsSdk => {
@@ -180,7 +180,7 @@ pub(super) async fn resolve_auth_method(
             };
             let context = AwsAuthContext::load(config)
                 .await
-                .map_err(aws_auth_error_to_codex_error)?;
+                .map_err(aws_auth_error_to_ava_error)?;
             Ok(BedrockAuthMethod::AwsSdkAuth { context })
         }
     }
@@ -188,7 +188,7 @@ pub(super) async fn resolve_auth_method(
 
 pub(super) async fn resolve_provider_auth(
     source: BedrockAuthSource,
-    managed_auth: Option<&CodexAuth>,
+    managed_auth: Option<&AvaAuth>,
     aws: &ModelProviderAwsAuthInfo,
     endpoint: BedrockEndpoint,
 ) -> Result<SharedAuthProvider> {
@@ -207,7 +207,7 @@ pub(super) async fn resolve_provider_auth(
 
 pub(super) async fn resolve_region(
     source: BedrockAuthSource,
-    managed_auth: Option<&CodexAuth>,
+    managed_auth: Option<&AvaAuth>,
     aws: &ModelProviderAwsAuthInfo,
     endpoint: BedrockEndpoint,
 ) -> Result<String> {
@@ -218,7 +218,7 @@ pub(super) async fn resolve_region(
         };
         let context = AwsAuthContext::load(config)
             .await
-            .map_err(aws_auth_error_to_codex_error)?;
+            .map_err(aws_auth_error_to_ava_error)?;
         return Ok(context.region().to_string());
     }
 
@@ -247,7 +247,7 @@ pub(super) fn bearer_token_region(
         .or_else(|| non_empty_env_var_from(AWS_REGION_ENV_VAR, env_var))
         .or_else(|| non_empty_env_var_from(AWS_DEFAULT_REGION_ENV_VAR, env_var))
         .ok_or_else(|| {
-            CodexErr::Fatal(
+            AvaErr::Fatal(
                 "Amazon Bedrock bearer token auth requires \
 `model_providers.amazon-bedrock.aws.region`, `AWS_REGION`, or `AWS_DEFAULT_REGION`"
                     .to_string(),
@@ -255,8 +255,8 @@ pub(super) fn bearer_token_region(
         })
 }
 
-fn aws_auth_error_to_codex_error(error: AwsAuthError) -> CodexErr {
-    CodexErr::Fatal(format!("failed to resolve Amazon Bedrock auth: {error}"))
+fn aws_auth_error_to_ava_error(error: AwsAuthError) -> AvaErr {
+    AvaErr::Fatal(format!("failed to resolve Amazon Bedrock auth: {error}"))
 }
 
 fn aws_auth_error_to_auth_error(error: AwsAuthError) -> AuthError {
@@ -282,7 +282,7 @@ fn remove_headers_not_preserved_by_bedrock_mantle(headers: &mut HeaderMap) {
     // The Bedrock Mantle front door does not preserve legacy OpenAI
     // compatibility headers that use snake_case, such as `session_id` and
     // `thread_id`, before SigV4 verification. Signing that header class makes
-    // richer Codex agent requests fail even though raw Responses requests work.
+    // richer Ava agent requests fail even though raw Responses requests work.
     let headers_to_remove = headers
         .keys()
         .filter(|name| name.as_str().contains('_'))
@@ -333,7 +333,7 @@ impl BedrockSigV4AuthProvider {
 impl AuthProvider for BedrockSigV4AuthProvider {
     fn add_auth_headers(&self, _headers: &mut HeaderMap) {}
 
-    fn apply_auth(&self, request: Request) -> codex_api::AuthProviderFuture<'_> {
+    fn apply_auth(&self, request: Request) -> ava_api::AuthProviderFuture<'_> {
         Box::pin(BedrockSigV4AuthProvider::apply_auth(self, request))
     }
 }
@@ -342,10 +342,10 @@ impl AuthProvider for BedrockSigV4AuthProvider {
 mod tests {
     use std::num::NonZeroU64;
 
-    use codex_api::AuthProvider;
-    use codex_login::auth::BedrockAccessKeysAuth;
-    use codex_login::auth::BedrockApiKeyAuth;
-    use codex_model_provider_info::AwsCredentialExportConfig;
+    use ava_api::AuthProvider;
+    use ava_login::auth::BedrockAccessKeysAuth;
+    use ava_login::auth::BedrockApiKeyAuth;
+    use ava_model_provider_info::AwsCredentialExportConfig;
     use http::HeaderValue;
     use pretty_assertions::assert_eq;
 
@@ -377,11 +377,11 @@ mod tests {
                 auth_refresh: None,
             }));
         let managed_auth =
-            AuthManager::from_auth_for_testing(CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+            AuthManager::from_auth_for_testing(AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
                 api_key: "managed-bedrock-api-key".to_string(),
                 region: "us-east-1".to_string(),
             }));
-        let managed_access_keys = AuthManager::from_auth_for_testing(CodexAuth::BedrockAccessKeys(
+        let managed_access_keys = AuthManager::from_auth_for_testing(AvaAuth::BedrockAccessKeys(
             BedrockAccessKeysAuth {
                 access_key_id: "managed-access-key-id".to_string(),
                 secret_access_key: "managed-secret-access-key".to_string(),

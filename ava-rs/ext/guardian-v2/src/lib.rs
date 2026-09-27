@@ -1,10 +1,10 @@
 use std::sync::Arc;
 use std::sync::Weak;
 
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_login::AuthManager;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_login::AuthManager;
 
 mod async_scorer;
 mod sync_reviewer;

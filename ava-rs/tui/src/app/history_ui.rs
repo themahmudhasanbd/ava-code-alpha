@@ -275,7 +275,7 @@ impl App {
     }
 
     pub(super) fn open_desktop_thread(&mut self, thread_id: ThreadId) {
-        let url = format!("codex://threads/{thread_id}");
+        let url = format!("ava://threads/{thread_id}");
         if let Err(err) = open_desktop_thread_url(&url) {
             self.chat_widget
                 .add_error_message(desktop_thread_open_error_message(&err));
@@ -315,7 +315,7 @@ impl App {
     }
 
     pub(super) fn clear_ui_header_lines(&self, width: u16) -> Vec<Line<'static>> {
-        self.clear_ui_header_lines_with_version(width, CODEX_CLI_VERSION)
+        self.clear_ui_header_lines_with_version(width, AVA_CLI_VERSION)
     }
 
     pub(super) fn queue_clear_ui_header(&mut self, tui: &mut tui::Tui) {
@@ -325,7 +325,7 @@ impl App {
                     || cell.as_any().is::<history_cell::SessionHeaderHistoryCell>()
             }) {
                 let header: Arc<dyn HistoryCell> =
-                    Arc::new(self.clear_ui_header_cell(CODEX_CLI_VERSION));
+                    Arc::new(self.clear_ui_header_cell(AVA_CLI_VERSION));
                 self.transcript_cells.insert(/*index*/ 0, header);
             }
             tui.frame_requester().schedule_frame();
@@ -452,7 +452,7 @@ fn windows_desktop_app_launch_script(url: &str) -> String {
 $ErrorActionPreference = 'Stop'
 $url = {url}
 
-$package = Get-AppxPackage -Name OpenAI.Codex -ErrorAction SilentlyContinue
+$package = Get-AppxPackage -Name OpenAI.Ava -ErrorAction SilentlyContinue
 if ($null -eq $package) {{
     Write-Error 'Desktop app package is not installed'
     exit 1
@@ -462,12 +462,12 @@ $manifest = Get-AppxPackageManifest -Package $package.PackageFullName
 $application = $manifest.Package.Applications.Application |
     Where-Object {{
         @($_.Extensions.Extension) | Where-Object {{
-            $_.Category -eq 'windows.protocol' -and $_.Protocol.Name -eq 'codex'
+            $_.Category -eq 'windows.protocol' -and $_.Protocol.Name -eq 'ava'
         }}
     }} |
     Select-Object -First 1
 if ($null -eq $application -or [string]::IsNullOrWhiteSpace($application.Executable)) {{
-    Write-Error 'Desktop app package does not declare a codex protocol executable'
+    Write-Error 'Desktop app package does not declare a ava protocol executable'
     exit 1
 }}
 

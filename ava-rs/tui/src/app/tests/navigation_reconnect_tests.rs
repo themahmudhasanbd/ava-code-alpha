@@ -8,7 +8,7 @@ use crate::app::reconnect::reconnect;
 use crate::app_event::AgentsOverviewThreadRefresh;
 use crate::app_event::WindowsSandboxEnableMode;
 use crate::app_server_session::ThreadParamsMode;
-use codex_app_server_client::AppServerEvent;
+use ava_app_server_client::AppServerEvent;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -16,8 +16,8 @@ use serde_json::json;
 async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conversation()
 -> Result<()> {
     use super::super::agents_overview::AGENTS_OVERVIEW_VIEW_ID;
-    use codex_app_server_protocol::Thread;
-    use codex_app_server_protocol::ThreadStatus;
+    use ava_app_server_protocol::Thread;
+    use ava_app_server_protocol::ThreadStatus;
     use tokio::net::UnixListener;
 
     // Losing an optional, previously opened thread must not strand the command center either.
@@ -155,7 +155,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
         let socket_path = directory.path().join("daemon.sock");
         let listener = UnixListener::bind(&socket_path)?;
         let endpoint = crate::RemoteAppServerEndpoint::UnixSocket {
-            socket_path: codex_utils_absolute_path::AbsolutePathBuf::try_from(socket_path.clone())?,
+            socket_path: ava_utils_absolute_path::AbsolutePathBuf::try_from(socket_path.clone())?,
         };
         app.app_server_target = AppServerTarget::LocalDaemon {
             allow_embedded_fallback: true,
@@ -163,7 +163,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
         };
         let interrupted_setup = previous_thread.is_none() && !overview_initialized;
         if interrupted_setup {
-            let preset = codex_utils_approval_presets::builtin_approval_presets()
+            let preset = ava_utils_approval_presets::builtin_approval_presets()
                 .into_iter()
                 .find(|preset| preset.id == "auto")
                 .expect("auto preset");
@@ -314,7 +314,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
             &mut session,
             &mut events,
             connected,
-            CODEX_CLI_VERSION,
+            AVA_CLI_VERSION,
         )
         .await?;
         if interrupted_setup {
@@ -326,7 +326,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
                 if let AppEvent::InsertHistoryCell(cell) = &event {
                     let rendered = lines_to_single_string(&cell.display_lines(/*width*/ 100));
                     if rendered.contains("Windows sandbox setup was interrupted") {
-                        insta::assert_snapshot!(rendered, @"■ Windows sandbox setup was interrupted. Restart Codex before using Agent mode.");
+                        insta::assert_snapshot!(rendered, @"■ Windows sandbox setup was interrupted. Restart Ava before using Agent mode.");
                         saw_warning = true;
                         continue;
                     }
@@ -482,7 +482,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
             assert_eq!(app.chat_widget.composer_text_with_pending(), "latest draft");
             assert!(
                 !std::iter::from_fn(|| events.try_recv().ok())
-                    .any(|event| matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })))
+                    .any(|event| matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })))
             );
             app.handle_tui_event(&mut tui, &mut session, TuiEvent::Paste("!".into()))
                 .await?;
@@ -570,7 +570,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
                     .any(|event| matches!(event, AppEvent::RunningTaskExit { action: RunningTaskExitAction::CancelTask, thread_id } if thread_id == id)));
                 app.handle_app_server_event(
                     &session,
-                    codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+                    ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
                         turn_completed_notification(id, "saved", TurnStatus::Completed),
                     )),
                 )
@@ -586,7 +586,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
             )
             .await?;
             while let Ok(event) = events.try_recv() {
-                if matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })) {
+                if matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })) {
                     app.handle_event(&mut tui, &mut session, event).await?;
                 }
             }

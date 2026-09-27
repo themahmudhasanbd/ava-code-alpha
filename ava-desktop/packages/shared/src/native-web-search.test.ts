@@ -26,7 +26,7 @@ describe("resolveNativeWebSearch", () => {
   it("stays off for wires without a hosted search tool", () => {
     for (const wire of [
       "openai-completions",
-      "openai-codex-responses",
+      "openai-ava-responses",
       "google-generative-ai",
       "pi-messages",
       "",
@@ -479,7 +479,7 @@ describe("nativeWebSearchSupportedOn", () => {
   it("rejects wires without a hosted search tool", () => {
     expect(nativeWebSearchSupportedOn("chat_completions")).toBe(false);
     expect(nativeWebSearchSupportedOn("openai-completions")).toBe(false);
-    expect(nativeWebSearchSupportedOn("openai_codex_responses")).toBe(false);
+    expect(nativeWebSearchSupportedOn("openai_ava_responses")).toBe(false);
     expect(nativeWebSearchSupportedOn(undefined)).toBe(false);
     expect(nativeWebSearchSupportedOn("")).toBe(false);
   });

@@ -6,7 +6,7 @@ use anyhow::Context;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use test_case::test_case;
@@ -56,7 +56,7 @@ async fn optional_mcp_startup_grace_controls_initial_turn_tool_catalog(
     let (http_server, startup_control) =
         AppsTestServer::mount_with_startup_control(&mcp_server).await?;
     let release_startup = startup_control.hold_next_successful_initialize();
-    let server_url = format!("{}/api/codex/ps/mcp", http_server.chatgpt_base_url);
+    let server_url = format!("{}/api/ava/ps/mcp", http_server.chatgpt_base_url);
     let response = responses::mount_sse_once(
         &responses_server,
         responses::sse(vec![
@@ -67,7 +67,7 @@ async fn optional_mcp_startup_grace_controls_initial_turn_tool_catalog(
     )
     .await;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             config.mcp_optional_startup_grace = startup_grace;
@@ -167,7 +167,7 @@ async fn optional_mcp_startup_grace_controls_initial_turn_tool_catalog(
         ),
     }
 
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -184,7 +184,7 @@ async fn running_thread_uses_refreshed_optional_mcp_startup_grace(
     let (http_server, startup_control) =
         AppsTestServer::mount_with_startup_control(&mcp_server).await?;
     let release_startup = startup_control.hold_next_successful_initialize();
-    let server_url = format!("{}/api/codex/ps/mcp", http_server.chatgpt_base_url);
+    let server_url = format!("{}/api/ava/ps/mcp", http_server.chatgpt_base_url);
     let initial_response = responses::mount_sse_once(
         &responses_server,
         responses::sse(vec![
@@ -195,7 +195,7 @@ async fn running_thread_uses_refreshed_optional_mcp_startup_grace(
     )
     .await;
 
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             config.mcp_optional_startup_grace = Duration::from_millis(50);
@@ -247,14 +247,14 @@ async fn running_thread_uses_refreshed_optional_mcp_startup_grace(
     refreshed_config.mcp_optional_startup_grace = refreshed_grace;
     match refresh_path {
         ConfigRefreshPath::Runtime => {
-            fixture.codex.refresh_runtime_config(refreshed_config).await;
+            fixture.ava-code.refresh_runtime_config(refreshed_config).await;
         }
         ConfigRefreshPath::Mcp => {
-            fixture.codex.refresh_mcp_config(refreshed_config).await;
+            fixture.ava-code.refresh_mcp_config(refreshed_config).await;
         }
     }
     assert_eq!(
-        fixture.codex.config().await.mcp_optional_startup_grace,
+        fixture.ava-code.config().await.mcp_optional_startup_grace,
         refreshed_grace,
         "the existing thread should retain the refreshed optional MCP startup grace"
     );
@@ -291,6 +291,6 @@ async fn running_thread_uses_refreshed_optional_mcp_startup_grace(
         "the refreshed optional MCP startup grace should expose the ready tool"
     );
 
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

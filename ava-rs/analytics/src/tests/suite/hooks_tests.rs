@@ -1,8 +1,8 @@
 //! Hook execution event, source, and status tests.
 
-use crate::events::CodexHookRunEventRequest;
+use crate::events::AvaHookRunEventRequest;
 use crate::events::TrackEventRequest;
-use crate::events::codex_hook_run_metadata;
+use crate::events::ava_hook_run_metadata;
 use crate::facts::AnalyticsFact;
 use crate::facts::CustomAnalyticsFact;
 use crate::facts::HookRunFact;
@@ -10,20 +10,20 @@ use crate::facts::HookRunInput;
 use crate::reducer::AnalyticsReducer;
 use crate::tests::support::TEST_PRODUCT_CLIENT_ID;
 use crate::tests::support::test_tracking_context;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookExecutionMode;
-use codex_protocol::protocol::HookHandlerType;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookSource;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookExecutionMode;
+use ava_protocol::protocol::HookHandlerType;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookSource;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
 #[test]
 fn hook_run_event_serializes_expected_shape() {
     let tracking = test_tracking_context("thread-3", "turn-3");
-    let event = TrackEventRequest::HookRun(CodexHookRunEventRequest {
-        event_type: "codex_hook_run",
-        event_params: codex_hook_run_metadata(
+    let event = TrackEventRequest::HookRun(AvaHookRunEventRequest {
+        event_type: "ava_hook_run",
+        event_params: ava_hook_run_metadata(
             &tracking,
             HookRunFact {
                 event_name: HookEventName::PreToolUse,
@@ -40,7 +40,7 @@ fn hook_run_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_hook_run",
+            "event_type": "ava_hook_run",
             "event_params": {
                 "thread_id": "thread-3",
                 "turn_id": "turn-3",
@@ -60,7 +60,7 @@ fn hook_run_event_serializes_expected_shape() {
 fn hook_run_metadata_maps_sources_and_statuses() {
     let tracking = test_tracking_context("thread-1", "turn-1");
 
-    let system = serde_json::to_value(codex_hook_run_metadata(
+    let system = serde_json::to_value(ava_hook_run_metadata(
         &tracking,
         HookRunFact {
             event_name: HookEventName::SessionStart,
@@ -71,7 +71,7 @@ fn hook_run_metadata_maps_sources_and_statuses() {
         },
     ))
     .expect("serialize system hook");
-    let project = serde_json::to_value(codex_hook_run_metadata(
+    let project = serde_json::to_value(ava_hook_run_metadata(
         &tracking,
         HookRunFact {
             event_name: HookEventName::Stop,
@@ -82,7 +82,7 @@ fn hook_run_metadata_maps_sources_and_statuses() {
         },
     ))
     .expect("serialize project hook");
-    let cloud_requirements = serde_json::to_value(codex_hook_run_metadata(
+    let cloud_requirements = serde_json::to_value(ava_hook_run_metadata(
         &tracking,
         HookRunFact {
             event_name: HookEventName::Stop,
@@ -93,7 +93,7 @@ fn hook_run_metadata_maps_sources_and_statuses() {
         },
     ))
     .expect("serialize cloud requirements hook");
-    let unknown = serde_json::to_value(codex_hook_run_metadata(
+    let unknown = serde_json::to_value(ava_hook_run_metadata(
         &tracking,
         HookRunFact {
             event_name: HookEventName::UserPromptSubmit,
@@ -119,7 +119,7 @@ fn hook_run_metadata_maps_sources_and_statuses() {
 fn hook_run_metadata_maps_stopped_status() {
     let tracking = test_tracking_context("thread-1", "turn-1");
 
-    let stopped = serde_json::to_value(codex_hook_run_metadata(
+    let stopped = serde_json::to_value(ava_hook_run_metadata(
         &tracking,
         HookRunFact {
             event_name: HookEventName::Stop,
@@ -158,7 +158,7 @@ async fn reducer_ingests_hook_run_fact() {
 
     let payload = serde_json::to_value(&events).expect("serialize events");
     assert_eq!(payload.as_array().expect("events array").len(), 1);
-    assert_eq!(payload[0]["event_type"], "codex_hook_run");
+    assert_eq!(payload[0]["event_type"], "ava_hook_run");
     assert_eq!(payload[0]["event_params"]["hook_name"], "PostToolUse");
     assert_eq!(payload[0]["event_params"]["hook_source"], "unknown");
     assert_eq!(payload[0]["event_params"]["handler_type"], "agent");

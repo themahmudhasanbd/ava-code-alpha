@@ -13,29 +13,29 @@ use crate::session_start::complete_session_start;
 use crate::transcript_mode::TranscriptMode;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::rollout_path;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::user_input::UserInput as CoreUserInput;
-use codex_state::SqliteConfig;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::user_input::UserInput as CoreUserInput;
+use ava_state::SqliteConfig;
 use pretty_assertions::assert_eq;
 use pretty_assertions::assert_ne;
 
 async fn history_fixture(item_counts: &[usize]) -> Result<(App, tempfile::TempDir, SessionTarget)> {
     let mut app = make_test_app().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     let filename_timestamp = "2026-01-02T00-00-00";
     let timestamp = "2026-01-02T00:00:00Z";
     let id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         filename_timestamp,
         timestamp,
         "history hydration",
@@ -44,7 +44,7 @@ async fn history_fixture(item_counts: &[usize]) -> Result<(App, tempfile::TempDi
     )
     .map_err(|error| color_eyre::eyre::eyre!(error))?;
     let thread_id = ThreadId::from_string(&id)?;
-    let path = rollout_path(codex_home.path(), filename_timestamp, &id);
+    let path = rollout_path(ava_home.path(), filename_timestamp, &id);
     let mut records = std::fs::read_to_string(&path)?
         .lines()
         .take(/*n*/ 1)
@@ -102,15 +102,15 @@ async fn history_fixture(item_counts: &[usize]) -> Result<(App, tempfile::TempDi
         path: Some(path),
         thread_id,
         cwd: None,
-        history_mode: Some(codex_app_server_protocol::ThreadHistoryMode::Paginated),
+        history_mode: Some(ava_app_server_protocol::ThreadHistoryMode::Paginated),
     };
-    Ok((app, codex_home, target))
+    Ok((app, ava_home, target))
 }
 
 #[tokio::test]
 async fn history_hydration_metadata_tracks_missing_turns_and_stale_completions_keep_new_request()
 -> Result<()> {
-    let (mut app, _codex_home, target) =
+    let (mut app, _ava_home, target) =
         history_fixture(&[1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]).await?;
     app.local_settings.transcript_mode = TranscriptMode::Terminal;
     app.local_settings.tui.terminal_resize_reflow_max_rows = Some(1);
@@ -246,16 +246,16 @@ async fn history_hydration_archived_retry_uses_first_attempt_runtime_settings() 
         SessionStartAction::Fork(crate::app_server_session::ForkPermissionMode::InheritSaved),
     ] {
         for mode in [TranscriptMode::Terminal, TranscriptMode::Owned] {
-            let (mut app, codex_home, mut target) = history_fixture(&[500]).await?;
+            let (mut app, ava_home, mut target) = history_fixture(&[500]).await?;
             app.config
                 .features
                 .set_enabled(Feature::TranscriptV2, !mode.is_owned())?;
-            app.config.tui_alternate_screen = codex_config::types::AltScreenMode::Always;
+            app.config.tui_alternate_screen = ava_config::types::AltScreenMode::Always;
             app.config.terminal_resize_reflow.max_rows = TerminalResizeReflowMaxRows::Limit(1);
             app.local_settings = crate::local_settings::LocalSettings::from(&app.config);
             app.local_settings.transcript_mode = mode;
             let active_path = target.path.take().unwrap();
-            let archived = codex_home.path().join("archived_sessions");
+            let archived = ava_home.path().join("archived_sessions");
             std::fs::create_dir_all(&archived)?;
             let path = archived.join(active_path.file_name().unwrap());
             std::fs::rename(active_path, &path)?;

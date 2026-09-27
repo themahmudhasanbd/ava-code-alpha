@@ -3,7 +3,7 @@
   shortcut recorder, toggles, and the appearance theme/language pickers.
 */
 
-/* Codex settings: full-window page (no app sidebar) */
+/* Ava settings: full-window page (no app sidebar) */
 .app-shell.settings-mode {
   background: var(--ds-bg-primary);
 }
@@ -1177,7 +1177,7 @@
   }
 }
 
-/* Codex settings switches ~32×20 (gold capture), neutral accent */
+/* Ava settings switches ~32×20 (gold capture), neutral accent */
 .settings-toggle {
   position: relative;
   width: 32px;

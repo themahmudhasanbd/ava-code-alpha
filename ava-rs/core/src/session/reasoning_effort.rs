@@ -10,11 +10,11 @@ use super::session::Session;
 use super::step_context::StepContext;
 use super::step_settings::ResolvedStepSettings;
 use crate::state::ReasoningEffortPin;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::models::ConfigurationReasoning;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::models::ConfigurationReasoning;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
 
 /// Sampling can establish a pin; compaction must not change live state before it succeeds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,7 +81,7 @@ impl Session {
                 item: ResponseItem::ConfigurationUpdate {
                     reasoning: ConfigurationReasoning { effort },
                 },
-                metadata: Some(CodexHarnessMetadata {
+                metadata: Some(AvaHarnessMetadata {
                     harness_authored_configuration: true,
                     ..Default::default()
                 }),

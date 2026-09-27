@@ -5,13 +5,13 @@ import { fileURLToPath } from 'node:url';
 const root = '/var/www/ava-code/ava-desktop/apps/desktop';
 const mainEntry = join(root, 'out/main/index.js');
 
-console.log('Testing Electron boot with native AvA Core (codex-app-server)...');
+console.log('Testing Electron boot with native AvA Core (ava-app-server)...');
 
 const env = {
   ...process.env,
   PI_DESKTOP_DEV: '1',
   PI_DESKTOP_DATA_DIR: '/root/.ava-code',
-  CODEX_HOME: '/root/.ava-code',
+  AVA_HOME: '/root/.ava-code',
   AVA_HOME: '/root/.ava-code',
   ELECTRON_ENABLE_LOGGING: '1',
 };

@@ -5,7 +5,7 @@
 
 use crate::text_formatting::format_json_compact;
 use base64::Engine;
-use codex_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::CallToolResult;
 use image::DynamicImage;
 use image::ImageReader;
 use rmcp::model::ContentBlock;

@@ -407,7 +407,7 @@
 .send-btn {
   display: inline-flex;
   height: 28px;
-  width: 28px; /* Codex spacing-token-button-composer = 28px */
+  width: 28px; /* Ava spacing-token-button-composer = 28px */
   flex: 0 0 28px;
   align-items: center;
   justify-content: center;
@@ -540,7 +540,7 @@
   gap: 10px;
   border-radius: var(--radius-sm);
   padding: 6px 8px;
-  min-height: 32px; /* Codex nav ~31-32px pitch */
+  min-height: 32px; /* Ava nav ~31-32px pitch */
   color: var(--ds-text-secondary);
   font-size: var(--text-base); /* readable primary sidebar nav */
   text-align: left;

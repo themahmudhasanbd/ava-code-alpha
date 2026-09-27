@@ -1,9 +1,9 @@
 use anyhow::Context;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginInstallPolicy;
-use codex_config::skill_config_rules_from_stack;
-use codex_login::CodexAuth;
-use codex_plugin::PluginId;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginInstallPolicy;
+use ava_config::skill_config_rules_from_stack;
+use ava_login::AvaAuth;
+use ava_plugin::PluginId;
 use std::collections::HashSet;
 use tracing::warn;
 
@@ -70,14 +70,14 @@ impl PluginsManager {
     pub async fn list_tool_suggest_discoverable_plugins(
         &self,
         input: &ToolSuggestPluginDiscoveryInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> anyhow::Result<Vec<ToolSuggestDiscoverablePlugin>> {
         if !input.plugins.plugins_enabled {
             return Ok(Vec::new());
         }
 
         let use_remote_global_catalog =
-            input.plugins.remote_plugin_enabled && auth.is_some_and(CodexAuth::uses_codex_backend);
+            input.plugins.remote_plugin_enabled && auth.is_some_and(AvaAuth::uses_ava_backend);
         let marketplaces = self
             .list_marketplaces_for_config(
                 &input.plugins,

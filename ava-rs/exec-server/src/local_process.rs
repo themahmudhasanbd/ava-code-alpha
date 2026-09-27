@@ -9,20 +9,20 @@ use std::time::Duration;
 
 use crate::process_telemetry::ProcessTelemetry;
 use crate::process_telemetry::ProcessTelemetryEvent;
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_network_proxy::NetworkPolicyAuditEvent;
-use codex_network_proxy::NetworkPolicyAuditObserver;
-use codex_network_proxy::NetworkProtocol;
-use codex_network_proxy::NetworkProxyHandle;
-use codex_protocol::config_types::EnvironmentVariablePattern;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::exec_output::StreamOutput;
-use codex_protocol::shell_environment;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::is_likely_sandbox_denied;
-use codex_utils_pty::ExecCommandSession;
-use codex_utils_pty::ProcessSignal as PtyProcessSignal;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_network_proxy::NetworkPolicyAuditEvent;
+use ava_network_proxy::NetworkPolicyAuditObserver;
+use ava_network_proxy::NetworkProtocol;
+use ava_network_proxy::NetworkProxyHandle;
+use ava_protocol::config_types::EnvironmentVariablePattern;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::exec_output::StreamOutput;
+use ava_protocol::shell_environment;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::is_likely_sandbox_denied;
+use ava_utils_pty::ExecCommandSession;
+use ava_utils_pty::ProcessSignal as PtyProcessSignal;
 use opentelemetry::trace::SpanContext;
 use opentelemetry::trace::TraceContextExt;
 use tokio::sync::Mutex;
@@ -413,7 +413,7 @@ impl LocalProcess {
             );
         }
 
-        let spawned_result = codex_sandboxing::spawn_process(codex_sandboxing::SpawnRequest {
+        let spawned_result = ava_sandboxing::spawn_process(ava_sandboxing::SpawnRequest {
             command: &prepared.command,
             cwd: prepared.cwd.as_path(),
             env: &prepared.env,
@@ -749,7 +749,7 @@ fn child_env(params: &ExecParams) -> HashMap<String, String> {
         }
         None => params.env.clone(),
     };
-    env.remove(crate::CODEX_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR);
+    env.remove(crate::AVA_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR);
     env.retain(|name, _| !shell_environment::is_non_inheritable_env_var(name));
     env
 }
@@ -1032,9 +1032,9 @@ fn watch_exit(
     telemetry: ProcessTelemetry,
 ) -> impl std::future::Future<Output = ()> + Send {
     // Set the copied OTEL parent before entering; never retain the RPC tracing span.
-    let process_span = tracing::info_span!(parent: None, "codex.exec_server.process");
+    let process_span = tracing::info_span!(parent: None, "ava.exec_server.process");
     if let Some(launch_context) = &telemetry.launch_context {
-        codex_otel::set_parent_from_context(
+        ava_otel::set_parent_from_context(
             &process_span,
             opentelemetry::Context::new().with_remote_span_context(launch_context.clone()),
         );
@@ -1219,18 +1219,18 @@ fn notification_sender(inner: &Inner) -> Option<RpcNotificationSender> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_exec_server_protocol::JSONRPCMessage;
-    use codex_exec_server_protocol::JSONRPCResponse;
-    use codex_exec_server_protocol::RequestId;
-    use codex_network_proxy::NetworkProxy;
-    use codex_network_proxy::NetworkProxyConfig;
-    use codex_network_proxy::NetworkProxyState;
-    use codex_network_proxy::RemoteNetworkProxyConfig;
-    use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
-    use codex_otel::MetricsConfig;
-    use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
-    use codex_utils_path_uri::PathUri;
-    use codex_utils_pty::ProcessDriver;
+    use ava_exec_server_protocol::JSONRPCMessage;
+    use ava_exec_server_protocol::JSONRPCResponse;
+    use ava_exec_server_protocol::RequestId;
+    use ava_network_proxy::NetworkProxy;
+    use ava_network_proxy::NetworkProxyConfig;
+    use ava_network_proxy::NetworkProxyState;
+    use ava_network_proxy::RemoteNetworkProxyConfig;
+    use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
+    use ava_otel::MetricsConfig;
+    use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
+    use ava_utils_path_uri::PathUri;
+    use ava_utils_pty::ProcessDriver;
     use opentelemetry_sdk::metrics::InMemoryMetricExporter;
     use opentelemetry_sdk::metrics::data::AggregatedMetrics;
     use opentelemetry_sdk::metrics::data::MetricData;
@@ -1369,13 +1369,13 @@ mod tests {
 
     fn telemetry_backend() -> (
         LocalProcess,
-        codex_otel::MetricsClient,
+        ava_otel::MetricsClient,
         InMemoryMetricExporter,
     ) {
         let exporter = InMemoryMetricExporter::default();
-        let metrics = codex_otel::MetricsClient::new(MetricsConfig::in_memory(
+        let metrics = ava_otel::MetricsClient::new(MetricsConfig::in_memory(
             "test",
-            "codex-exec-server",
+            "ava-exec-server",
             env!("CARGO_PKG_VERSION"),
             exporter.clone(),
         ))
@@ -1395,7 +1395,7 @@ mod tests {
     }
 
     fn assert_finished_process_result(
-        metrics: codex_otel::MetricsClient,
+        metrics: ava_otel::MetricsClient,
         exporter: &InMemoryMetricExporter,
         expected: &str,
     ) {
@@ -1819,7 +1819,7 @@ mod tests {
             .expect("build remote network proxy config");
         let state = NetworkProxyState::from_remote_launch_config(
             RemoteNetworkProxyLaunchConfig::new(proxy_config),
-            codex_utils_path_uri::Platform::native(),
+            ava_utils_path_uri::Platform::native(),
         )
         .expect("build network proxy state");
         let proxy = NetworkProxy::builder()
@@ -2045,7 +2045,7 @@ mod tests {
         let (_stderr_tx, stderr_rx) = tokio::sync::broadcast::channel(1);
         let (_exit_tx, exit_rx) = oneshot::channel();
 
-        codex_utils_pty::spawn_from_driver(ProcessDriver {
+        ava_utils_pty::spawn_from_driver(ProcessDriver {
             writer_tx,
             stdout_rx,
             stderr_rx: Some(stderr_rx),

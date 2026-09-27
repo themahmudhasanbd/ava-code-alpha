@@ -6,43 +6,43 @@ use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::create_request_user_input_sse_response;
 use app_test_support::write_models_cache_with_models;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItemsListParams;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadRevertParams;
-use codex_app_server_protocol::ThreadRevertResponse;
-use codex_app_server_protocol::ThreadRevertedNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadTurnsListParams;
-use codex_app_server_protocol::ThreadTurnsListResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_rollout::RolloutItem;
-use codex_rollout::read_session_meta_line;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItemsListParams;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadRevertParams;
+use ava_app_server_protocol::ThreadRevertResponse;
+use ava_app_server_protocol::ThreadRevertedNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadTurnsListParams;
+use ava_app_server_protocol::ThreadTurnsListResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_rollout::RolloutItem;
+use ava_rollout::read_session_meta_line;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::load_default_config_for_test;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -56,16 +56,16 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 #[tokio::test]
 async fn thread_revert_preserves_model_selected_multi_agent_version(restart: bool) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .disable_feature(Feature::MultiAgentV2)
-        .write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let mut model = codex_core::test_support::construct_model_info_offline("mock-model", &config);
+        .write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let mut model = ava_core::test_support::construct_model_info_offline("mock-model", &config);
     model.multi_agent_version = Some(MultiAgentVersion::V2);
-    write_models_cache_with_models(codex_home.path(), vec![model]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![model]).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     initialize_experimental(&mut mcp).await?;
@@ -98,7 +98,7 @@ async fn thread_revert_preserves_model_selected_multi_agent_version(restart: boo
         // Restart before another turn can persist a replacement TurnContext.
         mcp.shutdown_gracefully().await?;
         mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build()
             .await?;
         initialize_experimental(&mut mcp).await?;
@@ -151,7 +151,7 @@ async fn thread_revert_preserves_model_selected_multi_agent_version(restart: boo
 #[tokio::test]
 async fn thread_revert_preserves_fork_cutoff_after_cold_resume() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let updated_workspace = TempDir::new()?;
     let saved_cwd = AbsolutePathBuf::from_absolute_path(updated_workspace.path().canonicalize()?)?
         .into_path_buf();
@@ -160,10 +160,10 @@ async fn thread_revert_preserves_fork_cutoff_after_cold_resume() -> Result<()> {
         AbsolutePathBuf::from_absolute_path(&saved_cwd)?,
         AbsolutePathBuf::from_absolute_path(extra_workspace.path().canonicalize()?)?,
     ];
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
     // This fixture checks host-native cwd and workspace restoration across fork and revert.
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -197,7 +197,7 @@ async fn thread_revert_preserves_fork_cutoff_after_cold_resume() -> Result<()> {
             request_id,
             params: ThreadForkParams {
                 thread_id: parent.id.clone(),
-                cwd: Some(codex_home.path().to_string_lossy().into_owned()),
+                cwd: Some(ava_home.path().to_string_lossy().into_owned()),
                 ..Default::default()
             },
         })
@@ -213,7 +213,7 @@ async fn thread_revert_preserves_fork_cutoff_after_cold_resume() -> Result<()> {
     let inherited_revert_cutoff =
         std::fs::read_to_string(parent.path.as_ref().expect("parent rollout"))?
             .lines()
-            .map(codex_rollout::parse_rollout_line)
+            .map(ava_rollout::parse_rollout_line)
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .find_map(|line| match line.item {
@@ -276,7 +276,7 @@ async fn thread_revert_preserves_fork_cutoff_after_cold_resume() -> Result<()> {
 
         mcp.shutdown_gracefully().await?;
         mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .without_auto_env()
             .build()
             .await?;
@@ -315,7 +315,7 @@ async fn thread_revert_preserves_fork_cutoff_after_cold_resume() -> Result<()> {
             .expect("resumed model request")
             .body_json::<Value>()?;
         let metadata: Value = serde_json::from_str(
-            body["client_metadata"]["x-codex-turn-metadata"]
+            body["client_metadata"]["x-ava-turn-metadata"]
                 .as_str()
                 .expect("turn metadata"),
         )?;
@@ -333,10 +333,10 @@ async fn thread_revert_preserves_fork_cutoff_after_cold_resume() -> Result<()> {
 #[tokio::test]
 async fn thread_revert_replaces_paginated_history_before_turn() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     initialize_experimental(&mut mcp).await?;
@@ -420,7 +420,7 @@ async fn thread_revert_replaces_paginated_history_before_turn() -> Result<()> {
 
     mcp.shutdown_gracefully().await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     initialize_experimental(&mut mcp).await?;
@@ -518,7 +518,7 @@ async fn thread_revert_interrupts_active_turn_and_keeps_thread_loaded() -> Resul
     .await;
     MockResponsesConfig::new(&server.uri()).write(home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build()
         .await?;
     initialize_experimental(&mut mcp).await?;

@@ -1,8 +1,8 @@
 //! Exercises global-instruction refreshes through real turns and provider reads.
 
 use super::*;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use tokio::sync::Notify;
@@ -19,7 +19,7 @@ async fn failed_global_read_keeps_instructions_until_recovery() -> Result<()> {
     .await;
     let home = Arc::new(TempDir::new()?);
     let source = write_global_file(&home, GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
-    let mut builder = test_codex().with_home(Arc::clone(&home));
+    let mut builder = test_ava().with_home(Arc::clone(&home));
     let test = builder.build_with_auto_env(&server).await?;
     test.submit_turn("initial instructions").await?;
 
@@ -31,7 +31,7 @@ async fn failed_global_read_keeps_instructions_until_recovery() -> Result<()> {
     test.submit_turn("keep instructions through the read failure")
         .await?;
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
     );
 
@@ -73,7 +73,7 @@ async fn live_global_removal_preserves_repository_instructions(
     .await;
     let home = Arc::new(TempDir::new()?);
     let source = write_global_file(&home, GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_workspace_setup(|cwd, fs| async move {
             fs.write_file(
@@ -94,7 +94,7 @@ async fn live_global_removal_preserves_repository_instructions(
     test.submit_turn("remove global instructions").await?;
     test.submit_turn("keep repository instructions").await?;
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![test.workspace_path_uri(GLOBAL_AGENTS_FILENAME)?],
     );
     let cwd = &test.executor_environment().selection().cwd;
@@ -144,7 +144,7 @@ async fn global_instructions_refresh_after_a_tool_in_the_same_turn() -> Result<(
     .await;
     let home = Arc::new(TempDir::new()?);
     write_global_file(&home, GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_config(|config| {
             config
@@ -153,13 +153,13 @@ async fn global_instructions_refresh_after_a_tool_in_the_same_turn() -> Result<(
                 .expect("test config should allow request-user-input feature");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "ask before continuing".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let EventMsg::RequestUserInput(request) = wait_for_event(&test.codex, |event| {
+    let EventMsg::RequestUserInput(request) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::RequestUserInput(_))
     })
     .await
@@ -167,7 +167,7 @@ async fn global_instructions_refresh_after_a_tool_in_the_same_turn() -> Result<(
         unreachable!()
     };
     write_global_file(&home, GLOBAL_AGENTS_FILENAME, NEW_GLOBAL_INSTRUCTIONS)?;
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -180,7 +180,7 @@ async fn global_instructions_refresh_after_a_tool_in_the_same_turn() -> Result<(
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -202,7 +202,7 @@ async fn global_instructions_refresh_after_a_tool_in_the_same_turn() -> Result<(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn interrupting_a_provider_read_allows_the_next_turn_to_refresh() -> Result<()> {
     struct GatedProvider {
-        inner: CodexHomeUserInstructionsProvider,
+        inner: AvaHomeUserInstructionsProvider,
         block_next: AtomicBool,
         started: Notify,
     }
@@ -222,24 +222,24 @@ async fn interrupting_a_provider_read_allows_the_next_turn_to_refresh() -> Resul
     let home = Arc::new(TempDir::new()?);
     write_global_file(&home, GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
     let provider = Arc::new(GatedProvider {
-        inner: CodexHomeUserInstructionsProvider::new(home.path().to_path_buf().abs()),
+        inner: AvaHomeUserInstructionsProvider::new(home.path().to_path_buf().abs()),
         block_next: AtomicBool::new(/*v*/ false),
         started: Notify::new(),
     });
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_user_instructions_provider(provider.clone());
     let test = builder.build_with_auto_env(&server).await?;
     provider.block_next.store(/*val*/ true, Ordering::SeqCst);
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "interrupt this blocked read".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
     tokio::time::timeout(Duration::from_secs(10), provider.started.notified()).await?;
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;

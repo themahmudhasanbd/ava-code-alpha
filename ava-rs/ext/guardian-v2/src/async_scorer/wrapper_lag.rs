@@ -4,10 +4,10 @@
 
 use std::collections::VecDeque;
 
-use codex_extension_api::ToolCallSource;
-use codex_extension_api::ToolPayload;
-use codex_extension_api::ToolStartInput;
-use codex_protocol::ResponseItemId;
+use ava_extension_api::ToolCallSource;
+use ava_extension_api::ToolPayload;
+use ava_extension_api::ToolStartInput;
+use ava_protocol::ResponseItemId;
 
 struct ToolStart {
     call_id: String,

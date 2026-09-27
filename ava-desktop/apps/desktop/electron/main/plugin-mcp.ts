@@ -14,7 +14,7 @@ export const MCP_CALL_TIMEOUT_MS = 100_000;
  * Protocol bound, not a prompt budget: MCP tools reach the model as on-demand
  * entries behind `ToolSearch` rather than as an always-present list, so the
  * only thing that needs a ceiling is a server streaming forever. Sized like
- * Codex's per-server MCP catalog bound; a real catalog never approaches it.
+ * Ava's per-server MCP catalog bound; a real catalog never approaches it.
  */
 export const MAX_MCP_TOOLS_PER_SERVER = 2_048;
 /** Keep an MCP endpoint from bouncing requests through an unbounded chain. */

@@ -2,16 +2,16 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use codex_config::McpServerConfig;
-use codex_file_system::ExecutorFileSystem;
-use codex_mcp::McpServerSource;
-use codex_mcp::PreparedMcpCall;
-use codex_mcp::ResolvedMcpServer;
-use codex_protocol::mcp::CallToolResult;
-use codex_tools::ToolCallSource;
-use codex_tools::ToolName;
-use codex_tools::ToolPayload;
-use codex_utils_path_uri::PathUri;
+use ava_config::McpServerConfig;
+use ava_file_system::ExecutorFileSystem;
+use ava_mcp::McpServerSource;
+use ava_mcp::PreparedMcpCall;
+use ava_mcp::ResolvedMcpServer;
+use ava_protocol::mcp::CallToolResult;
+use ava_tools::ToolCallSource;
+use ava_tools::ToolName;
+use ava_tools::ToolPayload;
+use ava_utils_path_uri::PathUri;
 
 use crate::ConversationHistorySnapshot;
 use crate::ExtensionData;
@@ -43,9 +43,9 @@ pub enum ToolCallOutcome {
 /// Provenance captured from the immutable MCP call selected for one tool invocation.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum McpToolSource {
-    /// A connector routed through the host-owned Codex Apps MCP server.
+    /// A connector routed through the host-owned Ava Apps MCP server.
     Connector,
-    /// An MCP server whose frozen registration matches the active Codex configuration.
+    /// An MCP server whose frozen registration matches the active Ava configuration.
     Config,
     /// An MCP server registered by a locally loaded plugin.
     Plugin {
@@ -130,7 +130,7 @@ pub struct ToolStartInput<'a> {
     pub call_id: &'a str,
     /// Responses item that issued this call or started its code-mode cell.
     /// Hosts preserve the original wrapper identity across yields and waits.
-    pub originating_item_id: Option<&'a codex_protocol::ResponseItemId>,
+    pub originating_item_id: Option<&'a ava_protocol::ResponseItemId>,
     /// Tool name as routed by the host.
     pub tool_name: &'a ToolName,
     /// Read-only metadata and provenance from the exact MCP call that will execute.

@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 use std::io;
 
-use codex_exec_server::CapabilityRootDiscovery;
-use codex_exec_server::EnvironmentAccess;
-use codex_exec_server::EnvironmentAccessExt;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_protocol::protocol::Product;
-use codex_skills::EnvironmentSkillMetadata;
-use codex_skills::ParsedSkillFrontmatter;
-use codex_skills::SkillDependencies;
-use codex_skills::SkillPolicy;
-use codex_skills::parse_skill_frontmatter_metadata;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::SkillDiscoveryMode;
+use ava_exec_server::CapabilityRootDiscovery;
+use ava_exec_server::EnvironmentAccess;
+use ava_exec_server::EnvironmentAccessExt;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_protocol::protocol::Product;
+use ava_skills::EnvironmentSkillMetadata;
+use ava_skills::ParsedSkillFrontmatter;
+use ava_skills::SkillDependencies;
+use ava_skills::SkillPolicy;
+use ava_skills::parse_skill_frontmatter_metadata;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::SkillDiscoveryMode;
 use futures::StreamExt;
 
 use super::MAX_QUALIFIED_NAME_LEN;

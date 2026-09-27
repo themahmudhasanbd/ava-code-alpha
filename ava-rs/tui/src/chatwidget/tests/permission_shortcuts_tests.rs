@@ -117,12 +117,12 @@ async fn permission_shortcuts_respect_managed_mode_requirements() {
         .expect("set active profile");
 
     for requirements in [
-        codex_config::ConfigRequirementsToml {
+        ava_config::ConfigRequirementsToml {
             allowed_approvals_reviewers: Some(vec![AutoReview]),
             ..Default::default()
         },
-        codex_config::ConfigRequirementsToml {
-            auto_review: Some(codex_config::AutoReviewRequirementsToml {
+        ava_config::ConfigRequirementsToml {
+            auto_review: Some(ava_config::AutoReviewRequirementsToml {
                 required_on_models: Some(vec![chat.current_model().to_string()]),
                 ..Default::default()
             }),

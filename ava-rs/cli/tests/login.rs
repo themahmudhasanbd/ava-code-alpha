@@ -7,14 +7,14 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::CLIENT_ID;
-use codex_login::CODEX_ACCESS_TOKEN_ENV_VAR;
-use codex_login::REVOKE_TOKEN_URL_OVERRIDE_ENV_VAR;
-use codex_login::login_with_bedrock_access_keys;
-use codex_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::CLIENT_ID;
+use ava_login::AVA_ACCESS_TOKEN_ENV_VAR;
+use ava_login::REVOKE_TOKEN_URL_OVERRIDE_ENV_VAR;
+use ava_login::login_with_bedrock_access_keys;
+use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
 use predicates::str::contains;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -27,31 +27,31 @@ use wiremock::matchers::header;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-fn codex_command(codex_home: &Path) -> Result<assert_cmd::Command> {
-    let mut cmd = assert_cmd::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
-    cmd.env("CODEX_HOME", codex_home);
+fn ava_command(ava_home: &Path) -> Result<assert_cmd::Command> {
+    let mut cmd = assert_cmd::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
+    cmd.env("AVA_HOME", ava_home);
     Ok(cmd)
 }
 
-fn write_file_auth_config(codex_home: &Path) -> Result<()> {
+fn write_file_auth_config(ava_home: &Path) -> Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         "cli_auth_credentials_store = \"file\"\n",
     )?;
     Ok(())
 }
 
-fn read_auth_json(codex_home: &Path) -> Result<Value> {
-    let auth_json = std::fs::read_to_string(codex_home.join("auth.json"))?;
+fn read_auth_json(ava_home: &Path) -> Result<Value> {
+    let auth_json = std::fs::read_to_string(ava_home.join("auth.json"))?;
     Ok(serde_json::from_str(&auth_json)?)
 }
 
 #[test]
 fn login_with_api_key_reads_stdin_and_writes_auth_json() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_file_auth_config(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    write_file_auth_config(ava_home.path())?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args([
         "-c",
         "forced_login_method=\"api\"",
@@ -63,7 +63,7 @@ fn login_with_api_key_reads_stdin_and_writes_auth_json() -> Result<()> {
     .success()
     .stderr(contains("Successfully logged in"));
 
-    let auth = read_auth_json(codex_home.path())?;
+    let auth = read_auth_json(ava_home.path())?;
     assert_eq!(auth["OPENAI_API_KEY"], "sk-test");
     assert!(auth.get("tokens").is_none());
     assert!(auth.get("agent_identity").is_none());
@@ -73,11 +73,11 @@ fn login_with_api_key_reads_stdin_and_writes_auth_json() -> Result<()> {
 
 #[test]
 fn login_status_reports_auth_storage_errors() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_file_auth_config(codex_home.path())?;
-    std::fs::write(codex_home.path().join("auth.json"), "{invalid json")?;
+    let ava_home = TempDir::new()?;
+    write_file_auth_config(ava_home.path())?;
+    std::fs::write(ava_home.path().join("auth.json"), "{invalid json")?;
 
-    codex_command(codex_home.path())?
+    ava_command(ava_home.path())?
         .args(["login", "status"])
         .assert()
         .failure()
@@ -88,12 +88,12 @@ fn login_status_reports_auth_storage_errors() -> Result<()> {
 
 #[test]
 fn login_status_validates_configured_workload_identity() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_file_auth_config(codex_home.path())?;
-    let missing_assertion = codex_home.path().join("missing-identity-token");
+    let ava_home = TempDir::new()?;
+    write_file_auth_config(ava_home.path())?;
+    let missing_assertion = ava_home.path().join("missing-identity-token");
 
-    codex_command(codex_home.path())?
-        .env_remove(CODEX_ACCESS_TOKEN_ENV_VAR)
+    ava_command(ava_home.path())?
+        .env_remove(AVA_ACCESS_TOKEN_ENV_VAR)
         .env(OPENAI_FEDERATION_RULE_ID_ENV_VAR, "rule-test")
         .env(OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR, &missing_assertion)
         .args(["login", "status"])
@@ -114,8 +114,8 @@ fn logout_clears_only_the_selected_bedrock_provider() -> Result<()> {
         ("amazon-bedrock-runtime", false, "us.openai.gpt-5.6-sol"),
         ("openai", false, "gpt-5.6-sol"),
     ] {
-        let codex_home = TempDir::new()?;
-        let config_path = codex_home.path().join("config.toml");
+        let ava_home = TempDir::new()?;
+        let config_path = ava_home.path().join("config.toml");
         std::fs::write(
             &config_path,
             format!(
@@ -139,7 +139,7 @@ fn logout_clears_only_the_selected_bedrock_provider() -> Result<()> {
         )?;
         if managed_bedrock_auth {
             login_with_bedrock_access_keys(
-                codex_home.path(),
+                ava_home.path(),
                 "managed-access-key-id",
                 "managed-secret-access-key",
                 Some("managed-session-token"),
@@ -166,8 +166,8 @@ fn logout_clears_only_the_selected_bedrock_provider() -> Result<()> {
             "Not logged in"
         };
 
-        codex_command(codex_home.path())?
-            .env_remove(CODEX_ACCESS_TOKEN_ENV_VAR)
+        ava_command(ava_home.path())?
+            .env_remove(AVA_ACCESS_TOKEN_ENV_VAR)
             .env("AWS_ACCESS_KEY_ID", "environment-access-key-id")
             .env("AWS_SECRET_ACCESS_KEY", "environment-secret-access-key")
             .args(["logout"])
@@ -175,7 +175,7 @@ fn logout_clears_only_the_selected_bedrock_provider() -> Result<()> {
             .success()
             .stderr(contains(expected_message));
 
-        assert!(!codex_home.path().join("auth.json").exists());
+        assert!(!ava_home.path().join("auth.json").exists());
         let actual_config: toml::Value = toml::from_str(&std::fs::read_to_string(&config_path)?)?;
         assert_eq!(actual_config, expected_config);
     }
@@ -185,10 +185,10 @@ fn logout_clears_only_the_selected_bedrock_provider() -> Result<()> {
 
 #[test]
 fn login_with_access_token_rejects_invalid_jwt() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_file_auth_config(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    write_file_auth_config(ava_home.path())?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["login", "--with-access-token"])
         .write_stdin("not-a-jwt\n")
         .assert()
@@ -213,33 +213,33 @@ async fn debug_prompt_input_follows_authenticated_attribution_setting() -> Resul
         .expect(2)
         .mount(&server)
         .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "cli_auth_credentials_store = \"file\"\nchatgpt_base_url = \"{}/backend-api\"\n",
             server.uri()
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("workspace-123")
             .plan_type("enterprise"),
         AuthCredentialsStoreMode::File,
     )?;
     for enabled in [true, false] {
-        let output = codex_command(codex_home.path())?
+        let output = ava_command(ava_home.path())?
             .env("NO_PROXY", "127.0.0.1,localhost")
             .env("no_proxy", "127.0.0.1,localhost")
-            .env_remove("CODEX_ACCESS_TOKEN")
+            .env_remove("AVA_ACCESS_TOKEN")
             .env_remove("OPENAI_API_KEY")
             .args(["debug", "prompt-input"])
             .output()?;
         assert!(output.status.success());
         let prompt = String::from_utf8(output.stdout)?;
         assert_eq!(
-            prompt.contains("Co-authored-by: Codex <noreply@openai.com>"),
+            prompt.contains("Co-authored-by: Ava <noreply@openai.com>"),
             enabled
         );
         assert!(!prompt.contains("attribution is disabled for the current workspace"));
@@ -288,10 +288,10 @@ async fn device_login_revokes_existing_auth_before_requesting_new_tokens() -> Re
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
-    write_file_auth_config(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    write_file_auth_config(ava_home.path())?;
     std::fs::write(
-        codex_home.path().join("auth.json"),
+        ava_home.path().join("auth.json"),
         serde_json::to_vec(&json!({
             "auth_mode": "chatgpt",
             "OPENAI_API_KEY": null,
@@ -305,14 +305,14 @@ async fn device_login_revokes_existing_auth_before_requesting_new_tokens() -> Re
     )?;
 
     let issuer = server.uri();
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.env(
         REVOKE_TOKEN_URL_OVERRIDE_ENV_VAR,
         format!("{issuer}/oauth/revoke"),
     )
     .env("NO_PROXY", "127.0.0.1,localhost")
     .env("no_proxy", "127.0.0.1,localhost")
-    .env_remove("CODEX_ACCESS_TOKEN")
+    .env_remove("AVA_ACCESS_TOKEN")
     .env_remove("OPENAI_API_KEY")
     .args(["login", "--device-auth", "--experimental_issuer", &issuer])
     .assert()
@@ -344,7 +344,7 @@ async fn device_login_revokes_existing_auth_before_requesting_new_tokens() -> Re
         })
     );
 
-    let auth = read_auth_json(codex_home.path())?;
+    let auth = read_auth_json(ava_home.path())?;
     assert_eq!(auth["tokens"]["refresh_token"], "new-refresh");
     Ok(())
 }

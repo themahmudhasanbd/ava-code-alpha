@@ -20,7 +20,7 @@ impl PidBackend {
         #[cfg(windows)]
         crate::backend::windows::ensure_not_elevated()?;
         if let Some(parent) = self.pid_file.parent() {
-            codex_uds::prepare_private_socket_directory(parent)
+            ava_uds::prepare_private_socket_directory(parent)
                 .await
                 .with_context(|| format!("failed to create pid directory {}", parent.display()))?;
         }
@@ -69,16 +69,16 @@ impl PidBackend {
             }
         }
         // Pin the selected release across installer symlink/junction retargeting.
-        let codex_bin = fs::canonicalize(&self.codex_bin)
+        let ava_bin = fs::canonicalize(&self.ava_bin)
             .await
-            .unwrap_or_else(|_| self.codex_bin.clone());
+            .unwrap_or_else(|_| self.ava_bin.clone());
         let launched_identity =
             if matches!(self.command_kind, super::PidCommandKind::AppServer { .. }) {
-                executable_identity(&codex_bin).await.ok()
+                executable_identity(&ava_bin).await.ok()
             } else {
                 None
             };
-        let mut command = Command::new(&codex_bin);
+        let mut command = Command::new(&ava_bin);
         let stderr_log = match self.open_stderr_log().await {
             Ok(stderr_log) => stderr_log,
             Err(err) => {
@@ -102,7 +102,7 @@ impl PidBackend {
             && matches!(
                 tokio::time::timeout(
                     std::time::Duration::from_secs(5),
-                    Command::new(&codex_bin)
+                    Command::new(&ava_bin)
                         .args(["app-server", "--managed-daemon", "--help"])
                         .stdin(Stdio::null())
                         .stdout(Stdio::null())
@@ -115,12 +115,12 @@ impl PidBackend {
         {
             command.arg("--managed-daemon");
         } else if managed_app_server {
-            let codex_home = self
+            let ava_home = self
                 .pid_file
                 .parent()
                 .and_then(std::path::Path::parent)
-                .context("daemon pid path has no Codex home")?;
-            let recovery_file = codex_app_server_transport::daemon_recovery_file_path(codex_home);
+                .context("daemon pid path has no Ava home")?;
+            let recovery_file = ava_app_server_transport::daemon_recovery_file_path(ava_home);
             match fs::remove_file(&recovery_file).await {
                 Ok(()) => {}
                 Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
@@ -151,9 +151,9 @@ impl PidBackend {
             use windows_sys::Win32::System::Threading::DETACHED_PROCESS;
             // Preserve process-scoped paths before changing cwd; CA names match CUSTOM_CA_ENV_KEYS.
             for name in [
-                "CODEX_HOME",
-                "CODEX_SQLITE_HOME",
-                "CODEX_CA_CERTIFICATE",
+                "AVA_HOME",
+                "AVA_SQLITE_HOME",
+                "AVA_CA_CERTIFICATE",
                 "SSL_CERT_FILE",
                 "REQUESTS_CA_BUNDLE",
                 "CURL_CA_BUNDLE",
@@ -171,7 +171,7 @@ impl PidBackend {
                 let Some(mut value) = std::env::var_os(name) else {
                     continue;
                 };
-                if matches!(name, "CODEX_SQLITE_HOME" | "npm_config_cafile") {
+                if matches!(name, "AVA_SQLITE_HOME" | "npm_config_cafile") {
                     value = value.to_str().unwrap_or_default().trim().into();
                 }
                 // These consumers expand `~` independently of the working directory.
@@ -182,7 +182,7 @@ impl PidBackend {
                 } else {
                     matches!(
                         name,
-                        "CODEX_SQLITE_HOME" | "AWS_CONFIG_FILE" | "AWS_SHARED_CREDENTIALS_FILE"
+                        "AVA_SQLITE_HOME" | "AWS_CONFIG_FILE" | "AWS_SHARED_CREDENTIALS_FILE"
                     ) && std::path::Path::new(&value).starts_with("~")
                 };
                 if value.is_empty() || expands_home {
@@ -216,7 +216,7 @@ impl PidBackend {
             }
             match self.command_kind {
                 PidCommandKind::AppServer { .. } => {
-                    command.env(codex_app_server_transport::DAEMON_SHUTDOWN_SOCKET_ENV, "1");
+                    command.env(ava_app_server_transport::DAEMON_SHUTDOWN_SOCKET_ENV, "1");
                 }
                 PidCommandKind::UpdateLoop { .. } => {
                     let shutdown_file = self.pid_file.with_extension("shutdown");
@@ -228,7 +228,7 @@ impl PidBackend {
                         }
                     }
                     command.env(
-                        codex_app_server_transport::DAEMON_SHUTDOWN_FILE_ENV,
+                        ava_app_server_transport::DAEMON_SHUTDOWN_FILE_ENV,
                         shutdown_file,
                     );
                 }
@@ -249,7 +249,7 @@ impl PidBackend {
                     };
                     format!(
                         "failed to spawn detached app-server process using {}{job_hint}",
-                        self.codex_bin.display()
+                        self.ava_bin.display()
                     )
                 });
             }

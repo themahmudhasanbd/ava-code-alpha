@@ -1,6 +1,6 @@
 //! Calendar, aggregation, and chart rendering regressions.
 use super::*;
-use codex_backend_client::TokenUsageProfileDailyBucket as AccountTokenUsageDailyBucket;
+use ava_backend_client::TokenUsageProfileDailyBucket as AccountTokenUsageDailyBucket;
 use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
 

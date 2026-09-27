@@ -4,8 +4,8 @@
 use std::future::Future;
 use std::sync::Arc;
 
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
 use tokio::sync::oneshot;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
@@ -28,22 +28,22 @@ impl ThreadManager {
         options: StartThreadOptions,
         until: impl Future<Output = ()> + Send + 'static,
         tasks: &TaskTracker,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         if matches!(
             options.initial_history,
-            codex_history::InitialHistory::Resumed(_)
+            ava_history::InitialHistory::Resumed(_)
         ) {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "owned thread startup requires new or forked history".to_owned(),
             ));
         }
         if options
             .thread_extension_init
-            .get::<codex_extension_api::SessionIsolation>()
+            .get::<ava_extension_api::SessionIsolation>()
             .as_deref()
-            != Some(&codex_extension_api::SessionIsolation::Isolated)
+            != Some(&ava_extension_api::SessionIsolation::Isolated)
         {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "owned thread startup requires explicit session isolation".to_owned(),
             ));
         }
@@ -66,8 +66,8 @@ impl ThreadManager {
                 );
                 tokio::select! {
                     biased;
-                    _ = &mut until => Err(CodexErr::TurnAborted),
-                    _ = abandoned.cancelled() => Err(CodexErr::TurnAborted),
+                    _ = &mut until => Err(AvaErr::TurnAborted),
+                    _ = abandoned.cancelled() => Err(AvaErr::TurnAborted),
                     result = start => result,
                 }
             };
@@ -102,7 +102,7 @@ impl ThreadManager {
                 }
             }
         });
-        let thread = receiver.await.map_err(|_| CodexErr::InternalAgentDied)??;
+        let thread = receiver.await.map_err(|_| AvaErr::InternalAgentDied)??;
         handoff.disarm();
         Ok(thread)
     }

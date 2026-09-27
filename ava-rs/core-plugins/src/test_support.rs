@@ -12,60 +12,60 @@ use crate::PluginsConfigInput;
 use crate::PluginsManager;
 use crate::http_client_selector::HttpClientSelector;
 use crate::remote::RemotePluginServiceConfig;
-use codex_config::LoaderOverrides;
-use codex_config::NoopThreadConfigLoader;
-use codex_config::loader::load_config_layers_state;
-use codex_exec_server::LOCAL_FS;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestBuilder;
-use codex_login::AuthHeaders;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_login::auth::BedrockAccessKeysAuth;
-use codex_login::auth::BedrockApiKeyAuth;
-use codex_login::test_support::auth_manager_from_optional_auth;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::protocol::Product;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::LoadedSkillRoot;
-use codex_skills::LoadedSkills;
-use codex_skills::SkillError;
-use codex_skills::SkillLoadFuture;
-use codex_skills::SkillMetadata;
-use codex_skills::SkillRootLoadRequest;
-use codex_skills::SkillRootLoader;
-use codex_skills::parse_skill_frontmatter_metadata;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::PluginSkillRoot;
-use codex_utils_plugins::SkillDiscoveryMode;
-use codex_utils_plugins::migrated_command_skills_root;
+use ava_config::LoaderOverrides;
+use ava_config::NoopThreadConfigLoader;
+use ava_config::loader::load_config_layers_state;
+use ava_exec_server::LOCAL_FS;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestBuilder;
+use ava_login::AuthHeaders;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_login::auth::BedrockAccessKeysAuth;
+use ava_login::auth::BedrockApiKeyAuth;
+use ava_login::test_support::auth_manager_from_optional_auth;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::protocol::Product;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::LoadedSkillRoot;
+use ava_skills::LoadedSkills;
+use ava_skills::SkillError;
+use ava_skills::SkillLoadFuture;
+use ava_skills::SkillMetadata;
+use ava_skills::SkillRootLoadRequest;
+use ava_skills::SkillRootLoader;
+use ava_skills::parse_skill_frontmatter_metadata;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::PluginSkillRoot;
+use ava_utils_plugins::SkillDiscoveryMode;
+use ava_utils_plugins::migrated_command_skills_root;
 use http::Method;
 use toml::Value;
 
 pub(crate) const TEST_CURATED_PLUGIN_SHA: &str = "0123456789abcdef0123456789abcdef01234567";
 pub(crate) const TEST_CURATED_PLUGIN_CACHE_VERSION: &str = "01234567";
 
-pub(crate) fn test_plugins_manager(codex_home: PathBuf) -> PluginsManager {
+pub(crate) fn test_plugins_manager(ava_home: PathBuf) -> PluginsManager {
     PluginsManager::new(
-        codex_home,
+        ava_home,
         test_auth_manager(/*auth_mode*/ None),
         test_skill_root_loader(),
     )
 }
 
 pub(crate) fn test_plugins_manager_with_options(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     restriction_product: Option<Product>,
     auth_mode: Option<AuthMode>,
 ) -> PluginsManager {
     PluginsManager::new_with_options(
-        codex_home,
+        ava_home,
         restriction_product,
         test_auth_manager(auth_mode),
         test_skill_root_loader(),
@@ -73,12 +73,12 @@ pub(crate) fn test_plugins_manager_with_options(
 }
 
 pub(crate) fn test_plugins_manager_with_auth_manager(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     restriction_product: Option<Product>,
     auth_manager: Arc<AuthManager>,
 ) -> PluginsManager {
     PluginsManager::new_with_options(
-        codex_home,
+        ava_home,
         restriction_product,
         auth_manager,
         test_skill_root_loader(),
@@ -86,14 +86,14 @@ pub(crate) fn test_plugins_manager_with_auth_manager(
 }
 
 pub(crate) fn test_auth_manager(auth_mode: Option<AuthMode>) -> Arc<AuthManager> {
-    auth_manager_from_optional_auth(test_codex_auth(auth_mode))
+    auth_manager_from_optional_auth(test_ava_auth(auth_mode))
 }
 
 pub(crate) async fn set_test_auth_mode(auth_manager: &AuthManager, auth_mode: Option<AuthMode>) {
-    set_test_auth(auth_manager, test_codex_auth(auth_mode)).await;
+    set_test_auth(auth_manager, test_ava_auth(auth_mode)).await;
 }
 
-pub(crate) async fn set_test_auth(auth_manager: &AuthManager, auth: Option<CodexAuth>) {
+pub(crate) async fn set_test_auth(auth_manager: &AuthManager, auth: Option<AvaAuth>) {
     let Some(auth) = auth else {
         auth_manager.clear_external_auth();
         return;
@@ -104,40 +104,40 @@ pub(crate) async fn set_test_auth(auth_manager: &AuthManager, auth: Option<Codex
         .expect("test auth should update");
 }
 
-fn test_codex_auth(auth_mode: Option<AuthMode>) -> Option<CodexAuth> {
+fn test_ava_auth(auth_mode: Option<AuthMode>) -> Option<AvaAuth> {
     auth_mode.map(|auth_mode| match auth_mode {
-        AuthMode::ApiKey => CodexAuth::from_api_key("test-api-key"),
-        AuthMode::Chatgpt => CodexAuth::create_dummy_chatgpt_auth_for_testing(),
-        AuthMode::ChatgptAuthTokens => CodexAuth::from_external_chatgpt_tokens(
+        AuthMode::ApiKey => AvaAuth::from_api_key("test-api-key"),
+        AuthMode::Chatgpt => AvaAuth::create_dummy_chatgpt_auth_for_testing(),
+        AuthMode::ChatgptAuthTokens => AvaAuth::from_external_chatgpt_tokens(
             "header.e30.test",
             "test-account",
             /*chatgpt_plan_type*/ None,
         )
         .expect("test ChatGPT tokens should parse"),
-        AuthMode::Headers => CodexAuth::Headers(AuthHeaders::new(http::HeaderMap::new())),
-        AuthMode::BedrockApiKey => CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        AuthMode::Headers => AvaAuth::Headers(AuthHeaders::new(http::HeaderMap::new())),
+        AuthMode::BedrockApiKey => AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
             api_key: "test-api-key".to_string(),
             region: "us-east-1".to_string(),
         }),
-        AuthMode::BedrockAccessKeys => CodexAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
+        AuthMode::BedrockAccessKeys => AvaAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
             access_key_id: "test-access-key-id".to_string(),
             secret_access_key: "test-secret-access-key".to_string(),
             session_token: None,
         }),
         AuthMode::AgentIdentity | AuthMode::PersonalAccessToken => {
-            panic!("test auth mode requires a purpose-built CodexAuth")
+            panic!("test auth mode requires a purpose-built AvaAuth")
         }
     })
 }
 
-struct StaticExternalAuth(CodexAuth);
+struct StaticExternalAuth(AvaAuth);
 
 impl ExternalAuth for StaticExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 }
@@ -360,7 +360,7 @@ pub(crate) fn write_file(path: &Path, contents: &str) {
 pub(crate) fn write_curated_plugin(root: &Path, plugin_name: &str) {
     let plugin_root = root.join("plugins").join(plugin_name);
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         &format!(
             r#"{{
   "name": "{plugin_name}",
@@ -463,16 +463,16 @@ fn write_curated_marketplace(
     }
 }
 
-pub(crate) fn write_curated_plugin_sha_with(codex_home: &Path, sha: &str) {
-    write_file(&codex_home.join(".tmp/plugins.sha"), &format!("{sha}\n"));
+pub(crate) fn write_curated_plugin_sha_with(ava_home: &Path, sha: &str) {
+    write_file(&ava_home.join(".tmp/plugins.sha"), &format!("{sha}\n"));
 }
 
-pub(crate) async fn load_plugins_config(codex_home: &Path, cwd: &Path) -> PluginsConfigInput {
-    let codex_home = AbsolutePathBuf::try_from(codex_home).expect("codex home should be absolute");
+pub(crate) async fn load_plugins_config(ava_home: &Path, cwd: &Path) -> PluginsConfigInput {
+    let ava_home = AbsolutePathBuf::try_from(ava_home).expect("ava home should be absolute");
     let cwd = AbsolutePathBuf::try_from(cwd).expect("cwd should be absolute");
     let config_layer_stack = load_config_layers_state(
         LOCAL_FS.as_ref(),
-        codex_home.as_path(),
+        ava_home.as_path(),
         Some(cwd),
         &[],
         LoaderOverrides::without_managed_config_for_tests(),

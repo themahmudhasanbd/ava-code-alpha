@@ -9,7 +9,7 @@ use super::protocol::RefreshRemoteServerRequest;
 use super::protocol::RemoteControlTarget;
 use axum::http::HeaderMap;
 use axum::http::StatusCode;
-use codex_login::default_client::create_client_without_request_logging;
+use ava_login::default_client::create_client_without_request_logging;
 use rand::Rng;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -27,7 +27,7 @@ const REMOTE_CONTROL_ENROLL_TIMEOUT: Duration = Duration::from_secs(30);
 const REMOTE_CONTROL_SERVER_TOKEN_REFRESH_BACKOFF_MIN_SECS: u64 = 24;
 const REMOTE_CONTROL_SERVER_TOKEN_REFRESH_BACKOFF_MAX_SECS: u64 = 36;
 
-pub(super) const REMOTE_CONTROL_INSTALLATION_ID_HEADER: &str = "x-codex-installation-id";
+pub(super) const REMOTE_CONTROL_INSTALLATION_ID_HEADER: &str = "x-ava-installation-id";
 
 #[derive(Debug)]
 pub(super) struct RemoteControlServerRequestError {

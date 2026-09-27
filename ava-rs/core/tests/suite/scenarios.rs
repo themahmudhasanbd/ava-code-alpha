@@ -11,36 +11,36 @@ use std::time::Duration;
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::types::McpServerConfig;
-use codex_context_fragments::AnsweredQuestion;
-use codex_context_fragments::ContextualUserFragment;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::items::AgentMessageDelivery;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ImageReference;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
-use codex_skills_extension::ExecutorSkillProvider;
-use codex_skills_extension::SkillProviders;
-use codex_skills_extension::SkillsExtensionConfig;
-use codex_skills_extension::install;
-use codex_skills_extension::install_with_providers;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::types::McpServerConfig;
+use ava_context_fragments::AnsweredQuestion;
+use ava_context_fragments::ContextualUserFragment;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::items::AgentMessageDelivery;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
+use ava_skills_extension::ExecutorSkillProvider;
+use ava_skills_extension::SkillProviders;
+use ava_skills_extension::SkillsExtensionConfig;
+use ava_skills_extension::install;
+use ava_skills_extension::install_with_providers;
+use ava_utils_path_uri::PathUri;
 use core_test_support::context_snapshot;
 use core_test_support::context_snapshot::ContextSnapshotOptions;
 use core_test_support::context_snapshot::SnapshotEntry;
@@ -57,8 +57,8 @@ use core_test_support::skip_if_wine_exec;
 use core_test_support::stdio_server_bin;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::executor_path_uri;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::executor_path_uri;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_mcp_server;
@@ -112,7 +112,7 @@ fn write_scenario_capabilities(home: &TempDir) -> Result<ScenarioSkills> {
     ] {
         let manifest = plugin_cache
             .join(name)
-            .join("local/.codex-plugin/plugin.json");
+            .join("local/.ava-plugin/plugin.json");
         fs::create_dir_all(manifest.parent().expect("manifest parent"))?;
         fs::write(
             manifest,
@@ -238,9 +238,9 @@ async fn astra_asks_an_async_question_and_receives_the_answer_while_working() ->
     .await;
     let config_server = start_mock_server().await;
     let base_url = format!("{}/v1", streaming.uri());
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-6-astra")
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             configure_scenario_catalog(config);
             config.model_provider.base_url = Some(base_url);
@@ -253,17 +253,17 @@ async fn astra_asks_an_async_question_and_receives_the_answer_while_working() ->
         .build_with_auto_env(&config_server)
         .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![text(
             "Draft a short launch update. Ask me who it is for and keep working while I answer.",
         )]))
         .await?;
-    let turn_id = wait_for_event_match(&test.codex, |event| match event {
+    let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
         _ => None,
     })
     .await;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::ItemCompleted(event)
             if matches!(&event.item, TurnItem::AgentMessage(message)
                 if message.delivery == Some(AgentMessageDelivery::Async)))
@@ -274,7 +274,7 @@ async fn astra_asks_an_async_question_and_receives_the_answer_while_working() ->
         streaming.wait_for_request_count(/*count*/ 2),
     )
     .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::ItemCompleted(event)
             if matches!(&event.item, TurnItem::AgentMessage(message) if message.id == "working"))
     })
@@ -282,11 +282,11 @@ async fn astra_asks_an_async_question_and_receives_the_answer_while_working() ->
 
     let question_id = json!(["request_user_input_async", "audience-question", 0]).to_string();
     let answer = AnsweredQuestion::new(&question_id, question, "Customers").render();
-    test.codex
+    test.ava-code
         .steer_turn(TurnInputRequest::user_input(vec![text(&answer)]), turn_id)
         .await?;
     release_continuation.send(()).expect("release continuation");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -345,10 +345,10 @@ async fn astra_kickoff_with_skills_plugins_and_remote_compaction() -> Result<()>
         ],
     )
     .await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-6-astra")
         .with_home(home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_extensions(skills_extensions())
         .with_workspace_setup(|cwd, fs| async move {
             fs.write_file(
@@ -380,22 +380,22 @@ async fn astra_kickoff_with_skills_plugins_and_remote_compaction() -> Result<()>
     ]
     .into_iter()
     {
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(input))
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
     }
 
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             text("Check the final kickoff brief and attached sketch with $final-check and $calendar:agenda."),
             UserInput::Image {
@@ -408,7 +408,7 @@ async fn astra_kickoff_with_skills_plugins_and_remote_compaction() -> Result<()>
             plugin("calendar"),
         ]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -472,9 +472,9 @@ async fn astra_omits_disabled_executor_skills_from_model_context() -> Result<()>
         ])],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-6-astra")
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_extensions(Arc::new(extensions.build()))
         .with_config(configure_scenario_catalog)
         .build(&server)
@@ -536,7 +536,7 @@ async fn multi_agent_catalog_parameters() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             configure_scenario_catalog(config);
             config.workspace_roots = vec![config.cwd.clone()];
@@ -603,10 +603,10 @@ async fn astra_settings_release_check_with_direct_and_code_mode_tools() -> Resul
     let server = start_mock_server().await;
     let rmcp_server_bin = stdio_server_bin()?;
     let home = Arc::new(TempDir::new()?);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-6-astra")
         .with_home(home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             configure_scenario_catalog(config);
             let mut servers = config.mcp_servers.get().clone();
@@ -636,7 +636,7 @@ async fn astra_settings_release_check_with_direct_and_code_mode_tools() -> Resul
         release.join("settings.png"),
         BASE64_STANDARD.decode(ONE_PIXEL_PNG_BASE64)?,
     )?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
     let patch = "*** Begin Patch\n*** Update File: release/status.md\n@@\n-Status: pending\n+Status: blocked\n+Reason: expected Apply; observed Save\n+MCP: reachable\n*** End Patch\n";
     let patch_code = format!("text(await tools.apply_patch(`{patch}`));");
@@ -712,7 +712,7 @@ text(`MCP: ${ping.structuredContent?.echo ?? "missing"}`);"#,
 async fn astra_reads_code_mode_call_timing() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-6-astra")
         .with_config(|config| {
             configure_scenario_catalog(config);
@@ -828,10 +828,10 @@ async fn astra_refreshes_plugin_tools_and_skills_in_an_existing_thread() -> Resu
         ],
     )
     .await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-6-astra")
         .with_home(Arc::clone(&home))
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_extensions(skills_extensions())
         .with_config(configure_scenario_catalog);
     let test = builder.build(&server).await?;
@@ -840,9 +840,9 @@ async fn astra_refreshes_plugin_tools_and_skills_in_an_existing_thread() -> Resu
         .await?;
 
     let plugin_root = home.path().join("plugins/cache/test/notes/local");
-    fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         json!({ "name": "notes", "description": "Look up and summarize team notes" }).to_string(),
     )?;
     fs::write(
@@ -860,15 +860,15 @@ async fn astra_refreshes_plugin_tools_and_skills_in_an_existing_thread() -> Resu
         home.path().join("config.toml"),
         format!("{config}\n[plugins.\"notes@test\"]\nenabled = true\n"),
     )?;
-    test.codex.submit(Op::ReloadUserConfig).await?;
-    test.codex
+    test.ava-code.submit(Op::ReloadUserConfig).await?;
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             text("I installed Notes. Use $notes:summarize and the Notes tool to check that Mira owns the kickoff."),
             plugin("notes"),
             selected_skill("notes:summarize", &skill),
         ]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -943,7 +943,7 @@ async fn guardian_checkpoint_migration_request_history() -> Result<()> {
 async fn app_tool_exposure_request_history() -> Result<()> {
     let requests = super::app_tool_exposure::connector_exposure_requests(
         super::app_tool_exposure::ExposureCase::non_deferred(
-            codex_protocol::openai_models::ToolMode::CodeModeOnly,
+            ava_protocol::openai_models::ToolMode::CodeModeOnly,
         ),
     )
     .await?;

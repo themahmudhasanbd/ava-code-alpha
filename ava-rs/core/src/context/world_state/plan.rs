@@ -2,10 +2,10 @@ use super::PreviousSectionState;
 use super::WorldStateContextFragment;
 use super::WorldStateSection;
 use crate::context::ContextualUserFragment;
-use codex_extension_api::RenderedWorldStateFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::plan_tool::StepStatus;
-use codex_protocol::plan_tool::UpdatePlanArgs;
+use ava_extension_api::RenderedWorldStateFragment;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::plan_tool::StepStatus;
+use ava_protocol::plan_tool::UpdatePlanArgs;
 
 const PLAN_OPEN_TAG: &str = "<active_plan>";
 const PLAN_CLOSE_TAG: &str = "</active_plan>";

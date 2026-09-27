@@ -3,22 +3,22 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use codex_exec_server::ByteChunk;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::HttpClient;
-use codex_exec_server::HttpHeader;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestParams;
-use codex_exec_server::HttpRequestResponse;
-use codex_exec_server::HttpResponseBodyStream;
-use codex_login::AuthCredentialsStoreMode;
-use codex_login::AuthHeaders;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
+use ava_exec_server::ByteChunk;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::HttpClient;
+use ava_exec_server::HttpHeader;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestParams;
+use ava_exec_server::HttpRequestResponse;
+use ava_exec_server::HttpResponseBodyStream;
+use ava_login::AuthCredentialsStoreMode;
+use ava_login::AuthHeaders;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use pretty_assertions::assert_eq;
@@ -95,22 +95,22 @@ impl HttpClient for RecordingHttpClient {
     }
 }
 
-struct StaticExternalAuth(CodexAuth);
+struct StaticExternalAuth(AvaAuth);
 
 impl ExternalAuth for StaticExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         self.resolve()
     }
 }
 
-struct SequencedExternalAuth(Mutex<VecDeque<CodexAuth>>);
+struct SequencedExternalAuth(Mutex<VecDeque<AvaAuth>>);
 
 impl ExternalAuth for SequencedExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async {
             let mut sequence = self.0.lock().expect("auth sequence");
             Ok(if sequence.len() > 1 {
@@ -121,13 +121,13 @@ impl ExternalAuth for SequencedExternalAuth {
         })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         self.resolve()
     }
 }
 
-fn header_auth() -> CodexAuth {
-    CodexAuth::Headers(AuthHeaders::new(
+fn header_auth() -> AvaAuth {
+    AvaAuth::Headers(AuthHeaders::new(
         [
             (
                 "authorization".parse().unwrap(),
@@ -143,8 +143,8 @@ fn header_auth() -> CodexAuth {
     ))
 }
 
-fn chatgpt_auth(account_id: &str) -> CodexAuth {
-    CodexAuth::from_external_chatgpt_tokens(
+fn chatgpt_auth(account_id: &str) -> AvaAuth {
+    AvaAuth::from_external_chatgpt_tokens(
         "header.e30.same",
         account_id,
         /*chatgpt_plan_type*/ None,
@@ -152,8 +152,8 @@ fn chatgpt_auth(account_id: &str) -> CodexAuth {
     .expect("test auth")
 }
 
-fn fedramp_chatgpt_auth(account_id: &str) -> CodexAuth {
-    CodexAuth::from_external_chatgpt_tokens(
+fn fedramp_chatgpt_auth(account_id: &str) -> AvaAuth {
+    AvaAuth::from_external_chatgpt_tokens(
         "header.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lzX2ZlZHJhbXAiOnRydWV9fQ.same",
         account_id,
         /*chatgpt_plan_type*/ None,
@@ -161,7 +161,7 @@ fn fedramp_chatgpt_auth(account_id: &str) -> CodexAuth {
     .expect("FedRAMP test auth")
 }
 
-fn context(auth: CodexAuth, client: Arc<RecordingHttpClient>) -> TrustedAccessContext {
+fn context(auth: AvaAuth, client: Arc<RecordingHttpClient>) -> TrustedAccessContext {
     TrustedAccessContext::new(
         auth.clone(),
         AuthManager::from_auth_for_testing(auth),
@@ -199,7 +199,7 @@ async fn delivers_account_bound_verified_access_to_the_calling_plugin() {
         ),
     ));
     let mut context = context(
-        CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         client.clone(),
     );
     context.chatgpt_base_url.push('/');
@@ -265,12 +265,12 @@ async fn rejects_auth_without_a_nonempty_account_id() -> anyhow::Result<()> {
                 "last_refresh": "2099-01-01T00:00:00Z"
             }))?,
         )?;
-        let auth = CodexAuth::from_auth_storage(
+        let auth = AvaAuth::from_auth_storage(
             home.path(),
             AuthCredentialsStoreMode::File,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            &codex_login::test_support::transport_default_auth_route_config(),
+            &ava_login::test_support::transport_default_auth_route_config(),
         )
         .await?
         .expect("managed ChatGPT auth");
@@ -299,7 +299,7 @@ async fn rejects_api_key_authentication_without_sending_credentials() {
         /*status*/ 200,
         json!({ "programs": [] }),
     ));
-    let context = context(CodexAuth::from_api_key("test-api-key"), client.clone());
+    let context = context(AvaAuth::from_api_key("test-api-key"), client.clone());
 
     let metadata = context
         .add_context(Some(json!({
@@ -382,7 +382,7 @@ async fn maps_verified_access_states_and_rejects_invalid_provider_responses() {
     for (response_status, response, expected) in cases {
         let response_description = response.to_string();
         let context = context(
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
             Arc::new(RecordingHttpClient::new(response_status, response)),
         );
         let metadata = context.add_context(/*meta*/ None).await.expect("metadata");
@@ -473,7 +473,7 @@ async fn rejects_duplicate_cyber_programs() {
     ] {
         for programs in [json!([active, other]), json!([other, active])] {
             let context = context(
-                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+                AvaAuth::create_dummy_chatgpt_auth_for_testing(),
                 Arc::new(RecordingHttpClient::new(
                     /*status*/ 200,
                     json!({ "programs": programs }),
@@ -535,7 +535,7 @@ async fn uses_the_checked_auth_snapshot_for_request_headers() -> anyhow::Result<
         cyber_response("inactive", json!([])),
     ));
     let context = context(chatgpt_auth("account-a"), client.clone());
-    let refreshed = CodexAuth::from_external_chatgpt_tokens(
+    let refreshed = AvaAuth::from_external_chatgpt_tokens(
         "header.e30.refreshed",
         "account-a",
         /*chatgpt_plan_type*/ None,
@@ -572,7 +572,7 @@ async fn uses_the_checked_auth_snapshot_for_request_headers() -> anyhow::Result<
 async fn rejects_identity_changes_while_request_is_in_flight() -> anyhow::Result<()> {
     let personal = chatgpt_auth("account-a");
     let workspace =
-        CodexAuth::from_external_chatgpt_tokens("header.e30.same", "account-a", Some("team"))?;
+        AvaAuth::from_external_chatgpt_tokens("header.e30.same", "account-a", Some("team"))?;
     for (description, initial_auth, selected_auth) in [
         (
             "account switch",

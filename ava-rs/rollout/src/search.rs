@@ -5,10 +5,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::strip_user_message_prefix;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::strip_user_message_prefix;
 use regex::Regex;
 use regex::RegexBuilder;
 use tokio::process::Command;
@@ -27,12 +27,12 @@ pub type RolloutSearchMatches = HashMap<PathBuf, Option<String>>;
 
 pub async fn search_rollout_paths(
     rg_command: &Path,
-    codex_home: &Path,
+    ava_home: &Path,
     archived: bool,
     search_term: &str,
 ) -> io::Result<HashSet<PathBuf>> {
     Ok(
-        search_rollout_matches(rg_command, codex_home, archived, search_term)
+        search_rollout_matches(rg_command, ava_home, archived, search_term)
             .await?
             .into_keys()
             .collect(),
@@ -41,11 +41,11 @@ pub async fn search_rollout_paths(
 
 pub async fn search_rollout_matches(
     rg_command: &Path,
-    codex_home: &Path,
+    ava_home: &Path,
     archived: bool,
     search_term: &str,
 ) -> io::Result<RolloutSearchMatches> {
-    let root = codex_home.join(if archived {
+    let root = ava_home.join(if archived {
         ARCHIVED_SESSIONS_SUBDIR
     } else {
         SESSIONS_SUBDIR

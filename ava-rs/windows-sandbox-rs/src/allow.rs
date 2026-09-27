@@ -44,9 +44,9 @@ pub(crate) fn compute_allow_paths_for_permissions(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use std::fs;
     use tempfile::TempDir;
 
@@ -317,12 +317,12 @@ mod tests {
     }
 
     #[test]
-    fn denies_codex_and_agents_inside_writable_root() {
+    fn denies_ava_and_agents_inside_writable_root() {
         let tmp = TempDir::new().expect("tempdir");
         let command_cwd = tmp.path().join("workspace");
-        let codex_dir = command_cwd.join(".codex");
+        let ava_dir = command_cwd.join(".ava-code");
         let agents_dir = command_cwd.join(".agents");
-        let _ = fs::create_dir_all(&codex_dir);
+        let _ = fs::create_dir_all(&ava_dir);
         let _ = fs::create_dir_all(&agents_dir);
 
         let permission_profile = workspace_write_profile(
@@ -342,7 +342,7 @@ mod tests {
             .into_iter()
             .collect();
         let expected_deny: HashSet<PathBuf> = [
-            dunce::canonicalize(&codex_dir).unwrap(),
+            dunce::canonicalize(&ava_dir).unwrap(),
             dunce::canonicalize(&agents_dir).unwrap(),
         ]
         .into_iter()

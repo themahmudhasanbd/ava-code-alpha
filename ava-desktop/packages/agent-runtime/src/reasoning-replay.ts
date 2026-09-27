@@ -1,7 +1,7 @@
 /**
  * Preserve DeepSeek-compatible reasoning across context compaction (#296).
  *
- * Codex-shaped checkpoints drop assistant turns (and their thinking) from the
+ * Ava-shaped checkpoints drop assistant turns (and their thinking) from the
  * retained tail so tool calls cannot strand. Strict relays still require a
  * non-empty reasoning field on later assistant messages. Stashing the last few
  * thinking turns in opaque checkpoint `details.retainedReasoning` and replaying

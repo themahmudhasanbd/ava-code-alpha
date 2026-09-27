@@ -1,10 +1,10 @@
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::ReadDenyMatcher;
-use codex_protocol::permissions::windows_deny_read_glob_scan;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::ReadDenyMatcher;
+use ava_protocol::permissions::windows_deny_read_glob_scan;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::process::Command;
@@ -24,7 +24,7 @@ struct GlobScanPlan {
 
 /// Resolve split filesystem `None` read entries into concrete Windows ACL targets.
 ///
-/// Windows ACLs do not understand Codex filesystem glob patterns directly. Exact
+/// Windows ACLs do not understand Ava filesystem glob patterns directly. Exact
 /// unreadable roots can be passed through as-is, including paths that do not
 /// exist yet. Glob entries are snapshot-expanded to the files/directories that
 /// already exist under their literal scan root; future exact paths are handled
@@ -269,11 +269,11 @@ mod tests {
     use super::glob_scan_plans;
     use super::resolve_windows_deny_read_paths;
     use super::ripgrep_glob;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemPath;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemPath;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
     use std::collections::HashSet;
     use std::path::PathBuf;

@@ -2,15 +2,15 @@ use std::collections::BTreeSet;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_config::LoaderOverrides;
-use codex_core::config::ConfigBuilder;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_utils_path_uri::PathUri;
+use ava_config::LoaderOverrides;
+use ava_core::config::ConfigBuilder;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tokio::process::Command;
 
@@ -131,7 +131,7 @@ extends = "base"
     let mut overrides = LoaderOverrides::without_managed_config_for_tests();
     overrides.system_requirements_path = Some(requirements_file);
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(overrides)
         .build()
         .await
@@ -178,7 +178,7 @@ extends = "base"
         schema_version: 1,
         generated_at: "2026-01-01T00:00:00Z".to_string(),
         overall_status: check.status,
-        codex_version: "test".to_string(),
+        ava_version: "test".to_string(),
         checks: vec![check],
     };
     insta::assert_snapshot!(
@@ -233,11 +233,11 @@ extends = ":read-only"
     )
     .unwrap();
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await
         .unwrap();
-    let user_home = codex_utils_absolute_path::AbsolutePathBufGuard::home_directory().unwrap();
+    let user_home = ava_utils_absolute_path::AbsolutePathBufGuard::home_directory().unwrap();
     let path = PathUri::from_host_native_path(user_home.join("doctor-provenance")).unwrap();
     assert_eq!(
         source(&config, &path),
@@ -267,7 +267,7 @@ extends = ":read-only"
     )
     .unwrap();
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .cli_overrides(vec![(
             "permissions.diagnostic.filesystem".to_string(),
             format!("{{ {base} = \"write\" }}").parse().unwrap(),

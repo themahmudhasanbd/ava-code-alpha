@@ -3,13 +3,13 @@
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
@@ -52,7 +52,7 @@ async fn memory_read_version_selects_only_its_own_context() -> Result<()> {
         )
         .await;
         let mut app = TestAppServer::builder()
-            .with_codex_home(home.path())
+            .with_ava_home(home.path())
             .build_initialized()
             .await?;
         let start = app

@@ -1,8 +1,8 @@
-use codex_config::CloudConfigBundle;
+use ava_config::CloudConfigBundle;
 
-const CLOUD_CONFIG_BUNDLE_FETCH_ATTEMPT_METRIC: &str = "codex.cloud_config_bundle.fetch_attempt";
-const CLOUD_CONFIG_BUNDLE_FETCH_FINAL_METRIC: &str = "codex.cloud_config_bundle.fetch_final";
-const CLOUD_CONFIG_BUNDLE_LOAD_METRIC: &str = "codex.cloud_config_bundle.load";
+const CLOUD_CONFIG_BUNDLE_FETCH_ATTEMPT_METRIC: &str = "ava.cloud_config_bundle.fetch_attempt";
+const CLOUD_CONFIG_BUNDLE_FETCH_FINAL_METRIC: &str = "ava.cloud_config_bundle.fetch_final";
+const CLOUD_CONFIG_BUNDLE_LOAD_METRIC: &str = "ava.cloud_config_bundle.load";
 
 pub(crate) fn emit_fetch_attempt_metric(
     trigger: &str,
@@ -85,7 +85,7 @@ fn status_code_tag(status_code: Option<u16>) -> String {
 }
 
 fn emit_metric(metric_name: &str, tags: Vec<(&str, String)>) {
-    if let Some(metrics) = codex_otel::global() {
+    if let Some(metrics) = ava_otel::global() {
         let tag_refs = tags
             .iter()
             .map(|(key, value)| (*key, value.as_str()))

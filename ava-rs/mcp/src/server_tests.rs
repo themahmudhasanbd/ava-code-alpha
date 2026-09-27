@@ -1,6 +1,6 @@
 use super::referenced_environment_variables;
-use codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
-use codex_config::McpServerConfig;
+use ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
+use ava_config::McpServerConfig;
 use pretty_assertions::assert_eq;
 
 #[test]

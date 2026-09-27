@@ -6,9 +6,9 @@ use app_test_support::TestAppServer;
 use app_test_support::encode_id_token;
 use app_test_support::write_chatgpt_auth;
 use app_test_support::write_models_cache;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use std::time::Duration;
@@ -35,11 +35,11 @@ async fn account_switch_reloads_telemetry_collectors_and_preserves_trace_context
         .mount(&collector)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let initial_endpoint = format!("{}/initial", collector.uri());
-    write_otel_config(codex_home.path(), &initial_endpoint)?;
+    write_otel_config(ava_home.path(), &initial_endpoint)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("initial-access-token")
             .account_id(INITIAL_ACCOUNT_ID)
             .chatgpt_account_id(INITIAL_ACCOUNT_ID)
@@ -48,12 +48,12 @@ async fn account_switch_reloads_telemetry_collectors_and_preserves_trace_context
             .email(INITIAL_EMAIL),
         AuthCredentialsStoreMode::File,
     )?;
-    write_models_cache(codex_home.path()).await?;
+    write_models_cache(ava_home.path()).await?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("TRACEPARENT", Some(PARENT_TRACEPARENT))])
-        .with_json_logging("codex_app_server::otel_reloader=info")
+        .with_json_logging("ava_app_server::otel_reloader=info")
         .build_initialized_with_timeout(TEST_TIMEOUT)
         .await?;
     app_server
@@ -61,7 +61,7 @@ async fn account_switch_reloads_telemetry_collectors_and_preserves_trace_context
         .await?;
 
     let next_endpoint = format!("{}/next", collector.uri());
-    write_otel_config(codex_home.path(), &next_endpoint)?;
+    write_otel_config(ava_home.path(), &next_endpoint)?;
     let access_token = encode_id_token(
         &ChatGptIdTokenClaims::new()
             .email(NEXT_EMAIL)
@@ -81,7 +81,7 @@ async fn account_switch_reloads_telemetry_collectors_and_preserves_trace_context
     assert_eq!(response, LoginAccountResponse::ChatgptAuthTokens {});
     timeout(
         TEST_TIMEOUT,
-        app_server.wait_for_json_log_event("codex.app_server.otel_reloaded"),
+        app_server.wait_for_json_log_event("ava.app_server.otel_reloaded"),
     )
     .await??;
     app_server
@@ -126,7 +126,7 @@ async fn account_switch_reloads_telemetry_collectors_and_preserves_trace_context
         "the next account's trace context was not propagated: {next_traces}"
     );
     assert!(
-        next_metrics.contains("codex.thread.started"),
+        next_metrics.contains("ava.thread.started"),
         "the next account's metrics did not reach its collector: {next_metrics}"
     );
     assert!(
@@ -137,9 +137,9 @@ async fn account_switch_reloads_telemetry_collectors_and_preserves_trace_context
     Ok(())
 }
 
-fn write_otel_config(codex_home: &Path, collector_endpoint: &str) -> Result<()> {
+fn write_otel_config(ava_home: &Path, collector_endpoint: &str) -> Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"model = "mock-model"
 model_provider = "mock_provider"

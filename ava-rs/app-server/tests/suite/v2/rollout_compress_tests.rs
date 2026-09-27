@@ -7,13 +7,13 @@ use app_test_support::DEFAULT_CLIENT_NAME;
 use app_test_support::TestAppServer;
 use app_test_support::create_fake_rollout;
 use app_test_support::rollout_path;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::RolloutCompressResponse;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::RolloutCompressResponse;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio::time::timeout;
@@ -22,23 +22,23 @@ const READ_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 20);
 
 #[tokio::test]
 async fn rollout_compress_runs_after_startup_with_compression_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_args(&["-c", "features.local_thread_store_compression=false"])
         .build_initialized()
         .await?;
 
     let filename_ts = "2025-01-05T12-00-00";
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         "Saved user message",
         /*model_provider*/ None,
         /*git_info*/ None,
     )?;
-    let path = rollout_path(codex_home.path(), filename_ts, &thread_id);
+    let path = rollout_path(ava_home.path(), filename_ts, &thread_id);
     let original = std::fs::read_to_string(&path)?;
     let compressed_path = path.with_extension("jsonl.zst");
 
@@ -56,7 +56,7 @@ async fn rollout_compress_runs_after_startup_with_compression_disabled() -> Resu
     })
     .await?;
 
-    let mut reader = codex_rollout::open_rollout_line_reader(&path).await?;
+    let mut reader = ava_rollout::open_rollout_line_reader(&path).await?;
     let mut lines = Vec::new();
     while let Some(line) = reader.next_line().await? {
         lines.push(line);

@@ -1,11 +1,11 @@
 //! Tool item, Code Mode correlation, and artifact event tests.
 
 use crate::events::AppServerRpcTransport;
-use crate::events::CodexAppServerClientMetadata;
-use crate::events::CodexCommandExecutionEventParams;
-use crate::events::CodexCommandExecutionEventRequest;
-use crate::events::CodexRuntimeMetadata;
-use crate::events::CodexToolItemEventBase;
+use crate::events::AvaAppServerClientMetadata;
+use crate::events::AvaCommandExecutionEventParams;
+use crate::events::AvaCommandExecutionEventRequest;
+use crate::events::AvaRuntimeMetadata;
+use crate::events::AvaToolItemEventBase;
 use crate::events::FinalApprovalOutcome;
 use crate::events::ToolEventType;
 use crate::events::ToolItemTerminalStatus;
@@ -35,22 +35,22 @@ use crate::tests::support::sample_turn_resolved_config;
 use crate::tests::support::sample_turn_started_notification;
 use crate::tests::support::test_tracking_context;
 use crate::tests::support::test_turn_metadata;
-use codex_app_server_protocol::CollabAgentTool;
-use codex_app_server_protocol::CollabAgentToolCallStatus;
-use codex_app_server_protocol::CommandAction;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::ImageGenerationItem;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::McpToolCallAppContext;
-use codex_app_server_protocol::McpToolCallStatus;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::TurnStatus as AppServerTurnStatus;
-use codex_protocol::protocol::ThreadSource;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_app_server_protocol::CollabAgentTool;
+use ava_app_server_protocol::CollabAgentToolCallStatus;
+use ava_app_server_protocol::CommandAction;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::ImageGenerationItem;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::McpToolCallAppContext;
+use ava_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::TurnStatus as AppServerTurnStatus;
+use ava_protocol::protocol::ThreadSource;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -93,12 +93,12 @@ fn sampling_response(
 
 #[test]
 fn command_execution_event_serializes_expected_shape() {
-    let event = TrackEventRequest::CommandExecution(CodexCommandExecutionEventRequest {
-        event_type: "codex_command_execution_event",
-        event_params: CodexCommandExecutionEventParams {
+    let event = TrackEventRequest::CommandExecution(AvaCommandExecutionEventRequest {
+        event_type: "ava_command_execution_event",
+        event_params: AvaCommandExecutionEventParams {
             model_slug: None,
             reasoning_effort: None,
-            base: CodexToolItemEventBase {
+            base: AvaToolItemEventBase {
                 thread_id: "thread-1".to_string(),
                 session_id: "session-thread-1".to_string(),
                 turn_id: "turn-1".to_string(),
@@ -108,15 +108,15 @@ fn command_execution_event_serializes_expected_shape() {
                 parent_call_id: None,
                 originating_response_id: None,
                 subsequent_response_id: None,
-                app_server_client: CodexAppServerClientMetadata {
-                    product_client_id: "codex_tui".to_string(),
-                    client_name: Some("codex-tui".to_string()),
+                app_server_client: AvaAppServerClientMetadata {
+                    product_client_id: "ava_tui".to_string(),
+                    client_name: Some("ava-tui".to_string()),
                     client_version: Some("1.2.3".to_string()),
                     rpc_transport: AppServerRpcTransport::Websocket,
                     experimental_api_enabled: Some(true),
                 },
-                runtime: CodexRuntimeMetadata {
-                    codex_rs_version: "0.99.0".to_string(),
+                runtime: AvaRuntimeMetadata {
+                    ava_rs_version: "0.99.0".to_string(),
                     runtime_os: "macos".to_string(),
                     runtime_os_version: "15.3.1".to_string(),
                     runtime_arch: "aarch64".to_string(),
@@ -153,7 +153,7 @@ fn command_execution_event_serializes_expected_shape() {
 
     let payload = serde_json::to_value(&event).expect("serialize command execution event");
     let mut expected = json!({
-        "event_type": "codex_command_execution_event",
+        "event_type": "ava_command_execution_event",
         "event_params": {
             "model_slug": null,
             "reasoning_effort": null,
@@ -167,14 +167,14 @@ fn command_execution_event_serializes_expected_shape() {
             "originating_response_id": null,
             "subsequent_response_id": null,
             "app_server_client": {
-                "product_client_id": "codex_tui",
-                "client_name": "codex-tui",
+                "product_client_id": "ava_tui",
+                "client_name": "ava-tui",
                 "client_version": "1.2.3",
                 "rpc_transport": "websocket",
                 "experimental_api_enabled": true
             },
             "runtime": {
-                "codex_rs_version": "0.99.0",
+                "ava_rs_version": "0.99.0",
                 "runtime_os": "macos",
                 "runtime_os_version": "15.3.1",
                 "runtime_arch": "aarch64"
@@ -241,7 +241,7 @@ async fn item_lifecycle_notifications_publish_command_execution_event() {
                             );
                             if let ThreadItem::CommandExecution { model_context, .. } = &mut item {
                                 *model_context =
-                                    Some(codex_protocol::items::ModelInvocationContext {
+                                    Some(ava_protocol::items::ModelInvocationContext {
                                         model_slug: model.to_string(),
                                         reasoning_effort: Some("max".to_string()),
                                     });
@@ -302,7 +302,7 @@ async fn item_lifecycle_notifications_publish_command_execution_event() {
     assert_eq!(payload.as_array().expect("events array").len(), 1);
     assert_eq!(payload[0]["event_params"]["model_slug"], "invoking-model");
     assert_eq!(payload[0]["event_params"]["reasoning_effort"], "max");
-    assert_eq!(payload[0]["event_type"], "codex_command_execution_event");
+    assert_eq!(payload[0]["event_type"], "ava_command_execution_event");
     assert_eq!(payload[0]["event_params"]["thread_id"], "thread-1");
     assert_eq!(payload[0]["event_params"]["session_id"], "session-thread-1");
     assert_eq!(payload[0]["event_params"]["turn_id"], "turn-1");
@@ -344,7 +344,7 @@ async fn item_lifecycle_notifications_publish_command_execution_event() {
     assert_eq!(payload[0]["event_params"]["execution_duration_ms"], 42);
     assert_eq!(
         payload[0]["event_params"]["app_server_client"]["client_name"],
-        "codex-tui"
+        "ava-tui"
     );
     assert_eq!(payload[0]["event_params"]["thread_source"], "user");
 }
@@ -426,7 +426,7 @@ async fn collaborator_tool_events_keep_response_ids_when_completion_races_sampli
                 "tool_event_type": params["tool_event_type"],
             }),
             json!({
-                "type": "codex_collab_agent_tool_call_event",
+                "type": "ava_collab_agent_tool_call_event",
                 "item": "call-1",
                 "origin": "response-1",
                 "subsequent": "response-2",
@@ -612,8 +612,8 @@ async fn tool_event_types_require_exact_unambiguous_call_origin() {
                 }))
                 .collect::<Vec<_>>(),
             vec![
-                json!({"event": "codex_command_execution_event", "type": expected, "status": "completed", "duration": 42}),
-                json!({"event": "codex_control_tool_call_event", "type": expected, "status": "completed", "duration": 42}),
+                json!({"event": "ava_command_execution_event", "type": expected, "status": "completed", "duration": 42}),
+                json!({"event": "ava_control_tool_call_event", "type": expected, "status": "completed", "duration": 42}),
             ],
         );
     }
@@ -726,7 +726,7 @@ async fn mcp_elicitation_classification_survives_turn_completion_and_preserves_c
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut events,
         )
@@ -752,7 +752,7 @@ async fn mcp_elicitation_classification_survives_turn_completion_and_preserves_c
         .as_array()
         .expect("analytics events array")
         .iter()
-        .filter(|event| event["event_type"] == "codex_mcp_tool_call_event")
+        .filter(|event| event["event_type"] == "ava_mcp_tool_call_event")
         .map(|event| {
             json!({
                 "item_id": event["event_params"]["item_id"],
@@ -805,7 +805,7 @@ async fn reducer_ingests_artifact_operation_fact() {
     assert_eq!(
         serde_json::to_value(events).expect("serialize events"),
         json!([{
-            "event_type": "codex_artifact_operation",
+            "event_type": "ava_artifact_operation",
             "event_params": {
                 "thread_id": "thread-1",
                 "turn_id": "turn-1",

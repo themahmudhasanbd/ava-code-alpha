@@ -1,4 +1,4 @@
-use codex_http_client::TransportError;
+use ava_http_client::TransportError;
 use http::StatusCode;
 use std::time::Duration;
 

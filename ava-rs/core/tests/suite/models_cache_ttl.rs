@@ -1,5 +1,5 @@
-use codex_core::TurnInputRequest;
-use core_test_support::test_codex::local_selections;
+use ava_core::TurnInputRequest;
+use core_test_support::test_ava::local_selections;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -7,29 +7,29 @@ use anyhow::Result;
 use chrono::DateTime;
 use chrono::TimeZone;
 use chrono::Utc;
-use codex_core::config::Constrained;
-use codex_login::CodexAuth;
-use codex_models_manager::client_version_to_whole;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelMessages;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::openai_models::default_input_modalities;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::config::Constrained;
+use ava_login::AvaAuth;
+use ava_models_manager::client_version_to_whole;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelMessages;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::openai_models::default_input_modalities;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -39,8 +39,8 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::sse_response;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde::Deserialize;
@@ -50,30 +50,30 @@ use wiremock::MockServer;
 
 const ETAG: &str = "\"models-etag-ttl\"";
 const CACHE_FILE: &str = "models_cache.json";
-const REMOTE_MODEL: &str = "codex-test-ttl";
-const VERSIONED_MODEL: &str = "codex-test-versioned";
-const MISSING_VERSION_MODEL: &str = "codex-test-missing-version";
-const DIFFERENT_VERSION_MODEL: &str = "codex-test-different-version";
+const REMOTE_MODEL: &str = "ava-test-ttl";
+const VERSIONED_MODEL: &str = "ava-test-versioned";
+const MISSING_VERSION_MODEL: &str = "ava-test-missing-version";
+const DIFFERENT_VERSION_MODEL: &str = "ava-test-different-version";
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn guardian_reused_reviewer_avoids_stale_catalog_lookup() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = MockServer::start().await;
-    let bundled = codex_models_manager::bundled_models_response()?;
+    let bundled = ava_models_manager::bundled_models_response()?;
     let catalog = ModelsResponse {
         models: bundled
             .models
             .into_iter()
-            .filter(|model| ["gpt-5.4", "codex-auto-review"].contains(&model.slug.as_str()))
+            .filter(|model| ["gpt-5.4", "ava-auto-review"].contains(&model.slug.as_str()))
             .collect(),
     };
     assert_eq!(catalog.models.len(), 2);
     let initial_models =
         responses::mount_models_once_with_etag(&server, catalog.clone(), ETAG).await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("gpt-5.4");
     builder = builder.with_config(|config| {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
@@ -85,12 +85,12 @@ async fn guardian_reused_reviewer_avoids_stale_catalog_lookup() -> Result<()> {
         .get_models_manager()
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(initial_models.requests().len(), 1);
     rewrite_cache_timestamp(
-        &test.config.codex_home.join(CACHE_FILE),
+        &test.config.ava_home.join(CACHE_FILE),
         Utc::now() - chrono::Duration::hours(1),
     )
     .await?;
@@ -139,7 +139,7 @@ async fn guardian_reused_reviewer_avoids_stale_catalog_lookup() -> Result<()> {
     for request in &guardian_requests {
         assert_eq!(
             request.body_json()["model"].as_str(),
-            Some("codex-auto-review")
+            Some("ava-auto-review")
         );
     }
     let guardian_thread = guardian_requests[0].body_json()["client_metadata"]["thread_id"]
@@ -169,7 +169,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     builder = builder.with_config(|config| {
         config.model = Some("gpt-5.2".to_string());
         config.model_provider.request_max_retries = Some(0);
@@ -177,7 +177,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
     });
 
     let test = builder.build(&server).await?;
-    let codex = Arc::clone(&test.codex);
+    let ava = Arc::clone(&test.ava-code);
     let config = test.config.clone();
 
     // Populate cache via initial refresh.
@@ -185,11 +185,11 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
     let _ = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
-    let cache_path = config.codex_home.join(CACHE_FILE);
+    let cache_path = config.ava_home.join(CACHE_FILE);
     let stale_time = Utc.timestamp_opt(0, 0).single().expect("valid epoch");
     rewrite_cache_timestamp(&cache_path, stale_time).await?;
 
@@ -207,7 +207,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.cwd_path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hi".into(),
@@ -215,7 +215,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
             }])
             .with_thread_settings(ThreadSettingsOverrides {
                 environments: Some(local_selections(test.config.cwd.clone())),
-                approval_policy: Some(codex_protocol::protocol::AskForApproval::Never),
+                approval_policy: Some(ava_protocol::protocol::AskForApproval::Never),
                 sandbox_policy: Some(sandbox_policy),
                 permission_profile,
                 collaboration_mode: Some(CollaborationMode {
@@ -231,7 +231,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
         )
         .await?;
 
-    let _ = wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    let _ = wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let refreshed_cache = read_cache(&cache_path).await?;
     assert!(
@@ -249,7 +249,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
         .thread_manager
         .list_models(
             RefreshStrategy::Offline,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert!(
@@ -274,7 +274,7 @@ async fn matching_models_etag_does_not_rewrite_recent_cache() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     builder = builder.with_config(|config| {
         config.model = Some("gpt-5.2".to_string());
         config.model_provider.request_max_retries = Some(0);
@@ -286,11 +286,11 @@ async fn matching_models_etag_does_not_rewrite_recent_cache() -> Result<()> {
     let _ = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
-    let cache_path = test.config.codex_home.join(CACHE_FILE);
+    let cache_path = test.config.ava_home.join(CACHE_FILE);
     rewrite_cache_timestamp(&cache_path, Utc::now() - chrono::Duration::seconds(60)).await?;
     let original_contents = tokio::fs::read(&cache_path).await?;
     let original_modified = tokio::fs::metadata(&cache_path).await?.modified()?;
@@ -334,7 +334,7 @@ async fn matching_models_etag_renews_cache_after_half_its_lifetime() -> Result<(
     )
     .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     builder = builder.with_config(|config| {
         config.model = Some("gpt-5.2".to_string());
         config.model_provider.request_max_retries = Some(0);
@@ -346,11 +346,11 @@ async fn matching_models_etag_renews_cache_after_half_its_lifetime() -> Result<(
     let _ = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
-    let cache_path = test.config.codex_home.join(CACHE_FILE);
+    let cache_path = test.config.ava_home.join(CACHE_FILE);
     let fetched_at = Utc::now() - chrono::Duration::seconds(180);
     rewrite_cache_timestamp(&cache_path, fetched_at).await?;
 
@@ -394,13 +394,13 @@ async fn uses_cache_when_version_matches() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
-    let identity = codex_model_provider::test_support::models_cache_entry(
-        &codex_model_provider_info::ModelProviderInfo::create_openai_provider(Some(format!(
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+    let identity = ava_model_provider::test_support::models_cache_entry(
+        &ava_model_provider_info::ModelProviderInfo::create_openai_provider(Some(format!(
             "{}/v1",
             server.uri()
         ))),
-        Some(&CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        Some(&AvaAuth::create_dummy_chatgpt_auth_for_testing()),
         Vec::new(),
     )
     .identity;
@@ -435,7 +435,7 @@ async fn uses_cache_when_version_matches() -> Result<()> {
     let models = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
@@ -469,13 +469,13 @@ async fn refreshes_when_cache_version_missing() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
-    let identity = codex_model_provider::test_support::models_cache_entry(
-        &codex_model_provider_info::ModelProviderInfo::create_openai_provider(Some(format!(
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+    let identity = ava_model_provider::test_support::models_cache_entry(
+        &ava_model_provider_info::ModelProviderInfo::create_openai_provider(Some(format!(
             "{}/v1",
             server.uri()
         ))),
-        Some(&CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        Some(&AvaAuth::create_dummy_chatgpt_auth_for_testing()),
         Vec::new(),
     )
     .identity;
@@ -500,7 +500,7 @@ async fn refreshes_when_cache_version_missing() -> Result<()> {
     let models = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
@@ -529,13 +529,13 @@ async fn refreshes_when_cache_version_differs() -> Result<()> {
         models_mocks.push(responses::mount_models_once(&server, models_response.clone()).await);
     }
 
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
-    let identity = codex_model_provider::test_support::models_cache_entry(
-        &codex_model_provider_info::ModelProviderInfo::create_openai_provider(Some(format!(
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+    let identity = ava_model_provider::test_support::models_cache_entry(
+        &ava_model_provider_info::ModelProviderInfo::create_openai_provider(Some(format!(
             "{}/v1",
             server.uri()
         ))),
-        Some(&CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        Some(&AvaAuth::create_dummy_chatgpt_auth_for_testing()),
         Vec::new(),
     )
     .identity;
@@ -561,7 +561,7 @@ async fn refreshes_when_cache_version_differs() -> Result<()> {
     let models = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 

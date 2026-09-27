@@ -4,7 +4,7 @@ load("//:defs.bzl", "workspace_root_test")
 
 _WORKSPACE_ROOT_MARKER = "//ava-rs/utils/cargo-bin:repo_root.marker"
 
-def codex_e2e_benchmark(name, binaries = [], data = [], deps = []):
+def ava_e2e_benchmark(name, binaries = [], data = [], deps = []):
     """Defines a Bazel-only Divan end-to-end benchmark.
 
     The benchmark source lives at `e2e_benches/<name>.rs`, with hyphens in
@@ -51,6 +51,6 @@ def codex_e2e_benchmark(name, binaries = [], data = [], deps = []):
         runfile_env = runfile_env,
         tags = ["manual"],
         test_bin = ":" + binary_name,
-        visibility = ["//codex-rs:__pkg__"],
+        visibility = ["//ava-rs:__pkg__"],
         workspace_root_marker = _WORKSPACE_ROOT_MARKER,
     )

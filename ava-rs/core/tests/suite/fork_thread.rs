@@ -1,27 +1,27 @@
 use std::sync::Arc;
 
-use codex_core::ForkSnapshot;
-use codex_core::NewThread;
-use codex_core::TurnInputRequest;
-use codex_core::parse_turn_item;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_protocol::ThreadId;
-use codex_protocol::items::TurnItem;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_protocol::user_input::UserInput;
+use ava_core::ForkSnapshot;
+use ava_core::NewThread;
+use ava_core::TurnInputRequest;
+use ava_core::parse_turn_item;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_protocol::ThreadId;
+use ava_protocol::items::TurnItem;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use wiremock::Mock;
 use wiremock::MockServer;
@@ -48,26 +48,26 @@ async fn fork_thread_twice_drops_to_first_message() {
         .mount(&server)
         .await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build(&server).await.expect("create conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let thread_manager = test.thread_manager.clone();
     let config_for_fork = test.config.clone();
 
     // Send three user messages; wait for three completed turns.
     for text in ["first", "second", "third"] {
-        codex
+        ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: text.to_string(),
                 text_elements: Vec::new(),
             }]))
             .await
             .unwrap();
-        let _ = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+        let _ = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     }
 
     // Request history from the base conversation to obtain rollout path.
-    let base_path = codex.rollout_path().expect("rollout path");
+    let base_path = ava.rollout_path().expect("rollout path");
 
     // GetHistory flushes before returning the path; no wait needed.
 
@@ -98,21 +98,21 @@ async fn fork_thread_twice_drops_to_first_message() {
     // Fork once with n=1 → drops the last user input and everything after.
     let NewThread {
         thread_id: fork1_thread_id,
-        thread: codex_fork1,
+        thread: ava_fork1,
         ..
     } = thread_manager
         .fork_thread(
             ForkSnapshot::TruncateBeforeNthUserMessage(1),
-            codex_core::StartThreadOptions::new(config_for_fork.clone()),
+            ava_core::StartThreadOptions::new(config_for_fork.clone()),
             base_path.clone(),
         )
         .await
         .expect("fork 1");
 
-    let fork1_path = codex_fork1.rollout_path().expect("rollout path");
+    let fork1_path = ava_fork1.rollout_path().expect("rollout path");
     expected_after_first.push(thread_settings_applied_item(
         fork1_thread_id,
-        codex_fork1.thread_settings_snapshot().await,
+        ava_fork1.thread_settings_snapshot().await,
     ));
 
     // GetHistory on fork1 flushed; the file is ready.
@@ -125,18 +125,18 @@ async fn fork_thread_twice_drops_to_first_message() {
     // Fork again with n=0 → drops the (new) last user message, leaving only the first.
     let NewThread {
         thread_id: fork2_thread_id,
-        thread: codex_fork2,
+        thread: ava_fork2,
         ..
     } = thread_manager
         .fork_thread(
             ForkSnapshot::TruncateBeforeNthUserMessage(0),
-            codex_core::StartThreadOptions::new(config_for_fork.clone()),
+            ava_core::StartThreadOptions::new(config_for_fork.clone()),
             fork1_path.clone(),
         )
         .await
         .expect("fork 2");
 
-    let fork2_path = codex_fork2.rollout_path().expect("rollout path");
+    let fork2_path = ava_fork2.rollout_path().expect("rollout path");
     // GetHistory on fork2 flushed; the file is ready.
     let fork1_items = read_rollout_items(&fork1_path);
     let fork1_user_inputs = find_user_input_positions(&fork1_items);
@@ -147,7 +147,7 @@ async fn fork_thread_twice_drops_to_first_message() {
     let mut expected_after_second: Vec<RolloutItem> = fork1_items[..cut_last_on_fork1].to_vec();
     expected_after_second.push(thread_settings_applied_item(
         fork2_thread_id,
-        codex_fork2.thread_settings_snapshot().await,
+        ava_fork2.thread_settings_snapshot().await,
     ));
     let fork2_items = read_rollout_items(&fork2_path);
     pretty_assertions::assert_eq!(
@@ -174,11 +174,11 @@ async fn fork_thread_restores_history_selection_and_preserves_explicit_clear() -
     skip_if_no_network!(Ok(()));
 
     let server = MockServer::start().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
     let selected = vec!["slack@openai".to_string()];
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             disabled_plugin_ids: Some(selected.clone()),
             ..Default::default()
@@ -189,12 +189,12 @@ async fn fork_thread_restores_history_selection_and_preserves_explicit_clear() -
         conversation_id: test.session_configured.thread_id,
         history: Arc::new(vec![thread_settings_applied_item(
             test.session_configured.thread_id,
-            test.codex.thread_settings_snapshot().await,
+            test.ava-code.thread_settings_snapshot().await,
         )]),
         rollout_path: None,
     });
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             disabled_plugin_ids: Some(Vec::new()),
             ..Default::default()
@@ -206,7 +206,7 @@ async fn fork_thread_restores_history_selection_and_preserves_explicit_clear() -
         .thread_manager
         .fork_thread_from_history(
             ForkSnapshot::Interrupted,
-            codex_core::StartThreadOptions::new(test.config.clone()),
+            ava_core::StartThreadOptions::new(test.config.clone()),
             history.clone(),
         )
         .await?;
@@ -223,9 +223,9 @@ async fn fork_thread_restores_history_selection_and_preserves_explicit_clear() -
         .thread_manager
         .fork_thread_from_history(
             ForkSnapshot::Interrupted,
-            codex_core::StartThreadOptions {
+            ava_core::StartThreadOptions {
                 disabled_plugin_ids: Some(Vec::new()),
-                ..codex_core::StartThreadOptions::new(test.config.clone())
+                ..ava_core::StartThreadOptions::new(test.config.clone())
             },
             history,
         )
@@ -271,23 +271,23 @@ async fn assert_copied_fork_persists_inherited_history(history_mode: ThreadHisto
         .mount(&server)
         .await;
 
-    let mut builder = test_codex().with_history_mode(history_mode);
+    let mut builder = test_ava().with_history_mode(history_mode);
     let test = builder.build(&server).await.expect("create conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let thread_manager = test.thread_manager.clone();
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "fork me from stored history".to_string(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit initial user turn");
-    let _ = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _ = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    let source_path = codex.rollout_path().expect("source rollout path");
+    let source_path = ava.rollout_path().expect("source rollout path");
     let source_items = read_rollout_items(&source_path);
-    let source_meta = codex_rollout::read_session_meta_line(source_path.as_path())
+    let source_meta = ava_rollout::read_session_meta_line(source_path.as_path())
         .await
         .expect("read source session metadata");
     let mut supplied_history = vec![RolloutItem::SessionMeta(source_meta)];
@@ -298,7 +298,7 @@ async fn assert_copied_fork_persists_inherited_history(history_mode: ThreadHisto
     } = thread_manager
         .fork_thread_from_history(
             ForkSnapshot::Interrupted,
-            codex_core::StartThreadOptions::new(test.config.clone()),
+            ava_core::StartThreadOptions::new(test.config.clone()),
             InitialHistory::Resumed(ResumedHistory {
                 conversation_id: test.session_configured.thread_id,
                 history: Arc::new(supplied_history),
@@ -328,15 +328,15 @@ async fn assert_copied_fork_persists_inherited_history(history_mode: ThreadHisto
             .shutdown_and_wait()
             .await
             .expect("shutdown copied paginated fork");
-        let resumed_history = codex_rollout::RolloutRecorder::get_rollout_history(&forked_path)
+        let resumed_history = ava_rollout::RolloutRecorder::get_rollout_history(&forked_path)
             .await
             .expect("load copied paginated fork history");
         let resumed = thread_manager
             .resume_thread_with_history(
                 test.config.clone(),
                 resumed_history,
-                codex_core::test_support::auth_manager_from_auth(
-                    codex_login::CodexAuth::from_api_key("dummy"),
+                ava_core::test_support::auth_manager_from_auth(
+                    ava_login::AvaAuth::from_api_key("dummy"),
                 ),
                 /*parent_trace*/ None,
                 ClientMcpExtensions::default(),
@@ -377,7 +377,7 @@ fn read_rollout_items(path: &std::path::Path) -> Vec<RolloutItem> {
         let parse_json_message = format!("failed to parse rollout JSON line `{line}`");
         let v: serde_json::Value = serde_json::from_str(line).expect(&parse_json_message);
         let parse_line_message = format!("failed to parse rollout line `{line}`");
-        let rl = codex_rollout::decode_rollout_line(v).expect(&parse_line_message);
+        let rl = ava_rollout::decode_rollout_line(v).expect(&parse_line_message);
         match rl.item {
             RolloutItem::SessionMeta(_) => {}
             other => items.push(other),

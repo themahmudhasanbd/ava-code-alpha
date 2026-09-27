@@ -5,14 +5,14 @@ use crate::named_session_lookup::SessionCollection;
 use crate::named_session_lookup::lookup;
 use crate::session_archive_commands::SessionArchiveCommandOptions;
 use crate::session_archive_commands::start_app_server_for_session_command;
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ThreadQueueAddParams;
-use codex_app_server_protocol::ThreadQueueAddResponse;
-use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::experimental_required_message;
-use codex_protocol::ThreadId;
-use codex_utils_home_dir::find_codex_home;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ThreadQueueAddParams;
+use ava_app_server_protocol::ThreadQueueAddResponse;
+use ava_app_server_protocol::UserInput;
+use ava_app_server_protocol::experimental_required_message;
+use ava_protocol::ThreadId;
+use ava_utils_home_dir::find_ava_home;
 use color_eyre::Report;
 use color_eyre::eyre::Result;
 use color_eyre::eyre::WrapErr;
@@ -31,16 +31,16 @@ pub async fn run_session_queue_command(
 ) -> Result<String> {
     if options.cli.no_daemon && options.explicit_remote_endpoint.is_none() {
         return Err(eyre!(
-            "--no-daemon cannot be used with codex queue. Queuing must discover the shared server to avoid writing through a separate server."
+            "--no-daemon cannot be used with ava queue. Queuing must discover the shared server to avoid writing through a separate server."
         ));
     }
-    let codex_home = find_codex_home().wrap_err("failed to find Codex home")?;
+    let ava_home = find_ava_home().wrap_err("failed to find Ava home")?;
     let explicit_remote = options.explicit_remote_endpoint.is_some();
     let mut app_server =
-        start_app_server_for_session_command(options, codex_home.to_path_buf()).await?;
+        start_app_server_for_session_command(options, ava_home.to_path_buf()).await?;
     if !explicit_remote
         && app_server.uses_embedded_app_server()
-        && super::maybe_probe_default_daemon_socket(codex_home.as_path())
+        && super::maybe_probe_default_daemon_socket(ava_home.as_path())
             .await
             .is_some()
     {
@@ -53,7 +53,7 @@ pub async fn run_session_queue_command(
 
     let (thread_id, response) = match run_session_queue_action_with_app_server(
         &mut app_server,
-        codex_home.as_path(),
+        ava_home.as_path(),
         &target,
         &message,
         &client_message_id,
@@ -83,7 +83,7 @@ pub async fn run_session_queue_command(
 
 pub(super) async fn run_session_queue_action_with_app_server(
     app_server: &mut AppServerSession,
-    codex_home: &Path,
+    ava_home: &Path,
     target: &str,
     message: &str,
     client_message_id: &str,
@@ -93,7 +93,7 @@ pub(super) async fn run_session_queue_action_with_app_server(
     } else {
         let thread = lookup(
             app_server,
-            codex_home,
+            ava_home,
             target,
             &[SessionCollection::Active],
             &[

@@ -23,9 +23,9 @@ use crate::app_event::AppEvent;
 use crate::app_event_sender::AppEventSender;
 use crate::bottom_pane::MentionBinding;
 use crate::mention_codec::decode_history_mentions_with_at_mentions;
-use codex_message_history::HistoryBatchCursor;
-use codex_protocol::ThreadId;
-use codex_protocol::user_input::TextElement;
+use ava_message_history::HistoryBatchCursor;
+use ava_protocol::ThreadId;
+use ava_protocol::user_input::TextElement;
 
 #[path = "chat_composer_history/search_batch.rs"]
 mod search_batch;
@@ -1202,7 +1202,7 @@ mod tests {
 
         let mut history = ChatComposerHistory::new();
         history.record_local_submission(HistoryEntry::new("git status".to_string()));
-        history.record_local_submission(HistoryEntry::new("cargo test -p codex-tui".to_string()));
+        history.record_local_submission(HistoryEntry::new("cargo test -p ava-tui".to_string()));
         history.record_local_submission(HistoryEntry::new("git diff".to_string()));
 
         assert_eq!(
@@ -1268,7 +1268,7 @@ mod tests {
 
         let mut history = ChatComposerHistory::new();
         history.record_local_submission(HistoryEntry::new("git status".to_string()));
-        history.record_local_submission(HistoryEntry::new("cargo test -p codex-tui".to_string()));
+        history.record_local_submission(HistoryEntry::new("cargo test -p ava-tui".to_string()));
         history.record_local_submission(HistoryEntry::new("git status".to_string()));
         history.record_local_submission(HistoryEntry::new("git diff".to_string()));
 

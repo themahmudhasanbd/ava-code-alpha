@@ -2,22 +2,22 @@ use std::fs;
 use std::time::Duration;
 
 use chrono::Utc;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::ThreadTimelineEntry;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::realtime::BemItemPresentation;
-use codex_protocol::realtime::RealtimeItem;
-use codex_protocol::realtime::RealtimeItemContent;
-use codex_protocol::realtime::RealtimeSessionOutcome;
-use codex_protocol::realtime::RealtimeTranscriptRole;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::ThreadTimelineEntry;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::realtime::BemItemPresentation;
+use ava_protocol::realtime::RealtimeItem;
+use ava_protocol::realtime::RealtimeItemContent;
+use ava_protocol::realtime::RealtimeSessionOutcome;
+use ava_protocol::realtime::RealtimeTranscriptRole;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -48,7 +48,7 @@ async fn list_turns_pages_projected_rows_and_applies_item_views() {
             20,
             "failed",
             Some(
-                r#"{"message":"turn failed","codexErrorInfo":"serverOverloaded","additionalDetails":"retry later"}"#,
+                r#"{"message":"turn failed","avaErrorInfo":"serverOverloaded","additionalDetails":"retry later"}"#,
             ),
             None,
             None,
@@ -97,7 +97,7 @@ async fn list_turns_pages_projected_rows_and_applies_item_views() {
         first_page.turns[1].error,
         Some(StoredTurnError {
             message: "turn failed".to_string(),
-            codex_error_info: Some(CodexErrorInfo::ServerOverloaded),
+            ava_error_info: Some(AvaErrorInfo::ServerOverloaded),
             additional_details: Some("retry later".to_string()),
         })
     );
@@ -393,7 +393,7 @@ INSERT INTO thread_realtime_items (
 async fn timeline_turn_boundaries_page_through_shared_ordinals() {
     let (_home, store, thread_id) = store_with_mode(ThreadHistoryMode::Paginated).await;
     let db = history_db(&store).await;
-    let error = r#"{"message":"failed","codexErrorInfo":null,"additionalDetails":null}"#;
+    let error = r#"{"message":"failed","avaErrorInfo":null,"additionalDetails":null}"#;
     for (turn_id, start, end, status, error_json) in [
         ("complete", 10, Some(20), "completed", None),
         ("interrupt", 20, Some(30), "interrupted", None),
@@ -1294,13 +1294,13 @@ async fn store_with_mode(history_mode: ThreadHistoryMode) -> (TempDir, LocalThre
             /*history_base*/ None,
         );
     }
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
     .await
     .expect("state runtime");
-    let mut builder = codex_state::ThreadMetadataBuilder::new(
+    let mut builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         rollout_path,
         Utc::now(),
@@ -1392,7 +1392,7 @@ fn rollout_end_byte_offset(path: &std::path::Path, end_ordinal_exclusive: u64) -
     let end_byte_offset = bytes
         .split_inclusive(|byte| *byte == b'\n')
         .take_while(|line| {
-            codex_rollout::parse_rollout_line_bytes(line)
+            ava_rollout::parse_rollout_line_bytes(line)
                 .expect("parse rollout fixture")
                 .ordinal
                 .expect("paginated rollout ordinal")

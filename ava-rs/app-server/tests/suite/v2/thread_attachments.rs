@@ -15,24 +15,24 @@ use app_test_support::TestAppServer;
 use app_test_support::create_fake_rollout;
 use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::to_response;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadAttachment;
-use codex_app_server_protocol::ThreadAttachmentAddOutcome;
-use codex_app_server_protocol::ThreadAttachmentAddParams;
-use codex_app_server_protocol::ThreadAttachmentAddResponse;
-use codex_app_server_protocol::ThreadAttachmentListParams;
-use codex_app_server_protocol::ThreadAttachmentListResponse;
-use codex_app_server_protocol::ThreadAttachmentOperation;
-use codex_app_server_protocol::ThreadAttachmentRemoveParams;
-use codex_app_server_protocol::ThreadAttachmentRemoveResponse;
-use codex_app_server_protocol::ThreadAttachmentUpdatedNotification;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_features::Feature;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadAttachment;
+use ava_app_server_protocol::ThreadAttachmentAddOutcome;
+use ava_app_server_protocol::ThreadAttachmentAddParams;
+use ava_app_server_protocol::ThreadAttachmentAddResponse;
+use ava_app_server_protocol::ThreadAttachmentListParams;
+use ava_app_server_protocol::ThreadAttachmentListResponse;
+use ava_app_server_protocol::ThreadAttachmentOperation;
+use ava_app_server_protocol::ThreadAttachmentRemoveParams;
+use ava_app_server_protocol::ThreadAttachmentRemoveResponse;
+use ava_app_server_protocol::ThreadAttachmentUpdatedNotification;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_features::Feature;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -41,12 +41,12 @@ use tokio::time::timeout;
 #[tokio::test]
 async fn thread_attachments_support_unloaded_listing_and_idempotent_attachment() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let first_thread = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T08-00-00",
         "2025-01-06T08:00:00Z",
         "First thread",
@@ -54,7 +54,7 @@ async fn thread_attachments_support_unloaded_listing_and_idempotent_attachment()
         /*git_info*/ None,
     )?;
     let unrelated_thread = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T10-00-00",
         "2025-01-06T10:00:00Z",
         "Unrelated thread",
@@ -62,7 +62,7 @@ async fn thread_attachments_support_unloaded_listing_and_idempotent_attachment()
         /*git_info*/ None,
     )?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let request_id = server
@@ -82,7 +82,7 @@ async fn thread_attachments_support_unloaded_listing_and_idempotent_attachment()
     let first_params = ThreadAttachmentAddParams {
         thread_id: first_thread.clone(),
         attachment_type: "pull_request".to_string(),
-        identity_key: r#"["github.com","openai","codex",123]"#.to_string(),
+        identity_key: r#"["github.com","openai","ava",123]"#.to_string(),
         payload: json!({ "url": "https://github.com/openai/codex/pull/123" }),
     };
     let first: ThreadAttachmentAddResponse = server
@@ -129,7 +129,7 @@ async fn thread_attachments_support_unloaded_listing_and_idempotent_attachment()
             params: ThreadAttachmentAddParams {
                 thread_id: first_thread.clone(),
                 attachment_type: "pull_request".to_string(),
-                identity_key: r#"["github.com","openai","codex",456]"#.to_string(),
+                identity_key: r#"["github.com","openai","ava",456]"#.to_string(),
                 payload: json!({ "url": "https://github.com/openai/codex/pull/456" }),
             },
         })
@@ -142,7 +142,7 @@ async fn thread_attachments_support_unloaded_listing_and_idempotent_attachment()
             params: ThreadAttachmentAddParams {
                 thread_id: unrelated_thread,
                 attachment_type: "pull_request".to_string(),
-                identity_key: r#"["github.com","openai","codex",789]"#.to_string(),
+                identity_key: r#"["github.com","openai","ava",789]"#.to_string(),
                 payload: json!({ "url": "https://github.com/openai/codex/pull/789" }),
             },
         })
@@ -194,12 +194,12 @@ async fn thread_attachments_support_unloaded_listing_and_idempotent_attachment()
 #[tokio::test]
 async fn attachment_removal_is_idempotent_and_allows_reattachment() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T08-00-00",
         "2025-01-06T08:00:00Z",
         "Stored thread",
@@ -207,7 +207,7 @@ async fn attachment_removal_is_idempotent_and_allows_reattachment() -> Result<()
         /*git_info*/ None,
     )?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let request_id = server
@@ -219,7 +219,7 @@ async fn attachment_removal_is_idempotent_and_allows_reattachment() -> Result<()
     let create_params = ThreadAttachmentAddParams {
         thread_id: thread_id.clone(),
         attachment_type: "pull_request".to_string(),
-        identity_key: r#"["github.com","openai","codex",123]"#.to_string(),
+        identity_key: r#"["github.com","openai","ava",123]"#.to_string(),
         payload: json!({ "url": "https://github.com/openai/codex/pull/123" }),
     };
     let created: ThreadAttachmentAddResponse = server
@@ -305,12 +305,12 @@ async fn attachment_removal_is_idempotent_and_allows_reattachment() -> Result<()
 #[tokio::test]
 async fn thread_attachment_requests_reject_invalid_identities_and_cursors() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -320,7 +320,7 @@ async fn thread_attachment_requests_reject_invalid_identities_and_cursors() -> R
             json!({
                 "threadId": "not-a-thread-id",
                 "attachmentType": "pull_request",
-                "identityKey": r#"["github.com","openai","codex",123]"#,
+                "identityKey": r#"["github.com","openai","ava",123]"#,
                 "payload": {}
             }),
         ),
@@ -329,7 +329,7 @@ async fn thread_attachment_requests_reject_invalid_identities_and_cursors() -> R
             json!({
                 "threadId": uuid::Uuid::now_v7().to_string(),
                 "attachmentType": " ",
-                "identityKey": r#"["github.com","openai","codex",123]"#,
+                "identityKey": r#"["github.com","openai","ava",123]"#,
                 "payload": {}
             }),
         ),
@@ -365,19 +365,19 @@ async fn thread_attachment_requests_reject_invalid_identities_and_cursors() -> R
 async fn thread_attachment_mutations_respond_before_broadcasting_updates_to_multiple_clients()
 -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T08-00-00",
         "2025-01-06T08:00:00Z",
         "Stored thread",
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let (mut process, bind_addr) = spawn_websocket_server(codex_home.path()).await?;
+    let (mut process, bind_addr) = spawn_websocket_server(ava_home.path()).await?;
 
     let result = async {
         let mut first_client = connect_websocket(bind_addr).await?;
@@ -412,7 +412,7 @@ async fn thread_attachment_mutations_respond_before_broadcasting_updates_to_mult
             Some(json!({
                 "threadId": thread_id.to_uppercase(),
                 "attachmentType": "pull_request",
-                "identityKey": r#"["github.com","openai","codex",123]"#,
+                "identityKey": r#"["github.com","openai","ava",123]"#,
                 "payload": { "url": "https://github.com/openai/codex/pull/123" }
             })),
         )
@@ -444,7 +444,7 @@ async fn thread_attachment_mutations_respond_before_broadcasting_updates_to_mult
             ThreadAttachmentUpdatedNotification {
                 thread_id: thread_id.clone(),
                 attachment_type: "pull_request".to_string(),
-                identity_key: r#"["github.com","openai","codex",123]"#.to_string(),
+                identity_key: r#"["github.com","openai","ava",123]"#.to_string(),
                 attachment_id: attachment.id.clone(),
                 operation: ThreadAttachmentOperation::Created,
             }
@@ -458,7 +458,7 @@ async fn thread_attachment_mutations_respond_before_broadcasting_updates_to_mult
             Some(json!({
                 "threadId": format!("{{{thread_id}}}"),
                 "attachmentType": "pull_request",
-                "identityKey": r#"["github.com","openai","codex",123]"#
+                "identityKey": r#"["github.com","openai","ava",123]"#
             })),
         )
         .await?;
@@ -488,7 +488,7 @@ async fn thread_attachment_mutations_respond_before_broadcasting_updates_to_mult
             ThreadAttachmentUpdatedNotification {
                 thread_id,
                 attachment_type: "pull_request".to_string(),
-                identity_key: r#"["github.com","openai","codex",123]"#.to_string(),
+                identity_key: r#"["github.com","openai","ava",123]"#.to_string(),
                 attachment_id: attachment.id,
                 operation: ThreadAttachmentOperation::Deleted,
             }

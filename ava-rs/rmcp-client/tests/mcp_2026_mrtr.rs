@@ -2,14 +2,14 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::Environment;
-use codex_rmcp_client::Elicitation;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::McpProtocolMode;
-use codex_rmcp_client::RmcpClient;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::Environment;
+use ava_rmcp_client::Elicitation;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::McpProtocolMode;
+use ava_rmcp_client::RmcpClient;
 use futures::FutureExt;
 use pretty_assertions::assert_eq;
 use rmcp::model::ClientCapabilities;
@@ -129,7 +129,7 @@ async fn create_client(
         .initialize(
             InitializeRequestParams::new(
                 capabilities,
-                Implementation::new("codex-mrtr-test", "0.0.0"),
+                Implementation::new("ava-mrtr-test", "0.0.0"),
             )
             .with_protocol_version(ProtocolVersion::V_2025_06_18),
             Some(Duration::from_secs(5)),

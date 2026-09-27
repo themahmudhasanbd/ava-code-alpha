@@ -2,9 +2,9 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::ThreadHistoryMode;
 
 use super::LocalThreadStore;
 use super::thread_rollout_resolver;
@@ -95,33 +95,33 @@ impl LocalThreadStore {
             let rollout_path = match representation {
                 LineageRepresentation::Existing => rollout_path,
                 LineageRepresentation::PlainForReference => {
-                    let outside_codex_home = || ThreadStoreError::InvalidRequest {
+                    let outside_ava_home = || ThreadStoreError::InvalidRequest {
                         message: format!(
-                            "rollout path `{}` must be in Codex home directory",
+                            "rollout path `{}` must be in Ava home directory",
                             rollout_path.display()
                         ),
                     };
                     let canonical_rollout_path = std::fs::canonicalize(rollout_path.as_path())
-                        .map_err(|_| outside_codex_home())?;
-                    // Resume can retain either the logical Codex home path or its canonical
+                        .map_err(|_| outside_ava_home())?;
+                    // Resume can retain either the logical Ava home path or its canonical
                     // target. Keep references inside canonical managed roots so nested symlinks
                     // cannot escape them.
                     let is_managed_rollout = [
-                        self.config.codex_home.join(codex_rollout::SESSIONS_SUBDIR),
+                        self.config.ava_home.join(ava_rollout::SESSIONS_SUBDIR),
                         self.config
-                            .codex_home
-                            .join(codex_rollout::ARCHIVED_SESSIONS_SUBDIR),
+                            .ava_home
+                            .join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR),
                     ]
                     .into_iter()
                     .filter_map(|root| std::fs::canonicalize(root).ok())
                     .any(|root| canonical_rollout_path.starts_with(root));
                     if !is_managed_rollout {
-                        return Err(outside_codex_home());
+                        return Err(outside_ava_home());
                     }
                     canonical_rollout_path
                 }
             };
-            let meta = codex_rollout::read_session_meta_line(rollout_path.as_path())
+            let meta = ava_rollout::read_session_meta_line(rollout_path.as_path())
                 .await
                 .map_err(|err| ThreadStoreError::Internal {
                     message: format!(
@@ -147,7 +147,7 @@ impl LocalThreadStore {
                     if next_rollout_id.is_none() && meta.meta.history_base.is_none() =>
                 {
                     // A newly shared standalone source must remain readable by older binaries.
-                    codex_rollout::materialize_rollout_for_reference(rollout_path.as_path())
+                    ava_rollout::materialize_rollout_for_reference(rollout_path.as_path())
                         .await
                         .map_err(|err| ThreadStoreError::Internal {
                             message: format!(
@@ -193,7 +193,7 @@ async fn resolve_rollout_path_by_id(
     store: &LocalThreadStore,
     rollout_id: ThreadId,
 ) -> ThreadStoreResult<Option<PathBuf>> {
-    codex_rollout::find_rollout_path_by_rollout_id(store.config.codex_home.as_path(), rollout_id)
+    ava_rollout::find_rollout_path_by_rollout_id(store.config.ava_home.as_path(), rollout_id)
         .await
         .map_err(|err| ThreadStoreError::Internal {
             message: format!("failed to locate rollout {rollout_id}: {err}"),
@@ -272,7 +272,7 @@ async fn validate_cutoff_bounds(
     let path = rollout_path.to_path_buf();
     let end_byte_offset = end.end_byte_offset;
     let contains_prefix = tokio::task::spawn_blocking(move || {
-        codex_rollout::rollout_contains_prefix(&path, end_byte_offset)
+        ava_rollout::rollout_contains_prefix(&path, end_byte_offset)
     })
     .await
     .map_err(|err| ThreadStoreError::Internal {

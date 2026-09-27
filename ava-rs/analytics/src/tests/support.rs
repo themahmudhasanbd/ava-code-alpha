@@ -1,8 +1,8 @@
 //! Shared analytics test facts, fixtures, and reducer setup.
 
 use crate::events::AppServerRpcTransport;
-use crate::events::CodexAppServerClientMetadata;
-use crate::events::CodexRuntimeMetadata;
+use crate::events::AvaAppServerClientMetadata;
+use crate::events::AvaRuntimeMetadata;
 use crate::events::TrackEventRequest;
 use crate::facts::AnalyticsFact;
 use crate::facts::CodeModeToolCallFact;
@@ -14,53 +14,53 @@ use crate::facts::TurnProfileFact;
 use crate::facts::TurnResolvedConfigFact;
 use crate::facts::TurnTokenUsageFact;
 use crate::reducer::AnalyticsReducer;
-use codex_app_server_protocol::ApprovalsReviewer as AppServerApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval as AppServerAskForApproval;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::ImageReference;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxPolicy as AppServerSandboxPolicy;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SessionSource as AppServerSessionSource;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSource as AppServerThreadSource;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus as AppServerThreadStatus;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnError as AppServerTurnError;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus as AppServerTurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_login::default_client::DEFAULT_ORIGINATOR;
-use codex_plugin::AppConnectorId;
-use codex_plugin::PluginCapabilitySummary;
-use codex_plugin::PluginId;
-use codex_plugin::PluginTelemetryMetadata;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::models::PermissionProfile as CorePermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TokenUsage;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_app_server_protocol::ApprovalsReviewer as AppServerApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval as AppServerAskForApproval;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::ImageReference;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxPolicy as AppServerSandboxPolicy;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SessionSource as AppServerSessionSource;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSource as AppServerThreadSource;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus as AppServerThreadStatus;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnError as AppServerTurnError;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus as AppServerTurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_login::default_client::DEFAULT_ORIGINATOR;
+use ava_plugin::AppConnectorId;
+use ava_plugin::PluginCapabilitySummary;
+use ava_plugin::PluginId;
+use ava_plugin::PluginTelemetryMetadata;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::models::PermissionProfile as CorePermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TokenUsage;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-pub(super) const TEST_PRODUCT_CLIENT_ID: &str = "codex_work_desktop";
+pub(super) const TEST_PRODUCT_CLIENT_ID: &str = "ava_work_desktop";
 
 pub(super) struct TestTurnMetadata {
     pub(super) root_turn_id: Mutex<Option<String>>,
@@ -75,7 +75,7 @@ impl TurnAnalyticsMetadata for TestTurnMetadata {
         None
     }
 
-    fn codex_turn_source(&self) -> Option<String> {
+    fn ava_turn_source(&self) -> Option<String> {
         None
     }
 }
@@ -167,19 +167,19 @@ pub(super) fn sample_thread_start_response(
     })
 }
 
-pub(super) fn sample_app_server_client_metadata() -> CodexAppServerClientMetadata {
-    CodexAppServerClientMetadata {
+pub(super) fn sample_app_server_client_metadata() -> AvaAppServerClientMetadata {
+    AvaAppServerClientMetadata {
         product_client_id: DEFAULT_ORIGINATOR.to_string(),
-        client_name: Some("codex-tui".to_string()),
+        client_name: Some("ava-tui".to_string()),
         client_version: Some("1.0.0".to_string()),
         rpc_transport: AppServerRpcTransport::Stdio,
         experimental_api_enabled: Some(true),
     }
 }
 
-pub(super) fn sample_runtime_metadata() -> CodexRuntimeMetadata {
-    CodexRuntimeMetadata {
-        codex_rs_version: "0.1.0".to_string(),
+pub(super) fn sample_runtime_metadata() -> AvaRuntimeMetadata {
+    AvaRuntimeMetadata {
+        ava_rs_version: "0.1.0".to_string(),
         runtime_os: "macos".to_string(),
         runtime_os_version: "15.3.1".to_string(),
         runtime_arch: "aarch64".to_string(),
@@ -261,10 +261,10 @@ pub(super) fn sample_turn_start_request(thread_id: &str, request_id: i64) -> Cli
 }
 
 pub(super) fn sample_turn_start_response(turn_id: &str) -> ClientResponsePayload {
-    ClientResponsePayload::TurnStart(codex_app_server_protocol::TurnStartResponse {
+    ClientResponsePayload::TurnStart(ava_app_server_protocol::TurnStartResponse {
         turn: Turn {
             id: turn_id.to_string(),
-            items_view: codex_app_server_protocol::TurnItemsView::Full,
+            items_view: ava_app_server_protocol::TurnItemsView::Full,
             items: vec![],
             status: AppServerTurnStatus::InProgress,
             error: None,
@@ -283,7 +283,7 @@ pub(super) fn sample_turn_started_notification(
         thread_id: thread_id.to_string(),
         turn: Turn {
             id: turn_id.to_string(),
-            items_view: codex_app_server_protocol::TurnItemsView::Full,
+            items_view: ava_app_server_protocol::TurnItemsView::Full,
             items: vec![],
             status: AppServerTurnStatus::InProgress,
             error: None,
@@ -305,7 +305,7 @@ pub(super) fn sample_turn_token_usage_fact(thread_id: &str, turn_id: &str) -> Tu
             cache_write_input_tokens: 7,
             output_tokens: 140,
             reasoning_output_tokens: 13,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         },
     }
 }
@@ -314,19 +314,19 @@ pub(super) fn sample_turn_completed_notification(
     thread_id: &str,
     turn_id: &str,
     status: AppServerTurnStatus,
-    codex_error_info: Option<codex_app_server_protocol::CodexErrorInfo>,
+    ava_error_info: Option<ava_app_server_protocol::AvaErrorInfo>,
 ) -> ServerNotification {
     ServerNotification::TurnCompleted(TurnCompletedNotification {
         thread_id: thread_id.to_string(),
         turn: Turn {
             id: turn_id.to_string(),
-            items_view: codex_app_server_protocol::TurnItemsView::Full,
+            items_view: ava_app_server_protocol::TurnItemsView::Full,
             items: vec![],
             status,
-            error: codex_error_info.map(|codex_error_info| AppServerTurnError {
+            error: ava_error_info.map(|ava_error_info| AppServerTurnError {
                 misalignment: None,
                 message: "turn failed".to_string(),
-                codex_error_info: Some(codex_error_info),
+                ava_error_info: Some(ava_error_info),
                 additional_details: None,
             }),
             started_at: None,
@@ -390,13 +390,13 @@ pub(super) async fn ingest_initialize(
                 connection_id: 7,
                 params: InitializeParams {
                     client_info: ClientInfo {
-                        name: "codex-tui".to_string(),
+                        name: "ava-tui".to_string(),
                         title: None,
                         version: "1.0.0".to_string(),
                     },
                     capabilities: None,
                 },
-                product_client_id: "codex-tui".to_string(),
+                product_client_id: "ava-tui".to_string(),
                 runtime: sample_runtime_metadata(),
                 rpc_transport: AppServerRpcTransport::Stdio,
             },
@@ -579,7 +579,7 @@ pub(super) fn sample_initialize_fact(connection_id: u64) -> AnalyticsFact {
         connection_id,
         params: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-tui".to_string(),
+                name: "ava-tui".to_string(),
                 title: None,
                 version: "1.0.0".to_string(),
             },
@@ -592,8 +592,8 @@ pub(super) fn sample_initialize_fact(connection_id: u64) -> AnalyticsFact {
             }),
         },
         product_client_id: DEFAULT_ORIGINATOR.to_string(),
-        runtime: CodexRuntimeMetadata {
-            codex_rs_version: "0.99.0".to_string(),
+        runtime: AvaRuntimeMetadata {
+            ava_rs_version: "0.99.0".to_string(),
             runtime_os: "linux".to_string(),
             runtime_os_version: "24.04".to_string(),
             runtime_arch: "x86_64".to_string(),
@@ -622,7 +622,7 @@ pub(super) async fn ingest_complete_child_turn(
             thread_id,
             turn_id,
             AppServerTurnStatus::Completed,
-            /*codex_error_info*/ None,
+            /*ava_error_info*/ None,
         ))),
     ] {
         reducer.ingest(fact, events).await;

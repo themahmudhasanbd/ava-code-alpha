@@ -11,28 +11,28 @@ use super::send_track_events_request;
 use super::track_event_request_batches;
 #[cfg(debug_assertions)]
 use crate::events::AppServerRpcTransport;
-use crate::events::CodexAcceptedLineFingerprintsEventParams;
-use crate::events::CodexAcceptedLineFingerprintsEventRequest;
+use crate::events::AvaAcceptedLineFingerprintsEventParams;
+use crate::events::AvaAcceptedLineFingerprintsEventRequest;
 #[cfg(debug_assertions)]
-use crate::events::CodexAppServerClientMetadata;
+use crate::events::AvaAppServerClientMetadata;
 #[cfg(debug_assertions)]
-use crate::events::CodexMcpToolCallEventParams;
+use crate::events::AvaMcpToolCallEventParams;
 #[cfg(debug_assertions)]
-use crate::events::CodexMcpToolCallEventRequest;
+use crate::events::AvaMcpToolCallEventRequest;
 #[cfg(debug_assertions)]
-use crate::events::CodexPluginMeasurementEventParams;
+use crate::events::AvaPluginMeasurementEventParams;
 #[cfg(debug_assertions)]
-use crate::events::CodexPluginMeasurementEventRequest;
+use crate::events::AvaPluginMeasurementEventRequest;
 #[cfg(debug_assertions)]
-use crate::events::CodexPluginMetadata;
+use crate::events::AvaPluginMetadata;
 #[cfg(debug_assertions)]
-use crate::events::CodexPluginUsedEventRequest;
+use crate::events::AvaPluginUsedEventRequest;
 #[cfg(debug_assertions)]
-use crate::events::CodexPluginUsedMetadata;
+use crate::events::AvaPluginUsedMetadata;
 #[cfg(debug_assertions)]
-use crate::events::CodexRuntimeMetadata;
+use crate::events::AvaRuntimeMetadata;
 #[cfg(debug_assertions)]
-use crate::events::CodexToolItemEventBase;
+use crate::events::AvaToolItemEventBase;
 #[cfg(debug_assertions)]
 use crate::events::FinalApprovalOutcome;
 use crate::events::SkillInvocationEventParams;
@@ -47,7 +47,7 @@ use crate::events::ThreadArchiveEventParams;
 use crate::events::ToolItemTerminalStatus;
 use crate::events::TrackEventRequest;
 #[cfg(debug_assertions)]
-use crate::events::codex_artifact_operation_event_request;
+use crate::events::ava_artifact_operation_event_request;
 use crate::facts::AnalyticsFact;
 use crate::facts::AppInvocation;
 #[cfg(debug_assertions)]
@@ -61,37 +61,37 @@ use crate::facts::PluginMeasurementRow;
 use crate::facts::PluginMeasurementsInput;
 use crate::facts::TrackEventsContext;
 use crate::reducer::MAX_PLUGIN_MEASUREMENTS_PER_BATCH;
-use codex_app_server_protocol::ApprovalsReviewer as AppServerApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval as AppServerAskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::CommandExecutionOutputDeltaNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxPolicy as AppServerSandboxPolicy;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SessionSource as AppServerSessionSource;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadArchivedNotification;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadRealtimeItemAddedNotification;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus as AppServerThreadStatus;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnDiffUpdatedNotification;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus as AppServerTurnStatus;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::ApprovalsReviewer as AppServerApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval as AppServerAskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::CommandExecutionOutputDeltaNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxPolicy as AppServerSandboxPolicy;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SessionSource as AppServerSessionSource;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadArchivedNotification;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadRealtimeItemAddedNotification;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus as AppServerThreadStatus;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnDiffUpdatedNotification;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus as AppServerTurnStatus;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::TurnSteerResponse;
 #[cfg(debug_assertions)]
-use codex_login::AuthManager;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_login::AuthManager;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
@@ -120,14 +120,14 @@ impl AnalyticsEventsClient {
 
 fn sample_accepted_line_fingerprint_event(thread_id: &str) -> TrackEventRequest {
     TrackEventRequest::AcceptedLineFingerprints(Box::new(
-        CodexAcceptedLineFingerprintsEventRequest {
-            event_type: "codex_accepted_line_fingerprints",
-            event_params: CodexAcceptedLineFingerprintsEventParams {
-                event_type: "codex.accepted_line_fingerprints",
+        AvaAcceptedLineFingerprintsEventRequest {
+            event_type: "ava_accepted_line_fingerprints",
+            event_params: AvaAcceptedLineFingerprintsEventParams {
+                event_type: "ava.accepted_line_fingerprints",
                 turn_id: "turn-1".to_string(),
                 thread_id: thread_id.to_string(),
-                product_surface: Some("codex".to_string()),
-                model_slug: Some("gpt-5.1-codex".to_string()),
+                product_surface: Some("ava".to_string()),
+                model_slug: Some("gpt-5.1-ava".to_string()),
                 completed_at: 1,
                 repo_hash: None,
                 accepted_added_lines: 1,
@@ -152,19 +152,19 @@ fn sample_skill_track_event(thread_id: &str, plugin_id: Option<&str>) -> TrackEv
             turn_id: Some("turn-1".to_string()),
             voice_session_id: None,
             invoke_type: Some(InvocationType::Explicit),
-            model_slug: Some("gpt-5.1-codex".to_string()),
+            model_slug: Some("gpt-5.1-ava".to_string()),
         },
     })
 }
 
 #[cfg(debug_assertions)]
 fn sample_artifact_operation_event(thread_id: &str) -> TrackEventRequest {
-    TrackEventRequest::ArtifactOperation(codex_artifact_operation_event_request(
+    TrackEventRequest::ArtifactOperation(ava_artifact_operation_event_request(
         TrackEventsContext {
-            model_slug: "gpt-5.1-codex".to_string(),
+            model_slug: "gpt-5.1-ava".to_string(),
             thread_id: thread_id.to_string(),
             turn_id: "turn-1".to_string(),
-            product_client_id: "codex_desktop".to_string(),
+            product_client_id: "ava_desktop".to_string(),
         },
         ArtifactOperation {
             item_id: format!("item-{thread_id}"),
@@ -189,10 +189,10 @@ fn sample_regular_track_event(thread_id: &str) -> TrackEventRequest {
 
 #[cfg(debug_assertions)]
 fn sample_mcp_tool_call_event(thread_id: &str, plugin_id: Option<&str>) -> TrackEventRequest {
-    TrackEventRequest::McpToolCall(CodexMcpToolCallEventRequest {
-        event_type: "codex_mcp_tool_call_event",
-        event_params: CodexMcpToolCallEventParams {
-            base: CodexToolItemEventBase {
+    TrackEventRequest::McpToolCall(AvaMcpToolCallEventRequest {
+        event_type: "ava_mcp_tool_call_event",
+        event_params: AvaMcpToolCallEventParams {
+            base: AvaToolItemEventBase {
                 thread_id: thread_id.to_string(),
                 session_id: format!("session-{thread_id}"),
                 turn_id: "turn-1".to_string(),
@@ -202,15 +202,15 @@ fn sample_mcp_tool_call_event(thread_id: &str, plugin_id: Option<&str>) -> Track
                 parent_call_id: None,
                 originating_response_id: None,
                 subsequent_response_id: None,
-                app_server_client: CodexAppServerClientMetadata {
-                    product_client_id: "codex_desktop".to_string(),
+                app_server_client: AvaAppServerClientMetadata {
+                    product_client_id: "ava_desktop".to_string(),
                     client_name: None,
                     client_version: None,
                     rpc_transport: AppServerRpcTransport::InProcess,
                     experimental_api_enabled: None,
                 },
-                runtime: CodexRuntimeMetadata {
-                    codex_rs_version: "0.0.0".to_string(),
+                runtime: AvaRuntimeMetadata {
+                    ava_rs_version: "0.0.0".to_string(),
                     runtime_os: "test".to_string(),
                     runtime_os_version: "test".to_string(),
                     runtime_arch: "test".to_string(),
@@ -246,10 +246,10 @@ fn sample_mcp_tool_call_event(thread_id: &str, plugin_id: Option<&str>) -> Track
 
 #[cfg(debug_assertions)]
 fn sample_plugin_used_track_event(thread_id: &str, plugin_id: Option<&str>) -> TrackEventRequest {
-    TrackEventRequest::PluginUsed(CodexPluginUsedEventRequest {
-        event_type: "codex_plugin_used",
-        event_params: CodexPluginUsedMetadata {
-            plugin: CodexPluginMetadata {
+    TrackEventRequest::PluginUsed(AvaPluginUsedEventRequest {
+        event_type: "ava_plugin_used",
+        event_params: AvaPluginUsedMetadata {
+            plugin: AvaPluginMetadata {
                 plugin_id: plugin_id.map(str::to_string),
                 remote_plugin_id: None,
                 plugin_name: Some("sample".to_string()),
@@ -257,12 +257,12 @@ fn sample_plugin_used_track_event(thread_id: &str, plugin_id: Option<&str>) -> T
                 has_skills: Some(true),
                 mcp_server_count: Some(1),
                 connector_ids: Some(vec!["calendar".to_string()]),
-                product_client_id: Some("codex_desktop".to_string()),
+                product_client_id: Some("ava_desktop".to_string()),
             },
             mcp_server_names: Some(vec!["mcp-1".to_string()]),
             thread_id: Some(thread_id.to_string()),
             turn_id: Some("turn-1".to_string()),
-            model_slug: Some("gpt-5.1-codex".to_string()),
+            model_slug: Some("gpt-5.1-ava".to_string()),
         },
     })
 }
@@ -274,7 +274,7 @@ fn unique_capture_path(name: &str) -> PathBuf {
         .expect("system clock should be after Unix epoch")
         .as_nanos();
     std::env::temp_dir().join(format!(
-        "codex-analytics-{name}-{}-{nonce}.jsonl",
+        "ava-analytics-{name}-{}-{nonce}.jsonl",
         std::process::id()
     ))
 }
@@ -364,7 +364,7 @@ async fn capture_file_writes_exact_serialized_request() {
     };
     let event = sample_regular_track_event("thread-1");
     let expected_event = serde_json::to_value(&event).expect("serialize expected event");
-    let auth = codex_login::CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = ava_login::AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
     send_track_events_request(&auth, &destination, vec![event]).await;
 
@@ -385,7 +385,7 @@ async fn capture_file_writes_final_batches_as_separate_lines() {
     let destination = AnalyticsEventsDestination::CaptureFile {
         path: capture_path.clone(),
     };
-    let auth = codex_login::CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = ava_login::AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let events = vec![
         sample_regular_track_event("thread-1"),
         sample_accepted_line_fingerprint_event("thread-2"),
@@ -405,7 +405,7 @@ async fn capture_file_writes_final_batches_as_separate_lines() {
     assert_eq!(payloads[0]["events"][0]["skill_id"], "skill-thread-1");
     assert_eq!(
         payloads[1]["events"][0]["event_type"],
-        "codex_accepted_line_fingerprints"
+        "ava_accepted_line_fingerprints"
     );
     assert_eq!(payloads[2]["events"][0]["skill_id"], "skill-thread-3");
 
@@ -414,24 +414,24 @@ async fn capture_file_writes_final_batches_as_separate_lines() {
 
 #[tokio::test]
 #[cfg(debug_assertions)]
-async fn api_key_auth_sends_only_plugin_events_to_codex_backend() {
+async fn api_key_auth_sends_only_plugin_events_to_ava_backend() {
     let capture_path = unique_capture_path("api-key-plugin-events");
     let destination = AnalyticsEventsDestination::CaptureFile {
         path: capture_path.clone(),
     };
-    let auth_manager = codex_login::AuthManager::from_auth_for_testing(
-        codex_login::CodexAuth::from_api_key("sk-test"),
+    let auth_manager = ava_login::AuthManager::from_auth_for_testing(
+        ava_login::AvaAuth::from_api_key("sk-test"),
     );
     let plugin_measurement = |thread_id: &str, plugin_id: &str| {
-        TrackEventRequest::PluginMeasurement(CodexPluginMeasurementEventRequest {
-            event_type: "codex_plugin_measurement_event",
-            event_params: CodexPluginMeasurementEventParams {
+        TrackEventRequest::PluginMeasurement(AvaPluginMeasurementEventRequest {
+            event_type: "ava_plugin_measurement_event",
+            event_params: AvaPluginMeasurementEventParams {
                 model_slug: None,
                 reasoning_effort: None,
                 thread_id: thread_id.to_string(),
                 turn_id: "turn-1".to_string(),
                 item_id: "item-1".to_string(),
-                originator: "codex_cli_rs".to_string(),
+                originator: "ava_cli_rs".to_string(),
                 plugin_id: plugin_id.to_string(),
                 execution_id: "execution-1".to_string(),
                 operation: "security_scan".to_string(),
@@ -452,7 +452,7 @@ async fn api_key_auth_sends_only_plugin_events_to_codex_backend() {
             plugin_measurement("non-plugin-measurement", /*plugin_id*/ ""),
             sample_accepted_line_fingerprint_event("other-event"),
             TrackEventRequest::ThreadArchive(ThreadArchiveEvent {
-                event_type: "codex_thread_archive_event",
+                event_type: "ava_thread_archive_event",
                 event_params: ThreadArchiveEventParams {
                     thread_id: "non-plugin-thread-archive".to_string(),
                     action: ThreadArchiveAction::Archived,
@@ -503,7 +503,7 @@ async fn api_key_auth_sends_only_plugin_events_to_codex_backend() {
         delivered_events,
         vec![
             serde_json::json!({
-                "event_type": "codex_plugin_used",
+                "event_type": "ava_plugin_used",
                 "plugin_id": "sample@test",
                 "thread_id": "plugin-used",
             }),
@@ -513,17 +513,17 @@ async fn api_key_auth_sends_only_plugin_events_to_codex_backend() {
                 "thread_id": "plugin-skill",
             }),
             serde_json::json!({
-                "event_type": "codex_mcp_tool_call_event",
+                "event_type": "ava_mcp_tool_call_event",
                 "plugin_id": "sample@test",
                 "thread_id": "plugin-mcp",
             }),
             serde_json::json!({
-                "event_type": "codex_artifact_operation",
+                "event_type": "ava_artifact_operation",
                 "plugin_id": "presentations@openai-primary-runtime",
                 "thread_id": "plugin-artifact",
             }),
             serde_json::json!({
-                "event_type": "codex_plugin_measurement_event",
+                "event_type": "ava_plugin_measurement_event",
                 "plugin_id": "sample@test",
                 "thread_id": "plugin-measurement",
             }),
@@ -696,7 +696,7 @@ fn sample_turn_start_response() -> ClientResponsePayload {
     ClientResponsePayload::TurnStart(TurnStartResponse {
         turn: Turn {
             id: "turn-1".to_string(),
-            items_view: codex_app_server_protocol::TurnItemsView::Full,
+            items_view: ava_app_server_protocol::TurnItemsView::Full,
             items: Vec::new(),
             status: AppServerTurnStatus::InProgress,
             error: None,
@@ -720,7 +720,7 @@ fn track_plugin_measurements_rejects_unbounded_inputs_before_queueing() {
         thread_id: "thread-1".to_string(),
         turn_id: "turn-1".to_string(),
         item_id: "item-1".to_string(),
-        originator: "codex_cli_rs".to_string(),
+        originator: "ava_cli_rs".to_string(),
         model_slug: None,
         reasoning_effort: None,
         plugin_id: "sample@openai-curated".to_string(),
@@ -865,7 +865,7 @@ fn track_response_ignores_unserializable_thread_responses() {
     let ClientResponsePayload::ThreadStart(thread_start) = &mut response else {
         panic!("expected thread/start response");
     };
-    thread_start.cwd = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
+    thread_start.cwd = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
         std::path::PathBuf::from(OsString::from_vec(vec![b'/', b'b', b'a', b'd', 0xff])),
     )
     .expect("non-UTF-8 Unix paths are valid absolute paths");
@@ -903,8 +903,8 @@ async fn flush_waits_for_preceding_fact_delivery() {
 #[tokio::test]
 async fn flush_is_noop_when_analytics_is_disabled() {
     let client = AnalyticsEventsClient::new(
-        codex_login::AuthManager::from_auth_for_testing(
-            codex_login::CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        ava_login::AuthManager::from_auth_for_testing(
+            ava_login::AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         ),
         "https://chatgpt.com/backend-api".to_string(),
         /*analytics_enabled*/ Some(false),
@@ -925,7 +925,7 @@ fn app_used_preserves_first_classification_and_emits_again_next_turn() {
         model_slug: "gpt-5".to_string(),
         thread_id: "thread-1".to_string(),
         turn_id: "turn-1".to_string(),
-        product_client_id: "codex_desktop".to_string(),
+        product_client_id: "ava_desktop".to_string(),
     };
     for (turn_id, elicitation_type) in [
         ("turn-1", Some(ElicitationType::AuthOrLink)),

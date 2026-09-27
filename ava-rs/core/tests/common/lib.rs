@@ -2,24 +2,24 @@
 
 use anyhow::Context as _;
 use anyhow::ensure;
-use codex_arg0::Arg0PathEntryGuard;
-use codex_utils_cargo_bin::CargoBinError;
+use ava_arg0::Arg0PathEntryGuard;
+use ava_utils_cargo_bin::CargoBinError;
 use ctor::ctor;
 use std::sync::OnceLock;
 use tempfile::TempDir;
 
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::CodexThread;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::ConfigOverrides;
-pub use codex_core::test_support::TestCodexResponsesRequestKind;
-pub use codex_core::test_support::responses_metadata;
-use codex_utils_absolute_path::AbsolutePathBuf;
-pub use codex_utils_absolute_path::test_support::PathBufExt;
-pub use codex_utils_absolute_path::test_support::PathExt;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::AvaThread;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::ConfigOverrides;
+pub use ava_core::test_support::TestAvaResponsesRequestKind;
+pub use ava_core::test_support::responses_metadata;
+use ava_utils_absolute_path::AbsolutePathBuf;
+pub use ava_utils_absolute_path::test_support::PathBufExt;
+pub use ava_utils_absolute_path::test_support::PathExt;
 use regex_lite::Regex;
 use std::path::Path;
 use std::path::PathBuf;
@@ -31,8 +31,8 @@ pub mod process;
 pub mod responses;
 pub mod startup;
 pub mod streaming_sse;
-pub mod test_codex;
-pub mod test_codex_exec;
+pub mod test_ava;
+pub mod test_ava_exec;
 mod test_environment;
 pub mod tracing;
 pub mod zsh_fork;
@@ -51,13 +51,13 @@ static TEST_ARG0_PATH_ENTRY: OnceLock<Option<Arg0PathEntryGuard>> = OnceLock::ne
 
 #[ctor]
 fn enable_deterministic_unified_exec_process_ids_for_tests() {
-    codex_core::test_support::set_thread_manager_test_mode(/*enabled*/ true);
-    codex_core::test_support::set_deterministic_process_ids(/*enabled*/ true);
+    ava_core::test_support::set_thread_manager_test_mode(/*enabled*/ true);
+    ava_core::test_support::set_deterministic_process_ids(/*enabled*/ true);
 }
 
 #[ctor]
 fn configure_arg0_dispatch_for_test_binaries() {
-    let _ = TEST_ARG0_PATH_ENTRY.get_or_init(codex_arg0::arg0_dispatch);
+    let _ = TEST_ARG0_PATH_ENTRY.get_or_init(ava_arg0::arg0_dispatch);
 }
 
 #[ctor]
@@ -66,9 +66,9 @@ fn configure_insta_workspace_root_for_snapshot_tests() {
         return;
     }
 
-    let workspace_root = codex_utils_cargo_bin::repo_root()
+    let workspace_root = ava_utils_cargo_bin::repo_root()
         .ok()
-        .map(|root| root.join("codex-rs"));
+        .map(|root| root.join("ava-rs"));
 
     if let Some(workspace_root) = workspace_root
         && let Ok(workspace_root) = workspace_root.canonicalize()
@@ -148,7 +148,7 @@ impl TempDirExt for TempDir {
 }
 
 pub fn test_tmp_path() -> AbsolutePathBuf {
-    test_absolute_path_with_windows("/tmp", Some(r"C:\Users\codex\AppData\Local\Temp"))
+    test_absolute_path_with_windows("/tmp", Some(r"C:\Users\ava\AppData\Local\Temp"))
 }
 
 pub fn test_tmp_path_buf() -> PathBuf {
@@ -193,10 +193,10 @@ pub fn fetch_dotslash_file(
 
 /// Returns a default `Config` whose on-disk state is confined to the provided
 /// temporary directory. Using a per-test directory keeps tests hermetic and
-/// avoids clobbering a developer’s real `~/.codex`.
-pub async fn load_default_config_for_test(codex_home: &TempDir) -> Config {
+/// avoids clobbering a developer’s real `~/.ava-code`.
+pub async fn load_default_config_for_test(ava_home: &TempDir) -> Config {
     load_default_config_for_test_with_cloud_config_bundle(
-        codex_home,
+        ava_home,
         CloudConfigBundleLoader::default(),
     )
     .await
@@ -205,12 +205,12 @@ pub async fn load_default_config_for_test(codex_home: &TempDir) -> Config {
 /// Returns a default `Config` with test-provided cloud bundle requirements applied.
 /// during config construction.
 pub async fn load_default_config_for_test_with_cloud_config_bundle(
-    codex_home: &TempDir,
+    ava_home: &TempDir,
     cloud_config_bundle: CloudConfigBundleLoader,
 ) -> Config {
     ConfigBuilder::default()
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(default_test_overrides())
         .cloud_config_bundle(cloud_config_bundle)
         .build()
@@ -231,8 +231,8 @@ allow_local_binding = true
 #[cfg(target_os = "linux")]
 fn default_test_overrides() -> ConfigOverrides {
     ConfigOverrides {
-        codex_linux_sandbox_exe: Some(
-            find_codex_linux_sandbox_exe().expect("should find binary for codex-linux-sandbox"),
+        ava_linux_sandbox_exe: Some(
+            find_ava_linux_sandbox_exe().expect("should find binary for ava-linux-sandbox"),
         ),
         ..ConfigOverrides::default()
     }
@@ -244,11 +244,11 @@ fn default_test_overrides() -> ConfigOverrides {
 }
 
 #[cfg(target_os = "linux")]
-pub fn find_codex_linux_sandbox_exe() -> Result<PathBuf, CargoBinError> {
+pub fn find_ava_linux_sandbox_exe() -> Result<PathBuf, CargoBinError> {
     if let Some(path) = TEST_ARG0_PATH_ENTRY
         .get()
         .and_then(Option::as_ref)
-        .and_then(|path_entry| path_entry.paths().codex_linux_sandbox_exe.clone())
+        .and_then(|path_entry| path_entry.paths().ava_linux_sandbox_exe.clone())
     {
         return Ok(path);
     }
@@ -257,28 +257,28 @@ pub fn find_codex_linux_sandbox_exe() -> Result<PathBuf, CargoBinError> {
         return Ok(path);
     }
 
-    codex_utils_cargo_bin::cargo_bin("codex-linux-sandbox")
+    ava_utils_cargo_bin::cargo_bin("ava-linux-sandbox")
 }
 
 pub async fn wait_for_event<F>(
-    codex: &CodexThread,
+    ava: &AvaThread,
     predicate: F,
-) -> codex_protocol::protocol::EventMsg
+) -> ava_protocol::protocol::EventMsg
 where
-    F: FnMut(&codex_protocol::protocol::EventMsg) -> bool,
+    F: FnMut(&ava_protocol::protocol::EventMsg) -> bool,
 {
     use tokio::time::Duration;
-    wait_for_event_with_timeout(codex, predicate, Duration::from_secs(1)).await
+    wait_for_event_with_timeout(ava, predicate, Duration::from_secs(1)).await
 }
 
 /// Waits for a configured MCP server to finish startup and requires it to be ready.
-pub async fn wait_for_mcp_server(codex: &CodexThread, server_name: &str) -> anyhow::Result<()> {
-    use codex_protocol::protocol::EventMsg;
+pub async fn wait_for_mcp_server(ava: &AvaThread, server_name: &str) -> anyhow::Result<()> {
+    use ava_protocol::protocol::EventMsg;
 
     // Wait for the startup summary regardless of outcome, then interpret the
     // requested server's ready, failed, or cancelled entry below.
     let summary = loop {
-        let event = codex
+        let event = ava
             .next_event()
             .await
             .expect("stream ended unexpectedly while waiting for MCP startup");
@@ -305,17 +305,17 @@ pub async fn wait_for_mcp_server(codex: &CodexThread, server_name: &str) -> anyh
 }
 
 pub async fn submit_thread_settings(
-    codex: &CodexThread,
-    thread_settings: codex_protocol::protocol::ThreadSettingsOverrides,
+    ava: &AvaThread,
+    thread_settings: ava_protocol::protocol::ThreadSettingsOverrides,
 ) -> anyhow::Result<()> {
-    use codex_protocol::protocol::EventMsg;
-    use codex_protocol::protocol::Op;
+    use ava_protocol::protocol::EventMsg;
+    use ava_protocol::protocol::Op;
     use tokio::time::Duration;
     use tokio::time::timeout;
 
-    let submission_id = codex.submit(Op::ThreadSettings { thread_settings }).await?;
+    let submission_id = ava.submit(Op::ThreadSettings { thread_settings }).await?;
     loop {
-        let ev = timeout(Duration::from_secs(10), codex.next_event())
+        let ev = timeout(Duration::from_secs(10), ava.next_event())
             .await
             .expect("timeout waiting for thread settings update")
             .expect("stream ended unexpectedly");
@@ -336,11 +336,11 @@ pub struct ThreadIdle;
 #[derive(Default)]
 struct ThreadIdleNotification(tokio::sync::Notify);
 
-impl codex_extension_api::ThreadLifecycleContributor<Config> for ThreadIdle {
+impl ava_extension_api::ThreadLifecycleContributor<Config> for ThreadIdle {
     fn on_thread_idle<'a>(
         &'a self,
-        input: codex_extension_api::ThreadIdleInput<'a>,
-    ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+        input: ava_extension_api::ThreadIdleInput<'a>,
+    ) -> ava_extension_api::ExtensionFuture<'a, ()> {
         Box::pin(async move {
             input
                 .thread_store
@@ -352,7 +352,7 @@ impl codex_extension_api::ThreadLifecycleContributor<Config> for ThreadIdle {
 }
 
 impl ThreadIdle {
-    pub async fn wait(thread: &CodexThread) {
+    pub async fn wait(thread: &AvaThread) {
         // TurnComplete is sent before active-turn cleanup. Rollback requires the later idle signal.
         let idle = thread
             .thread_extension_data()
@@ -363,27 +363,27 @@ impl ThreadIdle {
     }
 }
 
-pub async fn wait_for_event_match<T, F>(codex: &CodexThread, matcher: F) -> T
+pub async fn wait_for_event_match<T, F>(ava: &AvaThread, matcher: F) -> T
 where
-    F: Fn(&codex_protocol::protocol::EventMsg) -> Option<T>,
+    F: Fn(&ava_protocol::protocol::EventMsg) -> Option<T>,
 {
-    let ev = wait_for_event(codex, |ev| matcher(ev).is_some()).await;
+    let ev = wait_for_event(ava, |ev| matcher(ev).is_some()).await;
     matcher(&ev).expect("EventMsg should match matcher predicate")
 }
 
 pub async fn wait_for_event_with_timeout<F>(
-    codex: &CodexThread,
+    ava: &AvaThread,
     mut predicate: F,
     wait_time: tokio::time::Duration,
-) -> codex_protocol::protocol::EventMsg
+) -> ava_protocol::protocol::EventMsg
 where
-    F: FnMut(&codex_protocol::protocol::EventMsg) -> bool,
+    F: FnMut(&ava_protocol::protocol::EventMsg) -> bool,
 {
     use tokio::time::Duration;
     use tokio::time::timeout;
     loop {
         // Allow a bit more time to accommodate async startup work (e.g. config IO, tool discovery)
-        let ev = timeout(wait_time.max(Duration::from_secs(10)), codex.next_event())
+        let ev = timeout(wait_time.max(Duration::from_secs(10)), ava.next_event())
             .await
             .expect("timeout waiting for event")
             .expect("stream ended unexpectedly");
@@ -394,15 +394,15 @@ where
 }
 
 pub fn sandbox_env_var() -> &'static str {
-    codex_core::spawn::CODEX_SANDBOX_ENV_VAR
+    ava_core::spawn::AVA_SANDBOX_ENV_VAR
 }
 
 pub fn sandbox_network_env_var() -> &'static str {
-    codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+    ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
 }
 
 pub fn format_with_current_shell(command: &str) -> Vec<String> {
-    codex_core::shell::default_user_shell().derive_exec_args(command, /*use_login_shell*/ true)
+    ava_core::shell::default_user_shell().derive_exec_args(command, /*use_login_shell*/ true)
 }
 
 pub fn format_with_current_shell_display(command: &str) -> String {
@@ -411,7 +411,7 @@ pub fn format_with_current_shell_display(command: &str) -> String {
 }
 
 pub fn format_with_current_shell_non_login(command: &str) -> Vec<String> {
-    codex_core::shell::default_user_shell()
+    ava_core::shell::default_user_shell()
         .derive_exec_args(command, /*use_login_shell*/ false)
 }
 
@@ -422,7 +422,7 @@ pub fn format_with_current_shell_display_non_login(command: &str) -> String {
 }
 
 pub fn stdio_server_bin() -> Result<String, CargoBinError> {
-    codex_utils_cargo_bin::cargo_bin("test_stdio_server").map(|p| p.to_string_lossy().to_string())
+    ava_utils_cargo_bin::cargo_bin("test_stdio_server").map(|p| p.to_string_lossy().to_string())
 }
 
 pub mod fs_wait {
@@ -599,7 +599,7 @@ macro_rules! skip_if_no_network {
     () => {{
         if ::std::env::var($crate::sandbox_network_env_var()).is_ok() {
             println!(
-                "Skipping test because it cannot execute when network is disabled in a Codex sandbox."
+                "Skipping test because it cannot execute when network is disabled in a Ava sandbox."
             );
             return;
         }
@@ -607,7 +607,7 @@ macro_rules! skip_if_no_network {
     ($return_value:expr $(,)?) => {{
         if ::std::env::var($crate::sandbox_network_env_var()).is_ok() {
             println!(
-                "Skipping test because it cannot execute when network is disabled in a Codex sandbox."
+                "Skipping test because it cannot execute when network is disabled in a Ava sandbox."
             );
             return $return_value;
         }
@@ -706,14 +706,14 @@ macro_rules! skip_if_target_windows {
 }
 
 #[macro_export]
-macro_rules! codex_linux_sandbox_exe_or_skip {
+macro_rules! ava_linux_sandbox_exe_or_skip {
     () => {{
         #[cfg(target_os = "linux")]
         {
-            match $crate::find_codex_linux_sandbox_exe() {
+            match $crate::find_ava_linux_sandbox_exe() {
                 Ok(path) => Some(path),
                 Err(err) => {
-                    eprintln!("codex-linux-sandbox binary not available, skipping test: {err}");
+                    eprintln!("ava-linux-sandbox binary not available, skipping test: {err}");
                     return;
                 }
             }
@@ -726,10 +726,10 @@ macro_rules! codex_linux_sandbox_exe_or_skip {
     ($return_value:expr $(,)?) => {{
         #[cfg(target_os = "linux")]
         {
-            match $crate::find_codex_linux_sandbox_exe() {
+            match $crate::find_ava_linux_sandbox_exe() {
                 Ok(path) => Some(path),
                 Err(err) => {
-                    eprintln!("codex-linux-sandbox binary not available, skipping test: {err}");
+                    eprintln!("ava-linux-sandbox binary not available, skipping test: {err}");
                     return $return_value;
                 }
             }

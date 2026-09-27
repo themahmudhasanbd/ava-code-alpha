@@ -3,22 +3,22 @@ use anyhow::Result;
 use base64::Engine;
 use chrono::Duration;
 use chrono::Utc;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::cache_system_proxy_route_for_test;
-use codex_login::AuthDotJson;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::AuthManager;
-use codex_login::CLIENT_ID_OVERRIDE_ENV_VAR;
-use codex_login::REFRESH_TOKEN_URL_OVERRIDE_ENV_VAR;
-use codex_login::RefreshTokenError;
-use codex_login::load_auth_dot_json;
-use codex_login::save_auth;
-use codex_login::token_data::IdTokenInfo;
-use codex_login::token_data::TokenData;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::auth::RefreshTokenFailedReason;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::cache_system_proxy_route_for_test;
+use ava_login::AuthDotJson;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AuthManager;
+use ava_login::CLIENT_ID_OVERRIDE_ENV_VAR;
+use ava_login::REFRESH_TOKEN_URL_OVERRIDE_ENV_VAR;
+use ava_login::RefreshTokenError;
+use ava_login::load_auth_dot_json;
+use ava_login::save_auth;
+use ava_login::token_data::IdTokenInfo;
+use ava_login::token_data::TokenData;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::auth::RefreshTokenFailedReason;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
 use serde::Serialize;
@@ -38,8 +38,8 @@ use wiremock::matchers::path;
 const INITIAL_ACCESS_TOKEN: &str = "initial-access-token";
 const INITIAL_REFRESH_TOKEN: &str = "initial-refresh-token";
 const SYSTEM_PROXY_TEST_ENDPOINT: &str = "http://auth-proxy.invalid/oauth/token";
-const SYSTEM_PROXY_TEST_SUBPROCESS_ENV_VAR: &str = "CODEX_AUTH_SYSTEM_PROXY_TEST_SUBPROCESS";
-const SYSTEM_PROXY_TEST_PROXY_URL_ENV_VAR: &str = "CODEX_AUTH_SYSTEM_PROXY_TEST_PROXY_URL";
+const SYSTEM_PROXY_TEST_SUBPROCESS_ENV_VAR: &str = "AVA_AUTH_SYSTEM_PROXY_TEST_SUBPROCESS";
+const SYSTEM_PROXY_TEST_PROXY_URL_ENV_VAR: &str = "AVA_AUTH_SYSTEM_PROXY_TEST_PROXY_URL";
 const SYSTEM_PROXY_TEST_NAME: &str =
     "suite::auth_refresh::refresh_token_honors_respect_system_proxy";
 const PROXY_ENV_KEYS: [&str; 8] = [
@@ -124,7 +124,7 @@ async fn refresh_token_honors_respect_system_proxy() -> Result<()> {
         return Ok(());
     }
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let proxy_url = std::env::var(SYSTEM_PROXY_TEST_PROXY_URL_ENV_VAR)
         .context("proxy URL should be set in the auth refresh test subprocess")?;
     cache_system_proxy_route_for_test(SYSTEM_PROXY_TEST_ENDPOINT, proxy_url);
@@ -133,14 +133,14 @@ async fn refresh_token_honors_respect_system_proxy() -> Result<()> {
         SYSTEM_PROXY_TEST_ENDPOINT.to_string(),
     );
     let auth_manager = AuthManager::shared(
-        codex_home.path().to_path_buf(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path().to_path_buf(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*forced_chatgpt_workspace_id*/ None,
         /*chatgpt_base_url*/ None,
         AuthKeyringBackendKind::default(),
         /*auth_route_config*/
-        codex_login::AuthRouteConfig::from_http_client_factory(HttpClientFactory::new(
+        ava_login::AuthRouteConfig::from_http_client_factory(HttpClientFactory::new(
             OutboundProxyPolicy::RespectSystemProxy,
         )),
     )
@@ -157,7 +157,7 @@ async fn refresh_token_honors_respect_system_proxy() -> Result<()> {
         bedrock_access_keys: None,
     };
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &initial_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -461,7 +461,7 @@ async fn refresh_token_skips_refresh_when_auth_changed() -> Result<()> {
         bedrock_access_keys: None,
     };
     save_auth(
-        ctx.codex_home.path(),
+        ctx.ava_home.path(),
         &disk_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -534,7 +534,7 @@ async fn refresh_token_errors_on_account_mismatch() -> Result<()> {
         bedrock_access_keys: None,
     };
     save_auth(
-        ctx.codex_home.path(),
+        ctx.ava_home.path(),
         &disk_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -715,7 +715,7 @@ async fn auth_reloads_disk_auth_when_cached_auth_is_stale() -> Result<()> {
         bedrock_access_keys: None,
     };
     save_auth(
-        ctx.codex_home.path(),
+        ctx.ava_home.path(),
         &disk_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -785,7 +785,7 @@ async fn auth_reloads_disk_auth_without_calling_expired_refresh_token() -> Resul
         bedrock_access_keys: None,
     };
     save_auth(
-        ctx.codex_home.path(),
+        ctx.ava_home.path(),
         &disk_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -1193,7 +1193,7 @@ async fn refresh_token_reloads_changed_auth_after_permanent_failure() -> Result<
         bedrock_access_keys: None,
     };
     save_auth(
-        ctx.codex_home.path(),
+        ctx.ava_home.path(),
         &disk_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -1329,7 +1329,7 @@ async fn unauthorized_recovery_reloads_then_refreshes_tokens() -> Result<()> {
         bedrock_access_keys: None,
     };
     save_auth(
-        ctx.codex_home.path(),
+        ctx.ava_home.path(),
         &disk_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -1431,7 +1431,7 @@ async fn unauthorized_recovery_errors_on_account_mismatch() -> Result<()> {
         bedrock_access_keys: None,
     };
     save_auth(
-        ctx.codex_home.path(),
+        ctx.ava_home.path(),
         &disk_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -1511,31 +1511,31 @@ async fn unauthorized_recovery_requires_chatgpt_auth() -> Result<()> {
 }
 
 struct RefreshTokenTestContext {
-    codex_home: TempDir,
+    ava_home: TempDir,
     auth_manager: Arc<AuthManager>,
     _env_guard: EnvGuard,
 }
 
 impl RefreshTokenTestContext {
     async fn new(server: &MockServer) -> Result<Self> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
 
         let endpoint = format!("{}/oauth/token", server.uri());
         let env_guard = EnvGuard::set(REFRESH_TOKEN_URL_OVERRIDE_ENV_VAR, endpoint);
 
         let auth_manager = AuthManager::shared(
-            codex_home.path().to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path().to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            codex_login::test_support::transport_default_auth_route_config(),
+            ava_login::test_support::transport_default_auth_route_config(),
         )
         .await;
 
         Ok(Self {
-            codex_home,
+            ava_home,
             auth_manager,
             _env_guard: env_guard,
         })
@@ -1543,7 +1543,7 @@ impl RefreshTokenTestContext {
 
     fn load_auth(&self) -> Result<AuthDotJson> {
         load_auth_dot_json(
-            self.codex_home.path(),
+            self.ava_home.path(),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
         )
@@ -1553,7 +1553,7 @@ impl RefreshTokenTestContext {
 
     async fn write_auth(&self, auth_dot_json: &AuthDotJson) -> Result<()> {
         save_auth(
-            self.codex_home.path(),
+            self.ava_home.path(),
             auth_dot_json,
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),

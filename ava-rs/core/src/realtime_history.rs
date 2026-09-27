@@ -4,17 +4,17 @@
 
 mod presentation;
 
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::RealtimeTranscriptDelta;
-use codex_protocol::protocol::RealtimeTranscriptDone;
-use codex_protocol::realtime::BemItemPresentation;
-use codex_protocol::realtime::RealtimeItem;
-use codex_protocol::realtime::RealtimeItemContent;
-use codex_protocol::realtime::RealtimeSessionOutcome;
-use codex_protocol::realtime::RealtimeTranscriptRole;
-use codex_protocol::user_input::UserInput;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::RealtimeTranscriptDelta;
+use ava_protocol::protocol::RealtimeTranscriptDone;
+use ava_protocol::realtime::BemItemPresentation;
+use ava_protocol::realtime::RealtimeItem;
+use ava_protocol::realtime::RealtimeItemContent;
+use ava_protocol::realtime::RealtimeSessionOutcome;
+use ava_protocol::realtime::RealtimeTranscriptRole;
+use ava_protocol::user_input::UserInput;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;

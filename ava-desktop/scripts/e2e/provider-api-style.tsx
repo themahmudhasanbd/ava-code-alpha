@@ -19,7 +19,7 @@ const frame = () => new Promise<void>((resolve) => {
   const timeout = setTimeout(resolve, 50);
   requestAnimationFrame(() => { clearTimeout(timeout); resolve(); });
 });
-const ACCOUNT_ONLY_STYLES = ["openai_codex_responses", "pi_messages"] as const;
+const ACCOUNT_ONLY_STYLES = ["openai_ava_responses", "pi_messages"] as const;
 type AccountOnlyStyle = (typeof ACCOUNT_ONLY_STYLES)[number];
 const fixture = (apiStyle: string): ProviderPublic => ({
   id: "legacy", name: "Legacy custom", vendorKey: "custom", type: "openai_compatible",

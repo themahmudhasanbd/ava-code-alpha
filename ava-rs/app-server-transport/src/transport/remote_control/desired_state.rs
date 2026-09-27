@@ -4,8 +4,8 @@ use super::RemoteControlUnavailable;
 use super::protocol::normalize_remote_control_url;
 use super::publish_current_enrollment;
 use super::websocket::RemoteControlStatusPublisher;
-use codex_app_server_protocol::RemoteControlStatusChangedNotification;
-use codex_state::RemoteControlEnrollmentRecord;
+use ava_app_server_protocol::RemoteControlStatusChangedNotification;
+use ava_state::RemoteControlEnrollmentRecord;
 use std::io;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

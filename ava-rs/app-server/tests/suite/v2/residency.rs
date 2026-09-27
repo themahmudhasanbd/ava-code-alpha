@@ -2,12 +2,12 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::write_models_cache;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_login::default_client::RESIDENCY_HEADER_NAME;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_login::default_client::RESIDENCY_HEADER_NAME;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -19,7 +19,7 @@ use test_case::test_case;
 use tokio::time::timeout;
 
 const READ_TIMEOUT: Duration = Duration::from_secs(60);
-const PROVIDER_RESIDENCY_ENV_VAR: &str = "CODEX_TEST_RESIDENCY_HEADER";
+const PROVIDER_RESIDENCY_ENV_VAR: &str = "AVA_TEST_RESIDENCY_HEADER";
 
 #[derive(Clone, Copy)]
 enum ModelTransport {
@@ -28,7 +28,7 @@ enum ModelTransport {
 }
 
 async fn write_provider_config(
-    codex_home: &Path,
+    ava_home: &Path,
     model_base_url: &str,
     transport: ModelTransport,
 ) -> Result<()> {
@@ -52,15 +52,15 @@ requires_openai_auth = true
 supports_websockets = {supports_websockets}
 
 [model_providers.custom-openai.http_headers]
-"X-OpenAI-Internal-Codex-Residency" = "eu-static"
+"X-OpenAI-Internal-Ava-Residency" = "eu-static"
 "x-provider-header" = "preserved"
 
 [model_providers.custom-openai.env_http_headers]
-"x-openai-internal-codex-residency" = "{PROVIDER_RESIDENCY_ENV_VAR}"
+"x-openai-internal-ava-residency" = "{PROVIDER_RESIDENCY_ENV_VAR}"
 "#
     );
-    std::fs::write(codex_home.join("config.toml"), config)?;
-    write_models_cache(codex_home).await?;
+    std::fs::write(ava_home.join("config.toml"), config)?;
+    write_models_cache(ava_home).await?;
     Ok(())
 }
 
@@ -97,18 +97,18 @@ async fn managed_residency_overrides_provider_headers(transport: ModelTransport)
         ModelTransport::Websocket => websocket_server.uri().to_string(),
     };
 
-    let codex_home = TempDir::new()?;
-    write_provider_config(codex_home.path(), &model_base_url, transport).await?;
+    let ava_home = TempDir::new()?;
+    write_provider_config(ava_home.path(), &model_base_url, transport).await?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         "enforce_residency = \"us\"\n",
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("OPENAI_API_KEY", Some("sk-test")),
-            ("CODEX_ACCESS_TOKEN", None),
+            ("AVA_ACCESS_TOKEN", None),
             (PROVIDER_RESIDENCY_ENV_VAR, Some("eu-environment")),
         ])
         .build_initialized_with_timeout(READ_TIMEOUT)

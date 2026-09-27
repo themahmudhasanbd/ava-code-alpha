@@ -11,7 +11,7 @@ fn compose_success_url_uses_local_page_by_default() {
         DEFAULT_ISSUER,
         "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnt9fQ.sig",
         "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnt9fQ.sig",
-        /*codex_streamlined_login*/ false,
+        /*ava_streamlined_login*/ false,
         &LoginSuccessPage::default(),
     ) else {
         panic!("expected local success redirect");
@@ -22,7 +22,7 @@ fn compose_success_url_uses_local_page_by_default() {
     assert_eq!(url.path(), "/success");
     assert_eq!(
         url.query_pairs()
-            .find(|(key, _)| key == "codex_streamlined_login"),
+            .find(|(key, _)| key == "ava_streamlined_login"),
         None
     );
 }
@@ -34,7 +34,7 @@ fn compose_success_url_uses_streamlined_local_page_when_requested() {
         DEFAULT_ISSUER,
         "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnt9fQ.sig",
         "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnt9fQ.sig",
-        /*codex_streamlined_login*/ true,
+        /*ava_streamlined_login*/ true,
         &LoginSuccessPage::default(),
     ) else {
         panic!("expected local success redirect");
@@ -43,7 +43,7 @@ fn compose_success_url_uses_streamlined_local_page_when_requested() {
 
     assert_eq!(
         url.query_pairs()
-            .find(|(key, _)| key == "codex_streamlined_login")
+            .find(|(key, _)| key == "ava_streamlined_login")
             .map(|(_, value)| value.into_owned()),
         Some("true".to_string())
     );
@@ -57,9 +57,9 @@ fn compose_success_url_uses_hosted_page_when_requested() {
             DEFAULT_ISSUER,
             "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnt9fQ.sig",
             "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnt9fQ.sig",
-            /*codex_streamlined_login*/ false,
+            /*ava_streamlined_login*/ false,
             &LoginSuccessPage::Hosted {
-                url: Url::parse(CODEX_OPEN_APP_URL).expect("open app URL should parse"),
+                url: Url::parse(AVA_OPEN_APP_URL).expect("open app URL should parse"),
                 app_brand: LoginSuccessPageBrand::Chatgpt,
             },
         ),
@@ -99,10 +99,10 @@ fn compose_success_url_keeps_setup_on_local_page() {
         DEFAULT_ISSUER,
         &id_token,
         &format!("e30.{access_payload}.sig"),
-        /*codex_streamlined_login*/ true,
+        /*ava_streamlined_login*/ true,
         &LoginSuccessPage::Hosted {
-            url: Url::parse(CODEX_OPEN_APP_URL).expect("open app URL should parse"),
-            app_brand: LoginSuccessPageBrand::Codex,
+            url: Url::parse(AVA_OPEN_APP_URL).expect("open app URL should parse"),
+            app_brand: LoginSuccessPageBrand::Ava,
         },
     ) else {
         panic!("expected local success redirect");

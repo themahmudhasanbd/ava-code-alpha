@@ -1,9 +1,9 @@
-use codex_app_server_protocol::HookEventName;
-use codex_app_server_protocol::HookHandlerMetadata;
-use codex_app_server_protocol::HookMetadata;
-use codex_app_server_protocol::HookSource;
-use codex_app_server_protocol::HookTrustStatus;
-use codex_app_server_protocol::HooksListEntry;
+use ava_app_server_protocol::HookEventName;
+use ava_app_server_protocol::HookHandlerMetadata;
+use ava_app_server_protocol::HookMetadata;
+use ava_app_server_protocol::HookSource;
+use ava_app_server_protocol::HookTrustStatus;
+use ava_app_server_protocol::HooksListEntry;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
@@ -62,7 +62,7 @@ impl HooksBrowserView {
     pub(crate) fn new(
         hooks: Vec<HookMetadata>,
         warnings: Vec<String>,
-        errors: Vec<codex_app_server_protocol::HookErrorInfo>,
+        errors: Vec<ava_app_server_protocol::HookErrorInfo>,
         app_event_tx: AppEventSender,
     ) -> Self {
         Self::from_entry(
@@ -103,7 +103,7 @@ impl HooksBrowserView {
     }
 
     fn event_rows(&self) -> Vec<EventRow> {
-        codex_protocol::protocol::HookEventName::iter()
+        ava_protocol::protocol::HookEventName::iter()
             .map(|event_name| {
                 let event_name: HookEventName = event_name.into();
                 let installed = self
@@ -144,7 +144,7 @@ impl HooksBrowserView {
     fn selected_event(&self) -> Option<HookEventName> {
         self.state
             .selected_idx
-            .and_then(|idx| codex_protocol::protocol::HookEventName::iter().nth(idx))
+            .and_then(|idx| ava_protocol::protocol::HookEventName::iter().nth(idx))
             .map(Into::into)
     }
 
@@ -198,7 +198,7 @@ impl HooksBrowserView {
 
     fn page_len(&self) -> usize {
         match self.page {
-            HooksBrowserPage::Events => codex_protocol::protocol::HookEventName::iter().count(),
+            HooksBrowserPage::Events => ava_protocol::protocol::HookEventName::iter().count(),
             HooksBrowserPage::Handlers(event_name) => self.handlers_for_event(event_name).count(),
         }
     }
@@ -288,7 +288,7 @@ impl HooksBrowserView {
         self.state = ScrollState::new();
         self.state.selected_idx = selected_event_name
             .and_then(|event_name| {
-                codex_protocol::protocol::HookEventName::iter()
+                ava_protocol::protocol::HookEventName::iter()
                     .position(|candidate| HookEventName::from(candidate) == event_name)
             })
             .or_else(|| (self.page_len() > 0).then_some(0));
@@ -714,7 +714,7 @@ fn event_description(event_name: HookEventName) -> &'static str {
         HookEventName::UserPromptSubmit => "When the user submits a prompt",
         HookEventName::SubagentStart => "When a subagent is created",
         HookEventName::SubagentStop => "Right before a subagent ends its turn",
-        HookEventName::Stop => "Right before Codex ends its turn",
+        HookEventName::Stop => "Right before Ava ends its turn",
         HookEventName::Interrupt => "Right before an interrupted turn is aborted",
     }
 }
@@ -830,12 +830,12 @@ mod tests {
     use crate::test_support::PathBufExt;
     use crate::test_support::test_path_buf;
     use crate::test_support::test_path_display;
-    use codex_app_server_protocol::HookErrorInfo;
-    use codex_app_server_protocol::HookEventName;
-    use codex_app_server_protocol::HookHandlerMetadata;
-    use codex_app_server_protocol::HookMetadata;
-    use codex_app_server_protocol::HookSource;
-    use codex_app_server_protocol::HookTrustStatus;
+    use ava_app_server_protocol::HookErrorInfo;
+    use ava_app_server_protocol::HookEventName;
+    use ava_app_server_protocol::HookHandlerMetadata;
+    use ava_app_server_protocol::HookMetadata;
+    use ava_app_server_protocol::HookSource;
+    use ava_app_server_protocol::HookTrustStatus;
     use crossterm::event::KeyCode;
     use crossterm::event::KeyEvent;
     use insta::assert_snapshot;
@@ -927,7 +927,7 @@ mod tests {
                     HookEventName::PreToolUse,
                     HookSource::Plugin,
                     Some("superpowers@openai-curated"),
-                    "${CODEX_PLUGIN_ROOT}/hooks/pre-tool-use-check.sh",
+                    "${AVA_PLUGIN_ROOT}/hooks/pre-tool-use-check.sh",
                     /*enabled*/ true,
                     /*is_managed*/ false,
                     /*display_order*/ 0,

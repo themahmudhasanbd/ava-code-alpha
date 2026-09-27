@@ -6,9 +6,9 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::cache_system_proxy_route_for_test;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::cache_system_proxy_route_for_test;
 use pretty_assertions::assert_eq;
 use wiremock::Mock;
 use wiremock::MockServer;
@@ -114,7 +114,7 @@ async fn migrated_requests_preserve_query_auth_and_json_body() {
         format!("http://{address}"),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
     )
-    .with_auth_provider(Arc::new(codex_model_provider::BearerAuthProvider::new(
+    .with_auth_provider(Arc::new(ava_model_provider::BearerAuthProvider::new(
         "request-token".to_string(),
     )));
 
@@ -137,14 +137,14 @@ async fn migrated_requests_preserve_query_auth_and_json_body() {
     assert_eq!(task_id, "task-created");
     assert_eq!(requests.len(), 2);
     assert!(requests[0].starts_with(
-        "GET /api/codex/tasks/list?limit=10&task_filter=mine+%2F+shared&cursor=next%3Dpage&environment_id=env%26one HTTP/1.1\r\n"
+        "GET /api/ava/tasks/list?limit=10&task_filter=mine+%2F+shared&cursor=next%3Dpage&environment_id=env%26one HTTP/1.1\r\n"
     ));
     assert!(
         requests[0]
             .to_ascii_lowercase()
             .contains("authorization: bearer request-token\r\n")
     );
-    assert!(requests[1].starts_with("POST /api/codex/tasks HTTP/1.1\r\n"));
+    assert!(requests[1].starts_with("POST /api/ava/tasks HTTP/1.1\r\n"));
     assert!(
         requests[1]
             .to_ascii_lowercase()
@@ -156,7 +156,7 @@ async fn migrated_requests_preserve_query_auth_and_json_body() {
 const BLOCKED_ORIGIN: &str = "http://127.0.0.1:0";
 
 fn run_without_environment_proxies(test_name: &str) -> bool {
-    const CHILD: &str = "CODEX_BOOTSTRAP_PROXY_TEST_CHILD";
+    const CHILD: &str = "AVA_BOOTSTRAP_PROXY_TEST_CHILD";
     if std::env::var_os(CHILD).is_some() {
         return false;
     }
@@ -189,7 +189,7 @@ fn fallback_client(base_url: &str) -> Client {
         base_url,
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault).with_system_proxy_fallback(),
     )
-    .with_auth_provider(Arc::new(codex_model_provider::BearerAuthProvider::new(
+    .with_auth_provider(Arc::new(ava_model_provider::BearerAuthProvider::new(
         "bootstrap-token".to_string(),
     )))
     .with_chatgpt_account_id("workspace-123")
@@ -203,7 +203,7 @@ async fn bootstrap_gets_resolve_each_fallback_destination_and_preserve_headers()
     ) {
         return;
     }
-    for (base_suffix, api_prefix) in [("", "/api/codex"), ("/backend-api", "/wham")] {
+    for (base_suffix, api_prefix) in [("", "/api/ava"), ("/backend-api", "/wham")] {
         let bundle_proxy = MockServer::start().await;
         let accounts_proxy = MockServer::start().await;
         let base_url = format!("{BLOCKED_ORIGIN}{base_suffix}");
@@ -246,7 +246,7 @@ async fn bootstrap_gets_keep_default_responses_without_proxy_retry() {
         let proxy = MockServer::start().await;
         for endpoint in ["config/bundle", "accounts/check"] {
             cache_system_proxy_route_for_test(
-                &format!("{}/api/codex/{endpoint}", issuer.uri()),
+                &format!("{}/api/ava/{endpoint}", issuer.uri()),
                 proxy.uri(),
             );
         }
@@ -285,7 +285,7 @@ async fn bootstrap_gets_honor_disabled_fallback() {
     let proxy = MockServer::start().await;
     let base_url = BLOCKED_ORIGIN;
     for endpoint in ["config/bundle", "accounts/check"] {
-        cache_system_proxy_route_for_test(&format!("{base_url}/api/codex/{endpoint}"), proxy.uri());
+        cache_system_proxy_route_for_test(&format!("{base_url}/api/ava/{endpoint}"), proxy.uri());
     }
     let client = Client::new(
         base_url,
@@ -326,7 +326,7 @@ async fn bootstrap_get_recovers_from_stalled_body_before_cloud_startup_timeout()
     });
     let proxy = MockServer::start().await;
     cache_system_proxy_route_for_test(
-        &format!("{issuer_url}/api/codex/config/bundle"),
+        &format!("{issuer_url}/api/ava/config/bundle"),
         proxy.uri(),
     );
     Mock::given(method("GET"))

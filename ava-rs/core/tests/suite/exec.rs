@@ -1,23 +1,23 @@
 #![cfg(target_os = "macos")]
 
-use codex_core::exec::ExecCapturePolicy;
-use codex_core::exec::ExecParams;
-use codex_core::exec::process_exec_tool_call;
-use codex_core::sandboxing::SandboxPermissions;
-use codex_core::spawn::CODEX_SANDBOX_ENV_VAR;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::error::Result;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::models::PermissionProfile;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::get_platform_sandbox;
+use ava_core::exec::ExecCapturePolicy;
+use ava_core::exec::ExecParams;
+use ava_core::exec::process_exec_tool_call;
+use ava_core::sandboxing::SandboxPermissions;
+use ava_core::spawn::AVA_SANDBOX_ENV_VAR;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::error::Result;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::models::PermissionProfile;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::get_platform_sandbox;
 use core_test_support::PathExt;
 use std::collections::HashMap;
 use tempfile::TempDir;
 
 fn skip_test() -> bool {
-    if std::env::var(CODEX_SANDBOX_ENV_VAR) == Ok("seatbelt".to_string()) {
-        eprintln!("{CODEX_SANDBOX_ENV_VAR} is set to 'seatbelt', skipping test.");
+    if std::env::var(AVA_SANDBOX_ENV_VAR) == Ok("seatbelt".to_string()) {
+        eprintln!("{AVA_SANDBOX_ENV_VAR} is set to 'seatbelt', skipping test.");
         return true;
     }
 
@@ -54,7 +54,7 @@ where
         &cwd,
         std::slice::from_ref(&cwd),
         &None,
-        /*codex_self_exe*/ &None,
+        /*ava_self_exe*/ &None,
         /*use_legacy_landlock*/ false,
         /*stdout_stream*/ None,
     )

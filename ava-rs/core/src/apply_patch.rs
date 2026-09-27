@@ -5,12 +5,12 @@ use crate::safety::assess_patch_safety;
 use crate::session::step_context::StepContext;
 use crate::session::turn_context::TurnEnvironment;
 use crate::tools::sandboxing::ExecApprovalRequirement;
-use codex_apply_patch::ApplyPatchAction;
-use codex_apply_patch::ApplyPatchFileChange;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::protocol::FileChange;
-use codex_protocol::protocol::FileSystemSandboxPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_apply_patch::ApplyPatchAction;
+use ava_apply_patch::ApplyPatchFileChange;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::protocol::FileChange;
+use ava_protocol::protocol::FileSystemSandboxPolicy;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::path::PathBuf;
 

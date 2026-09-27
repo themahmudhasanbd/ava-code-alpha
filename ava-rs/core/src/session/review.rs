@@ -124,7 +124,7 @@ pub(super) async fn spawn_review_thread(
             crate::tools::sandboxing::configured_windows_sandbox_selection(
                 parent_turn_context.config.permissions.windows_sandbox_type,
                 parent_turn_context.windows_sandbox_level,
-                &codex_utils_path_uri::PathUri::from_abs_path(&parent_turn_context.cwd),
+                &ava_utils_path_uri::PathUri::from_abs_path(&parent_turn_context.cwd),
             )
         });
     let turn_metadata_state = Arc::new(TurnMetadataState::new(
@@ -144,7 +144,7 @@ pub(super) async fn spawn_review_thread(
         &model_info,
     ));
 
-    let extension_data = Arc::new(codex_extension_api::ExtensionData::new(
+    let extension_data = Arc::new(ava_extension_api::ExtensionData::new(
         review_turn_id.clone(),
     ));
     extension_data.insert(parent_turn_context.skills_snapshot().as_ref().clone());

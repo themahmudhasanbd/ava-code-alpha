@@ -2,17 +2,17 @@ use super::config_processor::map_error as map_config_error;
 use crate::config_manager::ConfigManager;
 use crate::error_code::internal_error;
 use crate::error_code::invalid_request;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigEdit;
-use codex_app_server_protocol::ConfigWriteErrorCode;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::MergeStrategy;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::ConfigLayerSource;
-use codex_config::format_config_layer_source;
-use codex_core::config::Config;
-use codex_core::config::edit::ConfigEditsBuilder;
-use codex_model_provider::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigEdit;
+use ava_app_server_protocol::ConfigWriteErrorCode;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::MergeStrategy;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::ConfigLayerSource;
+use ava_config::format_config_layer_source;
+use ava_core::config::Config;
+use ava_core::config::edit::ConfigEditsBuilder;
+use ava_model_provider::AMAZON_BEDROCK_PROVIDER_ID;
 
 pub(super) struct BedrockProviderConfig<'a> {
     pub(super) region: Option<&'a str>,

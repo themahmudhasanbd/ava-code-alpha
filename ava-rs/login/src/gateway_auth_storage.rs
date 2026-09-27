@@ -9,15 +9,15 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_keyring_store::KeyringStore;
-use codex_secrets::LocalSecretsNamespace;
-use codex_secrets::SecretName;
-use codex_secrets::SecretScope;
-use codex_secrets::SecretsBackendKind;
-use codex_secrets::SecretsManager;
+use ava_keyring_store::KeyringStore;
+use ava_secrets::LocalSecretsNamespace;
+use ava_secrets::SecretName;
+use ava_secrets::SecretScope;
+use ava_secrets::SecretsBackendKind;
+use ava_secrets::SecretsManager;
 
-pub(super) async fn lock_credentials(codex_home: &Path) -> io::Result<File> {
-    let directory = codex_home.join("secrets");
+pub(super) async fn lock_credentials(ava_home: &Path) -> io::Result<File> {
+    let directory = ava_home.join("secrets");
     std::fs::create_dir_all(&directory)?;
     // Configurations have separate credential entries but rewrite the same encrypted file.
     // Keep one stable sidecar locked from the initial read through token exchange and save.
@@ -52,9 +52,9 @@ pub(super) async fn lock_credentials(codex_home: &Path) -> io::Result<File> {
 pub(super) struct GatewayAuthStorage(SecretsManager);
 
 impl GatewayAuthStorage {
-    pub(super) fn new(codex_home: PathBuf, keyring: Arc<dyn KeyringStore>) -> Self {
+    pub(super) fn new(ava_home: PathBuf, keyring: Arc<dyn KeyringStore>) -> Self {
         Self(SecretsManager::new_with_keyring_store_and_namespace(
-            codex_home,
+            ava_home,
             SecretsBackendKind::Local,
             keyring,
             LocalSecretsNamespace::GatewayOAuth,

@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 
-use super::CODEX_HOME_FLAG;
-use super::CODEX_WINDOWS_SANDBOX_ARG1;
+use super::AVA_HOME_FLAG;
+use super::AVA_WINDOWS_SANDBOX_ARG1;
 use super::COMMAND_CWD_FLAG;
 use super::DENY_READ_PATHS_JSON_FLAG;
 use super::DENY_WRITE_PATHS_JSON_FLAG;
@@ -51,8 +51,8 @@ fn windows_wrapper_args_round_trip() {
 
     let args = create_windows_sandbox_command_args_for_permission_profile(
         vec![
-            "codex.exe".to_string(),
-            "--codex-run-as-fs-helper".to_string(),
+            "ava.exe".to_string(),
+            "--ava-run-as-fs-helper".to_string(),
         ],
         &command_cwd,
         workspace_roots.as_slice(),
@@ -71,8 +71,8 @@ fn windows_wrapper_args_round_trip() {
     )
     .expect("build wrapper args");
 
-    assert_eq!(args[0], CODEX_WINDOWS_SANDBOX_ARG1);
-    assert!(args.contains(&CODEX_HOME_FLAG.to_string()));
+    assert_eq!(args[0], AVA_WINDOWS_SANDBOX_ARG1);
+    assert!(args.contains(&AVA_HOME_FLAG.to_string()));
     assert!(args.contains(&COMMAND_CWD_FLAG.to_string()));
     assert!(args.contains(&WORKSPACE_ROOT_FLAG.to_string()));
     assert!(args.contains(&PERMISSION_PROFILE_FLAG.to_string()));
@@ -92,7 +92,7 @@ fn windows_wrapper_args_round_trip() {
 
     assert_eq!(
         parsed.command,
-        vec!["codex.exe", "--codex-run-as-fs-helper"]
+        vec!["ava.exe", "--ava-run-as-fs-helper"]
     );
     assert_eq!(parsed.command_cwd, command_cwd);
     assert_eq!(parsed.workspace_roots, workspace_roots);

@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-extension-api"
+name = "ava-extension-api"
 version.workspace = true
 
 [lib]
-name = "codex_extension_api"
+name = "ava_extension_api"
 path = "src/lib.rs"
 test = false
 doctest = false
@@ -14,16 +14,16 @@ doctest = false
 workspace = true
 
 [dependencies]
-codex-history = { workspace = true }
-codex-config = { workspace = true }
-codex-context-fragments = { workspace = true }
-codex-exec-server-protocol = { workspace = true }
-codex-file-system = { workspace = true }
-codex-mcp = { workspace = true }
-codex-protocol = { workspace = true }
-codex-tools = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-path-uri = { workspace = true }
+ava-history = { workspace = true }
+ava-config = { workspace = true }
+ava-context-fragments = { workspace = true }
+ava-exec-server-protocol = { workspace = true }
+ava-file-system = { workspace = true }
+ava-mcp = { workspace = true }
+ava-protocol = { workspace = true }
+ava-tools = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-path-uri = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]

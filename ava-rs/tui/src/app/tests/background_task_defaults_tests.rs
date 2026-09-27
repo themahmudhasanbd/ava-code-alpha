@@ -8,7 +8,7 @@ use crate::app::tests::session_lifecycle_requests::start_recording_app_server_wi
 use crate::model_catalog::ModelCatalog;
 use crate::test_support::PathBufExt;
 use crate::tui::test_support::make_test_tui;
-use codex_state::SqliteConfig;
+use ava_state::SqliteConfig;
 use pretty_assertions::assert_eq;
 
 async fn confirm_permission_selection(
@@ -39,7 +39,7 @@ fn trust_launch_folder(app: &mut App) {
         "projects".into(),
         TomlValue::try_from(projects).expect("trust fixture"),
     ));
-    app.config.active_project.trust_level = Some(codex_protocol::config_types::TrustLevel::Trusted);
+    app.config.active_project.trust_level = Some(ava_protocol::config_types::TrustLevel::Trusted);
 }
 
 #[tokio::test]
@@ -166,16 +166,16 @@ async fn command_center_new_reads_server_defaults_for_actual_destination() -> Re
                 }
             ),
         )?;
-        std::fs::create_dir(destination.path().join(".codex"))?;
+        std::fs::create_dir(destination.path().join(".ava-code"))?;
         std::fs::write(
-            destination.path().join(".codex/config.toml"),
+            destination.path().join(".ava-code/config.toml"),
             "model = \"destination-model\"\nservice_tier = \"flex\"\n",
         )?;
         for home in [client_home.path(), server_home.path()] {
             crate::legacy_core::config::set_project_trust_level(
                 home,
                 destination.path(),
-                codex_protocol::config_types::TrustLevel::Trusted,
+                ava_protocol::config_types::TrustLevel::Trusted,
             )
             .map_err(|error| color_eyre::eyre::eyre!(error.to_string()))?;
         }
@@ -194,7 +194,7 @@ async fn command_center_new_reads_server_defaults_for_actual_destination() -> Re
         app.chat_widget.set_service_tier(Some("priority".into()));
         app.harness_overrides.cwd = Some(launch.path().to_path_buf());
         app.config = ConfigBuilder::default()
-            .codex_home(client_home.path().to_path_buf())
+            .ava_home(client_home.path().to_path_buf())
             .loader_overrides(app.loader_overrides.clone())
             .cli_overrides(app.cli_kv_overrides.clone())
             .harness_overrides(app.harness_overrides.clone())
@@ -210,7 +210,7 @@ async fn command_center_new_reads_server_defaults_for_actual_destination() -> Re
             ));
         trust_launch_folder(&mut app);
         let mut server_config = app.config.clone();
-        server_config.codex_home = server_home.path().to_path_buf().abs();
+        server_config.ava_home = server_home.path().to_path_buf().abs();
         server_config.sqlite = SqliteConfig::new_for_testing(server_home.path().abs());
         let thread_mode = if mode.starts_with("remote") {
             crate::app_server_session::ThreadParamsMode::Remote
@@ -242,12 +242,12 @@ async fn command_center_new_reads_server_defaults_for_actual_destination() -> Re
             let mut restored = app.config.clone();
             restored
                 .permissions
-                .set_permission_profile(codex_protocol::models::PermissionProfile::Disabled)?;
+                .set_permission_profile(ava_protocol::models::PermissionProfile::Disabled)?;
             app.runtime_permission_profile_override = Some(
                 RuntimePermissionProfileOverride::from_restored_config(&restored),
             );
             app.runtime_approval_policy_override = Some(RuntimeApprovalPolicyOverride::Restored(
-                codex_app_server_protocol::AskForApproval::Never,
+                ava_app_server_protocol::AskForApproval::Never,
             ));
         }
         let bootstrap = server.bootstrap(&app.config).await?;
@@ -377,7 +377,7 @@ async fn command_center_new_preserves_explicit_choices_and_managed_defaults() ->
             _ => {}
         }
         app.config = ConfigBuilder::default()
-            .codex_home(client_home.path().to_path_buf())
+            .ava_home(client_home.path().to_path_buf())
             .loader_overrides(app.loader_overrides.clone())
             .cli_overrides(app.cli_kv_overrides.clone())
             .harness_overrides(app.harness_overrides.clone())
@@ -385,7 +385,7 @@ async fn command_center_new_preserves_explicit_choices_and_managed_defaults() ->
             .await?;
         trust_launch_folder(&mut app);
         let mut server_config = app.config.clone();
-        server_config.codex_home = server_home.path().to_path_buf().abs();
+        server_config.ava_home = server_home.path().to_path_buf().abs();
         server_config.sqlite = SqliteConfig::new_for_testing(server_home.path().abs());
         let (mut server, requests, proxy) = start_recording_app_server_with_history(
             &server_config,
@@ -549,8 +549,8 @@ async fn command_center_new_preserves_permissions_across_sessions() -> Result<()
                     .active_permission_profile(),
             ),
             (
-                &codex_protocol::models::PermissionProfile::read_only(),
-                codex_protocol::protocol::AskForApproval::UnlessTrusted,
+                &ava_protocol::models::PermissionProfile::read_only(),
+                ava_protocol::protocol::AskForApproval::UnlessTrusted,
                 Some(ActivePermissionProfile::new(":read-only")),
             ),
         );
@@ -571,27 +571,27 @@ async fn command_center_new_preserves_only_selected_server_profiles() -> Result<
         "default_permissions = \":workspace\"\n[permissions.server-only]\nextends = \":read-only\"\n",
     )?;
     let server_config = ConfigBuilder::default()
-        .codex_home(home.path().into())
+        .ava_home(home.path().into())
         .build()
         .await?;
     app.app_server_target = AppServerTarget::Remote {
         endpoint: crate::resolve_remote_addr("ws://127.0.0.1:8765")?,
     };
     let client = crate::start_embedded_app_server(
-        codex_arg0::Arg0DispatchPaths::default(),
+        ava_arg0::Arg0DispatchPaths::default(),
         server_config,
         Vec::new(),
         LoaderOverrides::default(),
         /*strict_config*/ false,
         CloudConfigBundleLoader::default(),
-        codex_feedback::CodexFeedback::new(),
+        ava_feedback::AvaFeedback::new(),
         /*log_db*/ None,
         /*state_db*/ None,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     )
     .await?;
     let mut server = AppServerSession::new(
-        codex_app_server_client::AppServerClient::InProcess(client),
+        ava_app_server_client::AppServerClient::InProcess(client),
         crate::app_server_session::ThreadParamsMode::Remote,
     );
     let selection = PermissionProfileSelection {
@@ -682,7 +682,7 @@ async fn command_center_new_preserves_only_selected_server_profiles() -> Result<
                     extends: Some(":read-only".into()),
                 }),
                 &PermissionProfile::read_only(),
-                codex_protocol::protocol::AskForApproval::OnRequest,
+                ava_protocol::protocol::AskForApproval::OnRequest,
             )
         );
         if attempt == 1 {
@@ -763,7 +763,7 @@ async fn command_center_new_restores_blank_drafts_and_builtin_permissions() -> R
         )
         .await;
         while let Ok(event) = events.try_recv() {
-            if matches!(event, AppEvent::CodexOp(_)) {
+            if matches!(event, AppEvent::AvaOp(_)) {
                 Box::pin(app.handle_event(&mut tui, &mut server, event)).await?;
             }
         }
@@ -815,9 +815,9 @@ async fn command_center_new_restores_blank_drafts_and_builtin_permissions() -> R
 #[tokio::test]
 async fn command_center_new_checkout_and_worktree_preserve_source_and_default_branch() -> Result<()>
 {
-    use codex_worktree::CreateWorktree;
-    use codex_worktree::WorktreeManager;
-    use codex_worktree::WorktreeSettings;
+    use ava_worktree::CreateWorktree;
+    use ava_worktree::WorktreeManager;
+    use ava_worktree::WorktreeSettings;
     for (remote_only, stale_local) in [(false, false), (true, false), (false, true)] {
         let directory = tempdir()?;
         let source = directory.path().join("project");
@@ -909,7 +909,7 @@ async fn command_center_new_checkout_and_worktree_preserve_source_and_default_br
             assert_eq!(manager.list(&source).unwrap().len(), 1);
         }
         let (mut app, mut events, _) = make_test_app_with_channels().await;
-        app.config.codex_home = home.clone().abs();
+        app.config.ava_home = home.clone().abs();
         app.config.cwd = selected.cwd.clone().abs();
         app.chat_widget.windows_sandbox_local_server = cfg!(target_os = "windows");
         app.harness_overrides.cwd = Some(selected.cwd.clone());

@@ -1,16 +1,16 @@
 use crate::context_manager::estimate_image_reference_bytes;
-use codex_context_fragments::AnnotatedContent;
-use codex_context_fragments::set_annotated_content;
-use codex_context_fragments::to_annotated_content;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::is_image_close_tag_text;
-use codex_protocol::models::is_image_open_tag_text;
-use codex_protocol::models::is_local_image_open_tag_text;
-use codex_protocol::protocol::TruncationPolicy;
-use codex_utils_output_truncation::approx_token_count;
-use codex_utils_output_truncation::approx_tokens_from_byte_count_i64;
-use codex_utils_output_truncation::truncate_text;
+use ava_context_fragments::AnnotatedContent;
+use ava_context_fragments::set_annotated_content;
+use ava_context_fragments::to_annotated_content;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::is_image_close_tag_text;
+use ava_protocol::models::is_image_open_tag_text;
+use ava_protocol::models::is_local_image_open_tag_text;
+use ava_protocol::protocol::TruncationPolicy;
+use ava_utils_output_truncation::approx_token_count;
+use ava_utils_output_truncation::approx_tokens_from_byte_count_i64;
+use ava_utils_output_truncation::truncate_text;
 
 pub(super) fn content_item_token_count(item: &ContentItem) -> usize {
     match item {

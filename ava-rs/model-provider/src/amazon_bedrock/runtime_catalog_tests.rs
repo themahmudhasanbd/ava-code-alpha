@@ -1,4 +1,4 @@
-use codex_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::MultiAgentVersion;
 use pretty_assertions::assert_eq;
 
 use super::static_runtime_model_catalog;

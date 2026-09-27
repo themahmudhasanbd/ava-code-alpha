@@ -8,41 +8,41 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::CodexThread;
-use codex_core::ForkSnapshot;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::ThreadStoreConfig;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ThreadIdleInput;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::ToolLifecycleFuture;
-use codex_extension_api::ToolStartInput;
-use codex_features::Feature;
-use codex_history::GuardianHistoryCheckpoint;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RetainedContext;
-use codex_history::RetainedContextEvent;
-use codex_history::RolloutItem;
-use codex_history::VerifiedAnswer;
-use codex_history::VerifiedQuestionAnswer;
-use codex_protocol::ResponseItemId;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadRolledBackEvent;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::ForkBoundary;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::PrepareForkParams;
+use ava_core::AvaThread;
+use ava_core::ForkSnapshot;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::ThreadStoreConfig;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ThreadIdleInput;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::ToolLifecycleFuture;
+use ava_extension_api::ToolStartInput;
+use ava_features::Feature;
+use ava_history::GuardianHistoryCheckpoint;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RetainedContext;
+use ava_history::RetainedContextEvent;
+use ava_history::RolloutItem;
+use ava_history::VerifiedAnswer;
+use ava_history::VerifiedQuestionAnswer;
+use ava_protocol::ResponseItemId;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadRolledBackEvent;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::ForkBoundary;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::PrepareForkParams;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -52,8 +52,8 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -97,7 +97,7 @@ impl ThreadLifecycleContributor<Config> for ForkTestLifecycle {
     }
 }
 
-async fn wait_for_thread_idle(thread: &CodexThread) {
+async fn wait_for_thread_idle(thread: &AvaThread) {
     // TurnComplete precedes active-turn cleanup. Consume each turn's idle notification
     // separately, and scope it to the thread so child completion cannot satisfy it.
     let idle = thread
@@ -109,7 +109,7 @@ async fn wait_for_thread_idle(thread: &CodexThread) {
 }
 
 async fn record_answer(
-    thread: &CodexThread,
+    thread: &AvaThread,
     server: &MockServer,
     call_id: &str,
     answer: &str,
@@ -181,7 +181,7 @@ async fn record_answer(
     Ok(retained)
 }
 
-async fn load_context(test: &TestCodex, thread: &CodexThread) -> Result<Vec<RolloutItem>> {
+async fn load_context(test: &TestAva, thread: &AvaThread) -> Result<Vec<RolloutItem>> {
     Ok(test
         .thread_store
         .load_latest_model_context(LoadThreadHistoryParams {
@@ -192,7 +192,7 @@ async fn load_context(test: &TestCodex, thread: &CodexThread) -> Result<Vec<Roll
         .items)
 }
 
-async fn resume(test: &TestCodex, thread: &CodexThread) -> Result<Arc<CodexThread>> {
+async fn resume(test: &TestAva, thread: &AvaThread) -> Result<Arc<AvaThread>> {
     let thread_id = thread.startup_metadata().thread_id;
     thread.shutdown_and_wait().await?;
     test.thread_manager.remove_thread(&thread_id).await;
@@ -216,8 +216,8 @@ async fn resume(test: &TestCodex, thread: &CodexThread) -> Result<Arc<CodexThrea
 }
 
 async fn compact_and_assert_answers(
-    test: &TestCodex,
-    thread: &CodexThread,
+    test: &TestAva,
+    thread: &AvaThread,
     expected: &[VerifiedAnswer],
 ) -> Result<RetainedContext> {
     // Inspect live state by persisting a real compaction checkpoint, not a private getter.
@@ -279,7 +279,7 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
         ThreadHistoryMode::Paginated => &[],
     };
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_history_mode(history_mode)
         .with_config(move |config| {
             config.experimental_thread_store = ThreadStoreConfig::Local;
@@ -332,7 +332,7 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
         ])
     }));
     let response_mock = mount_sse_sequence(&server, responses).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: initial.clone(),
             text_elements: Vec::new(),
@@ -340,20 +340,20 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
         .await?;
     let mut answers = Vec::new();
     for (call_id, question, answer) in questions {
-        let request = wait_for_event_match(&test.codex, |event| match event {
+        let request = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::RequestUserInput(request) => Some(request.clone()),
             _ => None,
         })
         .await;
         if answers.is_empty() {
-            test.codex
+            test.ava-code
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                     text: STEER.to_owned(),
                     text_elements: Vec::new(),
                 }]))
                 .await?;
         }
-        test.codex
+        test.ava-code
             .submit(Op::UserInputAnswer {
                 id: request.turn_id.clone(),
                 response: RequestUserInputResponse {
@@ -375,13 +375,13 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
             }],
         });
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     // Rebuild from source events before there is a compaction checkpoint. The answer
     // was persisted first, but the accepted steering instruction must retain order 1.
-    let thread = resume(&test, &test.codex).await?;
+    let thread = resume(&test, &test.ava-code).await?;
     assert_eq!(answers[0].turn_id, answers[1].turn_id);
     let requests = response_mock.requests();
     assert_eq!(requests.len(), 3);
@@ -421,7 +421,7 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
             json!({
                 "order": index, "turn_id": answers[index].turn_id,
                 "message_id": message_id.as_str(),
-                "text": codex_guardian_context::truncate_text(text, /*max_tokens*/ 900),
+                "text": ava_guardian_context::truncate_text(text, /*max_tokens*/ 900),
                 "complete": index != 0 || matches!(instruction_size, InstructionSize::Normal),
             })
         })
@@ -565,7 +565,7 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
 ) -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_history_mode(history_mode)
         .with_config(|config| {
             config.experimental_thread_store = ThreadStoreConfig::Local;
@@ -596,7 +596,7 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
         ],
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: format!(
                 "Never publish publicly.\n{}\nNever upload logs.",
@@ -605,18 +605,18 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    let snapshot = test.codex.conversation_history_snapshot().await;
+    let snapshot = test.ava-code.conversation_history_snapshot().await;
     let source = snapshot
         .items()
         .find(|item| matches!(item, ResponseItem::Message { role, .. } if role == "user"))
         .cloned()
         .context("original instruction")?;
-    let mut expected = compact_and_assert_answers(&test, &test.codex, &[]).await?;
-    let mut checkpoint = load_context(&test, &test.codex)
+    let mut expected = compact_and_assert_answers(&test, &test.ava-code, &[]).await?;
+    let mut checkpoint = load_context(&test, &test.ava-code)
         .await?
         .into_iter()
         .rev()
@@ -652,10 +652,10 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
         LegacyInstructionSource::ModelWindow => window.push(source.into()),
         LegacyInstructionSource::Missing => expected = legacy,
     }
-    test.codex
+    test.ava-code
         .append_rollout_items(&[RolloutItem::Compacted(checkpoint)])
         .await?;
-    let resumed = resume(&test, &test.codex).await?;
+    let resumed = resume(&test, &test.ava-code).await?;
     assert_eq!(
         resumed
             .conversation_history_snapshot()
@@ -684,7 +684,7 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
 async fn disabled_capture_stays_incomplete_after_compaction_and_enabled_resume() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.experimental_thread_store = ThreadStoreConfig::Local;
             config
@@ -714,26 +714,26 @@ async fn disabled_capture_stays_incomplete_after_compaction_and_enabled_resume()
         ],
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Never publish publicly.".to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    let checkpoint = compact_and_assert_answers(&test, &test.codex, &[]).await?;
+    let checkpoint = compact_and_assert_answers(&test, &test.ava-code, &[]).await?;
     assert!(!checkpoint.user_messages_complete());
     assert_eq!(checkpoint.ordered_entries().count(), 0);
 
-    let thread_id = test.codex.startup_metadata().thread_id;
-    test.codex.shutdown_and_wait().await?;
+    let thread_id = test.ava-code.startup_metadata().thread_id;
+    test.ava-code.shutdown_and_wait().await?;
     test.thread_manager.remove_thread(&thread_id).await;
     let items: Vec<RolloutItem> = serde_json::from_value(serde_json::to_value(
-        load_context(&test, &test.codex).await?,
+        load_context(&test, &test.ava-code).await?,
     )?)?;
     let mut config = test.config.clone();
     config
@@ -776,7 +776,7 @@ async fn disabled_capture_stays_incomplete_after_compaction_and_enabled_resume()
 async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_history_mode(ThreadHistoryMode::Legacy)
         .with_config(|config| {
             config.experimental_thread_store = ThreadStoreConfig::Local;
@@ -820,7 +820,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
         .collect::<Vec<_>>();
     responses.push(sse(vec![ev_completed("done")]));
     let response_mock = mount_sse_sequence(&server, responses).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Check whether to publish.".to_owned(),
             text_elements: Vec::new(),
@@ -828,20 +828,20 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
         .await?;
     let mut answers = Vec::new();
     for (call_id, question, answer) in questions {
-        let request = wait_for_event_match(&test.codex, |event| match event {
+        let request = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::RequestUserInput(request) => Some(request.clone()),
             _ => None,
         })
         .await;
         if answers.is_empty() {
-            test.codex
+            test.ava-code
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "Also inspect the README.".to_owned(),
                     text_elements: Vec::new(),
                 }]))
                 .await?;
         }
-        test.codex
+        test.ava-code
             .submit(Op::UserInputAnswer {
                 id: request.turn_id.clone(),
                 response: RequestUserInputResponse {
@@ -863,7 +863,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
             }],
         });
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -891,7 +891,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
             );
         }
     }
-    test.codex
+    test.ava-code
         .append_rollout_items(
             &answers
                 .iter()
@@ -905,7 +905,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
                 .collect::<Vec<_>>(),
         )
         .await?;
-    let mut thread = resume(&test, &test.codex).await?;
+    let mut thread = resume(&test, &test.ava-code).await?;
     compact_and_assert_answers(&test, &thread, &answers).await?;
     for expected in [&answers[..1], &[]] {
         thread
@@ -939,7 +939,7 @@ async fn standalone_fork_retains_inherited_user_instructions(
     let compacted = history_mode == ThreadHistoryMode::Paginated;
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let mut test = test_codex()
+    let mut test = test_ava()
         .with_history_mode(history_mode)
         .with_config(|config| {
             config.experimental_thread_store = ThreadStoreConfig::Local;
@@ -986,13 +986,13 @@ async fn standalone_fork_retains_inherited_user_instructions(
             sse(vec![ev_completed("worker-complete")]),
         ],
     ).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: instruction.clone(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1001,7 +1001,7 @@ async fn standalone_fork_retains_inherited_user_instructions(
         .get_thread(created.recv().await?)
         .await?;
     wait_for_event(&worker, |event| matches!(event, EventMsg::TurnComplete(_))).await;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     let local_instruction = if compacted {
         // Leave less than Guardian's 900-token budget for the inherited source
         // within local compaction's 20K user-message budget.
@@ -1063,7 +1063,7 @@ async fn standalone_fork_retains_inherited_user_instructions(
             .await?;
         test.thread_manager
             .fork_prepared_thread(
-                codex_core::StartThreadOptions::new(test.config.clone()),
+                ava_core::StartThreadOptions::new(test.config.clone()),
                 prepared,
             )
             .await?
@@ -1071,7 +1071,7 @@ async fn standalone_fork_retains_inherited_user_instructions(
         test.thread_manager
             .fork_thread_from_history(
                 ForkSnapshot::Interrupted,
-                codex_core::StartThreadOptions::new(test.config.clone()),
+                ava_core::StartThreadOptions::new(test.config.clone()),
                 InitialHistory::Resumed(ResumedHistory {
                     conversation_id: worker.startup_metadata().thread_id,
                     history: Arc::new(load_context(&test, &worker).await?),
@@ -1083,11 +1083,11 @@ async fn standalone_fork_retains_inherited_user_instructions(
     assert!(fork.thread.guardian_root_snapshot().await.is_none());
     let history = fork.thread.conversation_history_snapshot().await;
     let retained = history.retained_context().context("root context")?;
-    let answers = codex_guardian_context::render_verified_answers(retained);
+    let answers = ava_guardian_context::render_verified_answers(retained);
     assert_eq!(
         (answers.fragments, answers.complete),
         (
-            vec![codex_guardian_context::GuardianRootMessage::IncompleteVerifiedAnswers.render()],
+            vec![ava_guardian_context::GuardianRootMessage::IncompleteVerifiedAnswers.render()],
             false
         ),
     );
@@ -1095,16 +1095,16 @@ async fn standalone_fork_retains_inherited_user_instructions(
         retained
             .ordered_entries()
             .map(|(_, entry)| match entry {
-                codex_history::RetainedContextEntry::UserMessage(message) =>
+                ava_history::RetainedContextEntry::UserMessage(message) =>
                     (message.text.clone(), message.complete),
-                codex_history::RetainedContextEntry::VerifiedAnswer(_) =>
+                ava_history::RetainedContextEntry::VerifiedAnswer(_) =>
                     panic!("no answers before root adoption"),
             })
             .collect::<Vec<_>>(),
         vec![
             (inherited_text, !compacted),
             (
-                codex_guardian_context::truncate_text(&local_instruction, /*max_tokens*/ 900),
+                ava_guardian_context::truncate_text(&local_instruction, /*max_tokens*/ 900),
                 !compacted,
             ),
         ],
@@ -1156,7 +1156,7 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(child_gate.clone());
     extensions.thread_lifecycle_contributor(child_gate.clone());
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_history_mode(ThreadHistoryMode::Legacy)
         .with_config(move |config| {
@@ -1176,24 +1176,24 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
         .build_with_auto_env(&server)
         .await?;
     mount_sse_sequence(&server, vec![sse(vec![ev_completed("initial")])]).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the project.".to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    wait_for_thread_idle(&test.codex).await;
+    wait_for_thread_idle(&test.ava-code).await;
     if compact_parent {
-        test.codex.submit(Op::Compact).await?;
-        wait_for_event(&test.codex, |event| {
+        test.ava-code.submit(Op::Compact).await?;
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
-        wait_for_thread_idle(&test.codex).await;
+        wait_for_thread_idle(&test.ava-code).await;
     }
 
     let mut created = test.thread_manager.subscribe_thread_created();
@@ -1246,13 +1246,13 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
     )
     .await;
     // This grant is either in uncompacted history or in the checkpoint's replay suffix.
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: PARENT_GRANT.to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1280,7 +1280,7 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
     assert!(
         root_snapshot
             .messages
-            .contains(&codex_core::GuardianRootMessage::User(
+            .contains(&ava_core::GuardianRootMessage::User(
                 PARENT_GRANT.to_owned()
             ))
     );
@@ -1312,8 +1312,8 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
         expected.as_ref().map(|context| context
             .ordered_entries()
             .map(|(_, entry)| match entry {
-                codex_history::RetainedContextEntry::UserMessage(message) => message.text.as_str(),
-                codex_history::RetainedContextEntry::VerifiedAnswer(_) =>
+                ava_history::RetainedContextEntry::UserMessage(message) => message.text.as_str(),
+                ava_history::RetainedContextEntry::VerifiedAnswer(_) =>
                     panic!("unexpected answer"),
             })
             .collect::<Vec<_>>()),
@@ -1339,7 +1339,7 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
         expected.as_ref()
     );
     child.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1353,7 +1353,7 @@ async fn retained_answers_cross_real_session_boundaries(
 ) -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_history_mode(history_mode)
         .with_config(|config| {
             config.experimental_thread_store = ThreadStoreConfig::Local;
@@ -1373,14 +1373,14 @@ async fn retained_answers_cross_real_session_boundaries(
         .build_with_auto_env(&server)
         .await?;
     let before = record_answer(
-        &test.codex,
+        &test.ava-code,
         &server,
         "before-compact",
         "Only publish privately.",
         /*acceptance_order*/ 1,
     )
     .await?;
-    let thread = resume(&test, &test.codex).await?;
+    let thread = resume(&test, &test.ava-code).await?;
     compact_and_assert_answers(&test, &thread, std::slice::from_ref(&before)).await?;
 
     let after = record_answer(

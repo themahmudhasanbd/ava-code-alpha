@@ -1,8 +1,8 @@
 use super::*;
 use crate::extensions::send_thread_warning;
-use codex_app_server_protocol::ThreadQueueChangedNotification;
-use codex_extension_api::ThreadIdleCause;
-use codex_protocol::config_types::MultiAgentMode;
+use ava_app_server_protocol::ThreadQueueChangedNotification;
+use ava_extension_api::ThreadIdleCause;
+use ava_protocol::config_types::MultiAgentMode;
 
 #[derive(Clone)]
 pub(super) struct ListenerTaskContext {
@@ -11,7 +11,7 @@ pub(super) struct ListenerTaskContext {
     pub(super) outgoing: Arc<OutgoingMessageSender>,
     pub(super) pending_thread_unloads: Arc<Mutex<HashSet<ThreadId>>>,
     pub(super) thread_watch_manager: ThreadWatchManager,
-    pub(super) codex_home: PathBuf,
+    pub(super) ava_home: PathBuf,
     pub(super) thread_unload_delay: Duration,
     pub(super) skills_watcher: Arc<SkillsWatcher>,
     pub(super) turn_cost_worker: Option<crate::turn_cost_worker::TurnCostWorkerHandle>,
@@ -214,7 +214,7 @@ pub(super) fn log_listener_attach_result(
 pub(super) async fn ensure_listener_task_running(
     listener_task_context: ListenerTaskContext,
     conversation_id: ThreadId,
-    conversation: Arc<CodexThread>,
+    conversation: Arc<AvaThread>,
     thread_state: Arc<Mutex<ThreadState>>,
 ) -> Result<(), JSONRPCErrorError> {
     let (cancel_tx, mut cancel_rx) = oneshot::channel();
@@ -269,7 +269,7 @@ pub(super) async fn ensure_listener_task_running(
         thread_state_manager,
         pending_thread_unloads,
         thread_watch_manager,
-        codex_home,
+        ava_home,
         turn_cost_worker,
         ..
     } = listener_task_context;
@@ -289,7 +289,7 @@ pub(super) async fn ensure_listener_task_running(
                     handle_thread_listener_command(
                         conversation_id,
                         &conversation,
-                        codex_home.as_path(),
+                        ava_home.as_path(),
                         &thread_state_manager,
                         &thread_state,
                         &thread_watch_manager,
@@ -405,7 +405,7 @@ pub(super) async fn ensure_listener_task_running(
     Ok(())
 }
 
-pub(super) async fn wait_for_thread_shutdown(thread: &Arc<CodexThread>) -> ThreadShutdownResult {
+pub(super) async fn wait_for_thread_shutdown(thread: &Arc<AvaThread>) -> ThreadShutdownResult {
     match tokio::time::timeout(Duration::from_secs(10), thread.shutdown_and_wait()).await {
         Ok(Ok(())) => ThreadShutdownResult::Complete,
         Ok(Err(_)) => ThreadShutdownResult::SubmitFailed,
@@ -420,7 +420,7 @@ pub(super) async fn unload_thread_without_subscribers(
     thread_state_manager: ThreadStateManager,
     thread_watch_manager: ThreadWatchManager,
     thread_id: ThreadId,
-    thread: Arc<CodexThread>,
+    thread: Arc<AvaThread>,
 ) {
     info!("thread {thread_id} has no subscribers and is idle; shutting down");
 
@@ -471,8 +471,8 @@ pub(super) async fn unload_thread_without_subscribers(
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn handle_thread_listener_command(
     conversation_id: ThreadId,
-    conversation: &Arc<CodexThread>,
-    codex_home: &Path,
+    conversation: &Arc<AvaThread>,
+    ava_home: &Path,
     thread_state_manager: &ThreadStateManager,
     thread_state: &Arc<Mutex<ThreadState>>,
     thread_watch_manager: &ThreadWatchManager,
@@ -488,7 +488,7 @@ pub(super) async fn handle_thread_listener_command(
             handle_pending_thread_resume_request(
                 conversation_id,
                 conversation,
-                codex_home,
+                ava_home,
                 thread_state_manager,
                 thread_state,
                 thread_watch_manager,
@@ -565,8 +565,8 @@ pub(super) async fn handle_thread_listener_command(
 )]
 pub(super) async fn handle_pending_thread_resume_request(
     conversation_id: ThreadId,
-    conversation: &Arc<CodexThread>,
-    _codex_home: &Path,
+    conversation: &Arc<AvaThread>,
+    _ava_home: &Path,
     thread_state_manager: &ThreadStateManager,
     thread_state: &Arc<Mutex<ThreadState>>,
     thread_watch_manager: &ThreadWatchManager,
@@ -892,9 +892,9 @@ pub(super) fn merge_turn_history_with_active_turn(turns: &mut Vec<Turn>, active_
 }
 
 fn merge_active_turn_into_page(
-    page: &mut codex_app_server_protocol::TurnsPage,
+    page: &mut ava_app_server_protocol::TurnsPage,
     mut active_turn: Turn,
-    params: &codex_app_server_protocol::ThreadResumeInitialTurnsPageParams,
+    params: &ava_app_server_protocol::ThreadResumeInitialTurnsPageParams,
 ) {
     super::thread_processor::apply_thread_turns_items_view(
         std::slice::from_mut(&mut active_turn),

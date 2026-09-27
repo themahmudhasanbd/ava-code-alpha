@@ -1,4 +1,4 @@
-//! Queries SiWC per-turn estimates using the client's Codex or WHAM route and auth.
+//! Queries SiWC per-turn estimates using the client's Ava or WHAM route and auth.
 //! Always request settled response IDs and retain thread/turn association and missing amounts.
 
 use super::Client;
@@ -48,8 +48,8 @@ impl Client {
         threads: &BTreeMap<String, Vec<String>>,
     ) -> Result<Vec<ChatgptThreadTurnCosts>, RequestError> {
         let url = match self.path_style {
-            PathStyle::CodexApi => {
-                format!("{}/api/codex/usage/thread-estimates/query", self.base_url)
+            PathStyle::AvaApi => {
+                format!("{}/api/ava/usage/thread-estimates/query", self.base_url)
             }
             PathStyle::ChatGptApi => {
                 format!("{}/wham/usage/thread-estimates/query", self.base_url)

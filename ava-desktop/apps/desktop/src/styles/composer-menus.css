@@ -4,9 +4,9 @@
   provider/model groups, and the composer plus menu.
 */
 
-/* DARK_COMPOSER_BOX — Codex elevated-primary + elevation-prominent */
+/* DARK_COMPOSER_BOX — Ava elevated-primary + elevation-prominent */
 :root[data-theme="dark"] .composer-shell {
-  /* Codex elevated-primary: #212121f5 / gray-800 96% (not flat solid) */
+  /* Ava elevated-primary: #212121f5 / gray-800 96% (not flat solid) */
   background: var(--ds-bg-elevated-primary);
   box-shadow: var(--ds-shadow-composer);
   border: 0;
@@ -15,7 +15,7 @@
 
 :root[data-theme="dark"] .composer-input::placeholder,
 :root[data-theme="dark"] .composer-placeholder {
-  /* Codex dark placeholder ink (--ds-placeholder-ink). */
+  /* Ava dark placeholder ink (--ds-placeholder-ink). */
   color: var(--ds-placeholder-ink);
   -webkit-text-fill-color: var(--ds-placeholder-ink);
   opacity: 1;

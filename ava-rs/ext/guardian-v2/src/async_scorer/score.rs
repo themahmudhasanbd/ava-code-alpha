@@ -8,9 +8,9 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::SystemTime;
 
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::ToolStartInput;
-use codex_protocol::security_risk::SecurityRiskScore;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::ToolStartInput;
+use ava_protocol::security_risk::SecurityRiskScore;
 
 use super::authorization::ScoreAuthorization;
 use super::wrapper_lag::WrapperLag;

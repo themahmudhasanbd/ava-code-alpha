@@ -1,7 +1,7 @@
 //! Clipboard copy backend for the TUI's `/copy` command and `Ctrl+O` hotkey.
 //!
 //! Local copying uses the native clipboard, with WSL PowerShell as a fallback.
-//! In tmux, also forward to the attached terminal so clients attached after Codex
+//! In tmux, also forward to the attached terminal so clients attached after Ava
 //! started receive the copy. Over SSH without tmux, send OSC 52 directly.
 //!
 //! Terminal writes have no delivery acknowledgement: a successful send must not
@@ -189,7 +189,7 @@ fn copy_to_clipboard_with(
     });
     // Copy natively first: an X11 SelectionClear from a terminal write can otherwise
     // race with arboard reusing its ownership window and clear the new native data.
-    // Persistent tmux sessions may gain remote clients after Codex starts, so still
+    // Persistent tmux sessions may gain remote clients after Ava starts, so still
     // forward even when no SSH variables were inherited or native copying succeeded.
     let terminal_result = (environment.tmux_session || environment.ssh_session).then(terminal_copy);
     match native_result {
@@ -265,9 +265,9 @@ fn arboard_copy(_text: &str, _html: Option<&str>) -> Result<Option<ClipboardLeas
 /// Copy text into the Windows clipboard from a WSL process.
 #[cfg(target_os = "linux")]
 fn wsl_clipboard_copy(text: &str) -> Result<(), String> {
-    let executable = codex_utils_path::system_executable("powershell.exe")
+    let executable = ava_utils_path::system_executable("powershell.exe")
         .ok_or_else(|| "PowerShell is unavailable in the system PATH".to_string())?;
-    let path = codex_utils_path::system_path()
+    let path = ava_utils_path::system_path()
         .map_err(|error| format!("failed to resolve system PATH: {error}"))?;
     let mut child = std::process::Command::new(executable)
         .env("PATH", path)

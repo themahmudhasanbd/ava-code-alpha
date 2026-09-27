@@ -1,11 +1,11 @@
 mod managed;
 mod shared_instructions;
 
-use crate::CodexAppsToolsCache;
+use crate::AvaAppsToolsCache;
 use crate::agent::LocalAgentControl;
 use crate::agents_md_manager::SessionInstructions;
 use crate::attestation::AttestationProvider;
-use crate::codex_thread::CodexThread;
+use crate::ava_thread::AvaThread;
 use crate::config::Config;
 use crate::config::ThreadStoreConfig;
 use crate::current_time::TimeProvider;
@@ -23,76 +23,76 @@ use crate::session::session::Session;
 use crate::tasks::InterruptedTurnHistoryMarker;
 use crate::tasks::interrupted_turn_history_marker;
 use crate::thread_startup_metadata::ThreadStartupMetadata;
-use codex_agent_graph_store::AgentGraphStore;
-use codex_agent_graph_store::LocalAgentGraphStore;
-use codex_analytics::AnalyticsEventsClient;
-use codex_app_server_protocol::ThreadHistoryBuilder;
-use codex_app_server_protocol::TurnStatus;
-use codex_attachment_store::AttachmentStore;
-use codex_attachment_store::InlineAttachmentStore;
-use codex_code_mode::CodeModeSessionProvider;
-use codex_code_mode::DisabledCodeModeSessionProvider;
-use codex_code_mode::ProcessOwnedCodeModeSessionProvider;
-use codex_core_plugins::PluginsManager;
-use codex_exec_server::EnvironmentManager;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::LoadedUserInstructions;
-use codex_extension_api::ThreadInstructionsProvider;
-use codex_extension_api::UserInstructionsProvider;
-use codex_extension_api::empty_extension_registry;
-use codex_features::Feature;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::default_client::CODEX_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR;
-use codex_login::default_client::originator;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::OPENAI_PROVIDER_ID;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionConfiguredEvent;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_rollout::state_db::StateDbHandle;
-use codex_skills_extension::HostSkillsService;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::LocalThreadStore;
-use codex_thread_store::LocalThreadStoreConfig;
-use codex_thread_store::MoveThreadToSectionParams;
-use codex_thread_store::PreparedFork;
-use codex_thread_store::ReadThreadByRolloutPathParams;
-use codex_thread_store::ReadThreadParams;
-use codex_thread_store::StoredModelContext;
-use codex_thread_store::StoredThread;
-use codex_thread_store::ThreadMetadataPatch;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::ThreadStoreError;
-use codex_thread_store::UpdateThreadMetadataParams;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_git_discovery::GitRootDiscovery;
+use ava_agent_graph_store::AgentGraphStore;
+use ava_agent_graph_store::LocalAgentGraphStore;
+use ava_analytics::AnalyticsEventsClient;
+use ava_app_server_protocol::ThreadHistoryBuilder;
+use ava_app_server_protocol::TurnStatus;
+use ava_attachment_store::AttachmentStore;
+use ava_attachment_store::InlineAttachmentStore;
+use ava_code_mode::CodeModeSessionProvider;
+use ava_code_mode::DisabledCodeModeSessionProvider;
+use ava_code_mode::ProcessOwnedCodeModeSessionProvider;
+use ava_core_plugins::PluginsManager;
+use ava_exec_server::EnvironmentManager;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::LoadedUserInstructions;
+use ava_extension_api::ThreadInstructionsProvider;
+use ava_extension_api::UserInstructionsProvider;
+use ava_extension_api::empty_extension_registry;
+use ava_features::Feature;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::default_client::AVA_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR;
+use ava_login::default_client::originator;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::OPENAI_PROVIDER_ID;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionConfiguredEvent;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_rollout::state_db::StateDbHandle;
+use ava_skills_extension::HostSkillsService;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::LocalThreadStore;
+use ava_thread_store::LocalThreadStoreConfig;
+use ava_thread_store::MoveThreadToSectionParams;
+use ava_thread_store::PreparedFork;
+use ava_thread_store::ReadThreadByRolloutPathParams;
+use ava_thread_store::ReadThreadParams;
+use ava_thread_store::StoredModelContext;
+use ava_thread_store::StoredThread;
+use ava_thread_store::ThreadMetadataPatch;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::ThreadStoreError;
+use ava_thread_store::UpdateThreadMetadataParams;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_git_discovery::GitRootDiscovery;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
@@ -151,21 +151,21 @@ fn should_use_test_thread_manager_behavior() -> bool {
     FORCE_TEST_THREAD_MANAGER_BEHAVIOR.load(Ordering::Relaxed)
 }
 
-struct TempCodexHomeGuard {
+struct TempAvaHomeGuard {
     path: PathBuf,
 }
 
-impl Drop for TempCodexHomeGuard {
+impl Drop for TempAvaHomeGuard {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.path);
     }
 }
 
-/// Represents a newly created Codex thread (formerly called a conversation), including the first event
+/// Represents a newly created Ava thread (formerly called a conversation), including the first event
 /// (which is [`EventMsg::SessionConfigured`]).
 pub struct NewThread {
     pub thread_id: ThreadId,
-    pub thread: Arc<CodexThread>,
+    pub thread: Arc<AvaThread>,
     pub session_configured: SessionConfiguredEvent,
 }
 
@@ -231,7 +231,7 @@ enum ShutdownOutcome {
 /// them in memory.
 pub struct ThreadManager {
     state: Arc<ThreadManagerState>,
-    _test_codex_home_guard: Option<TempCodexHomeGuard>,
+    _test_ava_home_guard: Option<TempAvaHomeGuard>,
 }
 
 /// Captured parent identity for an internal child, including inline parents that
@@ -268,7 +268,7 @@ pub struct StartThreadOptions {
     pub history_mode: Option<ThreadHistoryMode>,
     pub session_source: Option<SessionSource>,
     pub thread_source: Option<ThreadSource>,
-    pub dynamic_tools: Vec<codex_protocol::dynamic_tools::DynamicToolSpec>,
+    pub dynamic_tools: Vec<ava_protocol::dynamic_tools::DynamicToolSpec>,
     pub metrics_service_name: Option<String>,
     pub parent_trace: Option<W3cTraceContext>,
     pub environments: Option<Vec<TurnEnvironmentSelection>>,
@@ -350,10 +350,10 @@ impl ThreadSpawnRequest {
 fn originator_from_service_name(service_name: Option<&str>) -> Option<String> {
     let service_name = service_name?.trim();
     for originator in [
-        "codex_work_desktop",
-        "codex_work_web",
-        "codex_work_mobile",
-        "codex_work_cca",
+        "ava_work_desktop",
+        "ava_work_web",
+        "ava_work_mobile",
+        "ava_work_cca",
         "chatgpt_cca",
     ] {
         if service_name.eq_ignore_ascii_case(originator) {
@@ -394,7 +394,7 @@ pub(crate) struct ResumeThreadWithHistoryOptions {
 /// `Arc` reference that can be downgraded to by `LocalAgentControl` while preventing every single
 /// function to require an `Arc<&Self>`.
 pub(crate) struct ThreadManagerState {
-    threads: Arc<RwLock<HashMap<ThreadId, Arc<CodexThread>>>>,
+    threads: Arc<RwLock<HashMap<ThreadId, Arc<AvaThread>>>>,
     shared_thread_instructions: shared_instructions::SharedThreadInstructionsProviders,
     thread_created_tx: broadcast::Sender<ThreadId>,
     thread_id_generator: ThreadIdGenerator,
@@ -427,7 +427,7 @@ pub fn build_models_manager(
 ) -> SharedModelsManager {
     let provider = create_model_provider(config.model_provider.clone(), Some(auth_manager));
     let manager = provider.models_manager(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         config.model_catalog.clone(),
     );
     manager.set_api_key_model_discovery_enabled(
@@ -455,22 +455,22 @@ pub fn thread_store_from_config(
             ));
             if has_state_db && background_migration_enabled {
                 let startup_store = Arc::clone(&store);
-                let codex_home = config.codex_home.to_path_buf();
+                let ava_home = config.ava_home.to_path_buf();
                 tokio::spawn(async move {
                     if let Err(err) = startup_store.migrate_rollouts_on_startup().await {
                         warn!("failed to migrate legacy rollouts on startup: {err}");
                     }
                     if compression_enabled {
-                        codex_rollout::spawn_rollout_compression_worker(
-                            codex_home,
-                            codex_rollout::RolloutCompressionTrigger::Startup,
+                        ava_rollout::spawn_rollout_compression_worker(
+                            ava_home,
+                            ava_rollout::RolloutCompressionTrigger::Startup,
                         );
                     }
                 });
             } else if compression_enabled {
-                codex_rollout::spawn_rollout_compression_worker(
-                    config.codex_home.to_path_buf(),
-                    codex_rollout::RolloutCompressionTrigger::Startup,
+                ava_rollout::spawn_rollout_compression_worker(
+                    config.ava_home.to_path_buf(),
+                    ava_rollout::RolloutCompressionTrigger::Startup,
                 );
             }
             store
@@ -501,7 +501,7 @@ impl ThreadManager {
         config: &Config,
         auth_manager: Arc<AuthManager>,
         models_manager: SharedModelsManager,
-        codex_apps_tools_cache: CodexAppsToolsCache,
+        ava_apps_tools_cache: AvaAppsToolsCache,
         session_source: SessionSource,
         environment_manager: Arc<EnvironmentManager>,
         extensions: Arc<ExtensionRegistry<Config>>,
@@ -514,16 +514,16 @@ impl ThreadManager {
         attestation_provider: Option<Arc<dyn AttestationProvider>>,
         external_time_provider: Option<Arc<dyn TimeProvider>>,
     ) -> Self {
-        let codex_home = config.codex_home.clone();
+        let ava_home = config.ava_home.clone();
         let restriction_product = session_source.restriction_product();
         let (thread_created_tx, _) = broadcast::channel(THREAD_CREATED_CHANNEL_CAPACITY);
         let skills_service = Arc::new(HostSkillsService::new_with_restriction_product(
-            codex_home.clone(),
+            ava_home.clone(),
             config.bundled_skills_enabled(),
             restriction_product,
         ));
         let plugins_manager = Arc::new(PluginsManager::new_with_options(
-            codex_home.to_path_buf(),
+            ava_home.to_path_buf(),
             restriction_product,
             Arc::clone(&auth_manager),
             skills_service.clone(),
@@ -531,7 +531,7 @@ impl ThreadManager {
         let mcp_manager = Arc::new(McpManager::new_with_extensions(
             Arc::clone(&plugins_manager),
             Arc::clone(&extensions),
-            codex_apps_tools_cache,
+            ava_apps_tools_cache,
         ));
         let code_mode_session_provider: Arc<dyn CodeModeSessionProvider> =
             if config.features.enabled(Feature::CodeModeHost)
@@ -569,7 +569,7 @@ impl ThreadManager {
                 ops_log: should_use_test_thread_manager_behavior()
                     .then(|| Arc::new(std::sync::Mutex::new(Vec::new()))),
             }),
-            _test_codex_home_guard: None,
+            _test_ava_home_guard: None,
         }
     }
 
@@ -611,69 +611,69 @@ impl ThreadManager {
         self
     }
 
-    /// Construct with a dummy AuthManager containing the provided CodexAuth.
+    /// Construct with a dummy AuthManager containing the provided AvaAuth.
     /// Used for integration tests: should not be used by ordinary business logic.
     pub(crate) fn with_models_provider_for_tests(
-        auth: CodexAuth,
+        auth: AvaAuth,
         provider: ModelProviderInfo,
     ) -> Self {
         set_thread_manager_test_mode_for_tests(/*enabled*/ true);
-        let codex_home = std::env::temp_dir().join(format!(
-            "codex-thread-manager-test-{}",
+        let ava_home = std::env::temp_dir().join(format!(
+            "ava-thread-manager-test-{}",
             uuid::Uuid::new_v4()
         ));
-        std::fs::create_dir_all(&codex_home)
-            .unwrap_or_else(|err| panic!("temp codex home dir create failed: {err}"));
+        std::fs::create_dir_all(&ava_home)
+            .unwrap_or_else(|err| panic!("temp ava home dir create failed: {err}"));
         let mut manager = Self::with_models_provider_and_home_for_tests(
             auth,
             provider,
-            codex_home.clone(),
+            ava_home.clone(),
             Arc::new(EnvironmentManager::default_for_tests()),
         );
-        manager._test_codex_home_guard = Some(TempCodexHomeGuard { path: codex_home });
+        manager._test_ava_home_guard = Some(TempAvaHomeGuard { path: ava_home });
         manager
     }
 
-    /// Construct with a dummy AuthManager containing the provided CodexAuth and codex home.
+    /// Construct with a dummy AuthManager containing the provided AvaAuth and ava home.
     /// Used for integration tests: should not be used by ordinary business logic.
     pub(crate) fn with_models_provider_and_home_for_tests(
-        auth: CodexAuth,
+        auth: AvaAuth,
         provider: ModelProviderInfo,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         environment_manager: Arc<EnvironmentManager>,
     ) -> Self {
         Self::with_models_provider_home_and_state_for_tests(
             auth,
             provider,
-            codex_home,
+            ava_home,
             environment_manager,
             /*state_db*/ None,
         )
     }
 
     pub(crate) fn with_models_provider_home_and_state_for_tests(
-        auth: CodexAuth,
+        auth: AvaAuth,
         provider: ModelProviderInfo,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         environment_manager: Arc<EnvironmentManager>,
         state_db: Option<StateDbHandle>,
     ) -> Self {
         set_thread_manager_test_mode_for_tests(/*enabled*/ true);
         let auth_manager = AuthManager::from_auth_for_testing(auth);
         let installation_id = uuid::Uuid::new_v4().to_string();
-        let absolute_codex_home = match AbsolutePathBuf::from_absolute_path_checked(&codex_home) {
-            Ok(codex_home) => codex_home,
-            Err(err) => panic!("test codex_home should be absolute: {err}"),
+        let absolute_ava_home = match AbsolutePathBuf::from_absolute_path_checked(&ava_home) {
+            Ok(ava_home) => ava_home,
+            Err(err) => panic!("test ava_home should be absolute: {err}"),
         };
         let (thread_created_tx, _) = broadcast::channel(THREAD_CREATED_CHANNEL_CAPACITY);
         let restriction_product = SessionSource::Exec.restriction_product();
         let skills_service = Arc::new(HostSkillsService::new_with_restriction_product(
-            absolute_codex_home.clone(),
+            absolute_ava_home.clone(),
             /*bundled_skills_enabled*/ true,
             restriction_product,
         ));
         let plugins_manager = Arc::new(PluginsManager::new_with_options(
-            codex_home.clone(),
+            ava_home.clone(),
             restriction_product,
             Arc::clone(&auth_manager),
             skills_service.clone(),
@@ -683,8 +683,8 @@ impl ThreadManager {
         // process store should construct ThreadManager::new with an explicit store.
         let thread_store: Arc<dyn ThreadStore> = Arc::new(LocalThreadStore::new(
             LocalThreadStoreConfig {
-                codex_home: codex_home.clone(),
-                sqlite: codex_state::SqliteConfig::new_for_testing(absolute_codex_home),
+                ava_home: ava_home.clone(),
+                sqlite: ava_state::SqliteConfig::new_for_testing(absolute_ava_home),
                 default_model_provider_id: OPENAI_PROVIDER_ID.to_string(),
             },
             state_db.clone(),
@@ -697,7 +697,7 @@ impl ThreadManager {
                 thread_created_tx,
                 thread_id_generator: default_thread_id_generator(),
                 models_manager: create_model_provider(provider, Some(auth_manager.clone()))
-                    .models_manager(codex_home, /*config_model_catalog*/ None),
+                    .models_manager(ava_home, /*config_model_catalog*/ None),
                 git_root_discovery: Arc::default(),
                 environment_manager,
                 starting_mcp_runtimes: std::sync::Mutex::new(Vec::new()),
@@ -721,7 +721,7 @@ impl ThreadManager {
                 ops_log: should_use_test_thread_manager_behavior()
                     .then(|| Arc::new(std::sync::Mutex::new(Vec::new()))),
             }),
-            _test_codex_home_guard: None,
+            _test_ava_home_guard: None,
         }
     }
 
@@ -836,17 +836,17 @@ impl ThreadManager {
     pub fn validate_environment_selections(
         &self,
         environments: &[TurnEnvironmentSelection],
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         let mut environment_ids = HashSet::with_capacity(environments.len());
         for environment in environments {
             if environment.cwd.inferred_native_path_string().len() > MAX_TURN_ENVIRONMENT_CWD_BYTES
             {
-                return Err(CodexErr::InvalidRequest(
+                return Err(AvaErr::InvalidRequest(
                     "turn environment working directory exceeds the maximum size".to_string(),
                 ));
             }
             if !environment_ids.insert(environment.environment_id.as_str()) {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "duplicate turn environment id `{}`",
                     environment.environment_id
                 )));
@@ -855,7 +855,7 @@ impl ThreadManager {
                 .environment_manager
                 .get_environment(&environment.environment_id)
                 .ok_or_else(|| {
-                    CodexErr::InvalidRequest(format!(
+                    AvaErr::InvalidRequest(format!(
                         "unknown turn environment id `{}`",
                         environment.environment_id
                     ))
@@ -875,7 +875,7 @@ impl ThreadManager {
     pub async fn list_models(
         &self,
         refresh_strategy: RefreshStrategy,
-        http_client_factory: codex_http_client::HttpClientFactory,
+        http_client_factory: ava_http_client::HttpClientFactory,
     ) -> Vec<ModelPreset> {
         self.state
             .models_manager
@@ -895,13 +895,13 @@ impl ThreadManager {
         self.state.thread_created_tx.subscribe()
     }
 
-    pub async fn get_thread(&self, thread_id: ThreadId) -> CodexResult<Arc<CodexThread>> {
+    pub async fn get_thread(&self, thread_id: ThreadId) -> AvaResult<Arc<AvaThread>> {
         self.state.get_thread(thread_id).await
     }
 
     /// Updates metadata for loaded and cold threads through one entrypoint.
     ///
-    /// Loaded threads route through `CodexThread`/`LiveThread`, so metadata changes stay ordered
+    /// Loaded threads route through `AvaThread`/`LiveThread`, so metadata changes stay ordered
     /// with live rollout writes. Cold threads go directly to the store, which owns unloaded JSONL
     /// compatibility and SQLite metadata updates. This API always returns a materialized thread;
     /// if the store reports a successful no-op without one, it performs a fallback read.
@@ -910,10 +910,10 @@ impl ThreadManager {
         thread_id: ThreadId,
         patch: ThreadMetadataPatch,
         include_archived: bool,
-    ) -> CodexResult<StoredThread> {
+    ) -> AvaResult<StoredThread> {
         if let Ok(thread) = self.get_thread(thread_id).await {
             if thread.config_snapshot().await.ephemeral {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "ephemeral thread does not support metadata updates: {thread_id}"
                 )));
             }
@@ -933,7 +933,7 @@ impl ThreadManager {
             .await
             .map_err(|err| match err {
                 ThreadStoreError::ThreadNotFound { thread_id } => {
-                    CodexErr::ThreadNotFound(thread_id)
+                    AvaErr::ThreadNotFound(thread_id)
                 }
                 err => thread_store_metadata_update_error(thread_id, err),
             })?;
@@ -958,10 +958,10 @@ impl ThreadManager {
         thread_id: ThreadId,
         section: Option<&str>,
         before_thread_id: Option<ThreadId>,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         if let Ok(thread) = self.get_thread(thread_id).await {
             if thread.config_snapshot().await.ephemeral {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "ephemeral thread does not support section moves: {thread_id}"
                 )));
             }
@@ -985,7 +985,7 @@ impl ThreadManager {
     pub async fn list_agent_subtree_thread_ids(
         &self,
         thread_id: ThreadId,
-    ) -> CodexResult<Vec<ThreadId>> {
+    ) -> AvaResult<Vec<ThreadId>> {
         let mut subtree_thread_ids = Vec::new();
         let mut seen_thread_ids = HashSet::new();
         subtree_thread_ids.push(thread_id);
@@ -996,7 +996,7 @@ impl ThreadManager {
                 .list_thread_spawn_descendants(thread_id, /*status_filter*/ None)
                 .await
                 .map_err(|err| {
-                    CodexErr::Fatal(format!("failed to load thread-spawn descendants: {err}"))
+                    AvaErr::Fatal(format!("failed to load thread-spawn descendants: {err}"))
                 })?
             {
                 if seen_thread_ids.insert(descendant_id) {
@@ -1018,7 +1018,7 @@ impl ThreadManager {
         Ok(subtree_thread_ids)
     }
 
-    pub async fn start_thread(&self, options: StartThreadOptions) -> CodexResult<NewThread> {
+    pub async fn start_thread(&self, options: StartThreadOptions) -> AvaResult<NewThread> {
         Box::pin(self.start_thread_inner(
             options, /*forked_from_thread_id*/ None, /*startup*/ None,
         ))
@@ -1030,7 +1030,7 @@ impl ThreadManager {
         &self,
         parent_thread_id: ThreadId,
         options: StartThreadOptions,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         self.spawn_internal_session_with_history(
             parent_thread_id,
             options,
@@ -1049,7 +1049,7 @@ impl ThreadManager {
         parent_thread_id: ThreadId,
         options: StartThreadOptions,
         history: Vec<RolloutItem>,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         self.spawn_internal_session_with_history(
             parent_thread_id,
             options,
@@ -1065,9 +1065,9 @@ impl ThreadManager {
         mut options: StartThreadOptions,
         history: InitialHistory,
         inherited_instructions: Option<SessionInstructions>,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         if !matches!(options.session_source, Some(SessionSource::Internal(_))) {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "internal sessions require an internal session source".to_string(),
             ));
         }
@@ -1093,7 +1093,7 @@ impl ThreadManager {
         mut options: StartThreadOptions,
         forked_from_thread_id: Option<ThreadId>,
         startup: Option<Arc<crate::session::startup::SessionStartup>>,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let (resumed_session_source, resumed_thread_source) = options
             .initial_history
             .get_resumed_session_sources()
@@ -1110,7 +1110,7 @@ impl ThreadManager {
             && (!matches!(options.session_source, Some(SessionSource::Internal(_)))
                 || matches!(options.initial_history, InitialHistory::Resumed(_)))
         {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "a captured internal parent requires a new or forked internal session".to_owned(),
             ));
         }
@@ -1142,7 +1142,7 @@ impl ThreadManager {
         &self,
         forked_from_thread_id: ThreadId,
         mut options: StartThreadOptions,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let fork_source = self.get_thread(forked_from_thread_id).await?;
         // Persist queued rollout updates before reading the fork snapshot.
         fork_source.ensure_rollout_materialized().await;
@@ -1153,7 +1153,7 @@ impl ThreadManager {
             )
             .await
             .map_err(|err| {
-                CodexErr::Fatal(format!(
+                AvaErr::Fatal(format!(
                     "failed to read subagent fork source {forked_from_thread_id}: {err}"
                 ))
             })?;
@@ -1180,7 +1180,7 @@ impl ThreadManager {
         auth_manager: Arc<AuthManager>,
         parent_trace: Option<W3cTraceContext>,
         client_mcp_extensions: ClientMcpExtensions,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let initial_history = self.initial_history_from_rollout_path(rollout_path).await?;
         Box::pin(self.resume_thread_with_history(
             config,
@@ -1199,7 +1199,7 @@ impl ThreadManager {
     pub async fn ensure_multi_agent_v2_child_loaded(
         &self,
         child_thread_id: ThreadId,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         let stored_thread = self
             .state
             .read_stored_thread(ReadThreadParams {
@@ -1209,12 +1209,12 @@ impl ThreadManager {
             })
             .await?;
         let Some(parent_thread_id) = stored_thread.parent_thread_id else {
-            return Err(CodexErr::InvalidRequest(format!(
+            return Err(AvaErr::InvalidRequest(format!(
                 "thread {child_thread_id} is not a recorded multi-agent v2 child"
             )));
         };
         let parent = self.get_thread(parent_thread_id).await.map_err(|_| {
-            CodexErr::InvalidRequest(format!(
+            AvaErr::InvalidRequest(format!(
                 "cannot resume multi-agent v2 child {child_thread_id}: parent {parent_thread_id} is not loaded; resume the parent first"
             ))
         })?;
@@ -1233,7 +1233,7 @@ impl ThreadManager {
         auth_manager: Arc<AuthManager>,
         parent_trace: Option<W3cTraceContext>,
         client_mcp_extensions: ClientMcpExtensions,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let agent_control = self.agent_control_for_config(&config);
         let (session_source, thread_source) = initial_history
             .get_resumed_session_sources()
@@ -1259,7 +1259,7 @@ impl ThreadManager {
         config: Config,
         user_shell_override: crate::shell::Shell,
         client_mcp_extensions: ClientMcpExtensions,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let agent_control = self.agent_control_for_config(&config);
         let options = StartThreadOptions {
             client_mcp_extensions,
@@ -1278,7 +1278,7 @@ impl ThreadManager {
         auth_manager: Arc<AuthManager>,
         user_shell_override: crate::shell::Shell,
         client_mcp_extensions: ClientMcpExtensions,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let agent_control = self.agent_control_for_config(&config);
         let initial_history = self.initial_history_from_rollout_path(rollout_path).await?;
         let (session_source, thread_source) = initial_history
@@ -1297,9 +1297,9 @@ impl ThreadManager {
     }
 
     /// Removes the thread from the manager's internal map, though the thread is stored
-    /// as `Arc<CodexThread>`, it is possible that other references to it exist elsewhere.
+    /// as `Arc<AvaThread>`, it is possible that other references to it exist elsewhere.
     /// Returns the thread if the thread was found and removed.
-    pub async fn remove_thread(&self, thread_id: &ThreadId) -> Option<Arc<CodexThread>> {
+    pub async fn remove_thread(&self, thread_id: &ThreadId) -> Option<Arc<AvaThread>> {
         self.state.threads.write().await.remove(thread_id)
     }
 
@@ -1308,13 +1308,13 @@ impl ThreadManager {
     pub async fn remove_thread_for_client(
         &self,
         thread_id: &ThreadId,
-    ) -> CodexResult<Option<Arc<CodexThread>>> {
+    ) -> AvaResult<Option<Arc<AvaThread>>> {
         let mut threads = self.state.threads.write().await;
         if threads
             .get(thread_id)
             .is_some_and(|thread| thread.session_source.is_internal())
         {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "live internal threads can only be removed by their owner".to_owned(),
             ));
         }
@@ -1328,8 +1328,8 @@ impl ThreadManager {
     pub async fn remove_thread_if_matches(
         &self,
         thread_id: &ThreadId,
-        expected: &Arc<CodexThread>,
-    ) -> Option<Arc<CodexThread>> {
+        expected: &Arc<AvaThread>,
+    ) -> Option<Arc<AvaThread>> {
         let mut threads = self.state.threads.write().await;
         if threads
             .get(thread_id)
@@ -1402,7 +1402,7 @@ impl ThreadManager {
         snapshot: S,
         options: StartThreadOptions,
         path: PathBuf,
-    ) -> CodexResult<NewThread>
+    ) -> AvaResult<NewThread>
     where
         S: Into<ForkSnapshot>,
     {
@@ -1415,7 +1415,7 @@ impl ThreadManager {
     async fn initial_history_from_rollout_path(
         &self,
         rollout_path: PathBuf,
-    ) -> CodexResult<InitialHistory> {
+    ) -> AvaResult<InitialHistory> {
         let requested_rollout_path = rollout_path.clone();
         let stored_thread = self
             .state
@@ -1436,7 +1436,7 @@ impl ThreadManager {
         snapshot: S,
         options: StartThreadOptions,
         history: InitialHistory,
-    ) -> CodexResult<NewThread>
+    ) -> AvaResult<NewThread>
     where
         S: Into<ForkSnapshot>,
     {
@@ -1456,7 +1456,7 @@ impl ThreadManager {
         &self,
         options: StartThreadOptions,
         prepared: PreparedFork,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let history = InitialHistory::Resumed(ResumedHistory {
             conversation_id: prepared.source_thread_id,
             history: Arc::clone(&prepared.model_context),
@@ -1484,7 +1484,7 @@ impl ThreadManager {
         &self,
         mut options: StartThreadOptions,
         fork_history: ForkHistory,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let ForkHistory {
             snapshot,
             initial_history: history,
@@ -1616,52 +1616,52 @@ impl ThreadManagerState {
     }
 
     /// Fetch a thread by ID or return ThreadNotFound.
-    pub(crate) async fn get_thread(&self, thread_id: ThreadId) -> CodexResult<Arc<CodexThread>> {
+    pub(crate) async fn get_thread(&self, thread_id: ThreadId) -> AvaResult<Arc<AvaThread>> {
         let threads = self.threads.read().await;
         match threads.get(&thread_id) {
             Some(thread) if !thread.session_source.is_internal() => Ok(thread.clone()),
-            Some(_) | None => Err(CodexErr::ThreadNotFound(thread_id)),
+            Some(_) | None => Err(AvaErr::ThreadNotFound(thread_id)),
         }
     }
 
     pub(crate) async fn read_stored_thread(
         &self,
         params: ReadThreadParams,
-    ) -> CodexResult<StoredThread> {
+    ) -> AvaResult<StoredThread> {
         let thread_id = params.thread_id;
         self.thread_store
             .read_thread(params)
             .await
             .map_err(|err| match err {
                 ThreadStoreError::ThreadNotFound { thread_id } => {
-                    CodexErr::ThreadNotFound(thread_id)
+                    AvaErr::ThreadNotFound(thread_id)
                 }
                 ThreadStoreError::InvalidRequest { message } => {
                     if message.starts_with("no rollout found for thread id ") {
-                        CodexErr::ThreadNotFound(thread_id)
+                        AvaErr::ThreadNotFound(thread_id)
                     } else {
-                        CodexErr::Fatal(format!(
+                        AvaErr::Fatal(format!(
                             "failed to read stored thread {thread_id}: invalid thread-store request: {message}"
                         ))
                     }
                 }
-                err => CodexErr::Fatal(format!("failed to read stored thread {thread_id}: {err}")),
+                err => AvaErr::Fatal(format!("failed to read stored thread {thread_id}: {err}")),
             })
     }
 
     pub(crate) async fn load_latest_model_context(
         &self,
         params: LoadThreadHistoryParams,
-    ) -> CodexResult<StoredModelContext> {
+    ) -> AvaResult<StoredModelContext> {
         let thread_id = params.thread_id;
         self.thread_store
             .load_latest_model_context(params)
             .await
             .map_err(|err| match err {
                 ThreadStoreError::ThreadNotFound { thread_id } => {
-                    CodexErr::ThreadNotFound(thread_id)
+                    AvaErr::ThreadNotFound(thread_id)
                 }
-                err => CodexErr::Fatal(format!(
+                err => AvaErr::Fatal(format!(
                     "failed to load model context for thread {thread_id}: {err}"
                 )),
             })
@@ -1674,7 +1674,7 @@ impl ThreadManagerState {
         op: Op,
         parent_turn_id: Option<String>,
         root_turn_id: Option<String>,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         let thread = self.get_thread(thread_id).await?;
         if let Some(ops_log) = &self.ops_log
             && let Ok(mut log) = ops_log.lock()
@@ -1689,7 +1689,7 @@ impl ThreadManagerState {
     }
 
     /// Remove a thread from the manager by ID, returning it when present.
-    pub(crate) async fn remove_thread(&self, thread_id: &ThreadId) -> Option<Arc<CodexThread>> {
+    pub(crate) async fn remove_thread(&self, thread_id: &ThreadId) -> Option<Arc<AvaThread>> {
         self.threads.write().await.remove(thread_id)
     }
 
@@ -1830,7 +1830,7 @@ impl ThreadManagerState {
             InitialHistory::Resumed(_) | InitialHistory::Forked(_) => None,
         };
 
-        let env_originator = std::env::var(CODEX_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR)
+        let env_originator = std::env::var(AVA_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR)
             .is_ok()
             .then(|| originator().value);
         effective_originator_value(
@@ -1847,7 +1847,7 @@ impl ThreadManagerState {
         &self,
         config: Config,
         agent_control: LocalAgentControl,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         Box::pin(self.spawn_new_thread_with_source(
             config,
             agent_control,
@@ -1878,7 +1878,7 @@ impl ThreadManagerState {
         inherited_environments: Option<TurnEnvironmentSnapshot>,
         inherited_exec_policy: Option<Arc<crate::exec_policy::ExecPolicyManager>>,
         environments: Option<Vec<TurnEnvironmentSelection>>,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let client_mcp_extensions = self.client_mcp_extensions_for_child(parent_thread_id).await;
         let options = StartThreadOptions {
             history_mode,
@@ -1901,7 +1901,7 @@ impl ThreadManagerState {
     pub(crate) async fn resume_thread_with_history_with_source(
         &self,
         options: ResumeThreadWithHistoryOptions,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let ResumeThreadWithHistoryOptions {
             config,
             initial_history,
@@ -1956,7 +1956,7 @@ impl ThreadManagerState {
         inherited_exec_policy: Option<Arc<crate::exec_policy::ExecPolicyManager>>,
         environments: Option<Vec<TurnEnvironmentSelection>>,
         thread_extension_init: ExtensionDataInit,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let client_mcp_extensions = self.client_mcp_extensions_for_child(parent_thread_id).await;
         let options = StartThreadOptions {
             initial_history,
@@ -1991,7 +1991,7 @@ impl ThreadManagerState {
     }
 
     /// Spawn a new thread with optional history and register it with the manager.
-    async fn spawn_thread(&self, request: ThreadSpawnRequest) -> CodexResult<NewThread> {
+    async fn spawn_thread(&self, request: ThreadSpawnRequest) -> AvaResult<NewThread> {
         let ThreadSpawnRequest {
             startup,
             options,
@@ -2031,13 +2031,13 @@ impl ThreadManagerState {
         // Older callers and saved reviewers identify isolation through their source.
         // New internal callers supply an explicit runtime policy before startup.
         let isolation = thread_extension_init
-            .get::<codex_extension_api::SessionIsolation>()
+            .get::<ava_extension_api::SessionIsolation>()
             .map(|policy| *policy)
             .unwrap_or_else(|| {
                 if crate::guardian::is_basic_session_source(&session_source) {
-                    codex_extension_api::SessionIsolation::Isolated
+                    ava_extension_api::SessionIsolation::Isolated
                 } else {
-                    codex_extension_api::SessionIsolation::Inherit
+                    ava_extension_api::SessionIsolation::Inherit
                 }
             });
         thread_extension_init.insert(isolation);
@@ -2050,7 +2050,7 @@ impl ThreadManagerState {
         });
         let is_resumed_thread = matches!(&initial_history, InitialHistory::Resumed(_));
         if reserved_thread_id.is_some() && matches!(&initial_history, InitialHistory::Resumed(_)) {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "reserved thread ID cannot be used when resuming a thread".to_string(),
             ));
         }
@@ -2064,14 +2064,14 @@ impl ThreadManagerState {
                         thread.session_source,
                         SessionSource::Internal(InternalSessionSource::Guardian)
                     ) {
-                        return Err(CodexErr::InvalidRequest(
+                        return Err(AvaErr::InvalidRequest(
                             "cannot resume a live Guardian reviewer; use thread/read to inspect it, or resume after its parent is unloaded".to_owned(),
                         ));
                     }
                     if let Some(requested_rollout_path) = resumed.rollout_path.as_deref()
                         && thread.rollout_path().as_deref() != Some(requested_rollout_path)
                     {
-                        return Err(CodexErr::InvalidRequest(format!(
+                        return Err(AvaErr::InvalidRequest(format!(
                             "thread {} is already running with a different rollout path",
                             resumed.conversation_id
                         )));
@@ -2099,7 +2099,7 @@ impl ThreadManagerState {
                 .await;
         }
         let (instructions, inherited_exec_policy, extensions, mcp_manager, multi_agent_version) =
-            if isolation == codex_extension_api::SessionIsolation::Isolated {
+            if isolation == ava_extension_api::SessionIsolation::Isolated {
                 (
                     inherited_instructions.unwrap_or_default(),
                     None,
@@ -2166,9 +2166,9 @@ impl ThreadManagerState {
             &session_source,
             SessionSource::Internal(InternalSessionSource::Guardian)
         ) {
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Preserve
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Preserve
         } else {
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile
         };
         let attachment_source =
             forked_from_thread_id.filter(|_| matches!(&initial_history, InitialHistory::Forked(_)));
@@ -2278,7 +2278,7 @@ impl ThreadManagerState {
         session: Arc<Session>,
         io: SessionIo,
         session_source: SessionSource,
-    ) -> CodexResult<NewThread> {
+    ) -> AvaResult<NewThread> {
         let thread_id = session.thread_id();
         let event = io.next_event().await?;
         let session_configured = match event {
@@ -2287,14 +2287,14 @@ impl ThreadManagerState {
                 msg: EventMsg::SessionConfigured(session_configured),
             } if id == INITIAL_SUBMIT_ID => session_configured,
             _ => {
-                return Err(CodexErr::SessionConfiguredNotFirstEvent);
+                return Err(AvaErr::SessionConfiguredNotFirstEvent);
             }
         };
 
         {
             let mut threads = self.threads.write().await;
             if let std::collections::hash_map::Entry::Vacant(e) = threads.entry(thread_id) {
-                let thread = Arc::new(CodexThread::new(
+                let thread = Arc::new(AvaThread::new(
                     session,
                     io,
                     ThreadStartupMetadata::from(&session_configured),
@@ -2313,7 +2313,7 @@ impl ThreadManagerState {
         if let Err(err) = io.shutdown_and_wait().await {
             warn!("failed to shut down duplicate thread {thread_id}: {err}");
         }
-        Err(CodexErr::InvalidRequest(format!(
+        Err(AvaErr::InvalidRequest(format!(
             "thread {thread_id} is already running"
         )))
     }
@@ -2326,7 +2326,7 @@ impl ThreadManagerState {
         &self,
         session_source: &SessionSource,
         initial_history: &InitialHistory,
-    ) -> codex_rollout_trace::ThreadTraceContext {
+    ) -> ava_rollout_trace::ThreadTraceContext {
         // A fresh v2 child belongs to the same rollout tree as its parent, so
         // session startup derives its child trace from the parent's thread
         // context. Resumed children already have a prior `ThreadStarted` event
@@ -2336,10 +2336,10 @@ impl ThreadManagerState {
             parent_thread_id, ..
         }) = session_source
         else {
-            return codex_rollout_trace::ThreadTraceContext::disabled();
+            return ava_rollout_trace::ThreadTraceContext::disabled();
         };
         if matches!(initial_history, InitialHistory::Resumed(_)) {
-            return codex_rollout_trace::ThreadTraceContext::disabled();
+            return ava_rollout_trace::ThreadTraceContext::disabled();
         }
         // Parent lookup can fail if the parent was closed or released between
         // spawn preparation and session construction. Tracing is diagnostic, so
@@ -2349,17 +2349,17 @@ impl ThreadManagerState {
             .await
             .ok()
             .map(|thread| thread.session.services.rollout_thread_trace.clone())
-            .unwrap_or_else(codex_rollout_trace::ThreadTraceContext::disabled)
+            .unwrap_or_else(ava_rollout_trace::ThreadTraceContext::disabled)
     }
 }
 
 fn stored_thread_to_initial_history(
     stored_thread: StoredThread,
     rollout_path: Option<PathBuf>,
-) -> CodexResult<InitialHistory> {
+) -> AvaResult<InitialHistory> {
     let thread_id = stored_thread.thread_id;
     let history = stored_thread.history.ok_or_else(|| {
-        CodexErr::Fatal(format!(
+        AvaErr::Fatal(format!(
             "thread {thread_id} did not include persisted history"
         ))
     })?;
@@ -2370,22 +2370,22 @@ fn stored_thread_to_initial_history(
     }))
 }
 
-fn thread_store_rollout_read_error(err: ThreadStoreError) -> CodexErr {
+fn thread_store_rollout_read_error(err: ThreadStoreError) -> AvaErr {
     match err {
-        ThreadStoreError::ThreadNotFound { thread_id } => CodexErr::ThreadNotFound(thread_id),
-        ThreadStoreError::InvalidRequest { message } => CodexErr::InvalidRequest(message),
-        err => CodexErr::Fatal(format!("failed to read thread by rollout path: {err}")),
+        ThreadStoreError::ThreadNotFound { thread_id } => AvaErr::ThreadNotFound(thread_id),
+        ThreadStoreError::InvalidRequest { message } => AvaErr::InvalidRequest(message),
+        err => AvaErr::Fatal(format!("failed to read thread by rollout path: {err}")),
     }
 }
 
-fn thread_store_metadata_update_error(thread_id: ThreadId, err: ThreadStoreError) -> CodexErr {
+fn thread_store_metadata_update_error(thread_id: ThreadId, err: ThreadStoreError) -> AvaErr {
     match err {
-        ThreadStoreError::ThreadNotFound { thread_id } => CodexErr::ThreadNotFound(thread_id),
-        ThreadStoreError::InvalidRequest { message } => CodexErr::InvalidRequest(message),
-        ThreadStoreError::Unsupported { operation } => CodexErr::UnsupportedOperation(format!(
+        ThreadStoreError::ThreadNotFound { thread_id } => AvaErr::ThreadNotFound(thread_id),
+        ThreadStoreError::InvalidRequest { message } => AvaErr::InvalidRequest(message),
+        ThreadStoreError::Unsupported { operation } => AvaErr::UnsupportedOperation(format!(
             "thread metadata update is not supported by this store: {operation}"
         )),
-        err => CodexErr::Fatal(format!(
+        err => AvaErr::Fatal(format!(
             "failed to update thread metadata {thread_id}: {err}"
         )),
     }

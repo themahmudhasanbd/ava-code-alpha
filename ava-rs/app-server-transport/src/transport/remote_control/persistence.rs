@@ -8,7 +8,7 @@ use super::desired_state::RemoteControlDesiredState;
 use super::enroll::RemoteControlEnrollment;
 use super::enroll::update_persisted_remote_control_enrollment;
 use super::protocol::RemoteControlTarget;
-use codex_state::StateRuntime;
+use ava_state::StateRuntime;
 use std::future::Future;
 use std::io;
 use std::sync::Arc;

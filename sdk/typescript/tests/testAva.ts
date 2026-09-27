@@ -112,7 +112,7 @@ function getCurrentEnv(): Record<string, string> {
   const env: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(process.env)) {
-    if (key === "AVA_INTERNAL_ORIGINATOR_OVERRIDE" || key === "CODEX_INTERNAL_ORIGINATOR_OVERRIDE") {
+    if (key === "AVA_INTERNAL_ORIGINATOR_OVERRIDE" || key === "AVA_INTERNAL_ORIGINATOR_OVERRIDE") {
       continue;
     }
     if (value !== undefined) {

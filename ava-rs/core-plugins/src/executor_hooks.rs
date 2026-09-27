@@ -1,16 +1,16 @@
 //! Executor-discovered plugin hook admission and trusted MCP routing.
 
-use codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
-use codex_config::HookHandlerConfig;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::MCP_TOOL_CODEX_APPS_META_KEY;
-use codex_mcp::ToolInfo;
-use codex_plugin::ExecutorPluginHookSource;
-use codex_plugin::PluginId;
-use codex_plugin::is_allowlisted_bundled_cleanup_hook;
-use codex_plugin::manifest::PluginManifestHooks;
-use codex_protocol::capabilities::CapabilityRootLocation;
+use ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
+use ava_config::HookHandlerConfig;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::MCP_TOOL_AVA_APPS_META_KEY;
+use ava_mcp::ToolInfo;
+use ava_plugin::ExecutorPluginHookSource;
+use ava_plugin::PluginId;
+use ava_plugin::is_allowlisted_bundled_cleanup_hook;
+use ava_plugin::manifest::PluginManifestHooks;
+use ava_protocol::capabilities::CapabilityRootLocation;
 use serde_json::Map;
 use serde_json::Value;
 
@@ -88,7 +88,7 @@ pub fn executor_plugin_hook_sources<'a>(
                     group.hooks.retain(|handler| {
                         let app_connector_id = match handler {
                             HookHandlerConfig::McpTool { server, tool, .. }
-                                if server == CODEX_APPS_MCP_SERVER_NAME =>
+                                if server == AVA_APPS_MCP_SERVER_NAME =>
                             {
                                 lookup_enabled_tool(server, tool)
                                     .and_then(|info| info.connector_id.as_deref())
@@ -127,7 +127,7 @@ fn resolve_mcp_routing<'a>(
     else {
         return None;
     };
-    if server != CODEX_APPS_MCP_SERVER_NAME {
+    if server != AVA_APPS_MCP_SERVER_NAME {
         return Some(source);
     }
 
@@ -136,12 +136,12 @@ fn resolve_mcp_routing<'a>(
         .tool
         .meta
         .as_ref()?
-        .get(MCP_TOOL_CODEX_APPS_META_KEY)?
+        .get(MCP_TOOL_AVA_APPS_META_KEY)?
         .as_object()?;
     routing_metadata.get("resource_uri")?.as_str()?;
     source.mcp_environment_id = Some(DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string());
     source.mcp_metadata = Some(Map::from_iter([(
-        MCP_TOOL_CODEX_APPS_META_KEY.to_string(),
+        MCP_TOOL_AVA_APPS_META_KEY.to_string(),
         Value::Object(routing_metadata.clone()),
     )]));
     Some(source)

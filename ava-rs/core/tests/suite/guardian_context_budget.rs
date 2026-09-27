@@ -2,21 +2,21 @@
 //! Parent token-budget mode must not replace Guardian's summary compaction.
 
 use anyhow::Result;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_core::config::CurrentTimeReminderConfig;
-use codex_core::config::RolloutBudgetConfig;
-use codex_features::Feature;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::AutoReviewMessages;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::user_input::UserInput;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_core::config::CurrentTimeReminderConfig;
+use ava_core::config::RolloutBudgetConfig;
+use ava_features::Feature;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::AutoReviewMessages;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -26,7 +26,7 @@ use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -49,7 +49,7 @@ async fn review_preserves_user_instructions_until_request_budgeting(
         "Guardian approval actions require host-native paths"
     );
     let server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.6-luna", move |model| {
             model.context_window = Some(window);
         })
@@ -115,13 +115,13 @@ async fn review_preserves_user_instructions_until_request_budgeting(
     let followup = format!("{padding}{padding}Keep all files private.{padding}{padding}");
     let approval = format!(
         "{}\nApproved action: {command}",
-        codex_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX
+        ava_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX
     );
     let restriction = "Revoke permission to edit files. Only run the echo command.";
     // V2 retains the first review's user input. The smallest window exercises
     // first-review truncation only; the larger windows cover follow-up delivery.
     if compactions_per_turn.len() == 2 {
-        test.codex
+        test.ava-code
             .inject_response_items(vec![
                 responses::user_message_item(&followup),
                 ResponseItem::Message {
@@ -193,7 +193,7 @@ async fn review_preserves_user_instructions_until_request_budgeting(
             .to_string()
             .contains("complete-instructions")
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -224,7 +224,7 @@ async fn review_respects_complete_context_budget(
         "Guardian approval actions require host-native paths"
     );
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 if matches!(reviewer_response, ReviewerResponse::CompactionError) {
@@ -282,7 +282,7 @@ async fn review_respects_complete_context_budget(
             | ReviewerResponse::CompactionError
     ) {
         builder = builder
-            .with_code_mode_host_program(codex_utils_cargo_bin::cargo_bin("codex-code-mode-host")?);
+            .with_code_mode_host_program(ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")?);
     }
     let image_store = Arc::new(RecordingFileAttachmentStore::default());
     if matches!(reviewer_response, ReviewerResponse::FileImageContinuation) {
@@ -596,7 +596,7 @@ async fn review_respects_complete_context_budget(
             );
         }
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -620,7 +620,7 @@ async fn oversized_action_preserves_review_policy_and_next_review(
         "Guardian approval actions require host-native paths"
     );
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.5", |model| {
             model.auto_review_model_override = Some("gpt-5.6-luna".to_owned());
         })
@@ -690,16 +690,16 @@ async fn oversized_action_preserves_review_policy_and_next_review(
         );
     }
     let response = responses::mount_sse_sequence(&server, events).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the commands if the approval reviewer allows them.".to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
     let mut terminal_assessment = None;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         if let EventMsg::GuardianAssessment(assessment) = event
-            && assessment.status != codex_protocol::protocol::GuardianAssessmentStatus::InProgress
+            && assessment.status != ava_protocol::protocol::GuardianAssessmentStatus::InProgress
         {
             terminal_assessment = Some((assessment.status, assessment.risk_level));
         }
@@ -717,19 +717,19 @@ async fn oversized_action_preserves_review_policy_and_next_review(
         assert_eq!(
             terminal_assessment,
             Some((
-                codex_protocol::protocol::GuardianAssessmentStatus::Aborted,
+                ava_protocol::protocol::GuardianAssessmentStatus::Aborted,
                 None
             ))
         );
         assert_eq!(approval.command.last(), Some(&oversized_command));
-        test.codex
+        test.ava-code
             .submit(Op::ExecApproval {
                 id: approval.effective_approval_id(),
                 turn_id: None,
                 decision: ReviewDecision::denied("rejected by user"),
             })
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -776,6 +776,6 @@ async fn oversized_action_preserves_review_policy_and_next_review(
             .to_string()
             .contains("complete-action-review")
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

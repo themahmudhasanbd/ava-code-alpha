@@ -1,9 +1,9 @@
 use super::thread_input::ensure_direct_input_allowed;
 use super::*;
-use codex_core::McpManager;
-use codex_mcp::McpServerSource;
-use codex_mcp::ReadResourceRequestParams;
-use codex_mcp::resolve_oauth_callback;
+use ava_core::McpManager;
+use ava_mcp::McpServerSource;
+use ava_mcp::ReadResourceRequestParams;
+use ava_mcp::resolve_oauth_callback;
 
 use crate::thread_state::ThreadStateManager;
 
@@ -106,7 +106,7 @@ impl McpRequestProcessor {
     pub(super) async fn load_thread(
         &self,
         thread_id: &str,
-    ) -> Result<(ThreadId, Arc<CodexThread>), JSONRPCErrorError> {
+    ) -> Result<(ThreadId, Arc<AvaThread>), JSONRPCErrorError> {
         let thread_id = ThreadId::from_string(thread_id)
             .map_err(|err| invalid_request(format!("invalid thread id: {err}")))?;
 
@@ -158,7 +158,7 @@ impl McpRequestProcessor {
                 (mcp_config, runtime_context)
             }
         };
-        let effective_servers = codex_mcp::effective_mcp_servers(&mcp_config, auth.as_ref());
+        let effective_servers = ava_mcp::effective_mcp_servers(&mcp_config, auth.as_ref());
         let Some(server) = effective_servers.get(&name) else {
             return Err(invalid_request(format!(
                 "No MCP server named '{name}' found."
@@ -170,7 +170,7 @@ impl McpRequestProcessor {
             StreamableHttpRedirectMode::Legacy
         };
         let server = server.config();
-        if matches!(server.auth, codex_config::McpServerAuth::EmaAuth) {
+        if matches!(server.auth, ava_config::McpServerAuth::EmaAuth) {
             return Err(invalid_request(
                 "EMA MCP connections are not enabled in this version",
             ));
@@ -200,7 +200,7 @@ impl McpRequestProcessor {
             discover_supported_scopes(
                 &server.transport,
                 Arc::clone(&http_client),
-                codex_rmcp_client::OAuthDiscoveryTimeout::Requested,
+                ava_rmcp_client::OAuthDiscoveryTimeout::Requested,
                 redirect_mode,
             )
             .await
@@ -322,11 +322,11 @@ impl McpRequestProcessor {
     async fn list_mcp_server_status_response(
         request_id: String,
         params: ListMcpServerStatusParams,
-        mcp_config: codex_mcp::McpConfig,
-        auth: Option<CodexAuth>,
+        mcp_config: ava_mcp::McpConfig,
+        auth: Option<AvaAuth>,
         runtime_context: McpRuntimeContext,
         mcp_manager: Arc<McpManager>,
-        thread: Option<Arc<codex_core::CodexThread>>,
+        thread: Option<Arc<ava_core::AvaThread>>,
     ) -> Result<ListMcpServerStatusResponse, JSONRPCErrorError> {
         let detail = match params.detail.unwrap_or(McpServerStatusDetail::Full) {
             McpServerStatusDetail::Full => McpSnapshotDetail::Full,
@@ -338,7 +338,7 @@ impl McpRequestProcessor {
             auth.as_ref(),
             request_id,
             runtime_context,
-            mcp_manager.codex_apps_tools_cache(),
+            mcp_manager.ava_apps_tools_cache(),
             mcp_manager.tool_catalog_cache(),
             detail,
         )
@@ -443,7 +443,7 @@ impl McpRequestProcessor {
         if let Some(connector_id) = connector_id {
             resource_params.meta = Some(
                 serde_json::Map::from_iter([(
-                    "x-codex-turn-metadata".to_string(),
+                    "x-ava-turn-metadata".to_string(),
                     serde_json::json!({
                         "mcp_request_meta": {
                             "selected_connector_ids": [connector_id],
@@ -460,7 +460,7 @@ impl McpRequestProcessor {
 
             tokio::spawn(async move {
                 let origin_call_id =
-                    origin_call_id.filter(|_| server == codex_mcp::CODEX_APPS_MCP_SERVER_NAME);
+                    origin_call_id.filter(|_| server == ava_mcp::AVA_APPS_MCP_SERVER_NAME);
                 let result = match origin_call_id.as_deref() {
                     Some(call_id) => {
                         thread
@@ -482,7 +482,7 @@ impl McpRequestProcessor {
         let config = self.load_latest_config(/*fallback_cwd*/ None).await?;
         let mcp_manager = self.thread_manager.mcp_manager();
         let mcp_config = mcp_manager.runtime_config(&config).await;
-        let codex_apps_tools_cache = mcp_manager.codex_apps_tools_cache();
+        let ava_apps_tools_cache = mcp_manager.ava_apps_tools_cache();
         let tool_catalog_cache = mcp_manager.tool_catalog_cache();
         let auth = self.auth_manager.auth().await;
         let environment_manager = self.thread_manager.environment_manager();
@@ -498,7 +498,7 @@ impl McpRequestProcessor {
                 &mcp_config,
                 auth.as_ref(),
                 runtime_context,
-                codex_apps_tools_cache,
+                ava_apps_tools_cache,
                 tool_catalog_cache,
                 &server,
                 resource_params,
@@ -560,7 +560,7 @@ impl McpRequestProcessor {
 }
 
 fn mcp_operation_error(error: anyhow::Error) -> JSONRPCErrorError {
-    match codex_rmcp_client::mcp_error(&error) {
+    match ava_rmcp_client::mcp_error(&error) {
         Some(error) => JSONRPCErrorError {
             code: i64::from(error.code.0),
             message: error.message.to_string(),

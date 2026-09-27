@@ -299,11 +299,11 @@ impl ChatWidget {
 
     pub(super) fn handle_app_server_steer_rejected_error(
         &mut self,
-        codex_error_info: &AppServerCodexErrorInfo,
+        ava_error_info: &AppServerAvaErrorInfo,
     ) -> bool {
         matches!(
-            codex_error_info,
-            AppServerCodexErrorInfo::ActiveTurnNotSteerable { .. }
+            ava_error_info,
+            AppServerAvaErrorInfo::ActiveTurnNotSteerable { .. }
         ) && self.enqueue_rejected_steer()
     }
 
@@ -358,7 +358,7 @@ impl ChatWidget {
         self.finalize_turn();
 
         let message = if message.trim().is_empty() {
-            "Codex is currently experiencing high load.".to_string()
+            "Ava is currently experiencing high load.".to_string()
         } else {
             message
         };
@@ -414,7 +414,7 @@ impl ChatWidget {
         // on_error can drain queued input, before the asynchronous recovery read completes.
         self.input_queue.rate_limit_recovery_pending = self.has_chatgpt_account;
         let usage_limit_error = matches!(error_kind, RateLimitErrorKind::UsageLimit);
-        let rate_limit_reached_type = self.codex_rate_limit_reached_type.map(|kind| {
+        let rate_limit_reached_type = self.ava_rate_limit_reached_type.map(|kind| {
             if usage_limit_error {
                 match kind {
                     RateLimitReachedType::WorkspaceOwnerCreditsDepleted => {
@@ -429,19 +429,19 @@ impl ChatWidget {
                 kind
             }
         });
-        if self.codex_rate_limit_reached_type != rate_limit_reached_type {
+        if self.ava_rate_limit_reached_type != rate_limit_reached_type {
             self.clear_backend_banner();
         }
-        self.codex_rate_limit_reached_type = rate_limit_reached_type;
+        self.ava_rate_limit_reached_type = rate_limit_reached_type;
         // Keep owner remediation in history even when the optional backend banner is unavailable.
         let (message, nudge) = match rate_limit_reached_type {
             Some(RateLimitReachedType::WorkspaceOwnerCreditsDepleted) => (
-                    "You're out of credits. Your workspace is out of credits. Add credits to continue using Codex."
+                    "You're out of credits. Your workspace is out of credits. Add credits to continue using Ava."
                         .to_string(),
                     None,
             ),
             Some(RateLimitReachedType::WorkspaceOwnerUsageLimitReached) => (
-                    "Usage limit reached. You've reached your usage limit. Increase your limits to continue using codex."
+                    "Usage limit reached. You've reached your usage limit. Increase your limits to continue using ava."
                         .to_string(),
                     None,
             ),
@@ -467,15 +467,15 @@ impl ChatWidget {
     pub(super) fn handle_non_retry_error(
         &mut self,
         message: String,
-        codex_error_info: Option<AppServerCodexErrorInfo>,
+        ava_error_info: Option<AppServerAvaErrorInfo>,
     ) {
-        if codex_error_info == Some(AppServerCodexErrorInfo::MisalignmentPolicyViolation) {
+        if ava_error_info == Some(AppServerAvaErrorInfo::MisalignmentPolicyViolation) {
             self.on_misalignment_policy_violation();
-        } else if codex_error_info
+        } else if ava_error_info
             .as_ref()
             .is_some_and(|info| self.handle_app_server_steer_rejected_error(info))
         {
-        } else if codex_error_info
+        } else if ava_error_info
             .as_ref()
             .is_some_and(is_app_server_cyber_policy_error)
         {
@@ -493,7 +493,7 @@ impl ChatWidget {
             self.add_to_history(history_cell::new_safety_access_block_event());
             self.request_redraw();
             self.maybe_send_next_queued_input();
-        } else if let Some(info) = codex_error_info
+        } else if let Some(info) = ava_error_info
             .as_ref()
             .and_then(app_server_rate_limit_error_kind)
         {

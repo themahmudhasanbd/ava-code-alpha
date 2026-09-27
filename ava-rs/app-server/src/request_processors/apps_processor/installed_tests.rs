@@ -2,9 +2,9 @@ use super::APPS_INSTALLED_DURATION_METRIC;
 use super::AppsInstalledSnapshotMetrics;
 use super::record_apps_installed_metrics;
 use anyhow::Result;
-use codex_app_server_protocol::AppsInstalledResponse;
-use codex_otel::MetricsClient;
-use codex_otel::MetricsConfig;
+use ava_app_server_protocol::AppsInstalledResponse;
+use ava_otel::MetricsClient;
+use ava_otel::MetricsConfig;
 use opentelemetry_sdk::metrics::InMemoryMetricExporter;
 use opentelemetry_sdk::metrics::data::AggregatedMetrics;
 use opentelemetry_sdk::metrics::data::MetricData;
@@ -17,7 +17,7 @@ fn test_metrics() -> Result<MetricsClient> {
     Ok(MetricsClient::new(
         MetricsConfig::in_memory(
             "test",
-            "codex-app-server",
+            "ava-app-server",
             env!("CARGO_PKG_VERSION"),
             InMemoryMetricExporter::default(),
         )

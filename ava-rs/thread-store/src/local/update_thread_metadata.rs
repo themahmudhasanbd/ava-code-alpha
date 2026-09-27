@@ -2,20 +2,20 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use chrono::Utc;
-use codex_protocol::SanitizedGitUrl;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::GitInfo;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_rollout::RolloutConfig;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::RolloutRecorderParams;
-use codex_rollout::append_thread_name;
-use codex_rollout::read_session_meta_line;
-use codex_state::ThreadMetadataBuilder;
+use ava_protocol::SanitizedGitUrl;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::GitInfo;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_rollout::RolloutConfig;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::RolloutRecorderParams;
+use ava_rollout::append_thread_name;
+use ava_rollout::read_session_meta_line;
+use ava_state::ThreadMetadataBuilder;
 use tracing::warn;
 
 use super::LocalThreadStore;
@@ -151,7 +151,7 @@ pub(super) async fn update_thread_metadata(
         // legacy SessionMeta compatibility path below.
         if let Some(name) = patch.name.as_ref()
             && let Err(err) = append_thread_name(
-                store.config.codex_home.as_path(),
+                store.config.ava_home.as_path(),
                 thread_id,
                 name.as_deref().unwrap_or_default(),
             )
@@ -203,7 +203,7 @@ pub(super) async fn update_thread_metadata(
     }
 
     let state_db_ctx = store.state_db().await;
-    codex_rollout::state_db::reconcile_rollout(
+    ava_rollout::state_db::reconcile_rollout(
         state_db_ctx.as_deref(),
         resolved_rollout.path.as_path(),
         store.config.default_model_provider_id.as_str(),
@@ -217,7 +217,7 @@ pub(super) async fn update_thread_metadata(
 
     if let Some(name) = name {
         append_thread_name(
-            store.config.codex_home.as_path(),
+            store.config.ava_home.as_path(),
             thread_id,
             &name.unwrap_or_default(),
         )
@@ -276,7 +276,7 @@ pub(super) async fn update_thread_metadata(
             writer_lock,
             |meta| {
                 meta.git = Some(GitInfo {
-                    commit_hash: sha.as_deref().map(codex_git_utils::GitSha::new),
+                    commit_hash: sha.as_deref().map(ava_git_utils::GitSha::new),
                     branch: branch.clone(),
                     repository_url: origin_url.clone(),
                 });
@@ -331,7 +331,7 @@ async fn remove_pending_thread_metadata(
 }
 
 async fn refresh_resolved_rollout_path(resolved: &mut ResolvedThreadRollout) {
-    if let Some(path) = codex_rollout::existing_rollout_path(resolved.path.as_path()).await {
+    if let Some(path) = ava_rollout::existing_rollout_path(resolved.path.as_path()).await {
         resolved.path = path;
     }
 }
@@ -638,7 +638,7 @@ async fn metadata_for_missing_sqlite_row(
     rollout_path: &Path,
     rollout_path_archived: bool,
     patch: &ThreadMetadataPatch,
-) -> ThreadStoreResult<codex_state::ThreadMetadata> {
+) -> ThreadStoreResult<ava_state::ThreadMetadata> {
     let created_at = patch
         .created_at
         .or(patch.updated_at)
@@ -672,7 +672,7 @@ async fn canonical_history_mode(
     let session_meta = match read_session_meta_line(rollout_path).await {
         Ok(session_meta) => session_meta,
         Err(err) => {
-            if codex_rollout::existing_rollout_path(rollout_path)
+            if ava_rollout::existing_rollout_path(rollout_path)
                 .await
                 .is_none()
                 && let Some(history_mode) = store
@@ -758,11 +758,11 @@ fn enum_to_string<T: serde::Serialize>(value: &T) -> String {
 }
 
 fn normalize_cwd(cwd: PathBuf) -> PathBuf {
-    codex_utils_path::normalize_for_path_comparison(cwd.as_path()).unwrap_or(cwd)
+    ava_utils_path::normalize_for_path_comparison(cwd.as_path()).unwrap_or(cwd)
 }
 
 async fn apply_thread_git_info_patch(
-    state_db: &codex_state::StateRuntime,
+    state_db: &ava_state::StateRuntime,
     thread_id: ThreadId,
     git_info: &GitInfoPatch,
 ) -> ThreadStoreResult<()> {
@@ -858,7 +858,7 @@ async fn update_rollout_metadata(
         .await
         .get(&thread_id)
         .map(|entry| entry.recorder.clone());
-    let mut metadata = codex_rollout::read_session_meta_line(path)
+    let mut metadata = ava_rollout::read_session_meta_line(path)
         .await
         .map_err(io_error)?;
     if metadata.meta.id != thread_id {
@@ -874,7 +874,7 @@ async fn update_rollout_metadata(
         Some(recorder) => recorder,
         None => RolloutRecorder::new_with_writer_lock(
             &RolloutConfig {
-                codex_home: store.config.codex_home.clone(),
+                ava_home: store.config.ava_home.clone(),
                 sqlite: store.config.sqlite.clone(),
                 cwd: metadata.meta.cwd.clone(),
                 model_provider_id: store.config.default_model_provider_id.clone(),
@@ -906,15 +906,15 @@ fn memory_mode_as_str(mode: ThreadMemoryMode) -> &'static str {
 }
 
 fn rollout_path_is_archived(store: &LocalThreadStore, path: &Path) -> bool {
-    super::helpers::rollout_path_is_archived(store.config.codex_home.as_path(), path)
+    super::helpers::rollout_path_is_archived(store.config.ava_home.as_path(), path)
 }
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::protocol::ThreadHistoryMode;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::protocol::ThreadHistoryMode;
+    use ava_utils_absolute_path::test_support::PathExt;
     use futures::FutureExt;
     use pretty_assertions::assert_eq;
     use serde_json::Value;
@@ -960,7 +960,7 @@ mod tests {
             .expect("local store returns updated thread");
 
         assert_eq!(thread.name.as_deref(), Some("A sharper name"));
-        let latest_name = codex_rollout::find_thread_name_by_id(home.path(), &thread_id)
+        let latest_name = ava_rollout::find_thread_name_by_id(home.path(), &thread_id)
             .await
             .expect("find thread name");
         assert_eq!(latest_name.as_deref(), Some("A sharper name"));
@@ -975,7 +975,7 @@ mod tests {
         let rollout_path =
             write_session_file(home.path(), "2025-01-03T14-20-00", uuid).expect("session file");
         let original_rollout = std::fs::read_to_string(&rollout_path).expect("read rollout");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -983,7 +983,7 @@ mod tests {
         .expect("state db should initialize");
         let store = LocalThreadStore::new(config, Some(runtime.clone()));
 
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             rollout_path.as_path(),
             "test-provider",
@@ -996,7 +996,7 @@ mod tests {
         store
             .move_thread_to_section(MoveThreadToSectionParams {
                 thread_id,
-                section: Some(codex_state::PINNED_THREAD_SECTION_ID.to_string()),
+                section: Some(ava_state::PINNED_THREAD_SECTION_ID.to_string()),
                 before_thread_id: None,
             })
             .await
@@ -1013,9 +1013,9 @@ mod tests {
 
         assert_eq!(
             pinned.section,
-            Some(codex_state::ThreadSection {
-                id: codex_state::PINNED_THREAD_SECTION_ID.to_string(),
-                name: codex_state::PINNED_THREAD_SECTION_NAME.to_string(),
+            Some(ava_state::ThreadSection {
+                id: ava_state::PINNED_THREAD_SECTION_ID.to_string(),
+                name: ava_state::PINNED_THREAD_SECTION_NAME.to_string(),
                 appearance: None,
             })
         );
@@ -1026,9 +1026,9 @@ mod tests {
             .expect("pinned metadata");
         assert_eq!(
             pinned_metadata.section,
-            Some(codex_state::ThreadSection {
-                id: codex_state::PINNED_THREAD_SECTION_ID.to_string(),
-                name: codex_state::PINNED_THREAD_SECTION_NAME.to_string(),
+            Some(ava_state::ThreadSection {
+                id: ava_state::PINNED_THREAD_SECTION_ID.to_string(),
+                name: ava_state::PINNED_THREAD_SECTION_NAME.to_string(),
                 appearance: None,
             })
         );
@@ -1043,7 +1043,7 @@ mod tests {
                 allowed_sources: Vec::new(),
                 model_providers: None,
                 cwd_filters: None,
-                section: Some(Some(codex_state::PINNED_THREAD_SECTION_ID.to_string())),
+                section: Some(Some(ava_state::PINNED_THREAD_SECTION_ID.to_string())),
                 project_id: None,
                 archived: false,
                 search_term: None,
@@ -1070,9 +1070,9 @@ mod tests {
             .expect("read pinned thread by rollout path");
         assert_eq!(
             read_by_path.section,
-            Some(codex_state::ThreadSection {
-                id: codex_state::PINNED_THREAD_SECTION_ID.to_string(),
-                name: codex_state::PINNED_THREAD_SECTION_NAME.to_string(),
+            Some(ava_state::ThreadSection {
+                id: ava_state::PINNED_THREAD_SECTION_ID.to_string(),
+                name: ava_state::PINNED_THREAD_SECTION_NAME.to_string(),
                 appearance: None,
             })
         );
@@ -1129,7 +1129,7 @@ mod tests {
         )
         .expect("session file");
         let original_rollout = std::fs::read_to_string(&path).expect("read rollout");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1158,7 +1158,7 @@ mod tests {
         assert_eq!(metadata.name.as_deref(), Some("Canonical paginated name"));
         assert!(metadata.title.is_empty());
         assert_eq!(
-            codex_rollout::find_thread_name_by_id(home.path(), &thread_id)
+            ava_rollout::find_thread_name_by_id(home.path(), &thread_id)
                 .await
                 .expect("find thread name")
                 .as_deref(),
@@ -1224,8 +1224,8 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let path =
             write_session_file(home.path(), "2025-01-03T14-30-00", uuid).expect("session file");
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -1314,13 +1314,13 @@ mod tests {
         )
         .expect("session file");
         let original_rollout = std::fs::read_to_string(&path).expect("read rollout");
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
         .expect("state db should initialize");
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             path.as_path(),
             config.default_model_provider_id.as_str(),
@@ -1379,7 +1379,7 @@ mod tests {
             std::fs::read_to_string(&path).expect("read rollout"),
             original_rollout
         );
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             path.as_path(),
             config.default_model_provider_id.as_str(),
@@ -1412,7 +1412,7 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let path =
             write_session_file(home.path(), "2025-01-03T18-30-00", uuid).expect("session file");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1457,7 +1457,7 @@ mod tests {
         assert_eq!(appended["payload"]["memory_mode"], "disabled");
         assert_eq!(appended["payload"]["git"]["branch"], "feature");
 
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             path.as_path(),
             config.default_model_provider_id.as_str(),
@@ -1519,7 +1519,7 @@ mod tests {
     async fn update_thread_metadata_sets_git_info() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1566,7 +1566,7 @@ mod tests {
     async fn update_thread_metadata_updates_permission_profile_and_reasoning_effort() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1623,7 +1623,7 @@ mod tests {
     async fn update_thread_metadata_partially_updates_git_info() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1685,7 +1685,7 @@ mod tests {
     async fn update_thread_metadata_clears_git_info_fields() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1738,7 +1738,7 @@ mod tests {
         assert_eq!(appended["type"], "session_meta");
         assert_eq!(appended["payload"]["git"], json!({}));
 
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             path.as_path(),
             config.default_model_provider_id.as_str(),
@@ -1772,7 +1772,7 @@ mod tests {
         let appended = last_rollout_item(path.as_path());
         assert_eq!(appended["type"], "session_meta");
         assert_eq!(appended["payload"].get("git"), None);
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             path.as_path(),
             config.default_model_provider_id.as_str(),
@@ -1833,7 +1833,7 @@ mod tests {
         let appended = last_rollout_item(path.as_path());
         assert_eq!(appended["type"], "session_meta");
         assert_eq!(appended["payload"].get("git"), None);
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             path.as_path(),
             config.default_model_provider_id.as_str(),
@@ -1893,8 +1893,8 @@ mod tests {
     async fn update_thread_metadata_applies_combined_explicit_patch() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -1932,7 +1932,7 @@ mod tests {
         assert_eq!(appended["type"], "session_meta");
         assert_eq!(appended["payload"]["memory_mode"], "disabled");
         assert_eq!(appended["payload"]["git"]["branch"], "combined");
-        let latest_name = codex_rollout::find_thread_name_by_id(home.path(), &thread_id)
+        let latest_name = ava_rollout::find_thread_name_by_id(home.path(), &thread_id)
             .await
             .expect("find thread name");
         assert_eq!(latest_name.as_deref(), Some("Combined metadata"));
@@ -1987,8 +1987,8 @@ mod tests {
     async fn metadata_patch_applies_title_over_existing_name() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2031,8 +2031,8 @@ mod tests {
     async fn metadata_patch_applies_latest_preview_and_first_user_message() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2090,8 +2090,8 @@ mod tests {
     async fn observed_metadata_rejects_unknown_thread_without_rollout() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2137,8 +2137,8 @@ mod tests {
             ThreadHistoryMode::Paginated,
         )
         .expect("session file");
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2178,8 +2178,8 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         write_archived_session_file(home.path(), "2025-01-03T19-30-00", uuid)
             .expect("archived session file");
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2215,8 +2215,8 @@ mod tests {
     async fn observed_metadata_normalizes_cwd_for_list_filters() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2229,7 +2229,7 @@ mod tests {
         let child = workspace.join("child");
         std::fs::create_dir_all(child.as_path()).expect("create workspace");
         let unnormalized_cwd = child.join("..");
-        let normalized_cwd = codex_utils_path::normalize_for_path_comparison(workspace.as_path())
+        let normalized_cwd = ava_utils_path::normalize_for_path_comparison(workspace.as_path())
             .expect("normalize cwd");
 
         store
@@ -2286,8 +2286,8 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let archived_path = write_archived_session_file(home.path(), "2025-01-03T16-00-00", uuid)
             .expect("archived session file");
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2297,7 +2297,7 @@ mod tests {
             .mark_backfill_complete(/*last_watermark*/ None)
             .await
             .expect("backfill should be complete");
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             archived_path.as_path(),
             config.default_model_provider_id.as_str(),
@@ -2350,8 +2350,8 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let archived_path = write_archived_session_file(home.path(), "2025-01-03T16-30-00", uuid)
             .expect("archived session file");
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -2361,7 +2361,7 @@ mod tests {
             .mark_backfill_complete(/*last_watermark*/ None)
             .await
             .expect("backfill should be complete");
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(runtime.as_ref()),
             archived_path.as_path(),
             config.default_model_provider_id.as_str(),

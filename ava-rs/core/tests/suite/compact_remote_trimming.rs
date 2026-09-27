@@ -19,8 +19,8 @@ async fn remote_compact_v2_token_estimate_ignores_message_bookkeeping_and_json_e
 -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_auto_env_builder(
-        test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+    let harness = TestAvaHarness::with_auto_env_builder(
+        test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
     )
     .await?;
     let escaped_text = "a \"quoted\" line\nand\\path";
@@ -46,7 +46,7 @@ async fn remote_compact_v2_token_estimate_ignores_message_bookkeeping_and_json_e
             }),
         ),
     ] {
-        let codex = harness
+        let ava = harness
             .test()
             .thread_manager
             .start_thread(StartThreadOptions {
@@ -64,14 +64,14 @@ async fn remote_compact_v2_token_estimate_ignores_message_bookkeeping_and_json_e
             "content": [{"type": "input_text", "text": text}],
             "internal_chat_message_metadata_passthrough": metadata,
         });
-        codex
+        ava
             .inject_response_items(vec![serde_json::from_value(message.clone())?])
             .await?;
         let mock = mount_sse_once(harness.server(), compact_response()).await;
-        codex.submit(Op::Compact).await?;
-        wait_for_turn_complete(&codex).await;
+        ava.submit(Op::Compact).await?;
+        wait_for_turn_complete(&ava).await;
 
-        estimates.push(codex.token_usage_info().await.context("token usage")?);
+        estimates.push(ava.token_usage_info().await.context("token usage")?);
         assert_eq!(
             mock.single_request()
                 .input()
@@ -79,7 +79,7 @@ async fn remote_compact_v2_token_estimate_ignores_message_bookkeeping_and_json_e
                 .find(|item| item["id"] == id),
             Some(message),
         );
-        codex.shutdown_and_wait().await?;
+        ava.shutdown_and_wait().await?;
     }
 
     assert_eq!(estimates[0], estimates[1]);
@@ -92,7 +92,7 @@ async fn remote_compact_v2_trims_tool_search_output_to_empty_tools_array() -> Re
 
     let call_id = "tool-search-1";
     let tools = json!([{
-        "type": "namespace", "name": "codex_app", "description": "Codex app tools.",
+        "type": "namespace", "name": "ava_app", "description": "Ava app tools.",
         "tools": [{
             "type": "function", "name": "oversized_dynamic_tool", "description": "x".repeat(20_000),
             "parameters": {"type": "object", "properties": {}, "additionalProperties": false},
@@ -100,16 +100,16 @@ async fn remote_compact_v2_trims_tool_search_output_to_empty_tools_array() -> Re
         }],
     }]);
     for (context_window, expected_tools) in [(200_000, &tools), (2_000, &json!([]))] {
-        let harness = TestCodexHarness::with_builder(
-            test_codex()
-                .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        let harness = TestAvaHarness::with_builder(
+            test_ava()
+                .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
                 .with_config(move |config| {
                     configure_search_capable_model(config);
                     config.model_context_window = Some(context_window);
                 }),
         )
         .await?;
-        let codex = &harness.test().codex;
+        let ava = &harness.test().ava-code;
         let history = [
             json!({"type": "message", "role": "user", "content": [{"type": "input_text", "text": "find the tool"}]}),
             json!({"type": "tool_search_call", "call_id": call_id, "execution": "client", "arguments": {"query": "oversized deferred tool"}}),
@@ -118,10 +118,10 @@ async fn remote_compact_v2_trims_tool_search_output_to_empty_tools_array() -> Re
         .into_iter()
         .map(serde_json::from_value)
         .collect::<serde_json::Result<Vec<ResponseItem>>>()?;
-        codex.inject_response_items(history).await?;
+        ava.inject_response_items(history).await?;
         let mock = mount_sse_once(harness.server(), compact_response()).await;
-        codex.submit(Op::Compact).await?;
-        wait_for_turn_complete(codex).await;
+        ava.submit(Op::Compact).await?;
+        wait_for_turn_complete(ava).await;
 
         let request = mock.single_request();
         assert_eq!(request.path(), "/v1/responses");
@@ -155,9 +155,9 @@ async fn remote_compact_v2_trim_estimate_uses_session_base_instructions() -> Res
             CONTEXT_WINDOW_TRUNCATED_OUTPUT_MESSAGE,
         ),
     ] {
-        let harness = TestCodexHarness::with_builder(
-            test_codex()
-                .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        let harness = TestAvaHarness::with_builder(
+            test_ava()
+                .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
                 .with_config({
                     let instructions = instructions.to_string();
                     move |config| {
@@ -167,7 +167,7 @@ async fn remote_compact_v2_trim_estimate_uses_session_base_instructions() -> Res
                 }),
         )
         .await?;
-        let codex = &harness.test().codex;
+        let ava = &harness.test().ava-code;
         let history = [
             json!({"type": "message", "role": "user", "content": [{"type": "input_text", "text": "older user"}]}),
             json!({"type": "function_call", "call_id": "retained", "name": "exec_command", "arguments": "{}"}),
@@ -179,10 +179,10 @@ async fn remote_compact_v2_trim_estimate_uses_session_base_instructions() -> Res
         .into_iter()
         .map(serde_json::from_value)
         .collect::<serde_json::Result<Vec<ResponseItem>>>()?;
-        codex.inject_response_items(history).await?;
+        ava.inject_response_items(history).await?;
         let mock = mount_sse_once(harness.server(), compact_response()).await;
-        codex.submit(Op::Compact).await?;
-        wait_for_turn_complete(codex).await;
+        ava.submit(Op::Compact).await?;
+        wait_for_turn_complete(ava).await;
 
         let request = mock.single_request();
         assert_eq!(request.path(), "/v1/responses");

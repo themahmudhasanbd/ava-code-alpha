@@ -7,36 +7,36 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigEdit;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ConfigRequirementsReadResponse;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetParams;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::PermissionProfileListParams;
-use codex_app_server_protocol::PermissionProfileListResponse;
-use codex_app_server_protocol::PluginListParams;
-use codex_app_server_protocol::PluginListResponse;
-use codex_app_server_protocol::SkillScope;
-use codex_app_server_protocol::SkillsChangedNotification;
-use codex_app_server_protocol::SkillsExtraRootsSetParams;
-use codex_app_server_protocol::SkillsExtraRootsSetResponse;
-use codex_app_server_protocol::SkillsListParams;
-use codex_app_server_protocol::SkillsListResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::config::set_project_trust_level;
-use codex_core_plugins::store::PluginStore;
-use codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_plugin::PluginId;
-use codex_protocol::config_types::TrustLevel;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigEdit;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigRequirementsReadResponse;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetParams;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::PermissionProfileListParams;
+use ava_app_server_protocol::PermissionProfileListResponse;
+use ava_app_server_protocol::PluginListParams;
+use ava_app_server_protocol::PluginListResponse;
+use ava_app_server_protocol::SkillScope;
+use ava_app_server_protocol::SkillsChangedNotification;
+use ava_app_server_protocol::SkillsExtraRootsSetParams;
+use ava_app_server_protocol::SkillsExtraRootsSetResponse;
+use ava_app_server_protocol::SkillsListParams;
+use ava_app_server_protocol::SkillsListResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::config::set_project_trust_level;
+use ava_core_plugins::store::PluginStore;
+use ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_plugin::PluginId;
+use ava_protocol::config_types::TrustLevel;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::skip_if_remote;
 use core_test_support::skip_if_wine_exec;
 use pretty_assertions::assert_eq;
@@ -74,11 +74,11 @@ async fn expect_skills_changed_notification(
 }
 
 fn write_plugins_enabled_config_with_base_url(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     base_url: &str,
 ) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{base_url}"
 
@@ -90,12 +90,12 @@ plugins = true
 }
 
 fn write_cached_remote_plugin_with_skill(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
 ) -> Result<std::path::PathBuf> {
-    let plugin_root = codex_home.join("plugins/cache/openai-curated-remote/linear/local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    let plugin_root = ava_home.join("plugins/cache/openai-curated-remote/linear/local");
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"linear"}"#,
     )?;
 
@@ -110,15 +110,15 @@ fn write_cached_remote_plugin_with_skill(
 }
 
 fn write_cached_local_curated_plugin_with_skill(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     marketplace_name: &str,
 ) -> Result<()> {
-    let plugin_root = codex_home.join(format!(
+    let plugin_root = ava_home.join(format!(
         "plugins/cache/{marketplace_name}/google-calendar/local"
     ));
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"google-calendar"}"#,
     )?;
 
@@ -133,10 +133,10 @@ fn write_cached_local_curated_plugin_with_skill(
 
 #[tokio::test]
 async fn skills_list_disabled_bundled_skills_preserves_shared_system_skill_cache() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let mut enabled_mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -166,7 +166,7 @@ async fn skills_list_disabled_bundled_skills_preserves_shared_system_skill_cache
     );
 
     let mut disabled_mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_args(&["-c", "skills.bundled.enabled=false"])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -222,22 +222,22 @@ async fn skills_list_disabled_bundled_skills_preserves_shared_system_skill_cache
 
 #[tokio::test]
 async fn skills_list_uses_each_cwds_bundled_skills_configuration() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let disabled_cwd = TempDir::new()?;
     let enabled_cwd = TempDir::new()?;
 
     for (cwd, enabled) in [(disabled_cwd.path(), false), (enabled_cwd.path(), true)] {
         std::fs::create_dir_all(cwd.join(".git"))?;
-        std::fs::create_dir_all(cwd.join(".codex"))?;
+        std::fs::create_dir_all(cwd.join(".ava-code"))?;
         std::fs::write(
-            cwd.join(".codex/config.toml"),
+            cwd.join(".ava-code/config.toml"),
             format!("[skills.bundled]\nenabled = {enabled}\n"),
         )?;
-        set_project_trust_level(codex_home.path(), cwd, TrustLevel::Trusted)?;
+        set_project_trust_level(ava_home.path(), cwd, TrustLevel::Trusted)?;
     }
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -274,9 +274,9 @@ async fn skills_list_uses_each_cwds_bundled_skills_configuration() -> Result<()>
 
 #[tokio::test]
 async fn skills_list_runtime_enable_refreshes_shared_system_skill_cache() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
-    let stale_skill_path = codex_home
+    let stale_skill_path = ava_home
         .path()
         .join("skills/.system/stale-system-skill/SKILL.md");
     std::fs::create_dir_all(
@@ -289,12 +289,12 @@ async fn skills_list_runtime_enable_refreshes_shared_system_skill_cache() -> Res
         "---\nname: stale-system-skill\ndescription: stale system skill\n---\n\n# Body\n",
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[skills.bundled]\nenabled = false\n",
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -366,12 +366,12 @@ async fn skills_list_runtime_enable_refreshes_shared_system_skill_cache() -> Res
 
 #[tokio::test]
 async fn runtime_remote_plugin_toggle_updates_local_curated_plugin_skills() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let server = MockServer::start().await;
-    write_cached_local_curated_plugin_with_skill(codex_home.path(), "openai-curated")?;
+    write_cached_local_curated_plugin_with_skill(ava_home.path(), "openai-curated")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -385,7 +385,7 @@ enabled = true
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -394,7 +394,7 @@ enabled = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -433,7 +433,7 @@ enabled = true
         timeout(DEFAULT_TIMEOUT, mcp.read_response(thread_start_request_id)).await??;
 
     std::fs::write(
-        codex_home.path().join(
+        ava_home.path().join(
             "plugins/cache/openai-curated/google-calendar/local/skills/meeting-prep/SKILL.md",
         ),
         "---\nname: meeting-prep\ndescription: Updated meeting preparation\n---\n\n# Body\n",
@@ -483,17 +483,17 @@ enabled = true
 
 #[tokio::test]
 async fn skills_list_loads_remote_installed_plugin_skills_from_cache() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let server = MockServer::start().await;
     let expected_skill_path =
-        std::fs::canonicalize(write_cached_remote_plugin_with_skill(codex_home.path())?)?;
+        std::fs::canonicalize(write_cached_remote_plugin_with_skill(ava_home.path())?)?;
     write_plugins_enabled_config_with_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -570,7 +570,7 @@ async fn skills_list_loads_remote_installed_plugin_skills_from_cache() -> Result
             .await;
     }
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -671,10 +671,10 @@ async fn skills_list_loads_remote_installed_plugin_skills_from_cache() -> Result
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_reads_complete_alongside_skills_list_request() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -726,10 +726,10 @@ async fn config_reads_complete_alongside_skills_list_request() -> Result<()> {
 
 #[tokio::test]
 async fn skills_list_skips_cwd_roots_when_environment_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
-    write_skill(&codex_home, "home-skill")?;
-    let repo_skill_dir = cwd.path().join(".codex/skills/repo-skill");
+    write_skill(&ava_home, "home-skill")?;
+    let repo_skill_dir = cwd.path().join(".ava-code/skills/repo-skill");
     std::fs::create_dir_all(&repo_skill_dir)?;
     std::fs::write(
         repo_skill_dir.join("SKILL.md"),
@@ -737,9 +737,9 @@ async fn skills_list_skips_cwd_roots_when_environment_disabled() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
-        .with_env_overrides(&[(CODEX_EXEC_SERVER_URL_ENV_VAR, Some("none"))])
+        .with_env_overrides(&[(AVA_EXEC_SERVER_URL_ENV_VAR, Some("none"))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -772,12 +772,12 @@ async fn skills_list_skips_cwd_roots_when_environment_disabled() -> Result<()> {
 
 #[tokio::test]
 async fn skills_list_accepts_relative_cwds() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let relative_cwd = std::path::PathBuf::from("relative-cwd");
-    std::fs::create_dir_all(codex_home.path().join(&relative_cwd))?;
+    std::fs::create_dir_all(ava_home.path().join(&relative_cwd))?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -805,14 +805,14 @@ async fn skills_list_preserves_requested_cwd_order(home_plugins_enabled: bool) -
         Ok(()),
         "skills/list currently requires host-native cwd paths for workspace config"
     );
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let first_cwd = TempDir::new()?;
     let second_cwd = TempDir::new()?;
     let third_cwd = TempDir::new()?;
-    write_skill(&codex_home, "shared-skill")?;
-    write_cached_local_curated_plugin_with_skill(codex_home.path(), "openai-api-curated")?;
+    write_skill(&ava_home, "shared-skill")?;
+    write_cached_local_curated_plugin_with_skill(ava_home.path(), "openai-api-curated")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"[features]
 plugins = {home_plugins_enabled}
@@ -829,18 +829,18 @@ enabled = false
         (third_cwd.path(), true, false),
     ] {
         std::fs::create_dir_all(cwd.join(".git"))?;
-        std::fs::create_dir_all(cwd.join(".codex"))?;
+        std::fs::create_dir_all(cwd.join(".ava-code"))?;
         std::fs::write(
-            cwd.join(".codex/config.toml"),
+            cwd.join(".ava-code/config.toml"),
             format!(
                 "[features]\nplugins = {plugins_enabled}\n[plugins.\"google-calendar@openai-api-curated\"]\nenabled = {plugin_enabled}\n"
             ),
         )?;
-        set_project_trust_level(codex_home.path(), cwd, TrustLevel::Trusted)?;
+        set_project_trust_level(ava_home.path(), cwd, TrustLevel::Trusted)?;
     }
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -934,17 +934,17 @@ async fn skills_list_refreshes_externally_updated_plugin_versions() -> Result<()
         Ok(()),
         "skills/list currently requires host-native cwd paths for workspace config"
     );
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let source = TempDir::new()?;
-    std::fs::create_dir_all(source.path().join(".codex-plugin"))?;
+    std::fs::create_dir_all(source.path().join(".ava-plugin"))?;
     std::fs::create_dir_all(source.path().join("skills"))?;
     std::fs::write(
-        source.path().join(".codex-plugin/plugin.json"),
+        source.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"sample"}"#,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 
@@ -953,9 +953,9 @@ enabled = true
 "#,
     )?;
     let plugin_id = PluginId::parse("sample@test")?;
-    let store = PluginStore::new(codex_home.path().to_path_buf());
+    let store = PluginStore::new(ava_home.path().to_path_buf());
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let file_system = mcp.auto_env()?.environment().get_filesystem();
@@ -1023,12 +1023,12 @@ async fn skills_list_force_reload_refreshes_cached_plugin_roots() -> Result<()> 
         Ok(()),
         "skills/list currently requires host-native cwd paths for workspace config"
     );
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let first_cwd = TempDir::new()?;
     let second_cwd = TempDir::new()?;
-    write_cached_local_curated_plugin_with_skill(codex_home.path(), "openai-api-curated")?;
+    write_cached_local_curated_plugin_with_skill(ava_home.path(), "openai-api-curated")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 
@@ -1038,7 +1038,7 @@ enabled = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -1063,11 +1063,11 @@ enabled = true
         (second_cwd.path(), false, "google-calendar:refreshed-skill"),
     ] {
         if force_reload {
-            let plugin_root = codex_home
+            let plugin_root = ava_home
                 .path()
                 .join("plugins/cache/openai-api-curated/google-calendar/local");
             std::fs::write(
-                plugin_root.join(".codex-plugin/plugin.json"),
+                plugin_root.join(".ava-plugin/plugin.json"),
                 r#"{"name":"google-calendar","skills":"./replacement-skills"}"#,
             )?;
             let skill_dir = plugin_root.join("replacement-skills/refreshed-skill");
@@ -1102,11 +1102,11 @@ enabled = true
 #[tokio::test]
 async fn skills_list_uses_cached_result_after_session_default_writes_until_force_reload()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -1128,7 +1128,7 @@ async fn skills_list_uses_cached_result_after_session_default_writes_until_force
             .all(|skill| skill.name != "late-extra-skill")
     );
 
-    let skill_dir = cwd.path().join(".codex/skills/late-extra-skill");
+    let skill_dir = cwd.path().join(".ava-code/skills/late-extra-skill");
     std::fs::create_dir_all(&skill_dir)?;
     std::fs::write(
         skill_dir.join("SKILL.md"),
@@ -1212,7 +1212,7 @@ async fn skills_list_uses_cached_result_after_session_default_writes_until_force
 
 #[tokio::test]
 async fn skills_extra_roots_set_updates_process_runtime_roots() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let extra_root = TempDir::new()?;
     let extra_skills_root = extra_root.path().join("skills");
@@ -1224,7 +1224,7 @@ async fn skills_extra_roots_set_updates_process_runtime_roots() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -1309,7 +1309,7 @@ async fn skills_extra_roots_set_updates_process_runtime_roots() -> Result<()> {
 
     drop(mcp);
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -1341,19 +1341,19 @@ async fn skills_changed_notification_is_emitted_after_skill_change() -> Result<(
     );
 
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
-        .write(codex_home.path())?;
-    write_skill(&codex_home, "demo")?;
+        .write(ava_home.path())?;
+    write_skill(&ava_home, "demo")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let initial_skills_request_id = mcp
         .send_skills_list_request(SkillsListParams {
-            cwds: vec![codex_home.path().to_path_buf()],
+            cwds: vec![ava_home.path().to_path_buf()],
             force_reload: true,
         })
         .await?;
@@ -1404,7 +1404,7 @@ async fn skills_changed_notification_is_emitted_after_skill_change() -> Result<(
     let _: ThreadStartResponse =
         timeout(DEFAULT_TIMEOUT, mcp.read_response(thread_start_request_id)).await??;
 
-    let skill_path = codex_home
+    let skill_path = ava_home
         .path()
         .join("skills")
         .join("demo")
@@ -1417,7 +1417,7 @@ async fn skills_changed_notification_is_emitted_after_skill_change() -> Result<(
     expect_skills_changed_notification(&mut mcp, WATCHER_TIMEOUT).await?;
     let updated_skills_request_id = mcp
         .send_skills_list_request(SkillsListParams {
-            cwds: vec![codex_home.path().to_path_buf()],
+            cwds: vec![ava_home.path().to_path_buf()],
             force_reload: false,
         })
         .await?;

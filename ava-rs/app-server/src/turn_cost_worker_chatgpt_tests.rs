@@ -23,7 +23,7 @@ async fn chatgpt_cost_requires_visible_amount_and_matching_settlement(
     let server = MockServer::start().await;
     let mut runtime = test_runtime(
         &server,
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
     )
     .await;
     let thread_id = ThreadId::new();
@@ -39,7 +39,7 @@ async fn chatgpt_cost_requires_visible_amount_and_matching_settlement(
         },
     );
     Mock::given(method("POST"))
-        .and(path("/api/codex/usage/thread-estimates/query"))
+        .and(path("/api/ava/usage/thread-estimates/query"))
         .respond_with(
             ResponseTemplate::new(200).set_body_json(json!({"threads": [{
                 "thread_id": thread_id, "turns": [{"turn_id": "turn-1",

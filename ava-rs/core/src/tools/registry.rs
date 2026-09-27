@@ -26,19 +26,19 @@ use crate::tools::lifecycle::notify_tool_start;
 use crate::tools::router::tool_log_payload;
 use crate::tools::tool_dispatch_trace::ToolDispatchTrace;
 use crate::util::error_or_panic;
-use codex_analytics::ControlToolCallStatus;
-use codex_extension_api::AllowedTools;
-use codex_extension_api::ToolCallOutcome;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_protocol::protocol::EventMsg;
-use codex_rollout::state_db;
-use codex_shell_command::parse_command::parse_shell_script;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_analytics::ControlToolCallStatus;
+use ava_extension_api::AllowedTools;
+use ava_extension_api::ToolCallOutcome;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_protocol::protocol::EventMsg;
+use ava_rollout::state_db;
+use ava_shell_command::parse_command::parse_shell_script;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 use futures::future::BoxFuture;
 use indexmap::IndexMap;
 use indexmap::map::Entry;
@@ -46,8 +46,8 @@ use serde_json::Value;
 
 pub(crate) type ToolTelemetryTags = Vec<(&'static str, String)>;
 
-pub use codex_tools::ToolExecutor;
-pub use codex_tools::ToolExposure;
+pub use ava_tools::ToolExecutor;
+pub use ava_tools::ToolExposure;
 
 /// Typed runtime contract for locally executed tools.
 ///
@@ -65,7 +65,7 @@ pub(crate) trait CoreToolRuntime: ToolExecutor<ToolInvocation> {
     }
 
     /// Returns lazily cached Code Mode definitions owned by this runtime.
-    fn cached_code_mode_definitions(&self) -> Option<&[codex_code_mode::ToolDefinition]> {
+    fn cached_code_mode_definitions(&self) -> Option<&[ava_code_mode::ToolDefinition]> {
         None
     }
 
@@ -203,7 +203,7 @@ impl AnyToolResult {
             item: result.to_response_item(&call_id, &payload).into(),
             metadata: result
                 .fallback_token_limit_override()
-                .map(|limit| CodexHarnessMetadata {
+                .map(|limit| AvaHarnessMetadata {
                     history_truncation_token_limit: Some(limit),
                     ..Default::default()
                 }),

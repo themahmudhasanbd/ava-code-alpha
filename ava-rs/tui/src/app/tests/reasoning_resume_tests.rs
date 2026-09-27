@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::chatwidget::tests::helpers::render_bottom_popup;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ReasoningSummaryTextDeltaNotification;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ReasoningSummaryTextDeltaNotification;
 
 #[tokio::test]
 async fn resumed_reasoning_without_start_accepts_deltas_and_completion() {
@@ -137,7 +137,7 @@ async fn resumed_trailing_reasoning_is_kept_when_no_more_reasoning_arrives() {
         if next_item {
             app.chat_widget.handle_server_notification(
                 ServerNotification::ItemStarted(
-                    codex_app_server_protocol::ItemStartedNotification {
+                    ava_app_server_protocol::ItemStartedNotification {
                         thread_id: thread_id.to_string(),
                         turn_id: "turn".into(),
                         started_at_ms: 0,

@@ -7,7 +7,7 @@ import {
 } from "@pi-desktop/shared";
 
 export function isAccountOnlyApiStyle(style?: string): boolean {
-  return style === "openai_codex_responses" || style === "pi_messages";
+  return style === "openai_ava_responses" || style === "pi_messages";
 }
 
 /** The transport vocabulary also contains account-only and named-service APIs. */
@@ -21,7 +21,7 @@ export const API_STYLE_LABEL_KEYS: Record<CatalogApiStyle, string> = {
   responses: "settings.apiStyleResponses",
   anthropic_messages: "settings.apiStyleAnthropic",
   google_generative_ai: "settings.apiStyleGoogle",
-  openai_codex_responses: "settings.apiStyleCodexResponses",
+  openai_ava_responses: "settings.apiStyleAvaResponses",
   pi_messages: "settings.apiStylePiMessages",
   opencode_go: "settings.apiStyleOpenCodeGo",
 };

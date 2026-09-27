@@ -1,13 +1,13 @@
 //! Consumer task queries preserve missing amounts and require complete descendant groups.
 use super::client::Live;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_backend_client::TaskUsage;
-use codex_backend_client::TaskUsageThread;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_backend_client::TaskUsage;
+use ava_backend_client::TaskUsageThread;
 use futures::StreamExt;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -21,7 +21,7 @@ impl Chat {
     /// Local history can span accounts; unavailable task data does not verify ownership.
     pub(super) fn display_title(&self) -> &str {
         if self.task.as_ref().is_some_and(|task| {
-            task.data_status != codex_backend_client::TaskUsageStatus::Unavailable
+            task.data_status != ava_backend_client::TaskUsageStatus::Unavailable
         }) {
             &self.title
         } else {

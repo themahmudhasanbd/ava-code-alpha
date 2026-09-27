@@ -33,120 +33,120 @@ use crate::session_state::ThreadSessionState;
 use crate::status::StatusAccountDisplay;
 use crate::status::plan_type_display_name;
 use crate::terminal_visualization_instructions::with_terminal_visualization_instructions;
-use codex_app_server_client::AppServerClient;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_client::AppServerPath;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::Account;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::AuthMode;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigRequirementsReadResponse;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::ExternalAgentConfigDetectParams;
-use codex_app_server_protocol::ExternalAgentConfigDetectResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportParams;
-use codex_app_server_protocol::ExternalAgentConfigImportResponse;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItem;
-use codex_app_server_protocol::GetAccountParams;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::GetAccountResponse;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::LogoutAccountResponse;
-use codex_app_server_protocol::MemoryResetResponse;
-use codex_app_server_protocol::Model as ApiModel;
-use codex_app_server_protocol::ModelListParams;
-use codex_app_server_protocol::ModelListResponse;
-use codex_app_server_protocol::NewThreadModelDefaults;
-use codex_app_server_protocol::RateLimitSnapshot;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ReviewDelivery;
-use codex_app_server_protocol::ReviewStartParams;
-use codex_app_server_protocol::ReviewStartResponse;
-use codex_app_server_protocol::ReviewTarget;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::SkillsListParams;
-use codex_app_server_protocol::SkillsListResponse;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadApproveGuardianDeniedActionParams;
-use codex_app_server_protocol::ThreadApproveGuardianDeniedActionResponse;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadBackgroundTerminalsCleanParams;
-use codex_app_server_protocol::ThreadBackgroundTerminalsCleanResponse;
-use codex_app_server_protocol::ThreadCompactStartParams;
-use codex_app_server_protocol::ThreadCompactStartResponse;
-use codex_app_server_protocol::ThreadDeleteParams;
-use codex_app_server_protocol::ThreadDeleteResponse;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadGoalClearParams;
-use codex_app_server_protocol::ThreadGoalClearResponse;
-use codex_app_server_protocol::ThreadGoalGetParams;
-use codex_app_server_protocol::ThreadGoalGetResponse;
-use codex_app_server_protocol::ThreadGoalSetParams;
-use codex_app_server_protocol::ThreadGoalSetResponse;
-use codex_app_server_protocol::ThreadGoalStatus;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadInjectItemsParams;
-use codex_app_server_protocol::ThreadInjectItemsResponse;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadMemoryMode;
-use codex_app_server_protocol::ThreadMemoryModeSetParams;
-use codex_app_server_protocol::ThreadMemoryModeSetResponse;
-use codex_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSetNameParams;
-use codex_app_server_protocol::ThreadSetNameResponse;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_app_server_protocol::ThreadSettingsUpdateResponse;
-use codex_app_server_protocol::ThreadShellCommandParams;
-use codex_app_server_protocol::ThreadShellCommandResponse;
-use codex_app_server_protocol::ThreadSource;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStartSource;
-use codex_app_server_protocol::ThreadStatusChangedNotification;
-use codex_app_server_protocol::ThreadUnarchiveParams;
-use codex_app_server_protocol::ThreadUnarchiveResponse;
-use codex_app_server_protocol::ThreadUnsubscribeParams;
-use codex_app_server_protocol::ThreadUnsubscribeResponse;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::TurnSteerResponse;
-use codex_app_server_protocol::UserInput;
-use codex_config::ConfigLayerSource;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::ThreadId;
-use codex_protocol::approvals::GuardianAssessmentEvent;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelAvailabilityNux;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ModelServiceTier;
-use codex_protocol::openai_models::ModelUpgrade;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::protocol::SubAgentSource;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_client::AppServerClient;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_client::AppServerPath;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::Account;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::AuthMode;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigRequirementsReadResponse;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::ExternalAgentConfigDetectParams;
+use ava_app_server_protocol::ExternalAgentConfigDetectResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportParams;
+use ava_app_server_protocol::ExternalAgentConfigImportResponse;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItem;
+use ava_app_server_protocol::GetAccountParams;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::GetAccountResponse;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::LogoutAccountResponse;
+use ava_app_server_protocol::MemoryResetResponse;
+use ava_app_server_protocol::Model as ApiModel;
+use ava_app_server_protocol::ModelListParams;
+use ava_app_server_protocol::ModelListResponse;
+use ava_app_server_protocol::NewThreadModelDefaults;
+use ava_app_server_protocol::RateLimitSnapshot;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ReviewDelivery;
+use ava_app_server_protocol::ReviewStartParams;
+use ava_app_server_protocol::ReviewStartResponse;
+use ava_app_server_protocol::ReviewTarget;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::SkillsListParams;
+use ava_app_server_protocol::SkillsListResponse;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadApproveGuardianDeniedActionParams;
+use ava_app_server_protocol::ThreadApproveGuardianDeniedActionResponse;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadBackgroundTerminalsCleanParams;
+use ava_app_server_protocol::ThreadBackgroundTerminalsCleanResponse;
+use ava_app_server_protocol::ThreadCompactStartParams;
+use ava_app_server_protocol::ThreadCompactStartResponse;
+use ava_app_server_protocol::ThreadDeleteParams;
+use ava_app_server_protocol::ThreadDeleteResponse;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadGoalClearParams;
+use ava_app_server_protocol::ThreadGoalClearResponse;
+use ava_app_server_protocol::ThreadGoalGetParams;
+use ava_app_server_protocol::ThreadGoalGetResponse;
+use ava_app_server_protocol::ThreadGoalSetParams;
+use ava_app_server_protocol::ThreadGoalSetResponse;
+use ava_app_server_protocol::ThreadGoalStatus;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadInjectItemsParams;
+use ava_app_server_protocol::ThreadInjectItemsResponse;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadMemoryMode;
+use ava_app_server_protocol::ThreadMemoryModeSetParams;
+use ava_app_server_protocol::ThreadMemoryModeSetResponse;
+use ava_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSetNameParams;
+use ava_app_server_protocol::ThreadSetNameResponse;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::ThreadSettingsUpdateResponse;
+use ava_app_server_protocol::ThreadShellCommandParams;
+use ava_app_server_protocol::ThreadShellCommandResponse;
+use ava_app_server_protocol::ThreadSource;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStartSource;
+use ava_app_server_protocol::ThreadStatusChangedNotification;
+use ava_app_server_protocol::ThreadUnarchiveParams;
+use ava_app_server_protocol::ThreadUnarchiveResponse;
+use ava_app_server_protocol::ThreadUnsubscribeParams;
+use ava_app_server_protocol::ThreadUnsubscribeResponse;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::UserInput;
+use ava_config::ConfigLayerSource;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::ThreadId;
+use ava_protocol::approvals::GuardianAssessmentEvent;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelAvailabilityNux;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ModelServiceTier;
+use ava_protocol::openai_models::ModelUpgrade;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::protocol::SubAgentSource;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use color_eyre::eyre::ContextCompat;
 use color_eyre::eyre::Result;
 use color_eyre::eyre::WrapErr;
@@ -250,7 +250,7 @@ pub(crate) async fn request_thread_start_with_history_fallback(
                     || params
                         .config
                         .as_ref()
-                        .is_some_and(|config| config.contains_key("mcp_servers.codex_tui"));
+                        .is_some_and(|config| config.contains_key("mcp_servers.ava_tui"));
                 return Ok((response, history_support, task_tools_available));
             }
             Err(TypedRequestError::Server { source, .. })
@@ -302,7 +302,7 @@ pub(crate) struct AppServerBootstrap {
     pub(crate) account_email: Option<String>,
     pub(crate) auth_mode: Option<TelemetryAuthMode>,
     pub(crate) status_account_display: Option<StatusAccountDisplay>,
-    pub(crate) plan_type: Option<codex_protocol::account::PlanType>,
+    pub(crate) plan_type: Option<ava_protocol::account::PlanType>,
     /// Whether the configured model provider needs OpenAI-style auth. Combined
     /// with `has_chatgpt_account` to decide if a startup rate-limit prefetch
     /// should be fired.
@@ -311,7 +311,7 @@ pub(crate) struct AppServerBootstrap {
     pub(crate) feedback_audience: FeedbackAudience,
     pub(crate) has_chatgpt_account: bool,
     pub(crate) available_models: Vec<ModelPreset>,
-    pub(crate) collaboration_modes: Vec<codex_protocol::config_types::CollaborationModeMask>,
+    pub(crate) collaboration_modes: Vec<ava_protocol::config_types::CollaborationModeMask>,
 }
 
 pub(crate) struct AppServerSession {
@@ -459,7 +459,7 @@ impl AppServerSession {
         {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::AlreadyExists,
-                "a user-configured MCP server already owns the codex_tui namespace",
+                "a user-configured MCP server already owns the ava_tui namespace",
             ));
         }
         let managed_requirement = config
@@ -559,11 +559,11 @@ impl AppServerSession {
         Arc::clone(&self.task_search_generation)
     }
 
-    pub(crate) fn codex_home_path(
+    pub(crate) fn ava_home_path(
         &self,
-        local_codex_home: &AbsolutePathBuf,
+        local_ava_home: &AbsolutePathBuf,
     ) -> Option<AppServerPath> {
-        self.client.codex_home(local_codex_home)
+        self.client.ava_home(local_ava_home)
     }
 
     pub(crate) fn server_version(&self) -> Option<&str> {
@@ -573,11 +573,11 @@ impl AppServerSession {
         client.server_version()
     }
 
-    pub(crate) fn server_codex_home(&self) -> Option<&str> {
+    pub(crate) fn server_ava_home(&self) -> Option<&str> {
         let AppServerClient::Remote(client) = &self.client else {
             return None;
         };
-        client.codex_home()
+        client.ava_home()
     }
 
     pub(crate) async fn bootstrap(&mut self, config: &Config) -> Result<AppServerBootstrap> {
@@ -1344,15 +1344,15 @@ impl AppServerSession {
         items: Vec<UserInput>,
         cwd: PathBuf,
         approval_policy: Option<AskForApproval>,
-        approvals_reviewer: Option<codex_app_server_protocol::ApprovalsReviewer>,
+        approvals_reviewer: Option<ava_app_server_protocol::ApprovalsReviewer>,
         permissions_override: TurnPermissionsOverride,
         workspace_roots: &[AbsolutePathBuf],
         model: String,
-        effort: Option<codex_protocol::openai_models::ReasoningEffort>,
-        summary: Option<codex_protocol::config_types::ReasoningSummary>,
+        effort: Option<ava_protocol::openai_models::ReasoningEffort>,
+        summary: Option<ava_protocol::config_types::ReasoningSummary>,
         service_tier: Option<Option<String>>,
-        collaboration_mode: Option<codex_protocol::config_types::CollaborationMode>,
-        personality: Option<codex_protocol::config_types::Personality>,
+        collaboration_mode: Option<ava_protocol::config_types::CollaborationMode>,
+        personality: Option<ava_protocol::config_types::Personality>,
         output_schema: Option<serde_json::Value>,
     ) -> Result<TurnStartResponse> {
         let request_id = self.next_request_id();
@@ -1762,7 +1762,7 @@ pub(crate) async fn start_thread_with_request_handle(
 
 pub(crate) fn status_account_display_from_auth_mode(
     auth_mode: Option<AuthMode>,
-    plan_type: Option<codex_protocol::account::PlanType>,
+    plan_type: Option<ava_protocol::account::PlanType>,
 ) -> Option<StatusAccountDisplay> {
     match auth_mode {
         Some(AuthMode::ApiKey) => Some(StatusAccountDisplay::ApiKey),
@@ -1846,7 +1846,7 @@ fn model_preset_from_api_model(model: ApiModel) -> ModelPreset {
 
 fn approvals_reviewer_override_from_config(
     config: &Config,
-) -> Option<codex_app_server_protocol::ApprovalsReviewer> {
+) -> Option<ava_app_server_protocol::ApprovalsReviewer> {
     Some(config.approvals_reviewer.into())
 }
 
@@ -1861,7 +1861,7 @@ fn config_request_overrides_from_config(
     let mut session_config = toml::Value::Table(toml::Table::new());
     for layer in config.config_layer_stack.layers_low_to_high() {
         if matches!(&layer.name, ConfigLayerSource::SessionFlags) {
-            codex_config::merge_toml_values(&mut session_config, &layer.config);
+            ava_config::merge_toml_values(&mut session_config, &layer.config);
         }
     }
     let mut overrides: HashMap<_, _> = session_config
@@ -1945,7 +1945,7 @@ fn new_thread_reasoning_overrides(config: &Config) -> Option<HashMap<String, ser
     let mut overrides = config_request_overrides_from_config(config).unwrap_or_default();
     let summary = config
         .model_reasoning_summary
-        .unwrap_or(codex_protocol::config_types::ReasoningSummary::None);
+        .unwrap_or(ava_protocol::config_types::ReasoningSummary::None);
     overrides.insert(
         "model_reasoning_summary".to_string(),
         serde_json::Value::String(summary.to_string()),
@@ -1963,7 +1963,7 @@ fn new_thread_reasoning_overrides(config: &Config) -> Option<HashMap<String, ser
         features.insert(
             "concurrent_reasoning_summaries".to_string(),
             serde_json::Value::Bool(
-                summary != codex_protocol::config_types::ReasoningSummary::None
+                summary != ava_protocol::config_types::ReasoningSummary::None
                     && explicit_feature.unwrap_or(/*default*/ false),
             ),
         );
@@ -1982,10 +1982,10 @@ fn service_tier_override_from_config(config: &Config) -> Option<Option<String>> 
 fn sandbox_mode_from_permission_profile(
     permission_profile: &PermissionProfile,
     cwd: &std::path::Path,
-) -> Option<codex_app_server_protocol::SandboxMode> {
+) -> Option<ava_app_server_protocol::SandboxMode> {
     match permission_profile {
         PermissionProfile::Disabled => {
-            Some(codex_app_server_protocol::SandboxMode::DangerFullAccess)
+            Some(ava_app_server_protocol::SandboxMode::DangerFullAccess)
         }
         PermissionProfile::External { .. } => None,
         PermissionProfile::Managed { .. } => {
@@ -1994,11 +1994,11 @@ fn sandbox_mode_from_permission_profile(
                 permission_profile
                     .network_sandbox_policy()
                     .is_enabled()
-                    .then_some(codex_app_server_protocol::SandboxMode::DangerFullAccess)
+                    .then_some(ava_app_server_protocol::SandboxMode::DangerFullAccess)
             } else if file_system_policy.can_write_local_path_with_cwd(cwd, cwd) {
-                Some(codex_app_server_protocol::SandboxMode::WorkspaceWrite)
+                Some(ava_app_server_protocol::SandboxMode::WorkspaceWrite)
             } else {
-                Some(codex_app_server_protocol::SandboxMode::ReadOnly)
+                Some(ava_app_server_protocol::SandboxMode::ReadOnly)
             }
         }
     }
@@ -2012,14 +2012,14 @@ pub(crate) fn permission_profile_is_safely_represented_by_sandbox_mode(
         return false;
     };
     let projected_profile = match sandbox_mode {
-        codex_app_server_protocol::SandboxMode::ReadOnly => PermissionProfile::read_only(),
-        codex_app_server_protocol::SandboxMode::WorkspaceWrite => {
+        ava_app_server_protocol::SandboxMode::ReadOnly => PermissionProfile::read_only(),
+        ava_app_server_protocol::SandboxMode::WorkspaceWrite => {
             PermissionProfile::from_legacy_sandbox_policy_for_cwd(
-                &codex_protocol::protocol::SandboxPolicy::new_workspace_write_policy(),
+                &ava_protocol::protocol::SandboxPolicy::new_workspace_write_policy(),
                 cwd,
             )
         }
-        codex_app_server_protocol::SandboxMode::DangerFullAccess => PermissionProfile::Disabled,
+        ava_app_server_protocol::SandboxMode::DangerFullAccess => PermissionProfile::Disabled,
     };
     permission_profile.network_sandbox_policy() == projected_profile.network_sandbox_policy()
         && permission_profile
@@ -2035,7 +2035,7 @@ pub(crate) fn turn_permissions_overrides(
     permissions_override: TurnPermissionsOverride,
     cwd: &std::path::Path,
 ) -> Result<(
-    Option<codex_app_server_protocol::SandboxPolicy>,
+    Option<ava_app_server_protocol::SandboxPolicy>,
     Option<String>,
 )> {
     Ok(match permissions_override {
@@ -2430,7 +2430,7 @@ async fn thread_session_state_from_thread_fork_response(
 }
 
 fn display_permission_profile_from_thread_response(
-    sandbox: &codex_app_server_protocol::SandboxPolicy,
+    sandbox: &ava_app_server_protocol::SandboxPolicy,
     cwd: &std::path::Path,
     config: &Config,
     thread_params_mode: ThreadParamsMode,
@@ -2442,7 +2442,7 @@ fn display_permission_profile_from_thread_response(
                 PermissionProfile::Disabled
             ) && !matches!(
                 sandbox,
-                codex_app_server_protocol::SandboxPolicy::DangerFullAccess
+                ava_app_server_protocol::SandboxPolicy::DangerFullAccess
             ) =>
         {
             PermissionProfile::from_legacy_sandbox_policy_for_cwd(&sandbox.to_core(), cwd)
@@ -2468,14 +2468,14 @@ async fn thread_session_state_from_thread_response(
     model_provider_id: String,
     service_tier: Option<String>,
     approval_policy: AskForApproval,
-    approvals_reviewer: codex_protocol::config_types::ApprovalsReviewer,
+    approvals_reviewer: ava_protocol::config_types::ApprovalsReviewer,
     permission_profile: PermissionProfile,
     active_permission_profile: Option<ActivePermissionProfile>,
     cwd: AbsolutePathBuf,
     runtime_workspace_roots: Vec<AbsolutePathBuf>,
     instruction_source_paths: Vec<PathUri>,
-    reasoning_effort: Option<codex_protocol::openai_models::ReasoningEffort>,
-    personality: Option<codex_protocol::config_types::Personality>,
+    reasoning_effort: Option<ava_protocol::openai_models::ReasoningEffort>,
+    personality: Option<ava_protocol::config_types::Personality>,
     local_settings: &LocalSettings,
 ) -> Result<ThreadSessionState, String> {
     let thread_id = ThreadId::from_string(thread_id)
@@ -2485,11 +2485,11 @@ async fn thread_session_state_from_thread_response(
         .map(ThreadId::from_string)
         .transpose()
         .map_err(|err| format!("forked_from_id is invalid: {err}"))?;
-    let history_config = codex_message_history::HistoryConfig::new(
-        local_settings.codex_home.clone(),
+    let history_config = ava_message_history::HistoryConfig::new(
+        local_settings.ava_home.clone(),
         &local_settings.history,
     );
-    let (log_id, entry_count) = codex_message_history::history_metadata(&history_config).await;
+    let (log_id, entry_count) = ava_message_history::history_metadata(&history_config).await;
     Ok(ThreadSessionState {
         windows_sandbox_host,
         thread_id,
@@ -2557,34 +2557,34 @@ mod tests {
     use crate::legacy_core::config::ConfigOverrides;
     use app_test_support::create_fake_paginated_rollout;
     use app_test_support::create_fake_rollout;
-    use codex_app_server_protocol::ThreadStatus;
-    use codex_app_server_protocol::Turn;
-    use codex_app_server_protocol::TurnStatus;
-    use codex_features::Feature;
-    use codex_protocol::config_types::Personality;
-    use codex_protocol::config_types::ReasoningSummary;
-    use codex_protocol::config_types::ServiceTier;
-    use codex_protocol::config_types::Verbosity;
-    use codex_protocol::config_types::WebSearchMode;
-    use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-    use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-    use codex_protocol::models::ManagedFileSystemPermissions;
-    use codex_protocol::openai_models::ModelServiceTier;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemPath;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSpecialPath;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
-    use codex_utils_path_uri::LegacyAppPathString;
+    use ava_app_server_protocol::ThreadStatus;
+    use ava_app_server_protocol::Turn;
+    use ava_app_server_protocol::TurnStatus;
+    use ava_features::Feature;
+    use ava_protocol::config_types::Personality;
+    use ava_protocol::config_types::ReasoningSummary;
+    use ava_protocol::config_types::ServiceTier;
+    use ava_protocol::config_types::Verbosity;
+    use ava_protocol::config_types::WebSearchMode;
+    use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+    use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+    use ava_protocol::models::ManagedFileSystemPermissions;
+    use ava_protocol::openai_models::ModelServiceTier;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemPath;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSpecialPath;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
+    use ava_utils_path_uri::LegacyAppPathString;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
     async fn build_config(temp_dir: &TempDir) -> Config {
         ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await
             .expect("config should build")
@@ -2592,15 +2592,15 @@ mod tests {
 
     #[tokio::test]
     async fn bootstrap_reuses_prefetched_account_without_another_account_read() -> Result<()> {
-        let codex_home = tempfile::tempdir()?;
-        let config = build_config(&codex_home).await;
+        let ava_home = tempfile::tempdir()?;
+        let config = build_config(&ava_home).await;
         let mut app_server = crate::start_embedded_app_server_for_picker(&config).await?;
         let next_request_id = app_server.next_request_id;
         let account = GetAccountResponse {
             workspace_routing: None,
             account: Some(Account::Chatgpt {
                 email: Some("teammate@openai.com".to_string()),
-                plan_type: codex_protocol::account::PlanType::Plus,
+                plan_type: ava_protocol::account::PlanType::Plus,
             }),
             requires_openai_auth: true,
         };
@@ -2619,7 +2619,7 @@ mod tests {
             (
                 Some("teammate@openai.com"),
                 Some(TelemetryAuthMode::Chatgpt),
-                Some(codex_protocol::account::PlanType::Plus),
+                Some(ava_protocol::account::PlanType::Plus),
                 FeedbackAudience::OpenAiEmployee,
                 true,
             )
@@ -2631,8 +2631,8 @@ mod tests {
 
     #[tokio::test]
     async fn bootstrap_reads_account_when_no_prefetched_account_is_available() -> Result<()> {
-        let codex_home = tempfile::tempdir()?;
-        let config = build_config(&codex_home).await;
+        let ava_home = tempfile::tempdir()?;
+        let config = build_config(&ava_home).await;
         let mut app_server = crate::start_embedded_app_server_for_picker(&config).await?;
         let next_request_id = app_server.next_request_id;
 
@@ -2648,7 +2648,7 @@ mod tests {
             limit_id: Some(limit_id.to_string()),
             limit_name: None,
             normal_model_slug: None,
-            primary: Some(codex_app_server_protocol::RateLimitWindow {
+            primary: Some(ava_app_server_protocol::RateLimitWindow {
                 used_percent: 0,
                 window_duration_mins: Some(10_080),
                 resets_at: None,
@@ -2667,7 +2667,7 @@ mod tests {
             id: "model-id".to_string(),
             model: "current-model".to_string(),
             upgrade: Some("replacement-model".to_string()),
-            upgrade_info: Some(codex_app_server_protocol::ModelUpgradeInfo {
+            upgrade_info: Some(ava_app_server_protocol::ModelUpgradeInfo {
                 model: "replacement-model".to_string(),
                 upgrade_copy: None,
                 model_link: None,
@@ -2735,9 +2735,9 @@ mod tests {
             ordinary_usage_allowed: None,
             account_id: None,
             rate_limit_upsell: None,
-            rate_limits: rate_limit_snapshot("codex"),
+            rate_limits: rate_limit_snapshot("ava"),
             rate_limits_by_limit_id: Some(HashMap::from([
-                ("codex".to_string(), rate_limit_snapshot("codex")),
+                ("ava".to_string(), rate_limit_snapshot("ava")),
                 ("other".to_string(), rate_limit_snapshot("other")),
             ])),
             rate_limit_reset_credits: None,
@@ -2750,7 +2750,7 @@ mod tests {
                 .iter()
                 .map(|snapshot| snapshot.limit_id.as_deref())
                 .collect::<Vec<_>>(),
-            vec![Some("codex"), Some("other")]
+            vec![Some("ava"), Some("other")]
         );
     }
 
@@ -2856,16 +2856,16 @@ mod tests {
 
     #[tokio::test]
     async fn shared_thread_start_preserves_explicit_session_overrides() -> Result<()> {
-        let codex_home = tempfile::tempdir()?;
-        let workspace = codex_home.path().join("workspace");
+        let ava_home = tempfile::tempdir()?;
+        let workspace = ava_home.path().join("workspace");
         std::fs::create_dir(&workspace)?;
         std::fs::write(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
             "sandbox_mode = \"workspace-write\"\n[sandbox_workspace_write]\nnetwork_access = true\n",
         )?;
-        let server_config = build_config(&codex_home).await;
+        let server_config = build_config(&ava_home).await;
         let config = ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .harness_overrides(ConfigOverrides {
                 cwd: Some(workspace.clone()),
                 ..ConfigOverrides::default()
@@ -2946,7 +2946,7 @@ mod tests {
     async fn thread_start_params_include_cwd_for_embedded_sessions() {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .harness_overrides(ConfigOverrides {
                 default_permissions: Some(BUILT_IN_PERMISSION_PROFILE_WORKSPACE.to_string()),
                 ..ConfigOverrides::default()
@@ -3056,7 +3056,7 @@ mod tests {
 
         assert_eq!(
             sandbox_policy,
-            Some(codex_app_server_protocol::SandboxPolicy::ReadOnly {
+            Some(ava_app_server_protocol::SandboxPolicy::ReadOnly {
                 network_access: false
             })
         );
@@ -3075,7 +3075,7 @@ mod tests {
 
         assert_eq!(
             sandbox_policy,
-            Some(codex_app_server_protocol::SandboxPolicy::WorkspaceWrite {
+            Some(ava_app_server_protocol::SandboxPolicy::WorkspaceWrite {
                 writable_roots: Vec::new(),
                 network_access: false,
                 exclude_tmpdir_env_var: false,
@@ -3292,7 +3292,7 @@ mod tests {
 
         assert_eq!(
             sandbox_mode_from_permission_profile(&permission_profile, cwd.as_path()),
-            Some(codex_app_server_protocol::SandboxMode::ReadOnly)
+            Some(ava_app_server_protocol::SandboxMode::ReadOnly)
         );
         assert!(!permission_profile_is_safely_represented_by_sandbox_mode(
             &permission_profile,
@@ -3328,7 +3328,7 @@ mod tests {
 
         assert_eq!(
             sandbox_mode_from_permission_profile(&permission_profile, cwd.as_path()),
-            Some(codex_app_server_protocol::SandboxMode::WorkspaceWrite)
+            Some(ava_app_server_protocol::SandboxMode::WorkspaceWrite)
         );
     }
 
@@ -3501,8 +3501,8 @@ mod tests {
     #[tokio::test]
     async fn connected_thread_start_preserves_flex_without_catalog_support() -> Result<()> {
         for fast_mode_enabled in [false, true] {
-            let codex_home = tempfile::tempdir()?;
-            let server_config = build_config(&codex_home).await;
+            let ava_home = tempfile::tempdir()?;
+            let server_config = build_config(&ava_home).await;
             let mut config = server_config.clone();
             config.model = Some("gpt-5.5".to_string());
             config.service_tier = Some(ServiceTier::Flex.request_value().to_string());
@@ -3534,8 +3534,8 @@ mod tests {
 
     #[tokio::test]
     async fn persisted_resume_does_not_forward_implicit_service_tier() -> Result<()> {
-        let codex_home = tempfile::tempdir().expect("tempdir");
-        let mut config = build_config(&codex_home).await;
+        let ava_home = tempfile::tempdir().expect("tempdir");
+        let mut config = build_config(&ava_home).await;
         config.model = Some("gpt-5.5".to_string());
         config.service_tier = None;
         config
@@ -3544,7 +3544,7 @@ mod tests {
             .expect("enable fast mode");
         let thread_id = ThreadId::from_string(
             &create_fake_rollout(
-                codex_home.path(),
+                ava_home.path(),
                 "2025-01-05T12-00-00",
                 "2025-01-05T12:00:00Z",
                 "Saved user message",
@@ -3584,11 +3584,11 @@ mod tests {
     #[tokio::test]
     async fn side_fork_skips_parent_title_lookup_but_normal_ephemeral_fork_keeps_it() -> Result<()>
     {
-        let codex_home = tempfile::tempdir().expect("tempdir");
-        let config = build_config(&codex_home).await;
+        let ava_home = tempfile::tempdir().expect("tempdir");
+        let config = build_config(&ava_home).await;
         let source_thread_id = ThreadId::from_string(
             &create_fake_rollout(
-                codex_home.path(),
+                ava_home.path(),
                 "2025-01-05T12-00-00",
                 "2025-01-05T12:00:00Z",
                 "Saved user message",
@@ -3638,11 +3638,11 @@ mod tests {
 
     #[tokio::test]
     async fn ephemeral_paginated_fork_skips_unsupported_history_hydration() -> Result<()> {
-        let codex_home = tempfile::tempdir()?;
-        let config = build_config(&codex_home).await;
+        let ava_home = tempfile::tempdir()?;
+        let config = build_config(&ava_home).await;
         let source_thread_id = ThreadId::from_string(
             &create_fake_paginated_rollout(
-                codex_home.path(),
+                ava_home.path(),
                 "2025-01-05T12-00-00",
                 "2025-01-05T12:00:00Z",
                 "Saved user message",
@@ -3673,13 +3673,13 @@ mod tests {
 
     #[tokio::test]
     async fn side_fork_uses_one_request_for_long_paginated_history() -> Result<()> {
-        let codex_home = tempfile::tempdir().expect("tempdir");
-        let mut config = build_config(&codex_home).await;
+        let ava_home = tempfile::tempdir().expect("tempdir");
+        let mut config = build_config(&ava_home).await;
         config.terminal_resize_reflow.max_rows =
             crate::legacy_core::config::TerminalResizeReflowMaxRows::Limit(100);
         let filename_ts = "2025-01-05T12-00-00";
         let source_id = create_fake_paginated_rollout(
-            codex_home.path(),
+            ava_home.path(),
             filename_ts,
             "2025-01-05T12:00:00Z",
             "Saved user message",
@@ -3688,7 +3688,7 @@ mod tests {
         )
         .expect("create long paginated source rollout");
         let source_path =
-            app_test_support::rollout_path(codex_home.path(), filename_ts, source_id.as_str());
+            app_test_support::rollout_path(ava_home.path(), filename_ts, source_id.as_str());
         let mut contents = std::fs::read_to_string(&source_path)?;
         let rollout_line = |ordinal: usize, payload: serde_json::Value| {
             serde_json::json!({
@@ -3860,12 +3860,12 @@ mod tests {
 
     #[tokio::test]
     async fn side_fork_excludes_turns_without_clearing_regular_ephemeral_fork() -> Result<()> {
-        let codex_home = tempfile::tempdir().expect("tempdir");
-        let mut config = build_config(&codex_home).await;
+        let ava_home = tempfile::tempdir().expect("tempdir");
+        let mut config = build_config(&ava_home).await;
         config.ephemeral = true;
         let thread_id = ThreadId::from_string(
             &create_fake_rollout(
-                codex_home.path(),
+                ava_home.path(),
                 "2025-01-05T12-00-00",
                 "2025-01-05T12:00:00Z",
                 "Saved user message",
@@ -3886,7 +3886,7 @@ mod tests {
         assert_eq!(regular.turns.len(), 1);
         assert!(matches!(
             regular.turns[0].items.as_slice(),
-            [codex_app_server_protocol::ThreadItem::UserMessage { content, .. }]
+            [ava_app_server_protocol::ThreadItem::UserMessage { content, .. }]
                 if content == &[UserInput::Text {
                     text: "Saved user message".to_string(),
                     text_elements: Vec::new(),
@@ -3981,7 +3981,7 @@ mod tests {
         let read_only_profile = PermissionProfile::read_only();
         let response = ThreadResumeResponse {
             disabled_plugin_ids: Vec::new(),
-            thread: codex_app_server_protocol::Thread {
+            thread: ava_app_server_protocol::Thread {
                 originator: None,
                 environments: None,
                 id: thread_id.to_string(),
@@ -4006,7 +4006,7 @@ mod tests {
                 path: None,
                 cwd: test_path_buf("/tmp/project").abs(),
                 cli_version: "0.0.0".to_string(),
-                source: codex_app_server_protocol::SessionSource::Cli,
+                source: ava_app_server_protocol::SessionSource::Cli,
                 can_accept_direct_input: None,
                 thread_source: None,
                 agent_nickname: None,
@@ -4015,17 +4015,17 @@ mod tests {
                 name: None,
                 turns: vec![Turn {
                     id: "turn-1".to_string(),
-                    items_view: codex_app_server_protocol::TurnItemsView::Full,
+                    items_view: ava_app_server_protocol::TurnItemsView::Full,
                     items: vec![
-                        codex_app_server_protocol::ThreadItem::UserMessage {
+                        ava_app_server_protocol::ThreadItem::UserMessage {
                             id: "user-1".to_string(),
                             client_id: None,
-                            content: vec![codex_app_server_protocol::UserInput::Text {
+                            content: vec![ava_app_server_protocol::UserInput::Text {
                                 text: "hello from history".to_string(),
                                 text_elements: Vec::new(),
                             }],
                         },
-                        codex_app_server_protocol::ThreadItem::AgentMessage {
+                        ava_app_server_protocol::ThreadItem::AgentMessage {
                             id: "assistant-1".to_string(),
                             text: "assistant reply".to_string(),
                             phase: None,
@@ -4052,17 +4052,17 @@ mod tests {
             instruction_sources: vec![LegacyAppPathString::from_abs_path(
                 &test_path_buf("/tmp/project/AGENTS.md").abs(),
             )],
-            approval_policy: codex_app_server_protocol::AskForApproval::Never,
-            approvals_reviewer: codex_app_server_protocol::ApprovalsReviewer::User,
+            approval_policy: ava_app_server_protocol::AskForApproval::Never,
+            approvals_reviewer: ava_app_server_protocol::ApprovalsReviewer::User,
             sandbox: read_only_profile
                 .to_legacy_sandbox_policy(test_path_buf("/tmp/project").as_path())
                 .expect("read-only profile must be legacy-compatible")
                 .into(),
             active_permission_profile: None,
             reasoning_effort: None,
-            collaboration_mode: Some(codex_protocol::config_types::CollaborationMode {
-                mode: codex_protocol::config_types::ModeKind::Plan,
-                settings: codex_protocol::config_types::Settings {
+            collaboration_mode: Some(ava_protocol::config_types::CollaborationMode {
+                mode: ava_protocol::config_types::ModeKind::Plan,
+                settings: ava_protocol::config_types::Settings {
                     model: "gpt-5.4".to_string(),
                     reasoning_effort: None,
                     developer_instructions: Some("Keep planning".to_string()),
@@ -4121,7 +4121,7 @@ mod tests {
         assert_eq!(submitted_mode, Some(response.collaboration_mode.clone()));
 
         let embedded_config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().join("embedded-codex-home"))
+            .ava_home(temp_dir.path().join("embedded-ava-home"))
             .harness_overrides(ConfigOverrides {
                 default_permissions: Some(BUILT_IN_PERMISSION_PROFILE_WORKSPACE.to_string()),
                 ..ConfigOverrides::default()
@@ -4177,7 +4177,7 @@ mod tests {
     async fn embedded_thread_response_uses_local_config_profile() {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .harness_overrides(ConfigOverrides {
                 default_permissions: Some(BUILT_IN_PERMISSION_PROFILE_READ_ONLY.to_string()),
                 ..ConfigOverrides::default()
@@ -4189,7 +4189,7 @@ mod tests {
 
         assert_eq!(
             display_permission_profile_from_thread_response(
-                &codex_app_server_protocol::SandboxPolicy::DangerFullAccess,
+                &ava_app_server_protocol::SandboxPolicy::DangerFullAccess,
                 cwd.as_path(),
                 &config,
                 ThreadParamsMode::Embedded,
@@ -4205,12 +4205,12 @@ mod tests {
         let thread_id = ThreadId::new();
 
         let history_config =
-            codex_message_history::HistoryConfig::new(config.codex_home.clone(), &config.history);
+            ava_message_history::HistoryConfig::new(config.ava_home.clone(), &config.history);
 
-        codex_message_history::append_entry("older", &thread_id, &history_config)
+        ava_message_history::append_entry("older", &thread_id, &history_config)
             .await
             .expect("history append should succeed");
-        codex_message_history::append_entry("newer", &thread_id, &history_config)
+        ava_message_history::append_entry("newer", &thread_id, &history_config)
             .await
             .expect("history append should succeed");
 
@@ -4224,7 +4224,7 @@ mod tests {
             "openai".to_string(),
             /*service_tier*/ None,
             AskForApproval::Never,
-            codex_protocol::config_types::ApprovalsReviewer::User,
+            ava_protocol::config_types::ApprovalsReviewer::User,
             PermissionProfile::read_only(),
             /*active_permission_profile*/ None,
             test_path_buf("/tmp/project").abs(),
@@ -4261,7 +4261,7 @@ mod tests {
             "openai".to_string(),
             /*service_tier*/ None,
             AskForApproval::Never,
-            codex_protocol::config_types::ApprovalsReviewer::User,
+            ava_protocol::config_types::ApprovalsReviewer::User,
             PermissionProfile::read_only(),
             /*active_permission_profile*/ None,
             test_path_buf("/tmp/project").abs(),
@@ -4281,7 +4281,7 @@ mod tests {
     fn status_account_display_from_auth_mode_uses_remapped_plan_labels() {
         let business = status_account_display_from_auth_mode(
             Some(AuthMode::Chatgpt),
-            Some(codex_protocol::account::PlanType::EnterpriseCbpUsageBased),
+            Some(ava_protocol::account::PlanType::EnterpriseCbpUsageBased),
         );
         assert!(matches!(
             business,
@@ -4293,7 +4293,7 @@ mod tests {
 
         let team = status_account_display_from_auth_mode(
             Some(AuthMode::Chatgpt),
-            Some(codex_protocol::account::PlanType::SelfServeBusinessUsageBased),
+            Some(ava_protocol::account::PlanType::SelfServeBusinessUsageBased),
         );
         assert!(matches!(
             team,
@@ -4305,7 +4305,7 @@ mod tests {
 
         let business_prolite = status_account_display_from_auth_mode(
             Some(AuthMode::Chatgpt),
-            Some(codex_protocol::account::PlanType::SelfServeBusinessProLite),
+            Some(ava_protocol::account::PlanType::SelfServeBusinessProLite),
         );
         assert!(matches!(
             business_prolite,

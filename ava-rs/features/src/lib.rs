@@ -3,10 +3,10 @@
 //! This crate defines the feature registry plus the logic used to resolve an
 //! effective feature set from config-like inputs.
 
-use codex_otel::SessionTelemetry;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::WarningEvent;
+use ava_otel::SessionTelemetry;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::WarningEvent;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -105,7 +105,7 @@ pub enum Feature {
     /// Allow registration of the built-in sleep tool.
     SleepTool,
     /// Enable Claude-style lifecycle hooks loaded from hooks.json files.
-    CodexHooks,
+    AvaHooks,
     /// Store CLI auth in the encrypted local secrets backend when keyring storage is selected.
     SecretAuthStorage,
 
@@ -181,7 +181,7 @@ pub enum Feature {
     /// Enable importing project-scoped memory from external agents.
     ExternalAgentMemoryImport,
     /// Compress cold local thread-store rollout files, including shared histories.
-    /// Requires every reader of the Codex home to support compressed shared histories.
+    /// Requires every reader of the Ava home to support compressed shared histories.
     LocalThreadStoreCompression,
     /// Removed compatibility flag; local_thread_store_compression controls all rollout files.
     LocalThreadStoreSharedCompression,
@@ -189,7 +189,7 @@ pub enum Feature {
     BackgroundPaginatedRolloutMigration,
     /// Enable the Chronicle sidecar for passive screen-context memories.
     Chronicle,
-    /// Compress request bodies (zstd) when sending streaming requests to codex-backend.
+    /// Compress request bodies (zstd) when sending streaming requests to ava-backend.
     EnableRequestCompression,
     /// Keep active sampling turns alive until a failed network connection recovers.
     UnboundedConnectionRetries,
@@ -197,7 +197,7 @@ pub enum Feature {
     NetworkProxy,
     /// Enable managed worktree creation and repository-aware sessions.
     Worktrees,
-    /// Respect host system proxy settings for Codex-owned network clients.
+    /// Respect host system proxy settings for Ava-owned network clients.
     RespectSystemProxy,
     /// Retry eligible bootstrap requests through the system proxy after normal routing fails.
     SystemProxyFallback,
@@ -217,8 +217,8 @@ pub enum Feature {
     EnableMcpApps,
     /// Enable MCP protocol version 2026-07-28 support.
     Mcp20260728,
-    /// Enable MCP protocol version 2026-07-28 for the host-owned Codex Apps server.
-    CodexAppsMcp20260728,
+    /// Enable MCP protocol version 2026-07-28 for the host-owned Ava Apps server.
+    AvaAppsMcp20260728,
     /// Let RMCP coordinate OAuth refresh through the configured credential store.
     McpOAuthRefreshCoordination,
     /// Enable enterprise refresh-token authorization for configured MCP resources.
@@ -277,7 +277,7 @@ pub enum Feature {
     ///
     /// Requirements-only gate: this should be set from requirements, not user config.
     BrowserUseExternal,
-    /// Allow Codex Computer Use.
+    /// Allow Ava Computer Use.
     ///
     /// Requirements-only gate: this should be set from requirements, not user config.
     ComputerUse,
@@ -346,7 +346,7 @@ pub enum Feature {
     NonfatalClockReadErrors,
     /// Route MCP tool approval prompts through the MCP elicitation request path.
     ToolCallMcpElicitation,
-    /// Prompt Codex Apps connector auth failures through MCP URL elicitations.
+    /// Prompt Ava Apps connector auth failures through MCP URL elicitations.
     AuthElicitation,
     /// Offer Amazon Bedrock setup during TUI sign-in onboarding.
     BedrockSetupWizard,
@@ -397,7 +397,7 @@ pub enum Feature {
     /// Legacy remote models flag kept for backward compatibility.
     RemoteModels,
     /// Removed legacy git commit attribution guidance flag.
-    CodexGitCommit,
+    AvaGitCommit,
     /// Persist rollout metadata to a local SQLite database.
     Sqlite,
     /// Removed compatibility flag for the deleted apply_patch fallback feature.
@@ -565,7 +565,7 @@ impl Features {
             }
             if self.enabled(feature.id) != feature.default_enabled {
                 otel.counter(
-                    "codex.feature.state",
+                    "ava.feature.state",
                     /*inc*/ 1,
                     &[
                         ("feature", feature.key),
@@ -1116,8 +1116,8 @@ pub const FEATURES: &[FeatureSpec] = &[
         default_enabled: false,
     },
     FeatureSpec {
-        id: Feature::CodexGitCommit,
-        key: "codex_git_commit",
+        id: Feature::AvaGitCommit,
+        key: "ava_git_commit",
         stage: Stage::Removed,
         default_enabled: false,
     },
@@ -1200,7 +1200,7 @@ pub const FEATURES: &[FeatureSpec] = &[
         default_enabled: false,
     },
     FeatureSpec {
-        id: Feature::CodexHooks,
+        id: Feature::AvaHooks,
         key: "hooks",
         stage: Stage::Stable,
         default_enabled: true,
@@ -1277,7 +1277,7 @@ pub const FEATURES: &[FeatureSpec] = &[
         stage: Stage::Experimental {
             name: "Network proxy",
             menu_description: "Apply network proxy restrictions to sandboxed sessions that already have network access.",
-            announcement: "NEW: Network proxy can now be enabled from /experimental. Restart Codex after enabling it.",
+            announcement: "NEW: Network proxy can now be enabled from /experimental. Restart Ava after enabling it.",
         },
         default_enabled: false,
     },
@@ -1348,8 +1348,8 @@ pub const FEATURES: &[FeatureSpec] = &[
         default_enabled: false,
     },
     FeatureSpec {
-        id: Feature::CodexAppsMcp20260728,
-        key: "codex_apps_mcp_2026_07_28",
+        id: Feature::AvaAppsMcp20260728,
+        key: "ava_apps_mcp_2026_07_28",
         stage: Stage::UnderDevelopment,
         default_enabled: false,
     },
@@ -1771,7 +1771,7 @@ pub const FEATURES: &[FeatureSpec] = &[
         )) {
             Stage::Experimental {
                 name: "Prevent sleep while running",
-                menu_description: "Keep your computer awake while Codex is running a thread.",
+                menu_description: "Keep your computer awake while Ava is running a thread.",
                 announcement: "NEW: Prevent sleep while running is now available in /experimental.",
             }
         } else {

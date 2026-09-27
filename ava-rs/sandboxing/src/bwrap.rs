@@ -1,5 +1,5 @@
 use crate::policy_transforms::should_require_platform_sandbox;
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfile;
 use std::io::ErrorKind;
 use std::io::Read;
 use std::os::fd::AsRawFd;
@@ -14,16 +14,16 @@ use std::time::Instant;
 
 const SYSTEM_BWRAP_PROGRAM: &str = "bwrap";
 const MISSING_BWRAP_WARNING: &str = concat!(
-    "Codex could not find bubblewrap on PATH. ",
+    "Ava could not find bubblewrap on PATH. ",
     "Install bubblewrap with your OS package manager. ",
     "See the sandbox prerequisites: ",
     "https://developers.openai.com/codex/concepts/sandboxing#prerequisites. ",
-    "Codex will use the bundled bubblewrap in the meantime.",
+    "Ava will use the bundled bubblewrap in the meantime.",
 );
 const USER_NAMESPACE_WARNING: &str =
-    "Codex's Linux sandbox uses bubblewrap and needs access to create user namespaces.";
+    "Ava's Linux sandbox uses bubblewrap and needs access to create user namespaces.";
 pub(crate) const WSL1_BWRAP_WARNING: &str = concat!(
-    "Codex's Linux sandbox uses bubblewrap, which is not supported on WSL1 ",
+    "Ava's Linux sandbox uses bubblewrap, which is not supported on WSL1 ",
     "because WSL1 cannot create the required user namespaces. ",
     "Use WSL2 for sandboxed shell commands."
 );

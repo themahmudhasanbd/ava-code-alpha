@@ -1,14 +1,14 @@
 use super::session_lifecycle_requests::recorded_params;
 use super::session_lifecycle_requests::start_recording_app_server;
 use super::*;
-use codex_app_server_protocol::MisalignmentErrorDetails;
-use codex_app_server_protocol::MisalignmentSteer;
+use ava_app_server_protocol::MisalignmentErrorDetails;
+use ava_app_server_protocol::MisalignmentSteer;
 use pretty_assertions::assert_eq;
 
 fn policy_error() -> AppServerTurnError {
     AppServerTurnError {
         message: "Chat paused".into(),
-        codex_error_info: Some(AppServerCodexErrorInfo::MisalignmentPolicyViolation),
+        ava_error_info: Some(AppServerAvaErrorInfo::MisalignmentPolicyViolation),
         additional_details: None,
         misalignment: Some(MisalignmentErrorDetails {
             error_type: None,
@@ -27,7 +27,7 @@ fn error_notification(
     turn_id: &str,
     error: AppServerTurnError,
 ) -> ServerNotification {
-    ServerNotification::Error(codex_app_server_protocol::ErrorNotification {
+    ServerNotification::Error(ava_app_server_protocol::ErrorNotification {
         thread_id: thread_id.to_string(),
         turn_id: turn_id.into(),
         error,
@@ -157,7 +157,7 @@ async fn misalignment_continuation_requires_current_review_and_submits_once() ->
                 thread_id,
                 "settings-update",
                 AppServerTurnError {
-                    codex_error_info: Some(AppServerCodexErrorInfo::BadRequest),
+                    ava_error_info: Some(AppServerAvaErrorInfo::BadRequest),
                     ..policy_error()
                 },
             ),
@@ -172,7 +172,7 @@ async fn misalignment_continuation_requires_current_review_and_submits_once() ->
         let [params] = params.as_slice() else {
             panic!("expected one turn/start: {params:?}")
         };
-        let mut params: codex_app_server_protocol::TurnStartParams =
+        let mut params: ava_app_server_protocol::TurnStartParams =
             serde_json::from_value(params.clone())?;
         let metadata = params.responsesapi_client_metadata.take().unwrap();
         let override_value: serde_json::Value =
@@ -183,7 +183,7 @@ async fn misalignment_continuation_requires_current_review_and_submits_once() ->
         let config = app.chat_widget.config_ref();
         assert_eq!(
             params,
-            codex_app_server_protocol::TurnStartParams {
+            ava_app_server_protocol::TurnStartParams {
                 thread_id: thread_id.to_string(),
                 cwd: Some(config.cwd.to_path_buf()),
                 runtime_workspace_roots: Some(
@@ -191,10 +191,10 @@ async fn misalignment_continuation_requires_current_review_and_submits_once() ->
                 ),
                 approval_policy: Some(AskForApproval::OnRequest),
                 approvals_reviewer: Some(config.approvals_reviewer.into()),
-                sandbox_policy: Some(codex_app_server_protocol::SandboxPolicy::ReadOnly {
+                sandbox_policy: Some(ava_app_server_protocol::SandboxPolicy::ReadOnly {
                     network_access: false
                 }),
-                input: vec![codex_app_server_protocol::UserInput::Text {
+                input: vec![ava_app_server_protocol::UserInput::Text {
                     text: "Continue **only** within the requested scope.\nDo not edit files."
                         .to_string(),
                     text_elements: Vec::new(),

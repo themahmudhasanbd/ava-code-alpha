@@ -1,7 +1,7 @@
-use codex_aws_auth::AwsAuthConfig;
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
-use codex_protocol::error::Result;
+use ava_aws_auth::AwsAuthConfig;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_protocol::error::Result;
 
 use super::BedrockEndpoint;
 use super::auth::BedrockAuthSource;
@@ -24,7 +24,7 @@ pub(super) fn base_url(region: &str) -> String {
 
 pub(super) async fn bedrock_runtime_base_url(
     source: BedrockAuthSource,
-    managed_auth: Option<&CodexAuth>,
+    managed_auth: Option<&AvaAuth>,
     aws: &ModelProviderAwsAuthInfo,
 ) -> Result<String> {
     let region = resolve_region(source, managed_auth, aws, BedrockEndpoint::Runtime).await?;

@@ -7,13 +7,13 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::PluginReconcileChangedPlugin;
-use codex_app_server_protocol::PluginReconcileResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
+use ava_app_server_protocol::PluginReconcileChangedPlugin;
+use ava_app_server_protocol::PluginReconcileResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
 use core_test_support::responses;
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -45,7 +45,7 @@ async fn plugin_reconcile_syncs_bundles_and_reports_changes(
 ) -> Result<()> {
     let server = MockServer::start().await;
     // Both scopes must retain background-sync behavior with remote_plugin disabled.
-    let (mut app_server, codex_home) = start_app_server(&server).await?;
+    let (mut app_server, ava_home) = start_app_server(&server).await?;
     let thread = app_server.start_thread(Default::default()).await?.thread;
     let bundle_url = format!("{}/bundle", server.uri());
     let plugin_id = format!("linear@{marketplace}");
@@ -89,7 +89,7 @@ async fn plugin_reconcile_syncs_bundles_and_reports_changes(
         ("2.0.0", true, &first, vec![updated], 1),
     ] {
         let mut files = vec![(
-            ".codex-plugin/plugin.json",
+            ".ava-plugin/plugin.json",
             json!({"name": "linear"}).to_string(),
         )];
         if capabilities.has_mcps {
@@ -188,7 +188,7 @@ async fn plugin_reconcile_syncs_bundles_and_reports_changes(
     server.reset().await;
 
     // The next RPC must honor the latest config without contacting the plugin service.
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         config_path,
@@ -213,7 +213,7 @@ async fn turn_hook_runs(
     active_plugin_ids: Vec<String>,
 ) -> Result<usize> {
     Mock::given(method("POST"))
-        .and(path("/backend-api/codex/analytics-events/events"))
+        .and(path("/backend-api/ava/analytics-events/events"))
         .respond_with(ResponseTemplate::new(200))
         .mount(server)
         .await;
@@ -240,7 +240,7 @@ async fn turn_hook_runs(
     .await??;
     assert_eq!(completed.turn.status, TurnStatus::Completed);
     let event = wait_for_matching_analytics_event(server, DEFAULT_TIMEOUT, |event| {
-        event["event_type"] == "codex_turn_event"
+        event["event_type"] == "ava_turn_event"
             && event["event_params"]["turn_id"] == completed.turn.id
     })
     .await?;
@@ -267,18 +267,18 @@ async fn reconcile(app_server: &mut TestAppServer) -> Result<PluginReconcileResp
 }
 
 async fn start_app_server(server: &MockServer) -> Result<(TestAppServer, TempDir)> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let base_url = format!("{}/backend-api/", server.uri());
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{base_url}\""))
         .disable_feature(Feature::Apps)
         .enable_feature(Feature::Plugins)
-        .enable_feature(Feature::CodexHooks)
+        .enable_feature(Feature::AvaHooks)
         .disable_feature(Feature::RemotePlugin)
         .disable_feature(Feature::PluginSharing)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -286,15 +286,15 @@ async fn start_app_server(server: &MockServer) -> Result<(TestAppServer, TempDir
         AuthCredentialsStoreMode::File,
     )?;
     let app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .with_env_overrides(&[(
-            "CODEX_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS",
+            "AVA_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS",
             Some("1"),
         )])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
-    Ok((app_server, codex_home))
+    Ok((app_server, ava_home))
 }
 
 async fn mount_installed_snapshot(server: &MockServer, plugins: Vec<Value>) {

@@ -89,7 +89,7 @@ pub(super) fn history(
                             if key.starts_with("work_") {
                                 "work"
                             } else {
-                                "codex"
+                                "ava"
                             }
                             .to_string()
                         } else if key.eq_ignore_ascii_case("other") {
@@ -176,7 +176,7 @@ pub(super) fn history(
                 let mut record_values = BTreeMap::<String, f64>::new();
                 if grouping == Grouping::Model {
                     for model in record.models.unwrap_or_default() {
-                        let key = if model.model.eq_ignore_ascii_case("codex-auto-review")
+                        let key = if model.model.eq_ignore_ascii_case("ava-auto-review")
                             || model.model.eq_ignore_ascii_case("other")
                         {
                             "other".to_string()
@@ -197,13 +197,13 @@ pub(super) fn history(
                             return Err(String::from("Analytics returned an invalid amount."));
                         }
                         let key = match client.client_id.as_str() {
-                            "CODEX_CLI" => "cli",
-                            "CODEX_IDE_VSCODE" => "vscode",
-                            "CODEX_WEB" => "web",
-                            "CODEX_DESKTOP_APP" | "CODEX_WORK_DESKTOP" => "desktop_app",
-                            "CODEX_WORK_WEB" => "work_web",
-                            "CODEX_WORK_MOBILE" => "mobile",
-                            "CODEX_GITHUB" => "github_code_review",
+                            "AVA_CLI" => "cli",
+                            "AVA_IDE_VSCODE" => "vscode",
+                            "AVA_WEB" => "web",
+                            "AVA_DESKTOP_APP" | "AVA_WORK_DESKTOP" => "desktop_app",
+                            "AVA_WORK_WEB" => "work_web",
+                            "AVA_WORK_MOBILE" => "mobile",
+                            "AVA_GITHUB" => "github_code_review",
                             _ => "other",
                         };
                         *record_values.entry(key.to_string()).or_default() += client.turns;
@@ -338,7 +338,7 @@ pub(super) fn label(key: &str) -> &str {
         "sdk" => "SDK",
         "exec" => "Exec",
         "github" => "GitHub",
-        "codex" => "Codex",
+        "ava" => "Ava",
         "work" => "Work",
         "code_review" | "github_code_review" => "Code review",
         "start-user" | "start-composer" => "User messages",

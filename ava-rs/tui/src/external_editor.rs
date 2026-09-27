@@ -5,10 +5,10 @@ use std::path::PathBuf;
 use std::process::Stdio;
 
 #[cfg(windows)]
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
 #[cfg(windows)]
-use codex_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::FileSystemSpecialPath;
 use color_eyre::eyre::Report;
 use color_eyre::eyre::Result;
 use tempfile::Builder;
@@ -174,7 +174,7 @@ pub(super) fn editor_directory(
 pub(crate) async fn run_editor(
     seed: &str,
     editor_cmd: &[String],
-    codex_home: &Path,
+    ava_home: &Path,
     file_system_policy: &FileSystemSandboxPolicy,
     cwd: &Path,
 ) -> Result<String> {
@@ -185,7 +185,7 @@ pub(crate) async fn run_editor(
     let default_ava_home = dirs::home_dir().map(|home| home.join(".ava-code"));
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     let project_ava_home = cwd.join(".ava-code");
-    let mut candidate_homes = vec![codex_home];
+    let mut candidate_homes = vec![ava_home];
     if let Some(default_ava_home) = default_ava_home.as_deref() {
         candidate_homes.push(default_ava_home);
     }

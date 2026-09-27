@@ -1,6 +1,6 @@
 //! Session- and turn-scoped helpers for talking to model provider APIs.
 //!
-//! `ModelClient` is intended to live for the lifetime of a Codex session and holds the stable
+//! `ModelClient` is intended to live for the lifetime of a Ava session and holds the stable
 //! configuration and state needed to talk to a provider (auth, provider selection, conversation id,
 //! and transport fallback state).
 //!
@@ -10,7 +10,7 @@
 //!
 //! A [`ModelClientSession`] is created per turn and is used to stream one or more Responses API
 //! requests during that turn. It caches a Responses WebSocket connection (opened lazily) and stores
-//! per-turn state such as the `x-codex-turn-state` token used for sticky routing.
+//! per-turn state such as the `x-ava-turn-state` token used for sticky routing.
 //! Cached connections, incremental response state, and turn routing are discarded when auth
 //! ownership changes.
 //!
@@ -32,72 +32,72 @@ use std::sync::OnceLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use crate::CodexResponsesHeaders;
+use crate::AvaResponsesHeaders;
 use async_channel::Sender;
-use codex_api::AgentIdentityTelemetry;
-use codex_api::ApiError;
-use codex_api::AuthProvider;
-use codex_api::Compression;
-use codex_api::MemoriesClient as ApiMemoriesClient;
-use codex_api::MemorySummarizeInput as ApiMemorySummarizeInput;
-use codex_api::MemorySummarizeOutput as ApiMemorySummarizeOutput;
-use codex_api::Provider as ApiProvider;
-use codex_api::RawMemory as ApiRawMemory;
-use codex_api::RealtimeCallClient as ApiRealtimeCallClient;
-use codex_api::RealtimeSessionConfig as ApiRealtimeSessionConfig;
-use codex_api::Reasoning;
-use codex_api::ReasoningContext;
-use codex_api::RequestTelemetry;
-use codex_api::ReqwestTransport;
-use codex_api::ResponseCreateWsRequest;
-use codex_api::ResponsesApiRequest;
-use codex_api::ResponsesClient as ApiResponsesClient;
-use codex_api::ResponsesOptions as ApiResponsesOptions;
-use codex_api::ResponsesWebsocketClient as ApiWebSocketResponsesClient;
-use codex_api::ResponsesWebsocketConnection as ApiWebSocketConnection;
-use codex_api::ResponsesWsRequest;
-use codex_api::SharedAuthProvider;
-use codex_api::SseTelemetry;
-use codex_api::StreamOptions;
-use codex_api::TransportError;
-use codex_api::WebsocketTelemetry;
-use codex_api::auth_header_telemetry;
-use codex_api::build_session_headers;
-use codex_api::create_text_param_for_request;
-use codex_api::response_create_client_metadata;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::RefreshTokenError;
-use codex_login::UnauthorizedRecovery;
-use codex_login::default_client::ClientRedirectPolicy;
-use codex_login::default_client::add_originator_header;
-use codex_login::default_client::create_client_for_route;
-use codex_otel::SessionTelemetry;
-use codex_otel::WEBSOCKET_CONTINUATION_COUNT_METRIC;
-use codex_otel::current_span_w3c_trace_context;
-use codex_protocol::ResponseItemId;
-use codex_protocol::auth::AuthMode;
+use ava_api::AgentIdentityTelemetry;
+use ava_api::ApiError;
+use ava_api::AuthProvider;
+use ava_api::Compression;
+use ava_api::MemoriesClient as ApiMemoriesClient;
+use ava_api::MemorySummarizeInput as ApiMemorySummarizeInput;
+use ava_api::MemorySummarizeOutput as ApiMemorySummarizeOutput;
+use ava_api::Provider as ApiProvider;
+use ava_api::RawMemory as ApiRawMemory;
+use ava_api::RealtimeCallClient as ApiRealtimeCallClient;
+use ava_api::RealtimeSessionConfig as ApiRealtimeSessionConfig;
+use ava_api::Reasoning;
+use ava_api::ReasoningContext;
+use ava_api::RequestTelemetry;
+use ava_api::ReqwestTransport;
+use ava_api::ResponseCreateWsRequest;
+use ava_api::ResponsesApiRequest;
+use ava_api::ResponsesClient as ApiResponsesClient;
+use ava_api::ResponsesOptions as ApiResponsesOptions;
+use ava_api::ResponsesWebsocketClient as ApiWebSocketResponsesClient;
+use ava_api::ResponsesWebsocketConnection as ApiWebSocketConnection;
+use ava_api::ResponsesWsRequest;
+use ava_api::SharedAuthProvider;
+use ava_api::SseTelemetry;
+use ava_api::StreamOptions;
+use ava_api::TransportError;
+use ava_api::WebsocketTelemetry;
+use ava_api::auth_header_telemetry;
+use ava_api::build_session_headers;
+use ava_api::create_text_param_for_request;
+use ava_api::response_create_client_metadata;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::RefreshTokenError;
+use ava_login::UnauthorizedRecovery;
+use ava_login::default_client::ClientRedirectPolicy;
+use ava_login::default_client::add_originator_header;
+use ava_login::default_client::create_client_for_route;
+use ava_otel::SessionTelemetry;
+use ava_otel::WEBSOCKET_CONTINUATION_COUNT_METRIC;
+use ava_otel::current_span_w3c_trace_context;
+use ava_protocol::ResponseItemId;
+use ava_protocol::auth::AuthMode;
 
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
-use codex_protocol::config_types::Verbosity as VerbosityConfig;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::protocol::AuthRecoveryEvent;
-use codex_protocol::protocol::Event as ProtocolEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_rollout_trace::InferenceTraceAttempt;
-use codex_rollout_trace::InferenceTraceContext;
-use codex_tools::create_tools_json_for_responses_api;
-use codex_tools::create_tools_json_for_responses_lite;
-use codex_tools::create_tools_raw_json_for_responses_api;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
+use ava_protocol::config_types::Verbosity as VerbosityConfig;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::protocol::AuthRecoveryEvent;
+use ava_protocol::protocol::Event as ProtocolEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_rollout_trace::InferenceTraceAttempt;
+use ava_rollout_trace::InferenceTraceContext;
+use ava_tools::create_tools_json_for_responses_api;
+use ava_tools::create_tools_json_for_responses_lite;
+use ava_tools::create_tools_raw_json_for_responses_api;
 use eventsource_stream::Event;
 use eventsource_stream::EventStreamError;
 use futures::StreamExt;
@@ -127,50 +127,50 @@ use crate::context::BaseInstructionsFragment;
 use crate::context::ContextualUserFragment;
 use crate::cyber_access_program;
 use crate::feedback_tags;
-use crate::responses_metadata::CodexResponsesMetadata;
+use crate::responses_metadata::AvaResponsesMetadata;
 use crate::responses_metadata::subagent_header_value;
 use crate::util::emit_feedback_auth_recovery_tags;
-use codex_feedback::FeedbackRequestTags;
-use codex_feedback::emit_feedback_request_tags_with_auth_env;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_login::auth_env_telemetry::AuthEnvTelemetry;
-use codex_login::auth_env_telemetry::collect_auth_env_telemetry;
-use codex_model_provider::AgentIdentitySessionFallback;
-use codex_model_provider::ProviderAuthScope;
-use codex_model_provider::ProviderUnauthorizedRecovery;
-use codex_model_provider::ResponsesConnectionKey;
-use codex_model_provider::SharedModelProvider;
-use codex_model_provider::WorkspaceRoutingContext;
-use codex_model_provider::create_model_provider;
+use ava_feedback::FeedbackRequestTags;
+use ava_feedback::emit_feedback_request_tags_with_auth_env;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_login::auth_env_telemetry::AuthEnvTelemetry;
+use ava_login::auth_env_telemetry::collect_auth_env_telemetry;
+use ava_model_provider::AgentIdentitySessionFallback;
+use ava_model_provider::ProviderAuthScope;
+use ava_model_provider::ProviderUnauthorizedRecovery;
+use ava_model_provider::ResponsesConnectionKey;
+use ava_model_provider::SharedModelProvider;
+use ava_model_provider::WorkspaceRoutingContext;
+use ava_model_provider::create_model_provider;
 #[cfg(test)]
-use codex_model_provider_info::DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
-use codex_response_debug_context::extract_response_debug_context;
-use codex_response_debug_context::extract_response_debug_context_from_api_error;
-use codex_response_debug_context::telemetry_api_error_message;
-use codex_response_debug_context::telemetry_transport_error_message;
+use ava_model_provider_info::DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
+use ava_response_debug_context::extract_response_debug_context;
+use ava_response_debug_context::extract_response_debug_context_from_api_error;
+use ava_response_debug_context::telemetry_api_error_message;
+use ava_response_debug_context::telemetry_transport_error_message;
 
 pub const OPENAI_BETA_HEADER: &str = "OpenAI-Beta";
-pub const X_CODEX_INSTALLATION_ID_HEADER: &str = "x-codex-installation-id";
-pub const X_CODEX_ROUTING_HINT_HEADER: &str = "x-codex-routing-hint";
-pub const X_CODEX_TURN_STATE_HEADER: &str = "x-codex-turn-state";
-pub const X_CODEX_TURN_METADATA_HEADER: &str = "x-codex-turn-metadata";
-pub const X_CODEX_PARENT_THREAD_ID_HEADER: &str = "x-codex-parent-thread-id";
-pub const X_CODEX_WINDOW_ID_HEADER: &str = "x-codex-window-id";
+pub const X_AVA_INSTALLATION_ID_HEADER: &str = "x-ava-installation-id";
+pub const X_AVA_ROUTING_HINT_HEADER: &str = "x-ava-routing-hint";
+pub const X_AVA_TURN_STATE_HEADER: &str = "x-ava-turn-state";
+pub const X_AVA_TURN_METADATA_HEADER: &str = "x-ava-turn-metadata";
+pub const X_AVA_PARENT_THREAD_ID_HEADER: &str = "x-ava-parent-thread-id";
+pub const X_AVA_WINDOW_ID_HEADER: &str = "x-ava-window-id";
 pub const X_OPENAI_MEMGEN_REQUEST_HEADER: &str = "x-openai-memgen-request";
 pub const X_OPENAI_SUBAGENT_HEADER: &str = "x-openai-subagent";
 pub const X_RESPONSESAPI_INCLUDE_TIMING_METRICS_HEADER: &str =
     "x-responsesapi-include-timing-metrics";
-const X_CODEX_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY: &str =
-    "x-codex-ws-stream-request-start-ms";
+const X_AVA_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY: &str =
+    "x-ava-ws-stream-request-start-ms";
 const WS_REQUEST_HEADER_RESPONSES_LITE_CLIENT_METADATA_KEY: &str =
-    "ws_request_header_x_openai_internal_codex_responses_lite";
+    "ws_request_header_x_openai_internal_ava_responses_lite";
 const RESPONSES_WEBSOCKETS_V2_BETA_HEADER_VALUE: &str = "responses_websockets=2026-02-06";
-const X_OPENAI_INTERNAL_CODEX_RESPONSES_LITE_HEADER: &str =
-    "x-openai-internal-codex-responses-lite";
+const X_OPENAI_INTERNAL_AVA_RESPONSES_LITE_HEADER: &str =
+    "x-openai-internal-ava-responses-lite";
 const REALTIME_CALLS_ENDPOINT: &str = "/realtime/calls";
 const MEMORIES_SUMMARIZE_ENDPOINT: &str = "/memories/trace_summarize";
 #[cfg(test)]
@@ -226,7 +226,7 @@ enum ClientRouting {
 /// Keeping this as a single bundle ensures prewarm and normal request paths
 /// share the same auth/provider setup flow.
 struct CurrentClientSetup {
-    auth: Option<CodexAuth>,
+    auth: Option<AvaAuth>,
     auth_owner_generation: Option<u64>,
     auth_revision: Option<u64>,
     api_provider: ApiProvider,
@@ -248,7 +248,7 @@ impl RequestRouteTelemetry {
 
 /// A session-scoped client for model-provider API calls.
 ///
-/// This holds configuration and state that should be shared across turns within a Codex session
+/// This holds configuration and state that should be shared across turns within a Ava session
 /// (auth, provider selection, thread id, and transport fallback state).
 ///
 /// WebSocket fallback is session-scoped: once a turn activates the HTTP fallback, subsequent turns
@@ -262,7 +262,7 @@ pub struct ModelClient {
     state: Arc<ModelClientState>,
     agent_identity_policy: AgentIdentityAuthPolicy,
     prompt_cache_key_override: Option<String>,
-    codex_responses_headers: Option<Arc<CodexResponsesHeaders>>,
+    ava_responses_headers: Option<Arc<AvaResponsesHeaders>>,
     event_sender: Option<Sender<ProtocolEvent>>,
     http_client_factory: HttpClientFactory,
     restored_history: bool,
@@ -275,10 +275,10 @@ pub struct ModelClient {
 ///
 /// - The last full request, so subsequent calls can reuse incremental websocket request payloads
 ///   only when the current request is an incremental extension of the previous one.
-/// - The `x-codex-turn-state` sticky-routing token, which must be replayed for all requests within
+/// - The `x-ava-turn-state` sticky-routing token, which must be replayed for all requests within
 ///   the same turn.
 ///
-/// Create a fresh `ModelClientSession` for each Codex turn. Reusing it across turns would replay
+/// Create a fresh `ModelClientSession` for each Ava turn. Reusing it across turns would replay
 /// the previous turn's sticky-routing token into the next turn, which violates the client/server
 /// contract and can cause routing bugs.
 pub struct ModelClientSession {
@@ -287,8 +287,8 @@ pub struct ModelClientSession {
     /// Turn state for sticky routing.
     ///
     /// This is an `OnceLock` that stores the turn state value received from the server
-    /// on turn start via the `x-codex-turn-state` response header. Once set, this value
-    /// should be sent back to the server in the `x-codex-turn-state` request header for
+    /// on turn start via the `x-ava-turn-state` response header. Once set, this value
+    /// should be sent back to the server in the `x-ava-turn-state` request header for
     /// all subsequent requests within the same turn to maintain sticky routing.
     ///
     /// This is a contract between the client and server: we receive it at turn start,
@@ -465,7 +465,7 @@ impl ModelClient {
     #[allow(clippy::too_many_arguments)]
     /// Creates a new session-scoped `ModelClient`.
     ///
-    /// All arguments are expected to be stable for the lifetime of a Codex session. Per-turn values
+    /// All arguments are expected to be stable for the lifetime of a Ava session. Per-turn values
     /// are passed to [`ModelClientSession::stream`] (and other turn-scoped methods) explicitly. The
     /// HTTP client factory must come from the effective session configuration so every transport
     /// observes the resolved outbound proxy policy.
@@ -488,12 +488,12 @@ impl ModelClient {
         workspace_routing: WorkspaceRoutingContext,
     ) -> Self {
         let model_provider = create_model_provider(provider_info, auth_manager);
-        let codex_api_key_env_enabled = model_provider
+        let ava_api_key_env_enabled = model_provider
             .auth_manager()
             .as_ref()
-            .is_some_and(|manager| manager.codex_api_key_env_enabled());
+            .is_some_and(|manager| manager.ava_api_key_env_enabled());
         let auth_env_telemetry =
-            collect_auth_env_telemetry(model_provider.info(), codex_api_key_env_enabled);
+            collect_auth_env_telemetry(model_provider.info(), ava_api_key_env_enabled);
         let include_attestation = model_provider.supports_attestation();
         // Fixed-effort workers use request-level effort even when managed requirements
         // pin the feature on. Share this decision with update injection and pinning.
@@ -528,7 +528,7 @@ impl ModelClient {
             }),
             agent_identity_policy,
             prompt_cache_key_override: None,
-            codex_responses_headers: None,
+            ava_responses_headers: None,
             event_sender: None,
             http_client_factory,
             restored_history: false,
@@ -550,15 +550,15 @@ impl ModelClient {
         mut self,
         prompt_cache_key_override: Option<String>,
         event_sender: Sender<ProtocolEvent>,
-        codex_responses_headers: Option<Arc<CodexResponsesHeaders>>,
+        ava_responses_headers: Option<Arc<AvaResponsesHeaders>>,
     ) -> Self {
         self.prompt_cache_key_override = prompt_cache_key_override;
         self.event_sender = Some(event_sender);
-        self.codex_responses_headers = codex_responses_headers;
+        self.ava_responses_headers = ava_responses_headers;
         self
     }
 
-    fn prompt_cache_key(&self, responses_metadata: &CodexResponsesMetadata) -> String {
+    fn prompt_cache_key(&self, responses_metadata: &AvaResponsesMetadata) -> String {
         if let Some(prompt_cache_key) = &self.prompt_cache_key_override {
             return prompt_cache_key.clone();
         }
@@ -574,7 +574,7 @@ impl ModelClient {
 
     // ChatGPT derives cache affinity from the Responses session-id header. Keep the
     // actual session identity in turn metadata, hooks, and history/notes requests.
-    fn responses_session_id(&self, metadata: &CodexResponsesMetadata) -> String {
+    fn responses_session_id(&self, metadata: &AvaResponsesMetadata) -> String {
         if self.state.session_source.is_non_root_agent() {
             metadata.session_id.clone()
         } else {
@@ -642,7 +642,7 @@ impl ModelClient {
         if activated {
             warn!("falling back to HTTP");
             session_telemetry.counter(
-                "codex.transport.fallback_to_http",
+                "ava.transport.fallback_to_http",
                 /*inc*/ 1,
                 &[("from_wire_api", "responses_websocket")],
             );
@@ -732,7 +732,7 @@ impl ModelClient {
         let request_telemetry = Self::build_request_telemetry(
             session_telemetry,
             AuthRequestTelemetryContext::new(
-                client_setup.auth.as_ref().map(CodexAuth::auth_mode),
+                client_setup.auth.as_ref().map(AvaAuth::auth_mode),
                 client_setup.api_auth.as_ref(),
                 client_setup.agent_identity_telemetry.clone(),
                 PendingUnauthorizedRetry::default(),
@@ -784,7 +784,7 @@ impl ModelClient {
 
     fn build_responses_compatibility_headers(
         &self,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
     ) -> ApiHeaderMap {
         let mut extra_headers = responses_metadata.compatibility_headers();
         if matches!(
@@ -801,7 +801,7 @@ impl ModelClient {
 
     fn build_ws_client_metadata(
         &self,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
         use_responses_lite: bool,
     ) -> HashMap<String, String> {
         let mut client_metadata = responses_metadata.client_metadata();
@@ -873,7 +873,7 @@ impl ModelClient {
         effort: Option<ReasoningEffortConfig>,
         summary: ReasoningSummaryConfig,
         service_tier: Option<String>,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
     ) -> Result<ResponsesApiRequest> {
         let mut input = prompt.get_formatted_input_for_request(model_info);
         if !self.reasoning_effort_override_enabled(model_info) {
@@ -937,7 +937,7 @@ impl ModelClient {
             && is_openai
             && reasoning.summary.is_some())
         .then_some(StreamOptions {
-            reasoning_summary_delivery: codex_api::ReasoningSummaryDelivery::SequentialCutoff,
+            reasoning_summary_delivery: ava_api::ReasoningSummaryDelivery::SequentialCutoff,
         });
         let include = vec!["reasoning.encrypted_content".to_string()];
         let verbosity = if model_info.support_verbosity {
@@ -994,7 +994,7 @@ impl ModelClient {
                     url.scheme() == "https"
                         && url.host_str().is_some_and(|host| {
                             host == "api.openai.com"
-                                || codex_http_client::is_allowed_chatgpt_host(host)
+                                || ava_http_client::is_allowed_chatgpt_host(host)
                         })
                 });
         if !result_metadata_allowed {
@@ -1096,21 +1096,21 @@ impl ModelClient {
         }
     }
 
-    fn responses_headers(&self, auth: Option<&CodexAuth>, model: &str) -> ApiHeaderMap {
-        self.codex_responses_headers
+    fn responses_headers(&self, auth: Option<&AvaAuth>, model: &str) -> ApiHeaderMap {
+        self.ava_responses_headers
             .as_ref()
             .filter(|config| {
                 config.model == model
-                    && self.uses_codex_backend(auth)
-                    && self.state.provider.info().supports_codex_backend_routes()
+                    && self.uses_ava_backend(auth)
+                    && self.state.provider.info().supports_ava_backend_routes()
             })
             .map(|config| config.headers.clone())
             .unwrap_or_default()
     }
 
-    fn uses_codex_backend(&self, auth: Option<&CodexAuth>) -> bool {
+    fn uses_ava_backend(&self, auth: Option<&AvaAuth>) -> bool {
         let provider = self.state.provider.info();
-        auth.is_some_and(CodexAuth::uses_codex_backend)
+        auth.is_some_and(AvaAuth::uses_ava_backend)
             && provider.is_openai()
             && provider.requires_openai_auth
             && provider.env_key.is_none()
@@ -1123,7 +1123,7 @@ impl ModelClient {
         &self,
         metadata: &mut Option<HashMap<String, String>>,
         parent_response_id: Option<&str>,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         responses_headers: &ApiHeaderMap,
     ) {
         if let Some(metadata) = metadata.as_mut() {
@@ -1131,7 +1131,7 @@ impl ModelClient {
             metadata.remove("parent_response_id");
         }
         let guardian_reviewer = responses_headers
-            .get("x-codex-guardian")
+            .get("x-ava-guardian")
             .is_some_and(|value| value == "reviewer");
         if guardian_reviewer && let Some(parent_response_id) = parent_response_id {
             metadata.get_or_insert_with(HashMap::new).insert(
@@ -1143,10 +1143,10 @@ impl ModelClient {
             && !crate::guardian::is_basic_session_source(&self.state.session_source)
             && matches!(
                 auth,
-                Some(CodexAuth::Chatgpt(_) | CodexAuth::ChatgptAuthTokens(_))
+                Some(AvaAuth::Chatgpt(_) | AvaAuth::ChatgptAuthTokens(_))
             )
-            && self.uses_codex_backend(auth)
-            && self.state.provider.info().supports_codex_backend_routes()
+            && self.uses_ava_backend(auth)
+            && self.state.provider.info().supports_ava_backend_routes()
         {
             metadata
                 .get_or_insert_with(HashMap::new)
@@ -1156,11 +1156,11 @@ impl ModelClient {
 
     fn build_routing_hint_header(
         &self,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         model: &str,
         service_tier: Option<&str>,
     ) -> Option<HeaderValue> {
-        if !self.uses_codex_backend(auth) {
+        if !self.uses_ava_backend(auth) {
             return None;
         }
 
@@ -1179,7 +1179,7 @@ impl ModelClient {
     ) -> Result<ReqwestTransport> {
         let redirect_policy = if api_provider
             .headers
-            .contains_key(codex_model_provider::ACCOUNT_ROUTING_HEADER)
+            .contains_key(ava_model_provider::ACCOUNT_ROUTING_HEADER)
         {
             ClientRedirectPolicy::Reject
         } else {
@@ -1209,9 +1209,9 @@ impl ModelClient {
     async fn connect_websocket(
         &self,
         session_telemetry: &SessionTelemetry,
-        api_provider: codex_api::Provider,
+        api_provider: ava_api::Provider,
         api_auth: SharedAuthProvider,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
         auth_context: AuthRequestTelemetryContext,
         request_route_telemetry: RequestRouteTelemetry,
         responses_headers: &ApiHeaderMap,
@@ -1231,7 +1231,7 @@ impl ModelClient {
             ApiWebSocketResponsesClient::new(api_provider, api_auth).connect(
                 &self.http_client_factory,
                 headers,
-                codex_login::default_client::default_headers(),
+                ava_login::default_client::default_headers(),
                 /*turn_state*/ None,
                 Some(websocket_telemetry),
             ),
@@ -1295,7 +1295,7 @@ impl ModelClient {
     /// Builds websocket handshake headers for both prewarm and turn-time reconnect.
     async fn build_websocket_headers(
         &self,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
     ) -> ApiHeaderMap {
         let mut headers = build_responses_headers(
             self.state.beta_features_header.as_deref(),
@@ -1311,7 +1311,7 @@ impl ModelClient {
         ));
         headers.extend(self.build_responses_compatibility_headers(responses_metadata));
         if let Some(routing_hint) = &responses_metadata.routing_hint {
-            headers.insert(X_CODEX_ROUTING_HINT_HEADER, routing_hint.clone());
+            headers.insert(X_AVA_ROUTING_HINT_HEADER, routing_hint.clone());
         }
         if let Some(header_value) = self.generate_attestation_header_for().await {
             headers.insert(X_OAI_ATTESTATION_HEADER, header_value);
@@ -1346,7 +1346,7 @@ impl ModelClientSession {
     /// regardless of transport choice.
     async fn build_responses_options(
         &self,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
         compression: Compression,
         use_responses_lite: bool,
     ) -> ApiResponsesOptions {
@@ -1450,7 +1450,7 @@ impl ModelClientSession {
         &mut self,
         model_info: &ModelInfo,
         session_telemetry: &SessionTelemetry,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
     ) -> std::result::Result<(), ApiError> {
         if !self.client.responses_websocket_enabled() {
             return Ok(());
@@ -1473,7 +1473,7 @@ impl ModelClientSession {
         }
         self.websocket_session.reset(Some("other"));
         let auth_context = AuthRequestTelemetryContext::new(
-            client_setup.auth.as_ref().map(CodexAuth::auth_mode),
+            client_setup.auth.as_ref().map(AvaAuth::auth_mode),
             client_setup.api_auth.as_ref(),
             client_setup.agent_identity_telemetry.clone(),
             PendingUnauthorizedRetry::default(),
@@ -1579,9 +1579,9 @@ impl ModelClientSession {
             ))
     }
 
-    fn responses_request_compression(&self, auth: Option<&CodexAuth>) -> Compression {
+    fn responses_request_compression(&self, auth: Option<&AvaAuth>) -> Compression {
         if self.client.state.enable_request_compression
-            && auth.is_some_and(CodexAuth::uses_codex_backend)
+            && auth.is_some_and(AvaAuth::uses_ava_backend)
             && self.client.state.provider.info().is_openai()
         {
             Compression::Zstd
@@ -1615,7 +1615,7 @@ impl ModelClientSession {
         effort: Option<ReasoningEffortConfig>,
         summary: ReasoningSummaryConfig,
         service_tier: Option<String>,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
         inference_trace: &InferenceTraceContext,
     ) -> Result<ResponseStream> {
         let auth_manager = self.client.state.provider.auth_manager();
@@ -1639,7 +1639,7 @@ impl ModelClientSession {
                 client_setup.redirect_policy,
             )?;
             let request_auth_context = AuthRequestTelemetryContext::new(
-                client_setup.auth.as_ref().map(CodexAuth::auth_mode),
+                client_setup.auth.as_ref().map(AvaAuth::auth_mode),
                 client_setup.api_auth.as_ref(),
                 client_setup.agent_identity_telemetry.clone(),
                 pending_retry,
@@ -1678,7 +1678,7 @@ impl ModelClientSession {
                 &responses_headers,
             );
             let guardian_reviewer = responses_headers
-                .get("x-codex-guardian")
+                .get("x-ava-guardian")
                 .is_some_and(|value| value == "reviewer");
             if guardian_reviewer {
                 request.service_tier = None;
@@ -1692,7 +1692,7 @@ impl ModelClientSession {
             {
                 options
                     .extra_headers
-                    .insert(X_CODEX_ROUTING_HINT_HEADER, header_value);
+                    .insert(X_AVA_ROUTING_HINT_HEADER, header_value);
             }
             request.access_programs = cyber_access_program::for_auth(
                 client_setup.auth.as_ref(),
@@ -1793,7 +1793,7 @@ impl ModelClientSession {
         effort: Option<ReasoningEffortConfig>,
         summary: ReasoningSummaryConfig,
         service_tier: Option<String>,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
         warmup: bool,
         request_trace: Option<W3cTraceContext>,
         inference_trace: &InferenceTraceContext,
@@ -1816,7 +1816,7 @@ impl ModelClientSession {
                 .responses_headers(client_setup.auth.as_ref(), &model_info.slug);
             tracing::Span::current().record("api.path", "/responses");
             let request_auth_context = AuthRequestTelemetryContext::new(
-                client_setup.auth.as_ref().map(CodexAuth::auth_mode),
+                client_setup.auth.as_ref().map(AvaAuth::auth_mode),
                 client_setup.api_auth.as_ref(),
                 client_setup.agent_identity_telemetry.clone(),
                 pending_retry,
@@ -1834,7 +1834,7 @@ impl ModelClientSession {
                 &client_setup.api_provider,
             );
             let guardian_reviewer = responses_headers
-                .get("x-codex-guardian")
+                .get("x-ava-guardian")
                 .is_some_and(|value| value == "reviewer");
             if guardian_reviewer {
                 request.service_tier = None;
@@ -1909,7 +1909,7 @@ impl ModelClientSession {
                 .client
                 .build_ws_client_metadata(responses_metadata, model_info.use_responses_lite);
             if let Some(turn_state) = self.turn_state.get() {
-                client_metadata.insert(X_CODEX_TURN_STATE_HEADER.to_string(), turn_state.clone());
+                client_metadata.insert(X_AVA_TURN_STATE_HEADER.to_string(), turn_state.clone());
             }
             let continuation = self.prepare_websocket_request(&request);
             let (mode, reason) = if continuation.is_some() {
@@ -2079,7 +2079,7 @@ impl ModelClientSession {
         effort: Option<ReasoningEffortConfig>,
         summary: ReasoningSummaryConfig,
         service_tier: Option<String>,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
     ) -> Result<()> {
         if !self.client.responses_websocket_enabled() {
             return Ok(());
@@ -2140,7 +2140,7 @@ impl ModelClientSession {
         effort: Option<ReasoningEffortConfig>,
         summary: ReasoningSummaryConfig,
         service_tier: Option<String>,
-        responses_metadata: &CodexResponsesMetadata,
+        responses_metadata: &AvaResponsesMetadata,
         inference_trace: &InferenceTraceContext,
     ) -> Result<ResponseStream> {
         let wire_api = self.client.state.provider.info().wire_api;
@@ -2185,7 +2185,7 @@ impl ModelClientSession {
         }
     }
 
-    /// Permanently disables WebSockets for this Codex session and resets WebSocket state.
+    /// Permanently disables WebSockets for this Ava session and resets WebSocket state.
     ///
     /// This is used after exhausting the provider retry budget, to force subsequent requests onto
     /// the HTTP transport.
@@ -2214,17 +2214,17 @@ fn stamp_ws_stream_request_start_ms(request: &mut ResponsesWsRequest<'_>) {
         .client_metadata
         .get_or_insert_with(HashMap::new)
         .insert(
-            X_CODEX_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY.to_string(),
+            X_AVA_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY.to_string(),
             crate::turn_timing::now_unix_timestamp_ms().to_string(),
         );
 }
 
 /// Builds the extra headers attached to Responses API requests.
 ///
-/// These headers implement Codex-specific conventions:
+/// These headers implement Ava-specific conventions:
 ///
-/// - `x-codex-beta-features`: comma-separated beta feature keys enabled for the session.
-/// - `x-codex-turn-state`: sticky routing token captured earlier in the turn.
+/// - `x-ava-beta-features`: comma-separated beta feature keys enabled for the session.
+/// - `x-ava-turn-state`: sticky routing token captured earlier in the turn.
 fn build_responses_headers(
     beta_features_header: Option<&str>,
     turn_state: Option<&Arc<OnceLock<String>>>,
@@ -2234,13 +2234,13 @@ fn build_responses_headers(
         && !value.is_empty()
         && let Ok(header_value) = HeaderValue::from_str(value)
     {
-        headers.insert("x-codex-beta-features", header_value);
+        headers.insert("x-ava-beta-features", header_value);
     }
     if let Some(turn_state) = turn_state
         && let Some(state) = turn_state.get()
         && let Ok(header_value) = HeaderValue::from_str(state)
     {
-        headers.insert(X_CODEX_TURN_STATE_HEADER, header_value);
+        headers.insert(X_AVA_TURN_STATE_HEADER, header_value);
     }
     headers
 }
@@ -2248,7 +2248,7 @@ fn build_responses_headers(
 fn add_responses_lite_header(headers: &mut ApiHeaderMap, use_responses_lite: bool) {
     if use_responses_lite {
         headers.insert(
-            X_OPENAI_INTERNAL_CODEX_RESPONSES_LITE_HEADER,
+            X_OPENAI_INTERNAL_AVA_RESPONSES_LITE_HEADER,
             HeaderValue::from_static("true"),
         );
     }
@@ -2258,16 +2258,16 @@ const RESPONSE_STREAM_CHANNEL_CAPACITY: usize = 1600;
 const STREAM_DROPPED_REASON: &str = "response stream dropped before provider terminal event";
 
 fn map_response_stream(
-    api_stream: codex_api::ResponseStream,
+    api_stream: ava_api::ResponseStream,
     session_telemetry: SessionTelemetry,
     inference_trace_attempt: InferenceTraceAttempt,
     provider: SharedModelProvider,
 ) -> (ResponseStream, oneshot::Receiver<LastResponse>) {
-    let codex_api::ResponseStream {
+    let ava_api::ResponseStream {
         rx_event,
         upstream_request_id,
     } = api_stream;
-    let api_stream = codex_api::ResponseStream {
+    let api_stream = ava_api::ResponseStream {
         rx_event,
         upstream_request_id: None,
     };
@@ -2433,7 +2433,7 @@ where
 /// Handles a 401 response by optionally refreshing ChatGPT tokens once.
 ///
 /// When refresh succeeds, the caller should retry the API call; otherwise
-/// the mapped `CodexErr` is returned to the caller.
+/// the mapped `AvaErr` is returned to the caller.
 #[derive(Clone, Copy, Debug)]
 struct UnauthorizedRecoveryExecution {
     mode: &'static str,
@@ -2503,11 +2503,11 @@ impl AuthRequestTelemetryContext {
 
 struct WebsocketConnectParams<'a> {
     session_telemetry: &'a SessionTelemetry,
-    api_provider: codex_api::Provider,
+    api_provider: ava_api::Provider,
     auth_revision: Option<u64>,
     api_auth: SharedAuthProvider,
     auth_owner_generation: Option<u64>,
-    responses_metadata: &'a CodexResponsesMetadata,
+    responses_metadata: &'a AvaResponsesMetadata,
     auth_context: AuthRequestTelemetryContext,
     request_route_telemetry: RequestRouteTelemetry,
     responses_headers: &'a ApiHeaderMap,
@@ -2636,7 +2636,7 @@ async fn handle_unauthorized(
                     debug.auth_error.as_deref(),
                     debug.auth_error_code.as_deref(),
                 );
-                Err(CodexErr::RefreshTokenFailed(failed))
+                Err(AvaErr::RefreshTokenFailed(failed))
             }
             Err(RefreshTokenError::Transient(other)) => {
                 session_telemetry.record_auth_recovery(
@@ -2659,7 +2659,7 @@ async fn handle_unauthorized(
                     debug.auth_error.as_deref(),
                     debug.auth_error_code.as_deref(),
                 );
-                Err(CodexErr::Io(other))
+                Err(AvaErr::Io(other))
             }
         };
     }

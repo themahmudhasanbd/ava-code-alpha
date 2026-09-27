@@ -20,7 +20,7 @@ use crate::setup::setup_marker_path;
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfile;
 use pretty_assertions::assert_eq;
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -75,7 +75,7 @@ fn credential_setup_repairs_expired_accounts_once_and_reloads_credentials() -> R
                 permissions: &permissions,
                 command_cwd: home.path(),
                 env_map: &env,
-                codex_home: home.path(),
+                ava_home: home.path(),
                 proxy_enforced: false,
             },
             WindowsSandboxProxySettingsMode::Preserve,
@@ -172,9 +172,9 @@ fn credential_setup_reconciles_policy_and_repairs_accounts() -> Result<()> {
             fs::write(path, bytes)?;
         }
         let env = HashMap::from([
-            ("CODEX_WINDOWS_SANDBOX_PROXY_PORTS".into(), ports.into()),
+            ("AVA_WINDOWS_SANDBOX_PROXY_PORTS".into(), ports.into()),
             (
-                "CODEX_NETWORK_ALLOW_LOCAL_BINDING".into(),
+                "AVA_NETWORK_ALLOW_LOCAL_BINDING".into(),
                 u8::from(desired_binding).to_string(),
             ),
         ]);
@@ -185,14 +185,14 @@ fn credential_setup_reconciles_policy_and_repairs_accounts() -> Result<()> {
                     permissions: &permissions,
                     command_cwd: home.path(),
                     env_map: &env,
-                    codex_home: home.path(),
+                    ava_home: home.path(),
                     proxy_enforced: true,
                 },
                 WindowsSandboxProxySettingsMode::Reconcile,
                 |request, desired| {
                     // Matching artifacts must not let setup skip account repair.
                     assert!(!sandbox_setup_is_complete_with_settings(
-                        request.codex_home,
+                        request.ava_home,
                         &WindowsSandboxProvisioningSettings {
                             proxy_ports: desired.proxy_ports.clone(),
                             allow_local_binding: desired.allow_local_binding,

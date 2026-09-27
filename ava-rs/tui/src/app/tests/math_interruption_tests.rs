@@ -35,7 +35,7 @@ async fn unicode_math_termination_preserves_source_through_mode_and_resize() -> 
             for delta in ["Intro.\n\n", &source[8..]] {
                 let notification = if plan {
                     ServerNotification::PlanDelta(
-                        codex_app_server_protocol::PlanDeltaNotification {
+                        ava_app_server_protocol::PlanDeltaNotification {
                             thread_id: thread_id.to_string(),
                             turn_id: "math-turn".into(),
                             item_id: "math-message".into(),
@@ -61,7 +61,7 @@ async fn unicode_math_termination_preserves_source_through_mode_and_resize() -> 
                     } else {
                         "Server error".into()
                     },
-                    codex_error_info: None,
+                    ava_error_info: None,
                     additional_details: None,
                     misalignment: None,
                 });

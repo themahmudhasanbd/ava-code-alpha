@@ -12,19 +12,19 @@ use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
 use app_test_support::write_mock_responses_config_toml_with_chatgpt_base_url;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_rollout::RolloutItem;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_rollout::RolloutItem;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -46,12 +46,12 @@ use wiremock::matchers::path;
 const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(60);
 #[cfg(not(any(target_os = "macos", windows)))]
 const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(10);
-const COMMIT_ATTRIBUTION: &str = "Co-authored-by: Codex <noreply@openai.com>";
-const PR_ATTRIBUTION: &str = "Generated with [Codex](https://openai.com/codex/).";
+const COMMIT_ATTRIBUTION: &str = "Co-authored-by: Ava <noreply@openai.com>";
+const PR_ATTRIBUTION: &str = "Generated with [Ava](https://openai.com/codex/).";
 const ATTRIBUTION_DISABLED: &str = "attribution is disabled for the current workspace";
 const LEGACY_COMMIT_ATTRIBUTION_INSTRUCTIONS: &str = "\
 When you write or edit a git commit message, ensure the message ends with this trailer exactly once:
-Co-authored-by: Codex <noreply@openai.com>
+Co-authored-by: Ava <noreply@openai.com>
 
 Rules:
 - Keep existing trailers and append this trailer at the end if missing.
@@ -118,14 +118,14 @@ async fn git_attribution_follows_authenticated_workspace_policy() -> Result<()> 
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         &format!("{}/backend-api", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("workspace-enabled")
             .plan_type("enterprise"),
@@ -133,8 +133,8 @@ async fn git_attribution_follows_authenticated_workspace_policy() -> Result<()> 
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
-        .with_env_overrides(&[("OPENAI_API_KEY", None), ("CODEX_ACCESS_TOKEN", None)])
+        .with_ava_home(ava_home.path())
+        .with_env_overrides(&[("OPENAI_API_KEY", None), ("AVA_ACCESS_TOKEN", None)])
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, app_server.initialize()).await??;
@@ -243,14 +243,14 @@ async fn cold_resume_replaces_legacy_attribution_without_duplication(
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         &format!("{}/backend-api", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("workspace-resume")
             .plan_type("enterprise"),
@@ -258,8 +258,8 @@ async fn cold_resume_replaces_legacy_attribution_without_duplication(
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
-        .with_env_overrides(&[("OPENAI_API_KEY", None), ("CODEX_ACCESS_TOKEN", None)])
+        .with_ava_home(ava_home.path())
+        .with_env_overrides(&[("OPENAI_API_KEY", None), ("AVA_ACCESS_TOKEN", None)])
         .without_auto_env()
         .build()
         .await?;
@@ -280,8 +280,8 @@ async fn cold_resume_replaces_legacy_attribution_without_duplication(
     replace_attribution_fragment_with_legacy(&rollout_path, legacy_attribution)?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
-        .with_env_overrides(&[("OPENAI_API_KEY", None), ("CODEX_ACCESS_TOKEN", None)])
+        .with_ava_home(ava_home.path())
+        .with_env_overrides(&[("OPENAI_API_KEY", None), ("AVA_ACCESS_TOKEN", None)])
         .without_auto_env()
         .build()
         .await?;
@@ -323,7 +323,7 @@ fn replace_attribution_fragment_with_legacy(
         .lines()
         .filter(|line| !line.trim().is_empty())
         .map(|line| {
-            let mut line = codex_rollout::parse_rollout_line(line)?;
+            let mut line = ava_rollout::parse_rollout_line(line)?;
             if let RolloutItem::ResponseItem(response_item) = &mut line.item
                 && let ResponseItem::Message { role, content, .. } = &mut response_item.item
                 && role == "developer"
@@ -337,7 +337,7 @@ fn replace_attribution_fragment_with_legacy(
                                 LEGACY_COMMIT_ATTRIBUTION_INSTRUCTIONS.to_string()
                             }
                             LegacyAttribution::UnlinkedPullRequest => {
-                                text.replace(PR_ATTRIBUTION, "Generated with Codex.")
+                                text.replace(PR_ATTRIBUTION, "Generated with Ava.")
                             }
                         };
                         replaced = true;

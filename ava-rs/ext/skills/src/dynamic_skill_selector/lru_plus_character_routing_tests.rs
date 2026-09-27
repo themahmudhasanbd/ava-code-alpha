@@ -1,5 +1,5 @@
-use codex_skills::SkillDependencies;
-use codex_skills::SkillToolDependency;
+use ava_skills::SkillDependencies;
+use ava_skills::SkillToolDependency;
 use pretty_assertions::assert_eq;
 
 use super::*;

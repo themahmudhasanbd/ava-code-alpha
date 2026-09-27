@@ -14,54 +14,54 @@ use crate::session::session::Session;
 use crate::session::tests::update_turn_settings_for_test;
 use crate::session::turn_context::TurnContext;
 use crate::test_support;
-use codex_analytics::GuardianApprovalRequestSource;
-use codex_config::ConfigLayerStack;
-use codex_config::FeatureRequirementsToml;
-use codex_config::NetworkConstraints;
-use codex_config::NetworkDomainPermissionToml;
-use codex_config::NetworkDomainPermissionsToml;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
-use codex_config::config_toml::ConfigToml;
-use codex_config::types::McpServerConfig;
-use codex_exec_server::LOCAL_FS;
-use codex_features::Feature;
-use codex_guardian_context::ConversationTranscriptEntry;
-use codex_guardian_context::ConversationTranscriptEntryKind;
-use codex_guardian_reviewer::guardian_output_contract_prompt;
-use codex_history::RolloutItem;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_4_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::OPENAI_PROVIDER_ID;
-use codex_models_manager::manager::StaticModelsManager;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_prompts::GuardianPolicyInstructions;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::ThreadId;
-use codex_protocol::approvals::GuardianAssessmentAction;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::SandboxPermissions;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_analytics::GuardianApprovalRequestSource;
+use ava_config::ConfigLayerStack;
+use ava_config::FeatureRequirementsToml;
+use ava_config::NetworkConstraints;
+use ava_config::NetworkDomainPermissionToml;
+use ava_config::NetworkDomainPermissionsToml;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
+use ava_config::config_toml::ConfigToml;
+use ava_config::types::McpServerConfig;
+use ava_exec_server::LOCAL_FS;
+use ava_features::Feature;
+use ava_guardian_context::ConversationTranscriptEntry;
+use ava_guardian_context::ConversationTranscriptEntryKind;
+use ava_guardian_reviewer::guardian_output_contract_prompt;
+use ava_history::RolloutItem;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_4_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::OPENAI_PROVIDER_ID;
+use ava_models_manager::manager::StaticModelsManager;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_prompts::GuardianPolicyInstructions;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::ThreadId;
+use ava_protocol::approvals::GuardianAssessmentAction;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::SandboxPermissions;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::TempDirExt;
 use core_test_support::context_snapshot;
@@ -102,17 +102,17 @@ const GUARDIAN_MEMORY_CONTEXT_PROBE: &str = "guardian memory context probe";
 const GUARDIAN_SKILL_NAME: &str = "guardian-context-probe";
 const GUARDIAN_SKILL_BODY_PROBE: &str = "guardian skill body probe";
 
-// The memories extension depends on codex-core, so this probe verifies the nested Guardian config
+// The memories extension depends on ava-core, so this probe verifies the nested Guardian config
 // at request assembly without introducing a circular test dependency.
 struct GuardianMemoryContextEnabled(bool);
 
 struct GuardianMemoryContextProbe;
 
-impl codex_extension_api::ThreadLifecycleContributor<Config> for GuardianMemoryContextProbe {
+impl ava_extension_api::ThreadLifecycleContributor<Config> for GuardianMemoryContextProbe {
     fn on_thread_start<'a>(
         &'a self,
-        input: codex_extension_api::ThreadStartInput<'a, Config>,
-    ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+        input: ava_extension_api::ThreadStartInput<'a, Config>,
+    ) -> ava_extension_api::ExtensionFuture<'a, ()> {
         Box::pin(async move {
             input.thread_store.insert(GuardianMemoryContextEnabled(
                 input.config.memories.use_memories,
@@ -121,20 +121,20 @@ impl codex_extension_api::ThreadLifecycleContributor<Config> for GuardianMemoryC
     }
 }
 
-impl codex_extension_api::ContextContributor for GuardianMemoryContextProbe {
+impl ava_extension_api::ContextContributor for GuardianMemoryContextProbe {
     fn contribute_thread_context<'a>(
         &'a self,
-        _session_store: &'a codex_extension_api::ExtensionData,
-        thread_store: &'a codex_extension_api::ExtensionData,
-    ) -> codex_extension_api::ExtensionFuture<'a, Vec<codex_extension_api::PromptFragment>> {
+        _session_store: &'a ava_extension_api::ExtensionData,
+        thread_store: &'a ava_extension_api::ExtensionData,
+    ) -> ava_extension_api::ExtensionFuture<'a, Vec<ava_extension_api::PromptFragment>> {
         Box::pin(async move {
             if thread_store
                 .get::<GuardianMemoryContextEnabled>()
                 .is_some_and(|enabled| enabled.0)
             {
-                vec![codex_extension_api::PromptFragment::developer_policy(
+                vec![ava_extension_api::PromptFragment::developer_policy(
                     GUARDIAN_MEMORY_CONTEXT_PROBE,
-                    codex_extension_api::ContentItemKind(
+                    ava_extension_api::ContentItemKind(
                         "guardian.memory_context_probe".to_string(),
                     ),
                 )]
@@ -167,7 +167,7 @@ async fn guardian_test_session_turn_and_rx(
     config.model_provider.base_url = Some(format!("{}/v1", server.uri()));
     let config = Arc::new(config);
     let models_manager = test_support::models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
@@ -191,10 +191,10 @@ fn native_guardian_cwd(path: &str) -> LegacyAppPathString {
 fn guardian_exec_command_request(id: &str) -> GuardianApprovalRequest {
     GuardianApprovalRequest::ExecCommand {
         id: id.to_string(),
-        environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
         command: vec!["git".to_string(), "push".to_string()],
-        cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-        guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+        cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+        guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
         sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
         additional_permissions: None,
         justification: Some("Need to push the reviewed docs fix.".to_string()),
@@ -233,7 +233,7 @@ async fn guardian_test_session_and_turn_with_base_url(
     config.model_provider.base_url = Some(format!("{base_url}/v1"));
     let config = Arc::new(config);
     let models_manager = test_support::models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
@@ -265,7 +265,7 @@ async fn seed_guardian_parent_history(session: &Arc<Session>, turn: &Arc<TurnCon
                     id: None,
                     name: "gh_repo_view".to_string(),
                     namespace: None,
-                    arguments: "{\"repo\":\"openai/codex\"}".to_string(),
+                    arguments: "{\"repo\":\"openai/ava\"}".to_string(),
                     call_id: "call-1".to_string(),
                     encrypted_function_args: None,
                     internal_chat_message_metadata_passthrough: None,
@@ -275,7 +275,7 @@ async fn seed_guardian_parent_history(session: &Arc<Session>, turn: &Arc<TurnCon
                     call_id: Some("call-1".to_string()),
                     name: None,
                     namespace: None,
-                    output: codex_protocol::models::FunctionCallOutputPayload::from_text(
+                    output: ava_protocol::models::FunctionCallOutputPayload::from_text(
                         "repo visibility: public".to_string(),
                     ),
                     internal_chat_message_metadata_passthrough: None,
@@ -344,7 +344,7 @@ fn format_guardian_requests_snapshot(
 
 fn normalize_guardian_snapshot_paths(text: String) -> String {
     let mut text = text;
-    for canonical_path in ["/repo/codex-rs/core", "/repo"] {
+    for canonical_path in ["/repo/ava-rs/core", "/repo"] {
         let platform_path = test_path_buf(canonical_path).display().to_string();
         if platform_path == canonical_path {
             continue;
@@ -364,11 +364,11 @@ fn normalize_guardian_snapshot_paths(text: String) -> String {
     text
 }
 
-fn guardian_prompt_text(items: &[codex_protocol::user_input::UserInput]) -> String {
+fn guardian_prompt_text(items: &[ava_protocol::user_input::UserInput]) -> String {
     items
         .iter()
         .map(|item| match item {
-            codex_protocol::user_input::UserInput::Text { text, .. } => text.as_str(),
+            ava_protocol::user_input::UserInput::Text { text, .. } => text.as_str(),
             _ => "",
         })
         .collect::<String>()
@@ -405,10 +405,10 @@ async fn build_guardian_prompt_prefers_retry_reason_over_approval_reason() -> an
         },
         GuardianApprovalRequest::ExecCommand {
             id: "shell-1".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: None,
@@ -432,9 +432,9 @@ async fn build_guardian_prompt_truncates_oversized_approval_reason() -> anyhow::
     seed_guardian_parent_history(&session, &turn).await;
     let context = GuardianReviewContext::from(&turn);
     let approval_reason = format!("policy-start {} policy-end", "x".repeat(10_000));
-    let expected_reason = codex_utils_output_truncation::truncate_text(
+    let expected_reason = ava_utils_output_truncation::truncate_text(
         &approval_reason,
-        codex_utils_output_truncation::TruncationPolicy::Tokens(/*tokens*/ 512),
+        ava_utils_output_truncation::TruncationPolicy::Tokens(/*tokens*/ 512),
     );
 
     let prompt = build_guardian_prompt_items_with_parent_turn(
@@ -447,10 +447,10 @@ async fn build_guardian_prompt_truncates_oversized_approval_reason() -> anyhow::
         },
         GuardianApprovalRequest::ExecCommand {
             id: "shell-1".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: None,
@@ -465,7 +465,7 @@ async fn build_guardian_prompt_truncates_oversized_approval_reason() -> anyhow::
     let reason_item = items
         .iter()
         .find_map(|item| match item {
-            codex_protocol::user_input::UserInput::Text { text, .. }
+            ava_protocol::user_input::UserInput::Text { text, .. }
                 if text.contains("tokens truncated") =>
             {
                 Some(text)
@@ -493,14 +493,14 @@ async fn build_guardian_prompt_includes_parent_turn_denied_reads() -> anyhow::Re
         &FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
-                    value: codex_protocol::permissions::FileSystemSpecialPath::Root,
+                    value: ava_protocol::permissions::FileSystemSpecialPath::Root,
                 },
                 access: FileSystemAccessMode::Read,
                 missing_path_behavior: None,
             },
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
-                    value: codex_protocol::permissions::FileSystemSpecialPath::project_roots(Some(
+                    value: ava_protocol::permissions::FileSystemSpecialPath::project_roots(Some(
                         "private".to_string(),
                     )),
                 },
@@ -542,7 +542,7 @@ async fn build_guardian_prompt_includes_parent_turn_denied_reads() -> anyhow::Re
         },
         GuardianApprovalRequest::ExecCommand {
             id: "shell-1".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["cat".to_string(), "/repo/private/secret.txt".to_string()],
             cwd: test_path_buf("/repo").abs().into(),
             guardian_cwd: native_guardian_cwd("/repo"),
@@ -587,7 +587,7 @@ async fn background_approval_permissions_use_the_owning_environment() -> anyhow:
         ));
     let mut windows = secondary.clone();
     let windows_cwd = PathUri::parse("file:///C:/guardian-secondary")?;
-    windows.environment = Arc::new(codex_exec_server::Environment::create_for_tests(Some(
+    windows.environment = Arc::new(ava_exec_server::Environment::create_for_tests(Some(
         "ws://127.0.0.1:1".into(),
     ))?);
     windows.selection.environment_id = "windows".into();
@@ -632,7 +632,7 @@ async fn background_approval_permissions_use_the_owning_environment() -> anyhow:
         GuardianApprovalRequest::Execve {
             id: "shell".to_string(),
             environment_id: "secondary".to_string(),
-            source: codex_protocol::approvals::GuardianCommandSource::UnifiedExec,
+            source: ava_protocol::approvals::GuardianCommandSource::UnifiedExec,
             program: "cat".to_string(),
             argv: Vec::new(),
             cwd,
@@ -683,13 +683,13 @@ async fn guardian_uses_thread_permissions_for_an_unavailable_captured_environmen
         &FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry::new(
                 FileSystemPath::Special {
-                    value: codex_protocol::permissions::FileSystemSpecialPath::Root,
+                    value: ava_protocol::permissions::FileSystemSpecialPath::Root,
                 },
                 FileSystemAccessMode::Read,
             ),
             FileSystemSandboxEntry::new(
                 FileSystemPath::Special {
-                    value: codex_protocol::permissions::FileSystemSpecialPath::project_roots(Some(
+                    value: ava_protocol::permissions::FileSystemSpecialPath::project_roots(Some(
                         "private".into(),
                     )),
                 },
@@ -710,7 +710,7 @@ async fn guardian_uses_thread_permissions_for_an_unavailable_captured_environmen
     let mut selection = original.selection();
     selection.cwd = PathUri::from_abs_path(&captured_root);
     selection.workspace_roots = vec![selection.cwd.clone()];
-    selection.config = codex_protocol::protocol::EnvironmentConfigState::Failed("offline".into());
+    selection.config = ava_protocol::protocol::EnvironmentConfigState::Failed("offline".into());
     let captured = crate::environment_selection::TurnEnvironmentSnapshot {
         environments: vec![TurnEnvironmentState::Failed {
             selection,
@@ -775,10 +775,10 @@ async fn build_guardian_prompt_delta_mode_preserves_original_numbering() -> anyh
         /*retry_reason*/ None,
         GuardianApprovalRequest::ExecCommand {
             id: "shell-2".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Need to push the second docs fix.".to_string()),
@@ -799,7 +799,7 @@ async fn build_guardian_prompt_delta_mode_preserves_original_numbering() -> anyh
     assert!(text.contains("[5] user: Please also push the second docs fix."));
     assert!(text.contains("[6] assistant: I need approval for the second push."));
     assert!(text.contains(">>> TRANSCRIPT DELTA END\n"));
-    assert!(text.contains("The Codex agent has requested the following next action:\n"));
+    assert!(text.contains("The Ava agent has requested the following next action:\n"));
     assert!(!text.contains("[1] user: Please check the repo visibility"));
     assert_eq!(prompt.transcript_cursor.transcript_entry_count, 6);
 
@@ -816,10 +816,10 @@ async fn build_guardian_prompt_delta_mode_handles_empty_delta() -> anyhow::Resul
         /*retry_reason*/ None,
         GuardianApprovalRequest::ExecCommand {
             id: "shell-2".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Need to push the second docs fix.".to_string()),
@@ -854,10 +854,10 @@ async fn build_guardian_prompt_stale_delta_cursor_falls_back_to_full_prompt() ->
         /*retry_reason*/ None,
         GuardianApprovalRequest::ExecCommand {
             id: "shell-3".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Need to push the docs fix.".to_string()),
@@ -943,10 +943,10 @@ async fn build_guardian_prompt_stale_delta_version_falls_back_to_full_prompt() -
         /*retry_reason*/ None,
         GuardianApprovalRequest::ExecCommand {
             id: "shell-4".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Need to push after the compaction.".to_string()),
@@ -974,7 +974,7 @@ async fn build_guardian_prompt_stale_delta_version_falls_back_to_full_prompt() -
 }
 
 fn collect_guardian_transcript_entries(
-    history: &dyn codex_guardian_context::SectionHistory,
+    history: &dyn ava_guardian_context::SectionHistory,
     node_repl_result_token_limit: usize,
 ) -> Vec<ConversationTranscriptEntry> {
     prompt::collect_guardian_context(
@@ -1053,7 +1053,7 @@ fn collect_guardian_transcript_entries_includes_recent_tool_calls_and_output() {
             call_id: Some("call-1".to_string()),
             name: None,
             namespace: None,
-            output: codex_protocol::models::FunctionCallOutputPayload::from_text(
+            output: ava_protocol::models::FunctionCallOutputPayload::from_text(
                 "repo is public".to_string(),
             ),
             internal_chat_message_metadata_passthrough: None,
@@ -1099,7 +1099,7 @@ fn collect_guardian_transcript_entries_includes_recent_tool_calls_and_output() {
     let oversized_result = "é🙂".repeat(/*n*/ 10_000);
     if let ResponseItem::FunctionCallOutput { output, .. } = &mut items[2] {
         *output =
-            codex_protocol::models::FunctionCallOutputPayload::from_text(oversized_result.clone());
+            ava_protocol::models::FunctionCallOutputPayload::from_text(oversized_result.clone());
     }
     for token_cap in [
         GUARDIAN_MAX_TOOL_ENTRY_TOKENS,
@@ -1356,7 +1356,7 @@ async fn build_guardian_prompt_items_explains_network_access_review_scope() -> a
     );
     assert!(text.contains("\"trigger\""));
     assert!(text.contains("Network access JSON:"));
-    assert!(!text.contains("The Codex agent has requested the following action:"));
+    assert!(!text.contains("The Ava agent has requested the following action:"));
     assert!(!text.contains("Planned action JSON:"));
     assert!(!text.contains("Retry reason:"));
     assert!(!text.contains("Network access to \"example.com\" is blocked by policy."));
@@ -1366,7 +1366,7 @@ async fn build_guardian_prompt_items_explains_network_access_review_scope() -> a
     settings.set_prepend_module_to_snapshot(false);
     settings.bind(|| {
         assert_snapshot!(
-            "codex_core__guardian__tests__network_access_guardian_prompt_layout",
+            "ava_core__guardian__tests__network_access_guardian_prompt_layout",
             normalize_guardian_snapshot_paths(text)
         );
     });
@@ -1434,16 +1434,16 @@ fn guardian_write_stdin_preserves_input_and_foreign_cwd(
     Ok(())
 }
 
-#[test_case::test_case(codex_utils_path_uri::PathConvention::Windows, r"C:\workspace"; "windows")]
-#[test_case::test_case(codex_utils_path_uri::PathConvention::Posix, "/C:/workspace"; "posix")]
+#[test_case::test_case(ava_utils_path_uri::PathConvention::Windows, r"C:\workspace"; "windows")]
+#[test_case::test_case(ava_utils_path_uri::PathConvention::Posix, "/C:/workspace"; "posix")]
 fn guardian_exec_command_uses_executor_cwd_convention(
-    cwd_convention: codex_utils_path_uri::PathConvention,
+    cwd_convention: ava_utils_path_uri::PathConvention,
     expected_cwd: &str,
 ) -> serde_json::Result<()> {
     let cwd = PathUri::parse("file:///C:/workspace").expect("valid executor cwd");
     let action = crate::tools::sandboxing::ApprovalAction::ExecCommand {
         id: "command-1".to_string(),
-        environment_id: codex_exec_server::REMOTE_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_exec_server::REMOTE_ENVIRONMENT_ID.to_string(),
         command: vec!["git".to_string(), "status".to_string()],
         hook_command: "git status".to_string(),
         cwd,
@@ -1469,7 +1469,7 @@ fn guardian_exec_command_uses_executor_cwd_convention(
     assert_eq!(
         guardian_assessment_action(&action),
         GuardianAssessmentAction::Command {
-            source: codex_protocol::approvals::GuardianCommandSource::UnifiedExec,
+            source: ava_protocol::approvals::GuardianCommandSource::UnifiedExec,
             command: "git status".to_string(),
             cwd: LegacyAppPathString::from_string(expected_cwd),
         },
@@ -1583,19 +1583,19 @@ async fn cancelled_guardian_review_emits_terminal_abort_without_warning(
         ApprovalCancellation::BeforeRouting => cancel_token.cancel(),
         ApprovalCancellation::BeforeCachedResult => {
             struct CancelWhileApproving(CancellationToken);
-            impl codex_extension_api::ApprovalReviewContributor for CancelWhileApproving {
+            impl ava_extension_api::ApprovalReviewContributor for CancelWhileApproving {
                 fn decide<'a>(
                     &'a self,
-                    _input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-                ) -> codex_extension_api::ExtensionFuture<
+                    _input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+                ) -> ava_extension_api::ExtensionFuture<
                     'a,
-                    Option<codex_extension_api::ApprovalDecision>,
+                    Option<ava_extension_api::ApprovalDecision>,
                 > {
                     self.0.cancel();
-                    Box::pin(async { Some(codex_extension_api::ApprovalDecision::Allow) })
+                    Box::pin(async { Some(ava_extension_api::ApprovalDecision::Allow) })
                 }
             }
-            let mut extensions = codex_extension_api::ExtensionRegistryBuilder::<Config>::new();
+            let mut extensions = ava_extension_api::ExtensionRegistryBuilder::<Config>::new();
             extensions
                 .approval_review_contributor(Arc::new(CancelWhileApproving(cancel_token.clone())));
             Arc::get_mut(&mut session)
@@ -1748,7 +1748,7 @@ fn build_guardian_transcript_preserves_recent_tool_context_when_user_history_is_
             call_id: Some("call-1".to_string()),
             name: None,
             namespace: None,
-            output: codex_protocol::models::FunctionCallOutputPayload::from_text(
+            output: ava_protocol::models::FunctionCallOutputPayload::from_text(
                 "sandbox blocked outbound network access".to_string(),
             ),
             internal_chat_message_metadata_passthrough: None,
@@ -1818,7 +1818,7 @@ async fn guardian_reuse_respects_effective_policy_and_personality(
             "policy_template": "captured template: {{ tenant_policy_config }}",
         },
     }))?);
-    captured.personality = Some(codex_protocol::config_types::Personality::Friendly);
+    captured.personality = Some(ava_protocol::config_types::Personality::Friendly);
 
     Arc::get_mut(&mut session)
         .expect("unshared session")
@@ -1839,7 +1839,7 @@ async fn guardian_reuse_respects_effective_policy_and_personality(
         .unwrap()
         .policy = Some("changed action policy".to_string());
     let mut different_personality = changed_policy.clone();
-    different_personality.personality = Some(codex_protocol::config_types::Personality::Pragmatic);
+    different_personality.personality = Some(ava_protocol::config_types::Personality::Pragmatic);
     for (index, context) in [captured, changed_policy, different_personality]
         .into_iter()
         .enumerate()
@@ -1885,7 +1885,7 @@ async fn guardian_request_model_for_auto_review(
     String,
     String,
     String,
-    codex_analytics::GuardianReviewAnalyticsResult,
+    ava_analytics::GuardianReviewAnalyticsResult,
 )> {
     let server = start_mock_server().await;
     let guardian_assessment = serde_json::json!({
@@ -1938,10 +1938,10 @@ async fn guardian_request_model_for_auto_review(
         turn,
         GuardianApprovalRequest::ExecCommand {
             id: "shell-1".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: None,
@@ -2129,20 +2129,20 @@ async fn guardian_review_request_layout_matches_model_visible_request_snapshot()
         .expect("memory tool feature is configurable");
     let config = Arc::new(config);
     let models_manager = test_support::models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
     session.services.models_manager = models_manager;
     crate::guardian::test_host::install(&session, &config);
     let memory_extension = Arc::new(GuardianMemoryContextProbe);
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::<Config>::new();
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::<Config>::new();
     extensions.thread_lifecycle_contributor(memory_extension.clone());
     extensions.prompt_contributor(memory_extension);
     session.services.extensions = Arc::new(extensions.build());
 
     let skill_dir = config
-        .codex_home
+        .ava_home
         .to_path_buf()
         .join("skills")
         .join(GUARDIAN_SKILL_NAME);
@@ -2158,7 +2158,7 @@ async fn guardian_review_request_layout_matches_model_visible_request_snapshot()
     turn.provider = create_model_provider(config.model_provider.clone(), turn.auth_manager.clone());
     update_turn_settings_for_test(&mut turn, |settings| {
         Arc::make_mut(&mut settings.model_info).auto_review_model_override =
-            Some("codex-auto-review".to_string());
+            Some("ava-auto-review".to_string());
     });
     let session = Arc::new(session);
     let turn = Arc::new(turn);
@@ -2183,15 +2183,15 @@ async fn guardian_review_request_layout_matches_model_visible_request_snapshot()
 
     let request = GuardianApprovalRequest::ExecCommand {
         id: "shell-1".to_string(),
-        environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
         command: vec![
             "git".to_string(),
             "push".to_string(),
             "origin".to_string(),
             "guardian-approval-mvp".to_string(),
         ],
-        cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-        guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+        cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+        guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
         sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
         additional_permissions: None,
         justification: Some("Need to push the reviewed docs fix to the repo remote.".to_string()),
@@ -2223,12 +2223,12 @@ async fn guardian_review_request_layout_matches_model_visible_request_snapshot()
     ThreadId::from_string(guardian_thread_id).expect("guardian thread id should be a valid UUID");
     assert!(matches!(
         metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkNew)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkNew)
     ));
     let request = request_log.single_request();
     let turn_metadata: serde_json::Value = serde_json::from_str(
         &request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("guardian turn metadata"),
     )?;
     assert_eq!(turn_metadata["turn_trigger"], "guardian_review");
@@ -2274,9 +2274,9 @@ async fn guardian_review_request_layout_matches_model_visible_request_snapshot()
     // Check exact separators before the snapshot normalizes trailing whitespace.
     let guardian_user_text = request.message_input_texts("user").concat();
     assert!(guardian_user_text.contains(">>> TRANSCRIPT START\n"));
-    assert!(guardian_user_text.contains("The Codex agent has requested the following action:\n"));
+    assert!(guardian_user_text.contains("The Ava agent has requested the following action:\n"));
     assert!(guardian_user_text.contains(&format!(
-        ">>> TRANSCRIPT END\nReviewed Codex session id: {}\n",
+        ">>> TRANSCRIPT END\nReviewed Ava session id: {}\n",
         fixed_guardian_parent_session_id()
     )));
     assert!(
@@ -2344,7 +2344,7 @@ async fn guardian_review_request_layout_matches_model_visible_request_snapshot()
     settings.set_prepend_module_to_snapshot(false);
     settings.bind(|| {
         assert_snapshot!(
-            "codex_core__guardian__tests__guardian_review_request_layout",
+            "ava_core__guardian__tests__guardian_review_request_layout",
             normalize_guardian_snapshot_paths(format_guardian_requests_snapshot(
                 "Guardian review request layout",
                 &[("Guardian Review Request", &request)],
@@ -2406,16 +2406,16 @@ async fn guardian_reuses_prompt_cache_key_and_appends_prior_reviews() -> anyhow:
     let turn_mut = Arc::get_mut(&mut turn).expect("turn should be unique");
     update_turn_settings_for_test(turn_mut, |settings| {
         Arc::make_mut(&mut settings.model_info).auto_review_model_override =
-            Some("codex-auto-review".to_string());
+            Some("ava-auto-review".to_string());
     });
     seed_guardian_parent_history(&session, &turn).await;
 
     let first_request = GuardianApprovalRequest::ExecCommand {
         id: "shell-1".to_string(),
-        environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
         command: vec!["git".to_string(), "push".to_string()],
-        cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-        guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+        cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+        guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
         sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
         additional_permissions: None,
         justification: Some("Need to push the first docs fix.".to_string()),
@@ -2462,14 +2462,14 @@ async fn guardian_reuses_prompt_cache_key_and_appends_prior_reviews() -> anyhow:
         .await;
     let second_request = GuardianApprovalRequest::ExecCommand {
         id: "shell-2".to_string(),
-        environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
         command: vec![
             "git".to_string(),
             "push".to_string(),
             "--force-with-lease".to_string(),
         ],
-        cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-        guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+        cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+        guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
         sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
         additional_permissions: None,
         justification: Some("Need to push the second docs fix.".to_string()),
@@ -2520,7 +2520,7 @@ async fn guardian_reuses_prompt_cache_key_and_appends_prior_reviews() -> anyhow:
         .replace_history(
             vec![
                 ResponseItem::Compaction {
-                    id: Some(codex_protocol::ResponseItemId::from_server(
+                    id: Some(ava_protocol::ResponseItemId::from_server(
                         "cmp_guardian_parent_summary".to_string(),
                     )),
                     encrypted_content: "encrypted guardian parent summary".to_string(),
@@ -2550,10 +2550,10 @@ async fn guardian_reuses_prompt_cache_key_and_appends_prior_reviews() -> anyhow:
         .await;
     let third_request = GuardianApprovalRequest::ExecCommand {
         id: "shell-3".to_string(),
-        environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
         command: vec!["git".to_string(), "push".to_string()],
-        cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-        guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+        cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+        guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
         sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
         additional_permissions: None,
         justification: Some("Need to push the third docs fix.".to_string()),
@@ -2617,19 +2617,19 @@ async fn guardian_reuses_prompt_cache_key_and_appends_prior_reviews() -> anyhow:
     assert_eq!(fourth_assessment.outcome, GuardianAssessmentOutcome::Allow);
     assert!(matches!(
         first_metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkNew)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkNew)
     ));
     assert!(matches!(
         second_metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkReused)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkReused)
     ));
     assert!(matches!(
         third_metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkNew)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkNew)
     ));
     assert!(matches!(
         fourth_metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkNew)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkNew)
     ));
     ThreadId::from_string(
         first_metadata
@@ -2677,7 +2677,7 @@ async fn guardian_reuses_prompt_cache_key_and_appends_prior_reviews() -> anyhow:
                 .message_input_texts("user")
                 .join("\n")
                 .contains(&format!(
-                    "Reviewed Codex session id: {}",
+                    "Reviewed Ava session id: {}",
                     fixed_guardian_parent_session_id()
                 ))
         );
@@ -2755,7 +2755,7 @@ async fn guardian_reuses_prompt_cache_key_and_appends_prior_reviews() -> anyhow:
     settings.set_prepend_module_to_snapshot(false);
     settings.bind(|| {
         assert_snapshot!(
-            "codex_core__guardian__tests__guardian_followup_review_request_layout",
+            "ava_core__guardian__tests__guardian_followup_review_request_layout",
             format!(
                 "{}\n\nshared_prompt_cache_key: {}\nfollowup_contains_first_rationale: {}",
                 normalize_guardian_snapshot_paths(format_guardian_requests_snapshot(
@@ -2808,10 +2808,10 @@ async fn guardian_reused_trunk_ignores_stale_prior_turn_completion() -> anyhow::
         Arc::clone(&turn),
         GuardianApprovalRequest::ExecCommand {
             id: "shell-1".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Need to push the first docs fix.".to_string()),
@@ -2829,7 +2829,7 @@ async fn guardian_reused_trunk_ignores_stale_prior_turn_completion() -> anyhow::
     assert_eq!(first_assessment.rationale, "first guardian rationale");
     assert!(matches!(
         first_metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkNew)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkNew)
     ));
 
     session
@@ -2860,10 +2860,10 @@ async fn guardian_reused_trunk_ignores_stale_prior_turn_completion() -> anyhow::
         Arc::clone(&turn),
         GuardianApprovalRequest::ExecCommand {
             id: "shell-2".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Need to push the second docs fix.".to_string()),
@@ -2883,7 +2883,7 @@ async fn guardian_reused_trunk_ignores_stale_prior_turn_completion() -> anyhow::
     assert_eq!(second_assessment.rationale, "second guardian rationale");
     assert!(matches!(
         second_metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkReused)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkReused)
     ));
 
     assert_eq!(
@@ -2922,7 +2922,7 @@ async fn guardian_review_surfaces_responses_api_errors_in_rejection_reason() -> 
     config.model_provider.base_url = Some(format!("{}/v1", server.uri()));
     let config = Arc::new(config);
     let models_manager = test_support::models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
@@ -2944,10 +2944,10 @@ async fn guardian_review_surfaces_responses_api_errors_in_rejection_reason() -> 
         "review-shell-guardian-error".to_string(),
         GuardianApprovalRequest::ExecCommand {
             id: "shell-guardian-error".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Need to push the reviewed docs fix.".to_string()),
@@ -3054,7 +3054,7 @@ async fn guardian_review_retries_transient_session_failure_then_approves() -> an
     assert_eq!(metadata.attempt_count, 2);
     assert!(matches!(
         metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkReused)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkReused)
     ));
     assert_eq!(request_log.requests().len(), 2);
     Ok(())
@@ -3145,7 +3145,7 @@ async fn guardian_review_retries_two_parse_failures_then_approves() -> anyhow::R
     assert_eq!(metadata.attempt_count, 3);
     assert!(matches!(
         metadata.guardian_session_kind,
-        Some(codex_analytics::GuardianReviewSessionKind::TrunkReused)
+        Some(ava_analytics::GuardianReviewSessionKind::TrunkReused)
     ));
     assert_eq!(request_log.requests().len(), 3);
     Ok(())
@@ -3264,13 +3264,13 @@ async fn guardian_review_routes_required_actions(
 
     struct AutoApprovingReviewContributor;
 
-    impl codex_extension_api::ApprovalReviewContributor for AutoApprovingReviewContributor {
+    impl ava_extension_api::ApprovalReviewContributor for AutoApprovingReviewContributor {
         fn decide<'a>(
             &'a self,
-            _input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Option<codex_extension_api::ApprovalDecision>>
+            _input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>>
         {
-            Box::pin(async { Some(codex_extension_api::ApprovalDecision::Allow) })
+            Box::pin(async { Some(ava_extension_api::ApprovalDecision::Allow) })
         }
     }
 
@@ -3293,7 +3293,7 @@ async fn guardian_review_routes_required_actions(
     .await;
 
     let (mut session, mut turn) = guardian_test_session_and_turn(&server).await;
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::<Config>::new();
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::<Config>::new();
     extensions.approval_review_contributor(Arc::new(AutoApprovingReviewContributor));
     Arc::get_mut(&mut session)
         .expect("session should be uniquely owned")
@@ -3322,10 +3322,10 @@ async fn guardian_review_routes_required_actions(
         RequiredGuardianReview::EscalatedPermission => (
             GuardianApprovalRequest::ExecCommand {
                 id: "shell-escalated-permission".to_string(),
-                environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+                environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
                 command: vec!["git".to_string(), "push".to_string()],
-                cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-                guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+                cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+                guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
                 sandbox_permissions: crate::sandboxing::SandboxPermissions::RequireEscalated,
                 additional_permissions: None,
                 justification: Some("Need to push the reviewed docs fix.".to_string()),
@@ -3338,7 +3338,7 @@ async fn guardian_review_routes_required_actions(
             Arc::make_mut(&mut context.model_info).slug = "required-action-model".to_string();
             // The admitted turn has neither this model nor the new requirement.
             let mut config = session.get_config().await.as_ref().clone();
-            let requirements = codex_config::ConfigRequirements {
+            let requirements = ava_config::ConfigRequirements {
                 auto_review_required_models: Some(Sourced::new(
                     std::collections::BTreeSet::from([context.model_info.slug.clone()]),
                     RequirementSource::Unknown,
@@ -3475,10 +3475,10 @@ async fn guardian_ephemeral_retry_preserves_parallel_trunk_and_fork_history() ->
 
         let initial_request = GuardianApprovalRequest::ExecCommand {
             id: "shell-guardian-1".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "status".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Inspect repo state before proceeding.".to_string()),
@@ -3521,10 +3521,10 @@ async fn guardian_ephemeral_retry_preserves_parallel_trunk_and_fork_history() ->
 
         let second_request = GuardianApprovalRequest::ExecCommand {
             id: "shell-guardian-2".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "diff".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Inspect pending changes before proceeding.".to_string()),
@@ -3532,10 +3532,10 @@ async fn guardian_ephemeral_retry_preserves_parallel_trunk_and_fork_history() ->
         };
         let third_request = GuardianApprovalRequest::ExecCommand {
             id: "shell-guardian-3".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "push".to_string()],
-            cwd: test_path_buf("/repo/codex-rs/core").abs().into(),
-            guardian_cwd: native_guardian_cwd("/repo/codex-rs/core"),
+            cwd: test_path_buf("/repo/ava-rs/core").abs().into(),
+            guardian_cwd: native_guardian_cwd("/repo/ava-rs/core"),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Inspect whether pushing is safe before proceeding.".to_string()),
@@ -3667,7 +3667,7 @@ async fn guardian_ephemeral_retry_preserves_parallel_trunk_and_fork_history() ->
             .send(())
             .expect("second guardian review gate should still be open");
         assert_eq!(second_review.await?, ReviewDecision::Approved);
-        let feedback = codex_feedback::guardian_review_failures(&[session.thread_id()])
+        let feedback = ava_feedback::guardian_review_failures(&[session.thread_id()])
             .attachment
             .expect("failed ephemeral review survives cleanup and subsequent allowed reviews");
         let record: serde_json::Value = serde_json::from_slice(&feedback.buffer)?;
@@ -3730,7 +3730,7 @@ async fn guardian_review_session_config_preserves_parent_network_proxy() {
         crate::guardian::test_host::build_reviewer_config(&parent_config).expect("reviewer config"),
         /*live_network_config*/ None,
         "parent-active-model",
-        Some(codex_protocol::openai_models::ReasoningEffort::Low),
+        Some(ava_protocol::openai_models::ReasoningEffort::Low),
         ReasoningSummary::default(),
         /*personality*/ None,
         ResolvedModelMessages::bundled(),
@@ -3744,7 +3744,7 @@ async fn guardian_review_session_config_preserves_parent_network_proxy() {
     );
     assert_eq!(
         guardian_config.model_reasoning_effort,
-        Some(codex_protocol::openai_models::ReasoningEffort::Low)
+        Some(ava_protocol::openai_models::ReasoningEffort::Low)
     );
     assert_eq!(
         guardian_config.permissions.approval_policy,
@@ -3761,7 +3761,7 @@ async fn guardian_review_session_config_clears_context_overrides_for_distinct_ef
     let server = start_mock_server().await;
     let (session, mut turn) = guardian_test_session_and_turn(&server).await;
     let mut config = (*turn.config).clone();
-    config.model = Some("codex-auto-review".to_string());
+    config.model = Some("ava-auto-review".to_string());
     config.model_context_window = Some(900_000);
     config.model_auto_compact_token_limit = Some(600_000);
     Arc::get_mut(&mut turn)
@@ -3882,7 +3882,7 @@ async fn guardian_review_session_config_isolates_parent_customizations() {
         Feature::Apps,
         Feature::Plugins,
         Feature::GuardianV2,
-        Feature::CodexHooks,
+        Feature::AvaHooks,
     ];
     for feature in disabled_features {
         parent_config
@@ -4006,12 +4006,12 @@ async fn guardian_review_session_config_keeps_bedrock_provider_for_bedrock_gpt_5
 
 #[tokio::test]
 async fn guardian_review_session_config_uses_requirements_guardian_policy_config() {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
+    let ava_home = tempfile::tempdir().expect("create temp dir");
     let workspace = tempfile::tempdir().expect("create temp dir");
     let config_layer_stack = ConfigLayerStack::new(
         Vec::new(),
         Default::default(),
-        codex_config::ConfigRequirementsToml {
+        ava_config::ConfigRequirementsToml {
             guardian_policy_config: Some(
                 "  Use the workspace-managed guardian policy.  ".to_string(),
             ),
@@ -4026,7 +4026,7 @@ async fn guardian_review_session_config_uses_requirements_guardian_policy_config
             cwd: Some(workspace.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         config_layer_stack,
     )
     .await

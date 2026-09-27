@@ -1,4 +1,4 @@
-//! Diagnoses whether Codex update paths target the running installation.
+//! Diagnoses whether Ava update paths target the running installation.
 //!
 //! Update diagnostics combine cached version metadata, install-channel hints,
 //! and bounded latest-version HTTP probes. It never executes package managers or
@@ -9,11 +9,11 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use codex_core::config::Config;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::RouteAwareClientPool;
-use codex_install_context::InstallContext;
-use codex_install_context::InstallMethod;
+use ava_core::config::Config;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::RouteAwareClientPool;
+use ava_install_context::InstallContext;
+use ava_install_context::InstallMethod;
 use http::Method;
 use serde::Deserialize;
 #[cfg(target_os = "macos")]
@@ -60,7 +60,7 @@ pub(super) async fn updates_check(config: &Config) -> DoctorCheck {
         ),
         format!("update action: {}", update_action_label(&install_context)),
     ];
-    let version_file = config.codex_home.join(VERSION_FILE_NAME);
+    let version_file = config.ava_home.join(VERSION_FILE_NAME);
     push_cached_version_details(&mut details, &version_file);
 
     let mut status = CheckStatus::Ok;
@@ -297,7 +297,7 @@ fn windows_store_update(
         serde_json::from_slice(manifest).map_err(|_| "invalid Windows Store update manifest")?;
     if manifest.schema_version == 0
         || manifest.store_product_id != "9PLM9XGG6VKS"
-        || manifest.package_identity != "OpenAI.Codex"
+        || manifest.package_identity != "OpenAI.Ava"
     {
         return Err("Windows Store update manifest does not target the production application");
     }
@@ -393,7 +393,7 @@ fn update_action_label(context: &InstallContext) -> &'static str {
         InstallMethod::Bun => "bun install -g @openai/codex",
         InstallMethod::VitePlus => "vp install -g @openai/codex",
         InstallMethod::Pnpm => "pnpm add -g @openai/codex",
-        InstallMethod::Brew => "brew upgrade --cask codex",
+        InstallMethod::Brew => "brew upgrade --cask ava",
         InstallMethod::Standalone { .. } => "standalone installer",
         InstallMethod::Other => "manual or unknown",
     }
@@ -449,7 +449,7 @@ where
             .request(Method::GET, url)
             .header(
                 http::header::USER_AGENT,
-                concat!("codex-doctor/", env!("CARGO_PKG_VERSION")),
+                concat!("ava-doctor/", env!("CARGO_PKG_VERSION")),
             )
             .send()
             .await
@@ -501,8 +501,8 @@ mod tests {
 
     #[tokio::test]
     async fn version_http_probe_decodes_json_and_rejects_invalid_responses() {
-        use codex_http_client::HttpClientFactory;
-        use codex_http_client::OutboundProxyPolicy;
+        use ava_http_client::HttpClientFactory;
+        use ava_http_client::OutboundProxyPolicy;
         use wiremock::Mock;
         use wiremock::MockServer;
         use wiremock::ResponseTemplate;
@@ -571,7 +571,7 @@ mod tests {
     fn macos_update_probe_uses_the_persisted_production_appcast_feed() {
         let home = tempfile::tempdir().expect("temporary home should be created");
         let application = InstalledApp {
-            identity: "com.openai.codex",
+            identity: "com.openai.ava-code",
             version: "26.623.10000".to_string(),
             bundle: PathBuf::new(),
             build: 6139,
@@ -583,7 +583,7 @@ mod tests {
 
         let state_directory = home
             .path()
-            .join("Library/Application Support/com.openai.codex");
+            .join("Library/Application Support/com.openai.ava-code");
         std::fs::create_dir_all(&state_directory)
             .expect("production appcast state directory should be created");
         std::fs::write(
@@ -614,18 +614,18 @@ mod tests {
                 .expect("unrelated Sparkle cache directory should be created");
         }
         for (name, identity, build) in [
-            ("newest", "com.openai.codex", "6268"),
-            ("newer", "com.openai.codex", "6168"),
-            ("older", "com.openai.codex", "6138"),
+            ("newest", "com.openai.ava-code", "6268"),
+            ("newer", "com.openai.ava-code", "6168"),
+            ("older", "com.openai.ava-code", "6138"),
             ("different", "com.example.other", "9999"),
-            ("invalid", "com.openai.codex", "invalid"),
+            ("invalid", "com.openai.ava-code", "invalid"),
         ] {
             let bundle = root.path().join(name).join("extracted/ChatGPT.app");
             write_macos_bundle(&bundle, identity, build);
         }
         let outside = tempfile::tempdir().expect("external fixture should be created");
         let linked = outside.path().join("ChatGPT.app");
-        write_macos_bundle(&linked, "com.openai.codex", "9999");
+        write_macos_bundle(&linked, "com.openai.ava-code", "9999");
         std::os::unix::fs::symlink(&linked, root.path().join("ChatGPT.app"))
             .expect("symlinked staged app fixture should be created");
 
@@ -645,7 +645,7 @@ mod tests {
             "schemaVersion": 1,
             "buildVersion": "26.803.5235.1",
             "storeProductId": "9PLM9XGG6VKS",
-            "packageIdentity": "OpenAI.Codex",
+            "packageIdentity": "OpenAI.Ava",
         });
         assert_eq!(
             windows_store_update(&serde_json::to_vec(&manifest).unwrap(), "26.803.5235.0"),

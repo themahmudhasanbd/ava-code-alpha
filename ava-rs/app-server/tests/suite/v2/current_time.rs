@@ -5,15 +5,15 @@ use app_test_support::create_final_assistant_message_sse_response;
 use chrono::DateTime;
 use chrono::Local;
 use chrono::Utc;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CurrentTimeReadResponse;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CurrentTimeReadResponse;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -39,7 +39,7 @@ async fn current_time_read_round_trip_adds_reminder_to_model_input() -> Result<(
         create_final_assistant_message_sse_response("Done")?,
     )
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_extra_config(
             r#"[features.current_time_reminder]
@@ -48,10 +48,10 @@ reminder_interval_seconds = 1
 clock_source = "external"
 "#,
         )
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 

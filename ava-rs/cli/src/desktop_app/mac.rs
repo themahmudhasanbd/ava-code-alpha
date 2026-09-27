@@ -5,42 +5,42 @@ use std::path::PathBuf;
 use tempfile::Builder;
 use tokio::process::Command;
 
-const CODEX_BUNDLE_IDENTIFIER: &str = "com.avacode.alpha";
+const AVA_BUNDLE_IDENTIFIER: &str = "com.avacode.alpha";
 const OPENAI_APPLE_TEAM_IDENTIFIER: &str = "2DC432GLL2";
-const CODEX_DMG_URL_ARM64: &str =
+const AVA_DMG_URL_ARM64: &str =
     "https://persistent.oaistatic.com/codex-app-prod/AvA Code Alpha.dmg";
-const CODEX_DMG_URL_X64: &str =
+const AVA_DMG_URL_X64: &str =
     "https://persistent.oaistatic.com/codex-app-prod/AvA Code Alpha-latest-x64.dmg";
 
 pub async fn run_mac_app_open_or_install(
     workspace: PathBuf,
     download_url_override: Option<String>,
 ) -> anyhow::Result<()> {
-    if let Some(app_path) = find_existing_codex_app_path(&codex_app_search_dirs()) {
+    if let Some(app_path) = find_existing_ava_app_path(&ava_app_search_dirs()) {
         eprintln!(
             "Opening Desktop app at {app_path}...",
             app_path = app_path.display()
         );
-        open_codex_app(&app_path, &workspace).await?;
+        open_ava_app(&app_path, &workspace).await?;
         return Ok(());
     }
     eprintln!("Desktop app not found; downloading installer...");
     let download_url = download_url_override.unwrap_or_else(|| {
         let default_url = if is_apple_silicon_mac() {
-            CODEX_DMG_URL_ARM64
+            AVA_DMG_URL_ARM64
         } else {
-            CODEX_DMG_URL_X64
+            AVA_DMG_URL_X64
         };
         default_url.to_string()
     });
-    let installed_app = download_and_install_codex_to_user_applications(&download_url)
+    let installed_app = download_and_install_ava_to_user_applications(&download_url)
         .await
         .context("failed to download/install Desktop app")?;
     eprintln!(
         "Launching Desktop app from {installed_app}...",
         installed_app = installed_app.display()
     );
-    open_codex_app(&installed_app, &workspace).await?;
+    open_ava_app(&installed_app, &workspace).await?;
     Ok(())
 }
 
@@ -66,14 +66,14 @@ fn is_apple_silicon_mac() -> bool {
         || macos_sysctl_flag("hw.optional.arm64").unwrap_or(false)
 }
 
-fn find_existing_codex_app_path(applications_dirs: &[PathBuf]) -> Option<PathBuf> {
+fn find_existing_ava_app_path(applications_dirs: &[PathBuf]) -> Option<PathBuf> {
     applications_dirs
         .iter()
         .flat_map(|dir| ["ChatGPT.app", "AvA Code Alpha.app"].map(|app_name| dir.join(app_name)))
-        .find(|candidate| is_codex_app_bundle(candidate))
+        .find(|candidate| is_ava_app_bundle(candidate))
 }
 
-fn codex_app_search_dirs() -> Vec<PathBuf> {
+fn ava_app_search_dirs() -> Vec<PathBuf> {
     let mut paths = vec![PathBuf::from("/Applications")];
     if let Some(home) = std::env::var_os("HOME") {
         paths.push(PathBuf::from(home).join("Applications"));
@@ -81,7 +81,7 @@ fn codex_app_search_dirs() -> Vec<PathBuf> {
     paths
 }
 
-fn is_codex_app_bundle(app_path: &Path) -> bool {
+fn is_ava_app_bundle(app_path: &Path) -> bool {
     if !app_path.is_dir() {
         return false;
     }
@@ -96,17 +96,17 @@ fn is_codex_app_bundle(app_path: &Path) -> bool {
         .output()
         .is_ok_and(|output| {
             output.status.success()
-                && String::from_utf8_lossy(&output.stdout).trim() == CODEX_BUNDLE_IDENTIFIER
+                && String::from_utf8_lossy(&output.stdout).trim() == AVA_BUNDLE_IDENTIFIER
         })
 }
 
-async fn open_codex_app(app_path: &Path, workspace: &Path) -> anyhow::Result<()> {
-    verify_codex_app_bundle(app_path).await?;
+async fn open_ava_app(app_path: &Path, workspace: &Path) -> anyhow::Result<()> {
+    verify_ava_app_bundle(app_path).await?;
     eprintln!(
         "Opening workspace {workspace}...",
         workspace = workspace.display()
     );
-    let url = codex_new_thread_url(workspace);
+    let url = ava_new_thread_url(workspace);
     let status = Command::new("open")
         .arg("-a")
         .arg(app_path)
@@ -126,9 +126,9 @@ async fn open_codex_app(app_path: &Path, workspace: &Path) -> anyhow::Result<()>
     );
 }
 
-async fn verify_codex_app_bundle(app_path: &Path) -> anyhow::Result<()> {
+async fn verify_ava_app_bundle(app_path: &Path) -> anyhow::Result<()> {
     let requirement = format!(
-        "identifier \"{CODEX_BUNDLE_IDENTIFIER}\" and anchor apple generic and certificate leaf[subject.OU] = \"{OPENAI_APPLE_TEAM_IDENTIFIER}\""
+        "identifier \"{AVA_BUNDLE_IDENTIFIER}\" and anchor apple generic and certificate leaf[subject.OU] = \"{OPENAI_APPLE_TEAM_IDENTIFIER}\""
     );
     let output = Command::new("/usr/bin/codesign")
         .args(["--verify", "--deep", "--strict"])
@@ -143,23 +143,23 @@ async fn verify_codex_app_bundle(app_path: &Path) -> anyhow::Result<()> {
     }
 
     anyhow::bail!(
-        "Desktop app at {} failed OpenAI signature verification (team {OPENAI_APPLE_TEAM_IDENTIFIER}, bundle {CODEX_BUNDLE_IDENTIFIER}): {}",
+        "Desktop app at {} failed OpenAI signature verification (team {OPENAI_APPLE_TEAM_IDENTIFIER}, bundle {AVA_BUNDLE_IDENTIFIER}): {}",
         app_path.display(),
         String::from_utf8_lossy(&output.stderr).trim()
     );
 }
 
-fn codex_new_thread_url(workspace: &Path) -> String {
+fn ava_new_thread_url(workspace: &Path) -> String {
     let workspace = workspace.as_os_str().to_string_lossy();
     let mut serializer = url::form_urlencoded::Serializer::new(String::new());
     serializer.append_pair("path", workspace.as_ref());
     let query = serializer.finish();
-    format!("codex://threads/new?{query}")
+    format!("ava://threads/new?{query}")
 }
 
-async fn download_and_install_codex_to_user_applications(dmg_url: &str) -> anyhow::Result<PathBuf> {
+async fn download_and_install_ava_to_user_applications(dmg_url: &str) -> anyhow::Result<PathBuf> {
     let temp_dir = Builder::new()
-        .prefix("codex-app-installer-")
+        .prefix("ava-app-installer-")
         .tempdir()
         .context("failed to create temp dir")?;
     let tmp_root = temp_dir.path().to_path_buf();
@@ -175,12 +175,12 @@ async fn download_and_install_codex_to_user_applications(dmg_url: &str) -> anyho
         mount_point = mount_point.display()
     );
     let result = async {
-        let app_in_volume = find_codex_app_in_mount(&mount_point)
+        let app_in_volume = find_ava_app_in_mount(&mount_point)
             .context("failed to locate AvA Code Alpha.app in mounted dmg")?;
-        verify_codex_app_bundle(&app_in_volume)
+        verify_ava_app_bundle(&app_in_volume)
             .await
             .context("refusing to install an unverified Desktop app")?;
-        install_codex_app_bundle(&app_in_volume).await
+        install_ava_app_bundle(&app_in_volume).await
     }
     .await;
 
@@ -195,7 +195,7 @@ async fn download_and_install_codex_to_user_applications(dmg_url: &str) -> anyho
     result
 }
 
-async fn install_codex_app_bundle(app_in_volume: &Path) -> anyhow::Result<PathBuf> {
+async fn install_ava_app_bundle(app_in_volume: &Path) -> anyhow::Result<PathBuf> {
     for applications_dir in candidate_applications_dirs()? {
         eprintln!(
             "Installing Desktop app into {applications_dir}...",
@@ -292,7 +292,7 @@ async fn detach_dmg(mount_point: &Path) -> anyhow::Result<()> {
     anyhow::bail!("hdiutil detach failed with {status}");
 }
 
-fn find_codex_app_in_mount(mount_point: &Path) -> anyhow::Result<PathBuf> {
+fn find_ava_app_in_mount(mount_point: &Path) -> anyhow::Result<PathBuf> {
     let direct = mount_point.join("AvA Code Alpha.app");
     if direct.is_dir() {
         return Ok(direct);
@@ -352,11 +352,11 @@ fn parse_hdiutil_attach_mount_point(output: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::codex_new_thread_url;
-    use super::find_existing_codex_app_path;
-    use super::open_codex_app;
+    use super::ava_new_thread_url;
+    use super::find_existing_ava_app_path;
+    use super::open_ava_app;
     use super::parse_hdiutil_attach_mount_point;
-    use super::verify_codex_app_bundle;
+    use super::verify_ava_app_bundle;
     use pretty_assertions::assert_eq;
     use std::fs;
     use std::path::Path;
@@ -374,13 +374,13 @@ mod tests {
     }
 
     #[test]
-    fn finds_chatgpt_app_with_codex_bundle_identifier() {
+    fn finds_chatgpt_app_with_ava_bundle_identifier() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
         let app_path = temp_dir.path().join("ChatGPT.app");
         write_app_bundle(&app_path, "com.avacode.alpha");
 
         assert_eq!(
-            find_existing_codex_app_path(&[temp_dir.path().to_path_buf()]),
+            find_existing_ava_app_path(&[temp_dir.path().to_path_buf()]),
             Some(app_path)
         );
     }
@@ -389,22 +389,22 @@ mod tests {
     fn ignores_classic_chatgpt_app() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
         write_app_bundle(&temp_dir.path().join("ChatGPT.app"), "com.openai.chat");
-        let codex_app_path = temp_dir.path().join("AvA Code Alpha.app");
-        write_app_bundle(&codex_app_path, "com.avacode.alpha");
+        let ava_app_path = temp_dir.path().join("AvA Code Alpha.app");
+        write_app_bundle(&ava_app_path, "com.avacode.alpha");
 
         assert_eq!(
-            find_existing_codex_app_path(&[temp_dir.path().to_path_buf()]),
-            Some(codex_app_path)
+            find_existing_ava_app_path(&[temp_dir.path().to_path_buf()]),
+            Some(ava_app_path)
         );
     }
 
     #[tokio::test]
-    async fn rejects_unsigned_app_with_codex_bundle_identifier() {
+    async fn rejects_unsigned_app_with_ava_bundle_identifier() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
         let app_path = temp_dir.path().join("AvA Code Alpha.app");
         write_app_bundle(&app_path, "com.avacode.alpha");
 
-        let err = verify_codex_app_bundle(&app_path)
+        let err = verify_ava_app_bundle(&app_path)
             .await
             .expect_err("unsigned app should not satisfy the OpenAI signing requirement");
 
@@ -444,7 +444,7 @@ mod tests {
             .expect("verify app bundle signature");
         assert!(verify_status.success(), "ad-hoc signature should be valid");
 
-        let err = verify_codex_app_bundle(&app_path)
+        let err = verify_ava_app_bundle(&app_path)
             .await
             .expect_err("valid signature without the OpenAI team should not be trusted");
 
@@ -456,12 +456,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn refuses_to_launch_unsigned_existing_codex_app() {
+    async fn refuses_to_launch_unsigned_existing_ava_app() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
         let app_path = temp_dir.path().join("AvA Code Alpha.app");
         write_app_bundle(&app_path, "com.avacode.alpha");
 
-        let err = open_codex_app(&app_path, temp_dir.path())
+        let err = open_ava_app(&app_path, temp_dir.path())
             .await
             .expect_err("unsigned existing app should not be launched");
 
@@ -491,8 +491,8 @@ mod tests {
     }
 
     #[test]
-    fn codex_new_thread_url_encodes_workspace_path() {
-        let url = url::Url::parse(&codex_new_thread_url(Path::new("/tmp/codex workspace/#1")))
+    fn ava_new_thread_url_encodes_workspace_path() {
+        let url = url::Url::parse(&ava_new_thread_url(Path::new("/tmp/ava workspace/#1")))
             .expect("deep link should parse");
 
         assert_eq!(
@@ -503,10 +503,10 @@ mod tests {
                 url.query_pairs().into_owned().collect::<Vec<_>>(),
             ),
             (
-                "codex".to_string(),
+                "ava".to_string(),
                 Some("threads".to_string()),
                 "/new".to_string(),
-                vec![("path".to_string(), "/tmp/codex workspace/#1".to_string())],
+                vec![("path".to_string(), "/tmp/ava workspace/#1".to_string())],
             )
         );
     }

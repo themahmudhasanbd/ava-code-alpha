@@ -4,15 +4,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_login::AuthChangeState;
-use codex_rmcp_client::RmcpClient;
+use ava_login::AuthChangeState;
+use ava_rmcp_client::RmcpClient;
 use rmcp::model::ServerCapabilities;
 use serde_json::json;
 use tokio::sync::watch;
 use tokio_util::task::AbortOnDropHandle;
 
-pub(crate) const CAPABILITY: &str = "codex/auth-change";
-const NOTIFICATION: &str = "notifications/codex/authChanged";
+pub(crate) const CAPABILITY: &str = "ava/auth-change";
+const NOTIFICATION: &str = "notifications/ava/authChanged";
 const SEND_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub(crate) async fn start(

@@ -5,32 +5,32 @@ use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
 use app_test_support::write_models_cache;
-use codex_app_server::in_process;
-use codex_app_server::in_process::InProcessServerEvent;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnEnvironmentParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::NoopThreadConfigLoader;
-use codex_core::config::ConfigBuilder;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_login::AuthCredentialsStoreMode;
-use codex_protocol::protocol::SessionSource;
+use ava_app_server::in_process;
+use ava_app_server::in_process::InProcessServerEvent;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnEnvironmentParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::NoopThreadConfigLoader;
+use ava_core::config::ConfigBuilder;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_login::AuthCredentialsStoreMode;
+use ava_protocol::protocol::SessionSource;
 use core_test_support::responses;
-use core_test_support::test_codex::test_env;
+use core_test_support::test_ava::test_env;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -45,7 +45,7 @@ use wiremock::matchers::header;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-const COST_PATH: &str = "/api/codex/usage/thread-estimates/query";
+const COST_PATH: &str = "/api/ava/usage/thread-estimates/query";
 
 #[tokio::test]
 async fn chatgpt_turn_cost_reaches_otlp_on_success() -> Result<()> {
@@ -117,15 +117,15 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{}/metrics", protocol = "json" 
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     let config = Arc::new(
         ConfigBuilder::default()
-            .codex_home(home.path().to_path_buf())
+            .ava_home(home.path().to_path_buf())
             .loader_overrides(loader_overrides.clone())
             .build()
             .await?,
     );
-    let provider = codex_core::otel_init::build_provider(
+    let provider = ava_core::otel_init::build_provider(
         &config,
         "test",
-        Some("codex-app-server"),
+        Some("ava-app-server"),
         /*default_analytics_enabled*/ false,
     )
     .map_err(|error| anyhow::anyhow!(error.to_string()))?
@@ -149,16 +149,16 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{}/metrics", protocol = "json" 
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
         thread_config_loader: Arc::new(NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(environment_manager),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli,
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "test".to_string(),
             },
@@ -232,7 +232,7 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{}/metrics", protocol = "json" 
                 .expect("snapshot")
                 .scope_metrics()
                 .flat_map(opentelemetry_sdk::metrics::data::ScopeMetrics::metrics)
-                .any(|metric| metric.name() == "codex.turn.cost_microusd")
+                .any(|metric| metric.name() == "ava.turn.cost_microusd")
             {
                 break;
             }
@@ -254,7 +254,7 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{}/metrics", protocol = "json" 
         {
             for scope in resource["scopeMetrics"].as_array().expect("scope metrics") {
                 for metric in scope["metrics"].as_array().expect("metrics") {
-                    if metric["name"] == "codex.turn.cost_microusd" {
+                    if metric["name"] == "ava.turn.cost_microusd" {
                         points.extend(
                             metric["sum"]["dataPoints"]
                                 .as_array()

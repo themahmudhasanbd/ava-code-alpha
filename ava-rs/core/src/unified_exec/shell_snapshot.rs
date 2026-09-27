@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use codex_exec_server::ExecParams;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::ShellInfo;
-use codex_exec_server::ShellSnapshotRequest;
-use codex_features::Feature;
-use codex_protocol::protocol::AskForApproval;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxablePreference;
-use codex_tools::ToolName;
-use codex_tools::UnifiedExecShellMode;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::ExecParams;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::ShellInfo;
+use ava_exec_server::ShellSnapshotRequest;
+use ava_features::Feature;
+use ava_protocol::protocol::AskForApproval;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxablePreference;
+use ava_tools::ToolName;
+use ava_tools::UnifiedExecShellMode;
+use ava_utils_path_uri::PathUri;
 use tokio_util::task::AbortOnDropHandle;
 use uuid::Uuid;
 
@@ -20,7 +20,7 @@ use super::UnifiedExecContext;
 use super::process_manager::apply_unified_exec_env;
 use super::process_manager::exec_env_policy_from_shell_policy;
 use crate::config::NetworkProxySpec;
-use crate::exec_env::CODEX_THREAD_ID_ENV_VAR;
+use crate::exec_env::AVA_THREAD_ID_ENV_VAR;
 use crate::exec_env::inject_apply_patch_env;
 use crate::exec_env::inject_permission_profile_env;
 use crate::exec_env::inject_session_env;
@@ -109,7 +109,7 @@ impl Session {
                     });
                 let mut env = apply_unified_exec_env(HashMap::new());
                 env.insert(
-                    CODEX_THREAD_ID_ENV_VAR.to_string(),
+                    AVA_THREAD_ID_ENV_VAR.to_string(),
                     session.thread_id().to_string(),
                 );
                 inject_session_env(&mut env, session.session_id());

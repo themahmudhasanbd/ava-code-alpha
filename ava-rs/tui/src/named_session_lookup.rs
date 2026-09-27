@@ -3,13 +3,13 @@
 use std::path::Path;
 
 use crate::app_server_session::AppServerSession;
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadSortKey;
-use codex_app_server_protocol::ThreadSourceKind;
-use codex_protocol::ThreadId;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadSortKey;
+use ava_app_server_protocol::ThreadSourceKind;
+use ava_protocol::ThreadId;
 use color_eyre::eyre::Result;
 use color_eyre::eyre::WrapErr;
 
@@ -47,7 +47,7 @@ pub(super) fn display_label(thread: &Thread) -> &str {
 /// Resolve server-listed labels and reject distinct matches before selecting an ID.
 pub(super) async fn lookup(
     app_server: &mut AppServerSession,
-    codex_home: &Path,
+    ava_home: &Path,
     name: &str,
     collections: &[SessionCollection],
     source_kind_filters: &[Vec<ThreadSourceKind>],
@@ -95,13 +95,13 @@ pub(super) async fn lookup(
                     if !app_server.uses_remote_workspace()
                         && let Some(path) = thread.path.as_ref()
                     {
-                        let expected_root = codex_home.join(match collection {
-                            SessionCollection::Active => codex_rollout::SESSIONS_SUBDIR,
-                            SessionCollection::Archived => codex_rollout::ARCHIVED_SESSIONS_SUBDIR,
+                        let expected_root = ava_home.join(match collection {
+                            SessionCollection::Active => ava_rollout::SESSIONS_SUBDIR,
+                            SessionCollection::Archived => ava_rollout::ARCHIVED_SESSIONS_SUBDIR,
                         });
                         if !path.starts_with(expected_root)
                             || (thread.history_mode == ThreadHistoryMode::Legacy
-                                && codex_rollout::existing_rollout_path(path).await.is_none())
+                                && ava_rollout::existing_rollout_path(path).await.is_none())
                         {
                             continue;
                         }

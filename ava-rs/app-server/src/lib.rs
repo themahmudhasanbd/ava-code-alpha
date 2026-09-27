@@ -1,18 +1,18 @@
 #![recursion_limit = "256"]
 #![deny(clippy::print_stdout, clippy::print_stderr)]
 
-use codex_arg0::Arg0DispatchPaths;
-use codex_code_mode::CodeModeSessionProvider;
-use codex_code_mode::GrpcCodeModeSessionProvider;
-use codex_config::LoaderOverrides;
-use codex_config::NoopThreadConfigLoader;
-use codex_core::config::Config;
-use codex_core::config::UnsupportedUntrustedApprovalPolicyError;
-use codex_core::resolve_installation_id;
-use codex_login::AuthManager;
+use ava_arg0::Arg0DispatchPaths;
+use ava_code_mode::CodeModeSessionProvider;
+use ava_code_mode::GrpcCodeModeSessionProvider;
+use ava_config::LoaderOverrides;
+use ava_config::NoopThreadConfigLoader;
+use ava_core::config::Config;
+use ava_core::config::UnsupportedUntrustedApprovalPolicyError;
+use ava_core::resolve_installation_id;
+use ava_login::AuthManager;
 #[cfg(debug_assertions)]
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_cli::CliConfigOverrides;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_cli::CliConfigOverrides;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::ErrorKind;
@@ -48,26 +48,26 @@ use crate::transport::start_control_socket_acceptor;
 use crate::transport::start_remote_control;
 use crate::transport::start_stdio_connection;
 use crate::transport::start_websocket_acceptor;
-use codex_analytics::AppServerRpcTransport;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::TextPosition as AppTextPosition;
-use codex_app_server_protocol::TextRange as AppTextRange;
-use codex_app_server_transport::daemon_recovery_file_path;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLoadError;
-use codex_config::TextRange as CoreTextRange;
-use codex_core::ExecPolicyError;
-use codex_core::check_execpolicy_for_warnings;
-use codex_core::config::find_codex_home;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_features::Feature;
-use codex_feedback::CodexFeedback;
-use codex_protocol::protocol::SessionSource;
-use codex_rollout::state_db as rollout_state_db;
-use codex_state::log_db;
+use ava_analytics::AppServerRpcTransport;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::TextPosition as AppTextPosition;
+use ava_app_server_protocol::TextRange as AppTextRange;
+use ava_app_server_transport::daemon_recovery_file_path;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLoadError;
+use ava_config::TextRange as CoreTextRange;
+use ava_core::ExecPolicyError;
+use ava_core::check_execpolicy_for_warnings;
+use ava_core::config::find_ava_home;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_features::Feature;
+use ava_feedback::AvaFeedback;
+use ava_protocol::protocol::SessionSource;
+use ava_rollout::state_db as rollout_state_db;
+use ava_state::log_db;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
@@ -81,7 +81,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::registry::Registry;
 use tracing_subscriber::util::SubscriberInitExt;
 
-const SQLITE_RECOVERY_CONFIG_WARNING_SUMMARY: &str = "Codex rebuilt its local database.";
+const SQLITE_RECOVERY_CONFIG_WARNING_SUMMARY: &str = "Ava rebuilt its local database.";
 
 fn is_unsupported_untrusted_approval_policy_error(err: &std::io::Error) -> bool {
     err.get_ref().is_some_and(
@@ -151,9 +151,9 @@ pub use crate::transport::auth::WebsocketAuthCliMode;
 pub use crate::transport::take_remote_control_disabled_env;
 
 const LOG_FORMAT_ENV_VAR: &str = "LOG_FORMAT";
-const OTEL_SERVICE_NAME: &str = "codex-app-server";
+const OTEL_SERVICE_NAME: &str = "ava-app-server";
 #[cfg(debug_assertions)]
-const TEST_USER_CONFIG_FILE_ENV_VAR: &str = "CODEX_APP_SERVER_TEST_USER_CONFIG_FILE";
+const TEST_USER_CONFIG_FILE_ENV_VAR: &str = "AVA_APP_SERVER_TEST_USER_CONFIG_FILE";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum LogFormat {
@@ -378,14 +378,14 @@ fn project_config_warning(config: &Config) -> Option<ConfigWarningNotification> 
     let mut disabled_folders = Vec::new();
 
     for layer in config.config_layer_stack.all_layers_low_to_high() {
-        let ConfigLayerSource::Project { dot_codex_folder } = &layer.name else {
+        let ConfigLayerSource::Project { dot_ava_folder } = &layer.name else {
             continue;
         };
         let Some(disabled_reason) = &layer.disabled_reason else {
             continue;
         };
         disabled_folders.push((
-            dot_codex_folder.as_path().display().to_string(),
+            dot_ava_folder.as_path().display().to_string(),
             disabled_reason.clone(),
         ));
     }
@@ -497,7 +497,7 @@ pub async fn run_main_with_transport_options(
     runtime_options: AppServerRuntimeOptions,
 ) -> IoResult<AppServerExit> {
     #[cfg(target_os = "windows")]
-    let _registered_core = codex_windows_sandbox::registered_core_requested();
+    let _registered_core = ava_windows_sandbox::registered_core_requested();
     let loader_overrides = loader_overrides_with_test_user_config_file(
         loader_overrides,
         test_user_config_file_from_env(),
@@ -516,14 +516,14 @@ pub async fn run_main_with_transport_options(
             format!("error parsing -c overrides: {e}"),
         )
     })?;
-    let codex_home = find_codex_home()?;
+    let ava_home = find_ava_home()?;
     let local_runtime_paths = ExecServerRuntimePaths::from_optional_paths(
-        arg0_paths.codex_self_exe.clone(),
-        arg0_paths.codex_linux_sandbox_exe.clone(),
+        arg0_paths.ava_self_exe.clone(),
+        arg0_paths.ava_linux_sandbox_exe.clone(),
     )?;
     let ignore_user_config = loader_overrides.ignore_user_config;
     let config_manager = ConfigManager::new(
-        codex_home.to_path_buf(),
+        ava_home.to_path_buf(),
         cli_kv_overrides.clone(),
         loader_overrides,
         strict_config,
@@ -537,7 +537,7 @@ pub async fn run_main_with_transport_options(
     {
         Ok(config) => {
             let auth_manager =
-                AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false)
+                AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false)
                     .await
                     .map_err(std::io::Error::other)?;
             config_manager.replace_cloud_config_bundle_loader(
@@ -583,8 +583,8 @@ pub async fn run_main_with_transport_options(
     };
     config.auth_config().validate()?;
     #[cfg(target_os = "macos")]
-    let local_runtime_paths = local_runtime_paths.with_allowed_symlinked_codex_home(
-        codex_config::allowed_symlinked_codex_home(&config.config_layer_stack, &config.codex_home),
+    let local_runtime_paths = local_runtime_paths.with_allowed_symlinked_ava_home(
+        ava_config::allowed_symlinked_ava_home(&config.config_layer_stack, &config.ava_home),
     );
     let code_mode_session_provider: Option<Arc<dyn CodeModeSessionProvider>> =
         match &runtime_options.code_mode_host_transport {
@@ -607,8 +607,8 @@ pub async fn run_main_with_transport_options(
     let environment_manager = if ignore_user_config {
         EnvironmentManager::from_env(Some(local_runtime_paths), config.http_client_factory()).await
     } else {
-        EnvironmentManager::from_codex_home(
-            codex_home.clone(),
+        EnvironmentManager::from_ava_home(
+            ava_home.clone(),
             Some(local_runtime_paths),
             config.http_client_factory(),
         )
@@ -617,7 +617,7 @@ pub async fn run_main_with_transport_options(
     .map(Arc::new)
     .map_err(std::io::Error::other)?;
 
-    let otel = codex_core::otel_init::build_provider(
+    let otel = ava_core::otel_init::build_provider(
         &config,
         env!("CARGO_PKG_VERSION"),
         Some(OTEL_SERVICE_NAME),
@@ -629,11 +629,11 @@ pub async fn run_main_with_transport_options(
             format!("error loading otel config: {e}"),
         )
     })?;
-    codex_core::otel_init::record_process_start(otel.as_ref(), OTEL_SERVICE_NAME);
-    codex_core::otel_init::install_sqlite_telemetry(otel.as_ref(), OTEL_SERVICE_NAME);
+    ava_core::otel_init::record_process_start(otel.as_ref(), OTEL_SERVICE_NAME);
+    ava_core::otel_init::install_sqlite_telemetry(otel.as_ref(), OTEL_SERVICE_NAME);
     let unix_socket_startup_lock = match &transport {
         AppServerTransport::UnixSocket { .. } => {
-            let startup_lock_path = app_server_startup_lock_path(&codex_home)?;
+            let startup_lock_path = app_server_startup_lock_path(&ava_home)?;
             let startup_lock = acquire_app_server_startup_lock(startup_lock_path).await?;
             Some(startup_lock)
         }
@@ -674,7 +674,7 @@ pub async fn run_main_with_transport_options(
         });
     }
     if let Some(warning) =
-        codex_core::config::system_bwrap_warning(config.permissions.permission_profile())
+        ava_core::config::system_bwrap_warning(config.permissions.permission_profile())
     {
         config_warnings.push(ConfigWarningNotification {
             summary: warning,
@@ -684,7 +684,7 @@ pub async fn run_main_with_transport_options(
         });
     }
 
-    let feedback = CodexFeedback::new();
+    let feedback = AvaFeedback::new();
 
     // Install a simple subscriber so `tracing` output is visible. Users can
     // control the log level with `RUST_LOG` and switch to JSON logs with
@@ -745,7 +745,7 @@ pub async fn run_main_with_transport_options(
             "remote control is disabled by managed requirements",
         ));
     }
-    let installation_id = resolve_installation_id(&config.codex_home).await?;
+    let installation_id = resolve_installation_id(&config.ava_home).await?;
     let transport_shutdown_token = CancellationToken::new();
     // Remote enrollment must cancel before RPC drain without shutting down telemetry.
     let remote_control_shutdown_token = transport_shutdown_token.child_token();
@@ -776,7 +776,7 @@ pub async fn run_main_with_transport_options(
                 transport_event_tx.clone(),
                 transport_shutdown_token.clone(),
                 if cfg!(windows)
-                    && std::env::var_os(codex_app_server_transport::DAEMON_SHUTDOWN_SOCKET_ENV)
+                    && std::env::var_os(ava_app_server_transport::DAEMON_SHUTDOWN_SOCKET_ENV)
                         .is_some()
                 {
                     DaemonShutdownAccess::Managed
@@ -802,7 +802,7 @@ pub async fn run_main_with_transport_options(
     drop(unix_socket_startup_lock);
 
     let auth_manager =
-        AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false)
+        AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false)
             .await
             .map_err(std::io::Error::other)?;
 
@@ -872,7 +872,7 @@ pub async fn run_main_with_transport_options(
     transport_accept_handles.push(remote_control_accept_handle);
 
     // Only the standalone server measures its local home, not embedded/cloud runtimes.
-    if let Some(metrics) = otel.as_ref().and_then(codex_otel::OtelProvider::metrics) {
+    if let Some(metrics) = otel.as_ref().and_then(ava_otel::OtelProvider::metrics) {
         ava_home_metrics::spawn(&config, metrics.clone(), transport_shutdown_token.clone());
     }
 
@@ -940,7 +940,7 @@ pub async fn run_main_with_transport_options(
         info!("outbound router task exited (channel closed)");
     });
 
-    let recovery_file = daemon_recovery_file_path(&config.codex_home);
+    let recovery_file = daemon_recovery_file_path(&config.ava_home);
     let processor_handle = tokio::spawn({
         let auth_manager = Arc::clone(&auth_manager);
         let analytics_events_client =
@@ -1387,9 +1387,9 @@ async fn init_sqlite_state_db_with_fresh_start_on_corruption(
             }
             Err(err) => err,
         };
-        let database_path = codex_state::runtime_db_path_for_corruption_error(&err)
+        let database_path = ava_state::runtime_db_path_for_corruption_error(&err)
             .unwrap_or_else(|| config.sqlite_config().state_db_path());
-        if !codex_state::is_sqlite_corruption_error(&err)
+        if !ava_state::is_sqlite_corruption_error(&err)
             && !sqlite_home_is_blocking_file(database_path.as_path())
         {
             return Err(err);
@@ -1403,10 +1403,10 @@ async fn init_sqlite_state_db_with_fresh_start_on_corruption(
 
         let original_error = err.to_string();
         emit_state_db_backup_warning(&format!(
-            "Codex local database at {} appears damaged. Moving it into a backup folder so the app server can rebuild it from saved data.",
+            "Ava local database at {} appears damaged. Moving it into a backup folder so the app server can rebuild it from saved data.",
             database_path.display()
         ));
-        let backups = codex_state::backup_runtime_db_for_fresh_start(database_path.as_path())
+        let backups = ava_state::backup_runtime_db_for_fresh_start(database_path.as_path())
             .await
             .map_err(|backup_err| {
                 anyhow::anyhow!(
@@ -1415,7 +1415,7 @@ async fn init_sqlite_state_db_with_fresh_start_on_corruption(
             })?;
         for backup in &backups {
             emit_state_db_backup_warning(&format!(
-                "Moved damaged Codex local database file {} to {}",
+                "Moved damaged Ava local database file {} to {}",
                 backup.original_path.display(),
                 backup.backup_path.display()
             ));
@@ -1524,9 +1524,9 @@ mod tests {
     use super::loader_overrides_with_test_user_config_file;
     use super::turn_admission::TurnAdmission;
     #[cfg(debug_assertions)]
-    use codex_config::LoaderOverrides;
+    use ava_config::LoaderOverrides;
     #[cfg(debug_assertions)]
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -1582,7 +1582,7 @@ mod tests {
     #[cfg(debug_assertions)]
     #[test]
     fn debug_test_user_config_file_overrides_loader_path() {
-        let path = std::env::temp_dir().join("codex-app-server-test-config.toml");
+        let path = std::env::temp_dir().join("ava-app-server-test-config.toml");
         let loader_overrides = loader_overrides_with_test_user_config_file(
             LoaderOverrides::default(),
             Some(path.clone()),

@@ -167,7 +167,7 @@ impl App {
         initial_prompt: Option<String>,
         initial_images: Vec<PathBuf>,
         session_selection: SessionSelection,
-        feedback: codex_feedback::CodexFeedback,
+        feedback: ava_feedback::AvaFeedback,
         is_first_run: bool,
         should_prompt_windows_sandbox_nux_at_startup: bool,
         app_server_target: AppServerTarget,
@@ -284,8 +284,8 @@ impl App {
                 crate::status::remote_connection::pending_server_version_notice(
                     &local_settings.tui,
                     &app_server_target,
-                    app_server.server_codex_home(),
-                    CODEX_CLI_VERSION,
+                    app_server.server_ava_home(),
+                    AVA_CLI_VERSION,
                     app_server.server_version(),
                     /*last_shown*/ None,
                 )
@@ -345,7 +345,7 @@ impl App {
         let feedback_audience = bootstrap.feedback_audience;
         let auth_mode = bootstrap.auth_mode;
         let has_chatgpt_account = bootstrap.has_chatgpt_account;
-        let has_codex_backend_auth = matches!(auth_mode, Some(TelemetryAuthMode::Chatgpt));
+        let has_ava_backend_auth = matches!(auth_mode, Some(TelemetryAuthMode::Chatgpt));
         let requires_openai_auth = bootstrap.requires_openai_auth;
         let status_account_display = bootstrap.status_account_display.clone();
         let initial_plan_type = bootstrap.plan_type;
@@ -356,7 +356,7 @@ impl App {
             /*account_id*/ None,
             bootstrap.account_email.clone(),
             auth_mode,
-            codex_login::default_client::originator().value,
+            ava_login::default_client::originator().value,
             config.otel.log_user_prompt,
             user_agent(),
             serde_json::from_value(serde_json::json!("cli"))
@@ -368,7 +368,7 @@ impl App {
             .as_ref()
             .is_some_and(|cmd| !cmd.is_empty())
         {
-            session_telemetry.counter("codex.status_line", /*inc*/ 1, &[]);
+            session_telemetry.counter("ava.status_line", /*inc*/ 1, &[]);
         }
 
         let status_line_invalid_items_warned = Arc::new(AtomicBool::new(false));
@@ -441,7 +441,7 @@ impl App {
                     enhanced_keys_supported,
                     has_chatgpt_account,
                     requires_openai_auth,
-                    has_codex_backend_auth,
+                    has_ava_backend_auth,
                     model_catalog: model_catalog.clone(),
                     feedback: feedback.clone(),
                     is_first_run,
@@ -566,7 +566,7 @@ impl App {
                     enhanced_keys_supported,
                     has_chatgpt_account,
                     requires_openai_auth,
-                    has_codex_backend_auth,
+                    has_ava_backend_auth,
                     model_catalog: model_catalog.clone(),
                     feedback: feedback.clone(),
                     is_first_run,
@@ -605,7 +605,7 @@ impl App {
                     crate::app_server_session::ForkPermissionMode::InheritSaved
                 };
                 session_telemetry.counter(
-                    "codex.thread.fork",
+                    "ava.thread.fork",
                     /*inc*/ 1,
                     &[("source", "cli_subcommand")],
                 );
@@ -674,7 +674,7 @@ impl App {
                     enhanced_keys_supported,
                     has_chatgpt_account,
                     requires_openai_auth,
-                    has_codex_backend_auth,
+                    has_ava_backend_auth,
                     model_catalog: model_catalog.clone(),
                     feedback: feedback.clone(),
                     is_first_run,
@@ -734,7 +734,7 @@ impl App {
                 color_eyre::eyre::eyre!(
                     "Invalid `tui.keymap` configuration: {err}\n\
 Fix the config and retry.\n\
-See the Codex keymap documentation for supported actions and examples."
+See the Ava keymap documentation for supported actions and examples."
                 )
             })?;
         #[cfg(not(debug_assertions))]
@@ -847,10 +847,10 @@ See the Codex keymap documentation for supported actions and examples."
             app.recap.note_focus_lost(Instant::now());
         }
         let _ =
-            app.initialize_server_version_notice(CODEX_CLI_VERSION, app_server.server_version());
+            app.initialize_server_version_notice(AVA_CLI_VERSION, app_server.server_version());
         if initial_server_version_notice.is_none() {
             app.update_server_version_overview_notice(
-                CODEX_CLI_VERSION,
+                AVA_CLI_VERSION,
                 /*server_version*/ None,
             );
         }
@@ -1190,7 +1190,7 @@ See the Codex keymap documentation for supported actions and examples."
                         reconnect = None;
                         match result {
                             Ok(connected) => {
-                                app.finish_reconnect(tui, &mut app_server, &mut app_event_rx, connected, CODEX_CLI_VERSION).await?;
+                                app.finish_reconnect(tui, &mut app_server, &mut app_event_rx, connected, AVA_CLI_VERSION).await?;
                                 listen_for_app_server_events = true;
                                 waiting_for_initial_session_configured = false;
                             }

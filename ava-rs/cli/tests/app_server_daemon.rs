@@ -16,15 +16,15 @@ use tempfile::TempDir;
 
 struct TestDaemon {
     home: TempDir,
-    codex: PathBuf,
+    ava: PathBuf,
     unmanaged: Option<Child>,
 }
 
 impl TestDaemon {
     fn new() -> Result<Self> {
         let home = tempfile::Builder::new().tempdir_in("/tmp")?;
-        let codex = codex_utils_cargo_bin::cargo_bin("codex")?;
-        let codex_source = std::fs::canonicalize(&codex)?;
+        let ava = ava_utils_cargo_bin::cargo_bin("ava")?;
+        let ava_source = std::fs::canonicalize(&ava)?;
         let target = if cfg!(target_os = "macos") {
             format!("{}-apple-darwin", std::env::consts::ARCH)
         } else {
@@ -35,10 +35,10 @@ impl TestDaemon {
         let managed = standalone
             .join("releases")
             .join(&release_name)
-            .join("bin/codex");
+            .join("bin/ava");
         std::fs::create_dir_all(managed.parent().context("managed bin parent")?)?;
-        std::fs::hard_link(&codex_source, &managed)
-            .or_else(|_| std::fs::copy(&codex_source, managed).map(|_| ()))?;
+        std::fs::hard_link(&ava_source, &managed)
+            .or_else(|_| std::fs::copy(&ava_source, managed).map(|_| ()))?;
         std::fs::write(standalone.join("auto-update-version"), &release_name)?;
         std::os::unix::fs::symlink(
             PathBuf::from("releases").join(release_name),
@@ -50,14 +50,14 @@ impl TestDaemon {
         std::fs::write(state.join("app-server.stderr.log"), b"")?;
         Ok(Self {
             home,
-            codex,
+            ava,
             unmanaged: None,
         })
     }
 
     fn command(&self) -> Command {
-        let mut command = Command::new(&self.codex);
-        command.env("CODEX_HOME", self.home.path());
+        let mut command = Command::new(&self.ava-code);
+        command.env("AVA_HOME", self.home.path());
         command
     }
 
@@ -456,7 +456,7 @@ fn manual_update_rejects_an_unowned_installation() -> Result<()> {
         daemon
             .home
             .path()
-            .join("packages/standalone/current/bin/codex"),
+            .join("packages/standalone/current/bin/ava"),
     )?;
 
     assert_eq!(daemon.lifecycle("update")?["status"], "unsupported");
@@ -480,15 +480,15 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
     } else {
         daemon.home.path().join("cli-package")
     };
-    for directory in ["bin", "codex-path", "codex-resources"] {
+    for directory in ["bin", "ava-path", "ava-resources"] {
         std::fs::create_dir_all(package.join(directory))?;
     }
-    std::fs::copy(&daemon.codex, package.join("bin/codex"))?;
-    daemon.codex = package.join("bin/codex");
+    std::fs::copy(&daemon.ava-code, package.join("bin/ava"))?;
+    daemon.ava-code = package.join("bin/ava");
     for helper in [
-        "bin/codex-code-mode-host",
-        "codex-path/rg",
-        "codex-resources/bwrap",
+        "bin/ava-code-mode-host",
+        "ava-path/rg",
+        "ava-resources/bwrap",
     ] {
         std::fs::write(package.join(helper), b"runtime fixture")?;
         std::fs::set_permissions(package.join(helper), std::fs::Permissions::from_mode(0o755))?;
@@ -505,9 +505,9 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
         }
     );
     std::fs::write(
-        package.join("codex-package.json"),
+        package.join("ava-package.json"),
         serde_json::to_vec(&serde_json::json!({
-            "version": env!("CARGO_PKG_VERSION"), "target": target, "entrypoint": "bin/codex"
+            "version": env!("CARGO_PKG_VERSION"), "target": target, "entrypoint": "bin/ava"
         }))?,
     )?;
     if action == "start" && initial == InitialDaemon::Missing {
@@ -523,7 +523,7 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
         state.join("settings.json"),
         br#"{"shutdownGraceSeconds":0}"#,
     )?;
-    let cli_before = daemon.codex.canonicalize()?;
+    let cli_before = daemon.ava-code.canonicalize()?;
     let mut command = daemon.command();
     command.args(["app-server", "daemon", action]);
     // A freshly copied executable can briefly remain busy on Linux CI workers.
@@ -560,14 +560,14 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
         InitialDaemon::Legacy => (&standalone, "app-server.pid"),
     };
     assert_eq!(
-        output["managedCodexPath"],
+        output["managedAvaPath"],
         initial_root
             .canonicalize()?
-            .join("current/bin/codex")
+            .join("current/bin/ava")
             .to_str()
             .context("managed path is not UTF-8")?
     );
-    assert_eq!(daemon.codex.canonicalize()?, cli_before);
+    assert_eq!(daemon.ava-code.canonicalize()?, cli_before);
     assert_eq!(standalone.join("current").canonicalize()?, cli_selection);
     assert!(state.join(initial_pid_file).exists());
     let legacy_updater = match initial {
@@ -595,7 +595,7 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
             assert!(!current.exists());
         }
 
-        std::fs::remove_file(package.join("bin/codex-code-mode-host"))?;
+        std::fs::remove_file(package.join("bin/ava-code-mode-host"))?;
         let invalid = daemon
             .command()
             .args(["app-server", "daemon", "update", "--from-cli", "--yes"])
@@ -607,11 +607,11 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
             assert!(!current.exists());
         }
         std::fs::write(
-            package.join("bin/codex-code-mode-host"),
+            package.join("bin/ava-code-mode-host"),
             b"replacement helper",
         )?;
         std::fs::set_permissions(
-            package.join("bin/codex-code-mode-host"),
+            package.join("bin/ava-code-mode-host"),
             std::fs::Permissions::from_mode(0o755),
         )?;
         let replaced = daemon
@@ -633,9 +633,9 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
         assert!(!state.join("app-server.pid").exists());
         assert!(!state.join("app-server-updater.pid").exists());
         assert_eq!(
-            output["managedCodexPath"],
+            output["managedAvaPath"],
             current
-                .join("bin/codex")
+                .join("bin/ava")
                 .to_str()
                 .context("managed path is not UTF-8")?
         );
@@ -643,12 +643,12 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
         assert!(!dedicated.join("auto-update-version").exists());
         assert_eq!(std::fs::read(state.join("settings.json"))?, settings_before);
         assert_eq!(
-            std::fs::read(current.join("bin/codex-code-mode-host"))?,
+            std::fs::read(current.join("bin/ava-code-mode-host"))?,
             b"replacement helper"
         );
         if initial == InitialDaemon::Missing {
             assert_eq!(
-                std::fs::read(original.join("bin/codex-code-mode-host"))?,
+                std::fs::read(original.join("bin/ava-code-mode-host"))?,
                 b"runtime fixture"
             );
         }

@@ -1,5 +1,5 @@
 use super::*;
-use codex_arg0::Arg0DispatchPaths;
+use ava_arg0::Arg0DispatchPaths;
 use pretty_assertions::assert_eq;
 
 fn read_only_selection() -> PermissionProfileSelection {
@@ -31,18 +31,18 @@ async fn permission_shortcut_rejections_leave_state_unchanged() -> Result<()> {
             LoaderOverrides::without_managed_config_for_tests(),
             /*strict_config*/ false,
             CloudConfigBundleLoader::default(),
-            codex_feedback::CodexFeedback::new(),
+            ava_feedback::AvaFeedback::new(),
             /*log_db*/ None,
             /*state_db*/ None,
             Arc::clone(&app.environment_manager),
             |mut args| {
                 args.experimental_api = experimental_api;
-                codex_app_server_client::InProcessAppServerClient::start(args)
+                ava_app_server_client::InProcessAppServerClient::start(args)
             },
         )
         .await?;
         let mut app_server = AppServerSession::new(
-            codex_app_server_client::AppServerClient::InProcess(client),
+            ava_app_server_client::AppServerClient::InProcess(client),
             crate::app_server_session::ThreadParamsMode::Embedded,
         );
         while events.try_recv().is_ok() {}
@@ -75,15 +75,15 @@ async fn permission_shortcut_rejections_leave_state_unchanged() -> Result<()> {
 #[tokio::test]
 async fn permission_shortcut_confirms_without_persisting() -> Result<()> {
     let (mut app, mut events, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
     app.config
         .permissions
         .set_permission_profile_from_session_snapshot(PermissionProfileSnapshot::active(
             PermissionProfile::workspace_write(),
             ActivePermissionProfile::new(":workspace"),
         ))?;
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let contents = "approvals_reviewer = \"auto_review\"\n";
     std::fs::write(&config_path, contents)?;
     let mut app_server = start_config_write_test_app_server(&app).await?;

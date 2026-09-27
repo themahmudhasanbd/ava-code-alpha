@@ -13,7 +13,7 @@
 use std::sync::Arc;
 use std::sync::LazyLock;
 
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ResponseItem;
 
 use authorization::RootConversationSection;
 use authorization::TrustedUserAnswersSection;
@@ -172,7 +172,7 @@ pub trait SectionHistory: Send + Sync {
     fn items(&self) -> Box<dyn Iterator<Item = &ResponseItem> + Send + '_>;
 
     /// Bounded host-owned facts from the same snapshot as the current items.
-    fn retained_context(&self) -> Option<&codex_history::RetainedContext> {
+    fn retained_context(&self) -> Option<&ava_history::RetainedContext> {
         None
     }
 }

@@ -17,14 +17,14 @@ use tokio::time::timeout;
 /// New daemons own their packages, regardless of how the calling CLI was installed.
 /// Preserve legacy launch state, including logs left after a daemon is stopped;
 /// settings, installer selections, and lock files alone do not prove a prior launch.
-pub(crate) fn package_root(codex_home: &Path) -> PathBuf {
-    let dedicated = codex_home.join("packages/app-server-daemon");
+pub(crate) fn package_root(ava_home: &Path) -> PathBuf {
+    let dedicated = ava_home.join("packages/app-server-daemon");
     if !matches!(dedicated.join("current").symlink_metadata(),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound)
     {
         return dedicated;
     }
-    let state = codex_home.join("app-server-daemon");
+    let state = ava_home.join("app-server-daemon");
     for (package, artifacts) in [
         (
             "app-server-daemon",
@@ -49,18 +49,18 @@ pub(crate) fn package_root(codex_home: &Path) -> PathBuf {
             !matches!(state.join(name).symlink_metadata(),
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound)
         }) {
-            return codex_home.join("packages").join(package);
+            return ava_home.join("packages").join(package);
         }
     }
     dedicated
 }
 
 /// Resolve both packaged and legacy binaries without requiring a valid install.
-pub(crate) fn managed_codex_bin(codex_home: &Path) -> PathBuf {
-    let root = package_root(codex_home);
+pub(crate) fn managed_ava_bin(ava_home: &Path) -> PathBuf {
+    let root = package_root(ava_home);
     let current = root.join("current");
-    let packaged = current.join("bin").join(managed_codex_file_name());
-    let legacy = current.join(managed_codex_file_name());
+    let packaged = current.join("bin").join(managed_ava_file_name());
+    let legacy = current.join(managed_ava_file_name());
     if packaged.is_file()
         || !legacy.is_file() && (cfg!(windows) || root.ends_with("app-server-daemon"))
     {
@@ -71,8 +71,8 @@ pub(crate) fn managed_codex_bin(codex_home: &Path) -> PathBuf {
 }
 
 /// Only latest-channel stable releases may run the public latest-version updater.
-pub(crate) fn is_stable_standalone_release(codex_home: &Path, codex_bin: &Path) -> bool {
-    let standalone = package_root(codex_home);
+pub(crate) fn is_stable_standalone_release(ava_home: &Path, ava_bin: &Path) -> bool {
+    let standalone = package_root(ava_home);
     let Ok(releases) = std::fs::canonicalize(standalone.join("releases")) else {
         return false;
     };
@@ -112,17 +112,17 @@ pub(crate) fn is_stable_standalone_release(codex_home: &Path, codex_bin: &Path) 
         })
         && std::fs::read_to_string(standalone.join("auto-update-version"))
             .is_ok_and(|selected| selected == release_name)
-        && std::fs::canonicalize(codex_bin).is_ok_and(|bin| bin.starts_with(&release))
+        && std::fs::canonicalize(ava_bin).is_ok_and(|bin| bin.starts_with(&release))
 }
 
 /// Older managed binaries can serve app-server requests without owning an updater.
-pub(crate) async fn supports_daemon_update_loop(codex_bin: &Path) -> bool {
-    supports_daemon_command(codex_bin, &["pid-update-loop", "--help"]).await
+pub(crate) async fn supports_daemon_update_loop(ava_bin: &Path) -> bool {
+    supports_daemon_command(ava_bin, &["pid-update-loop", "--help"]).await
 }
 
 /// Probe an internal daemon command without running a long-lived process.
-pub(crate) async fn supports_daemon_command(codex_bin: &Path, args: &[&str]) -> bool {
-    let mut command = Command::new(codex_bin);
+pub(crate) async fn supports_daemon_command(ava_bin: &Path, args: &[&str]) -> bool {
+    let mut command = Command::new(ava_bin);
     #[cfg(windows)]
     command.creation_flags(windows_sys::Win32::System::Threading::CREATE_NO_WINDOW);
     timeout(
@@ -140,17 +140,17 @@ pub(crate) async fn supports_daemon_command(codex_bin: &Path, args: &[&str]) -> 
     .is_ok_and(|result| result.is_ok_and(|status| status.success()))
 }
 
-pub(crate) async fn resolved_managed_codex_bin(codex_bin: &Path) -> Result<PathBuf> {
-    fs::canonicalize(codex_bin).await.with_context(|| {
+pub(crate) async fn resolved_managed_ava_bin(ava_bin: &Path) -> Result<PathBuf> {
+    fs::canonicalize(ava_bin).await.with_context(|| {
         format!(
-            "failed to resolve managed Codex binary {}",
-            codex_bin.display()
+            "failed to resolve managed Ava binary {}",
+            ava_bin.display()
         )
     })
 }
 
-pub(crate) async fn managed_codex_version(codex_bin: &Path) -> Result<String> {
-    let mut command = Command::new(codex_bin);
+pub(crate) async fn managed_ava_version(ava_bin: &Path) -> Result<String> {
+    let mut command = Command::new(ava_bin);
     #[cfg(windows)]
     command.creation_flags(windows_sys::Win32::System::Threading::CREATE_NO_WINDOW);
     let output = command
@@ -160,25 +160,25 @@ pub(crate) async fn managed_codex_version(codex_bin: &Path) -> Result<String> {
         .await
         .with_context(|| {
             format!(
-                "failed to invoke managed Codex binary {}",
-                codex_bin.display()
+                "failed to invoke managed Ava binary {}",
+                ava_bin.display()
             )
         })?;
     if !output.status.success() {
         return Err(anyhow!(
-            "managed Codex binary {} exited with status {}",
-            codex_bin.display(),
+            "managed Ava binary {} exited with status {}",
+            ava_bin.display(),
             output.status
         ));
     }
 
     let stdout = String::from_utf8(output.stdout).with_context(|| {
         format!(
-            "managed Codex version was not utf-8: {}",
-            codex_bin.display()
+            "managed Ava version was not utf-8: {}",
+            ava_bin.display()
         )
     })?;
-    parse_codex_version(&stdout)
+    parse_ava_version(&stdout)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -199,16 +199,16 @@ pub(crate) fn executable_identity_from_bytes(bytes: &[u8]) -> ExecutableIdentity
     }
 }
 
-fn managed_codex_file_name() -> &'static str {
-    if cfg!(windows) { "codex.exe" } else { "codex" }
+fn managed_ava_file_name() -> &'static str {
+    if cfg!(windows) { "ava.exe" } else { "ava" }
 }
 
-fn parse_codex_version(output: &str) -> Result<String> {
+fn parse_ava_version(output: &str) -> Result<String> {
     let version = output
         .split_whitespace()
         .nth(1)
         .filter(|version| !version.is_empty())
-        .ok_or_else(|| anyhow!("managed Codex version output was malformed"))?;
+        .ok_or_else(|| anyhow!("managed Ava version output was malformed"))?;
     Ok(version.to_string())
 }
 

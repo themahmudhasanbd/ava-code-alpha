@@ -6,7 +6,7 @@
 - Last amended: 2026-08-06
 - Amended by: ADR 0049 (failure recovery), ADR 0061 (background compaction;
   removes the soft-boundary nudge, the `CompactContext` tool, and the
-  visibility of compaction activity), ADR 0064 (Codex parity; compaction is
+  visibility of compaction activity), ADR 0064 (Ava parity; compaction is
   inline again, the model-facing tool and budget reminders return, and every
   compaction is visible)
 

@@ -1,8 +1,8 @@
 use super::*;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::TurnItemContributor;
-use codex_protocol::ResponseItemId;
-use codex_protocol::items::AgentMessageContent;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::TurnItemContributor;
+use ava_protocol::ResponseItemId;
+use ava_protocol::items::AgentMessageContent;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 use tracing_subscriber::prelude::*;
@@ -15,7 +15,7 @@ impl TurnItemContributor for RewriteAgentMessageContributor {
         _thread_store: &'a ExtensionData,
         _turn_store: &'a ExtensionData,
         item: &'a mut TurnItem,
-    ) -> codex_extension_api::ExtensionFuture<'a, Result<(), String>> {
+    ) -> ava_extension_api::ExtensionFuture<'a, Result<(), String>> {
         Box::pin(async move {
             if let TurnItem::AgentMessage(agent_message) = item {
                 agent_message.content = vec![AgentMessageContent::Text {
@@ -41,10 +41,10 @@ fn assistant_output_text(text: &str) -> ResponseItem {
 
 #[test]
 fn post_sampling_token_estimate_is_disabled_by_always_on_sinks() {
-    let feedback = codex_feedback::CodexFeedback::new();
+    let feedback = ava_feedback::AvaFeedback::new();
     let subscriber = tracing_subscriber::registry()
         .with(feedback.logger_layer())
-        .with(tracing_subscriber::fmt::layer().with_filter(codex_state::log_db::default_filter()));
+        .with(tracing_subscriber::fmt::layer().with_filter(ava_state::log_db::default_filter()));
 
     tracing::subscriber::with_default(subscriber, || {
         tracing::callsite::rebuild_interest_cache();
@@ -61,7 +61,7 @@ fn post_sampling_token_estimate_is_disabled_by_always_on_sinks() {
 #[tokio::test]
 async fn plan_mode_uses_contributed_turn_item_for_last_agent_message() {
     let (mut session, turn_context) = crate::session::tests::make_session_and_context().await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.turn_item_contributor(Arc::new(RewriteAgentMessageContributor));
     session.services.extensions = Arc::new(builder.build());
     let turn_store = ExtensionData::new(turn_context.sub_id.clone());
@@ -90,11 +90,11 @@ async fn plan_mode_uses_contributed_turn_item_for_last_agent_message() {
 
 #[test]
 fn realtime_user_verification_notice_excludes_request_payload() {
-    let event = EventMsg::ElicitationRequest(codex_protocol::approvals::ElicitationRequestEvent {
+    let event = EventMsg::ElicitationRequest(ava_protocol::approvals::ElicitationRequestEvent {
         turn_id: None,
         server_name: "private-server-name".to_string(),
-        id: codex_protocol::mcp::RequestId::String("private-request-id".to_string()),
-        request: codex_protocol::approvals::ElicitationRequest::UserVerification {
+        id: ava_protocol::mcp::RequestId::String("private-request-id".to_string()),
+        request: ava_protocol::approvals::ElicitationRequest::UserVerification {
             title: "private-title".to_string(),
             description: "private-description".to_string(),
             challenge: "private-challenge".to_string(),

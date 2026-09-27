@@ -1,19 +1,19 @@
-pub use codex_backend_openapi_models::models::ConfigBundleResponse;
-pub use codex_backend_openapi_models::models::CreditStatusDetails;
-pub use codex_backend_openapi_models::models::DeliveredConfigToml;
-pub use codex_backend_openapi_models::models::DeliveredManagedLayers;
-pub use codex_backend_openapi_models::models::DeliveredRequirementsToml;
-pub use codex_backend_openapi_models::models::DeliveredTomlFragment;
-pub use codex_backend_openapi_models::models::PaginatedListTaskListItem;
-pub use codex_backend_openapi_models::models::PlanType;
-pub use codex_backend_openapi_models::models::RateLimitReachedKind;
-pub use codex_backend_openapi_models::models::RateLimitStatusDetails;
-pub use codex_backend_openapi_models::models::RateLimitStatusPayload;
-pub use codex_backend_openapi_models::models::RateLimitWindowSnapshot;
-pub use codex_backend_openapi_models::models::SpendControlLimitDetails;
-pub use codex_backend_openapi_models::models::TaskListItem;
+pub use ava_backend_openapi_models::models::ConfigBundleResponse;
+pub use ava_backend_openapi_models::models::CreditStatusDetails;
+pub use ava_backend_openapi_models::models::DeliveredConfigToml;
+pub use ava_backend_openapi_models::models::DeliveredManagedLayers;
+pub use ava_backend_openapi_models::models::DeliveredRequirementsToml;
+pub use ava_backend_openapi_models::models::DeliveredTomlFragment;
+pub use ava_backend_openapi_models::models::PaginatedListTaskListItem;
+pub use ava_backend_openapi_models::models::PlanType;
+pub use ava_backend_openapi_models::models::RateLimitReachedKind;
+pub use ava_backend_openapi_models::models::RateLimitStatusDetails;
+pub use ava_backend_openapi_models::models::RateLimitStatusPayload;
+pub use ava_backend_openapi_models::models::RateLimitWindowSnapshot;
+pub use ava_backend_openapi_models::models::SpendControlLimitDetails;
+pub use ava_backend_openapi_models::models::TaskListItem;
 
-use codex_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::RateLimitSnapshot;
 use serde::Deserialize;
 use serde::de::Deserializer;
 use serde_json::Value;
@@ -70,19 +70,19 @@ pub(crate) struct RateLimitStatusWithResetCredits {
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub(crate) struct AdditionalRateLimitWithNormalModel {
     #[serde(flatten)]
-    pub details: codex_backend_openapi_models::models::AdditionalRateLimitDetails,
+    pub details: ava_backend_openapi_models::models::AdditionalRateLimitDetails,
     pub normal_model_slug: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct CodexWorkspaceMessagesResponse {
+pub struct AvaWorkspaceMessagesResponse {
     #[serde(default)]
-    pub messages: Vec<CodexWorkspaceMessage>,
+    pub messages: Vec<AvaWorkspaceMessage>,
 }
 
-/// Authenticated Codex user settings used by CLI runtime policy.
+/// Authenticated Ava user settings used by CLI runtime policy.
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
-pub struct CodexUserSettingsResponse {
+pub struct AvaUserSettingsResponse {
     /// Server-computed effective commit-attribution policy.
     ///
     /// Older backend responses omit this field, which safely defaults to disabled.
@@ -91,9 +91,9 @@ pub struct CodexUserSettingsResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct CodexWorkspaceMessage {
+pub struct AvaWorkspaceMessage {
     pub message_id: String,
-    pub message_type: CodexWorkspaceMessageType,
+    pub message_type: AvaWorkspaceMessageType,
     pub message_body: String,
     #[serde(default)]
     pub created_at: Option<String>,
@@ -119,7 +119,7 @@ pub struct ConsumeRateLimitResetCreditResponse {
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum CodexWorkspaceMessageType {
+pub enum AvaWorkspaceMessageType {
     Headline,
     Announcement,
     #[serde(other)]
@@ -138,7 +138,7 @@ pub struct AccountEntry {
     pub id: String,
     /// Current subscription reported by the accounts endpoint, independent of token claims.
     #[serde(default)]
-    pub plan_type: Option<codex_protocol::account::PlanType>,
+    pub plan_type: Option<ava_protocol::account::PlanType>,
     pub workspace_backend_origin: Option<String>,
     pub account_routing_override: Option<String>,
     #[serde(default)]
@@ -181,7 +181,7 @@ struct ChatGptAccountEntry {
 struct ChatGptAccountInfo {
     account_id: Option<String>,
     #[serde(default)]
-    plan_type: Option<codex_protocol::account::PlanType>,
+    plan_type: Option<ava_protocol::account::PlanType>,
     #[serde(default)]
     name: Option<String>,
     #[serde(default)]
@@ -607,7 +607,7 @@ Second line"
 
     #[test]
     fn workspace_messages_response_deserializes_messages() {
-        let response: CodexWorkspaceMessagesResponse = serde_json::from_value(serde_json::json!({
+        let response: AvaWorkspaceMessagesResponse = serde_json::from_value(serde_json::json!({
             "messages": [
                 {
                     "message_id": "headline-id",
@@ -634,25 +634,25 @@ Second line"
 
         assert_eq!(
             response,
-            CodexWorkspaceMessagesResponse {
+            AvaWorkspaceMessagesResponse {
                 messages: vec![
-                    CodexWorkspaceMessage {
+                    AvaWorkspaceMessage {
                         message_id: "headline-id".to_string(),
-                        message_type: CodexWorkspaceMessageType::Headline,
+                        message_type: AvaWorkspaceMessageType::Headline,
                         message_body: "Headline body".to_string(),
                         created_at: Some("2026-06-14T00:00:00Z".to_string()),
                         archived_at: None,
                     },
-                    CodexWorkspaceMessage {
+                    AvaWorkspaceMessage {
                         message_id: "announcement-id".to_string(),
-                        message_type: CodexWorkspaceMessageType::Announcement,
+                        message_type: AvaWorkspaceMessageType::Announcement,
                         message_body: "Announcement body".to_string(),
                         created_at: Some("2026-06-14T01:00:00Z".to_string()),
                         archived_at: None,
                     },
-                    CodexWorkspaceMessage {
+                    AvaWorkspaceMessage {
                         message_id: "unknown-id".to_string(),
-                        message_type: CodexWorkspaceMessageType::Unknown,
+                        message_type: AvaWorkspaceMessageType::Unknown,
                         message_body: "Unknown body".to_string(),
                         created_at: None,
                         archived_at: None,

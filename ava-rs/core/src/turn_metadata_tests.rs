@@ -3,8 +3,8 @@ use super::*;
 use crate::responses_metadata::ANALYTICS_ENABLED_KEY;
 use crate::responses_metadata::AUTO_REVIEW_ENABLED_KEY;
 use crate::responses_metadata::CONTEXT_WINDOW_ID_KEY;
-use crate::responses_metadata::CodexResponsesMetadata;
-use crate::responses_metadata::CodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesMetadata;
+use crate::responses_metadata::AvaResponsesRequestKind;
 use crate::responses_metadata::CompactionTurnMetadata;
 use crate::responses_metadata::FORKED_FROM_ORDINAL_EXCLUSIVE_KEY;
 use crate::responses_metadata::INSTALLATION_ID_KEY;
@@ -22,22 +22,22 @@ use crate::responses_metadata::validate_extra_metadata;
 use crate::session::step_context::StepContext;
 use crate::session::tests::make_session_and_context;
 use crate::session::tests::update_turn_settings_for_test;
-use codex_analytics::CompactionImplementation;
-use codex_analytics::CompactionPhase;
-use codex_analytics::CompactionReason;
-use codex_analytics::CompactionTrigger;
-use codex_analytics::TurnAnalyticsMetadata;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::AgentPath;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::get_platform_sandbox;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_analytics::CompactionImplementation;
+use ava_analytics::CompactionPhase;
+use ava_analytics::CompactionReason;
+use ava_analytics::CompactionTrigger;
+use ava_analytics::TurnAnalyticsMetadata;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::AgentPath;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::get_platform_sandbox;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use pretty_assertions::assert_eq;
@@ -61,11 +61,11 @@ fn test_mcp_turn_metadata_context() -> ExecutionMetadata<'static> {
 fn test_turn_responses_metadata(
     state: &TurnMetadataState,
     window_id: &str,
-) -> CodexResponsesMetadata {
+) -> AvaResponsesMetadata {
     state.to_responses_metadata(
         "installation-a".to_string(),
         window_id.to_string(),
-        CodexResponsesRequestKind::Turn,
+        AvaResponsesRequestKind::Turn,
     )
 }
 
@@ -84,7 +84,7 @@ fn test_compaction_responses_metadata_json(
         .to_responses_metadata(
             "installation-a".to_string(),
             window_id.to_string(),
-            CodexResponsesRequestKind::Compaction(compaction),
+            AvaResponsesRequestKind::Compaction(compaction),
         )
         .turn_metadata_json()
         .expect("turn metadata json")
@@ -149,7 +149,7 @@ async fn detached_memory_responses_metadata_starts_an_independent_root_turn() {
     let (_temp_dir, repo_path) = create_clean_git_repo("repo-東京").await;
 
     let thread_manager = crate::ThreadManager::with_models_provider_for_tests(
-        codex_login::CodexAuth::from_api_key("test"),
+        ava_login::AvaAuth::from_api_key("test"),
         crate::config::test_config().await.model_provider,
     );
 
@@ -217,7 +217,7 @@ async fn detached_memory_responses_metadata_omits_empty_workspace_metadata() {
     let cwd = temp_dir.path().abs();
 
     let thread_manager = crate::ThreadManager::with_models_provider_for_tests(
-        codex_login::CodexAuth::from_api_key("test"),
+        ava_login::AvaAuth::from_api_key("test"),
         crate::config::test_config().await.model_provider,
     );
 
@@ -582,9 +582,9 @@ fn turn_metadata_state_includes_model_and_reasoning_effort_only_in_request_meta(
 async fn execution_metadata_applies_captured_settings_to_responses_metadata() {
     let (_session, mut turn) = make_session_and_context().await;
     let config = Arc::make_mut(&mut turn.config);
-    config.approvals_reviewer = codex_protocol::config_types::ApprovalsReviewer::AutoReview;
+    config.approvals_reviewer = ava_protocol::config_types::ApprovalsReviewer::AutoReview;
     config.permissions.approval_policy =
-        crate::config::Constrained::allow_any(codex_protocol::protocol::AskForApproval::OnRequest);
+        crate::config::Constrained::allow_any(ava_protocol::protocol::AskForApproval::OnRequest);
     update_turn_settings_for_test(&mut turn, |settings| {
         let model_info = Arc::make_mut(&mut settings.model_info);
         model_info.slug = "captured-step-model".to_string();
@@ -596,7 +596,7 @@ async fn execution_metadata_applies_captured_settings_to_responses_metadata() {
     let mut metadata = step_context.turn.turn_metadata_state.to_responses_metadata(
         "installation-a".to_string(),
         "window-a".to_string(),
-        CodexResponsesRequestKind::Turn,
+        AvaResponsesRequestKind::Turn,
     );
     ExecutionMetadata::from_settings(&step_context.settings).apply_to(&mut metadata);
     let metadata = metadata.turn_metadata_value().expect("turn metadata");
@@ -771,7 +771,7 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
         &model_info_from_slug("gpt-5.4"),
     );
     state.set_responses_api_metadata(BTreeMap::from([
-        ("codex_security_surface".to_string(), "sdk".to_string()),
+        ("ava_security_surface".to_string(), "sdk".to_string()),
         (ANALYTICS_ENABLED_KEY.to_string(), "false".to_string()),
         ("source".to_string(), " Configured_Source ".to_string()),
         (
@@ -788,7 +788,7 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
     state.set_turn_trigger("goal".to_string());
     state.set_responsesapi_client_metadata(HashMap::from([
         (
-            "codex_security_surface".to_string(),
+            "ava_security_surface".to_string(),
             "client-supplied".to_string(),
         ),
         ("fiber_run_id".to_string(), "fiber-123".to_string()),
@@ -797,7 +797,7 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
         ("workspace_kind".to_string(), "projectless".to_string()),
         ("source".to_string(), "client-source".to_string()),
         ("model".to_string(), "client-supplied".to_string()),
-        ("codex_version".to_string(), "client-supplied".to_string()),
+        ("ava_version".to_string(), "client-supplied".to_string()),
         (
             "reasoning_effort".to_string(),
             "client-supplied".to_string(),
@@ -807,11 +807,11 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
         ("agent_name".to_string(), "client-supplied".to_string()),
         ("installation_id".to_string(), "client-supplied".to_string()),
         (
-            "x-codex-installation-id".to_string(),
+            "x-ava-installation-id".to_string(),
             "client-supplied".to_string(),
         ),
         (
-            "x-codex-parent-thread-id".to_string(),
+            "x-ava-parent-thread-id".to_string(),
             "client-supplied".to_string(),
         ),
         (
@@ -866,7 +866,7 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
     assert!(json.get(ANALYTICS_ENABLED_KEY).is_none());
     assert_eq!(json["origin"].as_str(), Some("東京"));
     assert_eq!(json["workspace_kind"].as_str(), Some("projectless"));
-    assert_eq!(json["codex_security_surface"].as_str(), Some("sdk"));
+    assert_eq!(json["ava_security_surface"].as_str(), Some("sdk"));
     assert_eq!(json["model"].as_str(), Some("client-supplied"));
     assert_eq!(json["reasoning_effort"].as_str(), Some("client-supplied"));
     assert_eq!(json["session_id"].as_str(), Some("session-a"));
@@ -875,8 +875,8 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
     assert_eq!(json["agent_name"].as_str(), Some("/root"));
     assert!(json.get(TOOL_NAMESPACES_INFO_KEY).is_none());
     assert!(json.get(INSTALLATION_ID_KEY).is_none());
-    assert!(json.get("x-codex-installation-id").is_none());
-    assert!(json.get("x-codex-parent-thread-id").is_none());
+    assert!(json.get("x-ava-installation-id").is_none());
+    assert!(json.get("x-ava-parent-thread-id").is_none());
     assert!(json.get("x-openai-subagent").is_none());
     assert!(json.get("forked_from_thread_id").is_none());
     assert!(json.get(FORKED_FROM_ORDINAL_EXCLUSIVE_KEY).is_none());
@@ -912,7 +912,7 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
         Some("automation")
     );
     assert_eq!(
-        model_request_json["codex_security_surface"].as_str(),
+        model_request_json["ava_security_surface"].as_str(),
         Some("sdk")
     );
     assert_eq!(
@@ -928,7 +928,7 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
         test_turn_responses_metadata(&state, "thread-a:1").compatibility_headers();
     let compatibility_metadata: Value = serde_json::from_str(
         compatibility_headers
-            .get("x-codex-turn-metadata")
+            .get("x-ava-turn-metadata")
             .expect("compatibility turn metadata header")
             .to_str()
             .expect("valid compatibility header"),
@@ -949,18 +949,18 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
         .current_meta_value_for_mcp_request(test_mcp_turn_metadata_context())
         .expect("turn metadata should be present");
     assert_eq!(meta["model"].as_str(), Some("gpt-5.4"));
-    assert_eq!(meta["codex_version"], env!("CARGO_PKG_VERSION"));
+    assert_eq!(meta["ava_version"], env!("CARGO_PKG_VERSION"));
     assert_eq!(meta["reasoning_effort"].as_str(), Some("high"));
     assert!(meta.get(LEGACY_CODE_MODE_TOOL_NAMES_KEY).is_none());
     assert!(meta.get(TOOL_NAMESPACES_INFO_KEY).is_none());
     assert!(meta.get(PARENT_TURN_ID_KEY).is_none());
     assert!(meta.get(ROOT_TURN_ID_KEY).is_none());
     assert!(meta.get(WINDOW_ID_KEY).is_none());
-    assert!(meta.get("codex_security_surface").is_none());
+    assert!(meta.get("ava_security_surface").is_none());
     assert!(meta.get(ANALYTICS_ENABLED_KEY).is_none());
     assert_eq!(state.workspace_kind().as_deref(), Some("projectless"));
     assert_eq!(
-        (state.turn_trigger(), state.codex_turn_source()),
+        (state.turn_trigger(), state.ava_turn_source()),
         (
             Some("goal".to_string()),
             Some(" Configured_Source ".to_string())
@@ -996,7 +996,7 @@ fn turn_metadata_state_merges_client_metadata_without_replacing_reserved_fields(
                 .into_iter()
                 .collect(),
         );
-        assert_eq!(state.codex_turn_source(), expected);
+        assert_eq!(state.ava_turn_source(), expected);
     }
 }
 
@@ -1051,7 +1051,7 @@ fn turn_metadata_state_overlays_compaction_only_on_compaction_requests() {
         &model_info_from_slug("gpt-5.4"),
     );
     state.set_responses_api_metadata(BTreeMap::from([(
-        "codex_security_surface".to_string(),
+        "ava_security_surface".to_string(),
         "sdk".to_string(),
     )]));
     state.set_responsesapi_client_metadata(HashMap::from([(
@@ -1073,7 +1073,7 @@ fn turn_metadata_state_overlays_compaction_only_on_compaction_requests() {
     assert_eq!(compact_json["request_kind"].as_str(), Some("compaction"));
     assert_eq!(compact_json["turn_id"].as_str(), Some("turn-a"));
     assert_eq!(compact_json[WINDOW_ID_KEY].as_str(), Some("thread-a:2"));
-    assert_eq!(compact_json["codex_security_surface"].as_str(), Some("sdk"));
+    assert_eq!(compact_json["ava_security_surface"].as_str(), Some("sdk"));
     assert_eq!(
         compact_json["compaction"],
         serde_json::json!({
@@ -1089,7 +1089,7 @@ fn turn_metadata_state_overlays_compaction_only_on_compaction_requests() {
     let regular_json: Value = serde_json::from_str(&regular_header).expect("json");
     assert_eq!(regular_json["request_kind"].as_str(), Some("turn"));
     assert_eq!(regular_json[WINDOW_ID_KEY].as_str(), Some("thread-a:3"));
-    assert_eq!(regular_json["codex_security_surface"].as_str(), Some("sdk"));
+    assert_eq!(regular_json["ava_security_surface"].as_str(), Some("sdk"));
     assert!(regular_json.get("compaction").is_none());
 }
 

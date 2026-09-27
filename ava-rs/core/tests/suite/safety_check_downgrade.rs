@@ -1,18 +1,18 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ModelRerouteReason;
-use codex_protocol::protocol::ModelVerification;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ModelRerouteReason;
+use ava_protocol::protocol::ModelVerification;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_function_call;
 use core_test_support::responses::ev_model_verification_metadata;
@@ -24,23 +24,23 @@ use core_test_support::responses::sse_completed;
 use core_test_support::responses::sse_response;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use wiremock::ResponseTemplate;
 
 const SERVER_MODEL: &str = "gpt-5.2";
-const REQUESTED_MODEL: &str = "gpt-5.3-codex";
+const REQUESTED_MODEL: &str = "gpt-5.3-ava";
 const TRUSTED_ACCESS_FOR_CYBER_VERIFICATION: &str = "trusted_access_for_cyber";
 
 const CYBER_POLICY_MESSAGE: &str =
     "This request has been flagged for potentially high-risk cyber activity.";
 const BIO_POLICY_MESSAGE: &str = "This request has been flagged for possible biological risk.";
 
-fn disabled_text_turn(test: &TestCodex, text: &str) -> TurnInputRequest {
+fn disabled_text_turn(test: &TestAva, text: &str) -> TurnInputRequest {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.cwd_path());
     TurnInputRequest::user_input(vec![UserInput::Text {
@@ -73,14 +73,14 @@ async fn openai_model_header_mismatch_emits_warning_event() -> Result<()> {
         sse_response(sse_completed("resp-1")).insert_header("OpenAI-Model", SERVER_MODEL);
     let _mock = mount_response_once(&server, response).await;
 
-    let mut builder = test_codex().with_model(REQUESTED_MODEL);
+    let mut builder = test_ava().with_model(REQUESTED_MODEL);
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_text_turn(&test, "trigger safety check"))
         .await?;
 
-    let reroute = wait_for_event(&test.codex, |event| {
+    let reroute = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::ModelReroute(_))
     })
     .await;
@@ -91,14 +91,14 @@ async fn openai_model_header_mismatch_emits_warning_event() -> Result<()> {
     assert_eq!(reroute.to_model, SERVER_MODEL);
     assert_eq!(reroute.reason, ModelRerouteReason::HighRiskCyberActivity);
 
-    let warning = wait_for_event(&test.codex, |event| matches!(event, EventMsg::Warning(_))).await;
+    let warning = wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Warning(_))).await;
     let EventMsg::Warning(warning) = warning else {
         panic!("expected warning event");
     };
     assert!(warning.message.contains(REQUESTED_MODEL));
     assert!(warning.message.contains(SERVER_MODEL));
 
-    let _ = wait_for_event(&test.codex, |event| {
+    let _ = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -106,13 +106,13 @@ async fn openai_model_header_mismatch_emits_warning_event() -> Result<()> {
     Ok(())
 }
 
-#[test_case::test_case("cyber_policy", CYBER_POLICY_MESSAGE, CodexErrorInfo::CyberPolicy; "cyber")]
-#[test_case::test_case("bio_policy", BIO_POLICY_MESSAGE, CodexErrorInfo::BioPolicy; "bio")]
+#[test_case::test_case("cyber_policy", CYBER_POLICY_MESSAGE, AvaErrorInfo::CyberPolicy; "cyber")]
+#[test_case::test_case("bio_policy", BIO_POLICY_MESSAGE, AvaErrorInfo::BioPolicy; "bio")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn policy_response_emits_typed_error_without_retry(
     code: &str,
     message: &str,
-    error_info: CodexErrorInfo,
+    error_info: AvaErrorInfo,
 ) -> Result<()> {
     skip_if_no_network!(Ok(()));
 
@@ -127,24 +127,24 @@ async fn policy_response_emits_typed_error_without_retry(
     }));
     let mock = mount_response_once(&server, response).await;
 
-    let mut builder = test_codex().with_model(REQUESTED_MODEL);
+    let mut builder = test_ava().with_model(REQUESTED_MODEL);
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "trigger policy error".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let error = wait_for_event(&test.codex, |event| matches!(event, EventMsg::Error(_))).await;
+    let error = wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await;
     let EventMsg::Error(error) = error else {
         panic!("expected error event");
     };
     assert_eq!(error.message, message);
-    assert_eq!(error.codex_error_info, Some(error_info));
+    assert_eq!(error.ava_error_info, Some(error_info));
 
-    let _ = wait_for_event(&test.codex, |event| {
+    let _ = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -174,14 +174,14 @@ async fn response_model_field_mismatch_emits_warning_when_header_matches_request
     .insert_header("OpenAI-Model", REQUESTED_MODEL);
     let _mock = mount_response_once(&server, response).await;
 
-    let mut builder = test_codex().with_model(REQUESTED_MODEL);
+    let mut builder = test_ava().with_model(REQUESTED_MODEL);
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_text_turn(&test, "trigger response model check"))
         .await?;
 
-    let reroute = wait_for_event(&test.codex, |event| {
+    let reroute = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::ModelReroute(_))
     })
     .await;
@@ -192,7 +192,7 @@ async fn response_model_field_mismatch_emits_warning_when_header_matches_request
     assert_eq!(reroute.to_model, SERVER_MODEL);
     assert_eq!(reroute.reason, ModelRerouteReason::HighRiskCyberActivity);
 
-    let warning = wait_for_event(&test.codex, |event| {
+    let warning = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::Warning(warning)
@@ -208,7 +208,7 @@ async fn response_model_field_mismatch_emits_warning_when_header_matches_request
     assert!(warning.message.contains(REQUESTED_MODEL));
     assert!(warning.message.contains(SERVER_MODEL));
 
-    let _ = wait_for_event(&test.codex, |event| {
+    let _ = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -244,16 +244,16 @@ async fn openai_model_header_mismatch_only_emits_one_warning_per_turn() -> Resul
     .insert_header("OpenAI-Model", SERVER_MODEL);
     let _mock = mount_response_sequence(&server, vec![first_response, second_response]).await;
 
-    let mut builder = test_codex().with_model(REQUESTED_MODEL);
+    let mut builder = test_ava().with_model(REQUESTED_MODEL);
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_text_turn(&test, "trigger follow-up turn"))
         .await?;
 
     let mut warning_count = 0;
     loop {
-        let event = wait_for_event(&test.codex, |_| true).await;
+        let event = wait_for_event(&test.ava-code, |_| true).await;
         match event {
             EventMsg::Warning(warning)
                 if warning
@@ -282,17 +282,17 @@ async fn openai_model_header_casing_only_mismatch_does_not_warn() -> Result<()> 
         .insert_header("OpenAI-Model", requested_header.as_str());
     let _mock = mount_response_once(&server, response).await;
 
-    let mut builder = test_codex().with_model(REQUESTED_MODEL);
+    let mut builder = test_ava().with_model(REQUESTED_MODEL);
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_text_turn(&test, "trigger casing check"))
         .await?;
 
     let mut reroute_count = 0;
     let mut warning_count = 0;
     loop {
-        let event = wait_for_event(&test.codex, |_| true).await;
+        let event = wait_for_event(&test.ava-code, |_| true).await;
         match event {
             EventMsg::ModelReroute(_) => reroute_count += 1,
             EventMsg::Warning(warning)
@@ -325,10 +325,10 @@ async fn model_verification_emits_structured_event_without_reroute_or_warning() 
     ]));
     let _mock = mount_response_once(&server, response).await;
 
-    let mut builder = test_codex().with_model("gpt-5.5");
+    let mut builder = test_ava().with_model("gpt-5.5");
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_text_turn(&test, "trigger model verification"))
         .await?;
 
@@ -337,7 +337,7 @@ async fn model_verification_emits_structured_event_without_reroute_or_warning() 
     let mut warning_count = 0;
     let mut warning_item_count = 0;
     loop {
-        let event = wait_for_event(&test.codex, |_| true).await;
+        let event = wait_for_event(&test.ava-code, |_| true).await;
         match event {
             EventMsg::ModelVerification(event) => {
                 assert_eq!(
@@ -401,10 +401,10 @@ async fn model_verification_only_emits_once_per_turn() -> Result<()> {
     ]));
     let _mock = mount_response_sequence(&server, vec![first_response, second_response]).await;
 
-    let mut builder = test_codex().with_model(SERVER_MODEL);
+    let mut builder = test_ava().with_model(SERVER_MODEL);
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_text_turn(
             &test,
             "trigger follow-up model verification",
@@ -413,7 +413,7 @@ async fn model_verification_only_emits_once_per_turn() -> Result<()> {
 
     let mut verification_count = 0;
     loop {
-        let event = wait_for_event(&test.codex, |_| true).await;
+        let event = wait_for_event(&test.ava-code, |_| true).await;
         match event {
             EventMsg::ModelVerification(_) => verification_count += 1,
             EventMsg::Warning(warning) if warning.message.contains("high-risk cyber activity") => {

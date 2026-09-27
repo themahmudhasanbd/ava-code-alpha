@@ -1,11 +1,11 @@
-load("//:defs.bzl", "MACOS_WEBRTC_RUSTC_LINK_FLAGS", "codex_rust_crate")
+load("//:defs.bzl", "MACOS_WEBRTC_RUSTC_LINK_FLAGS", "ava_rust_crate")
 load("//bazel/platforms:release_binaries.bzl", "multiplatform_binaries")
-load("//bazel/rules:e2e_benchmark.bzl", "codex_e2e_benchmark")
+load("//bazel/rules:e2e_benchmark.bzl", "ava_e2e_benchmark")
 
-codex_rust_crate(
+ava_rust_crate(
     name = "cli",
-    binaries_with_build_commit = ["codex"],
-    crate_name = "codex_cli",
+    binaries_with_build_commit = ["ava"],
+    crate_name = "ava_cli",
     extra_binaries = [
         "//ava-rs/bwrap:bwrap",
     ],
@@ -14,10 +14,10 @@ codex_rust_crate(
 )
 
 multiplatform_binaries(
-    name = "codex",
+    name = "ava",
 )
 
-codex_e2e_benchmark(
-    name = "codex-help",
-    binaries = [":codex"],
+ava_e2e_benchmark(
+    name = "ava-help",
+    binaries = [":ava"],
 )

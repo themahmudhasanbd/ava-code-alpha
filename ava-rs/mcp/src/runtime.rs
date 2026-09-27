@@ -18,27 +18,27 @@ use std::time::Duration;
 
 use arc_swap::ArcSwap;
 use async_channel::Sender;
-use codex_config::types::McpServerDisabledReason;
-use codex_connectors::ConnectorRuntimeContextKey;
-use codex_connectors::ConnectorRuntimeManager;
-use codex_exec_server::Environment;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::HttpClient;
-use codex_exec_server::RouteAwareHttpClient;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_protocol::ThreadId;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::McpResourceOriginCheckpoint;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::with_http_headers_helper;
-use codex_utils_path_uri::PathUri;
+use ava_config::types::McpServerDisabledReason;
+use ava_connectors::ConnectorRuntimeContextKey;
+use ava_connectors::ConnectorRuntimeManager;
+use ava_exec_server::Environment;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::HttpClient;
+use ava_exec_server::RouteAwareHttpClient;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_protocol::ThreadId;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::McpResourceOriginCheckpoint;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::with_http_headers_helper;
+use ava_utils_path_uri::PathUri;
 use rmcp::model::ReadResourceRequestParams;
 use rmcp::model::ReadResourceResult;
 use rmcp::model::RequestId;
@@ -49,14 +49,14 @@ use tokio_util::sync::CancellationToken;
 
 use crate::McpConfig;
 use crate::binding::McpBinding;
-use crate::client_tool_catalog::CodexAppsToolSnapshot;
+use crate::client_tool_catalog::AvaAppsToolSnapshot;
 use crate::connection_manager::BindingCatalogRevision;
 use crate::connection_manager::McpConnectionSet;
 use crate::elicitation::ElicitationLifecycle;
 use crate::elicitation::ElicitationRequestRouter;
 use crate::elicitation::ElicitationReviewerHandle;
 use crate::event_stream::McpEventStreamOpener;
-use crate::mcp::CODEX_APPS_MCP_SERVER_NAME;
+use crate::mcp::AVA_APPS_MCP_SERVER_NAME;
 use crate::resource_client::McpResourceServerCacheKey;
 use crate::resource_origin::ResourceOrigins;
 use crate::server::EffectiveMcpServer;
@@ -83,11 +83,11 @@ pub struct McpRuntimeInput {
     pub tx_event: Option<Sender<Event>>,
     pub startup_cancellation_token: CancellationToken,
     pub runtime_context: McpRuntimeContext,
-    pub codex_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
+    pub ava_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
     pub tool_catalog_cache: McpToolCatalogCache,
-    pub codex_apps_tools_cache_key: ConnectorRuntimeContextKey,
+    pub ava_apps_tools_cache_key: ConnectorRuntimeContextKey,
     pub client_mcp_extensions: ClientMcpExtensions,
-    pub auth: Option<CodexAuth>,
+    pub auth: Option<AvaAuth>,
     pub auth_manager: Option<Arc<AuthManager>>,
     /// Whether the owning thread may prompt the user; automatic decisions remain available.
     pub allow_user_interaction: bool,
@@ -95,7 +95,7 @@ pub struct McpRuntimeInput {
     pub elicitation_lifecycle: Option<ElicitationLifecycle>,
 }
 
-/// Owns all mutable MCP state for one Codex thread.
+/// Owns all mutable MCP state for one Ava thread.
 ///
 /// Publication replaces the latest state atomically. Existing bindings retain
 /// their exact connections and configuration for as long as they are needed.
@@ -117,7 +117,7 @@ struct EventStreamCancellation {
 struct PublishedMcpRuntime {
     connections: Arc<McpConnectionSet>,
     config: Option<Arc<McpConfig>>,
-    auth: Option<CodexAuth>,
+    auth: Option<AvaAuth>,
     auth_token: Option<String>,
     auth_generation: Arc<()>,
     plugins_available: bool,
@@ -148,7 +148,7 @@ fn ensure_host_owned_apps_registration(
 
 impl PublishedMcpRuntime {
     // Shared by dirty detection and cache-key publication so their auth rules agree.
-    fn auth_matches(&self, auth: Option<&CodexAuth>) -> bool {
+    fn auth_matches(&self, auth: Option<&AvaAuth>) -> bool {
         match (self.auth.as_ref(), auth) {
             (Some(previous), Some(latest)) => {
                 previous == latest
@@ -294,9 +294,9 @@ impl McpRuntime {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .find(call_id)?;
         let binding = self
-            .current_binding_for_call(crate::CODEX_APPS_MCP_SERVER_NAME)
+            .current_binding_for_call(crate::AVA_APPS_MCP_SERVER_NAME)
             .await
-            .ok_or_else(|| anyhow::anyhow!("codex_apps MCP server is unavailable"))?;
+            .ok_or_else(|| anyhow::anyhow!("ava_apps MCP server is unavailable"))?;
 
         origin.read(&binding, thread_id, uri).await
     }
@@ -325,7 +325,7 @@ impl McpRuntime {
     /// Starts fresh connections and returns their complete, refreshed Apps catalog.
     pub async fn replace_fresh(&self, input: McpRuntimeInput) -> anyhow::Result<Vec<ToolInfo>> {
         self.publish(input, /*previous*/ None).await;
-        self.latest_hard_refresh_codex_apps_tools_cache().await
+        self.latest_hard_refresh_ava_apps_tools_cache().await
     }
 
     async fn publish(&self, input: McpRuntimeInput, previous: Option<&McpConnectionSet>) {
@@ -352,14 +352,14 @@ impl McpRuntime {
             )
             .await,
         );
-        let hosted_event_server_retained = connections.contains_server(CODEX_APPS_MCP_SERVER_NAME)
+        let hosted_event_server_retained = connections.contains_server(AVA_APPS_MCP_SERVER_NAME)
             && config
                 .mcp_server_catalog
-                .server(CODEX_APPS_MCP_SERVER_NAME)
+                .server(AVA_APPS_MCP_SERVER_NAME)
                 .is_some_and(|registration| {
                     registration
                         .source()
-                        .is_host_owned_apps(CODEX_APPS_MCP_SERVER_NAME, registration.config())
+                        .is_host_owned_apps(AVA_APPS_MCP_SERVER_NAME, registration.config())
                 });
         let mut cancellation = self
             .event_stream_cancellation
@@ -488,7 +488,7 @@ impl McpRuntime {
     }
 
     /// Returns whether the published snapshot still belongs to the current credentials.
-    pub fn current_auth_matches(&self, auth: Option<&CodexAuth>) -> bool {
+    pub fn current_auth_matches(&self, auth: Option<&AvaAuth>) -> bool {
         self.current.load().auth_matches(auth)
     }
 
@@ -601,16 +601,16 @@ impl McpRuntime {
             .await
     }
 
-    pub async fn latest_hard_refresh_codex_apps_tools_cache(
+    pub async fn latest_hard_refresh_ava_apps_tools_cache(
         &self,
     ) -> anyhow::Result<Vec<ToolInfo>> {
         self.latest_connections()
-            .refresh_codex_apps_tools_for_discovery()
+            .refresh_ava_apps_tools_for_discovery()
             .await
     }
 
     /// Refreshes the published Apps client and returns its exact inventory and MCP eligibility.
-    pub async fn refresh_codex_apps_tools(&self) -> anyhow::Result<CodexAppsToolSnapshot> {
+    pub async fn refresh_ava_apps_tools(&self) -> anyhow::Result<AvaAppsToolSnapshot> {
         let current = self.current.load_full();
         let config = current
             .config
@@ -618,7 +618,7 @@ impl McpRuntime {
             .ok_or_else(|| anyhow::anyhow!("MCP runtime is not configured"))?;
         current
             .connections
-            .refresh_codex_apps_client_catalog(config)
+            .refresh_ava_apps_client_catalog(config)
             .await
     }
 
@@ -682,7 +682,7 @@ impl McpRuntime {
     pub async fn connection_statuses(
         &self,
         config: &McpConfig,
-    ) -> std::collections::HashMap<String, codex_protocol::mcp::McpServerConnectionStatus> {
+    ) -> std::collections::HashMap<String, ava_protocol::mcp::McpServerConnectionStatus> {
         let current = self.current.load_full();
         let Some(published_config) = current.config.as_ref() else {
             return HashMap::new();
@@ -701,11 +701,11 @@ impl McpRuntime {
         Arc::clone(&self.current.load().connections)
     }
 
-    pub(crate) fn latest_host_owned_codex_apps_connections(
+    pub(crate) fn latest_host_owned_ava_apps_connections(
         &self,
     ) -> anyhow::Result<Arc<McpConnectionSet>> {
         let current = self.current.load();
-        ensure_host_owned_apps_registration(&current, CODEX_APPS_MCP_SERVER_NAME)?;
+        ensure_host_owned_apps_registration(&current, AVA_APPS_MCP_SERVER_NAME)?;
         Ok(Arc::clone(&current.connections))
     }
 
@@ -721,7 +721,7 @@ impl McpRuntime {
             .cancel_event_streams_on_server_removal
             .subscribe();
         let current = self.current.load();
-        if server == CODEX_APPS_MCP_SERVER_NAME {
+        if server == AVA_APPS_MCP_SERVER_NAME {
             ensure_host_owned_apps_registration(&current, server)?;
         }
         Ok((
@@ -774,7 +774,7 @@ impl McpRuntime {
 #[serde(rename_all = "camelCase")]
 pub struct SandboxState {
     pub permission_profile: PermissionProfile,
-    pub codex_linux_sandbox_exe: Option<PathBuf>,
+    pub ava_linux_sandbox_exe: Option<PathBuf>,
     pub sandbox_cwd: PathUri,
     #[serde(default)]
     pub use_legacy_landlock: bool,
@@ -800,7 +800,7 @@ pub struct McpRuntimeContext {
 /// by both MCP runtime startup and standalone OAuth login.
 pub fn apply_http_headers_helper(
     client: Arc<dyn HttpClient>,
-    config: &codex_config::McpServerConfig,
+    config: &ava_config::McpServerConfig,
     local_process_cwd: PathBuf,
 ) -> Result<Arc<dyn HttpClient>, String> {
     if matches!(
@@ -809,7 +809,7 @@ pub fn apply_http_headers_helper(
     ) {
         return Err("the MCP server is disabled by managed requirements".to_string());
     }
-    let codex_config::McpServerTransportConfig::StreamableHttp {
+    let ava_config::McpServerTransportConfig::StreamableHttp {
         url,
         http_headers_helper: Some(command),
         ..
@@ -861,7 +861,7 @@ impl McpRuntimeContext {
     pub(crate) fn resolve_server_environment(
         &self,
         server_name: &str,
-        config: &codex_config::McpServerConfig,
+        config: &ava_config::McpServerConfig,
     ) -> Result<Option<Arc<Environment>>, String> {
         // Resolve `"local"` through the shared registry when available. Local
         // HTTP is the one current exception: it can use the ambient HTTP client
@@ -880,10 +880,10 @@ impl McpRuntimeContext {
 
         if config.is_local_environment() {
             return match config.transport {
-                codex_config::McpServerTransportConfig::Stdio { .. } => Err(format!(
+                ava_config::McpServerTransportConfig::Stdio { .. } => Err(format!(
                     "local stdio MCP server `{server_name}` requires a local environment"
                 )),
-                codex_config::McpServerTransportConfig::StreamableHttp { .. } => Ok(None),
+                ava_config::McpServerTransportConfig::StreamableHttp { .. } => Ok(None),
             };
         }
 
@@ -897,7 +897,7 @@ impl McpRuntimeContext {
     pub fn resolve_http_client(
         &self,
         server_name: &str,
-        config: &codex_config::McpServerConfig,
+        config: &ava_config::McpServerConfig,
     ) -> Result<Arc<dyn HttpClient>, String> {
         let environment = self.resolve_server_environment(server_name, config)?;
         self.http_client_for_server(config, environment.as_ref())
@@ -905,7 +905,7 @@ impl McpRuntimeContext {
 
     pub(crate) fn http_client_for_server(
         &self,
-        config: &codex_config::McpServerConfig,
+        config: &ava_config::McpServerConfig,
         environment: Option<&Arc<Environment>>,
     ) -> Result<Arc<dyn HttpClient>, String> {
         let client = match environment {
@@ -917,7 +917,7 @@ impl McpRuntimeContext {
 }
 
 pub(crate) fn emit_duration(metric: &str, duration: Duration, tags: &[(&str, &str)]) {
-    if let Some(metrics) = codex_otel::global() {
+    if let Some(metrics) = ava_otel::global() {
         let _ = metrics.record_duration(metric, duration, tags);
     }
 }
@@ -926,12 +926,12 @@ pub(crate) fn emit_duration(metric: &str, duration: Duration, tags: &[(&str, &st
 mod tests {
     use std::collections::HashMap;
 
-    use codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
-    use codex_config::McpServerConfig;
-    use codex_config::McpServerTransportConfig;
-    use codex_exec_server::EnvironmentManager;
-    use codex_exec_server_test_support::environment_manager_without_environments;
-    use codex_utils_path_uri::LegacyAppPathString;
+    use ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
+    use ava_config::McpServerConfig;
+    use ava_config::McpServerTransportConfig;
+    use ava_exec_server::EnvironmentManager;
+    use ava_exec_server_test_support::environment_manager_without_environments;
+    use ava_utils_path_uri::LegacyAppPathString;
     use pretty_assertions::assert_eq;
     use serde_json::Value;
 
@@ -982,9 +982,9 @@ mod tests {
 
     #[tokio::test]
     async fn cached_bindings_follow_the_clients_catalog_revision() -> anyhow::Result<()> {
-        let codex_home = tempfile::tempdir()?;
+        let ava_home = tempfile::tempdir()?;
         let cache_context = ConnectorRuntimeManager::<ToolInfo>::default().context(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             ConnectorRuntimeContextKey::personal(
                 /*account_id*/ None, /*chatgpt_user_id*/ None,
             ),
@@ -999,9 +999,9 @@ mod tests {
             .await?;
         // Complete the fixture's shared startup future before testing stable reuse.
         connections.list_all_tools().await;
-        let mut config = crate::mcp::tests::test_mcp_config(codex_home.path().to_path_buf());
+        let mut config = crate::mcp::tests::test_mcp_config(ava_home.path().to_path_buf());
         config.server_permission_profiles.insert(
-            CODEX_APPS_MCP_SERVER_NAME.to_string(),
+            AVA_APPS_MCP_SERVER_NAME.to_string(),
             PermissionProfile::default(),
         );
         let published = Arc::new(PublishedMcpRuntime {
@@ -1032,7 +1032,7 @@ mod tests {
         .expect("cached initial binding");
         assert!(Arc::ptr_eq(&before, &repeated));
 
-        connections.refresh_codex_apps_tools_for_discovery().await?;
+        connections.refresh_ava_apps_tools_for_discovery().await?;
 
         let refreshed = McpRuntime::binding_from_published_runtime(
             Arc::clone(&published),
@@ -1043,7 +1043,7 @@ mod tests {
         .expect("refreshed binding");
         assert!(!Arc::ptr_eq(&before, &refreshed));
         let call = refreshed
-            .prepare_call(CODEX_APPS_MCP_SERVER_NAME, "search")
+            .prepare_call(AVA_APPS_MCP_SERVER_NAME, "search")
             .expect("refreshed call");
         let error = call
             .call_with_preparation(/*requested_timeout*/ None, || async {
@@ -1144,7 +1144,7 @@ mod tests {
         .expect("current directory should convert to a URI");
         let sandbox_state = SandboxState {
             permission_profile: PermissionProfile::workspace_write(),
-            codex_linux_sandbox_exe: None,
+            ava_linux_sandbox_exe: None,
             sandbox_cwd,
             use_legacy_landlock: false,
         };

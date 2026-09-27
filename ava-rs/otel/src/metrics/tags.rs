@@ -1,7 +1,7 @@
 use crate::metrics::Result;
 use crate::metrics::validation::validate_tag_key;
 use crate::metrics::validation::validate_tag_value;
-use codex_utils_string::sanitize_metric_tag_value;
+use ava_utils_string::sanitize_metric_tag_value;
 
 pub const APP_VERSION_TAG: &str = "app.version";
 pub const AUTH_MODE_TAG: &str = "auth_mode";
@@ -12,17 +12,17 @@ pub const SESSION_SOURCE_TAG: &str = "session_source";
 
 const OTHER_ORIGINATOR_TAG_VALUE: &str = "other";
 const KNOWN_ORIGINATOR_TAG_VALUES: &[&str] = &[
-    "codex_desktop",
-    "codex-app-server",
-    "codex_mcp_server",
-    "codex_cli_rs",
-    "codex-tui",
-    "codex_vscode",
+    "ava_desktop",
+    "ava-app-server",
+    "ava_mcp_server",
+    "ava_cli_rs",
+    "ava-tui",
+    "ava_vscode",
     "none",
-    "codex_exec",
-    "codex-cli",
-    "codex_sdk_ts",
-    "codex-app-server-sdk",
+    "ava_exec",
+    "ava-cli",
+    "ava_sdk_ts",
+    "ava-app-server-sdk",
 ];
 
 /// Return a known low-cardinality originator tag value, or `other`.
@@ -87,7 +87,7 @@ mod tests {
         let tags = SessionMetricTagValues {
             auth_mode: Some("api_key"),
             session_source: "cli",
-            originator: "codex_cli",
+            originator: "ava_cli",
             service_name: Some("desktop_app"),
             model: "gpt-5.1",
             app_version: "1.2.3",
@@ -100,7 +100,7 @@ mod tests {
             vec![
                 (AUTH_MODE_TAG, "api_key"),
                 (SESSION_SOURCE_TAG, "cli"),
-                (ORIGINATOR_TAG, "codex_cli"),
+                (ORIGINATOR_TAG, "ava_cli"),
                 (SERVICE_NAME_TAG, "desktop_app"),
                 (MODEL_TAG, "gpt-5.1"),
                 (APP_VERSION_TAG, "1.2.3"),
@@ -113,7 +113,7 @@ mod tests {
         let tags = SessionMetricTagValues {
             auth_mode: None,
             session_source: "exec",
-            originator: "codex_exec",
+            originator: "ava_exec",
             service_name: None,
             model: "gpt-5.1",
             app_version: "1.2.3",
@@ -125,7 +125,7 @@ mod tests {
             tags,
             vec![
                 (SESSION_SOURCE_TAG, "exec"),
-                (ORIGINATOR_TAG, "codex_exec"),
+                (ORIGINATOR_TAG, "ava_exec"),
                 (MODEL_TAG, "gpt-5.1"),
                 (APP_VERSION_TAG, "1.2.3"),
             ]

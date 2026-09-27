@@ -44,14 +44,14 @@ use crate::terminal_palette::effective_stdout_color_level;
 use crate::tui::FrameRequester;
 pub(crate) use bottom_pane_view::BottomPaneView;
 pub(crate) use bottom_pane_view::ViewCompletion;
-use codex_app_server_protocol::SkillMetadata;
-use codex_app_server_protocol::ToolRequestUserInputParams;
-use codex_features::Features;
-use codex_file_search::FileMatch;
-use codex_plugin::PluginCapabilitySummary;
-use codex_protocol::ThreadId;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::user_input::TextElement;
+use ava_app_server_protocol::SkillMetadata;
+use ava_app_server_protocol::ToolRequestUserInputParams;
+use ava_features::Features;
+use ava_file_search::FileMatch;
+use ava_plugin::PluginCapabilitySummary;
+use ava_protocol::ThreadId;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::user_input::TextElement;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -2314,7 +2314,7 @@ mod tests {
     use crate::status_indicator_widget::StatusDetailsCapitalization;
     use crate::test_support::PathBufExt;
     use crate::test_support::test_path_buf;
-    use codex_app_server_protocol::CommandExecutionApprovalDecision;
+    use ava_app_server_protocol::CommandExecutionApprovalDecision;
     use crossterm::event::KeyCode;
     use crossterm::event::KeyEvent;
     use crossterm::event::KeyEventKind;
@@ -2359,7 +2359,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -2369,7 +2369,7 @@ mod tests {
     fn exec_request() -> ApprovalRequest {
         ApprovalRequest::Exec(ExecApprovalRequest {
             kind: Default::default(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             thread_label: None,
             id: "1".to_string(),
             environment_id: None,
@@ -2399,7 +2399,7 @@ mod tests {
             item_id: "call".into(),
             is_blocking: true,
             auto_resolution_ms: None,
-            questions: vec![codex_app_server_protocol::ToolRequestUserInputQuestion {
+            questions: vec![ava_app_server_protocol::ToolRequestUserInputQuestion {
                 id: "question".into(),
                 header: String::new(),
                 question: "Which way?".into(),
@@ -2620,7 +2620,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: true,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -2640,7 +2640,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: true,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -2673,7 +2673,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -2998,7 +2998,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3045,7 +3045,7 @@ mod tests {
             for x in 0..area.width {
                 row.push(buf[(x, y)].symbol().chars().next().unwrap_or(' '));
             }
-            if row.contains("Ask Codex") {
+            if row.contains("Ask Ava") {
                 found_composer = true;
                 break;
             }
@@ -3065,7 +3065,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3139,7 +3139,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3170,7 +3170,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3193,7 +3193,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3222,7 +3222,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3259,7 +3259,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3291,7 +3291,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3322,7 +3322,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3351,7 +3351,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3374,7 +3374,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(vec![SkillMetadata {
@@ -3403,7 +3403,7 @@ mod tests {
 
         while let Ok(ev) = rx.try_recv() {
             assert!(
-                !matches!(ev, AppEvent::CodexOp(Op::Interrupt)),
+                !matches!(ev, AppEvent::AvaOp(Op::Interrupt)),
                 "expected Esc to not send Op::Interrupt when dismissing skill popup"
             );
         }
@@ -3422,7 +3422,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3463,7 +3463,7 @@ mod tests {
 
         while let Ok(ev) = rx.try_recv() {
             assert!(
-                !matches!(ev, AppEvent::CodexOp(Op::Interrupt)),
+                !matches!(ev, AppEvent::AvaOp(Op::Interrupt)),
                 "expected Esc to not send Op::Interrupt while command popup is active"
             );
         }
@@ -3490,7 +3490,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3510,7 +3510,7 @@ mod tests {
 
         while let Ok(ev) = rx.try_recv() {
             assert!(
-                !matches!(ev, AppEvent::CodexOp(Op::Interrupt)),
+                !matches!(ev, AppEvent::AvaOp(Op::Interrupt)),
                 "expected Esc to not send Op::Interrupt while typing `/subagents`"
             );
         }
@@ -3526,7 +3526,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3555,7 +3555,7 @@ mod tests {
 
         while let Ok(ev) = rx.try_recv() {
             assert!(
-                !matches!(ev, AppEvent::CodexOp(Op::Interrupt)),
+                !matches!(ev, AppEvent::AvaOp(Op::Interrupt)),
                 "expected Esc release after dismissing agent picker to not interrupt"
             );
         }
@@ -3574,7 +3574,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3585,7 +3585,7 @@ mod tests {
         pane.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
         assert!(
-            matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt))),
+            matches!(rx.try_recv(), Ok(AppEvent::AvaOp(Op::Interrupt))),
             "expected Esc to send Op::Interrupt while a task is running"
         );
 
@@ -3593,7 +3593,7 @@ mod tests {
         pane.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
         assert!(matches!(
             rx.try_recv(),
-            Ok(AppEvent::CodexOp(Op::Interrupt))
+            Ok(AppEvent::AvaOp(Op::Interrupt))
         ));
     }
 
@@ -3616,7 +3616,7 @@ mod tests {
 
         pane.handle_key_event(KeyEvent::new(KeyCode::F(12), KeyModifiers::NONE));
         assert!(
-            matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt))),
+            matches!(rx.try_recv(), Ok(AppEvent::AvaOp(Op::Interrupt))),
             "expected configured key to interrupt while `/subagents` is being edited"
         );
 
@@ -3624,7 +3624,7 @@ mod tests {
         pane.handle_key_event(KeyEvent::new(KeyCode::F(12), KeyModifiers::NONE));
         assert!(matches!(
             rx.try_recv(),
-            Ok(AppEvent::CodexOp(Op::Interrupt))
+            Ok(AppEvent::AvaOp(Op::Interrupt))
         ));
     }
 
@@ -3699,7 +3699,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3747,7 +3747,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),
@@ -3825,7 +3825,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: true,
             skills: Some(Vec::new()),

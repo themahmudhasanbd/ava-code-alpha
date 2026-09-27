@@ -4,17 +4,17 @@ use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_network_proxy::PROXY_ACTIVE_ENV_KEY;
-use codex_network_proxy::strip_managed_proxy_env;
-use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
-use codex_protocol::shell_environment;
-use codex_shell_command::shell_detect::ShellType;
-use codex_shell_command::shell_snapshot::CapturedSnapshot;
-use codex_shell_command::shell_snapshot::SnapshotCaptureOptions;
-use codex_shell_command::shell_snapshot::SnapshotStartup;
-use codex_shell_command::shell_snapshot::snapshot_capture_script;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_network_proxy::PROXY_ACTIVE_ENV_KEY;
+use ava_network_proxy::strip_managed_proxy_env;
+use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
+use ava_protocol::shell_environment;
+use ava_shell_command::shell_detect::ShellType;
+use ava_shell_command::shell_snapshot::CapturedSnapshot;
+use ava_shell_command::shell_snapshot::SnapshotCaptureOptions;
+use ava_shell_command::shell_snapshot::SnapshotStartup;
+use ava_shell_command::shell_snapshot::snapshot_capture_script;
+use ava_utils_path_uri::PathUri;
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 use tokio::sync::Mutex;
@@ -226,7 +226,7 @@ impl ShellSnapshotCache {
                 end -= 1;
             }
             let (chunk, remaining) = state.split_at(end);
-            let name = format!("__CODEX_SHELL_SNAPSHOT_STATE_{}", state_variables.len());
+            let name = format!("__AVA_SHELL_SNAPSHOT_STATE_{}", state_variables.len());
             prepared.env.insert(name.clone(), chunk.to_string());
             state_variables.push(name);
             state = remaining;

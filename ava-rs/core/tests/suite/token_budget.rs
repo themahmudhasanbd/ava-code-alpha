@@ -1,30 +1,30 @@
 use anyhow::Result;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::TokenBudgetConfig;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_model_provider_info::built_in_model_providers;
-use codex_protocol::config_types::AutoCompactTokenLimitScope;
-use codex_protocol::items::TurnItem;
-use codex_protocol::openai_models::ModelTokenBudgetConfig;
-use codex_protocol::protocol::CONTEXT_WINDOW_CLOSE_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_CLOSE_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_OPEN_TAG;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ItemStartedEvent;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_skills_extension::SkillsExtensionConfig;
-use codex_skills_extension::install;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::TokenBudgetConfig;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_model_provider_info::built_in_model_providers;
+use ava_protocol::config_types::AutoCompactTokenLimitScope;
+use ava_protocol::items::TurnItem;
+use ava_protocol::openai_models::ModelTokenBudgetConfig;
+use ava_protocol::protocol::CONTEXT_WINDOW_CLOSE_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_CLOSE_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_OPEN_TAG;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ItemStartedEvent;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_skills_extension::SkillsExtensionConfig;
+use ava_skills_extension::install;
 use core_test_support::PathBufExt;
 use core_test_support::assert_regex_match;
 use core_test_support::context_snapshot;
@@ -44,8 +44,8 @@ use core_test_support::responses::sse_completed;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::stdio_server_bin;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_mcp_server;
@@ -162,12 +162,12 @@ fn write_token_budget_compact_hooks(home: &Path) {
     std::fs::write(home.join("hooks.json"), hooks.to_string()).expect("write hooks.json");
 }
 
-async fn assert_context_compaction_item_lifecycle(codex: &std::sync::Arc<codex_core::CodexThread>) {
+async fn assert_context_compaction_item_lifecycle(ava: &std::sync::Arc<ava_core::AvaThread>) {
     let mut saw_compaction_started = false;
     let mut saw_compaction_completed = false;
 
     loop {
-        let event = codex.next_event().await.expect("next event");
+        let event = ava.next_event().await.expect("next event");
         match event.msg {
             EventMsg::ItemStarted(ItemStartedEvent {
                 item: TurnItem::ContextCompaction(_),
@@ -199,7 +199,7 @@ async fn token_budget_context_is_only_emitted_with_full_context() -> Result<()> 
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_context_window = Some(CONFIGURED_CONTEXT_WINDOW);
             config
@@ -253,12 +253,12 @@ async fn token_budget_guidance_precedes_standalone_context_window(
     )
     .await;
     let guidance_message = "Preserve important state before compaction.";
-    let backend_url = format!("{}/backend-api/codex", server.uri());
-    let test = test_codex()
+    let backend_url = format!("{}/backend-api/ava", server.uri());
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", |model| {
             model.supports_experimental_context = true;
         })
-        .with_auth(CodexAuth::from_external_chatgpt_tokens(
+        .with_auth(AvaAuth::from_external_chatgpt_tokens(
             "header.e30.signature",
             "account-123",
             Some("plus"),
@@ -306,13 +306,13 @@ async fn token_budget_guidance_precedes_standalone_context_window(
     Ok(())
 }
 
-#[test_case("OpenAI", "/backend-api/codex", None, true, true; "codex_backend")]
-#[test_case("OpenAI", "/backend-api/codex", None, false, false; "unsupported_model")]
-#[test_case("Custom", "/backend-api/codex", None, true, false; "custom_provider")]
-#[test_case("OpenAI", "/v1", None, true, false; "non_codex_endpoint")]
-#[test_case("OpenAI", "/backend-api/codex", Some("test-provider-token"), true, false; "provider_credentials")]
+#[test_case("OpenAI", "/backend-api/ava", None, true, true; "ava_backend")]
+#[test_case("OpenAI", "/backend-api/ava", None, false, false; "unsupported_model")]
+#[test_case("Custom", "/backend-api/ava", None, true, false; "custom_provider")]
+#[test_case("OpenAI", "/v1", None, true, false; "non_ava_endpoint")]
+#[test_case("OpenAI", "/backend-api/ava", Some("test-provider-token"), true, false; "provider_credentials")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn experimental_context_requires_capable_model_and_codex_backend(
+async fn experimental_context_requires_capable_model_and_ava_backend(
     provider_name: &'static str,
     base_path: &'static str,
     bearer_token: Option<&'static str>,
@@ -324,11 +324,11 @@ async fn experimental_context_requires_capable_model_and_codex_backend(
     let server = start_mock_server().await;
     let response = mount_sse_once(&server, sse_completed("resp-1")).await;
     let base_url = format!("{}{base_path}", server.uri());
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", move |model| {
             model.supports_experimental_context = supports_context;
         })
-        .with_auth(CodexAuth::from_external_chatgpt_tokens(
+        .with_auth(AvaAuth::from_external_chatgpt_tokens(
             "header.e30.signature",
             "account-123",
             Some("plus"),
@@ -379,9 +379,9 @@ async fn token_budget_history_notes_requires_capable_starting_model(
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let backend_url = format!("{}/backend-api/codex", server.uri());
-    let result = test_codex()
-        .with_auth(CodexAuth::from_external_chatgpt_tokens(
+    let backend_url = format!("{}/backend-api/ava", server.uri());
+    let result = test_ava()
+        .with_auth(AvaAuth::from_external_chatgpt_tokens(
             "header.e30.signature",
             "account-123",
             Some("plus"),
@@ -448,7 +448,7 @@ async fn token_budget_uses_model_message_defaults() -> Result<()> {
     model_defaults.enabled = true;
     model_defaults.use_history_notes_extension = true;
     let expected_guidance = model_defaults.guidance_message.clone();
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", move |model_info| {
             model_info.supports_experimental_context = true;
             model_info
@@ -489,7 +489,7 @@ async fn token_budget_explicit_default_template_overrides_model_defaults() -> Re
 
     let server = start_mock_server().await;
     let response = mount_sse_once(&server, sse_completed("resp-1")).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             let default_template = TokenBudgetConfig::default().reminder_message_template;
             std::fs::write(
@@ -540,9 +540,9 @@ async fn token_budget_defaults_follow_the_active_model(activation: Feature) -> R
         vec![sse_completed("resp-1"), sse_completed("resp-2")],
     )
     .await;
-    let backend_url = format!("{}/backend-api/codex", server.uri());
-    let test = test_codex()
-        .with_auth(CodexAuth::from_external_chatgpt_tokens(
+    let backend_url = format!("{}/backend-api/ava", server.uri());
+    let test = test_ava()
+        .with_auth(AvaAuth::from_external_chatgpt_tokens(
             "header.e30.signature",
             "account-123",
             Some("plus"),
@@ -580,20 +580,20 @@ async fn token_budget_defaults_follow_the_active_model(activation: Feature) -> R
 
     test.submit_turn("inspect first-model guidance").await?;
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some("gpt-5.4".to_string()),
             ..Default::default()
         },
     )
     .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "inspect second-model guidance".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -652,7 +652,7 @@ async fn token_budget_ignores_invalid_model_message_defaults() -> Result<()> {
     ] {
         let server = start_mock_server().await;
         let response = mount_sse_once(&server, sse_completed("resp-1")).await;
-        let test = test_codex()
+        let test = test_ava()
             .with_model_info_override("gpt-5.2", move |model_info| {
                 model_info
                     .model_messages
@@ -692,7 +692,7 @@ async fn model_token_budget_defaults_do_not_enable_disabled_feature() -> Result<
 
     let server = start_mock_server().await;
     let response = mount_sse_once(&server, sse_completed("resp-1")).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", |model_info| {
             model_info
                 .model_messages
@@ -730,7 +730,7 @@ async fn token_budget_context_injects_plain_thread_hint_text() -> Result<()> {
 
     let server = start_mock_server().await;
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.model_context_window = Some(CONFIGURED_CONTEXT_WINDOW);
             config
@@ -773,7 +773,7 @@ async fn token_budget_context_injects_plain_thread_hint_text() -> Result<()> {
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, "notes").await?;
+    wait_for_mcp_server(&test.ava-code, "notes").await?;
     let responses = mount_sse_sequence(
         &server,
         vec![sse(vec![
@@ -825,7 +825,7 @@ async fn token_budget_reminder_emits_after_crossing_compaction_threshold() -> Re
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_context_window = Some(10_000);
             config.token_budget = Some(TokenBudgetConfig {
@@ -881,7 +881,7 @@ async fn token_budget_reminder_uses_body_after_prefix_window() -> Result<()> {
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_context_window = Some(10_000);
             config.model_auto_compact_token_limit = Some(1_000);
@@ -952,7 +952,7 @@ async fn get_context_remaining_returns_token_budget_remaining_fragment() -> Resu
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_context_window = Some(10_000);
             config
@@ -1016,7 +1016,7 @@ async fn get_context_remaining_uses_body_after_prefix_window() -> Result<()> {
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_context_window = Some(10_000);
             config.model_auto_compact_token_limit = Some(7_000);
@@ -1073,7 +1073,7 @@ async fn get_context_remaining_returns_unknown_when_threshold_is_unbounded() -> 
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", |model_info| {
             model_info.context_window = None;
             model_info.max_context_window = None;
@@ -1136,7 +1136,7 @@ async fn token_budget_context_uses_new_window_after_compaction(
     model_provider.base_url = Some(format!("{}/v1", server.uri()));
     model_provider.supports_websockets = false;
 
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.model_provider = model_provider;
             config.model_context_window = Some(CONFIGURED_CONTEXT_WINDOW);
@@ -1155,7 +1155,7 @@ async fn token_budget_context_uses_new_window_after_compaction(
         .await?;
 
     if retain_client_developer_messages {
-        test.codex
+        test.ava-code
             .inject_response_items(vec![serde_json::from_value(json!({
                 "type": "message",
                 "role": "developer",
@@ -1164,8 +1164,8 @@ async fn token_budget_context_uses_new_window_after_compaction(
             .await?;
     }
     test.submit_turn("before compact").await?;
-    test.codex.submit(Op::Compact).await?;
-    assert_context_compaction_item_lifecycle(&test.codex).await;
+    test.ava-code.submit(Op::Compact).await?;
+    assert_context_compaction_item_lifecycle(&test.ava-code).await;
     test.submit_turn("after compact").await?;
 
     let requests = responses.requests();
@@ -1177,7 +1177,7 @@ async fn token_budget_context_uses_new_window_after_compaction(
         token_budget_window_ids(&initial_token_budget[0], "/root");
     let initial_turn_metadata: Value = serde_json::from_str(
         &requests[0]
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("initial context window metadata"),
     )?;
     assert_eq!(
@@ -1193,7 +1193,7 @@ async fn token_budget_context_uses_new_window_after_compaction(
     ) = token_budget_window_ids(&post_compaction_token_budget[0], "/root");
     let post_compaction_turn_metadata: Value = serde_json::from_str(
         &requests[1]
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("post-compaction context window metadata"),
     )?;
     assert_eq!(
@@ -1234,7 +1234,7 @@ async fn token_budget_compaction_runs_compact_hooks() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(write_token_budget_compact_hooks)
         .with_config(|config| {
             config.model_context_window = Some(CONFIGURED_CONTEXT_WINDOW);
@@ -1247,9 +1247,9 @@ async fn token_budget_compaction_runs_compact_hooks() -> Result<()> {
         .build(&server)
         .await?;
 
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
 
-    let pre_compact = wait_for_event_match(&test.codex, |event| match event {
+    let pre_compact = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::HookCompleted(completed)
             if completed.run.event_name == HookEventName::PreCompact =>
         {
@@ -1260,7 +1260,7 @@ async fn token_budget_compaction_runs_compact_hooks() -> Result<()> {
     .await;
     assert_eq!(pre_compact.run.status, HookRunStatus::Completed);
 
-    let post_compact = wait_for_event_match(&test.codex, |event| match event {
+    let post_compact = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::HookCompleted(completed)
             if completed.run.event_name == HookEventName::PostCompact =>
         {
@@ -1270,7 +1270,7 @@ async fn token_budget_compaction_runs_compact_hooks() -> Result<()> {
     })
     .await;
     assert_eq!(post_compact.run.status, HookRunStatus::Completed);
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1308,7 +1308,7 @@ async fn token_budget_mid_turn_auto_compaction_resets_before_active_follow_up(
     model_provider.name = "OpenAI (test)".into();
     model_provider.base_url = Some(format!("{}/v1", server.uri()));
     model_provider.supports_websockets = false;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", |model_info| {
             model_info
                 .model_messages
@@ -1340,7 +1340,7 @@ async fn token_budget_mid_turn_auto_compaction_resets_before_active_follow_up(
         .await?;
 
     if retain_client_developer_messages {
-        test.codex
+        test.ava-code
             .inject_response_items(vec![serde_json::from_value(json!({
                 "type": "message",
                 "role": "developer",
@@ -1441,7 +1441,7 @@ async fn token_budget_auto_compact_fallback_uses_buffer_until_new_context() -> R
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.name = "OpenAI (test)".into();
             config.model_context_window = Some(50_000);
@@ -1534,7 +1534,7 @@ async fn token_budget_auto_compact_fallback_rolls_over_after_buffer() -> Result<
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.model_provider.name = "OpenAI (test)".into();
             config.model_context_window = Some(50_000);
@@ -1612,7 +1612,7 @@ async fn new_context_tool_skips_auto_compact_fallback() -> Result<()> {
         orchestrator_skills_enabled: config.orchestrator_skills_enabled,
         shadow_selection_enabled: config.features.enabled(Feature::SkillSearch),
     });
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             config.update_plan_enabled = true;

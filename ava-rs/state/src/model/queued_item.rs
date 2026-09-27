@@ -1,5 +1,5 @@
 use anyhow::Result;
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 use sqlx::Row;
 use sqlx::sqlite::SqliteRow;
 

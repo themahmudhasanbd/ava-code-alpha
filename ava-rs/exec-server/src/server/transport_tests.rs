@@ -1,11 +1,11 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCNotification;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::JSONRPCResponse;
-use codex_exec_server_protocol::RequestId;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCNotification;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::JSONRPCResponse;
+use ava_exec_server_protocol::RequestId;
 use pretty_assertions::assert_eq;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncWriteExt;
@@ -63,8 +63,8 @@ async fn stdio_listen_transport_serves_initialize() {
         server_writer,
         test_runtime_paths(),
         crate::ExecServerTelemetry::default(),
-        codex_http_client::HttpClientFactory::new(
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+        ava_http_client::HttpClientFactory::new(
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
         RequestDispatchMode::Inline,
     ));
@@ -166,7 +166,7 @@ async fn write_jsonrpc_line(writer: &mut tokio::io::DuplexStream, message: &JSON
 fn test_runtime_paths() -> ExecServerRuntimePaths {
     ExecServerRuntimePaths::new(
         std::env::current_exe().expect("current exe"),
-        /*codex_linux_sandbox_exe*/ None,
+        /*ava_linux_sandbox_exe*/ None,
     )
     .expect("runtime paths")
 }

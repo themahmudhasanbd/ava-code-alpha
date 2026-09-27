@@ -3,12 +3,12 @@
 
 use super::LocalAgentControl;
 use crate::agent::types::AgentExecutionGuard;
-use crate::codex_thread::CodexThread;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionSource;
+use crate::ava_thread::AvaThread;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionSource;
 use std::sync::Arc;
 use std::sync::OnceLock;
 use std::sync::atomic::AtomicUsize;
@@ -33,8 +33,8 @@ impl Drop for LocalExecutionPermit {
 impl LocalAgentControl {
     pub(crate) async fn ensure_execution_capacity_for_turn_start(
         &self,
-        thread: &CodexThread,
-    ) -> CodexResult<()> {
+        thread: &AvaThread,
+    ) -> AvaResult<()> {
         if thread.session.active_turn.lock().await.is_some() {
             return Ok(());
         }
@@ -49,7 +49,7 @@ impl LocalAgentControl {
         &self,
         multi_agent_version: MultiAgentVersion,
         session_source: &SessionSource,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         if !is_execution_limited(multi_agent_version, session_source) {
             return Ok(());
         }
@@ -57,7 +57,7 @@ impl LocalAgentControl {
         if self.agent_execution_limiter.has_capacity() {
             Ok(())
         } else {
-            Err(CodexErr::new(CodexErrorDetails::AgentLimitReached {
+            Err(AvaErr::new(AvaErrorDetails::AgentLimitReached {
                 max_threads,
             }))
         }

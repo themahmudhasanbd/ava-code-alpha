@@ -9,18 +9,18 @@ use std::path::Path;
 
 pub fn detect_recent_cla_sessions(
     external_agent_home: &Path,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> io::Result<Vec<ExternalAgentSessionMigration>> {
     detect_recent_cla_sessions_with_limits(
         external_agent_home,
-        codex_home,
+        ava_home,
         ExternalAgentSessionImportLimits::default(),
     )
 }
 
 pub(crate) fn detect_recent_cla_sessions_with_limits(
     external_agent_home: &Path,
-    codex_home: &Path,
+    ava_home: &Path,
     limits: ExternalAgentSessionImportLimits,
 ) -> io::Result<Vec<ExternalAgentSessionMigration>> {
     let projects_root = external_agent_home.join("projects");
@@ -56,7 +56,7 @@ pub(crate) fn detect_recent_cla_sessions_with_limits(
         }
     }
     detect_recent_sessions(
-        codex_home, candidates, /*require_existing_cwd*/ true, limits,
+        ava_home, candidates, /*require_existing_cwd*/ true, limits,
     )
 }
 
@@ -64,7 +64,7 @@ pub(crate) fn detect_recent_cla_sessions_with_limits(
 mod tests {
     use super::*;
     use crate::sessions::ledger::record_imported_session;
-    use codex_protocol::ThreadId;
+    use ava_protocol::ThreadId;
     use serde_json::Value as JsonValue;
     use std::fs::FileTimes;
     use std::fs::OpenOptions;

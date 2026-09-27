@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 
-use codex_otel::MetricsClient;
-use codex_otel::MetricsConfig;
-use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
+use ava_otel::MetricsClient;
+use ava_otel::MetricsConfig;
+use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
 use opentelemetry_sdk::metrics::InMemoryMetricExporter;
 use opentelemetry_sdk::metrics::data::AggregatedMetrics;
 use opentelemetry_sdk::metrics::data::MetricData;
@@ -49,7 +49,7 @@ async fn snapshot_failure_retries_are_bounded_and_single_flight(
             "-lc".to_string(),
             "true".to_string(),
         ],
-        cwd: codex_utils_path_uri::PathUri::from_host_native_path(home.path())?,
+        cwd: ava_utils_path_uri::PathUri::from_host_native_path(home.path())?,
         env: HashMap::from([
             (
                 "HOME".to_string(),
@@ -77,7 +77,7 @@ async fn snapshot_failure_retries_are_bounded_and_single_flight(
     let metrics = MetricsClient::new(
         MetricsConfig::in_memory(
             "test",
-            "codex-exec-server",
+            "ava-exec-server",
             env!("CARGO_PKG_VERSION"),
             InMemoryMetricExporter::default(),
         )
@@ -171,7 +171,7 @@ async fn snapshot_failure_retries_are_bounded_and_single_flight(
         .flat_map(opentelemetry_sdk::metrics::data::ScopeMetrics::metrics)
     {
         match metric.name() {
-            "codex.shell_snapshot" => {
+            "ava.shell_snapshot" => {
                 let AggregatedMetrics::U64(MetricData::Sum(sum)) = metric.data() else {
                     panic!("expected shell snapshot counter");
                 };
@@ -183,7 +183,7 @@ async fn snapshot_failure_retries_are_bounded_and_single_flight(
                     counters.insert(tags, point.value());
                 }
             }
-            "codex.shell_snapshot.duration_ms" => {
+            "ava.shell_snapshot.duration_ms" => {
                 let AggregatedMetrics::F64(MetricData::Histogram(histogram)) = metric.data() else {
                     panic!("expected shell snapshot duration histogram");
                 };
@@ -324,4 +324,4 @@ fn snapshot_caches_only_unmanaged_proxy_state() {
         assert_eq!(snapshot.environment, expected);
     }
 }
-use codex_shell_command::shell_detect::ShellType;
+use ava_shell_command::shell_detect::ShellType;

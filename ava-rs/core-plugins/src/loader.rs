@@ -21,37 +21,37 @@ use crate::remote_plugin_id_resolver::RemotePluginIdResolver;
 use crate::store::PluginStore;
 use crate::store::plugin_version_for_source;
 use crate::store::plugin_version_for_source_with_fallback_manifest;
-use codex_config::ConfigLayerStack;
-use codex_config::HooksFile;
-use codex_config::SkillConfigRules;
-use codex_config::skill_config_rules_from_stack;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_config::types::PluginConfig;
-use codex_config::types::PluginMcpServerConfig;
-use codex_connectors::parse_plugin_app_config;
-use codex_connectors::parse_plugin_app_config_value;
-use codex_mcp::parse_agent_plugin_mcp_config;
-use codex_mcp::parse_plugin_mcp_config;
-use codex_plugin::AppDeclaration;
-use codex_plugin::LoadedPlugin;
-use codex_plugin::PluginCapabilitySummary;
-use codex_plugin::PluginHookSource;
-use codex_plugin::PluginId;
-use codex_plugin::PluginIdError;
-use codex_plugin::app_connector_ids_from_declarations;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::protocol::Product;
-use codex_skills::SkillMetadata;
-use codex_skills::SkillRootLoadRequest;
-use codex_skills::SkillRootLoader;
-use codex_skills::SkillRootSnapshots;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
-use codex_utils_plugins::SkillDiscoveryMode;
-use codex_utils_plugins::find_plugin_manifest_path;
-use codex_utils_plugins::migrated_command_skills_root;
+use ava_config::ConfigLayerStack;
+use ava_config::HooksFile;
+use ava_config::SkillConfigRules;
+use ava_config::skill_config_rules_from_stack;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_config::types::PluginConfig;
+use ava_config::types::PluginMcpServerConfig;
+use ava_connectors::parse_plugin_app_config;
+use ava_connectors::parse_plugin_app_config_value;
+use ava_mcp::parse_agent_plugin_mcp_config;
+use ava_mcp::parse_plugin_mcp_config;
+use ava_plugin::AppDeclaration;
+use ava_plugin::LoadedPlugin;
+use ava_plugin::PluginCapabilitySummary;
+use ava_plugin::PluginHookSource;
+use ava_plugin::PluginId;
+use ava_plugin::PluginIdError;
+use ava_plugin::app_connector_ids_from_declarations;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::protocol::Product;
+use ava_skills::SkillMetadata;
+use ava_skills::SkillRootLoadRequest;
+use ava_skills::SkillRootLoader;
+use ava_skills::SkillRootSnapshots;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
+use ava_utils_plugins::SkillDiscoveryMode;
+use ava_utils_plugins::find_plugin_manifest_path;
+use ava_utils_plugins::migrated_command_skills_root;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -167,7 +167,7 @@ async fn load_plugins_from_layer_stack_with_scope(
     scope: PluginLoadScope<'_>,
 ) -> Vec<LoadedPlugin<McpServerConfig>> {
     let configured_plugins = merge_configured_plugins_with_remote_installed(
-        configured_plugins_from_stack(config_layer_stack, store.codex_home().as_path()),
+        configured_plugins_from_stack(config_layer_stack, store.ava_home().as_path()),
         extra_plugins,
         store,
         remote_global_catalog_active,
@@ -372,13 +372,13 @@ pub fn remote_installed_plugins_to_config(
 }
 
 pub fn refresh_curated_plugin_cache(
-    codex_home: &Path,
+    ava_home: &Path,
     plugin_version: &str,
     configured_curated_plugin_ids: &[PluginId],
 ) -> Result<bool, String> {
     let cache_plugin_version = curated_plugin_cache_version(plugin_version);
-    let store = PluginStore::try_new(codex_home.to_path_buf()).map_err(|err| err.to_string())?;
-    let curated_marketplace_paths = curated_marketplace_paths_for_cache_refresh(codex_home)?;
+    let store = PluginStore::try_new(ava_home.to_path_buf()).map_err(|err| err.to_string())?;
+    let curated_marketplace_paths = curated_marketplace_paths_for_cache_refresh(ava_home)?;
     let mut loaded_marketplace_names = HashSet::<String>::new();
     let mut marketplace_plugin_keys = HashSet::<String>::new();
     let mut plugin_sources = HashMap::<String, AbsolutePathBuf>::new();
@@ -463,17 +463,17 @@ pub fn refresh_curated_plugin_cache(
 }
 
 fn curated_marketplace_paths_for_cache_refresh(
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> Result<Vec<AbsolutePathBuf>, String> {
     let curated_marketplace_path = AbsolutePathBuf::try_from(
-        codex_home
+        ava_home
             .join(".tmp/plugins")
             .join(".agents/plugins/marketplace.json"),
     )
     .map_err(|_| "local curated marketplace is not available".to_string())?;
     let mut paths = vec![curated_marketplace_path];
 
-    let api_marketplace_path = codex_home
+    let api_marketplace_path = ava_home
         .join(".tmp/plugins")
         .join(".agents/plugins/api_marketplace.json");
     if api_marketplace_path.is_file() {
@@ -496,12 +496,12 @@ pub fn curated_plugin_cache_version(plugin_version: &str) -> String {
 
 #[cfg(test)]
 pub(crate) fn refresh_non_curated_plugin_cache(
-    codex_home: &Path,
+    ava_home: &Path,
     additional_roots: &[AbsolutePathBuf],
     configured_plugin_keys: &[String],
 ) -> Result<bool, String> {
     collapse_non_curated_cache_refresh(refresh_non_curated_plugin_cache_detailed(
-        codex_home,
+        ava_home,
         additional_roots,
         configured_plugin_keys,
         PluginGitMode::Automatic,
@@ -509,13 +509,13 @@ pub(crate) fn refresh_non_curated_plugin_cache(
 }
 
 pub(crate) fn refresh_non_curated_plugin_cache_detailed(
-    codex_home: &Path,
+    ava_home: &Path,
     additional_roots: &[AbsolutePathBuf],
     configured_plugin_keys: &[String],
     git_mode: PluginGitMode,
 ) -> Result<NonCuratedCacheRefreshOutcome, String> {
     refresh_non_curated_plugin_cache_with_mode(
-        codex_home,
+        ava_home,
         additional_roots,
         configured_plugin_keys,
         NonCuratedCacheRefreshMode::IfVersionChanged,
@@ -525,12 +525,12 @@ pub(crate) fn refresh_non_curated_plugin_cache_detailed(
 
 #[cfg(test)]
 pub(crate) fn refresh_non_curated_plugin_cache_force_reinstall(
-    codex_home: &Path,
+    ava_home: &Path,
     additional_roots: &[AbsolutePathBuf],
     configured_plugin_keys: &[String],
 ) -> Result<bool, String> {
     collapse_non_curated_cache_refresh(refresh_non_curated_plugin_cache_force_reinstall_detailed(
-        codex_home,
+        ava_home,
         additional_roots,
         configured_plugin_keys,
         PluginGitMode::Automatic,
@@ -538,13 +538,13 @@ pub(crate) fn refresh_non_curated_plugin_cache_force_reinstall(
 }
 
 pub(crate) fn refresh_non_curated_plugin_cache_force_reinstall_detailed(
-    codex_home: &Path,
+    ava_home: &Path,
     additional_roots: &[AbsolutePathBuf],
     configured_plugin_keys: &[String],
     git_mode: PluginGitMode,
 ) -> Result<NonCuratedCacheRefreshOutcome, String> {
     refresh_non_curated_plugin_cache_with_mode(
-        codex_home,
+        ava_home,
         additional_roots,
         configured_plugin_keys,
         NonCuratedCacheRefreshMode::ForceReinstall,
@@ -553,7 +553,7 @@ pub(crate) fn refresh_non_curated_plugin_cache_force_reinstall_detailed(
 }
 
 fn refresh_non_curated_plugin_cache_with_mode(
-    codex_home: &Path,
+    ava_home: &Path,
     additional_roots: &[AbsolutePathBuf],
     configured_plugin_keys: &[String],
     mode: NonCuratedCacheRefreshMode,
@@ -588,7 +588,7 @@ fn refresh_non_curated_plugin_cache_with_mode(
         .map(PluginId::as_key)
         .collect::<HashSet<_>>();
 
-    let store = PluginStore::try_new(codex_home.to_path_buf()).map_err(|err| err.to_string())?;
+    let store = PluginStore::try_new(ava_home.to_path_buf()).map_err(|err| err.to_string())?;
     let marketplace_outcome = list_marketplaces_with_home(additional_roots, /*home_dir*/ None)
         .map_err(|err| format!("failed to discover marketplaces for cache refresh: {err}"))?;
     let mut plugin_sources = HashMap::<String, (MarketplacePluginSource, Option<String>)>::new();
@@ -659,7 +659,7 @@ fn refresh_non_curated_plugin_cache_with_mode(
         };
         let refresh_result = (|| -> Result<bool, String> {
             let materialized =
-                materialize_marketplace_plugin_source_with_mode(codex_home, &source, git_mode)
+                materialize_marketplace_plugin_source_with_mode(ava_home, &source, git_mode)
                     .map_err(|err| {
                         format!("failed to materialize plugin source for {plugin_key}: {err}")
                     })?;
@@ -743,12 +743,12 @@ fn configured_plugins_from_config_value(
     }
 }
 
-fn configured_plugins_from_codex_home(
-    codex_home: &Path,
+fn configured_plugins_from_ava_home(
+    ava_home: &Path,
     read_error_message: &str,
     parse_error_message: &str,
 ) -> HashMap<String, PluginConfig> {
-    let config_path = codex_home.join(CONFIG_TOML_FILE);
+    let config_path = ava_home.join(CONFIG_TOML_FILE);
     let user_config = match fs::read_to_string(&config_path) {
         Ok(user_config) => user_config,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return HashMap::new(),
@@ -811,9 +811,9 @@ fn curated_plugin_ids_from_config_keys(
     configured_curated_plugin_ids
 }
 
-pub fn configured_curated_plugin_ids_from_codex_home(codex_home: &Path) -> Vec<PluginId> {
-    curated_plugin_ids_from_config_keys(configured_plugins_from_codex_home(
-        codex_home,
+pub fn configured_curated_plugin_ids_from_ava_home(ava_home: &Path) -> Vec<PluginId> {
+    curated_plugin_ids_from_config_keys(configured_plugins_from_ava_home(
+        ava_home,
         "failed to read user config while refreshing curated plugin cache",
         "failed to parse user config while refreshing curated plugin cache",
     ))
@@ -1210,7 +1210,7 @@ pub fn load_plugin_hooks(
         Some(PluginManifestHooks::Inline(hooks_files)) => {
             let manifest_path = find_plugin_manifest_path(plugin_root.as_path())
                 .and_then(|path| AbsolutePathBuf::try_from(path).ok())
-                .unwrap_or_else(|| plugin_root.join(".codex-plugin/plugin.json"));
+                .unwrap_or_else(|| plugin_root.join(".ava-plugin/plugin.json"));
             for (index, hooks_file) in hooks_files.iter().enumerate() {
                 if hooks_file.hooks.is_empty() {
                     continue;
@@ -1406,9 +1406,9 @@ pub async fn load_configured_plugin_mcp_servers(
     auth_mode: Option<AuthMode>,
     plugin_id: &PluginId,
     config_layer_stack: &ConfigLayerStack,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> HashMap<String, McpServerConfig> {
-    let configured_plugins = configured_plugins_from_stack(config_layer_stack, codex_home);
+    let configured_plugins = configured_plugins_from_stack(config_layer_stack, ava_home);
     let plugin_id = plugin_id.as_key();
     let plugin_policy = configured_plugins
         .get(&plugin_id)
@@ -1579,7 +1579,7 @@ pub(crate) async fn load_plugin_mcp_servers_from_manifest_with_format(
     }
 
     if manifest_format == PluginManifestFormat::AgentPlugin {
-        agent_plugin_mcp_overlay::apply_codex_env_overlay(plugin_root, &mut mcp_servers).await;
+        agent_plugin_mcp_overlay::apply_ava_env_overlay(plugin_root, &mut mcp_servers).await;
     }
 
     mcp_servers
@@ -1734,15 +1734,15 @@ pub struct MaterializedMarketplacePluginSource {
 }
 
 pub fn materialize_marketplace_plugin_source(
-    codex_home: &Path,
+    ava_home: &Path,
     source: &MarketplacePluginSource,
 ) -> Result<MaterializedMarketplacePluginSource, String> {
-    materialize_marketplace_plugin_source_with_mode(codex_home, source, PluginGitMode::Manual)
+    materialize_marketplace_plugin_source_with_mode(ava_home, source, PluginGitMode::Manual)
 }
 
 /// Applies the initiating operation's Git trust policy throughout plugin materialization.
 pub(crate) fn materialize_marketplace_plugin_source_with_mode(
-    codex_home: &Path,
+    ava_home: &Path,
     source: &MarketplacePluginSource,
     mode: PluginGitMode,
 ) -> Result<MaterializedMarketplacePluginSource, String> {
@@ -1757,7 +1757,7 @@ pub(crate) fn materialize_marketplace_plugin_source_with_mode(
             ref_name,
             sha,
         } => {
-            let staging_root = codex_home.join("plugins/.marketplace-plugin-source-staging");
+            let staging_root = ava_home.join("plugins/.marketplace-plugin-source-staging");
             fs::create_dir_all(&staging_root).map_err(|err| {
                 format!(
                     "failed to create marketplace plugin source staging directory {}: {err}",
@@ -1774,7 +1774,7 @@ pub(crate) fn materialize_marketplace_plugin_source_with_mode(
                     )
                 })?;
             clone_git_plugin_source(
-                codex_home,
+                ava_home,
                 url,
                 ref_name.as_deref(),
                 sha.as_deref(),
@@ -1802,7 +1802,7 @@ pub(crate) fn materialize_marketplace_plugin_source_with_mode(
             registry,
         } => {
             let (path, tempdir) = materialize_npm_plugin_source(
-                codex_home,
+                ava_home,
                 package,
                 version.as_deref(),
                 registry.as_deref(),
@@ -1816,7 +1816,7 @@ pub(crate) fn materialize_marketplace_plugin_source_with_mode(
 }
 
 fn clone_git_plugin_source(
-    codex_home: &Path,
+    ava_home: &Path,
     url: &str,
     ref_name: Option<&str>,
     sha: Option<&str>,
@@ -1825,7 +1825,7 @@ fn clone_git_plugin_source(
     mode: PluginGitMode,
 ) -> Result<(), String> {
     let clone_cwd = match mode {
-        PluginGitMode::Automatic => Some(codex_home),
+        PluginGitMode::Automatic => Some(ava_home),
         PluginGitMode::Manual => None,
     };
     if let Some(sparse_checkout_path) = sparse_checkout_path {

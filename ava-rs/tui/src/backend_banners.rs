@@ -2,7 +2,7 @@
 //!
 //! The backend owns eligibility, copy, actions, and ordered model fallback instructions.
 
-use codex_protocol::account::PlanType;
+use ava_protocol::account::PlanType;
 use serde::Deserialize;
 
 mod actions;

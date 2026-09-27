@@ -1,12 +1,12 @@
 use super::resolve_windows_deny_read_paths;
 use super::walker::DirectoryScanMode;
 use super::walker::collect_existing_glob_directory_matches;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::ReadDenyMatcher;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::ReadDenyMatcher;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use std::collections::HashSet;
 use std::path::Path;
@@ -79,7 +79,7 @@ impl Drop for ProtectedDirectory {
 #[test]
 fn protected_directory_does_not_discard_accessible_deny_matches() {
     #[cfg(windows)]
-    if let Some(root) = std::env::var_os("CODEX_TEST_DENY_READ_RESTRICTED_ROOT") {
+    if let Some(root) = std::env::var_os("AVA_TEST_DENY_READ_RESTRICTED_ROOT") {
         assert_accessible_deny_matches(Path::new(&root));
         return;
     }
@@ -101,11 +101,11 @@ fn protected_directory_does_not_discard_accessible_deny_matches() {
         // this fixture's ACL. Restrict a separate process, including its rg child,
         // rather than changing the shared test process's privileges. The parent
         // owns ACL setup and cleanup, which the restricted child cannot perform.
-        let codex_home = TempDir::new().expect("restricted codex home");
+        let ava_home = TempDir::new().expect("restricted ava home");
         let cwd = AbsolutePathBuf::from_absolute_path(temp.path()).expect("workspace");
         let mut env = std::collections::HashMap::from([
             (
-                "CODEX_TEST_DENY_READ_RESTRICTED_ROOT".to_string(),
+                "AVA_TEST_DENY_READ_RESTRICTED_ROOT".to_string(),
                 cwd.display().to_string(),
             ),
             ("TEMP".to_string(), cwd.display().to_string()),
@@ -117,9 +117,9 @@ fn protected_directory_does_not_discard_accessible_deny_matches() {
             }
         }
         let result = crate::run_windows_sandbox_capture(
-            &codex_protocol::models::PermissionProfile::workspace_write(),
+            &ava_protocol::models::PermissionProfile::workspace_write(),
             std::slice::from_ref(&cwd),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 std::env::current_exe()
                     .expect("test binary")

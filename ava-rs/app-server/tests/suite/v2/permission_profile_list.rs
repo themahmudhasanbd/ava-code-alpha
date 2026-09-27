@@ -2,14 +2,14 @@ use std::time::Duration;
 
 use anyhow::Result;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::PermissionProfileListParams;
-use codex_app_server_protocol::PermissionProfileListResponse;
-use codex_app_server_protocol::PermissionProfileSummary;
-use codex_core::config::set_project_trust_level;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_app_server_protocol::PermissionProfileListParams;
+use ava_app_server_protocol::PermissionProfileListResponse;
+use ava_app_server_protocol::PermissionProfileSummary;
+use ava_core::config::set_project_trust_level;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio::time::timeout;
@@ -18,9 +18,9 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[tokio::test]
 async fn permission_profile_list_returns_builtin_and_configured_profiles() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 default_permissions = "dev"
 
@@ -39,7 +39,7 @@ description = "Inspect without writes."
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -91,12 +91,12 @@ description = "Inspect without writes."
 
 #[tokio::test]
 async fn permission_profile_list_resolves_project_profiles_and_paginates() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
-    let project_config_dir = workspace.path().join(".codex");
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 default_permissions = ":workspace"
 "#,
@@ -111,10 +111,10 @@ description = "Project-scoped profile."
 ":workspace_roots" = "write"
 "#,
     )?;
-    set_project_trust_level(codex_home.path(), workspace.path(), TrustLevel::Trusted)?;
+    set_project_trust_level(ava_home.path(), workspace.path(), TrustLevel::Trusted)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -177,9 +177,9 @@ description = "Project-scoped profile."
 #[tokio::test]
 async fn permission_profile_list_discovers_project_profiles_without_default_selection() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
-    let project_config_dir = workspace.path().join(".codex");
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
         project_config_dir.join("config.toml"),
@@ -191,10 +191,10 @@ description = "Project-scoped profile."
 ":workspace_roots" = "write"
 "#,
     )?;
-    set_project_trust_level(codex_home.path(), workspace.path(), TrustLevel::Trusted)?;
+    set_project_trust_level(ava_home.path(), workspace.path(), TrustLevel::Trusted)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -241,12 +241,12 @@ description = "Project-scoped profile."
 
 #[tokio::test]
 async fn permission_profile_list_resolves_roots_against_requested_cwd() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
     let unsafe_cwd = workspace.path().join("[workspace]");
     std::fs::create_dir_all(&unsafe_cwd)?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 default_permissions = ":workspace"
 
@@ -258,7 +258,7 @@ default_permissions = ":workspace"
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;

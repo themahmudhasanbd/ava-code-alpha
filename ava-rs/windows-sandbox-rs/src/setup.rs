@@ -39,8 +39,8 @@ use anyhow::Result;
 use anyhow::anyhow;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 use windows_sys::Win32::Foundation::CloseHandle;
 use windows_sys::Win32::Foundation::GetLastError;
@@ -50,12 +50,12 @@ use windows_sys::Win32::Security::FreeSid;
 use windows_sys::Win32::Security::SECURITY_NT_AUTHORITY;
 
 pub const SETUP_VERSION: u32 = 5;
-pub const OFFLINE_USERNAME: &str = "CodexSandboxOffline";
-pub const ONLINE_USERNAME: &str = "CodexSandboxOnline";
+pub const OFFLINE_USERNAME: &str = "AvaSandboxOffline";
+pub const ONLINE_USERNAME: &str = "AvaSandboxOnline";
 const ERROR_CANCELLED: u32 = 1223;
 const SECURITY_BUILTIN_DOMAIN_RID: u32 = 0x0000_0020;
 const DOMAIN_ALIAS_RID_ADMINS: u32 = 0x0000_0220;
-const SETUP_EXE_FILENAME: &str = "codex-windows-sandbox-setup.exe";
+const SETUP_EXE_FILENAME: &str = "ava-windows-sandbox-setup.exe";
 const USERPROFILE_ROOT_EXCLUSIONS: &[&str] = &[
     ".ssh",
     ".tsh",
@@ -184,31 +184,31 @@ fn run_setup_singleflight(key: String, run: impl FnOnce() -> Result<()>) -> Resu
     result
 }
 
-pub fn sandbox_dir(codex_home: &Path) -> PathBuf {
-    codex_home.join(".sandbox")
+pub fn sandbox_dir(ava_home: &Path) -> PathBuf {
+    ava_home.join(".sandbox")
 }
 
-pub fn sandbox_bin_dir(codex_home: &Path) -> PathBuf {
-    codex_home.join(".sandbox-bin")
+pub fn sandbox_bin_dir(ava_home: &Path) -> PathBuf {
+    ava_home.join(".sandbox-bin")
 }
 
-pub fn sandbox_secrets_dir(codex_home: &Path) -> PathBuf {
-    codex_home.join(".sandbox-secrets")
+pub fn sandbox_secrets_dir(ava_home: &Path) -> PathBuf {
+    ava_home.join(".sandbox-secrets")
 }
 
-pub fn setup_marker_path(codex_home: &Path) -> PathBuf {
-    sandbox_dir(codex_home).join("setup_marker.json")
+pub fn setup_marker_path(ava_home: &Path) -> PathBuf {
+    sandbox_dir(ava_home).join("setup_marker.json")
 }
 
-pub fn sandbox_users_path(codex_home: &Path) -> PathBuf {
-    sandbox_secrets_dir(codex_home).join("sandbox_users.json")
+pub fn sandbox_users_path(ava_home: &Path) -> PathBuf {
+    sandbox_secrets_dir(ava_home).join("sandbox_users.json")
 }
 
 pub struct SandboxSetupRequest<'a> {
     pub permissions: &'a ResolvedWindowsSandboxPermissions,
     pub command_cwd: &'a Path,
     pub env_map: &'a HashMap<String, String>,
-    pub codex_home: &'a Path,
+    pub ava_home: &'a Path,
     pub proxy_enforced: bool,
 }
 
@@ -226,7 +226,7 @@ pub fn run_setup_refresh(
     workspace_roots: &[AbsolutePathBuf],
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     proxy_enforced: bool,
 ) -> Result<()> {
     let Ok(permissions) =
@@ -245,7 +245,7 @@ pub fn run_setup_refresh(
             permissions: &permissions,
             command_cwd,
             env_map,
-            codex_home,
+            ava_home,
             proxy_enforced,
         },
         SetupRootOverrides {
@@ -275,7 +275,7 @@ pub fn run_setup_refresh_with_extra_read_roots(
     workspace_roots: &[AbsolutePathBuf],
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     extra_read_roots: Vec<PathBuf>,
     proxy_enforced: bool,
 ) -> Result<()> {
@@ -291,14 +291,14 @@ pub fn run_setup_refresh_with_extra_read_roots(
     let deny_read_paths =
         setup_refresh_deny_read_paths(permission_profile, workspace_roots, command_cwd)?;
     let runtime = current_setup_runtime();
-    let mut read_roots = gather_read_roots(command_cwd, &permissions, env_map, codex_home, runtime);
+    let mut read_roots = gather_read_roots(command_cwd, &permissions, env_map, ava_home, runtime);
     read_roots.extend(extra_read_roots);
     run_setup_refresh_inner(
         SandboxSetupRequest {
             permissions: &permissions,
             command_cwd,
             env_map,
-            codex_home,
+            ava_home,
             proxy_enforced,
         },
         SetupRootOverrides {
@@ -350,7 +350,7 @@ fn run_setup_refresh_inner(
         version: SETUP_VERSION,
         offline_username: OFFLINE_USERNAME.to_string(),
         online_username: ONLINE_USERNAME.to_string(),
-        codex_home: request.codex_home.to_path_buf(),
+        ava_home: request.ava_home.to_path_buf(),
         command_cwd: request.command_cwd.to_path_buf(),
         read_roots,
         write_roots,
@@ -367,15 +367,15 @@ fn run_setup_refresh_inner(
     let json = serde_json::to_vec(&payload)?;
     let b64 = BASE64_STANDARD.encode(json);
     run_setup_singleflight(b64.clone(), || {
-        run_setup_refresh_payload(&b64, request.codex_home)
+        run_setup_refresh_payload(&b64, request.ava_home)
     })
 }
 
-fn run_setup_refresh_payload(b64: &str, codex_home: &Path) -> Result<()> {
+fn run_setup_refresh_payload(b64: &str, ava_home: &Path) -> Result<()> {
     let exe = find_setup_exe();
-    let sbx_dir = sandbox_dir(codex_home);
+    let sbx_dir = sandbox_dir(ava_home);
     let log_path = current_log_file_path(&sbx_dir);
-    let cleared_report = match clear_setup_error_report(codex_home) {
+    let cleared_report = match clear_setup_error_report(ava_home) {
         Ok(()) => true,
         Err(err) => {
             log_note(
@@ -391,7 +391,7 @@ fn run_setup_refresh_payload(b64: &str, codex_home: &Path) -> Result<()> {
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    let cwd = std::env::current_dir().unwrap_or_else(|_| codex_home.to_path_buf());
+    let cwd = std::env::current_dir().unwrap_or_else(|_| ava_home.to_path_buf());
     log_note(
         &format!(
             "setup refresh: spawning {} (cwd={}, payload_len={})",
@@ -417,12 +417,12 @@ fn run_setup_refresh_payload(b64: &str, codex_home: &Path) -> Result<()> {
             Some(&sbx_dir),
         );
         return Err(report_helper_failure(
-            codex_home,
+            ava_home,
             cleared_report,
             status.code(),
         ));
     }
-    if let Err(err) = clear_setup_error_report(codex_home) {
+    if let Err(err) = clear_setup_error_report(ava_home) {
         log_note(
             &format!("setup refresh: failed to clear setup_error.json after success: {err}"),
             Some(&sbx_dir),
@@ -572,11 +572,11 @@ pub(crate) fn current_setup_runtime() -> SetupRuntime {
     }
 }
 
-fn gather_helper_read_roots(codex_home: &Path, runtime: SetupRuntime) -> Vec<PathBuf> {
+fn gather_helper_read_roots(ava_home: &Path, runtime: SetupRuntime) -> Vec<PathBuf> {
     if runtime == SetupRuntime::Registered {
         return Vec::new();
     }
-    let helper_dir = helper_bin_dir(codex_home);
+    let helper_dir = helper_bin_dir(ava_home);
     let _ = std::fs::create_dir_all(&helper_dir);
     vec![helper_dir]
 }
@@ -585,10 +585,10 @@ fn gather_full_read_roots_for_permissions(
     command_cwd: &Path,
     permissions: &ResolvedWindowsSandboxPermissions,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     runtime: SetupRuntime,
 ) -> Vec<PathBuf> {
-    let mut roots = gather_helper_read_roots(codex_home, runtime);
+    let mut roots = gather_helper_read_roots(ava_home, runtime);
     roots.extend(
         WINDOWS_PLATFORM_DEFAULT_READ_ROOTS
             .iter()
@@ -617,7 +617,7 @@ pub(crate) fn gather_read_roots(
     command_cwd: &Path,
     permissions: &ResolvedWindowsSandboxPermissions,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     runtime: SetupRuntime,
 ) -> Vec<PathBuf> {
     if permissions.has_symbolic_root_read_access(command_cwd) {
@@ -625,12 +625,12 @@ pub(crate) fn gather_read_roots(
             command_cwd,
             permissions,
             env_map,
-            codex_home,
+            ava_home,
             runtime,
         );
     }
 
-    let mut roots = gather_helper_read_roots(codex_home, runtime);
+    let mut roots = gather_helper_read_roots(ava_home, runtime);
     if permissions.include_platform_defaults() {
         roots.extend(
             WINDOWS_PLATFORM_DEFAULT_READ_ROOTS
@@ -666,14 +666,14 @@ pub(crate) fn effective_write_roots_for_setup(
     permissions: &ResolvedWindowsSandboxPermissions,
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     write_roots_override: Option<&[PathBuf]>,
 ) -> Vec<PathBuf> {
     effective_write_roots_for_permissions(
         permissions,
         command_cwd,
         env_map,
-        codex_home,
+        ava_home,
         write_roots_override,
     )
 }
@@ -682,7 +682,7 @@ pub(crate) fn effective_write_roots_for_permissions(
     permissions: &ResolvedWindowsSandboxPermissions,
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     write_roots_override: Option<&[PathBuf]>,
 ) -> Vec<PathBuf> {
     let write_roots = if let Some(roots) = write_roots_override {
@@ -694,7 +694,7 @@ pub(crate) fn effective_write_roots_for_permissions(
     let write_roots = filter_user_profile_root(write_roots);
     let write_roots = filter_user_profile_root_exclusions(write_roots);
     let write_roots = filter_ssh_config_dependency_roots(write_roots);
-    filter_sensitive_write_roots(write_roots, codex_home)
+    filter_sensitive_write_roots(write_roots, ava_home)
 }
 
 #[derive(Serialize)]
@@ -702,7 +702,7 @@ struct ElevationPayload {
     version: u32,
     offline_username: String,
     online_username: String,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     command_cwd: PathBuf,
     read_roots: Vec<PathBuf>,
     write_roots: Vec<PathBuf>,
@@ -713,7 +713,7 @@ struct ElevationPayload {
     proxy_ports: Vec<u16>,
     #[serde(default)]
     allow_local_binding: bool,
-    otel: Option<codex_otel::StatsigMetricsSettings>,
+    otel: Option<ava_otel::StatsigMetricsSettings>,
     real_user: String,
     mode: SetupMode,
     #[serde(default, skip_serializing_if = "SetupRuntime::is_legacy")]
@@ -771,11 +771,11 @@ pub(crate) const PROXY_ENV_KEYS: &[&str] = &[
     "ws_proxy",
     "wss_proxy",
 ];
-const ALLOW_LOCAL_BINDING_ENV_KEY: &str = "CODEX_NETWORK_ALLOW_LOCAL_BINDING";
+const ALLOW_LOCAL_BINDING_ENV_KEY: &str = "AVA_NETWORK_ALLOW_LOCAL_BINDING";
 // Internal wire format shared with network-proxy/src/proxy.rs. The value is a comma-separated,
 // sorted list of non-zero loopback proxy ports used only when computing the Windows offline
 // sandbox setup marker.
-const WINDOWS_SANDBOX_PROXY_PORTS_ENV_KEY: &str = "CODEX_WINDOWS_SANDBOX_PROXY_PORTS";
+const WINDOWS_SANDBOX_PROXY_PORTS_ENV_KEY: &str = "AVA_WINDOWS_SANDBOX_PROXY_PORTS";
 
 pub(crate) fn offline_proxy_settings_from_env(
     env_map: &HashMap<String, String>,
@@ -897,7 +897,7 @@ fn find_setup_exe_for_current_exe(exe: &Path) -> Option<PathBuf> {
 }
 
 fn report_helper_failure(
-    codex_home: &Path,
+    ava_home: &Path,
     cleared_report: bool,
     exit_code: Option<i32>,
 ) -> anyhow::Error {
@@ -905,7 +905,7 @@ fn report_helper_failure(
     if !cleared_report {
         return failure(SetupErrorCode::OrchestratorHelperExitNonzero, exit_detail);
     }
-    match read_setup_error_report(codex_home) {
+    match read_setup_error_report(ava_home) {
         Ok(Some(report)) => anyhow::Error::new(SetupFailure::from_report(report)),
         Ok(None) => failure(SetupErrorCode::OrchestratorHelperExitNonzero, exit_detail),
         Err(err) => failure(
@@ -915,8 +915,8 @@ fn report_helper_failure(
     }
 }
 
-fn verify_setup_completed(codex_home: &Path) -> Result<()> {
-    if sandbox_setup_is_complete(codex_home) {
+fn verify_setup_completed(ava_home: &Path) -> Result<()> {
+    if sandbox_setup_is_complete(ava_home) {
         Ok(())
     } else {
         Err(failure(
@@ -929,7 +929,7 @@ fn verify_setup_completed(codex_home: &Path) -> Result<()> {
 fn run_setup_exe(
     payload: &ElevationPayload,
     needs_elevation: bool,
-    codex_home: &Path,
+    ava_home: &Path,
     retained_handles: &[BorrowedHandle<'_>],
 ) -> Result<()> {
     let payload_json = serde_json::to_string(payload).map_err(|err| {
@@ -942,17 +942,17 @@ fn run_setup_exe(
     if !retained_handles.is_empty() {
         // Service requests are serialized and must not join a bare setup flight
         // whose helper was started without these directory protections.
-        return run_setup_exe_payload(&payload_b64, needs_elevation, codex_home, retained_handles);
+        return run_setup_exe_payload(&payload_b64, needs_elevation, ava_home, retained_handles);
     }
     run_setup_singleflight(payload_b64.clone(), || {
-        run_setup_exe_payload(&payload_b64, needs_elevation, codex_home, retained_handles)
+        run_setup_exe_payload(&payload_b64, needs_elevation, ava_home, retained_handles)
     })
 }
 
 fn run_setup_exe_payload(
     payload_b64: &str,
     needs_elevation: bool,
-    codex_home: &Path,
+    ava_home: &Path,
     retained_handles: &[BorrowedHandle<'_>],
 ) -> Result<()> {
     use windows_sys::Win32::System::Threading::GetExitCodeProcess;
@@ -963,14 +963,14 @@ fn run_setup_exe_payload(
     use windows_sys::Win32::UI::Shell::SHELLEXECUTEINFOW;
     use windows_sys::Win32::UI::Shell::ShellExecuteExW;
     let exe = find_setup_exe();
-    let cleared_report = match clear_setup_error_report(codex_home) {
+    let cleared_report = match clear_setup_error_report(ava_home) {
         Ok(()) => true,
         Err(err) => {
             log_note(
                 &format!(
                     "setup orchestrator: failed to clear setup_error.json before launch: {err}"
                 ),
-                Some(&sandbox_dir(codex_home)),
+                Some(&sandbox_dir(ava_home)),
             );
             false
         }
@@ -999,18 +999,18 @@ fn run_setup_exe_payload(
         })?;
         if !status.success() {
             return Err(report_helper_failure(
-                codex_home,
+                ava_home,
                 cleared_report,
                 status.code(),
             ));
         }
-        verify_setup_completed(codex_home)?;
-        if let Err(err) = clear_setup_error_report(codex_home) {
+        verify_setup_completed(ava_home)?;
+        if let Err(err) = clear_setup_error_report(ava_home) {
             log_note(
                 &format!(
                     "setup orchestrator: failed to clear setup_error.json after success: {err}"
                 ),
-                Some(&sandbox_dir(codex_home)),
+                Some(&sandbox_dir(ava_home)),
             );
         }
         return Ok(());
@@ -1050,17 +1050,17 @@ fn run_setup_exe_payload(
         CloseHandle(sei.hProcess);
         if code != 0 {
             return Err(report_helper_failure(
-                codex_home,
+                ava_home,
                 cleared_report,
                 Some(code as i32),
             ));
         }
     }
-    verify_setup_completed(codex_home)?;
-    if let Err(err) = clear_setup_error_report(codex_home) {
+    verify_setup_completed(ava_home)?;
+    if let Err(err) = clear_setup_error_report(ava_home) {
         log_note(
             &format!("setup orchestrator: failed to clear setup_error.json after success: {err}"),
-            Some(&sandbox_dir(codex_home)),
+            Some(&sandbox_dir(ava_home)),
         );
     }
     Ok(())
@@ -1093,7 +1093,7 @@ pub(crate) fn run_elevated_setup_with_proxy_settings(
             .socks_ports
             .retain(|port| settings.proxy_ports.contains(port));
         let outcome = crate::provisioning_client::provision_windows_sandbox_via_service(
-            request.codex_home,
+            request.ava_home,
             settings,
             listeners,
         )?;
@@ -1118,7 +1118,7 @@ fn run_elevated_setup_inner(
         .permissions
         .validate_elevated_filesystem_policy(request.command_cwd)?;
     // Ensure the shared sandbox directory exists before we send it to the elevated helper.
-    let sbx_dir = sandbox_dir(request.codex_home);
+    let sbx_dir = sandbox_dir(request.ava_home);
     std::fs::create_dir_all(&sbx_dir).map_err(|err| {
         failure(
             SetupErrorCode::OrchestratorSandboxDirCreateFailed,
@@ -1136,7 +1136,7 @@ fn run_elevated_setup_inner(
             format!("failed to determine elevation state: {err}"),
         )
     })?;
-    run_setup_exe(&payload, needs_elevation, request.codex_home, &[])
+    run_setup_exe(&payload, needs_elevation, request.ava_home, &[])
 }
 
 fn elevated_provisioning_payload(
@@ -1150,8 +1150,8 @@ fn elevated_provisioning_payload(
         version: SETUP_VERSION,
         offline_username: OFFLINE_USERNAME.to_string(),
         online_username: ONLINE_USERNAME.to_string(),
-        codex_home: request.codex_home.to_path_buf(),
-        command_cwd: request.codex_home.to_path_buf(),
+        ava_home: request.ava_home.to_path_buf(),
+        command_cwd: request.ava_home.to_path_buf(),
         read_roots: Vec::new(),
         write_roots: Vec::new(),
         deny_read_paths: Vec::new(),
@@ -1159,7 +1159,7 @@ fn elevated_provisioning_payload(
         proxy_ports: offline_proxy_settings.proxy_ports,
         allow_local_binding: offline_proxy_settings.allow_local_binding,
         real_user,
-        otel: codex_otel::global_statsig_metrics_settings(),
+        otel: ava_otel::global_statsig_metrics_settings(),
         mode: SetupMode::InteractiveProvision,
         runtime: SetupRuntime::Legacy,
         refresh_only: false,
@@ -1167,12 +1167,12 @@ fn elevated_provisioning_payload(
 }
 
 pub fn run_elevated_provisioning_setup(
-    codex_home: &Path,
+    ava_home: &Path,
     real_user: &str,
     settings: crate::WindowsSandboxProvisioningSettings,
 ) -> Result<()> {
     run_elevated_provisioning_setup_with_retained_handles(
-        codex_home,
+        ava_home,
         real_user,
         settings,
         current_setup_runtime(),
@@ -1184,15 +1184,15 @@ pub fn run_elevated_provisioning_setup(
 /// itself, so they survive an unexpected exit of the provisioning service.
 /// The runtime must describe the authenticated client, not the shared service image.
 pub fn run_elevated_provisioning_setup_with_retained_handles(
-    codex_home: &Path,
+    ava_home: &Path,
     real_user: &str,
     settings: crate::WindowsSandboxProvisioningSettings,
     runtime: SetupRuntime,
     retained_handles: &[BorrowedHandle<'_>],
 ) -> Result<()> {
-    if !codex_home.is_absolute()
+    if !ava_home.is_absolute()
         || !matches!(
-            codex_home.components().next(),
+            ava_home.components().next(),
             Some(std::path::Component::Prefix(prefix))
                 if matches!(
                     prefix.kind(),
@@ -1203,12 +1203,12 @@ pub fn run_elevated_provisioning_setup_with_retained_handles(
         return Err(failure(
             SetupErrorCode::OrchestratorSandboxDirCreateFailed,
             format!(
-                "sandbox provisioning CODEX_HOME must be an absolute local disk path: {}",
-                codex_home.display()
+                "sandbox provisioning AVA_HOME must be an absolute local disk path: {}",
+                ava_home.display()
             ),
         ));
     }
-    let sbx_dir = sandbox_dir(codex_home);
+    let sbx_dir = sandbox_dir(ava_home);
     std::fs::create_dir_all(&sbx_dir).map_err(|err| {
         failure(
             SetupErrorCode::OrchestratorSandboxDirCreateFailed,
@@ -1230,15 +1230,15 @@ pub fn run_elevated_provisioning_setup_with_retained_handles(
         version: SETUP_VERSION,
         offline_username: OFFLINE_USERNAME.to_string(),
         online_username: ONLINE_USERNAME.to_string(),
-        codex_home: codex_home.to_path_buf(),
-        command_cwd: codex_home.to_path_buf(),
+        ava_home: ava_home.to_path_buf(),
+        command_cwd: ava_home.to_path_buf(),
         read_roots: Vec::new(),
         write_roots: Vec::new(),
         deny_read_paths: Vec::new(),
         deny_write_paths: Vec::new(),
         proxy_ports: settings.proxy_ports,
         allow_local_binding: settings.allow_local_binding,
-        otel: codex_otel::global_statsig_metrics_settings(),
+        otel: ava_otel::global_statsig_metrics_settings(),
         real_user: real_user.to_string(),
         mode: SetupMode::ProvisionOnly,
         runtime,
@@ -1247,7 +1247,7 @@ pub fn run_elevated_provisioning_setup_with_retained_handles(
     run_setup_exe(
         &payload,
         /*needs_elevation*/ false,
-        codex_home,
+        ava_home,
         retained_handles,
     )
 }
@@ -1261,13 +1261,13 @@ pub(crate) fn build_payload_roots(
         request.permissions,
         request.command_cwd,
         request.env_map,
-        request.codex_home,
+        request.ava_home,
         overrides.write_roots.as_deref(),
     );
     let mut read_roots = if let Some(roots) = overrides.read_roots.as_deref() {
         // An explicit override is the split policy's complete readable set. Keep only the
         // helper/platform roots the elevated setup needs; do not re-add legacy cwd/full-read roots.
-        let mut read_roots = gather_helper_read_roots(request.codex_home, runtime);
+        let mut read_roots = gather_helper_read_roots(request.ava_home, runtime);
         if overrides.read_roots_include_platform_defaults {
             read_roots.extend(
                 WINDOWS_PLATFORM_DEFAULT_READ_ROOTS
@@ -1282,7 +1282,7 @@ pub(crate) fn build_payload_roots(
             request.command_cwd,
             request.permissions,
             request.env_map,
-            request.codex_home,
+            request.ava_home,
             runtime,
         )
     };
@@ -1435,21 +1435,21 @@ fn user_profile_child_name(path: &Path, user_profile: &Path) -> Option<String> {
         .map(str::to_string)
 }
 
-fn filter_sensitive_write_roots(mut roots: Vec<PathBuf>, codex_home: &Path) -> Vec<PathBuf> {
-    // Never grant capability write access to CODEX_HOME or anything under CODEX_HOME/.sandbox,
-    // CODEX_HOME/.sandbox-bin, or CODEX_HOME/.sandbox-secrets. These locations contain sandbox
+fn filter_sensitive_write_roots(mut roots: Vec<PathBuf>, ava_home: &Path) -> Vec<PathBuf> {
+    // Never grant capability write access to AVA_HOME or anything under AVA_HOME/.sandbox,
+    // AVA_HOME/.sandbox-bin, or AVA_HOME/.sandbox-secrets. These locations contain sandbox
     // control/state and helper binaries and must remain tamper-resistant.
-    let codex_home_key = canonical_path_key(codex_home);
-    let sbx_dir_key = canonical_path_key(&sandbox_dir(codex_home));
+    let ava_home_key = canonical_path_key(ava_home);
+    let sbx_dir_key = canonical_path_key(&sandbox_dir(ava_home));
     let sbx_dir_prefix = format!("{}/", sbx_dir_key.trim_end_matches('/'));
-    let sbx_bin_dir_key = canonical_path_key(&sandbox_bin_dir(codex_home));
+    let sbx_bin_dir_key = canonical_path_key(&sandbox_bin_dir(ava_home));
     let sbx_bin_dir_prefix = format!("{}/", sbx_bin_dir_key.trim_end_matches('/'));
-    let secrets_dir_key = canonical_path_key(&sandbox_secrets_dir(codex_home));
+    let secrets_dir_key = canonical_path_key(&sandbox_secrets_dir(ava_home));
     let secrets_dir_prefix = format!("{}/", secrets_dir_key.trim_end_matches('/'));
 
     roots.retain(|root| {
         let key = canonical_path_key(root);
-        key != codex_home_key
+        key != ava_home_key
             && key != sbx_dir_key
             && !key.starts_with(&sbx_dir_prefix)
             && key != sbx_bin_dir_key
@@ -1483,16 +1483,16 @@ mod tests {
     use crate::setup_error::SetupErrorReport;
     use crate::setup_error::extract_failure;
     use crate::setup_error::write_setup_error_report;
-    use codex_protocol::models::ManagedFileSystemPermissions;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemPath;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_protocol::permissions::FileSystemSpecialPath;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_protocol::permissions::project_roots_glob_pattern;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_protocol::models::ManagedFileSystemPermissions;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemPath;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_protocol::permissions::FileSystemSpecialPath;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_protocol::permissions::project_roots_glob_pattern;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
     use std::collections::HashMap;
     use std::collections::HashSet;
@@ -1517,8 +1517,8 @@ mod tests {
 
     #[test]
     fn setup_completion_requires_ready_artifacts() {
-        let codex_home = TempDir::new().expect("tempdir");
-        let err = verify_setup_completed(codex_home.path())
+        let ava_home = TempDir::new().expect("tempdir");
+        let err = verify_setup_completed(ava_home.path())
             .expect_err("missing setup artifacts should fail");
 
         assert_eq!(
@@ -1643,7 +1643,7 @@ mod tests {
             permissions: &permissions,
             command_cwd: &command_cwd,
             env_map: &env_map,
-            codex_home: tmp.path(),
+            ava_home: tmp.path(),
             proxy_enforced: false,
         };
 
@@ -1657,7 +1657,7 @@ mod tests {
     fn elevated_setup_payload_contains_no_caller_acl_roots() {
         let tmp = TempDir::new().expect("tempdir");
         let command_cwd = tmp.path().join("caller-workspace");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         fs::create_dir_all(&command_cwd).expect("create workspace");
         let permissions = permissions_for(
             &workspace_write_profile(
@@ -1671,7 +1671,7 @@ mod tests {
             permissions: &permissions,
             command_cwd: &command_cwd,
             env_map: &HashMap::new(),
-            codex_home: &codex_home,
+            ava_home: &ava_home,
             proxy_enforced: false,
         };
 
@@ -1683,7 +1683,7 @@ mod tests {
 
         assert!(matches!(payload.runtime, super::SetupRuntime::Legacy));
         assert_eq!(payload.real_user, r"DOMAIN\alice");
-        assert_eq!(payload.command_cwd, codex_home);
+        assert_eq!(payload.command_cwd, ava_home);
         assert_eq!(payload.read_roots, Vec::<PathBuf>::new());
         assert_eq!(payload.write_roots, Vec::<PathBuf>::new());
         assert_eq!(payload.deny_read_paths, Vec::<PathBuf>::new());
@@ -1697,9 +1697,9 @@ mod tests {
     #[test]
     fn report_helper_failure_uses_setup_error_report_when_clear_succeeded() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         write_setup_error_report(
-            codex_home.as_path(),
+            ava_home.as_path(),
             &SetupErrorReport {
                 code: super::SetupErrorCode::HelperFirewallPolicyAccessFailed,
                 message: "firewall policy unavailable".to_string(),
@@ -1708,7 +1708,7 @@ mod tests {
         .expect("write setup error report");
 
         let err = super::report_helper_failure(
-            codex_home.as_path(),
+            ava_home.as_path(),
             /*cleared_report*/ true,
             /*exit_code*/ Some(1),
         );
@@ -1726,9 +1726,9 @@ mod tests {
     #[test]
     fn report_helper_failure_ignores_setup_error_report_when_clear_failed() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         write_setup_error_report(
-            codex_home.as_path(),
+            ava_home.as_path(),
             &SetupErrorReport {
                 code: super::SetupErrorCode::HelperFirewallPolicyAccessFailed,
                 message: "stale report".to_string(),
@@ -1737,7 +1737,7 @@ mod tests {
         .expect("write setup error report");
 
         let err = super::report_helper_failure(
-            codex_home.as_path(),
+            ava_home.as_path(),
             /*cleared_report*/ false,
             /*exit_code*/ Some(1),
         );
@@ -1756,7 +1756,7 @@ mod tests {
     fn setup_refresh_skips_profiles_without_managed_filesystem_permissions() {
         let tmp = TempDir::new().expect("tempdir");
         let command_cwd = tmp.path().join("workspace");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         fs::create_dir_all(&command_cwd).expect("create workspace");
         let workspace_roots = workspace_roots_for(command_cwd.as_path());
 
@@ -1771,7 +1771,7 @@ mod tests {
                 workspace_roots.as_slice(),
                 command_cwd.as_path(),
                 &HashMap::new(),
-                codex_home.as_path(),
+                ava_home.as_path(),
                 /*proxy_enforced*/ false,
             )
             .expect("unsupported profiles do not need setup refresh");
@@ -1781,7 +1781,7 @@ mod tests {
                 workspace_roots.as_slice(),
                 command_cwd.as_path(),
                 &HashMap::new(),
-                codex_home.as_path(),
+                ava_home.as_path(),
                 vec![command_cwd.clone()],
                 /*proxy_enforced*/ false,
             )
@@ -1852,7 +1852,7 @@ mod tests {
     fn setup_refresh_rejects_root_globs_before_expansion() {
         let tmp = TempDir::new().expect("tempdir");
         let command_cwd = tmp.path().join("workspace");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         fs::create_dir_all(&command_cwd).expect("create workspace");
         let root = command_cwd.ancestors().last().expect("filesystem root");
         let mut file_system = FileSystemSandboxPolicy::read_only();
@@ -1874,7 +1874,7 @@ mod tests {
                 &workspace_roots,
                 &command_cwd,
                 &env_map,
-                &codex_home,
+                &ava_home,
                 /*proxy_enforced*/ false,
             )
             .expect_err("root glob must be rejected before expansion"),
@@ -1883,7 +1883,7 @@ mod tests {
                 &workspace_roots,
                 &command_cwd,
                 &env_map,
-                &codex_home,
+                &ava_home,
                 Vec::new(),
                 /*proxy_enforced*/ false,
             )
@@ -1950,9 +1950,9 @@ mod tests {
         let resources_dir = package_dir.join(RESOURCES_DIRNAME);
         fs::create_dir_all(&bin_dir).expect("create bin dir");
         fs::create_dir_all(&resources_dir).expect("create resources dir");
-        let exe = bin_dir.join("codex.exe");
-        let setup_exe = resources_dir.join("codex-windows-sandbox-setup.exe");
-        fs::write(&exe, b"codex").expect("write exe");
+        let exe = bin_dir.join("ava.exe");
+        let setup_exe = resources_dir.join("ava-windows-sandbox-setup.exe");
+        fs::write(&exe, b"ava").expect("write exe");
         fs::write(&setup_exe, b"setup").expect("write setup");
 
         let resolved = find_setup_exe_for_current_exe(&exe).expect("setup exe");
@@ -2022,7 +2022,7 @@ mod tests {
             "http://127.0.0.1:8080".to_string(),
         );
         env.insert(
-            "CODEX_NETWORK_ALLOW_LOCAL_BINDING".to_string(),
+            "AVA_NETWORK_ALLOW_LOCAL_BINDING".to_string(),
             "1".to_string(),
         );
 
@@ -2061,7 +2061,7 @@ mod tests {
             "socks5h://127.0.0.1:1081".to_string(),
         );
         env.insert(
-            "CODEX_NETWORK_ALLOW_LOCAL_BINDING".to_string(),
+            "AVA_NETWORK_ALLOW_LOCAL_BINDING".to_string(),
             "1".to_string(),
         );
 
@@ -2349,12 +2349,12 @@ mod tests {
     }
 
     #[test]
-    fn expanded_write_roots_still_drop_protected_codex_home() {
+    fn expanded_write_roots_still_drop_protected_ava_home() {
         let tmp = TempDir::new().expect("tempdir");
         let user_profile = tmp.path().join("user-profile");
-        let codex_home = user_profile.join("CodexHome");
+        let ava_home = user_profile.join("AvaHome");
         let documents = user_profile.join("Documents");
-        fs::create_dir_all(&codex_home).expect("create codex home");
+        fs::create_dir_all(&ava_home).expect("create ava home");
         fs::create_dir_all(&documents).expect("create documents");
 
         let mut roots =
@@ -2362,7 +2362,7 @@ mod tests {
         let user_profile_key = super::canonical_path_key(&user_profile);
         roots.retain(|root| super::canonical_path_key(root) != user_profile_key);
         roots.retain(|root| !super::is_user_profile_root_exclusion(root, &user_profile));
-        let roots = super::filter_sensitive_write_roots(roots, &codex_home);
+        let roots = super::filter_sensitive_write_roots(roots, &ava_home);
 
         assert_eq!(vec![documents], roots);
     }
@@ -2370,7 +2370,7 @@ mod tests {
     #[test]
     fn gather_read_roots_includes_helper_bin_dir() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let command_cwd = tmp.path().join("workspace");
         fs::create_dir_all(&command_cwd).expect("create workspace");
         let permission_profile = PermissionProfile::read_only();
@@ -2381,11 +2381,11 @@ mod tests {
             &command_cwd,
             &permissions,
             &HashMap::new(),
-            &codex_home,
+            &ava_home,
             super::SetupRuntime::Legacy,
         );
         let expected =
-            dunce::canonicalize(helper_bin_dir(&codex_home)).expect("canonical helper dir");
+            dunce::canonicalize(helper_bin_dir(&ava_home)).expect("canonical helper dir");
 
         assert!(roots.contains(&expected));
     }
@@ -2422,7 +2422,7 @@ mod tests {
                 permissions: &permissions,
                 command_cwd: tmp.path(),
                 env_map: &HashMap::new(),
-                codex_home: &home,
+                ava_home: &home,
                 proxy_enforced: false,
             },
             &super::SetupRootOverrides {
@@ -2441,7 +2441,7 @@ mod tests {
     #[test]
     fn workspace_write_roots_remain_readable() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let command_cwd = tmp.path().join("workspace");
         let writable_root = tmp.path().join("extra-write-root");
         fs::create_dir_all(&command_cwd).expect("create workspace");
@@ -2461,7 +2461,7 @@ mod tests {
             &command_cwd,
             &permissions,
             &HashMap::new(),
-            &codex_home,
+            &ava_home,
             super::SetupRuntime::Legacy,
         );
         let expected_writable =
@@ -2473,7 +2473,7 @@ mod tests {
     #[test]
     fn build_payload_roots_preserves_helper_roots_when_read_override_is_provided() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let workspace_root = tmp.path().join("workspace-root");
         let command_cwd = tmp.path().join("workspace");
         let readable_root = tmp.path().join("docs");
@@ -2489,7 +2489,7 @@ mod tests {
                 permissions: &permissions,
                 command_cwd: &command_cwd,
                 env_map: &HashMap::new(),
-                codex_home: &codex_home,
+                ava_home: &ava_home,
                 proxy_enforced: false,
             },
             &super::SetupRootOverrides {
@@ -2502,7 +2502,7 @@ mod tests {
             super::SetupRuntime::Legacy,
         );
         let expected_helper =
-            dunce::canonicalize(helper_bin_dir(&codex_home)).expect("canonical helper dir");
+            dunce::canonicalize(helper_bin_dir(&ava_home)).expect("canonical helper dir");
         let expected_cwd = dunce::canonicalize(&command_cwd).expect("canonical workspace");
         let expected_readable =
             dunce::canonicalize(&readable_root).expect("canonical readable root");
@@ -2521,7 +2521,7 @@ mod tests {
     #[test]
     fn build_payload_roots_replaces_full_read_policy_when_read_override_is_provided() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let workspace_root = tmp.path().join("workspace-root");
         let command_cwd = tmp.path().join("workspace");
         let readable_root = tmp.path().join("docs");
@@ -2537,7 +2537,7 @@ mod tests {
                 permissions: &permissions,
                 command_cwd: &command_cwd,
                 env_map: &HashMap::new(),
-                codex_home: &codex_home,
+                ava_home: &ava_home,
                 proxy_enforced: false,
             },
             &super::SetupRootOverrides {
@@ -2550,7 +2550,7 @@ mod tests {
             super::SetupRuntime::Legacy,
         );
         let expected_helper =
-            dunce::canonicalize(helper_bin_dir(&codex_home)).expect("canonical helper dir");
+            dunce::canonicalize(helper_bin_dir(&ava_home)).expect("canonical helper dir");
         let expected_cwd = dunce::canonicalize(&command_cwd).expect("canonical workspace");
         let expected_readable =
             dunce::canonicalize(&readable_root).expect("canonical readable root");
@@ -2569,11 +2569,11 @@ mod tests {
     #[test]
     fn effective_write_roots_match_payload_filtering_for_overrides() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let command_cwd = tmp.path().join("workspace");
         let extra_root = tmp.path().join("extra-root");
-        let sandbox_root = super::sandbox_dir(&codex_home);
-        fs::create_dir_all(&codex_home).expect("create codex home");
+        let sandbox_root = super::sandbox_dir(&ava_home);
+        fs::create_dir_all(&ava_home).expect("create ava home");
         fs::create_dir_all(&command_cwd).expect("create workspace");
         fs::create_dir_all(&extra_root).expect("create extra root");
         fs::create_dir_all(&sandbox_root).expect("create sandbox root");
@@ -2587,14 +2587,14 @@ mod tests {
         let override_roots = vec![
             command_cwd.clone(),
             extra_root.clone(),
-            codex_home.clone(),
+            ava_home.clone(),
             sandbox_root.clone(),
         ];
         let request = super::SandboxSetupRequest {
             permissions: &permissions,
             command_cwd: &command_cwd,
             env_map: &HashMap::new(),
-            codex_home: &codex_home,
+            ava_home: &ava_home,
             proxy_enforced: false,
         };
         let overrides = super::SetupRootOverrides {
@@ -2609,7 +2609,7 @@ mod tests {
             &permissions,
             &command_cwd,
             &HashMap::new(),
-            &codex_home,
+            &ava_home,
             Some(&override_roots),
         );
         let (_read_roots, payload_write_roots) =
@@ -2617,22 +2617,22 @@ mod tests {
 
         let expected_workspace = dunce::canonicalize(&command_cwd).expect("canonical workspace");
         let expected_extra = dunce::canonicalize(&extra_root).expect("canonical extra root");
-        let forbidden_codex_home = dunce::canonicalize(&codex_home).expect("canonical codex home");
+        let forbidden_ava_home = dunce::canonicalize(&ava_home).expect("canonical ava home");
         let forbidden_sandbox = dunce::canonicalize(&sandbox_root).expect("canonical sandbox root");
         assert_eq!(effective_write_roots, payload_write_roots);
         assert!(effective_write_roots.contains(&expected_workspace));
         assert!(effective_write_roots.contains(&expected_extra));
-        assert!(!effective_write_roots.contains(&forbidden_codex_home));
+        assert!(!effective_write_roots.contains(&forbidden_ava_home));
         assert!(!effective_write_roots.contains(&forbidden_sandbox));
     }
 
     #[test]
     fn effective_write_roots_use_runtime_workspace_roots_for_workspace_root() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let workspace_root = tmp.path().join("workspace");
         let command_cwd = workspace_root.join("subdir");
-        fs::create_dir_all(&codex_home).expect("create codex home");
+        fs::create_dir_all(&ava_home).expect("create ava home");
         fs::create_dir_all(&command_cwd).expect("create command cwd");
 
         let permission_profile = workspace_write_profile(
@@ -2647,7 +2647,7 @@ mod tests {
             &permissions,
             &command_cwd,
             &HashMap::new(),
-            &codex_home,
+            &ava_home,
             /*write_roots_override*/ None,
         );
 
@@ -2660,14 +2660,14 @@ mod tests {
     #[test]
     fn payload_deny_write_paths_merge_explicit_and_protected_children() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let command_cwd = tmp.path().join("workspace");
         let extra_write_root = tmp.path().join("extra-write-root");
         let command_git = command_cwd.join(".git");
-        let extra_codex = extra_write_root.join(".codex");
+        let extra_ava = extra_write_root.join(".ava-code");
         let explicit_deny = tmp.path().join("explicit-deny");
         fs::create_dir_all(&command_git).expect("create command .git");
-        fs::create_dir_all(&extra_codex).expect("create extra .codex");
+        fs::create_dir_all(&extra_ava).expect("create extra .ava-code");
         let writable_roots = vec![
             AbsolutePathBuf::from_absolute_path(&extra_write_root).expect("absolute writable root"),
         ];
@@ -2682,7 +2682,7 @@ mod tests {
             permissions: &permissions,
             command_cwd: &command_cwd,
             env_map: &HashMap::new(),
-            codex_home: &codex_home,
+            ava_home: &ava_home,
             proxy_enforced: false,
         };
 
@@ -2692,7 +2692,7 @@ mod tests {
         assert_eq!(
             [
                 dunce::canonicalize(&command_git).expect("canonical command .git"),
-                dunce::canonicalize(&extra_codex).expect("canonical extra .codex"),
+                dunce::canonicalize(&extra_ava).expect("canonical extra .ava-code"),
                 explicit_deny,
             ]
             .into_iter()
@@ -2704,7 +2704,7 @@ mod tests {
     #[test]
     fn full_read_roots_preserve_legacy_platform_defaults() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let command_cwd = tmp.path().join("workspace");
         fs::create_dir_all(&command_cwd).expect("create workspace");
         let permission_profile = PermissionProfile::read_only();
@@ -2715,7 +2715,7 @@ mod tests {
             &command_cwd,
             &permissions,
             &HashMap::new(),
-            &codex_home,
+            &ava_home,
             super::SetupRuntime::Legacy,
         );
 

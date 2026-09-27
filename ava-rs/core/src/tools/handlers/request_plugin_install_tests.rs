@@ -7,21 +7,21 @@ use crate::plugins::test_support::write_plugins_feature_config;
 use crate::session::step_context::StepContext;
 use crate::session::tests::make_session_and_context;
 use crate::turn_diff_tracker::TurnDiffTracker;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::config_toml::ConfigToml;
-use codex_config::types::ToolSuggestConfig;
-use codex_config::types::ToolSuggestDisabledTool;
-use codex_config::types::ToolSuggestDiscoverable;
-use codex_config::types::ToolSuggestDiscoverableType;
-use codex_core_plugins::PluginInstallRequest;
-use codex_core_plugins::startup_sync::curated_plugins_repo_path;
-use codex_login::test_support::auth_manager_from_optional_auth;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_rmcp_client::ElicitationResponse;
-use codex_tools::DiscoverablePluginInfo;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::config_toml::ConfigToml;
+use ava_config::types::ToolSuggestConfig;
+use ava_config::types::ToolSuggestDisabledTool;
+use ava_config::types::ToolSuggestDiscoverable;
+use ava_config::types::ToolSuggestDiscoverableType;
+use ava_core_plugins::PluginInstallRequest;
+use ava_core_plugins::startup_sync::curated_plugins_repo_path;
+use ava_login::test_support::auth_manager_from_optional_auth;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_rmcp_client::ElicitationResponse;
+use ava_tools::DiscoverablePluginInfo;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::PathExt;
 use pretty_assertions::assert_eq;
 use rmcp::model::ElicitationAction;
@@ -64,7 +64,7 @@ async fn request_plugin_install_rejects_subagent_threads(presentation: ToolSugge
             cancellation_token: tokio_util::sync::CancellationToken::new(),
             tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
             call_id: "call-1".to_string(),
-            tool_name: codex_tools::ToolName::plain(REQUEST_PLUGIN_INSTALL_TOOL_NAME),
+            tool_name: ava_tools::ToolName::plain(REQUEST_PLUGIN_INSTALL_TOOL_NAME),
             source: crate::tools::context::ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: arguments.to_string(),
@@ -95,13 +95,13 @@ fn request_plugin_install_does_not_support_parallel_tool_calls() {
 
 #[tokio::test]
 async fn verified_plugin_install_completed_requires_installed_plugin() {
-    let codex_home = tempdir().expect("tempdir should succeed");
-    let curated_root = curated_plugins_repo_path(codex_home.path());
+    let ava_home = tempdir().expect("tempdir should succeed");
+    let curated_root = curated_plugins_repo_path(ava_home.path());
     write_openai_api_curated_marketplace(&curated_root, &["sample"]);
-    write_curated_plugin_sha(codex_home.path());
-    write_plugins_feature_config(codex_home.path());
+    write_curated_plugin_sha(ava_home.path());
+    write_plugins_feature_config(ava_home.path());
 
-    let config = load_plugins_config(codex_home.path()).await;
+    let config = load_plugins_config(ava_home.path()).await;
     let plugins_manager =
         plugins_manager_for_config(&config, auth_manager_from_optional_auth(/*auth*/ None));
 
@@ -125,7 +125,7 @@ async fn verified_plugin_install_completed_requires_installed_plugin() {
         .await
         .expect("plugin should install");
 
-    let refreshed_config = load_plugins_config(codex_home.path()).await;
+    let refreshed_config = load_plugins_config(ava_home.path()).await;
     assert!(verified_plugin_install_completed(
         "sample@openai-api-curated",
         &refreshed_config,
@@ -200,15 +200,15 @@ fn request_plugin_install_response_persists_only_decline_always_mode() {
 
 #[tokio::test]
 async fn persist_disabled_install_request_writes_connector_config() {
-    let codex_home = tempdir().expect("tempdir should succeed");
+    let ava_home = tempdir().expect("tempdir should succeed");
     let tool = connector_tool("connector_calendar", "Google Calendar");
 
-    persist_disabled_install_request(&codex_home.path().abs(), &tool)
+    persist_disabled_install_request(&ava_home.path().abs(), &tool)
         .await
         .expect("persist connector disable");
 
     let contents =
-        std::fs::read_to_string(codex_home.path().join(CONFIG_TOML_FILE)).expect("read config");
+        std::fs::read_to_string(ava_home.path().join(CONFIG_TOML_FILE)).expect("read config");
     let parsed: ConfigToml = toml::from_str(&contents).expect("parse config");
     assert_eq!(
         parsed.tool_suggest,
@@ -221,7 +221,7 @@ async fn persist_disabled_install_request_writes_connector_config() {
 
 #[tokio::test]
 async fn persist_disabled_install_request_writes_plugin_config() {
-    let codex_home = tempdir().expect("tempdir should succeed");
+    let ava_home = tempdir().expect("tempdir should succeed");
     let tool = DiscoverableTool::Plugin(Box::new(DiscoverablePluginInfo {
         id: "slack@openai-curated".to_string(),
         remote_plugin_id: None,
@@ -232,12 +232,12 @@ async fn persist_disabled_install_request_writes_plugin_config() {
         app_connector_ids: Vec::new(),
     }));
 
-    persist_disabled_install_request(&codex_home.path().abs(), &tool)
+    persist_disabled_install_request(&ava_home.path().abs(), &tool)
         .await
         .expect("persist plugin disable");
 
     let contents =
-        std::fs::read_to_string(codex_home.path().join(CONFIG_TOML_FILE)).expect("read config");
+        std::fs::read_to_string(ava_home.path().join(CONFIG_TOML_FILE)).expect("read config");
     let parsed: ConfigToml = toml::from_str(&contents).expect("parse config");
     assert_eq!(
         parsed.tool_suggest,
@@ -250,10 +250,10 @@ async fn persist_disabled_install_request_writes_plugin_config() {
 
 #[tokio::test]
 async fn persist_disabled_install_request_dedupes_existing_disabled_tools() {
-    let codex_home = tempdir().expect("tempdir should succeed");
+    let ava_home = tempdir().expect("tempdir should succeed");
     let tool = connector_tool("connector_calendar", "Google Calendar");
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 [tool_suggest]
 discoverables = [
@@ -279,12 +279,12 @@ id = "slack@openai-curated"
     )
     .expect("write config");
 
-    persist_disabled_install_request(&codex_home.path().abs(), &tool)
+    persist_disabled_install_request(&ava_home.path().abs(), &tool)
         .await
         .expect("persist connector disable");
 
     let contents =
-        std::fs::read_to_string(codex_home.path().join(CONFIG_TOML_FILE)).expect("read config");
+        std::fs::read_to_string(ava_home.path().join(CONFIG_TOML_FILE)).expect("read config");
     let parsed: ConfigToml = toml::from_str(&contents).expect("parse config");
     assert_eq!(
         parsed.tool_suggest,

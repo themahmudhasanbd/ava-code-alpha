@@ -1,38 +1,38 @@
 use anyhow::Context;
-use codex_config::AppToolApproval;
-use codex_config::McpServerToolConfig;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::EnvironmentConfig;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_core_plugins::ExecutorPluginProvider;
-use codex_core_plugins::PluginCatalog;
-use codex_core_plugins::PluginCatalogEntry;
-use codex_core_plugins::PluginIdentity;
-use codex_core_plugins::PluginListQuery;
-use codex_core_plugins::PluginProvider;
-use codex_core_plugins::PluginProviderError;
-use codex_core_plugins::PluginProviderFuture;
-use codex_core_plugins::PluginSourceLocation;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecutorCapabilityDiscoveryCache;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_mcp_extension::PluginProviders;
-use codex_mcp_extension::PluginsThreadState;
-use codex_mcp_extension::install_plugin_providers;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_utils_path_uri::PathUri;
+use ava_config::AppToolApproval;
+use ava_config::McpServerToolConfig;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::EnvironmentConfig;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_core_plugins::ExecutorPluginProvider;
+use ava_core_plugins::PluginCatalog;
+use ava_core_plugins::PluginCatalogEntry;
+use ava_core_plugins::PluginIdentity;
+use ava_core_plugins::PluginListQuery;
+use ava_core_plugins::PluginProvider;
+use ava_core_plugins::PluginProviderError;
+use ava_core_plugins::PluginProviderFuture;
+use ava_core_plugins::PluginSourceLocation;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecutorCapabilityDiscoveryCache;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_mcp_extension::PluginProviders;
+use ava_mcp_extension::PluginsThreadState;
+use ava_mcp_extension::install_plugin_providers;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_utils_path_uri::PathUri;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::recorded_apps_tool_calls;
 use core_test_support::responses::ev_assistant_message;
@@ -43,8 +43,8 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::run_test_with_large_stack;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::run_test_with_large_stack;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::HashMap;
@@ -73,11 +73,11 @@ struct PackageSummary {
 
 #[tokio::test]
 async fn selected_plugin_servers_use_managed_requirements_for_the_selected_root_id() -> TestResult {
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     let plugin_root = tempfile::tempdir()?;
-    std::fs::create_dir_all(plugin_root.path().join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.path().join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.path().join(".codex-plugin/plugin.json"),
+        plugin_root.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"different-manifest-name","interface":{"displayName":"Selected Demo"}}"#,
     )?;
     std::fs::write(
@@ -91,12 +91,12 @@ async fn selected_plugin_servers_use_managed_requirements_for_the_selected_root_
 }"#,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[plugins.\"selected-root\".mcp_servers.mismatched]\nenabled = true\n[plugins.\"selected-root\".mcp_servers.unlisted]\nenabled = true",
     )?;
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -144,12 +144,12 @@ command = "expected-command"
 
 #[tokio::test]
 async fn selected_plugin_package_is_contributed_without_servers_or_connectors() -> TestResult {
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     let plugin_root = tempfile::tempdir()?;
-    std::fs::create_dir_all(plugin_root.path().join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.path().join(".ava-plugin"))?;
     std::fs::create_dir_all(plugin_root.path().join("skills/deploy"))?;
     std::fs::write(
-        plugin_root.path().join(".codex-plugin/plugin.json"),
+        plugin_root.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"skill-only","interface":{"displayName":"Skill Only"}}"#,
     )?;
     std::fs::write(
@@ -157,8 +157,8 @@ async fn selected_plugin_package_is_contributed_without_servers_or_connectors() 
         "---\nname: deploy\ndescription: Deploy the project.\n---\n",
     )?;
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -193,11 +193,11 @@ async fn selected_plugin_package_is_contributed_without_servers_or_connectors() 
 
 #[tokio::test]
 async fn managed_plugins_requirement_disables_selected_plugin_capabilities() -> TestResult {
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     let plugin_root = tempfile::tempdir()?;
-    std::fs::create_dir_all(plugin_root.path().join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.path().join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.path().join(".codex-plugin/plugin.json"),
+        plugin_root.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"selected-root","interface":{"displayName":"Selected Root"}}"#,
     )?;
     std::fs::write(
@@ -205,8 +205,8 @@ async fn managed_plugins_requirement_disables_selected_plugin_capabilities() -> 
         r#"{"mcpServers":{"probe":{"command":"probe-command"}}}"#,
     )?;
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -247,11 +247,11 @@ plugins = false
 
 #[tokio::test]
 async fn high_level_discovery_matches_the_existing_plugin_provider() -> TestResult {
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     let plugin_root = tempfile::tempdir()?;
-    std::fs::create_dir_all(plugin_root.path().join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.path().join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.path().join(".codex-plugin/plugin.json"),
+        plugin_root.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"demo","interface":{"displayName":"Demo"},"mcpServers":"./servers.json"}"#,
     )?;
     std::fs::write(
@@ -278,7 +278,7 @@ async fn high_level_discovery_matches_the_existing_plugin_provider() -> TestResu
 }"#,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 [plugins."selected-root".mcp_servers.first]
 enabled = false
@@ -302,8 +302,8 @@ default_tools_approval_mode = "auto"
 "#,
     )?;
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
     let existing = selected_plugin_contributions(&config, plugin_root.path()).await?;
@@ -415,7 +415,7 @@ async fn raw_selected_plugin_contributions(
 ) -> Result<Vec<McpServerContribution>, Box<dyn std::error::Error>> {
     let mut builder = ExtensionRegistryBuilder::new();
     let environment_manager = Arc::new(EnvironmentManager::default_for_tests());
-    codex_mcp_extension::install_plugins(&mut builder, Arc::clone(&environment_manager));
+    ava_mcp_extension::install_plugins(&mut builder, Arc::clone(&environment_manager));
     let registry = builder.build();
     let thread_init = ExtensionDataInit::new();
     let selected_capability_roots = vec![SelectedCapabilityRoot {
@@ -510,7 +510,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             .with_priority(1)
             .mount(&plugin_server).await;
         let declaration =
-            json!({"url": format!("{}/api/codex/ps/mcp", plugin_mcp.chatgpt_base_url)});
+            json!({"url": format!("{}/api/ava/ps/mcp", plugin_mcp.chatgpt_base_url)});
         let cloud = Arc::new(CloudCatalogFixture {
             reply: if cloud_empty {
                 Ok(PluginCatalog::default())
@@ -544,9 +544,9 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             providers = providers.with_cloud_provider(cloud.clone());
         }
         install_plugin_providers(&mut extensions, providers);
-        let mut builder = test_codex()
+        let mut builder = test_ava()
             .with_extensions(Arc::new(extensions.build()))
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_model_info_override("gpt-5.5", |model| model.supports_search_tool = false)
             .with_config(move |config| {
                 assert!(config.features.enable(Feature::Plugins).is_ok());
@@ -562,7 +562,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
         let test = builder.build(&server).await?;
         if installed {
             let selection = test
-                .codex
+                .ava-code
                 .environment_selections()
                 .await
                 .into_iter()
@@ -570,8 +570,8 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
                 .context("selected environment missing")?;
             let root = selection.cwd.join("notes")?;
             let root_path = root.to_abs_path()?;
-            fs::create_dir_all(root_path.join(".codex-plugin"))?;
-            fs::write(root_path.join(".codex-plugin/plugin.json"), json!({
+            fs::create_dir_all(root_path.join(".ava-plugin"))?;
+            fs::write(root_path.join(".ava-plugin/plugin.json"), json!({
                 "name": "notes", "version": "1", "interface": {"displayName": "Installed Notes"},
                 "mcpServers": "./.mcp.json"
             }).to_string())?;
@@ -579,7 +579,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
                 root_path.join(".mcp.json"),
                 json!({"mcpServers": {"notes": declaration}}).to_string(),
             )?;
-            test.codex
+            test.ava-code
                 .environment_ready(
                     &selection,
                     EnvironmentConfig {
@@ -673,7 +673,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             "{case}"
         );
         let state = test
-            .codex
+            .ava-code
             .thread_extension_data()
             .get::<PluginsThreadState>()
             .context("plugin state missing")?;
@@ -683,7 +683,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             "{case}"
         );
         let calendar = requests[0]
-            .tool_by_name("mcp__codex_apps__calendar", "_list_events")
+            .tool_by_name("mcp__ava_apps__calendar", "_list_events")
             .context("Calendar tool missing")?;
         assert_eq!(
             calendar["description"]
@@ -693,7 +693,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             cloud_enabled && cloud_available && !cloud_empty,
             "{case}"
         );
-        test.codex.shutdown_and_wait().await?;
+        test.ava-code.shutdown_and_wait().await?;
     }
     Ok(())
 }

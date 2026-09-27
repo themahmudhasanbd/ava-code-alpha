@@ -22,73 +22,73 @@ use crate::tools::lifecycle::process_mcp_tool_result;
 use crate::tools::sandboxing::ApprovalAction;
 use crate::tools::sandboxing::ToolError;
 use crate::turn_metadata::ExecutionMetadata;
-use codex_analytics::AppInvocation;
-use codex_analytics::ElicitationType;
-use codex_analytics::InvocationType;
-use codex_analytics::McpToolCallElicitation;
-use codex_analytics::build_track_events_context;
-use codex_api::HostedFileUploadContext;
-use codex_config::ConfigLayerSource;
-use codex_config::types::AppToolApproval;
-use codex_connectors::AppToolPolicy;
-use codex_connectors::AppToolPolicyEvaluator;
-use codex_connectors::AppToolPolicyInput;
-use codex_extension_api::McpToolContext;
-use codex_features::Feature;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::MCP_TOOL_CODEX_APPS_META_KEY;
-use codex_mcp::McpPermissionPromptAutoApproveContext;
-use codex_mcp::PreparedMcpCall;
-use codex_mcp::SandboxState;
-use codex_mcp::ToolInfo;
-use codex_mcp::auth_elicitation_completed_result;
-use codex_mcp::build_auth_elicitation_plan;
-use codex_mcp::is_connector_auth_failure_from_tool_result;
-use codex_mcp::mcp_permission_prompt_is_auto_approved;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::approvals::ElicitationRequest;
-use codex_protocol::items::McpAppDisplayMode;
-use codex_protocol::items::McpAppUi;
-use codex_protocol::items::McpToolCallError;
-use codex_protocol::items::McpToolCallItem;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::mcp::CONFIRMATION_POLICIES_META_KEY;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::mcp::is_node_repl_backed_server;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_KEY as MCP_TOOL_APPROVAL_KIND_KEY;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_MCP_TOOL_CALL as MCP_TOOL_APPROVAL_KIND_MCP_TOOL_CALL;
-use codex_protocol::mcp_approval_meta::CONNECTOR_DESCRIPTION_KEY as MCP_TOOL_APPROVAL_CONNECTOR_DESCRIPTION_KEY;
-use codex_protocol::mcp_approval_meta::CONNECTOR_ID_KEY as MCP_TOOL_APPROVAL_CONNECTOR_ID_KEY;
-use codex_protocol::mcp_approval_meta::CONNECTOR_NAME_KEY as MCP_TOOL_APPROVAL_CONNECTOR_NAME_KEY;
-use codex_protocol::mcp_approval_meta::PERSIST_ALWAYS as MCP_TOOL_APPROVAL_PERSIST_ALWAYS;
-use codex_protocol::mcp_approval_meta::PERSIST_KEY as MCP_TOOL_APPROVAL_PERSIST_KEY;
-use codex_protocol::mcp_approval_meta::PERSIST_SESSION as MCP_TOOL_APPROVAL_PERSIST_SESSION;
-use codex_protocol::mcp_approval_meta::SOURCE_CONNECTOR as MCP_TOOL_APPROVAL_SOURCE_CONNECTOR;
-use codex_protocol::mcp_approval_meta::SOURCE_KEY as MCP_TOOL_APPROVAL_SOURCE_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_DESCRIPTION_KEY as MCP_TOOL_APPROVAL_TOOL_DESCRIPTION_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_PARAMS_DISPLAY_KEY as MCP_TOOL_APPROVAL_TOOL_PARAMS_DISPLAY_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_PARAMS_KEY as MCP_TOOL_APPROVAL_TOOL_PARAMS_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_TITLE_KEY as MCP_TOOL_APPROVAL_TOOL_TITLE_KEY;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::McpInvocation;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputArgs;
-use codex_protocol::request_user_input::RequestUserInputQuestion;
-use codex_protocol::request_user_input::RequestUserInputQuestionOption;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rollout::state_db;
-use codex_tools::ToolName;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
-use codex_utils_path_uri::PathUri;
-use codex_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
+use ava_analytics::AppInvocation;
+use ava_analytics::ElicitationType;
+use ava_analytics::InvocationType;
+use ava_analytics::McpToolCallElicitation;
+use ava_analytics::build_track_events_context;
+use ava_api::HostedFileUploadContext;
+use ava_config::ConfigLayerSource;
+use ava_config::types::AppToolApproval;
+use ava_connectors::AppToolPolicy;
+use ava_connectors::AppToolPolicyEvaluator;
+use ava_connectors::AppToolPolicyInput;
+use ava_extension_api::McpToolContext;
+use ava_features::Feature;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::MCP_TOOL_AVA_APPS_META_KEY;
+use ava_mcp::McpPermissionPromptAutoApproveContext;
+use ava_mcp::PreparedMcpCall;
+use ava_mcp::SandboxState;
+use ava_mcp::ToolInfo;
+use ava_mcp::auth_elicitation_completed_result;
+use ava_mcp::build_auth_elicitation_plan;
+use ava_mcp::is_connector_auth_failure_from_tool_result;
+use ava_mcp::mcp_permission_prompt_is_auto_approved;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::approvals::ElicitationRequest;
+use ava_protocol::items::McpAppDisplayMode;
+use ava_protocol::items::McpAppUi;
+use ava_protocol::items::McpToolCallError;
+use ava_protocol::items::McpToolCallItem;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::mcp::CONFIRMATION_POLICIES_META_KEY;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::is_node_repl_backed_server;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_KEY as MCP_TOOL_APPROVAL_KIND_KEY;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_MCP_TOOL_CALL as MCP_TOOL_APPROVAL_KIND_MCP_TOOL_CALL;
+use ava_protocol::mcp_approval_meta::CONNECTOR_DESCRIPTION_KEY as MCP_TOOL_APPROVAL_CONNECTOR_DESCRIPTION_KEY;
+use ava_protocol::mcp_approval_meta::CONNECTOR_ID_KEY as MCP_TOOL_APPROVAL_CONNECTOR_ID_KEY;
+use ava_protocol::mcp_approval_meta::CONNECTOR_NAME_KEY as MCP_TOOL_APPROVAL_CONNECTOR_NAME_KEY;
+use ava_protocol::mcp_approval_meta::PERSIST_ALWAYS as MCP_TOOL_APPROVAL_PERSIST_ALWAYS;
+use ava_protocol::mcp_approval_meta::PERSIST_KEY as MCP_TOOL_APPROVAL_PERSIST_KEY;
+use ava_protocol::mcp_approval_meta::PERSIST_SESSION as MCP_TOOL_APPROVAL_PERSIST_SESSION;
+use ava_protocol::mcp_approval_meta::SOURCE_CONNECTOR as MCP_TOOL_APPROVAL_SOURCE_CONNECTOR;
+use ava_protocol::mcp_approval_meta::SOURCE_KEY as MCP_TOOL_APPROVAL_SOURCE_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_DESCRIPTION_KEY as MCP_TOOL_APPROVAL_TOOL_DESCRIPTION_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_PARAMS_DISPLAY_KEY as MCP_TOOL_APPROVAL_TOOL_PARAMS_DISPLAY_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_PARAMS_KEY as MCP_TOOL_APPROVAL_TOOL_PARAMS_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_TITLE_KEY as MCP_TOOL_APPROVAL_TOOL_TITLE_KEY;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::McpInvocation;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputArgs;
+use ava_protocol::request_user_input::RequestUserInputQuestion;
+use ava_protocol::request_user_input::RequestUserInputQuestionOption;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rollout::state_db;
+use ava_tools::ToolName;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
+use ava_utils_path_uri::PathUri;
+use ava_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
 use rmcp::model::ToolAnnotations;
 use serde::Deserialize;
 use serde::Serialize;
@@ -111,13 +111,13 @@ use telemetry::emit_mcp_call_metrics;
 use telemetry::mcp_call_metric_outcome;
 use telemetry::record_mcp_call_outcome_span_telemetry;
 
-const MCP_RESULT_TELEMETRY_META_KEY: &str = "codex/telemetry";
+const MCP_RESULT_TELEMETRY_META_KEY: &str = "ava/telemetry";
 const MCP_RESULT_TELEMETRY_SPAN_KEY: &str = "span";
 const MCP_RESULT_TELEMETRY_TARGET_ID_KEY: &str = "target_id";
 const MCP_RESULT_TELEMETRY_DID_TRIGGER_SERVER_USER_FLOW_KEY: &str = "did_trigger_server_user_flow";
-const MCP_RESULT_TELEMETRY_TARGET_ID_SPAN_ATTR: &str = "codex.mcp.target.id";
+const MCP_RESULT_TELEMETRY_TARGET_ID_SPAN_ATTR: &str = "ava.mcp.target.id";
 const MCP_RESULT_TELEMETRY_SERVER_USER_FLOW_SPAN_ATTR: &str =
-    "codex.mcp.server_user_flow.triggered";
+    "ava.mcp.server_user_flow.triggered";
 const MCP_RESULT_TELEMETRY_TARGET_ID_MAX_CHARS: usize = 256;
 const MCP_TOOL_CALL_EVENT_RESULT_MAX_BYTES: usize = DEFAULT_OUTPUT_BYTES_CAP;
 
@@ -209,7 +209,7 @@ pub(crate) async fn handle_mcp_tool_call(
     };
     let item_metadata = McpToolCallItemMetadata::from_tool_metadata(&server, Some(&metadata));
     let runtime_config = prepared_call.config();
-    let app_tool_policy = if server == CODEX_APPS_MCP_SERVER_NAME {
+    let app_tool_policy = if server == AVA_APPS_MCP_SERVER_NAME {
         let annotations = metadata.annotations.as_ref();
         AppToolPolicyEvaluator::new(&runtime_config.config_layer_stack).policy(AppToolPolicyInput {
             connector_id: metadata.connector_id.as_deref(),
@@ -222,7 +222,7 @@ pub(crate) async fn handle_mcp_tool_call(
     } else {
         AppToolPolicy::default()
     };
-    let approval_mode = if server == CODEX_APPS_MCP_SERVER_NAME {
+    let approval_mode = if server == AVA_APPS_MCP_SERVER_NAME {
         app_tool_policy.approval
     } else {
         prepared_call.tool_approval_mode()
@@ -231,7 +231,7 @@ pub(crate) async fn handle_mcp_tool_call(
     let connector_id = metadata.connector_id.clone();
     let connector_name = metadata.connector_name.clone();
 
-    if server == CODEX_APPS_MCP_SERVER_NAME && !app_tool_policy.enabled {
+    if server == AVA_APPS_MCP_SERVER_NAME && !app_tool_policy.enabled {
         let result = notify_mcp_tool_call_skip(
             sess.as_ref(),
             turn_context.as_ref(),
@@ -405,7 +405,7 @@ struct McpToolCallItemMetadata {
 
 impl McpToolCallItemMetadata {
     fn from_tool_metadata(server: &str, metadata: Option<&McpToolApprovalMetadata>) -> Self {
-        let trusted_mcp_app_metadata = if server == CODEX_APPS_MCP_SERVER_NAME {
+        let trusted_mcp_app_metadata = if server == AVA_APPS_MCP_SERVER_NAME {
             metadata
         } else {
             None
@@ -417,7 +417,7 @@ impl McpToolCallItemMetadata {
             mcp_app_ui: metadata.and_then(|metadata| metadata.mcp_app_ui.clone()),
             app_name: trusted_mcp_app_metadata.and_then(|metadata| metadata.connector_name.clone()),
             action_name: trusted_mcp_app_metadata
-                .and_then(|metadata| metadata.codex_apps_meta.as_ref())
+                .and_then(|metadata| metadata.ava_apps_meta.as_ref())
                 .and_then(|meta| meta.get(MCP_TOOL_RESOURCE_URI_META_KEY))
                 .and_then(serde_json::Value::as_str)
                 .and_then(|resource_uri| resource_uri.trim_matches('/').rsplit('/').next())
@@ -560,7 +560,7 @@ async fn handle_approved_mcp_tool_call(
                 &step_context.settings.model_info.input_modalities,
                 Ok(result),
             )?;
-            Ok(maybe_request_codex_apps_auth_elicitation(
+            Ok(maybe_request_ava_apps_auth_elicitation(
                 sess,
                 turn_context,
                 prepared_call.config().approval_policy.value(),
@@ -605,7 +605,7 @@ async fn handle_approved_mcp_tool_call(
         truncate_mcp_tool_result_for_event(&result),
     )
     .await;
-    maybe_track_codex_app_used(sess, step_context, &server, &metadata, elicitation_type).await;
+    maybe_track_ava_app_used(sess, step_context, &server, &metadata, elicitation_type).await;
 
     let outcome = mcp_call_metric_outcome(&result);
     emit_mcp_call_metrics(
@@ -652,10 +652,10 @@ fn mcp_tool_call_span(
         turn.id = turn_context.sub_id.as_str(),
         server.address = Empty,
         server.port = Empty,
-        codex.mcp.target.id = Empty,
-        codex.mcp.server_user_flow.triggered = Empty,
+        ava.mcp.target.id = Empty,
+        ava.mcp.server_user_flow.triggered = Empty,
         error.type = Empty,
-        codex.mcp.error.code = Empty,
+        ava.mcp.error.code = Empty,
     );
     record_server_fields(&span, fields.server_origin);
     span
@@ -730,7 +730,7 @@ fn truncate_str_to_char_boundary(value: &str, max_chars: usize) -> &str {
     }
 }
 
-async fn maybe_request_codex_apps_auth_elicitation(
+async fn maybe_request_ava_apps_auth_elicitation(
     sess: &Arc<Session>,
     turn_context: &TurnContext,
     approval_policy: AskForApproval,
@@ -739,7 +739,7 @@ async fn maybe_request_codex_apps_auth_elicitation(
     metadata: Option<&McpToolApprovalMetadata>,
     result: CallToolResult,
 ) -> CallToolResult {
-    if server != CODEX_APPS_MCP_SERVER_NAME {
+    if server != AVA_APPS_MCP_SERVER_NAME {
         return result;
     }
 
@@ -763,7 +763,7 @@ async fn maybe_request_codex_apps_auth_elicitation(
     let connector_id = metadata.and_then(|metadata| metadata.connector_id.as_deref());
     let connector_name = metadata.and_then(|metadata| metadata.connector_name.as_deref());
     let install_url = connector_id.map(|connector_id| {
-        codex_connectors::metadata::connector_install_url(
+        ava_connectors::metadata::connector_install_url(
             connector_name.unwrap_or(connector_id),
             connector_id,
         )
@@ -784,7 +784,7 @@ async fn maybe_request_codex_apps_auth_elicitation(
     let outcome = match sess
         .request_mcp_server_elicitation(
             turn_context,
-            CODEX_APPS_MCP_SERVER_NAME.to_string(),
+            AVA_APPS_MCP_SERVER_NAME.to_string(),
             request_id,
             request,
         )
@@ -822,12 +822,12 @@ async fn maybe_request_codex_apps_auth_elicitation(
         return result;
     }
 
-    refresh_codex_apps_after_connector_auth(sess, turn_context).await;
+    refresh_ava_apps_after_connector_auth(sess, turn_context).await;
     auth_elicitation_completed_result(&plan.auth_failure, result.meta)
 }
 
-async fn refresh_codex_apps_after_connector_auth(sess: &Arc<Session>, turn_context: &TurnContext) {
-    let mcp_tools_result = sess.hard_refresh_latest_codex_apps_tools().await;
+async fn refresh_ava_apps_after_connector_auth(sess: &Arc<Session>, turn_context: &TurnContext) {
+    let mcp_tools_result = sess.hard_refresh_latest_ava_apps_tools().await;
 
     match mcp_tools_result {
         Ok(mcp_tools) => {
@@ -839,7 +839,7 @@ async fn refresh_codex_apps_after_connector_auth(sess: &Arc<Session>, turn_conte
             );
         }
         Err(err) => {
-            tracing::warn!("failed to refresh Codex Apps tools after connector auth: {err:#}");
+            tracing::warn!("failed to refresh Ava Apps tools after connector auth: {err:#}");
         }
     }
 }
@@ -871,7 +871,7 @@ async fn augment_mcp_tool_request_meta_with_sandbox_state(
     // TurnEnvironment::sandbox_context instead of the runtime-wide Landlock value.
     let sandbox_state = serde_json::to_value(SandboxState {
         permission_profile: prepared_call.permission_profile().clone(),
-        codex_linux_sandbox_exe: prepared_call.config().codex_linux_sandbox_exe.clone(),
+        ava_linux_sandbox_exe: prepared_call.config().ava_linux_sandbox_exe.clone(),
         sandbox_cwd,
         use_legacy_landlock: prepared_call.config().use_legacy_landlock,
     })?;
@@ -879,7 +879,7 @@ async fn augment_mcp_tool_request_meta_with_sandbox_state(
     match meta.as_mut() {
         Some(serde_json::Value::Object(map)) => {
             map.insert(
-                codex_mcp::MCP_SANDBOX_STATE_META_CAPABILITY.to_string(),
+                ava_mcp::MCP_SANDBOX_STATE_META_CAPABILITY.to_string(),
                 sandbox_state,
             );
         }
@@ -887,7 +887,7 @@ async fn augment_mcp_tool_request_meta_with_sandbox_state(
         None => {
             let mut map = serde_json::Map::new();
             map.insert(
-                codex_mcp::MCP_SANDBOX_STATE_META_CAPABILITY.to_string(),
+                ava_mcp::MCP_SANDBOX_STATE_META_CAPABILITY.to_string(),
                 sandbox_state,
             );
             meta = Some(serde_json::Value::Object(map));
@@ -906,7 +906,7 @@ fn sandbox_cwd_for_mcp_server(step_context: &StepContext, environment_id: &str) 
         return Some(environment.cwd().clone());
     }
 
-    if environment_id == codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID {
+    if environment_id == ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID {
         #[allow(deprecated)]
         return Some(PathUri::from_abs_path(&step_context.turn.cwd));
     }
@@ -1101,14 +1101,14 @@ async fn notify_mcp_tool_call_completed(
     sess.emit_turn_item_completed(turn_context, item).await;
 }
 
-async fn maybe_track_codex_app_used(
+async fn maybe_track_ava_app_used(
     sess: &Session,
     step_context: &StepContext,
     server: &str,
     metadata: &McpToolApprovalMetadata,
     elicitation_type: Option<ElicitationType>,
 ) {
-    if server != CODEX_APPS_MCP_SERVER_NAME {
+    if server != AVA_APPS_MCP_SERVER_NAME {
         return;
     }
     let connector_id = metadata.connector_id.clone();
@@ -1163,7 +1163,7 @@ fn mcp_tool_call_auth_elicitation_type(
     connector_id: Option<&str>,
     result: &CallToolResult,
 ) -> Option<ElicitationType> {
-    (server == CODEX_APPS_MCP_SERVER_NAME
+    (server == AVA_APPS_MCP_SERVER_NAME
         && is_connector_auth_failure_from_tool_result(result, connector_id))
     .then_some(ElicitationType::AuthOrLink)
 }
@@ -1210,7 +1210,7 @@ pub(crate) struct McpToolApprovalMetadata {
     tool_title: Option<String>,
     tool_description: Option<String>,
     mcp_app_ui: Option<McpAppUi>,
-    codex_apps_meta: Option<serde_json::Map<String, serde_json::Value>>,
+    ava_apps_meta: Option<serde_json::Map<String, serde_json::Value>>,
     openai_file_input_optional_fields: Option<HashMap<String, Vec<String>>>,
 }
 
@@ -1223,7 +1223,7 @@ impl Session {
     ) -> Arc<(Option<McpInvocation>, McpToolApprovalMetadata)> {
         let key = (invocation.server.clone(), call_id.to_string());
         let metadata = Arc::new((
-            (invocation.server == CODEX_APPS_MCP_SERVER_NAME
+            (invocation.server == AVA_APPS_MCP_SERVER_NAME
                 || is_node_repl_backed_server(&invocation.server))
             .then(|| invocation.clone()),
             metadata,
@@ -1280,7 +1280,7 @@ async fn custom_mcp_tool_approval_mode(
         .and_then(|table| table.get("mcp_servers"))
         .cloned()
         .and_then(|value| {
-            HashMap::<String, codex_config::types::McpServerConfig>::deserialize(value).ok()
+            HashMap::<String, ava_config::types::McpServerConfig>::deserialize(value).ok()
         })
         .and_then(|servers| {
             let server_config = servers.get(server)?;
@@ -1335,22 +1335,22 @@ fn build_mcp_tool_call_request_meta(
         ))
     {
         request_meta.insert(
-            crate::X_CODEX_TURN_METADATA_HEADER.to_string(),
+            crate::X_AVA_TURN_METADATA_HEADER.to_string(),
             turn_metadata,
         );
     }
 
-    if server == CODEX_APPS_MCP_SERVER_NAME {
-        let mut codex_apps_meta = metadata
-            .and_then(|metadata| metadata.codex_apps_meta.clone())
+    if server == AVA_APPS_MCP_SERVER_NAME {
+        let mut ava_apps_meta = metadata
+            .and_then(|metadata| metadata.ava_apps_meta.clone())
             .unwrap_or_default();
-        codex_apps_meta.insert(
+        ava_apps_meta.insert(
             "call_id".to_string(),
             serde_json::Value::String(call_id.to_string()),
         );
         request_meta.insert(
-            MCP_TOOL_CODEX_APPS_META_KEY.to_string(),
-            serde_json::Value::Object(codex_apps_meta),
+            MCP_TOOL_AVA_APPS_META_KEY.to_string(),
+            serde_json::Value::Object(ava_apps_meta),
         );
     }
     if let Some(plugin_id) = metadata.and_then(|metadata| metadata.plugin_id.as_ref()) {
@@ -1485,7 +1485,7 @@ async fn maybe_request_mcp_tool_approval(
     invocation_tool_name: &ToolName,
     hook_tool_name: &HookToolName,
     metadata: &McpToolApprovalMetadata,
-    config: &codex_mcp::McpConfig,
+    config: &ava_mcp::McpConfig,
     permission_profile: &PermissionProfile,
     policy: McpToolApprovalPolicy,
 ) -> Option<ReviewDecision> {
@@ -1550,7 +1550,7 @@ async fn maybe_request_mcp_tool_approval(
         connector_id: metadata.connector_id.clone(),
         connector_name: metadata.connector_name.clone(),
         connector_description: metadata.connector_description.clone(),
-        connected_account_email: (invocation.server == CODEX_APPS_MCP_SERVER_NAME)
+        connected_account_email: (invocation.server == AVA_APPS_MCP_SERVER_NAME)
             .then(|| metadata.connected_account_email.clone())
             .flatten(),
         tool_title: metadata.tool_title.clone(),
@@ -1584,7 +1584,7 @@ async fn maybe_request_mcp_tool_approval(
         match sess.request_approval(action, approval_context).await {
             Ok(decision) => decision,
             Err(ToolError::Rejected(rejection)) => ReviewDecision::denied(rejection),
-            Err(ToolError::Codex(_)) => ReviewDecision::Abort,
+            Err(ToolError::Ava(_)) => ReviewDecision::Abort,
         },
     )
 }
@@ -1623,7 +1623,7 @@ pub(crate) async fn request_mcp_tool_user_approval(
     }
 
     if turn_context.session_source.is_non_root_agent() {
-        return ReviewDecision::denied(codex_mcp::MCP_ELICITATION_HANDOFF_MESSAGE);
+        return ReviewDecision::denied(ava_mcp::MCP_ELICITATION_HANDOFF_MESSAGE);
     }
 
     let tool_call_mcp_elicitation_enabled = turn_context
@@ -1672,7 +1672,7 @@ pub(crate) async fn request_mcp_tool_user_approval(
             tool_title: tool_title.clone(),
             tool_description: tool_description.clone(),
             mcp_app_ui: None,
-            codex_apps_meta: None,
+            ava_apps_meta: None,
             openai_file_input_optional_fields: None,
         };
         let request_id = rmcp::model::RequestId::String(question_id.clone().into());
@@ -1741,7 +1741,7 @@ fn session_mcp_tool_approval_key(
     }
 
     let connector_id = metadata.and_then(|metadata| metadata.connector_id.clone());
-    if invocation.server == CODEX_APPS_MCP_SERVER_NAME && connector_id.is_none() {
+    if invocation.server == AVA_APPS_MCP_SERVER_NAME && connector_id.is_none() {
         return None;
     }
 
@@ -1775,7 +1775,7 @@ pub(crate) fn build_guardian_mcp_tool_review_request(
         connector_id: metadata.and_then(|metadata| metadata.connector_id.clone()),
         connector_name: metadata.and_then(|metadata| metadata.connector_name.clone()),
         connector_description: metadata.and_then(|metadata| metadata.connector_description.clone()),
-        connected_account_email: (invocation.server == CODEX_APPS_MCP_SERVER_NAME)
+        connected_account_email: (invocation.server == AVA_APPS_MCP_SERVER_NAME)
             .then(|| metadata.and_then(|metadata| metadata.connected_account_email.clone()))
             .flatten(),
         tool_title: metadata.and_then(|metadata| metadata.tool_title.clone()),
@@ -1797,24 +1797,24 @@ fn mcp_tool_metadata(
 ) -> Result<McpToolApprovalMetadata, McpToolAccountError> {
     let server = tool_info.server_name.as_str();
     let tool_info = tool_info.clone();
-    let connector_description = (server == CODEX_APPS_MCP_SERVER_NAME)
+    let connector_description = (server == AVA_APPS_MCP_SERVER_NAME)
         .then(|| tool_info.namespace_description.clone())
         .flatten();
 
-    let codex_apps_meta = tool_info
+    let ava_apps_meta = tool_info
         .tool
         .meta
         .as_ref()
-        .and_then(|meta| meta.get(MCP_TOOL_CODEX_APPS_META_KEY))
+        .and_then(|meta| meta.get(MCP_TOOL_AVA_APPS_META_KEY))
         .and_then(serde_json::Value::as_object)
         .cloned();
-    let link_id = if server == CODEX_APPS_MCP_SERVER_NAME {
+    let link_id = if server == AVA_APPS_MCP_SERVER_NAME {
         account::resolve_account(&tool_info, arguments)?
     } else {
         None
     };
-    let connected_account_email = if server == CODEX_APPS_MCP_SERVER_NAME {
-        codex_apps_meta
+    let connected_account_email = if server == AVA_APPS_MCP_SERVER_NAME {
+        ava_apps_meta
             .as_ref()
             .and_then(|meta| meta.get(MCP_TOOL_CONNECTED_ACCOUNT_EMAIL_META_KEY))
             .and_then(serde_json::Value::as_str)
@@ -1854,7 +1854,7 @@ fn mcp_tool_metadata(
         tool_title: tool_info.tool.title,
         tool_description: tool_info.tool.description.map(std::borrow::Cow::into_owned),
         mcp_app_ui,
-        codex_apps_meta,
+        ava_apps_meta,
         // Disallow custom MCPs from uploading files via fileParams.
         openai_file_input_optional_fields: openai_file_input_optional_fields_for_server(
             server,
@@ -1867,7 +1867,7 @@ fn openai_file_input_optional_fields_for_server(
     server: &str,
     openai_file_input_optional_fields: &HashMap<String, Vec<String>>,
 ) -> Option<HashMap<String, Vec<String>>> {
-    (server == CODEX_APPS_MCP_SERVER_NAME)
+    (server == AVA_APPS_MCP_SERVER_NAME)
         .then(|| openai_file_input_optional_fields.clone())
         .filter(|params| !params.is_empty())
 }
@@ -1948,7 +1948,7 @@ fn build_mcp_tool_approval_fallback_message(
         .filter(|name| !name.is_empty())
         .map(ToString::to_string)
         .unwrap_or_else(|| {
-            if server == CODEX_APPS_MCP_SERVER_NAME {
+            if server == AVA_APPS_MCP_SERVER_NAME {
                 "this app".to_string()
             } else {
                 format!("the {server} MCP server")
@@ -2033,7 +2033,7 @@ fn build_mcp_tool_approval_elicitation_meta(
                 serde_json::Value::String(tool_description.clone()),
             );
         }
-        if server == CODEX_APPS_MCP_SERVER_NAME
+        if server == AVA_APPS_MCP_SERVER_NAME
             && (metadata.connector_id.is_some()
                 || metadata.connector_name.is_some()
                 || metadata.connector_description.is_some())
@@ -2053,7 +2053,7 @@ fn build_mcp_tool_approval_elicitation_meta(
                     MCP_TOOL_LINK_ID_META_KEY.to_string(),
                     serde_json::Value::String(link_id.clone()),
                 );
-                // Match the Codex Apps service's reserved implicit-link ID prefix.
+                // Match the Ava Apps service's reserved implicit-link ID prefix.
                 meta.insert(
                     MCP_TOOL_LINK_IS_IMPLICIT_META_KEY.to_string(),
                     serde_json::Value::Bool(link_id.starts_with("implicit_link::")),
@@ -2271,12 +2271,12 @@ async fn maybe_persist_mcp_tool_approval(
 ) {
     let tool_name = key.tool_name.clone();
 
-    let persist_result = if key.server == CODEX_APPS_MCP_SERVER_NAME {
+    let persist_result = if key.server == AVA_APPS_MCP_SERVER_NAME {
         let Some(connector_id) = key.connector_id.clone() else {
             remember_mcp_tool_approval(sess, key).await;
             return;
         };
-        persist_codex_app_tool_approval(&turn_context.config, &connector_id, &tool_name).await
+        persist_ava_app_tool_approval(&turn_context.config, &connector_id, &tool_name).await
     } else {
         persist_non_app_mcp_tool_approval(
             &turn_context.config,
@@ -2302,7 +2302,7 @@ async fn maybe_persist_mcp_tool_approval(
     remember_mcp_tool_approval(sess, key).await;
 }
 
-async fn persist_codex_app_tool_approval(
+async fn persist_ava_app_tool_approval(
     config: &Config,
     connector_id: &str,
     tool_name: &str,
@@ -2411,7 +2411,7 @@ fn user_mcp_server_is_configured(config: &Config, server: &str) -> anyhow::Resul
         return Ok(false);
     };
     let servers =
-        HashMap::<String, codex_config::types::McpServerConfig>::deserialize(mcp_servers_toml)?;
+        HashMap::<String, ava_config::types::McpServerConfig>::deserialize(mcp_servers_toml)?;
     Ok(servers.contains_key(server))
 }
 
@@ -2433,7 +2433,7 @@ fn project_mcp_tool_approval_config_folder(
                 .and_then(|table| table.get("mcp_servers"))
                 .cloned()
                 .and_then(|value| {
-                    HashMap::<String, codex_config::types::McpServerConfig>::deserialize(value).ok()
+                    HashMap::<String, ava_config::types::McpServerConfig>::deserialize(value).ok()
                 })?;
             if servers.contains_key(server) {
                 layer.config_folder()

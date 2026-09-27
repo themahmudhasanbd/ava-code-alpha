@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use async_channel::Receiver;
 use async_channel::Sender;
-use codex_async_utils::OrCancelExt;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::Submission;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::user_input::UserInput;
+use ava_async_utils::OrCancelExt;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::Submission;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::user_input::UserInput;
 use serde_json::Value;
 use std::time::Duration;
 use tokio::time::timeout;
@@ -28,25 +28,25 @@ use crate::session::SessionSpawnArgs;
 use crate::session::emit_subagent_session_started;
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
-use codex_history::InitialHistory;
-use codex_login::AuthManager;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_protocol::error::CodexErr;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::turn_input::TurnInputMode;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnInputSubmission;
-use codex_protocol::turn_input::TurnStartOptions;
+use ava_history::InitialHistory;
+use ava_login::AuthManager;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_protocol::error::AvaErr;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::turn_input::TurnInputMode;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnInputSubmission;
+use ava_protocol::turn_input::TurnStartOptions;
 
 #[cfg(test)]
 use crate::session::completed_session_loop_termination;
 
-/// Start an interactive sub-Codex thread and return its runtime and IO channels.
+/// Start an interactive sub-Ava thread and return its runtime and IO channels.
 ///
 /// Delegates never request approvals, and the returned IO yields their public events.
 /// Its submission channel accepts additional `Op`s for the sub-agent.
 #[allow(clippy::too_many_arguments)]
-pub(crate) async fn run_codex_thread_interactive(
+pub(crate) async fn run_ava_thread_interactive(
     mut config: Config,
     auth_manager: Arc<AuthManager>,
     models_manager: SharedModelsManager,
@@ -55,14 +55,14 @@ pub(crate) async fn run_codex_thread_interactive(
     parent_environments: TurnEnvironmentSnapshot,
     cancel_token: CancellationToken,
     subagent_source: SubAgentSource,
-    isolation: codex_extension_api::SessionIsolation,
+    isolation: ava_extension_api::SessionIsolation,
     initial_history: Option<InitialHistory>,
     git_enrichment_policy: GitEnrichmentPolicy,
-    windows_sandbox_proxy_settings_mode: codex_sandboxing::WindowsSandboxProxySettingsMode,
-) -> Result<(Arc<Session>, SessionIo), CodexErr> {
+    windows_sandbox_proxy_settings_mode: ava_sandboxing::WindowsSandboxProxySettingsMode,
+) -> Result<(Arc<Session>, SessionIo), AvaErr> {
     if config.permissions.approval_policy.value() != AskForApproval::Never {
-        return Err(CodexErr::InvalidRequest(
-            "Codex delegates require approval policy `never`".to_string(),
+        return Err(AvaErr::InvalidRequest(
+            "Ava delegates require approval policy `never`".to_string(),
         ));
     }
     config.permissions.approval_policy = Constrained::allow_only(AskForApproval::Never);
@@ -76,12 +76,12 @@ pub(crate) async fn run_codex_thread_interactive(
     let instructions = parent_session.inherited_instructions().await;
     let session_source = SessionSource::SubAgent(subagent_source.clone());
     let is_guardian_reviewer = crate::guardian::is_basic_session_source(&session_source);
-    let extensions = if isolation == codex_extension_api::SessionIsolation::Isolated {
-        codex_extension_api::empty_extension_registry()
+    let extensions = if isolation == ava_extension_api::SessionIsolation::Isolated {
+        ava_extension_api::empty_extension_registry()
     } else {
         Arc::clone(&parent_session.services.extensions)
     };
-    let mut thread_extension_init = codex_extension_api::ExtensionDataInit::default();
+    let mut thread_extension_init = ava_extension_api::ExtensionDataInit::default();
     thread_extension_init.insert(isolation);
     let (session, io) = Session::spawn(SessionSpawnArgs {
         startup: None,
@@ -120,7 +120,7 @@ pub(crate) async fn run_codex_thread_interactive(
         user_shell_override: None,
         inherited_environments: Some(parent_environments.clone()),
         inherited_exec_policy: Some(Arc::clone(&parent_session.services.exec_policy)),
-        parent_rollout_thread_trace: codex_rollout_trace::ThreadTraceContext::disabled(),
+        parent_rollout_thread_trace: ava_rollout_trace::ThreadTraceContext::disabled(),
         parent_trace: None,
         environment_selections: parent_environments.to_selections(),
         thread_extension_init,
@@ -183,7 +183,7 @@ pub(crate) fn forward_session_io(io: Arc<SessionIo>, cancel_token: CancellationT
 ///
 /// Internally calls the interactive variant, then immediately submits the provided input.
 #[allow(clippy::too_many_arguments)]
-pub(crate) async fn run_codex_thread_one_shot(
+pub(crate) async fn run_ava_thread_one_shot(
     config: Config,
     auth_manager: Arc<AuthManager>,
     models_manager: SharedModelsManager,
@@ -194,14 +194,14 @@ pub(crate) async fn run_codex_thread_one_shot(
     subagent_source: SubAgentSource,
     final_output_json_schema: Option<Value>,
     initial_history: Option<InitialHistory>,
-) -> Result<(Arc<Session>, SessionIo), CodexErr> {
+) -> Result<(Arc<Session>, SessionIo), AvaErr> {
     // Use a child token so we can stop the delegate after completion without
     // requiring the caller to cancel the parent token.
     let child_cancel = cancel_token.child_token();
     let parent_turn_id = parent_ctx.sub_id.clone();
     let parent_environments = parent_ctx.initial_environments.clone();
     let root_turn_id = parent_ctx.turn_metadata_state.root_turn_id();
-    let (session, io) = Box::pin(run_codex_thread_interactive(
+    let (session, io) = Box::pin(run_ava_thread_interactive(
         config,
         auth_manager,
         models_manager,
@@ -210,10 +210,10 @@ pub(crate) async fn run_codex_thread_one_shot(
         parent_environments,
         child_cancel.clone(),
         subagent_source,
-        codex_extension_api::SessionIsolation::Inherit,
+        ava_extension_api::SessionIsolation::Inherit,
         initial_history,
         GitEnrichmentPolicy::Fresh,
-        codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+        ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
     ))
     .await?;
 
@@ -233,7 +233,7 @@ pub(crate) async fn run_codex_thread_one_shot(
     match submission {
         TurnInputSubmission::Started { .. } => {}
         submission => {
-            return Err(CodexErr::InvalidRequest(format!(
+            return Err(AvaErr::InvalidRequest(format!(
                 "delegate turn input was not started: {submission:?}"
             )));
         }

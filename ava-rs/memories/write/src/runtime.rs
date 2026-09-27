@@ -1,44 +1,44 @@
 use crate::metrics::MEMORY_STORAGE_BYTES;
 use crate::workspace::memory_storage_bytes;
-use codex_core::CodexThread;
-use codex_core::ModelClient;
-use codex_core::NewThread;
-use codex_core::Prompt;
-use codex_core::ResponseEvent;
-use codex_core::StartIfIdleSubmission;
-use codex_core::StartThreadOptions;
-use codex_core::ThreadManager;
-use codex_core::TurnInputRequest;
-use codex_core::TurnStartOptions;
-use codex_core::config::Config;
-use codex_core::content_items_to_text;
-use codex_core::detached_memory_responses_metadata;
-use codex_core::resolve_installation_id;
-use codex_features::Feature;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_login::auth_env_telemetry::collect_auth_env_telemetry;
-use codex_login::default_client::originator;
-use codex_model_provider::ModelProvider;
-use codex_model_provider::SharedModelProvider;
-use codex_model_provider::create_model_provider;
-use codex_otel::SessionTelemetry;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::MemoryVersion;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::user_input::UserInput;
-use codex_rollout_trace::InferenceTraceContext;
-use codex_state::MemoryStore;
-use codex_terminal_detection::user_agent;
+use ava_core::AvaThread;
+use ava_core::ModelClient;
+use ava_core::NewThread;
+use ava_core::Prompt;
+use ava_core::ResponseEvent;
+use ava_core::StartIfIdleSubmission;
+use ava_core::StartThreadOptions;
+use ava_core::ThreadManager;
+use ava_core::TurnInputRequest;
+use ava_core::TurnStartOptions;
+use ava_core::config::Config;
+use ava_core::content_items_to_text;
+use ava_core::detached_memory_responses_metadata;
+use ava_core::resolve_installation_id;
+use ava_features::Feature;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_login::auth_env_telemetry::collect_auth_env_telemetry;
+use ava_login::default_client::originator;
+use ava_model_provider::ModelProvider;
+use ava_model_provider::SharedModelProvider;
+use ava_model_provider::create_model_provider;
+use ava_otel::SessionTelemetry;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::MemoryVersion;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::user_input::UserInput;
+use ava_rollout_trace::InferenceTraceContext;
+use ava_state::MemoryStore;
+use ava_terminal_detection::user_agent;
 use futures::StreamExt;
 use std::path::Path;
 use std::sync::Arc;
@@ -46,7 +46,7 @@ use std::time::Duration;
 
 pub(crate) struct SpawnedConsolidationAgent {
     pub(crate) thread_id: ThreadId,
-    pub(crate) thread: Arc<CodexThread>,
+    pub(crate) thread: Arc<AvaThread>,
 }
 
 #[derive(Clone, Debug)]
@@ -60,7 +60,7 @@ pub(crate) struct StageOneRequestContext {
 }
 
 impl StageOneRequestContext {
-    pub(crate) fn start_timer(&self, name: &str) -> Option<codex_otel::Timer> {
+    pub(crate) fn start_timer(&self, name: &str) -> Option<ava_otel::Timer> {
         self.session_telemetry
             .start_timer(name, &memory_metric_tags(self.version, &[]))
             .ok()
@@ -80,7 +80,7 @@ impl StageOneRequestContext {
 pub(crate) struct MemoryStartupContext {
     version: MemoryVersion,
     thread_id: ThreadId,
-    thread: Arc<CodexThread>,
+    thread: Arc<AvaThread>,
     thread_manager: Arc<ThreadManager>,
     auth_manager: Arc<AuthManager>,
     provider: SharedModelProvider,
@@ -112,12 +112,12 @@ fn build_session_telemetry(
 ) -> SessionTelemetry {
     let auth = auth_manager.auth_cached();
     let auth = auth.as_ref();
-    let auth_mode = auth.map(CodexAuth::auth_mode).map(TelemetryAuthMode::from);
-    let account_id = auth.and_then(CodexAuth::get_account_id);
-    let account_email = auth.and_then(CodexAuth::get_account_email);
+    let auth_mode = auth.map(AvaAuth::auth_mode).map(TelemetryAuthMode::from);
+    let account_id = auth.and_then(AvaAuth::get_account_id);
+    let account_email = auth.and_then(AvaAuth::get_account_email);
     let auth_env_telemetry = collect_auth_env_telemetry(
         &config.model_provider,
-        auth_manager.codex_api_key_env_enabled(),
+        auth_manager.ava_api_key_env_enabled(),
     );
     SessionTelemetry::new(
         thread_id,
@@ -139,7 +139,7 @@ impl MemoryStartupContext {
         thread_manager: Arc<ThreadManager>,
         auth_manager: Arc<AuthManager>,
         thread_id: ThreadId,
-        thread: Arc<CodexThread>,
+        thread: Arc<AvaThread>,
         config: &Config,
         source: SessionSource,
     ) -> Self {
@@ -163,7 +163,7 @@ impl MemoryStartupContext {
         thread_manager: Arc<ThreadManager>,
         auth_manager: Arc<AuthManager>,
         thread_id: ThreadId,
-        thread: Arc<CodexThread>,
+        thread: Arc<AvaThread>,
         config: &Config,
         source: SessionSource,
         provider: SharedModelProvider,
@@ -183,7 +183,7 @@ impl MemoryStartupContext {
         thread_manager: Arc<ThreadManager>,
         auth_manager: Arc<AuthManager>,
         thread_id: ThreadId,
-        thread: Arc<CodexThread>,
+        thread: Arc<AvaThread>,
         config: &Config,
         source: SessionSource,
         provider: SharedModelProvider,
@@ -272,7 +272,7 @@ impl MemoryStartupContext {
             .histogram(name, value, &memory_metric_tags(self.version, tags));
     }
 
-    pub(crate) fn start_timer(&self, name: &str) -> Option<codex_otel::Timer> {
+    pub(crate) fn start_timer(&self, name: &str) -> Option<ava_otel::Timer> {
         self.session_telemetry
             .start_timer(name, &memory_metric_tags(self.version, &[]))
             .ok()
@@ -317,7 +317,7 @@ impl MemoryStartupContext {
         prompt: &Prompt,
         context: &StageOneRequestContext,
     ) -> anyhow::Result<(String, Option<TokenUsage>)> {
-        let installation_id = resolve_installation_id(&config.codex_home).await?;
+        let installation_id = resolve_installation_id(&config.ava_home).await?;
         let config_snapshot = self.thread.config_snapshot().await;
         let session_source = config_snapshot.session_source;
         let session_id = SessionId::from(self.thread_id);
@@ -375,7 +375,7 @@ impl MemoryStartupContext {
                 ResponseEvent::OutputTextDelta(delta) => result.push_str(&delta),
                 ResponseEvent::OutputItemDone(item) => {
                     if result.is_empty()
-                        && let codex_protocol::models::ResponseItem::Message { content, .. } = item
+                        && let ava_protocol::models::ResponseItem::Message { content, .. } = item
                         && let Some(text) = content_items_to_text(&content)
                     {
                         result.push_str(&text);

@@ -39,8 +39,8 @@ impl Write for TestLogSink {
 }
 
 #[test]
-fn test_get_codex_user_agent() {
-    let user_agent = get_codex_user_agent();
+fn test_get_ava_user_agent() {
+    let user_agent = get_ava_user_agent();
     let originator = originator().value;
     let prefix = format!("{originator}/");
     assert!(user_agent.starts_with(&prefix));
@@ -49,29 +49,29 @@ fn test_get_codex_user_agent() {
 #[test]
 fn is_first_party_originator_matches_known_values() {
     assert_eq!(is_first_party_originator(DEFAULT_ORIGINATOR), true);
-    assert_eq!(is_first_party_originator("codex-tui"), true);
-    assert_eq!(is_first_party_originator("codex_vscode"), true);
-    assert_eq!(is_first_party_originator("Codex Something Else"), true);
-    assert_eq!(is_first_party_originator("codex_cli"), false);
+    assert_eq!(is_first_party_originator("ava-tui"), true);
+    assert_eq!(is_first_party_originator("ava_vscode"), true);
+    assert_eq!(is_first_party_originator("Ava Something Else"), true);
+    assert_eq!(is_first_party_originator("ava_cli"), false);
     assert_eq!(is_first_party_originator("Other"), false);
 }
 
 #[test]
 fn is_first_party_chat_originator_matches_known_values() {
-    assert_eq!(is_first_party_chat_originator("codex_atlas"), true);
+    assert_eq!(is_first_party_chat_originator("ava_atlas"), true);
     assert_eq!(
-        is_first_party_chat_originator("codex_chatgpt_desktop"),
+        is_first_party_chat_originator("ava_chatgpt_desktop"),
         true
     );
     assert_eq!(is_first_party_chat_originator(DEFAULT_ORIGINATOR), false);
-    assert_eq!(is_first_party_chat_originator("codex_vscode"), false);
+    assert_eq!(is_first_party_chat_originator("ava_vscode"), false);
 }
 
 #[test]
 fn add_originator_header_inserts_non_default_originator() {
     let default_originator = originator();
     let thread_originator = if default_originator.value == "chatgpt_cca" {
-        "codex_work_cca"
+        "ava_work_cca"
     } else {
         "chatgpt_cca"
     };
@@ -157,8 +157,8 @@ async fn test_create_client_sets_default_headers() {
         .expect("originator header missing");
     assert_eq!(originator_header.to_str().unwrap(), originator().value);
 
-    // User-Agent matches the computed Codex UA for that originator
-    let expected_ua = get_codex_user_agent();
+    // User-Agent matches the computed Ava UA for that originator
+    let expected_ua = get_ava_user_agent();
     let ua_header = headers
         .get("user-agent")
         .expect("user-agent header missing");
@@ -262,23 +262,23 @@ async fn raw_auth_client_does_not_log_sensitive_request_or_response_data() {
 
 #[test]
 fn test_invalid_suffix_is_sanitized() {
-    let prefix = "codex_cli_rs/0.0.0";
+    let prefix = "ava_cli_rs/0.0.0";
     let suffix = "bad\rsuffix";
 
     assert_eq!(
         sanitize_user_agent(format!("{prefix} ({suffix})"), prefix),
-        "codex_cli_rs/0.0.0 (bad_suffix)"
+        "ava_cli_rs/0.0.0 (bad_suffix)"
     );
 }
 
 #[test]
 fn test_invalid_suffix_is_sanitized2() {
-    let prefix = "codex_cli_rs/0.0.0";
+    let prefix = "ava_cli_rs/0.0.0";
     let suffix = "bad\0suffix";
 
     assert_eq!(
         sanitize_user_agent(format!("{prefix} ({suffix})"), prefix),
-        "codex_cli_rs/0.0.0 (bad_suffix)"
+        "ava_cli_rs/0.0.0 (bad_suffix)"
     );
 }
 
@@ -286,7 +286,7 @@ fn test_invalid_suffix_is_sanitized2() {
 #[cfg(target_os = "macos")]
 fn test_macos() {
     use regex_lite::Regex;
-    let user_agent = get_codex_user_agent();
+    let user_agent = get_ava_user_agent();
     let originator = regex_lite::escape(originator().value.as_str());
     let re = Regex::new(&format!(
         r"^{originator}/\d+\.\d+\.\d+ \(Mac OS \d+\.\d+\.\d+; (x86_64|arm64)\) (\S+)$"

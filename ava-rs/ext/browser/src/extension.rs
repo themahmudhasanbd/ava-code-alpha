@@ -1,21 +1,21 @@
 use std::sync::Arc;
 
-use codex_config::types::BrowserConfig;
-use codex_core::config::Config;
-use codex_core::context::{BrowserContextFragment, ContextualUserFragment};
-use codex_extension_api::ConfigContributor;
-use codex_extension_api::ContentItemKind;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::PromptFragment;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolExecutor;
-use codex_otel::MetricsClient;
+use ava_config::types::BrowserConfig;
+use ava_core::config::Config;
+use ava_core::context::{BrowserContextFragment, ContextualUserFragment};
+use ava_extension_api::ConfigContributor;
+use ava_extension_api::ContentItemKind;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::PromptFragment;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolExecutor;
+use ava_otel::MetricsClient;
 
 use crate::coordinator::BrowserCoordinator;
 use crate::prompts::build_browser_developer_instructions;

@@ -1,15 +1,15 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigEdit;
-use codex_app_server_protocol::MergeStrategy;
-use codex_core::ThreadManager;
-use codex_core_plugins::EffectivePluginsChange;
-use codex_core_plugins::remote::RemotePluginMaterialization;
-use codex_core_plugins::remote::RemotePluginScope;
-use codex_core_plugins::remote::RemotePluginShareDiscoverability;
-use codex_login::AuthManager;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigEdit;
+use ava_app_server_protocol::MergeStrategy;
+use ava_core::ThreadManager;
+use ava_core_plugins::EffectivePluginsChange;
+use ava_core_plugins::remote::RemotePluginMaterialization;
+use ava_core_plugins::remote::RemotePluginScope;
+use ava_core_plugins::remote::RemotePluginShareDiscoverability;
+use ava_login::AuthManager;
 use serde_json::json;
 use tracing::warn;
 
@@ -119,7 +119,7 @@ pub(crate) async fn trust_materialized_plugin_hooks(
         .plugins_manager()
         .plugins_for_config(&config.plugins_config_input())
         .await;
-    let hooks = codex_hooks::list_hooks(codex_hooks::HooksConfig {
+    let hooks = ava_hooks::list_hooks(ava_hooks::HooksConfig {
         feature_enabled: true,
         bypass_hook_trust: config.bypass_hook_trust,
         config_layer_stack: Some(config.config_layer_stack),

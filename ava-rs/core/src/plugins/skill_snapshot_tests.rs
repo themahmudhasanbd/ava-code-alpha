@@ -1,12 +1,12 @@
-use codex_core_plugins::PluginsManager;
-use codex_core_plugins::store::PluginStore;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_plugin::PluginId;
-use codex_protocol::protocol::Product;
-use codex_skills_extension::HostSkillsLoadInput;
-use codex_skills_extension::HostSkillsService;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_core_plugins::PluginsManager;
+use ava_core_plugins::store::PluginStore;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_plugin::PluginId;
+use ava_protocol::protocol::Product;
+use ava_skills_extension::HostSkillsLoadInput;
+use ava_skills_extension::HostSkillsService;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 
@@ -18,18 +18,18 @@ const REMOTE_PLUGIN_ID: &str = "plugins~Plugin_sample";
 
 #[tokio::test]
 async fn host_skills_service_reuses_plugin_manager_skill_snapshot() {
-    let codex_home = tempfile::tempdir().expect("create codex home");
-    let plugin_root = codex_home
+    let ava_home = tempfile::tempdir().expect("create ava home");
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache/openai-curated-remote/sample/local");
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","description":"sample plugin"}"#,
     );
     let skill_path = plugin_root.join("skills/SKILL.md");
     write_file(&skill_path, "---\nname: search\ndescription: first\n---\n");
     write_file(
-        &codex_home.path().join("config.toml"),
+        &ava_home.path().join("config.toml"),
         &format!(
             r#"[features]
 plugins = true
@@ -44,26 +44,26 @@ enabled = false
         ),
     );
     let plugin_id = PluginId::parse(PLUGIN_CONFIG_NAME).expect("remote plugin id should parse");
-    PluginStore::new(codex_home.path().to_path_buf())
+    PluginStore::new(ava_home.path().to_path_buf())
         .write_remote_plugin_id(&plugin_id, REMOTE_PLUGIN_ID)
         .expect("persist remote plugin id");
-    let config = load_plugins_config(codex_home.path()).await;
+    let config = load_plugins_config(ava_home.path()).await;
     let plugins_input = config.plugins_config_input();
     let skills_service = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ false,
     ));
     let plugins_manager = PluginsManager::new_with_options(
-        codex_home.path().to_path_buf(),
-        Some(Product::Codex),
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        ava_home.path().to_path_buf(),
+        Some(Product::Ava),
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
         skills_service.clone(),
     );
     let plugin_outcome = plugins_manager.plugins_for_config(&plugins_input).await;
 
     write_file(&skill_path, "---\nname: search\ndescription: second\n---\n");
 
-    let other_cwd = codex_home.path().join("other-workspace");
+    let other_cwd = ava_home.path().join("other-workspace");
     std::fs::create_dir_all(&other_cwd).expect("create second workspace");
     let other_cwd = AbsolutePathBuf::from_absolute_path(other_cwd).expect("absolute workspace");
 

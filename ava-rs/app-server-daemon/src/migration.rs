@@ -31,7 +31,7 @@ pub(super) async fn run(http: &impl InstallerHttp, legacy: &Daemon) -> Result<Up
         .0
         .parent()
         .and_then(Path::parent)
-        .context("package root has no Codex home")?;
+        .context("package root has no Ava home")?;
     let root = home.join("packages/app-server-daemon");
     let settings = legacy.load_settings().await?;
     let running = legacy.running_backend_instance(&settings).await?;
@@ -55,8 +55,8 @@ pub(super) async fn run(http: &impl InstallerHttp, legacy: &Daemon) -> Result<Up
     let script = fetch_installer_script(http).await?;
     anyhow::ensure!(
         script
-            .windows(b"CODEX_INSTALL_DEFER_SELECTION".len())
-            .any(|window| window == b"CODEX_INSTALL_DEFER_SELECTION"),
+            .windows(b"AVA_INSTALL_DEFER_SELECTION".len())
+            .any(|window| window == b"AVA_INSTALL_DEFER_SELECTION"),
         "the published installer does not support daemon migration yet; the legacy installation was left unchanged"
     );
     eprintln!("Preparing the daemon update in {}...", root.display());
@@ -95,12 +95,12 @@ pub(super) async fn run(http: &impl InstallerHttp, legacy: &Daemon) -> Result<Up
         "installer did not prepare a latest-channel daemon package"
     );
     let entrypoint = if cfg!(windows) {
-        "bin/codex.exe"
+        "bin/ava.exe"
     } else {
-        "bin/codex"
+        "bin/ava"
     };
     let binary = release.join(entrypoint);
-    let version = managed_install::managed_codex_version(&binary).await?;
+    let version = managed_install::managed_ava_version(&binary).await?;
     anyhow::ensure!(
         name.to_string_lossy().starts_with(&format!("{version}-")),
         "prepared daemon version does not match its release"
@@ -161,19 +161,19 @@ pub(super) async fn run(http: &impl InstallerHttp, legacy: &Daemon) -> Result<Up
         update_pid_file: legacy
             .update_pid_file
             .with_file_name(crate::DAEMON_UPDATE_PID_FILE_NAME),
-        managed_codex_bin: root.join("current").join(entrypoint),
+        managed_ava_bin: root.join("current").join(entrypoint),
         ..legacy.clone()
     };
     let running_version = if running.is_some() {
         selected.start_managed_backend(&settings).await.context(
-            "daemon migrated but could not start; retry with `codex app-server daemon start`",
+            "daemon migrated but could not start; retry with `ava app-server daemon start`",
         )?;
         Some(
             selected
                 .wait_until_ready()
                 .await
                 .context(
-                    "daemon migrated but is not ready; retry with `codex app-server daemon start`",
+                    "daemon migrated but is not ready; retry with `ava app-server daemon start`",
                 )?
                 .app_server_version,
         )
@@ -187,7 +187,7 @@ pub(super) async fn run(http: &impl InstallerHttp, legacy: &Daemon) -> Result<Up
         status: UpdateStatus::Updated,
         installed_version: Some(version),
         running_version,
-        managed_codex_path: selected.managed_codex_bin,
+        managed_ava_path: selected.managed_ava_bin,
         message: "The daemon was updated and moved to its dedicated package. The legacy CLI package was left unchanged.".to_string(),
     })
 }

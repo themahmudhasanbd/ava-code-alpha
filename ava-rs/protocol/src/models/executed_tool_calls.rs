@@ -218,12 +218,12 @@ pub enum ExecutedToolCallArguments {
     Raw(serde_json::Value),
     #[serde(skip_deserializing)]
     Truncated {
-        #[serde(rename = "_codex_executed_tool_call_truncated")]
+        #[serde(rename = "_ava_executed_tool_call_truncated")]
         truncation: ExecutedToolCallTruncation,
     },
 }
 
-/// A model-attempted Codex tool invocation captured at the shared runtime boundary.
+/// A model-attempted Ava tool invocation captured at the shared runtime boundary.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema, TS)]
 pub struct ExecutedToolCall {
     pub name: String,
@@ -360,9 +360,9 @@ impl ExecutedToolCall {
     pub fn new(name: String, arguments: serde_json::Value) -> Self {
         let arguments = if arguments
             .as_object()
-            .is_some_and(|object| object.contains_key("_codex_executed_tool_call_truncated"))
+            .is_some_and(|object| object.contains_key("_ava_executed_tool_call_truncated"))
         {
-            serde_json::json!({ "_codex_executed_tool_call_raw": arguments })
+            serde_json::json!({ "_ava_executed_tool_call_raw": arguments })
         } else {
             arguments
         };

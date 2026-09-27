@@ -8,18 +8,18 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::PoisonError;
 
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_guardian_context::MAX_PREVIOUS_REVIEWS;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::GuardianAssessmentEvent;
-use codex_protocol::request_user_input::RequestUserInputQuestion;
-use codex_protocol::request_user_input::RequestUserInputResponse;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_guardian_context::MAX_PREVIOUS_REVIEWS;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::GuardianAssessmentEvent;
+use ava_protocol::request_user_input::RequestUserInputQuestion;
+use ava_protocol::request_user_input::RequestUserInputResponse;
 use serde_json::json;
 
 use super::ContextualUserFragment;
-use crate::codex_thread::GuardianAuthorizationVersion;
-use crate::codex_thread::GuardianRootMessage;
+use crate::ava_thread::GuardianAuthorizationVersion;
+use crate::ava_thread::GuardianRootMessage;
 use crate::guardian::guardian_truncate_text;
 
 const MAX_RETAINED_USER_INPUTS: usize = 8;
@@ -116,7 +116,7 @@ impl GuardianReviewEvidence {
     ) -> GuardianUserInputSnapshot {
         match history.retained_context() {
             Some(context) => {
-                let answers = codex_guardian_context::render_verified_answers(context);
+                let answers = ava_guardian_context::render_verified_answers(context);
                 let authorization_version = GuardianAuthorizationVersion {
                     user_message_revision: history.user_message_revision(),
                     user_input_response_count: 0,
@@ -167,7 +167,7 @@ impl GuardianReviewEvidence {
             Some(context) => context
                 .verified_answers()
                 .find(|answer| answer.call_id == call_id)
-                .and_then(codex_guardian_context::render_verified_answer),
+                .and_then(ava_guardian_context::render_verified_answer),
             None => self
                 .state
                 .lock()

@@ -11,8 +11,8 @@ use axum::http::Version;
 use axum::middleware;
 use axum::middleware::Next;
 use axum::routing::get;
-use codex_code_mode_protocol::grpc::code_mode_host_server::CodeModeHostServer;
-use codex_code_mode_protocol::host::MAX_FRAME_BYTES;
+use ava_code_mode_protocol::grpc::code_mode_host_server::CodeModeHostServer;
+use ava_code_mode_protocol::host::MAX_FRAME_BYTES;
 use tokio::net::TcpListener;
 use tonic::service::Routes;
 use tonic::transport::Server;
@@ -26,7 +26,7 @@ pub(super) async fn run_tcp_listener(bind_address: SocketAddr) -> Result<()> {
     let local_address = listener
         .local_addr()
         .context("failed to read code-mode gRPC listen address")?;
-    info!("codex-code-mode-host listening on http://{local_address}");
+    info!("ava-code-mode-host listening on http://{local_address}");
     println!("http://{local_address}");
     io::stdout()
         .flush()

@@ -1,7 +1,7 @@
 use super::*;
 use crate::tools::handlers::multi_agents_spec::create_close_agent_tool_v1;
-use codex_protocol::error::CodexErrorDetails;
-use codex_tools::ToolSpec;
+use ava_protocol::error::AvaErrorDetails;
+use ava_tools::ToolSpec;
 
 pub(crate) struct Handler;
 
@@ -21,7 +21,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
         )
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -70,7 +70,7 @@ async fn handle_close_agent(
     {
         Ok(mut status_rx) => status_rx.borrow_and_update().clone(),
         Err(err)
-            if known_agent && matches!(err.details(), CodexErrorDetails::ThreadNotFound(_)) =>
+            if known_agent && matches!(err.details(), AvaErrorDetails::ThreadNotFound(_)) =>
         {
             session.services.agent_control.get_status(agent_id).await
         }

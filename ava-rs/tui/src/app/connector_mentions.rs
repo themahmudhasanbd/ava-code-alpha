@@ -2,15 +2,15 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::AppsInstalledParams;
-use codex_app_server_protocol::AppsInstalledResponse;
-use codex_app_server_protocol::AppsReadParams;
-use codex_app_server_protocol::AppsReadResponse;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::RequestId;
-use codex_connectors::AppInfo;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::AppsInstalledParams;
+use ava_app_server_protocol::AppsInstalledResponse;
+use ava_app_server_protocol::AppsReadParams;
+use ava_app_server_protocol::AppsReadResponse;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::RequestId;
+use ava_connectors::AppInfo;
 use std::collections::HashMap;
 use uuid::Uuid;
 

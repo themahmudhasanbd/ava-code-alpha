@@ -4,7 +4,7 @@
  * Two orderings matter here, and getting either wrong costs a real login.
  *
  * A flow can ask its first question before `providersOauthStart` has even
- * returned — OpenAI Codex opens with a browser-or-device-code choice, and pi-ai
+ * returned — OpenAI Ava opens with a browser-or-device-code choice, and pi-ai
  * raises it in the same tick the login begins — so this subscribes to the event
  * stream first and starts second, holding what arrives until the login id is
  * known and releasing it in order.

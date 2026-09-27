@@ -2,8 +2,8 @@ use super::*;
 use crate::context::GuardianContextMode;
 use crate::context::world_state::WorldStateSnapshot;
 use crate::context_manager::is_user_turn_boundary;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::protocol::SessionContextWindow;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::protocol::SessionContextWindow;
 use uuid::Uuid;
 
 // Return value of `Session::reconstruct_history_from_rollout`, bundling the rebuilt history with
@@ -11,8 +11,8 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub(super) struct RolloutReconstruction {
     pub(super) history: Vec<ResponseItemEnvelope>,
-    pub(super) retained_context: codex_history::RetainedContext,
-    pub(super) guardian_history: Option<codex_history::GuardianHistoryCheckpoint>,
+    pub(super) retained_context: ava_history::RetainedContext,
+    pub(super) guardian_history: Option<ava_history::GuardianHistoryCheckpoint>,
     pub(super) previous_turn_settings: Option<PreviousTurnSettings>,
     pub(super) reference_context_item: Option<TurnContextItem>,
     pub(super) world_state_baseline: Option<WorldStateSnapshot>,

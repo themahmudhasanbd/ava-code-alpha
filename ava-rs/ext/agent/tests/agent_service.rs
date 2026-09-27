@@ -1,10 +1,10 @@
 use anyhow::Result;
-use codex_agent_extension::AgentInvocation;
-use codex_agent_extension::AgentRunner;
-use codex_protocol::protocol::EventMsg;
+use ava_agent_extension::AgentInvocation;
+use ava_agent_extension::AgentRunner;
+use ava_protocol::protocol::EventMsg;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 
@@ -21,7 +21,7 @@ async fn starts_resolved_agent_prompt_in_forked_thread() -> Result<()> {
         ]),
     )
     .await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let parent_thread_id = test.session_configured.session_id.into();
     let agent_runner = AgentRunner::new(std::sync::Arc::downgrade(&test.thread_manager));
 

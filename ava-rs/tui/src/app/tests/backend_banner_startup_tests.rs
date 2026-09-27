@@ -59,7 +59,7 @@ async fn backend_banner_fallback_applies_before_initial_and_queued_startup_promp
     assert_eq!(app.active_thread_id, Some(thread_id));
     let submissions = std::iter::from_fn(|| events.try_recv().ok())
         .filter_map(|event| {
-            if let AppEvent::CodexOp(AppCommand::UserTurn { model, items, .. }) = event {
+            if let AppEvent::AvaOp(AppCommand::UserTurn { model, items, .. }) = event {
                 Some((model, items))
             } else {
                 None

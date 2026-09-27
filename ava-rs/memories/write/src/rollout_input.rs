@@ -3,20 +3,20 @@
 //! Budgets use the same token estimate as the rest of the memory pipeline.
 //! Extraction chunks preserve selected evidence in order within bounded messages.
 
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::MemoryContextFragment;
-use codex_protocol::ToolName;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_rollout::RolloutItem;
-use codex_rollout::should_persist_response_item_for_memories;
-use codex_secrets::redact_secrets;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::approx_bytes_for_tokens;
-use codex_utils_output_truncation::truncate_text;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::MemoryContextFragment;
+use ava_protocol::ToolName;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_rollout::RolloutItem;
+use ava_rollout::should_persist_response_item_for_memories;
+use ava_secrets::redact_secrets;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::approx_bytes_for_tokens;
+use ava_utils_output_truncation::truncate_text;
 use std::collections::HashMap;
 
 const OMITTED: &str = "[... response items omitted ...]\n";

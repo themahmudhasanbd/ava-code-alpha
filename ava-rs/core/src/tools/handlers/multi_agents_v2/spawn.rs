@@ -9,18 +9,18 @@ use crate::agent::types::SpawnAgentForkMode;
 use crate::agent::types::SpawnAgentOptions;
 use crate::agent_communication::AgentCommunicationContext;
 use crate::agent_communication::AgentCommunicationKind;
-use crate::codex_thread::ThreadConfigSnapshot;
+use crate::ava_thread::ThreadConfigSnapshot;
 use crate::session::multi_agents::resolve_usage_hints;
 use crate::tools::handlers::multi_agents::collab_tool_call_status;
 use crate::tools::handlers::multi_agents_spec::SpawnAgentToolOptions;
 use crate::tools::handlers::multi_agents_spec::create_spawn_agent_tool_v2;
 use crate::tools::handlers::multi_agents_v2::message_tool::message_content;
 use crate::turn_timing::now_unix_timestamp_ms;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_tools::ToolSpec;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_tools::ToolSpec;
 
 #[derive(Default)]
 pub(crate) struct Handler {
@@ -49,7 +49,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
         create_spawn_agent_tool_v2(self.options.clone(), self.description_override.as_deref())
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -243,7 +243,7 @@ async fn handle_spawn_agent(
     .await;
     let role_tag = role_name.unwrap_or(DEFAULT_ROLE_NAME);
     turn.session_telemetry.counter(
-        "codex.multi_agent.spawn",
+        "ava.multi_agent.spawn",
         /*inc*/ 1,
         &[("role", role_tag), ("version", "v2")],
     );

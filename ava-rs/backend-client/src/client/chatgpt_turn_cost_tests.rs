@@ -1,9 +1,9 @@
 //! Exercises both authenticated SiWC routes and preserves nullable/omitted estimate fields.
 
 use super::*;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::CodexAuth;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AvaAuth;
 use pretty_assertions::assert_eq;
 use wiremock::Mock;
 use wiremock::MockServer;
@@ -23,8 +23,8 @@ async fn chatgpt_turn_costs_use_workspace_auth_and_chatgpt_path() {
 }
 
 #[tokio::test]
-async fn chatgpt_turn_costs_use_workspace_auth_and_codex_path() {
-    check_query("", "/api/codex/usage/thread-estimates/query").await;
+async fn chatgpt_turn_costs_use_workspace_auth_and_ava_path() {
+    check_query("", "/api/ava/usage/thread-estimates/query").await;
 }
 
 async fn check_query(base_path: &str, endpoint: &str) {
@@ -60,7 +60,7 @@ async fn check_query(base_path: &str, endpoint: &str) {
         .await;
     let client = Client::from_auth(
         format!("{}{base_path}", server.uri()),
-        &CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        &AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
     );
     let result = client

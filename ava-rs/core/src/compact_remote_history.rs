@@ -5,13 +5,13 @@ use crate::context::ImageResizeNotice;
 use crate::context_manager::ContextManager;
 use crate::context_manager::estimate_item_token_count;
 use crate::session::turn_context::TurnContext;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseItem;
-use codex_utils_output_truncation::approx_token_count;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseItem;
+use ava_utils_output_truncation::approx_token_count;
 
 const CONTEXT_WINDOW_TRUNCATED_OUTPUT_MESSAGE: &str =
     "Output exceeded the available model context and was truncated";

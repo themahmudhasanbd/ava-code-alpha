@@ -1,33 +1,33 @@
 use anyhow::Result;
-use codex_core::StartThreadOptions;
-use codex_core::ThreadConfigSnapshot;
-use codex_core::TurnInputRequest;
-use codex_core::TurnStartOptions;
-use codex_core::config::AgentRoleConfig;
-use codex_core::config::CurrentTimeReminderConfig;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::items::SubAgentActivityItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::MultiAgentMessages;
-use codex_protocol::openai_models::MultiAgentRoleMessages;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentActivityKind;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::StartThreadOptions;
+use ava_core::ThreadConfigSnapshot;
+use ava_core::TurnInputRequest;
+use ava_core::TurnStartOptions;
+use ava_core::config::AgentRoleConfig;
+use ava_core::config::CurrentTimeReminderConfig;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::items::SubAgentActivityItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::MultiAgentMessages;
+use ava_protocol::openai_models::MultiAgentRoleMessages;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentActivityKind;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::hooks::trust_discovered_hooks;
 use core_test_support::responses::ResponsesRequest;
 use core_test_support::responses::assert_parent_turn;
@@ -49,10 +49,10 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::responses::strip_metadata_from_json;
 use core_test_support::responses::strip_response_item_ids_from_json;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -169,8 +169,8 @@ fn role_block(description: &str, role_name: &str) -> Option<String> {
     Some(block.join("\n"))
 }
 
-fn write_home_skill(codex_home: &Path, dir: &str, name: &str, description: &str) -> Result<()> {
-    let skill_dir = codex_home.join("skills").join(dir);
+fn write_home_skill(ava_home: &Path, dir: &str, name: &str, description: &str) -> Result<()> {
+    let skill_dir = ava_home.join("skills").join(dir);
     fs::create_dir_all(&skill_dir)?;
     let contents = format!("---\nname: {name}\ndescription: {description}\n---\n\n# Body\n");
     fs::write(skill_dir.join("SKILL.md"), contents)?;
@@ -353,7 +353,7 @@ async fn wait_for_hook_log(
     }
 }
 
-async fn wait_for_spawned_thread_id(test: &TestCodex) -> Result<String> {
+async fn wait_for_spawned_thread_id(test: &TestAva) -> Result<String> {
     let deadline = Instant::now() + Duration::from_secs(2);
     loop {
         let ids = test.thread_manager.list_thread_ids().await;
@@ -409,7 +409,7 @@ async fn wait_for_request_with_model(
 async fn setup_turn_one_with_spawned_child(
     server: &MockServer,
     child_response_delay: Option<Duration>,
-) -> Result<(TestCodex, String)> {
+) -> Result<(TestAva, String)> {
     let (test, spawned_id, _child_request_log) = setup_turn_one_with_custom_spawned_child(
         server,
         json!({
@@ -431,10 +431,10 @@ async fn setup_turn_one_with_custom_spawned_child(
     wait_for_parent_notification: bool,
     turn_reasoning_effort: ReasoningEffort,
     configure_test: impl FnOnce(
-        core_test_support::test_codex::TestCodexBuilder,
-    ) -> core_test_support::test_codex::TestCodexBuilder,
+        core_test_support::test_ava::TestAvaBuilder,
+    ) -> core_test_support::test_ava::TestAvaBuilder,
 ) -> Result<(
-    TestCodex,
+    TestAva,
     String,
     core_test_support::responses::ResponseMock,
 )> {
@@ -493,7 +493,7 @@ async fn setup_turn_one_with_custom_spawned_child(
     .await;
 
     let configured_reasoning_effort = turn_reasoning_effort.clone();
-    let mut builder = configure_test(test_codex().with_config(move |config| {
+    let mut builder = configure_test(test_ava().with_config(move |config| {
         config
             .features
             .enable(Feature::Collab)
@@ -502,7 +502,7 @@ async fn setup_turn_one_with_custom_spawned_child(
         config.model_reasoning_effort = Some(configured_reasoning_effort);
     }));
     let test = builder.build_with_auto_env(server).await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: TURN_1_PROMPT.to_string(),
@@ -514,14 +514,14 @@ async fn setup_turn_one_with_custom_spawned_child(
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     if child_response_delay.is_none() && wait_for_parent_notification {
         let _ = wait_for_requests(&child_request_log).await?;
         let rollout_path = test
-            .codex
+            .ava-code
             .rollout_path()
             .ok_or_else(|| anyhow::anyhow!("expected parent rollout path"))?;
         let deadline = Instant::now() + Duration::from_secs(6);
@@ -549,8 +549,8 @@ async fn spawn_child_and_capture_snapshot(
     server: &MockServer,
     spawn_args: serde_json::Value,
     configure_test: impl FnOnce(
-        core_test_support::test_codex::TestCodexBuilder,
-    ) -> core_test_support::test_codex::TestCodexBuilder,
+        core_test_support::test_ava::TestAvaBuilder,
+    ) -> core_test_support::test_ava::TestAvaBuilder,
 ) -> Result<ThreadConfigSnapshot> {
     let (test, spawned_id, _child_request_log) = setup_turn_one_with_custom_spawned_child(
         server,
@@ -675,7 +675,7 @@ async fn subagent_start_replaces_session_start_and_injects_context(
     )
     .await;
 
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             write_subagent_lifecycle_hooks(home, /*stop_prompts*/ &[], "worker")
                 .expect("failed to write subagent hook fixture");
@@ -695,7 +695,7 @@ async fn subagent_start_replaces_session_start_and_injects_context(
     let _ = wait_for_requests(&child_request_log).await?;
 
     let start_inputs = wait_for_hook_log(
-        test.codex_home_path(),
+        test.ava_home_path(),
         "subagent_start_hook_log.jsonl",
         /*expected_len*/ 1,
     )
@@ -712,7 +712,7 @@ async fn subagent_start_replaces_session_start_and_injects_context(
     );
 
     let user_prompt_submit_inputs = wait_for_hook_log(
-        test.codex_home_path(),
+        test.ava_home_path(),
         "user_prompt_submit_hook_log.jsonl",
         /*expected_len*/ 2,
     )
@@ -738,7 +738,7 @@ async fn subagent_start_replaces_session_start_and_injects_context(
     );
 
     let session_start_inputs = wait_for_hook_log(
-        test.codex_home_path(),
+        test.ava_home_path(),
         "session_start_hook_log.jsonl",
         /*expected_len*/ 1,
     )
@@ -826,7 +826,7 @@ async fn subagent_stop_replaces_stop_and_skips_internal_subagents() -> Result<()
     )
     .await;
 
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             write_subagent_lifecycle_hooks(
                 home,
@@ -850,7 +850,7 @@ async fn subagent_stop_replaces_stop_and_skips_internal_subagents() -> Result<()
     let _ = wait_for_requests(&second_child_request).await?;
 
     let subagent_stop_inputs = wait_for_hook_log(
-        test.codex_home_path(),
+        test.ava_home_path(),
         "subagent_stop_hook_log.jsonl",
         /*expected_len*/ 2,
     )
@@ -887,7 +887,7 @@ async fn subagent_stop_replaces_stop_and_skips_internal_subagents() -> Result<()
         Some("child done first")
     );
 
-    let stop_inputs = read_hook_log(test.codex_home_path(), "stop_hook_log.jsonl")?;
+    let stop_inputs = read_hook_log(test.ava_home_path(), "stop_hook_log.jsonl")?;
     assert!(
         stop_inputs
             .iter()
@@ -940,10 +940,10 @@ async fn subagent_stop_replaces_stop_and_skips_internal_subagents() -> Result<()
     assert_eq!(requests.len(), 1);
 
     let subagent_stop_inputs_after_internal =
-        read_hook_log(test.codex_home_path(), "subagent_stop_hook_log.jsonl")?;
+        read_hook_log(test.ava_home_path(), "subagent_stop_hook_log.jsonl")?;
     assert_eq!(subagent_stop_inputs_after_internal, subagent_stop_inputs);
 
-    let stop_inputs_after_internal = read_hook_log(test.codex_home_path(), "stop_hook_log.jsonl")?;
+    let stop_inputs_after_internal = read_hook_log(test.ava_home_path(), "stop_hook_log.jsonl")?;
     assert_eq!(stop_inputs_after_internal.len(), stop_input_count);
 
     Ok(())
@@ -1044,7 +1044,7 @@ async fn spawned_child_receives_forked_parent_context(
     )
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override(INHERITED_MODEL, |model| model.comp_hash = None)
         .with_history_mode(history_mode)
         .with_config(|config| {
@@ -1069,7 +1069,7 @@ async fn spawned_child_receives_forked_parent_context(
     assert!(child_request.body_contains_text(TURN_0_FORK_PROMPT));
     let child_body = child_request.body_json();
     let child_metadata: serde_json::Value = serde_json::from_str(
-        child_body["client_metadata"]["x-codex-turn-metadata"]
+        child_body["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("child turn metadata"),
     )?;
@@ -1153,7 +1153,7 @@ async fn spawned_child_receives_forked_parent_context(
     assert_root_turn(&followup_parent_body, Some(followup_parent_turn_id))?;
     assert_root_turn(&reused_child_body, Some(followup_parent_turn_id))?;
     let reused_metadata: Value = serde_json::from_str(
-        reused_child_body["client_metadata"]["x-codex-turn-metadata"]
+        reused_child_body["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("reused child turn metadata"),
     )?;
@@ -1161,8 +1161,8 @@ async fn spawned_child_receives_forked_parent_context(
     Ok(())
 }
 
-async fn submit_turn_with_trigger(test: &TestCodex, prompt: &str, trigger: &str) -> Result<()> {
-    test.codex
+async fn submit_turn_with_trigger(test: &TestAva, prompt: &str, trigger: &str) -> Result<()> {
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.to_string(),
@@ -1174,7 +1174,7 @@ async fn submit_turn_with_trigger(test: &TestCodex, prompt: &str, trigger: &str)
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1332,7 +1332,7 @@ async fn grandchild_full_fork_preserves_context_baseline(
         .with_priority(/*p*/ 6)
         .mount(&server)
         .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_history_mode(history_mode)
         .with_config(move |config| {
             config
@@ -1368,7 +1368,7 @@ async fn grandchild_full_fork_preserves_context_baseline(
         let request = timeout(Duration::from_secs(/*secs*/ 10), async {
             loop {
                 let request = mock.requests().into_iter().find(|request| {
-                    request.body_json()["client_metadata"]["x-codex-turn-metadata"]
+                    request.body_json()["client_metadata"]["x-ava-turn-metadata"]
                         .as_str()
                         .and_then(|text| serde_json::from_str::<Value>(text).ok())
                         .is_some_and(|metadata| metadata["agent_name"] == agent_name)
@@ -1400,7 +1400,7 @@ async fn grandchild_full_fork_preserves_context_baseline(
             );
         }
         let metadata: Value = serde_json::from_str(
-            request.body_json()["client_metadata"]["x-codex-turn-metadata"]
+            request.body_json()["client_metadata"]["x-ava-turn-metadata"]
                 .as_str()
                 .expect("descendant turn metadata"),
         )?;
@@ -1563,7 +1563,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
         ]),
     )
     .await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config
             .features
             .enable(Feature::Collab)
@@ -1631,7 +1631,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
             config.include_environment_context = false;
             config.current_time_reminder = Some(CurrentTimeReminderConfig {
                 reminder_interval_seconds: 0,
-                clock_source: codex_features::CurrentTimeSource::External,
+                clock_source: ava_features::CurrentTimeSource::External,
                 ..CurrentTimeReminderConfig::default()
             });
         }
@@ -1663,8 +1663,8 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
         #[derive(Default)]
         struct FailFirstClockRead(std::sync::atomic::AtomicBool);
 
-        impl codex_core::TimeProvider for FailFirstClockRead {
-            fn current_time(&self, _thread_id: ThreadId) -> codex_core::TimeFuture<'_> {
+        impl ava_core::TimeProvider for FailFirstClockRead {
+            fn current_time(&self, _thread_id: ThreadId) -> ava_core::TimeFuture<'_> {
                 let already_read = self.0.swap(true, std::sync::atomic::Ordering::Relaxed);
                 Box::pin(async move {
                     anyhow::ensure!(already_read, "parent clock unavailable");
@@ -1676,7 +1676,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
                 &self,
                 _thread_id: ThreadId,
                 _duration: Duration,
-            ) -> codex_core::SleepFuture<'_> {
+            ) -> ava_core::SleepFuture<'_> {
                 Box::pin(async { Ok(()) })
             }
         }
@@ -1686,8 +1686,8 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
     }
     let test = builder.build(&server).await?;
     if matches!(selection, FullHistoryV2ModelSelection::WorldStateIdentity) {
-        test.codex.submit(Op::Compact).await?;
-        wait_for_event(&test.codex, |event| {
+        test.ava-code.submit(Op::Compact).await?;
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -1704,7 +1704,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
             ),
             (FULL_HISTORY_EXPLICIT_PROMPT, ReasoningEffort::High, None),
         ] {
-            test.codex
+            test.ava-code
                 .start_or_steer_turn(
                     TurnInputRequest::user_input(vec![UserInput::Text {
                         text: prompt.to_string(),
@@ -1717,7 +1717,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
                     }),
                 )
                 .await?;
-            wait_for_event(&test.codex, |event| {
+            wait_for_event(&test.ava-code, |event| {
                 matches!(event, EventMsg::TurnComplete(_))
             })
             .await;
@@ -1865,7 +1865,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
         )?;
         let child_thread = test.thread_manager.get_thread(child_thread_id).await?;
         child_thread.flush_rollout().await?;
-        let child_rollout = codex_rollout::RolloutRecorder::get_rollout_history(
+        let child_rollout = ava_rollout::RolloutRecorder::get_rollout_history(
             &child_thread
                 .rollout_path()
                 .expect("child rollout should exist"),
@@ -2172,7 +2172,7 @@ async fn spawned_multi_agent_v2_child_inherits_parent_developer_context() -> Res
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Collab)
@@ -2282,7 +2282,7 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
     } else {
         "koffing"
     };
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(parent_model)
         .with_config(move |config| {
             config
@@ -2491,7 +2491,7 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
                 && decoded_body(req)
                     .and_then(|body| serde_json::from_slice::<Value>(&body).ok())
                     .and_then(|body| {
-                        body["client_metadata"]["x-codex-turn-metadata"]
+                        body["client_metadata"]["x-ava-turn-metadata"]
                             .as_str()
                             .and_then(|metadata| serde_json::from_str::<Value>(metadata).ok())
                     })
@@ -2563,7 +2563,7 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
         ]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("koffing")
         .with_config(|config| {
             config
@@ -2588,7 +2588,7 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
         let child_request = child_request.requests().into_iter().find_map(|request| {
             let body = request.body_json();
             let turn_metadata: Value =
-                serde_json::from_str(body["client_metadata"]["x-codex-turn-metadata"].as_str()?)
+                serde_json::from_str(body["client_metadata"]["x-ava-turn-metadata"].as_str()?)
                     .ok()?;
             turn_metadata
                 .get("parent_turn_id")
@@ -2623,7 +2623,7 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
     } else {
         None
     };
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: TURN_2_NO_WAIT_PROMPT.to_string(),
             text_elements: Vec::new(),
@@ -2636,7 +2636,7 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
             let mut completed_activity_completed = None;
             loop {
                 let event = test
-                    .codex
+                    .ava-code
                     .next_event()
                     .await
                     .expect("event stream should remain open");
@@ -2724,10 +2724,10 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
         );
         assert_eq!(started.turn_id, parent_turn_id);
 
-        test.codex.ensure_rollout_materialized().await;
-        test.codex.flush_rollout().await?;
-        let rollout = codex_rollout::RolloutRecorder::get_rollout_history(
-            &test.codex.rollout_path().expect("parent rollout path"),
+        test.ava-code.ensure_rollout_materialized().await;
+        test.ava-code.flush_rollout().await?;
+        let rollout = ava_rollout::RolloutRecorder::get_rollout_history(
+            &test.ava-code.rollout_path().expect("parent rollout path"),
         )
         .await?;
         assert!(
@@ -2767,7 +2767,7 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
                 id: format!("subagent-completed-{child_turn_id}"),
                 kind: SubAgentActivityKind::Completed,
                 agent_thread_id: child_thread_id,
-                agent_path: codex_protocol::AgentPath::root()
+                agent_path: ava_protocol::AgentPath::root()
                     .join("worker")
                     .expect("worker path"),
             }
@@ -2793,7 +2793,7 @@ async fn multi_agent_v2_peer_followup_completion_notifies_initiating_turn() -> R
     const FOLLOWUP_CALL_ID: &str = "request-peer-followup";
 
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.6-sol")
         .with_config(|config| {
             for feature in [Feature::Collab, Feature::MultiAgentV2] {
@@ -2990,7 +2990,7 @@ async fn multi_agent_v2_peer_followup_completion_notifies_initiating_turn() -> R
                 && request.body_contains_text(WORKER_FOLLOWUP_TASK))
             .then(|| {
                 let metadata: Value = serde_json::from_str(
-                    body["client_metadata"]["x-codex-turn-metadata"]
+                    body["client_metadata"]["x-ava-turn-metadata"]
                         .as_str()
                         .expect("worker turn metadata"),
                 )
@@ -3032,7 +3032,7 @@ async fn multi_agent_v2_peer_followup_completion_notifies_initiating_turn() -> R
                 id: format!("subagent-completed-{worker_followup_turn_id}"),
                 kind: SubAgentActivityKind::Completed,
                 agent_thread_id: worker_thread_id,
-                agent_path: codex_protocol::AgentPath::root()
+                agent_path: ava_protocol::AgentPath::root()
                     .join("worker")
                     .expect("worker path"),
             },
@@ -3136,7 +3136,7 @@ async fn skills_toggle_skips_instructions_for_parent_and_spawned_child() -> Resu
     )
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_pre_build_hook(|home| {
             write_home_skill(home, "demo", "demo-skill", "demo skill").expect("write home skill");
         })
@@ -3183,7 +3183,7 @@ async fn spawn_agent_role_overrides_requested_model_and_reasoning_settings() -> 
         }),
         |builder| {
             builder.with_config(|config| {
-                let role_path = config.codex_home.join("custom-role.toml");
+                let role_path = config.ava_home.join("custom-role.toml");
                 std::fs::write(
                     &role_path,
                     format!(
@@ -3223,7 +3223,7 @@ async fn spawn_agent_preserves_configured_defaults_through_unrelated_role() -> R
         }),
         |builder| {
             builder.with_config(|config| {
-                let role_path = config.codex_home.join("instructions-only-role.toml");
+                let role_path = config.ava_home.join("instructions-only-role.toml");
                 std::fs::write(&role_path, "developer_instructions = \"Stay focused\"\n")
                     .expect("write role config");
                 config.agent_roles.insert(
@@ -3285,13 +3285,13 @@ async fn spawn_agent_rejects_reasoning_effort_unsupported_by_role_model() -> Res
     )
     .await;
 
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config
                 .features
                 .enable(Feature::Collab)
                 .expect("test config should allow feature update");
-            let role_path = config.codex_home.join("model-only-role.toml");
+            let role_path = config.ava_home.join("model-only-role.toml");
             std::fs::write(&role_path, format!("model = \"{ROLE_MODEL}\"\n"))
                 .expect("write role config");
             config.agent_roles.insert(
@@ -3352,13 +3352,13 @@ async fn spawn_agent_tool_description_mentions_role_locked_settings() -> Result<
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Collab)
             .expect("test config should allow feature update");
         config.multi_agent_v2.hide_spawn_agent_metadata = false;
-        let role_path = config.codex_home.join("custom-role.toml");
+        let role_path = config.ava_home.join("custom-role.toml");
         std::fs::write(
             &role_path,
             format!(

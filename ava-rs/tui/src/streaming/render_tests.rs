@@ -5,7 +5,7 @@ use crate::inline_visualization::InlineVisualizationContext;
 use crate::markdown::render_streaming_markdown_agent_with_links_and_cwd;
 use crate::terminal_hyperlinks::HyperlinkLine;
 use crate::terminal_hyperlinks::visible_lines;
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 use insta::assert_debug_snapshot;
 use pretty_assertions::assert_eq;
 use std::path::Path;
@@ -121,9 +121,9 @@ fn incremental_file_citations_preserve_metadata_unicode_and_markdown() {
     let rendered_cases = [
         (
             "Quarterly Report.xlsx",
-            "- :codex-file-citation{artifact_kind=\"workbook\" ",
+            "- :ava-file-citation{artifact_kind=\"workbook\" ",
         ),
-        ("Résumé *final* ✨.xlsx", "- :codex-file-citation{"),
+        ("Résumé *final* ✨.xlsx", "- :ava-file-citation{"),
     ]
     .map(|(filename, prefix)| {
         let tail = format!("path=\"{}\"}}\n", cwd.join(filename).display());
@@ -244,7 +244,7 @@ fn inline_visualizations_use_canonical_full_render() {
     let mut source = String::new();
     let mut render = StreamingRender::new();
 
-    for chunk in ["Before.\n\n", "::codex-inline-vis{file=\"missing.html\"}\n"] {
+    for chunk in ["Before.\n\n", "::ava-inline-vis{file=\"missing.html\"}\n"] {
         source.push_str(chunk);
         render.append(
             &source,
@@ -273,7 +273,7 @@ fn inline_visualizations_use_canonical_full_render() {
 #[test]
 fn inline_visualizations_without_context_use_canonical_full_render() {
     let (_, render) = assert_rich_stream_matches_full_render(
-        &["Before.\n\n", "::codex-inline-vis{file=\"missing.html\"}\n"],
+        &["Before.\n\n", "::ava-inline-vis{file=\"missing.html\"}\n"],
         Some(80),
     );
 
@@ -309,7 +309,7 @@ fn inline_visualization_directive_survives_raw_to_rich_render_mode_switch() {
     append(
         &mut render,
         &mut source,
-        "::codex-inline-vis{file=\"missing.html\"}\n",
+        "::ava-inline-vis{file=\"missing.html\"}\n",
         width,
         &cwd,
         HistoryRenderMode::Raw,

@@ -112,7 +112,7 @@ test("an import hint is reachable from the control it explains", () => {
   assert.doesNotMatch(importPage, /className="import-hint"/);
   assert.match(importPage, /hint\?: string;/);
   assert.match(importPage, /hint=\{t\("settings\.importAgentScanModeHint"\)\}/);
-  assert.match(importPage, /hint=\{\n\s+codexCap != null/);
+  assert.match(importPage, /hint=\{\n\s+avaCap != null/);
   assert.match(importPage, /\{hint \? <HelpIcon label=\{hint\} \/> : null\}/);
   assert.match(importPage, /\{help \? <HelpIcon label=\{help\} \/> : null\}/);
   // A hint rides beside the controls, so the toolbar must still render them:

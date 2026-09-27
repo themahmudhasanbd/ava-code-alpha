@@ -1,10 +1,10 @@
 use std::fmt;
 
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotificationEnvelope;
-use codex_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotificationEnvelope;
+use ava_app_server_protocol::ServerRequest;
 use serde::Serialize;
 use tokio::sync::oneshot;
 

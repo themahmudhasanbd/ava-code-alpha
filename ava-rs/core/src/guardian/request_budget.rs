@@ -1,15 +1,15 @@
 //! Measures and checks complete synchronous requests after wire prefix assembly.
 //! Includes reused history, tool definitions, output format and continuations.
 
-use codex_api::ResponsesApiRequest;
-use codex_guardian_context::REQUEST_TOKENS_BOUNDARIES;
-use codex_guardian_context::REQUEST_TOKENS_METRIC;
-use codex_guardian_context::effective_input_token_limit;
-use codex_otel::SessionTelemetry;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_api::ResponsesApiRequest;
+use ava_guardian_context::REQUEST_TOKENS_BOUNDARIES;
+use ava_guardian_context::REQUEST_TOKENS_METRIC;
+use ava_guardian_context::effective_input_token_limit;
+use ava_otel::SessionTelemetry;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::TruncationPolicy;
 
 use crate::config::Config;
 use crate::context_manager::estimate_item_token_count;
@@ -61,13 +61,13 @@ pub(crate) fn check_prompt(
     prompt: &crate::client_common::Prompt,
     config: &Config,
     model: &ModelInfo,
-    metadata: &crate::responses_metadata::CodexResponsesMetadata,
-) -> CodexResult<()> {
+    metadata: &crate::responses_metadata::AvaResponsesMetadata,
+) -> AvaResult<()> {
     let request = session.services.model_client.build_responses_request(
         prompt,
         model,
         /*effort*/ None,
-        codex_protocol::config_types::ReasoningSummary::None,
+        ava_protocol::config_types::ReasoningSummary::None,
         /*service_tier*/ None,
         metadata,
     )?;
@@ -79,7 +79,7 @@ pub(crate) fn check_prompt(
             .services
             .thread_extension_data
             .insert(ExhaustedReviewBudget::Detected);
-        return Err(CodexErr::ContextWindowExceeded);
+        return Err(AvaErr::ContextWindowExceeded);
     }
     session
         .services

@@ -1,6 +1,6 @@
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::experimental_required_message;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::experimental_required_message;
 use color_eyre::Report;
 use pretty_assertions::assert_eq;
 

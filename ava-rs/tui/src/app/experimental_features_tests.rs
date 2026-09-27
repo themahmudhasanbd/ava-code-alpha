@@ -1,6 +1,6 @@
 use super::*;
 use crate::app::tests::make_test_app_with_channels;
-use codex_app_server_client::AppServerClient;
+use ava_app_server_client::AppServerClient;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -20,7 +20,7 @@ async fn experimental_features_use_selected_server_profile_and_preserve_task_set
         ..LoaderOverrides::without_managed_config_for_tests()
     };
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(loader.clone())
         .build()
         .await?;
@@ -31,7 +31,7 @@ async fn experimental_features_use_selected_server_profile_and_preserve_task_set
         loader,
         /*strict_config*/ false,
         Default::default(),
-        codex_feedback::CodexFeedback::new(),
+        ava_feedback::AvaFeedback::new(),
         /*log_db*/ None,
         /*state_db*/ None,
         Arc::new(EnvironmentManager::default_for_tests()),

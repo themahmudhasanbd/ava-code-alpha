@@ -3,7 +3,7 @@ use super::OwnedHandle;
 use super::PipeConnection;
 use super::ServiceRequest;
 use super::accept_pipe_connection;
-use super::home::prepare_codex_home;
+use super::home::prepare_ava_home;
 use super::is_config_parse_error;
 use super::pin_existing_ancestors;
 use super::pipe_security_descriptor;
@@ -12,18 +12,18 @@ use super::request::ProvisioningRequest;
 use super::response_error_message;
 use super::validate_request;
 use super::wake;
-use codex_windows_sandbox::DirectoryOpenDisposition;
-use codex_windows_sandbox::FramedProvisioningMessage;
-use codex_windows_sandbox::PROVISIONING_PROTOCOL_VERSION;
-use codex_windows_sandbox::ProvisioningMessage;
-use codex_windows_sandbox::SandboxProvisioningRequest;
-use codex_windows_sandbox::SandboxProvisioningResponse;
-use codex_windows_sandbox::SetupRuntime;
-use codex_windows_sandbox::WindowsSandboxProvisioningSettings;
-use codex_windows_sandbox::WindowsSandboxProxyListeners;
-use codex_windows_sandbox::read_provisioning_frame;
-use codex_windows_sandbox::to_wide;
-use codex_windows_sandbox::write_provisioning_frame;
+use ava_windows_sandbox::DirectoryOpenDisposition;
+use ava_windows_sandbox::FramedProvisioningMessage;
+use ava_windows_sandbox::PROVISIONING_PROTOCOL_VERSION;
+use ava_windows_sandbox::ProvisioningMessage;
+use ava_windows_sandbox::SandboxProvisioningRequest;
+use ava_windows_sandbox::SandboxProvisioningResponse;
+use ava_windows_sandbox::SetupRuntime;
+use ava_windows_sandbox::WindowsSandboxProvisioningSettings;
+use ava_windows_sandbox::WindowsSandboxProxyListeners;
+use ava_windows_sandbox::read_provisioning_frame;
+use ava_windows_sandbox::to_wide;
+use ava_windows_sandbox::write_provisioning_frame;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use std::path::PathBuf;
@@ -99,7 +99,7 @@ fn provisioning_request_rejects_malformed_registered_flag() {
             "version": PROVISIONING_PROTOCOL_VERSION,
             "type": "provision_sandbox_request",
             "payload": {
-                "codex_home": "C:\\Users\\owner\\.codex",
+                "ava_home": "C:\\Users\\owner\\.ava-code",
                 "registered_core": registered_core,
                 "settings": WindowsSandboxProvisioningSettings::default(),
                 "listeners": WindowsSandboxProxyListeners::default(),
@@ -115,7 +115,7 @@ fn provisioning_request_rejects_malformed_registered_flag() {
 #[test]
 fn runtime_registration_is_an_explicit_wire_opt_in() {
     let request = SandboxProvisioningRequest {
-        codex_home: r"C:\Users\owner\.codex".to_string(),
+        ava_home: r"C:\Users\owner\.ava-code".to_string(),
         registered_core: false,
         refresh_only: false,
         settings: WindowsSandboxProvisioningSettings::default(),
@@ -125,7 +125,7 @@ fn runtime_registration_is_an_explicit_wire_opt_in() {
     assert_eq!(
         serialized,
         serde_json::json!({
-            "codex_home": request.codex_home,
+            "ava_home": request.ava_home,
             "settings": request.settings,
             "listeners": request.listeners,
         }),
@@ -157,7 +157,7 @@ fn runtime_registration_is_an_explicit_wire_opt_in() {
 #[test]
 fn registration_refresh_is_explicit_and_requires_registered_core() {
     let mut request = SandboxProvisioningRequest {
-        codex_home: r"C:\Users\owner\.codex".to_string(),
+        ava_home: r"C:\Users\owner\.ava-code".to_string(),
         registered_core: false,
         refresh_only: true,
         settings: WindowsSandboxProvisioningSettings::default(),
@@ -177,14 +177,14 @@ fn registration_refresh_is_explicit_and_requires_registered_core() {
 
 #[test]
 fn runtime_registration_has_no_unpackaged_or_foreground_identity_exemption() {
-    let service = Some("OpenAI.Codex_testpublisher");
+    let service = Some("OpenAI.Ava_testpublisher");
     assert!(crate::package_identity::require_runtime_package_family(service, service).is_ok());
     for (client, service) in [
         (None, service),
         (service, None),
         (None, None),
-        (Some("OpenAI.CodexBeta_testpublisher"), service),
-        (Some("OpenAI.Codex_otherpublisher"), service),
+        (Some("OpenAI.AvaBeta_testpublisher"), service),
+        (Some("OpenAI.Ava_otherpublisher"), service),
     ] {
         assert!(crate::package_identity::require_runtime_package_family(client, service).is_err());
     }
@@ -230,16 +230,16 @@ fn unavailable_response_round_trips_through_provisioning_frame() {
 
 #[test]
 fn config_parse_errors_are_distinguished_from_policy_and_io_failures() {
-    let schema_error = codex_core::config::deserialize_config_toml_with_base(
+    let schema_error = ava_core::config::deserialize_config_toml_with_base(
         toml::from_str(r#"model_verbosity = "future-verbosity""#).unwrap(),
-        Path::new(r"C:\CodexTest"),
+        Path::new(r"C:\AvaTest"),
     )
     .unwrap_err();
     let contents = "[";
     let parse_error = toml::from_str::<toml::Value>(contents).unwrap_err();
-    let syntax_error = codex_config::io_error_from_config_error(
+    let syntax_error = ava_config::io_error_from_config_error(
         std::io::ErrorKind::InvalidData,
-        codex_config::config_error_from_toml("config.toml", contents, parse_error.clone()),
+        ava_config::config_error_from_toml("config.toml", contents, parse_error.clone()),
         Some(parse_error),
     );
     for error in [schema_error, syntax_error] {
@@ -267,7 +267,7 @@ fn config_parse_errors_are_distinguished_from_policy_and_io_failures() {
 #[test]
 fn provisioning_request_preserves_home_spaces_and_unicode() {
     let request = framed_request(SandboxProvisioningRequest {
-        codex_home: "D:\\Codex Homes\\Jos\u{00e9}\\.codex".to_string(),
+        ava_home: "D:\\Ava Homes\\Jos\u{00e9}\\.ava-code".to_string(),
         registered_core: false,
         refresh_only: false,
         settings: WindowsSandboxProvisioningSettings::default(),
@@ -276,7 +276,7 @@ fn provisioning_request_preserves_home_spaces_and_unicode() {
     assert_eq!(
         validate_request(&request).unwrap(),
         ServiceRequest::ProvisionSandbox(ProvisioningRequest {
-            codex_home: PathBuf::from("D:\\Codex Homes\\Jos\u{00e9}\\.codex"),
+            ava_home: PathBuf::from("D:\\Ava Homes\\Jos\u{00e9}\\.ava-code"),
             registered_core: false,
             refresh_only: false,
             listeners: WindowsSandboxProxyListeners::default(),
@@ -291,7 +291,7 @@ fn structured_provisioning_request_carries_normalized_proxy_settings() {
         [(8081, 3128, vec![3128, 8081]), (8081, 8081, vec![8081])]
     {
         let request = framed_request(SandboxProvisioningRequest {
-            codex_home: "D:\\Codex Homes\\Jos\u{00e9}\\.codex".to_string(),
+            ava_home: "D:\\Ava Homes\\Jos\u{00e9}\\.ava-code".to_string(),
             registered_core: false,
             refresh_only: false,
             settings: WindowsSandboxProvisioningSettings {
@@ -306,7 +306,7 @@ fn structured_provisioning_request_carries_normalized_proxy_settings() {
         assert_eq!(
             validate_request(&request).unwrap(),
             ServiceRequest::ProvisionSandbox(ProvisioningRequest {
-                codex_home: PathBuf::from("D:\\Codex Homes\\Jos\u{00e9}\\.codex"),
+                ava_home: PathBuf::from("D:\\Ava Homes\\Jos\u{00e9}\\.ava-code"),
                 registered_core: false,
                 refresh_only: false,
                 listeners: WindowsSandboxProxyListeners {
@@ -338,7 +338,7 @@ fn structured_provisioning_request_accepts_independent_and_additional_proxy_port
             socks_ports,
         };
         let request = framed_request(SandboxProvisioningRequest {
-            codex_home: r"C:\Users\alice\.codex".to_string(),
+            ava_home: r"C:\Users\alice\.ava-code".to_string(),
             registered_core: false,
             refresh_only: false,
             settings: settings.clone(),
@@ -347,7 +347,7 @@ fn structured_provisioning_request_accepts_independent_and_additional_proxy_port
         assert_eq!(
             validate_request(&request).unwrap(),
             ServiceRequest::ProvisionSandbox(ProvisioningRequest {
-                codex_home: PathBuf::from(r"C:\Users\alice\.codex"),
+                ava_home: PathBuf::from(r"C:\Users\alice\.ava-code"),
                 registered_core: false,
                 refresh_only: false,
                 settings,
@@ -360,7 +360,7 @@ fn structured_provisioning_request_accepts_independent_and_additional_proxy_port
 #[test]
 fn structured_provisioning_request_accepts_disabled_listeners() {
     let request = framed_request(SandboxProvisioningRequest {
-        codex_home: r"C:\Users\alice\.codex".to_string(),
+        ava_home: r"C:\Users\alice\.ava-code".to_string(),
         registered_core: false,
         refresh_only: false,
         settings: WindowsSandboxProvisioningSettings::default(),
@@ -369,7 +369,7 @@ fn structured_provisioning_request_accepts_disabled_listeners() {
     assert_eq!(
         validate_request(&request).unwrap(),
         ServiceRequest::ProvisionSandbox(ProvisioningRequest {
-            codex_home: PathBuf::from(r"C:\Users\alice\.codex"),
+            ava_home: PathBuf::from(r"C:\Users\alice\.ava-code"),
             registered_core: false,
             refresh_only: false,
             listeners: WindowsSandboxProxyListeners::default(),
@@ -381,7 +381,7 @@ fn structured_provisioning_request_accepts_disabled_listeners() {
 #[test]
 fn structured_provisioning_request_requires_exact_version_fields_and_framing() {
     let valid = SandboxProvisioningRequest {
-        codex_home: r"C:\Users\alice\.codex".to_string(),
+        ava_home: r"C:\Users\alice\.ava-code".to_string(),
         registered_core: false,
         refresh_only: false,
         settings: WindowsSandboxProvisioningSettings::default(),
@@ -429,7 +429,7 @@ fn structured_provisioning_request_rejects_invalid_or_inconsistent_ports() {
         (vec![3128], vec![3128], vec![8081]),
     ] {
         let request = framed_request(SandboxProvisioningRequest {
-            codex_home: r"C:\Users\alice\.codex".to_string(),
+            ava_home: r"C:\Users\alice\.ava-code".to_string(),
             registered_core: false,
             refresh_only: false,
             settings: WindowsSandboxProvisioningSettings {
@@ -449,7 +449,7 @@ fn structured_provisioning_request_rejects_invalid_or_inconsistent_ports() {
 fn provisioning_request_rejects_empty_control_characters_and_invalid_utf8() {
     for home in ["", "C:\\safe\0evil", "C:\\safe\rmore", "C:\\safe\nmore"] {
         let request = framed_request(SandboxProvisioningRequest {
-            codex_home: home.to_string(),
+            ava_home: home.to_string(),
             registered_core: false,
             refresh_only: false,
             settings: WindowsSandboxProvisioningSettings::default(),
@@ -459,7 +459,7 @@ fn provisioning_request_rejects_empty_control_characters_and_invalid_utf8() {
     }
 
     let mut invalid_utf8 = framed_request(SandboxProvisioningRequest {
-        codex_home: r"C:\Users\alice\.codex".to_string(),
+        ava_home: r"C:\Users\alice\.ava-code".to_string(),
         registered_core: false,
         refresh_only: false,
         settings: WindowsSandboxProvisioningSettings::default(),
@@ -481,7 +481,7 @@ fn unpackaged_pipe_clients_are_rejected_before_sending_a_request() {
 
     static NEXT_PIPE_INSTANCE: AtomicU64 = AtomicU64::new(0);
     let name = to_wide(format!(
-        r"\\.\pipe\OpenAI.CodexSandbox.Tests.{}.{}",
+        r"\\.\pipe\OpenAI.AvaSandbox.Tests.{}.{}",
         std::process::id(),
         NEXT_PIPE_INSTANCE.fetch_add(1, Ordering::Relaxed)
     ));
@@ -529,7 +529,7 @@ fn unpackaged_pipe_clients_are_rejected_before_sending_a_request() {
     assert!(
         error
             .to_string()
-            .contains("installed Codex package identity"),
+            .contains("installed Ava package identity"),
         "unexpected package authorization failure: {error:#}"
     );
 }
@@ -537,7 +537,7 @@ fn unpackaged_pipe_clients_are_rejected_before_sending_a_request() {
 #[test]
 fn disconnected_pipe_clients_do_not_prevent_subsequent_connections() {
     let pipe_name = format!(
-        r"\\.\pipe\OpenAI.CodexSandbox.DisconnectTests.{}",
+        r"\\.\pipe\OpenAI.AvaSandbox.DisconnectTests.{}",
         std::process::id()
     );
     let name = to_wide(&pipe_name);
@@ -684,19 +684,19 @@ fn pipe_descriptor_denies_sandbox_group_before_interactive_users() {
 #[test]
 fn registered_home_preparation_does_not_touch_the_legacy_bin() -> anyhow::Result<()> {
     let root = std::env::temp_dir().join(format!(
-        "codex-service-home-{:?}",
+        "ava-service-home-{:?}",
         windows::core::GUID::new()?
     ));
     std::fs::create_dir(&root)?;
     let result = (|| -> anyhow::Result<()> {
-        let home = root.join(".codex");
+        let home = root.join(".ava-code");
         std::fs::create_dir(&home)?;
         let bin = home.join(".sandbox-bin");
         let marker = b"legacy bin is deliberately not a directory";
         std::fs::write(&bin, marker)?;
 
         assert!(
-            prepare_codex_home(
+            prepare_ava_home(
                 &home,
                 SetupRuntime::Registered,
                 DirectoryOpenDisposition::OpenExisting,
@@ -705,7 +705,7 @@ fn registered_home_preparation_does_not_touch_the_legacy_bin() -> anyhow::Result
         );
         assert!(!home.join(".sandbox").exists());
         assert!(!home.join(".sandbox-secrets").exists());
-        let (_, handles) = prepare_codex_home(
+        let (_, handles) = prepare_ava_home(
             &home,
             SetupRuntime::Registered,
             DirectoryOpenDisposition::OpenOrCreate,
@@ -716,14 +716,14 @@ fn registered_home_preparation_does_not_touch_the_legacy_bin() -> anyhow::Result
         drop(handles);
 
         // Legacy still validates and pins the copied-bin path.
-        let (_, handles) = prepare_codex_home(
+        let (_, handles) = prepare_ava_home(
             &home,
             SetupRuntime::Registered,
             DirectoryOpenDisposition::OpenExisting,
         )?;
         drop(handles);
         assert!(
-            prepare_codex_home(
+            prepare_ava_home(
                 &home,
                 SetupRuntime::Legacy,
                 DirectoryOpenDisposition::OpenOrCreate,
@@ -732,7 +732,7 @@ fn registered_home_preparation_does_not_touch_the_legacy_bin() -> anyhow::Result
         );
         assert_eq!(std::fs::read(&bin)?.as_slice(), marker.as_slice());
         std::fs::remove_file(&bin)?;
-        let (_, handles) = prepare_codex_home(
+        let (_, handles) = prepare_ava_home(
             &home,
             SetupRuntime::Legacy,
             DirectoryOpenDisposition::OpenOrCreate,
@@ -754,7 +754,7 @@ fn installation_registration_requires_no_sandbox_settings() {
         &FramedProvisioningMessage {
             version: PROVISIONING_PROTOCOL_VERSION,
             message: ProvisioningMessage::RegisterInstallationRequest {
-                codex_home: r"C:\Users\alice\.codex".to_string(),
+                ava_home: r"C:\Users\alice\.ava-code".to_string(),
             },
         },
     )
@@ -762,7 +762,7 @@ fn installation_registration_requires_no_sandbox_settings() {
     assert_eq!(
         validate_request(&frame).unwrap(),
         ServiceRequest::RegisterInstallation {
-            codex_home: PathBuf::from(r"C:\Users\alice\.codex")
+            ava_home: PathBuf::from(r"C:\Users\alice\.ava-code")
         },
     );
 }

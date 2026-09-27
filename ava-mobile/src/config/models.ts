@@ -23,6 +23,6 @@ const combo = (id: string, name: string, description: string): ModelInfo => ({
 export const CURATED_MODELS: ModelInfo[] = [
   combo("ultra-working-combo", "Ultra Working Combo", "Best overall working combo"),
   combo("powerful-coding-combo", "Powerful Coding Combo", "Strong coding combo"),
-  combo("omni-codex-combo", "Omni Codex Combo", "Codex-style coding combo"),
+  combo("omni-ava-combo", "Omni Ava Combo", "Ava-style coding combo"),
   combo("auto/best-coding", "Auto Best Coding", "Automatically picks the best coder"),
 ];

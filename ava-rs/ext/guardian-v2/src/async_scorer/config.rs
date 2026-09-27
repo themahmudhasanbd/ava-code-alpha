@@ -1,15 +1,15 @@
-use codex_config::GuardianPolicyLoader;
-use codex_context_fragments::ContextualUserFragment;
-use codex_context_fragments::RenderedFragment;
-use codex_core::config::Config;
-use codex_features::FeatureToml;
-use codex_features::GuardianV2ConfigToml;
-use codex_features::GuardianV2TranscriptConfigToml;
-use codex_prompts::GuardianClassifierInstructions;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::openai_models::GuardianModelPolicy;
-use codex_protocol::openai_models::GuardianV2ModelConfig;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_config::GuardianPolicyLoader;
+use ava_context_fragments::ContextualUserFragment;
+use ava_context_fragments::RenderedFragment;
+use ava_core::config::Config;
+use ava_features::FeatureToml;
+use ava_features::GuardianV2ConfigToml;
+use ava_features::GuardianV2TranscriptConfigToml;
+use ava_prompts::GuardianClassifierInstructions;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::openai_models::GuardianModelPolicy;
+use ava_protocol::openai_models::GuardianV2ModelConfig;
+use ava_protocol::openai_models::ReasoningEffort;
 
 use super::transcript::MAX_MESSAGE_ENTRY_TOKENS;
 use super::transcript::MAX_MESSAGE_TRANSCRIPT_TOKENS;
@@ -68,7 +68,7 @@ impl GuardianV2Config {
         let mut resolved = Self::from_overrides(configured.clone())?;
         // Config.features can be changed after loading, including for reviewer threads.
         let legacy = FeatureToml::Config(GuardianV2ConfigToml {
-            enabled: Some(config.features.enabled(codex_features::Feature::GuardianV2)),
+            enabled: Some(config.features.enabled(ava_features::Feature::GuardianV2)),
             ..configured
         });
         resolved.policy =
@@ -78,7 +78,7 @@ impl GuardianV2Config {
 
     pub(super) fn policy_for_model(
         &self,
-        model: Option<&codex_protocol::openai_models::ModelInfo>,
+        model: Option<&ava_protocol::openai_models::ModelInfo>,
     ) -> GuardianModelPolicy {
         self.policy.resolve(model)
     }
@@ -247,7 +247,7 @@ impl GuardianV2Config {
                 enabled: Some(true),
                 ..configured.clone()
             })),
-            &codex_config::ConfigRequirements::default(),
+            &ava_config::ConfigRequirements::default(),
         );
         Ok(Self {
             local_overrides: configured.clone(),

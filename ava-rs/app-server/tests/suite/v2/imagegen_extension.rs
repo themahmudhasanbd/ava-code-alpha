@@ -7,22 +7,22 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ImageGenerationFailure;
-use codex_app_server_protocol::ImageGenerationItem;
-use codex_app_server_protocol::ImageReference as V2ImageReference;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
+use ava_app_server_protocol::ImageGenerationFailure;
+use ava_app_server_protocol::ImageGenerationItem;
+use ava_app_server_protocol::ImageReference as V2ImageReference;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
 use core_test_support::responses;
 use core_test_support::skip_if_remote;
 use pretty_assertions::assert_eq;
@@ -64,10 +64,10 @@ async fn standalone_image_generation_returns_saved_path_hint_to_model() -> Resul
     let call_id = "image-run-1";
     let server = responses::start_mock_server().await;
     Mock::given(method("POST"))
-        .and(path("/api/codex/images/generations"))
+        .and(path("/api/ava/images/generations"))
         .respond_with(
             ResponseTemplate::new(200)
-                .insert_header("x-codex-imagegen-request-id", "req-imagegen-123")
+                .insert_header("x-ava-imagegen-request-id", "req-imagegen-123")
                 .set_body_json(json!({
                     "created": 1,
                     "background": "opaque",
@@ -105,12 +105,12 @@ async fn standalone_image_generation_returns_saved_path_hint_to_model() -> Resul
     )
     .await;
 
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -156,7 +156,7 @@ async fn standalone_image_generation_returns_saved_path_hint_to_model() -> Resul
         .await
         .context("failed to fetch received requests")?
         .into_iter()
-        .find(|request| request.url.path() == "/api/codex/images/generations")
+        .find(|request| request.url.path() == "/api/ava/images/generations")
         .context("image generation request should be sent")?;
     assert_eq!(
         image_request
@@ -202,7 +202,7 @@ async fn standalone_image_generation_returns_saved_path_hint_to_model() -> Resul
     let event = wait_for_analytics_event(
         &server,
         DEFAULT_READ_TIMEOUT,
-        "codex_image_generation_event",
+        "ava_image_generation_event",
     )
     .await?;
     assert_eq!(
@@ -243,15 +243,15 @@ async fn transparent_image_preserves_output_metadata_and_persisted_history() -> 
     )
     .await;
 
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt"),
         AuthCredentialsStoreMode::File,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -283,7 +283,7 @@ async fn transparent_image_preserves_output_metadata_and_persisted_history() -> 
 
     drop(mcp);
     let mut resumed = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -354,15 +354,15 @@ async fn automatic_image_background_preserves_unknown_transparency() -> Result<(
     )
     .await;
 
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt"),
         AuthCredentialsStoreMode::File,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -395,7 +395,7 @@ async fn standalone_image_generation_failure_emits_terminal_item() -> Result<()>
     let call_id = "image-run-failed";
     let server = responses::start_mock_server().await;
     Mock::given(method("POST"))
-        .and(path("/api/codex/images/generations"))
+        .and(path("/api/ava/images/generations"))
         .respond_with(ResponseTemplate::new(500).set_body_string("image backend failed"))
         .expect(1)
         .mount(&server)
@@ -421,15 +421,15 @@ async fn standalone_image_generation_failure_emits_terminal_item() -> Result<()>
     )
     .await;
 
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt"),
         AuthCredentialsStoreMode::File,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -481,10 +481,10 @@ async fn image_generation_usage_limit_preserves_correlated_failure_metadata() ->
     let reset_at = 1_786_150_800;
     let server = responses::start_mock_server().await;
     Mock::given(method("POST"))
-        .and(path("/api/codex/images/generations"))
+        .and(path("/api/ava/images/generations"))
         .respond_with(
             ResponseTemplate::new(429)
-                .insert_header("x-codex-active-limit", "image_gen")
+                .insert_header("x-ava-active-limit", "image_gen")
                 .insert_header("x-image-gen-primary-used-percent", "100")
                 .insert_header("x-image-gen-primary-window-minutes", "1440")
                 .insert_header("x-image-gen-primary-reset-at", reset_at.to_string())
@@ -521,15 +521,15 @@ async fn image_generation_usage_limit_preserves_correlated_failure_metadata() ->
     )
     .await;
 
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt"),
         AuthCredentialsStoreMode::File,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -616,8 +616,8 @@ async fn standalone_image_edit_uses_attached_model_visible_image() -> Result<()>
         "remote executors use different imagegen storage approaches, so host-local image paths are unavailable"
     );
 
-    let (edit_request, _) = run_image_edit_test(|codex_home| {
-        let image_path = codex_home.join("attached.png");
+    let (edit_request, _) = run_image_edit_test(|ava_home| {
+        let image_path = ava_home.join("attached.png");
         std::fs::write(&image_path, TINY_PNG_BYTES)?;
         Ok((
             json!({
@@ -686,20 +686,20 @@ async fn standalone_image_generation_is_exposed_in_code_mode_only() -> Result<()
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         ImagegenTestMode::CodeModeOnly,
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt"),
         AuthCredentialsStoreMode::File,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -751,20 +751,20 @@ generatedImage(result);
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         ImagegenTestMode::CodeModeOnly,
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt"),
         AuthCredentialsStoreMode::File,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -819,8 +819,8 @@ async fn run_image_edit_test(
     let server = responses::start_mock_server().await;
     mount_image_edit_response(&server).await;
 
-    let codex_home = TempDir::new()?;
-    let (arguments, input) = input(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    let (arguments, input) = input(ava_home.path())?;
     let response_mock = responses::mount_sse_sequence(
         &server,
         vec![
@@ -842,15 +842,15 @@ async fn run_image_edit_test(
     )
     .await;
 
-    create_config_toml(codex_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
+    create_config_toml(ava_home.path(), &server.uri(), ImagegenTestMode::Direct)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt"),
         AuthCredentialsStoreMode::File,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -884,7 +884,7 @@ async fn run_image_edit_test(
         .context("failed to fetch received requests")?;
     let image_request = requests
         .iter()
-        .find(|request| request.url.path() == "/api/codex/images/edits")
+        .find(|request| request.url.path() == "/api/ava/images/edits")
         .context("image edit request should be sent")?;
     assert_eq!(
         image_request
@@ -905,7 +905,7 @@ async fn run_image_edit_test(
 fn assert_image_turn_id_header(request: &wiremock::Request, expected_turn_id: &str) -> Result<()> {
     let turn_id = request
         .headers
-        .get("x-codex-image-turn-id")
+        .get("x-ava-image-turn-id")
         .context("image request should include the current turn id")?
         .to_str()
         .context("image turn id should be valid ASCII")?;
@@ -952,10 +952,10 @@ async fn wait_for_image_generation_completed(
 
 async fn mount_image_response_with_background(server: &MockServer, background: &str) {
     Mock::given(method("POST"))
-        .and(path("/api/codex/images/generations"))
+        .and(path("/api/ava/images/generations"))
         .respond_with(
             ResponseTemplate::new(200)
-                .insert_header("x-codex-imagegen-request-id", "req-imagegen-123")
+                .insert_header("x-ava-imagegen-request-id", "req-imagegen-123")
                 .set_body_json(json!({
                     "created": 1,
                     "background": background,
@@ -969,7 +969,7 @@ async fn mount_image_response_with_background(server: &MockServer, background: &
 
 async fn mount_image_edit_response(server: &MockServer) {
     Mock::given(method("POST"))
-        .and(path("/api/codex/images/edits"))
+        .and(path("/api/ava/images/edits"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "created": 1,
             "background": "transparent",
@@ -981,18 +981,18 @@ async fn mount_image_edit_response(server: &MockServer) {
 }
 
 fn create_config_toml(
-    codex_home: &Path,
+    ava_home: &Path,
     server_uri: &str,
     mode: ImagegenTestMode,
 ) -> std::io::Result<()> {
     let mut config = MockResponsesConfig::new(server_uri)
         .with_model_provider("openai-custom")
         .with_provider_name("OpenAI")
-        .with_provider_base_url(&format!("{server_uri}/api/codex"))
+        .with_provider_base_url(&format!("{server_uri}/api/ava"))
         .with_root_config(&format!("chatgpt_base_url = \"{server_uri}\""))
         .with_provider_config("supports_websockets = false\nrequires_openai_auth = true");
     if matches!(mode, ImagegenTestMode::CodeModeOnly) {
         config = config.enable_feature(Feature::CodeModeOnly);
     }
-    config.write(codex_home)
+    config.write(ava_home)
 }

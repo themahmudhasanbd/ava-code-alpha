@@ -67,10 +67,10 @@ struct ServiceState {
 }
 
 pub(crate) fn run() -> Result<()> {
-    let service_name = codex_windows_sandbox::windows_sandbox_service_name()?;
+    let service_name = ava_windows_sandbox::windows_sandbox_service_name()?;
     let state = ServiceState {
         service_name: service_name.clone(),
-        pipe_name: codex_windows_sandbox::windows_sandbox_service_pipe_name()?,
+        pipe_name: ava_windows_sandbox::windows_sandbox_service_pipe_name()?,
         shutdown: Arc::new(AtomicBool::new(false)),
         uninstalling: Arc::new(AtomicBool::new(false)),
         status_handle: OnceLock::new(),
@@ -113,8 +113,8 @@ pub(crate) fn run_foreground() -> Result<()> {
         || {
             eprintln!(
                 "{} listening on {}",
-                codex_windows_sandbox::windows_sandbox_service_name()?,
-                codex_windows_sandbox::windows_sandbox_service_pipe_name()?
+                ava_windows_sandbox::windows_sandbox_service_name()?,
+                ava_windows_sandbox::windows_sandbox_service_pipe_name()?
             );
             Ok(())
         },
@@ -131,7 +131,7 @@ unsafe extern "system" fn service_main(_argument_count: u32, _arguments: *mut *m
     if let Err(error) = service_main_inner(state) {
         log_error(
             EVENT_SERVICE_FAILED,
-            &format!("The Codex sandbox service encountered a fatal error: {error:#}"),
+            &format!("The Ava sandbox service encountered a fatal error: {error:#}"),
         );
         eprintln!("{} failed: {error:#}", state.service_name);
         if state.status_handle.get().is_some() {
@@ -169,7 +169,7 @@ fn service_main_inner(state: &ServiceState) -> Result<()> {
     runtime_lifecycle::run(state, &package_lifecycle)?;
     log_information(
         EVENT_SERVICE_STOPPED,
-        "The Codex sandbox service has stopped.",
+        "The Ava sandbox service has stopped.",
     );
     state.report_status(SERVICE_STOPPED, NO_ERROR)
 }
@@ -195,7 +195,7 @@ unsafe extern "system" fn service_control_handler(
                 }
                 log_information(
                     EVENT_SERVICE_STOP_REQUESTED,
-                    "The Codex sandbox service was asked to stop.",
+                    "The Ava sandbox service was asked to stop.",
                 );
                 wake_listener();
             }
@@ -206,7 +206,7 @@ unsafe extern "system" fn service_control_handler(
             if let Err(error) = state.report_status(current_status, NO_ERROR) {
                 log_error(
                     EVENT_SERVICE_FAILED,
-                    "The Codex sandbox service could not report its current status.",
+                    "The Ava sandbox service could not report its current status.",
                 );
                 eprintln!("unable to report the current service status: {error:#}");
             }
@@ -241,7 +241,7 @@ pub(crate) fn log_error(event_id: u32, message: &str) {
 fn log_event(event_type: u16, event_id: u32, message: &str) {
     let source = SERVICE_STATE
         .get()
-        .map_or("CodexSandboxService", |state| state.service_name.as_str())
+        .map_or("AvaSandboxService", |state| state.service_name.as_str())
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<_>>();

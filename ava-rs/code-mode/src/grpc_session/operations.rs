@@ -4,16 +4,16 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_code_mode_protocol::CellId;
-use codex_code_mode_protocol::CodeModeSessionDelegate;
-use codex_code_mode_protocol::DEFAULT_EXEC_YIELD_TIME_MS;
-use codex_code_mode_protocol::ExecuteRequest;
-use codex_code_mode_protocol::RuntimeResponse;
-use codex_code_mode_protocol::StartedCell;
-use codex_code_mode_protocol::WaitOutcome;
-use codex_code_mode_protocol::WaitRequest;
-use codex_code_mode_protocol::grpc;
-use codex_protocol::protocol::W3cTraceContext;
+use ava_code_mode_protocol::CellId;
+use ava_code_mode_protocol::CodeModeSessionDelegate;
+use ava_code_mode_protocol::DEFAULT_EXEC_YIELD_TIME_MS;
+use ava_code_mode_protocol::ExecuteRequest;
+use ava_code_mode_protocol::RuntimeResponse;
+use ava_code_mode_protocol::StartedCell;
+use ava_code_mode_protocol::WaitOutcome;
+use ava_code_mode_protocol::WaitRequest;
+use ava_code_mode_protocol::grpc;
+use ava_protocol::protocol::W3cTraceContext;
 use tokio::sync::OwnedMutexGuard;
 use tokio::sync::oneshot;
 use tracing::Instrument;
@@ -79,7 +79,7 @@ impl SessionInner {
             execution.id = %execution_id,
             call_id = %request.tool_call_id,
         );
-        let trace = codex_otel::span_w3c_trace_context(&execute_span);
+        let trace = ava_otel::span_w3c_trace_context(&execute_span);
         let request = conversion::execute_request(&self.id, execution_id.clone(), request)?;
         self.state
             .lock()

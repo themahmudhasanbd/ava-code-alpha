@@ -1,4 +1,4 @@
-"""Command-line interface for building Codex package directories."""
+"""Command-line interface for building Ava package directories."""
 
 import argparse
 import re
@@ -46,7 +46,7 @@ def parse_package_version(value: str) -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Build a canonical Codex package directory and optional archive.",
+        description="Build a canonical Ava package directory and optional archive.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -61,14 +61,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--variant",
         choices=sorted(PACKAGE_VARIANTS),
-        default="codex",
+        default="ava",
         help="Package variant to build.",
     )
     parser.add_argument(
         "--package-version",
         type=parse_package_version,
         default=read_workspace_version(),
-        help="Semantic version to record in codex-package.json.",
+        help="Semantic version to record in ava-package.json.",
     )
     parser.add_argument(
         "--package-dir",
@@ -117,7 +117,7 @@ def parse_args() -> argparse.Namespace:
         "--code-mode-host-bin",
         type=Path,
         help=(
-            "Optional prebuilt codex-code-mode-host executable. If omitted, "
+            "Optional prebuilt ava-code-mode-host executable. If omitted, "
             "the host is built with Cargo."
         ),
     )
@@ -135,7 +135,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help=(
             "Optional DotSlash manifest for the patched zsh fork instead of "
-            "scripts/codex_package/codex-zsh."
+            "scripts/ava_package/ava-zsh."
         ),
     )
     zsh_source.add_argument(
@@ -144,21 +144,21 @@ def parse_args() -> argparse.Namespace:
         help="Optional prebuilt zsh executable instead of fetching from a manifest.",
     )
     parser.add_argument(
-        "--codex-command-runner-bin",
+        "--ava-command-runner-bin",
         type=Path,
         help=(
-            "Optional prebuilt Windows codex-command-runner.exe executable. "
-            "If omitted for Windows targets, codex-command-runner is built "
+            "Optional prebuilt Windows ava-command-runner.exe executable. "
+            "If omitted for Windows targets, ava-command-runner is built "
             "with Cargo."
         ),
     )
     parser.add_argument(
-        "--codex-windows-sandbox-setup-bin",
+        "--ava-windows-sandbox-setup-bin",
         type=Path,
         help=(
-            "Optional prebuilt Windows codex-windows-sandbox-setup.exe "
+            "Optional prebuilt Windows ava-windows-sandbox-setup.exe "
             "executable. If omitted for Windows targets, "
-            "codex-windows-sandbox-setup is built with Cargo."
+            "ava-windows-sandbox-setup is built with Cargo."
         ),
     )
     parser.add_argument(
@@ -166,7 +166,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help=(
             "Optional local ripgrep executable override instead of fetching from "
-            "scripts/codex_package/rg."
+            "scripts/ava_package/rg."
         ),
     )
     return parser.parse_args()
@@ -180,7 +180,7 @@ def main() -> int:
     package_dir = (
         package_dir_arg.resolve()
         if package_dir_arg is not None
-        else Path(tempfile.mkdtemp(prefix="codex-package-")).resolve()
+        else Path(tempfile.mkdtemp(prefix="ava-package-")).resolve()
     )
 
     source_outputs = build_source_binaries(
@@ -203,15 +203,15 @@ def main() -> int:
             "prebuilt Linux bwrap executable",
             "--bwrap-bin",
         ),
-        codex_command_runner_bin=resolve_optional_input_path(
-            args.codex_command_runner_bin,
-            "prebuilt Windows codex-command-runner.exe executable",
-            "--codex-command-runner-bin",
+        ava_command_runner_bin=resolve_optional_input_path(
+            args.ava_command_runner_bin,
+            "prebuilt Windows ava-command-runner.exe executable",
+            "--ava-command-runner-bin",
         ),
-        codex_windows_sandbox_setup_bin=resolve_optional_input_path(
-            args.codex_windows_sandbox_setup_bin,
-            "prebuilt Windows codex-windows-sandbox-setup.exe executable",
-            "--codex-windows-sandbox-setup-bin",
+        ava_windows_sandbox_setup_bin=resolve_optional_input_path(
+            args.ava_windows_sandbox_setup_bin,
+            "prebuilt Windows ava-windows-sandbox-setup.exe executable",
+            "--ava-windows-sandbox-setup-bin",
         ),
     )
     inputs = PackageInputs(
@@ -220,8 +220,8 @@ def main() -> int:
         rg_bin=resolve_rg_bin(spec, args.rg_bin),
         zsh_bin=resolve_zsh_bin(spec, args.zsh_manifest, zsh_bin=args.zsh_bin),
         bwrap_bin=source_outputs.bwrap_bin,
-        codex_command_runner_bin=source_outputs.codex_command_runner_bin,
-        codex_windows_sandbox_setup_bin=source_outputs.codex_windows_sandbox_setup_bin,
+        ava_command_runner_bin=source_outputs.ava_command_runner_bin,
+        ava_windows_sandbox_setup_bin=source_outputs.ava_windows_sandbox_setup_bin,
     )
     prepare_package_dir(package_dir, force=args.force)
     build_package_dir(package_dir, args.package_version, variant, spec, inputs)
@@ -232,9 +232,9 @@ def main() -> int:
     for archive_output in args.archive_output:
         archive_path = archive_output.resolve()
         write_archive(package_dir, archive_path, force=args.force)
-        print(f"Built Codex package archive at {archive_path}")
+        print(f"Built Ava package archive at {archive_path}")
 
-    print(f"Built Codex package directory at {package_dir}")
+    print(f"Built Ava package directory at {package_dir}")
     return 0
 
 

@@ -9,41 +9,41 @@ use crate::session::tests::make_session_and_context;
 use crate::session::tests::update_selected_settings_for_test;
 use crate::session::tests::update_turn_settings_for_test;
 use crate::state::TaskKind;
-use codex_config::AutoReviewRequirementsToml;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
-use codex_config::ConfigRequirementsWithSources;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
-use codex_extension_api::Instructions;
-use codex_extension_api::LoadInstructionsFuture;
-use codex_extension_api::LoadedUserInstructions;
-use codex_extension_api::ThreadInstructionsProvider;
-use codex_extension_api::UserInstructionsProvider;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_models_manager::ModelsManagerConfig;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::manager::ModelsManager;
-use codex_models_manager::manager::ModelsManagerFuture;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_models_manager::manager::StaticModelsManager;
-use codex_models_manager::model_info::with_config_overrides;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::openai_models::AutoReviewMessages;
-use codex_protocol::openai_models::GuardianV2ModelConfig;
-use codex_protocol::openai_models::GuardianV2TranscriptModelConfig;
-use codex_protocol::openai_models::ModelTokenBudgetConfig;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::Submission;
-use codex_protocol::protocol::TurnAbortReason;
+use ava_config::AutoReviewRequirementsToml;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
+use ava_config::ConfigRequirementsWithSources;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
+use ava_extension_api::Instructions;
+use ava_extension_api::LoadInstructionsFuture;
+use ava_extension_api::LoadedUserInstructions;
+use ava_extension_api::ThreadInstructionsProvider;
+use ava_extension_api::UserInstructionsProvider;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_models_manager::ModelsManagerConfig;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::manager::ModelsManager;
+use ava_models_manager::manager::ModelsManagerFuture;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_models_manager::manager::StaticModelsManager;
+use ava_models_manager::model_info::with_config_overrides;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::openai_models::AutoReviewMessages;
+use ava_protocol::openai_models::GuardianV2ModelConfig;
+use ava_protocol::openai_models::GuardianV2TranscriptModelConfig;
+use ava_protocol::openai_models::ModelTokenBudgetConfig;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::Submission;
+use ava_protocol::protocol::TurnAbortReason;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeSet;
 use std::sync::Mutex as StdMutex;
@@ -103,7 +103,7 @@ impl ThreadInstructionsProvider for GatedInstructionsProvider {
 async fn instruction_refresh_serializes_reads_and_releases_on_cancellation() {
     let (mut session, turn) = make_session_and_context().await;
     let turn = Arc::new(turn);
-    let source = turn.config.codex_home.join("AGENTS.md");
+    let source = turn.config.ava_home.join("AGENTS.md");
     let instructions = |text: &str| {
         Some(Instructions {
             text: text.to_string(),
@@ -173,7 +173,7 @@ async fn thread_instruction_refresh_serializes_reads_and_releases_on_cancellatio
     let turn = Arc::new(turn);
     let global = global_text.map(|text| Instructions {
         text: text.to_string(),
-        source: Some(turn.config.codex_home.join("AGENTS.md")),
+        source: Some(turn.config.ava_home.join("AGENTS.md")),
     });
     let instructions = |text: &str| {
         Some(Instructions {

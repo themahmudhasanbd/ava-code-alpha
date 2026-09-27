@@ -35,22 +35,22 @@ use crate::provider::OtelProvider;
 use crate::sanitize_metric_tag_value;
 use crate::tool_result::ToolResultEvent;
 use crate::tool_result::emit_tool_result;
-use codex_api::AgentIdentityTelemetry;
-use codex_api::ApiError;
-use codex_api::ResponseEvent;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::ToolName;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ToolResultLogConfig;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::user_input::UserInput;
+use ava_api::AgentIdentityTelemetry;
+use ava_api::ApiError;
+use ava_api::ResponseEvent;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::ToolName;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ToolResultLogConfig;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::user_input::UserInput;
 use eventsource_stream::Event as StreamEvent;
 use eventsource_stream::EventStreamError as StreamError;
 use opentelemetry_sdk::metrics::data::ResourceMetrics;
@@ -82,8 +82,8 @@ fn trace_field_value<'a>(fields: &'a [(&str, &str)], key: &str) -> Option<&'a st
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AuthEnvTelemetryMetadata {
     pub openai_api_key_env_present: bool,
-    pub codex_api_key_env_present: bool,
-    pub codex_api_key_env_enabled: bool,
+    pub ava_api_key_env_present: bool,
+    pub ava_api_key_env_enabled: bool,
     pub provider_env_key_name: Option<String>,
     pub provider_env_key_present: Option<bool>,
     pub refresh_token_url_override_present: bool,
@@ -273,7 +273,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.startup_phase",
+                event.name = "ava.startup_phase",
                 startup.phase = phase,
                 startup.status = status,
                 duration_ms = %duration.as_millis(),
@@ -289,7 +289,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.turn_ttft",
+                event.name = "ava.turn_ttft",
                 duration_ms = %duration.as_millis(),
             },
             log: {},
@@ -346,7 +346,7 @@ impl SessionTelemetry {
         }
         log_event!(
             self,
-            event.name = "codex.turn_cost",
+            event.name = "ava.turn_cost",
             turn.id = turn_id,
             usage.estimated_usd = estimated_usd,
             turn.interrupted = interrupted,
@@ -370,7 +370,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.plugin_install_elicitation_sent",
+                event.name = "ava.plugin_install_elicitation_sent",
                 plugin_install.tool_type = tool_type,
                 plugin_install.tool_id = tool_id,
                 plugin_install.tool_name = tool_name,
@@ -403,7 +403,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.plugin_install_suggestion",
+                event.name = "ava.plugin_install_suggestion",
                 plugin_install.tool_type = tool_type,
                 plugin_install.tool_id = tool_id,
                 plugin_install.tool_name = tool_name,
@@ -569,10 +569,10 @@ impl SessionTelemetry {
                 handle_responses_span
                     .record("gen_ai.usage.output_tokens", token_usage.output_tokens);
                 handle_responses_span.record(
-                    "codex.usage.reasoning_output_tokens",
+                    "ava.usage.reasoning_output_tokens",
                     token_usage.reasoning_output_tokens,
                 );
-                handle_responses_span.record("codex.usage.total_tokens", token_usage.total_tokens);
+                handle_responses_span.record("ava.usage.total_tokens", token_usage.total_tokens);
             }
             _ => {}
         }
@@ -593,11 +593,11 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.conversation_starts",
+                event.name = "ava.conversation_starts",
                 provider_name = %provider_name,
                 auth.env_openai_api_key_present = self.metadata.auth_env.openai_api_key_env_present,
-                auth.env_codex_api_key_present = self.metadata.auth_env.codex_api_key_env_present,
-                auth.env_codex_api_key_enabled = self.metadata.auth_env.codex_api_key_env_enabled,
+                auth.env_ava_api_key_present = self.metadata.auth_env.ava_api_key_env_present,
+                auth.env_ava_api_key_enabled = self.metadata.auth_env.ava_api_key_env_enabled,
                 auth.env_provider_key_name = self.metadata.auth_env.provider_env_key_name.as_deref(),
                 auth.env_provider_key_present = self.metadata.auth_env.provider_env_key_present,
                 auth.env_refresh_token_url_override_present = self.metadata.auth_env.refresh_token_url_override_present,
@@ -688,7 +688,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.api_request",
+                event.name = "ava.api_request",
                 duration_ms = %duration.as_millis(),
                 http.response.status_code = status,
                 error.message = error,
@@ -700,8 +700,8 @@ impl SessionTelemetry {
                 auth.recovery_phase = recovery_phase,
                 endpoint = endpoint,
                 auth.env_openai_api_key_present = self.metadata.auth_env.openai_api_key_env_present,
-                auth.env_codex_api_key_present = self.metadata.auth_env.codex_api_key_env_present,
-                auth.env_codex_api_key_enabled = self.metadata.auth_env.codex_api_key_env_enabled,
+                auth.env_ava_api_key_present = self.metadata.auth_env.ava_api_key_env_present,
+                auth.env_ava_api_key_enabled = self.metadata.auth_env.ava_api_key_env_enabled,
                 auth.env_provider_key_name = self.metadata.auth_env.provider_env_key_name.as_deref(),
                 auth.env_provider_key_present = self.metadata.auth_env.provider_env_key_present,
                 auth.env_refresh_token_url_override_present = self.metadata.auth_env.refresh_token_url_override_present,
@@ -744,7 +744,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.websocket_connect",
+                event.name = "ava.websocket_connect",
                 duration_ms = %duration.as_millis(),
                 http.response.status_code = status,
                 success = success_str,
@@ -756,8 +756,8 @@ impl SessionTelemetry {
                 auth.recovery_phase = recovery_phase,
                 endpoint = endpoint,
                 auth.env_openai_api_key_present = self.metadata.auth_env.openai_api_key_env_present,
-                auth.env_codex_api_key_present = self.metadata.auth_env.codex_api_key_env_present,
-                auth.env_codex_api_key_enabled = self.metadata.auth_env.codex_api_key_env_enabled,
+                auth.env_ava_api_key_present = self.metadata.auth_env.ava_api_key_env_present,
+                auth.env_ava_api_key_enabled = self.metadata.auth_env.ava_api_key_env_enabled,
                 auth.env_provider_key_name = self.metadata.auth_env.provider_env_key_name.as_deref(),
                 auth.env_provider_key_present = self.metadata.auth_env.provider_env_key_present,
                 auth.env_refresh_token_url_override_present = self.metadata.auth_env.refresh_token_url_override_present,
@@ -795,13 +795,13 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.websocket_request",
+                event.name = "ava.websocket_request",
                 duration_ms = %duration.as_millis(),
                 success = success_str,
                 error.message = error,
                 auth.env_openai_api_key_present = self.metadata.auth_env.openai_api_key_env_present,
-                auth.env_codex_api_key_present = self.metadata.auth_env.codex_api_key_env_present,
-                auth.env_codex_api_key_enabled = self.metadata.auth_env.codex_api_key_env_enabled,
+                auth.env_ava_api_key_present = self.metadata.auth_env.ava_api_key_env_present,
+                auth.env_ava_api_key_enabled = self.metadata.auth_env.ava_api_key_env_enabled,
                 auth.env_provider_key_name = self.metadata.auth_env.provider_env_key_name.as_deref(),
                 auth.env_provider_key_present = self.metadata.auth_env.provider_env_key_present,
                 auth.env_refresh_token_url_override_present = self.metadata.auth_env.refresh_token_url_override_present,
@@ -830,7 +830,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.auth_recovery",
+                event.name = "ava.auth_recovery",
                 auth.mode = mode,
                 auth.step = step,
                 auth.outcome = outcome,
@@ -970,7 +970,7 @@ impl SessionTelemetry {
         );
         log_event!(
             self,
-            event.name = "codex.sse_event",
+            event.name = "ava.sse_event",
             event.kind = %kind,
             duration_ms = %duration.as_millis(),
         );
@@ -994,21 +994,21 @@ impl SessionTelemetry {
         match kind {
             Some(kind) => log_event!(
                 self,
-                event.name = "codex.sse_event",
+                event.name = "ava.sse_event",
                 event.kind = %kind,
                 duration_ms = %duration.as_millis(),
                 error.message = %error,
             ),
             None => log_event!(
                 self,
-                event.name = "codex.sse_event",
+                event.name = "ava.sse_event",
                 duration_ms = %duration.as_millis(),
                 error.message = %error,
             ),
         }
         trace_event!(
             self,
-            event.name = "codex.sse_event",
+            event.name = "ava.sse_event",
             event.kind = %kind_str,
             duration_ms = %duration.as_millis(),
             error.message = %error,
@@ -1022,7 +1022,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.sse_event",
+                event.name = "ava.sse_event",
                 event.kind = %"response.completed",
                 error.message = %error,
             },
@@ -1035,7 +1035,7 @@ impl SessionTelemetry {
         log_and_trace_event!(
             self,
             common: {
-                event.name = "codex.sse_event",
+                event.name = "ava.sse_event",
                 event.kind = %"response.completed",
                 input_token_count = %usage.input_tokens,
                 output_token_count = %usage.output_tokens,
@@ -1081,13 +1081,13 @@ impl SessionTelemetry {
 
         log_event!(
             self,
-            event.name = "codex.user_prompt",
+            event.name = "ava.user_prompt",
             prompt_length = %prompt.chars().count(),
             prompt = %prompt_to_log,
         );
         trace_event!(
             self,
-            event.name = "codex.user_prompt",
+            event.name = "ava.user_prompt",
             prompt_length = %prompt.chars().count(),
             text_input_count = text_input_count as i64,
             image_input_count = image_input_count as i64,
@@ -1106,7 +1106,7 @@ impl SessionTelemetry {
         match source {
             Some(source) => log_event!(
                 self,
-                event.name = "codex.tool_decision",
+                event.name = "ava.tool_decision",
                 tool_name = %tool_name.name,
                 tool_namespace = %tool_namespace,
                 call_id = %call_id,
@@ -1115,7 +1115,7 @@ impl SessionTelemetry {
             ),
             None => log_event!(
                 self,
-                event.name = "codex.tool_decision",
+                event.name = "ava.tool_decision",
                 tool_name = %tool_name.name,
                 tool_namespace = %tool_namespace,
                 call_id = %call_id,
@@ -1137,7 +1137,7 @@ impl SessionTelemetry {
             escalated_duration.map(|duration| duration.as_millis().min(i64::MAX as u128) as i64);
         log_event!(
             self,
-            event.name = "codex.sandbox_outcome",
+            event.name = "ava.sandbox_outcome",
             tool_name = %tool_name,
             call_id = %call_id,
             outcome = %outcome,
@@ -1146,7 +1146,7 @@ impl SessionTelemetry {
         );
         trace_event!(
             self,
-            event.name = "codex.sandbox_outcome",
+            event.name = "ava.sandbox_outcome",
             tool_name = %tool_name,
             call_id = %call_id,
             outcome = %outcome,

@@ -22,8 +22,8 @@ use crate::noise_relay::stream_handler::NoiseStreamHandler;
 use crate::relay::HarnessKeyValidator;
 use crate::relay::run_multiplexed_environment;
 use crate::server::ConnectionProcessor;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 
 // These tests exercise real sockets, not keepalive deadlines. The shared unit-test
 // Pong timeout is only 100 ms and can expire during Noise handshakes under load.
@@ -150,7 +150,7 @@ impl Executor {
     ) -> Result<Self> {
         let processor = ConnectionProcessor::new(ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?);
         Self::start_with_processor(validator, identity, processor).await
     }
@@ -364,7 +364,7 @@ async fn registration_renewal_recovers_the_session_and_running_process() -> Resu
                         "-c".to_owned(),
                         "IFS= read line; printf 'from-stdin:%s\\n' \"$line\"".to_owned(),
                     ],
-                    cwd: codex_utils_path_uri::PathUri::from_host_native_path(
+                    cwd: ava_utils_path_uri::PathUri::from_host_native_path(
                         std::env::current_dir()?,
                     )?,
                     shell_snapshot: None,
@@ -707,7 +707,7 @@ async fn refresh_before_startup_marks_startup_finished() -> Result<()> {
 
 struct ControlledRpc {
     client: ExecServerClient,
-    requests: tokio::sync::mpsc::Receiver<codex_exec_server_protocol::JSONRPCMessage>,
+    requests: tokio::sync::mpsc::Receiver<ava_exec_server_protocol::JSONRPCMessage>,
     responses: tokio::sync::mpsc::Sender<crate::connection::JsonRpcConnectionEvent>,
 }
 
@@ -715,8 +715,8 @@ async fn controlled_rpc() -> Result<ControlledRpc> {
     use crate::connection::JsonRpcConnection;
     use crate::connection::JsonRpcConnectionEvent;
     use crate::connection::JsonRpcTransport;
-    use codex_exec_server_protocol::JSONRPCMessage;
-    use codex_exec_server_protocol::JSONRPCResponse;
+    use ava_exec_server_protocol::JSONRPCMessage;
+    use ava_exec_server_protocol::JSONRPCResponse;
     let (outgoing_tx, mut requests) = tokio::sync::mpsc::channel(/*buffer*/ 8);
     let (responses, incoming_rx) = tokio::sync::mpsc::channel(/*buffer*/ 8);
     let connection = JsonRpcConnection {
@@ -759,8 +759,8 @@ async fn controlled_rpc() -> Result<ControlledRpc> {
 )]
 async fn retirement_rejects_pending_mutation_before_stream_cleanup() -> Result<()> {
     use crate::connection::JsonRpcConnectionEvent;
-    use codex_exec_server_protocol::JSONRPCMessage;
-    use codex_exec_server_protocol::JSONRPCResponse;
+    use ava_exec_server_protocol::JSONRPCMessage;
+    use ava_exec_server_protocol::JSONRPCResponse;
     for response_queued in [false, true] {
         let mut rpc = controlled_rpc().await?;
         let call = rpc.client.fs_remove(crate::protocol::FsRemoveParams {
@@ -816,8 +816,8 @@ async fn retirement_rejects_pending_mutation_before_stream_cleanup() -> Result<(
 )]
 async fn retirement_rejects_pending_process_start_before_stream_cleanup() -> Result<()> {
     use crate::connection::JsonRpcConnectionEvent;
-    use codex_exec_server_protocol::JSONRPCMessage;
-    use codex_exec_server_protocol::JSONRPCResponse;
+    use ava_exec_server_protocol::JSONRPCMessage;
+    use ava_exec_server_protocol::JSONRPCResponse;
     for response_queued in [false, true] {
         let mut rpc = controlled_rpc().await?;
         let process_id = ProcessId::from("retired-process");

@@ -1,16 +1,16 @@
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_features::Feature;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_features::Feature;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -21,8 +21,8 @@ use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use serde_json::Value;
 use serde_json::json;
@@ -49,8 +49,8 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
     );
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(move |config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
@@ -64,7 +64,7 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
         });
     if !matches!(cancellation, Cancellation::DirectTool) {
         builder = builder
-            .with_code_mode_host_program(codex_utils_cargo_bin::cargo_bin("codex-code-mode-host")?);
+            .with_code_mode_host_program(ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")?);
     }
     let test = builder.build_with_auto_env(&server).await?;
     let output_file = test.cwd.path().join("cancelled-guardian-command.txt");
@@ -152,7 +152,7 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
     )
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "start a Guardian-reviewed command".into(),
@@ -173,7 +173,7 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
     .context("Guardian review did not start")?;
 
     if let Some(yielded_parent) = yielded_parent {
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -212,21 +212,21 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
             ],
         )
         .await;
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "terminate the background cell".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
     } else {
-        test.codex.submit(Op::Interrupt).await?;
+        test.ava-code.submit(Op::Interrupt).await?;
     }
 
     tokio::time::timeout(Duration::from_secs(10), async {
         let mut guardian_aborted = false;
         let mut parent_finished = false;
         while !guardian_aborted || !parent_finished {
-            let event = test.codex.next_event().await?;
+            let event = test.ava-code.next_event().await?;
             match event.msg {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status == GuardianAssessmentStatus::Aborted =>
@@ -247,6 +247,6 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
     .await
     .context("tool cancellation did not abort Guardian")??;
     assert!(!output_file.exists(), "cancelled command executed");
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

@@ -6,15 +6,15 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::Environment;
-use codex_rmcp_client::RmcpClient;
-use codex_rmcp_client::StoredOAuthTokens;
-use codex_rmcp_client::WrappedOAuthTokenResponse;
-use codex_rmcp_client::is_authentication_required_error;
-use codex_rmcp_client::save_oauth_tokens;
-use codex_rmcp_client::stored_oauth_credentials;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::Environment;
+use ava_rmcp_client::RmcpClient;
+use ava_rmcp_client::StoredOAuthTokens;
+use ava_rmcp_client::WrappedOAuthTokenResponse;
+use ava_rmcp_client::is_authentication_required_error;
+use ava_rmcp_client::save_oauth_tokens;
+use ava_rmcp_client::stored_oauth_credentials;
 use oauth2::AccessToken;
 use oauth2::RefreshToken;
 use oauth2::basic::BasicTokenType;
@@ -72,7 +72,7 @@ async fn run_scenarios(scenarios: &[&str]) -> anyhow::Result<()> {
         let home = TempDir::new()?;
         let output = Command::new(std::env::current_exe()?)
             .args(["runtime_oauth_child", "--exact", "--ignored", "--nocapture"])
-            .env("CODEX_HOME", home.path())
+            .env("AVA_HOME", home.path())
             .env(SCENARIO_ENV, scenario)
             .output()
             .await?;
@@ -87,7 +87,7 @@ async fn run_scenarios(scenarios: &[&str]) -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-#[ignore = "spawned by OAuth recovery tests with an isolated CODEX_HOME"]
+#[ignore = "spawned by OAuth recovery tests with an isolated AVA_HOME"]
 async fn runtime_oauth_child() -> anyhow::Result<()> {
     let scenario = std::env::var(SCENARIO_ENV)?;
     let mcp = MockServer::start().await;

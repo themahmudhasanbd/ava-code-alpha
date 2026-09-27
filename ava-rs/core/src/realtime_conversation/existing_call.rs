@@ -7,14 +7,14 @@ use super::RealtimeWebrtcSidebandInputTask;
 use super::spawn_webrtc_sideband_input_task;
 use crate::client::ModelClient;
 use async_channel::Sender;
-use codex_api::RealtimeEvent;
-use codex_api::RealtimeEventParser;
-use codex_api::RealtimeSessionConfig;
-use codex_api::RealtimeTranscriptState;
-use codex_api::RealtimeWebsocketClient;
-use codex_api::map_api_error;
-use codex_login::default_client::default_headers;
-use codex_protocol::error::Result as CodexResult;
+use ava_api::RealtimeEvent;
+use ava_api::RealtimeEventParser;
+use ava_api::RealtimeSessionConfig;
+use ava_api::RealtimeTranscriptState;
+use ava_api::RealtimeWebsocketClient;
+use ava_api::map_api_error;
+use ava_login::default_client::default_headers;
+use ava_protocol::error::Result as AvaResult;
 use http::HeaderMap;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
@@ -37,7 +37,7 @@ pub(super) struct ExistingCallAttachment {
     pub(super) stop_token: CancellationToken,
 }
 
-pub(super) async fn attach(attachment: ExistingCallAttachment) -> CodexResult<JoinHandle<()>> {
+pub(super) async fn attach(attachment: ExistingCallAttachment) -> AvaResult<JoinHandle<()>> {
     let ExistingCallAttachment {
         client,
         model_client,

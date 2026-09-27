@@ -4,39 +4,39 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_config::ConfigPathContext;
-use codex_config::permissions_toml::FilesystemPermissionToml;
-use codex_config::permissions_toml::FilesystemPermissionsToml;
-use codex_config::permissions_toml::NetworkDomainPermissionToml;
-use codex_config::permissions_toml::NetworkDomainPermissionsToml;
-use codex_config::permissions_toml::NetworkToml;
-use codex_config::permissions_toml::NetworkUnixSocketPermissionToml;
-use codex_config::permissions_toml::NetworkUnixSocketPermissionsToml;
-use codex_config::permissions_toml::PermissionProfileToml;
-use codex_config::permissions_toml::PermissionsToml;
-use codex_config::permissions_toml::WorkspaceRootsToml;
-use codex_features::NetworkProxyConfigToml;
-use codex_features::NetworkProxyDomainPermissionToml;
-use codex_features::NetworkProxyModeToml;
-use codex_features::NetworkProxyUnixSocketPermissionToml;
-use codex_network_proxy::NetworkMode;
-use codex_network_proxy::NetworkProxyConfig;
+use ava_config::ConfigPathContext;
+use ava_config::permissions_toml::FilesystemPermissionToml;
+use ava_config::permissions_toml::FilesystemPermissionsToml;
+use ava_config::permissions_toml::NetworkDomainPermissionToml;
+use ava_config::permissions_toml::NetworkDomainPermissionsToml;
+use ava_config::permissions_toml::NetworkToml;
+use ava_config::permissions_toml::NetworkUnixSocketPermissionToml;
+use ava_config::permissions_toml::NetworkUnixSocketPermissionsToml;
+use ava_config::permissions_toml::PermissionProfileToml;
+use ava_config::permissions_toml::PermissionsToml;
+use ava_config::permissions_toml::WorkspaceRootsToml;
+use ava_features::NetworkProxyConfigToml;
+use ava_features::NetworkProxyDomainPermissionToml;
+use ava_features::NetworkProxyModeToml;
+use ava_features::NetworkProxyUnixSocketPermissionToml;
+use ava_network_proxy::NetworkMode;
+use ava_network_proxy::NetworkProxyConfig;
 #[cfg(test)]
-use codex_network_proxy::NetworkUnixSocketPermission as ProxyNetworkUnixSocketPermission;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::permissions::project_roots_glob_pattern;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::NetworkUnixSocketPermission as ProxyNetworkUnixSocketPermission;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::permissions::project_roots_glob_pattern;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 
 use super::ProjectConfig;
 use super::permission_path;
@@ -509,14 +509,14 @@ pub(crate) fn reject_unknown_builtin_permission_profile(profile_name: &str) -> i
 }
 
 /// Returns a list of paths that must be readable by shell tools in order
-/// for Codex to function. These should always be added to the
+/// for Ava to function. These should always be added to the
 /// `FileSystemSandboxPolicy` for a thread.
-pub(crate) fn get_readable_roots_required_for_codex_runtime(
-    codex_home: &Path,
+pub(crate) fn get_readable_roots_required_for_ava_runtime(
+    ava_home: &Path,
     zsh_path: Option<&PathBuf>,
     main_execve_wrapper_exe: Option<&PathBuf>,
 ) -> Vec<AbsolutePathBuf> {
-    let arg0_root = AbsolutePathBuf::from_absolute_path(codex_home.join("tmp").join("arg0")).ok();
+    let arg0_root = AbsolutePathBuf::from_absolute_path(ava_home.join("tmp").join("arg0")).ok();
     let zsh_path = zsh_path.and_then(|path| AbsolutePathBuf::from_absolute_path(path).ok());
     let execve_wrapper_root = main_execve_wrapper_exe.and_then(|path| {
         let path = AbsolutePathBuf::from_absolute_path(path).ok()?;
@@ -836,7 +836,7 @@ fn remove_trailing_glob_suffix(path: &str) -> &str {
 }
 
 // WARNING: keep this parser forward-compatible.
-// Adding a new `:special_path` must not make older Codex versions reject the
+// Adding a new `:special_path` must not make older Ava versions reject the
 // config. Unknown values intentionally round-trip through
 // `FileSystemSpecialPath::Unknown` so they can be surfaced as warnings and
 // ignored, rather than aborting config load.
@@ -864,7 +864,7 @@ fn push_warning(startup_warnings: &mut Vec<String>, message: String) {
 
 fn missing_filesystem_entries_warning(profile_name: &str) -> String {
     format!(
-        "Permissions profile `{profile_name}` does not define any recognized filesystem entries for this version of Codex. Filesystem access will remain restricted. Upgrade Codex if this profile expects filesystem permissions."
+        "Permissions profile `{profile_name}` does not define any recognized filesystem entries for this version of Ava. Filesystem access will remain restricted. Upgrade Ava if this profile expects filesystem permissions."
     )
 }
 
@@ -879,10 +879,10 @@ fn maybe_push_unknown_special_path_warning(
         startup_warnings,
         match subpath.as_deref() {
             Some(subpath) => format!(
-                "Configured filesystem path `{path}` with nested entry `{subpath}` is not recognized by this version of Codex and will be ignored. Upgrade Codex if this path is required."
+                "Configured filesystem path `{path}` with nested entry `{subpath}` is not recognized by this version of Ava and will be ignored. Upgrade Ava if this path is required."
             ),
             None => format!(
-                "Configured filesystem path `{path}` is not recognized by this version of Codex and will be ignored. Upgrade Codex if this path is required."
+                "Configured filesystem path `{path}` is not recognized by this version of Ava and will be ignored. Upgrade Ava if this path is required."
             ),
         },
     );

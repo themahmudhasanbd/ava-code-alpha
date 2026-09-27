@@ -7,16 +7,16 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadDeleteParams;
-use codex_app_server_protocol::ThreadDeleteResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadDeleteParams;
+use ava_app_server_protocol::ThreadDeleteResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -38,10 +38,10 @@ async fn delete_runs_session_end_before_removing_transcript() -> Result<()> {
 
 async fn run_removal_session_end_test(operation: &str) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("persisted answer").await;
-    let codex_home = TempDir::new()?;
-    let log_path = write_config_and_hook(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    let log_path = write_config_and_hook(ava_home.path(), &server.uri())?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(READ_TIMEOUT)
         .await?;
     let thread_id = start_thread(&mut app_server).await?;
@@ -108,10 +108,10 @@ async fn app_server_shutdown_runs_session_end_for_all_loaded_threads(
     shutdown: Shutdown,
 ) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    let log_path = write_config_and_hook(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    let log_path = write_config_and_hook(ava_home.path(), &server.uri())?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(READ_TIMEOUT)
         .await?;
     let first = start_thread(&mut app_server).await?;
@@ -164,9 +164,9 @@ async fn start_thread(app_server: &mut TestAppServer) -> Result<String> {
     Ok(response.thread.id)
 }
 
-fn write_config_and_hook(codex_home: &Path, server_uri: &str) -> Result<std::path::PathBuf> {
-    let log_path = codex_home.join("session-end.jsonl");
-    let script_path = codex_home.join("session-end.py");
+fn write_config_and_hook(ava_home: &Path, server_uri: &str) -> Result<std::path::PathBuf> {
+    let log_path = ava_home.join("session-end.jsonl");
+    let script_path = ava_home.join("session-end.py");
     std::fs::write(
         &script_path,
         format!(
@@ -187,7 +187,7 @@ with Path(r"{}").open("a", encoding="utf-8") as handle:
     )?;
     MockResponsesConfig::new(server_uri)
         .with_sandbox_mode("danger-full-access")
-        .enable_feature(Feature::CodexHooks)
+        .enable_feature(Feature::AvaHooks)
         .with_extra_config(&format!(
             r#"[[hooks.SessionEnd]]
 matcher = "other"
@@ -199,7 +199,7 @@ timeout = 3
 "#,
             script_path = script_path.display(),
         ))
-        .write(codex_home)?;
+        .write(ava_home)?;
     Ok(log_path)
 }
 

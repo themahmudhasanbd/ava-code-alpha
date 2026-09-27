@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-memories-extension"
+name = "ava-memories-extension"
 version.workspace = true
 
 [lib]
-name = "codex_memories_extension"
+name = "ava_memories_extension"
 path = "src/lib.rs"
 doctest = false
 
@@ -14,16 +14,16 @@ workspace = true
 
 [dependencies]
 chrono = { workspace = true }
-codex-config = { workspace = true }
-codex-core = { workspace = true }
-codex-extension-api = { workspace = true }
-codex-features = { workspace = true }
-codex-otel = { workspace = true }
-codex-protocol = { workspace = true }
-codex-tools = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-output-truncation = { workspace = true }
-codex-utils-template = { workspace = true }
+ava-config = { workspace = true }
+ava-core = { workspace = true }
+ava-extension-api = { workspace = true }
+ava-features = { workspace = true }
+ava-otel = { workspace = true }
+ava-protocol = { workspace = true }
+ava-tools = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-output-truncation = { workspace = true }
+ava-utils-template = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

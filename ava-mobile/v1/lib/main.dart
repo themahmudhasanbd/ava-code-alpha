@@ -679,7 +679,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     return _findModelByIdOrName("ultra-working-combo", models: list) ??
            _findModelByIdOrName("ultra-coding-combo", models: list) ??
            _findModelByIdOrName("powerful-coding-combo", models: list) ??
-           _findModelByIdOrName("omni-codex-combo", models: list) ??
+           _findModelByIdOrName("omni-ava-combo", models: list) ??
            _findModelByIdOrName("auto/best-coding", models: list) ??
            _findModelByIdOrName("gpt-6-astra", models: list) ??
            list.first;

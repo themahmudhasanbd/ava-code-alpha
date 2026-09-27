@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { avaExecSpy as codexExecSpy } from "./avaExecSpy";
+import { avaExecSpy as avaExecSpy } from "./avaExecSpy";
 import { describe, expect, it } from "@jest/globals";
 
 import {
@@ -196,7 +196,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createMockClient(url);
 
     try {
@@ -218,7 +218,7 @@ describe("Ava", () => {
       expectPair(commandArgs, ["--sandbox", "workspace-write"]);
       expectPair(commandArgs, ["--model", "gpt-test-1"]);
       expectPair(commandArgs, ["--thread-source", "automated_review"]);
-      const metadata = JSON.parse(payload!.headers["x-codex-turn-metadata"] as string) as {
+      const metadata = JSON.parse(payload!.headers["x-ava-turn-metadata"] as string) as {
         thread_source?: string;
       };
       expect(metadata.thread_source).toBe("automated_review");
@@ -243,7 +243,7 @@ describe("Ava", () => {
         ],
       });
 
-      const { args: spawnArgs, restore } = codexExecSpy();
+      const { args: spawnArgs, restore } = avaExecSpy();
       const { client, cleanup } = createMockClient(url);
 
       try {
@@ -275,7 +275,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createMockClient(url);
 
     try {
@@ -306,7 +306,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createMockClient(url);
 
     try {
@@ -337,7 +337,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createMockClient(url);
 
     try {
@@ -368,7 +368,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createMockClient(url);
 
     try {
@@ -399,7 +399,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createMockClient(url);
 
     try {
@@ -418,7 +418,7 @@ describe("Ava", () => {
     }
   });
 
-  it("passes CodexOptions config overrides as TOML --config flags", async () => {
+  it("passes AvaOptions config overrides as TOML --config flags", async () => {
     const { url, close } = await startResponsesTestProxy({
       statusCode: 200,
       responseBodies: [
@@ -430,7 +430,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createTestClient({
       baseUrl: url,
       apiKey: "test",
@@ -459,7 +459,7 @@ describe("Ava", () => {
     }
   });
 
-  it("lets thread options override CodexOptions config overrides", async () => {
+  it("lets thread options override AvaOptions config overrides", async () => {
     const { url, close } = await startResponsesTestProxy({
       statusCode: 200,
       responseBodies: [
@@ -471,7 +471,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createTestClient({
       baseUrl: url,
       apiKey: "test",
@@ -509,9 +509,9 @@ describe("Ava", () => {
     });
 
     // TODO(anp): Add the sandbox helper to the SDK workflow so this can use a deny-read override.
-    const writablePath = path.join(os.tmpdir(), "codex-sdk-config.env");
+    const writablePath = path.join(os.tmpdir(), "ava-sdk-config.env");
     const permissionOverride = `permissions.sdk_test.filesystem={":root"="read",${JSON.stringify(writablePath)}="write"}`;
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createTestClient({
       baseUrl: url,
       apiKey: "test",
@@ -550,7 +550,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
     const { client, cleanup } = createMockClient(url);
 
     try {
@@ -592,7 +592,7 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
+    const { args: spawnArgs, restore } = avaExecSpy();
 
     const schema = {
       type: "object",
@@ -615,7 +615,7 @@ describe("Ava", () => {
       const text = payload!.json.text;
       expect(text).toBeDefined();
       expect(text?.format).toEqual({
-        name: "codex_output_schema",
+        name: "ava_output_schema",
         type: "json_schema",
         strict: true,
         schema,
@@ -678,8 +678,8 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-images-"));
+    const { args: spawnArgs, restore } = avaExecSpy();
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ava-images-"));
     const imagesDirectoryEntries: [string, string] = [
       path.join(tempDir, "first.png"),
       path.join(tempDir, "second.jpg"),
@@ -725,8 +725,8 @@ describe("Ava", () => {
       ],
     });
 
-    const { args: spawnArgs, restore } = codexExecSpy();
-    const workingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "codex-working-dir-"));
+    const { args: spawnArgs, restore } = avaExecSpy();
+    const workingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "ava-working-dir-"));
     const { client, cleanup } = createTestClient({
       baseUrl: url,
       apiKey: "test",
@@ -760,7 +760,7 @@ describe("Ava", () => {
         ),
       ],
     });
-    const workingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "codex-working-dir-"));
+    const workingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "ava-working-dir-"));
     const { client, cleanup } = createTestClient({
       baseUrl: url,
       apiKey: "test",
@@ -780,7 +780,7 @@ describe("Ava", () => {
     }
   });
 
-  it("sets the codex sdk originator header", async () => {
+  it("sets the ava sdk originator header", async () => {
     const { url, close, requests } = await startResponsesTestProxy({
       statusCode: 200,
       responseBodies: [sse(responseStarted(), assistantMessage("Hi!"), responseCompleted())],
@@ -794,9 +794,9 @@ describe("Ava", () => {
       expect(requests.length).toBeGreaterThan(0);
       const originatorHeader = requests[0]!.headers["originator"];
       if (Array.isArray(originatorHeader)) {
-        expect(originatorHeader).toContain("codex_sdk_ts");
+        expect(originatorHeader).toContain("ava_sdk_ts");
       } else {
-        expect(originatorHeader).toBe("codex_sdk_ts");
+        expect(originatorHeader).toBe("ava_sdk_ts");
       }
     } finally {
       cleanup();
@@ -826,7 +826,7 @@ describe("Ava", () => {
 });
 
 /**
- * Given a list of args to `codex` and a `key`, collects all `--config`
+ * Given a list of args to `ava` and a `key`, collects all `--config`
  * overrides for that key.
  */
 function collectConfigValues(args: string[] | undefined, key: string): string[] {

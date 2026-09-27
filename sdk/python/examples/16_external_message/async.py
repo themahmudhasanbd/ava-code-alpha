@@ -12,12 +12,12 @@ from _bootstrap import ensure_local_sdk_src, runtime_config
 
 ensure_local_sdk_src()
 
-from openai_codex import AsyncCodex, ExternalMessage, Sandbox
+from openai_ava import AsyncAva, ExternalMessage, Sandbox
 
 
 async def main() -> None:
-    async with AsyncCodex(config=runtime_config()) as codex:
-        thread = await codex.thread_start(sandbox=Sandbox.read_only)
+    async with AsyncAva(config=runtime_config()) as ava:
+        thread = await ava.thread_start(sandbox=Sandbox.read_only)
         await thread.run(
             "When deployment notifications arrive, summarize their status and suggest "
             "what I should check. Do not change files or deploy anything."

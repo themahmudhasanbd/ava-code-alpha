@@ -2,10 +2,10 @@
 
 use anyhow::Result;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_core::config::set_project_trust_level;
-use codex_protocol::config_types::TrustLevel;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_core::config::set_project_trust_level;
+use ava_protocol::config_types::TrustLevel;
 use pretty_assertions::assert_ne;
 use std::process::Command;
 use std::time::Duration;
@@ -25,7 +25,7 @@ async fn ignored_config_fields_emit_startup_and_project_warnings() -> Result<()>
     )?;
     let read_timeout = Duration::from_secs(30);
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized_with_timeout(read_timeout)
         .await?;
     let startup_warning: ConfigWarningNotification =
@@ -53,9 +53,9 @@ async fn ignored_config_fields_emit_startup_and_project_warnings() -> Result<()>
 
     let project = TempDir::new()?;
     std::fs::create_dir(project.path().join(".git"))?;
-    std::fs::create_dir(project.path().join(".codex"))?;
+    std::fs::create_dir(project.path().join(".ava-code"))?;
     std::fs::write(
-        project.path().join(".codex/config.toml"),
+        project.path().join(".ava-code/config.toml"),
         "project_setting = 'private_value'",
     )?;
     set_project_trust_level(home.path(), project.path(), TrustLevel::Trusted)?;
@@ -74,19 +74,19 @@ async fn ignored_config_fields_emit_startup_and_project_warnings() -> Result<()>
 
 #[test]
 fn strict_config_rejects_unknown_config_fields_for_standalone_app_server() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 foo = "bar"
 "#,
     )?;
 
-    let output = Command::new(codex_utils_cargo_bin::cargo_bin("codex-app-server")?)
-        .env("CODEX_HOME", codex_home.path())
+    let output = Command::new(ava_utils_cargo_bin::cargo_bin("ava-app-server")?)
+        .env("AVA_HOME", ava_home.path())
         .env(
-            "CODEX_APP_SERVER_MANAGED_CONFIG_PATH",
-            codex_home.path().join("managed_config.toml"),
+            "AVA_APP_SERVER_MANAGED_CONFIG_PATH",
+            ava_home.path().join("managed_config.toml"),
         )
         .args(["--strict-config", "--listen", "off"])
         .output()?;
@@ -118,15 +118,15 @@ fn managed_auth_requirements_fail_closed_for_standalone_app_server() -> Result<(
             "forced_chatgpt_workspace_id = ['other']",
         ),
     ] {
-        let codex_home = TempDir::new()?;
-        std::fs::write(codex_home.path().join("requirements.toml"), requirements)?;
-        std::fs::write(codex_home.path().join("config.toml"), config)?;
+        let ava_home = TempDir::new()?;
+        std::fs::write(ava_home.path().join("requirements.toml"), requirements)?;
+        std::fs::write(ava_home.path().join("config.toml"), config)?;
 
-        let output = Command::new(codex_utils_cargo_bin::cargo_bin("codex-app-server")?)
-            .env("CODEX_HOME", codex_home.path())
+        let output = Command::new(ava_utils_cargo_bin::cargo_bin("ava-app-server")?)
+            .env("AVA_HOME", ava_home.path())
             .env(
-                "CODEX_APP_SERVER_MANAGED_CONFIG_PATH",
-                codex_home.path().join("managed_config.toml"),
+                "AVA_APP_SERVER_MANAGED_CONFIG_PATH",
+                ava_home.path().join("managed_config.toml"),
             )
             .args(["--listen", "off"])
             .output()?;

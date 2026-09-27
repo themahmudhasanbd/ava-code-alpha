@@ -13,14 +13,14 @@ use crate::history_cell::McpInvocation;
 use crate::history_cell::McpToolCallCell;
 use crate::history_cell::PlainHistoryCell;
 use crate::history_cell::new_active_mcp_tool_call;
-use codex_app_server_protocol::CollabAgentTool;
-use codex_app_server_protocol::CollabAgentToolCallStatus;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::McpToolCallStatus;
-use codex_app_server_protocol::ThreadItem;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::parse_command::ParsedCommand;
+use ava_app_server_protocol::CollabAgentTool;
+use ava_app_server_protocol::CollabAgentToolCallStatus;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::ThreadItem;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::parse_command::ParsedCommand;
 use ratatui::style::Stylize as _;
 use ratatui::text::Line;
 
@@ -159,7 +159,7 @@ impl CommandHistory {
             command: replay_command_args(&command)?,
             parsed: command_actions
                 .into_iter()
-                .map(codex_app_server_protocol::CommandAction::into_core)
+                .map(ava_app_server_protocol::CommandAction::into_core)
                 .collect(),
             source,
             aggregated_output: aggregated_output.unwrap_or_default(),

@@ -9,14 +9,14 @@ use crate::tools::context::ToolPayload;
 use crate::tools::context::boxed_tool_output;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_features::Feature;
-use codex_protocol::models::ResponseInputItem;
-use codex_tools::JsonSchema;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_features::Feature;
+use ava_protocol::models::ResponseInputItem;
+use ava_tools::JsonSchema;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 use serde_json::Value as JsonValue;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -82,7 +82,7 @@ impl ToolExecutor<ToolInvocation> for CurrentTimeHandler {
         })
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

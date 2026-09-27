@@ -2,10 +2,10 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
 
-use codex_network_proxy::NetworkDecision;
-use codex_network_proxy::NetworkPolicyRequest;
-use codex_network_proxy::NetworkPolicyRequestArgs;
-use codex_network_proxy::NetworkProtocol;
+use ava_network_proxy::NetworkDecision;
+use ava_network_proxy::NetworkPolicyRequest;
+use ava_network_proxy::NetworkPolicyRequestArgs;
+use ava_network_proxy::NetworkProtocol;
 use pretty_assertions::assert_eq;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
@@ -58,7 +58,7 @@ impl DeciderHarness {
     async fn next_request(
         &mut self,
     ) -> (
-        codex_exec_server_protocol::RequestId,
+        ava_exec_server_protocol::RequestId,
         NetworkPolicyRequestParams,
     ) {
         let outbound = timeout(Duration::from_secs(1), self.outgoing.recv())

@@ -10,7 +10,7 @@ use crate::ReadThreadParams;
 use crate::StoredThread;
 use crate::ThreadStoreError;
 use crate::ThreadStoreResult;
-use codex_rollout::rollout_date_parts;
+use ava_rollout::rollout_date_parts;
 
 use super::thread_rollout_resolver;
 use super::thread_rollout_resolver::RolloutLocation;
@@ -41,14 +41,14 @@ pub(super) async fn unarchive_thread(
     let mut restored_path = None;
     let mut rollout_moves = Vec::new();
     for rollout_path in rollout_paths {
-        if !rollout_path_is_archived(store.config.codex_home.as_path(), rollout_path.as_path()) {
+        if !rollout_path_is_archived(store.config.ava_home.as_path(), rollout_path.as_path()) {
             continue;
         }
         let canonical_archived_path = scoped_rollout_path(
             store
                 .config
-                .codex_home
-                .join(codex_rollout::ARCHIVED_SESSIONS_SUBDIR),
+                .ava_home
+                .join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR),
             rollout_path.as_path(),
             "archived",
         )?;
@@ -64,8 +64,8 @@ pub(super) async fn unarchive_thread(
         };
         let dest_dir = store
             .config
-            .codex_home
-            .join(codex_rollout::SESSIONS_SUBDIR)
+            .ava_home
+            .join(ava_rollout::SESSIONS_SUBDIR)
             .join(year)
             .join(month)
             .join(day);
@@ -145,9 +145,9 @@ pub(super) async fn unarchive_thread(
 #[cfg(test)]
 mod tests {
     use chrono::Utc;
-    use codex_protocol::ThreadId;
-    use codex_protocol::protocol::SessionSource;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_protocol::ThreadId;
+    use ava_protocol::protocol::SessionSource;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
     use uuid::Uuid;
@@ -231,8 +231,8 @@ mod tests {
         let selected_archived_path = alternate_directory
             .join("..")
             .join(archived_path.file_name().expect("file name"));
-        let runtime = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let runtime = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             config.default_model_provider_id.clone(),
         )
         .await
@@ -242,7 +242,7 @@ mod tests {
             .mark_backfill_complete(/*last_watermark*/ None)
             .await
             .expect("backfill should be complete");
-        let mut builder = codex_state::ThreadMetadataBuilder::new(
+        let mut builder = ava_state::ThreadMetadataBuilder::new(
             thread_id,
             selected_archived_path,
             Utc::now(),
@@ -253,9 +253,9 @@ mod tests {
         builder.cli_version = Some("test_version".to_string());
         let mut metadata = builder.build(config.default_model_provider_id.as_str());
         metadata.archived_at = Some(metadata.updated_at);
-        metadata.section = Some(codex_state::ThreadSection {
-            id: codex_state::PINNED_THREAD_SECTION_ID.to_string(),
-            name: codex_state::PINNED_THREAD_SECTION_NAME.to_string(),
+        metadata.section = Some(ava_state::ThreadSection {
+            id: ava_state::PINNED_THREAD_SECTION_ID.to_string(),
+            name: ava_state::PINNED_THREAD_SECTION_NAME.to_string(),
             appearance: None,
         });
         runtime

@@ -204,7 +204,7 @@ test("input.requested synthesizes an asktool_request keyed by the RACP input id"
         sessionId: HOST_SESSION_ID,
         turnId: "turn-1",
         expiresAt: "2026-09-18T10:05:00.000Z",
-        agentName: "codex",
+        agentName: "ava",
         parentToolCallId: "tc-parent",
         questions: [
           { id: "q1", question: "which?", options: ["a", "b"], multiSelect: false },

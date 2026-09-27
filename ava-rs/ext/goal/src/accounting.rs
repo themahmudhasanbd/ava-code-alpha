@@ -1,11 +1,11 @@
-use codex_extension_api::ToolCallOutcome;
-use codex_extension_api::ToolName;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::protocol::TokenUsage;
-use codex_state::ThreadGoalStatus;
+use ava_extension_api::ToolCallOutcome;
+use ava_extension_api::ToolName;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::protocol::TokenUsage;
+use ava_state::ThreadGoalStatus;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::sync::PoisonError;
@@ -519,7 +519,7 @@ fn token_delta_since_last_accounting(last: &TokenUsage, current: &TokenUsage) ->
             .reasoning_output_tokens
             .saturating_sub(last.reasoning_output_tokens),
         total_tokens: current.total_tokens.saturating_sub(last.total_tokens),
-        codex_rollout_budget_units: None,
+        ava_rollout_budget_units: None,
     };
     goal_token_delta_for_usage(&delta)
 }

@@ -100,7 +100,7 @@ events.
 
 **Adopted in D103 (tokens-only first cut), placement amended by D347**:
 completed assistant turns show a model badge under the answer. The compact
-Codex-style context inspector lives in the composer toolbar next to the model
+Ava-style context inspector lives in the composer toolbar next to the model
 picker and always mirrors the newest assistant turn that reported usage. The
 trigger shows remaining context percentage in a small ring; clicking it
 toggles a light summary panel with remaining/window counts and two unboxed

@@ -1,18 +1,18 @@
 use super::permission_profile_policy_tag;
 use super::permission_profile_sandbox_tag;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxKind;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::get_platform_sandbox;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxKind;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::get_platform_sandbox;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 
@@ -96,7 +96,7 @@ fn root_write_managed_profile_with_enabled_network_is_untagged() {
         file_system: ManagedFileSystemPermissions::Restricted {
             entries: vec![FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
-                    value: codex_protocol::permissions::FileSystemSpecialPath::Root,
+                    value: ava_protocol::permissions::FileSystemSpecialPath::Root,
                 },
                 access: FileSystemAccessMode::Write,
                 missing_path_behavior: None,
@@ -138,8 +138,8 @@ fn managed_network_enforcement_tags_unrestricted_profiles_as_sandboxed() {
 
 #[test]
 fn profile_policy_tag_reports_closest_legacy_mode() {
-    let cwd = AbsolutePathBuf::from_absolute_path(Path::new("/tmp/codex")).expect("absolute cwd");
-    let writable_root = AbsolutePathBuf::from_absolute_path(Path::new("/tmp/codex/work"))
+    let cwd = AbsolutePathBuf::from_absolute_path(Path::new("/tmp/ava")).expect("absolute cwd");
+    let writable_root = AbsolutePathBuf::from_absolute_path(Path::new("/tmp/ava/work"))
         .expect("absolute writable root");
     let profile = PermissionProfile::from_runtime_permissions(
         &FileSystemSandboxPolicy {

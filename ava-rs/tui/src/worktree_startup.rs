@@ -7,8 +7,8 @@ use std::sync::atomic::Ordering;
 
 #[derive(Clone)]
 pub(crate) struct ManagedTuiWorktree {
-    manager: codex_worktree::WorktreeManager,
-    checkout: codex_worktree::ManagedWorktree,
+    manager: ava_worktree::WorktreeManager,
+    checkout: ava_worktree::ManagedWorktree,
     recovery: Arc<StartupRecovery>,
 }
 
@@ -96,11 +96,11 @@ impl ManagedTuiWorktree {
 async fn latest_thread_cwd(path: Option<PathBuf>, fallback: PathBuf) -> PathBuf {
     let Some(path) = path else { return fallback };
     tokio::task::spawn_blocking(move || {
-        let reader = codex_rollout::open_rollout_seekable_reader(&path).ok()?;
-        let mut scanner = codex_rollout::ReverseJsonlScanner::new(reader).ok()?;
+        let reader = ava_rollout::open_rollout_seekable_reader(&path).ok()?;
+        let mut scanner = ava_rollout::ReverseJsonlScanner::new(reader).ok()?;
         while let Some(outcome) = scanner.scan_next_rollout_line().ok()? {
-            if let codex_rollout::ScanOutcome::Parsed(codex_rollout::RolloutLine {
-                item: codex_rollout::RolloutItem::TurnContext(item),
+            if let ava_rollout::ScanOutcome::Parsed(ava_rollout::RolloutLine {
+                item: ava_rollout::RolloutItem::TurnContext(item),
                 ..
             }) = outcome
             {
@@ -129,7 +129,7 @@ pub(super) async fn prepare(
 ) -> color_eyre::Result<(Config, CloudConfigBundleLoader, ManagedTuiWorktree)> {
     if let Some(id_or_name) = cli.fork_session_id.as_deref() {
         let prepared = if should_load_configured_environments(&loader_overrides, target) {
-            EnvironmentManager::prepare_from_codex_home(&source.codex_home).await
+            EnvironmentManager::prepare_from_ava_home(&source.ava_home).await
         } else {
             EnvironmentManager::prepare_from_env().await
         }
@@ -139,8 +139,8 @@ pub(super) async fn prepare(
         }
         let environment = prepared.build(
             Some(ExecServerRuntimePaths::from_optional_paths(
-                arg0_paths.codex_self_exe.clone(),
-                arg0_paths.codex_linux_sandbox_exe.clone(),
+                arg0_paths.ava_self_exe.clone(),
+                arg0_paths.ava_linux_sandbox_exe.clone(),
             )?),
             source.http_client_factory(),
         )?;
@@ -155,7 +155,7 @@ pub(super) async fn prepare(
             loader_overrides.clone(),
             strict_config,
             source_bundle.clone(),
-            codex_feedback::CodexFeedback::new(),
+            ava_feedback::AvaFeedback::new(),
             /*log_db*/ None,
             state,
             Arc::new(environment),
@@ -182,7 +182,7 @@ pub(super) async fn prepare(
             let cwd = latest_thread_cwd(thread.path, thread.cwd.into_path_buf()).await;
             let cwd = AbsolutePathBuf::from_absolute_path(cwd)?;
             let bootstrap = load_bootstrap_config_or_exit(
-                &source.codex_home,
+                &source.ava_home,
                 Some(&cwd),
                 cli_overrides.clone(),
                 loader_overrides.clone(),
@@ -191,7 +191,7 @@ pub(super) async fn prepare(
             )
             .await;
             let source_bundle =
-                cloud_config_bundle_for_app_server_target(target, &bootstrap, &source.codex_home)
+                cloud_config_bundle_for_app_server_target(target, &bootstrap, &source.ava_home)
                     .await?;
             overrides.cwd = Some(cwd.into_path_buf());
             source = load_config_or_exit(
@@ -204,7 +204,7 @@ pub(super) async fn prepare(
             .await;
         }
     }
-    if !source.features.enabled(codex_features::Feature::Worktrees) {
+    if !source.features.enabled(ava_features::Feature::Worktrees) {
         color_eyre::eyre::bail!(
             "`--worktree` requires the worktrees feature; enable it with `--enable worktrees`"
         );
@@ -221,7 +221,7 @@ pub(super) async fn prepare(
         }
     }
     let host = load_bootstrap_config_or_exit(
-        &source.codex_home,
+        &source.ava_home,
         /*cwd*/ None,
         Vec::new(),
         LoaderOverrides::default(),
@@ -229,15 +229,15 @@ pub(super) async fn prepare(
         CloudConfigBundleLoader::default(),
     )
     .await;
-    let manager = codex_worktree::WorktreeManager::new(
-        codex_worktree::WorktreeSettings::for_cli(
-            &source.codex_home,
+    let manager = ava_worktree::WorktreeManager::new(
+        ava_worktree::WorktreeSettings::for_cli(
+            &source.ava_home,
             host.config_toml.desktop.as_ref(),
         )
         .map_err(std::io::Error::other)?,
     );
     let checkout = manager
-        .create(&codex_worktree::CreateWorktree {
+        .create(&ava_worktree::CreateWorktree {
             source_cwd: source.cwd.to_path_buf(),
             base: None,
         })
@@ -253,10 +253,10 @@ pub(super) async fn prepare(
     };
     let destination = AbsolutePathBuf::from_absolute_path(managed.checkout.cwd.clone())?;
     let bootstrap = load_config_toml_with_layer_stack(
-        &source.codex_home,
+        &source.ava_home,
         Some(&destination),
         cli_overrides.clone(),
-        codex_config::ConfigLoadOptions {
+        ava_config::ConfigLoadOptions {
             loader_overrides: loader_overrides.clone(),
             strict_config,
             cloud_config_bundle: CloudConfigBundleLoader::default(),
@@ -264,7 +264,7 @@ pub(super) async fn prepare(
     )
     .await?;
     let bundle =
-        cloud_config_bundle_for_app_server_target(target, &bootstrap, &source.codex_home).await?;
+        cloud_config_bundle_for_app_server_target(target, &bootstrap, &source.ava_home).await?;
     managed
         .check_source_policy(
             &cli_overrides,

@@ -2,11 +2,11 @@
 
 use anyhow::Result;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::Account;
-use codex_app_server_protocol::GetAccountParams;
-use codex_app_server_protocol::GetAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_protocol::config_types::ForcedLoginMethod;
+use ava_app_server_protocol::Account;
+use ava_app_server_protocol::GetAccountParams;
+use ava_app_server_protocol::GetAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_protocol::config_types::ForcedLoginMethod;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -28,7 +28,7 @@ async fn start_server(
         std::fs::write(home.path().join("requirements.toml"), requirements)?;
     }
     let server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized_with_timeout(READ_TIMEOUT)
         .await?;
     Ok((home, server))
@@ -167,7 +167,7 @@ command = "print-token"
         account,
         GetAccountResponse {
             account: Some(Account::AmazonBedrock {
-                uses_codex_managed_credentials: false
+                uses_ava_managed_credentials: false
             }),
             requires_openai_auth: false,
             workspace_routing: None,

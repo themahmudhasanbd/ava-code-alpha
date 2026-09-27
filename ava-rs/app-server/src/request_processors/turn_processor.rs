@@ -1,20 +1,20 @@
 use super::thread_input::ensure_direct_input_allowed;
 use super::*;
-use codex_agent_extension::AgentInvocation;
-use codex_agent_extension::AgentRun;
-use codex_agent_extension::AgentRunner;
-use codex_app_server_protocol::ImageReference as V2ImageReference;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageReference as CoreImageReference;
-use codex_protocol::protocol::AdditionalContextEntry as CoreAdditionalContextEntry;
-use codex_protocol::protocol::AdditionalContextKind as CoreAdditionalContextKind;
-use codex_protocol::protocol::TurnSettingsUpdate;
-use codex_protocol::protocol::TurnSettingsUpdateOutcome;
-use codex_skills::system_cache_root_dir;
+use ava_agent_extension::AgentInvocation;
+use ava_agent_extension::AgentRun;
+use ava_agent_extension::AgentRunner;
+use ava_app_server_protocol::ImageReference as V2ImageReference;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageReference as CoreImageReference;
+use ava_protocol::protocol::AdditionalContextEntry as CoreAdditionalContextEntry;
+use ava_protocol::protocol::AdditionalContextKind as CoreAdditionalContextKind;
+use ava_protocol::protocol::TurnSettingsUpdate;
+use ava_protocol::protocol::TurnSettingsUpdateOutcome;
+use ava_skills::system_cache_root_dir;
 
 use crate::image_url::REMOTE_IMAGE_URL_ERROR;
 use crate::image_url::is_remote_image_url;
@@ -127,9 +127,9 @@ struct ThreadSettingsBuildParams {
     method: &'static str,
     disabled_plugin_ids: Option<Vec<String>>,
     environment_override: ThreadEnvironmentOverride,
-    approval_policy: Option<codex_app_server_protocol::AskForApproval>,
-    approvals_reviewer: Option<codex_app_server_protocol::ApprovalsReviewer>,
-    sandbox_policy: Option<codex_app_server_protocol::SandboxPolicy>,
+    approval_policy: Option<ava_app_server_protocol::AskForApproval>,
+    approvals_reviewer: Option<ava_app_server_protocol::ApprovalsReviewer>,
+    sandbox_policy: Option<ava_app_server_protocol::SandboxPolicy>,
     permissions: Option<String>,
     model: Option<String>,
     service_tier: Option<Option<String>>,
@@ -226,7 +226,7 @@ impl TurnRequestProcessor {
                 update: TurnSettingsUpdate {
                     approvals_reviewer: params
                         .approvals_reviewer
-                        .map(codex_app_server_protocol::ApprovalsReviewer::to_core),
+                        .map(ava_app_server_protocol::ApprovalsReviewer::to_core),
                     model: params.model,
                     // Match thread/settings/update: public null does not clear effort.
                     effort: params.effort.map(Some),
@@ -373,7 +373,7 @@ impl TurnRequestProcessor {
     async fn load_thread(
         &self,
         thread_id: &str,
-    ) -> Result<(ThreadId, Arc<CodexThread>), JSONRPCErrorError> {
+    ) -> Result<(ThreadId, Arc<AvaThread>), JSONRPCErrorError> {
         // Resolve the core conversation handle from a v2 thread id string.
         let thread_id = ThreadId::from_string(thread_id)
             .map_err(|err| invalid_request(format!("invalid thread id: {err}")))?;
@@ -390,7 +390,7 @@ impl TurnRequestProcessor {
     async fn ensure_direct_input_allowed(
         &self,
         request_id: &ConnectionRequestId,
-        thread: &CodexThread,
+        thread: &AvaThread,
     ) -> Result<(), JSONRPCErrorError> {
         ensure_direct_input_allowed(thread)
             .await
@@ -471,7 +471,7 @@ impl TurnRequestProcessor {
             CoreReviewTarget::Custom { instructions } => instructions.clone(),
         };
 
-        let hint = codex_core::review_prompts::user_facing_hint(&core_target);
+        let hint = ava_core::review_prompts::user_facing_hint(&core_target);
         let review_request = ReviewRequest {
             target: core_target,
             user_facing_hint: Some(hint.clone()),
@@ -483,16 +483,16 @@ impl TurnRequestProcessor {
     async fn request_trace_context(
         &self,
         request_id: &ConnectionRequestId,
-    ) -> Option<codex_protocol::protocol::W3cTraceContext> {
+    ) -> Option<ava_protocol::protocol::W3cTraceContext> {
         self.outgoing.request_trace_context(request_id).await
     }
 
     async fn submit_core_op(
         &self,
         request_id: &ConnectionRequestId,
-        thread: &CodexThread,
+        thread: &AvaThread,
         op: Op,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         thread
             .submit_with_trace(op, self.request_trace_context(request_id).await)
             .await
@@ -685,7 +685,7 @@ impl TurnRequestProcessor {
         if turn_has_input && started {
             let config_snapshot = thread.config_snapshot().await;
             if config_snapshot.is_primary_environment_configured() {
-                codex_memories_write::start_memories_startup_task(
+                ava_memories_write::start_memories_startup_task(
                     Arc::clone(&self.thread_manager),
                     Arc::clone(&self.auth_manager),
                     thread_id,
@@ -716,7 +716,7 @@ impl TurnRequestProcessor {
 
     async fn build_environment_override(
         &self,
-        thread: &CodexThread,
+        thread: &AvaThread,
         cwd: Option<AbsolutePathBuf>,
         workspace_roots: Option<Vec<AbsolutePathBuf>>,
         environment_selections: Option<Vec<TurnEnvironmentSelection>>,
@@ -774,9 +774,9 @@ impl TurnRequestProcessor {
 
     async fn build_thread_settings_overrides(
         &self,
-        thread: &CodexThread,
+        thread: &AvaThread,
         params: ThreadSettingsBuildParams,
-    ) -> Result<codex_protocol::protocol::ThreadSettingsOverrides, JSONRPCErrorError> {
+    ) -> Result<ava_protocol::protocol::ThreadSettingsOverrides, JSONRPCErrorError> {
         let ThreadSettingsBuildParams {
             method,
             disabled_plugin_ids,
@@ -829,9 +829,9 @@ impl TurnRequestProcessor {
             || personality.is_some();
 
         let approval_policy =
-            approval_policy.map(codex_app_server_protocol::AskForApproval::to_core);
+            approval_policy.map(ava_app_server_protocol::AskForApproval::to_core);
         let approvals_reviewer =
-            approvals_reviewer.map(codex_app_server_protocol::ApprovalsReviewer::to_core);
+            approvals_reviewer.map(ava_app_server_protocol::ApprovalsReviewer::to_core);
         let sandbox_policy = sandbox_policy.map(|policy| policy.to_core());
         let (permission_profile, active_permission_profile, profile_workspace_roots) =
             if let Some(permissions) = permissions {
@@ -872,7 +872,7 @@ impl TurnRequestProcessor {
 
         if has_any_overrides {
             thread
-                .preview_thread_settings_overrides(CodexThreadSettingsOverrides {
+                .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
                     disabled_plugin_ids: disabled_plugin_ids.clone(),
                     environments: environments.clone(),
                     runtime_workspace_roots: runtime_workspace_roots.clone(),
@@ -896,7 +896,7 @@ impl TurnRequestProcessor {
                 })?;
         }
 
-        Ok(codex_protocol::protocol::ThreadSettingsOverrides {
+        Ok(ava_protocol::protocol::ThreadSettingsOverrides {
             disabled_plugin_ids,
             environments,
             runtime_workspace_roots,
@@ -954,7 +954,7 @@ impl TurnRequestProcessor {
             )
             .await?;
 
-        if thread_settings != codex_protocol::protocol::ThreadSettingsOverrides::default() {
+        if thread_settings != ava_protocol::protocol::ThreadSettingsOverrides::default() {
             self.submit_core_op(
                 request_id,
                 thread.as_ref(),
@@ -992,14 +992,14 @@ impl TurnRequestProcessor {
             .inject_response_items(items)
             .await
             .map_err(|err| match err.details() {
-                CodexErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
+                AvaErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
                 _ => internal_error(format!("failed to inject response items: {err}")),
             })?;
         Ok(ThreadInjectItemsResponse {})
     }
 
     async fn set_app_server_client_info(
-        thread: &CodexThread,
+        thread: &AvaThread,
         app_server_client_name: Option<String>,
         app_server_client_version: Option<String>,
     ) -> Result<(), JSONRPCErrorError> {
@@ -1096,11 +1096,11 @@ impl TurnRequestProcessor {
                     ),
                     NotSubmittedReason::ActiveTurnNotSteerable { turn_kind } => {
                         let (message, turn_steer_error) = match turn_kind {
-                            codex_protocol::protocol::NonSteerableTurnKind::Review => (
+                            ava_protocol::protocol::NonSteerableTurnKind::Review => (
                                 "cannot steer a review turn".to_string(),
                                 TurnSteerRequestError::NonSteerableReview,
                             ),
-                            codex_protocol::protocol::NonSteerableTurnKind::Compact => (
+                            ava_protocol::protocol::NonSteerableTurnKind::Compact => (
                                 "cannot steer a compact turn".to_string(),
                                 TurnSteerRequestError::NonSteerableCompact,
                             ),
@@ -1108,7 +1108,7 @@ impl TurnRequestProcessor {
                         let error = TurnError {
                             misalignment: None,
                             message: message.clone(),
-                            codex_error_info: Some(CodexErrorInfo::ActiveTurnNotSteerable {
+                            ava_error_info: Some(AvaErrorInfo::ActiveTurnNotSteerable {
                                 turn_kind: turn_kind.into(),
                             }),
                             additional_details: None,
@@ -1162,7 +1162,7 @@ impl TurnRequestProcessor {
         &self,
         request_id: &ConnectionRequestId,
         thread_id: &str,
-    ) -> Result<Option<(ThreadId, Arc<CodexThread>)>, JSONRPCErrorError> {
+    ) -> Result<Option<(ThreadId, Arc<AvaThread>)>, JSONRPCErrorError> {
         let (thread_id, thread) = self.load_thread(thread_id).await?;
         self.ensure_direct_input_allowed(request_id, thread.as_ref())
             .await?;
@@ -1235,11 +1235,11 @@ impl TurnRequestProcessor {
                 flush_transcript_tail_on_session_end: params
                     .flush_transcript_tail_on_session_end
                     .unwrap_or(false),
-                codex_responses_as_items: params.codex_responses_as_items.unwrap_or(false),
-                codex_response_item_prefix: params.codex_response_item_prefix,
-                codex_response_handoff_mode: params.codex_response_handoff_mode.unwrap_or_default(),
-                codex_response_handoff_channel_prefixes: params
-                    .codex_response_handoff_channel_prefixes,
+                ava_responses_as_items: params.ava_responses_as_items.unwrap_or(false),
+                ava_response_item_prefix: params.ava_response_item_prefix,
+                ava_response_handoff_mode: params.ava_response_handoff_mode.unwrap_or_default(),
+                ava_response_handoff_channel_prefixes: params
+                    .ava_response_handoff_channel_prefixes,
                 model: params.model,
                 output_modality: params.output_modality,
                 include_startup_context: params
@@ -1425,7 +1425,7 @@ impl TurnRequestProcessor {
     async fn start_inline_review(
         &self,
         request_id: &ConnectionRequestId,
-        parent_thread: Arc<CodexThread>,
+        parent_thread: Arc<AvaThread>,
         review_request: ReviewRequest,
         display_text: &str,
         parent_thread_id: String,
@@ -1447,7 +1447,7 @@ impl TurnRequestProcessor {
     async fn start_detached_review(
         &self,
         request_id: &ConnectionRequestId,
-        parent_thread: Arc<CodexThread>,
+        parent_thread: Arc<AvaThread>,
         prompt: &str,
     ) -> std::result::Result<(), JSONRPCErrorError> {
         // AgentRunner::start still delegates to spawn_subagent, which forks from the parent's
@@ -1455,7 +1455,7 @@ impl TurnRequestProcessor {
         // closed until detached review has a bounded fork path.
         if matches!(
             parent_thread.config_snapshot().await.history_mode,
-            codex_protocol::protocol::ThreadHistoryMode::Paginated
+            ava_protocol::protocol::ThreadHistoryMode::Paginated
         ) {
             return Err(invalid_request(
                 "paginated threads do not support detached review",
@@ -1572,7 +1572,7 @@ impl TurnRequestProcessor {
                 .await?;
             }
             CoreReviewDelivery::Detached => {
-                let review_skill_path = system_cache_root_dir(&self.config.codex_home)
+                let review_skill_path = system_cache_root_dir(&self.config.ava_home)
                     .join("review-agent")
                     .join("SKILL.md");
                 let prompt = format!(
@@ -1661,7 +1661,7 @@ impl TurnRequestProcessor {
             outgoing: Arc::clone(&self.outgoing),
             pending_thread_unloads: Arc::clone(&self.pending_thread_unloads),
             thread_watch_manager: self.thread_watch_manager.clone(),
-            codex_home: self.config.codex_home.to_path_buf(),
+            ava_home: self.config.ava_home.to_path_buf(),
             thread_unload_delay: self.config.thread_unload_delay,
             skills_watcher: Arc::clone(&self.skills_watcher),
             turn_cost_worker: self.turn_cost_worker.clone(),

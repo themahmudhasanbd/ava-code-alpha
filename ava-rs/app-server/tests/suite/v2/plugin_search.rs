@@ -4,13 +4,13 @@ use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::PluginSearchParams;
-use codex_app_server_protocol::PluginSearchResponse;
-use codex_app_server_protocol::PluginSearchScope;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::login_with_api_key;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::PluginSearchParams;
+use ava_app_server_protocol::PluginSearchResponse;
+use ava_app_server_protocol::PluginSearchScope;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::login_with_api_key;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -27,10 +27,10 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[tokio::test]
 async fn plugin_search_omits_shared_workspace_results_when_plugin_sharing_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -43,7 +43,7 @@ plugin_sharing = false
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -97,7 +97,7 @@ plugin_sharing = false
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -138,10 +138,10 @@ plugin_sharing = false
 
 #[tokio::test]
 async fn plugin_search_only_searches_workspace_when_remote_plugin_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -153,7 +153,7 @@ remote_plugin = false
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -181,7 +181,7 @@ remote_plugin = false
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -260,12 +260,12 @@ remote_plugin = false
 
 #[tokio::test]
 async fn plugin_search_stitches_local_results_into_the_first_remote_page() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let server = MockServer::start().await;
-    std::fs::create_dir_all(codex_home.path().join(".tmp"))?;
+    std::fs::create_dir_all(ava_home.path().join(".tmp"))?;
     std::fs::write(
-        codex_home
+        ava_home
             .path()
             .join(".tmp/plugin-share-local-paths-v1.json"),
         "{invalid json",
@@ -311,8 +311,8 @@ async fn plugin_search_stitches_local_results_into_the_first_remote_page() -> Re
         "marketplace.json",
         &local_plugins,
     )?;
-    write_remote_plugin_search_config(codex_home.path(), &server, /*remote_plugin*/ true)?;
-    write_chatgpt_search_auth(codex_home.path())?;
+    write_remote_plugin_search_config(ava_home.path(), &server, /*remote_plugin*/ true)?;
+    write_chatgpt_search_auth(ava_home.path())?;
 
     Mock::given(method("GET"))
         .and(path("/backend-api/ps/plugins/search"))
@@ -353,7 +353,7 @@ async fn plugin_search_stitches_local_results_into_the_first_remote_page() -> Re
         .await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -424,10 +424,10 @@ async fn plugin_search_stitches_local_results_into_the_first_remote_page() -> Re
 #[tokio::test]
 async fn plugin_search_returns_local_matches_for_api_key_auth() -> Result<()> {
     for remote_plugin_enabled in [false, true] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let repo_root = TempDir::new()?;
-        let curated_root = codex_home.path().join(".tmp/plugins");
-        let bundled_alpha_root = codex_home
+        let curated_root = ava_home.path().join(".tmp/plugins");
+        let bundled_alpha_root = ava_home
             .path()
             .join(".tmp/bundled-marketplaces/openai-bundled-alpha");
         let server = MockServer::start().await;
@@ -472,16 +472,16 @@ async fn plugin_search_returns_local_matches_for_api_key_auth() -> Result<()> {
                 description: "Built-in alpha calendar",
             }],
         )?;
-        write_remote_plugin_search_config(codex_home.path(), &server, remote_plugin_enabled)?;
+        write_remote_plugin_search_config(ava_home.path(), &server, remote_plugin_enabled)?;
         login_with_api_key(
-            codex_home.path(),
+            ava_home.path(),
             "sk-test-key",
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
         )?;
 
         let mut app_server = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .without_auto_env()
             .build_initialized_with_timeout(DEFAULT_TIMEOUT)
             .await?;
@@ -551,9 +551,9 @@ async fn plugin_search_returns_local_matches_for_api_key_auth() -> Result<()> {
 #[tokio::test]
 async fn plugin_search_deduplicates_shared_remote_identities_while_ignoring_local_curated_plugins()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
-    let curated_root = codex_home.path().join(".tmp/plugins");
+    let curated_root = ava_home.path().join(".tmp/plugins");
     let server = MockServer::start().await;
     write_local_marketplace(
         &curated_root,
@@ -594,9 +594,9 @@ async fn plugin_search_deduplicates_shared_remote_identities_while_ignoring_loca
         ],
     )?;
     let shared_plugin_path = repo_root.path().join("plugins/local-planner");
-    std::fs::create_dir_all(codex_home.path().join(".tmp"))?;
+    std::fs::create_dir_all(ava_home.path().join(".tmp"))?;
     std::fs::write(
-        codex_home
+        ava_home
             .path()
             .join(".tmp/plugin-share-local-paths-v1.json"),
         serde_json::to_string(&json!({
@@ -605,11 +605,11 @@ async fn plugin_search_deduplicates_shared_remote_identities_while_ignoring_loca
             },
         }))?,
     )?;
-    write_installed_plugin(codex_home.path(), "openai-curated", "calendar")?;
-    write_installed_plugin(codex_home.path(), "personal-tools", "local-planner")?;
-    write_installed_plugin(codex_home.path(), "personal-tools", "calendar-local-only")?;
+    write_installed_plugin(ava_home.path(), "openai-curated", "calendar")?;
+    write_installed_plugin(ava_home.path(), "personal-tools", "local-planner")?;
+    write_installed_plugin(ava_home.path(), "personal-tools", "calendar-local-only")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -629,7 +629,7 @@ enabled = true
             server.uri()
         ),
     )?;
-    write_chatgpt_search_auth(codex_home.path())?;
+    write_chatgpt_search_auth(ava_home.path())?;
 
     Mock::given(method("GET"))
         .and(path("/backend-api/ps/plugins/search"))
@@ -656,7 +656,7 @@ enabled = true
         .await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -746,7 +746,7 @@ fn write_local_marketplace(
     )?;
 
     for plugin in plugins {
-        let plugin_manifest = root.join("plugins").join(plugin.name).join(".codex-plugin");
+        let plugin_manifest = root.join("plugins").join(plugin.name).join(".ava-plugin");
         std::fs::create_dir_all(&plugin_manifest)?;
         std::fs::write(
             plugin_manifest.join("plugin.json"),
@@ -765,12 +765,12 @@ fn write_local_marketplace(
 }
 
 fn write_remote_plugin_search_config(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     server: &MockServer,
     remote_plugin: bool,
 ) -> Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -784,9 +784,9 @@ remote_plugin = {remote_plugin}
     Ok(())
 }
 
-fn write_chatgpt_search_auth(codex_home: &std::path::Path) -> Result<()> {
+fn write_chatgpt_search_auth(ava_home: &std::path::Path) -> Result<()> {
     write_chatgpt_auth(
-        codex_home,
+        ava_home,
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -797,16 +797,16 @@ fn write_chatgpt_search_auth(codex_home: &std::path::Path) -> Result<()> {
 }
 
 fn write_installed_plugin(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     marketplace_name: &str,
     plugin_name: &str,
 ) -> Result<()> {
-    let plugin_manifest = codex_home
+    let plugin_manifest = ava_home
         .join("plugins/cache")
         .join(marketplace_name)
         .join(plugin_name)
         .join("1.2.3")
-        .join(".codex-plugin");
+        .join(".ava-plugin");
     std::fs::create_dir_all(&plugin_manifest)?;
     std::fs::write(
         plugin_manifest.join("plugin.json"),

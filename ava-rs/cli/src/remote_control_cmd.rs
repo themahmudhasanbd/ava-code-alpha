@@ -3,22 +3,22 @@ use std::time::Duration;
 
 use anyhow::Context;
 use clap::Args;
-use codex_app_server::AppServerRuntimeOptions;
-use codex_app_server::AppServerTransport;
-use codex_app_server::AppServerWebsocketAuthSettings;
-use codex_app_server_daemon::LifecycleCommand as AppServerLifecycleCommand;
-use codex_app_server_daemon::LifecycleOutput as AppServerLifecycleOutput;
-use codex_app_server_daemon::LifecycleStatus as AppServerLifecycleStatus;
-use codex_app_server_daemon::RemoteControlReadyOutput as AppServerRemoteControlReadyOutput;
-use codex_app_server_daemon::RemoteControlReadyStatus as AppServerRemoteControlReadyStatus;
-use codex_app_server_daemon::RemoteControlStartOutput as AppServerRemoteControlStartOutput;
-use codex_app_server_protocol::RemoteControlConnectionStatus;
-use codex_app_server_protocol::RemoteControlPairingStartResponse;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::LoaderOverrides;
-use codex_protocol::protocol::SessionSource;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_cli::CliConfigOverrides;
+use ava_app_server::AppServerRuntimeOptions;
+use ava_app_server::AppServerTransport;
+use ava_app_server::AppServerWebsocketAuthSettings;
+use ava_app_server_daemon::LifecycleCommand as AppServerLifecycleCommand;
+use ava_app_server_daemon::LifecycleOutput as AppServerLifecycleOutput;
+use ava_app_server_daemon::LifecycleStatus as AppServerLifecycleStatus;
+use ava_app_server_daemon::RemoteControlReadyOutput as AppServerRemoteControlReadyOutput;
+use ava_app_server_daemon::RemoteControlReadyStatus as AppServerRemoteControlReadyStatus;
+use ava_app_server_daemon::RemoteControlStartOutput as AppServerRemoteControlStartOutput;
+use ava_app_server_protocol::RemoteControlConnectionStatus;
+use ava_app_server_protocol::RemoteControlPairingStartResponse;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::LoaderOverrides;
+use ava_protocol::protocol::SessionSource;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_cli::CliConfigOverrides;
 use serde::Serialize;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
@@ -79,16 +79,16 @@ pub(crate) async fn run(
                 command.json,
                 "Starting app-server daemon with remote control enabled...",
             )?;
-            let output = codex_app_server_daemon::ensure_remote_control_ready().await?;
+            let output = ava_app_server_daemon::ensure_remote_control_ready().await?;
             print_remote_control_start_output(&output, command.json)?;
         }
         Some(RemoteControlSubcommand::Stop) => {
             print_remote_control_progress(command.json, "Stopping remote control...")?;
-            let output = codex_app_server_daemon::run(AppServerLifecycleCommand::Stop).await?;
+            let output = ava_app_server_daemon::run(AppServerLifecycleCommand::Stop).await?;
             print_remote_control_stop_output(&output, command.json)?;
         }
         Some(RemoteControlSubcommand::Pair) => {
-            let output = codex_app_server_daemon::start_remote_control_pairing().await?;
+            let output = ava_app_server_daemon::start_remote_control_pairing().await?;
             print_remote_control_pairing_output(&output, command.json)?;
         }
     }
@@ -113,7 +113,7 @@ async fn run_foreground_remote_control(
     root_config_overrides: CliConfigOverrides,
 ) -> anyhow::Result<()> {
     let socket_dir = tempfile::Builder::new()
-        .prefix("codex-rc-")
+        .prefix("ava-rc-")
         .tempdir_in("/tmp")
         .or_else(|_| tempfile::tempdir())
         .context("failed to create private app-server socket directory")?;
@@ -124,12 +124,12 @@ async fn run_foreground_remote_control(
         socket_path: socket_path.clone(),
     };
     let runtime_options = AppServerRuntimeOptions {
-        remote_control_startup_mode: codex_app_server::RemoteControlStartupMode::EnabledEphemeral,
+        remote_control_startup_mode: ava_app_server::RemoteControlStartupMode::EnabledEphemeral,
         install_shutdown_signal_handler: false,
         ..Default::default()
     };
     let (stop_rx, stop_signal_task) = foreground_stop_signal();
-    let app_server = codex_app_server::run_main_with_transport_options(
+    let app_server = ava_app_server::run_main_with_transport_options(
         arg0_paths,
         root_config_overrides,
         LoaderOverrides::default(),
@@ -269,7 +269,7 @@ async fn abort_foreground_app_server(app_server_task: JoinHandle<std::io::Result
 async fn wait_for_foreground_remote_control_ready(
     socket_path: AbsolutePathBuf,
 ) -> anyhow::Result<AppServerRemoteControlReadyStatus> {
-    codex_app_server_daemon::enable_remote_control_on_socket(
+    ava_app_server_daemon::enable_remote_control_on_socket(
         socket_path.as_path(),
         FOREGROUND_SOCKET_CONNECT_TIMEOUT,
         FOREGROUND_SOCKET_CONNECT_RETRY_DELAY,
@@ -425,11 +425,11 @@ fn remote_control_start_human_lines(
 }
 
 fn daemon_app_server_human_lines(output: &AppServerRemoteControlStartOutput) -> Vec<String> {
-    let (managed_codex_path, managed_codex_version) = daemon_app_server_identity(output);
+    let (managed_ava_path, managed_ava_version) = daemon_app_server_identity(output);
     vec![
         "Daemon used app-server:".to_string(),
-        format!("  path: {}", managed_codex_path.display()),
-        format!("  version: {}", managed_codex_version.unwrap_or("unknown")),
+        format!("  path: {}", managed_ava_path.display()),
+        format!("  version: {}", managed_ava_version.unwrap_or("unknown")),
     ]
 }
 
@@ -438,12 +438,12 @@ fn daemon_app_server_identity(
 ) -> (&std::path::Path, Option<&str>) {
     match output {
         AppServerRemoteControlStartOutput::Bootstrap(output) => (
-            &output.managed_codex_path,
-            output.managed_codex_version.as_deref(),
+            &output.managed_ava_path,
+            output.managed_ava_version.as_deref(),
         ),
         AppServerRemoteControlStartOutput::Start(output) => (
-            &output.managed_codex_path,
-            output.managed_codex_version.as_deref(),
+            &output.managed_ava_path,
+            output.managed_ava_version.as_deref(),
         ),
     }
 }
@@ -527,8 +527,8 @@ mod tests {
                 status: AppServerLifecycleStatus::Started,
                 backend: None,
                 pid: Some(42),
-                managed_codex_path: PathBuf::from("/opt/codex/bin/codex"),
-                managed_codex_version: Some("1.0.0".to_string()),
+                managed_ava_path: PathBuf::from("/opt/ava/bin/ava"),
+                managed_ava_version: Some("1.0.0".to_string()),
                 socket_path: PathBuf::from("/tmp/app-server-control.sock"),
                 cli_version: Some("1.0.0".to_string()),
                 app_server_version: Some("2.0.0".to_string()),
@@ -612,7 +612,7 @@ mod tests {
             ),
             vec![
                 "Daemon used app-server:".to_string(),
-                "  path: /opt/codex/bin/codex".to_string(),
+                "  path: /opt/ava/bin/ava".to_string(),
                 "  version: 1.0.0".to_string(),
             ]
         );
@@ -648,8 +648,8 @@ mod tests {
                 "daemon": {
                     "status": "started",
                     "pid": 42,
-                    "managedCodexPath": "/opt/codex/bin/codex",
-                    "managedCodexVersion": "1.0.0",
+                    "managedAvaPath": "/opt/ava/bin/ava",
+                    "managedAvaVersion": "1.0.0",
                     "socketPath": "/tmp/app-server-control.sock",
                     "cliVersion": "1.0.0",
                     "appServerVersion": "2.0.0",

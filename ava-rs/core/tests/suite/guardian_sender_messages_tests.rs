@@ -1,18 +1,18 @@
 //! Genuine sender context stays reviewer-only and is replaced on every delivery.
 
 use anyhow::Result;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_features::Feature;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::turn_input::TurnInput;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_features::Feature;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::turn_input::TurnInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -21,7 +21,7 @@ use serde_json::json;
 async fn guardian_receives_sender_user_messages() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.5", |model| {
             model.auto_review_model_override = Some("gpt-5.6-luna".to_owned());
         })
@@ -39,7 +39,7 @@ async fn guardian_receives_sender_user_messages() -> Result<()> {
     let receiver = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(test.codex.environment_selections().await),
+            environments: Some(test.ava-code.environment_selections().await),
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?
@@ -58,9 +58,9 @@ async fn guardian_receives_sender_user_messages() -> Result<()> {
     }
     for (namespace, output, expected) in [
         (
-            "codex_app",
+            "ava_app",
             format!(
-                "<codex_delegation>\n  <source_thread_id>{sender}</source_thread_id>\n  <input>Inspect.</input>\n</codex_delegation>"
+                "<ava_delegation>\n  <source_thread_id>{sender}</source_thread_id>\n  <input>Inspect.</input>\n</ava_delegation>"
             ),
             vec![
                 "user: Inspect the experiment.",
@@ -70,7 +70,7 @@ async fn guardian_receives_sender_user_messages() -> Result<()> {
             ],
         ),
         (
-            "codex_tui",
+            "ava_tui",
             "Inspect again without sender provenance.".to_owned(),
             vec![],
         ),

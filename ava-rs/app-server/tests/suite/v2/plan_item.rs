@@ -4,22 +4,22 @@ use anyhow::bail;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::PlanDeltaNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::PlanDeltaNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -45,13 +45,13 @@ async fn plan_mode_uses_proposed_plan_block_for_plan_item() -> Result<()> {
     ])];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::CollaborationModes)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -107,13 +107,13 @@ async fn plan_mode_without_proposed_plan_does_not_emit_plan_item() -> Result<()>
     ])];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::CollaborationModes)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -130,7 +130,7 @@ async fn plan_mode_without_proposed_plan_does_not_emit_plan_item() -> Result<()>
     Ok(())
 }
 
-async fn start_plan_mode_turn(mcp: &mut TestAppServer) -> Result<codex_app_server_protocol::Turn> {
+async fn start_plan_mode_turn(mcp: &mut TestAppServer) -> Result<ava_app_server_protocol::Turn> {
     let thread = mcp
         .start_thread(ThreadStartParams {
             model: Some("mock-model".to_string()),

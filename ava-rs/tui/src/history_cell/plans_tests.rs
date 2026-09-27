@@ -30,7 +30,7 @@ fn finalized_plan_file_citation_renders_as_local_path_snapshot() {
     let output = cwd.join("Quarterly Report.xlsx").display().to_string();
     let plan = new_proposed_plan(
         format!(
-            "- :codex-file-citation{{path=\"{output}\" purpose=\"output\" artifact_kind=\"workbook\"}}\n"
+            "- :ava-file-citation{{path=\"{output}\" purpose=\"output\" artifact_kind=\"workbook\"}}\n"
         ),
         &cwd,
     );

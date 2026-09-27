@@ -1,26 +1,26 @@
 //! Thread MCP runtime projection and publication.
 //!
 //! This module owns the small correctness boundary between immutable session
-//! inputs and the mutable [`codex_mcp::McpRuntime`]. Background scheduling
+//! inputs and the mutable [`ava_mcp::McpRuntime`]. Background scheduling
 //! belongs elsewhere.
 
 use super::session::SessionConfiguration;
 use super::*;
 use crate::mcp::McpRuntimeProjection;
-use codex_config::McpServerDisabledReason;
-use codex_config::McpServerTransportConfig;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::ElicitationReviewerHandle;
-use codex_mcp::McpServerRegistration;
-use codex_mcp::McpServerSource;
-use codex_mcp::McpStartupPolicy;
-use codex_mcp::PreparedMcpCall;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
+use ava_config::McpServerDisabledReason;
+use ava_config::McpServerTransportConfig;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::ElicitationReviewerHandle;
+use ava_mcp::McpServerRegistration;
+use ava_mcp::McpServerSource;
+use ava_mcp::McpStartupPolicy;
+use ava_mcp::PreparedMcpCall;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
 use std::collections::HashSet;
 
 pub(super) struct McpDesiredState {
     pub(super) config: Arc<Config>,
-    pub(super) auth: Option<CodexAuth>,
+    pub(super) auth: Option<AvaAuth>,
     pub(super) submit_id: String,
     pub(super) originator: String,
     pub(super) session_source: SessionSource,
@@ -68,7 +68,7 @@ impl Session {
 
     pub(super) async fn latest_mcp_desired_state(
         &self,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         environments: TurnEnvironmentSnapshot,
     ) -> McpDesiredState {
         let (session_configuration, disabled_plugin_ids) = {
@@ -107,7 +107,7 @@ impl Session {
     pub(super) async fn install_initial_mcp_runtime(
         self: &Arc<Self>,
         session_configuration: &SessionConfiguration,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         mcp_projection: McpRuntimeProjection,
         resolved_environments: &TurnEnvironmentSnapshot,
         mcp_runtime_cwd: PathBuf,
@@ -156,7 +156,7 @@ impl Session {
         mut projection: McpRuntimeProjection,
     ) -> BoxFuture<'a, McpRuntimeProjection> {
         Box::pin(async move {
-            if self.isolation == codex_extension_api::SessionIsolation::Isolated {
+            if self.isolation == ava_extension_api::SessionIsolation::Isolated {
                 return projection;
             }
 
@@ -180,7 +180,7 @@ impl Session {
                 // Count completed discovery attempts, including refreshes, before host policy
                 // or MCP startup determines whether the server's tools become available.
                 self.services.session_telemetry.counter(
-                    "codex.mcp.executor_discovery",
+                    "ava.mcp.executor_discovery",
                     /*inc*/ 1,
                     &[("outcome", outcome)],
                 );
@@ -202,11 +202,11 @@ impl Session {
                         "unavailable"
                     };
                     self.services.session_telemetry.counter(
-                        "codex.mcp.executor_discovery.server",
+                        "ava.mcp.executor_discovery.server",
                         /*inc*/ 1,
                         &[("server_name", name.as_str()), ("outcome", outcome)],
                     );
-                    if name == CODEX_APPS_MCP_SERVER_NAME
+                    if name == AVA_APPS_MCP_SERVER_NAME
                         || !server.is_local_environment()
                         || projection
                             .config
@@ -333,7 +333,7 @@ impl Session {
             .collect();
         config
             .environment_cwds
-            .entry(codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string())
+            .entry(ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string())
             .or_insert_with(|| PathUri::from_abs_path(&desired.config.cwd));
         let mcp_servers = effective_mcp_servers(&config, auth.as_ref());
         config.set_server_permission_profiles(
@@ -368,9 +368,9 @@ impl Session {
             tx_event: Some(self.get_tx_event()),
             startup_cancellation_token: CancellationToken::new(),
             runtime_context,
-            codex_apps_tools_cache: self.services.mcp_manager.codex_apps_tools_cache(),
+            ava_apps_tools_cache: self.services.mcp_manager.ava_apps_tools_cache(),
             tool_catalog_cache: self.services.mcp_manager.tool_catalog_cache(),
-            codex_apps_tools_cache_key: connector_runtime_context_key(auth.as_ref()),
+            ava_apps_tools_cache_key: connector_runtime_context_key(auth.as_ref()),
             client_mcp_extensions: self.services.client_mcp_extensions.for_mcp_servers(),
             auth,
             auth_manager: Some(Arc::clone(&self.services.auth_manager)),

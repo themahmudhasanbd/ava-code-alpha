@@ -4,10 +4,10 @@ use anyhow::Context;
 use clap::ArgAction;
 use clap::ArgGroup;
 use clap::Parser;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::edit::ConfigEditsBuilder;
-use codex_core::config::find_codex_home;
-use codex_utils_cli::ProfileV2Name;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::edit::ConfigEditsBuilder;
+use ava_core::config::find_ava_home;
+use ava_utils_cli::ProfileV2Name;
 use toml::Value as TomlValue;
 
 #[derive(Debug, Parser)]
@@ -21,16 +21,16 @@ pub(crate) struct SandboxSetupCommand {
     #[arg(long = "elevated", action = ArgAction::SetTrue)]
     elevated_sandbox_level: bool,
 
-    /// Windows user that will run Codex after managed deployment.
+    /// Windows user that will run Ava after managed deployment.
     #[arg(
         long = "user",
         value_name = "USER",
         conflicts_with = "current_user",
-        requires = "codex_home"
+        requires = "ava_home"
     )]
     user: Option<String>,
 
-    /// Use the current Windows user as the Codex user.
+    /// Use the current Windows user as the Ava user.
     #[arg(
         long = "current-user",
         default_value_t = false,
@@ -38,9 +38,9 @@ pub(crate) struct SandboxSetupCommand {
     )]
     current_user: bool,
 
-    /// CODEX_HOME for the Codex user. Required with --user.
-    #[arg(long = "codex-home", value_name = "DIR")]
-    codex_home: Option<PathBuf>,
+    /// AVA_HOME for the Ava user. Required with --user.
+    #[arg(long = "ava-home", value_name = "DIR")]
+    ava_home: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,7 +53,7 @@ impl SandboxSetupCommand {
         if self.elevated_sandbox_level {
             Ok(SandboxSetupLevel::Elevated)
         } else {
-            anyhow::bail!("`codex sandbox setup` currently requires --elevated");
+            anyhow::bail!("`ava sandbox setup` currently requires --elevated");
         }
     }
 }
@@ -90,23 +90,23 @@ async fn run_elevated(
 ) -> anyhow::Result<()> {
     let identity = resolve_sandbox_setup_identity(&cmd)?;
     let config = ConfigBuilder::default()
-        .codex_home(identity.codex_home.clone())
-        .fallback_cwd(Some(identity.codex_home.clone()))
-        .loader_overrides(super::loader_overrides_for_profile_at_codex_home(
+        .ava_home(identity.ava_home.clone())
+        .fallback_cwd(Some(identity.ava_home.clone()))
+        .loader_overrides(super::loader_overrides_for_profile_at_ava_home(
             config_profile.as_ref(),
-            &identity.codex_home,
+            &identity.ava_home,
         ))
         .cli_overrides(cli_overrides)
         .build()
         .await
-        .context("failed to load target user's Codex config for sandbox provisioning")?;
+        .context("failed to load target user's Ava config for sandbox provisioning")?;
 
-    codex_core::windows_sandbox::run_elevated_provisioning_setup(
-        identity.codex_home.as_path(),
+    ava_core::windows_sandbox::run_elevated_provisioning_setup(
+        identity.ava_home.as_path(),
         identity.real_user.as_str(),
         config.permissions.network.as_ref(),
     )?;
-    ConfigEditsBuilder::new(identity.codex_home.as_path())
+    ConfigEditsBuilder::new(identity.ava_home.as_path())
         .set_windows_sandbox_mode("elevated")
         .apply()
         .await
@@ -119,14 +119,14 @@ async fn run_elevated(
     println!(
         "Windows elevated sandbox setup completed for {} at {}.",
         identity.real_user,
-        identity.codex_home.display()
+        identity.ava_home.display()
     );
     Ok(())
 }
 
 struct SandboxSetupIdentity {
     real_user: String,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
 }
 
 fn resolve_sandbox_setup_identity(
@@ -138,13 +138,13 @@ fn resolve_sandbox_setup_identity(
             .map_err(|err| {
                 anyhow::anyhow!("failed to determine current user from environment: {err}")
             })?;
-        let codex_home = match cmd.codex_home.clone() {
-            Some(codex_home) => codex_home,
-            None => find_codex_home()?.to_path_buf(),
+        let ava_home = match cmd.ava_home.clone() {
+            Some(ava_home) => ava_home,
+            None => find_ava_home()?.to_path_buf(),
         };
         return Ok(SandboxSetupIdentity {
             real_user,
-            codex_home,
+            ava_home,
         });
     }
 
@@ -152,13 +152,13 @@ fn resolve_sandbox_setup_identity(
         .user
         .clone()
         .ok_or_else(|| anyhow::anyhow!("--user or --current-user is required"))?;
-    let codex_home = cmd
-        .codex_home
+    let ava_home = cmd
+        .ava_home
         .clone()
-        .ok_or_else(|| anyhow::anyhow!("--codex-home is required with --user"))?;
+        .ok_or_else(|| anyhow::anyhow!("--ava-home is required with --user"))?;
     Ok(SandboxSetupIdentity {
         real_user,
-        codex_home,
+        ava_home,
     })
 }
 
@@ -173,8 +173,8 @@ mod tests {
             "--elevated",
             "--user",
             "DOMAIN\\alice",
-            "--codex-home",
-            r"C:\Users\alice\.codex",
+            "--ava-home",
+            r"C:\Users\alice\.ava-code",
         ])
         .expect("parse");
 
@@ -182,8 +182,8 @@ mod tests {
         assert_eq!(command.user.as_deref(), Some(r"DOMAIN\alice"));
         assert!(!command.current_user);
         assert_eq!(
-            command.codex_home.as_deref(),
-            Some(std::path::Path::new(r"C:\Users\alice\.codex"))
+            command.ava_home.as_deref(),
+            Some(std::path::Path::new(r"C:\Users\alice\.ava-code"))
         );
     }
 
@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn requires_codex_home_for_managed_user() {
+    fn requires_ava_home_for_managed_user() {
         let err =
             SandboxSetupCommand::try_parse_from(["setup", "--elevated", "--user", "DOMAIN\\alice"])
                 .expect_err("parse should fail");
@@ -211,8 +211,8 @@ mod tests {
             "--elevated".to_string(),
             "--user".to_string(),
             r"DOMAIN\alice".to_string(),
-            "--codex-home".to_string(),
-            r"C:\Users\alice\.codex".to_string(),
+            "--ava-home".to_string(),
+            r"C:\Users\alice\.ava-code".to_string(),
         ])
         .expect("parse")
         .expect("setup command");

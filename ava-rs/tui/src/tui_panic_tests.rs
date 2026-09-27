@@ -11,10 +11,10 @@ use crossterm::cursor::SetCursorStyle;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 
-const BEFORE_PANIC: &str = "\x1b]1337;codex-before-panic\x07";
-const BEFORE_RECOVERY: &str = "\x1b]1337;codex-before-recovery\x07";
-const BEFORE_VISIBLE_FRAME: &str = "\x1b]1337;codex-before-visible-frame\x07";
-const AFTER_VISIBLE_FRAME: &str = "\x1b]1337;codex-after-visible-frame\x07";
+const BEFORE_PANIC: &str = "\x1b]1337;ava-before-panic\x07";
+const BEFORE_RECOVERY: &str = "\x1b]1337;ava-before-recovery\x07";
+const BEFORE_VISIBLE_FRAME: &str = "\x1b]1337;ava-before-visible-frame\x07";
+const AFTER_VISIBLE_FRAME: &str = "\x1b]1337;ava-after-visible-frame\x07";
 
 #[test]
 fn caught_panic_rehides_cursor_before_repainting_and_restores_its_shape() {
@@ -52,7 +52,7 @@ fn caught_panic_rehides_cursor_before_repainting_and_restores_its_shape() {
             "--ignored",
             "--nocapture",
         ])
-        .env("CODEX_TUI_CAUGHT_PANIC_PTY_CHILD", "1")
+        .env("AVA_TUI_CAUGHT_PANIC_PTY_CHILD", "1")
         .stdin(Stdio::from(slave.try_clone().expect("clone PTY slave")))
         .stdout(Stdio::from(slave))
         .stderr(Stdio::piped())
@@ -136,7 +136,7 @@ fn caught_panic_rehides_cursor_before_repainting_and_restores_its_shape() {
 #[tokio::test(flavor = "current_thread")]
 #[ignore]
 async fn caught_panic_pty_child() {
-    if std::env::var_os("CODEX_TUI_CAUGHT_PANIC_PTY_CHILD").is_none() {
+    if std::env::var_os("AVA_TUI_CAUGHT_PANIC_PTY_CHILD").is_none() {
         return;
     }
     super::set_modes().expect("set terminal modes");

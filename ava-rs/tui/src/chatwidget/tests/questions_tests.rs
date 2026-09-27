@@ -1,7 +1,7 @@
 //! Verify question input delivery, retained drafts, and visible editor behavior.
 use super::*;
 use crate::bottom_pane::RestrictedInputMode;
-use codex_protocol::items::AsyncUserInputQuestion;
+use ava_protocol::items::AsyncUserInputQuestion;
 use pretty_assertions::assert_eq;
 
 fn questions() -> Vec<AsyncUserInputQuestion> {
@@ -63,8 +63,8 @@ async fn accepted_question_answer_uses_existing_delivery_and_keeps_main_draft() 
 
 #[tokio::test]
 async fn async_question_answers_preserve_ambiguous_skill_selection_and_dismiss_remotely() {
-    use codex_context_fragments::AnsweredQuestion;
-    use codex_context_fragments::ContextualUserFragment;
+    use ava_context_fragments::AnsweredQuestion;
+    use ava_context_fragments::ContextualUserFragment;
 
     let (mut chat, _rx, mut ops) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.thread_id = Some(ThreadId::new());
@@ -430,7 +430,7 @@ async fn selected_answers_preserve_long_labels_and_reject_oversized_submissions(
     for (length, snapshot) in [
         (300, "named_question"),
         (
-            codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS,
+            ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS,
             "oversized_question",
         ),
     ] {
@@ -450,7 +450,7 @@ async fn selected_answers_preserve_long_labels_and_reject_oversized_submissions(
             assert!(ops.try_recv().is_err());
             // JSON escaping must count toward the limit even when the answer itself fits.
             chat.bottom_pane.handle_paste(
-                "\"".repeat(codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS / 2),
+                "\"".repeat(ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS / 2),
             );
             chat.handle_key_event(KeyEvent::from(KeyCode::Enter));
             assert_eq!(question_count(&chat), saved);
@@ -903,7 +903,7 @@ async fn desktop_async_answer_dismisses_only_its_question_and_preserves_the_othe
 [{"questionItemId":"[\"request_user_input_async\",\"questions\",0]","question":"Same title?","answer":"Answer from desktop"}]
 </send_user_message_question_reply>"#;
         let reply = format!(
-            "# Context from my IDE setup:\n\n## Open tabs:\n- lib.rs: src/lib.rs\n\n## My request for Codex:\n{reply}"
+            "# Context from my IDE setup:\n\n## Open tabs:\n- lib.rs: src/lib.rs\n\n## My request for Ava:\n{reply}"
         );
         let item = AppServerThreadItem::UserMessage {
             id: "answer".into(),
@@ -958,8 +958,8 @@ async fn desktop_async_answer_dismisses_only_its_question_and_preserves_the_othe
 
 #[tokio::test]
 async fn distinct_async_question_replies_with_identical_text_both_render() {
-    use codex_context_fragments::AnsweredQuestion;
-    use codex_context_fragments::ContextualUserFragment;
+    use ava_context_fragments::AnsweredQuestion;
+    use ava_context_fragments::ContextualUserFragment;
 
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
     drain_insert_history(&mut rx);

@@ -101,7 +101,7 @@ async fn unavailable_thread_routes_local_and_recovery_commands() -> Result<()> {
     app.handle_tui_event(&mut tui, &mut session, TuiEvent::Key(KeyCode::Esc.into()))
         .await?;
     while let Ok(event) = events.try_recv() {
-        assert!(!matches!(event, AppEvent::CodexOp(_)));
+        assert!(!matches!(event, AppEvent::AvaOp(_)));
         app.handle_event(&mut tui, &mut session, event).await?;
     }
     assert_eq!(app.chat_widget.capture_thread_input_state(), input);

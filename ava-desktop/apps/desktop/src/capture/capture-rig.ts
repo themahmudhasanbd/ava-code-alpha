@@ -1020,7 +1020,7 @@ export function installCaptureRig(): CaptureRig {
       // Destructive fixture seeding is capture-rig only; the rig sets
       // __PI_CAPTURE__ before invoking (see electron/main capture suite).
       if (!window.__PI_CAPTURE__) return;
-      // Optical hero title length: short folder basenames under-ink vs Codex gold.
+      // Optical hero title length: short folder basenames under-ink vs Ava gold.
       const ws = useAppStore.getState().workspace;
       if (ws?.path) {
         const base = (ws.name || ws.path.split(/[\/]/).filter(Boolean).pop() || "").trim();

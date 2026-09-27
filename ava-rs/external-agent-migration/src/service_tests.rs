@@ -14,15 +14,15 @@ const SOURCE_EXTERNAL_AGENT_UPPER_PRODUCT_NAME: &str = "CLAUDE-CODE";
 fn fixture_paths() -> (TempDir, PathBuf, PathBuf) {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(EXTERNAL_AGENT_DIR);
-    let codex_home = root.path().join(".codex");
-    (root, external_agent_home, codex_home)
+    let ava_home = root.path().join(".ava-code");
+    (root, external_agent_home, ava_home)
 }
 
 fn service_for_paths(
     external_agent_home: PathBuf,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
 ) -> ExternalAgentConfigService {
-    ExternalAgentConfigService::new_for_test(codex_home, external_agent_home)
+    ExternalAgentConfigService::new_for_test(ava_home, external_agent_home)
 }
 
 fn github_plugin_details() -> MigrationDetails {

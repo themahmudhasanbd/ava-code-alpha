@@ -14,25 +14,25 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
-use codex_exec_server::Environment;
-use codex_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY;
-use codex_network_proxy::CredentialBrokerContext;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::brokered_credential_marker_env_keys;
-use codex_network_proxy::brokered_credential_value_env_keys;
-use codex_otel::SessionTelemetry;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::shell_environment::create_env_from_vars;
-use codex_shell_command::shell_snapshot::CapturedSnapshot;
-use codex_shell_command::shell_snapshot::PreparedSnapshot;
-use codex_shell_command::shell_snapshot::SnapshotCaptureOptions;
-use codex_shell_command::shell_snapshot::SnapshotCredentialEnvironment;
-use codex_shell_command::shell_snapshot::SnapshotStartup;
-use codex_shell_command::shell_snapshot::prepare_snapshot_credentials;
-use codex_shell_command::shell_snapshot::snapshot_capture_script;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::Environment;
+use ava_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY;
+use ava_network_proxy::CredentialBrokerContext;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::brokered_credential_marker_env_keys;
+use ava_network_proxy::brokered_credential_value_env_keys;
+use ava_otel::SessionTelemetry;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::shell_environment::create_env_from_vars;
+use ava_shell_command::shell_snapshot::CapturedSnapshot;
+use ava_shell_command::shell_snapshot::PreparedSnapshot;
+use ava_shell_command::shell_snapshot::SnapshotCaptureOptions;
+use ava_shell_command::shell_snapshot::SnapshotCredentialEnvironment;
+use ava_shell_command::shell_snapshot::SnapshotStartup;
+use ava_shell_command::shell_snapshot::prepare_snapshot_credentials;
+use ava_shell_command::shell_snapshot::snapshot_capture_script;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use tokio::fs;
 use tokio::process::Command;
 use tokio::sync::watch;
@@ -53,7 +53,7 @@ pub(crate) struct ShellSnapshot {
 }
 
 struct ShellSnapshotConfig {
-    codex_home: AbsolutePathBuf,
+    ava_home: AbsolutePathBuf,
     session_id: ThreadId,
     session_telemetry: SessionTelemetry,
     state_db: Option<StateDbHandle>,
@@ -107,7 +107,7 @@ const SNAPSHOT_DIR: &str = "shell_snapshots";
 
 impl ShellSnapshot {
     pub(crate) fn new(
-        codex_home: AbsolutePathBuf,
+        ava_home: AbsolutePathBuf,
         session_id: ThreadId,
         session_telemetry: SessionTelemetry,
         state_db: Option<StateDbHandle>,
@@ -116,7 +116,7 @@ impl ShellSnapshot {
     ) -> Self {
         Self {
             config: Some(Arc::new(ShellSnapshotConfig {
-                codex_home,
+                ava_home,
                 session_id,
                 session_telemetry,
                 state_db,
@@ -216,9 +216,9 @@ impl ShellSnapshot {
             };
             let timer = config
                 .session_telemetry
-                .start_timer("codex.shell_snapshot.duration_ms", &[("version", "v1")]);
+                .start_timer("ava.shell_snapshot.duration_ms", &[("version", "v1")]);
             let snapshot = ShellSnapshot::try_create(
-                &config.codex_home,
+                &config.ava_home,
                 config.session_id,
                 &cwd,
                 &shell,
@@ -235,7 +235,7 @@ impl ShellSnapshot {
             }
             config
                 .session_telemetry
-                .counter("codex.shell_snapshot", /*inc*/ 1, &counter_tags);
+                .counter("ava.shell_snapshot", /*inc*/ 1, &counter_tags);
             snapshot.ok().map(Arc::new)
         }
         .instrument(snapshot_span)
@@ -243,7 +243,7 @@ impl ShellSnapshot {
     }
 
     async fn try_create(
-        codex_home: &AbsolutePathBuf,
+        ava_home: &AbsolutePathBuf,
         session_id: ThreadId,
         session_cwd: &AbsolutePathBuf,
         shell: &Shell,
@@ -260,19 +260,19 @@ impl ShellSnapshot {
             .duration_since(SystemTime::UNIX_EPOCH)
             .map(|duration| duration.as_nanos())
             .unwrap_or(0);
-        let path = codex_home
+        let path = ava_home
             .join(SNAPSHOT_DIR)
             .join(format!("{session_id}.{nonce}.{extension}"));
-        let temp_path = codex_home
+        let temp_path = ava_home
             .join(SNAPSHOT_DIR)
             .join(format!("{session_id}.tmp-{nonce}"));
 
         // Clean the (unlikely) leaked snapshot files.
-        let codex_home = codex_home.clone();
+        let ava_home = ava_home.clone();
         let cleanup_session_id = session_id;
         tokio::spawn(async move {
             if let Err(err) =
-                cleanup_stale_snapshots(&codex_home, cleanup_session_id, state_db).await
+                cleanup_stale_snapshots(&ava_home, cleanup_session_id, state_db).await
             {
                 tracing::warn!("Failed to clean up shell snapshots: {err:?}");
             }
@@ -673,7 +673,7 @@ async fn capture_snapshot(
         .apply_to_env_for_snapshot(&mut env);
     let mut snapshot_allowed_env = env.clone();
     // The live broker regenerates this marker; captured dummies can belong to another scope.
-    snapshot_allowed_env.remove("CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS");
+    snapshot_allowed_env.remove("AVA_NETWORK_PROXY_BROKERED_CREDENTIALS");
     for key in &provider_context_keys {
         if env_value(&original_env, key) != env_value(&env, key) {
             remove_env_value(&mut snapshot_allowed_env, key);
@@ -1057,11 +1057,11 @@ async fn run_script_with_timeout(
         handler.env_clear();
         handler.envs(env);
     }
-    codex_protocol::shell_environment::scrub_non_inheritable_env_vars(handler.as_std_mut());
+    ava_protocol::shell_environment::scrub_non_inheritable_env_vars(handler.as_std_mut());
     #[cfg(unix)]
     unsafe {
         handler.pre_exec(|| {
-            codex_utils_pty::process_group::detach_from_tty()?;
+            ava_utils_pty::process_group::detach_from_tty()?;
             Ok(())
         });
     }
@@ -1084,11 +1084,11 @@ async fn run_script_with_timeout(
 /// whose rollouts have not been updated within the retention window.
 /// The active session id is exempt from cleanup.
 pub async fn cleanup_stale_snapshots(
-    codex_home: &AbsolutePathBuf,
+    ava_home: &AbsolutePathBuf,
     active_session_id: ThreadId,
     state_db: Option<StateDbHandle>,
 ) -> Result<()> {
-    let snapshot_dir = codex_home.join(SNAPSHOT_DIR);
+    let snapshot_dir = ava_home.join(SNAPSHOT_DIR);
 
     let mut entries = match fs::read_dir(&snapshot_dir).await {
         Ok(entries) => entries,
@@ -1117,7 +1117,7 @@ pub async fn cleanup_stale_snapshots(
         }
 
         let rollout_path =
-            find_thread_path_by_id_str(codex_home, session_id, state_db.as_deref()).await?;
+            find_thread_path_by_id_str(ava_home, session_id, state_db.as_deref()).await?;
         let Some(rollout_path) = rollout_path else {
             remove_snapshot_file(&path).await;
             continue;

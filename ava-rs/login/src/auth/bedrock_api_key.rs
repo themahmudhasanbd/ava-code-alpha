@@ -1,14 +1,14 @@
 use std::fmt;
 use std::path::Path;
 
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_config::types::AuthCredentialsStoreMode;
 use serde::Deserialize;
 use serde::Serialize;
 
 use super::manager::save_auth;
 use super::storage::AuthDotJson;
 use super::storage::AuthKeyringBackendKind;
-use codex_protocol::auth::AuthMode;
+use ava_protocol::auth::AuthMode;
 
 /// Managed Amazon Bedrock API key persisted in `auth.json`.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
@@ -28,7 +28,7 @@ impl fmt::Debug for BedrockApiKeyAuth {
 
 /// Writes an `auth.json` that contains only the Amazon Bedrock API key auth.
 pub fn login_with_bedrock_api_key(
-    codex_home: &Path,
+    ava_home: &Path,
     api_key: &str,
     region: &str,
     auth_credentials_store_mode: AuthCredentialsStoreMode,
@@ -48,7 +48,7 @@ pub fn login_with_bedrock_api_key(
         bedrock_access_keys: None,
     };
     save_auth(
-        codex_home,
+        ava_home,
         &auth_dot_json,
         auth_credentials_store_mode,
         keyring_backend_kind,

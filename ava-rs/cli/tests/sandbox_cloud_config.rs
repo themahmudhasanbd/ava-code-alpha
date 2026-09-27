@@ -4,10 +4,10 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_config::ConfigLoadOptions;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::config::load_config_toml_with_layer_stack;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::ConfigLoadOptions;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::config::load_config_toml_with_layer_stack;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -42,16 +42,16 @@ async fn sandbox_fetches_and_enforces_cloud_managed_permission_profile() -> Resu
         "contents": CLOUD_MANAGED_PERMISSION_PROFILE_REQUIREMENTS,
     }]);
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "cli_auth_credentials_store = \"file\"\nchatgpt_base_url = \"{chatgpt_base_url}\"\n",
         ),
     )?;
     let bootstrap_config = load_config_toml_with_layer_stack(
-        codex_home.path(),
-        Some(&AbsolutePathBuf::from_absolute_path(codex_home.path())?),
+        ava_home.path(),
+        Some(&AbsolutePathBuf::from_absolute_path(ava_home.path())?),
         vec![
             (
                 "cli_auth_credentials_store".to_string(),
@@ -77,7 +77,7 @@ async fn sandbox_fetches_and_enforces_cloud_managed_permission_profile() -> Resu
     }
 
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("workspace-123")
             .chatgpt_account_id("workspace-123")
@@ -98,14 +98,14 @@ async fn sandbox_fetches_and_enforces_cloud_managed_permission_profile() -> Resu
         .mount(&server)
         .await;
 
-    let codex = codex_utils_cargo_bin::cargo_bin("codex")?;
+    let ava = ava_utils_cargo_bin::cargo_bin("ava")?;
     let chatgpt_base_url_override = format!("chatgpt_base_url=\"{chatgpt_base_url}\"");
-    let output = Command::new(&codex)
-        .current_dir(codex_home.path())
-        .env("CODEX_HOME", codex_home.path())
+    let output = Command::new(&ava)
+        .current_dir(ava_home.path())
+        .env("AVA_HOME", ava_home.path())
         .env("NO_PROXY", "127.0.0.1,localhost")
         .env("no_proxy", "127.0.0.1,localhost")
-        .env_remove("CODEX_ACCESS_TOKEN")
+        .env_remove("AVA_ACCESS_TOKEN")
         .env_remove("OPENAI_API_KEY")
         .args(["-c", "cli_auth_credentials_store=\"file\""])
         .args(["-c", chatgpt_base_url_override.as_str()])
@@ -116,7 +116,7 @@ async fn sandbox_fetches_and_enforces_cloud_managed_permission_profile() -> Resu
             "--include-managed-config",
             "--",
         ])
-        .arg(&codex)
+        .arg(&ava)
         .arg("--version")
         .output()?;
     let cloud_bundle_request_paths: Vec<_> = server
@@ -140,13 +140,13 @@ async fn sandbox_fetches_and_enforces_cloud_managed_permission_profile() -> Resu
     );
     if !nested_macos_sandbox_unavailable {
         assert!(
-            String::from_utf8(output.stdout)?.starts_with("codex"),
-            "expected the sandboxed Codex version command to run",
+            String::from_utf8(output.stdout)?.starts_with("ava"),
+            "expected the sandboxed Ava version command to run",
         );
     }
 
     let cache: Value = serde_json::from_slice(&std::fs::read(
-        codex_home.path().join("cloud-config-bundle-cache.json"),
+        ava_home.path().join("cloud-config-bundle-cache.json"),
     )?)?;
     assert_eq!(
         json!({

@@ -1,8 +1,8 @@
 //! Orders retained inputs and records host-verified facts at the context checkpoint boundary.
 
 use crate::context::GuardianContextMode;
-use codex_history::RetainedContextEvent;
-use codex_history::RolloutItem;
+use ava_history::RetainedContextEvent;
+use ava_history::RolloutItem;
 
 use super::Session;
 use super::thread_settings;

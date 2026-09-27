@@ -686,7 +686,7 @@ export const koEntries: ChangelogEntry[] = [
     version: "0.2.10",
     date: "2026-07-30",
     highlights: [
-      "향상된 컨트롤을 갖춘 Codex/WorkBuddy 스타일 대화 상단 바를 추가합니다.",
+      "향상된 컨트롤을 갖춘 Ava/WorkBuddy 스타일 대화 상단 바를 추가합니다.",
       "가독성을 높이도록 채팅 transcript와 Markdown 본문 스타일을 새로 고칩니다.",
       "컨텍스트 메뉴로 작업 패널 헤더를 통합하고 사이드바 접기를 애니메이션 처리합니다.",
       "도구 실행기를 하나의 생성 드롭다운으로 합쳐 인터페이스를 간결하게 합니다.",

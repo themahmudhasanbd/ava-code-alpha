@@ -686,7 +686,7 @@ export const trEntries: ChangelogEntry[] = [
     "version": "0.2.10",
     "date": "2026-07-30",
     "highlights": [
-      "Geliştirilmiş kontrollere sahip Codex/WorkBuddy tarzı konuşma üst çubuğu ekleyin.",
+      "Geliştirilmiş kontrollere sahip Ava/WorkBuddy tarzı konuşma üst çubuğu ekleyin.",
       "Daha iyi okunabilirlik için sohbet metnini ve işaretlemeli düzyazı stilini yenileyin.",
       "Çalışma paneli başlığını içerik menüsüyle birleştirin ve kenar çubuğu daraltmayı canlandırın.",
       "Daha temiz bir arayüz için araç başlatıcılarını tek bir açılır menüde birleştirin.",

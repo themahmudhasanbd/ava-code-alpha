@@ -2,23 +2,23 @@ use super::*;
 use crate::app_event::ConnectorsSnapshot;
 use crate::bottom_pane::ExperimentalFeatureItem;
 use crate::chatwidget::connectors::ConnectorsCacheState;
-use codex_app_server_protocol::HookErrorInfo;
-use codex_app_server_protocol::HooksListEntry;
-use codex_app_server_protocol::HooksListResponse;
-use codex_app_server_protocol::MarketplaceLoadErrorInfo;
-use codex_app_server_protocol::MarketplaceRemoveResponse;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginShareContext;
-use codex_app_server_protocol::PluginShareDiscoverability;
-use codex_app_server_protocol::PluginSource;
-use codex_connectors::AppInfo;
+use ava_app_server_protocol::HookErrorInfo;
+use ava_app_server_protocol::HooksListEntry;
+use ava_app_server_protocol::HooksListResponse;
+use ava_app_server_protocol::MarketplaceLoadErrorInfo;
+use ava_app_server_protocol::MarketplaceRemoveResponse;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginShareContext;
+use ava_app_server_protocol::PluginShareDiscoverability;
+use ava_app_server_protocol::PluginSource;
+use ava_connectors::AppInfo;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
 async fn experimental_mode_plan_is_ignored_on_startup() {
-    let codex_home = tempdir().expect("tempdir");
+    let ava_home = tempdir().expect("tempdir");
     let cfg = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cli_overrides(vec![
             (
                 "features.collaboration_modes".to_string(),
@@ -44,9 +44,9 @@ async fn experimental_mode_plan_is_ignored_on_startup() {
         initial_user_message: None,
         enhanced_keys_supported: false,
         has_chatgpt_account: false,
-        has_codex_backend_auth: false,
+        has_ava_backend_auth: false,
         model_catalog: test_model_catalog(&cfg),
-        feedback: codex_feedback::CodexFeedback::new(),
+        feedback: ava_feedback::AvaFeedback::new(),
         is_first_run: true,
         status_account_display: None,
         initial_plan_type: None,
@@ -651,8 +651,8 @@ async fn plugin_detail_popup_snapshot_labels_personal_marketplace_as_local() {
         Some("Turn Figma files into implementation context."),
         &["design-review", "extract-copy"],
         &[
-            (codex_app_server_protocol::HookEventName::PreToolUse, 1),
-            (codex_app_server_protocol::HookEventName::Stop, 2),
+            (ava_app_server_protocol::HookEventName::PreToolUse, 1),
+            (ava_app_server_protocol::HookEventName::Stop, 2),
         ],
         &["Figma", "Slack"],
         &["figma-mcp", "docs-mcp"],
@@ -698,8 +698,8 @@ async fn plugin_detail_popup_snapshot_shows_npm_source() {
         Some("Turn Figma files into implementation context."),
         &["design-review", "extract-copy"],
         &[
-            (codex_app_server_protocol::HookEventName::PreToolUse, 1),
-            (codex_app_server_protocol::HookEventName::Stop, 2),
+            (ava_app_server_protocol::HookEventName::PreToolUse, 1),
+            (ava_app_server_protocol::HookEventName::Stop, 2),
         ],
         &["Figma", "Slack"],
         &["figma-mcp", "docs-mcp"],
@@ -737,8 +737,8 @@ async fn plugin_detail_popup_distinguishes_admin_installed_from_enabled() {
         Some("Turn Figma files into implementation context."),
         &["design-review", "extract-copy"],
         &[
-            (codex_app_server_protocol::HookEventName::PreToolUse, 1),
-            (codex_app_server_protocol::HookEventName::Stop, 2),
+            (ava_app_server_protocol::HookEventName::PreToolUse, 1),
+            (ava_app_server_protocol::HookEventName::Stop, 2),
         ],
         &["Figma", "Slack"],
         &["figma-mcp", "docs-mcp"],
@@ -2364,7 +2364,7 @@ async fn apps_installed_mentions_revoke_access_and_reject_stale_account_results(
 
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ true, /*has_codex_backend_auth*/ true,
+        /*has_chatgpt_account*/ true, /*has_ava_backend_auth*/ true,
     );
 
     assert_ne!(chat.connector_scope_generation(), generation);
@@ -3058,7 +3058,7 @@ async fn experimental_features_popup_snapshot() {
             key: Feature::RealtimeConversation.key().to_string(),
             writable: true,
             name: "Voice conversations".to_string(),
-            description: "Talk with Codex using /voice.".to_string(),
+            description: "Talk with Ava using /voice.".to_string(),
             enabled: false,
         },
     ];
@@ -3074,9 +3074,9 @@ async fn experimental_features_popup_snapshot() {
     let popup = render_bottom_popup(&chat, /*width*/ 80);
     assert_chatwidget_snapshot!("experimental_features_popup", popup);
 
-    let mut config = codex_config::types::TuiKeymap::default();
-    config.list.accept = Some(codex_config::types::KeybindingsSpec::One(
-        codex_config::types::KeybindingSpec("ctrl-x enter".to_string()),
+    let mut config = ava_config::types::TuiKeymap::default();
+    config.list.accept = Some(ava_config::types::KeybindingsSpec::One(
+        ava_config::types::KeybindingSpec("ctrl-x enter".to_string()),
     ));
     let keymap = crate::keymap::RuntimeKeymap::from_config(&config)
         .expect("valid experimental-feature chord");
@@ -3185,12 +3185,12 @@ async fn experimental_popup_available_snapshot() {
     };
     let features = [
         ("network_proxy", "Network proxy", "Apply network proxy restrictions to sandboxed sessions that already have network access."),
-        ("prevent_idle_sleep", "Prevent sleep while running", "Keep your computer awake while Codex is running a thread."),
+        ("prevent_idle_sleep", "Prevent sleep while running", "Keep your computer awake while Ava is running a thread."),
     ]
     .into_iter()
-    .map(|(name, display_name, description)| codex_app_server_protocol::ExperimentalFeature {
+    .map(|(name, display_name, description)| ava_app_server_protocol::ExperimentalFeature {
         name: name.to_string(),
-        stage: codex_app_server_protocol::ExperimentalFeatureStage::Beta,
+        stage: ava_app_server_protocol::ExperimentalFeatureStage::Beta,
         display_name: Some(display_name.to_string()),
         description: Some(description.to_string()),
         announcement: None,
@@ -3334,7 +3334,7 @@ async fn model_picker_refresh_rejects_obsolete_and_unusable_replies() {
         chat.status_account_display.clone(),
         chat.plan_type,
         chat.has_chatgpt_account,
-        chat.has_codex_backend_auth,
+        chat.has_ava_backend_auth,
     );
     assert!(!chat.on_models_loaded(current_request, Ok(refreshed.clone())));
     assert_eq!(chat.model_catalog.try_list_models().unwrap(), initial);
@@ -3367,7 +3367,7 @@ async fn model_picker_refreshes_startup_catalog() {
         let mut startup = vec![get_available_model(&chat, "gpt-5.5")];
         let mut refreshed = chat.model_catalog.try_list_models().unwrap();
         let mut auto = startup[0].clone();
-        auto.model = "codex-auto-test".to_string();
+        auto.model = "ava-auto-test".to_string();
         auto.id = auto.model.clone();
         auto.description = "Auto model".to_string();
         refreshed.push(auto);
@@ -3410,7 +3410,7 @@ async fn model_picker_queued_all_models_uses_refreshed_catalog() {
     let refreshed = chat.model_catalog.try_list_models().unwrap();
     let preset = get_available_model(&chat, "gpt-5.5");
     let mut auto = preset.clone();
-    auto.model = "codex-auto-test".to_string();
+    auto.model = "ava-auto-test".to_string();
     auto.id = auto.model.clone();
     chat.model_catalog = Arc::new(ModelCatalog::new(vec![auto, preset]));
     chat.open_model_popup();
@@ -3573,7 +3573,7 @@ async fn model_picker_refresh_dismisses_empty_choices() {
         }
         let before = render_bottom_popup(&chat, /*width*/ 80);
         if explicit_all_models {
-            preset.model = "codex-auto-test".to_string();
+            preset.model = "ava-auto-test".to_string();
         } else {
             preset.show_in_picker = false;
         }
@@ -3658,7 +3658,7 @@ async fn server_overloaded_error_does_not_switch_models() {
     handle_error(
         &mut chat,
         "server overloaded",
-        Some(CodexErrorInfo::ServerOverloaded),
+        Some(AvaErrorInfo::ServerOverloaded),
     );
 
     while let Ok(event) = rx.try_recv() {
@@ -3981,7 +3981,7 @@ async fn reasoning_shortcut_is_ignored_with_model_popup_open() {
 async fn reasoning_up_shortcut_does_not_silently_enter_advanced_effort() {
     for (model, model_path) in [
         ("gpt-5.5", "All models → gpt-5.5"),
-        ("codex-auto-test", "codex-auto-test"),
+        ("ava-auto-test", "ava-auto-test"),
     ] {
         let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.5")).await;
         chat.thread_id = Some(ThreadId::new());
@@ -4163,9 +4163,9 @@ async fn advanced_only_reasoning_option_requires_explicit_selection() {
 async fn auto_model_advertising_advanced_effort_opens_reasoning_picker() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let mut preset = get_available_model(&chat, "gpt-5.6-terra");
-    preset.id = "codex-auto-test".to_string();
-    preset.model = "codex-auto-test".to_string();
-    preset.display_name = "codex-auto-test".to_string();
+    preset.id = "ava-auto-test".to_string();
+    preset.model = "ava-auto-test".to_string();
+    preset.display_name = "ava-auto-test".to_string();
     preset.default_reasoning_effort = ReasoningEffortConfig::Medium;
     preset
         .supported_reasoning_efforts
@@ -4212,7 +4212,7 @@ async fn feedback_upload_consent_popup_snapshot() {
         chat.current_rollout_path.clone(),
         Some("auto-review-rollout-thread-1.jsonl".to_string()),
         /*include_windows_sandbox_log*/ true,
-        &codex_feedback::FeedbackDiagnostics::new(vec![codex_feedback::FeedbackDiagnostic {
+        &ava_feedback::FeedbackDiagnostics::new(vec![ava_feedback::FeedbackDiagnostic {
             headline: "Proxy environment variables are set and may affect connectivity."
                 .to_string(),
             details: vec!["HTTPS_PROXY = hello".to_string()],
@@ -4233,7 +4233,7 @@ async fn feedback_good_result_consent_popup_includes_connectivity_diagnostics_fi
         chat.current_rollout_path.clone(),
         Some("auto-review-rollout-thread-1.jsonl".to_string()),
         /*include_windows_sandbox_log*/ false,
-        &codex_feedback::FeedbackDiagnostics::new(vec![codex_feedback::FeedbackDiagnostic {
+        &ava_feedback::FeedbackDiagnostics::new(vec![ava_feedback::FeedbackDiagnostic {
             headline: "Proxy environment variables are set and may affect connectivity."
                 .to_string(),
             details: vec!["HTTPS_PROXY = hello".to_string()],
@@ -4282,7 +4282,7 @@ async fn account_change_dismisses_the_previous_app_directory_snapshot() {
 
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ true, /*has_codex_backend_auth*/ true,
+        /*has_chatgpt_account*/ true, /*has_ava_backend_auth*/ true,
     );
     let after = normalize_snapshot_paths(render_bottom_popup(&chat, /*width*/ 80));
     assert_chatwidget_snapshot!(

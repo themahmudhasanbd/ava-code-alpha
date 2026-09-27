@@ -2,32 +2,32 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::DynamicToolCallOutputContentItem;
-use codex_app_server_protocol::DynamicToolCallParams;
-use codex_app_server_protocol::DynamicToolCallResponse;
-use codex_app_server_protocol::DynamicToolFunctionSpec;
-use codex_app_server_protocol::DynamicToolSpec;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadClosedNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadStatusChangedNotification;
-use codex_app_server_protocol::ThreadUnsubscribeParams;
-use codex_app_server_protocol::ThreadUnsubscribeResponse;
-use codex_app_server_protocol::ThreadUnsubscribeStatus;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::DynamicToolCallOutputContentItem;
+use ava_app_server_protocol::DynamicToolCallParams;
+use ava_app_server_protocol::DynamicToolCallResponse;
+use ava_app_server_protocol::DynamicToolFunctionSpec;
+use ava_app_server_protocol::DynamicToolSpec;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadClosedNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadStatusChangedNotification;
+use ava_app_server_protocol::ThreadUnsubscribeParams;
+use ava_app_server_protocol::ThreadUnsubscribeResponse;
+use ava_app_server_protocol::ThreadUnsubscribeStatus;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
 use core_test_support::responses;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
@@ -41,14 +41,14 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 #[tokio::test]
 async fn thread_unsubscribe_keeps_thread_loaded_until_idle_timeout() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_sandbox_mode("danger-full-access")
         .with_root_config("thread_unload_delay_secs = 2")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -204,8 +204,8 @@ async fn thread_unsubscribe_during_turn_keeps_turn_running(delay_secs: u64) -> R
     let tool_call_arguments = serde_json::to_string(&tool_args)?;
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
 
     let (server, mut completions) = start_streaming_sse_server(vec![
         vec![StreamingSseChunk {
@@ -231,10 +231,10 @@ async fn thread_unsubscribe_during_turn_keeps_turn_running(delay_secs: u64) -> R
     MockResponsesConfig::new(server.uri())
         .with_sandbox_mode("danger-full-access")
         .with_root_config(&format!("thread_unload_delay_secs = {delay_secs}"))
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -375,13 +375,13 @@ async fn thread_unsubscribe_preserves_cached_status_before_idle_unload() -> Resu
         responses::sse_failed("resp-1", "server_error", "simulated failure"),
     )
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_sandbox_mode("danger-full-access")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -447,7 +447,7 @@ async fn thread_unsubscribe_preserves_cached_status_before_idle_unload() -> Resu
             request_id,
             params: ThreadResumeParams {
                 thread_id,
-                cwd: Some(codex_home.path().to_string_lossy().to_string()),
+                cwd: Some(ava_home.path().to_string_lossy().to_string()),
                 ..Default::default()
             },
         })
@@ -460,13 +460,13 @@ async fn thread_unsubscribe_preserves_cached_status_before_idle_unload() -> Resu
 #[tokio::test]
 async fn thread_unsubscribe_reports_not_subscribed_before_idle_unload() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_sandbox_mode("danger-full-access")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 

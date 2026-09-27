@@ -18,7 +18,7 @@ pub use auth_fixtures::ChatGptIdTokenClaims;
 pub use auth_fixtures::encode_id_token;
 pub use auth_fixtures::mount_workspace_routing;
 pub use auth_fixtures::write_chatgpt_auth;
-use codex_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::JSONRPCResponse;
 pub use config::MockResponsesConfig;
 pub use config::write_mock_responses_config_toml;
 pub use config::write_mock_responses_config_toml_with_chatgpt_base_url;
@@ -60,6 +60,6 @@ pub use test_app_server::TestAppServerBuilder;
 
 pub fn to_response<T: DeserializeOwned>(response: JSONRPCResponse) -> anyhow::Result<T> {
     let value = serde_json::to_value(response.result)?;
-    let codex_response = serde_json::from_value(value)?;
-    Ok(codex_response)
+    let ava_response = serde_json::from_value(value)?;
+    Ok(ava_response)
 }

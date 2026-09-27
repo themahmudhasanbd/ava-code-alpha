@@ -11,10 +11,10 @@ use super::super::SessionTarget;
 use super::ArchiveState;
 use crate::key_hint::KeyBinding;
 use crate::tui::FrameRequester;
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::ThreadSortKey;
-use codex_protocol::ThreadId;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::ThreadSortKey;
+use ava_protocol::ThreadId;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
@@ -189,7 +189,7 @@ fn archived_status_preserves_directory_filter_and_hides_archive_shortcut() {
     assert_eq!(state.status, SessionStatus::Archived);
     let params = super::super::thread_list_params(
         /*cursor*/ None,
-        Some(codex_app_server_protocol::ThreadListCwdFilter::One(
+        Some(ava_app_server_protocol::ThreadListCwdFilter::One(
             "/tmp/project".to_string(),
         )),
         SessionStatus::Archived,

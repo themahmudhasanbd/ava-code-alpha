@@ -10,7 +10,7 @@ use std::future::Future;
 use std::sync::Arc;
 
 use anyhow::Result;
-use codex_connectors::ConnectorRuntimeSnapshot;
+use ava_connectors::ConnectorRuntimeSnapshot;
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;
 use tokio::sync::RwLockReadGuard;
@@ -21,7 +21,7 @@ use crate::tools::ToolInfo;
 type ToolCatalogUpdates = watch::Receiver<Option<Arc<ConnectorRuntimeSnapshot<ToolInfo>>>>;
 
 /// The exact Apps catalog returned by an awaited refresh of one published runtime.
-pub struct CodexAppsToolSnapshot {
+pub struct AvaAppsToolSnapshot {
     /// Raw installed tools, including tools hidden or disabled for the model.
     pub tools: Vec<ToolInfo>,
     /// Raw MCP tool names allowed by the same runtime's generic MCP policy.

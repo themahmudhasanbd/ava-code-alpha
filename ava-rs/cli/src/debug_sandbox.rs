@@ -8,31 +8,31 @@ use std::path::PathBuf;
 use std::process::Stdio;
 
 use anyhow::Context as _;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::ConfigOverrides;
-use codex_core::config::NetworkProxyAuditMetadata;
-use codex_core::config::find_codex_home;
-use codex_core::exec_env::create_env;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::ConfigOverrides;
+use ava_core::config::NetworkProxyAuditMetadata;
+use ava_core::config::find_ava_home;
+use ava_core::exec_env::create_env;
 #[cfg(target_os = "macos")]
-use codex_core::spawn::CODEX_SANDBOX_ENV_VAR;
-use codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR;
-use codex_core::windows_sandbox::local_binding_policy_for_sandbox;
-use codex_core::windows_sandbox::managed_proxy_routing_for_windows_sandbox;
-use codex_protocol::config_types::SandboxMode;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::SandboxEnforcement;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_sandboxing::landlock::create_linux_sandbox_command_args_for_permission_profile;
+use ava_core::spawn::AVA_SANDBOX_ENV_VAR;
+use ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR;
+use ava_core::windows_sandbox::local_binding_policy_for_sandbox;
+use ava_core::windows_sandbox::managed_proxy_routing_for_windows_sandbox;
+use ava_protocol::config_types::SandboxMode;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::SandboxEnforcement;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_sandboxing::landlock::create_linux_sandbox_command_args_for_permission_profile;
 #[cfg(target_os = "macos")]
-use codex_sandboxing::seatbelt::CreateSeatbeltCommandArgsParams;
+use ava_sandboxing::seatbelt::CreateSeatbeltCommandArgsParams;
 #[cfg(target_os = "macos")]
-use codex_sandboxing::seatbelt::create_seatbelt_command_args;
-use codex_sandboxing::with_managed_mitm_ca_readable_root;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_cli::CliConfigOverrides;
+use ava_sandboxing::seatbelt::create_seatbelt_command_args;
+use ava_sandboxing::with_managed_mitm_ca_readable_root;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_cli::CliConfigOverrides;
 use tokio::process::Child;
 use tokio::process::Command as TokioCommand;
 use toml::Value as TomlValue;
@@ -48,7 +48,7 @@ use seatbelt::DenialLogger;
 #[cfg(target_os = "macos")]
 pub async fn run_command_under_seatbelt(
     command: SeatbeltCommand,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     loader_overrides: LoaderOverrides,
 ) -> anyhow::Result<()> {
     let SeatbeltCommand {
@@ -76,7 +76,7 @@ pub async fn run_command_under_seatbelt(
         },
         command,
         config_overrides,
-        codex_linux_sandbox_exe,
+        ava_linux_sandbox_exe,
         SandboxType::Seatbelt,
         log_denials,
         &allow_unix_sockets,
@@ -87,7 +87,7 @@ pub async fn run_command_under_seatbelt(
 #[cfg(not(target_os = "macos"))]
 pub async fn run_command_under_seatbelt(
     _command: SeatbeltCommand,
-    _codex_linux_sandbox_exe: Option<PathBuf>,
+    _ava_linux_sandbox_exe: Option<PathBuf>,
     _loader_overrides: LoaderOverrides,
 ) -> anyhow::Result<()> {
     anyhow::bail!("Seatbelt sandbox is only available on macOS");
@@ -95,7 +95,7 @@ pub async fn run_command_under_seatbelt(
 
 pub async fn run_command_under_landlock(
     command: LandlockCommand,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     loader_overrides: LoaderOverrides,
 ) -> anyhow::Result<()> {
     let LandlockCommand {
@@ -121,7 +121,7 @@ pub async fn run_command_under_landlock(
         },
         command,
         config_overrides,
-        codex_linux_sandbox_exe,
+        ava_linux_sandbox_exe,
         SandboxType::Landlock,
         /*log_denials*/ false,
         &[],
@@ -131,7 +131,7 @@ pub async fn run_command_under_landlock(
 
 pub async fn run_command_under_windows_sandbox(
     command: WindowsCommand,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     loader_overrides: LoaderOverrides,
 ) -> anyhow::Result<()> {
     let WindowsCommand {
@@ -157,7 +157,7 @@ pub async fn run_command_under_windows_sandbox(
         },
         command,
         config_overrides,
-        codex_linux_sandbox_exe,
+        ava_linux_sandbox_exe,
         SandboxType::Windows,
         /*log_denials*/ false,
         &[],
@@ -204,7 +204,7 @@ async fn run_command_under_sandbox(
     mut config_options: DebugSandboxConfigOptions,
     command: Vec<String>,
     config_overrides: CliConfigOverrides,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     sandbox_type: SandboxType,
     log_denials: bool,
     #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
@@ -214,7 +214,7 @@ async fn run_command_under_sandbox(
         .sandbox_state
         .sandbox_state_json
         .as_deref()
-        .map(serde_json::from_str::<codex_mcp::SandboxState>)
+        .map(serde_json::from_str::<ava_mcp::SandboxState>)
         .transpose()
         .map_err(|err| anyhow::anyhow!("invalid --sandbox-state-json value: {err}"))?;
     let sandbox_state_readable_root = config_options
@@ -222,7 +222,7 @@ async fn run_command_under_sandbox(
         .sandbox_state_readable_root
         .clone();
     let sandbox_state_disable_network = config_options.sandbox_state.sandbox_state_disable_network;
-    let codex_linux_sandbox_exe = match sandbox_state.as_ref() {
+    let ava_linux_sandbox_exe = match sandbox_state.as_ref() {
         Some(state) => {
             config_options.cwd = Some(
                 state
@@ -232,17 +232,17 @@ async fn run_command_under_sandbox(
                     .to_path_buf(),
             );
             state
-                .codex_linux_sandbox_exe
+                .ava_linux_sandbox_exe
                 .clone()
-                .or(codex_linux_sandbox_exe)
+                .or(ava_linux_sandbox_exe)
         }
-        None => codex_linux_sandbox_exe,
+        None => ava_linux_sandbox_exe,
     };
     let config = load_debug_sandbox_config(
         config_overrides
             .parse_overrides()
             .map_err(anyhow::Error::msg)?,
-        codex_linux_sandbox_exe,
+        ava_linux_sandbox_exe,
         config_options,
         /*strict_config*/ false,
     )
@@ -319,12 +319,12 @@ async fn run_command_under_sandbox(
     if let SandboxType::Windows = sandbox_type {
         #[cfg(target_os = "windows")]
         {
-            if config.permissions.windows_sandbox_type != codex_sandboxing::SandboxType::WindowsMxc
+            if config.permissions.windows_sandbox_type != ava_sandboxing::SandboxType::WindowsMxc
             {
                 let workspace_roots = config
                     .effective_workspace_roots()
                     .iter()
-                    .map(codex_utils_path_uri::PathUri::to_abs_path)
+                    .map(ava_utils_path_uri::PathUri::to_abs_path)
                     .collect::<std::io::Result<Vec<_>>>()
                     .context("invalid Windows sandbox workspace roots")?;
                 run_command_under_windows_session(
@@ -373,7 +373,7 @@ async fn run_command_under_sandbox(
     };
     let network = network_proxy
         .as_ref()
-        .map(codex_core::config::StartedNetworkProxy::proxy);
+        .map(ava_core::config::StartedNetworkProxy::proxy);
     // Proxy containment depends on whether a proxy is active, not whether its
     // policy came from managed requirements.
     #[cfg(any(target_os = "macos", target_os = "windows"))]
@@ -407,7 +407,7 @@ async fn run_command_under_sandbox(
             .map_err(|err| anyhow::anyhow!(err))?;
             // This CLI inherits the user's controlling terminal. Keep this deny
             // after every shared policy allowance so the child cannot queue input
-            // for the unsandboxed shell that resumes when Codex exits.
+            // for the unsandboxed shell that resumes when Ava exits.
             match args.as_mut_slice() {
                 [flag, policy, ..] if flag.as_str() == "-p" => {
                     policy.push_str("\n(deny file-ioctl (ioctl-command TIOCSTI))");
@@ -422,7 +422,7 @@ async fn run_command_under_sandbox(
                 network_sandbox_policy,
                 env,
                 |env_map| {
-                    env_map.insert(CODEX_SANDBOX_ENV_VAR.to_string(), "seatbelt".to_string());
+                    env_map.insert(AVA_SANDBOX_ENV_VAR.to_string(), "seatbelt".to_string());
                     if let Some(network) = network.as_ref() {
                         network.apply_to_env(env_map);
                     }
@@ -432,9 +432,9 @@ async fn run_command_under_sandbox(
         }
         SandboxType::Landlock => {
             #[expect(clippy::expect_used)]
-            let codex_linux_sandbox_exe = config
-                .codex_linux_sandbox_exe
-                .expect("codex-linux-sandbox executable not found");
+            let ava_linux_sandbox_exe = config
+                .ava_linux_sandbox_exe
+                .expect("ava-linux-sandbox executable not found");
             let network_sandbox_policy = runtime_permission_profile.network_sandbox_policy();
             let (env, managed_network) = if let Some(network) = network.as_ref() {
                 let prepared =
@@ -452,9 +452,9 @@ async fn run_command_under_sandbox(
                 managed_network.as_ref(),
             );
             spawn_debug_sandbox_child(
-                codex_linux_sandbox_exe,
+                ava_linux_sandbox_exe,
                 args,
-                Some("codex-linux-sandbox"),
+                Some("ava-linux-sandbox"),
                 cwd.to_path_buf(),
                 network_sandbox_policy,
                 env,
@@ -468,16 +468,16 @@ async fn run_command_under_sandbox(
         }
         #[cfg(target_os = "windows")]
         SandboxType::Windows => {
-            use codex_sandboxing::SandboxCommand;
-            use codex_sandboxing::SandboxManager;
-            use codex_sandboxing::SandboxTransformRequest;
-            use codex_utils_path_uri::PathUri;
+            use ava_sandboxing::SandboxCommand;
+            use ava_sandboxing::SandboxManager;
+            use ava_sandboxing::SandboxTransformRequest;
+            use ava_utils_path_uri::PathUri;
 
             let (program, args) = command
                 .split_first()
                 .context("sandbox command must not be empty")?;
             let sandbox_policy_cwd = PathUri::from_abs_path(&sandbox_policy_cwd);
-            let codex_self_exe = std::env::current_exe()?;
+            let ava_self_exe = std::env::current_exe()?;
             let request = SandboxManager::new().transform(SandboxTransformRequest {
                 command: SandboxCommand {
                     program: program.into(),
@@ -488,14 +488,14 @@ async fn run_command_under_sandbox(
                     additional_permissions: None,
                 },
                 permissions: &runtime_permission_profile,
-                sandbox: codex_sandboxing::SandboxType::WindowsMxc,
+                sandbox: ava_sandboxing::SandboxType::WindowsMxc,
                 enforce_managed_network,
                 environment_id: None,
                 network: network.as_ref(),
                 sandbox_policy_cwd: &sandbox_policy_cwd,
-                sandbox_exe: Some(codex_self_exe.as_path()),
+                sandbox_exe: Some(ava_self_exe.as_path()),
                 use_legacy_landlock: false,
-                windows_sandbox_level: codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+                windows_sandbox_level: ava_protocol::config_types::WindowsSandboxLevel::Disabled,
             })?;
             let (program, args) = request
                 .command
@@ -546,12 +546,12 @@ async fn run_command_under_windows_session(
     workspace_roots: Vec<AbsolutePathBuf>,
     env: std::collections::HashMap<String, String>,
 ) -> ! {
-    use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-    use codex_protocol::config_types::WindowsSandboxLevel;
-    use codex_windows_sandbox::WindowsSandboxProxySettingsMode;
-    use codex_windows_sandbox::WindowsSandboxSessionRequest;
-    use codex_windows_sandbox::resolve_windows_deny_read_paths;
-    use codex_windows_sandbox::spawn_windows_sandbox_session_for_level;
+    use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+    use ava_protocol::config_types::WindowsSandboxLevel;
+    use ava_windows_sandbox::WindowsSandboxProxySettingsMode;
+    use ava_windows_sandbox::WindowsSandboxSessionRequest;
+    use ava_windows_sandbox::resolve_windows_deny_read_paths;
+    use ava_windows_sandbox::spawn_windows_sandbox_session_for_level;
 
     // Setup reconciles persistent deny ACLs against this list. An empty list
     // would discard the profile's denies, including on subsequent launches.
@@ -570,7 +570,7 @@ async fn run_command_under_windows_session(
     let spawned = spawn_windows_sandbox_session_for_level(WindowsSandboxSessionRequest {
         permission_profile,
         workspace_roots: workspace_roots.as_slice(),
-        codex_home: config.codex_home.as_path(),
+        ava_home: config.ava_home.as_path(),
         command,
         cwd: cwd.as_path(),
         env_map: env,
@@ -597,7 +597,7 @@ async fn run_command_under_windows_session(
         }
     };
 
-    let exit_code = codex_windows_sandbox::forward_sandbox_session_stdio(spawned).await;
+    let exit_code = ava_windows_sandbox::forward_sandbox_session_stdio(spawned).await;
     std::process::exit(exit_code);
 }
 
@@ -622,7 +622,7 @@ async fn spawn_debug_sandbox_child(
     cmd.envs(env);
 
     if !network_sandbox_policy.is_enabled() {
-        cmd.env(CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR, "1");
+        cmd.env(AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR, "1");
     }
 
     cmd.stdin(Stdio::inherit())
@@ -634,34 +634,34 @@ async fn spawn_debug_sandbox_child(
 
 async fn load_debug_sandbox_config(
     cli_overrides: Vec<(String, TomlValue)>,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     options: DebugSandboxConfigOptions,
     strict_config: bool,
 ) -> anyhow::Result<Config> {
     let cloud_config_bundle = cloud_config::bootstrap_cloud_config_bundle(
         &cli_overrides,
         &options,
-        find_codex_home,
+        find_ava_home,
         strict_config,
     )
     .await?;
 
-    load_debug_sandbox_config_with_codex_home(
+    load_debug_sandbox_config_with_ava_home(
         cli_overrides,
-        codex_linux_sandbox_exe,
+        ava_linux_sandbox_exe,
         options,
-        /*codex_home*/ None,
+        /*ava_home*/ None,
         cloud_config_bundle,
         strict_config,
     )
     .await
 }
 
-async fn load_debug_sandbox_config_with_codex_home(
+async fn load_debug_sandbox_config_with_ava_home(
     cli_overrides: Vec<(String, TomlValue)>,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     options: DebugSandboxConfigOptions,
-    codex_home: Option<PathBuf>,
+    ava_home: Option<PathBuf>,
     cloud_config_bundle: CloudConfigBundleLoader,
     strict_config: bool,
 ) -> anyhow::Result<Config> {
@@ -681,7 +681,7 @@ async fn load_debug_sandbox_config_with_codex_home(
         ));
     }
 
-    // For legacy configs, `codex sandbox` historically defaulted to read-only
+    // For legacy configs, `ava sandbox` historically defaulted to read-only
     // instead of inheriting ambient `sandbox_mode` settings from user/system
     // config. Keep that behavior unless this invocation explicitly passes a
     // legacy `sandbox_mode` CLI override for compatibility with older callers.
@@ -690,10 +690,10 @@ async fn load_debug_sandbox_config_with_codex_home(
         cli_overrides.clone(),
         ConfigOverrides {
             cwd: cwd.clone(),
-            codex_linux_sandbox_exe: codex_linux_sandbox_exe.clone(),
+            ava_linux_sandbox_exe: ava_linux_sandbox_exe.clone(),
             ..Default::default()
         },
-        codex_home.clone(),
+        ava_home.clone(),
         managed_requirements_mode,
         loader_overrides.clone(),
         cloud_config_bundle.clone(),
@@ -710,10 +710,10 @@ async fn load_debug_sandbox_config_with_codex_home(
         ConfigOverrides {
             sandbox_mode: Some(SandboxMode::ReadOnly),
             cwd,
-            codex_linux_sandbox_exe,
+            ava_linux_sandbox_exe,
             ..Default::default()
         },
-        codex_home,
+        ava_home,
         managed_requirements_mode,
         loader_overrides,
         cloud_config_bundle,
@@ -726,7 +726,7 @@ async fn load_debug_sandbox_config_with_codex_home(
 async fn build_debug_sandbox_config_with_loader_overrides(
     cli_overrides: Vec<(String, TomlValue)>,
     harness_overrides: ConfigOverrides,
-    codex_home: Option<PathBuf>,
+    ava_home: Option<PathBuf>,
     managed_requirements_mode: ManagedRequirementsMode,
     mut loader_overrides: LoaderOverrides,
     cloud_config_bundle: CloudConfigBundleLoader,
@@ -741,10 +741,10 @@ async fn build_debug_sandbox_config_with_loader_overrides(
         loader_overrides.ignore_managed_requirements = true;
     }
     builder = builder.loader_overrides(loader_overrides);
-    if let Some(codex_home) = codex_home {
+    if let Some(ava_home) = ava_home {
         builder = builder
-            .codex_home(codex_home.clone())
-            .fallback_cwd(Some(codex_home));
+            .ava_home(ava_home.clone())
+            .fallback_cwd(Some(ava_home));
     }
     builder.build().await
 }
@@ -764,8 +764,8 @@ fn cli_overrides_use_legacy_sandbox_mode(cli_overrides: &[(String, TomlValue)]) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_config::ConfigRequirementsToml;
-    use codex_config::test_support::CloudConfigBundleFixture;
+    use ava_config::ConfigRequirementsToml;
+    use ava_config::test_support::CloudConfigBundleFixture;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
@@ -785,14 +785,14 @@ enabled = true
     async fn build_debug_sandbox_config(
         cli_overrides: Vec<(String, TomlValue)>,
         harness_overrides: ConfigOverrides,
-        codex_home: Option<PathBuf>,
+        ava_home: Option<PathBuf>,
         managed_requirements_mode: ManagedRequirementsMode,
         strict_config: bool,
     ) -> std::io::Result<Config> {
         build_debug_sandbox_config_with_loader_overrides(
             cli_overrides,
             harness_overrides,
-            codex_home,
+            ava_home,
             managed_requirements_mode,
             LoaderOverrides::default(),
             CloudConfigBundleLoader::default(),
@@ -806,12 +806,12 @@ enabled = true
     }
 
     fn write_permissions_profile_config(
-        codex_home: &TempDir,
+        ava_home: &TempDir,
         docs: &std::path::Path,
         private: &std::path::Path,
     ) -> std::io::Result<()> {
         write_permissions_profile_config_to_path(
-            &codex_home.path().join("config.toml"),
+            &ava_home.path().join("config.toml"),
             docs,
             private,
         )
@@ -841,17 +841,17 @@ enabled = true
 
     #[tokio::test]
     async fn debug_sandbox_honors_active_permission_profiles() -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let sandbox_paths = TempDir::new()?;
         let docs = sandbox_paths.path().join("docs");
         let private = docs.join("private");
-        write_permissions_profile_config(&codex_home, &docs, &private)?;
-        let codex_home_path = codex_home.path().to_path_buf();
+        write_permissions_profile_config(&ava_home, &docs, &private)?;
+        let ava_home_path = ava_home.path().to_path_buf();
 
         let profile_config = build_debug_sandbox_config(
             Vec::new(),
             ConfigOverrides::default(),
-            Some(codex_home_path.clone()),
+            Some(ava_home_path.clone()),
             ManagedRequirementsMode::Include,
             /*strict_config*/ false,
         )
@@ -862,15 +862,15 @@ enabled = true
                 sandbox_mode: Some(SandboxMode::ReadOnly),
                 ..Default::default()
             },
-            Some(codex_home_path.clone()),
+            Some(ava_home_path.clone()),
             ManagedRequirementsMode::Include,
             /*strict_config*/ false,
         )
         .await?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: None,
@@ -878,7 +878,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Include,
                 loader_overrides: LoaderOverrides::default(),
             },
-            Some(codex_home_path),
+            Some(ava_home_path),
             CloudConfigBundleLoader::default(),
             /*strict_config*/ false,
         )
@@ -904,13 +904,13 @@ enabled = true
 
     #[tokio::test]
     async fn debug_sandbox_honors_config_profile_loader_overrides() -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let sandbox_paths = TempDir::new()?;
         let docs = sandbox_paths.path().join("docs");
         let private = docs.join("private");
-        let profile_path = codex_home.path().join("work.config.toml");
+        let profile_path = ava_home.path().join("work.config.toml");
         write_permissions_profile_config_to_path(&profile_path, &docs, &private)?;
-        let codex_home_path = codex_home.path().to_path_buf();
+        let ava_home_path = ava_home.path().to_path_buf();
         let loader_overrides = LoaderOverrides {
             user_config_path: Some(AbsolutePathBuf::from_absolute_path(&profile_path)?),
             user_config_profile: Some("work".parse().expect("profile name should parse")),
@@ -920,7 +920,7 @@ enabled = true
         let profile_config = build_debug_sandbox_config_with_loader_overrides(
             Vec::new(),
             ConfigOverrides::default(),
-            Some(codex_home_path.clone()),
+            Some(ava_home_path.clone()),
             ManagedRequirementsMode::Include,
             loader_overrides.clone(),
             CloudConfigBundleLoader::default(),
@@ -933,15 +933,15 @@ enabled = true
                 sandbox_mode: Some(SandboxMode::ReadOnly),
                 ..Default::default()
             },
-            Some(codex_home_path.clone()),
+            Some(ava_home_path.clone()),
             ManagedRequirementsMode::Include,
             /*strict_config*/ false,
         )
         .await?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: None,
@@ -949,7 +949,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Include,
                 loader_overrides,
             },
-            Some(codex_home_path),
+            Some(ava_home_path),
             CloudConfigBundleLoader::default(),
             /*strict_config*/ false,
         )
@@ -971,8 +971,8 @@ enabled = true
 
     #[tokio::test]
     async fn debug_sandbox_honors_explicit_legacy_sandbox_mode() -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
-        let codex_home_path = codex_home.path().to_path_buf();
+        let ava_home = TempDir::new()?;
+        let ava_home_path = ava_home.path().to_path_buf();
         let cli_overrides = vec![(
             "sandbox_mode".to_string(),
             TomlValue::String("workspace-write".to_string()),
@@ -981,7 +981,7 @@ enabled = true
         let workspace_write_config = build_debug_sandbox_config(
             cli_overrides.clone(),
             ConfigOverrides::default(),
-            Some(codex_home_path.clone()),
+            Some(ava_home_path.clone()),
             ManagedRequirementsMode::Include,
             /*strict_config*/ false,
         )
@@ -992,15 +992,15 @@ enabled = true
                 sandbox_mode: Some(SandboxMode::ReadOnly),
                 ..Default::default()
             },
-            Some(codex_home_path.clone()),
+            Some(ava_home_path.clone()),
             ManagedRequirementsMode::Include,
             /*strict_config*/ false,
         )
         .await?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             cli_overrides,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: None,
@@ -1008,7 +1008,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Include,
                 loader_overrides: LoaderOverrides::default(),
             },
-            Some(codex_home_path),
+            Some(ava_home_path),
             CloudConfigBundleLoader::default(),
             /*strict_config*/ false,
         )
@@ -1043,8 +1043,8 @@ enabled = true
 
     #[tokio::test]
     async fn debug_sandbox_defaults_legacy_configs_to_read_only() -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
-        let codex_home_path = codex_home.path().to_path_buf();
+        let ava_home = TempDir::new()?;
+        let ava_home_path = ava_home.path().to_path_buf();
 
         let read_only_config = build_debug_sandbox_config(
             Vec::new(),
@@ -1052,15 +1052,15 @@ enabled = true
                 sandbox_mode: Some(SandboxMode::ReadOnly),
                 ..Default::default()
             },
-            Some(codex_home_path.clone()),
+            Some(ava_home_path.clone()),
             ManagedRequirementsMode::Include,
             /*strict_config*/ false,
         )
         .await?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: None,
@@ -1068,7 +1068,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Include,
                 loader_overrides: LoaderOverrides::default(),
             },
-            Some(codex_home_path),
+            Some(ava_home_path),
             CloudConfigBundleLoader::default(),
             /*strict_config*/ false,
         )
@@ -1085,11 +1085,11 @@ enabled = true
 
     #[tokio::test]
     async fn debug_sandbox_honors_explicit_builtin_permission_profile() -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: Some(":workspace".to_string()),
@@ -1097,7 +1097,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Ignore,
                 loader_overrides: LoaderOverrides::default(),
             },
-            Some(codex_home.path().to_path_buf()),
+            Some(ava_home.path().to_path_buf()),
             CloudConfigBundleLoader::default(),
             /*strict_config*/ false,
         )
@@ -1107,7 +1107,7 @@ enabled = true
             .permissions
             .permission_profile()
             .file_system_sandbox_policy();
-        let expected = codex_protocol::models::PermissionProfile::workspace_write()
+        let expected = ava_protocol::models::PermissionProfile::workspace_write()
             .file_system_sandbox_policy();
         assert!(
             expected
@@ -1123,11 +1123,11 @@ enabled = true
     #[tokio::test]
     async fn debug_sandbox_honors_explicit_cloud_managed_permission_profile() -> anyhow::Result<()>
     {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: Some("managed-cloud".to_string()),
@@ -1135,7 +1135,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Include,
                 loader_overrides: LoaderOverrides::without_managed_config_for_tests(),
             },
-            Some(codex_home.path().to_path_buf()),
+            Some(ava_home.path().to_path_buf()),
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 CLOUD_MANAGED_PERMISSION_PROFILE_REQUIREMENTS,
             ),
@@ -1167,11 +1167,11 @@ enabled = true
     #[tokio::test]
     async fn debug_sandbox_ignores_cloud_managed_permission_profiles_by_default()
     -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: Some(":workspace".to_string()),
@@ -1179,7 +1179,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Ignore,
                 loader_overrides: LoaderOverrides::without_managed_config_for_tests(),
             },
-            Some(codex_home.path().to_path_buf()),
+            Some(ava_home.path().to_path_buf()),
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 CLOUD_MANAGED_PERMISSION_PROFILE_REQUIREMENTS,
             ),
@@ -1208,15 +1208,15 @@ enabled = true
 
     #[tokio::test]
     async fn debug_sandbox_honors_explicit_named_permission_profile() -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let sandbox_paths = TempDir::new()?;
         let docs = sandbox_paths.path().join("docs");
         let private = docs.join("private");
-        write_permissions_profile_config(&codex_home, &docs, &private)?;
+        write_permissions_profile_config(&ava_home, &docs, &private)?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: Some("limited-read-test".to_string()),
@@ -1224,7 +1224,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Ignore,
                 loader_overrides: LoaderOverrides::default(),
             },
-            Some(codex_home.path().to_path_buf()),
+            Some(ava_home.path().to_path_buf()),
             CloudConfigBundleLoader::default(),
             /*strict_config*/ false,
         )
@@ -1236,7 +1236,7 @@ enabled = true
                 TomlValue::String("limited-read-test".to_string()),
             )],
             ConfigOverrides::default(),
-            Some(codex_home.path().to_path_buf()),
+            Some(ava_home.path().to_path_buf()),
             ManagedRequirementsMode::Include,
             /*strict_config*/ false,
         )
@@ -1252,12 +1252,12 @@ enabled = true
 
     #[tokio::test]
     async fn debug_sandbox_uses_explicit_cwd() -> anyhow::Result<()> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let cwd = TempDir::new()?;
 
-        let config = load_debug_sandbox_config_with_codex_home(
+        let config = load_debug_sandbox_config_with_ava_home(
             Vec::new(),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
             DebugSandboxConfigOptions {
                 sandbox_state: Default::default(),
                 permissions_profile: Some(":workspace".to_string()),
@@ -1265,7 +1265,7 @@ enabled = true
                 managed_requirements_mode: ManagedRequirementsMode::Ignore,
                 loader_overrides: LoaderOverrides::default(),
             },
-            Some(codex_home.path().to_path_buf()),
+            Some(ava_home.path().to_path_buf()),
             CloudConfigBundleLoader::default(),
             /*strict_config*/ false,
         )

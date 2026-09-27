@@ -7,16 +7,16 @@ use crate::app::tests::session_lifecycle_requests::start_recording_realtime_spee
 use crate::app::tests::session_lifecycle_requests::start_recording_remote_app_server;
 use crate::chatwidget::commit_realtime_history_events;
 use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_protocol::models::MessagePhase;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_protocol::models::MessagePhase;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 
@@ -106,7 +106,7 @@ async fn check_remote_voice_start(
             /*failed_thread_name*/ None,
             crate::app_server_session::ThreadParamsMode::Remote,
             RealtimeRequestBehavior::AcceptStart,
-            codex_config::LoaderOverrides::default(),
+            ava_config::LoaderOverrides::default(),
         )
         .await?;
     let thread_id = ThreadId::new();
@@ -118,7 +118,7 @@ async fn check_remote_voice_start(
         &mut tui,
         &mut app_server,
         AppEvent::PersistRealtimeVoiceSelection {
-            voice: codex_protocol::protocol::RealtimeVoice::Juniper,
+            voice: ava_protocol::protocol::RealtimeVoice::Juniper,
         },
     ))
     .await?;
@@ -129,8 +129,8 @@ async fn check_remote_voice_start(
                 app.chat_widget.config_ref().realtime.voice
             ),
             (
-                Some(codex_protocol::protocol::RealtimeVoice::Juniper),
-                Some(codex_protocol::protocol::RealtimeVoice::Juniper)
+                Some(ava_protocol::protocol::RealtimeVoice::Juniper),
+                Some(ava_protocol::protocol::RealtimeVoice::Juniper)
             )
         );
     }
@@ -140,18 +140,18 @@ async fn check_remote_voice_start(
     );
     if expected_voice != Some("juniper") {
         std::fs::write(
-            app.config.codex_home.join("config.toml"),
+            app.config.ava_home.join("config.toml"),
             "[realtime]\ntype = \"conversational\"\n",
         )?;
     }
     // A reconnected TUI can retain a different local preference from its server.
-    app.config.realtime.voice = Some(codex_protocol::protocol::RealtimeVoice::Maple);
+    app.config.realtime.voice = Some(ava_protocol::protocol::RealtimeVoice::Maple);
     app.chat_widget
-        .on_realtime_voice_saved(codex_protocol::protocol::RealtimeVoice::Maple);
+        .on_realtime_voice_saved(ava_protocol::protocol::RealtimeVoice::Maple);
     Box::pin(app.handle_event(
         &mut tui,
         &mut app_server,
-        AppEvent::CodexOp(Op::RealtimeConversationStart {
+        AppEvent::AvaOp(Op::RealtimeConversationStart {
             thread_id,
             offer_sdp: String::from("v=0\r\n").into(),
         }),
@@ -317,7 +317,7 @@ async fn switching_agent_threads_stops_backend_voice_once_through_app_server() -
     app.enqueue_thread_notification(
         source,
         ServerNotification::ThreadRealtimeTranscriptDone(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                 thread_id: source.to_string(),
                 role: "user".into(),
                 text: "queued before switch".into(),
@@ -367,7 +367,7 @@ async fn switching_threads_keeps_the_source_voice_partial_only_on_reattach() {
     crate::chatwidget::activate_voice_for_thread(&mut app.chat_widget, source);
     app.chat_widget.handle_server_notification(
         ServerNotification::ThreadRealtimeTranscriptDelta(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
                 thread_id: source.to_string(),
                 role: "user".into(),
                 delta: "spoken partial".into(),
@@ -403,7 +403,7 @@ async fn switching_threads_keeps_the_source_voice_partial_only_on_reattach() {
     assert!(!app.pending_realtime_transcript_replay.contains_key(&source));
     app.chat_widget.handle_server_notification(
         ServerNotification::ThreadRealtimeTranscriptDone(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                 thread_id: source.to_string(),
                 role: "user".into(),
                 text: "spoken partial completed".into(),
@@ -476,7 +476,7 @@ async fn queued_voice_caption_after_switch_returns_once_to_its_source_thread() {
     app.enqueue_thread_notification(
         source,
         ServerNotification::ThreadRealtimeTranscriptDone(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                 thread_id: source.to_string(),
                 role: "assistant".into(),
                 text: "arrived after two switches".into(),
@@ -488,21 +488,21 @@ async fn queued_voice_caption_after_switch_returns_once_to_its_source_thread() {
 
     for notification in [
         ServerNotification::ThreadRealtimeTranscriptDelta(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
                 thread_id: source.to_string(),
                 role: "user".into(),
                 delta: "last ".into(),
             },
         ),
         ServerNotification::ThreadRealtimeTranscriptDelta(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
                 thread_id: source.to_string(),
                 role: "user".into(),
                 delta: "words".into(),
             },
         ),
         ServerNotification::ThreadRealtimeTranscriptDone(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                 thread_id: source.to_string(),
                 role: "user".into(),
                 text: "last words".into(),
@@ -516,7 +516,7 @@ async fn queued_voice_caption_after_switch_returns_once_to_its_source_thread() {
     app.enqueue_thread_notification(
         source,
         ServerNotification::ThreadRealtimeTranscriptDelta(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification {
                 thread_id: source.to_string(),
                 role: "assistant".into(),
                 delta: "discarded partial".into(),
@@ -528,7 +528,7 @@ async fn queued_voice_caption_after_switch_returns_once_to_its_source_thread() {
     app.enqueue_thread_notification(
         source,
         ServerNotification::ThreadRealtimeTranscriptDone(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                 thread_id: source.to_string(),
                 role: "assistant".into(),
                 text: String::new(),
@@ -719,7 +719,7 @@ async fn inactive_voice_replay_is_bounded_and_discarded_with_its_thread() {
         app.retain_inactive_realtime_transcript(
             *thread_id,
             &ServerNotification::ThreadRealtimeTranscriptDone(
-                codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+                ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                     thread_id: thread_id.to_string(),
                     role: "assistant".into(),
                     text: format!("caption {index}"),
@@ -939,7 +939,7 @@ async fn completed_voice_caption_survives_repeated_thread_replacement() {
     crate::chatwidget::activate_voice_for_thread(&mut app.chat_widget, source);
     app.chat_widget.handle_server_notification(
         ServerNotification::ThreadRealtimeTranscriptDone(
-            codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+            ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                 thread_id: source.to_string(),
                 role: "assistant".into(),
                 text: "spoken complete".into(),
@@ -1040,7 +1040,7 @@ async fn inactive_caption_precedes_later_buffered_turn_without_start_event() {
         app.retain_inactive_realtime_transcript(
             source,
             &ServerNotification::ThreadRealtimeTranscriptDone(
-                codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
+                ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification {
                     thread_id: source.to_string(),
                     role: "assistant".into(),
                     text: "Earlier spoken answer".into(),
@@ -1060,7 +1060,7 @@ async fn inactive_caption_precedes_later_buffered_turn_without_start_event() {
                 .events
                 .push(ThreadBufferedEvent::Notification(Box::new(
                     ServerNotification::AgentMessageDelta(
-                        codex_app_server_protocol::AgentMessageDeltaNotification {
+                        ava_app_server_protocol::AgentMessageDeltaNotification {
                             thread_id: source.to_string(),
                             turn_id: "later-turn".into(),
                             item_id: "later-answer".into(),
@@ -1163,7 +1163,7 @@ async fn rejected_realtime_speech_restores_the_delegated_final_answer() -> Resul
     };
     while events.try_recv().is_ok() {}
     let mut tui = crate::tui::test_support::make_test_tui()?;
-    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(speech))).await?;
+    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(speech))).await?;
     assert_eq!(
         recorded_params(&requests, "thread/realtime/appendSpeech").len(),
         1
@@ -1268,7 +1268,7 @@ async fn switching_threads_retains_undelivered_voice_answer_after_replay_evictio
     app.app_event_tx = crate::app_event_sender::AppEventSender::new(replacement_tx);
 
     let mut tui = crate::tui::test_support::make_test_tui()?;
-    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(speech))).await?;
+    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(speech))).await?;
     assert!(recorded_params(&requests, "thread/realtime/appendSpeech").is_empty());
     while let Ok(event) = side_events.try_recv() {
         if let AppEvent::InsertHistoryCell(cell) = event {
@@ -1531,7 +1531,7 @@ async fn delegated_final_speech_reaches_app_server_once_and_stale_speech_is_reje
     );
     assert!(ops.try_recv().is_err());
     let mut tui = crate::tui::test_support::make_test_tui()?;
-    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(speech.clone())))
+    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(speech.clone())))
         .await?;
     assert!(!app.chat_widget.has_pending_realtime_speech(delivery_id));
     assert_eq!(
@@ -1547,7 +1547,7 @@ async fn delegated_final_speech_reaches_app_server_once_and_stale_speech_is_reje
         typed,
         ItemEventKind::Started,
     );
-    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(speech))).await?;
+    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(speech))).await?;
     assert_eq!(
         recorded_params(&requests, "thread/realtime/appendSpeech").len(),
         1
@@ -1610,7 +1610,7 @@ async fn delegated_final_speech_reaches_app_server_once_and_stale_speech_is_reje
         !app.chat_widget
             .has_pending_realtime_speech(queued_delivery_id)
     );
-    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(queued))).await?;
+    Box::pin(app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(queued))).await?;
     assert_eq!(
         recorded_params(&requests, "thread/realtime/appendSpeech").len(),
         1
@@ -1647,13 +1647,13 @@ async fn rejected_voice_setting_preserves_current_selection() -> Result<()> {
         app.config.realtime.voice,
         app.chat_widget.config_ref().realtime.voice,
     );
-    std::fs::write(app.config.codex_home.join("config.toml"), "realtime = [")?;
+    std::fs::write(app.config.ava_home.join("config.toml"), "realtime = [")?;
     let mut tui = crate::tui::test_support::make_test_tui()?;
     Box::pin(app.handle_event(
         &mut tui,
         &mut app_server,
         AppEvent::PersistRealtimeVoiceSelection {
-            voice: codex_protocol::protocol::RealtimeVoice::Juniper,
+            voice: ava_protocol::protocol::RealtimeVoice::Juniper,
         },
     ))
     .await?;
@@ -1687,7 +1687,7 @@ async fn rejected_voice_setting_preserves_current_selection() -> Result<()> {
 async fn remote_voice_config_read_failure_does_not_start_with_local_voice() -> Result<()> {
     let (mut app, _events, _ops) = make_test_app_with_channels().await;
     let (mut app_server, requests, proxy) = start_recording_remote_app_server(&app.config).await?;
-    std::fs::write(app.config.codex_home.join("config.toml"), "realtime = [")?;
+    std::fs::write(app.config.ava_home.join("config.toml"), "realtime = [")?;
     let thread_id = ThreadId::new();
     let error = app
         .try_submit_active_thread_op_via_app_server(
@@ -1709,20 +1709,20 @@ async fn remote_voice_config_read_failure_does_not_start_with_local_voice() -> R
 
 #[tokio::test]
 async fn embedded_voice_settings_follow_project_after_thread_switch() -> Result<()> {
-    use codex_protocol::protocol::RealtimeVoice;
+    use ava_protocol::protocol::RealtimeVoice;
     let (mut app, _events, _ops) = make_test_app_with_channels().await;
     let projects = tempfile::tempdir()?;
     for voice in [RealtimeVoice::Maple, RealtimeVoice::Sol] {
         let cwd = projects.path().join(voice.wire_name());
-        std::fs::create_dir_all(cwd.join(".codex"))?;
+        std::fs::create_dir_all(cwd.join(".ava-code"))?;
         std::fs::write(
-            cwd.join(".codex/config.toml"),
+            cwd.join(".ava-code/config.toml"),
             format!("[realtime]\nvoice = \"{}\"\n", voice.wire_name()),
         )?;
         crate::legacy_core::config::set_project_trust_level(
-            &app.config.codex_home,
+            &app.config.ava_home,
             &cwd,
-            codex_protocol::config_types::TrustLevel::Trusted,
+            ava_protocol::config_types::TrustLevel::Trusted,
         )
         .map_err(|error| color_eyre::eyre::eyre!(error.to_string()))?;
     }
@@ -1783,11 +1783,11 @@ async fn embedded_voice_settings_follow_project_after_thread_switch() -> Result<
 async fn remote_voice_picker_reads_server_preference() -> Result<()> {
     let (mut app, _events, _ops) = make_test_app_with_channels().await;
     std::fs::write(
-        app.config.codex_home.join("config.toml"),
+        app.config.ava_home.join("config.toml"),
         "[realtime]\nvoice = \"sol\"\n",
     )?;
     app.chat_widget
-        .set_realtime_voice(Some(codex_protocol::protocol::RealtimeVoice::Maple));
+        .set_realtime_voice(Some(ava_protocol::protocol::RealtimeVoice::Maple));
     let (server, requests, proxy) = start_recording_remote_app_server(&app.config).await?;
     app.open_realtime_settings(&server).await;
     assert_eq!(
@@ -1819,7 +1819,7 @@ async fn remote_voice_picker_uses_server_catalog_and_falls_back_when_unavailable
                 /*failed_thread_name*/ None,
                 crate::app_server_session::ThreadParamsMode::Remote,
                 RealtimeRequestBehavior::Forward,
-                codex_config::LoaderOverrides::default(),
+                ava_config::LoaderOverrides::default(),
             )
             .await?;
         app.open_realtime_settings(&server).await;
@@ -1848,15 +1848,15 @@ async fn overridden_voice_save_keeps_effective_voice() -> Result<()> {
         let (mut app, mut events, _ops) = make_test_app_with_channels().await;
         let project = tempfile::tempdir()?;
         let overrides = if project_override {
-            std::fs::create_dir_all(project.path().join(".codex"))?;
+            std::fs::create_dir_all(project.path().join(".ava-code"))?;
             std::fs::write(
-                project.path().join(".codex/config.toml"),
+                project.path().join(".ava-code/config.toml"),
                 "[realtime]\nvoice = \"maple\"\n",
             )?;
             crate::legacy_core::config::set_project_trust_level(
-                &app.config.codex_home,
+                &app.config.ava_home,
                 project.path(),
-                codex_protocol::config_types::TrustLevel::Trusted,
+                ava_protocol::config_types::TrustLevel::Trusted,
             )
             .map_err(|error| color_eyre::eyre::eyre!(error.to_string()))?;
             app.config.cwd = AbsolutePathBuf::from_absolute_path(project.path())?;
@@ -1873,24 +1873,24 @@ async fn overridden_voice_save_keeps_effective_voice() -> Result<()> {
             )]
         };
         let client = crate::start_embedded_app_server(
-            codex_arg0::Arg0DispatchPaths::default(),
+            ava_arg0::Arg0DispatchPaths::default(),
             app.config.clone(),
             overrides,
-            codex_config::LoaderOverrides::without_managed_config_for_tests(),
+            ava_config::LoaderOverrides::without_managed_config_for_tests(),
             /*strict_config*/ false,
-            codex_config::CloudConfigBundleLoader::default(),
-            codex_feedback::CodexFeedback::new(),
+            ava_config::CloudConfigBundleLoader::default(),
+            ava_feedback::AvaFeedback::new(),
             /*log_db*/ None,
             /*state_db*/ None,
-            Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+            Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         )
         .await?;
         let server = AppServerSession::new(
-            codex_app_server_client::AppServerClient::InProcess(client),
+            ava_app_server_client::AppServerClient::InProcess(client),
             crate::app_server_session::ThreadParamsMode::Embedded,
         );
         while events.try_recv().is_ok() {}
-        app.persist_realtime_voice(&server, codex_protocol::protocol::RealtimeVoice::Juniper)
+        app.persist_realtime_voice(&server, ava_protocol::protocol::RealtimeVoice::Juniper)
             .await;
         assert_eq!(
             (
@@ -1898,8 +1898,8 @@ async fn overridden_voice_save_keeps_effective_voice() -> Result<()> {
                 app.chat_widget.config_ref().realtime.voice
             ),
             (
-                Some(codex_protocol::protocol::RealtimeVoice::Maple),
-                Some(codex_protocol::protocol::RealtimeVoice::Maple)
+                Some(ava_protocol::protocol::RealtimeVoice::Maple),
+                Some(ava_protocol::protocol::RealtimeVoice::Maple)
             ),
         );
         let message = std::iter::from_fn(|| events.try_recv().ok())

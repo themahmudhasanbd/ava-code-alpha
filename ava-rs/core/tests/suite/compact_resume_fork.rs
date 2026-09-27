@@ -2,7 +2,7 @@
 //!
 //! Each test sets up a mocked SSE conversation and drives the conversation through
 //! a specific sequence of operations. After every operation we capture the
-//! request payload that Codex would send to the model and assert that the
+//! request payload that Ava would send to the model and assert that the
 //! model-visible history matches the expected sequence of messages.
 
 use super::compact::COMPACT_WARNING_MESSAGE;
@@ -10,22 +10,22 @@ use super::compact::FIRST_REPLY;
 use super::compact::SUMMARY_TEXT;
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::CodexThread;
-use codex_core::ThreadManager;
-use codex_core::TurnInputRequest;
-use codex_core::compact::SUMMARIZATION_PROMPT;
-use codex_core::config::Config;
-use codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_history::CodexHarnessMetadata;
-use codex_history::RolloutItem;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::WarningEvent;
-use codex_protocol::user_input::UserInput;
+use ava_core::AvaThread;
+use ava_core::ThreadManager;
+use ava_core::TurnInputRequest;
+use ava_core::compact::SUMMARIZATION_PROMPT;
+use ava_core::config::Config;
+use ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_history::AvaHarnessMetadata;
+use ava_history::RolloutItem;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::WarningEvent;
+use ava_protocol::user_input::UserInput;
 use core_test_support::ThreadIdle;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::ResponsesRequest;
@@ -34,7 +34,7 @@ use core_test_support::responses::ev_completed;
 use core_test_support::responses::mount_sse_once_match;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -48,7 +48,7 @@ const AFTER_SECOND_RESUME: &str = "AFTER_SECOND_RESUME";
 const CHECKPOINT_METADATA_KEY: &str = "replacement_history_metadata";
 
 fn network_disabled() -> bool {
-    std::env::var(CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok()
+    std::env::var(AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok()
 }
 
 fn body_contains_text(body: &str, text: &str) -> bool {
@@ -85,7 +85,7 @@ fn seed_first_checkpoint_harness_metadata(path: &Path, retained_text: &str) -> R
     let mut lines = std::fs::read_to_string(path)?
         .lines()
         .filter(|line| !line.trim().is_empty())
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<Result<Vec<_>, _>>()?;
     let replacement_history = lines
         .iter_mut()
@@ -99,7 +99,7 @@ fn seed_first_checkpoint_harness_metadata(path: &Path, retained_text: &str) -> R
         .find(|envelope| response_message_contains_text(&envelope.item, retained_text))
         .context("retained user message missing from first compacted checkpoint")?;
     for envelope in replacement_history {
-        envelope.metadata = Some(CodexHarnessMetadata::default());
+        envelope.metadata = Some(AvaHarnessMetadata::default());
     }
 
     let rewritten = lines
@@ -118,7 +118,7 @@ fn assert_latest_checkpoint_retains_harness_metadata(
     let replacement_history = std::fs::read_to_string(path)?
         .lines()
         .filter(|line| !line.trim().is_empty())
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .rev()
@@ -614,12 +614,12 @@ async fn mount_second_compact_sequence(server: &MockServer) -> ResponseMock {
 async fn start_test_conversation(
     server: &MockServer,
     model: Option<&str>,
-) -> (Arc<TempDir>, Config, Arc<ThreadManager>, Arc<CodexThread>) {
+) -> (Arc<TempDir>, Config, Arc<ThreadManager>, Arc<AvaThread>) {
     let base_url = format!("{}/v1", server.uri());
     let model = model.map(str::to_string);
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.thread_lifecycle_contributor(Arc::new(ThreadIdle));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(move |config| {
             config.update_plan_enabled = true;
@@ -633,10 +633,10 @@ async fn start_test_conversation(
     let test = Box::pin(builder.build(server))
         .await
         .expect("create conversation");
-    (test.home, test.config, test.thread_manager, test.codex)
+    (test.home, test.config, test.thread_manager, test.ava-code)
 }
 
-async fn user_turn(conversation: &Arc<CodexThread>, text: &str) {
+async fn user_turn(conversation: &Arc<AvaThread>, text: &str) {
     conversation
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: text.into(),
@@ -648,7 +648,7 @@ async fn user_turn(conversation: &Arc<CodexThread>, text: &str) {
     ThreadIdle::wait(conversation).await;
 }
 
-async fn compact_conversation(conversation: &Arc<CodexThread>) {
+async fn compact_conversation(conversation: &Arc<AvaThread>) {
     conversation
         .submit(Op::Compact)
         .await
@@ -668,11 +668,11 @@ async fn compact_conversation(conversation: &Arc<CodexThread>) {
     ThreadIdle::wait(conversation).await;
 }
 
-fn fetch_conversation_path(conversation: &Arc<CodexThread>) -> std::path::PathBuf {
+fn fetch_conversation_path(conversation: &Arc<AvaThread>) -> std::path::PathBuf {
     conversation.rollout_path().expect("rollout path")
 }
 
-async fn shutdown_conversation(conversation: &Arc<CodexThread>) {
+async fn shutdown_conversation(conversation: &Arc<AvaThread>) {
     conversation
         .shutdown_and_wait()
         .await
@@ -683,9 +683,9 @@ async fn resume_conversation(
     manager: &ThreadManager,
     config: &Config,
     path: std::path::PathBuf,
-) -> Arc<CodexThread> {
-    let auth_manager = codex_core::test_support::auth_manager_from_auth(
-        codex_login::CodexAuth::from_api_key("dummy"),
+) -> Arc<AvaThread> {
+    let auth_manager = ava_core::test_support::auth_manager_from_auth(
+        ava_login::AvaAuth::from_api_key("dummy"),
     );
     Box::pin(manager.resume_thread_from_rollout(
         config.clone(),
@@ -705,10 +705,10 @@ async fn fork_thread(
     config: &Config,
     path: std::path::PathBuf,
     nth_user_message: usize,
-) -> Arc<CodexThread> {
+) -> Arc<AvaThread> {
     Box::pin(manager.fork_thread(
         nth_user_message,
-        codex_core::StartThreadOptions::new(config.clone()),
+        ava_core::StartThreadOptions::new(config.clone()),
         path,
     ))
     .await

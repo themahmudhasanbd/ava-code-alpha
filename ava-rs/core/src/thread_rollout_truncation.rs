@@ -5,16 +5,16 @@
 
 use crate::context_manager::is_user_turn_boundary;
 use crate::event_mapping;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::build_turns_from_rollout_items;
-use codex_history::InitialHistory;
-use codex_history::RolloutItem;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InterAgentCommunication;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::build_turns_from_rollout_items;
+use ava_history::InitialHistory;
+use ava_history::RolloutItem;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InterAgentCommunication;
 
 pub(crate) fn initial_history_has_prior_user_turns(conversation_history: &InitialHistory) -> bool {
     conversation_history.scan_rollout_items(rollout_item_is_user_turn_boundary)
@@ -169,13 +169,13 @@ pub(crate) fn truncate_rollout_before_nth_user_message_from_start(
 pub fn truncate_rollout_after_turn_id(
     mut items: Vec<RolloutItem>,
     last_turn_id: &str,
-) -> CodexResult<Vec<RolloutItem>> {
+) -> AvaResult<Vec<RolloutItem>> {
     let turns = build_turns_from_rollout_items(&items);
     let turn = turns
         .iter()
         .find(|turn| turn.id == last_turn_id)
         .ok_or_else(|| {
-            CodexErr::InvalidRequest(format!(
+            AvaErr::InvalidRequest(format!(
                 "lastTurnId '{last_turn_id}' was not found in the source thread"
             ))
         })?;
@@ -190,13 +190,13 @@ pub fn truncate_rollout_after_turn_id(
             )
         })
         .ok_or_else(|| {
-            CodexErr::InvalidRequest(format!(
+            AvaErr::InvalidRequest(format!(
                 "lastTurnId '{last_turn_id}' is not a persisted canonical turn in the source thread"
             ))
         })?;
 
     if matches!(turn.status, TurnStatus::InProgress) {
-        return Err(CodexErr::InvalidRequest(format!(
+        return Err(AvaErr::InvalidRequest(format!(
             "lastTurnId '{last_turn_id}' identifies an in-progress turn"
         )));
     }
@@ -217,7 +217,7 @@ pub fn truncate_rollout_after_turn_id(
 pub fn truncate_rollout_before_turn_id(
     mut items: Vec<RolloutItem>,
     before_turn_id: &str,
-) -> CodexResult<Vec<RolloutItem>> {
+) -> AvaResult<Vec<RolloutItem>> {
     let cut_index = items.iter().position(|item| {
         matches!(
             item,
@@ -232,12 +232,12 @@ pub fn truncate_rollout_before_turn_id(
             .iter()
             .any(|turn| turn.id == before_turn_id)
         {
-            return Err(CodexErr::InvalidRequest(format!(
+            return Err(AvaErr::InvalidRequest(format!(
                 "beforeTurnId '{before_turn_id}' is not a persisted canonical turn in the source thread"
             )));
         }
 
-        return Err(CodexErr::InvalidRequest(format!(
+        return Err(AvaErr::InvalidRequest(format!(
             "beforeTurnId '{before_turn_id}' was not found in the source thread"
         )));
     };
@@ -250,7 +250,7 @@ pub fn truncate_rollout_before_turn_id(
             .iter()
             .any(|turn| turn.id == before_turn_id)
     {
-        return Err(CodexErr::InvalidRequest(format!(
+        return Err(AvaErr::InvalidRequest(format!(
             "beforeTurnId '{before_turn_id}' was not found in the source thread"
         )));
     }

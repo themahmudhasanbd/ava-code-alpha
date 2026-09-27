@@ -8,8 +8,8 @@ use std::time::Duration;
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use codex_protocol::config_types::ToolExposureSurface;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_protocol::config_types::ToolExposureSurface;
+use ava_utils_path_uri::LegacyAppPathString;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -168,7 +168,7 @@ pub struct McpServerOAuthConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub callback_url: Option<String>,
 
-    /// Fixed callback port that takes precedence over Codex's global OAuth callback port.
+    /// Fixed callback port that takes precedence over Ava's global OAuth callback port.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub callback_port: Option<u16>,
 
@@ -223,14 +223,14 @@ pub struct McpServerConfig {
     #[serde(default, skip_serializing_if = "McpServerAuth::is_default")]
     pub auth: McpServerAuth,
 
-    /// Effective environment id for where Codex should start this MCP server.
+    /// Effective environment id for where Ava should start this MCP server.
     pub environment_id: String,
 
-    /// When `false`, Codex skips initializing this MCP server.
+    /// When `false`, Ava skips initializing this MCP server.
     #[serde(default = "default_enabled")]
     pub enabled: bool,
 
-    /// When `true`, `codex exec` exits with an error if this MCP server fails to initialize.
+    /// When `true`, `ava exec` exits with an error if this MCP server fails to initialize.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub required: bool,
 

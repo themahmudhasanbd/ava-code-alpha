@@ -4,39 +4,39 @@ use std::path::Path;
 use std::time::Duration;
 
 use chrono::Utc;
-use codex_app_server_protocol::ThreadItem;
-use codex_protocol::ThreadId;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::RateLimitSnapshot;
-use codex_protocol::protocol::RateLimitWindow;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::TokenCountEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::realtime::BemItemPresentation;
-use codex_protocol::realtime::RealtimeItem;
-use codex_protocol::realtime::RealtimeItemContent;
-use codex_protocol::realtime::RealtimeSessionOutcome;
-use codex_protocol::realtime::RealtimeTranscriptRole;
-use codex_rollout::RolloutConfig;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::RolloutRecorderParams;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ThreadItem;
+use ava_protocol::ThreadId;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::RateLimitWindow;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::TokenCountEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::realtime::BemItemPresentation;
+use ava_protocol::realtime::RealtimeItem;
+use ava_protocol::realtime::RealtimeItemContent;
+use ava_protocol::realtime::RealtimeSessionOutcome;
+use ava_protocol::realtime::RealtimeTranscriptRole;
+use ava_rollout::RolloutConfig;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::RolloutRecorderParams;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -99,19 +99,19 @@ async fn paginated_history_without_state_db_does_not_initialize_sqlite() {
     }
 }
 
-/// Separate Codex and SQLite homes must work together across startup backfill,
+/// Separate Ava and SQLite homes must work together across startup backfill,
 /// thread listing, and projection-backed paginated history reads.
 #[tokio::test]
 async fn split_homes_support_backfill_listing_and_paginated_history() {
     let root = TempDir::new().expect("temp dir");
-    let codex_home = root.path().join("codex");
+    let ava_home = root.path().join("ava");
     let sqlite_home = root.path().join("sqlite");
     let thread_id = ThreadId::new();
-    let sqlite = codex_state::SqliteConfig::new_for_testing(sqlite_home.as_path().abs());
+    let sqlite = ava_state::SqliteConfig::new_for_testing(sqlite_home.as_path().abs());
     let rollout_config = RolloutConfig {
-        codex_home: codex_home.clone(),
+        ava_home: ava_home.clone(),
         sqlite: sqlite.clone(),
-        cwd: codex_home.clone(),
+        cwd: ava_home.clone(),
         model_provider_id: "test-provider".to_string(),
         generate_memories: false,
     };
@@ -145,9 +145,9 @@ async fn split_homes_support_backfill_listing_and_paginated_history() {
     let rollout_path = recorder.rollout_path().to_path_buf();
     recorder.shutdown().await.expect("close paginated rollout");
 
-    let runtime = codex_rollout::state_db::try_init(&rollout_config)
+    let runtime = ava_rollout::state_db::try_init(&rollout_config)
         .await
-        .expect("backfill state from Codex home");
+        .expect("backfill state from Ava home");
     assert!(
         runtime
             .get_thread(thread_id)
@@ -200,7 +200,7 @@ async fn split_homes_support_backfill_listing_and_paginated_history() {
             history: None,
             include_archived: false,
             metadata: ThreadPersistenceMetadata {
-                cwd: Some(codex_home.clone()),
+                cwd: Some(ava_home.clone()),
                 model_provider: "test-provider".to_string(),
                 memory_mode: ThreadMemoryMode::Enabled,
             },
@@ -284,8 +284,8 @@ async fn split_homes_support_backfill_listing_and_paginated_history() {
         );
         let filename = sqlite_path.file_name().expect("SQLite database filename");
         assert!(
-            !codex_home.join(filename).exists(),
-            "SQLite database should not be created under Codex home"
+            !ava_home.join(filename).exists(),
+            "SQLite database should not be created under Ava home"
         );
     }
 }
@@ -343,7 +343,7 @@ async fn paginated_live_append_materializes_turn_items_and_state() {
         rollout_line_byte_offsets(rollout_path.as_path(), /*ordinal*/ 1);
     let (_, turn_end_byte_offset) =
         rollout_line_byte_offsets(rollout_path.as_path(), /*ordinal*/ 4);
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -504,7 +504,7 @@ async fn paginated_realtime_items_materialize_separately_in_rollout_order() {
     let expected_rows = fs::read_to_string(rollout_path.as_path())
         .expect("read canonical rollout")
         .lines()
-        .map(|line| codex_rollout::parse_rollout_line(line).expect("parse rollout line"))
+        .map(|line| ava_rollout::parse_rollout_line(line).expect("parse rollout line"))
         .filter_map(|line| match line.item {
             RolloutItem::RealtimeItem(item) => Some((
                 item.id,
@@ -536,7 +536,7 @@ async fn paginated_realtime_items_materialize_separately_in_rollout_order() {
         ]
     );
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -737,7 +737,7 @@ async fn referenced_paginated_rollout_projects_inherited_ordinal_range() {
         );
     }
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -884,7 +884,7 @@ async fn active_turn_stores_only_its_start_position() {
         .expect("rollout path");
     let (turn_start_byte_offset, _) =
         rollout_line_byte_offsets(rollout_path.as_path(), /*ordinal*/ 1);
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1110,7 +1110,7 @@ async fn paginated_fork_reads_compressed_shared_lineage_without_materializing() 
         .expect_err("external shared source cannot be referenced by rollout id");
     assert!(matches!(
         error,
-        crate::ThreadStoreError::InvalidRequest { message } if message.contains("must be in Codex home")
+        crate::ThreadStoreError::InvalidRequest { message } if message.contains("must be in Ava home")
     ));
     store
         .shutdown_thread(source_thread_id)
@@ -1347,7 +1347,7 @@ async fn subagent_prefix_advances_projection_without_materializing_history() {
         .expect("rollout path");
     let (child_start_byte_offset, _) =
         rollout_line_byte_offsets(rollout_path.as_path(), /*ordinal*/ 5);
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1407,7 +1407,7 @@ async fn unexpected_duplicate_item_completion_does_not_poison_projection() {
         })
         .await
         .expect("append completed item");
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1494,7 +1494,7 @@ async fn terminal_turn_does_not_change_after_later_records() {
         .await
         .expect("append later records");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1553,13 +1553,13 @@ async fn summary_items_use_final_answers_and_ignore_commentary() {
     let home = TempDir::new().expect("temp dir");
     let config = test_config(home.path());
     let thread_id = ThreadId::default();
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
     .await
     .expect("state runtime");
-    let mut builder = codex_state::ThreadMetadataBuilder::new(
+    let mut builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         home.path().join("missing-rollout.jsonl"),
         Utc::now(),
@@ -1605,7 +1605,7 @@ async fn summary_items_use_final_answers_and_ignore_commentary() {
         .await
         .expect("append items before turn lifecycle");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1713,7 +1713,7 @@ async fn paginated_projection_accepts_float_rate_limits_and_later_final_answers(
         .await
         .expect("append projected turn start");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1848,7 +1848,7 @@ async fn next_write_catches_up_unprojected_durable_suffix() {
         .await
         .expect("persist session metadata");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1935,7 +1935,7 @@ async fn synchronized_catch_up_does_not_replay_old_rows() {
         .await
         .expect("append turn start");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -1975,7 +1975,7 @@ async fn catch_up_preserves_trailing_partial_line_boundaries() {
         .await
         .expect("persist session metadata");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -2061,8 +2061,8 @@ async fn catch_up_skips_invalid_complete_suffixes_and_projects_later_history() {
             .await
             .expect("persist session metadata");
 
-        let pool = codex_state::open_thread_history_db(
-            &codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let pool = ava_state::open_thread_history_db(
+            &ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         )
         .await
         .expect("open thread history db");
@@ -2111,7 +2111,7 @@ async fn jsonl_failure_does_not_create_projection_database() {
         .expect_err("JSONL append should fail");
 
     assert!(
-        !codex_state::SqliteConfig::new_for_testing(home.path().abs())
+        !ava_state::SqliteConfig::new_for_testing(home.path().abs())
             .thread_history_db_path()
             .exists()
     );
@@ -2186,7 +2186,7 @@ async fn blank_and_rejected_rollout_lines_advance_projection() {
         .await
         .expect("persist session metadata");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -2271,7 +2271,7 @@ async fn unknown_rollout_lines_leave_ordinals_pending_for_valid_retries() {
         .await
         .expect("persist session metadata");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -2364,7 +2364,7 @@ async fn event_timestamps_allow_invalid_rollout_timestamps() {
         .await
         .expect("project records with event timestamps");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -2412,7 +2412,7 @@ async fn malformed_rollout_lines_skip_inferred_ordinal_gaps() {
         .await
         .expect("skip malformed gap and project later history");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -2455,7 +2455,7 @@ async fn shutdown_materializes_items_queued_without_a_flush() {
         .await
         .expect("shutdown live thread");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -2509,7 +2509,7 @@ async fn delete_waits_for_in_flight_projection_before_removing_rows() {
         .expect("finish in-flight append");
     delete.await.expect("join delete").expect("delete thread");
 
-    let pool = codex_state::open_thread_history_db(&codex_state::SqliteConfig::new_for_testing(
+    let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
         home.path().abs(),
     ))
     .await
@@ -2531,9 +2531,9 @@ SELECT
     assert_eq!(counts, (0, 0, 0));
 }
 
-async fn projection_store(codex_home: &Path) -> LocalThreadStore {
-    let config = test_config(codex_home);
-    let state_db = codex_state::StateRuntime::init(
+async fn projection_store(ava_home: &Path) -> LocalThreadStore {
+    let config = test_config(ava_home);
+    let state_db = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -2678,7 +2678,7 @@ fn rollout_line_byte_offsets(path: &std::path::Path, ordinal: u64) -> (i64, i64)
     let mut start_byte_offset = 0;
     for line in bytes.split_inclusive(|byte| *byte == b'\n') {
         let end_byte_offset = start_byte_offset + line.len();
-        if codex_rollout::parse_rollout_line_bytes(line)
+        if ava_rollout::parse_rollout_line_bytes(line)
             .ok()
             .and_then(|line| line.ordinal)
             == Some(ordinal)

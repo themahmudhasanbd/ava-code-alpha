@@ -1,7 +1,7 @@
 use crate::tools::context::ToolCallSource;
 use crate::tools::context::ToolInvocation;
-use codex_analytics::ControlToolCallFact;
-use codex_analytics::ControlToolCallStatus;
+use ava_analytics::ControlToolCallFact;
+use ava_analytics::ControlToolCallStatus;
 
 pub(crate) struct ControlToolCallGuard<'a> {
     invocation: &'a ToolInvocation,
@@ -14,14 +14,14 @@ impl<'a> ControlToolCallGuard<'a> {
     pub(crate) fn new(invocation: &'a ToolInvocation) -> Self {
         Self {
             invocation,
-            started_at_ms: codex_analytics::now_unix_millis(),
+            started_at_ms: ava_analytics::now_unix_millis(),
             completed_at_ms: None,
             status: ControlToolCallStatus::Interrupted,
         }
     }
 
     pub(crate) fn finish(&mut self, status: ControlToolCallStatus) {
-        self.completed_at_ms = Some(codex_analytics::now_unix_millis());
+        self.completed_at_ms = Some(ava_analytics::now_unix_millis());
         self.status = status;
     }
 }
@@ -51,7 +51,7 @@ impl Drop for ControlToolCallGuard<'_> {
                 started_at_ms: self.started_at_ms,
                 completed_at_ms: self
                     .completed_at_ms
-                    .unwrap_or_else(codex_analytics::now_unix_millis),
+                    .unwrap_or_else(ava_analytics::now_unix_millis),
                 status: self.status,
             });
     }

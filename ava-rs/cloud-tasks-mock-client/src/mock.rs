@@ -1,19 +1,19 @@
 use chrono::Utc;
-use codex_cloud_tasks_client::ApplyOutcome;
-use codex_cloud_tasks_client::ApplyStatus;
-use codex_cloud_tasks_client::AttemptStatus;
-use codex_cloud_tasks_client::CloudBackend;
-use codex_cloud_tasks_client::CloudBackendFuture;
-use codex_cloud_tasks_client::CloudTaskError;
-use codex_cloud_tasks_client::CreatedTask;
-use codex_cloud_tasks_client::DiffSummary;
-use codex_cloud_tasks_client::Result;
-use codex_cloud_tasks_client::TaskId;
-use codex_cloud_tasks_client::TaskListPage;
-use codex_cloud_tasks_client::TaskStatus;
-use codex_cloud_tasks_client::TaskSummary;
-use codex_cloud_tasks_client::TaskText;
-use codex_cloud_tasks_client::TurnAttempt;
+use ava_cloud_tasks_client::ApplyOutcome;
+use ava_cloud_tasks_client::ApplyStatus;
+use ava_cloud_tasks_client::AttemptStatus;
+use ava_cloud_tasks_client::CloudBackend;
+use ava_cloud_tasks_client::CloudBackendFuture;
+use ava_cloud_tasks_client::CloudTaskError;
+use ava_cloud_tasks_client::CreatedTask;
+use ava_cloud_tasks_client::DiffSummary;
+use ava_cloud_tasks_client::Result;
+use ava_cloud_tasks_client::TaskId;
+use ava_cloud_tasks_client::TaskListPage;
+use ava_cloud_tasks_client::TaskStatus;
+use ava_cloud_tasks_client::TaskSummary;
+use ava_cloud_tasks_client::TaskText;
+use ava_cloud_tasks_client::TurnAttempt;
 
 #[derive(Clone, Default)]
 pub struct MockClient;

@@ -1,7 +1,7 @@
 use super::*;
 use crate::context::world_state::WorldState;
-use codex_config::RequirementSource;
-use codex_protocol::models::ResponseItem;
+use ava_config::RequirementSource;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 
 #[test]

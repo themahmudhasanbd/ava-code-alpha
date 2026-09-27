@@ -218,7 +218,7 @@ export const SETTINGS_NAV: SettingsNavEntry[] = [
       "settings.importModelsTitle",
       "settings.importSourceClaudeCode",
       "settings.importSourceOpenCode",
-      "settings.importSourceCodex",
+      "settings.importSourceAva",
       "settings.importSourcePi",
       "settings.importSourceCcSwitch",
     ],

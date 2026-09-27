@@ -6,7 +6,7 @@ import {
   parseCcSwitchConfigJson,
   parseCcSwitchProviders,
   parseClaudeCodeModelConfig,
-  parseCodexModelConfig,
+  parseAvaModelConfig,
   parseJsonDocument,
   parseOpenCodeModelConfig,
   parsePiModelConfig,
@@ -84,7 +84,7 @@ async function scanAva(
   for (const candidate of candidates) {
     const text = await readText(candidate);
     if (text) {
-      const parsed = parseCodexModelConfig(text, env);
+      const parsed = parseAvaModelConfig(text, env);
       for (const p of parsed) {
         if (!results.some((existing) => draftMatchesExisting(p, [existing]))) {
           results.push(p);
@@ -101,7 +101,7 @@ async function scanAva(
         if (f.endsWith(".config.toml") && f !== "config.toml") {
           const text = await readText(path.join(dir, f));
           if (text) {
-            const parsed = parseCodexModelConfig(text, env);
+            const parsed = parseAvaModelConfig(text, env);
             for (const p of parsed) {
               if (!results.some((existing) => draftMatchesExisting(p, [existing]))) {
                 results.push(p);

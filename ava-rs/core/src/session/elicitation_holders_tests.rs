@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use codex_core_plugins::PluginCommandAttribution;
-use codex_plugin::PluginId;
-use codex_protocol::approvals::ExecApprovalKind;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsArgs;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::request_user_input::RequestUserInputArgs;
-use codex_protocol::request_user_input::RequestUserInputResponse;
+use ava_core_plugins::PluginCommandAttribution;
+use ava_plugin::PluginId;
+use ava_protocol::approvals::ExecApprovalKind;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsArgs;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::request_user_input::RequestUserInputArgs;
+use ava_protocol::request_user_input::RequestUserInputResponse;
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 
@@ -71,7 +71,7 @@ async fn command_approval_holds_an_elicitation_until_response() {
     });
 
     let event = events.recv().await.expect("approval event");
-    let codex_protocol::protocol::EventMsg::ExecApprovalRequest(event) = event.msg else {
+    let ava_protocol::protocol::EventMsg::ExecApprovalRequest(event) = event.msg else {
         panic!("expected command approval event");
     };
     assert_eq!(event.plugin_id.as_deref(), Some("sample@openai-curated"));

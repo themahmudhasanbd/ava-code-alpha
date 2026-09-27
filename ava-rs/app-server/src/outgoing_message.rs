@@ -7,22 +7,22 @@ use std::sync::atomic::Ordering;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::Result;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerNotificationEnvelope;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerRequestPayload;
-use codex_app_server_protocol::ServerResponse;
-use codex_diagnostics::Gauge;
-use codex_diagnostics::GaugeGuard;
-use codex_otel::span_w3c_trace_context;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
+use ava_analytics::AnalyticsEventsClient;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::Result;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerNotificationEnvelope;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerRequestPayload;
+use ava_app_server_protocol::ServerResponse;
+use ava_diagnostics::Gauge;
+use ava_diagnostics::GaugeGuard;
+use ava_otel::span_w3c_trace_context;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
@@ -32,14 +32,14 @@ use tracing::warn;
 
 use crate::error_code::internal_error;
 use crate::server_request_error::TURN_TRANSITION_PENDING_REQUEST_ERROR_REASON;
-pub(crate) use codex_app_server_transport::ConnectionId;
-pub(crate) use codex_app_server_transport::OutgoingError;
-pub(crate) use codex_app_server_transport::OutgoingMessage;
-pub(crate) use codex_app_server_transport::OutgoingResponse;
-pub(crate) use codex_app_server_transport::QueuedOutgoingMessage;
+pub(crate) use ava_app_server_transport::ConnectionId;
+pub(crate) use ava_app_server_transport::OutgoingError;
+pub(crate) use ava_app_server_transport::OutgoingMessage;
+pub(crate) use ava_app_server_transport::OutgoingResponse;
+pub(crate) use ava_app_server_transport::QueuedOutgoingMessage;
 
 #[cfg(test)]
-use codex_protocol::account::PlanType;
+use ava_protocol::account::PlanType;
 
 pub(crate) type ClientRequestResult = std::result::Result<Result, JSONRPCErrorError>;
 
@@ -127,7 +127,7 @@ pub(crate) enum OutgoingEnvelope {
 
 /// Sends messages to the client and manages request callbacks.
 pub(crate) struct OutgoingMessageSender {
-    verification_auth: OnceLock<Arc<codex_login::AuthManager>>,
+    verification_auth: OnceLock<Arc<ava_login::AuthManager>>,
     verification_connections: Mutex<HashSet<ConnectionId>>,
     next_server_request_id: AtomicI64,
     sender: mpsc::Sender<OutgoingEnvelope>,
@@ -339,7 +339,7 @@ impl OutgoingMessageSender {
         let user_verification = matches!(
             &request,
             ServerRequest::McpServerElicitationRequest { params, .. }
-                if matches!(&params.request, codex_app_server_protocol::McpServerElicitationRequest::UserVerification { .. })
+                if matches!(&params.request, ava_app_server_protocol::McpServerElicitationRequest::UserVerification { .. })
         );
         // Snapshot before waiting on eligibility or callback locks. A request cannot inherit
         // whichever account happens to be current after an unrelated operation releases a lock.
@@ -906,27 +906,27 @@ mod user_verification_cancel_context_tests;
 mod tests {
     use std::time::Duration;
 
-    use codex_app_server_protocol::AccountLoginCompletedNotification;
-    use codex_app_server_protocol::AccountRateLimitsUpdatedNotification;
-    use codex_app_server_protocol::AccountUpdatedNotification;
-    use codex_app_server_protocol::ApplyPatchApprovalParams;
-    use codex_app_server_protocol::AuthMode;
-    use codex_app_server_protocol::CommandExecutionApprovalDecision;
-    use codex_app_server_protocol::CommandExecutionRequestApprovalParams;
-    use codex_app_server_protocol::ConfigWarningNotification;
-    use codex_app_server_protocol::DynamicToolCallParams;
-    use codex_app_server_protocol::FileChangeRequestApprovalParams;
-    use codex_app_server_protocol::GuardianWarningNotification;
-    use codex_app_server_protocol::ModelRerouteReason;
-    use codex_app_server_protocol::ModelReroutedNotification;
-    use codex_app_server_protocol::ModelVerification;
-    use codex_app_server_protocol::ModelVerificationNotification;
-    use codex_app_server_protocol::RateLimitSnapshot;
-    use codex_app_server_protocol::RateLimitWindow;
-    use codex_app_server_protocol::ServerResponse;
-    use codex_app_server_protocol::ToolRequestUserInputParams;
-    use codex_app_server_protocol::TurnModerationMetadataNotification;
-    use codex_protocol::ThreadId;
+    use ava_app_server_protocol::AccountLoginCompletedNotification;
+    use ava_app_server_protocol::AccountRateLimitsUpdatedNotification;
+    use ava_app_server_protocol::AccountUpdatedNotification;
+    use ava_app_server_protocol::ApplyPatchApprovalParams;
+    use ava_app_server_protocol::AuthMode;
+    use ava_app_server_protocol::CommandExecutionApprovalDecision;
+    use ava_app_server_protocol::CommandExecutionRequestApprovalParams;
+    use ava_app_server_protocol::ConfigWarningNotification;
+    use ava_app_server_protocol::DynamicToolCallParams;
+    use ava_app_server_protocol::FileChangeRequestApprovalParams;
+    use ava_app_server_protocol::GuardianWarningNotification;
+    use ava_app_server_protocol::ModelRerouteReason;
+    use ava_app_server_protocol::ModelReroutedNotification;
+    use ava_app_server_protocol::ModelVerification;
+    use ava_app_server_protocol::ModelVerificationNotification;
+    use ava_app_server_protocol::RateLimitSnapshot;
+    use ava_app_server_protocol::RateLimitWindow;
+    use ava_app_server_protocol::ServerResponse;
+    use ava_app_server_protocol::ToolRequestUserInputParams;
+    use ava_app_server_protocol::TurnModerationMetadataNotification;
+    use ava_protocol::ThreadId;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use std::sync::Arc;
@@ -998,7 +998,7 @@ mod tests {
         let notification =
             ServerNotification::AccountRateLimitsUpdated(AccountRateLimitsUpdatedNotification {
                 rate_limits: RateLimitSnapshot {
-                    limit_id: Some("codex".to_string()),
+                    limit_id: Some("ava".to_string()),
                     limit_name: None,
                     normal_model_slug: None,
                     primary: Some(RateLimitWindow {
@@ -1020,7 +1020,7 @@ mod tests {
                 "method": "account/rateLimits/updated",
                 "params": {
                         "rateLimits": {
-                        "limitId": "codex",
+                        "limitId": "ava",
                         "limitName": null,
                         "normalModelSlug": null,
                         "primary": {
@@ -1113,7 +1113,7 @@ mod tests {
         let notification = ServerNotification::ModelRerouted(ModelReroutedNotification {
             thread_id: "thread-1".to_string(),
             turn_id: "turn-1".to_string(),
-            from_model: "gpt-5.3-codex".to_string(),
+            from_model: "gpt-5.3-ava".to_string(),
             to_model: "gpt-5.2".to_string(),
             reason: ModelRerouteReason::HighRiskCyberActivity,
         });
@@ -1124,7 +1124,7 @@ mod tests {
                 "params": {
                     "threadId": "thread-1",
                     "turnId": "turn-1",
-                    "fromModel": "gpt-5.3-codex",
+                    "fromModel": "gpt-5.3-ava",
                     "toModel": "gpt-5.2",
                     "reason": "highRiskCyberActivity",
                 },
@@ -1229,7 +1229,7 @@ mod tests {
     async fn send_response_routes_to_target_connection() {
         let (tx, mut rx) = mpsc::channel::<OutgoingEnvelope>(4);
         let outgoing =
-            OutgoingMessageSender::new(tx, codex_analytics::AnalyticsEventsClient::disabled());
+            OutgoingMessageSender::new(tx, ava_analytics::AnalyticsEventsClient::disabled());
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(42),
             request_id: RequestId::Integer(7),
@@ -1239,7 +1239,7 @@ mod tests {
             .send_response(
                 request_id.clone(),
                 ClientResponsePayload::ThreadArchive(
-                    codex_app_server_protocol::ThreadArchiveResponse {},
+                    ava_app_server_protocol::ThreadArchiveResponse {},
                 ),
             )
             .await;
@@ -1273,7 +1273,7 @@ mod tests {
     async fn send_response_clears_registered_request_context() {
         let (tx, _rx) = mpsc::channel::<OutgoingEnvelope>(4);
         let outgoing =
-            OutgoingMessageSender::new(tx, codex_analytics::AnalyticsEventsClient::disabled());
+            OutgoingMessageSender::new(tx, ava_analytics::AnalyticsEventsClient::disabled());
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(42),
             request_id: RequestId::Integer(7),
@@ -1293,7 +1293,7 @@ mod tests {
             .send_response(
                 request_id,
                 ClientResponsePayload::ThreadArchive(
-                    codex_app_server_protocol::ThreadArchiveResponse {},
+                    ava_app_server_protocol::ThreadArchiveResponse {},
                 ),
             )
             .await;
@@ -1305,7 +1305,7 @@ mod tests {
     async fn send_error_routes_to_target_connection() {
         let (tx, mut rx) = mpsc::channel::<OutgoingEnvelope>(4);
         let outgoing =
-            OutgoingMessageSender::new(tx, codex_analytics::AnalyticsEventsClient::disabled());
+            OutgoingMessageSender::new(tx, ava_analytics::AnalyticsEventsClient::disabled());
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(9),
             request_id: RequestId::Integer(3),
@@ -1340,7 +1340,7 @@ mod tests {
     async fn send_server_notification_to_connections_reuses_timestamp() {
         let (tx, mut rx) = mpsc::channel::<OutgoingEnvelope>(2);
         let outgoing =
-            OutgoingMessageSender::new(tx, codex_analytics::AnalyticsEventsClient::disabled());
+            OutgoingMessageSender::new(tx, ava_analytics::AnalyticsEventsClient::disabled());
 
         outgoing
             .send_server_notification_to_connections(
@@ -1377,7 +1377,7 @@ mod tests {
     async fn send_server_notification_to_connection_and_wait_tracks_write_completion() {
         let (tx, mut rx) = mpsc::channel::<OutgoingEnvelope>(4);
         let outgoing =
-            OutgoingMessageSender::new(tx, codex_analytics::AnalyticsEventsClient::disabled());
+            OutgoingMessageSender::new(tx, ava_analytics::AnalyticsEventsClient::disabled());
         let send_task = tokio::spawn(async move {
             outgoing
                 .send_server_notification_to_connection_and_wait(
@@ -1385,7 +1385,7 @@ mod tests {
                     ServerNotification::ModelRerouted(ModelReroutedNotification {
                         thread_id: "thread-1".to_string(),
                         turn_id: "turn-1".to_string(),
-                        from_model: "gpt-5.3-codex".to_string(),
+                        from_model: "gpt-5.3-ava".to_string(),
                         to_model: "gpt-5.2".to_string(),
                         reason: ModelRerouteReason::HighRiskCyberActivity,
                     }),
@@ -1429,7 +1429,7 @@ mod tests {
     async fn connection_closed_clears_registered_request_contexts() {
         let (tx, _rx) = mpsc::channel::<OutgoingEnvelope>(4);
         let outgoing =
-            OutgoingMessageSender::new(tx, codex_analytics::AnalyticsEventsClient::disabled());
+            OutgoingMessageSender::new(tx, ava_analytics::AnalyticsEventsClient::disabled());
         let closed_connection_request = ConnectionRequestId {
             connection_id: ConnectionId(9),
             request_id: RequestId::Integer(3),
@@ -1466,7 +1466,7 @@ mod tests {
     async fn notify_client_error_forwards_error_to_waiter() {
         let (tx, _rx) = mpsc::channel::<OutgoingEnvelope>(4);
         let outgoing =
-            OutgoingMessageSender::new(tx, codex_analytics::AnalyticsEventsClient::disabled());
+            OutgoingMessageSender::new(tx, ava_analytics::AnalyticsEventsClient::disabled());
 
         let (request_id, wait_for_result) = outgoing
             .send_request(ServerRequestPayload::ApplyPatchApproval(
@@ -1498,7 +1498,7 @@ mod tests {
         let (tx, _rx) = mpsc::channel::<OutgoingEnvelope>(8);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let thread_id = ThreadId::new();
         let thread_outgoing = ThreadScopedOutgoingMessageSender::new(
@@ -1562,7 +1562,7 @@ mod tests {
         let (tx, _rx) = mpsc::channel::<OutgoingEnvelope>(8);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let thread_id = ThreadId::new();
         let thread_outgoing = ThreadScopedOutgoingMessageSender::new(

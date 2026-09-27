@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 use std::io;
 
-use codex_exec_server::EnvironmentAccess;
-use codex_exec_server::WalkEntryKind;
-use codex_exec_server::WalkOptions;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::DISCOVERABLE_PLUGIN_MANIFEST_PATHS;
-use codex_utils_plugins::SkillDiscoveryMode;
+use ava_exec_server::EnvironmentAccess;
+use ava_exec_server::WalkEntryKind;
+use ava_exec_server::WalkOptions;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::DISCOVERABLE_PLUGIN_MANIFEST_PATHS;
+use ava_utils_plugins::SkillDiscoveryMode;
 
 use super::MAX_SCAN_DEPTH;
 use super::MAX_SKILLS_DIRS_PER_ROOT;

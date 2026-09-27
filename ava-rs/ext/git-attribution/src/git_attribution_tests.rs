@@ -3,13 +3,13 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
 use tokio::sync::Notify;
 use wiremock::Mock;
 use wiremock::MockServer;
@@ -27,19 +27,19 @@ fn http_client_factory() -> HttpClientFactory {
     HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault)
 }
 
-fn enterprise_auth(account_id: &str) -> CodexAuth {
-    CodexAuth::from_external_chatgpt_tokens("e30.e30.c2ln", account_id, Some("enterprise"))
+fn enterprise_auth(account_id: &str) -> AvaAuth {
+    AvaAuth::from_external_chatgpt_tokens("e30.e30.c2ln", account_id, Some("enterprise"))
         .expect("fake ChatGPT auth should parse")
 }
 
-struct StaticExternalAuth(CodexAuth);
+struct StaticExternalAuth(AvaAuth);
 
 impl ExternalAuth for StaticExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         self.resolve()
     }
 }

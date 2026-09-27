@@ -2,20 +2,20 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Weak;
 
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_tools::ConversationHistory;
-use codex_tools::ExtensionTurnItem;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ToolCall as ExtensionToolCall;
-use codex_tools::ToolEnvironment;
-use codex_tools::ToolName;
-use codex_tools::ToolSearchInfo;
-use codex_tools::ToolSpec;
-use codex_tools::TurnItemEmissionFuture;
-use codex_tools::TurnItemEmitter;
-use codex_utils_string::to_ascii_json_string;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_tools::ConversationHistory;
+use ava_tools::ExtensionTurnItem;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ToolCall as ExtensionToolCall;
+use ava_tools::ToolEnvironment;
+use ava_tools::ToolName;
+use ava_tools::ToolSearchInfo;
+use ava_tools::ToolSpec;
+use ava_tools::TurnItemEmissionFuture;
+use ava_tools::TurnItemEmitter;
+use ava_utils_string::to_ascii_json_string;
 
 use crate::sandboxing::SandboxPermissions;
 use crate::session::session::Session;
@@ -29,12 +29,12 @@ use crate::tools::registry::ToolExecutor;
 use crate::turn_metadata::ExecutionMetadata;
 
 pub(crate) struct ExtensionToolAdapter(
-    Arc<dyn for<'call> codex_tools::ToolExecutor<ExtensionToolCall<'call>>>,
+    Arc<dyn for<'call> ava_tools::ToolExecutor<ExtensionToolCall<'call>>>,
 );
 
 impl ExtensionToolAdapter {
     pub(crate) fn new(
-        executor: Arc<dyn for<'call> codex_tools::ToolExecutor<ExtensionToolCall<'call>>>,
+        executor: Arc<dyn for<'call> ava_tools::ToolExecutor<ExtensionToolCall<'call>>>,
     ) -> Self {
         Self(executor)
     }
@@ -61,7 +61,7 @@ impl ToolExecutor<ToolInvocation> for ExtensionToolAdapter {
         self.0.search_info()
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -167,7 +167,7 @@ async fn to_extension_call(invocation: &ToolInvocation) -> ExtensionToolCall<'_>
     let conversation_history =
         ConversationHistory::new(invocation.session.clone_history().await.into_raw_items());
     let settings = &invocation.step_context.settings;
-    let codex_turn_metadata = invocation
+    let ava_turn_metadata = invocation
         .turn
         .turn_metadata_state
         .current_meta_value_for_mcp_request(ExecutionMetadata::from_settings(
@@ -204,7 +204,7 @@ async fn to_extension_call(invocation: &ToolInvocation) -> ExtensionToolCall<'_>
         call_id: invocation.call_id.clone(),
         tool_name: invocation.tool_name.clone(),
         model: settings.model_info.slug.clone(),
-        codex_turn_metadata,
+        ava_turn_metadata,
         truncation_policy: settings.model_info.truncation_policy.into(),
         source: extension_tool_call_source(invocation.source.clone()),
         conversation_history,
@@ -221,20 +221,20 @@ async fn to_extension_call(invocation: &ToolInvocation) -> ExtensionToolCall<'_>
 mod tests {
     use std::sync::Arc;
 
-    use codex_extension_items::ExtensionItem;
-    use codex_extension_items::image_generation::ImageGenerationItem;
-    use codex_extension_items::web_search::WebSearchItem;
-    use codex_protocol::items::TurnItem;
-    use codex_protocol::models::ContentItem;
-    use codex_protocol::models::ResponseItem;
-    use codex_protocol::protocol::EventMsg;
-    use codex_protocol::protocol::ImageGenerationBeginEvent;
-    use codex_protocol::protocol::ImageGenerationEndEvent;
-    use codex_tools::ExtensionTurnItem;
-    use codex_tools::ToolCallSource as ExtensionToolCallSource;
-    use codex_utils_absolute_path::test_support::PathExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
-    use codex_utils_path_uri::PathUri;
+    use ava_extension_items::ExtensionItem;
+    use ava_extension_items::image_generation::ImageGenerationItem;
+    use ava_extension_items::web_search::WebSearchItem;
+    use ava_protocol::items::TurnItem;
+    use ava_protocol::models::ContentItem;
+    use ava_protocol::models::ResponseItem;
+    use ava_protocol::protocol::EventMsg;
+    use ava_protocol::protocol::ImageGenerationBeginEvent;
+    use ava_protocol::protocol::ImageGenerationEndEvent;
+    use ava_tools::ExtensionTurnItem;
+    use ava_tools::ToolCallSource as ExtensionToolCallSource;
+    use ava_utils_absolute_path::test_support::PathExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
+    use ava_utils_path_uri::PathUri;
     use core_test_support::responses::strip_response_item_id;
     use core_test_support::responses::strip_response_item_ids;
     use pretty_assertions::assert_eq;
@@ -255,19 +255,19 @@ mod tests {
 
     struct StubExtensionExecutor;
 
-    impl<'call> codex_extension_api::ToolExecutor<codex_tools::ToolCall<'call>>
+    impl<'call> ava_extension_api::ToolExecutor<ava_tools::ToolCall<'call>>
         for StubExtensionExecutor
     {
-        fn tool_name(&self) -> codex_tools::ToolName {
-            codex_tools::ToolName::plain("extension_echo")
+        fn tool_name(&self) -> ava_tools::ToolName {
+            ava_tools::ToolName::plain("extension_echo")
         }
 
-        fn spec(&self) -> codex_tools::ToolSpec {
-            codex_tools::ToolSpec::Function(codex_tools::ResponsesApiTool {
+        fn spec(&self) -> ava_tools::ToolSpec {
+            ava_tools::ToolSpec::Function(ava_tools::ResponsesApiTool {
                 name: "extension_echo".to_string(),
                 description: "Echoes arguments.".to_string(),
                 strict: true,
-                parameters: codex_tools::parse_tool_input_schema(&json!({
+                parameters: ava_tools::parse_tool_input_schema(&json!({
                     "type": "object",
                     "properties": {
                         "message": { "type": "string" },
@@ -283,38 +283,38 @@ mod tests {
 
         fn handle<'a>(
             &'a self,
-            _call: codex_tools::ToolCall<'call>,
-        ) -> codex_tools::ToolExecutorFuture<'a>
+            _call: ava_tools::ToolCall<'call>,
+        ) -> ava_tools::ToolExecutorFuture<'a>
         where
             'call: 'a,
         {
             Box::pin(async {
                 Ok(
-                    Box::new(codex_tools::JsonToolOutput::new(json!({ "ok": true })))
-                        as Box<dyn codex_tools::ToolOutput>,
+                    Box::new(ava_tools::JsonToolOutput::new(json!({ "ok": true })))
+                        as Box<dyn ava_tools::ToolOutput>,
                 )
             })
         }
     }
 
     struct CapturingExtensionExecutor {
-        captured_call: Arc<Mutex<Option<codex_tools::ToolCall<'static>>>>,
+        captured_call: Arc<Mutex<Option<ava_tools::ToolCall<'static>>>>,
         captured_sandbox_cwds: Arc<Mutex<Vec<PathUri>>>,
     }
 
-    impl<'call> codex_extension_api::ToolExecutor<codex_tools::ToolCall<'call>>
+    impl<'call> ava_extension_api::ToolExecutor<ava_tools::ToolCall<'call>>
         for CapturingExtensionExecutor
     {
-        fn tool_name(&self) -> codex_tools::ToolName {
-            codex_tools::ToolName::plain("extension_echo")
+        fn tool_name(&self) -> ava_tools::ToolName {
+            ava_tools::ToolName::plain("extension_echo")
         }
 
-        fn spec(&self) -> codex_tools::ToolSpec {
-            codex_tools::ToolSpec::Function(codex_tools::ResponsesApiTool {
+        fn spec(&self) -> ava_tools::ToolSpec {
+            ava_tools::ToolSpec::Function(ava_tools::ResponsesApiTool {
                 name: "extension_echo".to_string(),
                 description: "Captures arguments.".to_string(),
                 strict: false,
-                parameters: codex_tools::JsonSchema::default(),
+                parameters: ava_tools::JsonSchema::default(),
                 output_schema: None,
                 defer_loading: None,
             })
@@ -322,8 +322,8 @@ mod tests {
 
         fn handle<'a>(
             &'a self,
-            call: codex_tools::ToolCall<'call>,
-        ) -> codex_tools::ToolExecutorFuture<'a>
+            call: ava_tools::ToolCall<'call>,
+        ) -> ava_tools::ToolExecutorFuture<'a>
         where
             'call: 'a,
         {
@@ -334,8 +334,8 @@ mod tests {
     impl CapturingExtensionExecutor {
         async fn handle_call(
             &self,
-            call: codex_tools::ToolCall<'_>,
-        ) -> Result<Box<dyn codex_tools::ToolOutput>, codex_tools::FunctionCallError> {
+            call: ava_tools::ToolCall<'_>,
+        ) -> Result<Box<dyn ava_tools::ToolOutput>, ava_tools::FunctionCallError> {
             call.turn_item_emitter
                 .emit_started(ExtensionTurnItem {
                     item: ExtensionItem::WebSearch(WebSearchItem {
@@ -353,14 +353,14 @@ mod tests {
                 .iter()
                 .map(|environment| environment.file_system_sandbox_context.cwd.clone())
                 .collect();
-            let call = codex_tools::ToolCall {
+            let call = ava_tools::ToolCall {
                 environments: Vec::new(),
                 ..call
             };
             *self.captured_call.lock().await = Some(call);
             Ok(
-                Box::new(codex_tools::JsonToolOutput::new(json!({ "ok": true })))
-                    as Box<dyn codex_tools::ToolOutput>,
+                Box::new(ava_tools::JsonToolOutput::new(json!({ "ok": true })))
+                    as Box<dyn ava_tools::ToolOutput>,
             )
         }
     }
@@ -389,13 +389,13 @@ mod tests {
             cancellation_token: tokio_util::sync::CancellationToken::new(),
             tracker: Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new())),
             call_id: "call-extension".to_string(),
-            tool_name: codex_tools::ToolName::plain("extension_echo"),
+            tool_name: ava_tools::ToolName::plain("extension_echo"),
             source: ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: json!({ "message": "hello" }).to_string(),
             },
         };
-        let output = codex_tools::JsonToolOutput::new(json!({ "ok": true }));
+        let output = ava_tools::JsonToolOutput::new(json!({ "ok": true }));
 
         assert_eq!(
             CoreToolRuntime::pre_tool_use_payload(&handler, &invocation),
@@ -483,7 +483,7 @@ mod tests {
             cancellation_token: tokio_util::sync::CancellationToken::new(),
             tracker: Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new())),
             call_id: "call-extension".to_string(),
-            tool_name: codex_tools::ToolName::plain("extension_echo"),
+            tool_name: ava_tools::ToolName::plain("extension_echo"),
             source: ToolCallSource::CodeMode {
                 cell_id: "cell-1".to_string(),
                 runtime_tool_call_id: "nested-call-1".to_string(),
@@ -504,13 +504,13 @@ mod tests {
         assert_eq!(captured_call.call_id, "call-extension");
         assert_eq!(
             captured_call.tool_name,
-            codex_tools::ToolName::plain("extension_echo")
+            ava_tools::ToolName::plain("extension_echo")
         );
         assert_eq!(captured_call.model, model);
         assert_eq!(captured_call.truncation_policy, truncation_policy);
         let metadata: serde_json::Value = serde_json::from_str(
             captured_call
-                .codex_turn_metadata
+                .ava_turn_metadata
                 .as_deref()
                 .expect("turn metadata"),
         )
@@ -583,7 +583,7 @@ mod tests {
             imagegen_request_id: None,
             generation_id: None,
         });
-        codex_tools::TurnItemEmitter::emit_started(
+        ava_tools::TurnItemEmitter::emit_started(
             &emitter,
             ExtensionTurnItem {
                 item: expected_started_item.clone(),
@@ -593,7 +593,7 @@ mod tests {
             },
         )
         .await;
-        codex_tools::TurnItemEmitter::emit_completed(
+        ava_tools::TurnItemEmitter::emit_completed(
             &emitter,
             ExtensionTurnItem {
                 item: expected_completed_item.clone(),

@@ -176,7 +176,7 @@ fn finalized_assistant_file_citation_renders_as_local_path_snapshot() {
     let output = cwd.join("Quarterly Report.xlsx").display().to_string();
     let cell = AgentMarkdownCell::new(
         format!(
-            r#"Generated :codex-file-citation{{artifact_kind="workbook" path="{output}" purpose="output"}}."#
+            r#"Generated :ava-file-citation{{artifact_kind="workbook" path="{output}" purpose="output"}}."#
         ),
         &cwd,
     );
@@ -226,7 +226,7 @@ fn raw_markdown_bypasses_the_rich_render_cache() {
 #[test]
 fn visualization_directives_are_not_cached() {
     for markdown in [
-        "::codex-inline-vis{file=\"chart.html\"}",
+        "::ava-inline-vis{file=\"chart.html\"}",
         "\u{e200}visualize\u{e202}{\"path\":\"/tmp/chart.html\"}\u{e201}",
     ] {
         let cell = AgentMarkdownCell::new(markdown.to_string(), Path::new("/tmp"));

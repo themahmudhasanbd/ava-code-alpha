@@ -9,8 +9,8 @@ use crate::terminal_hyperlinks::HyperlinkLine;
 use crate::terminal_hyperlinks::adaptive_wrap_hyperlink_lines;
 use crate::terminal_hyperlinks::plain_hyperlink_lines;
 use crate::wrapping::RtOptions;
-use codex_ansi_escape::ansi_escape_line;
-use codex_utils_elapsed::format_duration;
+use ava_ansi_escape::ansi_escape_line;
+use ava_utils_elapsed::format_duration;
 use ratatui::prelude::*;
 
 impl ExecCell {

@@ -3,7 +3,7 @@ use crate::harness::build_metrics_with_defaults;
 use crate::harness::find_metric;
 use crate::harness::histogram_data;
 use crate::harness::latest_metrics;
-use codex_otel::Result;
+use ava_otel::Result;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 
@@ -11,22 +11,22 @@ use std::collections::BTreeMap;
 #[test]
 fn send_builds_payload_with_tags_and_histograms() -> Result<()> {
     let (metrics, exporter) =
-        build_metrics_with_defaults(&[("service", "codex-cli"), ("env", "prod")])?;
+        build_metrics_with_defaults(&[("service", "ava-cli"), ("env", "prod")])?;
 
     metrics.counter_with_description(
-        "codex.turns",
-        "Total number of Codex turns.",
+        "ava.turns",
+        "Total number of Ava turns.",
         /*inc*/ 1,
         &[("model", "gpt-5.1"), ("env", "dev")],
     )?;
     metrics.histogram(
-        "codex.tool_latency",
+        "ava.tool_latency",
         /*value*/ 25,
         &[("tool", "shell")],
     )?;
     metrics.gauge_with_description(
-        "codex.active",
-        "Number of active Codex operations.",
+        "ava.active",
+        "Number of active Ava operations.",
         /*value*/ 2,
         &[("component", "test")],
     )?;
@@ -34,8 +34,8 @@ fn send_builds_payload_with_tags_and_histograms() -> Result<()> {
 
     let resource_metrics = latest_metrics(&exporter);
 
-    let counter = find_metric(&resource_metrics, "codex.turns").expect("counter metric missing");
-    assert_eq!(counter.description(), "Total number of Codex turns.");
+    let counter = find_metric(&resource_metrics, "ava.turns").expect("counter metric missing");
+    assert_eq!(counter.description(), "Total number of Ava turns.");
     let counter_attributes = match counter.data() {
         opentelemetry_sdk::metrics::data::AggregatedMetrics::U64(data) => match data {
             opentelemetry_sdk::metrics::data::MetricData::Sum(sum) => {
@@ -50,21 +50,21 @@ fn send_builds_payload_with_tags_and_histograms() -> Result<()> {
     };
 
     let expected_counter_attributes = BTreeMap::from([
-        ("service".to_string(), "codex-cli".to_string()),
+        ("service".to_string(), "ava-cli".to_string()),
         ("env".to_string(), "dev".to_string()),
         ("model".to_string(), "gpt-5.1".to_string()),
     ]);
     assert_eq!(counter_attributes, expected_counter_attributes);
 
     let (bounds, bucket_counts, sum, count) =
-        histogram_data(&resource_metrics, "codex.tool_latency");
+        histogram_data(&resource_metrics, "ava.tool_latency");
     assert!(!bounds.is_empty());
     assert_eq!(bucket_counts.iter().sum::<u64>(), 1);
     assert_eq!(sum, 25.0);
     assert_eq!(count, 1);
 
     let histogram_attrs = attributes_to_map(
-        find_metric(&resource_metrics, "codex.tool_latency")
+        find_metric(&resource_metrics, "ava.tool_latency")
             .and_then(|metric| match metric.data() {
                 opentelemetry_sdk::metrics::data::AggregatedMetrics::F64(
                     opentelemetry_sdk::metrics::data::MetricData::Histogram(histogram),
@@ -74,17 +74,17 @@ fn send_builds_payload_with_tags_and_histograms() -> Result<()> {
                     .map(opentelemetry_sdk::metrics::data::HistogramDataPoint::attributes),
                 _ => None,
             })
-            .expect("codex.tool_latency histogram attributes should exist"),
+            .expect("ava.tool_latency histogram attributes should exist"),
     );
     let expected_histogram_attributes = BTreeMap::from([
-        ("service".to_string(), "codex-cli".to_string()),
+        ("service".to_string(), "ava-cli".to_string()),
         ("env".to_string(), "prod".to_string()),
         ("tool".to_string(), "shell".to_string()),
     ]);
     assert_eq!(histogram_attrs, expected_histogram_attributes);
 
-    let gauge = find_metric(&resource_metrics, "codex.active").expect("gauge metric missing");
-    assert_eq!(gauge.description(), "Number of active Codex operations.");
+    let gauge = find_metric(&resource_metrics, "ava.active").expect("gauge metric missing");
+    assert_eq!(gauge.description(), "Number of active Ava operations.");
     let gauge_point = match gauge.data() {
         opentelemetry_sdk::metrics::data::AggregatedMetrics::I64(data) => match data {
             opentelemetry_sdk::metrics::data::MetricData::Gauge(gauge) => {
@@ -100,7 +100,7 @@ fn send_builds_payload_with_tags_and_histograms() -> Result<()> {
         BTreeMap::from([
             ("component".to_string(), "test".to_string()),
             ("env".to_string(), "prod".to_string()),
-            ("service".to_string(), "codex-cli".to_string()),
+            ("service".to_string(), "ava-cli".to_string()),
         ])
     );
 
@@ -112,7 +112,7 @@ fn histogram_uses_explicit_bucket_boundaries() -> Result<()> {
     let (metrics, exporter) = build_metrics_with_defaults(&[])?;
 
     metrics.histogram_with_boundaries(
-        "codex.payload_bytes",
+        "ava.payload_bytes",
         /*value*/ 1024,
         &[256.0, 1024.0, 4096.0],
         &[],
@@ -120,7 +120,7 @@ fn histogram_uses_explicit_bucket_boundaries() -> Result<()> {
     metrics.shutdown()?;
 
     assert_eq!(
-        histogram_data(&latest_metrics(&exporter), "codex.payload_bytes"),
+        histogram_data(&latest_metrics(&exporter), "ava.payload_bytes"),
         (vec![256.0, 1024.0, 4096.0], vec![0, 1, 0, 0], 1024.0, 1)
     );
 
@@ -131,18 +131,18 @@ fn histogram_uses_explicit_bucket_boundaries() -> Result<()> {
 #[test]
 fn send_merges_default_tags_per_line() -> Result<()> {
     let (metrics, exporter) = build_metrics_with_defaults(&[
-        ("service", "codex-cli"),
+        ("service", "ava-cli"),
         ("env", "prod"),
         ("region", "us"),
     ])?;
 
     metrics.counter(
-        "codex.alpha",
+        "ava.alpha",
         /*inc*/ 1,
         &[("env", "dev"), ("component", "alpha")],
     )?;
     metrics.counter(
-        "codex.beta",
+        "ava.beta",
         /*inc*/ 2,
         &[("service", "worker"), ("component", "beta")],
     )?;
@@ -150,7 +150,7 @@ fn send_merges_default_tags_per_line() -> Result<()> {
 
     let resource_metrics = latest_metrics(&exporter);
     let alpha_metric =
-        find_metric(&resource_metrics, "codex.alpha").expect("codex.alpha metric missing");
+        find_metric(&resource_metrics, "ava.alpha").expect("ava.alpha metric missing");
     let alpha_point = match alpha_metric.data() {
         opentelemetry_sdk::metrics::data::AggregatedMetrics::U64(data) => match data {
             opentelemetry_sdk::metrics::data::MetricData::Sum(sum) => {
@@ -168,12 +168,12 @@ fn send_merges_default_tags_per_line() -> Result<()> {
         ("component".to_string(), "alpha".to_string()),
         ("env".to_string(), "dev".to_string()),
         ("region".to_string(), "us".to_string()),
-        ("service".to_string(), "codex-cli".to_string()),
+        ("service".to_string(), "ava-cli".to_string()),
     ]);
     assert_eq!(alpha_attrs, expected_alpha_attrs);
 
     let beta_metric =
-        find_metric(&resource_metrics, "codex.beta").expect("codex.beta metric missing");
+        find_metric(&resource_metrics, "ava.beta").expect("ava.beta metric missing");
     let beta_point = match beta_metric.data() {
         opentelemetry_sdk::metrics::data::AggregatedMetrics::U64(data) => match data {
             opentelemetry_sdk::metrics::data::MetricData::Sum(sum) => {
@@ -203,11 +203,11 @@ fn send_merges_default_tags_per_line() -> Result<()> {
 fn client_sends_enqueued_metric() -> Result<()> {
     let (metrics, exporter) = build_metrics_with_defaults(&[])?;
 
-    metrics.counter("codex.turns", /*inc*/ 1, &[("model", "gpt-5.1")])?;
+    metrics.counter("ava.turns", /*inc*/ 1, &[("model", "gpt-5.1")])?;
     metrics.shutdown()?;
 
     let resource_metrics = latest_metrics(&exporter);
-    let counter = find_metric(&resource_metrics, "codex.turns").expect("counter metric missing");
+    let counter = find_metric(&resource_metrics, "ava.turns").expect("counter metric missing");
     let points = match counter.data() {
         opentelemetry_sdk::metrics::data::AggregatedMetrics::U64(data) => match data {
             opentelemetry_sdk::metrics::data::MetricData::Sum(sum) => {
@@ -231,11 +231,11 @@ fn client_sends_enqueued_metric() -> Result<()> {
 fn shutdown_flushes_in_memory_exporter() -> Result<()> {
     let (metrics, exporter) = build_metrics_with_defaults(&[])?;
 
-    metrics.counter("codex.turns", /*inc*/ 1, &[])?;
+    metrics.counter("ava.turns", /*inc*/ 1, &[])?;
     metrics.shutdown()?;
 
     let resource_metrics = latest_metrics(&exporter);
-    let counter = find_metric(&resource_metrics, "codex.turns").expect("counter metric missing");
+    let counter = find_metric(&resource_metrics, "ava.turns").expect("counter metric missing");
     let points = match counter.data() {
         opentelemetry_sdk::metrics::data::AggregatedMetrics::U64(data) => match data {
             opentelemetry_sdk::metrics::data::MetricData::Sum(sum) => {

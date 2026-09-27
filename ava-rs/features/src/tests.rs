@@ -7,8 +7,8 @@ use crate::FeaturesToml;
 use crate::Stage;
 use crate::feature_for_key;
 use crate::unstable_features_warning_event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::WarningEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::WarningEvent;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use toml::Table;
@@ -94,9 +94,9 @@ fn cwd_relative_turn_diffs_is_an_opt_in_map_feature() {
 }
 
 #[test]
-fn codex_apps_mcp_protocol_can_be_enabled_independently_of_generic_mcp() {
+fn ava_apps_mcp_protocol_can_be_enabled_independently_of_generic_mcp() {
     let features_toml = FeaturesToml::from(BTreeMap::from([
-        (Feature::CodexAppsMcp20260728.key().to_string(), true),
+        (Feature::AvaAppsMcp20260728.key().to_string(), true),
         (Feature::Mcp20260728.key().to_string(), false),
     ]));
     let features = Features::from_sources(
@@ -110,7 +110,7 @@ fn codex_apps_mcp_protocol_can_be_enabled_independently_of_generic_mcp() {
 
     assert_eq!(
         (
-            features.enabled(Feature::CodexAppsMcp20260728),
+            features.enabled(Feature::AvaAppsMcp20260728),
             features.enabled(Feature::Mcp20260728),
         ),
         (true, false),
@@ -266,7 +266,7 @@ max_recent_non_user_entries = 12
             classifier_instructions: Some("Review this action".to_owned()),
             review_threshold: Some(0.65),
             max_tool_call_lag: Some(2),
-            reasoning_effort: Some(codex_protocol::openai_models::ReasoningEffort::Minimal),
+            reasoning_effort: Some(ava_protocol::openai_models::ReasoningEffort::Minimal),
             max_action_tokens: Some(512),
             max_classifier_instruction_tokens: Some(256),
             reuse_parent_compaction: Some(false),
@@ -488,9 +488,9 @@ fn collab_is_legacy_alias_for_multi_agent() {
 }
 
 #[test]
-fn codex_hooks_is_legacy_alias_for_hooks() {
-    assert_eq!(feature_for_key("hooks"), Some(Feature::CodexHooks));
-    assert_eq!(feature_for_key("codex_hooks"), Some(Feature::CodexHooks));
+fn ava_hooks_is_legacy_alias_for_hooks() {
+    assert_eq!(feature_for_key("hooks"), Some(Feature::AvaHooks));
+    assert_eq!(feature_for_key("ava_hooks"), Some(Feature::AvaHooks));
 }
 
 #[test]

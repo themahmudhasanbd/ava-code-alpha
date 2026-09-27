@@ -3,18 +3,18 @@
 use std::collections::VecDeque;
 
 use anyhow::Context;
-use codex_connectors::AppToolPolicyEvaluator;
-use codex_connectors::AppToolPolicyInput;
-use codex_protocol::ThreadId;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::mcp::McpResourceOrigin;
-use codex_protocol::mcp::McpResourceOriginCheckpoint;
-use codex_protocol::protocol::EventMsg;
+use ava_connectors::AppToolPolicyEvaluator;
+use ava_connectors::AppToolPolicyInput;
+use ava_protocol::ThreadId;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::mcp::McpResourceOrigin;
+use ava_protocol::mcp::McpResourceOriginCheckpoint;
+use ava_protocol::protocol::EventMsg;
 use rmcp::model::ReadResourceRequestParams;
 use rmcp::model::ReadResourceResult;
 
-use crate::CODEX_APPS_MCP_SERVER_NAME;
+use crate::AVA_APPS_MCP_SERVER_NAME;
 use crate::McpBinding;
 
 const MAX_ORIGINS: usize = 64;
@@ -193,7 +193,7 @@ impl ResourceOrigins {
         link_id: Option<&str>,
         uri: Option<&str>,
     ) {
-        if server != CODEX_APPS_MCP_SERVER_NAME {
+        if server != AVA_APPS_MCP_SERVER_NAME {
             return;
         }
         let Some(connector_id) = connector_id.filter(|value| !value.trim().is_empty()) else {
@@ -259,7 +259,7 @@ impl ResourceOrigin {
         }
 
         let tool_info = binding
-            .tool_info(CODEX_APPS_MCP_SERVER_NAME, &self.tool)
+            .tool_info(AVA_APPS_MCP_SERVER_NAME, &self.tool)
             .context("originating MCP tool is unavailable")?;
         if tool_info.connector_id.as_deref() != Some(self.connector_id.as_str()) {
             anyhow::bail!("originating MCP tool connector does not match its app context");
@@ -274,7 +274,7 @@ impl ResourceOrigin {
         }
         if self.link_id.is_none()
             && tool_meta
-                .and_then(|meta| meta.get("_codex_apps"))
+                .and_then(|meta| meta.get("_ava_apps"))
                 .and_then(|meta| meta.get("requires_explicit_link_id"))
                 .and_then(serde_json::Value::as_bool)
                 == Some(true)
@@ -299,7 +299,7 @@ impl ResourceOrigin {
 
         let meta = serde_json::from_value(serde_json::json!({
             "threadId": thread_id,
-            "x-codex-turn-metadata": {
+            "x-ava-turn-metadata": {
                 "mcp_request_meta": {
                     "selected_connector_ids": [&self.connector_id],
                     "link_id": &self.link_id,
@@ -308,7 +308,7 @@ impl ResourceOrigin {
         }))?;
         binding
             .read_resource(
-                CODEX_APPS_MCP_SERVER_NAME,
+                AVA_APPS_MCP_SERVER_NAME,
                 ReadResourceRequestParams::new(uri).with_meta(meta),
             )
             .await

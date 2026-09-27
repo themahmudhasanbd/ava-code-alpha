@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::async_scorer::authorization::ScoreAuthorization;
-use codex_protocol::models::ImageReference;
+use ava_protocol::models::ImageReference;
 use pretty_assertions::assert_eq;
 
 #[derive(Clone, Copy)]
@@ -13,7 +13,7 @@ enum BudgetOutcome {
 
 async fn catalog_budget_fixture(base_url: String, window: i64) -> Result<GuardianFailureFixture> {
     let server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override(MODEL, move |model| {
             model.context_window = Some(window);
             model.effective_context_window_percent = 50;
@@ -51,7 +51,7 @@ async fn catalog_budget_fixture(base_url: String, window: i64) -> Result<Guardia
             mcp_resource_client: None,
             extension_metrics: None,
             session_store: &session_store,
-            thread_store: test.codex.thread_extension_data(),
+            thread_store: test.ava-code.thread_extension_data(),
         })
         .await;
     Ok(GuardianFailureFixture {
@@ -116,7 +116,7 @@ async fn assert_catalog_budget(evidence: BudgetEvidence) -> Result<()> {
         let restriction = "Revoke permission to edit files. Only read README.md.";
         let approval = format!(
             "{}\nApproved action: read_file README.md",
-            codex_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX
+            ava_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX
         );
         let mut user = user_instruction(&instruction);
         let (checkpoint, commentary) = match evidence {
@@ -170,7 +170,7 @@ async fn assert_catalog_budget(evidence: BudgetEvidence) -> Result<()> {
         }));
         fixture
             .test
-            .codex
+            .ava-code
             .inject_response_items(history.clone())
             .await?;
         let history: Arc<dyn ConversationHistorySnapshot> = match evidence {
@@ -181,10 +181,10 @@ async fn assert_catalog_budget(evidence: BudgetEvidence) -> Result<()> {
                 compaction_model_hash: Some("budget-checkpoint".to_owned()),
             }),
             BudgetEvidence::Image | BudgetEvidence::UserInstructions => {
-                fixture.test.codex.conversation_history_snapshot().await
+                fixture.test.ava-code.conversation_history_snapshot().await
             }
         };
-        let thread_store = fixture.test.codex.thread_extension_data();
+        let thread_store = fixture.test.ava-code.thread_extension_data();
         if matches!(evidence, BudgetEvidence::UserInstructions) {
             set_cached_score(
                 thread_store,
@@ -196,7 +196,7 @@ async fn assert_catalog_budget(evidence: BudgetEvidence) -> Result<()> {
                 },
             );
             let progress = thread_store.get::<GuardianV2ScoreProgress>().unwrap();
-            let authorization = ScoreAuthorization::current(&fixture.test.codex).await;
+            let authorization = ScoreAuthorization::current(&fixture.test.ava-code).await;
             seed_cached_score(&progress, thread_store, /*index*/ 0, authorization);
             assert_eq!(
                 cached_approval(
@@ -240,7 +240,7 @@ async fn assert_catalog_budget(evidence: BudgetEvidence) -> Result<()> {
                     .iter()
                     .all(|request| request.method.as_str() != "POST")
             );
-            fixture.test.codex.shutdown_and_wait().await?;
+            fixture.test.ava-code.shutdown_and_wait().await?;
             continue;
         }
         let progress = thread_store.get::<GuardianV2ScoreProgress>().unwrap();
@@ -277,7 +277,7 @@ async fn assert_catalog_budget(evidence: BudgetEvidence) -> Result<()> {
             .await,
             Some(ReviewDecision::Approved)
         );
-        fixture.test.codex.shutdown_and_wait().await?;
+        fixture.test.ava-code.shutdown_and_wait().await?;
     }
     Ok(())
 }

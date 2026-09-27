@@ -3,68 +3,68 @@ use super::ModelClient;
 use super::PendingUnauthorizedRetry;
 use super::Prompt;
 use super::UnauthorizedRecoveryExecution;
-use super::X_CODEX_INSTALLATION_ID_HEADER;
-use super::X_CODEX_PARENT_THREAD_ID_HEADER;
-use super::X_CODEX_TURN_METADATA_HEADER;
-use super::X_CODEX_WINDOW_ID_HEADER;
+use super::X_AVA_INSTALLATION_ID_HEADER;
+use super::X_AVA_PARENT_THREAD_ID_HEADER;
+use super::X_AVA_TURN_METADATA_HEADER;
+use super::X_AVA_WINDOW_ID_HEADER;
 use super::X_OPENAI_SUBAGENT_HEADER;
 use crate::AttestationContext;
 use crate::AttestationProvider;
 use crate::GenerateAttestationFuture;
-use crate::responses_metadata::CodexResponsesMetadata;
-use crate::test_support::TestCodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesMetadata;
+use crate::test_support::TestAvaResponsesRequestKind;
 use crate::test_support::responses_metadata as test_responses_metadata;
 use base64::Engine;
-use codex_api::AgentIdentityTelemetry;
-use codex_api::ApiError;
-use codex_api::ResponseEvent;
-use codex_api::TransportError;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_model_provider::BearerAuthProvider;
-use codex_model_provider::ModelProvider;
-use codex_model_provider::ModelProviderFuture;
-use codex_model_provider::ProviderAccountResult;
-use codex_model_provider::ProviderAuthRecoveryMessages;
-use codex_model_provider::ProviderUnauthorizedRecovery;
-use codex_model_provider::SharedModelProvider;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::CHATGPT_CODEX_BASE_URL;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_model_provider_info::create_oss_provider_with_base_url;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_otel::SessionTelemetry;
-use codex_protocol::ThreadId;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ExecutedToolCall;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::ToolResultMetadata;
-use codex_protocol::models::ToolResultSource;
-use codex_protocol::models::ToolResultSources;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_rollout_trace::ExecutionStatus;
-use codex_rollout_trace::InferenceTraceAttempt;
-use codex_rollout_trace::InferenceTraceContext;
-use codex_rollout_trace::RawTraceEventPayload;
-use codex_rollout_trace::RolloutTrace;
-use codex_rollout_trace::TraceWriter;
-use codex_rollout_trace::replay_bundle;
+use ava_api::AgentIdentityTelemetry;
+use ava_api::ApiError;
+use ava_api::ResponseEvent;
+use ava_api::TransportError;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_model_provider::BearerAuthProvider;
+use ava_model_provider::ModelProvider;
+use ava_model_provider::ModelProviderFuture;
+use ava_model_provider::ProviderAccountResult;
+use ava_model_provider::ProviderAuthRecoveryMessages;
+use ava_model_provider::ProviderUnauthorizedRecovery;
+use ava_model_provider::SharedModelProvider;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::CHATGPT_AVA_BASE_URL;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_model_provider_info::create_oss_provider_with_base_url;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_otel::SessionTelemetry;
+use ava_protocol::ThreadId;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ExecutedToolCall;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::ToolResultMetadata;
+use ava_protocol::models::ToolResultSource;
+use ava_protocol::models::ToolResultSources;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_rollout_trace::ExecutionStatus;
+use ava_rollout_trace::InferenceTraceAttempt;
+use ava_rollout_trace::InferenceTraceContext;
+use ava_rollout_trace::RawTraceEventPayload;
+use ava_rollout_trace::RolloutTrace;
+use ava_rollout_trace::TraceWriter;
+use ava_rollout_trace::replay_bundle;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -122,7 +122,7 @@ fn test_model_client_with_thread_id(
         /*concurrent_reasoning_summaries_enabled*/ false,
         /*attestation_provider*/ None,
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
-        codex_model_provider::WorkspaceRoutingContext::new(
+        ava_model_provider::WorkspaceRoutingContext::new(
             "https://chatgpt.com/backend-api".into(),
         ),
     )
@@ -134,10 +134,10 @@ fn test_model_provider() -> SharedModelProvider {
 
 #[tokio::test]
 async fn workspace_routed_http_rejects_redirects_without_a_routing_header() {
-    use codex_client::HttpTransport;
-    use codex_login::WorkspaceRouting;
-    use codex_login::WorkspaceRoutingRequest;
-    use codex_login::WorkspaceRoutingResolver;
+    use ava_client::HttpTransport;
+    use ava_login::WorkspaceRouting;
+    use ava_login::WorkspaceRoutingRequest;
+    use ava_login::WorkspaceRoutingResolver;
 
     struct Routing(Option<&'static str>);
     impl WorkspaceRoutingResolver for Routing {
@@ -176,7 +176,7 @@ async fn workspace_routed_http_rejects_redirects_without_a_routing_header() {
             .mount(&destination)
             .await;
         let manager =
-            AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+            AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
         let resolver: Arc<dyn WorkspaceRoutingResolver> = Arc::new(Routing(routing_override));
         manager.set_workspace_routing_resolver(Arc::downgrade(&resolver));
         let mut client = test_model_client(SessionSource::Exec);
@@ -251,7 +251,7 @@ impl ModelProvider for SetupRefreshProvider {
         self.inner.auth_manager()
     }
 
-    fn auth(&self) -> ModelProviderFuture<'_, Option<CodexAuth>> {
+    fn auth(&self) -> ModelProviderFuture<'_, Option<AvaAuth>> {
         self.inner.auth()
     }
 
@@ -261,7 +261,7 @@ impl ModelProvider for SetupRefreshProvider {
 
     fn api_provider(
         &self,
-    ) -> ModelProviderFuture<'_, codex_protocol::error::Result<codex_api::Provider>> {
+    ) -> ModelProviderFuture<'_, ava_protocol::error::Result<ava_api::Provider>> {
         Box::pin(async move {
             self.setup_calls.fetch_add(1, Ordering::SeqCst);
             let manager = self.inner.auth_manager().expect("auth manager");
@@ -278,7 +278,7 @@ impl ModelProvider for SetupRefreshProvider {
                     token,
                     workspace,
                 } => {
-                    codex_login::auth::login_with_chatgpt_auth_tokens(
+                    ava_login::auth::login_with_chatgpt_auth_tokens(
                         home, token, workspace, /*chatgpt_plan_type*/ None,
                     )?;
                     manager.reload().await;
@@ -290,10 +290,10 @@ impl ModelProvider for SetupRefreshProvider {
 
     fn models_manager(
         &self,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         config_model_catalog: Option<ModelsResponse>,
     ) -> SharedModelsManager {
-        self.inner.models_manager(codex_home, config_model_catalog)
+        self.inner.models_manager(ava_home, config_model_catalog)
     }
 }
 
@@ -307,7 +307,7 @@ async fn client_setup_accepts_command_credential_refresh() {
         let token_path = tempdir.path().join("token.txt");
         std::fs::write(&token_path, "initial-token").unwrap();
         let mut info = test_model_provider().info().clone();
-        info.auth = Some(codex_protocol::config_types::ModelProviderAuthInfo {
+        info.auth = Some(ava_protocol::config_types::ModelProviderAuthInfo {
             command: if cfg!(windows) { "cmd.exe" } else { "cat" }.into(),
             args: if cfg!(windows) {
                 vec!["/D", "/C", "type", "token.txt"]
@@ -339,11 +339,11 @@ async fn client_setup_accepts_command_credential_refresh() {
         );
         let refreshed_revision = Some(*manager.auth_change_receiver().borrow());
         assert_ne!(
-            codex_model_provider::ResponsesConnectionKey::new(
+            ava_model_provider::ResponsesConnectionKey::new(
                 &setup.api_provider,
                 setup.auth_revision
             ),
-            codex_model_provider::ResponsesConnectionKey::new(
+            ava_model_provider::ResponsesConnectionKey::new(
                 &setup.api_provider,
                 refreshed_revision
             ),
@@ -367,7 +367,7 @@ async fn client_setup_rebuilds_chatgpt_refresh_but_rejects_account_switches() {
             format!("header.{payload}.signature")
         };
         let home = TempDir::new().unwrap();
-        let initial = CodexAuth::from_external_chatgpt_tokens(
+        let initial = AvaAuth::from_external_chatgpt_tokens(
             &token("user-a", "initial"),
             "workspace-a",
             /*chatgpt_plan_type*/ None,
@@ -420,8 +420,8 @@ fn test_responses_metadata_for_client(
     turn_id: Option<&str>,
     window_id: String,
     parent_thread_id: Option<ThreadId>,
-    request_kind: TestCodexResponsesRequestKind,
-) -> CodexResponsesMetadata {
+    request_kind: TestAvaResponsesRequestKind,
+) -> AvaResponsesMetadata {
     let thread_id = client.state.thread_id.to_string();
     test_responses_metadata(
         TEST_INSTALLATION_ID,
@@ -501,7 +501,7 @@ fn responses_request_limits_raw_tool_metadata_to_resolved_first_party_https_endp
         /*turn_id*/ None,
         format!("{}:0", client.state.thread_id),
         /*parent_thread_id*/ None,
-        TestCodexResponsesRequestKind::Turn,
+        TestAvaResponsesRequestKind::Turn,
     );
     for (base_url, allowed) in [
         ("https://api.openai.com/v1", true),
@@ -522,7 +522,7 @@ fn responses_request_limits_raw_tool_metadata_to_resolved_first_party_https_endp
                 &prompt,
                 &model,
                 /*effort*/ None,
-                codex_protocol::config_types::ReasoningSummary::None,
+                ava_protocol::config_types::ReasoningSummary::None,
                 /*service_tier*/ None,
                 &responses_metadata,
             )?;
@@ -556,7 +556,7 @@ fn websocket_incremental_reuse_tracks_raw_result_metadata() -> anyhow::Result<()
         /*turn_id*/ None,
         format!("{}:0", client.state.thread_id),
         /*parent_thread_id*/ None,
-        TestCodexResponsesRequestKind::Turn,
+        TestAvaResponsesRequestKind::Turn,
     );
     for (scenario, base_url, previous_metadata, current_metadata, expect_incremental) in [
         (
@@ -622,7 +622,7 @@ fn websocket_incremental_reuse_tracks_raw_result_metadata() -> anyhow::Result<()
             },
             &test_model_info(),
             /*effort*/ None,
-            codex_protocol::config_types::ReasoningSummary::None,
+            ava_protocol::config_types::ReasoningSummary::None,
             /*service_tier*/ None,
             &responses_metadata,
         )?;
@@ -697,7 +697,7 @@ async fn responses_http_omits_raw_tool_metadata_for_openai_named_custom_endpoint
         /*turn_id*/ None,
         format!("{}:0", client.state.thread_id),
         /*parent_thread_id*/ None,
-        TestCodexResponsesRequestKind::Turn,
+        TestAvaResponsesRequestKind::Turn,
     );
     let mut session = client.new_session();
     let mut stream = session
@@ -706,7 +706,7 @@ async fn responses_http_omits_raw_tool_metadata_for_openai_named_custom_endpoint
             &test_model_info(),
             &test_session_telemetry(),
             /*effort*/ None,
-            codex_protocol::config_types::ReasoningSummary::None,
+            ava_protocol::config_types::ReasoningSummary::None,
             /*service_tier*/ None,
             &responses_metadata,
             &InferenceTraceContext::disabled(),
@@ -751,14 +751,14 @@ fn responses_lite_prefix_ids_track_thread_and_payload() -> anyhow::Result<()> {
             prompt,
             &model,
             /*effort*/ None,
-            codex_protocol::config_types::ReasoningSummary::None,
+            ava_protocol::config_types::ReasoningSummary::None,
             /*service_tier*/ None,
             &test_responses_metadata_for_client(
                 client,
                 /*turn_id*/ None,
                 format!("{}:0", client.state.thread_id),
                 /*parent_thread_id*/ None,
-                TestCodexResponsesRequestKind::Turn,
+                TestAvaResponsesRequestKind::Turn,
             ),
         )
     };
@@ -771,11 +771,11 @@ fn responses_lite_prefix_ids_track_thread_and_payload() -> anyhow::Result<()> {
     assert_eq!(changed_instructions.input[0], original.input[0]);
     assert_ne!(changed_instructions.input[1].id(), original.input[1].id());
 
-    prompt.tools = vec![codex_tools::ToolSpec::Freeform(codex_tools::FreeformTool {
+    prompt.tools = vec![ava_tools::ToolSpec::Freeform(ava_tools::FreeformTool {
         name: "exec".to_string(),
         description: "Execute JavaScript.".to_string(),
         defer_loading: None,
-        format: codex_tools::FreeformToolFormat {
+        format: ava_tools::FreeformToolFormat {
             r#type: "grammar".to_string(),
             syntax: "lark".to_string(),
             definition: "start: /.+/".to_string(),
@@ -825,14 +825,14 @@ fn websocket_continuation_reset_reason_survives_failed_reconnect_and_turn_bounda
                 &Prompt::default(),
                 &test_model_info(),
                 /*effort*/ None,
-                codex_protocol::config_types::ReasoningSummary::None,
+                ava_protocol::config_types::ReasoningSummary::None,
                 /*service_tier*/ None,
                 &test_responses_metadata_for_client(
                     &client,
                     /*turn_id*/ None,
                     format!("{}:0", client.state.thread_id),
                     /*parent_thread_id*/ None,
-                    TestCodexResponsesRequestKind::Turn,
+                    TestAvaResponsesRequestKind::Turn,
                 ),
             )
             .expect("build continuation request");
@@ -871,14 +871,14 @@ fn reasoning_effort_in_request(
             &Prompt::default(),
             model_info,
             Some(effort),
-            codex_protocol::config_types::ReasoningSummary::None,
+            ava_protocol::config_types::ReasoningSummary::None,
             /*service_tier*/ None,
             &test_responses_metadata_for_client(
                 &client,
                 /*turn_id*/ None,
                 format!("{}:0", client.state.thread_id),
                 /*parent_thread_id*/ None,
-                TestCodexResponsesRequestKind::Turn,
+                TestAvaResponsesRequestKind::Turn,
             ),
         )
         .expect("build responses request")
@@ -1032,8 +1032,8 @@ fn started_inference_attempt(temp: &TempDir) -> anyhow::Result<InferenceTraceAtt
         agent_path: "/root".to_string(),
         metadata_payload: None,
     })?;
-    writer.append(RawTraceEventPayload::CodexTurnStarted {
-        codex_turn_id: "turn-1".to_string(),
+    writer.append(RawTraceEventPayload::AvaTurnStarted {
+        ava_turn_id: "turn-1".to_string(),
         thread_id: "thread-root".to_string(),
     })?;
 
@@ -1058,7 +1058,7 @@ fn started_inference_attempt(temp: &TempDir) -> anyhow::Result<InferenceTraceAtt
 
 fn output_message(id: &str, text: &str) -> ResponseItem {
     ResponseItem::Message {
-        id: Some(codex_protocol::ResponseItemId::with_suffix("msg", id)),
+        id: Some(ava_protocol::ResponseItemId::with_suffix("msg", id)),
         role: "assistant".to_string(),
         content: vec![ContentItem::OutputText {
             text: text.to_string(),
@@ -1128,7 +1128,7 @@ fn internal_session_prompt_cache_key_is_scoped_to_parent_thread() {
         Some("turn-123"),
         "window-1".to_string(),
         Some(parent_thread_id),
-        TestCodexResponsesRequestKind::Turn,
+        TestAvaResponsesRequestKind::Turn,
     );
 
     assert_eq!(
@@ -1171,20 +1171,20 @@ fn build_ws_client_metadata_includes_window_lineage_and_turn_metadata() {
         Some("turn-123"),
         expected_window_id.clone(),
         Some(parent_thread_id),
-        TestCodexResponsesRequestKind::Turn,
+        TestAvaResponsesRequestKind::Turn,
     );
     let client_metadata =
         client.build_ws_client_metadata(&responses_metadata, /*use_responses_lite*/ false);
     let parent_thread_id = parent_thread_id.to_string();
     let turn_metadata: serde_json::Value = serde_json::from_str(
         client_metadata
-            .get(X_CODEX_TURN_METADATA_HEADER)
+            .get(X_AVA_TURN_METADATA_HEADER)
             .expect("turn metadata"),
     )
     .expect("valid turn metadata");
     for (client_key, metadata_key, expected) in [
         (
-            X_CODEX_INSTALLATION_ID_HEADER,
+            X_AVA_INSTALLATION_ID_HEADER,
             "installation_id",
             "11111111-1111-4111-8111-111111111111",
         ),
@@ -1192,12 +1192,12 @@ fn build_ws_client_metadata_includes_window_lineage_and_turn_metadata() {
         ("thread_id", "thread_id", thread_id.as_str()),
         ("turn_id", "turn_id", "turn-123"),
         (
-            X_CODEX_WINDOW_ID_HEADER,
+            X_AVA_WINDOW_ID_HEADER,
             "window_id",
             expected_window_id.as_str(),
         ),
         (
-            X_CODEX_PARENT_THREAD_ID_HEADER,
+            X_AVA_PARENT_THREAD_ID_HEADER,
             "parent_thread_id",
             parent_thread_id.as_str(),
         ),
@@ -1350,7 +1350,7 @@ async fn bedrock_unauthorized_error_uses_provider_mapping() {
     assert_eq!(
         error.to_string(),
         format!(
-            "Amazon Bedrock rejected the request because its AWS signature has expired. Refresh your AWS credentials and retry. If `AWS_BEARER_TOKEN_BEDROCK` is set, update or unset it, then restart Codex, url: {url}"
+            "Amazon Bedrock rejected the request because its AWS signature has expired. Refresh your AWS credentials and retry. If `AWS_BEARER_TOKEN_BEDROCK` is set, update or unset it, then restart Ava, url: {url}"
         )
     );
 }
@@ -1371,7 +1371,7 @@ impl ModelProvider for TestRecoveryProvider {
         None
     }
 
-    fn auth(&self) -> ModelProviderFuture<'_, Option<CodexAuth>> {
+    fn auth(&self) -> ModelProviderFuture<'_, Option<AvaAuth>> {
         self.inner.auth()
     }
 
@@ -1388,11 +1388,11 @@ impl ModelProvider for TestRecoveryProvider {
 
     fn recover_from_unauthorized(
         &self,
-    ) -> ModelProviderFuture<'_, codex_protocol::error::Result<ProviderUnauthorizedRecovery>> {
+    ) -> ModelProviderFuture<'_, ava_protocol::error::Result<ProviderUnauthorizedRecovery>> {
         self.attempts.fetch_add(1, Ordering::Relaxed);
         Box::pin(async move {
             if self.should_fail {
-                Err(CodexErr::Io(std::io::Error::other(
+                Err(AvaErr::Io(std::io::Error::other(
                     "provider recovery failed",
                 )))
             } else {
@@ -1403,10 +1403,10 @@ impl ModelProvider for TestRecoveryProvider {
 
     fn models_manager(
         &self,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         config_model_catalog: Option<ModelsResponse>,
     ) -> SharedModelsManager {
-        self.inner.models_manager(codex_home, config_model_catalog)
+        self.inner.models_manager(ava_home, config_model_catalog)
     }
 }
 
@@ -1464,7 +1464,7 @@ async fn provider_owned_auth_recovery_is_bounded_and_preserves_unauthorized_fail
         };
 
         match error.details() {
-            CodexErrorDetails::UnexpectedStatus(response) => {
+            AvaErrorDetails::UnexpectedStatus(response) => {
                 assert_eq!(response.status, http::StatusCode::UNAUTHORIZED);
                 assert_eq!(response.body, "unauthorized");
             }
@@ -1613,9 +1613,9 @@ fn model_client_with_counting_attestation(
     let (auth_manager, provider) = if include_attestation {
         (
             Some(AuthManager::from_auth_for_testing(
-                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+                AvaAuth::create_dummy_chatgpt_auth_for_testing(),
             )),
-            ModelProviderInfo::create_openai_provider(Some(CHATGPT_CODEX_BASE_URL.to_string())),
+            ModelProviderInfo::create_openai_provider(Some(CHATGPT_AVA_BASE_URL.to_string())),
         )
     } else {
         (
@@ -1641,7 +1641,7 @@ fn model_client_with_counting_attestation(
             calls: attestation_calls.clone(),
         })),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
-        codex_model_provider::WorkspaceRoutingContext::new(
+        ava_model_provider::WorkspaceRoutingContext::new(
             "https://chatgpt.com/backend-api".into(),
         ),
     );
@@ -1656,12 +1656,12 @@ fn thread_responses_headers_are_scoped_to_model_and_backend_auth() {
         http::HeaderName::from_static("x-custom-request"),
         http::HeaderValue::from_static("example"),
     )]);
-    model_client.codex_responses_headers = Some(Arc::new(crate::CodexResponsesHeaders {
+    model_client.ava_responses_headers = Some(Arc::new(crate::AvaResponsesHeaders {
         model: "selected-model".to_owned(),
         headers: headers.clone(),
     }));
-    let chatgpt_auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
-    let api_key_auth = CodexAuth::from_api_key("test-api-key");
+    let chatgpt_auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
+    let api_key_auth = AvaAuth::from_api_key("test-api-key");
     for (auth, model, expected) in [
         (Some(&chatgpt_auth), "selected-model", headers),
         (Some(&chatgpt_auth), "other-model", http::HeaderMap::new()),
@@ -1690,7 +1690,7 @@ fn thread_responses_headers_are_scoped_to_model_and_backend_auth() {
 #[test_case::test_case(/*cache_key*/ None; "own_cache")]
 #[test_case::test_case(Some("parent-session"); "inherited_cache")]
 #[tokio::test]
-async fn websocket_handshake_includes_attestation_for_chatgpt_codex_responses(
+async fn websocket_handshake_includes_attestation_for_chatgpt_ava_responses(
     cache_key: Option<&str>,
 ) {
     let (mut model_client, attestation_calls) =
@@ -1700,7 +1700,7 @@ async fn websocket_handshake_includes_attestation_for_chatgpt_codex_responses(
         /*turn_id*/ None,
         format!("{}:0", model_client.state.thread_id),
         /*parent_thread_id*/ None,
-        TestCodexResponsesRequestKind::WebsocketConnection,
+        TestAvaResponsesRequestKind::WebsocketConnection,
     );
 
     model_client.prompt_cache_key_override = cache_key.map(str::to_string);
@@ -1742,7 +1742,7 @@ async fn existing_call_sideband_headers_include_attestation() {
 }
 
 #[tokio::test]
-async fn non_chatgpt_codex_endpoints_omit_attestation_generation() {
+async fn non_chatgpt_ava_endpoints_omit_attestation_generation() {
     let (model_client, attestation_calls) =
         model_client_with_counting_attestation(/*include_attestation*/ false);
     let mut response_headers = http::HeaderMap::new();

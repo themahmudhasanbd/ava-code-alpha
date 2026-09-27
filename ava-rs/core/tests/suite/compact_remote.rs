@@ -4,38 +4,38 @@ use anyhow::Context;
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_history::CodexHarnessMetadata;
-use codex_history::InitialHistory;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_login::auth::BedrockApiKeyAuth;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_5_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::AgentPath;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::ConversationStartParams;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::RealtimeConversationRealtimeEvent;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::RealtimeOutputModality;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::user_input::UserInput;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_history::AvaHarnessMetadata;
+use ava_history::InitialHistory;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_login::auth::BedrockApiKeyAuth;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_5_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::AgentPath;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::ConversationStartParams;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::RealtimeConversationRealtimeEvent;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::RealtimeOutputModality;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::mount_sse_once;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_websocket_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::TestCodexHarness;
-use core_test_support::test_codex::test_codex as base_test_codex;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::TestAvaHarness;
+use core_test_support::test_ava::test_ava as base_test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_event_with_timeout;
@@ -52,23 +52,23 @@ use wiremock::ResponseTemplate;
 mod trimming;
 
 const DUMMY_FUNCTION_NAME: &str = "test_tool";
-const TURN_STATE_HEADER: &str = "x-codex-turn-state";
+const TURN_STATE_HEADER: &str = "x-ava-turn-state";
 const REMOTE_COMPACT_TURN_COMPLETE_TIMEOUT: Duration = Duration::from_secs(30);
 const CONTEXT_WINDOW_TRUNCATED_OUTPUT_MESSAGE: &str =
     "Output exceeded the available model context and was truncated";
 
-fn test_codex() -> TestCodexBuilder {
-    base_test_codex().with_config(|config| {
+fn test_ava() -> TestAvaBuilder {
+    base_test_ava().with_config(|config| {
         config.update_plan_enabled = true;
     })
 }
 
-fn remote_realtime_test_codex_builder(
+fn remote_realtime_test_ava_builder(
     realtime_server: &responses::WebSocketTestServer,
-) -> TestCodexBuilder {
+) -> TestAvaBuilder {
     let realtime_base_url = realtime_server.uri().to_string();
-    test_codex()
-        .with_auth(CodexAuth::from_api_key("dummy"))
+    test_ava()
+        .with_auth(AvaAuth::from_api_key("dummy"))
         .with_config(move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
         })
@@ -94,17 +94,17 @@ async fn start_remote_realtime_server() -> responses::WebSocketTestServer {
     .await
 }
 
-async fn start_realtime_conversation(codex: &codex_core::CodexThread) -> Result<()> {
-    codex
+async fn start_realtime_conversation(ava: &ava_core::AvaThread) -> Result<()> {
+    ava
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -119,7 +119,7 @@ async fn start_realtime_conversation(codex: &codex_core::CodexThread) -> Result<
         }))
         .await?;
 
-    wait_for_event_match(codex, |msg| match msg {
+    wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -127,7 +127,7 @@ async fn start_realtime_conversation(codex: &codex_core::CodexThread) -> Result<
     .await
     .expect("conversation start failed");
 
-    wait_for_event_match(codex, |msg| match msg {
+    wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -142,9 +142,9 @@ async fn start_realtime_conversation(codex: &codex_core::CodexThread) -> Result<
     Ok(())
 }
 
-async fn close_realtime_conversation(codex: &codex_core::CodexThread) -> Result<()> {
-    codex.submit(Op::RealtimeConversationClose).await?;
-    wait_for_event_match(codex, |msg| match msg {
+async fn close_realtime_conversation(ava: &ava_core::AvaThread) -> Result<()> {
+    ava.submit(Op::RealtimeConversationClose).await?;
+    wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
@@ -171,21 +171,21 @@ fn assert_request_contains_custom_realtime_start(
     );
 }
 
-async fn wait_for_turn_complete(codex: &codex_core::CodexThread) {
+async fn wait_for_turn_complete(ava: &ava_core::AvaThread) {
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |ev| matches!(ev, EventMsg::TurnComplete(_)),
         REMOTE_COMPACT_TURN_COMPLETE_TIMEOUT,
     )
     .await;
 }
 
-fn amazon_bedrock_test_codex() -> TestCodexBuilder {
-    let auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+fn amazon_bedrock_test_ava() -> TestAvaBuilder {
+    let auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
         api_key: "bedrock-test-api-key".to_string(),
         region: "us-east-1".to_string(),
     });
-    test_codex()
+    test_ava()
         .with_auth(auth)
         .with_model(AMAZON_BEDROCK_GPT_5_5_MODEL_ID)
         .with_config(|config| {
@@ -212,7 +212,7 @@ fn annotate_retained_user_in_rollout(path: &Path, retained_text: &str) -> Result
     let mut rollout = fs::read_to_string(path)?
         .lines()
         .filter(|line| !line.trim().is_empty())
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<std::result::Result<Vec<_>, _>>()?;
     rollout
         .iter_mut()
@@ -225,7 +225,7 @@ fn annotate_retained_user_in_rollout(path: &Path, retained_text: &str) -> Result
             _ => None,
         })
         .context("persisted user response missing from rollout")?
-        .metadata = Some(CodexHarnessMetadata::default());
+        .metadata = Some(AvaHarnessMetadata::default());
 
     let contents = rollout
         .iter()
@@ -240,7 +240,7 @@ fn assert_compacted_user_metadata(path: &Path, retained_text: &str) -> Result<()
     let replacement_history = fs::read_to_string(path)?
         .lines()
         .filter(|line| !line.trim().is_empty())
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<std::result::Result<Vec<_>, _>>()?
         .into_iter()
         .rev()
@@ -295,7 +295,7 @@ async fn remote_compact_v2_retains_metadata_from_resumed_history() -> Result<()>
     )
     .await;
 
-    let builder = || test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+    let builder = || test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let initial = builder()
         .with_pre_build_hook(|home| {
             fs::write(
@@ -313,16 +313,16 @@ async fn remote_compact_v2_retains_metadata_from_resumed_history() -> Result<()>
         .rollout_path
         .clone()
         .context("rollout path")?;
-    initial.codex.shutdown_and_wait().await?;
+    initial.ava-code.shutdown_and_wait().await?;
     annotate_retained_user_in_rollout(&rollout_path, retained_text)?;
 
     let resumed = builder()
         .resume(&server, home, rollout_path.clone())
         .await?;
-    resumed.codex.submit(Op::Compact).await?;
-    wait_for_turn_complete(&resumed.codex).await;
+    resumed.ava-code.submit(Op::Compact).await?;
+    wait_for_turn_complete(&resumed.ava-code).await;
     resumed.submit_turn("continue after compaction").await?;
-    resumed.codex.shutdown_and_wait().await?;
+    resumed.ava-code.shutdown_and_wait().await?;
 
     let requests = response_mock.requests();
     let compact_request = &requests[1];
@@ -349,9 +349,9 @@ async fn remote_compact_v2_retains_only_client_developer_messages_when_enabled(
 ) -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_auto_env_builder(
-        test_codex()
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let harness = TestAvaHarness::with_auto_env_builder(
+        test_ava()
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_config(move |config| {
                 if enabled {
                     config
@@ -371,9 +371,9 @@ async fn remote_compact_v2_retains_only_client_developer_messages_when_enabled(
         phase: None,
         internal_chat_message_metadata_passthrough: None,
     };
-    let codex = &harness.test().codex;
-    let rollout_path = codex.rollout_path().context("rollout path")?;
-    codex
+    let ava = &harness.test().ava-code;
+    let rollout_path = ava.rollout_path().context("rollout path")?;
+    ava
         .inject_response_items(vec![developer("INJECTED_CLIENT_DEVELOPER")])
         .await?;
     let response_mock = responses::mount_sse_sequence(
@@ -396,8 +396,8 @@ async fn remote_compact_v2_retains_only_client_developer_messages_when_enabled(
     .await;
 
     harness.test().submit_turn("before compact").await?;
-    codex.submit(Op::Compact).await?;
-    wait_for_turn_complete(codex).await;
+    ava.submit(Op::Compact).await?;
+    wait_for_turn_complete(ava).await;
     harness.test().submit_turn("after compact").await?;
 
     let requests = response_mock.requests();
@@ -410,10 +410,10 @@ async fn remote_compact_v2_retains_only_client_developer_messages_when_enabled(
         .iter()
         .for_each(assert_compact_request_omits_harness_metadata);
 
-    codex.shutdown_and_wait().await?;
+    ava.shutdown_and_wait().await?;
     let replacement_history = fs::read_to_string(&rollout_path)?
         .lines()
-        .filter_map(|line| codex_rollout::parse_rollout_line(line).ok())
+        .filter_map(|line| ava_rollout::parse_rollout_line(line).ok())
         .filter_map(|line| match line.item {
             RolloutItem::Compacted(compacted) => compacted.replacement_history,
             _ => None,
@@ -436,16 +436,16 @@ async fn remote_compact_v2_retains_only_client_developer_messages_when_enabled(
 async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_auto_env_builder(
-        test_codex()
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let harness = TestAvaHarness::with_auto_env_builder(
+        test_ava()
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_config(|config| {
                 config.model_auto_compact_token_limit = Some(200);
             }),
     )
     .await?;
-    let codex = &harness.test().codex;
-    let rollout_path = codex.rollout_path().context("rollout path")?;
+    let ava = &harness.test().ava-code;
+    let rollout_path = ava.rollout_path().context("rollout path")?;
     let responses_mock = responses::mount_sse_sequence(
         harness.server(),
         vec![
@@ -475,14 +475,14 @@ async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()
     .await;
 
     harness.test().submit_turn("before compact").await?;
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "turn that triggers auto compact".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
     let mut preserved_prompts = Vec::new();
-    wait_for_event(codex, |event| {
+    wait_for_event(ava, |event| {
         if let EventMsg::UserMessage(message) = event {
             preserved_prompts.push(message.message.clone());
         }
@@ -490,11 +490,11 @@ async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()
     })
     .await;
     assert_eq!(preserved_prompts, vec!["turn that triggers auto compact"]);
-    wait_for_event(codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     assert_eq!(responses_mock.requests().len(), 2);
 
-    codex.flush_rollout().await?;
-    let history = codex.load_history(/*include_archived*/ false).await?;
+    ava.flush_rollout().await?;
+    let history = ava.load_history(/*include_archived*/ false).await?;
     assert_eq!(
         history
             .items
@@ -511,11 +511,11 @@ async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()
         1,
         "the accepted prompt should be saved exactly once after compaction fails"
     );
-    codex.shutdown_and_wait().await?;
+    ava.shutdown_and_wait().await?;
 
     let record = fs::read_to_string(&rollout_path)?
         .lines()
-        .filter_map(|line| codex_rollout::parse_rollout_line(line).ok())
+        .filter_map(|line| ava_rollout::parse_rollout_line(line).ok())
         .filter_map(|line| match line.item {
             RolloutItem::TokenUsageRecord(record) => Some(record),
             _ => None,
@@ -531,7 +531,7 @@ async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()
 async fn amazon_bedrock_automatic_compaction_uses_v2_responses_endpoint() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_auto_env_builder(amazon_bedrock_test_codex().with_config(
+    let harness = TestAvaHarness::with_auto_env_builder(amazon_bedrock_test_ava().with_config(
         |config| {
             config.model_auto_compact_token_limit = Some(200);
         },
@@ -587,7 +587,7 @@ async fn amazon_bedrock_automatic_compaction_uses_v2_responses_endpoint() -> Res
         compact_request
             .header("x-amzn-mantle-client-agent")
             .as_deref(),
-        Some("codex")
+        Some("ava")
     );
     assert_eq!(
         compact_request.body_json()["model"],
@@ -616,9 +616,9 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
 ) -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_auto_env_builder(
-        test_codex()
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let harness = TestAvaHarness::with_auto_env_builder(
+        test_ava()
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_config(move |config| {
                 let _ = config.features.enable(Feature::UnifiedImageBudget);
                 if let Some(enabled) = image_budget_enabled {
@@ -629,7 +629,7 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
             }),
     )
     .await?;
-    let codex = &harness.test().codex;
+    let ava = &harness.test().ava-code;
     // Each original-detail image costs 10,000 estimated patch tokens.
     let image_inputs = (1..=8)
         .map(|number| {
@@ -638,7 +638,7 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
                     image: ImageReference::File {
                         file_id: format!("file_{number}"),
                     },
-                    detail: Some(codex_protocol::models::ImageDetail::Original),
+                    detail: Some(ava_protocol::models::ImageDetail::Original),
                 });
             }
             let image = image::ImageBuffer::from_pixel(
@@ -655,7 +655,7 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
                         BASE64_STANDARD.encode(bytes.get_ref())
                     ),
                 },
-                detail: Some(codex_protocol::models::ImageDetail::Original),
+                detail: Some(ava_protocol::models::ImageDetail::Original),
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -672,10 +672,10 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
         ]),
     )
     .await;
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(input))
         .await?;
-    wait_for_turn_complete(codex).await;
+    wait_for_turn_complete(ava).await;
     let initial_request = initial_mock.single_request();
     let prepared_images = initial_request
         .inputs_of_type("message")
@@ -709,8 +709,8 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
             ]),
         )
         .await;
-        codex.submit(Op::Compact).await?;
-        wait_for_turn_complete(codex).await;
+        ava.submit(Op::Compact).await?;
+        wait_for_turn_complete(ava).await;
         let compact_request = compact_mock.single_request();
         assert_eq!(compact_request.path(), "/v1/responses");
         assert_eq!(
@@ -726,13 +726,13 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
             ]),
         )
         .await;
-        codex
+        ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "after compact".to_string(),
                 text_elements: Vec::new(),
             }]))
             .await?;
-        wait_for_turn_complete(codex).await;
+        wait_for_turn_complete(ava).await;
         let follow_up = follow_up_mock.single_request();
         assert_eq!(
             follow_up.inputs_of_type("compaction")[0]["encrypted_content"],
@@ -788,10 +788,10 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
                 ]),
             )
             .await;
-            codex
+            ava
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![image_inputs[7].clone()]))
                 .await?;
-            wait_for_turn_complete(codex).await;
+            wait_for_turn_complete(ava).await;
             let _ = append_mock.single_request();
         }
     }
@@ -802,8 +802,8 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
 async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_builder(
-        test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+    let harness = TestAvaHarness::with_builder(
+        test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
     )
     .await?;
     let image_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
@@ -847,7 +847,7 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
             .map(|item| RolloutItem::ResponseItem(item.into()))
     })
     .collect::<serde_json::Result<Vec<_>>>()?;
-    let codex = harness
+    let ava = harness
         .test()
         .thread_manager
         .start_thread(StartThreadOptions {
@@ -891,15 +891,15 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
     )
     .await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello remote compact".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_turn_complete(&codex).await;
+    wait_for_turn_complete(&ava).await;
 
-    codex
+    ava
         .submit(Op::InterAgentCommunication {
             communication: InterAgentCommunication::new(
                 AgentPath::root().join("child").expect("valid child path"),
@@ -912,7 +912,7 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
             start_options: Default::default(),
         })
         .await?;
-    codex
+    ava
         .submit(Op::InterAgentCommunication {
             communication: InterAgentCommunication::new(
                 AgentPath::root().join("child").expect("valid child path"),
@@ -925,7 +925,7 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
         })
         .await?;
     let delegated_task_ciphertext = format!("delegated compact task{}", "x".repeat(40_000));
-    codex
+    ava
         .submit(Op::InterAgentCommunication {
             communication: InterAgentCommunication::new_encrypted(
                 AgentPath::root(),
@@ -937,11 +937,11 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
             start_options: Default::default(),
         })
         .await?;
-    wait_for_turn_complete(&codex).await;
+    wait_for_turn_complete(&ava).await;
 
     let descendant_followup_ciphertext = "descendant follow-up task";
     let worker_path = AgentPath::root().join("worker").expect("valid worker path");
-    codex
+    ava
         .submit(Op::InterAgentCommunication {
             communication: InterAgentCommunication::new_encrypted(
                 worker_path.join("child").expect("valid grandchild path"),
@@ -953,18 +953,18 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
             start_options: Default::default(),
         })
         .await?;
-    wait_for_turn_complete(&codex).await;
+    wait_for_turn_complete(&ava).await;
 
-    let compact_turn_id = codex.submit(Op::Compact).await?;
-    wait_for_turn_complete(&codex).await;
+    let compact_turn_id = ava.submit(Op::Compact).await?;
+    wait_for_turn_complete(&ava).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "after compact".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_turn_complete(&codex).await;
+    wait_for_turn_complete(&ava).await;
 
     let response_requests = responses_mock.requests();
     let compact_request = &response_requests[3];
@@ -1021,7 +1021,7 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
     );
     assert!(
         compact_request
-            .header("x-codex-beta-features")
+            .header("x-ava-beta-features")
             .as_deref()
             .is_some_and(|value| value
                 .split(',')
@@ -1031,7 +1031,7 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
     assert_eq!(compact_request.path(), "/v1/responses");
     let compact_metadata: Value = serde_json::from_str(
         &compact_request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("v2 compact request should include turn metadata"),
     )
     .expect("v2 compact turn metadata should be valid json");
@@ -1043,10 +1043,10 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
     );
     assert_eq!(
         compact_metadata["window_id"].as_str(),
-        compact_request.header("x-codex-window-id").as_deref()
+        compact_request.header("x-ava-window-id").as_deref()
     );
     assert_eq!(
-        compact_request.body_json()["client_metadata"]["x-codex-window-id"].as_str(),
+        compact_request.body_json()["client_metadata"]["x-ava-window-id"].as_str(),
         compact_metadata["window_id"].as_str()
     );
     assert_eq!(
@@ -1152,17 +1152,17 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
 async fn remote_compact_v2_retries_failures_with_stream_retry_budget() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_builder(
-        test_codex()
+    let harness = TestAvaHarness::with_builder(
+        test_ava()
             .with_history_mode(ThreadHistoryMode::Paginated)
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_config(|config| {
                 config.model_provider.request_max_retries = Some(0);
                 config.model_provider.stream_max_retries = Some(2);
             }),
     )
     .await?;
-    let codex = harness.test().codex.clone();
+    let ava = harness.test().ava-code.clone();
 
     let responses_mock = responses::mount_response_sequence(
         harness.server(),
@@ -1197,24 +1197,24 @@ async fn remote_compact_v2_retries_failures_with_stream_retry_budget() -> Result
     )
     .await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello remote compact".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_turn_complete(&codex).await;
+    wait_for_turn_complete(&ava).await;
 
-    codex.submit(Op::Compact).await?;
-    wait_for_turn_complete(&codex).await;
+    ava.submit(Op::Compact).await?;
+    wait_for_turn_complete(&ava).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "after compact".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_turn_complete(&codex).await;
+    wait_for_turn_complete(&ava).await;
 
     let response_requests = responses_mock.requests();
     assert_eq!(
@@ -1226,7 +1226,7 @@ async fn remote_compact_v2_retries_failures_with_stream_retry_budget() -> Result
         assert_eq!("/v1/responses", compact_request.path());
         let compact_metadata: Value = serde_json::from_str(
             &compact_request
-                .header("x-codex-turn-metadata")
+                .header("x-ava-turn-metadata")
                 .expect("v2 compact request should include turn metadata"),
         )?;
         assert_eq!(compact_metadata["window_number"].as_u64(), Some(0));
@@ -1269,16 +1269,16 @@ async fn remote_compact_v2_rewrites_multiple_trailing_function_call_outputs(
     let second_trimmed_call_id = "second-trimmed-call";
     let retained_output = "retained tool output";
 
-    let harness = TestCodexHarness::with_builder(
-        test_codex()
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let harness = TestAvaHarness::with_builder(
+        test_ava()
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_config(|config| {
                 config.model_context_window = Some(2_000);
                 config.model_auto_compact_token_limit = Some(200_000);
             }),
     )
     .await?;
-    let codex = harness.test().codex.clone();
+    let ava = harness.test().ava-code.clone();
 
     let initial_mock = mount_sse_once(
         harness.server(),
@@ -1303,7 +1303,7 @@ async fn remote_compact_v2_rewrites_multiple_trailing_function_call_outputs(
     .into_iter()
     .map(serde_json::from_value)
     .collect::<serde_json::Result<Vec<ResponseItem>>>()?;
-    codex.inject_response_items(history).await?;
+    ava.inject_response_items(history).await?;
 
     let mut response_bodies = vec![sse(vec![
         json!({
@@ -1320,8 +1320,8 @@ async fn remote_compact_v2_rewrites_multiple_trailing_function_call_outputs(
     if automatic {
         harness.test().submit_text_turn("after compact").await?;
     } else {
-        codex.submit(Op::Compact).await?;
-        wait_for_turn_complete(&codex).await;
+        ava.submit(Op::Compact).await?;
+        wait_for_turn_complete(&ava).await;
     }
 
     let requests = compact_mock.requests();
@@ -1350,7 +1350,7 @@ async fn remote_compact_v2_rewrites_multiple_trailing_function_call_outputs(
     if automatic {
         let followup_metadata: Value = serde_json::from_str(
             &requests[1]
-                .header("x-codex-turn-metadata")
+                .header("x-ava-turn-metadata")
                 .context("follow-up request metadata")?,
         )?;
         assert_eq!(followup_metadata["request_kind"], "turn");
@@ -1401,7 +1401,7 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
     let server = wiremock::MockServer::start().await;
     let initial_realtime_server = start_remote_realtime_server().await;
     let initial_instructions = "initial custom realtime start instructions";
-    let mut initial_builder = remote_realtime_test_codex_builder(&initial_realtime_server)
+    let mut initial_builder = remote_realtime_test_ava_builder(&initial_realtime_server)
         .with_config({
             let initial_instructions = initial_instructions.to_string();
             move |config| {
@@ -1432,11 +1432,11 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
     )
     .await;
 
-    start_realtime_conversation(initial.codex.as_ref()).await?;
+    start_realtime_conversation(initial.ava-code.as_ref()).await?;
     initial.submit_turn("USER_ONE").await?;
-    close_realtime_conversation(initial.codex.as_ref()).await?;
-    initial.codex.submit(Op::Shutdown).await?;
-    wait_for_event(&initial.codex, |ev| {
+    close_realtime_conversation(initial.ava-code.as_ref()).await?;
+    initial.ava-code.submit(Op::Shutdown).await?;
+    wait_for_event(&initial.ava-code, |ev| {
         matches!(ev, EventMsg::ShutdownComplete)
     })
     .await;
@@ -1444,7 +1444,7 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
 
     let resumed_realtime_server = start_remote_realtime_server().await;
     let changed_instructions = "changed custom realtime start instructions";
-    let mut resume_builder = remote_realtime_test_codex_builder(&resumed_realtime_server)
+    let mut resume_builder = remote_realtime_test_ava_builder(&resumed_realtime_server)
         .with_config({
             let changed_instructions = changed_instructions.to_string();
             move |config| {
@@ -1453,10 +1453,10 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
         });
     let resumed = resume_builder.resume(&server, home, rollout_path).await?;
 
-    start_realtime_conversation(resumed.codex.as_ref()).await?;
+    start_realtime_conversation(resumed.ava-code.as_ref()).await?;
     resumed.submit_turn("USER_TWO").await?;
-    resumed.codex.submit(Op::Compact).await?;
-    wait_for_turn_complete(&resumed.codex).await;
+    resumed.ava-code.submit(Op::Compact).await?;
+    wait_for_turn_complete(&resumed.ava-code).await;
     resumed.submit_turn("USER_THREE").await?;
 
     let requests = responses_mock.requests();
@@ -1479,7 +1479,7 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
     assert_request_contains_custom_realtime_start(&requests[3], changed_instructions);
     assert!(!requests[3].body_contains_text(initial_instructions));
 
-    close_realtime_conversation(resumed.codex.as_ref()).await?;
+    close_realtime_conversation(resumed.ava-code.as_ref()).await?;
     resumed_realtime_server.shutdown().await;
     Ok(())
 }
@@ -1488,15 +1488,15 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
 async fn remote_mid_turn_compact_v2_sends_turn_state_over_http() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestCodexHarness::with_builder(
-        test_codex()
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let harness = TestAvaHarness::with_builder(
+        test_ava()
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_config(|config| {
                 config.model_auto_compact_token_limit = Some(200);
             }),
     )
     .await?;
-    let codex = harness.test().codex.clone();
+    let ava = harness.test().ava-code.clone();
     let responses_mock = responses::mount_response_sequence(
         harness.server(),
         vec![
@@ -1530,13 +1530,13 @@ async fn remote_mid_turn_compact_v2_sends_turn_state_over_http() -> Result<()> {
     .await;
 
     // Phase 1: sampling mints state and schedules inline v2 compaction.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "RUN_WITH_MID_TURN_COMPACT_V2".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_turn_complete(&codex).await;
+    wait_for_turn_complete(&ava).await;
 
     let requests = responses_mock.requests();
     assert_eq!(requests.len(), 4);
@@ -1617,8 +1617,8 @@ async fn remote_mid_turn_compact_v2_sends_turn_state_over_websocket() -> Result<
         ],
     ]])
     .await;
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_auto_compact_token_limit = Some(200);
         });
@@ -1626,13 +1626,13 @@ async fn remote_mid_turn_compact_v2_sends_turn_state_over_websocket() -> Result<
 
     // Phase 1: startup prewarm stays empty, then WebSocket sampling mints state and schedules
     // inline v2 compaction.
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "RUN_WITH_WS_MID_TURN_COMPACT_V2".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_turn_complete(&test.codex).await;
+    wait_for_turn_complete(&test.ava-code).await;
 
     let requests = server.single_connection();
     assert_eq!(requests.len(), 5);

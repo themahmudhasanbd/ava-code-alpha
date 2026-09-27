@@ -25,7 +25,7 @@ use crate::git_process::run_git_command_with_timeout_output;
 ///
 /// Note that this does **not** detect *work‑trees* created with
 /// `git worktree add` where the checkout lives outside the main repository
-/// directory. If you need Codex to work from such a checkout simply pass the
+/// directory. If you need Ava to work from such a checkout simply pass the
 /// `--allow-no-git-exec` CLI flag that disables the repo requirement.
 pub fn get_git_repo_root(base_dir: &Path) -> Option<PathBuf> {
     let base = if base_dir.is_dir() {
@@ -839,7 +839,7 @@ mod tests {
 
     #[tokio::test]
     async fn git_metadata_commands_do_not_inherit_stdin() {
-        const CHILD_ENV: &str = "CODEX_GIT_UTILS_STDIN_CHILD";
+        const CHILD_ENV: &str = "AVA_GIT_UTILS_STDIN_CHILD";
 
         if std::env::var_os(CHILD_ENV).is_some() {
             let temp_dir = tempfile::tempdir().expect("create temp dir");
@@ -894,7 +894,7 @@ mod tests {
         for remote in [
             "git@github.com:OpenAI/Codex.git",
             "ssh://git@github.com/openai/codex.git",
-            "ssh://git@github.com:22/OpenAI/Codex.git",
+            "ssh://git@github.com:22/OpenAI/Ava.git",
             "https://github.com/openai/codex.git",
             "https://github.com:443/openai/codex.git",
             "https://token@github.com/openai/codex/",
@@ -1044,9 +1044,9 @@ mod tests {
         run_git(&["init", "-q", "--initial-branch=main"]);
         run_git(&[
             "-c",
-            "user.name=Codex Tests",
+            "user.name=Ava Tests",
             "-c",
-            "user.email=codex-tests@example.com",
+            "user.email=ava-tests@example.com",
             "commit",
             "--allow-empty",
             "-q",

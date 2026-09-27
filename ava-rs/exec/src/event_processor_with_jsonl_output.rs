@@ -3,23 +3,23 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 
-use codex_app_server_protocol::CollabAgentTool;
-use codex_app_server_protocol::CollabAgentToolCallStatus;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::McpToolCallStatus;
-use codex_app_server_protocol::PatchApplyStatus;
-use codex_app_server_protocol::PatchChangeKind;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadTokenUsage;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::WebSearchAction as ApiWebSearchAction;
-use codex_core::config::Config;
-use codex_protocol::models::WebSearchAction;
-use codex_protocol::protocol::SessionConfiguredEvent;
+use ava_app_server_protocol::CollabAgentTool;
+use ava_app_server_protocol::CollabAgentToolCallStatus;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::PatchApplyStatus;
+use ava_app_server_protocol::PatchChangeKind;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadTokenUsage;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::WebSearchAction as ApiWebSearchAction;
+use ava_core::config::Config;
+use ava_protocol::models::WebSearchAction;
+use ava_protocol::protocol::SessionConfiguredEvent;
 use serde_json::json;
 
-pub use crate::event_processor::CodexStatus;
+pub use crate::event_processor::AvaStatus;
 use crate::event_processor::EventProcessor;
 use crate::event_processor::handle_last_message;
 use crate::exec_events::AgentMessageItem;
@@ -76,7 +76,7 @@ struct RunningTodoList {
 #[derive(Debug, PartialEq)]
 pub struct CollectedThreadEvents {
     pub events: Vec<ThreadEvent>,
-    pub status: CodexStatus,
+    pub status: AvaStatus,
 }
 
 impl EventProcessorWithJsonOutput {
@@ -128,13 +128,13 @@ impl EventProcessorWithJsonOutput {
         }
     }
 
-    pub fn map_todo_items(plan: &[codex_app_server_protocol::TurnPlanStep]) -> Vec<TodoItem> {
+    pub fn map_todo_items(plan: &[ava_app_server_protocol::TurnPlanStep]) -> Vec<TodoItem> {
         plan.iter()
             .map(|step| TodoItem {
                 text: step.step.clone(),
                 completed: matches!(
                     step.status,
-                    codex_app_server_protocol::TurnPlanStepStatus::Completed
+                    ava_app_server_protocol::TurnPlanStepStatus::Completed
                 ),
             })
             .collect()
@@ -265,25 +265,25 @@ impl EventProcessorWithJsonOutput {
                                 thread_id,
                                 CollabAgentState {
                                     status: match state.status {
-                                        codex_app_server_protocol::CollabAgentStatus::PendingInit => {
+                                        ava_app_server_protocol::CollabAgentStatus::PendingInit => {
                                             CollabAgentStatus::PendingInit
                                         }
-                                        codex_app_server_protocol::CollabAgentStatus::Running => {
+                                        ava_app_server_protocol::CollabAgentStatus::Running => {
                                             CollabAgentStatus::Running
                                         }
-                                        codex_app_server_protocol::CollabAgentStatus::Interrupted => {
+                                        ava_app_server_protocol::CollabAgentStatus::Interrupted => {
                                             CollabAgentStatus::Interrupted
                                         }
-                                        codex_app_server_protocol::CollabAgentStatus::Completed => {
+                                        ava_app_server_protocol::CollabAgentStatus::Completed => {
                                             CollabAgentStatus::Completed
                                         }
-                                        codex_app_server_protocol::CollabAgentStatus::Errored => {
+                                        ava_app_server_protocol::CollabAgentStatus::Errored => {
                                             CollabAgentStatus::Errored
                                         }
-                                        codex_app_server_protocol::CollabAgentStatus::Shutdown => {
+                                        ava_app_server_protocol::CollabAgentStatus::Shutdown => {
                                             CollabAgentStatus::Shutdown
                                         }
-                                        codex_app_server_protocol::CollabAgentStatus::NotFound => {
+                                        ava_app_server_protocol::CollabAgentStatus::NotFound => {
                                             CollabAgentStatus::NotFound
                                         }
                                     },
@@ -414,7 +414,7 @@ impl EventProcessorWithJsonOutput {
                     details: ThreadItemDetails::Error(ErrorItem { message }),
                 },
             })],
-            status: CodexStatus::Running,
+            status: AvaStatus::Running,
         }
     }
 
@@ -437,7 +437,7 @@ impl EventProcessorWithJsonOutput {
                         details: ThreadItemDetails::Error(ErrorItem { message }),
                     },
                 }));
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::Warning(notification) => {
                 let warning = self.collect_warning(notification.message);
@@ -454,7 +454,7 @@ impl EventProcessorWithJsonOutput {
                 let error = ThreadErrorEvent { message };
                 self.last_critical_error = Some(error.clone());
                 events.push(ThreadEvent::Error(error));
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::DeprecationNotice(notification) => {
                 let message = match notification.details {
@@ -469,16 +469,16 @@ impl EventProcessorWithJsonOutput {
                         details: ThreadItemDetails::Error(ErrorItem { message }),
                     },
                 }));
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::HookStarted(_) | ServerNotification::HookCompleted(_) => {
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::ItemStarted(notification) => {
                 if let Some(item) = self.map_started_item(notification.item) {
                     events.push(ThreadEvent::ItemStarted(ItemStartedEvent { item }));
                 }
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::ItemCompleted(notification) => {
                 if let Some(item) = self.map_completed_item_mut(notification.item) {
@@ -489,7 +489,7 @@ impl EventProcessorWithJsonOutput {
                     }
                     events.push(ThreadEvent::ItemCompleted(ItemCompletedEvent { item }));
                 }
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::ModelRerouted(notification) => {
                 events.push(ThreadEvent::ItemCompleted(ItemCompletedEvent {
@@ -503,12 +503,12 @@ impl EventProcessorWithJsonOutput {
                         }),
                     },
                 }));
-                CodexStatus::Running
+                AvaStatus::Running
             }
-            ServerNotification::ModelVerification(_) => CodexStatus::Running,
+            ServerNotification::ModelVerification(_) => AvaStatus::Running,
             ServerNotification::ThreadTokenUsageUpdated(notification) => {
                 self.last_total_token_usage = Some(notification.token_usage);
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::TurnCompleted(notification) => {
                 if let Some(running) = self.running_todo_list.take() {
@@ -533,7 +533,7 @@ impl EventProcessorWithJsonOutput {
                         events.push(ThreadEvent::TurnCompleted(TurnCompletedEvent {
                             usage: self.usage_from_last_total(),
                         }));
-                        CodexStatus::InitiateShutdown
+                        AvaStatus::InitiateShutdown
                     }
                     TurnStatus::Failed => {
                         self.final_message = None;
@@ -554,17 +554,17 @@ impl EventProcessorWithJsonOutput {
                                 message: "turn failed".to_string(),
                             });
                         events.push(ThreadEvent::TurnFailed(TurnFailedEvent { error }));
-                        CodexStatus::InitiateShutdown
+                        AvaStatus::InitiateShutdown
                     }
                     TurnStatus::Interrupted => {
                         self.final_message = None;
                         self.emit_final_message_on_shutdown = false;
-                        CodexStatus::InitiateShutdown
+                        AvaStatus::InitiateShutdown
                     }
-                    TurnStatus::InProgress => CodexStatus::Running,
+                    TurnStatus::InProgress => AvaStatus::Running,
                 }
             }
-            ServerNotification::TurnDiffUpdated(_) => CodexStatus::Running,
+            ServerNotification::TurnDiffUpdated(_) => AvaStatus::Running,
             ServerNotification::TurnPlanUpdated(notification) => {
                 let items = Self::map_todo_items(&notification.plan);
                 if let Some(running) = self.running_todo_list.as_mut() {
@@ -589,13 +589,13 @@ impl EventProcessorWithJsonOutput {
                         },
                     }));
                 }
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::TurnStarted(_) => {
                 events.push(ThreadEvent::TurnStarted(TurnStartedEvent {}));
-                CodexStatus::Running
+                AvaStatus::Running
             }
-            _ => CodexStatus::Running,
+            _ => AvaStatus::Running,
         };
 
         CollectedThreadEvents { events, status }
@@ -612,7 +612,7 @@ impl EventProcessor for EventProcessorWithJsonOutput {
         self.emit(Self::thread_started_event(session_configured));
     }
 
-    fn process_server_notification(&mut self, notification: ServerNotification) -> CodexStatus {
+    fn process_server_notification(&mut self, notification: ServerNotification) -> AvaStatus {
         let collected = self.collect_thread_events(notification);
         for event in collected.events {
             self.emit(event);
@@ -620,7 +620,7 @@ impl EventProcessor for EventProcessorWithJsonOutput {
         collected.status
     }
 
-    fn process_warning(&mut self, message: String) -> CodexStatus {
+    fn process_warning(&mut self, message: String) -> AvaStatus {
         let collected = self.collect_warning(message);
         for event in collected.events {
             self.emit(event);

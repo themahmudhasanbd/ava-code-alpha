@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import type { AvaConfigObject, AvaConfigValue } from "./avaOptions";
 import { SandboxMode, ModelReasoningEffort, ApprovalMode, WebSearchMode } from "./threadOptions";
 
-export type CodexExecArgs = {
+export type AvaExecArgs = {
   input: string;
 
   baseUrl?: string;
@@ -42,9 +42,9 @@ export type CodexExecArgs = {
   approvalPolicy?: ApprovalMode;
 };
 
-const INTERNAL_ORIGINATOR_ENV = "CODEX_INTERNAL_ORIGINATOR_OVERRIDE";
-const TYPESCRIPT_SDK_ORIGINATOR = "codex_sdk_ts";
-const CODEX_NPM_NAME = "@openai/codex";
+const INTERNAL_ORIGINATOR_ENV = "AVA_INTERNAL_ORIGINATOR_OVERRIDE";
+const TYPESCRIPT_SDK_ORIGINATOR = "ava_sdk_ts";
+const AVA_NPM_NAME = "@openai/codex";
 
 const PLATFORM_PACKAGE_BY_TARGET: Record<string, string> = {
   "x86_64-unknown-linux-musl": "@openai/codex-linux-x64",
@@ -57,12 +57,12 @@ const PLATFORM_PACKAGE_BY_TARGET: Record<string, string> = {
 
 const moduleRequire = createRequire(import.meta.url);
 
-type CodexPathResolution = {
+type AvaPathResolution = {
   executablePath: string;
   pathDirs: string[];
 };
 
-export class CodexExec {
+export class AvaExec {
   private executablePath: string;
   private pathDirs: string[];
   private envOverride?: Record<string, string>;
@@ -79,7 +79,7 @@ export class CodexExec {
       this.executablePath = executablePath;
       this.pathDirs = [];
     } else {
-      const resolved = findCodexPath();
+      const resolved = findAvaPath();
       this.executablePath = resolved.executablePath;
       this.pathDirs = resolved.pathDirs;
     }
@@ -88,7 +88,7 @@ export class CodexExec {
     this.rawConfigOverrides = rawConfigOverrides;
   }
 
-  async *run(args: CodexExecArgs): AsyncGenerator<string> {
+  async *run(args: AvaExecArgs): AsyncGenerator<string> {
     const commandArgs: string[] = ["exec", "--experimental-json"];
 
     if (this.configOverrides) {
@@ -187,7 +187,7 @@ export class CodexExec {
       env[INTERNAL_ORIGINATOR_ENV] = TYPESCRIPT_SDK_ORIGINATOR;
     }
     if (args.apiKey) {
-      env.CODEX_API_KEY = args.apiKey;
+      env.AVA_API_KEY = args.apiKey;
     }
     if (this.pathDirs.length > 0) {
       prependPathDirs(env, this.pathDirs);
@@ -244,7 +244,7 @@ export class CodexExec {
       if (code !== 0 || signal) {
         const stderrBuffer = Buffer.concat(stderrChunks);
         const detail = signal ? `signal ${signal}` : `code ${code ?? 1}`;
-        throw new Error(`Codex Exec exited with ${detail}: ${stderrBuffer.toString("utf8")}`);
+        throw new Error(`Ava Exec exited with ${detail}: ${stderrBuffer.toString("utf8")}`);
       }
     } finally {
       rl.close();
@@ -290,7 +290,7 @@ function flattenConfigOverrides(
 
   for (const [key, child] of entries) {
     if (!key) {
-      throw new Error("Codex config override keys must be non-empty strings");
+      throw new Error("Ava config override keys must be non-empty strings");
     }
     if (child === undefined) {
       continue;
@@ -346,7 +346,7 @@ function isPlainObject(value: unknown): value is AvaConfigObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function findCodexPath(): CodexPathResolution {
+function findAvaPath(): AvaPathResolution {
   const { platform, arch } = process;
 
   let targetTriple = null;
@@ -403,21 +403,21 @@ function findCodexPath(): CodexPathResolution {
 
   let vendorRoot: string;
   try {
-    const codexPackageJsonPath = moduleRequire.resolve(`${CODEX_NPM_NAME}/package.json`);
-    const codexRequire = createRequire(codexPackageJsonPath);
-    const platformPackageJsonPath = codexRequire.resolve(`${platformPackage}/package.json`);
+    const avaPackageJsonPath = moduleRequire.resolve(`${AVA_NPM_NAME}/package.json`);
+    const avaRequire = createRequire(avaPackageJsonPath);
+    const platformPackageJsonPath = avaRequire.resolve(`${platformPackage}/package.json`);
     vendorRoot = path.join(path.dirname(platformPackageJsonPath), "vendor");
   } catch {
     throw new Error(
-      `Unable to locate Codex CLI binaries. Ensure ${CODEX_NPM_NAME} is installed with optional dependencies.`,
+      `Unable to locate Ava CLI binaries. Ensure ${AVA_NPM_NAME} is installed with optional dependencies.`,
     );
   }
 
-  const codexBinaryName = process.platform === "win32" ? "codex.exe" : "codex";
-  const nativePackage = resolveNativePackage(vendorRoot, targetTriple, codexBinaryName);
+  const avaBinaryName = process.platform === "win32" ? "ava.exe" : "ava";
+  const nativePackage = resolveNativePackage(vendorRoot, targetTriple, avaBinaryName);
   if (!nativePackage) {
     throw new Error(
-      `Unable to locate Codex CLI binaries for ${targetTriple}. Ensure ${CODEX_NPM_NAME} is installed with optional dependencies.`,
+      `Unable to locate Ava CLI binaries for ${targetTriple}. Ensure ${AVA_NPM_NAME} is installed with optional dependencies.`,
     );
   }
 
@@ -427,18 +427,18 @@ function findCodexPath(): CodexPathResolution {
 export function resolveNativePackage(
   vendorRoot: string,
   targetTriple: string,
-  codexBinaryName: string,
-): CodexPathResolution | null {
+  avaBinaryName: string,
+): AvaPathResolution | null {
   const packageRoot = path.join(vendorRoot, targetTriple);
-  const packageBinaryPath = path.join(packageRoot, "bin", codexBinaryName);
-  if (isFile(packageBinaryPath) && isFile(path.join(packageRoot, "codex-package.json"))) {
+  const packageBinaryPath = path.join(packageRoot, "bin", avaBinaryName);
+  if (isFile(packageBinaryPath) && isFile(path.join(packageRoot, "ava-package.json"))) {
     return {
       executablePath: packageBinaryPath,
-      pathDirs: existingDirs(path.join(packageRoot, "codex-path")),
+      pathDirs: existingDirs(path.join(packageRoot, "ava-path")),
     };
   }
 
-  const legacyBinaryPath = path.join(packageRoot, "codex", codexBinaryName);
+  const legacyBinaryPath = path.join(packageRoot, "ava", avaBinaryName);
   if (isFile(legacyBinaryPath)) {
     return {
       executablePath: legacyBinaryPath,

@@ -6,7 +6,7 @@ use crate::test_support::load_plugins_config;
 use crate::test_support::test_auth_manager;
 use crate::test_support::test_plugins_manager_with_auth_manager;
 use crate::test_support::write_file;
-use codex_protocol::auth::AuthMode;
+use ava_protocol::auth::AuthMode;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::atomic::AtomicBool;
@@ -41,7 +41,7 @@ async fn uninstall_serializes_backend_mutations_and_preserves_cache_on_failure()
         .unwrap();
         let cache = manager.store.plugin_base_root(&plugin_id);
         write_file(
-            cache.join("1.0.0/.codex-plugin/plugin.json").as_path(),
+            cache.join("1.0.0/.ava-plugin/plugin.json").as_path(),
             r#"{"name":"sample","version":"1.0.0"}"#,
         );
         Mock::given(method("GET"))

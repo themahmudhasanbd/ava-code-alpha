@@ -5,9 +5,9 @@ use crate::ConfigRequirements;
 use crate::ConfigRequirementsToml;
 use crate::config_toml::ConfigToml;
 use crate::first_layer_config_error_from_entries;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 
@@ -24,7 +24,7 @@ fn toml(contents: &str) -> TomlValue {
 }
 
 fn base_dir() -> AbsolutePathBuf {
-    test_path_buf("/var/lib/codex").abs()
+    test_path_buf("/var/lib/ava").abs()
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn enterprise_layers_precede_user_and_override_system() {
     let base_dir = base_dir();
     let mut layers = vec![ConfigLayerEntry::new(
         ConfigLayerSource::System {
-            file: test_path_buf("/etc/codex/config.toml").abs(),
+            file: test_path_buf("/etc/ava/config.toml").abs(),
         },
         toml(
             r#"
@@ -105,7 +105,7 @@ review_model = "system-review"
     );
     layers.push(ConfigLayerEntry::new(
         ConfigLayerSource::User {
-            file: test_path_buf("/home/alice/.codex/config.toml").abs(),
+            file: test_path_buf("/home/alice/.ava-code/config.toml").abs(),
             profile: None,
         },
         toml("model = \"user\""),
@@ -125,7 +125,7 @@ review_model = "system-review"
             .collect::<Vec<_>>(),
         vec![
             ConfigLayerSource::System {
-                file: test_path_buf("/etc/codex/config.toml").abs(),
+                file: test_path_buf("/etc/ava/config.toml").abs(),
             },
             ConfigLayerSource::EnterpriseManaged {
                 id: "low".to_string(),
@@ -136,7 +136,7 @@ review_model = "system-review"
                 name: "High priority".to_string(),
             },
             ConfigLayerSource::User {
-                file: test_path_buf("/home/alice/.codex/config.toml").abs(),
+                file: test_path_buf("/home/alice/.ava-code/config.toml").abs(),
                 profile: None,
             },
         ]

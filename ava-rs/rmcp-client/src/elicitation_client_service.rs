@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::PoisonError;
 
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
 
 use rmcp::RoleClient;
 use rmcp::model::ClientInfo;

@@ -7,9 +7,9 @@ use super::*;
 #[cfg(all(test, not(target_os = "windows")))]
 use crate::app_event::WindowsSandboxEnableMode;
 #[cfg(target_os = "windows")]
-use codex_app_server_protocol::WindowsSandboxSetupMode;
+use ava_app_server_protocol::WindowsSandboxSetupMode;
 #[cfg(any(target_os = "windows", test))]
-use codex_utils_approval_presets::ApprovalPreset;
+use ava_utils_approval_presets::ApprovalPreset;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WindowsSandboxHost {
@@ -47,8 +47,8 @@ pub(super) async fn windows_sandbox_ready(app_server: &mut AppServerSession) -> 
         )
         .await,
         Ok(Ok(
-            codex_app_server_protocol::WindowsSandboxReadinessResponse {
-                status: codex_app_server_protocol::WindowsSandboxReadiness::Ready,
+            ava_app_server_protocol::WindowsSandboxReadinessResponse {
+                status: ava_app_server_protocol::WindowsSandboxReadiness::Ready,
             }
         ))
     )
@@ -165,7 +165,7 @@ impl App {
         if self.windows_sandbox.pending_setup.is_some() {
             if self.windows_sandbox.setup_started_at.is_none() {
                 self.chat_widget.add_info_message(
-                    "Windows sandbox setup is still running. Restart Codex to retry.".to_string(),
+                    "Windows sandbox setup is still running. Restart Ava to retry.".to_string(),
                     /*hint*/ None,
                 );
             }
@@ -194,7 +194,7 @@ impl App {
                 .request_handle()
                 .request_typed(ClientRequest::WindowsSandboxSetupStart {
                     request_id,
-                    params: codex_app_server_protocol::WindowsSandboxSetupStartParams {
+                    params: ava_app_server_protocol::WindowsSandboxSetupStartParams {
                         mode: setup_mode,
                         cwd: Some(self.chat_widget.config_ref().cwd.clone()),
                     },
@@ -209,19 +209,19 @@ impl App {
         &mut self,
         response: std::result::Result<
             std::result::Result<
-                codex_app_server_protocol::WindowsSandboxSetupStartResponse,
+                ava_app_server_protocol::WindowsSandboxSetupStartResponse,
                 TypedRequestError,
             >,
             tokio::time::error::Elapsed,
         >,
     ) {
         match response {
-            Ok(Ok(codex_app_server_protocol::WindowsSandboxSetupStartResponse {
+            Ok(Ok(ava_app_server_protocol::WindowsSandboxSetupStartResponse {
                 started: true,
             })) => {}
             Err(_) => {
                 self.chat_widget.add_error_message(
-                    "Windows sandbox setup request timed out. Waiting for completion; restart Codex if it does not finish."
+                    "Windows sandbox setup request timed out. Waiting for completion; restart Ava if it does not finish."
                         .to_string(),
                 );
             }

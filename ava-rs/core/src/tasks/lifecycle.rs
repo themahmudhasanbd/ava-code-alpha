@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ThreadIdleCause;
-use codex_extension_api::TurnStartPhase;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TurnAbortReason;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ThreadIdleCause;
+use ava_extension_api::TurnStartPhase;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TurnAbortReason;
 
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
@@ -28,7 +28,7 @@ impl Session {
                 self.refresh_mcp_if_dirty().await;
             }
             contributor
-                .on_turn_start(codex_extension_api::TurnStartInput {
+                .on_turn_start(ava_extension_api::TurnStartInput {
                     turn_id: turn_context.sub_id.as_str(),
                     collaboration_mode: &collaboration_mode,
                     token_usage_at_turn_start,
@@ -43,7 +43,7 @@ impl Session {
     pub(super) async fn emit_turn_stop_lifecycle(&self, turn_store: &ExtensionData) {
         for contributor in self.services.extensions.turn_lifecycle_contributors() {
             contributor
-                .on_turn_stop(codex_extension_api::TurnStopInput {
+                .on_turn_stop(ava_extension_api::TurnStopInput {
                     session_store: &self.services.session_extension_data,
                     thread_store: &self.services.thread_extension_data,
                     turn_store,
@@ -70,7 +70,7 @@ impl Session {
 
         for contributor in self.services.extensions.thread_lifecycle_contributors() {
             contributor
-                .on_thread_idle(codex_extension_api::ThreadIdleInput {
+                .on_thread_idle(ava_extension_api::ThreadIdleInput {
                     cause,
                     session_store: &self.services.session_extension_data,
                     thread_store: &self.services.thread_extension_data,
@@ -86,7 +86,7 @@ impl Session {
     ) {
         for contributor in self.services.extensions.turn_lifecycle_contributors() {
             contributor
-                .on_turn_abort(codex_extension_api::TurnAbortInput {
+                .on_turn_abort(ava_extension_api::TurnAbortInput {
                     reason: reason.clone(),
                     session_store: &self.services.session_extension_data,
                     thread_store: &self.services.thread_extension_data,
@@ -99,11 +99,11 @@ impl Session {
     pub(crate) async fn emit_turn_error_lifecycle(
         &self,
         turn_context: &TurnContext,
-        error: CodexErrorInfo,
+        error: AvaErrorInfo,
     ) {
         for contributor in self.services.extensions.turn_lifecycle_contributors() {
             contributor
-                .on_turn_error(codex_extension_api::TurnErrorInput {
+                .on_turn_error(ava_extension_api::TurnErrorInput {
                     turn_id: turn_context.sub_id.as_str(),
                     error: error.clone(),
                     session_store: &self.services.session_extension_data,

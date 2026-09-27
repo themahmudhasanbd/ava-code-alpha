@@ -2,39 +2,39 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::process_telemetry::ProcessTelemetry;
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_file_system::WindowsSandboxSelection;
-use codex_network_proxy::CUSTOM_CA_ENV_KEYS;
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_network_proxy::ManagedProxyRouting;
-use codex_network_proxy::NetworkPolicyAuditObserver;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::NetworkProxyHandle;
-use codex_network_proxy::NetworkProxyState;
-use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
-use codex_network_proxy::is_managed_mitm_ca_trust_bundle_path;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_file_system::WindowsSandboxSelection;
+use ava_network_proxy::CUSTOM_CA_ENV_KEYS;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::ManagedProxyRouting;
+use ava_network_proxy::NetworkPolicyAuditObserver;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::NetworkProxyHandle;
+use ava_network_proxy::NetworkProxyState;
+use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
+use ava_network_proxy::is_managed_mitm_ca_trust_bundle_path;
 #[cfg(target_os = "windows")]
-use codex_network_proxy::strip_managed_proxy_env;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxDirectSpawnTransformRequest;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxTransformRequest;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::WindowsSandboxFilesystemOverrides;
-use codex_sandboxing::WindowsSandboxProxySettingsMode;
-use codex_sandboxing::WindowsSandboxSpawnRequest;
-use codex_sandboxing::resolve_windows_elevated_filesystem_overrides;
-use codex_sandboxing::resolve_windows_restricted_token_filesystem_overrides;
-use codex_sandboxing::windows_sandbox_uses_elevated_backend;
-use codex_sandboxing::with_managed_mitm_ca_readable_root;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::strip_managed_proxy_env;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxDirectSpawnTransformRequest;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxTransformRequest;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::WindowsSandboxFilesystemOverrides;
+use ava_sandboxing::WindowsSandboxProxySettingsMode;
+use ava_sandboxing::WindowsSandboxSpawnRequest;
+use ava_sandboxing::resolve_windows_elevated_filesystem_overrides;
+use ava_sandboxing::resolve_windows_restricted_token_filesystem_overrides;
+use ava_sandboxing::windows_sandbox_uses_elevated_backend;
+use ava_sandboxing::with_managed_mitm_ca_readable_root;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 
 #[cfg(unix)]
-use crate::CODEX_ARG0_EXEC_HELPER_ARG1;
+use crate::AVA_ARG0_EXEC_HELPER_ARG1;
 use crate::ExecServerRuntimePaths;
 use crate::protocol::ExecParams;
 use crate::rpc::internal_error;
@@ -93,7 +93,7 @@ pub(crate) async fn prepare_exec_request_with_telemetry(
                 "MXC custom argv0 is not supported".to_owned(),
             ));
         }
-        if !codex_sandboxing::windows_mxc_available() {
+        if !ava_sandboxing::windows_mxc_available() {
             return Err(invalid_params(
                 "native MXC is unavailable on this executor".to_owned(),
             ));
@@ -183,17 +183,17 @@ pub(crate) async fn prepare_exec_request_with_telemetry(
     let sandbox_helper_paths = params
         .arg0
         .iter()
-        .map(|_| runtime_paths.codex_self_exe.clone())
+        .map(|_| runtime_paths.ava_self_exe.clone())
         .collect::<Vec<_>>();
     // Bubblewrap launches the configured helper, which may re-enter this executable to apply
     // seccomp, so the outer filesystem sandbox must expose both paths.
     #[cfg(target_os = "linux")]
     let sandbox_helper_paths = {
         let mut sandbox_helper_paths = sandbox_helper_paths;
-        if !sandbox_helper_paths.contains(&runtime_paths.codex_self_exe) {
-            sandbox_helper_paths.push(runtime_paths.codex_self_exe.clone());
+        if !sandbox_helper_paths.contains(&runtime_paths.ava_self_exe) {
+            sandbox_helper_paths.push(runtime_paths.ava_self_exe.clone());
         }
-        sandbox_helper_paths.extend(runtime_paths.codex_linux_sandbox_exe.iter().cloned());
+        sandbox_helper_paths.extend(runtime_paths.ava_linux_sandbox_exe.iter().cloned());
         sandbox_helper_paths
     };
     #[cfg(unix)]
@@ -208,7 +208,7 @@ pub(crate) async fn prepare_exec_request_with_telemetry(
     let sandbox_manager = SandboxManager::new();
     #[cfg(target_os = "macos")]
     let sandbox_manager = sandbox_manager
-        .with_allowed_symlinked_codex_home(runtime_paths.allowed_symlinked_codex_home.clone());
+        .with_allowed_symlinked_ava_home(runtime_paths.allowed_symlinked_ava_home.clone());
     let (sandbox, windows_sandbox_level) = select_sandbox(
         &sandbox_manager,
         &permissions,
@@ -229,12 +229,12 @@ pub(crate) async fn prepare_exec_request_with_telemetry(
         || (program.into(), args.to_vec()),
         |arg0| {
             let mut helper_args = Vec::with_capacity(params.argv.len() + 2);
-            helper_args.push(CODEX_ARG0_EXEC_HELPER_ARG1.to_string());
+            helper_args.push(AVA_ARG0_EXEC_HELPER_ARG1.to_string());
             helper_args.push(arg0.clone());
             helper_args.extend(params.argv.iter().cloned());
             (
                 runtime_paths
-                    .codex_self_exe
+                    .ava_self_exe
                     .as_path()
                     .as_os_str()
                     .to_owned(),
@@ -263,9 +263,9 @@ pub(crate) async fn prepare_exec_request_with_telemetry(
             network: None,
             sandbox_policy_cwd,
             sandbox_exe: if cfg!(windows) {
-                Some(runtime_paths.codex_self_exe.as_path())
+                Some(runtime_paths.ava_self_exe.as_path())
             } else {
-                runtime_paths.codex_linux_sandbox_exe.as_deref()
+                runtime_paths.ava_linux_sandbox_exe.as_deref()
             },
             use_legacy_landlock: sandbox_context.use_legacy_landlock,
             windows_sandbox_level: windows_sandbox_level.unwrap_or(WindowsSandboxLevel::Disabled),
@@ -346,7 +346,7 @@ async fn prepare_managed_network(
     };
     let mut state = NetworkProxyState::from_remote_launch_config(
         network_proxy,
-        codex_utils_path_uri::Platform::native(),
+        ava_utils_path_uri::Platform::native(),
     )
     .map_err(|err| invalid_params(format!("invalid network proxy config: {err}")))?;
     if let Some(observer) = network_policy_audit_observer {
@@ -355,13 +355,13 @@ async fn prepare_managed_network(
     if let Some(launch_context) = &telemetry.launch_context {
         state.set_launch_span_context(launch_context.clone());
     }
-    state.set_process_log_metadata(codex_network_proxy::NetworkProxyProcessLogMetadata {
+    state.set_process_log_metadata(ava_network_proxy::NetworkProxyProcessLogMetadata {
         thread_id: telemetry.thread_id.clone(),
         tool_call_id: telemetry.tool_call_id.clone(),
         executor_identity: telemetry
             .executor_registration
             .as_ref()
-            .map(|registration| codex_network_proxy::ExecutorLogIdentity {
+            .map(|registration| ava_network_proxy::ExecutorLogIdentity {
                 environment_id: registration.environment_id.clone(),
                 registration_id: registration.executor_registration_id.clone(),
             }),

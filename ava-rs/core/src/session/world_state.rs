@@ -24,21 +24,21 @@ use crate::context::world_state::RealtimeState;
 use crate::context::world_state::ToolsState;
 use crate::context::world_state::UserProfileState;
 use crate::context::world_state::WorldState;
-use codex_connectors::AppToolPolicyEvaluator;
-use codex_extension_api::WorldStateContributionInput;
-use codex_features::Feature;
-use codex_prompts::ApprovalPromptContext;
-use codex_prompts::ResolvedModelMessages;
-use codex_prompts::render_model_instructions;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::models::BaseInstructionsProvenance;
+use ava_connectors::AppToolPolicyEvaluator;
+use ava_extension_api::WorldStateContributionInput;
+use ava_features::Feature;
+use ava_prompts::ApprovalPromptContext;
+use ava_prompts::ResolvedModelMessages;
+use ava_prompts::render_model_instructions;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::models::BaseInstructionsProvenance;
 
 impl Session {
     #[tracing::instrument(name = "world_state.build", level = "info", skip_all)]
     pub(crate) async fn build_world_state_for_step(
         &self,
         step_context: &StepContext,
-    ) -> CodexResult<WorldState> {
+    ) -> AvaResult<WorldState> {
         let turn_context = step_context.turn.as_ref();
         let settings = &step_context.settings;
         let model_info = settings.model_info.as_ref();
@@ -55,7 +55,7 @@ impl Session {
                     turn_context.config.base_instructions_provenance,
                     Some(BaseInstructionsProvenance::Model { .. })
                 )) {
-            codex_prompts::without_update_plan_instructions(&model_instructions)
+            ava_prompts::without_update_plan_instructions(&model_instructions)
         } else {
             model_instructions
         };
@@ -111,7 +111,7 @@ impl Session {
                 turn_context
                     .session_source
                     .get_agent_path()
-                    .unwrap_or_else(codex_protocol::AgentPath::root),
+                    .unwrap_or_else(ava_protocol::AgentPath::root),
                 window_ids.first_window_id,
                 window_ids.previous_window_id,
                 window_ids.window_id,

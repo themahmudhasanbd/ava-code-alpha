@@ -4,16 +4,16 @@ use anyhow::Context as _;
 use anyhow::Result;
 use anyhow::ensure;
 use clap::Parser;
-use codex_network_proxy::ConfigReloader;
-use codex_network_proxy::ConfigReloaderFuture;
-use codex_network_proxy::ConfigState;
-use codex_network_proxy::NetworkMode;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_network_proxy::NetworkProxyConstraints;
-use codex_network_proxy::NetworkProxyState;
-use codex_network_proxy::Platform;
-use codex_network_proxy::build_config_state;
+use ava_network_proxy::ConfigReloader;
+use ava_network_proxy::ConfigReloaderFuture;
+use ava_network_proxy::ConfigState;
+use ava_network_proxy::NetworkMode;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::NetworkProxyConstraints;
+use ava_network_proxy::NetworkProxyState;
+use ava_network_proxy::Platform;
+use ava_network_proxy::build_config_state;
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -22,7 +22,7 @@ use tracing_subscriber::EnvFilter;
 const MAX_CONFIG_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Parser)]
-#[command(name = "codex-network-proxy", about = "Codex network policy proxy")]
+#[command(name = "ava-network-proxy", about = "Ava network policy proxy")]
 struct Args {
     /// Standalone JSON configuration containing a `network` object.
     #[arg(long, value_name = "PATH")]
@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
     let state = Arc::new(NetworkProxyState::with_reloader(config_state, reloader));
     NetworkProxy::builder()
         .state(state)
-        .managed_by_codex(/*managed_by_codex*/ false)
+        .managed_by_ava(/*managed_by_ava*/ false)
         .build()
         .await?
         .run()

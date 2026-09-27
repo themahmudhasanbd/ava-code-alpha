@@ -1,34 +1,34 @@
-use codex_api::ReqwestTransport;
-use codex_api::SearchClient;
-use codex_api::SearchCommands;
-use codex_api::SearchQuery;
-use codex_api::SearchRequest;
-use codex_api::SearchSettings;
-use codex_core::X_CODEX_TURN_METADATA_HEADER;
-use codex_core::web_search_action_detail;
-use codex_extension_api::ExtensionTurnItem;
-use codex_extension_api::FunctionCallError;
-use codex_extension_api::ResponsesApiTool;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolOutput;
-use codex_extension_api::ToolSpec;
-use codex_extension_api::parse_tool_input_schema_without_compaction;
-use codex_extension_items::ExtensionItem;
-use codex_extension_items::web_search::WebSearchAction;
-use codex_extension_items::web_search::WebSearchItem;
-use codex_login::default_client::add_originator_header;
-use codex_login::default_client::create_client;
-use codex_model_provider::SharedModelProvider;
-use codex_protocol::models::WebSearchAction as CoreWebSearchAction;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::WebSearchBeginEvent;
-use codex_protocol::protocol::WebSearchEndEvent;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ToolExposure;
-use codex_tools::default_namespace_description;
+use ava_api::ReqwestTransport;
+use ava_api::SearchClient;
+use ava_api::SearchCommands;
+use ava_api::SearchQuery;
+use ava_api::SearchRequest;
+use ava_api::SearchSettings;
+use ava_core::X_AVA_TURN_METADATA_HEADER;
+use ava_core::web_search_action_detail;
+use ava_extension_api::ExtensionTurnItem;
+use ava_extension_api::FunctionCallError;
+use ava_extension_api::ResponsesApiTool;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolOutput;
+use ava_extension_api::ToolSpec;
+use ava_extension_api::parse_tool_input_schema_without_compaction;
+use ava_extension_items::ExtensionItem;
+use ava_extension_items::web_search::WebSearchAction;
+use ava_extension_items::web_search::WebSearchItem;
+use ava_login::default_client::add_originator_header;
+use ava_login::default_client::create_client;
+use ava_model_provider::SharedModelProvider;
+use ava_protocol::models::WebSearchAction as CoreWebSearchAction;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::WebSearchBeginEvent;
+use ava_protocol::protocol::WebSearchEndEvent;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ToolExposure;
+use ava_tools::default_namespace_description;
 use http::HeaderMap;
 use http::HeaderValue;
 use url::Url;
@@ -40,7 +40,7 @@ use crate::schema::commands_schema;
 pub(crate) const WEB_NAMESPACE: &str = "web";
 pub(crate) const RUN_TOOL_NAME: &str = "run";
 const WEB_RUN_DESCRIPTION: &str = include_str!("../web_run_description.md");
-const RESULTS_PAYLOAD_BYTES_METRIC: &str = "codex.web_search.results.payload_bytes";
+const RESULTS_PAYLOAD_BYTES_METRIC: &str = "ava.web_search.results.payload_bytes";
 
 pub(crate) struct WebSearchTool {
     pub(crate) session_id: String,
@@ -83,7 +83,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for WebSearchTool {
         true
     }
 
-    fn handle<'a>(&'a self, call: ToolCall<'call>) -> codex_extension_api::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, call: ToolCall<'call>) -> ava_extension_api::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -126,7 +126,7 @@ impl WebSearchTool {
         };
         let extra_headers = search_request_headers(
             self.originator.as_deref(),
-            call.codex_turn_metadata.as_deref(),
+            call.ava_turn_metadata.as_deref(),
         );
         call.turn_item_emitter
             .emit_started(extension_turn_item(
@@ -148,7 +148,7 @@ impl WebSearchTool {
         let output = response.output;
         let results = response.results;
         if let Some(results) = results.as_ref()
-            && let Some(metrics) = codex_otel::global()
+            && let Some(metrics) = ava_otel::global()
             && let Ok(payload) = serde_json::to_vec(results)
         {
             let payload_bytes = i64::try_from(payload.len()).unwrap_or(i64::MAX);
@@ -193,7 +193,7 @@ fn search_request_headers(originator: Option<&str>, turn_metadata: Option<&str>)
     if let Some(turn_metadata) = turn_metadata
         && let Ok(header_value) = HeaderValue::from_str(turn_metadata)
     {
-        headers.insert(X_CODEX_TURN_METADATA_HEADER, header_value);
+        headers.insert(X_AVA_TURN_METADATA_HEADER, header_value);
     }
 
     if let Some(originator) = originator {
@@ -268,13 +268,13 @@ fn extension_turn_item(item: WebSearchItem, legacy_event: EventMsg) -> Extension
 
 #[cfg(test)]
 mod tests {
-    use codex_api::SearchCommands;
-    use codex_extension_items::web_search::WebSearchAction;
+    use ava_api::SearchCommands;
+    use ava_extension_items::web_search::WebSearchAction;
     use pretty_assertions::assert_eq;
 
     use super::command_action;
     use super::search_request_headers;
-    use codex_core::X_CODEX_TURN_METADATA_HEADER;
+    use ava_core::X_AVA_TURN_METADATA_HEADER;
 
     #[test]
     fn search_request_headers_forward_thread_originator_and_turn_metadata() {
@@ -287,7 +287,7 @@ mod tests {
         );
         assert_eq!(
             headers
-                .get(X_CODEX_TURN_METADATA_HEADER)
+                .get(X_AVA_TURN_METADATA_HEADER)
                 .and_then(|value| value.to_str().ok()),
             Some("turn-metadata")
         );

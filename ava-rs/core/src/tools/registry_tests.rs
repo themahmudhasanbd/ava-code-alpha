@@ -1,28 +1,28 @@
 use super::*;
 use crate::session::session::Session;
 use crate::session::step_context::StepContext;
-use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
-use codex_protocol::models::ResponseItem;
-use codex_utils_output_truncation::TruncationPolicy;
+use ava_protocol::DEFAULT_FUNCTION_NAMESPACE;
+use ava_protocol::models::ResponseItem;
+use ava_utils_output_truncation::TruncationPolicy;
 use futures::future::BoxFuture;
 use pretty_assertions::assert_eq;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 struct TestHandler {
-    tool_name: codex_tools::ToolName,
+    tool_name: ava_tools::ToolName,
 }
 
 impl ToolExecutor<ToolInvocation> for TestHandler {
-    fn tool_name(&self) -> codex_tools::ToolName {
+    fn tool_name(&self) -> ava_tools::ToolName {
         self.tool_name.clone()
     }
 
-    fn spec(&self) -> codex_tools::ToolSpec {
+    fn spec(&self) -> ava_tools::ToolSpec {
         test_spec(&self.tool_name)
     }
 
-    fn handle<'a>(&'a self, _invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, _invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -45,15 +45,15 @@ struct ReadinessTestHandler {
 }
 
 impl ToolExecutor<ToolInvocation> for ReadinessTestHandler {
-    fn tool_name(&self) -> codex_tools::ToolName {
+    fn tool_name(&self) -> ava_tools::ToolName {
         self.handler.tool_name()
     }
 
-    fn spec(&self) -> codex_tools::ToolSpec {
+    fn spec(&self) -> ava_tools::ToolSpec {
         self.handler.spec()
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -76,20 +76,20 @@ enum LifecycleTestResult {
 }
 
 struct LifecycleTestHandler {
-    tool_name: codex_tools::ToolName,
+    tool_name: ava_tools::ToolName,
     result: LifecycleTestResult,
 }
 
 impl ToolExecutor<ToolInvocation> for LifecycleTestHandler {
-    fn tool_name(&self) -> codex_tools::ToolName {
+    fn tool_name(&self) -> ava_tools::ToolName {
         self.tool_name.clone()
     }
 
-    fn spec(&self) -> codex_tools::ToolSpec {
+    fn spec(&self) -> ava_tools::ToolSpec {
         test_spec(&self.tool_name)
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -122,13 +122,13 @@ impl LifecycleTestHandler {
 
 impl CoreToolRuntime for LifecycleTestHandler {}
 
-fn test_spec(tool_name: &codex_tools::ToolName) -> codex_tools::ToolSpec {
-    codex_tools::ToolSpec::Function(codex_tools::ResponsesApiTool {
+fn test_spec(tool_name: &ava_tools::ToolName) -> ava_tools::ToolSpec {
+    ava_tools::ToolSpec::Function(ava_tools::ResponsesApiTool {
         name: tool_name.name.clone(),
         description: "Test tool.".to_string(),
         strict: false,
         defer_loading: None,
-        parameters: codex_tools::JsonSchema::default(),
+        parameters: ava_tools::JsonSchema::default(),
         output_schema: None,
     })
 }
@@ -137,13 +137,13 @@ fn test_spec(tool_name: &codex_tools::ToolName) -> codex_tools::ToolSpec {
 enum RecordedToolLifecycle {
     Start {
         call_id: String,
-        tool_name: codex_tools::ToolName,
+        tool_name: ava_tools::ToolName,
         root_turn_id: Option<String>,
     },
     Finish {
         call_id: String,
-        tool_name: codex_tools::ToolName,
-        outcome: codex_extension_api::ToolCallOutcome,
+        tool_name: ava_tools::ToolName,
+        outcome: ava_extension_api::ToolCallOutcome,
     },
 }
 
@@ -151,11 +151,11 @@ struct ToolLifecycleRecorder {
     records: Arc<std::sync::Mutex<Vec<RecordedToolLifecycle>>>,
 }
 
-impl codex_extension_api::ToolLifecycleContributor for ToolLifecycleRecorder {
+impl ava_extension_api::ToolLifecycleContributor for ToolLifecycleRecorder {
     fn on_tool_start<'a>(
         &'a self,
-        input: codex_extension_api::ToolStartInput<'a>,
-    ) -> codex_extension_api::ToolLifecycleFuture<'a> {
+        input: ava_extension_api::ToolStartInput<'a>,
+    ) -> ava_extension_api::ToolLifecycleFuture<'a> {
         let records = Arc::clone(&self.records);
         let record = RecordedToolLifecycle::Start {
             call_id: input.call_id.to_string(),
@@ -172,8 +172,8 @@ impl codex_extension_api::ToolLifecycleContributor for ToolLifecycleRecorder {
 
     fn on_tool_finish<'a>(
         &'a self,
-        input: codex_extension_api::ToolFinishInput<'a>,
-    ) -> codex_extension_api::ToolLifecycleFuture<'a> {
+        input: ava_extension_api::ToolFinishInput<'a>,
+    ) -> ava_extension_api::ToolLifecycleFuture<'a> {
         let records = Arc::clone(&self.records);
         let record = RecordedToolLifecycle::Finish {
             call_id: input.call_id.to_string(),
@@ -191,10 +191,10 @@ impl codex_extension_api::ToolLifecycleContributor for ToolLifecycleRecorder {
 
 #[test]
 fn handler_normalizes_only_the_default_namespace() {
-    let namespace = "mcp__codex_apps__gmail";
+    let namespace = "mcp__ava_apps__gmail";
     let tool_name = "gmail_get_recent_emails";
-    let plain_name = codex_tools::ToolName::plain(tool_name);
-    let namespaced_name = codex_tools::ToolName::namespaced(namespace, tool_name);
+    let plain_name = ava_tools::ToolName::plain(tool_name);
+    let namespaced_name = ava_tools::ToolName::namespaced(namespace, tool_name);
     let plain_handler = Arc::new(TestHandler {
         tool_name: plain_name.clone(),
     }) as Arc<dyn CoreToolRuntime>;
@@ -205,14 +205,14 @@ fn handler_normalizes_only_the_default_namespace() {
         ToolRegistry::from_tools([Arc::clone(&plain_handler), Arc::clone(&namespaced_handler)]);
 
     let plain = registry.tool(&plain_name);
-    let default_namespaced = registry.tool(&codex_tools::ToolName::namespaced(
+    let default_namespaced = registry.tool(&ava_tools::ToolName::namespaced(
         DEFAULT_FUNCTION_NAMESPACE,
         tool_name,
     ));
-    let empty_namespaced = registry.tool(&codex_tools::ToolName::namespaced("", tool_name));
+    let empty_namespaced = registry.tool(&ava_tools::ToolName::namespaced("", tool_name));
     let namespaced = registry.tool(&namespaced_name);
-    let missing_namespaced = registry.tool(&codex_tools::ToolName::namespaced(
-        "mcp__codex_apps__calendar",
+    let missing_namespaced = registry.tool(&ava_tools::ToolName::namespaced(
+        "mcp__ava_apps__calendar",
         tool_name,
     ));
 
@@ -243,8 +243,8 @@ fn handler_normalizes_only_the_default_namespace() {
 
 #[test]
 fn registry_rejects_default_namespace_alias_collisions() {
-    let plain_name = codex_tools::ToolName::plain("lookup");
-    let namespaced_name = codex_tools::ToolName::namespaced(DEFAULT_FUNCTION_NAMESPACE, "lookup");
+    let plain_name = ava_tools::ToolName::plain("lookup");
+    let namespaced_name = ava_tools::ToolName::namespaced(DEFAULT_FUNCTION_NAMESPACE, "lookup");
 
     for [first_name, duplicate_name] in [
         [plain_name.clone(), namespaced_name.clone()],
@@ -284,7 +284,7 @@ fn registry_rejects_default_namespace_alias_collisions() {
 fn registry_preserves_external_winners_and_trusted_synthetic_order() {
     let handler = |tool_name| Arc::new(TestHandler { tool_name }) as Arc<dyn CoreToolRuntime>;
     let [first_name, second_name, synthetic_name] =
-        ["first", "second", "synthetic"].map(codex_tools::ToolName::plain);
+        ["first", "second", "synthetic"].map(ava_tools::ToolName::plain);
     let first_handler = handler(first_name.clone());
 
     let mut registry = ToolRegistry::from_tools([Arc::clone(&first_handler)]);
@@ -314,8 +314,8 @@ fn reserved_command_tools_reject_external_runtimes_without_a_builtin() {
     let mut registry = ToolRegistry::default();
 
     for reserved_name in ["exec_command", "shell_command"] {
-        let tool_name = codex_tools::ToolName::plain(reserved_name);
-        let namespaced_tool_name = codex_tools::ToolName::namespaced("client", reserved_name);
+        let tool_name = ava_tools::ToolName::plain(reserved_name);
+        let namespaced_tool_name = ava_tools::ToolName::namespaced("client", reserved_name);
 
         assert!(!registry.register_external(handler(tool_name.clone())));
         assert!(
@@ -323,7 +323,7 @@ fn reserved_command_tools_reject_external_runtimes_without_a_builtin() {
                 .register_external_with_exposure(handler(tool_name.clone()), ToolExposure::Direct)
         );
         assert!(
-            !registry.register_external(handler(codex_tools::ToolName::namespaced(
+            !registry.register_external(handler(ava_tools::ToolName::namespaced(
                 DEFAULT_FUNCTION_NAMESPACE,
                 reserved_name,
             )))
@@ -343,7 +343,7 @@ fn reserved_command_tools_reject_external_runtimes_without_a_builtin() {
 
 #[test]
 fn registry_records_reserved_exec_command_when_a_matching_tool_exists() {
-    let tool_name = codex_tools::ToolName::plain("exec_command");
+    let tool_name = ava_tools::ToolName::plain("exec_command");
     let trusted = Arc::new(TestHandler {
         tool_name: tool_name.clone(),
     }) as Arc<dyn CoreToolRuntime>;
@@ -360,12 +360,12 @@ fn registry_records_reserved_exec_command_when_a_matching_tool_exists() {
 #[test]
 fn registry_allows_identical_names_in_different_namespaces() {
     let handler = |tool_name| Arc::new(TestHandler { tool_name }) as Arc<dyn CoreToolRuntime>;
-    let mut registry = ToolRegistry::from_tools([handler(codex_tools::ToolName::namespaced(
+    let mut registry = ToolRegistry::from_tools([handler(ava_tools::ToolName::namespaced(
         "first", "lookup",
     ))]);
 
     assert!(
-        registry.register_external(handler(codex_tools::ToolName::namespaced(
+        registry.register_external(handler(ava_tools::ToolName::namespaced(
             "second", "lookup",
         )))
     );
@@ -376,8 +376,8 @@ fn registry_allows_identical_names_in_different_namespaces() {
 async fn readiness_selects_exact_tool_with_registry_owned_exposure() {
     let (session, _turn) = crate::session::tests::make_session_and_context().await;
     let session = Arc::new(session);
-    let plain_name = codex_tools::ToolName::plain("echo");
-    let namespaced_name = codex_tools::ToolName::namespaced("mcp__server__", "echo");
+    let plain_name = ava_tools::ToolName::plain("echo");
+    let namespaced_name = ava_tools::ToolName::namespaced("mcp__server__", "echo");
     assert!(
         TestHandler {
             tool_name: plain_name.clone(),
@@ -432,7 +432,7 @@ async fn readiness_selects_exact_tool_with_registry_owned_exposure() {
 
     assert!(
         registry
-            .tool(&codex_tools::ToolName::namespaced("mcp__missing__", "echo"))
+            .tool(&ava_tools::ToolName::namespaced("mcp__missing__", "echo"))
             .is_none()
     );
     assert_eq!(
@@ -447,7 +447,7 @@ async fn readiness_selects_exact_tool_with_registry_owned_exposure() {
 #[tokio::test]
 async fn function_tools_expose_default_hook_payloads_and_rewrites() -> anyhow::Result<()> {
     let (session, turn) = crate::session::tests::make_session_and_context().await;
-    let tool_name = codex_tools::ToolName::namespaced("functions.", "echo");
+    let tool_name = ava_tools::ToolName::namespaced("functions.", "echo");
     let handler = TestHandler {
         tool_name: tool_name.clone(),
     };
@@ -493,7 +493,7 @@ async fn function_tools_expose_default_hook_payloads_and_rewrites() -> anyhow::R
 #[tokio::test]
 async fn function_hook_input_defaults_empty_arguments_to_object() {
     let (session, turn) = crate::session::tests::make_session_and_context().await;
-    let tool_name = codex_tools::ToolName::plain("echo");
+    let tool_name = ava_tools::ToolName::plain("echo");
     let handler = TestHandler {
         tool_name: tool_name.clone(),
     };
@@ -520,9 +520,9 @@ async fn spawn_agent_function_tools_use_agent_matcher_alias() {
     let turn = Arc::new(turn);
 
     let hook_payloads = [
-        codex_tools::ToolName::plain("spawn_agent"),
-        codex_tools::ToolName::namespaced(DEFAULT_FUNCTION_NAMESPACE, "spawn_agent"),
-        codex_tools::ToolName::namespaced(MULTI_AGENT_V1_NAMESPACE, "spawn_agent"),
+        ava_tools::ToolName::plain("spawn_agent"),
+        ava_tools::ToolName::namespaced(DEFAULT_FUNCTION_NAMESPACE, "spawn_agent"),
+        ava_tools::ToolName::namespaced(MULTI_AGENT_V1_NAMESPACE, "spawn_agent"),
     ]
     .into_iter()
     .map(|tool_name| {
@@ -602,7 +602,7 @@ fn post_tool_use_feedback_output_preserves_fallback_token_limit_override(
         },
         result: Box::new(PostToolUseFeedbackOutput {
             original: Box::new(crate::tools::context::McpToolOutput {
-                result: codex_protocol::mcp::CallToolResult {
+                result: ava_protocol::mcp::CallToolResult {
                     content: Vec::new(),
                     structured_content: None,
                     is_error: None,
@@ -629,7 +629,7 @@ fn post_tool_use_feedback_output_preserves_fallback_token_limit_override(
                 call_id: "call-1".to_string(),
                 output: FunctionCallOutputPayload::from_text("hook feedback".to_string()),
             }),
-            metadata: Some(CodexHarnessMetadata {
+            metadata: Some(AvaHarnessMetadata {
                 history_truncation_token_limit: Some(expected_token_limit),
                 ..Default::default()
             }),
@@ -645,7 +645,7 @@ fn post_tool_use_feedback_output_keeps_code_mode_result_typed() {
             arguments: "{}".to_string(),
         },
         result: Box::new(PostToolUseFeedbackOutput {
-            original: Box::new(codex_tools::JsonToolOutput::new(
+            original: Box::new(ava_tools::JsonToolOutput::new(
                 serde_json::json!({ "typed": true }),
             )),
             model_visible: crate::tools::context::FunctionToolOutput::from_text(
@@ -661,7 +661,7 @@ fn post_tool_use_feedback_output_keeps_code_mode_result_typed() {
         ResponseItemEnvelope::new(
             ResponseInputItem::FunctionCallOutput {
                 call_id: "call-1".to_string(),
-                output: codex_protocol::models::FunctionCallOutputPayload::from_text(
+                output: ava_protocol::models::FunctionCallOutputPayload::from_text(
                     "hook feedback".to_string()
                 ),
             }
@@ -675,7 +675,7 @@ fn post_tool_use_feedback_output_keeps_code_mode_result_typed() {
             arguments: "{}".to_string(),
         },
         result: Box::new(PostToolUseFeedbackOutput {
-            original: Box::new(codex_tools::JsonToolOutput::new(
+            original: Box::new(ava_tools::JsonToolOutput::new(
                 serde_json::json!({ "typed": true }),
             )),
             model_visible: crate::tools::context::FunctionToolOutput::from_text(
@@ -701,7 +701,7 @@ fn post_tool_use_feedback_output_preserves_mcp_result_metadata(tool_error: bool)
     });
     let result = PostToolUseFeedbackOutput {
         original: Box::new(crate::tools::context::McpToolOutput {
-            result: codex_protocol::mcp::CallToolResult {
+            result: ava_protocol::mcp::CallToolResult {
                 content: vec![serde_json::json!({
                     "type": "text",
                     "text": "original result",
@@ -714,7 +714,7 @@ fn post_tool_use_feedback_output_preserves_mcp_result_metadata(tool_error: bool)
             result_metadata_capture_allowed: true,
             wall_time: std::time::Duration::ZERO,
             original_image_detail_supported: false,
-            truncation_policy: codex_utils_output_truncation::TruncationPolicy::Bytes(64),
+            truncation_policy: ava_utils_output_truncation::TruncationPolicy::Bytes(64),
         }),
         model_visible: FunctionToolOutput::from_text(
             "unrelated hook feedback".to_string(),
@@ -735,14 +735,14 @@ async fn dispatch_uses_canonical_tool_names_for_lifecycle_contributors() -> anyh
     turn.turn_metadata_state
         .set_root_turn_id("root-turn".to_string());
     let records = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.tool_lifecycle_contributor(Arc::new(ToolLifecycleRecorder {
         records: Arc::clone(&records),
     }));
     session.services.extensions = Arc::new(builder.build());
 
-    let ok_tool = codex_tools::ToolName::plain("ok_tool");
-    let failing_tool = codex_tools::ToolName::namespaced("extensions", "failing_tool");
+    let ok_tool = ava_tools::ToolName::plain("ok_tool");
+    let failing_tool = ava_tools::ToolName::namespaced("extensions", "failing_tool");
     let ok_handler = Arc::new(LifecycleTestHandler {
         tool_name: ok_tool.clone(),
         result: LifecycleTestResult::Ok { success: false },
@@ -761,7 +761,7 @@ async fn dispatch_uses_canonical_tool_names_for_lifecycle_contributors() -> anyh
                 Arc::clone(&session),
                 Arc::clone(&turn),
                 "ok-call",
-                codex_tools::ToolName::namespaced(DEFAULT_FUNCTION_NAMESPACE, "ok_tool"),
+                ava_tools::ToolName::namespaced(DEFAULT_FUNCTION_NAMESPACE, "ok_tool"),
             ),
             /*terminal_outcome_reached*/ None,
         )
@@ -792,7 +792,7 @@ async fn dispatch_uses_canonical_tool_names_for_lifecycle_contributors() -> anyh
         RecordedToolLifecycle::Finish {
             call_id: "ok-call".to_string(),
             tool_name: ok_tool.with_default_namespace(),
-            outcome: codex_extension_api::ToolCallOutcome::Completed { success: false },
+            outcome: ava_extension_api::ToolCallOutcome::Completed { success: false },
         },
         RecordedToolLifecycle::Start {
             call_id: "failing-call".to_string(),
@@ -802,7 +802,7 @@ async fn dispatch_uses_canonical_tool_names_for_lifecycle_contributors() -> anyh
         RecordedToolLifecycle::Finish {
             call_id: "failing-call".to_string(),
             tool_name: failing_tool,
-            outcome: codex_extension_api::ToolCallOutcome::Failed {
+            outcome: ava_extension_api::ToolCallOutcome::Failed {
                 handler_executed: true,
             },
         },
@@ -821,7 +821,7 @@ fn test_invocation(
     session: Arc<crate::session::session::Session>,
     turn: Arc<crate::session::turn_context::TurnContext>,
     call_id: &str,
-    tool_name: codex_tools::ToolName,
+    tool_name: ava_tools::ToolName,
 ) -> ToolInvocation {
     let step_context = StepContext::for_test(Arc::clone(&turn));
     ToolInvocation {

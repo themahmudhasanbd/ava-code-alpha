@@ -59,7 +59,7 @@ Tables (canonical DDL in [04-data-storage](04-data-storage.md) §4.3–4.4, §4.
         "responses",
         "anthropic_messages",
         "google_generative_ai",
-        "openai_codex_responses",
+        "openai_ava_responses",
         "pi_messages",
         "auto"
       ]
@@ -158,8 +158,8 @@ model record may explicitly set it to `true` for an upstream that accepts
 `authKind: "oauth"` marks a vendor-account row (ADR 0095, D237, D240): the credential
 is an OAuth grant under `secret:provider:<id>:oauth` rather than a pasted key,
 so the row carries no `secretRef` for it and launches with an empty key. The
-two account-only apiStyle values are vendor-account wire APIs — `openai_codex_responses`
-(the Codex conversation envelope) and `pi_messages` (the radius gateway) — and
+two account-only apiStyle values are vendor-account wire APIs — `openai_ava_responses`
+(the Ava conversation envelope) and `pi_messages` (the radius gateway) — and
 are not offered in the custom-provider dialog because neither works against a
 hand-typed base URL with a pasted key. New custom services offer only
 Chat Completions, Responses, Anthropic Messages, and Google Generative AI;
@@ -251,7 +251,7 @@ Anthropic OAuth's `claude-cli/<version>`, or OpenCode's
 `pi-desktop/<APP_VERSION>`). A non-empty map is last-writer on that row's
 outbound HTTP — session turns, subagents, prompt enhancement, plugin one-shots,
 `/models` discovery (including unsaved form values), connection tests, and
-OAuth token refresh. A fetch wrapper is the last writer so Codex and the
+OAuth token refresh. A fetch wrapper is the last writer so Ava and the
 Anthropic SDK cannot overwrite it. The same values are also placed on stream-
 option headers so OpenCode's caller-wins rule stays true. Keys are
 case-insensitive unique, at most 32 entries, name ≤ 256 bytes, value ≤ 4096
@@ -388,7 +388,7 @@ metadata; an account model absent from the snapshot remains generic.
 | vendorKey | subscription | typical apiStyle | login shape |
 |---|---|---|---|
 | anthropic | Claude Pro/Max | anthropic_messages | PKCE + local callback |
-| openai-codex | ChatGPT Plus/Pro | openai_codex_responses | PKCE + local callback, or pasted code |
+| openai-ava | ChatGPT Plus/Pro | openai_ava_responses | PKCE + local callback, or pasted code |
 | github-copilot | Copilot | varies by model | device code |
 | openrouter | account credit | chat_completions | PKCE + local callback |
 | kimi-coding | Kimi | chat_completions (headers-only auth) | device code |
@@ -542,7 +542,7 @@ The canonical DDL lives in [04-data-storage](04-data-storage.md) (D086). Summary
   (`models.getAvailable`, which applies the vendor's own `filterModels`, so a
   Copilot account lists what its subscription includes) instead of calling
   `/models`; each returned model carries the apiStyle its wire API implies.
-  Static vendors such as `openai-codex` use the pinned pi-ai catalog (0.86.1
+  Static vendors such as `openai-ava` use the pinned pi-ai catalog (0.86.1
   includes `gpt-6-astra`); models.dev does not invent those IDs. `xai` is the
   exception: conversation models come from `GET /v1/models` on the resolved
   account token, and the pinned catalog is used only when that request fails.

@@ -53,8 +53,8 @@ pub fn is_openai_curated_marketplace_name(marketplace_name: &str) -> bool {
         || marketplace_name == OPENAI_API_CURATED_MARKETPLACE_NAME
 }
 
-pub type LoadedPlugin = codex_plugin::LoadedPlugin<codex_config::McpServerConfig>;
-pub type PluginLoadOutcome = codex_plugin::PluginLoadOutcome<codex_config::McpServerConfig>;
+pub type LoadedPlugin = ava_plugin::LoadedPlugin<ava_config::McpServerConfig>;
+pub type PluginLoadOutcome = ava_plugin::PluginLoadOutcome<ava_config::McpServerConfig>;
 
 pub use app_mcp_routing::apps_route_available;
 pub use artifact_operation::ArtifactOperation;

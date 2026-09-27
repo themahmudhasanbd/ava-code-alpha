@@ -6,19 +6,19 @@ use crate::app_event_sender::AppEventSender;
 use crate::app_server_session::AppServerSession;
 use crate::app_server_session::ThreadParamsMode;
 use crate::legacy_core::config::Config;
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ConfigRequirements;
-use codex_app_server_protocol::ConfigRequirementsReadResponse;
-use codex_app_server_protocol::PermissionProfileListParams;
-use codex_app_server_protocol::PermissionProfileListResponse;
-use codex_app_server_protocol::PermissionProfileSummary;
-use codex_app_server_protocol::RequestId;
-use codex_utils_approval_presets::builtin_approval_presets;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigRequirements;
+use ava_app_server_protocol::ConfigRequirementsReadResponse;
+use ava_app_server_protocol::PermissionProfileListParams;
+use ava_app_server_protocol::PermissionProfileListResponse;
+use ava_app_server_protocol::PermissionProfileSummary;
+use ava_app_server_protocol::RequestId;
+use ava_utils_approval_presets::builtin_approval_presets;
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
@@ -100,7 +100,7 @@ pub(crate) fn fetch(
     let local_discovery = (!app_server.uses_embedded_app_server()
         && mode == ThreadParamsMode::Embedded
         && config.config_layer_stack.layers_low_to_high().any(|layer| {
-            matches!(layer.name, codex_config::ConfigLayerSource::SessionFlags)
+            matches!(layer.name, ava_config::ConfigLayerSource::SessionFlags)
                 && layer.config.get("permissions").is_some()
         }))
     .then(|| PermissionDiscovery::local(config));
@@ -203,7 +203,7 @@ fn discovery_error(error: TypedRequestError) -> String {
                     || source.message.contains("configRequirements/read")
                     || source.message.contains("config/read"))))
     {
-        return "This server does not support permission discovery. Upgrade the Codex server to use this menu.".to_string();
+        return "This server does not support permission discovery. Upgrade the Ava server to use this menu.".to_string();
     }
     format!("Failed to load permissions: {error}")
 }

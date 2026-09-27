@@ -1,20 +1,20 @@
-use super::CodexClient;
+use super::AvaClient;
 use super::loopback_responses_server::LoopbackResponsesServer;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ConfigValueWriteParams;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginInstalledParams;
-use codex_app_server_protocol::PluginInstalledResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::WriteStatus;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginInstalledParams;
+use ava_app_server_protocol::PluginInstalledResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_app_server_protocol::WriteStatus;
 use serde_json::Value;
 use serde_json::json;
 use std::ffi::OsString;
@@ -27,8 +27,8 @@ use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
-pub(super) const ANALYTICS_CAPTURE_ENV_VAR: &str = "CODEX_ANALYTICS_EVENTS_CAPTURE_FILE";
-const TEST_USER_CONFIG_ENV_VAR: &str = "CODEX_APP_SERVER_TEST_USER_CONFIG_FILE";
+pub(super) const ANALYTICS_CAPTURE_ENV_VAR: &str = "AVA_ANALYTICS_EVENTS_CAPTURE_FILE";
+const TEST_USER_CONFIG_ENV_VAR: &str = "AVA_APP_SERVER_TEST_USER_CONFIG_FILE";
 const CAPTURE_READY_TIMEOUT: Duration = Duration::from_secs(5);
 const CAPTURE_TIMEOUT: Duration = Duration::from_secs(10);
 const CAPTURE_POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -38,13 +38,13 @@ const MOCK_MODEL_SLUG: &str = "plugin-analytics-smoke";
 const MOCK_PROVIDER_ID: &str = "plugin_analytics_smoke";
 
 pub(super) fn run(
-    codex_bin: &Path,
+    ava_bin: &Path,
     config_overrides: &[String],
     plugin_id: &str,
     capture_file: Option<PathBuf>,
 ) -> Result<()> {
     let capture_path = capture_file.unwrap_or_else(|| {
-        std::env::temp_dir().join(format!("codex-plugin-analytics-{}.jsonl", process::id()))
+        std::env::temp_dir().join(format!("ava-plugin-analytics-{}.jsonl", process::id()))
     });
     prepare_capture_file(&capture_path)?;
 
@@ -63,7 +63,7 @@ pub(super) fn run(
             temporary_config.path().as_os_str().to_os_string(),
         ),
     ];
-    let mut client = CodexClient::spawn_stdio_with_env(codex_bin, &overrides, &child_environment)?;
+    let mut client = AvaClient::spawn_stdio_with_env(ava_bin, &overrides, &child_environment)?;
     wait_until_capture_is_ready(&capture_path)?;
     client.initialize()?;
 
@@ -94,7 +94,7 @@ pub(super) fn run(
     Ok(())
 }
 
-fn run_plugin_turn(client: &mut CodexClient, expected: &ExpectedPlugin) -> Result<String> {
+fn run_plugin_turn(client: &mut AvaClient, expected: &ExpectedPlugin) -> Result<String> {
     let thread = client.thread_start(ThreadStartParams {
         model: Some(MOCK_MODEL_SLUG.to_string()),
         model_provider: Some(MOCK_PROVIDER_ID.to_string()),
@@ -124,7 +124,7 @@ fn run_plugin_turn(client: &mut CodexClient, expected: &ExpectedPlugin) -> Resul
 }
 
 fn wait_for_plugin_usage(
-    client: &mut CodexClient,
+    client: &mut AvaClient,
     capture_path: &Path,
     expected: &ExpectedPlugin,
 ) -> Result<()> {
@@ -137,7 +137,7 @@ fn wait_for_plugin_usage(
         // barrier that tells us whether this attempt resolved the plugin.
         let events = wait_for_turn_analytics(capture_path, &turn_id)?;
         if events.iter().any(|event| {
-            event["event_type"] == "codex_plugin_used"
+            event["event_type"] == "ava_plugin_used"
                 && event["event_params"]["turn_id"].as_str() == Some(turn_id.as_str())
                 && event["event_params"]["plugin_id"].as_str() == Some(expected.plugin_id.as_str())
         }) {
@@ -164,7 +164,7 @@ struct ExpectedPlugin {
     marketplace_name: String,
 }
 
-fn plugin_installed(client: &mut CodexClient) -> Result<PluginInstalledResponse> {
+fn plugin_installed(client: &mut AvaClient) -> Result<PluginInstalledResponse> {
     let request_id = client.request_id();
     client.send_request(
         ClientRequest::PluginInstalled {
@@ -224,7 +224,7 @@ fn expected_plugin(response: &PluginInstalledResponse, plugin_id: &str) -> Resul
 }
 
 fn write_plugin_enabled(
-    client: &mut CodexClient,
+    client: &mut AvaClient,
     config_path: &Path,
     plugin_id: &str,
     enabled: bool,
@@ -318,7 +318,7 @@ pub(super) fn wait_until_capture_is_ready(path: &Path) -> Result<()> {
         }
         if Instant::now() >= deadline {
             bail!(
-                "analytics capture did not become ready at {}; use a debug Codex binary",
+                "analytics capture did not become ready at {}; use a debug Ava binary",
                 path.display()
             );
         }
@@ -355,7 +355,7 @@ fn wait_for_turn_analytics(path: &Path, turn_id: &str) -> Result<Vec<Value>> {
     loop {
         let events = read_capture_events(path)?;
         if events.iter().any(|event| {
-            event["event_type"] == "codex_turn_event"
+            event["event_type"] == "ava_turn_event"
                 && event["event_params"]["turn_id"].as_str() == Some(turn_id)
         }) {
             return Ok(events);
@@ -420,7 +420,7 @@ fn validate_plugin_events(events: Vec<Value>, expected: &ExpectedPlugin) -> Resu
             );
         };
         validate_identity(event, expected)?;
-        if event_type == "codex_plugin_used" {
+        if event_type == "ava_plugin_used" {
             validate_used_metadata(event)?;
         }
         validated.push((*event).clone());
@@ -430,9 +430,9 @@ fn validate_plugin_events(events: Vec<Value>, expected: &ExpectedPlugin) -> Resu
 
 fn required_event_types() -> [&'static str; 3] {
     [
-        "codex_plugin_disabled",
-        "codex_plugin_enabled",
-        "codex_plugin_used",
+        "ava_plugin_disabled",
+        "ava_plugin_enabled",
+        "ava_plugin_used",
     ]
 }
 
@@ -463,7 +463,7 @@ fn validate_used_metadata(event: &Value) -> Result<()> {
         "model_slug",
     ] {
         if params.get(field).is_none_or(Value::is_null) {
-            bail!("codex_plugin_used event has null or missing `{field}`");
+            bail!("ava_plugin_used event has null or missing `{field}`");
         }
     }
     require_string(params, "model_slug", MOCK_MODEL_SLUG)
@@ -484,7 +484,7 @@ struct TemporaryConfigFile {
 impl TemporaryConfigFile {
     fn create() -> Result<Self> {
         let path = std::env::temp_dir().join(format!(
-            "codex-plugin-analytics-config-{}.toml",
+            "ava-plugin-analytics-config-{}.toml",
             process::id()
         ));
         fs::write(&path, "")

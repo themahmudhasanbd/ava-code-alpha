@@ -6,7 +6,7 @@
 
 ## Context
 
-One turn on a long session retried a Codex request ten times over ~112 seconds and
+One turn on a long session retried a Ava request ten times over ~112 seconds and
 reported `NETWORK_ERROR: fetch failed` for every attempt; a new turn on the same
 provider, model, and network succeeded immediately. The log record carried
 `phase=stream`, `streamMs=1~2`, and `retryAttempt=10`, and nothing else.

@@ -1,21 +1,21 @@
 use std::path::Path;
 
 use anyhow::Result;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::test_support::PathExt;
 use predicates::str::contains;
 use tempfile::TempDir;
 
-fn codex_command(codex_home: &Path) -> Result<assert_cmd::Command> {
-    let mut cmd = assert_cmd::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
-    cmd.env("CODEX_HOME", codex_home);
+fn ava_command(ava_home: &Path) -> Result<assert_cmd::Command> {
+    let mut cmd = assert_cmd::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
+    cmd.env("AVA_HOME", ava_home);
     Ok(cmd)
 }
 
 #[tokio::test]
 async fn debug_clear_memories_resets_state_and_removes_memory_dir() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = TempDir::new()?;
+    let sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let runtime = StateRuntime::init(sqlite.clone(), "test-provider".to_string()).await?;
     runtime.close().await;
 
@@ -53,8 +53,8 @@ INSERT INTO threads (
         "#,
     )
     .bind(thread_id)
-    .bind(codex_home.path().join("session.jsonl").display().to_string())
-    .bind(codex_home.path().display().to_string())
+    .bind(ava_home.path().join("session.jsonl").display().to_string())
+    .bind(ava_home.path().display().to_string())
     .execute(&pool)
     .await?;
 
@@ -103,13 +103,13 @@ INSERT INTO jobs (
     .execute(&memories_pool)
     .await?;
 
-    let memory_root = codex_home.path().join("memories");
+    let memory_root = ava_home.path().join("memories");
     std::fs::create_dir_all(&memory_root)?;
     std::fs::write(memory_root.join("memory_summary.md"), "stale memory")?;
     pool.close().await;
     memories_pool.close().await;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["debug", "clear-memories"])
         .assert()
         .success()
@@ -136,8 +136,8 @@ INSERT INTO jobs (
 
 #[tokio::test]
 async fn debug_clear_memories_resets_memories_db_without_state_db() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = TempDir::new()?;
+    let sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let runtime = StateRuntime::init(sqlite.clone(), "test-provider".to_string()).await?;
     runtime.close().await;
 
@@ -167,7 +167,7 @@ INSERT INTO stage1_outputs (
     memories_pool.close().await;
     std::fs::remove_file(&db_path)?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["debug", "clear-memories"])
         .assert()
         .success()

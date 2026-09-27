@@ -5,41 +5,41 @@ use app_test_support::create_fake_rollout;
 use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::rollout_path;
 use app_test_support::to_response;
-use codex_app_server_protocol::GitInfo;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSection;
-use codex_app_server_protocol::ThreadSectionListParams;
-use codex_app_server_protocol::ThreadSectionListResponse;
-use codex_app_server_protocol::ThreadSectionMoveParams;
-use codex_app_server_protocol::ThreadSectionMoveResponse;
-use codex_app_server_protocol::ThreadSortKey;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_core::ARCHIVED_SESSIONS_SUBDIR;
-use codex_features::Feature;
-use codex_git_utils::GitSha;
-use codex_protocol::SanitizedGitUrl;
-use codex_protocol::ThreadId;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::GitInfo as RolloutGitInfo;
-use codex_rollout::state_db::reconcile_rollout;
-use codex_state::PINNED_THREAD_SECTION_ID;
-use codex_state::PINNED_THREAD_SECTION_NAME;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::GitInfo;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSection;
+use ava_app_server_protocol::ThreadSectionListParams;
+use ava_app_server_protocol::ThreadSectionListResponse;
+use ava_app_server_protocol::ThreadSectionMoveParams;
+use ava_app_server_protocol::ThreadSectionMoveResponse;
+use ava_app_server_protocol::ThreadSortKey;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_core::ARCHIVED_SESSIONS_SUBDIR;
+use ava_features::Feature;
+use ava_git_utils::GitSha;
+use ava_protocol::SanitizedGitUrl;
+use ava_protocol::ThreadId;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::GitInfo as RolloutGitInfo;
+use ava_rollout::state_db::reconcile_rollout;
+use ava_state::PINNED_THREAD_SECTION_ID;
+use ava_state::PINNED_THREAD_SECTION_NAME;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -55,10 +55,10 @@ const INVALID_REQUEST_ERROR_CODE: i64 = -32600;
 #[tokio::test]
 async fn thread_section_move_pins_before_first_turn() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -144,9 +144,9 @@ async fn thread_section_move_pins_before_first_turn() -> Result<()> {
 #[tokio::test]
 async fn thread_section_move_pins_and_unpins_with_filtered_recency_pagination() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
-    let state_db = init_state_db(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
+    let state_db = init_state_db(ava_home.path()).await?;
 
     let mut thread_ids = Vec::new();
     for (filename_timestamp, timestamp, preview) in [
@@ -163,7 +163,7 @@ async fn thread_section_move_pins_and_unpins_with_filtered_recency_pagination() 
         ),
     ] {
         let thread_id = create_fake_rollout(
-            codex_home.path(),
+            ava_home.path(),
             filename_timestamp,
             timestamp,
             preview,
@@ -172,7 +172,7 @@ async fn thread_section_move_pins_and_unpins_with_filtered_recency_pagination() 
         )?;
         reconcile_rollout(
             Some(&state_db),
-            rollout_path(codex_home.path(), filename_timestamp, &thread_id).as_path(),
+            rollout_path(ava_home.path(), filename_timestamp, &thread_id).as_path(),
             "mock_provider",
             /*builder*/ None,
             &[],
@@ -187,7 +187,7 @@ async fn thread_section_move_pins_and_unpins_with_filtered_recency_pagination() 
     };
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -253,7 +253,7 @@ async fn thread_section_move_pins_and_unpins_with_filtered_recency_pagination() 
             .expect("pinned thread should remain persisted");
         assert_eq!(
             thread.section,
-            Some(codex_state::ThreadSection {
+            Some(ava_state::ThreadSection {
                 id: pinned_section.id.clone(),
                 name: pinned_section.name.clone(),
                 appearance: None,
@@ -383,9 +383,9 @@ async fn thread_section_move_pins_and_unpins_with_filtered_recency_pagination() 
 async fn thread_sections_preserve_server_owned_manual_order_across_moves_and_restarts() -> Result<()>
 {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
-    let state_db = init_state_db(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
+    let state_db = init_state_db(ava_home.path()).await?;
 
     let mut thread_ids = Vec::new();
     for (filename_timestamp, timestamp, preview) in [
@@ -406,7 +406,7 @@ async fn thread_sections_preserve_server_owned_manual_order_across_moves_and_res
         ),
     ] {
         let thread_id = create_fake_rollout(
-            codex_home.path(),
+            ava_home.path(),
             filename_timestamp,
             timestamp,
             preview,
@@ -415,7 +415,7 @@ async fn thread_sections_preserve_server_owned_manual_order_across_moves_and_res
         )?;
         reconcile_rollout(
             Some(&state_db),
-            rollout_path(codex_home.path(), filename_timestamp, &thread_id).as_path(),
+            rollout_path(ava_home.path(), filename_timestamp, &thread_id).as_path(),
             "mock_provider",
             /*builder*/ None,
             &[],
@@ -430,7 +430,7 @@ async fn thread_sections_preserve_server_owned_manual_order_across_moves_and_res
     };
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -532,7 +532,7 @@ async fn thread_sections_preserve_server_owned_manual_order_across_moves_and_res
 
     drop(mcp);
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let request_id = mcp.send_thread_list_request(list_params).await?;
@@ -562,11 +562,11 @@ async fn thread_sections_preserve_server_owned_manual_order_across_moves_and_res
 #[tokio::test]
 async fn thread_metadata_update_patches_git_branch_and_returns_updated_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -663,12 +663,12 @@ async fn thread_metadata_update_patches_git_branch_and_returns_updated_thread() 
 #[tokio::test]
 async fn thread_metadata_update_sanitizes_git_origin_before_persisting() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
-    let state_db = init_state_db(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
+    let state_db = init_state_db(ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -747,11 +747,11 @@ async fn thread_metadata_update_sanitizes_git_origin_before_persisting() -> Resu
 #[tokio::test]
 async fn thread_metadata_update_rejects_empty_git_info_patch() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -798,11 +798,11 @@ async fn thread_metadata_update_rejects_empty_git_info_patch() -> Result<()> {
 #[tokio::test]
 async fn thread_metadata_update_rejects_ephemeral_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -876,13 +876,13 @@ async fn thread_metadata_update_rejects_ephemeral_thread() -> Result<()> {
 #[tokio::test]
 async fn thread_metadata_update_repairs_missing_sqlite_row_for_stored_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
-    let _state_db = init_state_db(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
+    let _state_db = init_state_db(ava_home.path()).await?;
 
     let preview = "Stored thread preview";
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         preview,
@@ -891,7 +891,7 @@ async fn thread_metadata_update_repairs_missing_sqlite_row_for_stored_thread() -
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -935,13 +935,13 @@ async fn thread_metadata_update_repairs_missing_sqlite_row_for_stored_thread() -
 #[tokio::test]
 async fn thread_metadata_update_repairs_loaded_thread_without_resetting_summary() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
-    let state_db = init_state_db(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
+    let state_db = init_state_db(ava_home.path()).await?;
 
     let preview = "Loaded thread preview";
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T08-30-00",
         "2025-01-06T08:30:00Z",
         preview,
@@ -949,7 +949,7 @@ async fn thread_metadata_update_repairs_loaded_thread_without_resetting_summary(
         /*git_info*/ None,
     )?;
     let thread_uuid = ThreadId::from_string(&thread_id)?;
-    let rollout_path = rollout_path(codex_home.path(), "2025-01-06T08-30-00", &thread_id);
+    let rollout_path = rollout_path(ava_home.path(), "2025-01-06T08-30-00", &thread_id);
     reconcile_rollout(
         Some(&state_db),
         rollout_path.as_path(),
@@ -962,7 +962,7 @@ async fn thread_metadata_update_repairs_loaded_thread_without_resetting_summary(
     .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -1027,13 +1027,13 @@ async fn thread_metadata_update_repairs_loaded_thread_without_resetting_summary(
 #[tokio::test]
 async fn thread_metadata_update_repairs_missing_sqlite_row_for_archived_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
-    let _state_db = init_state_db(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
+    let _state_db = init_state_db(ava_home.path()).await?;
 
     let preview = "Archived thread preview";
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T08-30-00",
         "2025-01-06T08:30:00Z",
         preview,
@@ -1041,9 +1041,9 @@ async fn thread_metadata_update_repairs_missing_sqlite_row_for_archived_thread()
         /*git_info*/ None,
     )?;
 
-    let archived_dir = codex_home.path().join(ARCHIVED_SESSIONS_SUBDIR);
+    let archived_dir = ava_home.path().join(ARCHIVED_SESSIONS_SUBDIR);
     fs::create_dir_all(&archived_dir)?;
-    let archived_source = rollout_path(codex_home.path(), "2025-01-06T08-30-00", &thread_id);
+    let archived_source = rollout_path(ava_home.path(), "2025-01-06T08-30-00", &thread_id);
     let archived_dest = archived_dir.join(
         archived_source
             .file_name()
@@ -1052,7 +1052,7 @@ async fn thread_metadata_update_repairs_missing_sqlite_row_for_archived_thread()
     fs::rename(&archived_source, &archived_dest)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -1096,11 +1096,11 @@ async fn thread_metadata_update_repairs_missing_sqlite_row_for_archived_thread()
 #[tokio::test]
 async fn thread_metadata_update_can_clear_stored_git_fields() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
 
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-07T09-15-00",
         "2025-01-07T09:15:00Z",
         "Thread preview",
@@ -1109,15 +1109,15 @@ async fn thread_metadata_update_can_clear_stored_git_fields() -> Result<()> {
             commit_hash: Some(GitSha::new("abc123")),
             branch: Some("feature/sidebar-pr".to_string()),
             repository_url: Some(
-                SanitizedGitUrl::try_from("git@example.com:openai/codex.git")
+                SanitizedGitUrl::try_from("git@example.com:openai/ava.git")
                     .expect("repository URL should be valid"),
             ),
         }),
     )?;
-    let _state_db = init_state_db(codex_home.path()).await?;
+    let _state_db = init_state_db(ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -1164,9 +1164,9 @@ async fn thread_metadata_update_can_clear_stored_git_fields() -> Result<()> {
     Ok(())
 }
 
-async fn init_state_db(codex_home: &Path) -> Result<Arc<StateRuntime>> {
+async fn init_state_db(ava_home: &Path) -> Result<Arc<StateRuntime>> {
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.abs()),
         "mock_provider".into(),
     )
     .await?;

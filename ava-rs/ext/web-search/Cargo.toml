@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-web-search-extension"
+name = "ava-web-search-extension"
 version.workspace = true
 
 [lib]
-name = "codex_web_search_extension"
+name = "ava_web_search_extension"
 path = "src/lib.rs"
 doctest = false
 
@@ -13,16 +13,16 @@ doctest = false
 workspace = true
 
 [dependencies]
-codex-api = { workspace = true }
-codex-core = { workspace = true }
-codex-extension-api = { workspace = true }
-codex-extension-items = { workspace = true }
-codex-login = { workspace = true }
-codex-model-provider = { workspace = true }
-codex-model-provider-info = { workspace = true }
-codex-otel = { workspace = true }
-codex-protocol = { workspace = true }
-codex-tools = { workspace = true }
+ava-api = { workspace = true }
+ava-core = { workspace = true }
+ava-extension-api = { workspace = true }
+ava-extension-items = { workspace = true }
+ava-login = { workspace = true }
+ava-model-provider = { workspace = true }
+ava-model-provider-info = { workspace = true }
+ava-otel = { workspace = true }
+ava-protocol = { workspace = true }
+ava-tools = { workspace = true }
 http = { workspace = true }
 schemars = { workspace = true }
 serde_json = { workspace = true }

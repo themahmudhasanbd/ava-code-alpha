@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
-use codex_utils_plugins::SkillDiscoveryMode;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
+use ava_utils_plugins::SkillDiscoveryMode;
 
 use crate::AppConnectorId;
 use crate::AppDeclaration;

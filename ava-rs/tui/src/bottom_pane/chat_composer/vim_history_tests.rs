@@ -2,9 +2,9 @@
 
 use std::path::PathBuf;
 
-use codex_config::types::KeybindingSpec;
-use codex_config::types::KeybindingsSpec;
-use codex_config::types::TuiKeymap;
+use ava_config::types::KeybindingSpec;
+use ava_config::types::KeybindingsSpec;
+use ava_config::types::TuiKeymap;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;

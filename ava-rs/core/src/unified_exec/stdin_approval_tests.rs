@@ -2,16 +2,16 @@
 
 use super::*;
 use crate::session::tests::make_session_and_context;
-use codex_network_proxy::NetworkMode;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_sandboxing::SandboxType;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::NetworkMode;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_sandboxing::SandboxType;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Arc;
@@ -255,9 +255,9 @@ async fn enabling_windows_sandbox_respects_the_launch_backend(
     assert_eq!(
         environment.windows_sandbox_selection_for_turn_metadata(),
         if sandbox_type == SandboxType::WindowsMxc {
-            codex_file_system::WindowsSandboxSelection::Mxc
+            ava_file_system::WindowsSandboxSelection::Mxc
         } else {
-            codex_file_system::WindowsSandboxSelection::Disabled
+            ava_file_system::WindowsSandboxSelection::Disabled
         }
     );
     let permissions = TerminalPermissions::for_launch(

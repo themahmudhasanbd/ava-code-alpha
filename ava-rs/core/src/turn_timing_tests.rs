@@ -1,9 +1,9 @@
-use codex_analytics::TurnProfile;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseItem;
+use ava_analytics::TurnProfile;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
 use std::time::Instant;

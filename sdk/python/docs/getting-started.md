@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide gets a published OpenAI Codex Python SDK installation running
+This guide gets a published OpenAI Ava Python SDK installation running
 with a multi-turn thread.
 
 ## 1. Install
@@ -8,27 +8,27 @@ with a multi-turn thread.
 Install the SDK:
 
 ```bash
-pip install openai-codex
+pip install openai-ava
 ```
 
 Requirements:
 
 - Python `>=3.10`
-- An existing Codex account session, or one of the login flows below
+- An existing Ava account session, or one of the login flows below
 
-The SDK installs its matching `openai-codex-cli-bin` runtime dependency
-automatically. Stable SDK releases track the corresponding stable Codex CLI release.
+The SDK installs its matching `openai-ava-cli-bin` runtime dependency
+automatically. Stable SDK releases track the corresponding stable Ava CLI release.
 
 ## 2. Authenticate When Needed
 
-Existing Codex authentication is reused automatically. For ChatGPT browser
+Existing Ava authentication is reused automatically. For ChatGPT browser
 login:
 
 ```python
-from openai_codex import Codex
+from openai_ava import Ava
 
-with Codex() as codex:
-    login = codex.login_chatgpt()
+with Ava() as ava:
+    login = ava.login_chatgpt()
     print(login.auth_url)
     print(login.wait().success)
 ```
@@ -36,8 +36,8 @@ with Codex() as codex:
 For device-code login:
 
 ```python
-with Codex() as codex:
-    login = codex.login_chatgpt_device_code()
+with Ava() as ava:
+    login = ava.login_chatgpt_device_code()
     print(login.verification_url, login.user_code)
     print(login.wait().success)
 ```
@@ -45,18 +45,18 @@ with Codex() as codex:
 For API-key login:
 
 ```python
-with Codex() as codex:
-    codex.login_api_key("sk-...")
-    print(codex.account().account)
+with Ava() as ava:
+    ava.login_api_key("sk-...")
+    print(ava.account().account)
 ```
 
 ## 3. Run A Turn
 
 ```python
-from openai_codex import Codex, Sandbox
+from openai_ava import Ava, Sandbox
 
-with Codex() as codex:
-    thread = codex.thread_start(sandbox=Sandbox.workspace_write)
+with Ava() as ava:
+    thread = ava.thread_start(sandbox=Sandbox.workspace_write)
     result = thread.run("Say hello in one sentence.")
 
     print("Thread:", thread.id)
@@ -80,10 +80,10 @@ and `TextInput` represent user input.
 Use one enum for the initial thread and later turn overrides:
 
 ```python
-from openai_codex import Codex, Sandbox
+from openai_ava import Ava, Sandbox
 
-with Codex() as codex:
-    thread = codex.thread_start(sandbox=Sandbox.workspace_write)
+with Ava() as ava:
+    thread = ava.thread_start(sandbox=Sandbox.workspace_write)
     thread.run("Make the requested changes.")
     review = thread.run("Review the diff only.", sandbox=Sandbox.read_only)
 ```
@@ -95,16 +95,16 @@ Available presets:
   configured writable roots; this is the normal default for workspace work.
 - `Sandbox.full_access`: run without filesystem access restrictions.
 
-When `sandbox=` is omitted, Codex uses its configured default. A turn override
+When `sandbox=` is omitted, Ava uses its configured default. A turn override
 also applies to subsequent turns on that thread.
 
 ## 5. Continue A Thread
 
 ```python
-from openai_codex import Codex
+from openai_ava import Ava
 
-with Codex() as codex:
-    thread = codex.thread_start()
+with Ava() as ava:
+    thread = ava.thread_start()
     thread.run("Summarize Rust ownership in two bullets.")
     result = thread.run("Now explain it to a Python developer.")
     print(result.final_response)
@@ -113,8 +113,8 @@ with Codex() as codex:
 To resume a stored thread later:
 
 ```python
-with Codex() as codex:
-    thread = codex.thread_resume("thr_123")
+with Ava() as ava:
+    thread = ava.thread_resume("thr_123")
     print(thread.run("Continue where we left off.").final_response)
 ```
 
@@ -123,12 +123,12 @@ with Codex() as codex:
 ```python
 import asyncio
 
-from openai_codex import AsyncCodex, Sandbox
+from openai_ava import AsyncAva, Sandbox
 
 
 async def main() -> None:
-    async with AsyncCodex() as codex:
-        thread = await codex.thread_start(sandbox=Sandbox.workspace_write)
+    async with AsyncAva() as ava:
+        thread = await ava.thread_start(sandbox=Sandbox.workspace_write)
         result = await thread.run("Continue where we left off.")
         print(result.final_response)
 
@@ -141,16 +141,16 @@ asyncio.run(main())
 Python's built-in documentation tools cover the curated SDK surface:
 
 ```python
-import openai_codex
-from openai_codex import Codex, CodexConfig
+import openai_ava
+from openai_ava import Ava, AvaConfig
 
-help(openai_codex)
-help(Codex)
-help(CodexConfig)
+help(openai_ava)
+help(Ava)
+help(AvaConfig)
 ```
 
 ```bash
-python -m pydoc openai_codex
+python -m pydoc openai_ava
 ```
 
 ## Developing From This Repository

@@ -1,7 +1,7 @@
 mod thread_list_cwd_filter_tests {
     use super::super::normalize_thread_list_cwd_filters;
-    use codex_app_server_protocol::ThreadListCwdFilter;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_app_server_protocol::ThreadListCwdFilter;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 
@@ -38,8 +38,8 @@ mod thread_list_cwd_filter_tests {
 
 mod background_terminal_pagination_tests {
     use super::super::paginate_background_terminals;
-    use codex_app_server_protocol::ThreadBackgroundTerminal;
-    use codex_utils_path_uri::LegacyAppPathString;
+    use ava_app_server_protocol::ThreadBackgroundTerminal;
+    use ava_utils_path_uri::LegacyAppPathString;
     use pretty_assertions::assert_eq;
 
     fn terminal(process_id: &str) -> ThreadBackgroundTerminal {
@@ -97,7 +97,7 @@ mod background_terminal_pagination_tests {
 
 mod thread_processor_behavior_tests {
     async fn forked_from_id_from_rollout(path: &Path) -> Option<String> {
-        codex_core::read_session_meta_line(path)
+        ava_core::read_session_meta_line(path)
             .await
             .ok()
             .and_then(|meta_line| meta_line.meta.forked_from_id)
@@ -110,30 +110,30 @@ mod thread_processor_behavior_tests {
     use anyhow::Result;
     use chrono::DateTime;
     use chrono::Utc;
-    use codex_app_server_protocol::ServerRequestPayload;
-    use codex_app_server_protocol::ThreadItem;
-    use codex_app_server_protocol::ToolRequestUserInputParams;
-    use codex_config::CloudConfigBundleLoader;
-    use codex_config::LoaderOverrides;
-    use codex_config::SessionThreadConfig;
-    use codex_config::StaticThreadConfigLoader;
-    use codex_config::ThreadConfigSource;
-    use codex_model_provider_info::ModelProviderInfo;
-    use codex_model_provider_info::WireApi;
-    use codex_protocol::ThreadId;
-    use codex_protocol::config_types::CollaborationMode;
-    use codex_protocol::config_types::ModeKind;
-    use codex_protocol::config_types::Settings;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::protocol::AskForApproval;
-    use codex_protocol::protocol::SessionSource;
-    use codex_protocol::protocol::SubAgentSource;
-    use codex_protocol::protocol::TurnEnvironmentSelections;
-    use codex_state::ThreadMetadataBuilder;
-    use codex_thread_store::StoredThread;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_app_server_protocol::ServerRequestPayload;
+    use ava_app_server_protocol::ThreadItem;
+    use ava_app_server_protocol::ToolRequestUserInputParams;
+    use ava_config::CloudConfigBundleLoader;
+    use ava_config::LoaderOverrides;
+    use ava_config::SessionThreadConfig;
+    use ava_config::StaticThreadConfigLoader;
+    use ava_config::ThreadConfigSource;
+    use ava_model_provider_info::ModelProviderInfo;
+    use ava_model_provider_info::WireApi;
+    use ava_protocol::ThreadId;
+    use ava_protocol::config_types::CollaborationMode;
+    use ava_protocol::config_types::ModeKind;
+    use ava_protocol::config_types::Settings;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::protocol::AskForApproval;
+    use ava_protocol::protocol::SessionSource;
+    use ava_protocol::protocol::SubAgentSource;
+    use ava_protocol::protocol::TurnEnvironmentSelections;
+    use ava_state::ThreadMetadataBuilder;
+    use ava_thread_store::StoredThread;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
     use serde_json::Value;
     use serde_json::json;
@@ -156,7 +156,7 @@ mod thread_processor_behavior_tests {
         };
         match namespace {
             Some(namespace) => {
-                DynamicToolSpec::Namespace(codex_app_server_protocol::DynamicToolNamespaceSpec {
+                DynamicToolSpec::Namespace(ava_app_server_protocol::DynamicToolNamespaceSpec {
                     name: namespace.to_string(),
                     description: "test namespace".to_string(),
                     tools: vec![DynamicToolNamespaceTool::Function(function)],
@@ -212,7 +212,7 @@ mod thread_processor_behavior_tests {
     fn validate_dynamic_tools_accepts_same_name_in_different_namespaces() {
         let tools = vec![
             dynamic_tool(
-                Some("codex_app"),
+                Some("ava_app"),
                 "my_tool",
                 json!({
                     "type": "object",
@@ -238,7 +238,7 @@ mod thread_processor_behavior_tests {
     #[test]
     fn validate_dynamic_tools_accepts_responses_compatible_identifiers() {
         let tools = vec![dynamic_tool(
-            Some("Codex-App_2"),
+            Some("Ava-App_2"),
             "lookup-ticket_2",
             json!({
                 "type": "object",
@@ -263,8 +263,8 @@ mod thread_processor_behavior_tests {
             defer_loading: true,
         };
         let tools = vec![DynamicToolSpec::Namespace(
-            codex_app_server_protocol::DynamicToolNamespaceSpec {
-                name: "codex_app".to_string(),
+            ava_app_server_protocol::DynamicToolNamespaceSpec {
+                name: "ava_app".to_string(),
                 description: "test namespace".to_string(),
                 tools: vec![
                     DynamicToolNamespaceTool::Function(function()),
@@ -273,14 +273,14 @@ mod thread_processor_behavior_tests {
             },
         )];
         let err = validate_dynamic_tools(&tools).expect_err("duplicate name");
-        assert!(err.contains("codex_app"), "unexpected error: {err}");
+        assert!(err.contains("ava_app"), "unexpected error: {err}");
         assert!(err.contains("my_tool"), "unexpected error: {err}");
     }
 
     #[test]
     fn thread_turns_list_merges_in_progress_active_turn_before_agent_status_running() {
         let persisted_items = vec![RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "persisted".to_string(),
                 images: None,
@@ -372,7 +372,7 @@ mod thread_processor_behavior_tests {
     #[test]
     fn validate_dynamic_tools_rejects_namespace_not_supported_by_responses() {
         let tools = vec![dynamic_tool(
-            Some("codex.app"),
+            Some("ava.app"),
             "lookup_ticket",
             json!({
                 "type": "object",
@@ -382,7 +382,7 @@ mod thread_processor_behavior_tests {
             /*defer_loading*/ true,
         )];
         let err = validate_dynamic_tools(&tools).expect_err("invalid namespace");
-        assert!(err.contains("codex.app"), "unexpected error: {err}");
+        assert!(err.contains("ava.app"), "unexpected error: {err}");
         assert!(
             err.contains("Responses API") && err.contains("^[a-zA-Z0-9_-]+$"),
             "unexpected error: {err}"
@@ -483,7 +483,7 @@ mod thread_processor_behavior_tests {
             cli_version: "0.0.0".to_string(),
             source: SessionSource::Cli,
             history_mode: Default::default(),
-            thread_source: Some(codex_protocol::protocol::ThreadSource::User),
+            thread_source: Some(ava_protocol::protocol::ThreadSource::User),
             agent_nickname: None,
             agent_role: None,
             agent_path: None,
@@ -685,9 +685,9 @@ mod thread_processor_behavior_tests {
             model: "gpt-5".to_string(),
             model_provider_id: "openai".to_string(),
             service_tier: Some("flex".to_string()),
-            approval_policy: codex_protocol::protocol::AskForApproval::OnRequest,
-            approvals_reviewer: codex_protocol::config_types::ApprovalsReviewer::User,
-            permission_profile: codex_protocol::models::PermissionProfile::Disabled,
+            approval_policy: ava_protocol::protocol::AskForApproval::OnRequest,
+            approvals_reviewer: ava_protocol::config_types::ApprovalsReviewer::User,
+            permission_profile: ava_protocol::models::PermissionProfile::Disabled,
             full_access: false,
             active_permission_profile: None,
             environments: TurnEnvironmentSelections::new(cwd, Vec::new()),
@@ -728,7 +728,7 @@ mod thread_processor_behavior_tests {
             thread_id,
             PathBuf::from("/tmp/rollout.jsonl"),
             Utc::now(),
-            codex_protocol::protocol::SessionSource::default(),
+            ava_protocol::protocol::SessionSource::default(),
         );
         builder.model_provider = Some("mock_provider".to_string());
         let mut metadata = builder.build("mock_provider");
@@ -759,7 +759,7 @@ mod thread_processor_behavior_tests {
         let mut request_overrides = None;
         let mut typesafe_overrides = ConfigOverrides::default();
         let persisted_metadata =
-            test_thread_metadata(Some("gpt-5.1-codex-max"), Some(ReasoningEffort::High))?;
+            test_thread_metadata(Some("gpt-5.1-ava-max"), Some(ReasoningEffort::High))?;
 
         merge_persisted_resume_metadata(
             &mut request_overrides,
@@ -769,7 +769,7 @@ mod thread_processor_behavior_tests {
 
         assert_eq!(
             typesafe_overrides.model,
-            Some("gpt-5.1-codex-max".to_string())
+            Some("gpt-5.1-ava-max".to_string())
         );
         assert_eq!(
             typesafe_overrides.model_provider,
@@ -792,11 +792,11 @@ mod thread_processor_behavior_tests {
             serde_json::Value::String("low".to_string()),
         )]));
         let mut typesafe_overrides = ConfigOverrides {
-            model: Some("gpt-5.2-codex".to_string()),
+            model: Some("gpt-5.2-ava".to_string()),
             ..Default::default()
         };
         let persisted_metadata =
-            test_thread_metadata(Some("gpt-5.1-codex-max"), Some(ReasoningEffort::High))?;
+            test_thread_metadata(Some("gpt-5.1-ava-max"), Some(ReasoningEffort::High))?;
 
         merge_persisted_resume_metadata(
             &mut request_overrides,
@@ -804,7 +804,7 @@ mod thread_processor_behavior_tests {
             &persisted_metadata,
         );
 
-        assert_eq!(typesafe_overrides.model, Some("gpt-5.2-codex".to_string()));
+        assert_eq!(typesafe_overrides.model, Some("gpt-5.2-ava".to_string()));
         assert_eq!(typesafe_overrides.model_provider, None);
         assert_eq!(
             request_overrides,
@@ -821,11 +821,11 @@ mod thread_processor_behavior_tests {
     {
         let mut request_overrides = Some(HashMap::from([(
             "model".to_string(),
-            serde_json::Value::String("gpt-5.2-codex".to_string()),
+            serde_json::Value::String("gpt-5.2-ava".to_string()),
         )]));
         let mut typesafe_overrides = ConfigOverrides::default();
         let persisted_metadata =
-            test_thread_metadata(Some("gpt-5.1-codex-max"), Some(ReasoningEffort::High))?;
+            test_thread_metadata(Some("gpt-5.1-ava-max"), Some(ReasoningEffort::High))?;
 
         merge_persisted_resume_metadata(
             &mut request_overrides,
@@ -839,7 +839,7 @@ mod thread_processor_behavior_tests {
             request_overrides,
             Some(HashMap::from([(
                 "model".to_string(),
-                serde_json::Value::String("gpt-5.2-codex".to_string()),
+                serde_json::Value::String("gpt-5.2-ava".to_string()),
             )]))
         );
         Ok(())
@@ -854,7 +854,7 @@ mod thread_processor_behavior_tests {
             ..Default::default()
         };
         let persisted_metadata =
-            test_thread_metadata(Some("gpt-5.1-codex-max"), Some(ReasoningEffort::High))?;
+            test_thread_metadata(Some("gpt-5.1-ava-max"), Some(ReasoningEffort::High))?;
 
         merge_persisted_resume_metadata(
             &mut request_overrides,
@@ -877,7 +877,7 @@ mod thread_processor_behavior_tests {
         )]));
         let mut typesafe_overrides = ConfigOverrides::default();
         let persisted_metadata =
-            test_thread_metadata(Some("gpt-5.1-codex-max"), Some(ReasoningEffort::High))?;
+            test_thread_metadata(Some("gpt-5.1-ava-max"), Some(ReasoningEffort::High))?;
 
         merge_persisted_resume_metadata(
             &mut request_overrides,
@@ -921,9 +921,9 @@ mod thread_processor_behavior_tests {
 
     #[tokio::test]
     async fn read_summary_from_rollout_returns_empty_preview_when_no_user_message() -> Result<()> {
-        use codex_protocol::protocol::SessionMetaLine;
-        use codex_rollout::RolloutItem;
-        use codex_rollout::RolloutLine;
+        use ava_protocol::protocol::SessionMetaLine;
+        use ava_rollout::RolloutItem;
+        use ava_rollout::RolloutLine;
         use std::fs;
         use std::fs::FileTimes;
 
@@ -979,9 +979,9 @@ mod thread_processor_behavior_tests {
 
     #[tokio::test]
     async fn read_summary_from_rollout_preserves_agent_nickname() -> Result<()> {
-        use codex_protocol::protocol::SessionMetaLine;
-        use codex_rollout::RolloutItem;
-        use codex_rollout::RolloutLine;
+        use ava_protocol::protocol::SessionMetaLine;
+        use ava_rollout::RolloutItem;
+        use ava_rollout::RolloutLine;
         use std::fs;
 
         let temp_dir = TempDir::new()?;
@@ -1002,7 +1002,7 @@ mod thread_processor_behavior_tests {
                 agent_nickname: None,
                 agent_role: None,
             }),
-            thread_source: Some(codex_protocol::protocol::ThreadSource::Subagent),
+            thread_source: Some(ava_protocol::protocol::ThreadSource::Subagent),
             agent_nickname: Some("atlas".to_string()),
             agent_role: Some("explorer".to_string()),
             model_provider: Some("test-provider".to_string()),
@@ -1031,9 +1031,9 @@ mod thread_processor_behavior_tests {
 
     #[tokio::test]
     async fn read_summary_from_rollout_preserves_forked_from_id() -> Result<()> {
-        use codex_protocol::protocol::SessionMetaLine;
-        use codex_rollout::RolloutItem;
-        use codex_rollout::RolloutLine;
+        use ava_protocol::protocol::SessionMetaLine;
+        use ava_rollout::RolloutItem;
+        use ava_rollout::RolloutLine;
         use std::fs;
 
         let temp_dir = TempDir::new()?;
@@ -1077,7 +1077,7 @@ mod thread_processor_behavior_tests {
         let (outgoing_tx, mut outgoing_rx) = tokio::sync::mpsc::channel(8);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             outgoing_tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let thread_outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing.clone(),
@@ -1157,7 +1157,7 @@ mod thread_processor_behavior_tests {
             PathBuf::from("/"),
             "0.0.0".to_string(),
             source,
-            Some(codex_protocol::protocol::ThreadSource::Subagent),
+            Some(ava_protocol::protocol::ThreadSource::Subagent),
             Some("atlas".to_string()),
             Some("explorer".to_string()),
             /*git_sha*/ None,
@@ -1195,7 +1195,7 @@ mod thread_processor_behavior_tests {
             state.cancel_tx = Some(cancel_tx);
             state.track_current_turn_event(
                 "turn-1",
-                &EventMsg::TurnStarted(codex_protocol::protocol::TurnStartedEvent {
+                &EventMsg::TurnStarted(ava_protocol::protocol::TurnStartedEvent {
                     turn_id: "turn-1".to_string(),
                     root_turn_id: None,
                     trace_id: None,

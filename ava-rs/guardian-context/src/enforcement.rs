@@ -5,10 +5,10 @@
 
 use std::collections::HashSet;
 
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::protocol::TruncationPolicy;
 
 use crate::ComposedContext;
 use crate::RequestBudget;

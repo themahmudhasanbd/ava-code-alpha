@@ -38,26 +38,26 @@ use crate::tools::runtimes::apply_patch::ApplyPatchRequest;
 use crate::tools::runtimes::apply_patch::ApplyPatchRuntime;
 use crate::tools::sandboxing::ToolCtx;
 use crate::windows_sandbox::windows_sandbox_level_for_legacy_checks;
-use codex_apply_patch::ApplyPatchAction;
-use codex_apply_patch::ApplyPatchFileChange;
-use codex_apply_patch::ApplyPatchFileUpdateMode;
-use codex_apply_patch::Hunk;
-use codex_apply_patch::StreamingPatchParser;
-use codex_exec_server::ExecutorFileSystem;
-use codex_features::Feature;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::FileChange;
-use codex_protocol::protocol::PatchApplyUpdatedEvent;
-use codex_sandboxing::policy_transforms::effective_file_system_sandbox_policy;
-use codex_sandboxing::policy_transforms::merge_permission_profiles;
-use codex_sandboxing::policy_transforms::normalize_additional_permissions;
-use codex_sandboxing::policy_transforms::normalize_additional_permissions_with_context;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
-use codex_utils_path_uri::PathUri;
+use ava_apply_patch::ApplyPatchAction;
+use ava_apply_patch::ApplyPatchFileChange;
+use ava_apply_patch::ApplyPatchFileUpdateMode;
+use ava_apply_patch::Hunk;
+use ava_apply_patch::StreamingPatchParser;
+use ava_exec_server::ExecutorFileSystem;
+use ava_features::Feature;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::FileChange;
+use ava_protocol::protocol::PatchApplyUpdatedEvent;
+use ava_sandboxing::policy_transforms::effective_file_system_sandbox_policy;
+use ava_sandboxing::policy_transforms::merge_permission_profiles;
+use ava_sandboxing::policy_transforms::normalize_additional_permissions;
+use ava_sandboxing::policy_transforms::normalize_additional_permissions_with_context;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
+use ava_utils_path_uri::PathUri;
 
 const APPLY_PATCH_ARGUMENT_DIFF_BUFFER_INTERVAL: Duration = Duration::from_millis(500);
 
@@ -189,7 +189,7 @@ fn hunk_source_path(hunk: &Hunk) -> &Path {
     }
 }
 
-fn format_update_chunks_for_progress(chunks: &[codex_apply_patch::UpdateFileChunk]) -> String {
+fn format_update_chunks_for_progress(chunks: &[ava_apply_patch::UpdateFileChunk]) -> String {
     let mut unified_diff = String::new();
     for chunk in chunks {
         match &chunk.change_context {
@@ -238,7 +238,7 @@ fn file_paths_for_action(action: &ApplyPatchAction) -> Vec<PathUri> {
 
 fn write_permissions_for_paths(
     file_paths: &[PathUri],
-    file_system_sandbox_policy: &codex_protocol::permissions::FileSystemSandboxPolicy,
+    file_system_sandbox_policy: &ava_protocol::permissions::FileSystemSandboxPolicy,
     context: &FileSystemSandboxPolicyContext<'_>,
     sandbox_route: PatchSandboxRoute,
 ) -> Option<AdditionalPermissionProfile> {
@@ -297,7 +297,7 @@ async fn effective_patch_permissions(
 ) -> (
     Vec<PathUri>,
     crate::tools::handlers::EffectiveAdditionalPermissions,
-    codex_protocol::permissions::FileSystemSandboxPolicy,
+    ava_protocol::permissions::FileSystemSandboxPolicy,
 ) {
     let environment_id = environment.selection.environment_id.as_str();
     let file_paths = file_paths_for_action(action);
@@ -348,7 +348,7 @@ impl ToolExecutor<ToolInvocation> for ApplyPatchHandler {
         create_apply_patch_freeform_tool(self.multi_environment)
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -378,7 +378,7 @@ impl ApplyPatchHandler {
                 "apply_patch handler received unsupported payload".to_string(),
             ));
         };
-        let args = match codex_apply_patch::parse_patch(&patch_input) {
+        let args = match ava_apply_patch::parse_patch(&patch_input) {
             Ok(args) => args,
             Err(parse_error) => {
                 return Err(FunctionCallError::RespondToModel(format!(
@@ -401,7 +401,7 @@ impl ApplyPatchHandler {
         };
         let fs = turn_environment.environment.get_filesystem();
         let sandbox = turn_environment.sandbox_context(/*additional_permissions*/ None);
-        match codex_apply_patch::verify_apply_patch_args_with_mode(
+        match ava_apply_patch::verify_apply_patch_args_with_mode(
             args,
             turn_environment.cwd(),
             apply_patch_file_update_mode(&turn),
@@ -410,7 +410,7 @@ impl ApplyPatchHandler {
         )
         .await
         {
-            codex_apply_patch::MaybeApplyPatchVerified::Body(changes) => {
+            ava_apply_patch::MaybeApplyPatchVerified::Body(changes) => {
                 let tool_ctx = ToolCtx {
                     session,
                     step_context: Arc::clone(&step_context),
@@ -427,18 +427,18 @@ impl ApplyPatchHandler {
                 .await?;
                 Ok(boxed_tool_output(ApplyPatchToolOutput::from_text(content)))
             }
-            codex_apply_patch::MaybeApplyPatchVerified::CorrectnessError(parse_error) => {
+            ava_apply_patch::MaybeApplyPatchVerified::CorrectnessError(parse_error) => {
                 Err(FunctionCallError::RespondToModel(format!(
                     "apply_patch verification failed: {parse_error}"
                 )))
             }
-            codex_apply_patch::MaybeApplyPatchVerified::ShellParseError(error) => {
+            ava_apply_patch::MaybeApplyPatchVerified::ShellParseError(error) => {
                 tracing::trace!("Failed to parse apply_patch input, {error:?}");
                 Err(FunctionCallError::RespondToModel(
                     "apply_patch handler received invalid patch input".to_string(),
                 ))
             }
-            codex_apply_patch::MaybeApplyPatchVerified::NotApplyPatch => {
+            ava_apply_patch::MaybeApplyPatchVerified::NotApplyPatch => {
                 Err(FunctionCallError::RespondToModel(
                     "apply_patch handler received non-apply_patch input".to_string(),
                 ))
@@ -511,7 +511,7 @@ pub(crate) async fn intercept_apply_patch(
 ) -> Result<Option<FunctionToolOutput>, FunctionCallError> {
     let turn = &step_context.turn;
     let sandbox = turn_environment.sandbox_context(/*additional_permissions*/ None);
-    match codex_apply_patch::maybe_parse_apply_patch_verified_with_mode(
+    match ava_apply_patch::maybe_parse_apply_patch_verified_with_mode(
         command,
         cwd,
         apply_patch_file_update_mode(turn),
@@ -520,7 +520,7 @@ pub(crate) async fn intercept_apply_patch(
     )
     .await
     {
-        codex_apply_patch::MaybeApplyPatchVerified::Body(changes) => {
+        ava_apply_patch::MaybeApplyPatchVerified::Body(changes) => {
             let tool_ctx = ToolCtx {
                 session,
                 step_context,
@@ -532,16 +532,16 @@ pub(crate) async fn intercept_apply_patch(
                 execute_verified_patch(changes, turn_environment, tracker, tool_ctx).await?;
             Ok(Some(FunctionToolOutput::from_text(content, Some(true))))
         }
-        codex_apply_patch::MaybeApplyPatchVerified::CorrectnessError(parse_error) => {
+        ava_apply_patch::MaybeApplyPatchVerified::CorrectnessError(parse_error) => {
             Err(FunctionCallError::RespondToModel(format!(
                 "apply_patch verification failed: {parse_error}"
             )))
         }
-        codex_apply_patch::MaybeApplyPatchVerified::ShellParseError(error) => {
+        ava_apply_patch::MaybeApplyPatchVerified::ShellParseError(error) => {
             tracing::trace!("Failed to parse apply_patch input, {error:?}");
             Ok(None)
         }
-        codex_apply_patch::MaybeApplyPatchVerified::NotApplyPatch => Ok(None),
+        ava_apply_patch::MaybeApplyPatchVerified::NotApplyPatch => Ok(None),
     }
 }
 

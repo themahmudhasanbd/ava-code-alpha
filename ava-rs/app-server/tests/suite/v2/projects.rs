@@ -4,50 +4,50 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::ProjectChangeType;
-use codex_app_server_protocol::ProjectChangedNotification;
-use codex_app_server_protocol::ProjectCreateParams;
-use codex_app_server_protocol::ProjectCreateResponse;
-use codex_app_server_protocol::ProjectDeleteParams;
-use codex_app_server_protocol::ProjectDeleteResponse;
-use codex_app_server_protocol::ProjectImportParams;
-use codex_app_server_protocol::ProjectImportResponse;
-use codex_app_server_protocol::ProjectListParams;
-use codex_app_server_protocol::ProjectListResponse;
-use codex_app_server_protocol::ProjectMoveParams;
-use codex_app_server_protocol::ProjectMoveResponse;
-use codex_app_server_protocol::ProjectReadParams;
-use codex_app_server_protocol::ProjectReadResponse;
-use codex_app_server_protocol::ProjectRoot;
-use codex_app_server_protocol::ProjectSortKey;
-use codex_app_server_protocol::ProjectUpdateParams;
-use codex_app_server_protocol::ProjectUpdateResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateResponse;
-use codex_app_server_protocol::ThreadProjectUpdatedNotification;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::ProjectChangeType;
+use ava_app_server_protocol::ProjectChangedNotification;
+use ava_app_server_protocol::ProjectCreateParams;
+use ava_app_server_protocol::ProjectCreateResponse;
+use ava_app_server_protocol::ProjectDeleteParams;
+use ava_app_server_protocol::ProjectDeleteResponse;
+use ava_app_server_protocol::ProjectImportParams;
+use ava_app_server_protocol::ProjectImportResponse;
+use ava_app_server_protocol::ProjectListParams;
+use ava_app_server_protocol::ProjectListResponse;
+use ava_app_server_protocol::ProjectMoveParams;
+use ava_app_server_protocol::ProjectMoveResponse;
+use ava_app_server_protocol::ProjectReadParams;
+use ava_app_server_protocol::ProjectReadResponse;
+use ava_app_server_protocol::ProjectRoot;
+use ava_app_server_protocol::ProjectSortKey;
+use ava_app_server_protocol::ProjectUpdateParams;
+use ava_app_server_protocol::ProjectUpdateResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateResponse;
+use ava_app_server_protocol::ThreadProjectUpdatedNotification;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -55,12 +55,12 @@ use uuid::Uuid;
 #[tokio::test]
 async fn projects_list_by_recency_and_preserve_metadata_timestamps() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let mut projects = Vec::new();
@@ -205,13 +205,13 @@ async fn projects_list_by_recency_and_preserve_metadata_timestamps() -> Result<(
 #[tokio::test]
 async fn projects_persist_and_assign_threads() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
-    let root = AbsolutePathBuf::from_absolute_path(codex_home.path())?;
+        .write(ava_home.path())?;
+    let root = AbsolutePathBuf::from_absolute_path(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -293,7 +293,7 @@ async fn projects_persist_and_assign_threads() -> Result<()> {
 
     drop(server);
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let resumed: ThreadResumeResponse = server
@@ -636,19 +636,19 @@ async fn projects_persist_and_assign_threads() -> Result<()> {
         .await?;
     assert_eq!(unassigned_after_delete.data.len(), 1);
     assert_eq!(unassigned_after_delete.data[0].id, started.thread.id);
-    assert!(codex_home.path().exists());
+    assert!(ava_home.path().exists());
     Ok(())
 }
 
 #[tokio::test]
 async fn deleted_project_is_dropped_before_first_durable_thread_persistence() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -733,12 +733,12 @@ async fn deleted_project_is_dropped_before_first_durable_thread_persistence() ->
 #[tokio::test]
 async fn project_import_is_atomic_and_notifies_after_commit_in_order() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -885,12 +885,12 @@ async fn project_import_is_atomic_and_notifies_after_commit_in_order() -> Result
 #[tokio::test]
 async fn projects_validate_filters_cursors_and_sqlite_less_assignment() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -968,7 +968,7 @@ async fn projects_validate_filters_cursors_and_sqlite_less_assignment() -> Resul
         format!("experimental_thread_store = {{ type = \"in_memory\", id = \"{store_id}\" }}"),
     )?;
     let mut unsupported_projects = TestAppServer::builder()
-        .with_codex_home(unsupported_projects_home.path())
+        .with_ava_home(unsupported_projects_home.path())
         .build_initialized()
         .await?;
     let start_id = unsupported_projects
@@ -1017,12 +1017,12 @@ async fn projects_validate_filters_cursors_and_sqlite_less_assignment() -> Resul
 #[tokio::test]
 async fn assigned_forks_inherit_projects_for_persistent_and_ephemeral_children() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let project: ProjectCreateResponse = server

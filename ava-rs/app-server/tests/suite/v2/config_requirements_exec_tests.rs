@@ -4,18 +4,18 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionRequestApprovalResponse;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionRequestApprovalResponse;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
@@ -78,7 +78,7 @@ decision = "prompt"
     .await;
 
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized_with_timeout(read_timeout)
         .await?;
     let environment_id = app.auto_env_params()?.environment_id;

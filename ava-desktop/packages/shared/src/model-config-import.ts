@@ -22,7 +22,7 @@ import type {
 export const MODEL_CONFIG_IMPORT_SOURCES = [
   "claude-code",
   "opencode",
-  "codex",
+  "ava",
   "pi",
   "cc-switch",
 ] as const;
@@ -82,9 +82,9 @@ const API_STYLE_ALIASES: Record<string, CatalogApiStyle> = {
   google: "google_generative_ai",
   google_generative_ai: "google_generative_ai",
   "google-generative-ai": "google_generative_ai",
-  openai_codex_responses: "openai_codex_responses",
-  "openai-codex-responses": "openai_codex_responses",
-  "openai-codex": "openai_codex_responses",
+  openai_ava_responses: "openai_ava_responses",
+  "openai-ava-responses": "openai_ava_responses",
+  "openai-ava": "openai_ava_responses",
   pi_messages: "pi_messages",
   "pi-messages": "pi_messages",
   opencode_go: "opencode_go",
@@ -375,7 +375,7 @@ export function parseOpenCodeModelConfig(
   return drafts;
 }
 
-export function parseCodexModelConfig(
+export function parseAvaModelConfig(
   toml: string,
   env: ModelConfigImportEnv = {},
 ): ModelConfigImportDraft[] {
@@ -413,7 +413,7 @@ export function parseCodexModelConfig(
     ]);
     if (modelIds.length === 0) continue;
     const draft = finishDraft({
-      source: "codex",
+      source: "ava",
       externalId: id,
       name: stringValue(fields.name) || id,
       baseUrl,
@@ -471,7 +471,7 @@ export function parsePiModelConfig(
 const CC_SWITCH_APP_TYPES = [
   "claude",
   "claude-desktop",
-  "codex",
+  "ava",
   "gemini",
   "grokbuild",
   "opencode",
@@ -557,8 +557,8 @@ function parseCcSwitchProvider(
     // scanner own these rows so the source of truth wins. See issue #588.
     return [];
   }
-  if (appType === "codex" || appType === "grokbuild") {
-    return parseCcSwitchTomlApp(row, env, appType === "codex" ? "responses" : "chat_completions");
+  if (appType === "ava" || appType === "grokbuild") {
+    return parseCcSwitchTomlApp(row, env, appType === "ava" ? "responses" : "chat_completions");
   }
   if (appType === "gemini") {
     return parseCcSwitchGemini(row, env);
@@ -575,7 +575,7 @@ function parseCcSwitchTomlApp(
   const toml = typeof settings.config === "string" ? settings.config : "";
   const auth = asRecord(settings.auth) ?? {};
   const authSecret = firstSecret(firstString(auth.OPENAI_API_KEY, auth.api_key));
-  const parsed = parseCodexModelConfig(toml, env);
+  const parsed = parseAvaModelConfig(toml, env);
   const withAuth = parsed.map((draft) => ({
     ...draft,
     secretValue: draft.secretValue ?? authSecret,
@@ -947,7 +947,7 @@ type TomlExtract = {
 };
 
 /**
- * Minimal TOML reader for Codex `config.toml`: root keys plus `[table]`
+ * Minimal TOML reader for Ava `config.toml`: root keys plus `[table]`
  * assignments. Arrays-of-tables and inline tables are ignored.
  */
 function parseTomlSubset(text: string): TomlExtract {

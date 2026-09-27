@@ -1740,7 +1740,7 @@ task-candidate E2E 从请求工作树运行，但使用主工作区已经准备�
   天沟。页脚设置和插件操作是紧凑的图标按钮；
   插件紧邻“设置”右侧，并公开本地化的
 可访问的名称。每个作用域会话创建控件都使用专用的
-  带有本地化标签和可访问名称的消息加号图标。 `Codex` 仅在以下情况下保持可见
+  带有本地化标签和可访问名称的消息加号图标。 `Ava` 仅在以下情况下保持可见
   外部导入源标签或非运行时设计参考文本。
 - **链接规格**：`04-ux/01-ui-ia.md`、`04-ux/07-ui-design-system.md`、
   `04-ux/08-component-spec.md`、`04-ux/09-interaction-patterns.md`、
@@ -5204,13 +5204,13 @@ eleven-tool-round desktop paths are verified by
 
 #### E2E-PROVIDER-custom-form-excludes-account-formats：新建自定义服务不提供账户专用格式
 
-- **先决条件**：隔离配置，英文及简体中文；构造使用 Codex、Pi 账户格式的
+- **先决条件**：隔离配置，英文及简体中文；构造使用 Ava、Pi 账户格式的
   历史非 OAuth 行，其中包含 OpenAI 预设 URL，使用合成模型，不使用真实凭据。
 - **步骤**：1) 新建自定义服务，检查接口格式选项。2) 编辑两种历史行并原样
   保存，再明确选择 Responses 保存。3) 复制原历史行，检查当前格式及说明，
   等待超过发现防抖时间后取消。4) 再次复制，选择 Anthropic Messages 后保存。
   5) 检查保存请求及原行未被改变。
-- **预期**：新建只提供四种通用协议；Codex 与 Pi 通过厂商账户使用，不能作为
+- **预期**：新建只提供四种通用协议；Ava 与 Pi 通过厂商账户使用，不能作为
   新 API key 服务格式。历史行在未主动修改时保留协议、名称、URL 和认证。
   复制时显示原账户格式但不可重新选择；必须主动选支持的格式后才能保存和
   发现模型，并提供本地化说明。取消不创建行；有效副本不复用原行 ID 或凭据。
@@ -5427,7 +5427,7 @@ eleven-tool-round desktop paths are verified by
 
 ## UI shell 视觉场景
 
-### US-UI-01 符合 Codex 的外壳镀铬
+### US-UI-01 符合 Ava 的外壳镀铬
 - 在 macOS 深色主题上打开桌面应用程序。
 - 预计木炭主表面（`#181818`），左侧边栏包含当前项目
   和临时会话组，以及浮底输入框
@@ -5508,8 +5508,8 @@ eleven-tool-round desktop paths are verified by
 
 ### US-UI-15 法典密度 + 海拔
 - 侧边栏行使用紧凑的约 28–32 像素间距，层次结构为 12–14 像素
-  US-UI-69 和 8px 水平填充（Codex `radius-token-row` 10px）。
-- 浮动输入框使用 Codex 高度突出：0.5 像素笔画 + 柔和的 3px/20px 阴影（不是沉重的 10–30 像素下降）。
+  US-UI-69 和 8px 水平填充（Ava `radius-token-row` 10px）。
+- 浮动输入框使用 Ava 高度突出：0.5 像素笔画 + 柔和的 3px/20px 阴影（不是沉重的 10–30 像素下降）。
 - 空英雄标题的行高为 28px / 34px，粗细为 400。
 - 如果 Stage Manager 折叠窗口，窗口将恢复 ≥1000×700（目标 1200×800）。
 
@@ -5522,7 +5522,7 @@ eleven-tool-round desktop paths are verified by
   复制贝尔。
 - 单击 build/version 芯片会检查当前更新或打开
   设置 → 可用更新时的信息。
-- Codex `{x:16,y:16}` 上的交通灯带有 46 像素的工具栏；扩展的
+- Ava `{x:16,y:16}` 上的交通灯带有 46 像素的工具栏；扩展的
   macOS 侧边栏将折叠侧边栏放在右侧相同的位置
   行，没有 Logo/Home 品牌或 back/forward 按钮。
 
@@ -5551,7 +5551,7 @@ eleven-tool-round desktop paths are verified by
 
 ### US-UI-19 永久舞台管理器边界恢复（仅 macOS）
 - 在使用 Stage Manager 的 macOS 上，缩小或取消聚焦 PI 窗口，直到宽度 < 1040 或高度 < 700。
-- 预计外壳会重新声明类似 Codex 的足迹（~1200×800，最小 1040×700）并在仍然折叠的情况下继续恢复（不仅在发射后的前 20 秒内）。
+- 预计外壳会重新声明类似 Ava 的足迹（~1200×800，最小 1040×700）并在仍然折叠的情况下继续恢复（不仅在发射后的前 20 秒内）。
 - 该恢复看门狗仅限 macOS（D447）。在 Windows/Linux 上它必须完全不运行：应用绝不能在无人操作时重新调整或抬升自己的窗口。聚焦其他窗口，确认 PI-Desktop 留在其后方而不是跳回窗口栈顶端，并且栈序检查（`xprop -root _NET_CLIENT_LIST_STACKING`）不会显示它周期性回到顶端。
 
 ### US-UI-20 深色浮动编辑框
@@ -5602,7 +5602,7 @@ eleven-tool-round desktop paths are verified by
 
 ### US-UI-24 设置全页 shell
 - 打开设置（页脚配置文件 → 设置）。
-- 预计**全页** Codex 设置（无应用程序 sidebar/nav）。左导轨有后部
+- 预计**全页** Ava 设置（无应用程序 sidebar/nav）。左导轨有后部
   到应用程序、搜索和确切的基础知识/全局AI/快捷方式/模型配置/
   按顺序导入/项目存档/信息；内容窗格显示部分标题和
 目的地的设置或存档内容。
@@ -5781,7 +5781,7 @@ eleven-tool-round desktop paths are verified by
 
 ### US-UI-50 目的地标题比例
 - 打开设置 → 项目存档和插件。
-- 预计大节标题 (~28px) 与 Codex destination/index 页面一致。
+- 预计大节标题 (~28px) 与 Ava destination/index 页面一致。
 - 黑暗家庭范围内的会话创建控件保持安静的图标操作，无需
   独立的新任务行。
 
@@ -5825,7 +5825,7 @@ eleven-tool-round desktop paths are verified by
   始终跟得上输入、没有可见停顿，菜单的行顺序保持不变。增长到七行、
   超过第七行后内部滚动，以及 delete/submit 后的收缩都与上述一致（D264）。
 
-### US-UI-56 Codex 转录工具活动
+### US-UI-56 Ava 转录工具活动
 - 在浅色和深色主题中，工具调用使用透明紧凑的活动行，
   不是高架卡片或彩色成功轨道。
 - 连续调用出现在一个默认折叠的处理组内。其
@@ -6714,14 +6714,14 @@ eleven-tool-round desktop paths are verified by
 - **步骤**：1）打开设置 → 模型配置。2）编辑该 AI 服务，展开某个已选模型的“高级”
   折叠区，记下其上下文窗口、输出上限与思考等级按钮；取消。3）编辑厂商账户，对它的
   某个已选模型做同样的操作。4）在支持推理的账户模型上切换一个思考等级并保存。
-  5）重新打开账户编辑器，读取该模型的等级按钮。6）对 OpenAI Codex 账户，检查
+  5）重新打开账户编辑器，读取该模型的等级按钮。6）对 OpenAI Ava 账户，检查
   `gpt-6-astra`（或其他同时发布在 models.dev `openai` 提供商下的账户模型），
   确认其已发布的上下文/输出上限与推理等级存在。7）在账户编辑器里手工输入一个目录
   未发布的自定义模型 ID，为它启用一个思考等级并保存。
 - **预期**：两个对话框渲染同一个选择器 —— 同样的已发现列表、同样的搜索、同样的
   自由填写自定义模型入口、同样的已选面板、同样的“高级”折叠区与等级按钮 —— 账户
   编辑器不再缺少高级设置。在账户模型上启用的等级会持久化，并在重新打开编辑器后
-  依然存在。OpenAI Codex 的 `openai-codex` 适配器键会解析匹配的 `openai`
+  依然存在。OpenAI Ava 的 `openai-ava` 适配器键会解析匹配的 `openai`
   models.dev 记录，因此 `gpt-6-astra` 不会显示为通用的 128,000 / 8,192 /
   无推理默认值。已认证的 ChatGPT 列表本身来自已固定的 pi-ai 目录（0.86.1
   包含 `gpt-6-astra`）；models.dev 不能补上缺失的 OAuth ID。没有已发布记录
@@ -7239,7 +7239,7 @@ eleven-tool-round desktop paths are verified by
 
 #### E2E-209：从本地智能体存储导入模型配置
 
-- **前提条件**：本机存在 Claude Code / Codex / OpenCode / Pi / CC Switch 的提供商配置。
+- **前提条件**：本机存在 Claude Code / Ava / OpenCode / Pi / CC Switch 的提供商配置。
 - **步骤**：1) 打开设置 → 导入 → 模型配置。2) 扫描并导入与现有行凭据不同的配置。3) 再次导入相同凭据。4) 确认 Composer 能选中新导入的提供商，密钥不进入渲染器。
 - **预期**：规范化端点、API 风格和凭据都相同才视为等价；不同密钥在同一端点创建独立行。重复导入幂等跳过。见 ADR 0179 / ADR 0188 / D342 / D351。
 - **链接规格**：`04-ux/06-settings-ia.md`、`04-ux/08-component-spec.md`、ADR 0179、ADR 0188
@@ -7769,9 +7769,9 @@ runner 会在运行时的隔离临时目录中生成六个插件形态 fixture�
 - **里程碑**：M6+
 - **状态**：由源代码契约与单元测试覆盖（`sidebar-session-groups.test.mjs`、`project-import-archive.test.mjs`、`plugin-session-refresh.test.mjs`）；渲染桌面旅程为草稿（适用变更合入前需在具备条件的环境中运行 E2E）
 
-#### E2E-IMPORT-codex-scan-filters-synthetic-titles
+#### E2E-IMPORT-ava-scan-filters-synthetic-titles
 
-- **前提条件**：一个 Codex 归档，其中的会话以合成注入开头（`# Context from my IDE setup:`、`# In app browser:`、`# Browser comments:`、`# Files mentioned by the user:`、`# Diff comments:`、`# Selected text:`、`# Review findings:`、`# AGENTS.md`、`You are Codex`、`<environment>`），且至少一个会话的存储时间戳损坏或越界。
+- **前提条件**：一个 Ava 归档，其中的会话以合成注入开头（`# Context from my IDE setup:`、`# In app browser:`、`# Browser comments:`、`# Files mentioned by the user:`、`# Diff comments:`、`# Selected text:`、`# Review findings:`、`# AGENTS.md`、`You are Ava`、`<environment>`），且至少一个会话的存储时间戳损坏或越界。
 - **步骤**：
   1. 对该归档运行设置 → 会话导入 → 扫描。
   2. 检查候选会话的标题与每条会话展示的 createdAt/updatedAt。
@@ -7780,7 +7780,7 @@ runner 会在运行时的隔离临时目录中生成六个插件形态 fixture�
 - **链接规格**：`03-runtime/01-ipc-protocol.md`、`04-ux/06-settings-ia.md`、D320
 - **验收**：C（对话与流）、F（持久化）、品质
 - **里程碑**：M6+
-- **状态**：由单元测试覆盖（`importer-codex-scan.test.mjs`）；UI 旅程为草稿（该表面变更时需在具备条件的环境中运行）
+- **状态**：由单元测试覆盖（`importer-ava-scan.test.mjs`）；UI 旅程为草稿（该表面变更时需在具备条件的环境中运行）
 
 #### E2E-LAYOUT-three-column-width-priority
 

@@ -5,15 +5,15 @@ use crate::collaboration_mode_presets::builtin_collaboration_mode_presets;
 use crate::config::ModelsManagerConfig;
 use crate::model_info;
 use chrono::Utc;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::error::Result as CoreResult;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::error::Result as CoreResult;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
 use std::fmt;
 use std::future::Future;
 use std::path::PathBuf;
@@ -46,8 +46,8 @@ pub trait ModelsEndpointClient: fmt::Debug + Send + Sync {
     /// Returns whether this provider can authenticate command-scoped requests.
     fn has_command_auth(&self) -> bool;
 
-    /// Returns whether the currently resolved auth can use Codex backend-only models.
-    fn uses_codex_backend(&self) -> ModelsEndpointFuture<'_, bool>;
+    /// Returns whether the currently resolved auth can use Ava backend-only models.
+    fn uses_ava_backend(&self) -> ModelsEndpointFuture<'_, bool>;
 
     /// Returns whether this provider supports an authoritative catalog with OpenAI API keys.
     fn supports_api_key_models(&self) -> bool {
@@ -169,10 +169,10 @@ pub trait ModelsManager: fmt::Debug + Send + Sync {
         remote_models.sort_by_key(|model| model.priority);
 
         let mut presets: Vec<ModelPreset> = remote_models.into_iter().map(Into::into).collect();
-        let uses_codex_backend = self
+        let uses_ava_backend = self
             .auth_manager()
-            .is_some_and(AuthManager::current_auth_uses_codex_backend);
-        presets = ModelPreset::filter_by_auth(presets, uses_codex_backend);
+            .is_some_and(AuthManager::current_auth_uses_ava_backend);
+        presets = ModelPreset::filter_by_auth(presets, uses_ava_backend);
 
         ModelPreset::mark_default_by_picker_visibility(&mut presets);
 
@@ -275,11 +275,11 @@ pub struct StaticModelsManager {
 impl OpenAiModelsManager {
     /// Construct an OpenAI-compatible remote model manager.
     pub fn new(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         endpoint_client: Arc<dyn ModelsEndpointClient>,
         auth_manager: Option<Arc<AuthManager>>,
     ) -> Self {
-        let cache_path = codex_home.join(MODEL_CACHE_FILE);
+        let cache_path = ava_home.join(MODEL_CACHE_FILE);
         Self::new_with_optional_cache(
             Some(Arc::new(FileModelsCache::new(
                 cache_path,
@@ -563,7 +563,7 @@ impl OpenAiModelsManager {
     }
 
     async fn should_refresh_models(&self) -> bool {
-        self.endpoint_client.uses_codex_backend().await
+        self.endpoint_client.uses_ava_backend().await
             || self.endpoint_client.has_command_auth()
             || self.supports_api_key_discovery()
     }
@@ -609,7 +609,7 @@ impl OpenAiModelsManager {
             return false;
         };
         let _timer =
-            codex_otel::start_global_timer("codex.remote_models.load_cache.duration_ms", &[]);
+            ava_otel::start_global_timer("ava.remote_models.load_cache.duration_ms", &[]);
         let client_version = crate::client_version_to_whole();
         info!(client_version, "models cache: evaluating cache eligibility");
         let Some(identity) = self.endpoint_client.identity() else {
@@ -785,7 +785,7 @@ pub(crate) fn construct_model_info_from_candidates(
     config: &ModelsManagerConfig,
 ) -> ModelInfo {
     // First use the normal longest-prefix match. If that misses, allow a narrowly scoped
-    // retry for namespaced slugs like `custom/gpt-5.3-codex`.
+    // retry for namespaced slugs like `custom/gpt-5.3-ava`.
     let remote = find_model_by_longest_prefix(model, candidates)
         .or_else(|| find_model_by_namespaced_suffix(model, candidates));
     let model_info = if let Some(remote) = remote {

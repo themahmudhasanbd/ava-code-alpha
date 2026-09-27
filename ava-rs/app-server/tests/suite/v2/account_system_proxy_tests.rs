@@ -6,30 +6,30 @@ use app_test_support::ChatGptIdTokenClaims;
 use app_test_support::MockResponsesConfig;
 use app_test_support::encode_id_token;
 use app_test_support::mount_workspace_routing;
-use codex_app_server::in_process;
-use codex_app_server::in_process::InProcessServerEvent;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::LoginAccountParams;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_core::config::ConfigBuilder;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_http_client::HttpClientBuilder;
-use codex_http_client::cache_system_proxy_route_for_test;
-use codex_protocol::protocol::SessionSource;
+use ava_app_server::in_process;
+use ava_app_server::in_process::InProcessServerEvent;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::LoginAccountParams;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_core::config::ConfigBuilder;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_http_client::HttpClientBuilder;
+use ava_http_client::cache_system_proxy_route_for_test;
+use ava_protocol::protocol::SessionSource;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -49,7 +49,7 @@ use wiremock::matchers::path;
 
 const TEST_NAME: &str =
     "suite::v2::account_system_proxy::browser_login_bootstraps_through_system_proxy";
-const TEST_MODE: &str = "CODEX_APP_SERVER_SYSTEM_PROXY_TEST_MODE";
+const TEST_MODE: &str = "AVA_APP_SERVER_SYSTEM_PROXY_TEST_MODE";
 const BLOCKED_ORIGIN: &str = "http://127.0.0.1:0";
 const READ_TIMEOUT: Duration = Duration::from_secs(60);
 
@@ -64,7 +64,7 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
         for mode in ["bootstrap-only", "cloud-enables-proxy"] {
             let mut command = Command::new(std::env::current_exe()?);
             command.arg("--exact").arg(TEST_NAME);
-            for key in codex_network_proxy::PROXY_ENV_KEYS {
+            for key in ava_network_proxy::PROXY_ENV_KEYS {
                 command.env_remove(key);
             }
             let output = timeout(
@@ -72,9 +72,9 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
                 command
                     .kill_on_drop(true)
                     .env(TEST_MODE, mode)
-                    .env("CODEX_APP_SERVER_LOGIN_ISSUER", BLOCKED_ORIGIN)
+                    .env("AVA_APP_SERVER_LOGIN_ISSUER", BLOCKED_ORIGIN)
                     .env_remove("OPENAI_API_KEY")
-                    .env_remove("CODEX_API_KEY")
+                    .env_remove("AVA_API_KEY")
                     .output(),
             )
             .await??;
@@ -91,9 +91,9 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
     let cloud_enables_proxy = mode == "cloud-enables-proxy";
     let proxy = MockServer::start().await;
     let provider = MockServer::start().await;
-    let codex_home = TempDir::new()?;
-    let model_catalog = codex_models_manager::bundled_models_response()?;
-    let model_catalog_path = codex_home.path().join("models.json");
+    let ava_home = TempDir::new()?;
+    let model_catalog = ava_models_manager::bundled_models_response()?;
+    let model_catalog_path = ava_home.path().join("models.json");
     std::fs::write(&model_catalog_path, serde_json::to_vec(&model_catalog)?)?;
     MockResponsesConfig::new(&provider.uri())
         .with_model(&model_catalog.models[0].slug)
@@ -110,7 +110,7 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
             "chatgpt_base_url = \"{BLOCKED_ORIGIN}/backend-api\"\ncli_auth_credentials_store = \"file\"\nmodel_catalog_json = {}",
             serde_json::to_string(&model_catalog_path)?,
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let id_token = encode_id_token(
         &ChatGptIdTokenClaims::new()
             .email("proxy@example.com")
@@ -174,8 +174,8 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
 
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(loader_overrides.clone())
         .build()
         .await?;
@@ -187,17 +187,17 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
         loader_overrides,
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
-        thread_config_loader: Arc::new(codex_config::NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        thread_config_loader: Arc::new(ava_config::NoopThreadConfigLoader),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli,
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },
@@ -211,7 +211,7 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
             .request(ClientRequest::LoginAccount {
                 request_id: RequestId::Integer(1),
                 params: LoginAccountParams::Chatgpt {
-                    codex_streamlined_login: false,
+                    ava_streamlined_login: false,
                     use_hosted_login_success_page: false,
                     app_brand: None,
                 },
@@ -251,7 +251,7 @@ async fn browser_login_bootstraps_through_system_proxy() -> Result<()> {
     })
     .await??;
     let saved_auth: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(codex_home.path().join("auth.json"))?)?;
+        serde_json::from_slice(&std::fs::read(ava_home.path().join("auth.json"))?)?;
     assert_eq!(saved_auth["OPENAI_API_KEY"], "proxy-api-key");
 
     let started: ThreadStartResponse = serde_json::from_value(

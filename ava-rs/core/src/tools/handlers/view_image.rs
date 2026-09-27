@@ -1,16 +1,16 @@
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_protocol::items::ImageViewItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::openai_models::InputModality;
-use codex_utils_image::data_url_from_bytes;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_protocol::items::ImageViewItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::openai_models::InputModality;
+use ava_utils_image::data_url_from_bytes;
 use serde::Deserialize;
 
 use crate::function_tool::FunctionCallError;
@@ -25,8 +25,8 @@ use crate::tools::handlers::view_image_spec::ViewImageToolOptions;
 use crate::tools::handlers::view_image_spec::create_view_image_tool;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 
 pub struct ViewImageHandler {
     options: ViewImageToolOptions,
@@ -82,7 +82,7 @@ impl ToolExecutor<ToolInvocation> for ViewImageHandler {
         true
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -278,13 +278,13 @@ mod tests {
     use crate::tools::context::ToolCallSource;
     use crate::tools::context::ToolInvocation;
     use crate::turn_diff_tracker::TurnDiffTracker;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::PathUri;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::PathUri;
     use core_test_support::TempDirExt;
     use image::ImageBuffer;
     use image::ImageFormat;
@@ -396,7 +396,7 @@ mod tests {
                 cancellation_token: tokio_util::sync::CancellationToken::new(),
                 tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
                 call_id: "call-view-image".to_string(),
-                tool_name: codex_tools::ToolName::plain("view_image"),
+                tool_name: ava_tools::ToolName::plain("view_image"),
                 source: ToolCallSource::Direct,
                 payload: ToolPayload::Function {
                     arguments: json!({ "path": "image.png" }).to_string(),
@@ -426,7 +426,7 @@ mod tests {
                 cancellation_token: tokio_util::sync::CancellationToken::new(),
                 tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
                 call_id: "call-view-image".to_string(),
-                tool_name: codex_tools::ToolName::plain("view_image"),
+                tool_name: ava_tools::ToolName::plain("view_image"),
                 source: ToolCallSource::Direct,
                 payload: ToolPayload::Function {
                     arguments: json!({ "path": "image.png", "detail": "low" }).to_string(),
@@ -469,7 +469,7 @@ mod tests {
                 cancellation_token: tokio_util::sync::CancellationToken::new(),
                 tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
                 call_id: "call-view-image".to_string(),
-                tool_name: codex_tools::ToolName::plain("view_image"),
+                tool_name: ava_tools::ToolName::plain("view_image"),
                 source: ToolCallSource::Direct,
                 payload: ToolPayload::Function {
                     arguments: json!({ "path": "image.png", "detail": "high" }).to_string(),
@@ -507,7 +507,7 @@ mod tests {
                 cancellation_token: tokio_util::sync::CancellationToken::new(),
                 tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
                 call_id: "call-view-image".to_string(),
-                tool_name: codex_tools::ToolName::plain("view_image"),
+                tool_name: ava_tools::ToolName::plain("view_image"),
                 source: ToolCallSource::CodeMode {
                     cell_id: "cell-1".to_string(),
                     runtime_tool_call_id: "tool-1".to_string(),

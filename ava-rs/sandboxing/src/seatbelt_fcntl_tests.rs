@@ -5,8 +5,8 @@
 use super::CreateSeatbeltCommandArgsParams;
 use super::MACOS_PATH_TO_SEATBELT_EXECUTABLE;
 use super::create_seatbelt_command_args;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use pretty_assertions::assert_eq;
 use std::fs;
 use std::fs::File;
@@ -18,8 +18,8 @@ use std::path::Path;
 use std::process::Command;
 
 const F_MAKECOMPRESSED: libc::c_int = 80;
-const FIXTURE_ENV: &str = "CODEX_SEATBELT_FCNTL_FIXTURE";
-const EXPECTATION_ENV: &str = "CODEX_SEATBELT_FCNTL_EXPECTATION";
+const FIXTURE_ENV: &str = "AVA_SEATBELT_FCNTL_FIXTURE";
+const EXPECTATION_ENV: &str = "AVA_SEATBELT_FCNTL_EXPECTATION";
 const TRANSFER_UNSUPPORTED: &str = "F_TRANSFEREXTENTS positive control unsupported";
 const FILES: [&str; 3] = ["canary", "workspace/donor", "receiver"];
 

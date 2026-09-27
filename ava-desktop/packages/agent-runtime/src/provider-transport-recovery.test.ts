@@ -10,11 +10,11 @@ import {
 } from "./provider-transport-recovery.js";
 
 /** The reporter's endpoint (issue #234): a provider fetch that never answered. */
-const CODEX_URL = "https://chatgpt.com/backend-api/codex/responses";
+const AVA_URL = "https://chatgpt.com/backend-api/codex/responses";
 
 it("neither rebuilds nor retries a captured certificate rejection after flattening", () => {
   const failure = describeProviderFetchFailure(
-    fetchFailed(coded("SELF_SIGNED_CERT_IN_CHAIN")), CODEX_URL,
+    fetchFailed(coded("SELF_SIGNED_CERT_IN_CHAIN")), AVA_URL,
   );
   expect(failure).toBeDefined();
   if (!failure) throw new Error("missing failure");
@@ -29,7 +29,7 @@ it("neither rebuilds nor retries a captured certificate rejection after flatteni
     retriable: false,
     details: { networkCode: "SELF_SIGNED_CERT_IN_CHAIN" },
   });
-  const protocol = describeProviderFetchFailure(fetchFailed(coded("EPROTO")), CODEX_URL);
+  const protocol = describeProviderFetchFailure(fetchFailed(coded("EPROTO")), AVA_URL);
   if (!protocol) throw new Error("missing protocol failure");
   expect(health.observeFailure(protocol)).toBe(false);
   expect(health.observeFailure(protocol)).toBe(true);
@@ -62,7 +62,7 @@ describe("describeProviderFetchFailure", () => {
     // see it: the errno only exists in the cause chain.
     const failure = describeProviderFetchFailure(
       fetchFailed(coded("ECONNRESET", { syscall: "read" })),
-      CODEX_URL,
+      AVA_URL,
     );
 
     expect(failure).toEqual({
@@ -87,7 +87,7 @@ describe("describeProviderFetchFailure", () => {
     );
 
     expect(
-      describeProviderFetchFailure(fetchFailed(aggregate), CODEX_URL),
+      describeProviderFetchFailure(fetchFailed(aggregate), AVA_URL),
     ).toMatchObject({
       category: "refused",
       fields: {
@@ -101,7 +101,7 @@ describe("describeProviderFetchFailure", () => {
   it("reads the origin of an object-shaped request input", () => {
     expect(
       describeProviderFetchFailure(fetchFailed(coded("ENOTFOUND")), {
-        url: CODEX_URL,
+        url: AVA_URL,
       })?.origin,
     ).toBe("https://chatgpt.com");
   });
@@ -112,7 +112,7 @@ describe("describeProviderFetchFailure", () => {
     expect(
       describeProviderFetchFailure(
         Object.assign(new Error("Request aborted"), { name: "AbortError" }),
-        CODEX_URL,
+        AVA_URL,
       ),
     ).toBeUndefined();
     expect(
@@ -220,7 +220,7 @@ describe("withProviderFetchFailure", () => {
     };
     const failure = describeProviderFetchFailure(
       fetchFailed(coded("ECONNRESET")),
-      CODEX_URL,
+      AVA_URL,
     );
 
     expect(withProviderFetchFailure(classified, failure)).toEqual({
@@ -243,7 +243,7 @@ describe("withProviderFetchFailure", () => {
     };
     const failure = describeProviderFetchFailure(
       fetchFailed(coded("ECONNRESET")),
-      CODEX_URL,
+      AVA_URL,
     );
 
     expect(withProviderFetchFailure(limited, failure)).toBe(limited);

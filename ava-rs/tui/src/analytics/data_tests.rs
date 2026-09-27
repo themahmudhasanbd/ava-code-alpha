@@ -60,9 +60,9 @@ async fn panicking_loads_request_a_frame_and_report_interruption() {
 
 #[test]
 fn rpc_errors_do_not_expose_server_diagnostics() {
-    let error = codex_app_server_client::TypedRequestError::Server {
+    let error = ava_app_server_client::TypedRequestError::Server {
         method: "thread/list".into(),
-        source: codex_app_server_protocol::JSONRPCErrorError {
+        source: ava_app_server_protocol::JSONRPCErrorError {
             code: -32603,
             message: "Failed opening /private/workspace: token=secret".into(),
             data: Some(serde_json::json!({"credential": "secret"})),

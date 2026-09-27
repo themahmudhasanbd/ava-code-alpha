@@ -4,8 +4,8 @@ use super::*;
 use crate::app::test_support::make_test_app;
 use crate::history_cell::ComputerActivityCell;
 use crate::history_cell::FinalMessageSeparator;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::UserInput;
 use pretty_assertions::assert_eq;
 
 fn turn(id: &str, status: TurnStatus, item_ids: &[&str]) -> Turn {

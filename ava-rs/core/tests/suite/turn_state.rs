@@ -13,12 +13,12 @@ use core_test_support::responses::sse_response;
 use core_test_support::responses::start_mock_server;
 use core_test_support::responses::start_websocket_server_with_headers;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
 
-const TURN_STATE_HEADER: &str = "x-codex-turn-state";
+const TURN_STATE_HEADER: &str = "x-ava-turn-state";
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn responses_turn_state_persists_within_turn_and_resets_after() -> Result<()> {
@@ -52,7 +52,7 @@ async fn responses_turn_state_persists_within_turn_and_resets_after() -> Result<
     ];
     let request_log = mount_response_sequence(&server, responses).await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     test.submit_turn("run a shell command").await?;
     test.submit_turn("second turn").await?;
 
@@ -75,11 +75,11 @@ async fn responses_turn_state_persists_within_turn_and_resets_after() -> Result<
             .map(str::to_string)
     };
 
-    let first_turn_id = parse_turn_id(requests[0].header("x-codex-turn-metadata"))
+    let first_turn_id = parse_turn_id(requests[0].header("x-ava-turn-metadata"))
         .expect("first request should include turn metadata turn_id");
-    let second_turn_id = parse_turn_id(requests[1].header("x-codex-turn-metadata"))
+    let second_turn_id = parse_turn_id(requests[1].header("x-ava-turn-metadata"))
         .expect("follow-up request should include turn metadata turn_id");
-    let third_turn_id = parse_turn_id(requests[2].header("x-codex-turn-metadata"))
+    let third_turn_id = parse_turn_id(requests[2].header("x-ava-turn-metadata"))
         .expect("new turn request should include turn metadata turn_id");
 
     assert_eq!(first_turn_id, second_turn_id);
@@ -122,7 +122,7 @@ async fn websocket_turn_state_persists_within_turn_and_resets_after() -> Result<
     }])
     .await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_websocket_server(&server).await?;
     // Phase 1: startup prewarm uses the connection without generating a response.
     // Wait before submitting a turn, which changes the session's sandbox policy.
@@ -155,7 +155,7 @@ async fn websocket_turn_state_persists_within_turn_and_resets_after() -> Result<
         .iter()
         .map(|body| {
             serde_json::from_str::<Value>(
-                body["client_metadata"]["x-codex-turn-metadata"]
+                body["client_metadata"]["x-ava-turn-metadata"]
                     .as_str()
                     .expect("websocket request should include turn metadata"),
             )
@@ -238,7 +238,7 @@ async fn websocket_turn_state_is_stable_within_turn() -> Result<()> {
         close_after_requests: false,
     }])
     .await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_websocket_server(&server).await?;
 
     // Phase 1: the initial request starts empty and receives the first metadata value.

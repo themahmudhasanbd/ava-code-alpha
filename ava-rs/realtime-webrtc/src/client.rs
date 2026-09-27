@@ -6,9 +6,9 @@ use std::time::Duration;
 
 use anyhow::Result;
 use anyhow::ensure;
-use codex_install_context::CodexPackageLayout;
-use codex_utils_pty::ProcessHandle;
-use codex_utils_pty::SpawnedProcess;
+use ava_install_context::AvaPackageLayout;
+use ava_utils_pty::ProcessHandle;
+use ava_utils_pty::SpawnedProcess;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 
@@ -152,14 +152,14 @@ impl VoiceHost {
         Ok(self)
     }
 
-    pub async fn connect(package: &CodexPackageLayout, build_commit: &str) -> Result<Self> {
+    pub async fn connect(package: &AvaPackageLayout, build_commit: &str) -> Result<Self> {
         let root = package.package_dir.as_path().canonicalize()?;
         let name = if cfg!(windows) {
-            "codex-voice-host.exe"
+            "ava-voice-host.exe"
         } else {
-            "codex-voice-host"
+            "ava-voice-host"
         };
-        let path = root.join("codex-resources/voice/bin").join(name);
+        let path = root.join("ava-resources/voice/bin").join(name);
         ensure!(
             path.canonicalize()? == path,
             "voice helper must be inside the physical package"
@@ -180,7 +180,7 @@ impl VoiceHost {
             stdout_rx,
             stderr_rx,
             exit_rx,
-        } = codex_utils_pty::spawn_pipe_process(
+        } = ava_utils_pty::spawn_pipe_process(
             &path,
             &[],
             &root,

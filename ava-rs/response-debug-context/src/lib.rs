@@ -1,6 +1,6 @@
 use base64::Engine;
-use codex_api::ApiError;
-use codex_api::TransportError;
+use ava_api::ApiError;
+use ava_api::TransportError;
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 const OAI_REQUEST_ID_HEADER: &str = "x-oai-request-id";
@@ -94,8 +94,8 @@ mod tests {
     use super::extract_response_debug_context;
     use super::telemetry_api_error_message;
     use super::telemetry_transport_error_message;
-    use codex_api::ApiError;
-    use codex_api::TransportError;
+    use ava_api::ApiError;
+    use ava_api::TransportError;
     use http::HeaderMap;
     use http::HeaderValue;
     use http::StatusCode;

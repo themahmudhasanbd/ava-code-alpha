@@ -8,19 +8,19 @@ use std::time::SystemTime;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::CodexThread;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::ForkBoundary;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::PrepareForkParams;
+use ava_core::AvaThread;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::ForkBoundary;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::PrepareForkParams;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -29,7 +29,7 @@ use core_test_support::responses::mount_sse_once;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use wiremock::MockServer;
@@ -39,7 +39,7 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_history_mode(ThreadHistoryMode::Paginated)
         .with_config(|config| {
             config.model_provider.name = "Local compaction test provider".to_string();
@@ -52,7 +52,7 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
         .await?;
     turn(
         &server,
-        &test.codex,
+        &test.ava-code,
         "Create a checkpoint",
         "OBSOLETE_PRE_CHECKPOINT_REPLY",
     )
@@ -65,14 +65,14 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
         ]),
     )
     .await;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     turn(
         &server,
-        &test.codex,
+        &test.ava-code,
         "shared-compression: inherited parent turn",
         "INHERITED_COMPRESSION_REPLY",
     )
@@ -88,13 +88,13 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
     let child = test
         .thread_manager
         .fork_prepared_thread(
-            codex_core::StartThreadOptions::new(test.config.clone()),
+            ava_core::StartThreadOptions::new(test.config.clone()),
             prepared,
         )
         .await?;
     turn(
         &server,
-        &test.codex,
+        &test.ava-code,
         "shared-compression: parent AFTER fork cutoff",
         "POST_FORK_COMPRESSION_REPLY",
     )
@@ -107,12 +107,12 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
     )
     .await?;
 
-    let parent_path = test.codex.rollout_path().context("parent rollout")?;
+    let parent_path = test.ava-code.rollout_path().context("parent rollout")?;
     let child_path = child.thread.rollout_path().context("child rollout")?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     child.thread.shutdown_and_wait().await?;
     assert_eq!(
-        codex_rollout::read_session_meta_line(&child_path)
+        ava_rollout::read_session_meta_line(&child_path)
             .await?
             .meta
             .history_base
@@ -138,7 +138,7 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
         .enable(Feature::LocalThreadStoreCompression)?;
     // Use production feature wiring, rather than manually writing zstd files or calling the worker.
     let store =
-        codex_core::thread_store_from_config(&config, codex_core::init_state_db(&config).await);
+        ava_core::thread_store_from_config(&config, ava_core::init_state_db(&config).await);
     tokio::time::timeout(Duration::from_secs(30), async {
         loop {
             if paths
@@ -173,7 +173,7 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
                 history: Arc::new(context.items),
                 rollout_path: Some(child_path),
             }),
-            codex_core::test_support::auth_manager_from_auth(codex_login::CodexAuth::from_api_key(
+            ava_core::test_support::auth_manager_from_auth(ava_login::AvaAuth::from_api_key(
                 "dummy",
             )),
             /*parent_trace*/ None,
@@ -217,7 +217,7 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
 
 async fn turn(
     server: &MockServer,
-    thread: &Arc<CodexThread>,
+    thread: &Arc<AvaThread>,
     prompt: &str,
     reply: &str,
 ) -> Result<ResponseMock> {

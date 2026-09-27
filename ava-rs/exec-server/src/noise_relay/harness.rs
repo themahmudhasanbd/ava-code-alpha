@@ -363,10 +363,10 @@ where
                         }
                     };
                     let request_trace = match message {
-                        codex_exec_server_protocol::JSONRPCMessage::Request(request) => request.trace,
-                        codex_exec_server_protocol::JSONRPCMessage::Notification(_)
-                        | codex_exec_server_protocol::JSONRPCMessage::Response(_)
-                        | codex_exec_server_protocol::JSONRPCMessage::Error(_) => None,
+                        ava_exec_server_protocol::JSONRPCMessage::Request(request) => request.trace,
+                        ava_exec_server_protocol::JSONRPCMessage::Notification(_)
+                        | ava_exec_server_protocol::JSONRPCMessage::Response(_)
+                        | ava_exec_server_protocol::JSONRPCMessage::Error(_) => None,
                     };
                     pending_outbound = Some((framed, 0, request_trace));
                 }

@@ -2,13 +2,13 @@
 
 use super::*;
 use crate::store::validate_plugin_version_segment;
-use codex_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathConvention;
 
 /// Fetches installation authorization and download metadata, but materializes no
 /// other installed plugins and never publishes to the shared plugin catalog.
 pub(crate) async fn fetch_measurement_reference_bundle(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     target: &crate::script_attribution::PluginMeasurementTarget,
 ) -> anyhow::Result<Option<(String, crate::remote_bundle::ValidatedRemotePluginBundle)>> {
     ensure_chatgpt_auth(Some(auth))?;

@@ -4,17 +4,17 @@
 
 use std::io::Write;
 
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::TruncationPolicy;
 
 use crate::ComposedContext;
 use crate::composition::SectionDelivery;
 use crate::composition::SectionOutput;
 
-pub const SECTION_COST_METRIC: &str = "codex.guardian.context.section_cost";
-pub const REQUEST_TOKENS_METRIC: &str = "codex.guardian.context.request_tokens";
+pub const SECTION_COST_METRIC: &str = "ava.guardian.context.section_cost";
+pub const REQUEST_TOKENS_METRIC: &str = "ava.guardian.context.request_tokens";
 /// Fixed across reviewers and models so complete-request distributions align.
 pub const REQUEST_TOKENS_BOUNDARIES: &[f64] = &[
     1_000.0,
@@ -58,7 +58,7 @@ pub const DEFAULT_MAX_INPUT_TOKENS: usize = 128_000;
 /// Applies the same configured-window cap and effective percentage as sync review.
 /// Async callers supply no parent-model override.
 pub fn effective_input_token_limit(
-    model: &codex_protocol::openai_models::ModelInfo,
+    model: &ava_protocol::openai_models::ModelInfo,
     configured_window: Option<i64>,
 ) -> usize {
     let supported = model

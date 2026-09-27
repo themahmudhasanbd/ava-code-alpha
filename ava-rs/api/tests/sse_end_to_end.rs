@@ -4,17 +4,17 @@ use std::time::Duration;
 
 use anyhow::Result;
 use bytes::Bytes;
-use codex_api::AuthProvider;
-use codex_api::Compression;
-use codex_api::Provider;
-use codex_api::ResponseEvent;
-use codex_api::ResponsesClient;
-use codex_client::HttpTransport;
-use codex_client::Request;
-use codex_client::Response;
-use codex_client::StreamResponse;
-use codex_client::TransportError;
-use codex_protocol::models::ResponseItem;
+use ava_api::AuthProvider;
+use ava_api::Compression;
+use ava_api::Provider;
+use ava_api::ResponseEvent;
+use ava_api::ResponsesClient;
+use ava_client::HttpTransport;
+use ava_client::Request;
+use ava_client::Response;
+use ava_client::StreamResponse;
+use ava_client::TransportError;
+use ava_protocol::models::ResponseItem;
 use futures::StreamExt;
 use http::HeaderMap;
 use http::StatusCode;
@@ -62,7 +62,7 @@ fn provider(name: &str) -> Provider {
         base_url: "https://example.com/v1".to_string(),
         query_params: None,
         headers: HeaderMap::new(),
-        retry: codex_api::RetryConfig {
+        retry: ava_api::RetryConfig {
             max_attempts: 1,
             base_delay: Duration::from_millis(1),
             retry_429: false,
@@ -119,7 +119,7 @@ async fn responses_stream_parses_items_and_completed_end_to_end() -> Result<()> 
                 "output_tokens": 5,
                 "total_tokens": 15,
                 "extra": { "label": "example", "items": [0, null, true] },
-                "codex_rollout_budget_units": 2.5
+                "ava_rollout_budget_units": 2.5
             }
         }
     });
@@ -174,7 +174,7 @@ async fn responses_stream_parses_items_and_completed_end_to_end() -> Result<()> 
             assert_eq!(response_id, "resp1");
             assert_eq!(
                 usage_metadata,
-                &Some(codex_protocol::ResponseUsageMetadata {
+                &Some(ava_protocol::ResponseUsageMetadata {
                     amount: Some("0.12345678901234567890".to_string()),
                     metadata: Some(expected_metadata),
                 })
@@ -186,7 +186,7 @@ async fn responses_stream_parses_items_and_completed_end_to_end() -> Result<()> 
             assert_eq!(
                 token_usage
                     .as_ref()
-                    .and_then(|usage| usage.codex_rollout_budget_units.as_ref())
+                    .and_then(|usage| usage.ava_rollout_budget_units.as_ref())
                     .and_then(serde_json::Number::as_f64),
                 Some(2.5)
             );

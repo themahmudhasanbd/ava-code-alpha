@@ -6,34 +6,34 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_core::TurnInput;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::AppendThreadItemsParams;
-use codex_thread_store::ArchiveThreadParams;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::DeleteThreadParams;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::ListThreadsParams;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::PersistContext;
-use codex_thread_store::ReadThreadByRolloutPathParams;
-use codex_thread_store::ReadThreadParams;
-use codex_thread_store::ResumeThreadParams;
-use codex_thread_store::StoredThread;
-use codex_thread_store::StoredThreadHistory;
-use codex_thread_store::ThreadPage;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::ThreadStoreFuture;
-use codex_thread_store::UpdateThreadMetadataParams;
+use ava_core::TurnInput;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::AppendThreadItemsParams;
+use ava_thread_store::ArchiveThreadParams;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::DeleteThreadParams;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::ListThreadsParams;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::PersistContext;
+use ava_thread_store::ReadThreadByRolloutPathParams;
+use ava_thread_store::ReadThreadParams;
+use ava_thread_store::ResumeThreadParams;
+use ava_thread_store::StoredThread;
+use ava_thread_store::StoredThreadHistory;
+use ava_thread_store::ThreadPage;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::ThreadStoreFuture;
+use ava_thread_store::UpdateThreadMetadataParams;
 use core_test_support::responses;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -166,14 +166,14 @@ async fn steered_input_checkpoint_controls_next_request(
     });
     let base_url = format!("{}/v1", server.uri());
     let config_server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_thread_store(store.clone())
         .with_history_mode(ThreadHistoryMode::Legacy)
         .with_config(move |config| config.model_provider.base_url = Some(base_url))
         .build_with_auto_env(&config_server)
         .await?;
     let first = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "first prompt".to_string(),
             text_elements: Vec::new(),
@@ -182,7 +182,7 @@ async fn steered_input_checkpoint_controls_next_request(
     let TurnInputSubmission::Started { turn_id } = first else {
         panic!("first input should start a turn");
     };
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::AgentMessageContentDelta(_))
     })
     .await;
@@ -196,13 +196,13 @@ async fn steered_input_checkpoint_controls_next_request(
             TurnInputRequest::new(TurnInput::ResponseItem(serde_json::from_value(json!({
                 "type": "function_call_output",
                 "name": "send_message_to_thread",
-                "namespace": "codex_app",
+                "namespace": "ava_app",
                 "output": "steered input",
             }))?))
         }
     };
     assert_eq!(
-        test.codex.start_or_steer_turn(input).await?,
+        test.ava-code.start_or_steer_turn(input).await?,
         TurnInputSubmission::Steered { turn_id }
     );
     // Steering still waits for the existing inference stream to finish.
@@ -242,11 +242,11 @@ async fn steered_input_checkpoint_controls_next_request(
     second_completed
         .send(())
         .expect("finish follow-up inference");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     server.shutdown().await;
     Ok(())
 }

@@ -44,7 +44,7 @@ produces. Copy, edit, fork, and retry cover the rest.
 3. **Annotations.** Remove annotations as a feature: the comment editor, the
    floating annotation index, the answer source badges and highlights, the
    composer annotation attachment chip, the annotation store slice, and the
-   annotation anchor modules are deleted. A `:codex-annotation{index="N"}`
+   annotation anchor modules are deleted. A `:ava-annotation{index="N"}`
    directive in an answer is no longer recognized; it renders as the ordinary
    Markdown text it is.
 4. **Prompt assembly.** The send path no longer composes a

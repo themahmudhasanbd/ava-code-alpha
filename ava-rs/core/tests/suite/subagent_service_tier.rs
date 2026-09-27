@@ -1,15 +1,15 @@
 //! Verifies that root service-tier changes reach existing child turns and future work.
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::AgentRoleConfig;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::AgentRoleConfig;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -19,7 +19,7 @@ use core_test_support::responses::mount_sse_once_match;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -71,7 +71,7 @@ fn configure_priority_role(config: &mut Config) {
     }
     config.model_provider.request_max_retries = Some(0);
     config.model_provider.stream_max_retries = Some(0);
-    let role_path = config.codex_home.join("priority-worker.toml");
+    let role_path = config.ava_home.join("priority-worker.toml");
     std::fs::write(&role_path, "service_tier = \"priority\"\n")
         .expect("priority role should be written");
     config.agent_roles.insert(
@@ -84,7 +84,7 @@ fn configure_priority_role(config: &mut Config) {
     );
 }
 
-async fn wait_for_turn_complete(thread: &codex_core::CodexThread) {
+async fn wait_for_turn_complete(thread: &ava_core::AvaThread) {
     wait_for_event(thread, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 }
 
@@ -159,7 +159,7 @@ async fn root_service_tier_change_updates_existing_subagent(
     let initial_service_tier_owned = initial_service_tier.map(str::to_string);
     let updated_request_service_tier = updated_service_tier
         .filter(|service_tier| *service_tier != SERVICE_TIER_DEFAULT_REQUEST_VALUE);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.6-sol")
         .with_config(move |config| {
             config.service_tier = initial_service_tier_owned;
@@ -230,7 +230,7 @@ async fn root_service_tier_change_updates_existing_subagent(
     assert_request_service_tier(&initial_child_request, initial_service_tier);
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             service_tier: Some(updated_service_tier.map(str::to_string)),
             ..Default::default()
@@ -307,7 +307,7 @@ async fn root_service_tier_change_updates_existing_subagent(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn evicted_role_subagent_uses_root_service_tier_after_reload() -> Result<()> {
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.6-sol")
         .with_config(|config| {
             config.service_tier = Some("priority".to_string());
@@ -364,7 +364,7 @@ async fn evicted_role_subagent_uses_root_service_tier_after_reload() -> Result<(
     );
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             service_tier: Some(None),
             ..Default::default()
@@ -377,7 +377,7 @@ async fn evicted_role_subagent_uses_root_service_tier_after_reload() -> Result<(
     let reloaded_thread = test.thread_manager.get_thread(original_thread_id).await?;
     assert_eq!(
         reloaded_thread.config_snapshot().await.service_tier,
-        test.codex.config_snapshot().await.service_tier,
+        test.ava-code.config_snapshot().await.service_tier,
         "reload ignores the role tier and preserves the root-owned preference"
     );
 
@@ -391,7 +391,7 @@ async fn evicted_role_subagent_uses_root_service_tier_after_reload() -> Result<(
     wait_for_turn_complete(&reloaded_thread).await;
     assert_request_service_tier(&reloaded_request, /*expected*/ None);
     reloaded_thread.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
 
     Ok(())
 }

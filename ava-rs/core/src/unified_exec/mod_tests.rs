@@ -1,5 +1,5 @@
 use super::*;
-use crate::codex_thread::BackgroundTerminalInfo;
+use crate::ava_thread::BackgroundTerminalInfo;
 use crate::environment_selection::TurnEnvironmentState;
 use crate::exec::ExecCapturePolicy;
 use crate::exec::ExecExpiration;
@@ -9,22 +9,22 @@ use crate::session::tests::make_session_and_context;
 use crate::session::turn_context::TurnContext;
 use crate::tools::context::ExecCommandToolOutput;
 use crate::unified_exec::WriteStdinRequest;
-use codex_exec_server::ExecProcess;
-use codex_exec_server::ExecProcessEventReceiver;
-use codex_exec_server::ExecProcessFuture;
-use codex_exec_server::ProcessId;
-use codex_exec_server::ProcessSignal;
-use codex_exec_server::ReadResponse;
-use codex_exec_server::StartedExecProcess;
-use codex_exec_server::WriteResponse;
-use codex_exec_server::WriteStatus;
-use codex_sandboxing::SandboxType;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::approx_tokens_from_byte_count;
+use ava_exec_server::ExecProcess;
+use ava_exec_server::ExecProcessEventReceiver;
+use ava_exec_server::ExecProcessFuture;
+use ava_exec_server::ProcessId;
+use ava_exec_server::ProcessSignal;
+use ava_exec_server::ReadResponse;
+use ava_exec_server::StartedExecProcess;
+use ava_exec_server::WriteResponse;
+use ava_exec_server::WriteStatus;
+use ava_sandboxing::SandboxType;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::approx_tokens_from_byte_count;
 use core_test_support::skip_if_no_remote_env;
 use core_test_support::skip_if_sandbox;
-use core_test_support::test_codex::test_env as remote_test_env;
+use core_test_support::test_ava::test_env as remote_test_env;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
@@ -115,7 +115,7 @@ async fn exec_command_with_tty(
                 process_id,
                 &request,
                 /*tool_ctx*/ None,
-                codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+                ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
                 /*network_policy_decider*/ None,
                 tty,
                 Box::new(NoopSpawnLifecycle),
@@ -145,7 +145,7 @@ async fn exec_command_with_tty(
             initial_exec_command_active: Arc::new(std::sync::atomic::AtomicBool::new(true)),
             hook_command: cmd.to_string(),
             tty,
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             permissions: TerminalPermissions::for_launch(
                 turn.initial_environments
                     .primary()
@@ -237,7 +237,7 @@ struct BlockingTerminateExecProcess {
 }
 
 impl BlockingTerminateExecProcess {
-    async fn read(&self) -> Result<ReadResponse, codex_exec_server::ExecServerError> {
+    async fn read(&self) -> Result<ReadResponse, ava_exec_server::ExecServerError> {
         Ok(ReadResponse {
             chunks: Vec::new(),
             next_seq: 1,
@@ -249,13 +249,13 @@ impl BlockingTerminateExecProcess {
         })
     }
 
-    async fn write(&self) -> Result<WriteResponse, codex_exec_server::ExecServerError> {
+    async fn write(&self) -> Result<WriteResponse, ava_exec_server::ExecServerError> {
         Ok(WriteResponse {
             status: WriteStatus::Accepted,
         })
     }
 
-    async fn terminate(&self) -> Result<(), codex_exec_server::ExecServerError> {
+    async fn terminate(&self) -> Result<(), ava_exec_server::ExecServerError> {
         let _ = self.terminate_started.send(true);
         self.allow_terminate.notified().await;
         Ok(())
@@ -311,7 +311,7 @@ async fn blocking_terminate_unified_process(
                 allow_terminate,
                 wake_tx,
             }),
-            sandbox_type: Some(codex_sandboxing::SandboxType::None),
+            sandbox_type: Some(ava_sandboxing::SandboxType::None),
         })
         .await?,
     ))
@@ -373,7 +373,7 @@ async fn unified_exec_persists_across_requests() -> anyhow::Result<()> {
         &session,
         &turn,
         process_id,
-        "export CODEX_INTERACTIVE_SHELL_VAR=codex\n",
+        "export AVA_INTERACTIVE_SHELL_VAR=ava\n",
         /*yield_time_ms*/ 2_500,
     )
     .await?;
@@ -382,14 +382,14 @@ async fn unified_exec_persists_across_requests() -> anyhow::Result<()> {
         &session,
         &turn,
         process_id,
-        "echo $CODEX_INTERACTIVE_SHELL_VAR\n",
+        "echo $AVA_INTERACTIVE_SHELL_VAR\n",
         /*yield_time_ms*/ 2_500,
     )
     .await?;
     assert!(
         out_2
             .truncated_output(DEFAULT_MAX_OUTPUT_TOKENS)
-            .contains("codex"),
+            .contains("ava"),
         "expected environment variable output"
     );
 
@@ -416,7 +416,7 @@ async fn multi_unified_exec_sessions() -> anyhow::Result<()> {
         &session,
         &turn,
         session_a,
-        "export CODEX_INTERACTIVE_SHELL_VAR=codex\n",
+        "export AVA_INTERACTIVE_SHELL_VAR=ava\n",
         /*yield_time_ms*/ 2_500,
     )
     .await?;
@@ -424,7 +424,7 @@ async fn multi_unified_exec_sessions() -> anyhow::Result<()> {
     let out_2 = exec_command(
         &session,
         &turn,
-        "echo $CODEX_INTERACTIVE_SHELL_VAR",
+        "echo $AVA_INTERACTIVE_SHELL_VAR",
         /*yield_time_ms*/ 2_500,
         /*workdir*/ None,
     )
@@ -437,7 +437,7 @@ async fn multi_unified_exec_sessions() -> anyhow::Result<()> {
     assert!(
         !out_2
             .truncated_output(DEFAULT_MAX_OUTPUT_TOKENS)
-            .contains("codex"),
+            .contains("ava"),
         "short command should run in a fresh shell"
     );
 
@@ -445,14 +445,14 @@ async fn multi_unified_exec_sessions() -> anyhow::Result<()> {
         &session,
         &turn,
         shell_a.process_id.expect("expected process id"),
-        "echo $CODEX_INTERACTIVE_SHELL_VAR\n",
+        "echo $AVA_INTERACTIVE_SHELL_VAR\n",
         /*yield_time_ms*/ 2_500,
     )
     .await?;
     assert!(
         out_3
             .truncated_output(DEFAULT_MAX_OUTPUT_TOKENS)
-            .contains("codex"),
+            .contains("ava"),
         "session should preserve state"
     );
 
@@ -477,7 +477,7 @@ async fn unified_exec_timeouts() -> anyhow::Result<()> {
         &session,
         &turn,
         process_id,
-        format!("export CODEX_INTERACTIVE_SHELL_VAR={TEST_VAR_VALUE}\n").as_str(),
+        format!("export AVA_INTERACTIVE_SHELL_VAR={TEST_VAR_VALUE}\n").as_str(),
         /*yield_time_ms*/ 2_500,
     )
     .await?;
@@ -486,7 +486,7 @@ async fn unified_exec_timeouts() -> anyhow::Result<()> {
         &session,
         &turn,
         process_id,
-        "sleep 5 && echo $CODEX_INTERACTIVE_SHELL_VAR\n",
+        "sleep 5 && echo $AVA_INTERACTIVE_SHELL_VAR\n",
         /*yield_time_ms*/ 10,
     )
     .await?;
@@ -621,7 +621,7 @@ async fn terminating_initial_exec_command_rechecks_initial_response_state() -> a
             initial_exec_command_active: Arc::new(std::sync::atomic::AtomicBool::new(true)),
             hook_command: "sleep 60".to_string(),
             tty: true,
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             permissions: TerminalPermissions::for_launch(
                 turn.initial_environments
                     .primary()
@@ -706,7 +706,7 @@ async fn terminating_during_stdin_poll_returns_exited_response() -> anyhow::Resu
             initial_exec_command_active: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             hook_command: "sleep 60".to_string(),
             tty: true,
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             permissions: TerminalPermissions::for_launch(
                 turn.initial_environments
                     .primary()
@@ -777,13 +777,13 @@ async fn completed_pipe_commands_preserve_exit_code() -> anyhow::Result<()> {
         shell_env(),
     );
 
-    let environment = codex_exec_server::Environment::default_for_tests();
+    let environment = ava_exec_server::Environment::default_for_tests();
     let process = UnifiedExecProcessManager::default()
         .open_session_with_prepared_exec_env(
             /*process_id*/ 1234,
             &request,
             /*tool_ctx*/ None,
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
             /*network_policy_decider*/ None,
             /*tty*/ false,
             Box::new(NoopSpawnLifecycle),
@@ -826,7 +826,7 @@ async fn unified_exec_uses_remote_exec_server_when_configured() -> anyhow::Resul
             /*process_id*/ 1234,
             &request,
             /*tool_ctx*/ None,
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
             /*network_policy_decider*/ None,
             /*tty*/ true,
             Box::new(NoopSpawnLifecycle),
@@ -877,7 +877,7 @@ async fn remote_exec_server_rejects_inherited_fd_launches() -> anyhow::Result<()
             /*process_id*/ 1234,
             &request,
             /*tool_ctx*/ None,
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
             /*network_policy_decider*/ None,
             /*tty*/ true,
             Box::new(TestSpawnLifecycle {
@@ -904,15 +904,15 @@ async fn stdin_approval_preserves_the_reviewed_terminal() -> anyhow::Result<()> 
     use crate::session::tests::make_session_and_context_with_auth_and_config_and_rx;
     use crate::state::ActiveTurn;
     use crate::tools::sandboxing::ToolError;
-    use codex_features::Feature;
-    use codex_protocol::config_types::ApprovalsReviewer;
-    use codex_protocol::protocol::AskForApproval;
-    use codex_protocol::protocol::EventMsg;
-    use codex_protocol::protocol::ReviewDecision;
+    use ava_features::Feature;
+    use ava_protocol::config_types::ApprovalsReviewer;
+    use ava_protocol::protocol::AskForApproval;
+    use ava_protocol::protocol::EventMsg;
+    use ava_protocol::protocol::ReviewDecision;
 
     skip_if_sandbox!(Ok(()));
     let (session, mut turn, events) = make_session_and_context_with_auth_and_config_and_rx(
-        codex_login::CodexAuth::from_api_key("Test API Key"),
+        ava_login::AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config.features.enable(Feature::WriteStdinApproval).unwrap();

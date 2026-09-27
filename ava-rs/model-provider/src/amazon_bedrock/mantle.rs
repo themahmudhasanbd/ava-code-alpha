@@ -1,8 +1,8 @@
-use codex_aws_auth::AwsAuthConfig;
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
+use ava_aws_auth::AwsAuthConfig;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
 
 use super::BedrockEndpoint;
 use super::auth::BedrockAuthSource;
@@ -49,7 +49,7 @@ pub(super) fn base_url(region: &str) -> Result<String> {
     if is_supported_amazon_bedrock_region(region) {
         Ok(format!("https://bedrock-mantle.{region}.api.aws/openai/v1"))
     } else {
-        Err(CodexErr::Fatal(format!(
+        Err(AvaErr::Fatal(format!(
             "Amazon Bedrock does not support region `{region}`"
         )))
     }
@@ -57,7 +57,7 @@ pub(super) fn base_url(region: &str) -> Result<String> {
 
 pub(super) async fn bedrock_mantle_runtime_base_url(
     source: BedrockAuthSource,
-    managed_auth: Option<&CodexAuth>,
+    managed_auth: Option<&AvaAuth>,
     aws: &ModelProviderAwsAuthInfo,
 ) -> Result<String> {
     let region = resolve_region(source, managed_auth, aws, BedrockEndpoint::Mantle).await?;
@@ -92,13 +92,13 @@ mod tests {
     fn aws_auth_config_uses_profile_and_mantle_service() {
         assert_eq!(
             aws_auth_config(&ModelProviderAwsAuthInfo {
-                profile: Some("codex-bedrock".to_string()),
+                profile: Some("ava-bedrock".to_string()),
                 region: None,
                 credential_export: None,
                 auth_refresh: None,
             }),
             AwsAuthConfig {
-                profile: Some("codex-bedrock".to_string()),
+                profile: Some("ava-bedrock".to_string()),
                 region: None,
                 service: "bedrock-mantle".to_string(),
             }

@@ -1,9 +1,9 @@
 //! Separate older history at every turn boundary; only successful turns gain completion metadata.
 //! A page splitting a turn only adds completion metadata when it contains that turn's last item.
 
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnStatus;
 use std::collections::HashMap;
 
 pub(super) fn group_completed_turn_items(

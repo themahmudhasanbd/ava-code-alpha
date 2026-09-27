@@ -5,39 +5,39 @@ use crate::context::world_state::WorldState;
 use crate::context::world_state::WorldStateSection;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::AgentPath;
-use codex_protocol::ResponseItemId;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ConfigurationReasoning;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::LocalShellAction;
-use codex_protocol::models::LocalShellExecAction;
-use codex_protocol::models::LocalShellStatus;
-use codex_protocol::models::ReasoningItemContent;
-use codex_protocol::models::ReasoningItemReasoningSummary;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::default_input_modalities;
-use codex_protocol::protocol::APPS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ENVIRONMENTS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::PLUGINS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::TurnContextItem;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::AgentPath;
+use ava_protocol::ResponseItemId;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ConfigurationReasoning;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::LocalShellAction;
+use ava_protocol::models::LocalShellExecAction;
+use ava_protocol::models::LocalShellStatus;
+use ava_protocol::models::ReasoningItemContent;
+use ava_protocol::models::ReasoningItemReasoningSummary;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::default_input_modalities;
+use ava_protocol::protocol::APPS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ENVIRONMENTS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::PLUGINS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::TurnContextItem;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
 use image::ImageBuffer;
 use image::ImageFormat;
 use image::Luma;
@@ -165,14 +165,14 @@ fn conversation_history_snapshot_binds_review_mode_and_hash_to_the_latest_item(
             "type": "compaction", "id": "known", "encrypted_content": "opaque checkpoint"
         }))
         .expect("checkpoint fixture"),
-        metadata: Some(CodexHarnessMetadata {
+        metadata: Some(AvaHarnessMetadata {
             compaction_model_hash: Some("producer-hash".to_owned()),
             ..Default::default()
         }),
     };
     let mut history = ContextManager::with_guardian_context_mode(
         GuardianContextMode::ThreadOwned,
-        &codex_protocol::protocol::SessionSource::Cli,
+        &ava_protocol::protocol::SessionSource::Cli,
     );
     history.replace_annotated(vec![checkpoint.clone()]);
     history.restore_review_context(
@@ -182,7 +182,7 @@ fn conversation_history_snapshot_binds_review_mode_and_hash_to_the_latest_item(
     );
     let snapshot = history.conversation_history_snapshot();
     let mut unknown = checkpoint.clone();
-    unknown.metadata = latest_hash.map(|hash| CodexHarnessMetadata {
+    unknown.metadata = latest_hash.map(|hash| AvaHarnessMetadata {
         compaction_model_hash: Some(hash.to_owned()),
         ..Default::default()
     });
@@ -252,7 +252,7 @@ fn conversation_history_snapshot_binds_review_mode_and_hash_to_the_latest_item(
 fn checkpoint_retained_evidence_survives_legacy_review(saved_context: serde_json::Value) {
     let mut history = ContextManager::with_guardian_context_mode(
         GuardianContextMode::ThreadOwned,
-        &codex_protocol::protocol::SessionSource::Cli,
+        &ava_protocol::protocol::SessionSource::Cli,
     );
     history.replace_annotated(vec![ResponseItemEnvelope::new(
         serde_json::from_value(serde_json::json!({
@@ -291,7 +291,7 @@ fn checkpoint_retained_evidence_survives_legacy_review(saved_context: serde_json
 fn checkpoint_replayed_instructions_keep_legacy_review_when_the_source_survives() {
     let mut history = ContextManager::with_guardian_context_mode(
         GuardianContextMode::ThreadOwned,
-        &codex_protocol::protocol::SessionSource::Cli,
+        &ava_protocol::protocol::SessionSource::Cli,
     );
     history.replace_annotated(vec![ResponseItemEnvelope::new(
         serde_json::from_value(serde_json::json!({
@@ -511,7 +511,7 @@ fn reference_context_item() -> TurnContextItem {
         realtime_active: Some(false),
         cyber_access_program: None,
         effort: None,
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     }
 }
 
@@ -594,7 +594,7 @@ fn retains_only_harness_authored_configuration_updates() {
     };
     let trusted = ResponseItemEnvelope {
         item: update.clone(),
-        metadata: Some(CodexHarnessMetadata {
+        metadata: Some(AvaHarnessMetadata {
             harness_authored_configuration: true,
             ..Default::default()
         }),
@@ -605,7 +605,7 @@ fn retains_only_harness_authored_configuration_updates() {
             ResponseItemEnvelope::new(update.clone()),
             ResponseItemEnvelope {
                 item: update,
-                metadata: Some(CodexHarnessMetadata {
+                metadata: Some(AvaHarnessMetadata {
                     client_authored: true,
                     ..Default::default()
                 }),
@@ -620,7 +620,7 @@ fn retains_only_harness_authored_configuration_updates() {
                     phase: None,
                     internal_chat_message_metadata_passthrough: None,
                 },
-                metadata: Some(CodexHarnessMetadata {
+                metadata: Some(AvaHarnessMetadata {
                     harness_authored_configuration: true,
                     ..Default::default()
                 }),
@@ -641,7 +641,7 @@ fn drop_last_n_user_turns_removes_post_input_configuration_update_with_its_turn(
             item: ResponseItem::ConfigurationUpdate {
                 reasoning: ConfigurationReasoning { effort },
             },
-            metadata: Some(CodexHarnessMetadata {
+            metadata: Some(AvaHarnessMetadata {
                 harness_authored_configuration: true,
                 ..Default::default()
             }),
@@ -768,7 +768,7 @@ fn annotated_history_apis_preserve_envelopes() {
     let first_item = assistant_msg("first");
     let first_envelope = ResponseItemEnvelope {
         item: first_item.clone(),
-        metadata: Some(CodexHarnessMetadata::default()),
+        metadata: Some(AvaHarnessMetadata::default()),
     };
     let mut history = ContextManager::new();
 
@@ -803,7 +803,7 @@ fn record_annotated_items_preserves_metadata_while_processing_item(
             },
             internal_chat_message_metadata_passthrough: None,
         },
-        metadata: Some(CodexHarnessMetadata {
+        metadata: Some(AvaHarnessMetadata {
             history_truncation_token_limit,
             ..Default::default()
         }),
@@ -850,7 +850,7 @@ fn for_prompt_annotated_preserves_metadata_while_normalizing_item() {
             phase: None,
             internal_chat_message_metadata_passthrough: None,
         },
-        metadata: Some(CodexHarnessMetadata::default()),
+        metadata: Some(AvaHarnessMetadata::default()),
     };
     let mut history = ContextManager::new();
     history.replace_annotated(vec![envelope.clone()]);
@@ -1389,11 +1389,11 @@ fn drop_last_n_user_turns_preserves_prefix() {
     );
     // With no remaining instruction boundary, rollback must not revoke facts from a
     // prior checkpoint merely because their source messages are no longer visible.
-    history.record_retained_context(&codex_history::RetainedContextEvent::VerifiedAnswer {
-        answer: codex_history::VerifiedAnswer {
+    history.record_retained_context(&ava_history::RetainedContextEvent::VerifiedAnswer {
+        answer: ava_history::VerifiedAnswer {
             turn_id: "checkpoint-turn".to_owned(),
             call_id: "ask-1".to_owned(),
-            questions: vec![codex_history::VerifiedQuestionAnswer {
+            questions: vec![ava_history::VerifiedQuestionAnswer {
                 question: "Upload?".to_owned(),
                 answer: "Only privately.".to_owned(),
             }],
@@ -1408,7 +1408,7 @@ fn drop_last_n_user_turns_preserves_prefix() {
     // instruction and answer as complete evidence, including after the next compaction.
     let mut history = ContextManager::with_guardian_context_mode(
         GuardianContextMode::ThreadOwned,
-        &codex_protocol::protocol::SessionSource::Exec,
+        &ava_protocol::protocol::SessionSource::Exec,
     );
     let mut expected = None;
     for (id, text) in [
@@ -1432,11 +1432,11 @@ fn drop_last_n_user_turns_preserves_prefix() {
         };
         history.record_items([&message], TruncationPolicy::Tokens(10_000));
         if id == "restriction" {
-            history.record_retained_context(&codex_history::RetainedContextEvent::VerifiedAnswer {
-                answer: codex_history::VerifiedAnswer {
+            history.record_retained_context(&ava_history::RetainedContextEvent::VerifiedAnswer {
+                answer: ava_history::VerifiedAnswer {
                     turn_id: "shared-turn".to_owned(),
                     call_id: "ask".to_owned(),
-                    questions: vec![codex_history::VerifiedQuestionAnswer {
+                    questions: vec![ava_history::VerifiedQuestionAnswer {
                         question: "Publish?".to_owned(),
                         answer: "Only privately.".to_owned(),
                     }],
@@ -2269,7 +2269,7 @@ fn normalize_preserves_named_function_call_output_without_call_id() {
         id: None,
         call_id: None,
         name: Some("send_message_to_thread".to_string()),
-        namespace: Some("codex_app".to_string()),
+        namespace: Some("ava_app".to_string()),
         output: FunctionCallOutputPayload::from_text("cross-thread message".to_string()),
         internal_chat_message_metadata_passthrough: None,
     };
@@ -2861,11 +2861,11 @@ fn passthrough_metadata_does_not_change_context_estimates() {
                 serde_json::to_value(turn_metadata).expect("turn metadata");
             let mut item: ResponseItem = serde_json::from_value(output).expect("response item");
             assert_eq!(estimate_response_item_model_visible_bytes(&item), before);
-            let mut call = codex_protocol::models::ExecutedToolCall::new(
+            let mut call = ava_protocol::models::ExecutedToolCall::new(
                 "test_tool".to_string(),
                 serde_json::json!({"input": "x".repeat(8 * 1024)}),
             );
-            call.set_tool_result_metadata(codex_protocol::models::ToolResultMetadata::new(
+            call.set_tool_result_metadata(ava_protocol::models::ToolResultMetadata::new(
                 &serde_json::json!({"provider": "x".repeat(16 * 1024)}),
             ));
             item.append_executed_tool_calls(vec![call]);

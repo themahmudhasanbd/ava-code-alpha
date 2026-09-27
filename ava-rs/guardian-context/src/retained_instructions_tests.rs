@@ -1,9 +1,9 @@
 use super::*;
-use codex_history::RetainedContextEvent;
-use codex_history::RetainedInputSource;
-use codex_history::RetainedUserMessage;
-use codex_history::VerifiedAnswer;
-use codex_history::VerifiedQuestionAnswer;
+use ava_history::RetainedContextEvent;
+use ava_history::RetainedInputSource;
+use ava_history::RetainedUserMessage;
+use ava_history::VerifiedAnswer;
+use ava_history::VerifiedQuestionAnswer;
 use pretty_assertions::assert_eq;
 
 #[test]

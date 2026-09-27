@@ -176,7 +176,7 @@ export async function createWindow({
     resizable: true,
     // One frameless look everywhere: macOS keeps inset traffic lights;
     // Windows/Linux hide native chrome entirely — the renderer draws its
-    // own Codex-style window controls (see WindowControls.tsx).
+    // own Ava-style window controls (see WindowControls.tsx).
     // The traffic-light position comes from @pi-desktop/shared so the space
     // the renderer reserves for the buttons (styles/tokens.css) is derived
     // from the same numbers that place them.
@@ -677,8 +677,8 @@ export async function createWindow({
     logger.app("diagnostics", "warn", "blocked navigation attempt", { data: { url } });
   });
 
-  // Codex-like default footprint. CG bounds are truth under Stage Manager.
-  const CODEX_BOUNDS = { x: 40, y: 30, width: 1200, height: 800 } as const;
+  // Ava-like default footprint. CG bounds are truth under Stage Manager.
+  const AVA_BOUNDS = { x: 40, y: 30, width: 1200, height: 800 } as const;
   let boundsGuard = false;
   let boundsTimer: NodeJS.Timeout | null = null;
   let pinUntil = 0;
@@ -756,13 +756,13 @@ export async function createWindow({
       window.moveTop();
       if (shelved) {
         window.hide();
-        window.setBounds({ ...CODEX_BOUNDS }, false);
+        window.setBounds({ ...AVA_BOUNDS }, false);
         window.show();
       } else {
-        window.setBounds({ ...CODEX_BOUNDS }, false);
+        window.setBounds({ ...AVA_BOUNDS }, false);
       }
-      window.setSize(CODEX_BOUNDS.width, CODEX_BOUNDS.height, false);
-      window.setPosition(CODEX_BOUNDS.x, CODEX_BOUNDS.y, false);
+      window.setSize(AVA_BOUNDS.width, AVA_BOUNDS.height, false);
+      window.setPosition(AVA_BOUNDS.x, AVA_BOUNDS.y, false);
       const restoredBounds = window.getBounds();
       windowState.workPanelBaseBounds = { ...restoredBounds };
       windowState.workPanelLastAppliedBounds = { ...restoredBounds };
@@ -988,7 +988,7 @@ export async function createWindow({
 
   window.once("ready-to-show", () => {
     if (!isLiveWindow()) return;
-    // Capture runs need the deterministic Codex footprint; normal launches
+    // Capture runs need the deterministic Ava footprint; normal launches
     // must respect restored user bounds and only fix real shelf states.
     ensureStableBounds(process.env.PI_DESKTOP_CAPTURE === "1");
     window.show();
@@ -1005,7 +1005,7 @@ export async function createWindow({
             const { writeFileSync } = await import("node:fs");
             const shot = async (name: string) => {
               const img = await windowState.mainWindow!.webContents.capturePage();
-              writeFileSync(`/tmp/codex-screens/${name}.png`, img.toPNG());
+              writeFileSync(`/tmp/ava-screens/${name}.png`, img.toPNG());
               console.log("CAPTURE", name, img.getSize());
             };
             const clickNav = async (nav: string) => {
@@ -1139,7 +1139,7 @@ export async function createWindow({
               // provider fixture optional
             }
             await new Promise((r) => setTimeout(r, 500));
-            // Prefer a titled empty recent (Codex gold selects a real title, not "New task").
+            // Prefer a titled empty recent (Ava gold selects a real title, not "New task").
             try {
               await windowState.mainWindow!.webContents.executeJavaScript(`
                 (() => {
@@ -1424,7 +1424,7 @@ export async function createWindow({
               await probeWorkPanelHeader("minimum-supported");
               await shot("pi-panel-minimum-supported");
             } finally {
-              windowState.mainWindow!.setSize(CODEX_BOUNDS.width, CODEX_BOUNDS.height, false);
+              windowState.mainWindow!.setSize(AVA_BOUNDS.width, AVA_BOUNDS.height, false);
               windowState.mainWindow!.setMinimumSize(
                 workPanelMinimumWindowWidth(),
                 windowMinHeight,
@@ -1587,7 +1587,7 @@ export async function createWindow({
                 window.__PI_DESKTOP__?.seedNotifications?.(0);
               `);
             } finally {
-              windowState.mainWindow!.setSize(CODEX_BOUNDS.width, CODEX_BOUNDS.height, false);
+              windowState.mainWindow!.setSize(AVA_BOUNDS.width, AVA_BOUNDS.height, false);
               windowState.mainWindow!.setMinimumSize(
                 workPanelMinimumWindowWidth(),
                 windowMinHeight,

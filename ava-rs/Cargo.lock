@@ -419,17 +419,17 @@ name = "app_test_support"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "ava-app-server-protocol",
+ "ava-config",
+ "ava-core",
+ "ava-exec-server",
+ "ava-features",
+ "ava-login",
+ "ava-model-provider",
+ "ava-protocol",
+ "ava-utils-cargo-bin",
  "base64 0.22.1",
  "chrono",
- "codex-app-server-protocol",
- "codex-config",
- "codex-core",
- "codex-exec-server",
- "codex-features",
- "codex-login",
- "codex-model-provider",
- "codex-protocol",
- "codex-utils-cargo-bin",
  "core_test_support",
  "pretty_assertions",
  "serde",
@@ -888,6 +888,3339 @@ name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
+
+[[package]]
+name = "ava-agent-extension"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-core",
+ "ava-protocol",
+ "core_test_support",
+ "pretty_assertions",
+ "tokio",
+]
+
+[[package]]
+name = "ava-agent-graph-store"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-state",
+ "ava-utils-absolute-path",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "ava-agent-identity"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-http-client",
+ "ava-protocol",
+ "base64 0.22.1",
+ "chrono",
+ "crypto_box",
+ "ed25519-dalek",
+ "http 1.4.0",
+ "jsonwebtoken",
+ "pretty_assertions",
+ "rand 0.9.3",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+]
+
+[[package]]
+name = "ava-agent-roles"
+version = "0.0.0"
+dependencies = [
+ "ava-config",
+ "ava-file-system",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "serde",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+]
+
+[[package]]
+name = "ava-analytics"
+version = "0.0.0"
+dependencies = [
+ "ava-app-server-protocol",
+ "ava-git-utils",
+ "ava-login",
+ "ava-model-provider",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-state",
+ "ava-utils-absolute-path",
+ "os_info",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "sha1 0.10.6",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-ansi-escape"
+version = "0.0.0"
+dependencies = [
+ "ansi-to-tui",
+ "ratatui",
+ "tracing",
+]
+
+[[package]]
+name = "ava-api"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "assert_matches",
+ "async-channel",
+ "ava-client",
+ "ava-http-client",
+ "ava-protocol",
+ "ava-utils-rustls-provider",
+ "ava-websocket-client",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "eventsource-stream",
+ "futures",
+ "http 1.4.0",
+ "pretty_assertions",
+ "rcgen",
+ "regex-lite",
+ "rustls",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-test",
+ "tokio-tungstenite",
+ "tokio-util",
+ "tracing",
+ "tungstenite",
+ "url",
+ "uuid",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-app-server"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "app_test_support",
+ "ava-agent-extension",
+ "ava-analytics",
+ "ava-app-server-protocol",
+ "ava-app-server-transport",
+ "ava-arg0",
+ "ava-aws-auth",
+ "ava-backend-client",
+ "ava-browser-extension",
+ "ava-chatgpt",
+ "ava-cloud-config",
+ "ava-code-mode",
+ "ava-config",
+ "ava-connectors",
+ "ava-core",
+ "ava-core-plugins",
+ "ava-diagnostics",
+ "ava-exec-server",
+ "ava-extension-api",
+ "ava-external-agent-migration",
+ "ava-features",
+ "ava-feedback",
+ "ava-file-search",
+ "ava-file-watcher",
+ "ava-git-attribution",
+ "ava-git-utils",
+ "ava-goal-extension",
+ "ava-guardian-v2",
+ "ava-history-notes-extension",
+ "ava-home",
+ "ava-hooks",
+ "ava-http-client",
+ "ava-image-generation-extension",
+ "ava-login",
+ "ava-mcp",
+ "ava-mcp-extension",
+ "ava-memories-extension",
+ "ava-memories-write",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-models-manager",
+ "ava-network-proxy",
+ "ava-otel",
+ "ava-plugin",
+ "ava-prompts",
+ "ava-protocol",
+ "ava-queue-extension",
+ "ava-rmcp-client",
+ "ava-rollout",
+ "ava-sandboxing",
+ "ava-shell-command",
+ "ava-skills",
+ "ava-skills-extension",
+ "ava-state",
+ "ava-thread-store",
+ "ava-tools",
+ "ava-uds",
+ "ava-user-verification",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-cli",
+ "ava-utils-json-to-toml",
+ "ava-utils-path-uri",
+ "ava-utils-pty",
+ "ava-web-search-extension",
+ "ava-windows-sandbox",
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "clap",
+ "core_test_support",
+ "flate2",
+ "futures",
+ "hmac 0.12.1",
+ "http 1.4.0",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "pretty_assertions",
+ "rmcp",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "sha2 0.10.9",
+ "shlex",
+ "sqlx",
+ "tar",
+ "tempfile",
+ "test-case",
+ "thiserror 2.0.18",
+ "tikv-jemallocator",
+ "time",
+ "tokio",
+ "tokio-tungstenite",
+ "tokio-util",
+ "toml 0.9.11+spec-1.1.0",
+ "toml_edit 0.24.0+spec-1.1.0",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-app-server-client"
+version = "0.0.0"
+dependencies = [
+ "ava-app-server",
+ "ava-app-server-protocol",
+ "ava-arg0",
+ "ava-config",
+ "ava-core",
+ "ava-exec-server",
+ "ava-feedback",
+ "ava-protocol",
+ "ava-uds",
+ "ava-utils-absolute-path",
+ "ava-utils-rustls-provider",
+ "futures",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-tungstenite",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "ava-app-server-daemon"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-app-server-protocol",
+ "ava-app-server-transport",
+ "ava-http-client",
+ "ava-install-context",
+ "ava-uds",
+ "ava-utils-home-dir",
+ "blake3",
+ "futures",
+ "libc",
+ "pretty_assertions",
+ "semver",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ava-app-server-protocol"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-app-server-protocol-noop-macros",
+ "ava-experimental-api-macros",
+ "ava-extension-items",
+ "ava-history",
+ "ava-protocol",
+ "ava-rollout",
+ "ava-secrets",
+ "ava-shell-command",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-path-uri",
+ "ava-utils-redacted-string",
+ "inventory",
+ "pretty_assertions",
+ "rmcp",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "similar",
+ "strum_macros 0.28.0",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tracing",
+ "ts-rs",
+ "uuid",
+ "zstd",
+]
+
+[[package]]
+name = "ava-app-server-protocol-noop-macros"
+version = "0.0.0"
+
+[[package]]
+name = "ava-app-server-test-client"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-app-server-protocol",
+ "ava-core",
+ "ava-otel",
+ "ava-protocol",
+ "ava-utils-cli",
+ "clap",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "tungstenite",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "ava-app-server-transport"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-api",
+ "ava-app-server-protocol",
+ "ava-config",
+ "ava-core",
+ "ava-login",
+ "ava-model-provider",
+ "ava-protocol",
+ "ava-state",
+ "ava-uds",
+ "ava-utils-absolute-path",
+ "ava-utils-rustls-provider",
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "clap",
+ "constant_time_eq",
+ "futures",
+ "gethostname",
+ "hmac 0.12.1",
+ "httpdate",
+ "jsonwebtoken",
+ "libc",
+ "owo-colors",
+ "pretty_assertions",
+ "rand 0.9.3",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "signal-hook",
+ "tempfile",
+ "time",
+ "tokio",
+ "tokio-tungstenite",
+ "tokio-util",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "ava-apply-patch"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "assert_matches",
+ "ava-exec-server",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-path-uri",
+ "pretty_assertions",
+ "similar",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tree-sitter",
+ "tree-sitter-bash",
+]
+
+[[package]]
+name = "ava-arg0"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-apply-patch",
+ "ava-async-utils",
+ "ava-exec-server",
+ "ava-install-context",
+ "ava-linux-sandbox",
+ "ava-sandboxing",
+ "ava-shell-escalation",
+ "ava-utils-absolute-path",
+ "ava-utils-home-dir",
+ "ava-windows-sandbox",
+ "dotenvy",
+ "pathdiff",
+ "pretty_assertions",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "ava-async-utils"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+ "rand 0.9.3",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
+name = "ava-attachment-store"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+ "serde",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-aws-auth"
+version = "0.0.0"
+dependencies = [
+ "aws-config",
+ "aws-credential-types",
+ "aws-sigv4",
+ "aws-types",
+ "bytes",
+ "http 1.4.0",
+ "pretty_assertions",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "ava-backend-client"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-api",
+ "ava-backend-openapi-models",
+ "ava-http-client",
+ "ava-login",
+ "ava-model-provider",
+ "ava-protocol",
+ "http 1.4.0",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-backend-openapi-models"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_with",
+]
+
+[[package]]
+name = "ava-browser-extension"
+version = "0.0.0"
+dependencies = [
+ "ava-config",
+ "ava-core",
+ "ava-extension-api",
+ "ava-otel",
+ "ava-protocol",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "base64 0.22.1",
+ "chrono",
+ "futures",
+ "http 1.4.0",
+ "pretty_assertions",
+ "reqwest 0.12.28",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "url",
+ "uuid",
+ "which 8.0.0",
+]
+
+[[package]]
+name = "ava-build-info"
+version = "0.0.0"
+dependencies = [
+ "ava-install-context",
+ "pretty_assertions",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+]
+
+[[package]]
+name = "ava-bwrap"
+version = "0.0.0"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
+name = "ava-chatgpt"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-connectors",
+ "ava-core",
+ "ava-git-utils",
+ "ava-http-client",
+ "ava-login",
+ "ava-model-provider",
+ "ava-plugin",
+ "ava-utils-cargo-bin",
+ "ava-utils-cli",
+ "clap",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "ava-cli"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "app_test_support",
+ "assert_cmd",
+ "assert_matches",
+ "ava-api",
+ "ava-app-server",
+ "ava-app-server-daemon",
+ "ava-app-server-protocol",
+ "ava-app-server-test-client",
+ "ava-arg0",
+ "ava-aws-auth",
+ "ava-build-info",
+ "ava-chatgpt",
+ "ava-cloud-config",
+ "ava-cloud-tasks",
+ "ava-config",
+ "ava-core",
+ "ava-core-plugins",
+ "ava-exec",
+ "ava-exec-server",
+ "ava-execpolicy",
+ "ava-extension-api",
+ "ava-features",
+ "ava-git-attribution",
+ "ava-git-utils",
+ "ava-history",
+ "ava-home",
+ "ava-http-client",
+ "ava-install-context",
+ "ava-login",
+ "ava-mcp",
+ "ava-memories-write",
+ "ava-model-provider",
+ "ava-models-manager",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-responses-api-proxy",
+ "ava-rmcp-client",
+ "ava-rollout",
+ "ava-rollout-trace",
+ "ava-sandboxing",
+ "ava-skills-extension",
+ "ava-state",
+ "ava-stdio-to-uds",
+ "ava-tcp-tunnel",
+ "ava-terminal-detection",
+ "ava-thread-store",
+ "ava-tui",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-cli",
+ "ava-utils-path",
+ "ava-utils-path-uri",
+ "ava-utils-pty",
+ "ava-windows-sandbox",
+ "chrono",
+ "clap",
+ "clap_complete",
+ "crossterm",
+ "flate2",
+ "futures",
+ "http 1.4.0",
+ "insta",
+ "libc",
+ "os_info",
+ "owo-colors",
+ "predicates",
+ "pretty_assertions",
+ "regex-lite",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "supports-color 3.0.2",
+ "sys-locale",
+ "tar",
+ "tempfile",
+ "tikv-jemallocator",
+ "tokio",
+ "tokio-tungstenite",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "unicode-segmentation",
+ "url",
+ "vt100",
+ "which 8.0.0",
+ "windows-sys 0.52.0",
+ "wiremock",
+ "zstd",
+]
+
+[[package]]
+name = "ava-client"
+version = "0.0.0"
+dependencies = [
+ "ava-http-client",
+ "eventsource-stream",
+ "futures",
+ "http 1.4.0",
+ "rand 0.9.3",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-cloud-config"
+version = "0.0.0"
+dependencies = [
+ "ava-agent-identity",
+ "ava-async-utils",
+ "ava-backend-client",
+ "ava-config",
+ "ava-core",
+ "ava-http-client",
+ "ava-login",
+ "ava-otel",
+ "ava-protocol",
+ "base64 0.22.1",
+ "chrono",
+ "hmac 0.12.1",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-cloud-tasks"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-cloud-tasks-client",
+ "ava-cloud-tasks-mock-client",
+ "ava-core",
+ "ava-git-utils",
+ "ava-http-client",
+ "ava-login",
+ "ava-model-provider",
+ "ava-tui",
+ "ava-utils-cli",
+ "chrono",
+ "clap",
+ "crossterm",
+ "http 1.4.0",
+ "insta",
+ "owo-colors",
+ "pretty_assertions",
+ "ratatui",
+ "serde",
+ "serde_json",
+ "supports-color 3.0.2",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber",
+ "unicode-segmentation",
+ "unicode-width 0.2.1",
+]
+
+[[package]]
+name = "ava-cloud-tasks-client"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-api",
+ "ava-backend-client",
+ "ava-git-utils",
+ "ava-http-client",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "ava-cloud-tasks-mock-client"
+version = "0.0.0"
+dependencies = [
+ "ava-cloud-tasks-client",
+ "chrono",
+ "diffy",
+]
+
+[[package]]
+name = "ava-code-mode"
+version = "0.0.0"
+dependencies = [
+ "ava-code-mode-protocol",
+ "ava-http-client",
+ "ava-install-context",
+ "ava-otel",
+ "ava-protocol",
+ "futures",
+ "http-body-util",
+ "pretty_assertions",
+ "prost",
+ "reqwest 0.12.28",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tower",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "ava-code-mode-host"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-code-mode",
+ "ava-code-mode-protocol",
+ "ava-code-mode-runtime",
+ "ava-otel",
+ "ava-otel-trace-websocket",
+ "ava-protocol",
+ "ava-utils-cargo-bin",
+ "axum",
+ "clap",
+ "futures",
+ "pretty_assertions",
+ "prost",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "ava-code-mode-protocol"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "glob",
+ "pretty_assertions",
+ "prost",
+ "protoc-bin-vendored",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
+name = "ava-code-mode-runtime"
+version = "0.0.0"
+dependencies = [
+ "ava-code-mode-protocol",
+ "ava-protocol",
+ "base64 0.22.1",
+ "deno_core_icudata",
+ "futures",
+ "opentelemetry",
+ "pretty_assertions",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "v8",
+]
+
+[[package]]
+name = "ava-collaboration-mode-templates"
+version = "0.0.0"
+
+[[package]]
+name = "ava-config"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-execpolicy",
+ "ava-features",
+ "ava-file-system",
+ "ava-git-utils",
+ "ava-model-provider-info",
+ "ava-network-proxy",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path",
+ "ava-utils-path-uri",
+ "ava-utils-redacted-string",
+ "ava-windows-sandbox",
+ "base64 0.22.1",
+ "core-foundation 0.9.4",
+ "dns-lookup",
+ "dunce",
+ "futures",
+ "gethostname",
+ "indexmap 2.14.0",
+ "libc",
+ "multimap",
+ "pretty_assertions",
+ "prost",
+ "regex-lite",
+ "schemars 0.8.22",
+ "serde",
+ "serde_ignored",
+ "serde_json",
+ "serde_path_to_error",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-stream",
+ "toml 0.9.11+spec-1.1.0",
+ "toml_edit 0.24.0+spec-1.1.0",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "tracing",
+ "wildmatch",
+ "winapi-util",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ava-config-schema"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-config",
+ "clap",
+]
+
+[[package]]
+name = "ava-connectors"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "ava-config",
+ "ava-login",
+ "ava-otel",
+ "ava-plugin",
+ "ava-protocol",
+ "indexmap 2.14.0",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "sha1 0.10.6",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "urlencoding",
+]
+
+[[package]]
+name = "ava-connectors-extension"
+version = "0.0.0"
+dependencies = [
+ "ava-connectors",
+ "ava-core-plugins",
+ "ava-file-system",
+ "ava-plugin",
+ "ava-utils-path-uri",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "ava-context-fragments"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-utils-string",
+ "pretty_assertions",
+ "serde_json",
+]
+
+[[package]]
+name = "ava-core"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "assert_cmd",
+ "assert_matches",
+ "async-channel",
+ "ava-agent-graph-store",
+ "ava-agent-roles",
+ "ava-analytics",
+ "ava-api",
+ "ava-app-server-protocol",
+ "ava-apply-patch",
+ "ava-async-utils",
+ "ava-attachment-store",
+ "ava-client",
+ "ava-code-mode",
+ "ava-config",
+ "ava-connectors",
+ "ava-context-fragments",
+ "ava-core-plugins",
+ "ava-diagnostics",
+ "ava-exec-server",
+ "ava-exec-server-test-support",
+ "ava-execpolicy",
+ "ava-extension-api",
+ "ava-extension-items",
+ "ava-features",
+ "ava-feedback",
+ "ava-file-system",
+ "ava-git-utils",
+ "ava-guardian-context",
+ "ava-guardian-reviewer",
+ "ava-history",
+ "ava-home",
+ "ava-hooks",
+ "ava-http-client",
+ "ava-image-generation-extension",
+ "ava-install-context",
+ "ava-login",
+ "ava-mcp",
+ "ava-memories-read",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-models-manager",
+ "ava-network-proxy",
+ "ava-otel",
+ "ava-plugin",
+ "ava-prompts",
+ "ava-protocol",
+ "ava-response-debug-context",
+ "ava-rmcp-client",
+ "ava-rollout",
+ "ava-rollout-trace",
+ "ava-sandboxing",
+ "ava-shell-command",
+ "ava-shell-escalation",
+ "ava-skills",
+ "ava-skills-extension",
+ "ava-state",
+ "ava-terminal-detection",
+ "ava-test-binary-support",
+ "ava-thread-store",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "ava-utils-audio",
+ "ava-utils-cache",
+ "ava-utils-cargo-bin",
+ "ava-utils-git-discovery",
+ "ava-utils-home-dir",
+ "ava-utils-image",
+ "ava-utils-output-truncation",
+ "ava-utils-path",
+ "ava-utils-path-uri",
+ "ava-utils-plugins",
+ "ava-utils-pty",
+ "ava-utils-redacted-string",
+ "ava-utils-stream-parser",
+ "ava-utils-string",
+ "ava-web-search-extension",
+ "ava-windows-sandbox",
+ "base64 0.22.1",
+ "bm25",
+ "chrono",
+ "core_test_support",
+ "ctor 0.6.3",
+ "dirs",
+ "dunce",
+ "eventsource-stream",
+ "futures",
+ "http 1.4.0",
+ "iana-time-zone",
+ "image",
+ "indexmap 2.14.0",
+ "insta",
+ "libc",
+ "maplit",
+ "once_cell",
+ "openssl-sys",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "predicates",
+ "pretty_assertions",
+ "rand 0.9.3",
+ "regex-lite",
+ "rmcp",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "sha1 0.10.6",
+ "shlex",
+ "similar",
+ "tempfile",
+ "test-case",
+ "test-log",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-tungstenite",
+ "tokio-util",
+ "toml 0.9.11+spec-1.1.0",
+ "toml_edit 0.24.0+spec-1.1.0",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "tracing-test",
+ "url",
+ "uuid",
+ "walkdir",
+ "which 8.0.0",
+ "whoami 1.6.1",
+ "wiremock",
+ "zstd",
+]
+
+[[package]]
+name = "ava-core-api"
+version = "0.0.0"
+dependencies = [
+ "ava-analytics",
+ "ava-app-server-protocol",
+ "ava-arg0",
+ "ava-config",
+ "ava-core",
+ "ava-exec-server",
+ "ava-extension-api",
+ "ava-features",
+ "ava-history",
+ "ava-home",
+ "ava-image-generation-extension",
+ "ava-login",
+ "ava-model-provider-info",
+ "ava-models-manager",
+ "ava-protocol",
+ "ava-state",
+ "ava-utils-absolute-path",
+]
+
+[[package]]
+name = "ava-core-plugins"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-analytics",
+ "ava-app-server-protocol",
+ "ava-config",
+ "ava-connectors",
+ "ava-exec-server",
+ "ava-exec-server-test-support",
+ "ava-git-utils",
+ "ava-hooks",
+ "ava-http-client",
+ "ava-login",
+ "ava-mcp",
+ "ava-model-provider",
+ "ava-otel",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-shell-command",
+ "ava-skills",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "ava-utils-path",
+ "ava-utils-path-uri",
+ "ava-utils-plugins",
+ "chrono",
+ "dirs",
+ "flate2",
+ "futures",
+ "http 1.4.0",
+ "libc",
+ "pretty_assertions",
+ "regex",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "serde_yaml",
+ "sha2 0.10.9",
+ "tar",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-test",
+ "url",
+ "uuid",
+ "wiremock",
+ "zip",
+]
+
+[[package]]
+name = "ava-diagnostics"
+version = "0.0.0"
+dependencies = [
+ "libc",
+ "pretty_assertions",
+]
+
+[[package]]
+name = "ava-exec"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "ava-app-server-client",
+ "ava-app-server-protocol",
+ "ava-apply-patch",
+ "ava-arg0",
+ "ava-cloud-config",
+ "ava-config",
+ "ava-core",
+ "ava-features",
+ "ava-feedback",
+ "ava-git-utils",
+ "ava-history",
+ "ava-login",
+ "ava-model-provider-info",
+ "ava-otel",
+ "ava-protocol",
+ "ava-rollout",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-cli",
+ "ava-utils-oss",
+ "ava-utils-path-uri",
+ "ava-utils-sandbox-summary",
+ "ava-worktree",
+ "clap",
+ "core_test_support",
+ "libc",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "owo-colors",
+ "predicates",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "supports-color 3.0.2",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "ts-rs",
+ "uuid",
+ "walkdir",
+ "wiremock",
+ "zstd",
+]
+
+[[package]]
+name = "ava-exec-server"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "ava-api",
+ "ava-build-info",
+ "ava-config",
+ "ava-exec-server-protocol",
+ "ava-exec-server-test-support",
+ "ava-file-system",
+ "ava-http-client",
+ "ava-network-proxy",
+ "ava-otel",
+ "ava-protocol",
+ "ava-sandboxing",
+ "ava-shell-command",
+ "ava-test-binary-support",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-home-dir",
+ "ava-utils-path-uri",
+ "ava-utils-pty",
+ "ava-utils-rustls-provider",
+ "ava-websocket-client",
+ "axum",
+ "base64 0.22.1",
+ "bytes",
+ "clatter",
+ "ctor 0.6.3",
+ "dirs",
+ "futures",
+ "http 1.4.0",
+ "libc",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "pretty_assertions",
+ "prost",
+ "rcgen",
+ "rustix 1.1.4",
+ "rustls",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "tempfile",
+ "test-case",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-tungstenite",
+ "tokio-util",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "windows-sys 0.52.0",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-exec-server-protocol"
+version = "0.0.0"
+dependencies = [
+ "ava-file-system",
+ "ava-mxc-sandbox",
+ "ava-network-proxy",
+ "ava-protocol",
+ "ava-shell-command",
+ "ava-utils-path-uri",
+ "base64 0.22.1",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ava-exec-server-test-support"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-exec-server",
+ "ava-http-client",
+ "futures",
+ "prost",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-execpolicy"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-utils-absolute-path",
+ "clap",
+ "multimap",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "shlex",
+ "starlark",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "ava-experimental-api-macros"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "ava-extension-api"
+version = "0.0.0"
+dependencies = [
+ "ava-config",
+ "ava-context-fragments",
+ "ava-exec-server-protocol",
+ "ava-file-system",
+ "ava-history",
+ "ava-mcp",
+ "ava-protocol",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "pretty_assertions",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "ava-extension-items"
+version = "0.0.0"
+dependencies = [
+ "ava-utils-absolute-path",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "ts-rs",
+]
+
+[[package]]
+name = "ava-external-agent-migration"
+version = "0.0.0"
+dependencies = [
+ "ava-analytics",
+ "ava-app-server-protocol",
+ "ava-config",
+ "ava-core",
+ "ava-core-plugins",
+ "ava-hooks",
+ "ava-login",
+ "ava-memories-write",
+ "ava-otel",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-rollout",
+ "ava-thread-store",
+ "ava-utils-output-truncation",
+ "chrono",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2 0.10.9",
+ "tempfile",
+ "tokio",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+]
+
+[[package]]
+name = "ava-features"
+version = "0.0.0"
+dependencies = [
+ "ava-network-proxy",
+ "ava-otel",
+ "ava-protocol",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+]
+
+[[package]]
+name = "ava-feedback"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-http-client",
+ "ava-login",
+ "ava-protocol",
+ "ava-rollout",
+ "bytes",
+ "flate2",
+ "http 1.4.0",
+ "httpdate",
+ "log",
+ "mime_guess",
+ "pretty_assertions",
+ "sentry",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-file-search"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossbeam-channel",
+ "ignore",
+ "nucleo",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "ava-file-system"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "bytes",
+ "futures",
+ "serde",
+]
+
+[[package]]
+name = "ava-file-watcher"
+version = "0.0.0"
+dependencies = [
+ "notify",
+ "pretty_assertions",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-git-attribution"
+version = "0.0.0"
+dependencies = [
+ "ava-backend-client",
+ "ava-extension-api",
+ "ava-http-client",
+ "ava-login",
+ "serde_json",
+ "tokio",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-git-utils"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-file-system",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "ava-utils-pty",
+ "chrono",
+ "futures",
+ "gix",
+ "once_cell",
+ "pretty_assertions",
+ "regex",
+ "schemars 0.8.22",
+ "serde",
+ "similar",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "ts-rs",
+ "walkdir",
+]
+
+[[package]]
+name = "ava-goal-extension"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-analytics",
+ "ava-core",
+ "ava-extension-api",
+ "ava-otel",
+ "ava-prompts",
+ "ava-protocol",
+ "ava-rollout",
+ "ava-state",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "ava-utils-template",
+ "chrono",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-guardian-context"
+version = "0.0.0"
+dependencies = [
+ "ava-context-fragments",
+ "ava-history",
+ "ava-protocol",
+ "pretty_assertions",
+ "serde_json",
+]
+
+[[package]]
+name = "ava-guardian-reviewer"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-analytics",
+ "ava-extension-api",
+ "ava-feedback",
+ "ava-guardian-context",
+ "ava-mcp",
+ "ava-otel",
+ "ava-prompts",
+ "ava-protocol",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "pretty_assertions",
+ "rand 0.9.3",
+ "serde",
+ "serde_json",
+ "test-case",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "ava-guardian-v2"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-analytics",
+ "ava-api",
+ "ava-config",
+ "ava-context-fragments",
+ "ava-core",
+ "ava-extension-api",
+ "ava-features",
+ "ava-guardian-context",
+ "ava-guardian-reviewer",
+ "ava-history",
+ "ava-http-client",
+ "ava-login",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-prompts",
+ "ava-protocol",
+ "core_test_support",
+ "dirs",
+ "http 1.4.0",
+ "pretty_assertions",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "ava-history"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-protocol",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ava-history-notes-extension"
+version = "0.0.0"
+dependencies = [
+ "ava-analytics",
+ "ava-api",
+ "ava-client",
+ "ava-config",
+ "ava-core",
+ "ava-extension-api",
+ "ava-login",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-protocol",
+ "ava-tools",
+ "ava-utils-output-truncation",
+ "core_test_support",
+ "http 1.4.0",
+ "pretty_assertions",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-home"
+version = "0.0.0"
+dependencies = [
+ "ava-extension-api",
+ "ava-utils-absolute-path",
+ "pretty_assertions",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-hooks"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "ava-config",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-output-truncation",
+ "ava-utils-path-uri",
+ "ava-utils-pty",
+ "chrono",
+ "futures",
+ "pretty_assertions",
+ "regex",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "ava-http-client"
+version = "0.0.0"
+dependencies = [
+ "ava-utils-cargo-bin",
+ "ava-utils-rustls-provider",
+ "bytes",
+ "futures",
+ "http 1.4.0",
+ "native-tls",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "pretty_assertions",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls",
+ "rustls-native-certs",
+ "rustls-pki-types",
+ "rustls-platform-verifier",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "system-configuration",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "windows-sys 0.52.0",
+ "zstd",
+]
+
+[[package]]
+name = "ava-image-generation-extension"
+version = "0.0.0"
+dependencies = [
+ "ava-api",
+ "ava-core",
+ "ava-exec-server",
+ "ava-extension-api",
+ "ava-extension-items",
+ "ava-login",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-protocol",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "ava-utils-image",
+ "ava-utils-path-uri",
+ "base64 0.22.1",
+ "http 1.4.0",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-install-context"
+version = "0.0.0"
+dependencies = [
+ "ava-utils-absolute-path",
+ "ava-utils-home-dir",
+ "pretty_assertions",
+ "semver",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "ava-keyring-store"
+version = "0.0.0"
+dependencies = [
+ "keyring",
+ "tracing",
+]
+
+[[package]]
+name = "ava-linux-sandbox"
+version = "0.0.0"
+dependencies = [
+ "ava-core",
+ "ava-install-context",
+ "ava-network-proxy",
+ "ava-process-hardening",
+ "ava-protocol",
+ "ava-sandboxing",
+ "ava-uds",
+ "ava-utils-absolute-path",
+ "clap",
+ "globset",
+ "landlock",
+ "libc",
+ "pretty_assertions",
+ "rustix 1.1.4",
+ "seccompiler",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "test-case",
+ "tokio",
+ "url",
+]
+
+[[package]]
+name = "ava-lmstudio"
+version = "0.0.0"
+dependencies = [
+ "ava-core",
+ "ava-http-client",
+ "ava-model-provider-info",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "which 8.0.0",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-login"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-agent-identity",
+ "ava-config",
+ "ava-http-client",
+ "ava-keyring-store",
+ "ava-model-provider-info",
+ "ava-otel",
+ "ava-protocol",
+ "ava-secrets",
+ "ava-terminal-detection",
+ "ava-utils-template",
+ "ava-workload-identity",
+ "base64 0.22.1",
+ "chrono",
+ "core_test_support",
+ "http 1.4.0",
+ "jsonwebtoken",
+ "keyring",
+ "once_cell",
+ "os_info",
+ "pretty_assertions",
+ "rand 0.9.3",
+ "regex-lite",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tiny_http",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "urlencoding",
+ "webbrowser",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-mcp"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "assert_matches",
+ "async-channel",
+ "ava-api",
+ "ava-async-utils",
+ "ava-config",
+ "ava-connectors",
+ "ava-diagnostics",
+ "ava-exec-server",
+ "ava-exec-server-test-support",
+ "ava-login",
+ "ava-model-provider",
+ "ava-otel",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-rmcp-client",
+ "ava-utils-path-uri",
+ "ava-utils-plugins",
+ "futures",
+ "insta",
+ "lru",
+ "pretty_assertions",
+ "regex-lite",
+ "rmcp",
+ "serde",
+ "serde_json",
+ "sha1 0.10.6",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "ava-mcp-extension"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-config",
+ "ava-connectors",
+ "ava-connectors-extension",
+ "ava-core",
+ "ava-core-plugins",
+ "ava-exec-server",
+ "ava-exec-server-test-support",
+ "ava-extension-api",
+ "ava-features",
+ "ava-login",
+ "ava-mcp",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "axum",
+ "core_test_support",
+ "futures",
+ "pretty_assertions",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-memories-extension"
+version = "0.0.0"
+dependencies = [
+ "ava-config",
+ "ava-core",
+ "ava-extension-api",
+ "ava-features",
+ "ava-otel",
+ "ava-protocol",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "ava-utils-output-truncation",
+ "ava-utils-template",
+ "chrono",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "ava-memories-read"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-shell-command",
+ "ava-utils-absolute-path",
+ "pretty_assertions",
+]
+
+[[package]]
+name = "ava-memories-write"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-backend-client",
+ "ava-config",
+ "ava-core",
+ "ava-features",
+ "ava-git-utils",
+ "ava-login",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-models-manager",
+ "ava-otel",
+ "ava-protocol",
+ "ava-rollout",
+ "ava-rollout-trace",
+ "ava-secrets",
+ "ava-state",
+ "ava-terminal-detection",
+ "ava-utils-absolute-path",
+ "ava-utils-output-truncation",
+ "ava-utils-template",
+ "chrono",
+ "core_test_support",
+ "futures",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "uuid",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-mermaid"
+version = "0.0.0"
+dependencies = [
+ "insta",
+ "pretty_assertions",
+ "unicode-width 0.2.1",
+]
+
+[[package]]
+name = "ava-message-history"
+version = "0.0.0"
+dependencies = [
+ "ava-config",
+ "memchr",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-model-provider"
+version = "0.0.0"
+dependencies = [
+ "ava-agent-identity",
+ "ava-api",
+ "ava-aws-auth",
+ "ava-feedback",
+ "ava-http-client",
+ "ava-keyring-store",
+ "ava-login",
+ "ava-model-provider-info",
+ "ava-models-manager",
+ "ava-otel",
+ "ava-protocol",
+ "ava-response-debug-context",
+ "ava-secrets",
+ "ava-utils-redacted-string",
+ "base64 0.22.1",
+ "chrono",
+ "http 1.4.0",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "url",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-model-provider-info"
+version = "0.0.0"
+dependencies = [
+ "ava-api",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-redacted-string",
+ "dirs",
+ "http 1.4.0",
+ "maplit",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "toml 0.9.11+spec-1.1.0",
+ "url",
+]
+
+[[package]]
+name = "ava-models-manager"
+version = "0.0.0"
+dependencies = [
+ "ava-http-client",
+ "ava-login",
+ "ava-otel",
+ "ava-prompts",
+ "ava-protocol",
+ "ava-utils-output-truncation",
+ "chrono",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-mxc-sandbox"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "appcontainer_common",
+ "ava-network-proxy",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "ava-windows-sandbox",
+ "learning_mode_windows",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tracelogging",
+ "windows-sys 0.61.2",
+ "wxc_common",
+]
+
+[[package]]
+name = "ava-network-proxy"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-utils-absolute-path",
+ "ava-utils-home-dir",
+ "ava-utils-path-uri",
+ "ava-utils-rustls-provider",
+ "ava-windows-sandbox",
+ "base64 0.22.1",
+ "chrono",
+ "clap",
+ "globset",
+ "opentelemetry",
+ "pretty_assertions",
+ "rama-core",
+ "rama-dns",
+ "rama-http",
+ "rama-http-backend",
+ "rama-net",
+ "rama-socks5",
+ "rama-tcp",
+ "rama-tls-rustls",
+ "rama-unix",
+ "rand 0.9.3",
+ "rand_regex",
+ "regex",
+ "regex-automata",
+ "regex-syntax",
+ "rustls-native-certs",
+ "schannel",
+ "schemars 0.8.22",
+ "security-framework 3.5.1",
+ "serde",
+ "serde_ignored",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ava-ollama"
+version = "0.0.0"
+dependencies = [
+ "assert_matches",
+ "async-stream",
+ "ava-core",
+ "ava-http-client",
+ "ava-model-provider-info",
+ "bytes",
+ "futures",
+ "memchr",
+ "pretty_assertions",
+ "semver",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-otel"
+version = "0.0.0"
+dependencies = [
+ "ava-api",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-string",
+ "chrono",
+ "eventsource-stream",
+ "gethostname",
+ "http 1.4.0",
+ "libc",
+ "opentelemetry",
+ "opentelemetry-appender-tracing",
+ "opentelemetry-otlp",
+ "opentelemetry-semantic-conventions",
+ "opentelemetry_sdk",
+ "os_info",
+ "pretty_assertions",
+ "reqwest 0.12.28",
+ "seccompiler",
+ "serde",
+ "serde_json",
+ "strum_macros 0.28.0",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "ava-otel-trace-websocket"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "futures",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-plugin"
+version = "0.0.0"
+dependencies = [
+ "ava-config",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "ava-utils-plugins",
+ "pretty_assertions",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "ava-process-hardening"
+version = "0.0.0"
+dependencies = [
+ "libc",
+ "pretty_assertions",
+]
+
+[[package]]
+name = "ava-prompts"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-collaboration-mode-templates",
+ "ava-context-fragments",
+ "ava-execpolicy",
+ "ava-git-utils",
+ "ava-guardian-context",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-template",
+ "pretty_assertions",
+ "tracing",
+]
+
+[[package]]
+name = "ava-protocol"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-async-utils",
+ "ava-execpolicy",
+ "ava-extension-items",
+ "ava-http-client",
+ "ava-network-proxy",
+ "ava-utils-absolute-path",
+ "ava-utils-image",
+ "ava-utils-path-uri",
+ "ava-utils-redacted-string",
+ "ava-utils-string",
+ "chardetng",
+ "chrono",
+ "encoding_rs",
+ "gix-url",
+ "globset",
+ "http 1.4.0",
+ "icu_decimal",
+ "icu_locale_core",
+ "icu_provider",
+ "landlock",
+ "pretty_assertions",
+ "quick-xml 0.41.0",
+ "schemars 0.8.22",
+ "seccompiler",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "strum 0.27.2",
+ "strum_macros 0.28.0",
+ "sys-locale",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "ts-rs",
+ "uuid",
+ "wildmatch",
+]
+
+[[package]]
+name = "ava-queue-extension"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-core",
+ "ava-extension-api",
+ "ava-protocol",
+ "ava-state",
+ "ava-thread-store",
+ "ava-utils-absolute-path",
+ "core_test_support",
+ "pretty_assertions",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "ava-realtime-webrtc"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-build-info",
+ "ava-install-context",
+ "ava-utils-pty",
+ "ctor 0.6.3",
+ "futures",
+ "libc",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-response-debug-context"
+version = "0.0.0"
+dependencies = [
+ "ava-api",
+ "base64 0.22.1",
+ "http 1.4.0",
+ "pretty_assertions",
+ "serde_json",
+]
+
+[[package]]
+name = "ava-responses-api-proxy"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-process-hardening",
+ "clap",
+ "ctor 0.6.3",
+ "libc",
+ "pretty_assertions",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tiny_http",
+ "zeroize",
+]
+
+[[package]]
+name = "ava-rmcp-client"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-api",
+ "ava-config",
+ "ava-exec-server",
+ "ava-http-client",
+ "ava-keyring-store",
+ "ava-network-proxy",
+ "ava-protocol",
+ "ava-secrets",
+ "ava-utils-cargo-bin",
+ "ava-utils-home-dir",
+ "ava-utils-path-uri",
+ "ava-utils-pty",
+ "axum",
+ "base64 0.22.1",
+ "bytes",
+ "futures",
+ "http 1.4.0",
+ "keyring",
+ "libc",
+ "memchr",
+ "oauth2",
+ "pretty_assertions",
+ "rmcp",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "sha2 0.10.9",
+ "sse-stream",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tiny_http",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-test",
+ "url",
+ "urlencoding",
+ "webbrowser",
+ "which 8.0.0",
+ "windows-sys 0.52.0",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-rollout"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-extension-items",
+ "ava-file-search",
+ "ava-git-utils",
+ "ava-history",
+ "ava-otel",
+ "ava-protocol",
+ "ava-state",
+ "ava-utils-absolute-path",
+ "ava-utils-path",
+ "chrono",
+ "pretty_assertions",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+ "zstd",
+]
+
+[[package]]
+name = "ava-rollout-trace"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-code-mode",
+ "ava-protocol",
+ "http 1.4.0",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "ava-sandboxing"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-mxc-sandbox",
+ "ava-network-proxy",
+ "ava-otel",
+ "ava-protocol",
+ "ava-uds",
+ "ava-utils-absolute-path",
+ "ava-utils-home-dir",
+ "ava-utils-path-uri",
+ "ava-utils-pty",
+ "ava-windows-sandbox",
+ "dunce",
+ "libc",
+ "pretty_assertions",
+ "regex-lite",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "url",
+ "which 8.0.0",
+]
+
+[[package]]
+name = "ava-secrets"
+version = "0.0.0"
+dependencies = [
+ "age",
+ "anyhow",
+ "ava-git-utils",
+ "ava-keyring-store",
+ "base64 0.22.1",
+ "keyring",
+ "pretty_assertions",
+ "rand 0.9.3",
+ "regex",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
+name = "ava-shell-command"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "base64 0.22.1",
+ "libc",
+ "once_cell",
+ "pretty_assertions",
+ "regex",
+ "serde",
+ "serde_json",
+ "shlex",
+ "tempfile",
+ "tree-sitter",
+ "tree-sitter-bash",
+ "tree-sitter-powershell",
+ "url",
+ "which 8.0.0",
+]
+
+[[package]]
+name = "ava-shell-escalation"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "clap",
+ "libc",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "socket2 0.6.3",
+ "tempfile",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "ava-skills"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-shell-command",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "include_dir",
+ "pretty_assertions",
+ "serde",
+ "serde_yaml",
+ "shlex",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "ava-skills-extension"
+version = "0.0.0"
+dependencies = [
+ "assert_matches",
+ "ava-analytics",
+ "ava-config",
+ "ava-exec-server",
+ "ava-extension-api",
+ "ava-mcp",
+ "ava-models-manager",
+ "ava-otel",
+ "ava-protocol",
+ "ava-skills",
+ "ava-tools",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-path-uri",
+ "ava-utils-plugins",
+ "ava-utils-string",
+ "dirs",
+ "dunce",
+ "futures",
+ "insta",
+ "opentelemetry_sdk",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "tokio",
+ "toml 0.9.11+spec-1.1.0",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "ava-state"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-git-utils",
+ "ava-history",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "chrono",
+ "libsqlite3-sys",
+ "log",
+ "pretty_assertions",
+ "scopeguard",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "strum 0.27.2",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "ava-stdio-to-uds"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-uds",
+ "ava-utils-cargo-bin",
+ "pretty_assertions",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "ava-tcp-tunnel"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "clap",
+ "h3",
+ "h3-quinn",
+ "http 1.4.0",
+ "pretty_assertions",
+ "quinn",
+ "rand 0.9.3",
+ "rcgen",
+ "rustls",
+ "rustls-native-certs",
+ "serde_json",
+ "tokio",
+ "url",
+]
+
+[[package]]
+name = "ava-terminal-detection"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+ "tracing",
+]
+
+[[package]]
+name = "ava-test-binary-support"
+version = "0.0.0"
+dependencies = [
+ "ava-arg0",
+ "tempfile",
+]
+
+[[package]]
+name = "ava-thread-manager-sample"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-core-api",
+ "clap",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "ava-thread-store"
+version = "0.0.0"
+dependencies = [
+ "ava-app-server-protocol",
+ "ava-extension-items",
+ "ava-git-utils",
+ "ava-install-context",
+ "ava-otel",
+ "ava-protocol",
+ "ava-rollout",
+ "ava-state",
+ "ava-utils-absolute-path",
+ "ava-utils-path",
+ "ava-utils-path-uri",
+ "chrono",
+ "futures",
+ "pretty_assertions",
+ "pulldown-cmark",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
+ "zstd",
+]
+
+[[package]]
+name = "ava-tools"
+version = "0.0.0"
+dependencies = [
+ "ava-code-mode",
+ "ava-connectors",
+ "ava-extension-items",
+ "ava-features",
+ "ava-file-system",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-output-truncation",
+ "ava-utils-string",
+ "bitflags 2.13.1",
+ "jsonptr",
+ "pretty_assertions",
+ "rmcp",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+ "urlencoding",
+]
+
+[[package]]
+name = "ava-tui"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "app_test_support",
+ "arboard",
+ "assert_matches",
+ "ava-ansi-escape",
+ "ava-app-server-client",
+ "ava-app-server-daemon",
+ "ava-app-server-protocol",
+ "ava-arg0",
+ "ava-backend-client",
+ "ava-build-info",
+ "ava-cloud-config",
+ "ava-config",
+ "ava-connectors",
+ "ava-context-fragments",
+ "ava-core-plugins",
+ "ava-exec-server",
+ "ava-features",
+ "ava-feedback",
+ "ava-file-search",
+ "ava-git-utils",
+ "ava-history",
+ "ava-http-client",
+ "ava-install-context",
+ "ava-login",
+ "ava-mcp",
+ "ava-mermaid",
+ "ava-message-history",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-models-manager",
+ "ava-otel",
+ "ava-plugin",
+ "ava-protocol",
+ "ava-realtime-webrtc",
+ "ava-rollout",
+ "ava-sandboxing",
+ "ava-shell-command",
+ "ava-state",
+ "ava-terminal-detection",
+ "ava-uds",
+ "ava-utils-absolute-path",
+ "ava-utils-approval-presets",
+ "ava-utils-cargo-bin",
+ "ava-utils-cli",
+ "ava-utils-elapsed",
+ "ava-utils-fuzzy-match",
+ "ava-utils-home-dir",
+ "ava-utils-oss",
+ "ava-utils-path",
+ "ava-utils-path-uri",
+ "ava-utils-plugins",
+ "ava-utils-sandbox-summary",
+ "ava-utils-sleep-inhibitor",
+ "ava-utils-string",
+ "ava-windows-sandbox",
+ "ava-worktree",
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "clap",
+ "color-eyre",
+ "core_test_support",
+ "crossterm",
+ "derive_more 2.1.1",
+ "diffy",
+ "dirs",
+ "dunce",
+ "futures",
+ "http 1.4.0",
+ "image",
+ "insta",
+ "itertools 0.14.0",
+ "lazy_static",
+ "libc",
+ "objc2-app-kit",
+ "pathdiff",
+ "pretty_assertions",
+ "pulldown-cmark",
+ "rand 0.9.3",
+ "ratatui",
+ "ratatui-macros",
+ "regex-lite",
+ "reqwest 0.12.28",
+ "rmcp",
+ "semver",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "sha2 0.10.9",
+ "shlex",
+ "strum 0.27.2",
+ "strum_macros 0.28.0",
+ "supports-color 3.0.2",
+ "syntect",
+ "tempfile",
+ "textwrap 0.16.2",
+ "thiserror 2.0.18",
+ "tiny_http",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "tokio-util",
+ "toml 0.9.11+spec-1.1.0",
+ "toml_edit 0.24.0+spec-1.1.0",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "two-face",
+ "unicode-segmentation",
+ "unicode-width 0.2.1",
+ "url",
+ "urlencoding",
+ "uuid",
+ "vt100",
+ "webbrowser",
+ "which 8.0.0",
+ "windows-sys 0.52.0",
+ "winsplit",
+ "wiremock",
+ "zbus",
+]
+
+[[package]]
+name = "ava-uds"
+version = "0.0.0"
+dependencies = [
+ "async-io",
+ "libc",
+ "pretty_assertions",
+ "tempfile",
+ "tokio",
+ "tokio-util",
+ "uds_windows",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ava-user-verification"
+version = "0.0.0"
+dependencies = [
+ "base64 0.22.1",
+ "core-foundation 0.10.1",
+ "dirs",
+ "objc2",
+ "objc2-foundation",
+ "objc2-local-authentication",
+ "p256",
+ "pretty_assertions",
+ "security-framework 3.5.1",
+ "security-framework-sys",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "ava-utils-absolute-path"
+version = "0.0.0"
+dependencies = [
+ "dirs",
+ "dunce",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "ts-rs",
+]
+
+[[package]]
+name = "ava-utils-approval-presets"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+]
+
+[[package]]
+name = "ava-utils-audio"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-utils-cache",
+ "ava-utils-string",
+ "base64 0.22.1",
+ "pretty_assertions",
+ "symphonia",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "ava-utils-cache"
+version = "0.0.0"
+dependencies = [
+ "lru",
+ "sha1 0.10.6",
+ "tokio",
+]
+
+[[package]]
+name = "ava-utils-cargo-bin"
+version = "0.0.0"
+dependencies = [
+ "assert_cmd",
+ "runfiles",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "ava-utils-cli"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-shell-command",
+ "clap",
+ "pretty_assertions",
+ "serde",
+ "toml 0.9.11+spec-1.1.0",
+]
+
+[[package]]
+name = "ava-utils-elapsed"
+version = "0.0.0"
+
+[[package]]
+name = "ava-utils-fuzzy-match"
+version = "0.0.0"
+
+[[package]]
+name = "ava-utils-git-discovery"
+version = "0.0.0"
+dependencies = [
+ "ava-git-utils",
+ "ava-utils-absolute-path",
+ "futures",
+ "pretty_assertions",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ava-utils-home-dir"
+version = "0.0.0"
+dependencies = [
+ "ava-utils-absolute-path",
+ "dirs",
+ "pretty_assertions",
+ "tempfile",
+]
+
+[[package]]
+name = "ava-utils-image"
+version = "0.0.0"
+dependencies = [
+ "ava-utils-cache",
+ "base64 0.22.1",
+ "divan",
+ "image",
+ "mime_guess",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "ava-utils-json-to-toml"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+ "serde_json",
+ "toml 0.9.11+spec-1.1.0",
+]
+
+[[package]]
+name = "ava-utils-oss"
+version = "0.0.0"
+dependencies = [
+ "ava-core",
+ "ava-lmstudio",
+ "ava-model-provider-info",
+ "ava-ollama",
+]
+
+[[package]]
+name = "ava-utils-output-truncation"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-utils-string",
+ "pretty_assertions",
+]
+
+[[package]]
+name = "ava-utils-path"
+version = "0.0.0"
+dependencies = [
+ "ava-utils-absolute-path",
+ "dunce",
+ "pretty_assertions",
+ "tempfile",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ava-utils-path-uri"
+version = "0.0.0"
+dependencies = [
+ "ava-utils-absolute-path",
+ "base64 0.22.1",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "ts-rs",
+ "url",
+ "urlencoding",
+]
+
+[[package]]
+name = "ava-utils-plugins"
+version = "0.0.0"
+dependencies = [
+ "ava-exec-server",
+ "ava-exec-server-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "ava-utils-pty"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "filedescriptor",
+ "lazy_static",
+ "libc",
+ "log",
+ "portable-pty",
+ "pretty_assertions",
+ "shared_library",
+ "tempfile",
+ "tokio",
+ "winapi",
+]
+
+[[package]]
+name = "ava-utils-readiness"
+version = "0.0.0"
+dependencies = [
+ "assert_matches",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+]
+
+[[package]]
+name = "ava-utils-redacted-string"
+version = "0.0.0"
+dependencies = [
+ "schemars 0.8.22",
+ "serde",
+]
+
+[[package]]
+name = "ava-utils-rustls-provider"
+version = "0.0.0"
+dependencies = [
+ "rustls",
+]
+
+[[package]]
+name = "ava-utils-sandbox-summary"
+version = "0.0.0"
+dependencies = [
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-path-uri",
+ "pretty_assertions",
+]
+
+[[package]]
+name = "ava-utils-sleep-inhibitor"
+version = "0.0.0"
+dependencies = [
+ "core-foundation 0.9.4",
+ "libc",
+ "tracing",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "ava-utils-stream-parser"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+]
+
+[[package]]
+name = "ava-utils-string"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+ "regex-lite",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ava-utils-template"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+]
+
+[[package]]
+name = "ava-v8-poc"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+ "v8",
+]
+
+[[package]]
+name = "ava-voice-host"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-install-context",
+ "ava-process-hardening",
+ "ava-realtime-webrtc",
+ "ava-utils-cargo-bin",
+ "cpal",
+ "crossbeam-queue",
+ "futures",
+ "gstreamer",
+ "gstreamer-app",
+ "gstreamer-audio",
+ "libloading",
+ "opus",
+ "pretty_assertions",
+ "rand 0.9.3",
+ "rtc",
+ "rubato",
+ "sonora",
+ "tempfile",
+ "tokio",
+ "webrtc",
+]
+
+[[package]]
+name = "ava-web-search-extension"
+version = "0.0.0"
+dependencies = [
+ "ava-api",
+ "ava-core",
+ "ava-extension-api",
+ "ava-extension-items",
+ "ava-login",
+ "ava-model-provider",
+ "ava-model-provider-info",
+ "ava-otel",
+ "ava-protocol",
+ "ava-tools",
+ "http 1.4.0",
+ "pretty_assertions",
+ "schemars 0.8.22",
+ "serde_json",
+ "url",
+]
+
+[[package]]
+name = "ava-websocket-client"
+version = "0.0.0"
+dependencies = [
+ "ava-http-client",
+ "ava-utils-rustls-provider",
+ "futures",
+ "pretty_assertions",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
+ "tokio-tungstenite",
+ "url",
+]
+
+[[package]]
+name = "ava-windows-sandbox"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-otel",
+ "ava-protocol",
+ "ava-utils-absolute-path",
+ "ava-utils-pty",
+ "ava-utils-string",
+ "base64 0.22.1",
+ "chrono",
+ "dirs-next",
+ "dunce",
+ "glob",
+ "pretty_assertions",
+ "rand 0.8.6",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing-appender",
+ "windows 0.58.0",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ava-windows-sandbox-service"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-cloud-config",
+ "ava-config",
+ "ava-core",
+ "ava-windows-sandbox",
+ "pretty_assertions",
+ "serde_json",
+ "tokio",
+ "toml 0.9.11+spec-1.1.0",
+ "windows 0.58.0",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ava-workload-identity"
+version = "0.0.0"
+dependencies = [
+ "ava-http-client",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "url",
+ "wiremock",
+]
+
+[[package]]
+name = "ava-worktree"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "ava-git-utils",
+ "ava-protocol",
+ "dunce",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "uuid",
+]
 
 [[package]]
 name = "aws-config"
@@ -2040,3339 +5373,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "codex-agent-extension"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-core",
- "codex-protocol",
- "core_test_support",
- "pretty_assertions",
- "tokio",
-]
-
-[[package]]
-name = "codex-agent-graph-store"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
- "codex-state",
- "codex-utils-absolute-path",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "codex-agent-identity"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "chrono",
- "codex-http-client",
- "codex-protocol",
- "crypto_box",
- "ed25519-dalek",
- "http 1.4.0",
- "jsonwebtoken",
- "pretty_assertions",
- "rand 0.9.3",
- "serde",
- "serde_json",
- "sha2 0.10.9",
-]
-
-[[package]]
-name = "codex-agent-roles"
-version = "0.0.0"
-dependencies = [
- "codex-config",
- "codex-file-system",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "serde",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
-]
-
-[[package]]
-name = "codex-analytics"
-version = "0.0.0"
-dependencies = [
- "codex-app-server-protocol",
- "codex-git-utils",
- "codex-login",
- "codex-model-provider",
- "codex-plugin",
- "codex-protocol",
- "codex-state",
- "codex-utils-absolute-path",
- "os_info",
- "pretty_assertions",
- "serde",
- "serde_json",
- "sha1 0.10.6",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-ansi-escape"
-version = "0.0.0"
-dependencies = [
- "ansi-to-tui",
- "ratatui",
- "tracing",
-]
-
-[[package]]
-name = "codex-api"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "assert_matches",
- "async-channel",
- "base64 0.22.1",
- "bytes",
- "chrono",
- "codex-client",
- "codex-http-client",
- "codex-protocol",
- "codex-utils-rustls-provider",
- "codex-websocket-client",
- "eventsource-stream",
- "futures",
- "http 1.4.0",
- "pretty_assertions",
- "rcgen",
- "regex-lite",
- "rustls",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tokio-test",
- "tokio-tungstenite",
- "tokio-util",
- "tracing",
- "tungstenite",
- "url",
- "uuid",
- "wiremock",
-]
-
-[[package]]
-name = "codex-app-server"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "app_test_support",
- "axum",
- "base64 0.22.1",
- "chrono",
- "clap",
- "codex-agent-extension",
- "codex-analytics",
- "codex-app-server-protocol",
- "codex-app-server-transport",
- "codex-arg0",
- "codex-aws-auth",
- "codex-backend-client",
- "codex-browser-extension",
- "codex-chatgpt",
- "codex-cloud-config",
- "codex-code-mode",
- "codex-config",
- "codex-connectors",
- "codex-core",
- "codex-core-plugins",
- "codex-diagnostics",
- "codex-exec-server",
- "codex-extension-api",
- "codex-external-agent-migration",
- "codex-features",
- "codex-feedback",
- "codex-file-search",
- "codex-file-watcher",
- "codex-git-attribution",
- "codex-git-utils",
- "codex-goal-extension",
- "codex-guardian-v2",
- "codex-history-notes-extension",
- "codex-home",
- "codex-hooks",
- "codex-http-client",
- "codex-image-generation-extension",
- "codex-login",
- "codex-mcp",
- "codex-mcp-extension",
- "codex-memories-extension",
- "codex-memories-write",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-models-manager",
- "codex-network-proxy",
- "codex-otel",
- "codex-plugin",
- "codex-prompts",
- "codex-protocol",
- "codex-queue-extension",
- "codex-rmcp-client",
- "codex-rollout",
- "codex-sandboxing",
- "codex-shell-command",
- "codex-skills",
- "codex-skills-extension",
- "codex-state",
- "codex-thread-store",
- "codex-tools",
- "codex-uds",
- "codex-user-verification",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-cli",
- "codex-utils-json-to-toml",
- "codex-utils-path-uri",
- "codex-utils-pty",
- "codex-web-search-extension",
- "codex-windows-sandbox",
- "core_test_support",
- "flate2",
- "futures",
- "hmac 0.12.1",
- "http 1.4.0",
- "opentelemetry",
- "opentelemetry_sdk",
- "pretty_assertions",
- "rmcp",
- "serde",
- "serde_json",
- "serial_test",
- "sha2 0.10.9",
- "shlex",
- "sqlx",
- "tar",
- "tempfile",
- "test-case",
- "thiserror 2.0.18",
- "tikv-jemallocator",
- "time",
- "tokio",
- "tokio-tungstenite",
- "tokio-util",
- "toml 0.9.11+spec-1.1.0",
- "toml_edit 0.24.0+spec-1.1.0",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "url",
- "uuid",
- "wiremock",
-]
-
-[[package]]
-name = "codex-app-server-client"
-version = "0.0.0"
-dependencies = [
- "codex-app-server",
- "codex-app-server-protocol",
- "codex-arg0",
- "codex-config",
- "codex-core",
- "codex-exec-server",
- "codex-feedback",
- "codex-protocol",
- "codex-uds",
- "codex-utils-absolute-path",
- "codex-utils-rustls-provider",
- "futures",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-tungstenite",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "codex-app-server-daemon"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "blake3",
- "codex-app-server-protocol",
- "codex-app-server-transport",
- "codex-http-client",
- "codex-install-context",
- "codex-uds",
- "codex-utils-home-dir",
- "futures",
- "libc",
- "pretty_assertions",
- "semver",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "codex-app-server-protocol"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-app-server-protocol-noop-macros",
- "codex-experimental-api-macros",
- "codex-extension-items",
- "codex-history",
- "codex-protocol",
- "codex-rollout",
- "codex-secrets",
- "codex-shell-command",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-path-uri",
- "codex-utils-redacted-string",
- "inventory",
- "pretty_assertions",
- "rmcp",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "serde_with",
- "similar",
- "strum_macros 0.28.0",
- "tempfile",
- "thiserror 2.0.18",
- "tracing",
- "ts-rs",
- "uuid",
- "zstd",
-]
-
-[[package]]
-name = "codex-app-server-protocol-noop-macros"
-version = "0.0.0"
-
-[[package]]
-name = "codex-app-server-test-client"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "codex-app-server-protocol",
- "codex-core",
- "codex-otel",
- "codex-protocol",
- "codex-utils-cli",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "tungstenite",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "codex-app-server-transport"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64 0.22.1",
- "chrono",
- "clap",
- "codex-api",
- "codex-app-server-protocol",
- "codex-config",
- "codex-core",
- "codex-login",
- "codex-model-provider",
- "codex-protocol",
- "codex-state",
- "codex-uds",
- "codex-utils-absolute-path",
- "codex-utils-rustls-provider",
- "constant_time_eq",
- "futures",
- "gethostname",
- "hmac 0.12.1",
- "httpdate",
- "jsonwebtoken",
- "libc",
- "owo-colors",
- "pretty_assertions",
- "rand 0.9.3",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "signal-hook",
- "tempfile",
- "time",
- "tokio",
- "tokio-tungstenite",
- "tokio-util",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "codex-apply-patch"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "assert_matches",
- "codex-exec-server",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-path-uri",
- "pretty_assertions",
- "similar",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tree-sitter",
- "tree-sitter-bash",
-]
-
-[[package]]
-name = "codex-arg0"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-apply-patch",
- "codex-async-utils",
- "codex-exec-server",
- "codex-install-context",
- "codex-linux-sandbox",
- "codex-sandboxing",
- "codex-shell-escalation",
- "codex-utils-absolute-path",
- "codex-utils-home-dir",
- "codex-windows-sandbox",
- "dotenvy",
- "pathdiff",
- "pretty_assertions",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "codex-async-utils"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
- "rand 0.9.3",
- "tokio",
- "tokio-util",
-]
-
-[[package]]
-name = "codex-attachment-store"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
- "serde",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-aws-auth"
-version = "0.0.0"
-dependencies = [
- "aws-config",
- "aws-credential-types",
- "aws-sigv4",
- "aws-types",
- "bytes",
- "http 1.4.0",
- "pretty_assertions",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "codex-backend-client"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-api",
- "codex-backend-openapi-models",
- "codex-http-client",
- "codex-login",
- "codex-model-provider",
- "codex-protocol",
- "http 1.4.0",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tokio",
- "url",
- "wiremock",
-]
-
-[[package]]
-name = "codex-backend-openapi-models"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "serde_with",
-]
-
-[[package]]
-name = "codex-browser-extension"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "chrono",
- "codex-config",
- "codex-core",
- "codex-extension-api",
- "codex-otel",
- "codex-protocol",
- "codex-tools",
- "codex-utils-absolute-path",
- "futures",
- "http 1.4.0",
- "pretty_assertions",
- "reqwest 0.12.28",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "url",
- "uuid",
- "which 8.0.0",
-]
-
-[[package]]
-name = "codex-build-info"
-version = "0.0.0"
-dependencies = [
- "codex-install-context",
- "pretty_assertions",
- "semver",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
-]
-
-[[package]]
-name = "codex-bwrap"
-version = "0.0.0"
-dependencies = [
- "cc",
- "libc",
- "pkg-config",
-]
-
-[[package]]
-name = "codex-chatgpt"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "codex-connectors",
- "codex-core",
- "codex-git-utils",
- "codex-http-client",
- "codex-login",
- "codex-model-provider",
- "codex-plugin",
- "codex-utils-cargo-bin",
- "codex-utils-cli",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "codex-cli"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "app_test_support",
- "assert_cmd",
- "assert_matches",
- "chrono",
- "clap",
- "clap_complete",
- "codex-api",
- "codex-app-server",
- "codex-app-server-daemon",
- "codex-app-server-protocol",
- "codex-app-server-test-client",
- "codex-arg0",
- "codex-aws-auth",
- "codex-build-info",
- "codex-chatgpt",
- "codex-cloud-config",
- "codex-cloud-tasks",
- "codex-config",
- "codex-core",
- "codex-core-plugins",
- "codex-exec",
- "codex-exec-server",
- "codex-execpolicy",
- "codex-extension-api",
- "codex-features",
- "codex-git-attribution",
- "codex-git-utils",
- "codex-history",
- "codex-home",
- "codex-http-client",
- "codex-install-context",
- "codex-login",
- "codex-mcp",
- "codex-memories-write",
- "codex-model-provider",
- "codex-models-manager",
- "codex-plugin",
- "codex-protocol",
- "codex-responses-api-proxy",
- "codex-rmcp-client",
- "codex-rollout",
- "codex-rollout-trace",
- "codex-sandboxing",
- "codex-skills-extension",
- "codex-state",
- "codex-stdio-to-uds",
- "codex-tcp-tunnel",
- "codex-terminal-detection",
- "codex-thread-store",
- "codex-tui",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-cli",
- "codex-utils-path",
- "codex-utils-path-uri",
- "codex-utils-pty",
- "codex-windows-sandbox",
- "crossterm",
- "flate2",
- "futures",
- "http 1.4.0",
- "insta",
- "libc",
- "os_info",
- "owo-colors",
- "predicates",
- "pretty_assertions",
- "regex-lite",
- "serde",
- "serde_json",
- "sqlx",
- "supports-color 3.0.2",
- "sys-locale",
- "tar",
- "tempfile",
- "tikv-jemallocator",
- "tokio",
- "tokio-tungstenite",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "unicode-segmentation",
- "url",
- "vt100",
- "which 8.0.0",
- "windows-sys 0.52.0",
- "wiremock",
- "zstd",
-]
-
-[[package]]
-name = "codex-client"
-version = "0.0.0"
-dependencies = [
- "codex-http-client",
- "eventsource-stream",
- "futures",
- "http 1.4.0",
- "rand 0.9.3",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-cloud-config"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "chrono",
- "codex-agent-identity",
- "codex-async-utils",
- "codex-backend-client",
- "codex-config",
- "codex-core",
- "codex-http-client",
- "codex-login",
- "codex-otel",
- "codex-protocol",
- "hmac 0.12.1",
- "pretty_assertions",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-cloud-tasks"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "codex-cloud-tasks-client",
- "codex-cloud-tasks-mock-client",
- "codex-core",
- "codex-git-utils",
- "codex-http-client",
- "codex-login",
- "codex-model-provider",
- "codex-tui",
- "codex-utils-cli",
- "crossterm",
- "http 1.4.0",
- "insta",
- "owo-colors",
- "pretty_assertions",
- "ratatui",
- "serde",
- "serde_json",
- "supports-color 3.0.2",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber",
- "unicode-segmentation",
- "unicode-width 0.2.1",
-]
-
-[[package]]
-name = "codex-cloud-tasks-client"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "codex-api",
- "codex-backend-client",
- "codex-git-utils",
- "codex-http-client",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "codex-cloud-tasks-mock-client"
-version = "0.0.0"
-dependencies = [
- "chrono",
- "codex-cloud-tasks-client",
- "diffy",
-]
-
-[[package]]
-name = "codex-code-mode"
-version = "0.0.0"
-dependencies = [
- "codex-code-mode-protocol",
- "codex-http-client",
- "codex-install-context",
- "codex-otel",
- "codex-protocol",
- "futures",
- "http-body-util",
- "pretty_assertions",
- "prost",
- "reqwest 0.12.28",
- "serde_json",
- "tokio",
- "tokio-util",
- "tonic",
- "tower",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "codex-code-mode-host"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "axum",
- "clap",
- "codex-code-mode",
- "codex-code-mode-protocol",
- "codex-code-mode-runtime",
- "codex-otel",
- "codex-otel-trace-websocket",
- "codex-protocol",
- "codex-utils-cargo-bin",
- "futures",
- "pretty_assertions",
- "prost",
- "serde_json",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tonic",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "codex-code-mode-protocol"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
- "glob",
- "pretty_assertions",
- "prost",
- "protoc-bin-vendored",
- "serde",
- "serde_json",
- "tokio",
- "tokio-util",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
-]
-
-[[package]]
-name = "codex-code-mode-runtime"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "codex-code-mode-protocol",
- "codex-protocol",
- "deno_core_icudata",
- "futures",
- "opentelemetry",
- "pretty_assertions",
- "serde_json",
- "tokio",
- "tokio-util",
- "tracing",
- "v8",
-]
-
-[[package]]
-name = "codex-collaboration-mode-templates"
-version = "0.0.0"
-
-[[package]]
-name = "codex-config"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "codex-execpolicy",
- "codex-features",
- "codex-file-system",
- "codex-git-utils",
- "codex-model-provider-info",
- "codex-network-proxy",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path",
- "codex-utils-path-uri",
- "codex-utils-redacted-string",
- "codex-windows-sandbox",
- "core-foundation 0.9.4",
- "dns-lookup",
- "dunce",
- "futures",
- "gethostname",
- "indexmap 2.14.0",
- "libc",
- "multimap",
- "pretty_assertions",
- "prost",
- "regex-lite",
- "schemars 0.8.22",
- "serde",
- "serde_ignored",
- "serde_json",
- "serde_path_to_error",
- "sha2 0.10.9",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tokio-stream",
- "toml 0.9.11+spec-1.1.0",
- "toml_edit 0.24.0+spec-1.1.0",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
- "tracing",
- "wildmatch",
- "winapi-util",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "codex-config-schema"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "codex-config",
-]
-
-[[package]]
-name = "codex-connectors"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "arc-swap",
- "codex-config",
- "codex-login",
- "codex-otel",
- "codex-plugin",
- "codex-protocol",
- "indexmap 2.14.0",
- "pretty_assertions",
- "serde",
- "serde_json",
- "sha1 0.10.6",
- "tempfile",
- "tokio",
- "tracing",
- "urlencoding",
-]
-
-[[package]]
-name = "codex-connectors-extension"
-version = "0.0.0"
-dependencies = [
- "codex-connectors",
- "codex-core-plugins",
- "codex-file-system",
- "codex-plugin",
- "codex-utils-path-uri",
- "serde_json",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "codex-context-fragments"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
- "codex-utils-string",
- "pretty_assertions",
- "serde_json",
-]
-
-[[package]]
-name = "codex-core"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "arc-swap",
- "assert_cmd",
- "assert_matches",
- "async-channel",
- "base64 0.22.1",
- "bm25",
- "chrono",
- "codex-agent-graph-store",
- "codex-agent-roles",
- "codex-analytics",
- "codex-api",
- "codex-app-server-protocol",
- "codex-apply-patch",
- "codex-async-utils",
- "codex-attachment-store",
- "codex-client",
- "codex-code-mode",
- "codex-config",
- "codex-connectors",
- "codex-context-fragments",
- "codex-core-plugins",
- "codex-diagnostics",
- "codex-exec-server",
- "codex-exec-server-test-support",
- "codex-execpolicy",
- "codex-extension-api",
- "codex-extension-items",
- "codex-features",
- "codex-feedback",
- "codex-file-system",
- "codex-git-utils",
- "codex-guardian-context",
- "codex-guardian-reviewer",
- "codex-history",
- "codex-home",
- "codex-hooks",
- "codex-http-client",
- "codex-image-generation-extension",
- "codex-install-context",
- "codex-login",
- "codex-mcp",
- "codex-memories-read",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-models-manager",
- "codex-network-proxy",
- "codex-otel",
- "codex-plugin",
- "codex-prompts",
- "codex-protocol",
- "codex-response-debug-context",
- "codex-rmcp-client",
- "codex-rollout",
- "codex-rollout-trace",
- "codex-sandboxing",
- "codex-shell-command",
- "codex-shell-escalation",
- "codex-skills",
- "codex-skills-extension",
- "codex-state",
- "codex-terminal-detection",
- "codex-test-binary-support",
- "codex-thread-store",
- "codex-tools",
- "codex-utils-absolute-path",
- "codex-utils-audio",
- "codex-utils-cache",
- "codex-utils-cargo-bin",
- "codex-utils-git-discovery",
- "codex-utils-home-dir",
- "codex-utils-image",
- "codex-utils-output-truncation",
- "codex-utils-path",
- "codex-utils-path-uri",
- "codex-utils-plugins",
- "codex-utils-pty",
- "codex-utils-redacted-string",
- "codex-utils-stream-parser",
- "codex-utils-string",
- "codex-web-search-extension",
- "codex-windows-sandbox",
- "core_test_support",
- "ctor 0.6.3",
- "dirs",
- "dunce",
- "eventsource-stream",
- "futures",
- "http 1.4.0",
- "iana-time-zone",
- "image",
- "indexmap 2.14.0",
- "insta",
- "libc",
- "maplit",
- "once_cell",
- "openssl-sys",
- "opentelemetry",
- "opentelemetry_sdk",
- "predicates",
- "pretty_assertions",
- "rand 0.9.3",
- "regex-lite",
- "rmcp",
- "serde",
- "serde_json",
- "serial_test",
- "sha1 0.10.6",
- "shlex",
- "similar",
- "tempfile",
- "test-case",
- "test-log",
- "thiserror 2.0.18",
- "tokio",
- "tokio-tungstenite",
- "tokio-util",
- "toml 0.9.11+spec-1.1.0",
- "toml_edit 0.24.0+spec-1.1.0",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "tracing-test",
- "url",
- "uuid",
- "walkdir",
- "which 8.0.0",
- "whoami 1.6.1",
- "wiremock",
- "zstd",
-]
-
-[[package]]
-name = "codex-core-api"
-version = "0.0.0"
-dependencies = [
- "codex-analytics",
- "codex-app-server-protocol",
- "codex-arg0",
- "codex-config",
- "codex-core",
- "codex-exec-server",
- "codex-extension-api",
- "codex-features",
- "codex-history",
- "codex-home",
- "codex-image-generation-extension",
- "codex-login",
- "codex-model-provider-info",
- "codex-models-manager",
- "codex-protocol",
- "codex-state",
- "codex-utils-absolute-path",
-]
-
-[[package]]
-name = "codex-core-plugins"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "codex-analytics",
- "codex-app-server-protocol",
- "codex-config",
- "codex-connectors",
- "codex-exec-server",
- "codex-exec-server-test-support",
- "codex-git-utils",
- "codex-hooks",
- "codex-http-client",
- "codex-login",
- "codex-mcp",
- "codex-model-provider",
- "codex-otel",
- "codex-plugin",
- "codex-protocol",
- "codex-shell-command",
- "codex-skills",
- "codex-tools",
- "codex-utils-absolute-path",
- "codex-utils-path",
- "codex-utils-path-uri",
- "codex-utils-plugins",
- "dirs",
- "flate2",
- "futures",
- "http 1.4.0",
- "libc",
- "pretty_assertions",
- "regex",
- "semver",
- "serde",
- "serde_json",
- "serde_with",
- "serde_yaml",
- "sha2 0.10.9",
- "tar",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
- "tracing-subscriber",
- "tracing-test",
- "url",
- "uuid",
- "wiremock",
- "zip",
-]
-
-[[package]]
-name = "codex-diagnostics"
-version = "0.0.0"
-dependencies = [
- "libc",
- "pretty_assertions",
-]
-
-[[package]]
-name = "codex-exec"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "clap",
- "codex-app-server-client",
- "codex-app-server-protocol",
- "codex-apply-patch",
- "codex-arg0",
- "codex-cloud-config",
- "codex-config",
- "codex-core",
- "codex-features",
- "codex-feedback",
- "codex-git-utils",
- "codex-history",
- "codex-login",
- "codex-model-provider-info",
- "codex-otel",
- "codex-protocol",
- "codex-rollout",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-cli",
- "codex-utils-oss",
- "codex-utils-path-uri",
- "codex-utils-sandbox-summary",
- "codex-worktree",
- "core_test_support",
- "libc",
- "opentelemetry",
- "opentelemetry_sdk",
- "owo-colors",
- "predicates",
- "pretty_assertions",
- "serde",
- "serde_json",
- "supports-color 3.0.2",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "ts-rs",
- "uuid",
- "walkdir",
- "wiremock",
- "zstd",
-]
-
-[[package]]
-name = "codex-exec-server"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "arc-swap",
- "axum",
- "base64 0.22.1",
- "bytes",
- "clatter",
- "codex-api",
- "codex-build-info",
- "codex-config",
- "codex-exec-server-protocol",
- "codex-exec-server-test-support",
- "codex-file-system",
- "codex-http-client",
- "codex-network-proxy",
- "codex-otel",
- "codex-protocol",
- "codex-sandboxing",
- "codex-shell-command",
- "codex-test-binary-support",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-home-dir",
- "codex-utils-path-uri",
- "codex-utils-pty",
- "codex-utils-rustls-provider",
- "codex-websocket-client",
- "ctor 0.6.3",
- "dirs",
- "futures",
- "http 1.4.0",
- "libc",
- "opentelemetry",
- "opentelemetry_sdk",
- "pretty_assertions",
- "prost",
- "rcgen",
- "rustix 1.1.4",
- "rustls",
- "serde",
- "serde_json",
- "serial_test",
- "tempfile",
- "test-case",
- "thiserror 2.0.18",
- "tokio",
- "tokio-tungstenite",
- "tokio-util",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "url",
- "uuid",
- "windows-sys 0.52.0",
- "wiremock",
-]
-
-[[package]]
-name = "codex-exec-server-protocol"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "codex-file-system",
- "codex-mxc-sandbox",
- "codex-network-proxy",
- "codex-protocol",
- "codex-shell-command",
- "codex-utils-path-uri",
- "pretty_assertions",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "codex-exec-server-test-support"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-exec-server",
- "codex-http-client",
- "futures",
- "prost",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "wiremock",
-]
-
-[[package]]
-name = "codex-execpolicy"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "codex-utils-absolute-path",
- "multimap",
- "pretty_assertions",
- "serde",
- "serde_json",
- "shlex",
- "starlark",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "codex-experimental-api-macros"
-version = "0.0.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "codex-extension-api"
-version = "0.0.0"
-dependencies = [
- "codex-config",
- "codex-context-fragments",
- "codex-exec-server-protocol",
- "codex-file-system",
- "codex-history",
- "codex-mcp",
- "codex-protocol",
- "codex-tools",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "pretty_assertions",
- "serde_json",
- "tokio",
-]
-
-[[package]]
-name = "codex-extension-items"
-version = "0.0.0"
-dependencies = [
- "codex-utils-absolute-path",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "ts-rs",
-]
-
-[[package]]
-name = "codex-external-agent-migration"
-version = "0.0.0"
-dependencies = [
- "chrono",
- "codex-analytics",
- "codex-app-server-protocol",
- "codex-config",
- "codex-core",
- "codex-core-plugins",
- "codex-hooks",
- "codex-login",
- "codex-memories-write",
- "codex-otel",
- "codex-plugin",
- "codex-protocol",
- "codex-rollout",
- "codex-thread-store",
- "codex-utils-output-truncation",
- "pretty_assertions",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2 0.10.9",
- "tempfile",
- "tokio",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
-]
-
-[[package]]
-name = "codex-features"
-version = "0.0.0"
-dependencies = [
- "codex-network-proxy",
- "codex-otel",
- "codex-protocol",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
-]
-
-[[package]]
-name = "codex-feedback"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bytes",
- "codex-http-client",
- "codex-login",
- "codex-protocol",
- "codex-rollout",
- "flate2",
- "http 1.4.0",
- "httpdate",
- "log",
- "mime_guess",
- "pretty_assertions",
- "sentry",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "wiremock",
-]
-
-[[package]]
-name = "codex-file-search"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "crossbeam-channel",
- "ignore",
- "nucleo",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "codex-file-system"
-version = "0.0.0"
-dependencies = [
- "bytes",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "futures",
- "serde",
-]
-
-[[package]]
-name = "codex-file-watcher"
-version = "0.0.0"
-dependencies = [
- "notify",
- "pretty_assertions",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-git-attribution"
-version = "0.0.0"
-dependencies = [
- "codex-backend-client",
- "codex-extension-api",
- "codex-http-client",
- "codex-login",
- "serde_json",
- "tokio",
- "wiremock",
-]
-
-[[package]]
-name = "codex-git-utils"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "codex-file-system",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "codex-utils-pty",
- "futures",
- "gix",
- "once_cell",
- "pretty_assertions",
- "regex",
- "schemars 0.8.22",
- "serde",
- "similar",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "ts-rs",
- "walkdir",
-]
-
-[[package]]
-name = "codex-goal-extension"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "codex-analytics",
- "codex-core",
- "codex-extension-api",
- "codex-otel",
- "codex-prompts",
- "codex-protocol",
- "codex-rollout",
- "codex-state",
- "codex-tools",
- "codex-utils-absolute-path",
- "codex-utils-template",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-guardian-context"
-version = "0.0.0"
-dependencies = [
- "codex-context-fragments",
- "codex-history",
- "codex-protocol",
- "pretty_assertions",
- "serde_json",
-]
-
-[[package]]
-name = "codex-guardian-reviewer"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-analytics",
- "codex-extension-api",
- "codex-feedback",
- "codex-guardian-context",
- "codex-mcp",
- "codex-otel",
- "codex-prompts",
- "codex-protocol",
- "opentelemetry",
- "opentelemetry_sdk",
- "pretty_assertions",
- "rand 0.9.3",
- "serde",
- "serde_json",
- "test-case",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "codex-guardian-v2"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-analytics",
- "codex-api",
- "codex-config",
- "codex-context-fragments",
- "codex-core",
- "codex-extension-api",
- "codex-features",
- "codex-guardian-context",
- "codex-guardian-reviewer",
- "codex-history",
- "codex-http-client",
- "codex-login",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-prompts",
- "codex-protocol",
- "core_test_support",
- "dirs",
- "http 1.4.0",
- "pretty_assertions",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "codex-history"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-protocol",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "codex-history-notes-extension"
-version = "0.0.0"
-dependencies = [
- "codex-analytics",
- "codex-api",
- "codex-client",
- "codex-config",
- "codex-core",
- "codex-extension-api",
- "codex-login",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-protocol",
- "codex-tools",
- "codex-utils-output-truncation",
- "core_test_support",
- "http 1.4.0",
- "pretty_assertions",
- "serde_json",
- "tempfile",
- "tokio",
- "wiremock",
-]
-
-[[package]]
-name = "codex-home"
-version = "0.0.0"
-dependencies = [
- "codex-extension-api",
- "codex-utils-absolute-path",
- "pretty_assertions",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-hooks"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-channel",
- "chrono",
- "codex-config",
- "codex-plugin",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-output-truncation",
- "codex-utils-path-uri",
- "codex-utils-pty",
- "futures",
- "pretty_assertions",
- "regex",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "codex-http-client"
-version = "0.0.0"
-dependencies = [
- "bytes",
- "codex-utils-cargo-bin",
- "codex-utils-rustls-provider",
- "futures",
- "http 1.4.0",
- "native-tls",
- "opentelemetry",
- "opentelemetry_sdk",
- "pretty_assertions",
- "rcgen",
- "reqwest 0.12.28",
- "rustls",
- "rustls-native-certs",
- "rustls-pki-types",
- "rustls-platform-verifier",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "system-configuration",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "windows-sys 0.52.0",
- "zstd",
-]
-
-[[package]]
-name = "codex-image-generation-extension"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "codex-api",
- "codex-core",
- "codex-exec-server",
- "codex-extension-api",
- "codex-extension-items",
- "codex-login",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-protocol",
- "codex-tools",
- "codex-utils-absolute-path",
- "codex-utils-image",
- "codex-utils-path-uri",
- "http 1.4.0",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-install-context"
-version = "0.0.0"
-dependencies = [
- "codex-utils-absolute-path",
- "codex-utils-home-dir",
- "pretty_assertions",
- "semver",
- "serde",
- "serde_json",
- "tempfile",
-]
-
-[[package]]
-name = "codex-keyring-store"
-version = "0.0.0"
-dependencies = [
- "keyring",
- "tracing",
-]
-
-[[package]]
-name = "codex-linux-sandbox"
-version = "0.0.0"
-dependencies = [
- "clap",
- "codex-core",
- "codex-install-context",
- "codex-network-proxy",
- "codex-process-hardening",
- "codex-protocol",
- "codex-sandboxing",
- "codex-uds",
- "codex-utils-absolute-path",
- "globset",
- "landlock",
- "libc",
- "pretty_assertions",
- "rustix 1.1.4",
- "seccompiler",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "test-case",
- "tokio",
- "url",
-]
-
-[[package]]
-name = "codex-lmstudio"
-version = "0.0.0"
-dependencies = [
- "codex-core",
- "codex-http-client",
- "codex-model-provider-info",
- "serde_json",
- "tokio",
- "tracing",
- "which 8.0.0",
- "wiremock",
-]
-
-[[package]]
-name = "codex-login"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "chrono",
- "codex-agent-identity",
- "codex-config",
- "codex-http-client",
- "codex-keyring-store",
- "codex-model-provider-info",
- "codex-otel",
- "codex-protocol",
- "codex-secrets",
- "codex-terminal-detection",
- "codex-utils-template",
- "codex-workload-identity",
- "core_test_support",
- "http 1.4.0",
- "jsonwebtoken",
- "keyring",
- "once_cell",
- "os_info",
- "pretty_assertions",
- "rand 0.9.3",
- "regex-lite",
- "serde",
- "serde_json",
- "serial_test",
- "sha2 0.10.9",
- "tempfile",
- "thiserror 2.0.18",
- "tiny_http",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
- "urlencoding",
- "webbrowser",
- "wiremock",
-]
-
-[[package]]
-name = "codex-mcp"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "arc-swap",
- "assert_matches",
- "async-channel",
- "codex-api",
- "codex-async-utils",
- "codex-config",
- "codex-connectors",
- "codex-diagnostics",
- "codex-exec-server",
- "codex-exec-server-test-support",
- "codex-login",
- "codex-model-provider",
- "codex-otel",
- "codex-plugin",
- "codex-protocol",
- "codex-rmcp-client",
- "codex-utils-path-uri",
- "codex-utils-plugins",
- "futures",
- "insta",
- "lru",
- "pretty_assertions",
- "regex-lite",
- "rmcp",
- "serde",
- "serde_json",
- "sha1 0.10.6",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tokio-util",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "codex-mcp-extension"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "axum",
- "codex-config",
- "codex-connectors",
- "codex-connectors-extension",
- "codex-core",
- "codex-core-plugins",
- "codex-exec-server",
- "codex-exec-server-test-support",
- "codex-extension-api",
- "codex-features",
- "codex-login",
- "codex-mcp",
- "codex-plugin",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "core_test_support",
- "futures",
- "pretty_assertions",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tokio-util",
- "tracing",
- "wiremock",
-]
-
-[[package]]
-name = "codex-memories-extension"
-version = "0.0.0"
-dependencies = [
- "chrono",
- "codex-config",
- "codex-core",
- "codex-extension-api",
- "codex-features",
- "codex-otel",
- "codex-protocol",
- "codex-tools",
- "codex-utils-absolute-path",
- "codex-utils-output-truncation",
- "codex-utils-template",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "sqlx",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "codex-memories-read"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
- "codex-shell-command",
- "codex-utils-absolute-path",
- "pretty_assertions",
-]
-
-[[package]]
-name = "codex-memories-write"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "codex-backend-client",
- "codex-config",
- "codex-core",
- "codex-features",
- "codex-git-utils",
- "codex-login",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-models-manager",
- "codex-otel",
- "codex-protocol",
- "codex-rollout",
- "codex-rollout-trace",
- "codex-secrets",
- "codex-state",
- "codex-terminal-detection",
- "codex-utils-absolute-path",
- "codex-utils-output-truncation",
- "codex-utils-template",
- "core_test_support",
- "futures",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing",
- "uuid",
- "wiremock",
-]
-
-[[package]]
-name = "codex-mermaid"
-version = "0.0.0"
-dependencies = [
- "insta",
- "pretty_assertions",
- "unicode-width 0.2.1",
-]
-
-[[package]]
-name = "codex-message-history"
-version = "0.0.0"
-dependencies = [
- "codex-config",
- "memchr",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-model-provider"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "chrono",
- "codex-agent-identity",
- "codex-api",
- "codex-aws-auth",
- "codex-feedback",
- "codex-http-client",
- "codex-keyring-store",
- "codex-login",
- "codex-model-provider-info",
- "codex-models-manager",
- "codex-otel",
- "codex-protocol",
- "codex-response-debug-context",
- "codex-secrets",
- "codex-utils-redacted-string",
- "http 1.4.0",
- "pretty_assertions",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "tokio",
- "tracing",
- "url",
- "wiremock",
-]
-
-[[package]]
-name = "codex-model-provider-info"
-version = "0.0.0"
-dependencies = [
- "codex-api",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-redacted-string",
- "dirs",
- "http 1.4.0",
- "maplit",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "tempfile",
- "toml 0.9.11+spec-1.1.0",
- "url",
-]
-
-[[package]]
-name = "codex-models-manager"
-version = "0.0.0"
-dependencies = [
- "chrono",
- "codex-http-client",
- "codex-login",
- "codex-otel",
- "codex-prompts",
- "codex-protocol",
- "codex-utils-output-truncation",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-mxc-sandbox"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "appcontainer_common",
- "codex-network-proxy",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "codex-windows-sandbox",
- "learning_mode_windows",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tracelogging",
- "windows-sys 0.61.2",
- "wxc_common",
-]
-
-[[package]]
-name = "codex-network-proxy"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "chrono",
- "clap",
- "codex-utils-absolute-path",
- "codex-utils-home-dir",
- "codex-utils-path-uri",
- "codex-utils-rustls-provider",
- "codex-windows-sandbox",
- "globset",
- "opentelemetry",
- "pretty_assertions",
- "rama-core",
- "rama-dns",
- "rama-http",
- "rama-http-backend",
- "rama-net",
- "rama-socks5",
- "rama-tcp",
- "rama-tls-rustls",
- "rama-unix",
- "rand 0.9.3",
- "rand_regex",
- "regex",
- "regex-automata",
- "regex-syntax",
- "rustls-native-certs",
- "schannel",
- "schemars 0.8.22",
- "security-framework 3.5.1",
- "serde",
- "serde_ignored",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "codex-ollama"
-version = "0.0.0"
-dependencies = [
- "assert_matches",
- "async-stream",
- "bytes",
- "codex-core",
- "codex-http-client",
- "codex-model-provider-info",
- "futures",
- "memchr",
- "pretty_assertions",
- "semver",
- "serde_json",
- "tokio",
- "tracing",
- "wiremock",
-]
-
-[[package]]
-name = "codex-otel"
-version = "0.0.0"
-dependencies = [
- "chrono",
- "codex-api",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-string",
- "eventsource-stream",
- "gethostname",
- "http 1.4.0",
- "libc",
- "opentelemetry",
- "opentelemetry-appender-tracing",
- "opentelemetry-otlp",
- "opentelemetry-semantic-conventions",
- "opentelemetry_sdk",
- "os_info",
- "pretty_assertions",
- "reqwest 0.12.28",
- "seccompiler",
- "serde",
- "serde_json",
- "strum_macros 0.28.0",
- "thiserror 2.0.18",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "codex-otel-trace-websocket"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "axum",
- "futures",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-plugin"
-version = "0.0.0"
-dependencies = [
- "codex-config",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "codex-utils-plugins",
- "pretty_assertions",
- "serde_json",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "codex-process-hardening"
-version = "0.0.0"
-dependencies = [
- "libc",
- "pretty_assertions",
-]
-
-[[package]]
-name = "codex-prompts"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-collaboration-mode-templates",
- "codex-context-fragments",
- "codex-execpolicy",
- "codex-git-utils",
- "codex-guardian-context",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-template",
- "pretty_assertions",
- "tracing",
-]
-
-[[package]]
-name = "codex-protocol"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chardetng",
- "chrono",
- "codex-async-utils",
- "codex-execpolicy",
- "codex-extension-items",
- "codex-http-client",
- "codex-network-proxy",
- "codex-utils-absolute-path",
- "codex-utils-image",
- "codex-utils-path-uri",
- "codex-utils-redacted-string",
- "codex-utils-string",
- "encoding_rs",
- "gix-url",
- "globset",
- "http 1.4.0",
- "icu_decimal",
- "icu_locale_core",
- "icu_provider",
- "landlock",
- "pretty_assertions",
- "quick-xml 0.41.0",
- "schemars 0.8.22",
- "seccompiler",
- "serde",
- "serde_json",
- "serde_with",
- "strum 0.27.2",
- "strum_macros 0.28.0",
- "sys-locale",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "ts-rs",
- "uuid",
- "wildmatch",
-]
-
-[[package]]
-name = "codex-queue-extension"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-core",
- "codex-extension-api",
- "codex-protocol",
- "codex-state",
- "codex-thread-store",
- "codex-utils-absolute-path",
- "core_test_support",
- "pretty_assertions",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "codex-realtime-webrtc"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-build-info",
- "codex-install-context",
- "codex-utils-pty",
- "ctor 0.6.3",
- "futures",
- "libc",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-response-debug-context"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "codex-api",
- "http 1.4.0",
- "pretty_assertions",
- "serde_json",
-]
-
-[[package]]
-name = "codex-responses-api-proxy"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "codex-process-hardening",
- "ctor 0.6.3",
- "libc",
- "pretty_assertions",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "tiny_http",
- "zeroize",
-]
-
-[[package]]
-name = "codex-rmcp-client"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64 0.22.1",
- "bytes",
- "codex-api",
- "codex-config",
- "codex-exec-server",
- "codex-http-client",
- "codex-keyring-store",
- "codex-network-proxy",
- "codex-protocol",
- "codex-secrets",
- "codex-utils-cargo-bin",
- "codex-utils-home-dir",
- "codex-utils-path-uri",
- "codex-utils-pty",
- "futures",
- "http 1.4.0",
- "keyring",
- "libc",
- "memchr",
- "oauth2",
- "pretty_assertions",
- "rmcp",
- "serde",
- "serde_json",
- "serial_test",
- "sha2 0.10.9",
- "sse-stream",
- "tempfile",
- "thiserror 2.0.18",
- "tiny_http",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "tracing-test",
- "url",
- "urlencoding",
- "webbrowser",
- "which 8.0.0",
- "windows-sys 0.52.0",
- "wiremock",
-]
-
-[[package]]
-name = "codex-rollout"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "codex-extension-items",
- "codex-file-search",
- "codex-git-utils",
- "codex-history",
- "codex-otel",
- "codex-protocol",
- "codex-state",
- "codex-utils-absolute-path",
- "codex-utils-path",
- "pretty_assertions",
- "regex",
- "serde",
- "serde_json",
- "tempfile",
- "time",
- "tokio",
- "tracing",
- "uuid",
- "zstd",
-]
-
-[[package]]
-name = "codex-rollout-trace"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-code-mode",
- "codex-protocol",
- "http 1.4.0",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "codex-sandboxing"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-mxc-sandbox",
- "codex-network-proxy",
- "codex-otel",
- "codex-protocol",
- "codex-uds",
- "codex-utils-absolute-path",
- "codex-utils-home-dir",
- "codex-utils-path-uri",
- "codex-utils-pty",
- "codex-windows-sandbox",
- "dunce",
- "libc",
- "pretty_assertions",
- "regex-lite",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing",
- "url",
- "which 8.0.0",
-]
-
-[[package]]
-name = "codex-secrets"
-version = "0.0.0"
-dependencies = [
- "age",
- "anyhow",
- "base64 0.22.1",
- "codex-git-utils",
- "codex-keyring-store",
- "keyring",
- "pretty_assertions",
- "rand 0.9.3",
- "regex",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "tracing",
-]
-
-[[package]]
-name = "codex-shell-command"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "codex-protocol",
- "codex-utils-absolute-path",
- "libc",
- "once_cell",
- "pretty_assertions",
- "regex",
- "serde",
- "serde_json",
- "shlex",
- "tempfile",
- "tree-sitter",
- "tree-sitter-bash",
- "tree-sitter-powershell",
- "url",
- "which 8.0.0",
-]
-
-[[package]]
-name = "codex-shell-escalation"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "codex-protocol",
- "codex-utils-absolute-path",
- "libc",
- "pretty_assertions",
- "serde",
- "serde_json",
- "socket2 0.6.3",
- "tempfile",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "codex-skills"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
- "codex-shell-command",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "include_dir",
- "pretty_assertions",
- "serde",
- "serde_yaml",
- "shlex",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "codex-skills-extension"
-version = "0.0.0"
-dependencies = [
- "assert_matches",
- "codex-analytics",
- "codex-config",
- "codex-exec-server",
- "codex-extension-api",
- "codex-mcp",
- "codex-models-manager",
- "codex-otel",
- "codex-protocol",
- "codex-skills",
- "codex-tools",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-path-uri",
- "codex-utils-plugins",
- "codex-utils-string",
- "dirs",
- "dunce",
- "futures",
- "insta",
- "opentelemetry_sdk",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
- "tokio",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "codex-state"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "codex-git-utils",
- "codex-history",
- "codex-protocol",
- "codex-utils-absolute-path",
- "libsqlite3-sys",
- "log",
- "pretty_assertions",
- "scopeguard",
- "serde",
- "serde_json",
- "sqlx",
- "strum 0.27.2",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "codex-stdio-to-uds"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-uds",
- "codex-utils-cargo-bin",
- "pretty_assertions",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "codex-tcp-tunnel"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bytes",
- "clap",
- "h3",
- "h3-quinn",
- "http 1.4.0",
- "pretty_assertions",
- "quinn",
- "rand 0.9.3",
- "rcgen",
- "rustls",
- "rustls-native-certs",
- "serde_json",
- "tokio",
- "url",
-]
-
-[[package]]
-name = "codex-terminal-detection"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
- "tracing",
-]
-
-[[package]]
-name = "codex-test-binary-support"
-version = "0.0.0"
-dependencies = [
- "codex-arg0",
- "tempfile",
-]
-
-[[package]]
-name = "codex-thread-manager-sample"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "codex-core-api",
- "serde_json",
- "tracing",
-]
-
-[[package]]
-name = "codex-thread-store"
-version = "0.0.0"
-dependencies = [
- "chrono",
- "codex-app-server-protocol",
- "codex-extension-items",
- "codex-git-utils",
- "codex-install-context",
- "codex-otel",
- "codex-protocol",
- "codex-rollout",
- "codex-state",
- "codex-utils-absolute-path",
- "codex-utils-path",
- "codex-utils-path-uri",
- "futures",
- "pretty_assertions",
- "pulldown-cmark",
- "serde",
- "serde_json",
- "sqlx",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "uuid",
- "zstd",
-]
-
-[[package]]
-name = "codex-tools"
-version = "0.0.0"
-dependencies = [
- "bitflags 2.13.1",
- "codex-code-mode",
- "codex-connectors",
- "codex-extension-items",
- "codex-features",
- "codex-file-system",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-output-truncation",
- "codex-utils-string",
- "jsonptr",
- "pretty_assertions",
- "rmcp",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tracing",
- "urlencoding",
-]
-
-[[package]]
-name = "codex-tui"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "app_test_support",
- "arboard",
- "assert_matches",
- "axum",
- "base64 0.22.1",
- "chrono",
- "clap",
- "codex-ansi-escape",
- "codex-app-server-client",
- "codex-app-server-daemon",
- "codex-app-server-protocol",
- "codex-arg0",
- "codex-backend-client",
- "codex-build-info",
- "codex-cloud-config",
- "codex-config",
- "codex-connectors",
- "codex-context-fragments",
- "codex-core-plugins",
- "codex-exec-server",
- "codex-features",
- "codex-feedback",
- "codex-file-search",
- "codex-git-utils",
- "codex-history",
- "codex-http-client",
- "codex-install-context",
- "codex-login",
- "codex-mcp",
- "codex-mermaid",
- "codex-message-history",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-models-manager",
- "codex-otel",
- "codex-plugin",
- "codex-protocol",
- "codex-realtime-webrtc",
- "codex-rollout",
- "codex-sandboxing",
- "codex-shell-command",
- "codex-state",
- "codex-terminal-detection",
- "codex-uds",
- "codex-utils-absolute-path",
- "codex-utils-approval-presets",
- "codex-utils-cargo-bin",
- "codex-utils-cli",
- "codex-utils-elapsed",
- "codex-utils-fuzzy-match",
- "codex-utils-home-dir",
- "codex-utils-oss",
- "codex-utils-path",
- "codex-utils-path-uri",
- "codex-utils-plugins",
- "codex-utils-sandbox-summary",
- "codex-utils-sleep-inhibitor",
- "codex-utils-string",
- "codex-windows-sandbox",
- "codex-worktree",
- "color-eyre",
- "core_test_support",
- "crossterm",
- "derive_more 2.1.1",
- "diffy",
- "dirs",
- "dunce",
- "futures",
- "http 1.4.0",
- "image",
- "insta",
- "itertools 0.14.0",
- "lazy_static",
- "libc",
- "objc2-app-kit",
- "pathdiff",
- "pretty_assertions",
- "pulldown-cmark",
- "rand 0.9.3",
- "ratatui",
- "ratatui-macros",
- "regex-lite",
- "reqwest 0.12.28",
- "rmcp",
- "semver",
- "serde",
- "serde_json",
- "serial_test",
- "sha2 0.10.9",
- "shlex",
- "strum 0.27.2",
- "strum_macros 0.28.0",
- "supports-color 3.0.2",
- "syntect",
- "tempfile",
- "textwrap 0.16.2",
- "thiserror 2.0.18",
- "tiny_http",
- "tokio",
- "tokio-stream",
- "tokio-tungstenite",
- "tokio-util",
- "toml 0.9.11+spec-1.1.0",
- "toml_edit 0.24.0+spec-1.1.0",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "two-face",
- "unicode-segmentation",
- "unicode-width 0.2.1",
- "url",
- "urlencoding",
- "uuid",
- "vt100",
- "webbrowser",
- "which 8.0.0",
- "windows-sys 0.52.0",
- "winsplit",
- "wiremock",
- "zbus",
-]
-
-[[package]]
-name = "codex-uds"
-version = "0.0.0"
-dependencies = [
- "async-io",
- "libc",
- "pretty_assertions",
- "tempfile",
- "tokio",
- "tokio-util",
- "uds_windows",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "codex-user-verification"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "core-foundation 0.10.1",
- "dirs",
- "objc2",
- "objc2-foundation",
- "objc2-local-authentication",
- "p256",
- "pretty_assertions",
- "security-framework 3.5.1",
- "security-framework-sys",
- "sha2 0.10.9",
- "tempfile",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "codex-utils-absolute-path"
-version = "0.0.0"
-dependencies = [
- "dirs",
- "dunce",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "tempfile",
- "ts-rs",
-]
-
-[[package]]
-name = "codex-utils-approval-presets"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
-]
-
-[[package]]
-name = "codex-utils-audio"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "codex-protocol",
- "codex-utils-cache",
- "codex-utils-string",
- "pretty_assertions",
- "symphonia",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "codex-utils-cache"
-version = "0.0.0"
-dependencies = [
- "lru",
- "sha1 0.10.6",
- "tokio",
-]
-
-[[package]]
-name = "codex-utils-cargo-bin"
-version = "0.0.0"
-dependencies = [
- "assert_cmd",
- "runfiles",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "codex-utils-cli"
-version = "0.0.0"
-dependencies = [
- "clap",
- "codex-protocol",
- "codex-shell-command",
- "pretty_assertions",
- "serde",
- "toml 0.9.11+spec-1.1.0",
-]
-
-[[package]]
-name = "codex-utils-elapsed"
-version = "0.0.0"
-
-[[package]]
-name = "codex-utils-fuzzy-match"
-version = "0.0.0"
-
-[[package]]
-name = "codex-utils-git-discovery"
-version = "0.0.0"
-dependencies = [
- "codex-git-utils",
- "codex-utils-absolute-path",
- "futures",
- "pretty_assertions",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "codex-utils-home-dir"
-version = "0.0.0"
-dependencies = [
- "codex-utils-absolute-path",
- "dirs",
- "pretty_assertions",
- "tempfile",
-]
-
-[[package]]
-name = "codex-utils-image"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "codex-utils-cache",
- "divan",
- "image",
- "mime_guess",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "codex-utils-json-to-toml"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
- "serde_json",
- "toml 0.9.11+spec-1.1.0",
-]
-
-[[package]]
-name = "codex-utils-oss"
-version = "0.0.0"
-dependencies = [
- "codex-core",
- "codex-lmstudio",
- "codex-model-provider-info",
- "codex-ollama",
-]
-
-[[package]]
-name = "codex-utils-output-truncation"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
- "codex-utils-string",
- "pretty_assertions",
-]
-
-[[package]]
-name = "codex-utils-path"
-version = "0.0.0"
-dependencies = [
- "codex-utils-absolute-path",
- "dunce",
- "pretty_assertions",
- "tempfile",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "codex-utils-path-uri"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "codex-utils-absolute-path",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "ts-rs",
- "url",
- "urlencoding",
-]
-
-[[package]]
-name = "codex-utils-plugins"
-version = "0.0.0"
-dependencies = [
- "codex-exec-server",
- "codex-exec-server-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "codex-utils-pty"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "filedescriptor",
- "lazy_static",
- "libc",
- "log",
- "portable-pty",
- "pretty_assertions",
- "shared_library",
- "tempfile",
- "tokio",
- "winapi",
-]
-
-[[package]]
-name = "codex-utils-readiness"
-version = "0.0.0"
-dependencies = [
- "assert_matches",
- "thiserror 2.0.18",
- "time",
- "tokio",
-]
-
-[[package]]
-name = "codex-utils-redacted-string"
-version = "0.0.0"
-dependencies = [
- "schemars 0.8.22",
- "serde",
-]
-
-[[package]]
-name = "codex-utils-rustls-provider"
-version = "0.0.0"
-dependencies = [
- "rustls",
-]
-
-[[package]]
-name = "codex-utils-sandbox-summary"
-version = "0.0.0"
-dependencies = [
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-path-uri",
- "pretty_assertions",
-]
-
-[[package]]
-name = "codex-utils-sleep-inhibitor"
-version = "0.0.0"
-dependencies = [
- "core-foundation 0.9.4",
- "libc",
- "tracing",
- "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "codex-utils-stream-parser"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
-]
-
-[[package]]
-name = "codex-utils-string"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
- "regex-lite",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "codex-utils-template"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
-]
-
-[[package]]
-name = "codex-v8-poc"
-version = "0.0.0"
-dependencies = [
- "pretty_assertions",
- "v8",
-]
-
-[[package]]
-name = "codex-voice-host"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-install-context",
- "codex-process-hardening",
- "codex-realtime-webrtc",
- "codex-utils-cargo-bin",
- "cpal",
- "crossbeam-queue",
- "futures",
- "gstreamer",
- "gstreamer-app",
- "gstreamer-audio",
- "libloading",
- "opus",
- "pretty_assertions",
- "rand 0.9.3",
- "rtc",
- "rubato",
- "sonora",
- "tempfile",
- "tokio",
- "webrtc",
-]
-
-[[package]]
-name = "codex-web-search-extension"
-version = "0.0.0"
-dependencies = [
- "codex-api",
- "codex-core",
- "codex-extension-api",
- "codex-extension-items",
- "codex-login",
- "codex-model-provider",
- "codex-model-provider-info",
- "codex-otel",
- "codex-protocol",
- "codex-tools",
- "http 1.4.0",
- "pretty_assertions",
- "schemars 0.8.22",
- "serde_json",
- "url",
-]
-
-[[package]]
-name = "codex-websocket-client"
-version = "0.0.0"
-dependencies = [
- "codex-http-client",
- "codex-utils-rustls-provider",
- "futures",
- "pretty_assertions",
- "rcgen",
- "rustls",
- "tokio",
- "tokio-rustls",
- "tokio-tungstenite",
- "url",
-]
-
-[[package]]
-name = "codex-windows-sandbox"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "chrono",
- "codex-otel",
- "codex-protocol",
- "codex-utils-absolute-path",
- "codex-utils-pty",
- "codex-utils-string",
- "dirs-next",
- "dunce",
- "glob",
- "pretty_assertions",
- "rand 0.8.6",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing-appender",
- "windows 0.58.0",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "codex-windows-sandbox-service"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-cloud-config",
- "codex-config",
- "codex-core",
- "codex-windows-sandbox",
- "pretty_assertions",
- "serde_json",
- "tokio",
- "toml 0.9.11+spec-1.1.0",
- "windows 0.58.0",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "codex-workload-identity"
-version = "0.0.0"
-dependencies = [
- "codex-http-client",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "url",
- "wiremock",
-]
-
-[[package]]
-name = "codex-worktree"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "codex-git-utils",
- "codex-protocol",
- "dunce",
- "pretty_assertions",
- "serde",
- "serde_json",
- "tempfile",
- "uuid",
-]
-
-[[package]]
 name = "color-eyre"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5603,27 +5603,27 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
+ "ava-analytics",
+ "ava-arg0",
+ "ava-attachment-store",
+ "ava-config",
+ "ava-core",
+ "ava-exec-server",
+ "ava-extension-api",
+ "ava-features",
+ "ava-guardian-v2",
+ "ava-home",
+ "ava-hooks",
+ "ava-http-client",
+ "ava-login",
+ "ava-model-provider-info",
+ "ava-models-manager",
+ "ava-protocol",
+ "ava-thread-store",
+ "ava-utils-absolute-path",
+ "ava-utils-cargo-bin",
+ "ava-utils-path-uri",
  "base64 0.22.1",
- "codex-analytics",
- "codex-arg0",
- "codex-attachment-store",
- "codex-config",
- "codex-core",
- "codex-exec-server",
- "codex-extension-api",
- "codex-features",
- "codex-guardian-v2",
- "codex-home",
- "codex-hooks",
- "codex-http-client",
- "codex-login",
- "codex-model-provider-info",
- "codex-models-manager",
- "codex-protocol",
- "codex-thread-store",
- "codex-utils-absolute-path",
- "codex-utils-cargo-bin",
- "codex-utils-path-uri",
  "ctor 0.6.3",
  "futures",
  "notify",

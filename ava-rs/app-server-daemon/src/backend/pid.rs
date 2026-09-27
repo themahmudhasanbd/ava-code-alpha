@@ -16,7 +16,7 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
 #[cfg(any(unix, windows))]
-use codex_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR;
+use ava_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR;
 use serde::Deserialize;
 use serde::Serialize;
 use tokio::fs;
@@ -37,7 +37,7 @@ const STDERR_LOG_TAIL_BYTES: u64 = 4096;
 #[cfg_attr(not(any(unix, windows)), allow(dead_code))]
 pub(crate) struct PidBackend {
     pub(super) feature_overrides: BTreeMap<String, bool>,
-    codex_bin: PathBuf,
+    ava_bin: PathBuf,
     pid_file: PathBuf,
     lock_file: PathBuf,
     command_kind: PidCommandKind,
@@ -99,11 +99,11 @@ impl PidBackend {
         }
     }
 
-    pub(crate) fn new(codex_bin: PathBuf, pid_file: PathBuf, remote_control_enabled: bool) -> Self {
+    pub(crate) fn new(ava_bin: PathBuf, pid_file: PathBuf, remote_control_enabled: bool) -> Self {
         let lock_file = pid_file.with_extension("pid.lock");
         Self {
             feature_overrides: BTreeMap::new(),
-            codex_bin,
+            ava_bin,
             pid_file,
             lock_file,
             command_kind: PidCommandKind::AppServer {
@@ -113,14 +113,14 @@ impl PidBackend {
     }
 
     pub(crate) fn new_update_loop(
-        codex_bin: PathBuf,
+        ava_bin: PathBuf,
         pid_file: PathBuf,
         restore_release: Option<String>,
     ) -> Self {
         let lock_file = pid_file.with_extension("pid.lock");
         Self {
             feature_overrides: BTreeMap::new(),
-            codex_bin,
+            ava_bin,
             pid_file,
             lock_file,
             command_kind: PidCommandKind::UpdateLoop { restore_release },
@@ -187,13 +187,13 @@ impl PidBackend {
                 }
                 match self.command_kind {
                     PidCommandKind::AppServer { .. } => {
-                        let codex_home = self
+                        let ava_home = self
                             .pid_file
                             .parent()
                             .and_then(Path::parent)
-                            .context("daemon pid path has no Codex home")?;
+                            .context("daemon pid path has no Ava home")?;
                         let socket_path =
-                            codex_app_server_transport::app_server_control_socket_path(codex_home)?;
+                            ava_app_server_transport::app_server_control_socket_path(ava_home)?;
                         if let Err(err) =
                             crate::client::request_shutdown(socket_path.as_path(), pid).await
                         {

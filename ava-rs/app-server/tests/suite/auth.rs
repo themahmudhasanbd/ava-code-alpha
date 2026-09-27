@@ -6,20 +6,20 @@ use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
 use chrono::Duration;
 use chrono::Utc;
-use codex_app_server_protocol::Account;
-use codex_app_server_protocol::AuthMode;
-use codex_app_server_protocol::GetAccountParams;
-use codex_app_server_protocol::GetAccountResponse;
-use codex_app_server_protocol::GetAuthStatusParams;
-use codex_app_server_protocol::GetAuthStatusResponse;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
-use codex_login::REFRESH_TOKEN_URL_OVERRIDE_ENV_VAR;
-use codex_protocol::account::PlanType as AccountPlanType;
+use ava_app_server_protocol::Account;
+use ava_app_server_protocol::AuthMode;
+use ava_app_server_protocol::GetAccountParams;
+use ava_app_server_protocol::GetAccountResponse;
+use ava_app_server_protocol::GetAuthStatusParams;
+use ava_app_server_protocol::GetAuthStatusResponse;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
+use ava_login::REFRESH_TOKEN_URL_OVERRIDE_ENV_VAR;
+use ava_protocol::account::PlanType as AccountPlanType;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use tempfile::TempDir;
@@ -36,7 +36,7 @@ use wiremock::matchers::path;
 const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
 
 fn create_config_toml_custom_provider(
-    codex_home: &Path,
+    ava_home: &Path,
     requires_openai_auth: bool,
 ) -> std::io::Result<()> {
     let mut config = MockResponsesConfig::new("http://127.0.0.1:0")
@@ -45,11 +45,11 @@ fn create_config_toml_custom_provider(
     if requires_openai_auth {
         config = config.with_provider_config("requires_openai_auth = true");
     }
-    config.write(codex_home)
+    config.write(ava_home)
 }
 
-fn create_config_toml(codex_home: &Path) -> std::io::Result<()> {
-    let config_toml = codex_home.join("config.toml");
+fn create_config_toml(ava_home: &Path) -> std::io::Result<()> {
+    let config_toml = ava_home.join("config.toml");
     std::fs::write(
         config_toml,
         r#"
@@ -63,8 +63,8 @@ shell_snapshot = false
     )
 }
 
-fn create_config_toml_forced_login(codex_home: &Path, forced_method: &str) -> std::io::Result<()> {
-    let config_toml = codex_home.join("config.toml");
+fn create_config_toml_forced_login(ava_home: &Path, forced_method: &str) -> std::io::Result<()> {
+    let config_toml = ava_home.join("config.toml");
     let contents = format!(
         r#"
 model = "mock-model"
@@ -90,11 +90,11 @@ async fn login_with_api_key_via_request(mcp: &mut TestAppServer, api_key: &str) 
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_no_auth() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -116,11 +116,11 @@ async fn get_auth_status_no_auth() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_with_api_key() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -143,8 +143,8 @@ async fn get_auth_status_with_api_key() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn personal_access_token_without_email_supports_auth_status_and_account_read() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
 
     let server = MockServer::start().await;
     Mock::given(method("GET"))
@@ -164,12 +164,12 @@ async fn personal_access_token_without_email_supports_auth_status_and_account_re
     let authapi_base_url = server.uri();
     let mut mcp = TestAppServer::builder()
         .with_mock_chatgpt_backend()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("OPENAI_API_KEY", None),
-            ("CODEX_ACCESS_TOKEN", Some("at-test-token")),
-            ("CODEX_AUTHAPI_BASE_URL", Some(authapi_base_url.as_str())),
+            ("AVA_ACCESS_TOKEN", Some("at-test-token")),
+            ("AVA_AUTHAPI_BASE_URL", Some(authapi_base_url.as_str())),
         ])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -220,11 +220,11 @@ async fn personal_access_token_without_email_supports_auth_status_and_account_re
     assert_eq!(
         to_response::<GetAccountResponse>(response)?,
         GetAccountResponse {
-            workspace_routing: Some(codex_app_server_protocol::WorkspaceRouting {
+            workspace_routing: Some(ava_app_server_protocol::WorkspaceRouting {
                 chatgpt_account_id: "account-123".to_string(),
                 backend_origin: "https://chatgpt.com".to_string(),
                 account_routing_override:
-                    codex_app_server_protocol::AccountRoutingOverride::NoConstraint,
+                    ava_app_server_protocol::AccountRoutingOverride::NoConstraint,
             }),
             account: Some(Account::Chatgpt {
                 email: None,
@@ -240,11 +240,11 @@ async fn personal_access_token_without_email_supports_auth_status_and_account_re
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_with_api_key_when_auth_not_required() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml_custom_provider(codex_home.path(), /*requires_openai_auth*/ false)?;
+    let ava_home = TempDir::new()?;
+    create_config_toml_custom_provider(ava_home.path(), /*requires_openai_auth*/ false)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -272,11 +272,11 @@ async fn get_auth_status_with_api_key_when_auth_not_required() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_with_api_key_no_include_token() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -299,11 +299,11 @@ async fn get_auth_status_with_api_key_no_include_token() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_with_api_key_refresh_requested() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -332,10 +332,10 @@ async fn get_auth_status_with_api_key_refresh_requested() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_omits_token_after_permanent_refresh_failure() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("stale-access-token")
             .refresh_token("stale-refresh-token")
             .account_id("acct_123")
@@ -358,7 +358,7 @@ async fn get_auth_status_omits_token_after_permanent_refresh_failure() -> Result
 
     let refresh_url = format!("{}/oauth/token", server.uri());
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("OPENAI_API_KEY", None),
@@ -405,10 +405,10 @@ async fn get_auth_status_omits_token_after_permanent_refresh_failure() -> Result
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_omits_token_after_proactive_refresh_failure() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("stale-access-token")
             .refresh_token("stale-refresh-token")
             .account_id("acct_123")
@@ -432,7 +432,7 @@ async fn get_auth_status_omits_token_after_proactive_refresh_failure() -> Result
 
     let refresh_url = format!("{}/oauth/token", server.uri());
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("OPENAI_API_KEY", None),
@@ -468,10 +468,10 @@ async fn get_auth_status_omits_token_after_proactive_refresh_failure() -> Result
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_auth_status_returns_token_after_proactive_refresh_recovery() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("stale-access-token")
             .refresh_token("stale-refresh-token")
             .account_id("acct_123")
@@ -495,7 +495,7 @@ async fn get_auth_status_returns_token_after_proactive_refresh_recovery() -> Res
 
     let refresh_url = format!("{}/oauth/token", server.uri());
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("OPENAI_API_KEY", None),
@@ -526,7 +526,7 @@ async fn get_auth_status_returns_token_after_proactive_refresh_recovery() -> Res
     );
 
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("recovered-access-token")
             .refresh_token("recovered-refresh-token")
             .account_id("acct_123")
@@ -563,11 +563,11 @@ async fn get_auth_status_returns_token_after_proactive_refresh_recovery() -> Res
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn login_api_key_rejected_when_forced_chatgpt() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    create_config_toml_forced_login(codex_home.path(), "chatgpt")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml_forced_login(ava_home.path(), "chatgpt")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;

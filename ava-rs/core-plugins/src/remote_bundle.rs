@@ -8,15 +8,15 @@ use crate::store::PluginStore;
 use crate::store::PluginStoreError;
 use crate::store::error_context_sub_error_type;
 use crate::store::validate_plugin_version_segment;
-use codex_http_client::HttpResponse;
-use codex_http_client::RouteAwareRequestError;
-use codex_plugin::PluginId;
-use codex_plugin::PluginIdError;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::AGENT_PLUGIN_MANIFEST_RELATIVE_PATH;
-use codex_utils_plugins::AgentPluginSchemaStatus;
-use codex_utils_plugins::agent_plugin_schema_status;
-use codex_utils_plugins::find_plugin_manifest_path;
+use ava_http_client::HttpResponse;
+use ava_http_client::RouteAwareRequestError;
+use ava_plugin::PluginId;
+use ava_plugin::PluginIdError;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::AGENT_PLUGIN_MANIFEST_RELATIVE_PATH;
+use ava_utils_plugins::AgentPluginSchemaStatus;
+use ava_utils_plugins::agent_plugin_schema_status;
+use ava_utils_plugins::find_plugin_manifest_path;
 use http::Method;
 use http::StatusCode;
 use serde_json::Value as JsonValue;
@@ -35,7 +35,7 @@ const REMOTE_PLUGIN_BUNDLE_MAX_EXTRACTED_BYTES: u64 = 512 * 1024 * 1024;
 const REMOTE_PLUGIN_INSTALL_STAGING_DIR: &str = "plugins/.remote-plugin-install-staging";
 #[cfg(debug_assertions)]
 const TEST_ALLOW_LOOPBACK_HTTP_REMOTE_PLUGIN_BUNDLES_ENV: &str =
-    "CODEX_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS";
+    "AVA_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS";
 
 #[derive(Debug, Clone)]
 pub struct ValidatedRemotePluginBundle {
@@ -107,7 +107,7 @@ pub enum RemotePluginBundleInstallError {
     DownloadBody {
         url: String,
         #[source]
-        source: codex_http_client::HttpError,
+        source: ava_http_client::HttpError,
     },
 
     #[error("remote plugin bundle download from {url} exceeded maximum size of {max_bytes} bytes")]
@@ -256,12 +256,12 @@ fn is_loopback_url(url: &Url) -> bool {
 
 pub async fn download_and_install_remote_plugin_bundle(
     config: &RemotePluginServiceConfig,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     bundle: ValidatedRemotePluginBundle,
 ) -> Result<PluginInstallResult, RemotePluginBundleInstallError> {
     let bundle_bytes = download_remote_plugin_bundle(config, &bundle).await?;
     tokio::task::spawn_blocking(move || {
-        install_remote_plugin_bundle(codex_home, bundle, bundle_bytes)
+        install_remote_plugin_bundle(ava_home, bundle, bundle_bytes)
     })
     .await
     .map_err(|err| {
@@ -409,11 +409,11 @@ fn enforce_download_size_limit(
 }
 
 pub(crate) fn install_remote_plugin_bundle(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     bundle: ValidatedRemotePluginBundle,
     bundle_bytes: Vec<u8>,
 ) -> Result<PluginInstallResult, RemotePluginBundleInstallError> {
-    let staging_root = codex_home.join(REMOTE_PLUGIN_INSTALL_STAGING_DIR);
+    let staging_root = ava_home.join(REMOTE_PLUGIN_INSTALL_STAGING_DIR);
     fs::create_dir_all(&staging_root).map_err(|source| {
         RemotePluginBundleInstallError::io(
             "failed to create remote plugin bundle staging directory",
@@ -439,7 +439,7 @@ pub(crate) fn install_remote_plugin_bundle(
         ))
     })?;
 
-    let store = PluginStore::try_new(codex_home)?;
+    let store = PluginStore::try_new(ava_home)?;
     let remote_plugin_id = bundle.remote_plugin_id;
     let result = store
         .install_with_version(plugin_root, bundle.plugin_id, bundle.plugin_version)
@@ -811,11 +811,11 @@ mod tests {
 
     #[test]
     fn install_rejects_invalid_tar_gz_bundle() {
-        let codex_home = tempdir().expect("tempdir");
+        let ava_home = tempdir().expect("tempdir");
         let bundle = valid_remote_plugin_bundle();
 
         let err = install_remote_plugin_bundle(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             bundle,
             b"not a tar.gz".to_vec(),
         )
@@ -826,11 +826,11 @@ mod tests {
 
     #[test]
     fn install_rejects_bundle_without_standard_plugin_root() {
-        let codex_home = tempdir().expect("tempdir");
+        let ava_home = tempdir().expect("tempdir");
         let bundle = valid_remote_plugin_bundle();
 
         let err = install_remote_plugin_bundle(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             bundle,
             tar_gz_bytes(&[("README.md", b"missing plugin manifest", /*mode*/ 0o644)]),
         )
@@ -843,20 +843,20 @@ mod tests {
 
     #[test]
     fn install_persists_remote_plugin_install_metadata() {
-        let codex_home = tempdir().expect("tempdir");
+        let ava_home = tempdir().expect("tempdir");
         let bundle = valid_remote_plugin_bundle();
 
         let result = install_remote_plugin_bundle(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             bundle,
             tar_gz_bytes(&[(
-                ".codex-plugin/plugin.json",
+                ".ava-plugin/plugin.json",
                 br#"{"name":"linear","version":"1.2.3"}"#,
                 /*mode*/ 0o644,
             )]),
         )
         .expect("install bundle");
-        let store = PluginStore::new(codex_home.path().to_path_buf());
+        let store = PluginStore::new(ava_home.path().to_path_buf());
 
         assert_eq!(
             store.remote_plugin_id(&result.plugin_id).unwrap(),
@@ -864,7 +864,7 @@ mod tests {
         );
         let metadata_path = store
             .plugin_base_root(&result.plugin_id)
-            .join(".codex-remote-plugin-install.json");
+            .join(".ava-remote-plugin-install.json");
         assert_eq!(
             serde_json::from_str::<serde_json::Value>(
                 &std::fs::read_to_string(metadata_path.as_path())
@@ -880,7 +880,7 @@ mod tests {
 
     #[test]
     fn install_preserves_non_global_bundle_manifest_metadata() {
-        let codex_home = tempdir().expect("tempdir");
+        let ava_home = tempdir().expect("tempdir");
         let bundle = validate_remote_plugin_bundle(
             REMOTE_PLUGIN_ID,
             "workspace-shared-with-me",
@@ -898,11 +898,11 @@ mod tests {
         .expect("valid install plan");
 
         let result = install_remote_plugin_bundle(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             bundle,
             tar_gz_bytes(&[
                 (
-                    ".codex-plugin/plugin.json",
+                    ".ava-plugin/plugin.json",
                     br#"{"name":"linear","version":"bundle-version"}"#,
                     /*mode*/ 0o644,
                 ),
@@ -920,7 +920,7 @@ mod tests {
             &std::fs::read_to_string(
                 result
                     .installed_path
-                    .join(".codex-plugin/plugin.json")
+                    .join(".ava-plugin/plugin.json")
                     .as_path(),
             )
             .expect("read installed plugin manifest"),
@@ -953,10 +953,10 @@ mod tests {
     #[test]
     fn find_extracted_plugin_root_uses_local_manifest_discovery() {
         let extraction_root = tempdir().expect("tempdir");
-        std::fs::create_dir_all(extraction_root.path().join(".codex-plugin"))
+        std::fs::create_dir_all(extraction_root.path().join(".ava-plugin"))
             .expect("create manifest dir");
         std::fs::write(
-            extraction_root.path().join(".codex-plugin/plugin.json"),
+            extraction_root.path().join(".ava-plugin/plugin.json"),
             r#"{"name":"linear"}"#,
         )
         .expect("write manifest");
@@ -971,9 +971,9 @@ mod tests {
     fn find_extracted_plugin_root_rejects_nested_plugin_root() {
         let extraction_root = tempdir().expect("tempdir");
         let plugin_root = extraction_root.path().join("linear");
-        std::fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create manifest dir");
+        std::fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create manifest dir");
         std::fs::write(
-            plugin_root.join(".codex-plugin/plugin.json"),
+            plugin_root.join(".ava-plugin/plugin.json"),
             r#"{"name":"linear"}"#,
         )
         .expect("write manifest");
@@ -1043,7 +1043,7 @@ mod tests {
         extract_plugin_bundle_tar_gz(
             &tar_gz_bytes(&[
                 (
-                    ".codex-plugin/plugin.json",
+                    ".ava-plugin/plugin.json",
                     b"{\"name\":\"linear\"}",
                     /*mode*/ 0o644,
                 ),

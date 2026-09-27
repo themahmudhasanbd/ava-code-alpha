@@ -12,9 +12,9 @@ use crate::cwd_prompt::CwdPromptAction;
 use crate::cwd_prompt::CwdPromptOutcome;
 use crate::legacy_core::config::Config;
 use crate::tui::Tui;
-use codex_config::types::ResumeCwdMode;
-use codex_protocol::ThreadId;
-use codex_utils_path as path_utils;
+use ava_config::types::ResumeCwdMode;
+use ava_protocol::ThreadId;
+use ava_utils_path as path_utils;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ResolveCwdOutcome {
@@ -126,7 +126,7 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let session_cwd = temp_dir.path().join("session");
         let config = crate::legacy_core::config::ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await?;
         let current_cwd = config.cwd.to_path_buf();
@@ -159,7 +159,7 @@ mod tests {
     async fn matching_resume_cwd_skips_prompt_without_configured_mode() -> color_eyre::Result<()> {
         let temp_dir = TempDir::new()?;
         let config = crate::legacy_core::config::ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await?;
         let current_cwd = config.cwd.to_path_buf();
@@ -187,7 +187,7 @@ mod tests {
     async fn configured_session_cwd_rejects_missing_metadata() -> color_eyre::Result<()> {
         let temp_dir = TempDir::new()?;
         let config = crate::legacy_core::config::ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await?;
         let current_cwd = config.cwd.to_path_buf();

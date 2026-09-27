@@ -1,7 +1,7 @@
 use super::parse_frameless_bidi_event;
 use crate::endpoint::realtime_websocket::protocol_v1::parse_realtime_event_v1;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::RealtimeHandoffRequested;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::RealtimeHandoffRequested;
 
 #[test]
 fn legacy_and_frameless_delegations_decode_to_the_same_handoff() {

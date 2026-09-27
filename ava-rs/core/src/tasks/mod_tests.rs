@@ -9,18 +9,18 @@ use crate::session::session::Session;
 use crate::session::tests::make_session_and_context_with_rx;
 use crate::session::turn_context::TurnContext;
 use crate::state::TaskKind;
-use codex_otel::MetricsClient;
-use codex_otel::MetricsConfig;
-use codex_otel::SessionTelemetry;
-use codex_otel::TURN_MEMORY_METRIC;
-use codex_otel::TURN_NETWORK_PROXY_METRIC;
-use codex_otel::TURN_TOKEN_USAGE_METRIC;
-use codex_otel::TURN_TOOL_CALL_METRIC;
-use codex_otel::TURN_UNIFIED_EXEC_RUNNING_PROCESSES_METRIC;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TokenUsage;
+use ava_otel::MetricsClient;
+use ava_otel::MetricsConfig;
+use ava_otel::SessionTelemetry;
+use ava_otel::TURN_MEMORY_METRIC;
+use ava_otel::TURN_NETWORK_PROXY_METRIC;
+use ava_otel::TURN_TOKEN_USAGE_METRIC;
+use ava_otel::TURN_TOOL_CALL_METRIC;
+use ava_otel::TURN_UNIFIED_EXEC_RUNNING_PROCESSES_METRIC;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TokenUsage;
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::metrics::InMemoryMetricExporter;
 use opentelemetry_sdk::metrics::data::AggregatedMetrics;
@@ -57,7 +57,7 @@ impl SessionTask for PendingTask {
 fn test_session_telemetry() -> SessionTelemetry {
     let exporter = InMemoryMetricExporter::default();
     let metrics = MetricsClient::new(
-        MetricsConfig::in_memory("test", "codex-core", env!("CARGO_PKG_VERSION"), exporter)
+        MetricsConfig::in_memory("test", "ava-core", env!("CARGO_PKG_VERSION"), exporter)
             .with_runtime_reader(),
     )
     .expect("in-memory metrics client");
@@ -130,7 +130,7 @@ async fn turn_completion_metrics_follow_model_switch(scenario: UsageScenario) {
     let metrics = MetricsClient::new(
         MetricsConfig::in_memory(
             "test",
-            "codex-core",
+            "ava-core",
             env!("CARGO_PKG_VERSION"),
             InMemoryMetricExporter::default(),
         )
@@ -189,7 +189,7 @@ async fn turn_completion_metrics_follow_model_switch(scenario: UsageScenario) {
             output_tokens: 70,
             reasoning_output_tokens: 40,
             total_tokens: 170,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         };
         // Local pre-turn compaction records usage with the previous model's context.
         session
@@ -216,7 +216,7 @@ async fn turn_completion_metrics_follow_model_switch(scenario: UsageScenario) {
             output_tokens: 7,
             reasoning_output_tokens: 4,
             total_tokens: 17,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         };
         // Multiple requests for one model must still produce one turn histogram sample.
         for _ in 0..2 {
@@ -239,7 +239,7 @@ async fn turn_completion_metrics_follow_model_switch(scenario: UsageScenario) {
 
     let task_result = if matches!(scenario, UsageScenario::CompactThenStop) {
         // A PostCompact hook can stop the turn before the new model samples.
-        Err(CodexErr::TurnAborted)
+        Err(AvaErr::TurnAborted)
     } else {
         Ok(None)
     };

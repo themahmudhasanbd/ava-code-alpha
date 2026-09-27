@@ -75,7 +75,7 @@ Open issue:
   ADR docs), error-code registry unified to shared/errors.ts, e2e statuses
   synced to real automation, decisions-log restructured (A–I) with
   supersession chains, acceptance criteria evidence-tagged
-- Codex visual parity pass (D034–D072 series; capture suite)
+- Ava visual parity pass (D034–D072 series; capture suite)
 - M6 Plan/Goal operating state implementation: one-Agent Agent/Plan/Goal
   transitions, immutable `.pi/plan/*.md` and `.pi/goal/*.md` checkpoints,
   approve/reject with explicit Ask-defaulted permission selection, restart
@@ -84,7 +84,7 @@ Open issue:
   renderer coverage (E2E-104–E2E-120)
 
 ### In Progress
-- Codex visual gold polish (ongoing capture-driven iteration)
+- Ava visual gold polish (ongoing capture-driven iteration)
 - Signed/notarized macOS distribution and native Windows/Linux qualification
 - Stronger plugin runtime sandbox and publisher-signature/provenance path
 - Full Playwright/UI-driven E2E coverage

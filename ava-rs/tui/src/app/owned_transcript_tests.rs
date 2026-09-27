@@ -8,9 +8,9 @@ use crate::history_cell::HistoryCell;
 use crate::history_cell::UserHistoryCell;
 use crate::session_state::ThreadSessionState;
 use crate::test_support::test_path_buf;
-use codex_app_server_protocol::AskForApproval;
-use codex_config::types::ApprovalsReviewer;
-use codex_protocol::models::PermissionProfile;
+use ava_app_server_protocol::AskForApproval;
+use ava_config::types::ApprovalsReviewer;
+use ava_protocol::models::PermissionProfile;
 use pretty_assertions::assert_eq;
 use ratatui::buffer::Buffer;
 
@@ -159,7 +159,7 @@ async fn owned_transcript_reserves_a_row_above_the_composer() -> Result<()> {
         app.chat_widget.apply_external_edit(draft.to_string());
         if label == "Detailed" {
             app.transcript_cells = vec![Arc::new(crate::history_cell::new_view_image_tool_call(
-                codex_utils_path_uri::LegacyAppPathString::from_string("assets/detail-image.png"),
+                ava_utils_path_uri::LegacyAppPathString::from_string("assets/detail-image.png"),
             ))];
             app.open_transcript_overlay(&mut tui);
             assert!(app.overlay.is_none() && app.transcript_view.is_detailed());
@@ -398,13 +398,13 @@ async fn owned_details_escape_interrupts_work_without_starting_backtrack() -> Re
     tui.set_owned_screen(/*owned*/ true)?;
     app.open_transcript_overlay(&mut tui);
     app.chat_widget.handle_server_notification(
-        ServerNotification::TurnStarted(codex_app_server_protocol::TurnStartedNotification {
+        ServerNotification::TurnStarted(ava_app_server_protocol::TurnStartedNotification {
             thread_id: thread_id.to_string(),
-            turn: codex_app_server_protocol::Turn {
+            turn: ava_app_server_protocol::Turn {
                 id: "active-turn".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
-                status: codex_app_server_protocol::TurnStatus::InProgress,
+                status: ava_app_server_protocol::TurnStatus::InProgress,
                 error: None,
                 started_at: None,
                 completed_at: None,
@@ -420,7 +420,7 @@ async fn owned_details_escape_interrupts_work_without_starting_backtrack() -> Re
     )
     .await?;
     let interrupts = std::iter::from_fn(|| events.try_recv().ok())
-        .filter(|event| matches!(event, AppEvent::CodexOp(AppCommand::Interrupt)))
+        .filter(|event| matches!(event, AppEvent::AvaOp(AppCommand::Interrupt)))
         .count();
     assert_eq!(
         (
@@ -1096,7 +1096,7 @@ async fn find_refreshes_live_details_before_searching_the_first_query() -> Resul
             "live".into(),
             vec!["printf visible\nprintf needle".into()],
             Vec::new(),
-            codex_app_server_protocol::CommandExecutionSource::Agent,
+            ava_app_server_protocol::CommandExecutionSource::Agent,
             /*interaction_input*/ None,
             /*animations_enabled*/ false,
         )),

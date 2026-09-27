@@ -1,8 +1,8 @@
 use crate::config_toml::ConfigToml;
 use crate::types::RawMcpServerConfig;
-use codex_features::FEATURES;
-use codex_features::legacy_feature_keys;
-use codex_protocol::protocol::GranularApprovalConfig;
+use ava_features::FEATURES;
+use ava_features::legacy_feature_keys;
+use ava_protocol::protocol::GranularApprovalConfig;
 use schemars::JsonSchema;
 use schemars::r#gen::SchemaGenerator;
 use schemars::r#gen::SchemaSettings;
@@ -17,7 +17,7 @@ use serde_json::Value;
 use std::path::Path;
 
 /// Determines the conditions under which the user is consulted to approve
-/// running the command proposed by Codex.
+/// running the command proposed by Ava.
 #[allow(dead_code)]
 #[derive(JsonSchema)]
 #[schemars(rename = "AskForApproval")]
@@ -47,115 +47,115 @@ pub fn features_schema(schema_gen: &mut SchemaGenerator) -> Schema {
 
     let mut validation = ObjectValidation::default();
     for feature in FEATURES {
-        if feature.id == codex_features::Feature::Artifact {
+        if feature.id == ava_features::Feature::Artifact {
             continue;
         }
-        if feature.id == codex_features::Feature::CodeMode {
+        if feature.id == ava_features::Feature::CodeMode {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::CodeModeConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::CodeModeConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::CodeModeHost {
+        if feature.id == ava_features::Feature::CodeModeHost {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::CodeModeHostConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::CodeModeHostConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::NonPrefixedMcpToolNames {
+        if feature.id == ava_features::Feature::NonPrefixedMcpToolNames {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::NonPrefixedMcpToolNamesConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::NonPrefixedMcpToolNamesConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::GuardianThreadContext {
+        if feature.id == ava_features::Feature::GuardianThreadContext {
             // This setting is already part of the guardianv2 feature table.
             continue;
         }
-        if feature.id == codex_features::Feature::GuardianV2 {
+        if feature.id == ava_features::Feature::GuardianV2 {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::GuardianV2ConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::GuardianV2ConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::MultiAgentV2 {
+        if feature.id == ava_features::Feature::MultiAgentV2 {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::MultiAgentV2ConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::MultiAgentV2ConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::TokenBudget {
+        if feature.id == ava_features::Feature::TokenBudget {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::TokenBudgetConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::TokenBudgetConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::ContextManagement {
+        if feature.id == ava_features::Feature::ContextManagement {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::ContextManagementConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::ContextManagementConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::RolloutBudget {
+        if feature.id == ava_features::Feature::RolloutBudget {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::RolloutBudgetConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::RolloutBudgetConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::CurrentTimeReminder {
+        if feature.id == ava_features::Feature::CurrentTimeReminder {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::CurrentTimeReminderConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::CurrentTimeReminderConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::SleepTool {
+        if feature.id == ava_features::Feature::SleepTool {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::SleepToolConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::SleepToolConfigToml,
                 >>(),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::AppsMcpPathOverride {
+        if feature.id == ava_features::Feature::AppsMcpPathOverride {
             validation.properties.insert(
                 feature.key.to_string(),
                 removed_apps_mcp_path_override_schema(schema_gen),
             );
             continue;
         }
-        if feature.id == codex_features::Feature::NetworkProxy {
+        if feature.id == ava_features::Feature::NetworkProxy {
             validation.properties.insert(
                 feature.key.to_string(),
-                schema_gen.subschema_for::<codex_features::FeatureToml<
-                    codex_features::NetworkProxyConfigToml,
+                schema_gen.subschema_for::<ava_features::FeatureToml<
+                    ava_features::NetworkProxyConfigToml,
                 >>(),
             );
             continue;
@@ -171,7 +171,7 @@ pub fn features_schema(schema_gen: &mut SchemaGenerator) -> Schema {
     }
     validation.properties.insert(
         "tool_registry".to_string(),
-        schema_gen.subschema_for::<codex_features::ToolRegistryConfigToml>(),
+        schema_gen.subschema_for::<ava_features::ToolRegistryConfigToml>(),
     );
     validation.additional_properties = Some(Box::new(Schema::Bool(false)));
     object.object = Some(Box::new(validation));

@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_otel::MetricsClient;
+use ava_otel::MetricsClient;
 use tracing::warn;
 
 /// Registry-issued identity captured from the executor's authenticated relay connection.
@@ -203,7 +203,7 @@ impl ExecServerTelemetry {
             .inner
             .as_ref()
             .map(|inner| inner.metrics.clone())
-            .or_else(codex_otel::global)
+            .or_else(ava_otel::global)
         else {
             return;
         };
@@ -213,8 +213,8 @@ impl ExecServerTelemetry {
         if let Err(failure_reason) = result {
             tags.push(("failure_reason", failure_reason));
         }
-        let _ = metrics.record_duration("codex.shell_snapshot.duration_ms", duration, &tags);
-        let _ = metrics.counter("codex.shell_snapshot", /*inc*/ 1, &tags);
+        let _ = metrics.record_duration("ava.shell_snapshot.duration_ms", duration, &tags);
+        let _ = metrics.counter("ava.shell_snapshot", /*inc*/ 1, &tags);
     }
 
     pub(crate) fn remote_registration_completed(&self, result: &'static str, duration: Duration) {
@@ -239,20 +239,20 @@ impl ExecServerTelemetry {
         self.with_inner(|inner| {
             inner.adjust_process_count(/*delta*/ 1);
         });
-        let parent = codex_otel::current_span_w3c_trace_context();
+        let parent = ava_otel::current_span_w3c_trace_context();
         // `parent:` accepts a local tracing span/ID, not a W3C context. A local
         // parent would keep the request span alive until process exit and delay
         // its export. Use `parent: None`, then set the W3C parent below to link
         // the spans without retaining the request span.
         let span = tracing::info_span!(
             parent: None,
-            "codex.exec_server.process",
+            "ava.exec_server.process",
             otel.kind = "internal",
             process.id = process_id,
             result = tracing::field::Empty,
         );
         if let Some(parent) = parent {
-            codex_otel::set_parent_from_w3c_trace_context(&span, &parent);
+            ava_otel::set_parent_from_w3c_trace_context(&span, &parent);
         }
         ProcessMetricGuard {
             telemetry: self.clone(),

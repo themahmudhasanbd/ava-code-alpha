@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_CREATE_TOOL;
 use core_test_support::responses::ev_completed;
@@ -19,7 +19,7 @@ use core_test_support::responses::namespace_child_tool;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -65,9 +65,9 @@ async fn canonical_plugin_disable_overrides_shared_connector_and_can_be_cleared(
         let root = home
             .path()
             .join(format!("plugins/cache/{marketplace}/{name}/local"));
-        std::fs::create_dir_all(root.join(".codex-plugin"))?;
+        std::fs::create_dir_all(root.join(".ava-plugin"))?;
         std::fs::write(
-            root.join(".codex-plugin/plugin.json"),
+            root.join(".ava-plugin/plugin.json"),
             format!(r#"{{"name":"{name}"}}"#),
         )?;
         std::fs::write(
@@ -75,9 +75,9 @@ async fn canonical_plugin_disable_overrides_shared_connector_and_can_be_cleared(
             r#"{"apps":{"calendar":{"id":"calendar"}}}"#,
         )?;
     }
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.features.enable(Feature::Apps).unwrap();
             config.chatgpt_base_url = apps.chatgpt_base_url;
@@ -112,7 +112,7 @@ async fn canonical_plugin_disable_overrides_shared_connector_and_can_be_cleared(
             ],
         )
         .await;
-        test.codex
+        test.ava-code
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "Find the calendar tool.".to_string(),
@@ -124,14 +124,14 @@ async fn canonical_plugin_disable_overrides_shared_connector_and_can_be_cleared(
                 }),
             )
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
         assert_eq!(
             namespace_child_tool(
                 &mock.requests()[1].tool_search_output(&call_id),
-                "mcp__codex_apps__google_calendar",
+                "mcp__ava_apps__google_calendar",
                 SEARCH_CALENDAR_CREATE_TOOL,
             )
             .is_some(),

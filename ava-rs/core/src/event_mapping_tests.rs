@@ -4,25 +4,25 @@ use super::parse_turn_item;
 use crate::context::ContextualUserFragment;
 use crate::context::InternalContextSource;
 use crate::context::InternalModelContextFragment;
-use codex_protocol::ResponseItemId;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::HookPromptFragment;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::WebSearchItem;
-use codex_protocol::items::build_hook_prompt_message;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ReasoningItemContent;
-use codex_protocol::models::ReasoningItemReasoningSummary;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::WebSearchAction;
-use codex_protocol::protocol::CONTEXT_WINDOW_CLOSE_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_CLOSE_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_OPEN_TAG;
-use codex_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::user_input::UserInput;
+use ava_protocol::ResponseItemId;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::HookPromptFragment;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::WebSearchItem;
+use ava_protocol::items::build_hook_prompt_message;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ReasoningItemContent;
+use ava_protocol::models::ReasoningItemReasoningSummary;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::WebSearchAction;
+use ava_protocol::protocol::CONTEXT_WINDOW_CLOSE_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_CLOSE_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_OPEN_TAG;
+use ava_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::user_input::UserInput;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -299,7 +299,7 @@ fn parses_assistant_message_input_text_for_backward_compatibility() {
 #[test]
 fn skips_unnamed_image_label_text() {
     let image_url = "data:image/png;base64,abc".to_string();
-    let label = codex_protocol::models::image_open_tag_text();
+    let label = ava_protocol::models::image_open_tag_text();
     let user_text = "Please review this image.".to_string();
 
     let item = ResponseItem::Message {
@@ -314,7 +314,7 @@ fn skips_unnamed_image_label_text() {
                 detail: Some(DEFAULT_IMAGE_DETAIL),
             },
             ContentItem::InputText {
-                text: codex_protocol::models::image_close_tag_text(),
+                text: ava_protocol::models::image_close_tag_text(),
             },
             ContentItem::InputText {
                 text: user_text.clone(),
@@ -496,7 +496,7 @@ fn parses_agent_message() {
         id: Some(ResponseItemId::with_suffix("msg", "1")),
         role: "assistant".to_string(),
         content: vec![ContentItem::OutputText {
-            text: "Hello from Codex".to_string(),
+            text: "Hello from Ava".to_string(),
         }],
         phase: None,
         internal_chat_message_metadata_passthrough: None,
@@ -509,7 +509,7 @@ fn parses_agent_message() {
             let Some(AgentMessageContent::Text { text }) = message.content.first() else {
                 panic!("expected agent message text content");
             };
-            assert_eq!(text, "Hello from Codex");
+            assert_eq!(text, "Hello from Ava");
         }
         other => panic!("expected TurnItem::AgentMessage, got {other:?}"),
     }

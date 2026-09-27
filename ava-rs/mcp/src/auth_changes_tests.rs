@@ -1,5 +1,5 @@
 use super::*;
-use codex_rmcp_client::InProcessTransportFactory;
+use ava_rmcp_client::InProcessTransportFactory;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use pretty_assertions::assert_eq;

@@ -20,20 +20,20 @@
 use crate::config::Config;
 use crate::context::UserInstructions as ContextUserInstructions;
 use crate::environment_selection::TurnEnvironmentSnapshot;
-use codex_config::ConfigLayerSource;
-use codex_config::default_project_root_markers;
-use codex_config::merge_toml_values;
-use codex_config::project_root_markers_from_config;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_extension_api::Instructions;
-use codex_file_system::FileSystemSandboxContext;
-use codex_file_system::FindUpErrorPolicy;
-use codex_file_system::find_nearest_ancestor_with_markers;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigLayerSource;
+use ava_config::default_project_root_markers;
+use ava_config::merge_toml_values;
+use ava_config::project_root_markers_from_config;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_extension_api::Instructions;
+use ava_file_system::FileSystemSandboxContext;
+use ava_file_system::FindUpErrorPolicy;
+use ava_file_system::find_nearest_ancestor_with_markers;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use futures::StreamExt;
 use std::io;
 use toml::Value as TomlValue;
@@ -349,7 +349,7 @@ impl LoadedAgentsMd {
     /// Creates source-less user instructions for tests.
     ///
     /// This cannot be gated with `#[cfg(test)]` because integration tests
-    /// compile `codex-core` as a normal dependency without that configuration.
+    /// compile `ava-core` as a normal dependency without that configuration.
     pub fn from_text_for_testing(contents: impl Into<String>) -> Self {
         let contents = contents.into();
         if contents.trim().is_empty() {

@@ -3,21 +3,21 @@ use std::path::PathBuf;
 
 use crate::JsonSchema;
 use crate::TS;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::SandboxMode;
-use codex_protocol::config_types::Verbosity;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::FileChange;
-pub use codex_protocol::protocol::GitSha;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::SandboxMode;
+use ava_protocol::config_types::Verbosity;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::FileChange;
+pub use ava_protocol::protocol::GitSha;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -69,8 +69,8 @@ pub struct InitializeCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct InitializeResponse {
     pub user_agent: String,
-    /// Absolute path to the server's $CODEX_HOME directory.
-    pub codex_home: AbsolutePathBuf,
+    /// Absolute path to the server's $AVA_HOME directory.
+    pub ava_home: AbsolutePathBuf,
     /// Platform family for the running app-server target, for example
     /// `"unix"` or `"windows"`.
     pub platform_family: String,
@@ -138,8 +138,8 @@ pub struct GitDiffToRemoteResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ApplyPatchApprovalParams {
     pub conversation_id: ThreadId,
-    /// Use to correlate this with [codex_protocol::protocol::PatchApplyBeginEvent]
-    /// and [codex_protocol::protocol::PatchApplyEndEvent].
+    /// Use to correlate this with [ava_protocol::protocol::PatchApplyBeginEvent]
+    /// and [ava_protocol::protocol::PatchApplyEndEvent].
     pub call_id: String,
     pub file_changes: HashMap<PathBuf, FileChange>,
     /// Optional explanatory reason (e.g. request for extra write access).
@@ -159,8 +159,8 @@ pub struct ApplyPatchApprovalResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ExecCommandApprovalParams {
     pub conversation_id: ThreadId,
-    /// Use to correlate this with [codex_protocol::protocol::ExecCommandBeginEvent]
-    /// and [codex_protocol::protocol::ExecCommandEndEvent].
+    /// Use to correlate this with [ava_protocol::protocol::ExecCommandBeginEvent]
+    /// and [ava_protocol::protocol::ExecCommandEndEvent].
     pub call_id: String,
     /// Identifier for this specific approval callback.
     pub approval_id: Option<String>,

@@ -5,10 +5,10 @@ use crate::effective_plugin_change::trust_materialized_plugin_hooks;
 use crate::request_serialization::RequestSerializationAccess;
 use crate::request_serialization::RequestSerializationQueueKey;
 use crate::request_serialization::RequestSerializationQueues;
-use codex_app_server_protocol::PluginReconcileChangedPlugin;
-use codex_app_server_protocol::PluginReconcileParams;
-use codex_app_server_protocol::PluginReconcileResponse;
-use codex_core_plugins::remote::RemotePluginShareDiscoverability;
+use ava_app_server_protocol::PluginReconcileChangedPlugin;
+use ava_app_server_protocol::PluginReconcileParams;
+use ava_app_server_protocol::PluginReconcileResponse;
+use ava_core_plugins::remote::RemotePluginShareDiscoverability;
 
 impl PluginRequestProcessor {
     #[tracing::instrument(level = "debug", skip_all, fields(reason = ?params.reason))]
@@ -22,7 +22,7 @@ impl PluginRequestProcessor {
         let plugins_input = config.plugins_config_input();
         let auth = self.auth_manager.auth().await;
         if !plugins_input.plugins_enabled
-            || !auth.as_ref().is_some_and(CodexAuth::uses_codex_backend)
+            || !auth.as_ref().is_some_and(AvaAuth::uses_ava_backend)
         {
             return Ok(Some(PluginReconcileResponse::default().into()));
         }

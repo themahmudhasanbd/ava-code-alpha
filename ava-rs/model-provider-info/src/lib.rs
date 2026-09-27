@@ -1,21 +1,21 @@
-//! Registry of model providers supported by Codex.
+//! Registry of model providers supported by Ava.
 //!
 //! Providers can be defined in two places:
-//!   1. Built-in defaults compiled into the binary so Codex works out-of-the-box.
-//!   2. User-defined entries inside `~/.codex/config.toml` under the `model_providers`
+//!   1. Built-in defaults compiled into the binary so Ava works out-of-the-box.
+//!   2. User-defined entries inside `~/.ava-code/config.toml` under the `model_providers`
 //!      key. These override or extend the defaults at runtime.
 //!
 //! API provider construction applies the process-wide managed residency policy also
 //! used by default HTTP headers.
 
-use codex_api::Provider as ApiProvider;
-use codex_api::RetryConfig as ApiRetryConfig;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::config_types::ModelProviderAuthInfo;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::EnvVarError;
-use codex_protocol::error::Result as CodexResult;
-use codex_utils_redacted_string::RedactedString;
+use ava_api::Provider as ApiProvider;
+use ava_api::RetryConfig as ApiRetryConfig;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::config_types::ModelProviderAuthInfo;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::EnvVarError;
+use ava_protocol::error::Result as AvaResult;
+use ava_utils_redacted_string::RedactedString;
 use http::HeaderMap;
 use http::header::HeaderName;
 use http::header::HeaderValue;
@@ -35,7 +35,7 @@ mod gateway_oauth;
 pub use gateway_oauth::GatewayOAuthConfig;
 pub use gateway_oauth::GatewayOAuthDelivery;
 
-pub const RESIDENCY_HEADER_NAME: &str = "x-openai-internal-codex-residency";
+pub const RESIDENCY_HEADER_NAME: &str = "x-openai-internal-ava-residency";
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -74,7 +74,7 @@ const MAX_REQUEST_MAX_RETRIES: u64 = 100;
 const OPENAI_PROVIDER_NAME: &str = "OpenAI";
 const OPENAI_ACTOR_AUTHORIZATION_HEADER: &str = "x-openai-actor-authorization";
 pub const OPENAI_PROVIDER_ID: &str = "openai";
-pub const CHATGPT_CODEX_BASE_URL: &str = "https://chatgpt.com/backend-api/codex";
+pub const CHATGPT_AVA_BASE_URL: &str = "https://chatgpt.com/backend-api/codex";
 const AMAZON_BEDROCK_PROVIDER_NAME: &str = "Amazon Bedrock";
 pub const AMAZON_BEDROCK_PROVIDER_ID: &str = "amazon-bedrock";
 const AMAZON_BEDROCK_RUNTIME_PROVIDER_NAME: &str = "Amazon Bedrock Runtime";
@@ -91,7 +91,7 @@ pub const AMAZON_BEDROCK_RUNTIME_GLOBAL_GPT_5_6_LUNA_MODEL_ID: &str = "global.op
 pub const AMAZON_BEDROCK_DEFAULT_BASE_URL: &str =
     "https://bedrock-mantle.us-east-1.api.aws/openai/v1";
 const AMAZON_BEDROCK_MANTLE_CLIENT_AGENT_HEADER: &str = "x-amzn-mantle-client-agent";
-const AMAZON_BEDROCK_MANTLE_CLIENT_AGENT_VALUE: &str = "codex";
+const AMAZON_BEDROCK_MANTLE_CLIENT_AGENT_VALUE: &str = "ava";
 const CHAT_WIRE_API_REMOVED_ERROR: &str = "`wire_api = \"chat\"` is no longer supported.\nHow to fix: set `wire_api = \"responses\"` in your provider config.\nMore info: https://github.com/openai/codex/discussions/7782";
 pub const LEGACY_OLLAMA_CHAT_PROVIDER_ID: &str = "ollama-chat";
 pub const OLLAMA_CHAT_PROVIDER_REMOVED_ERROR: &str = "`ollama-chat` is no longer supported.\nHow to fix: replace `ollama-chat` with `ollama` in `model_provider`, `oss_provider`, or `--local-provider`.\nMore info: https://github.com/openai/codex/discussions/7782";
@@ -137,8 +137,8 @@ pub struct ModelProviderInfo {
     pub name: String,
     /// Base URL for the provider's OpenAI-compatible API.
     pub base_url: Option<String>,
-    /// Optional full URL for a Codex-native model catalog. When unset, OpenAI discovery
-    /// uses the Codex backend unless `base_url` overrides the inference endpoint.
+    /// Optional full URL for a Ava-native model catalog. When unset, OpenAI discovery
+    /// uses the Ava backend unless `base_url` overrides the inference endpoint.
     pub model_catalog_url: Option<RedactedString>,
     /// Environment variable that stores the user's API key for this provider.
     pub env_key: Option<String>,
@@ -390,7 +390,7 @@ other non-default provider fields are not supported"
         }
     }
 
-    fn build_header_map(&self) -> CodexResult<HeaderMap> {
+    fn build_header_map(&self) -> AvaResult<HeaderMap> {
         let capacity = self.http_headers.as_ref().map_or(0, HashMap::len)
             + self.env_http_headers.as_ref().map_or(0, HashMap::len);
         let mut headers = HeaderMap::with_capacity(capacity);
@@ -420,7 +420,7 @@ other non-default provider fields are not supported"
     }
 
     /// Builds an API provider with managed residency taking precedence over configured headers.
-    pub fn to_api_provider(&self, auth_mode: Option<AuthMode>) -> CodexResult<ApiProvider> {
+    pub fn to_api_provider(&self, auth_mode: Option<AuthMode>) -> AvaResult<ApiProvider> {
         let default_base_url = if matches!(
             auth_mode,
             Some(
@@ -431,7 +431,7 @@ other non-default provider fields are not supported"
                     | AuthMode::PersonalAccessToken
             )
         ) {
-            CHATGPT_CODEX_BASE_URL
+            CHATGPT_AVA_BASE_URL
         } else {
             "https://api.openai.com/v1"
         };
@@ -473,7 +473,7 @@ other non-default provider fields are not supported"
     /// If `env_key` is Some, returns the API key for this provider if present
     /// in the environment or saved in auth.json. If `env_key` is required but
     /// cannot be found, returns an error.
-    pub fn api_key(&self) -> CodexResult<Option<String>> {
+    pub fn api_key(&self) -> AvaResult<Option<String>> {
         match &self.env_key {
             Some(env_key) => {
                 // 1. Check direct environment variable
@@ -489,7 +489,7 @@ other non-default provider fields are not supported"
                     return Ok(Some(token));
                 }
 
-                Err(CodexErr::EnvVar(EnvVarError {
+                Err(AvaErr::EnvVar(EnvVarError {
                     var: env_key.clone(),
                     instructions: self.env_key_instructions.clone(),
                 }))
@@ -689,12 +689,12 @@ other non-default provider fields are not supported"
         self.name == OPENAI_PROVIDER_NAME
     }
 
-    pub fn supports_codex_backend_routes(&self) -> bool {
+    pub fn supports_ava_backend_routes(&self) -> bool {
         self.is_openai()
             && self.base_url.as_deref().is_none_or(|base_url| {
                 base_url
                     .trim_end_matches('/')
-                    .ends_with("/backend-api/codex")
+                    .ends_with("/backend-api/ava")
             })
     }
 
@@ -961,22 +961,22 @@ pub fn create_custom_provider(
 }
 
 pub fn create_oss_provider(default_provider_port: u16, wire_api: WireApi) -> ModelProviderInfo {
-    // These CODEX_OSS_ environment variables are experimental: we may
+    // These AVA_OSS_ environment variables are experimental: we may
     // switch to reading values from config.toml instead.
-    let default_codex_oss_base_url = format!(
+    let default_ava_oss_base_url = format!(
         "http://localhost:{codex_oss_port}/v1",
-        codex_oss_port = std::env::var("CODEX_OSS_PORT")
+        ava_oss_port = std::env::var("AVA_OSS_PORT")
             .ok()
             .filter(|value| !value.trim().is_empty())
             .and_then(|value| value.parse::<u16>().ok())
             .unwrap_or(default_provider_port)
     );
 
-    let codex_oss_base_url = std::env::var("CODEX_OSS_BASE_URL")
+    let ava_oss_base_url = std::env::var("AVA_OSS_BASE_URL")
         .ok()
         .filter(|v| !v.trim().is_empty())
-        .unwrap_or(default_codex_oss_base_url);
-    create_oss_provider_with_base_url(&codex_oss_base_url, wire_api)
+        .unwrap_or(default_ava_oss_base_url);
+    create_oss_provider_with_base_url(&ava_oss_base_url, wire_api)
 }
 
 pub fn create_oss_provider_with_base_url(base_url: &str, wire_api: WireApi) -> ModelProviderInfo {

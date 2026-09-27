@@ -1,21 +1,21 @@
 //! Measures local session storage once at standalone app-server startup.
 //!
-//! The background scan only visits sessions and archived_sessions under CODEX_HOME.
+//! The background scan only visits sessions and archived_sessions under AVA_HOME.
 //! It sums regular-file lengths without reading file contents or following symlinks.
 //! Incomplete scans emit no samples, and shutdown cancels the scan.
 //! The compression tag reflects the effective startup config, not compression completion.
 
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_otel::MetricsClient;
-use codex_rollout::ARCHIVED_SESSIONS_SUBDIR;
-use codex_rollout::SESSIONS_SUBDIR;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_otel::MetricsClient;
+use ava_rollout::ARCHIVED_SESSIONS_SUBDIR;
+use ava_rollout::SESSIONS_SUBDIR;
 use std::io;
 use std::path::Path;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-const SIZE_BYTES_METRIC: &str = "codex.app_server.codex_home.size_bytes";
+const SIZE_BYTES_METRIC: &str = "ava.app_server.ava_home.size_bytes";
 // Bucket sizes range from 1 MiB through 1 TiB; larger directories use the overflow bucket.
 const SIZE_BYTES_BOUNDARIES: &[f64] = &[
     1_048_576.0,
@@ -32,16 +32,16 @@ pub(crate) fn spawn(
     metrics: MetricsClient,
     shutdown: CancellationToken,
 ) -> JoinHandle<()> {
-    let codex_home = config.codex_home.to_path_buf();
+    let ava_home = config.ava_home.to_path_buf();
     let compression_enabled = config
         .features
         .enabled(Feature::LocalThreadStoreCompression)
         .to_string();
     tokio::task::spawn_blocking(move || {
-        let sizes = match directory_sizes(&codex_home, &shutdown) {
+        let sizes = match directory_sizes(&ava_home, &shutdown) {
             Ok(sizes) => sizes,
             Err(error) => {
-                tracing::debug!(error_kind = ?error.kind(), "Skipping CODEX_HOME size metrics");
+                tracing::debug!(error_kind = ?error.kind(), "Skipping AVA_HOME size metrics");
                 return;
             }
         };
@@ -68,9 +68,9 @@ struct DirectorySizes {
     archived_sessions: u64,
 }
 
-fn directory_sizes(codex_home: &Path, shutdown: &CancellationToken) -> io::Result<DirectorySizes> {
-    let sessions = codex_home.join(SESSIONS_SUBDIR);
-    let archived_sessions = codex_home.join(ARCHIVED_SESSIONS_SUBDIR);
+fn directory_sizes(ava_home: &Path, shutdown: &CancellationToken) -> io::Result<DirectorySizes> {
+    let sessions = ava_home.join(SESSIONS_SUBDIR);
+    let archived_sessions = ava_home.join(ARCHIVED_SESSIONS_SUBDIR);
     let mut sizes = DirectorySizes::default();
     let mut pending = Vec::new();
     for directory in [&sessions, &archived_sessions] {

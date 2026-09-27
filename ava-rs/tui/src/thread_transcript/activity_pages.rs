@@ -22,7 +22,7 @@ pub(crate) fn is_hidden_activity_detail(cell: &Arc<dyn HistoryCell>) -> bool {
 pub(crate) fn fold_trailing_activity_details(
     older: &Arc<dyn HistoryCell>,
     details: &[Arc<dyn HistoryCell>],
-    turns: &[codex_app_server_protocol::Turn],
+    turns: &[ava_app_server_protocol::Turn],
 ) -> Option<Arc<dyn HistoryCell>> {
     let (mut ids, retained) =
         if let Some(group) = older.as_any().downcast_ref::<ComputerActivityCell>() {

@@ -2,53 +2,53 @@ use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::test_path_buf_with_windows;
 use app_test_support::test_tmp_path_buf;
-use codex_app_server_protocol::AllowDenyRequirement;
-use codex_app_server_protocol::AppConfig;
-use codex_app_server_protocol::AppLinkConfig;
-use codex_app_server_protocol::AppLinksConfig;
-use codex_app_server_protocol::AppToolApproval;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AppsConfig;
-use codex_app_server_protocol::AppsDefaultConfig;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::BrowserUseAccessApprovalLifetime;
-use codex_app_server_protocol::BrowserUseConfig;
-use codex_app_server_protocol::BrowserUseOriginPolicy;
-use codex_app_server_protocol::BrowserUseOriginPolicyConfig;
-use codex_app_server_protocol::BrowserUseRequirements;
-use codex_app_server_protocol::CliAuthCredentialsStoreMode;
-use codex_app_server_protocol::ComputerUseConfig;
-use codex_app_server_protocol::ComputerUseMacosConfig;
-use codex_app_server_protocol::ComputerUseMacosRequirements;
-use codex_app_server_protocol::ComputerUseRequirements;
-use codex_app_server_protocol::ComputerUseWindowsConfig;
-use codex_app_server_protocol::ComputerUseWindowsExeConfig;
-use codex_app_server_protocol::ComputerUseWindowsExeRequirement;
-use codex_app_server_protocol::ComputerUseWindowsRequirements;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigEdit;
-use codex_app_server_protocol::ConfigLayerSource;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ConfigRequirementsReadResponse;
-use codex_app_server_protocol::ConfigValueWriteParams;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::ConfiguredHookHandler;
-use codex_app_server_protocol::ForcedChatgptWorkspaceIds;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::ToolsV2;
-use codex_app_server_protocol::WriteStatus;
-use codex_core::config::set_project_trust_level;
-use codex_protocol::config_types::ToolExposureSurface;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::config_types::WebSearchContextSize;
-use codex_protocol::config_types::WebSearchLocation;
-use codex_protocol::config_types::WebSearchToolConfig;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::AllowDenyRequirement;
+use ava_app_server_protocol::AppConfig;
+use ava_app_server_protocol::AppLinkConfig;
+use ava_app_server_protocol::AppLinksConfig;
+use ava_app_server_protocol::AppToolApproval;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AppsConfig;
+use ava_app_server_protocol::AppsDefaultConfig;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::BrowserUseAccessApprovalLifetime;
+use ava_app_server_protocol::BrowserUseConfig;
+use ava_app_server_protocol::BrowserUseOriginPolicy;
+use ava_app_server_protocol::BrowserUseOriginPolicyConfig;
+use ava_app_server_protocol::BrowserUseRequirements;
+use ava_app_server_protocol::CliAuthCredentialsStoreMode;
+use ava_app_server_protocol::ComputerUseConfig;
+use ava_app_server_protocol::ComputerUseMacosConfig;
+use ava_app_server_protocol::ComputerUseMacosRequirements;
+use ava_app_server_protocol::ComputerUseRequirements;
+use ava_app_server_protocol::ComputerUseWindowsConfig;
+use ava_app_server_protocol::ComputerUseWindowsExeConfig;
+use ava_app_server_protocol::ComputerUseWindowsExeRequirement;
+use ava_app_server_protocol::ComputerUseWindowsRequirements;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigEdit;
+use ava_app_server_protocol::ConfigLayerSource;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigRequirementsReadResponse;
+use ava_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::ConfiguredHookHandler;
+use ava_app_server_protocol::ForcedChatgptWorkspaceIds;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::ToolsV2;
+use ava_app_server_protocol::WriteStatus;
+use ava_core::config::set_project_trust_level;
+use ava_protocol::config_types::ToolExposureSurface;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::config_types::WebSearchContextSize;
+use ava_protocol::config_types::WebSearchLocation;
+use ava_protocol::config_types::WebSearchToolConfig;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -59,30 +59,30 @@ use tokio::time::timeout;
 // processing config RPCs under load.
 const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
 
-fn write_config(codex_home: &TempDir, contents: &str) -> Result<()> {
+fn write_config(ava_home: &TempDir, contents: &str) -> Result<()> {
     Ok(std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         contents,
     )?)
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn managed_auth_settings_are_exposed_enforced_and_read_only() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"cli_auth_credentials_store = "file"
 chatgpt_base_url = "https://user.example/backend-api/"
 "#,
     )?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"cli_auth_credentials_store = "ephemeral"
 chatgpt_base_url = "https://managed.example/backend-api/"
 "#,
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -157,7 +157,7 @@ chatgpt_base_url = "https://managed.example/backend-api/"
     }
 
     assert_eq!(
-        std::fs::read_to_string(codex_home.path().join("config.toml"))?,
+        std::fs::read_to_string(ava_home.path().join("config.toml"))?,
         "cli_auth_credentials_store = \"file\"\nchatgpt_base_url = \"https://user.example/backend-api/\"\n",
     );
 
@@ -166,9 +166,9 @@ chatgpt_base_url = "https://managed.example/backend-api/"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_requirements_read_includes_remote_control_and_managed_hooks() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"allow_remote_control = false
 
 [hooks]
@@ -190,7 +190,7 @@ statusMessage = "Scanning file"
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -234,9 +234,9 @@ statusMessage = "Scanning file"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_requirements_read_includes_browser_and_computer_use_schema() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"
 allow_browser_and_computer_use = false
 
@@ -282,7 +282,7 @@ access = "deny"
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -356,16 +356,16 @@ access = "deny"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_requirements_read_includes_in_app_updates_policy() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"
 [features]
 in_app_updates = false
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -389,13 +389,13 @@ in_app_updates = false
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_requirements_read_includes_managed_model_policy_and_instructions() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         "developer_instructions = \"ordinary instructions\"\n",
     )?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"
 additional_developer_instructions = "Follow the managed policy.\nPreserve its formatting."
 
@@ -410,7 +410,7 @@ service_tier = "fast"
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -470,15 +470,15 @@ service_tier = "fast"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_disables_guardian_v2_when_managed_config_requires_guardian_v1() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_config(&codex_home, "[features]\nguardianv2 = true\n")?;
+    let ava_home = TempDir::new()?;
+    write_config(&ava_home, "[features]\nguardianv2 = true\n")?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         "allowed_approvals_reviewers = [\"auto_review\"]\n",
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -504,19 +504,19 @@ async fn config_read_disables_guardian_v2_when_managed_config_requires_guardian_
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_returns_effective_and_layers() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 model = "gpt-user"
 sandbox_mode = "workspace-write"
 "#,
     )?;
-    let codex_home_path = codex_home.path().canonicalize()?;
-    let user_file = AbsolutePathBuf::try_from(codex_home_path.join("config.toml"))?;
+    let ava_home_path = ava_home.path().canonicalize()?;
+    let user_file = AbsolutePathBuf::try_from(ava_home_path.join("config.toml"))?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -554,9 +554,9 @@ sandbox_mode = "workspace-write"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_includes_tools() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 model = "gpt-user"
 
@@ -565,11 +565,11 @@ context_size = "low"
 allowed_domains = ["example.com"]
 "#,
     )?;
-    let codex_home_path = codex_home.path().canonicalize()?;
-    let user_file = AbsolutePathBuf::try_from(codex_home_path.join("config.toml"))?;
+    let ava_home_path = ava_home.path().canonicalize()?;
+    let user_file = AbsolutePathBuf::try_from(ava_home_path.join("config.toml"))?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -625,9 +625,9 @@ allowed_domains = ["example.com"]
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_includes_browser_and_computer_use_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 [browser_use]
 allow_history_access = true
@@ -657,7 +657,7 @@ access = "allow"
 "#,
     )?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"
 allow_browser_and_computer_use = false
 
@@ -674,7 +674,7 @@ default_app_access = "allow"
     )?;
 
     let workspace = TempDir::new()?;
-    let project_config_dir = workspace.path().join(".codex");
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
         project_config_dir.join("config.toml"),
@@ -700,13 +700,13 @@ product_name = "Microsoft Visual Studio Code"
 access = "deny"
 "#,
     )?;
-    set_project_trust_level(codex_home.path(), workspace.path(), TrustLevel::Trusted)?;
-    let codex_home_path = codex_home.path().canonicalize()?;
-    let user_file = AbsolutePathBuf::try_from(codex_home_path.join("config.toml"))?;
+    set_project_trust_level(ava_home.path(), workspace.path(), TrustLevel::Trusted)?;
+    let ava_home_path = ava_home.path().canonicalize()?;
+    let user_file = AbsolutePathBuf::try_from(ava_home_path.join("config.toml"))?;
     let project_config = AbsolutePathBuf::try_from(project_config_dir)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -791,7 +791,7 @@ access = "deny"
             .expect("project policy origin")
             .name,
         ConfigLayerSource::Project {
-            dot_codex_folder: project_config.clone(),
+            dot_ava_folder: project_config.clone(),
         }
     );
     assert_eq!(
@@ -810,7 +810,7 @@ access = "deny"
             .expect("project computer use origin")
             .name,
         ConfigLayerSource::Project {
-            dot_codex_folder: project_config,
+            dot_ava_folder: project_config,
         }
     );
 
@@ -858,9 +858,9 @@ access = "deny"
 async fn config_read_accepts_legacy_forced_chatgpt_workspace_id() -> Result<()> {
     const WORKSPACE_ID: &str = "123e4567-e89b-42d3-a456-426614174000";
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         &format!(
             r#"
 forced_chatgpt_workspace_id = "{WORKSPACE_ID}"
@@ -869,7 +869,7 @@ forced_chatgpt_workspace_id = "{WORKSPACE_ID}"
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -896,9 +896,9 @@ async fn config_read_accepts_forced_chatgpt_workspace_id_list() -> Result<()> {
     const WORKSPACE_ID_A: &str = "123e4567-e89b-42d3-a456-426614174000";
     const WORKSPACE_ID_B: &str = "123e4567-e89b-42d3-a456-426614174001";
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         &format!(
             r#"
 forced_chatgpt_workspace_id = ["{WORKSPACE_ID_A}", "{WORKSPACE_ID_B}"]
@@ -907,7 +907,7 @@ forced_chatgpt_workspace_id = ["{WORKSPACE_ID_A}", "{WORKSPACE_ID_B}"]
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -934,9 +934,9 @@ forced_chatgpt_workspace_id = ["{WORKSPACE_ID_A}", "{WORKSPACE_ID_B}"]
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_includes_nested_web_search_tool_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 web_search = "live"
 
@@ -948,7 +948,7 @@ location = { country = "US", city = "New York", timezone = "America/New_York" }
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -981,9 +981,9 @@ location = { country = "US", city = "New York", timezone = "America/New_York" }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_ignores_bool_web_search_tool_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 [tools]
 web_search = true
@@ -991,7 +991,7 @@ web_search = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1012,9 +1012,9 @@ web_search = true
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_includes_apps() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 [apps._default]
 approvals_reviewer = "auto_review"
@@ -1043,11 +1043,11 @@ omit_tools_from = []
 [apps.app_with_empty_links.links]
 "#,
     )?;
-    let codex_home_path = codex_home.path().canonicalize()?;
-    let user_file = AbsolutePathBuf::try_from(codex_home_path.join("config.toml"))?;
+    let ava_home_path = ava_home.path().canonicalize()?;
+    let user_file = AbsolutePathBuf::try_from(ava_home_path.join("config.toml"))?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1215,13 +1215,13 @@ omit_tools_from = []
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_includes_desktop_settings() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 [desktop]
 appearanceTheme = "dark"
-selected-avatar-id = "codex"
+selected-avatar-id = "ava"
 
 [desktop.workspace]
 collapsed = true
@@ -1230,7 +1230,7 @@ width = 320
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1246,7 +1246,7 @@ width = 320
 
     let desktop = config.desktop.expect("desktop settings present");
     assert_eq!(desktop.get("appearanceTheme"), Some(&json!("dark")));
-    assert_eq!(desktop.get("selected-avatar-id"), Some(&json!("codex")));
+    assert_eq!(desktop.get("selected-avatar-id"), Some(&json!("ava")));
     assert_eq!(
         desktop.get("workspace"),
         Some(&json!({
@@ -1260,11 +1260,11 @@ width = 320
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_includes_project_layers_for_cwd() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_config(&codex_home, r#"model = "gpt-user""#)?;
+    let ava_home = TempDir::new()?;
+    write_config(&ava_home, r#"model = "gpt-user""#)?;
 
     let workspace = TempDir::new()?;
-    let project_config_dir = workspace.path().join(".codex");
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
         project_config_dir.join("config.toml"),
@@ -1272,11 +1272,11 @@ async fn config_read_includes_project_layers_for_cwd() -> Result<()> {
 model_reasoning_effort = "high"
 "#,
     )?;
-    set_project_trust_level(codex_home.path(), workspace.path(), TrustLevel::Trusted)?;
+    set_project_trust_level(ava_home.path(), workspace.path(), TrustLevel::Trusted)?;
     let project_config = AbsolutePathBuf::try_from(project_config_dir)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1295,7 +1295,7 @@ model_reasoning_effort = "high"
     assert_eq!(
         origins.get("model_reasoning_effort").expect("origin").name,
         ConfigLayerSource::Project {
-            dot_codex_folder: project_config
+            dot_ava_folder: project_config
         }
     );
 
@@ -1304,12 +1304,12 @@ model_reasoning_effort = "high"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_respects_managed_project_root_markers() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_config(&codex_home, "model_context_window = 16384\n")?;
+    let ava_home = TempDir::new()?;
+    write_config(&ava_home, "model_context_window = 16384\n")?;
     let workspace = TempDir::new()?;
-    let ancestor_config = workspace.path().join(".codex");
+    let ancestor_config = workspace.path().join(".ava-code");
     let child = workspace.path().join("child");
-    let child_config = child.join(".codex");
+    let child_config = child.join(".ava-code");
     for dir in [
         workspace.path().join(".git"),
         ancestor_config.clone(),
@@ -1326,15 +1326,15 @@ async fn config_read_respects_managed_project_root_markers() -> Result<()> {
         child_config.join("config.toml"),
         "model_reasoning_effort = \"high\"\n",
     )?;
-    set_project_trust_level(codex_home.path(), workspace.path(), TrustLevel::Trusted)?;
-    let managed_path = codex_home.path().join("managed_config.toml");
+    set_project_trust_level(ava_home.path(), workspace.path(), TrustLevel::Trusted)?;
+    let managed_path = ava_home.path().join("managed_config.toml");
     std::fs::write(&managed_path, "project_root_markers = []\n")?;
     let managed_path = managed_path.to_string_lossy().into_owned();
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
-        .with_env_overrides(&[("CODEX_APP_SERVER_MANAGED_CONFIG_PATH", Some(&managed_path))])
+        .with_env_overrides(&[("AVA_APP_SERVER_MANAGED_CONFIG_PATH", Some(&managed_path))])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
     let request_id = app_server
@@ -1358,8 +1358,8 @@ async fn config_read_respects_managed_project_root_markers() -> Result<()> {
         .expect("layers present")
         .into_iter()
         .filter_map(|layer| {
-            if let ConfigLayerSource::Project { dot_codex_folder } = layer.name {
-                Some((dot_codex_folder, layer.config, layer.disabled_reason))
+            if let ConfigLayerSource::Project { dot_ava_folder } = layer.name {
+                Some((dot_ava_folder, layer.config, layer.disabled_reason))
             } else {
                 None
             }
@@ -1378,11 +1378,11 @@ async fn config_read_respects_managed_project_root_markers() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_includes_system_layer_and_overrides() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let user_dir = test_path_buf_with_windows("/user", Some(r"C:\Users\user"));
     let system_dir = test_path_buf_with_windows("/system", Some(r"C:\System"));
     write_config(
-        &codex_home,
+        &ava_home,
         &format!(
             r#"
 model = "gpt-user"
@@ -1396,10 +1396,10 @@ network_access = true
             serde_json::json!(user_dir)
         ),
     )?;
-    let codex_home_path = codex_home.path().canonicalize()?;
-    let user_file = AbsolutePathBuf::try_from(codex_home_path.join("config.toml"))?;
+    let ava_home_path = ava_home.path().canonicalize()?;
+    let user_file = AbsolutePathBuf::try_from(ava_home_path.join("config.toml"))?;
 
-    let managed_path = codex_home.path().join("managed_config.toml");
+    let managed_path = ava_home.path().join("managed_config.toml");
     let managed_file = AbsolutePathBuf::try_from(managed_path.clone())?;
     std::fs::write(
         &managed_path,
@@ -1418,10 +1418,10 @@ writable_roots = [{}]
     let managed_path_str = managed_path.display().to_string();
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[(
-            "CODEX_APP_SERVER_MANAGED_CONFIG_PATH",
+            "AVA_APP_SERVER_MANAGED_CONFIG_PATH",
             Some(&managed_path_str),
         )])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -1500,7 +1500,7 @@ writable_roots = [{}]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_value_write_replaces_value() -> Result<()> {
     let temp_dir = TempDir::new()?;
-    let codex_home = temp_dir.path().canonicalize()?;
+    let ava_home = temp_dir.path().canonicalize()?;
     write_config(
         &temp_dir,
         r#"
@@ -1509,7 +1509,7 @@ model = "gpt-old"
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1535,7 +1535,7 @@ model = "gpt-old"
         .await?;
     let write: ConfigWriteResponse =
         timeout(DEFAULT_READ_TIMEOUT, mcp.read_response(write_id)).await??;
-    let expected_file_path = AbsolutePathBuf::resolve_path_against_base("config.toml", codex_home);
+    let expected_file_path = AbsolutePathBuf::resolve_path_against_base("config.toml", ava_home);
 
     assert_eq!(write.status, WriteStatus::Ok);
     assert_eq!(write.file_path, expected_file_path);
@@ -1556,10 +1556,10 @@ model = "gpt-old"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_provider_write_reports_source_displacement() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_config(&codex_home, "")?;
+    let ava_home = TempDir::new()?;
+    write_config(&ava_home, "")?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_args(&[
             "-c",
@@ -1616,7 +1616,7 @@ async fn config_provider_write_reports_source_displacement() -> Result<()> {
             provider[field] = value;
         }
         let saved: toml::Value = toml::from_str(&std::fs::read_to_string(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
         )?)?;
         assert_eq!(
             serde_json::to_value(
@@ -1642,9 +1642,9 @@ async fn config_provider_write_reports_source_displacement() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_provider_field_removal_uses_higher_same_id_definition() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"[features.network_proxy.credentials.vendor]
 env = ["VENDOR_PASSWORD"]
 patterns = ["^pin_[a-z]{8}$"]
@@ -1652,7 +1652,7 @@ url_prefixes = ["https://fixed.example"]
 "#,
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_args(&[
             "-c",
             "features.network_proxy.credentials.vendor.url_prefixes=['https://fixed.example']",
@@ -1673,7 +1673,7 @@ url_prefixes = ["https://fixed.example"]
     assert_eq!(write.status, WriteStatus::OkOverridden);
 
     let saved: toml::Value = toml::from_str(&std::fs::read_to_string(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
     )?)?;
     assert_eq!(
         serde_json::to_value(&saved["features"]["network_proxy"]["credentials"]["vendor"])?,
@@ -1699,7 +1699,7 @@ url_prefixes = ["https://fixed.example"]
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_provider_remapping_rejects_invalid_replacements_atomically() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let initial = r#"[features.network_proxy]
 enabled = true
 credential_broker = true
@@ -1708,9 +1708,9 @@ env = ["VENDOR_PASSWORD"]
 patterns = ["^pin_[a-z]{8}$"]
 url_prefixes = ["https://api.vendor.example"]
 "#;
-    write_config(&codex_home, initial)?;
+    write_config(&ava_home, initial)?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1755,7 +1755,7 @@ url_prefixes = ["https://api.vendor.example"]
             Some(&json!("configValidationError"))
         );
         assert_eq!(
-            std::fs::read_to_string(codex_home.path().join("config.toml"))?,
+            std::fs::read_to_string(ava_home.path().join("config.toml"))?,
             initial
         );
     }
@@ -1791,7 +1791,7 @@ url_prefixes = ["https://api.vendor.example"]
         Some(&json!("configValidationError"))
     );
     assert_eq!(
-        std::fs::read_to_string(codex_home.path().join("config.toml"))?,
+        std::fs::read_to_string(ava_home.path().join("config.toml"))?,
         initial
     );
     let id = app_server
@@ -1883,9 +1883,9 @@ async fn config_provider_upsert_persists_displaced_siblings() -> Result<()> {
             Some("OTHER_PASSWORD"),
         ),
     ] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         write_config(
-            &codex_home,
+            &ava_home,
             r#"[features.network_proxy]
 enabled = true
 credential_broker = true
@@ -1904,7 +1904,7 @@ auth = ["bearer"]
 "#,
         )?;
         let mut app_server = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .without_auto_env()
             .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
             .await?;
@@ -1974,11 +1974,11 @@ auth = ["bearer"]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_value_write_updates_desktop_settings() -> Result<()> {
     let temp_dir = TempDir::new()?;
-    let codex_home = temp_dir.path().canonicalize()?;
+    let ava_home = temp_dir.path().canonicalize()?;
     write_config(&temp_dir, "")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -2013,7 +2013,7 @@ async fn config_value_write_updates_desktop_settings() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_read_after_pipelined_write_sees_written_value() -> Result<()> {
     let temp_dir = TempDir::new()?;
-    let codex_home = temp_dir.path().canonicalize()?;
+    let ava_home = temp_dir.path().canonicalize()?;
     write_config(
         &temp_dir,
         r#"
@@ -2022,7 +2022,7 @@ model = "gpt-old"
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -2056,23 +2056,23 @@ model = "gpt-old"
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_value_write_rejects_version_conflict() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_config(
-        &codex_home,
+        &ava_home,
         r#"
 model = "gpt-old"
 "#,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
     let write_id = mcp
         .send_config_value_write_request(ConfigValueWriteParams {
-            file_path: Some(codex_home.path().join("config.toml").display().to_string()),
+            file_path: Some(ava_home.path().join("config.toml").display().to_string()),
             key_path: "model".to_string(),
             value: json!("gpt-new"),
             merge_strategy: MergeStrategy::Replace,
@@ -2099,11 +2099,11 @@ model = "gpt-old"
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_batch_write_applies_multiple_edits() -> Result<()> {
     let tmp_dir = TempDir::new()?;
-    let codex_home = tmp_dir.path().canonicalize()?;
+    let ava_home = tmp_dir.path().canonicalize()?;
     write_config(&tmp_dir, "")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -2111,7 +2111,7 @@ async fn config_batch_write_applies_multiple_edits() -> Result<()> {
     let writable_root = test_tmp_path_buf();
     let batch_id = mcp
         .send_config_batch_write_request(ConfigBatchWriteParams {
-            file_path: Some(codex_home.join("config.toml").display().to_string()),
+            file_path: Some(ava_home.join("config.toml").display().to_string()),
             edits: vec![
                 ConfigEdit {
                     key_path: "sandbox_mode".to_string(),
@@ -2134,7 +2134,7 @@ async fn config_batch_write_applies_multiple_edits() -> Result<()> {
     let batch_write: ConfigWriteResponse =
         timeout(DEFAULT_READ_TIMEOUT, mcp.read_response(batch_id)).await??;
     assert_eq!(batch_write.status, WriteStatus::Ok);
-    let expected_file_path = AbsolutePathBuf::resolve_path_against_base("config.toml", codex_home);
+    let expected_file_path = AbsolutePathBuf::resolve_path_against_base("config.toml", ava_home);
     assert_eq!(batch_write.file_path, expected_file_path);
 
     let read_id = mcp
@@ -2160,7 +2160,7 @@ async fn config_batch_write_applies_multiple_edits() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_batch_write_round_trips_browser_and_computer_use_config() -> Result<()> {
     let tmp_dir = TempDir::new()?;
-    let codex_home = tmp_dir.path().canonicalize()?;
+    let ava_home = tmp_dir.path().canonicalize()?;
     write_config(
         &tmp_dir,
         r#"
@@ -2184,7 +2184,7 @@ access = "deny"
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -2276,12 +2276,12 @@ access = "deny"
     assert_eq!(batch_write.status, WriteStatus::Ok);
     assert_eq!(
         batch_write.file_path,
-        AbsolutePathBuf::resolve_path_against_base("config.toml", &codex_home)
+        AbsolutePathBuf::resolve_path_against_base("config.toml", &ava_home)
     );
     assert_eq!(batch_write.overridden_metadata, None);
 
     let persisted: toml::Value =
-        toml::from_str(&std::fs::read_to_string(codex_home.join("config.toml"))?)?;
+        toml::from_str(&std::fs::read_to_string(ava_home.join("config.toml"))?)?;
     let expected_persisted: toml::Value = toml::from_str(
         r#"
 model = "gpt-existing"
@@ -2392,7 +2392,7 @@ access = "deny"
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_batch_write_rejects_legacy_profile_tables() -> Result<()> {
     let tmp_dir = TempDir::new()?;
-    let codex_home = tmp_dir.path().canonicalize()?;
+    let ava_home = tmp_dir.path().canonicalize()?;
     write_config(
         &tmp_dir,
         r#"
@@ -2402,14 +2402,14 @@ model = "gpt-5.3-spark"
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
     let batch_id = mcp
         .send_config_batch_write_request(ConfigBatchWriteParams {
-            file_path: Some(codex_home.join("config.toml").display().to_string()),
+            file_path: Some(ava_home.join("config.toml").display().to_string()),
             edits: vec![
                 ConfigEdit {
                     key_path: "profiles.\"team.prod\".model".to_string(),
@@ -2444,7 +2444,7 @@ model = "gpt-5.3-spark"
     );
 
     let config: toml::Value =
-        toml::from_str(&std::fs::read_to_string(codex_home.join("config.toml"))?)?;
+        toml::from_str(&std::fs::read_to_string(ava_home.join("config.toml"))?)?;
     assert_eq!(
         config["profiles"]["team.prod"]["model"].as_str(),
         Some("gpt-5.3-spark")
@@ -2457,22 +2457,22 @@ model = "gpt-5.3-spark"
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn config_batch_write_updates_multiple_desktop_settings() -> Result<()> {
     let tmp_dir = TempDir::new()?;
-    let codex_home = tmp_dir.path().canonicalize()?;
+    let ava_home = tmp_dir.path().canonicalize()?;
     write_config(&tmp_dir, "")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
     let batch_id = mcp
         .send_config_batch_write_request(ConfigBatchWriteParams {
-            file_path: Some(codex_home.join("config.toml").display().to_string()),
+            file_path: Some(ava_home.join("config.toml").display().to_string()),
             edits: vec![
                 ConfigEdit {
                     key_path: "desktop.selected-avatar-id".to_string(),
-                    value: json!("codex"),
+                    value: json!("ava"),
                     merge_strategy: MergeStrategy::Replace,
                 },
                 ConfigEdit {
@@ -2501,7 +2501,7 @@ async fn config_batch_write_updates_multiple_desktop_settings() -> Result<()> {
     let read: ConfigReadResponse =
         timeout(DEFAULT_READ_TIMEOUT, mcp.read_response(read_id)).await??;
     let desktop = read.config.desktop.expect("desktop settings present");
-    assert_eq!(desktop.get("selected-avatar-id"), Some(&json!("codex")));
+    assert_eq!(desktop.get("selected-avatar-id"), Some(&json!("ava")));
     assert_eq!(
         desktop.get("workspace"),
         Some(&json!({
@@ -2514,7 +2514,7 @@ async fn config_batch_write_updates_multiple_desktop_settings() -> Result<()> {
 }
 
 fn assert_layers_user_then_optional_system(
-    layers: &[codex_app_server_protocol::ConfigLayer],
+    layers: &[ava_app_server_protocol::ConfigLayer],
     user_file: AbsolutePathBuf,
 ) -> Result<()> {
     let mut first_index = 0;
@@ -2540,7 +2540,7 @@ fn assert_layers_user_then_optional_system(
 }
 
 fn assert_layers_managed_user_then_optional_system(
-    layers: &[codex_app_server_protocol::ConfigLayer],
+    layers: &[ava_app_server_protocol::ConfigLayer],
     managed_file: AbsolutePathBuf,
     user_file: AbsolutePathBuf,
 ) -> Result<()> {

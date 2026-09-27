@@ -93,7 +93,7 @@ impl Client {
             )));
         }
         let prefix = match self.path_style {
-            PathStyle::CodexApi => "api/codex",
+            PathStyle::AvaApi => "api/ava",
             PathStyle::ChatGptApi => "wham",
         };
         let url = format!("{}/{prefix}/usage/thread_usage/query_v2", self.base_url);

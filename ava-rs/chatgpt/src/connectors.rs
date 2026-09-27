@@ -5,52 +5,52 @@ use std::time::Duration;
 use crate::chatgpt_client::chatgpt_get_request_with_timeout;
 use crate::chatgpt_client::chatgpt_post_request_with_timeout;
 
-use codex_connectors::AppInfo;
-use codex_connectors::AppToolPolicyEvaluator;
-use codex_connectors::ConnectorDirectoryCacheContext;
-use codex_connectors::ConnectorDirectoryCacheKey;
-use codex_connectors::ConnectorMetadata;
-use codex_connectors::ConnectorMetadataStore;
-use codex_connectors::ConnectorToolSummary;
-use codex_connectors::DirectoryListResponse;
-use codex_connectors::merge::merge_connectors;
-use codex_connectors::merge::merge_plugin_connectors;
-use codex_core::config::Config;
-pub use codex_core::connectors::list_accessible_connectors_from_mcp_tools;
-pub use codex_core::connectors::list_accessible_connectors_from_mcp_tools_with_environment_manager;
-pub use codex_core::connectors::list_accessible_connectors_from_mcp_tools_with_mcp_manager;
-pub use codex_core::connectors::list_accessible_connectors_from_mcp_tools_with_options;
-pub use codex_core::connectors::list_accessible_connectors_from_mcp_tools_with_options_and_status;
-pub use codex_core::connectors::list_cached_accessible_connectors_from_mcp_tools;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_plugin::AppConnectorId;
+use ava_connectors::AppInfo;
+use ava_connectors::AppToolPolicyEvaluator;
+use ava_connectors::ConnectorDirectoryCacheContext;
+use ava_connectors::ConnectorDirectoryCacheKey;
+use ava_connectors::ConnectorMetadata;
+use ava_connectors::ConnectorMetadataStore;
+use ava_connectors::ConnectorToolSummary;
+use ava_connectors::DirectoryListResponse;
+use ava_connectors::merge::merge_connectors;
+use ava_connectors::merge::merge_plugin_connectors;
+use ava_core::config::Config;
+pub use ava_core::connectors::list_accessible_connectors_from_mcp_tools;
+pub use ava_core::connectors::list_accessible_connectors_from_mcp_tools_with_environment_manager;
+pub use ava_core::connectors::list_accessible_connectors_from_mcp_tools_with_mcp_manager;
+pub use ava_core::connectors::list_accessible_connectors_from_mcp_tools_with_options;
+pub use ava_core::connectors::list_accessible_connectors_from_mcp_tools_with_options_and_status;
+pub use ava_core::connectors::list_cached_accessible_connectors_from_mcp_tools;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_plugin::AppConnectorId;
 use serde::Deserialize;
 use serde::Serialize;
 
 const DIRECTORY_CONNECTORS_TIMEOUT: Duration = Duration::from_secs(60);
 const CONNECTOR_METADATA_TIMEOUT: Duration = Duration::from_secs(60);
-const DEFAULT_APPS_PRODUCT_SKU: &str = "codex";
+const DEFAULT_APPS_PRODUCT_SKU: &str = "ava";
 
 async fn apps_enabled(config: &Config) -> anyhow::Result<bool> {
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false).await?;
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false).await?;
     let auth = auth_manager.auth().await;
     Ok(config
         .features
-        .apps_enabled_for_auth(auth.as_ref().is_some_and(CodexAuth::uses_codex_backend)))
+        .apps_enabled_for_auth(auth.as_ref().is_some_and(AvaAuth::uses_ava_backend)))
 }
 
-async fn connector_auth(config: &Config) -> anyhow::Result<CodexAuth> {
+async fn connector_auth(config: &Config) -> anyhow::Result<AvaAuth> {
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false).await?;
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false).await?;
     let auth = auth_manager
         .auth()
         .await
         .ok_or_else(|| anyhow::anyhow!("ChatGPT auth not available"))?;
     anyhow::ensure!(
-        auth.uses_codex_backend(),
-        "ChatGPT connectors require Codex backend auth"
+        auth.uses_ava_backend(),
+        "ChatGPT connectors require Ava backend auth"
     );
     Ok(auth)
 }
@@ -88,7 +88,7 @@ pub async fn list_cached_all_connectors(
 
     let auth = connector_auth(config).await.ok()?;
     let cache_context = connector_directory_cache_context(config, &auth);
-    let connectors = codex_connectors::cached_directory_connectors(&cache_context)?;
+    let connectors = ava_connectors::cached_directory_connectors(&cache_context)?;
     Some(merge_directory_and_plugin_connectors(
         connectors,
         plugin_apps,
@@ -105,7 +105,7 @@ pub async fn list_all_connectors_with_options(
     }
     let auth = connector_auth(config).await?;
     let cache_context = connector_directory_cache_context(config, &auth);
-    let connectors = codex_connectors::list_all_connectors_with_options(
+    let connectors = ava_connectors::list_all_connectors_with_options(
         cache_context,
         auth.is_workspace_account(),
         force_refetch,
@@ -136,17 +136,17 @@ pub struct ConnectorMetadataReadResult {
 /// account or backend change can only commit to the scope under which it was requested.
 pub async fn read_connector_metadata(
     config: &Config,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     app_ids: &[String],
     include_tools: bool,
 ) -> anyhow::Result<ConnectorMetadataReadResult> {
     anyhow::ensure!(
-        auth.uses_codex_backend(),
-        "ChatGPT backend requests require Codex backend auth"
+        auth.uses_ava_backend(),
+        "ChatGPT backend requests require Ava backend auth"
     );
     anyhow::ensure!(
         auth.get_account_id().is_some(),
-        "ChatGPT account ID not available, please re-run codex login"
+        "ChatGPT account ID not available, please re-run ava login"
     );
 
     let store = ConnectorMetadataStore::new(
@@ -300,10 +300,10 @@ fn batch_app_to_metadata(app: BatchApp) -> ConnectorMetadata {
 
 fn connector_directory_cache_context(
     config: &Config,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
 ) -> ConnectorDirectoryCacheContext {
     ConnectorDirectoryCacheContext::new(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         ConnectorDirectoryCacheKey::new(
             config.chatgpt_base_url.clone(),
             auth.get_account_id(),
@@ -369,8 +369,8 @@ pub fn merge_connectors_with_accessible(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_connectors::metadata::connector_install_url;
-    use codex_plugin::AppConnectorId;
+    use ava_connectors::metadata::connector_install_url;
+    use ava_plugin::AppConnectorId;
     use pretty_assertions::assert_eq;
     use serde_json::json;
 

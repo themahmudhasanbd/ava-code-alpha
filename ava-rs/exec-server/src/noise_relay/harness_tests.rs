@@ -8,10 +8,10 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::RequestId;
-use codex_protocol::protocol::W3cTraceContext;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::RequestId;
+use ava_protocol::protocol::W3cTraceContext;
 use futures::Sink;
 use futures::SinkExt;
 use futures::StreamExt;

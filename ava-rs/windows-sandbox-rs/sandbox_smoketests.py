@@ -1,5 +1,5 @@
 # sandbox_smoketests.py
-# Run a suite of smoke tests against the Windows sandbox via the Codex CLI
+# Run a suite of smoke tests against the Windows sandbox via the Ava CLI
 # Requires: Python 3.8+ on Windows. No pip requirements.
 
 import os
@@ -15,26 +15,26 @@ from typing import List, Optional, Tuple
 from urllib.parse import urlsplit
 
 
-def _resolve_codex_cmd() -> List[str]:
-    """Resolve the Codex CLI to invoke `codex sandbox windows`.
+def _resolve_ava_cmd() -> List[str]:
+    """Resolve the Ava CLI to invoke `ava sandbox windows`.
 
     Prefer local builds (debug first), then fall back to PATH.
-    Returns the argv prefix to run Codex.
+    Returns the argv prefix to run Ava.
     """
     root = Path(__file__).parent
     ws_root = root.parent
     cargo_target = os.environ.get("CARGO_TARGET_DIR")
 
     candidates = [
-        ws_root / "target" / "debug" / "codex.exe",
-        ws_root / "target" / "release" / "codex.exe",
+        ws_root / "target" / "debug" / "ava.exe",
+        ws_root / "target" / "release" / "ava.exe",
     ]
     if cargo_target:
         cargo_base = Path(cargo_target)
         candidates.extend(
             [
-                cargo_base / "debug" / "codex.exe",
-                cargo_base / "release" / "codex.exe",
+                cargo_base / "debug" / "ava.exe",
+                cargo_base / "release" / "ava.exe",
             ]
         )
 
@@ -42,19 +42,19 @@ def _resolve_codex_cmd() -> List[str]:
         if candidate.exists():
             return [str(candidate)]
 
-    if shutil.which("codex"):
-        return ["codex"]
+    if shutil.which("ava"):
+        return ["ava"]
 
     raise FileNotFoundError(
-        "Codex CLI not found. Build it first, e.g.\n"
-        "  cargo build -p codex-cli --release\n"
+        "Ava CLI not found. Build it first, e.g.\n"
+        "  cargo build -p ava-cli --release\n"
         "or for debug:\n"
-        "  cargo build -p codex-cli\n"
+        "  cargo build -p ava-cli\n"
     )
 
 
-CODEX_CMD = _resolve_codex_cmd()
-print(CODEX_CMD)
+AVA_CMD = _resolve_ava_cmd()
+print(AVA_CMD)
 TIMEOUT_SEC = 20
 
 WS_ROOT = Path(os.environ["USERPROFILE"]) / "sbx_ws_tests"
@@ -84,7 +84,7 @@ def run_sbx(
     env.update(ENV_BASE)
     if env_extra:
         env.update(env_extra)
-    # Map policy to codex CLI overrides.
+    # Map policy to ava CLI overrides.
     # read-only => default; workspace-write => legacy sandbox_mode override
     if policy not in ("read-only", "workspace-write"):
         raise ValueError(f"unknown policy: {policy}")
@@ -101,7 +101,7 @@ def run_sbx(
         ]
 
     argv = [
-        *CODEX_CMD,
+        *AVA_CMD,
         "sandbox",
         "windows",
         *policy_flags,
@@ -506,12 +506,12 @@ def main() -> int:
     # 17. WS: direct loopback blocked, proxy loopback allowed via env proxy
     if have("curl"):
         with start_loopback_proxy_fixture() as (target_port, proxy_port):
-            proxy_home = WS_ROOT / ".codex_proxy_smoke"
+            proxy_home = WS_ROOT / ".ava_proxy_smoke"
             remove_if_exists(proxy_home)
             proxy_home.mkdir(parents=True, exist_ok=True)
             proxy_url = f"http://127.0.0.1:{proxy_port}"
             proxy_env = {
-                "CODEX_HOME": str(proxy_home),
+                "AVA_HOME": str(proxy_home),
                 "HTTP_PROXY": proxy_url,
                 "http_proxy": proxy_url,
                 "ALL_PROXY": proxy_url,
@@ -555,7 +555,7 @@ def main() -> int:
                 "workspace-write",
                 direct_cmd,
                 WS_ROOT,
-                env_extra={"CODEX_HOME": str(proxy_home)},
+                env_extra={"AVA_HOME": str(proxy_home)},
             )
             add(
                 "WS: direct loopback blocked",
@@ -729,7 +729,7 @@ def main() -> int:
 
     rc, out, err = run_sbx(
         "workspace-write",
-        ["cmd", "/c", "echo hi > \\\\.\\pipe\\codex_testpipe"],
+        ["cmd", "/c", "echo hi > \\\\.\\pipe\\ava_testpipe"],
         WS_ROOT,
     )
     add("WS: named pipe creation denied", rc != 0, f"rc={rc}")
@@ -763,19 +763,19 @@ def main() -> int:
         f"rc={rc}",
     )
 
-    # 34. WS: policy tamper (.codex artifacts) denied
-    codex_home = Path(os.environ["USERPROFILE"]) / ".codex"
-    cap_sid_target = codex_home / "cap_sid"
+    # 34. WS: policy tamper (.ava-code artifacts) denied
+    ava_home = Path(os.environ["USERPROFILE"]) / ".ava-code"
+    cap_sid_target = ava_home / "cap_sid"
     rc, out, err = run_sbx(
         "workspace-write",
         ["cmd", "/c", f'echo tamper > "{cap_sid_target}"'],
         WS_ROOT,
     )
     rc2, out2, err2 = run_sbx(
-        "workspace-write", ["cmd", "/c", "echo tamper > .codex\\policy.json"], WS_ROOT
+        "workspace-write", ["cmd", "/c", "echo tamper > .ava-code\\policy.json"], WS_ROOT
     )
-    add("WS: .codex cap_sid tamper denied", rc != 0, f"rc={rc}, err={err}")
-    add("WS: .codex policy tamper denied", rc2 != 0, f"rc={rc2}, err={err2}")
+    add("WS: .ava-code cap_sid tamper denied", rc != 0, f"rc={rc}, err={err}")
+    add("WS: .ava-code policy tamper denied", rc2 != 0, f"rc={rc2}, err={err2}")
 
     # 35. WS: PATH stub bypass denied (ssh before stubs)
     tools_dir = WS_ROOT / "tools"
@@ -848,7 +848,7 @@ def main() -> int:
     fake_root = WS_ROOT / "fake_root"
     if make_symlink(fake_root, Path("C:/")):
         rc, out, err = run_sbx(
-            "workspace-write", ["cmd", "/c", "echo owned > codex_escape.txt"], fake_root
+            "workspace-write", ["cmd", "/c", "echo owned > ava_escape.txt"], fake_root
         )
         add("WS: workspace-root symlink poisoning denied", rc != 0, f"rc={rc}")
     else:

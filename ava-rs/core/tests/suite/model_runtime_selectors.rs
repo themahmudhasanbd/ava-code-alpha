@@ -1,21 +1,21 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -26,7 +26,7 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -76,7 +76,7 @@ async fn wait_for_model_available(manager: &SharedModelsManager, slug: &str) -> 
         if let Some(model) = manager
             .list_models(
                 RefreshStrategy::Online,
-                codex_core::test_support::default_http_client_factory(),
+                ava_core::test_support::default_http_client_factory(),
             )
             .await
             .iter()
@@ -115,8 +115,8 @@ async fn response_for_remote_model(
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(configure);
     let test = builder.build(&server).await?;
     let models_manager = test.thread_manager.get_models_manager();
@@ -125,14 +125,14 @@ async fn response_for_remote_model(
     assert_eq!(models_mock.requests().len(), 1);
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(model_slug),
             ..Default::default()
         },
     )
     .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "list tools".into(),
             text_elements: Vec::new(),
@@ -140,7 +140,7 @@ async fn response_for_remote_model(
         .await?;
     let mut warnings = Vec::new();
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Warning(warning) => warnings.push(warning.message),
             EventMsg::TurnComplete(_) => break,
             _ => {}
@@ -179,8 +179,8 @@ async fn remote_tool_mode_selector_overrides_feature_flags() -> Result<()> {
     assert!(
         direct_tools
             .iter()
-            .all(|name| name != codex_code_mode::PUBLIC_TOOL_NAME
-                && name != codex_code_mode::WAIT_TOOL_NAME),
+            .all(|name| name != ava_code_mode::PUBLIC_TOOL_NAME
+                && name != ava_code_mode::WAIT_TOOL_NAME),
         "direct mode should override enabled code mode flags: {direct_tools:?}"
     );
 
@@ -192,8 +192,8 @@ async fn remote_tool_mode_selector_overrides_feature_flags() -> Result<()> {
         tool_names(&code_mode_only_body),
         vec![
             // Code-mode entrypoints.
-            codex_code_mode::PUBLIC_TOOL_NAME.to_string(),
-            codex_code_mode::WAIT_TOOL_NAME.to_string(),
+            ava_code_mode::PUBLIC_TOOL_NAME.to_string(),
+            ava_code_mode::WAIT_TOOL_NAME.to_string(),
             "request_user_input".to_string(),
             // Hosted Responses tool.
             "web_search".to_string(),
@@ -211,7 +211,7 @@ async fn remote_tool_mode_selector_overrides_feature_flags() -> Result<()> {
     assert!(
         tool_names(&unsupported_response.body)
             .iter()
-            .any(|name| name == codex_code_mode::PUBLIC_TOOL_NAME)
+            .any(|name| name == ava_code_mode::PUBLIC_TOOL_NAME)
     );
     assert_eq!(
         unsupported_response
@@ -243,10 +243,10 @@ async fn remote_code_mode_only_selector_fails_closed_when_host_is_disabled() -> 
     assert!(
         tools
             .iter()
-            .any(|name| name == codex_code_mode::PUBLIC_TOOL_NAME)
+            .any(|name| name == ava_code_mode::PUBLIC_TOOL_NAME)
             && tools
                 .iter()
-                .any(|name| name == codex_code_mode::WAIT_TOOL_NAME),
+                .any(|name| name == ava_code_mode::WAIT_TOOL_NAME),
         "code-mode-only must retain code-mode tools: {tools:?}"
     );
     assert!(
@@ -296,8 +296,8 @@ async fn unsupported_code_mode_warning_is_emitted_each_turn() -> Result<()> {
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config
                 .features
@@ -312,7 +312,7 @@ async fn unsupported_code_mode_warning_is_emitted_each_turn() -> Result<()> {
     assert_eq!(models_mock.requests().len(), 1);
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(model_slug.to_string()),
             ..Default::default()
@@ -322,7 +322,7 @@ async fn unsupported_code_mode_warning_is_emitted_each_turn() -> Result<()> {
 
     let mut warning_counts = Vec::new();
     for prompt in ["first turn", "second turn"] {
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.to_string(),
                 text_elements: Vec::new(),
@@ -331,7 +331,7 @@ async fn unsupported_code_mode_warning_is_emitted_each_turn() -> Result<()> {
 
         let mut warning_count = 0;
         loop {
-            match wait_for_event(&test.codex, |_| true).await {
+            match wait_for_event(&test.ava-code, |_| true).await {
                 EventMsg::Warning(warning)
                     if warning.message.contains(UNSUPPORTED_CODE_MODE_WARNING) =>
                 {
@@ -434,8 +434,8 @@ async fn remote_multi_agent_selector_uses_model_selected_before_first_turn() -> 
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some(ROOT_MODEL.to_string());
         });
@@ -443,28 +443,28 @@ async fn remote_multi_agent_selector_uses_model_selected_before_first_turn() -> 
     assert_eq!(
         (
             models_mock.requests().len(),
-            test.codex.multi_agent_version(),
+            test.ava-code.multi_agent_version(),
         ),
         (1, None)
     );
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(CHILD_MODEL.to_string()),
             ..Default::default()
         },
     )
     .await?;
-    assert_eq!(test.codex.multi_agent_version(), None);
+    assert_eq!(test.ava-code.multi_agent_version(), None);
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: ROOT_PROMPT.into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -472,7 +472,7 @@ async fn remote_multi_agent_selector_uses_model_selected_before_first_turn() -> 
     assert_eq!(
         (
             models_mock.requests().len(),
-            test.codex.multi_agent_version(),
+            test.ava-code.multi_agent_version(),
             tool_names(
                 &response_mock
                     .last_request()

@@ -11,10 +11,10 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::LocalStdioServerLauncher;
-use codex_rmcp_client::RmcpClient;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::LocalStdioServerLauncher;
+use ava_rmcp_client::RmcpClient;
 use futures::FutureExt as _;
 use pretty_assertions::assert_eq;
 use rmcp::model::ClientCapabilities;

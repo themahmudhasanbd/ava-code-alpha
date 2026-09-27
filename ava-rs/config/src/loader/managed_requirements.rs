@@ -15,8 +15,8 @@ use crate::compose_requirements;
 use crate::config_requirements::ConfigRequirementsWithSources;
 use crate::state::ConfigLoadOptions;
 use crate::state::LoaderOverrides;
-use codex_file_system::ExecutorFileSystem;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_file_system::ExecutorFileSystem;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::io;
 use std::path::Path;
 
@@ -25,7 +25,7 @@ use std::path::Path;
 /// remains a requirements source.
 pub async fn load_managed_requirements_state(
     fs: &dyn ExecutorFileSystem,
-    codex_home: &Path,
+    ava_home: &Path,
     options: impl Into<ConfigLoadOptions>,
 ) -> io::Result<ConfigRequirementsToml> {
     let ConfigLoadOptions {
@@ -39,12 +39,12 @@ pub async fn load_managed_requirements_state(
 
     let mut bundle_requirements = Vec::new();
     if let Some(bundle) = cloud_config_bundle.get().await.map_err(io::Error::other)? {
-        let base_dir = AbsolutePathBuf::from_absolute_path(codex_home)?;
+        let base_dir = AbsolutePathBuf::from_absolute_path(ava_home)?;
         bundle_requirements = bundle.requirements_toml.into_layers(&base_dir);
     }
     let (requirements, _, _) = load_requirements_from_sources(
         fs,
-        codex_home,
+        ava_home,
         &overrides,
         strict_config,
         bundle_requirements,
@@ -63,7 +63,7 @@ pub async fn load_managed_requirements_state(
 /// config stack and its ignored-field diagnostics.
 pub(super) async fn load_requirements_from_sources(
     fs: &dyn ExecutorFileSystem,
-    codex_home: &Path,
+    ava_home: &Path,
     overrides: &LoaderOverrides,
     strict_config: bool,
     bundle_requirements: Vec<RequirementsLayerEntry>,
@@ -78,7 +78,7 @@ pub(super) async fn load_requirements_from_sources(
     if !overrides.ignore_managed_requirements {
         #[cfg(target_os = "macos")]
         {
-            let base_dir = AbsolutePathBuf::from_absolute_path(codex_home)?;
+            let base_dir = AbsolutePathBuf::from_absolute_path(ava_home)?;
             managed_preferences_requirements_layer = macos::load_managed_admin_requirements_layer(
                 overrides
                     .macos_managed_config_requirements_base64
@@ -99,7 +99,7 @@ pub(super) async fn load_requirements_from_sources(
     }
 
     let loaded_config_layers =
-        layer_io::load_config_layers_internal(fs, codex_home, overrides.clone(), strict_config)
+        layer_io::load_config_layers_internal(fs, ava_home, overrides.clone(), strict_config)
             .await?;
     if !overrides.ignore_managed_requirements {
         requirements_layers.extend(system_requirements_layer);
@@ -107,7 +107,7 @@ pub(super) async fn load_requirements_from_sources(
         // Legacy managed_config.toml contributes approval and sandbox requirements.
         requirements_layers.extend(requirements_layers_from_legacy_scheme(
             loaded_config_layers.clone(),
-            codex_home,
+            ava_home,
         )?);
         requirements_layers.extend(managed_preferences_requirements_layer);
     }

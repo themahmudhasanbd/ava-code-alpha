@@ -1,10 +1,10 @@
 //! App mention and usage events.
 
-use crate::events::CodexAppMentionedEventRequest;
-use crate::events::CodexAppUsedEventRequest;
-use crate::events::CodexAppUsedMetadata;
+use crate::events::AvaAppMentionedEventRequest;
+use crate::events::AvaAppUsedEventRequest;
+use crate::events::AvaAppUsedMetadata;
 use crate::events::TrackEventRequest;
-use crate::events::codex_app_metadata;
+use crate::events::ava_app_metadata;
 use crate::facts::AnalyticsFact;
 use crate::facts::AppInvocation;
 use crate::facts::AppMentionedInput;
@@ -21,9 +21,9 @@ use serde_json::json;
 #[test]
 fn app_mentioned_event_serializes_expected_shape() {
     let tracking = test_tracking_context("thread-1", "turn-1");
-    let event = TrackEventRequest::AppMentioned(CodexAppMentionedEventRequest {
-        event_type: "codex_app_mentioned",
-        event_params: codex_app_metadata(
+    let event = TrackEventRequest::AppMentioned(AvaAppMentionedEventRequest {
+        event_type: "ava_app_mentioned",
+        event_params: ava_app_metadata(
             &tracking,
             AppInvocation {
                 connector_id: Some("calendar".to_string()),
@@ -38,7 +38,7 @@ fn app_mentioned_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_app_mentioned",
+            "event_type": "ava_app_mentioned",
             "event_params": {
                 "connector_id": "calendar",
                 "thread_id": "thread-1",
@@ -55,10 +55,10 @@ fn app_mentioned_event_serializes_expected_shape() {
 #[test]
 fn app_used_event_serializes_expected_shape() {
     let tracking = test_tracking_context("thread-2", "turn-2");
-    let event = TrackEventRequest::AppUsed(CodexAppUsedEventRequest {
-        event_type: "codex_app_used",
-        event_params: CodexAppUsedMetadata {
-            app: codex_app_metadata(
+    let event = TrackEventRequest::AppUsed(AvaAppUsedEventRequest {
+        event_type: "ava_app_used",
+        event_params: AvaAppUsedMetadata {
+            app: ava_app_metadata(
                 &tracking,
                 AppInvocation {
                     connector_id: Some("drive".to_string()),
@@ -76,7 +76,7 @@ fn app_used_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_app_used",
+            "event_type": "ava_app_used",
             "event_params": {
                 "connector_id": "drive",
                 "thread_id": "thread-2",
@@ -145,8 +145,8 @@ async fn reducer_ingests_app_facts() {
             ),
         ],
         [
-            ("codex_app_mentioned", Some(TEST_PRODUCT_CLIENT_ID)),
-            ("codex_app_used", Some(TEST_PRODUCT_CLIENT_ID)),
+            ("ava_app_mentioned", Some(TEST_PRODUCT_CLIENT_ID)),
+            ("ava_app_used", Some(TEST_PRODUCT_CLIENT_ID)),
         ]
     );
     assert_eq!(

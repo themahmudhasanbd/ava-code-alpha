@@ -223,8 +223,8 @@ fn runtime_paths_include_desktop_parent_and_primary_runtime_roots() {
     assert_eq!(
         runtime_paths(Some(local_app_data), Some(user_profile)),
         vec![
-            PathBuf::from(r"C:\Users\user\AppData\Local\OpenAI\Codex"),
-            PathBuf::from(r"C:\Users\user\.cache\codex-runtimes"),
+            PathBuf::from(r"C:\Users\user\AppData\Local\OpenAI\Ava"),
+            PathBuf::from(r"C:\Users\user\.cache\ava-runtimes"),
         ]
     );
 }
@@ -235,6 +235,6 @@ fn primary_runtime_path_does_not_depend_on_local_app_data() {
 
     assert_eq!(
         runtime_paths(/*local_app_data*/ None, Some(user_profile)),
-        vec![PathBuf::from(r"C:\Users\user\.cache\codex-runtimes")]
+        vec![PathBuf::from(r"C:\Users\user\.cache\ava-runtimes")]
     );
 }

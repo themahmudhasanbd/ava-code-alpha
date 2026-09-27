@@ -10,33 +10,33 @@ use app_test_support::create_request_user_input_sse_response;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
 use app_test_support::write_mock_responses_config_toml_with_chatgpt_base_url;
-use codex_app_server_protocol::AppInfo;
-use codex_app_server_protocol::CapabilityRootLocation;
-use codex_app_server_protocol::EnvironmentAddResponse;
-use codex_app_server_protocol::EnvironmentInfoResponse;
-use codex_app_server_protocol::ListMcpServerStatusParams;
-use codex_app_server_protocol::ListMcpServerStatusResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SelectedCapabilityRoot;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnEnvironmentParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::TurnSteerResponse;
-use codex_app_server_protocol::UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::protocol::PLUGINS_INSTRUCTIONS_OPEN_TAG;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_protocol::AppInfo;
+use ava_app_server_protocol::CapabilityRootLocation;
+use ava_app_server_protocol::EnvironmentAddResponse;
+use ava_app_server_protocol::EnvironmentInfoResponse;
+use ava_app_server_protocol::ListMcpServerStatusParams;
+use ava_app_server_protocol::ListMcpServerStatusResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SelectedCapabilityRoot;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnEnvironmentParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::protocol::PLUGINS_INSTRUCTIONS_OPEN_TAG;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::process::wait_for_pid_file;
 use core_test_support::responses;
 use core_test_support::responses::ResponsesRequest;
@@ -93,8 +93,8 @@ async fn selected_plugin_mcp_startup_respects_explicit_mentions(
     let explicitly_mentioned = !matches!(mention, PluginMention::Unmentioned);
     let responses_server = responses::start_mock_server().await;
     let fixture = selected_capability_fixture(&responses_server.uri(), &responses_server.uri())?;
-    mount_analytics_capture(&responses_server, fixture.codex_home.path()).await?;
-    let config_path = fixture.codex_home.path().join("config.toml");
+    mount_analytics_capture(&responses_server, fixture.ava_home.path()).await?;
+    let config_path = fixture.ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?.replace(
         "executor_capability_discovery = true",
         &format!("executor_capability_discovery = {executor_capability_discovery}"),
@@ -107,7 +107,7 @@ async fn selected_plugin_mcp_startup_respects_explicit_mentions(
     )
     .await;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(fixture.codex_home.path())
+        .with_ava_home(fixture.ava_home.path())
         // This fixture owns environments.toml and selects its environments explicitly.
         .without_auto_env()
         .build()
@@ -120,7 +120,7 @@ async fn selected_plugin_mcp_startup_respects_explicit_mentions(
     )
     .await?;
     let mut exec_server =
-        spawn_exec_server(fixture.codex_home.path(), &fixture.exec_server_url).await?;
+        spawn_exec_server(fixture.ava_home.path(), &fixture.exec_server_url).await?;
     add_environment(&mut app_server, &fixture.exec_server_url).await?;
 
     let text_input = |text| UserInput::Text {
@@ -182,7 +182,7 @@ async fn selected_plugin_mcp_startup_respects_explicit_mentions(
     );
 
     let event = wait_for_matching_analytics_event(&responses_server, READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_turn_event"
+        event["event_type"] == "ava_turn_event"
             && event["event_params"]["thread_id"] == thread_id
             && event["event_params"]["turn_id"] == turn.id
     })
@@ -227,14 +227,14 @@ async fn managed_plugins_requirement_disables_selected_executor_plugin_capabilit
     )
     .await?;
     let fixture = selected_capability_fixture(&responses_server.uri(), &apps_url)?;
-    let config_path = fixture.codex_home.path().join("config.toml");
+    let config_path = fixture.ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?.replace(
         "executor_capability_discovery = true",
         &format!("executor_capability_discovery = {executor_capability_discovery}\nplugins = true"),
     );
     std::fs::write(config_path, config)?;
     std::fs::write(
-        fixture.codex_home.path().join("requirements.toml"),
+        fixture.ava_home.path().join("requirements.toml"),
         "[features]\nplugins = false\n",
     )?;
     let response_mock = responses::mount_sse_once(
@@ -248,7 +248,7 @@ async fn managed_plugins_requirement_disables_selected_executor_plugin_capabilit
     .await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(fixture.codex_home.path())
+        .with_ava_home(fixture.ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -260,7 +260,7 @@ async fn managed_plugins_requirement_disables_selected_executor_plugin_capabilit
     )
     .await?;
     let mut exec_server =
-        spawn_exec_server(fixture.codex_home.path(), &fixture.exec_server_url).await?;
+        spawn_exec_server(fixture.ava_home.path(), &fixture.exec_server_url).await?;
     add_environment(&mut app_server, &fixture.exec_server_url).await?;
 
     run_turn(
@@ -361,7 +361,7 @@ async fn selected_capability_stack_tracks_environment_availability_and_resume() 
     .await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(fixture.codex_home.path())
+        .with_ava_home(fixture.ava_home.path())
         // This fixture owns environments.toml and selects its environments explicitly.
         .without_auto_env()
         .build()
@@ -385,7 +385,7 @@ async fn selected_capability_stack_tracks_environment_availability_and_resume() 
     assert_selected_capabilities_absent(&initial_requests[0]);
 
     let mut exec_server =
-        spawn_exec_server(fixture.codex_home.path(), &fixture.exec_server_url).await?;
+        spawn_exec_server(fixture.ava_home.path(), &fixture.exec_server_url).await?;
     add_environment(&mut app_server, &fixture.exec_server_url).await?;
     wait_for_selected_mcp_server(&mut app_server, &thread_id).await?;
 
@@ -413,7 +413,7 @@ async fn selected_capability_stack_tracks_environment_availability_and_resume() 
     std::fs::remove_file(&fixture.pid_file)?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(fixture.codex_home.path())
+        .with_ava_home(fixture.ava_home.path())
         // This fixture owns environments.toml and selects its environments explicitly.
         .without_auto_env()
         .build()
@@ -448,7 +448,7 @@ async fn selected_capability_stack_tracks_environment_availability_and_resume() 
             .is_some_and(|text| text.contains(NO_SELECTED_SKILLS_MESSAGE))
     );
 
-    exec_server = spawn_exec_server(fixture.codex_home.path(), &fixture.exec_server_url).await?;
+    exec_server = spawn_exec_server(fixture.ava_home.path(), &fixture.exec_server_url).await?;
     add_environment(&mut app_server, &fixture.exec_server_url).await?;
     wait_for_selected_mcp_server(&mut app_server, &thread_id).await?;
 
@@ -552,8 +552,8 @@ async fn selected_capabilities_become_available_between_samples_in_one_turn(
     let fixture = selected_capability_fixture(&responses_server.uri(), &apps_url)?;
     let initialize_barrier = fixture.block_mcp_startup()?;
     let stop_hook_barrier = if matches!(mention_timing, MentionTiming::InitialBeforeRestart) {
-        let barrier = fixture.codex_home.path().join("allow-stop-hook");
-        let hook_path = fixture.codex_home.path().join("wait-for-stop.py");
+        let barrier = fixture.ava_home.path().join("allow-stop-hook");
+        let hook_path = fixture.ava_home.path().join("wait-for-stop.py");
         std::fs::write(
             &hook_path,
             "import json\nimport sys\nimport time\nfrom pathlib import Path\n\n\
@@ -565,12 +565,12 @@ async fn selected_capabilities_become_available_between_samples_in_one_turn(
             barrier.display()
         ));
         std::fs::write(
-            fixture.codex_home.path().join("requirements.toml"),
+            fixture.ava_home.path().join("requirements.toml"),
             format!(
                 "[[hooks.Stop]]\n[[hooks.Stop.hooks]]\ntype = 'command'\ncommand = {command}\ntimeout = 60\n"
             ),
         )?;
-        let config_path = fixture.codex_home.path().join("config.toml");
+        let config_path = fixture.ava_home.path().join("config.toml");
         let config = std::fs::read_to_string(&config_path)?
             .replace("[features]\n", "[features]\nhooks = true\n");
         std::fs::write(config_path, config)?;
@@ -611,7 +611,7 @@ async fn selected_capabilities_become_available_between_samples_in_one_turn(
     .await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(fixture.codex_home.path())
+        .with_ava_home(fixture.ava_home.path())
         // This fixture owns environments.toml and selects its environments explicitly.
         .without_auto_env()
         .build()
@@ -733,7 +733,7 @@ async fn selected_capabilities_become_available_between_samples_in_one_turn(
         request_id
     };
     let mut exec_server =
-        spawn_exec_server(fixture.codex_home.path(), &fixture.exec_server_url).await?;
+        spawn_exec_server(fixture.ava_home.path(), &fixture.exec_server_url).await?;
     add_environment(&mut app_server, &fixture.exec_server_url).await?;
     if let Some(request_id) = request_id {
         app_server
@@ -822,7 +822,7 @@ async fn selected_capabilities_become_available_between_samples_in_one_turn(
 }
 
 struct SelectedCapabilityFixture {
-    codex_home: TempDir,
+    ava_home: TempDir,
     _plugin: TempDir,
     pid_file: std::path::PathBuf,
     exec_server_url: String,
@@ -848,13 +848,13 @@ fn selected_capability_fixture(
     responses_server_uri: &str,
     apps_url: &str,
 ) -> Result<SelectedCapabilityFixture> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        codex_home.path(),
+        ava_home.path(),
         responses_server_uri,
         apps_url,
     )?;
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?.replacen(
         "model_provider = \"mock_provider\"",
         "mcp_oauth_credentials_store = \"file\"\nmodel_provider = \"mock_provider\"",
@@ -867,7 +867,7 @@ fn selected_capability_fixture(
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .email("selected-capability-stack@example.com")
@@ -882,13 +882,13 @@ fn selected_capability_fixture(
     let exec_server_url = format!("ws://{}", listener.local_addr()?);
     drop(listener);
     std::fs::write(
-        codex_home.path().join("environments.toml"),
+        ava_home.path().join("environments.toml"),
         format!(
             "default = \"{EXECUTOR_ID}\"\ninclude_local = true\n\n[[environments]]\nid = \"{EXECUTOR_ID}\"\nurl = \"{exec_server_url}\"\nconnect_timeout_sec = 0.05\n"
         ),
     )?;
 
-    let local_skill_dir = codex_home.path().join("skills/local-deploy");
+    let local_skill_dir = ava_home.path().join("skills/local-deploy");
     std::fs::create_dir_all(&local_skill_dir)?;
     std::fs::write(
         local_skill_dir.join("SKILL.md"),
@@ -898,7 +898,7 @@ fn selected_capability_fixture(
     )?;
 
     let plugin = TempDir::new()?;
-    let manifest_dir = plugin.path().join(".codex-plugin");
+    let manifest_dir = plugin.path().join(".ava-plugin");
     let skill_dir = plugin.path().join("skills/deploy");
     let pid_file = plugin.path().join("executor-mcp.pid");
     std::fs::create_dir_all(&manifest_dir)?;
@@ -942,7 +942,7 @@ fn selected_capability_fixture(
     };
     let environment_cwd = AbsolutePathBuf::try_from(plugin.path().to_path_buf())?;
     Ok(SelectedCapabilityFixture {
-        codex_home,
+        ava_home,
         _plugin: plugin,
         pid_file,
         exec_server_url,
@@ -969,7 +969,7 @@ fn assert_selected_plugin_tools_absent(request: &ResponsesRequest) {
             .is_none()
     );
     let connector = request
-        .tool_by_name("mcp__codex_apps__calendar", "connector_calendar")
+        .tool_by_name("mcp__ava_apps__calendar", "connector_calendar")
         .expect("host connector should remain model-visible");
     assert!(
         connector["description"]
@@ -1026,7 +1026,7 @@ fn assert_selected_plugin_tools(request: &ResponsesRequest) {
             .is_some()
     );
     let connector = request
-        .tool_by_name("mcp__codex_apps__calendar", "connector_calendar")
+        .tool_by_name("mcp__ava_apps__calendar", "connector_calendar")
         .expect("selected connector should be model-visible");
     assert!(
         connector["description"]
@@ -1160,14 +1160,14 @@ async fn wait_for_selected_mcp_server(
     Ok(())
 }
 
-async fn spawn_exec_server(codex_home: &std::path::Path, url: &str) -> Result<Child> {
-    let mut child = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+async fn spawn_exec_server(ava_home: &std::path::Path, url: &str) -> Result<Child> {
+    let mut child = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
         .args(["exec-server", "--listen", url])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
         .kill_on_drop(true)
-        .env("CODEX_HOME", codex_home)
+        .env("AVA_HOME", ava_home)
         .env(EXECUTOR_ENV_NAME, EXECUTOR_ENV_VALUE)
         .spawn()?;
     let stdout = child

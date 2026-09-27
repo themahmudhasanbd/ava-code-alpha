@@ -3,41 +3,41 @@
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use codex_extension_api::ApprovalReviewContributor;
-use codex_extension_api::ConfigContributor;
-use codex_extension_api::ContentItemKind;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ContextualUserFragment;
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ExtensionWarning;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::PromptFragment;
-use codex_extension_api::ResponseItem;
-use codex_extension_api::SkillInvocationContributor;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::TokenUsageContributor;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::TurnContextContributionInput;
-use codex_extension_api::TurnInputContext;
-use codex_extension_api::TurnInputContributor;
-use codex_extension_api::TurnItemContributor;
-use codex_extension_api::TurnLifecycleContributor;
-use codex_protocol::items::HookPromptItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::WarningEvent;
+use ava_extension_api::ApprovalReviewContributor;
+use ava_extension_api::ConfigContributor;
+use ava_extension_api::ContentItemKind;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ContextualUserFragment;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ExtensionWarning;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::PromptFragment;
+use ava_extension_api::ResponseItem;
+use ava_extension_api::SkillInvocationContributor;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::TokenUsageContributor;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::TurnContextContributionInput;
+use ava_extension_api::TurnInputContext;
+use ava_extension_api::TurnInputContributor;
+use ava_extension_api::TurnItemContributor;
+use ava_extension_api::TurnLifecycleContributor;
+use ava_protocol::items::HookPromptItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::WarningEvent;
 use pretty_assertions::assert_eq;
 
 struct AllContributors;
@@ -53,7 +53,7 @@ fn mcp_contribution_context_identifies_the_running_thread() {
         &config,
         &thread_init,
         &thread_store,
-        "codex_work_cca",
+        "ava_work_cca",
         &[],
         /*executor_capability_discovery*/ None,
     )
@@ -158,19 +158,19 @@ impl TurnItemContributor for AllContributors {
 impl ApprovalReviewContributor for AllContributors {
     fn decide<'a>(
         &'a self,
-        _input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-    ) -> ExtensionFuture<'a, Option<codex_extension_api::ApprovalDecision>> {
-        Box::pin(async { Some(codex_extension_api::ApprovalDecision::AskUser) })
+        _input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+    ) -> ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>> {
+        Box::pin(async { Some(ava_extension_api::ApprovalDecision::AskUser) })
     }
 }
 
-impl codex_extension_api::SynchronousApprovalReviewer for AllContributors {
+impl ava_extension_api::SynchronousApprovalReviewer for AllContributors {
     fn review(
         &self,
-        _reason: codex_protocol::approvals::GuardianReviewReason,
-    ) -> ExtensionFuture<'_, Option<codex_protocol::protocol::ReviewDecision>> {
+        _reason: ava_protocol::approvals::GuardianReviewReason,
+    ) -> ExtensionFuture<'_, Option<ava_protocol::protocol::ReviewDecision>> {
         Box::pin(std::future::ready(Some(
-            codex_protocol::protocol::ReviewDecision::Approved,
+            ava_protocol::protocol::ReviewDecision::Approved,
         )))
     }
 }
@@ -203,15 +203,15 @@ async fn build_round_trips_every_contributor_category() {
     assert_eq!(registry.tool_lifecycle_contributors().len(), 1);
     assert_eq!(registry.turn_item_contributors().len(), 1);
     let thread_store = ExtensionData::new("thread");
-    let input = codex_extension_api::ApprovalDecisionInput {
+    let input = ava_extension_api::ApprovalDecisionInput {
         approval_id: "approval-1",
         tool_call_id: None,
         action: &serde_json::Value::Null,
-        thread_id: codex_protocol::ThreadId::new(),
+        thread_id: ava_protocol::ThreadId::new(),
         thread_store: &thread_store,
-        category: codex_protocol::openai_models::GuardianScope::Shell,
-        approval_policy: codex_protocol::protocol::AskForApproval::OnRequest,
-        approvals_reviewer: codex_protocol::config_types::ApprovalsReviewer::AutoReview,
+        category: ava_protocol::openai_models::GuardianScope::Shell,
+        approval_policy: ava_protocol::protocol::AskForApproval::OnRequest,
+        approvals_reviewer: ava_protocol::config_types::ApprovalsReviewer::AutoReview,
         require_guardian: false,
         require_fresh_review: false,
         full_access: false,
@@ -220,7 +220,7 @@ async fn build_round_trips_every_contributor_category() {
     };
     assert_eq!(
         registry.decide_approval(&input).await,
-        Some(codex_extension_api::ApprovalDecision::AskUser)
+        Some(ava_extension_api::ApprovalDecision::AskUser)
     );
 }
 
@@ -322,7 +322,7 @@ async fn contributors_preserve_registration_order() {
         fragments.extend(
             contributor
                 .contribute_turn_context(TurnContextContributionInput {
-                    thread_id: codex_protocol::ThreadId::default(),
+                    thread_id: ava_protocol::ThreadId::default(),
                     turn_id: turn_store.level_id(),
                     session_store: &session_store,
                     thread_store: &thread_store,

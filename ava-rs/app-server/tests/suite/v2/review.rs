@@ -5,31 +5,31 @@ use app_test_support::create_command_execution_sse_response;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::create_mock_responses_server_sequence;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::DeprecationNoticeNotification;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ReviewDelivery;
-use codex_app_server_protocol::ReviewStartParams;
-use codex_app_server_protocol::ReviewStartResponse;
-use codex_app_server_protocol::ReviewTarget;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStartedNotification;
-use codex_app_server_protocol::ThreadStatusChangedNotification;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_features::Feature;
-use codex_skills::system_cache_root_dir;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::DeprecationNoticeNotification;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ReviewDelivery;
+use ava_app_server_protocol::ReviewStartParams;
+use ava_app_server_protocol::ReviewStartResponse;
+use ava_app_server_protocol::ReviewTarget;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStartedNotification;
+use ava_app_server_protocol::ThreadStatusChangedNotification;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_features::Feature;
+use ava_skills::system_cache_root_dir;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -44,11 +44,11 @@ const COLLIDING_REVIEW_SKILL_MARKER: &str = "COLLIDING_REVIEW_SKILL_MARKER";
 #[tokio::test]
 async fn review_start_rejects_detached_delivery_for_paginated_parent() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -118,11 +118,11 @@ async fn review_start_runs_review_turn_and_emits_code_review_item(
     .to_string();
     let server = create_mock_responses_server_repeating_assistant(&review_payload).await;
 
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let thread_id = start_default_thread(&mut mcp).await?;
@@ -228,15 +228,15 @@ async fn review_start_exec_approval_item_id_matches_command_execution_item() -> 
     ];
     let server = create_mock_responses_server_sequence(responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_provider_name("Mock provider")
         .with_approval_policy("on-request")
         .disable_feature(Feature::ShellSnapshot)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let thread_id = start_default_thread(&mut mcp).await?;
@@ -292,7 +292,7 @@ async fn review_start_exec_approval_item_id_matches_command_execution_item() -> 
 
     mcp.send_response(
         request_id,
-        serde_json::json!({ "decision": codex_protocol::protocol::ReviewDecision::Approved }),
+        serde_json::json!({ "decision": ava_protocol::protocol::ReviewDecision::Approved }),
     )
     .await?;
     timeout(
@@ -307,11 +307,11 @@ async fn review_start_exec_approval_item_id_matches_command_execution_item() -> 
 #[tokio::test]
 async fn review_start_rejects_empty_base_branch() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let thread_id = start_default_thread(&mut mcp).await?;
@@ -361,10 +361,10 @@ async fn review_start_with_detached_delivery_returns_new_thread_id() -> Result<(
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let startup_provider = responses::start_mock_server().await;
-    create_config_toml(codex_home.path(), &startup_provider.uri())?;
-    let colliding_skill_dir = codex_home.path().join("skills/review-agent-collision");
+    create_config_toml(ava_home.path(), &startup_provider.uri())?;
+    let colliding_skill_dir = ava_home.path().join("skills/review-agent-collision");
     std::fs::create_dir_all(&colliding_skill_dir)?;
     std::fs::write(
         colliding_skill_dir.join("SKILL.md"),
@@ -372,8 +372,8 @@ async fn review_start_with_detached_delivery_returns_new_thread_id() -> Result<(
             "---\nname: review-agent\ndescription: Colliding user review skill.\n---\n\n{COLLIDING_REVIEW_SKILL_MARKER}\n"
         ),
     )?;
-    let canonical_codex_home = std::fs::canonicalize(codex_home.path())?.try_into()?;
-    let review_skill_path = system_cache_root_dir(&canonical_codex_home)
+    let canonical_ava_home = std::fs::canonicalize(ava_home.path())?.try_into()?;
+    let review_skill_path = system_cache_root_dir(&canonical_ava_home)
         .join("review-agent")
         .join("SKILL.md");
     let expected_prompt = format!(
@@ -382,12 +382,12 @@ async fn review_start_with_detached_delivery_returns_new_thread_id() -> Result<(
     );
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     // New threads use the refreshed route; detached review must inherit that route.
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         format!(
             "model_provider = 'review-gateway'\n[model_providers.review-gateway]\nname = 'Review Gateway'\nbase_url = '{}/v1'\n",
             server.uri()
@@ -503,11 +503,11 @@ async fn review_start_with_detached_delivery_returns_new_thread_id() -> Result<(
 #[tokio::test]
 async fn review_start_rejects_empty_commit_sha() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let thread_id = start_default_thread(&mut mcp).await?;
@@ -540,11 +540,11 @@ async fn review_start_rejects_empty_commit_sha() -> Result<()> {
 #[tokio::test]
 async fn review_start_rejects_empty_custom_instructions() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let thread_id = start_default_thread(&mut mcp).await?;
@@ -614,9 +614,9 @@ async fn materialize_thread_rollout(mcp: &mut TestAppServer, thread_id: &str) ->
     Ok(())
 }
 
-fn create_config_toml(codex_home: &std::path::Path, server_uri: &str) -> std::io::Result<()> {
+fn create_config_toml(ava_home: &std::path::Path, server_uri: &str) -> std::io::Result<()> {
     MockResponsesConfig::new(server_uri)
         .with_provider_name("Mock provider")
         .disable_feature(Feature::ShellSnapshot)
-        .write(codex_home)
+        .write(ava_home)
 }

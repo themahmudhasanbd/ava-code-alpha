@@ -135,7 +135,7 @@
     },
     "RateLimitResetType": {
       "enum": [
-        "codexRateLimits",
+        "avaRateLimits",
         "unknown"
       ],
       "type": "string"
@@ -323,7 +323,7 @@
       "additionalProperties": {
         "$ref": "#/definitions/RateLimitSnapshot"
       },
-      "description": "Multi-bucket view keyed by metered `limit_id` (for example, `codex`).",
+      "description": "Multi-bucket view keyed by metered `limit_id` (for example, `ava`).",
       "type": [
         "object",
         "null"

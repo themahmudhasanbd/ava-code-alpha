@@ -7,16 +7,16 @@ use anyhow::Context;
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::TurnInputRequest;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::items::CommandExecutionStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::sandbox::SandboxType;
-use codex_protocol::user_input::UserInput;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::TurnInputRequest;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::items::CommandExecutionStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::sandbox::SandboxType;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -26,8 +26,8 @@ use core_test_support::responses::sse;
 use core_test_support::responses::sse_response;
 use core_test_support::responses::start_mock_server;
 use core_test_support::startup::STARTUP_TIMEOUT;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -172,7 +172,7 @@ async fn remote_local_binding_policy_and_review_cleanup(
             }
         }
     });
-    let test = test_codex()
+    let test = test_ava()
         .with_exec_server_url(exec_server_url)
         .with_cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(format!(
@@ -209,7 +209,7 @@ mode = "full"
         test.session_configured.permission_profile.clone(),
         test.config.cwd.as_path(),
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "build the site".into(),
@@ -241,7 +241,7 @@ mode = "full"
     }
     let completed = timeout(Duration::from_secs(/*secs*/ 15), async {
         loop {
-            match test.codex.next_event().await?.msg {
+            match test.ava-code.next_event().await?.msg {
                 EventMsg::ItemCompleted(event) => {
                     if let TurnItem::CommandExecution(item) = event.item {
                         return Ok::<_, anyhow::Error>(item);

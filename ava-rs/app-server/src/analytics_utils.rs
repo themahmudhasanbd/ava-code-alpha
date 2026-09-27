@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_core::config::Config;
-use codex_login::AuthManager;
+use ava_analytics::AnalyticsEventsClient;
+use ava_core::config::Config;
+use ava_login::AuthManager;
 
 pub(crate) fn analytics_events_client_from_config(
     auth_manager: Arc<AuthManager>,

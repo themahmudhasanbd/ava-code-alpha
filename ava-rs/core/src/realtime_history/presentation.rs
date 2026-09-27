@@ -2,16 +2,16 @@
 
 use super::RealtimeHistoryState;
 use super::StreamingAgentMessage;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::DynamicToolCallStatus;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::SubAgentActivityKind;
-use codex_protocol::realtime::BemItemPresentation;
-use codex_protocol::realtime::RealtimeItem;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::DynamicToolCallStatus;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::SubAgentActivityKind;
+use ava_protocol::realtime::BemItemPresentation;
+use ava_protocol::realtime::RealtimeItem;
 
-const INLINE_MARKDOWN_DIRECTIVE: &str = "::codex-realtime-inline{}";
-const INLINE_VISUALIZATION_DIRECTIVE: &str = "::codex-inline-vis{";
+const INLINE_MARKDOWN_DIRECTIVE: &str = "::ava-realtime-inline{}";
+const INLINE_VISUALIZATION_DIRECTIVE: &str = "::ava-inline-vis{";
 const VISUALIZE_DIRECTIVE: &str = "visualize{";
 const BACKTICK_FENCE: &str = "```";
 const TILDE_FENCE: &str = "~~~";
@@ -71,7 +71,7 @@ impl RealtimeHistoryState {
             TurnItem::McpToolCall(call)
                 if self.active_session_id.is_some()
                     && completed
-                    && call.server == "codex_app"
+                    && call.server == "ava_app"
                     && call.status == McpToolCallStatus::Completed =>
             {
                 self.add_promotion(items, turn_id, &call.id, BemItemPresentation::WholeItem);

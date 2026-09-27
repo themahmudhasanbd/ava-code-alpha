@@ -4,19 +4,19 @@ use std::time::Instant;
 use chrono::DateTime;
 use chrono::NaiveDateTime;
 use chrono::Utc;
-use codex_git_utils::collect_git_info;
-use codex_git_utils::get_git_repo_root;
-use codex_protocol::ThreadId;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GitInfo;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::strip_user_message_prefix;
-use codex_protocol::protocol::user_message_preview;
-use codex_rollout::RolloutItem;
-use codex_state::ThreadMetadata;
+use ava_git_utils::collect_git_info;
+use ava_git_utils::get_git_repo_root;
+use ava_protocol::ThreadId;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GitInfo;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::strip_user_message_prefix;
+use ava_protocol::protocol::user_message_preview;
+use ava_rollout::RolloutItem;
+use ava_state::ThreadMetadata;
 
 use crate::CreateThreadParams;
 use crate::GitInfoPatch;
@@ -165,7 +165,7 @@ impl ThreadMetadataSync {
         self.defer_resume_update_until_append = false;
         let affects_metadata = items
             .iter()
-            .any(codex_state::rollout_item_affects_thread_metadata);
+            .any(ava_state::rollout_item_affects_thread_metadata);
         let advances_recency = items
             .iter()
             .any(|item| matches!(item, RolloutItem::EventMsg(EventMsg::TurnStarted(_))));
@@ -412,28 +412,28 @@ fn git_info_patch_from_observation(git_info: GitInfo) -> GitInfoPatch {
 mod tests {
     use std::sync::Arc;
 
-    use codex_protocol::config_types::ApprovalsReviewer;
-    use codex_protocol::config_types::CollaborationMode;
-    use codex_protocol::config_types::ModeKind;
-    use codex_protocol::config_types::ReasoningSummary;
-    use codex_protocol::config_types::Settings;
-    use codex_protocol::items::UserMessageItem;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::protocol::AskForApproval;
-    use codex_protocol::protocol::ItemCompletedEvent;
-    use codex_protocol::protocol::SessionMeta;
-    use codex_protocol::protocol::SessionMetaLine;
-    use codex_protocol::protocol::SessionSource;
-    use codex_protocol::protocol::ThreadGoal;
-    use codex_protocol::protocol::ThreadGoalStatus;
-    use codex_protocol::protocol::ThreadGoalUpdatedEvent;
-    use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-    use codex_protocol::protocol::ThreadSettingsSnapshot;
-    use codex_protocol::protocol::TurnStartedEvent;
-    use codex_protocol::protocol::UserMessageEvent;
-    use codex_protocol::user_input::UserInput;
-    use codex_rollout::CompactedItem;
+    use ava_protocol::config_types::ApprovalsReviewer;
+    use ava_protocol::config_types::CollaborationMode;
+    use ava_protocol::config_types::ModeKind;
+    use ava_protocol::config_types::ReasoningSummary;
+    use ava_protocol::config_types::Settings;
+    use ava_protocol::items::UserMessageItem;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::protocol::AskForApproval;
+    use ava_protocol::protocol::ItemCompletedEvent;
+    use ava_protocol::protocol::SessionMeta;
+    use ava_protocol::protocol::SessionMetaLine;
+    use ava_protocol::protocol::SessionSource;
+    use ava_protocol::protocol::ThreadGoal;
+    use ava_protocol::protocol::ThreadGoalStatus;
+    use ava_protocol::protocol::ThreadGoalUpdatedEvent;
+    use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+    use ava_protocol::protocol::ThreadSettingsSnapshot;
+    use ava_protocol::protocol::TurnStartedEvent;
+    use ava_protocol::protocol::UserMessageEvent;
+    use ava_protocol::user_input::UserInput;
+    use ava_rollout::CompactedItem;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -452,7 +452,7 @@ mod tests {
             source: SessionSource::Exec,
             thread_source: None,
             originator: "test_originator".to_string(),
-            base_instructions: codex_protocol::models::BaseInstructions::default(),
+            base_instructions: ava_protocol::models::BaseInstructions::default(),
             dynamic_tools: Vec::new(),
             selected_capability_roots: Vec::new(),
             multi_agent_version: None,
@@ -658,7 +658,7 @@ mod tests {
                 thread_id: None,
                 thread_settings: ThreadSettingsSnapshot {
                     disabled_plugin_ids: Vec::new(),
-                    model: "gpt-5.2-codex".to_string(),
+                    model: "gpt-5.2-ava".to_string(),
                     model_provider_id: "updated-provider".to_string(),
                     service_tier: None,
                     approval_policy: AskForApproval::Never,
@@ -673,7 +673,7 @@ mod tests {
                     collaboration_mode: CollaborationMode {
                         mode: ModeKind::Default,
                         settings: Settings {
-                            model: "gpt-5.2-codex".to_string(),
+                            model: "gpt-5.2-ava".to_string(),
                             reasoning_effort: Some(ReasoningEffort::Ultra),
                             developer_instructions: None,
                         },
@@ -686,7 +686,7 @@ mod tests {
             .observe_appended_items(&[item.clone()])
             .expect("thread settings metadata update");
 
-        assert_eq!(update.patch.model.as_deref(), Some("gpt-5.2-codex"));
+        assert_eq!(update.patch.model.as_deref(), Some("gpt-5.2-ava"));
         assert_eq!(
             update.patch.model_provider.as_deref(),
             Some("updated-provider")
@@ -767,7 +767,7 @@ mod tests {
     #[test]
     fn resume_preserves_existing_display_metadata_and_initializes_missing_title() {
         let thread_id = ThreadId::new();
-        let mut metadata = codex_state::ThreadMetadataBuilder::new(
+        let mut metadata = ava_state::ThreadMetadataBuilder::new(
             thread_id,
             Default::default(),
             Utc::now(),

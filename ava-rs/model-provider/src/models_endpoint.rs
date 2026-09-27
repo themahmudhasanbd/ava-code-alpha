@@ -4,34 +4,34 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_api::AgentIdentityTelemetry;
-use codex_api::ModelsClient;
-use codex_api::RequestTelemetry;
-use codex_api::ReqwestTransport;
-use codex_api::TransportError;
-use codex_api::auth_header_telemetry;
-use codex_api::map_api_error;
-use codex_feedback::FeedbackRequestTags;
-use codex_feedback::emit_feedback_request_tags_with_auth_env;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthEnvTelemetry;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::GatewayAuthManager;
-use codex_login::collect_auth_env_telemetry;
-use codex_login::default_client::ClientRedirectPolicy;
-use codex_login::default_client::create_client_for_route_async;
-use codex_model_provider_info::CHATGPT_CODEX_BASE_URL;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_models_manager::manager::ModelsEndpointClient;
-use codex_models_manager::manager::ModelsEndpointFuture;
-use codex_models_manager::manager::ModelsEndpointResponse;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CoreResult;
-use codex_response_debug_context::extract_response_debug_context;
-use codex_response_debug_context::telemetry_transport_error_message;
+use ava_api::AgentIdentityTelemetry;
+use ava_api::ModelsClient;
+use ava_api::RequestTelemetry;
+use ava_api::ReqwestTransport;
+use ava_api::TransportError;
+use ava_api::auth_header_telemetry;
+use ava_api::map_api_error;
+use ava_feedback::FeedbackRequestTags;
+use ava_feedback::emit_feedback_request_tags_with_auth_env;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthEnvTelemetry;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::GatewayAuthManager;
+use ava_login::collect_auth_env_telemetry;
+use ava_login::default_client::ClientRedirectPolicy;
+use ava_login::default_client::create_client_for_route_async;
+use ava_model_provider_info::CHATGPT_AVA_BASE_URL;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_models_manager::manager::ModelsEndpointClient;
+use ava_models_manager::manager::ModelsEndpointFuture;
+use ava_models_manager::manager::ModelsEndpointResponse;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as CoreResult;
+use ava_response_debug_context::extract_response_debug_context;
+use ava_response_debug_context::telemetry_transport_error_message;
 use http::HeaderMap;
 use tokio::time::timeout;
 
@@ -73,18 +73,18 @@ impl OpenAiModelsEndpoint {
         }
     }
 
-    async fn auth(&self) -> Option<CodexAuth> {
+    async fn auth(&self) -> Option<AvaAuth> {
         match self.auth_manager.as_ref() {
             Some(auth_manager) => auth_manager.auth().await,
             None => None,
         }
     }
 
-    async fn uses_codex_backend(&self) -> bool {
+    async fn uses_ava_backend(&self) -> bool {
         self.auth()
             .await
             .as_ref()
-            .is_some_and(CodexAuth::uses_codex_backend)
+            .is_some_and(AvaAuth::uses_ava_backend)
     }
 
     async fn list_models(
@@ -94,7 +94,7 @@ impl OpenAiModelsEndpoint {
     ) -> CoreResult<ModelsEndpointResponse> {
         let auth = self.auth().await;
         let metric_auth_mode = if self.has_provider_api_key()
-            || auth.as_ref().is_some_and(CodexAuth::is_api_key_auth)
+            || auth.as_ref().is_some_and(AvaAuth::is_api_key_auth)
         {
             "api_key"
         } else if auth.is_some() {
@@ -102,20 +102,20 @@ impl OpenAiModelsEndpoint {
         } else {
             "none"
         };
-        let _timer = codex_otel::start_global_timer(
-            "codex.remote_models.fetch_update.duration_ms",
+        let _timer = ava_otel::start_global_timer(
+            "ava.remote_models.fetch_update.duration_ms",
             &[("auth_mode", metric_auth_mode)],
         );
         let identity = crate::models_identity::identity(&self.provider_info, auth.as_ref())?;
-        let auth_mode = auth.as_ref().map(CodexAuth::auth_mode);
+        let auth_mode = auth.as_ref().map(AvaAuth::auth_mode);
         let mut api_provider = self.provider_info.to_api_provider(auth_mode)?;
-        if (auth.as_ref().is_some_and(CodexAuth::is_api_key_auth) || self.has_provider_api_key())
+        if (auth.as_ref().is_some_and(AvaAuth::is_api_key_auth) || self.has_provider_api_key())
             && self.supports_api_key_models()
             && self.provider_info.base_url.is_none()
             && self.provider_info.model_catalog_url.is_none()
         {
-            // Codex metadata is served by the Codex backend, not the public /v1/models API.
-            api_provider.base_url = CHATGPT_CODEX_BASE_URL.to_string();
+            // Ava metadata is served by the Ava backend, not the public /v1/models API.
+            api_provider.base_url = CHATGPT_AVA_BASE_URL.to_string();
         }
         let resolved = compose_auth(
             &self.provider_info,
@@ -134,7 +134,7 @@ impl OpenAiModelsEndpoint {
             None => ModelsClient::<ReqwestTransport>::request_url(&api_provider, client_version),
         };
         let auth_telemetry = auth_header_telemetry(api_auth.as_ref());
-        let agent_identity_telemetry = if let Some(CodexAuth::AgentIdentity(auth)) = auth.as_ref() {
+        let agent_identity_telemetry = if let Some(AvaAuth::AgentIdentity(auth)) = auth.as_ref() {
             Some(agent_identity_telemetry(auth))
         } else {
             None
@@ -164,7 +164,7 @@ impl OpenAiModelsEndpoint {
                 .await
                 .map_err(|mut error| {
                     if self.provider_info.model_catalog_url.is_some()
-                        && let codex_api::ApiError::Transport(TransportError::Http {
+                        && let ava_api::ApiError::Transport(TransportError::Http {
                             url,
                             headers,
                             body,
@@ -180,7 +180,7 @@ impl OpenAiModelsEndpoint {
                 })
         })
         .await
-        .map_err(|_| CodexErr::RequestTimeout)??;
+        .map_err(|_| AvaErr::RequestTimeout)??;
         Ok(ModelsEndpointResponse {
             models,
             etag,
@@ -189,11 +189,11 @@ impl OpenAiModelsEndpoint {
     }
 
     fn auth_env(&self) -> AuthEnvTelemetry {
-        let codex_api_key_env_enabled = self
+        let ava_api_key_env_enabled = self
             .auth_manager
             .as_ref()
-            .is_some_and(|auth_manager| auth_manager.codex_api_key_env_enabled());
-        collect_auth_env_telemetry(&self.provider_info, codex_api_key_env_enabled)
+            .is_some_and(|auth_manager| auth_manager.ava_api_key_env_enabled());
+        collect_auth_env_telemetry(&self.provider_info, ava_api_key_env_enabled)
     }
 }
 
@@ -220,8 +220,8 @@ impl ModelsEndpointClient for OpenAiModelsEndpoint {
         self.provider_info.has_command_auth()
     }
 
-    fn uses_codex_backend(&self) -> ModelsEndpointFuture<'_, bool> {
-        Box::pin(OpenAiModelsEndpoint::uses_codex_backend(self))
+    fn uses_ava_backend(&self) -> ModelsEndpointFuture<'_, bool> {
+        Box::pin(OpenAiModelsEndpoint::uses_ava_backend(self))
     }
 
     fn list_models<'a>(
@@ -306,9 +306,9 @@ impl RequestTelemetry for ModelsRequestTelemetry {
             .unwrap_or_default();
         let status = status.map(|status| status.as_u16());
         tracing::event!(
-            target: "codex_otel.log_only",
+            target: "ava_otel.log_only",
             tracing::Level::INFO,
-            event.name = "codex.api_request",
+            event.name = "ava.api_request",
             duration_ms = %duration.as_millis(),
             http.response.status_code = status,
             success = success,
@@ -318,8 +318,8 @@ impl RequestTelemetry for ModelsRequestTelemetry {
             auth.header_attached = self.auth_header_attached,
             auth.header_name = self.auth_header_name,
             auth.env_openai_api_key_present = self.auth_env.openai_api_key_env_present,
-            auth.env_codex_api_key_present = self.auth_env.codex_api_key_env_present,
-            auth.env_codex_api_key_enabled = self.auth_env.codex_api_key_env_enabled,
+            auth.env_ava_api_key_present = self.auth_env.ava_api_key_env_present,
+            auth.env_ava_api_key_enabled = self.auth_env.ava_api_key_env_enabled,
             auth.env_provider_key_name = self.auth_env.provider_env_key_name.as_deref(),
             auth.env_provider_key_present = self.auth_env.provider_env_key_present,
             auth.env_refresh_token_url_override_present = self.auth_env.refresh_token_url_override_present,
@@ -332,9 +332,9 @@ impl RequestTelemetry for ModelsRequestTelemetry {
             auth.task_id = self.agent_identity_telemetry.as_ref().map(|metadata| metadata.task_id.as_str()),
         );
         tracing::event!(
-            target: "codex_otel.trace_safe",
+            target: "ava_otel.trace_safe",
             tracing::Level::INFO,
-            event.name = "codex.api_request",
+            event.name = "ava.api_request",
             duration_ms = %duration.as_millis(),
             http.response.status_code = status,
             success = success,
@@ -344,8 +344,8 @@ impl RequestTelemetry for ModelsRequestTelemetry {
             auth.header_attached = self.auth_header_attached,
             auth.header_name = self.auth_header_name,
             auth.env_openai_api_key_present = self.auth_env.openai_api_key_env_present,
-            auth.env_codex_api_key_present = self.auth_env.codex_api_key_env_present,
-            auth.env_codex_api_key_enabled = self.auth_env.codex_api_key_env_enabled,
+            auth.env_ava_api_key_present = self.auth_env.ava_api_key_env_present,
+            auth.env_ava_api_key_enabled = self.auth_env.ava_api_key_env_enabled,
             auth.env_provider_key_name = self.auth_env.provider_env_key_name.as_deref(),
             auth.env_provider_key_present = self.auth_env.provider_env_key_present,
             auth.env_refresh_token_url_override_present = self.auth_env.refresh_token_url_override_present,
@@ -389,19 +389,19 @@ mod tests {
     use std::sync::Mutex;
 
     use super::*;
-    use codex_http_client::OutboundProxyPolicy;
-    use codex_login::default_client::RESIDENCY_HEADER_NAME;
-    use codex_login::default_client::ResidencyRequirement;
-    use codex_login::default_client::create_client;
-    use codex_login::default_client::set_default_client_residency_requirement;
-    use codex_models_manager::manager::ModelsManager;
-    use codex_models_manager::manager::OpenAiModelsManager;
-    use codex_models_manager::manager::RefreshStrategy;
-    use codex_protocol::auth::AuthMode;
-    use codex_protocol::config_types::ModelProviderAuthInfo;
-    use codex_protocol::error::CodexErrorDetails;
-    use codex_protocol::openai_models::ModelVisibility;
-    use codex_protocol::openai_models::ModelsResponse;
+    use ava_http_client::OutboundProxyPolicy;
+    use ava_login::default_client::RESIDENCY_HEADER_NAME;
+    use ava_login::default_client::ResidencyRequirement;
+    use ava_login::default_client::create_client;
+    use ava_login::default_client::set_default_client_residency_requirement;
+    use ava_models_manager::manager::ModelsManager;
+    use ava_models_manager::manager::OpenAiModelsManager;
+    use ava_models_manager::manager::RefreshStrategy;
+    use ava_protocol::auth::AuthMode;
+    use ava_protocol::config_types::ModelProviderAuthInfo;
+    use ava_protocol::error::AvaErrorDetails;
+    use ava_protocol::openai_models::ModelVisibility;
+    use ava_protocol::openai_models::ModelsResponse;
     use pretty_assertions::assert_eq;
     use wiremock::Mock;
     use wiremock::MockServer;
@@ -449,7 +449,7 @@ mod tests {
 
     #[tokio::test]
     async fn api_key_discovery_respects_provider_routing() {
-        let client_version = codex_models_manager::client_version_to_whole();
+        let client_version = ava_models_manager::client_version_to_whole();
         for (name, base_url, models_url, inference_url) in [
             (
                 "OpenAI",
@@ -471,7 +471,7 @@ mod tests {
             ),
         ] {
             let capture = Arc::new(CaptureModelsUrl(Mutex::new(/*t*/ None)));
-            let auth = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("test-api-key"));
+            let auth = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("test-api-key"));
             let endpoint = Arc::new(OpenAiModelsEndpoint {
                 provider_info: ModelProviderInfo {
                     name: name.to_string(),
@@ -505,10 +505,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn provider_api_key_without_endpoint_overrides_uses_codex_backend() {
+    async fn provider_api_key_without_endpoint_overrides_uses_ava_backend() {
         for auth in [
             None,
-            Some(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+            Some(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
         ] {
             let capture = Arc::new(CaptureModelsUrl(Mutex::new(/*t*/ None)));
             let auth_manager = auth.map(AuthManager::from_auth_for_testing);
@@ -532,8 +532,8 @@ mod tests {
             assert_eq!(
                 *capture.0.lock().unwrap(),
                 Some(format!(
-                    "{CHATGPT_CODEX_BASE_URL}/models?client_version={}",
-                    codex_models_manager::client_version_to_whole(),
+                    "{CHATGPT_AVA_BASE_URL}/models?client_version={}",
+                    ava_models_manager::client_version_to_whole(),
                 ))
             );
         }
@@ -670,38 +670,38 @@ mod tests {
     #[derive(Debug)]
     struct RotatingAuth(std::sync::atomic::AtomicUsize);
 
-    impl codex_login::ExternalAuth for RotatingAuth {
-        fn resolve(&self) -> codex_login::ExternalAuthFuture<'_, CodexAuth> {
+    impl ava_login::ExternalAuth for RotatingAuth {
+        fn resolve(&self) -> ava_login::ExternalAuthFuture<'_, AvaAuth> {
             Box::pin(async move {
                 let generation = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                Ok(CodexAuth::from_api_key(&format!("token-{generation}")))
+                Ok(AvaAuth::from_api_key(&format!("token-{generation}")))
             })
         }
 
         fn refresh(
             &self,
-            _context: codex_login::ExternalAuthRefreshContext,
-        ) -> codex_login::ExternalAuthFuture<'_, CodexAuth> {
+            _context: ava_login::ExternalAuthRefreshContext,
+        ) -> ava_login::ExternalAuthFuture<'_, AvaAuth> {
             self.resolve()
         }
     }
 
     #[tokio::test]
     async fn command_auth_refresh_fetches_a_catalog_for_the_current_credentials() {
-        use codex_models_manager::manager::ModelsManager;
-        use codex_models_manager::manager::OpenAiModelsManager;
-        use codex_models_manager::manager::RefreshStrategy;
+        use ava_models_manager::manager::ModelsManager;
+        use ava_models_manager::manager::OpenAiModelsManager;
+        use ava_models_manager::manager::RefreshStrategy;
 
         let server = MockServer::start().await;
-        let auth = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("initial"));
+        let auth = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("initial"));
         auth.set_external_auth(Arc::new(RotatingAuth(std::sync::atomic::AtomicUsize::new(
             0,
         ))))
         .await
         .unwrap();
-        let model = codex_protocol::openai_models::ModelInfo {
+        let model = ava_protocol::openai_models::ModelInfo {
             used_fallback_model_metadata: false,
-            ..codex_models_manager::model_info::model_info_from_slug("command-auth-model")
+            ..ava_models_manager::model_info::model_info_from_slug("command-auth-model")
         };
         Mock::given(method("GET"))
             .and(path("/models"))
@@ -746,7 +746,7 @@ mod tests {
             .await;
         assert_eq!(manager.get_remote_models().await, catalog.models);
         auth.auth().await;
-        let bundled = codex_models_manager::bundled_models_response().unwrap();
+        let bundled = ava_models_manager::bundled_models_response().unwrap();
         assert_eq!(manager.get_remote_models().await, bundled.models);
         assert_eq!(manager.try_get_remote_models().unwrap(), bundled.models);
         assert_eq!(
@@ -780,12 +780,12 @@ mod tests {
     #[tokio::test]
     async fn explicit_catalog_reuses_auth_headers_and_query_parameters() {
         for auth in [
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
-            CodexAuth::from_api_key("test-key"),
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
+            AvaAuth::from_api_key("test-key"),
         ] {
             let server = MockServer::start().await;
             let mut model =
-                codex_models_manager::model_info::model_info_from_slug("provider-model");
+                ava_models_manager::model_info::model_info_from_slug("provider-model");
             model.visibility = ModelVisibility::List;
             model.supported_in_api = true;
             model.used_fallback_model_metadata = false;
@@ -793,7 +793,7 @@ mod tests {
                 models: vec![model],
             };
             Mock::given(method("GET"))
-                .and(path("/codex/models"))
+                .and(path("/ava/models"))
                 .and(header(
                     "authorization",
                     format!("Bearer {}", auth.get_token().unwrap()),
@@ -809,7 +809,7 @@ mod tests {
             // The parallel residency test must not change this catalog's cache identity.
             let provider = ModelProviderInfo {
                 model_catalog_url: Some(
-                    format!("{}/codex/models?deployment=one", server.uri()).into(),
+                    format!("{}/ava/models?deployment=one", server.uri()).into(),
                 ),
                 query_params: Some(std::collections::HashMap::from([(
                     "api-version".to_string(),
@@ -818,7 +818,7 @@ mod tests {
                 http_headers: Some(std::collections::HashMap::from([
                     ("x-provider-header".to_string(), "preserved".into()),
                     (
-                        codex_login::default_client::RESIDENCY_HEADER_NAME.to_string(),
+                        ava_login::default_client::RESIDENCY_HEADER_NAME.to_string(),
                         "us".into(),
                     ),
                 ])),
@@ -837,7 +837,7 @@ mod tests {
             );
             // SIWC does not require the API-key rollout flag.
             manager.set_api_key_model_discovery_enabled(
-                auth_manager.auth_mode() == Some(codex_protocol::auth::AuthMode::ApiKey),
+                auth_manager.auth_mode() == Some(ava_protocol::auth::AuthMode::ApiKey),
             );
             for _ in 0..2 {
                 assert_eq!(
@@ -859,14 +859,14 @@ mod tests {
         let mut body = br#"{"models":[]}"#.to_vec();
         body.resize(MAX_MODEL_CATALOG_BYTES + 1, b' ');
         Mock::given(method("GET"))
-            .and(path("/codex/models"))
+            .and(path("/ava/models"))
             .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_bytes(body))
             .expect(1)
             .mount(&server)
             .await;
         let endpoint = OpenAiModelsEndpoint::new(
             ModelProviderInfo {
-                model_catalog_url: Some(format!("{}/codex/models", server.uri()).into()),
+                model_catalog_url: Some(format!("{}/ava/models", server.uri()).into()),
                 ..ModelProviderInfo::default()
             },
             /*auth_manager*/ None,
@@ -879,7 +879,7 @@ mod tests {
             )
             .await
             .expect_err("oversized catalog should be rejected");
-        let CodexErrorDetails::InvalidRequest(message) = error.details() else {
+        let AvaErrorDetails::InvalidRequest(message) = error.details() else {
             panic!("expected a response-size error, got {error:?}");
         };
         assert_eq!(
@@ -893,10 +893,10 @@ mod tests {
         let server = MockServer::start().await;
         let destination = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path("/codex/models"))
+            .and(path("/ava/models"))
             .respond_with(
                 ResponseTemplate::new(/*s*/ 302)
-                    .insert_header("location", format!("{}/codex/models", destination.uri()))
+                    .insert_header("location", format!("{}/ava/models", destination.uri()))
                     .set_body_string("catalog-secret"),
             )
             .expect(1)
@@ -906,7 +906,7 @@ mod tests {
             ModelProviderInfo {
                 base_url: Some(server.uri()),
                 model_catalog_url: Some(
-                    format!("{}/codex/models?token=catalog-secret", server.uri()).into(),
+                    format!("{}/ava/models?token=catalog-secret", server.uri()).into(),
                 ),
                 experimental_bearer_token: Some("provider-key".into()),
                 ..ModelProviderInfo::default()

@@ -1,0 +1,13 @@
+---
+source: cli/src/main.rs
+assertion_line: 3324
+expression: "errors.join(\"\\n\")"
+---
+ava --worktree login: `--worktree` supports new interactive sessions, `ava fork`, `ava exec`, and `ava exec fork`
+ava fork --worktree: `ava fork --worktree` requires an explicit session ID
+ava fork --worktree --last: `ava fork --worktree` requires an explicit session ID
+ava exec resume --worktree session: `--worktree` cannot resume an existing session; use `ava exec fork --worktree`
+ava exec review --worktree: `--worktree` is not supported for code review
+ava resume --worktree session: `--worktree` supports new interactive sessions, `ava fork`, `ava exec`, and `ava exec fork`
+ava archive session --worktree: `--worktree` supports new interactive sessions, `ava fork`, `ava exec`, and `ava exec fork`
+ava queue --thread session --message hi --worktree: `--worktree` supports new interactive sessions, `ava fork`, `ava exec`, and `ava exec fork`

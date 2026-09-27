@@ -5,15 +5,15 @@ use std::path::Path;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::config::Config;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_core::config::Config;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathExt;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::CALENDAR_EXTRACT_TEXT_TOOL_NAME;
@@ -36,8 +36,8 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_target_windows;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::executor_path_uri;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::executor_path_uri;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -69,7 +69,7 @@ fn restrict_apps_upload_reads(config: &mut Config, denied_file_name: &str) {
         ))
         .expect("test config should allow a restricted read policy");
 
-    let user_config_path = config.codex_home.join("config.toml").abs();
+    let user_config_path = config.ava_home.join("config.toml").abs();
     let user_config = toml::from_str(
         r#"
 [apps.calendar]
@@ -146,7 +146,7 @@ async fn mount_file_upload_mocks(server: &MockServer, file_size_bytes: u64) {
         .and(body_partial_json(json!({
             "file_name": "report.txt",
             "file_size": file_size_bytes,
-            "use_case": "codex",
+            "use_case": "ava",
         })))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "file_id": "file_123",
@@ -177,7 +177,7 @@ async fn mount_file_upload_mocks(server: &MockServer, file_size_bytes: u64) {
 }
 
 async fn run_extract_turn(
-    test: &TestCodex,
+    test: &TestAva,
     server: &MockServer,
     permission_profile: PermissionProfile,
 ) -> Result<ResponseMock> {
@@ -225,7 +225,7 @@ async fn run_extract_turn(
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn codex_apps_file_params_omit_fields_absent_from_tool_schema() -> Result<()> {
+async fn ava_apps_file_params_omit_fields_absent_from_tool_schema() -> Result<()> {
     let server = start_mock_server().await;
     let apps_server = AppsTestServer::mount(&server).await?;
     mount_file_upload_mocks(&server, STREAMED_FILE_SIZE as u64).await;
@@ -272,7 +272,7 @@ async fn codex_apps_file_params_omit_fields_absent_from_tool_schema() -> Result<
         Some(&schema_filtered_uploaded_file(&server))
     );
     assert_eq!(
-        apps_tool_call.pointer("/params/_meta/_codex_apps"),
+        apps_tool_call.pointer("/params/_meta/_ava_apps"),
         Some(&json!({
             "call_id": "extract-call-1",
             "resource_uri": DOCUMENT_EXTRACT_TEXT_RESOURCE_URI,
@@ -288,7 +288,7 @@ async fn codex_apps_file_params_omit_fields_absent_from_tool_schema() -> Result<
     let upload_body: Value =
         serde_json::from_slice(&upload_request.body).expect("Files request should be JSON");
     assert_eq!(
-        upload_body.get("codex_connector_id"),
+        upload_body.get("ava_connector_id"),
         Some(&json!("calendar"))
     );
     assert_eq!(upload_body.get("upload_source"), None);
@@ -299,7 +299,7 @@ async fn codex_apps_file_params_omit_fields_absent_from_tool_schema() -> Result<
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn codex_apps_file_params_pass_uploaded_file_to_post_tool_use_hook() -> Result<()> {
+async fn ava_apps_file_params_pass_uploaded_file_to_post_tool_use_hook() -> Result<()> {
     let server = start_mock_server().await;
     let apps_server = AppsTestServer::mount(&server).await?;
     mount_file_upload_mocks(&server, /*file_size_bytes*/ 11).await;
@@ -317,7 +317,7 @@ async fn codex_apps_file_params_pass_uploaded_file_to_post_tool_use_hook() -> Re
     tokio::fs::write(test.cwd.path().join("report.txt"), b"hello world").await?;
     let _responses = run_extract_turn(&test, &server, PermissionProfile::Disabled).await?;
 
-    let hook_inputs = read_post_tool_use_hook_inputs(test.codex_home_path())?;
+    let hook_inputs = read_post_tool_use_hook_inputs(test.ava_home_path())?;
     assert_eq!(hook_inputs.len(), 1);
     assert_eq!(
         hook_inputs[0]["tool_input"]["file"],
@@ -329,7 +329,7 @@ async fn codex_apps_file_params_pass_uploaded_file_to_post_tool_use_hook() -> Re
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn codex_apps_file_params_stream_allowed_file_under_restricted_read_policy() -> Result<()> {
+async fn ava_apps_file_params_stream_allowed_file_under_restricted_read_policy() -> Result<()> {
     skip_if_target_windows!(
         Ok(()),
         "Windows restricted-token sandbox cannot enforce deny-read policies"
@@ -369,7 +369,7 @@ async fn codex_apps_file_params_stream_allowed_file_under_restricted_read_policy
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn codex_apps_file_params_reject_denied_file_before_upload() -> Result<()> {
+async fn ava_apps_file_params_reject_denied_file_before_upload() -> Result<()> {
     skip_if_target_windows!(
         Ok(()),
         "Windows restricted-token sandbox cannot enforce deny-read policies"

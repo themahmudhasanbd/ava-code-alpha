@@ -14,10 +14,10 @@ use uuid::Uuid;
 
 use super::oneshot::Completion;
 
-use crate::codex_thread::BackgroundTerminalInfo;
-use crate::exec_env::CODEX_PERMISSION_PROFILE_ENV_VAR;
-use crate::exec_env::CODEX_THREAD_ID_ENV_VAR;
-use crate::exec_env::CODEX_VERSION_ENV_VAR;
+use crate::ava_thread::BackgroundTerminalInfo;
+use crate::exec_env::AVA_PERMISSION_PROFILE_ENV_VAR;
+use crate::exec_env::AVA_THREAD_ID_ENV_VAR;
+use crate::exec_env::AVA_VERSION_ENV_VAR;
 use crate::exec_env::create_env;
 use crate::exec_env::inject_apply_patch_env;
 use crate::exec_env::inject_permission_profile_env;
@@ -69,25 +69,25 @@ use crate::unified_exec::shell_snapshot::shell_snapshot_request;
 use crate::unified_exec::take_plugin_metrics_sidecar;
 use crate::unified_exec::trace_id;
 use crate::windows_sandbox::windows_sandbox_level_for_legacy_checks;
-use codex_core_plugins::PLUGIN_METRICS_OUTPUT_ENV_VAR;
-use codex_core_plugins::PluginCommandAttribution;
-use codex_core_plugins::PluginMetricsSidecar;
-use codex_core_plugins::strip_output_env;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkProxy;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_protocol::protocol::TerminalInteractionEvent;
-use codex_protocol::shell_environment::is_non_inheritable_env_var;
-use codex_sandboxing::SandboxCommand;
-use codex_shell_command::is_dangerous_command::DangerousCommandPlatform;
-use codex_tools::ToolName;
-use codex_utils_output_truncation::approx_tokens_from_byte_count;
-use codex_utils_path_uri::PathUri;
+use ava_core_plugins::PLUGIN_METRICS_OUTPUT_ENV_VAR;
+use ava_core_plugins::PluginCommandAttribution;
+use ava_core_plugins::PluginMetricsSidecar;
+use ava_core_plugins::strip_output_env;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkProxy;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_protocol::protocol::TerminalInteractionEvent;
+use ava_protocol::shell_environment::is_non_inheritable_env_var;
+use ava_sandboxing::SandboxCommand;
+use ava_shell_command::is_dangerous_command::DangerousCommandPlatform;
+use ava_tools::ToolName;
+use ava_utils_output_truncation::approx_tokens_from_byte_count;
+use ava_utils_path_uri::PathUri;
 
 const UNIFIED_EXEC_ENV: [(&str, &str); 10] = [
     ("NO_COLOR", "1"),
@@ -99,10 +99,10 @@ const UNIFIED_EXEC_ENV: [(&str, &str); 10] = [
     ("PAGER", "cat"),
     ("GIT_PAGER", "cat"),
     ("GH_PAGER", "cat"),
-    ("CODEX_CI", "1"),
+    ("AVA_CI", "1"),
 ];
 const NETWORK_ACCESS_DENIED_MESSAGE: &str =
-    "Network access was denied by the Codex sandbox network proxy.";
+    "Network access was denied by the Ava sandbox network proxy.";
 const LATE_NETWORK_DENIAL_GRACE_PERIOD: Duration = Duration::from_millis(100);
 const MAX_STDIN_APPROVAL_BYTES: usize = 8_000;
 const INTERRUPT: &str = "\u{3}";
@@ -134,31 +134,31 @@ pub(super) fn apply_unified_exec_env(mut env: HashMap<String, String>) -> HashMa
 
 pub(super) fn exec_env_policy_from_shell_policy(
     policy: &ShellEnvironmentPolicy,
-) -> codex_exec_server::ExecEnvPolicy {
+) -> ava_exec_server::ExecEnvPolicy {
     let mut exclude = policy
         .exclude
         .iter()
         .map(std::string::ToString::to_string)
         .collect::<Vec<_>>();
     exclude.extend([
-        CODEX_PERMISSION_PROFILE_ENV_VAR.to_string(),
-        CODEX_VERSION_ENV_VAR.to_string(),
-        codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
+        AVA_PERMISSION_PROFILE_ENV_VAR.to_string(),
+        AVA_VERSION_ENV_VAR.to_string(),
+        ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
         PLUGIN_METRICS_OUTPUT_ENV_VAR.to_string(),
     ]);
     let mut r#set = policy.r#set.clone();
     r#set.retain(|key, _| {
         ![
-            CODEX_PERMISSION_PROFILE_ENV_VAR,
-            CODEX_VERSION_ENV_VAR,
-            codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR,
+            AVA_PERMISSION_PROFILE_ENV_VAR,
+            AVA_VERSION_ENV_VAR,
+            ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR,
             PLUGIN_METRICS_OUTPUT_ENV_VAR,
         ]
         .iter()
         .any(|runtime_key| key.eq_ignore_ascii_case(runtime_key))
             && !is_non_inheritable_env_var(key)
     });
-    codex_exec_server::ExecEnvPolicy {
+    ava_exec_server::ExecEnvPolicy {
         inherit: policy.inherit.clone(),
         ignore_default_excludes: policy.ignore_default_excludes,
         exclude,
@@ -181,9 +181,9 @@ fn env_overlay_for_exec_server(
             !is_non_inheritable_env_var(key)
                 && (matches!(
                     key.as_str(),
-                    CODEX_PERMISSION_PROFILE_ENV_VAR
-                        | CODEX_VERSION_ENV_VAR
-                        | codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR
+                    AVA_PERMISSION_PROFILE_ENV_VAR
+                        | AVA_VERSION_ENV_VAR
+                        | ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR
                 ) || local_policy_env.get(*key) != Some(*value))
         })
         .map(|(key, value)| (key.clone(), value.clone()))
@@ -193,7 +193,7 @@ fn env_overlay_for_exec_server(
 fn exec_server_env_for_request(
     request: &ExecRequest,
 ) -> (
-    Option<codex_exec_server::ExecEnvPolicy>,
+    Option<ava_exec_server::ExecEnvPolicy>,
     HashMap<String, String>,
 ) {
     if let Some(exec_server_env_config) = &request.exec_server_env_config {
@@ -221,9 +221,9 @@ fn exec_server_params_for_request(
     process_id: i32,
     request: &ExecRequest,
     tool_ctx: Option<&ToolCtx>,
-    windows_sandbox_proxy_settings_mode: codex_sandboxing::WindowsSandboxProxySettingsMode,
+    windows_sandbox_proxy_settings_mode: ava_sandboxing::WindowsSandboxProxySettingsMode,
     tty: bool,
-) -> codex_exec_server::ExecParams {
+) -> ava_exec_server::ExecParams {
     let (env_policy, env) = exec_server_env_for_request(request);
     let sandbox = request.exec_server_sandbox.clone().map(|mut sandbox| {
         sandbox.windows_sandbox_proxy_settings_mode = Some(windows_sandbox_proxy_settings_mode);
@@ -237,9 +237,9 @@ fn exec_server_params_for_request(
         } else {
             process_id.to_string()
         };
-    codex_exec_server::ExecParams {
+    ava_exec_server::ExecParams {
         process_id: exec_server_process_id.into(),
-        metadata: tool_ctx.map(|ctx| codex_exec_server::ExecMetadata {
+        metadata: tool_ctx.map(|ctx| ava_exec_server::ExecMetadata {
             thread_id: Some(ctx.session.thread_id()),
             tool_call_id: Some(ctx.call_id.clone()),
         }),
@@ -337,7 +337,7 @@ async fn finish_deferred_network_approval_for_session(
 fn network_approval_error_message(err: ToolError) -> String {
     match err {
         ToolError::Rejected(message) => message,
-        ToolError::Codex(err) => err.to_string(),
+        ToolError::Ava(err) => err.to_string(),
     }
 }
 
@@ -941,7 +941,7 @@ impl UnifiedExecProcessManager {
                 "text"
             };
             context.step_context.session_telemetry.counter(
-                "codex.unified_exec.stdin_review.size_check",
+                "ava.unified_exec.stdin_review.size_check",
                 /*inc*/ 1,
                 &[("result", size_check_result), ("input_kind", input_kind)],
             );
@@ -1260,21 +1260,21 @@ impl UnifiedExecProcessManager {
         options: ExecOptions,
         attempt: &SandboxAttempt<'_>,
         network: Option<&NetworkProxy>,
-        network_proxy_launch: Option<codex_network_proxy::RemoteNetworkProxyLaunchConfig>,
+        network_proxy_launch: Option<ava_network_proxy::RemoteNetworkProxyLaunchConfig>,
         environment_id: Option<&str>,
         exec_server_env_config: Option<ExecServerEnvConfig>,
-        shell_snapshot: Option<codex_exec_server::ShellSnapshotRequest>,
-        windows_sandbox_proxy_settings_mode: codex_sandboxing::WindowsSandboxProxySettingsMode,
+        shell_snapshot: Option<ava_exec_server::ShellSnapshotRequest>,
+        windows_sandbox_proxy_settings_mode: ava_sandboxing::WindowsSandboxProxySettingsMode,
         tty: bool,
         spawn_lifecycle: SpawnLifecycleHandle,
-        environment: &codex_exec_server::Environment,
+        environment: &ava_exec_server::Environment,
     ) -> Result<UnifiedExecProcess, ToolError> {
         let mut request = if environment.is_remote() || shell_snapshot.is_some() {
             attempt.env_for_exec_server(command, options)
         } else {
             attempt.env_for(command, options, network, environment_id)
         }
-        .map_err(ToolError::Codex)?;
+        .map_err(ToolError::Ava)?;
         let network_policy_decider = network_proxy_launch
             .as_ref()
             .filter(|launch| launch.policy_decision_timeout_ms.is_some())
@@ -1298,7 +1298,7 @@ impl UnifiedExecProcessManager {
         .await
         .map_err(|err| match err {
             UnifiedExecError::SandboxDenied { output, .. } => {
-                ToolError::Codex(CodexErr::Sandbox(SandboxErr::Denied {
+                ToolError::Ava(AvaErr::Sandbox(SandboxErr::Denied {
                     output: Box::new(output),
                     network_policy_decision: None,
                 }))
@@ -1313,11 +1313,11 @@ impl UnifiedExecProcessManager {
         process_id: i32,
         request: &ExecRequest,
         tool_ctx: Option<&ToolCtx>,
-        windows_sandbox_proxy_settings_mode: codex_sandboxing::WindowsSandboxProxySettingsMode,
+        windows_sandbox_proxy_settings_mode: ava_sandboxing::WindowsSandboxProxySettingsMode,
         network_policy_decider: Option<Arc<dyn NetworkPolicyDecider>>,
         tty: bool,
         mut spawn_lifecycle: SpawnLifecycleHandle,
-        environment: &codex_exec_server::Environment,
+        environment: &ava_exec_server::Environment,
     ) -> Result<UnifiedExecProcess, UnifiedExecError> {
         let inherited_fds = spawn_lifecycle.inherited_fds();
 
@@ -1338,10 +1338,10 @@ impl UnifiedExecProcessManager {
             );
             // Sandbox retries can reuse the public ID for a new executor process.
             tracing::event!(
-                name: "codex.unified_exec.process_start_requested",
-                target: "codex_otel.trace_safe",
+                name: "ava.unified_exec.process_start_requested",
+                target: "ava_otel.trace_safe",
                 tracing::Level::INFO,
-                event.name = "codex.unified_exec.process_start_requested",
+                event.name = "ava.unified_exec.process_start_requested",
                 unified_exec_process_id = process_id,
                 process.id = params.process_id.as_str(),
             );
@@ -1372,7 +1372,7 @@ impl UnifiedExecProcessManager {
         let network_proxy_restricting_sid = {
             #[cfg(target_os = "windows")]
             {
-                if request.sandbox == codex_sandboxing::SandboxType::WindowsRestrictedToken {
+                if request.sandbox == ava_sandboxing::SandboxType::WindowsRestrictedToken {
                     request
                         .network
                         .as_ref()
@@ -1399,8 +1399,8 @@ impl UnifiedExecProcessManager {
             }
         };
         let windows_sandbox =
-            if request.sandbox == codex_sandboxing::SandboxType::WindowsRestrictedToken {
-                Some(codex_sandboxing::WindowsSandboxSpawnRequest {
+            if request.sandbox == ava_sandboxing::SandboxType::WindowsRestrictedToken {
+                Some(ava_sandboxing::WindowsSandboxSpawnRequest {
                     permission_profile: &request.permission_profile,
                     workspace_roots: &request.windows_sandbox_workspace_roots,
                     windows_sandbox_level: request.windows_sandbox_level,
@@ -1412,7 +1412,7 @@ impl UnifiedExecProcessManager {
             } else {
                 None
             };
-        let spawn_result = codex_sandboxing::spawn_process(codex_sandboxing::SpawnRequest {
+        let spawn_result = ava_sandboxing::spawn_process(ava_sandboxing::SpawnRequest {
             command: &request.command,
             cwd: native_cwd.as_path(),
             env: &request.env,
@@ -1447,7 +1447,7 @@ impl UnifiedExecProcessManager {
         let local_policy_env = create_env(shell_environment_policy, /*thread_id*/ None);
         let mut env = local_policy_env.clone();
         env.insert(
-            CODEX_THREAD_ID_ENV_VAR.to_string(),
+            AVA_THREAD_ID_ENV_VAR.to_string(),
             context.session.thread_id.to_string(),
         );
         inject_session_env(&mut env, context.session.session_id());
@@ -1538,8 +1538,8 @@ impl UnifiedExecProcessManager {
             .await
             .map(|result| (result.output, result.deferred_network_approval))
             .map_err(|err| match err {
-                ToolError::Codex(err) => match err.details() {
-                    CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
+                ToolError::Ava(err) => match err.details() {
+                    AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
                         let output = output.as_ref().clone();
                         let message = if output.aggregated_output.text.is_empty() {
                             let exit_code = output.exit_code;

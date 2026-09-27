@@ -1,4 +1,4 @@
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -10,13 +10,13 @@ use crate::types::Personality;
 use crate::types::SessionPickerViewMode;
 use crate::types::WindowsToml;
 use crate::user_profile_toml::UserProfileToml;
-use codex_features::FeaturesToml;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::SandboxMode;
-use codex_protocol::config_types::Verbosity;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
+use ava_features::FeaturesToml;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::SandboxMode;
+use ava_protocol::config_types::Verbosity;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
 
 /// Collection of common configuration options that a user can define as a unit
 /// in `config.toml`.

@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 use crate::Message;
 use crate::decode_frame;
 
-// Matches the maximum read in codex_utils_pty's pipe output reader. Retain at most
+// Matches the maximum read in ava_utils_pty's pipe output reader. Retain at most
 // one such chunk and one bounded partial frame, never a queue of decoded messages.
 const MAX_CHUNK_BYTES: usize = 8_192;
 

@@ -1,11 +1,11 @@
 //! Renders the provider catalog and Astra reasoning choices without changing the default model.
 
 use super::*;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_models_manager::manager::RefreshStrategy;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_models_manager::manager::RefreshStrategy;
 
 #[tokio::test]
 async fn bedrock_astra_model_and_reasoning_pickers() {

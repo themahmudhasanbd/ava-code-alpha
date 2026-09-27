@@ -2,10 +2,10 @@ use std::io::SeekFrom;
 use std::path::Path;
 
 use chrono::DateTime;
-use codex_app_server_protocol::ThreadHistoryChangeSet;
-use codex_app_server_protocol::project_rollout_line;
-use codex_protocol::ThreadId;
-use codex_rollout::RolloutItem;
+use ava_app_server_protocol::ThreadHistoryChangeSet;
+use ava_app_server_protocol::project_rollout_line;
+use ava_protocol::ThreadId;
+use ava_rollout::RolloutItem;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncSeekExt;
 use tracing::warn;
@@ -16,8 +16,8 @@ use super::thread_history::RolloutProjectionStep;
 use crate::ThreadStoreError;
 use crate::ThreadStoreResult;
 
-const SQLITE_PROJECTION_METRIC: &str = "codex.thread_history.sqlite_projection";
-const SQLITE_PROJECTION_ANOMALY_METRIC: &str = "codex.thread_history.sqlite_projection.anomaly";
+const SQLITE_PROJECTION_METRIC: &str = "ava.thread_history.sqlite_projection";
+const SQLITE_PROJECTION_ANOMALY_METRIC: &str = "ava.thread_history.sqlite_projection.anomaly";
 
 pub(super) async fn materialize_to_sqlite(
     store: &LocalThreadStore,
@@ -42,13 +42,13 @@ async fn materialize_to_sqlite_with_state_db(
         .as_ref()
         .map_or(0, |state| state.next_byte_offset);
     if projection_state.is_none()
-        && codex_rollout::existing_rollout_path(rollout_path)
+        && ava_rollout::existing_rollout_path(rollout_path)
             .await
             .is_none()
     {
         return Ok(());
     }
-    let session_meta = codex_rollout::read_session_meta_line(rollout_path)
+    let session_meta = ava_rollout::read_session_meta_line(rollout_path)
         .await
         .map_err(thread_store_io_error)?
         .meta;
@@ -91,7 +91,7 @@ async fn read_projection_steps(
 ) -> ThreadStoreResult<(Vec<RolloutProjectionStep>, u64)> {
     let path = rollout_path.to_path_buf();
     let file =
-        tokio::task::spawn_blocking(move || codex_rollout::open_rollout_seekable_reader(&path))
+        tokio::task::spawn_blocking(move || ava_rollout::open_rollout_seekable_reader(&path))
             .await
             .map_err(|err| ThreadStoreError::Internal {
                 message: format!("failed to join rollout projection read: {err}"),
@@ -164,7 +164,7 @@ async fn read_projection_steps(
             }
         };
         let raw_ordinal = value.get("ordinal").and_then(serde_json::Value::as_u64);
-        let line = match codex_rollout::decode_rollout_line(value) {
+        let line = match ava_rollout::decode_rollout_line(value) {
             Ok(line) => line,
             Err(err) => {
                 warn!(
@@ -333,7 +333,7 @@ impl ProjectionAnomaly {
 }
 
 fn record_projection_outcome(result: &ThreadStoreResult<()>) {
-    let Some(metrics) = codex_otel::global() else {
+    let Some(metrics) = ava_otel::global() else {
         return;
     };
     let outcome = if result.is_ok() { "success" } else { "error" };
@@ -345,7 +345,7 @@ fn record_projection_outcome(result: &ThreadStoreResult<()>) {
 }
 
 fn record_projection_anomaly(anomaly: ProjectionAnomaly) {
-    let Some(metrics) = codex_otel::global() else {
+    let Some(metrics) = ava_otel::global() else {
         return;
     };
     let _ = metrics.counter(

@@ -9,12 +9,12 @@
 
 use super::*;
 use crate::chatwidget::InterruptedTurnNoticeMode;
-use codex_app_server_protocol::ThreadUnsubscribeParams;
-use codex_app_server_protocol::ThreadUnsubscribeResponse;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
+use ava_app_server_protocol::ThreadUnsubscribeParams;
+use ava_app_server_protocol::ThreadUnsubscribeResponse;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
 
 const SIDE_RENAME_BLOCK_MESSAGE: &str = "Side conversations are ephemeral and cannot be renamed.";
 const SIDE_MAIN_THREAD_UNAVAILABLE_MESSAGE: &str =
@@ -714,7 +714,7 @@ impl App {
         }
 
         self.session_telemetry.counter(
-            "codex.thread.side",
+            "ava.thread.side",
             /*inc*/ 1,
             &[("source", "slash_command")],
         );

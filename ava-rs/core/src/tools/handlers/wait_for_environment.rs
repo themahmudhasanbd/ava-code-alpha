@@ -1,8 +1,8 @@
-use codex_tools::JsonSchema;
-use codex_tools::JsonToolOutput;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_tools::JsonSchema;
+use ava_tools::JsonToolOutput;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -104,7 +104,7 @@ impl ToolExecutor<ToolInvocation> for WaitForEnvironmentHandler {
         })
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

@@ -1,13 +1,13 @@
-"""Python SDK for running Codex workflows.
+"""Python SDK for running Ava workflows.
 
-Start with :class:`Codex` for synchronous applications or
-:class:`AsyncCodex` for async applications. Most programs create a thread and
+Start with :class:`Ava` for synchronous applications or
+:class:`AsyncAva` for async applications. Most programs create a thread and
 run a turn::
 
-    from openai_codex import Codex, Sandbox
+    from openai_ava import Ava, Sandbox
 
-    with Codex() as codex:
-        thread = codex.thread_start(sandbox=Sandbox.workspace_write)
+    with Ava() as ava:
+        thread = ava.thread_start(sandbox=Sandbox.workspace_write)
         result = thread.run("Describe this project.")
         print(result.final_response)
 """
@@ -16,12 +16,12 @@ from ._version import __version__
 from .api import (
     ApprovalMode,
     AsyncChatgptLoginHandle,
-    AsyncCodex,
+    AsyncAva,
     AsyncDeviceCodeLoginHandle,
     AsyncThread,
     AsyncTurnHandle,
     ChatgptLoginHandle,
-    Codex,
+    Ava,
     DeviceCodeLoginHandle,
     ExternalMessage,
     ImageInput,
@@ -37,10 +37,10 @@ from .api import (
     TurnHandle,
     TurnResult,
 )
-from .client import CodexConfig
+from .client import AvaConfig
 from .errors import (
-    CodexError,
-    CodexRpcError,
+    AvaError,
+    AvaRpcError,
     InternalRpcError,
     InvalidParamsError,
     InvalidRequestError,
@@ -56,9 +56,9 @@ from .retry import retry_on_overload
 
 __all__ = [
     "__version__",
-    "CodexConfig",
-    "Codex",
-    "AsyncCodex",
+    "AvaConfig",
+    "Ava",
+    "AsyncAva",
     "ApprovalMode",
     "Sandbox",
     "ChatgptLoginHandle",
@@ -80,10 +80,10 @@ __all__ = [
     "SkillInput",
     "MentionInput",
     "retry_on_overload",
-    "CodexError",
+    "AvaError",
     "TransportClosedError",
     "JsonRpcError",
-    "CodexRpcError",
+    "AvaRpcError",
     "ParseError",
     "InvalidRequestError",
     "MethodNotFoundError",

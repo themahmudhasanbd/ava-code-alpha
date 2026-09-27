@@ -16,8 +16,8 @@ use super::fetch_installed_plugins;
 use crate::store::PLUGINS_CACHE_DIR;
 use crate::store::PluginStore;
 use crate::store::PluginStoreError;
-use codex_login::CodexAuth;
-use codex_plugin::PluginId;
+use ava_login::AvaAuth;
+use ava_plugin::PluginId;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
@@ -97,8 +97,8 @@ pub struct RemotePluginCacheMutationGuard {
     key: RemotePluginCacheMutationKey,
 }
 
-pub(crate) fn remote_installed_plugin_bundle_sync_gate(codex_home: &Path) -> Arc<Semaphore> {
-    let plugin_cache_root = remote_plugin_cache_root(codex_home);
+pub(crate) fn remote_installed_plugin_bundle_sync_gate(ava_home: &Path) -> Arc<Semaphore> {
+    let plugin_cache_root = remote_plugin_cache_root(ava_home);
     let gates =
         REMOTE_INSTALLED_PLUGIN_BUNDLE_SYNC_GATES.get_or_init(|| Mutex::new(HashMap::new()));
     let mut gates = match gates.lock() {
@@ -114,12 +114,12 @@ pub(crate) fn remote_installed_plugin_bundle_sync_gate(codex_home: &Path) -> Arc
 }
 
 pub async fn sync_remote_installed_plugin_bundles_once(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> Result<RemoteInstalledPluginBundleSyncOutcome, RemoteInstalledPluginBundleSyncError> {
     let result = sync_remote_installed_plugin_bundles_once_with_snapshot(
-        codex_home,
+        ava_home,
         config,
         auth,
         /*previous_plugin_ids*/ &[],
@@ -129,9 +129,9 @@ pub async fn sync_remote_installed_plugin_bundles_once(
 }
 
 pub(crate) async fn sync_remote_installed_plugin_bundles_once_with_snapshot(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     previous_plugin_ids: &[PluginId],
 ) -> Result<RemoteInstalledPluginBundleSyncResult, RemoteInstalledPluginBundleSyncError> {
     let auth = ensure_chatgpt_auth(auth)?;
@@ -162,7 +162,7 @@ pub(crate) async fn sync_remote_installed_plugin_bundles_once_with_snapshot(
         })?;
         validated_installed_plugins.push((installed_plugin, cached_plugin, plugin_id));
     }
-    let store = PluginStore::try_new(codex_home.clone())?;
+    let store = PluginStore::try_new(ava_home.clone())?;
     let installed_plugin_ids = validated_installed_plugins
         .iter()
         .map(|(_, _, plugin_id)| plugin_id.as_key())
@@ -277,7 +277,7 @@ pub(crate) async fn sync_remote_installed_plugin_bundles_once_with_snapshot(
         capabilities.include_active_bundle(&store, &plugin_id).await;
         match crate::remote_bundle::download_and_install_remote_plugin_bundle(
             config,
-            codex_home.clone(),
+            ava_home.clone(),
             bundle,
         )
         .await
@@ -352,12 +352,12 @@ pub(crate) async fn sync_remote_installed_plugin_bundles_once_with_snapshot(
 }
 
 pub fn mark_remote_plugin_cache_mutation_in_flight(
-    codex_home: &Path,
+    ava_home: &Path,
     marketplace_name: &str,
     plugin_name: &str,
 ) -> RemotePluginCacheMutationGuard {
     let key = RemotePluginCacheMutationKey {
-        plugin_cache_root: remote_plugin_cache_root(codex_home),
+        plugin_cache_root: remote_plugin_cache_root(ava_home),
         marketplace_name: marketplace_name.to_string(),
         plugin_name: plugin_name.to_string(),
     };
@@ -394,7 +394,7 @@ async fn remove_stale_remote_plugin_caches(
     installed_plugin_names_by_marketplace: &BTreeMap<String, BTreeSet<String>>,
     removed_plugins: &mut Vec<RemotePluginChange>,
 ) -> Result<(), String> {
-    let codex_home = store.codex_home().as_path();
+    let ava_home = store.ava_home().as_path();
     for marketplace_name in [
         REMOTE_GLOBAL_MARKETPLACE_NAME,
         REMOTE_CREATED_BY_ME_MARKETPLACE_NAME,
@@ -403,7 +403,7 @@ async fn remove_stale_remote_plugin_caches(
         REMOTE_WORKSPACE_SHARED_WITH_ME_PRIVATE_MARKETPLACE_NAME,
         REMOTE_WORKSPACE_SHARED_WITH_ME_UNLISTED_MARKETPLACE_NAME,
     ] {
-        let marketplace_root = codex_home.join(PLUGINS_CACHE_DIR).join(marketplace_name);
+        let marketplace_root = ava_home.join(PLUGINS_CACHE_DIR).join(marketplace_name);
         if !marketplace_root.exists() {
             continue;
         }
@@ -433,7 +433,7 @@ async fn remove_stale_remote_plugin_caches(
             if installed_plugin_names.contains(&plugin_name) {
                 continue;
             }
-            if is_remote_plugin_cache_mutation_in_flight(codex_home, marketplace_name, &plugin_name)
+            if is_remote_plugin_cache_mutation_in_flight(ava_home, marketplace_name, &plugin_name)
             {
                 continue;
             }
@@ -472,12 +472,12 @@ async fn remove_stale_remote_plugin_caches(
     Ok(())
 }
 
-fn remote_plugin_cache_root(codex_home: &Path) -> PathBuf {
-    codex_home.join(PLUGINS_CACHE_DIR)
+fn remote_plugin_cache_root(ava_home: &Path) -> PathBuf {
+    ava_home.join(PLUGINS_CACHE_DIR)
 }
 
 fn is_remote_plugin_cache_mutation_in_flight(
-    codex_home: &Path,
+    ava_home: &Path,
     marketplace_name: &str,
     plugin_name: &str,
 ) -> bool {
@@ -489,7 +489,7 @@ fn is_remote_plugin_cache_mutation_in_flight(
         Err(err) => err.into_inner(),
     };
     mutations.contains_key(&RemotePluginCacheMutationKey {
-        plugin_cache_root: remote_plugin_cache_root(codex_home),
+        plugin_cache_root: remote_plugin_cache_root(ava_home),
         marketplace_name: marketplace_name.to_string(),
         plugin_name: plugin_name.to_string(),
     })
@@ -511,14 +511,14 @@ mod tests {
     #[tokio::test]
     async fn sync_same_version_backfills_metadata_and_missing_version_requires_materialization() {
         let server = MockServer::start().await;
-        let codex_home = tempfile::tempdir().expect("create codex home");
-        let cached_manifest = codex_home
+        let ava_home = tempfile::tempdir().expect("create ava home");
+        let cached_manifest = ava_home
             .path()
             .join(PLUGINS_CACHE_DIR)
             .join(REMOTE_GLOBAL_MARKETPLACE_NAME)
             .join("linear")
             .join("1.2.3")
-            .join(".codex-plugin")
+            .join(".ava-plugin")
             .join("plugin.json");
         std::fs::create_dir_all(cached_manifest.parent().expect("manifest parent"))
             .expect("create cached plugin manifest parent");
@@ -571,10 +571,10 @@ mod tests {
             format!("{}/backend-api", server.uri()),
             crate::test_support::test_http_client_factory(),
         );
-        let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+        let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
         let outcome = sync_remote_installed_plugin_bundles_once(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             &config,
             Some(&auth),
         )
@@ -596,9 +596,9 @@ mod tests {
             REMOTE_GLOBAL_MARKETPLACE_NAME.to_string(),
         )
         .expect("valid plugin id");
-        let metadata_path = PluginStore::new(codex_home.path().to_path_buf())
+        let metadata_path = PluginStore::new(ava_home.path().to_path_buf())
             .plugin_base_root(&plugin_id)
-            .join(".codex-remote-plugin-install.json");
+            .join(".ava-remote-plugin-install.json");
         assert_eq!(
             serde_json::from_str::<serde_json::Value>(
                 &std::fs::read_to_string(metadata_path.as_path())
@@ -611,7 +611,7 @@ mod tests {
             })
         );
         assert!(
-            !codex_home
+            !ava_home
                 .path()
                 .join(PLUGINS_CACHE_DIR)
                 .join(REMOTE_GLOBAL_MARKETPLACE_NAME)
@@ -623,7 +623,7 @@ mod tests {
     #[tokio::test]
     async fn sync_all_scopes_paginates_and_reconciles_each_marketplace() {
         let server = MockServer::start().await;
-        let codex_home = tempfile::tempdir().expect("create codex home");
+        let ava_home = tempfile::tempdir().expect("create ava home");
         let cached_plugins = [
             (
                 REMOTE_GLOBAL_MARKETPLACE_NAME,
@@ -652,13 +652,13 @@ mod tests {
         ];
         for (marketplace_name, plugin_name, _, _) in cached_plugins {
             for cached_plugin_name in [plugin_name, "stale"] {
-                let manifest = codex_home
+                let manifest = ava_home
                     .path()
                     .join(PLUGINS_CACHE_DIR)
                     .join(marketplace_name)
                     .join(cached_plugin_name)
                     .join("1.2.3")
-                    .join(".codex-plugin")
+                    .join(".ava-plugin")
                     .join("plugin.json");
                 std::fs::create_dir_all(manifest.parent().expect("manifest parent"))
                     .expect("create cached plugin manifest parent");
@@ -722,10 +722,10 @@ mod tests {
         let (config, selected_urls) = crate::test_support::recording_remote_plugin_service_config(
             format!("{}/backend-api", server.uri()),
         );
-        let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+        let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
         let outcome = sync_remote_installed_plugin_bundles_once(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             &config,
             Some(&auth),
         )
@@ -766,19 +766,19 @@ mod tests {
             ]
         );
         for (marketplace_name, plugin_name, _, _) in cached_plugins {
-            let plugin_root = codex_home
+            let plugin_root = ava_home
                 .path()
                 .join(PLUGINS_CACHE_DIR)
                 .join(marketplace_name)
                 .join(plugin_name);
             assert!(
                 plugin_root
-                    .join("1.2.3/.codex-plugin/plugin.json")
+                    .join("1.2.3/.ava-plugin/plugin.json")
                     .is_file()
             );
             assert_eq!(
                 serde_json::from_str::<serde_json::Value>(
-                    &std::fs::read_to_string(plugin_root.join(".codex-remote-plugin-install.json"))
+                    &std::fs::read_to_string(plugin_root.join(".ava-remote-plugin-install.json"))
                         .expect("read remote plugin install metadata")
                 )
                 .expect("parse remote plugin install metadata"),
@@ -788,7 +788,7 @@ mod tests {
                 })
             );
             assert!(
-                !codex_home
+                !ava_home
                     .path()
                     .join(PLUGINS_CACHE_DIR)
                     .join(marketplace_name)
@@ -800,14 +800,14 @@ mod tests {
 
     #[tokio::test]
     async fn stale_remote_plugin_cleanup_skips_cache_mutations_in_progress() {
-        let codex_home = tempfile::tempdir().expect("create codex home");
-        let cached_manifest = codex_home
+        let ava_home = tempfile::tempdir().expect("create ava home");
+        let cached_manifest = ava_home
             .path()
             .join(PLUGINS_CACHE_DIR)
             .join(REMOTE_GLOBAL_MARKETPLACE_NAME)
             .join("linear")
             .join("1.2.3")
-            .join(".codex-plugin")
+            .join(".ava-plugin")
             .join("plugin.json");
         std::fs::create_dir_all(cached_manifest.parent().expect("manifest parent"))
             .expect("create cached plugin manifest parent");
@@ -831,18 +831,18 @@ mod tests {
             ]);
 
         let guard = mark_remote_plugin_cache_mutation_in_flight(
-            codex_home.path(),
+            ava_home.path(),
             REMOTE_GLOBAL_MARKETPLACE_NAME,
             "linear",
         );
         let second_guard = mark_remote_plugin_cache_mutation_in_flight(
-            codex_home.path(),
+            ava_home.path(),
             REMOTE_GLOBAL_MARKETPLACE_NAME,
             "linear",
         );
         let mut removed = Vec::new();
         remove_stale_remote_plugin_caches(
-            &PluginStore::new(codex_home.path().to_path_buf()),
+            &PluginStore::new(ava_home.path().to_path_buf()),
             &installed_plugin_names_by_marketplace,
             &mut removed,
         )
@@ -854,7 +854,7 @@ mod tests {
         drop(guard);
         let mut removed = Vec::new();
         remove_stale_remote_plugin_caches(
-            &PluginStore::new(codex_home.path().to_path_buf()),
+            &PluginStore::new(ava_home.path().to_path_buf()),
             &installed_plugin_names_by_marketplace,
             &mut removed,
         )
@@ -866,7 +866,7 @@ mod tests {
         drop(second_guard);
         let mut removed = Vec::new();
         remove_stale_remote_plugin_caches(
-            &PluginStore::new(codex_home.path().to_path_buf()),
+            &PluginStore::new(ava_home.path().to_path_buf()),
             &installed_plugin_names_by_marketplace,
             &mut removed,
         )
@@ -885,14 +885,14 @@ mod tests {
     #[tokio::test]
     async fn stale_remote_plugin_cleanup_removes_stale_marketplace_caches_and_keeps_canonical_cache()
      {
-        let codex_home = tempfile::tempdir().expect("create codex home");
-        let created_by_me_cached_manifest = codex_home
+        let ava_home = tempfile::tempdir().expect("create ava home");
+        let created_by_me_cached_manifest = ava_home
             .path()
             .join(PLUGINS_CACHE_DIR)
             .join(REMOTE_CREATED_BY_ME_MARKETPLACE_NAME)
             .join("created-by-me-plugin")
             .join("1.2.3")
-            .join(".codex-plugin")
+            .join(".ava-plugin")
             .join("plugin.json");
         std::fs::create_dir_all(
             created_by_me_cached_manifest
@@ -905,25 +905,25 @@ mod tests {
             r#"{"name":"created-by-me-plugin"}"#,
         )
         .expect("write cached plugin manifest");
-        let cached_manifest = codex_home
+        let cached_manifest = ava_home
             .path()
             .join(PLUGINS_CACHE_DIR)
             .join(REMOTE_WORKSPACE_SHARED_WITH_ME_PRIVATE_MARKETPLACE_NAME)
             .join("private-plugin")
             .join("1.2.3")
-            .join(".codex-plugin")
+            .join(".ava-plugin")
             .join("plugin.json");
         std::fs::create_dir_all(cached_manifest.parent().expect("manifest parent"))
             .expect("create cached plugin manifest parent");
         std::fs::write(&cached_manifest, r#"{"name":"private-plugin"}"#)
             .expect("write cached plugin manifest");
-        let canonical_cached_manifest = codex_home
+        let canonical_cached_manifest = ava_home
             .path()
             .join(PLUGINS_CACHE_DIR)
             .join(REMOTE_WORKSPACE_SHARED_WITH_ME_MARKETPLACE_NAME)
             .join("shared-plugin")
             .join("1.2.3")
-            .join(".codex-plugin")
+            .join(".ava-plugin")
             .join("plugin.json");
         std::fs::create_dir_all(canonical_cached_manifest.parent().expect("manifest parent"))
             .expect("create canonical cached plugin manifest parent");
@@ -956,7 +956,7 @@ mod tests {
 
         let mut removed = Vec::new();
         remove_stale_remote_plugin_caches(
-            &PluginStore::new(codex_home.path().to_path_buf()),
+            &PluginStore::new(ava_home.path().to_path_buf()),
             &installed_plugin_names_by_marketplace,
             &mut removed,
         )

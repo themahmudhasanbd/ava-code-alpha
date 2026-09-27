@@ -1,6 +1,6 @@
 //! Model-invisible checkpoint of the host's bounded Guardian transcript.
 
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ResponseItem;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;

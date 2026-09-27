@@ -4,13 +4,13 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Weak;
 
-use codex_exec_server::Environment;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_extension_api::ExtensionMetrics;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::McpResourceClient;
-use codex_mcp::McpResourceServerCacheKey;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
+use ava_exec_server::Environment;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_extension_api::ExtensionMetrics;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::McpResourceClient;
+use ava_mcp::McpResourceServerCacheKey;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
 use tokio::sync::OnceCell;
 
 use crate::SkillsExtensionConfig;
@@ -261,7 +261,7 @@ impl SkillsThreadState {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let cache_key =
-            mcp_resources.and_then(|client| client.server_cache_key(CODEX_APPS_MCP_SERVER_NAME));
+            mcp_resources.and_then(|client| client.server_cache_key(AVA_APPS_MCP_SERVER_NAME));
         if let Some(cache) = cache
             .as_ref()
             .filter(|cache| cache.mcp_cache_key == cache_key)

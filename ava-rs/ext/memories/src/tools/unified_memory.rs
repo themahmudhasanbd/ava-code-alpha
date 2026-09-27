@@ -1,19 +1,19 @@
 use std::path::PathBuf;
 
 use chrono::Utc;
-use codex_config::types::MemoriesConfig;
-use codex_extension_api::FunctionCallError;
-use codex_extension_api::JsonToolOutput;
-use codex_extension_api::ResponsesApiTool;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolSpec;
-use codex_extension_api::parse_tool_input_schema;
-use codex_otel::MetricsClient;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::default_namespace_description;
+use ava_config::types::MemoriesConfig;
+use ava_extension_api::FunctionCallError;
+use ava_extension_api::JsonToolOutput;
+use ava_extension_api::ResponsesApiTool;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolSpec;
+use ava_extension_api::parse_tool_input_schema;
+use ava_otel::MetricsClient;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::default_namespace_description;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -157,7 +157,7 @@ Scopes:
         })
     }
 
-    fn handle<'a>(&'a self, call: ToolCall<'call>) -> codex_extension_api::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, call: ToolCall<'call>) -> ava_extension_api::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -169,7 +169,7 @@ impl UnifiedMemoryTool {
     async fn handle_call(
         &self,
         call: ToolCall<'_>,
-    ) -> Result<Box<dyn codex_extension_api::ToolOutput>, FunctionCallError> {
+    ) -> Result<Box<dyn ava_extension_api::ToolOutput>, FunctionCallError> {
         let args: UnifiedMemoryArgs = super::parse_args(&call)?;
         let response = self.execute_action(args).await?;
         Ok(Box::new(JsonToolOutput::new(json!(response))))

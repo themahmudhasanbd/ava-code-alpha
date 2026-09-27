@@ -1,8 +1,8 @@
-use codex_analytics::AnalyticsEventsClient;
-use codex_protocol::ThreadId;
-use codex_protocol::items::CollabAgentTool;
-use codex_protocol::items::CollabAgentToolCallItem;
-use codex_protocol::items::CollabAgentToolCallStatus;
+use ava_analytics::AnalyticsEventsClient;
+use ava_protocol::ThreadId;
+use ava_protocol::items::CollabAgentTool;
+use ava_protocol::items::CollabAgentToolCallItem;
+use ava_protocol::items::CollabAgentToolCallStatus;
 
 use crate::tools::context::ToolInvocation;
 use crate::turn_timing::now_unix_timestamp_ms;

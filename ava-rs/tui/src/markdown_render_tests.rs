@@ -734,7 +734,7 @@ fn inline_code_and_file_paths_follow_syntax_theme() {
         let theme = if name == "no-markup-color" {
             syntect::highlighting::Theme::default()
         } else {
-            crate::render::highlight::resolve_theme_by_name(name, /*codex_home*/ None)
+            crate::render::highlight::resolve_theme_by_name(name, /*ava_home*/ None)
                 .expect("bundled theme")
         };
         let colors = if name == "catppuccin-latte" {
@@ -897,11 +897,11 @@ fn web_link_labels_have_a_visible_underline_snapshot() {
 #[test]
 fn file_link_hides_destination() {
     let text = render_markdown_text_for_cwd(
-        "[/Users/example/code/codex/codex-rs/tui/src/My%20File.rs](/Users/example/code/codex/codex-rs/tui/src/My%20File.rs)",
-        Path::new("/Users/example/code/codex"),
+        "[/Users/example/code/ava/ava-rs/tui/src/My%20File.rs](/Users/example/code/ava/ava-rs/tui/src/My%20File.rs)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/My File.rs",
+        "ava-rs/tui/src/My File.rs",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -910,17 +910,17 @@ fn file_link_hides_destination() {
 #[test]
 fn file_link_keeps_descriptive_label_and_target() {
     let text = render_markdown_text_for_cwd(
-        "Your `codex` launcher [automatically adds those overrides](/home/dev-user/code/openai/project/dotslash-gen/bin/codex:1105), even though you did not specify any.",
+        "Your `ava` launcher [automatically adds those overrides](/home/dev-user/code/openai/project/dotslash-gen/bin/ava:1105), even though you did not specify any.",
         Path::new("/home/dev-user/code/openai"),
     );
     let expected = Text::from(Line::from_iter([
         "Your ".into(),
-        Span::styled("codex", MarkdownStyles::default().code),
+        Span::styled("ava", MarkdownStyles::default().code),
         " launcher ".into(),
         "automatically adds those overrides".into(),
         " (".into(),
         Span::styled(
-            "project/dotslash-gen/bin/codex:1105",
+            "project/dotslash-gen/bin/ava:1105",
             MarkdownStyles::default().code,
         ),
         ")".into(),
@@ -993,8 +993,8 @@ fn file_link_compares_path_spellings_without_changing_display() {
 #[test]
 fn file_link_decodes_percent_encoded_bare_path_destination() {
     let text = render_markdown_text_for_cwd(
-        "[open Example Folder/Résumé/report.md](/Users/example/code/codex/Example%20Folder/R%C3%A9sum%C3%A9/report.md)",
-        Path::new("/Users/example/code/codex"),
+        "[open Example Folder/Résumé/report.md](/Users/example/code/ava/Example%20Folder/R%C3%A9sum%C3%A9/report.md)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([
         "open Example Folder/Résumé/report.md".into(),
@@ -1043,11 +1043,11 @@ fn file_link_keeps_unrelated_relative_label_with_matching_suffix() {
 #[test]
 fn file_link_appends_line_number_when_label_lacks_it() {
     let text = render_markdown_text_for_cwd(
-        "[markdown_render.rs](/Users/example/code/codex/codex-rs/tui/src/markdown_render.rs:74)",
-        Path::new("/Users/example/code/codex"),
+        "[markdown_render.rs](/Users/example/code/ava/ava-rs/tui/src/markdown_render.rs:74)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/markdown_render.rs:74",
+        "ava-rs/tui/src/markdown_render.rs:74",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1056,11 +1056,11 @@ fn file_link_appends_line_number_when_label_lacks_it() {
 #[test]
 fn file_link_keeps_absolute_paths_outside_cwd() {
     let text = render_markdown_text_for_cwd(
-        "[README.md:74](/Users/example/code/codex/README.md:74)",
-        Path::new("/Users/example/code/codex/codex-rs/tui"),
+        "[README.md:74](/Users/example/code/ava/README.md:74)",
+        Path::new("/Users/example/code/ava/ava-rs/tui"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "/Users/example/code/codex/README.md:74",
+        "/Users/example/code/ava/README.md:74",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1090,11 +1090,11 @@ fn file_links_preserve_foreign_windows_paths_and_anchors_snapshot() {
 #[test]
 fn file_link_appends_hash_anchor_when_label_lacks_it() {
     let text = render_markdown_text_for_cwd(
-        "[markdown_render.rs](file:///Users/example/code/codex/codex-rs/tui/src/markdown_render.rs#L74C3)",
-        Path::new("/Users/example/code/codex"),
+        "[markdown_render.rs](file:///Users/example/code/ava/ava-rs/tui/src/markdown_render.rs#L74C3)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/markdown_render.rs:74:3",
+        "ava-rs/tui/src/markdown_render.rs:74:3",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1103,11 +1103,11 @@ fn file_link_appends_hash_anchor_when_label_lacks_it() {
 #[test]
 fn file_link_uses_target_path_for_hash_anchor() {
     let text = render_markdown_text_for_cwd(
-        "[markdown_render.rs#L74C3](file:///Users/example/code/codex/codex-rs/tui/src/markdown_render.rs#L74C3)",
-        Path::new("/Users/example/code/codex"),
+        "[markdown_render.rs#L74C3](file:///Users/example/code/ava/ava-rs/tui/src/markdown_render.rs#L74C3)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/markdown_render.rs:74:3",
+        "ava-rs/tui/src/markdown_render.rs:74:3",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1116,11 +1116,11 @@ fn file_link_uses_target_path_for_hash_anchor() {
 #[test]
 fn file_link_appends_range_when_label_lacks_it() {
     let text = render_markdown_text_for_cwd(
-        "[markdown_render.rs](/Users/example/code/codex/codex-rs/tui/src/markdown_render.rs:74:3-76:9)",
-        Path::new("/Users/example/code/codex"),
+        "[markdown_render.rs](/Users/example/code/ava/ava-rs/tui/src/markdown_render.rs:74:3-76:9)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/markdown_render.rs:74:3-76:9",
+        "ava-rs/tui/src/markdown_render.rs:74:3-76:9",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1129,11 +1129,11 @@ fn file_link_appends_range_when_label_lacks_it() {
 #[test]
 fn file_link_uses_target_path_for_range() {
     let text = render_markdown_text_for_cwd(
-        "[markdown_render.rs:74:3-76:9](/Users/example/code/codex/codex-rs/tui/src/markdown_render.rs:74:3-76:9)",
-        Path::new("/Users/example/code/codex"),
+        "[markdown_render.rs:74:3-76:9](/Users/example/code/ava/ava-rs/tui/src/markdown_render.rs:74:3-76:9)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/markdown_render.rs:74:3-76:9",
+        "ava-rs/tui/src/markdown_render.rs:74:3-76:9",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1142,11 +1142,11 @@ fn file_link_uses_target_path_for_range() {
 #[test]
 fn file_link_appends_hash_range_when_label_lacks_it() {
     let text = render_markdown_text_for_cwd(
-        "[markdown_render.rs](file:///Users/example/code/codex/codex-rs/tui/src/markdown_render.rs#L74C3-L76C9)",
-        Path::new("/Users/example/code/codex"),
+        "[markdown_render.rs](file:///Users/example/code/ava/ava-rs/tui/src/markdown_render.rs#L74C3-L76C9)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/markdown_render.rs:74:3-76:9",
+        "ava-rs/tui/src/markdown_render.rs:74:3-76:9",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1155,8 +1155,8 @@ fn file_link_appends_hash_range_when_label_lacks_it() {
 #[test]
 fn multiline_file_link_label_after_styled_prefix_does_not_panic() {
     let text = render_markdown_text_for_cwd(
-        "**bold** plain [foo\nbar](file:///Users/example/code/codex/codex-rs/tui/src/markdown_render.rs#L74C3)",
-        Path::new("/Users/example/code/codex"),
+        "**bold** plain [foo\nbar](file:///Users/example/code/ava/ava-rs/tui/src/markdown_render.rs#L74C3)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([
         "bold".bold(),
@@ -1166,7 +1166,7 @@ fn multiline_file_link_label_after_styled_prefix_does_not_panic() {
         "bar".into(),
         " (".into(),
         Span::styled(
-            "codex-rs/tui/src/markdown_render.rs:74:3",
+            "ava-rs/tui/src/markdown_render.rs:74:3",
             MarkdownStyles::default().code,
         ),
         ")".into(),
@@ -1177,11 +1177,11 @@ fn multiline_file_link_label_after_styled_prefix_does_not_panic() {
 #[test]
 fn file_link_uses_target_path_for_hash_range() {
     let text = render_markdown_text_for_cwd(
-        "[markdown_render.rs#L74C3-L76C9](file:///Users/example/code/codex/codex-rs/tui/src/markdown_render.rs#L74C3-L76C9)",
-        Path::new("/Users/example/code/codex"),
+        "[markdown_render.rs#L74C3-L76C9](file:///Users/example/code/ava/ava-rs/tui/src/markdown_render.rs#L74C3-L76C9)",
+        Path::new("/Users/example/code/ava"),
     );
     let expected = Text::from(Line::from_iter([Span::styled(
-        "codex-rs/tui/src/markdown_render.rs:74:3-76:9",
+        "ava-rs/tui/src/markdown_render.rs:74:3-76:9",
         MarkdownStyles::default().code,
     )]));
     assert_eq!(text, expected);
@@ -1202,8 +1202,8 @@ fn url_link_shows_destination() {
 #[test]
 fn markdown_render_file_link_snapshot() {
     let text = render_markdown_text_for_cwd(
-        "See [markdown_render.rs:74](/Users/example/code/codex/codex-rs/tui/src/markdown_render.rs:74).",
-        Path::new("/Users/example/code/codex"),
+        "See [markdown_render.rs:74](/Users/example/code/ava/ava-rs/tui/src/markdown_render.rs:74).",
+        Path::new("/Users/example/code/ava"),
     );
     let rendered = text
         .lines
@@ -1223,9 +1223,9 @@ fn markdown_render_file_link_snapshot() {
 #[test]
 fn unordered_list_local_file_link_stays_inline_with_following_text() {
     let text = render_markdown_text_with_width_and_cwd(
-        "- [binary](/Users/example/code/codex/codex-rs/README.md:93): core is the agent/business logic, tui is the terminal UI, exec is the headless automation surface, and cli is the top-level multitool binary.",
+        "- [binary](/Users/example/code/ava/ava-rs/README.md:93): core is the agent/business logic, tui is the terminal UI, exec is the headless automation surface, and cli is the top-level multitool binary.",
         Some(72),
-        Some(Path::new("/Users/example/code/codex")),
+        Some(Path::new("/Users/example/code/ava")),
     );
     let rendered = text
         .lines
@@ -1240,7 +1240,7 @@ fn unordered_list_local_file_link_stays_inline_with_following_text() {
     assert_eq!(
         rendered,
         vec![
-            "- binary (codex-rs/README.md:93): core is the agent/business logic, tui",
+            "- binary (ava-rs/README.md:93): core is the agent/business logic, tui",
             "  is the terminal UI, exec is the headless automation surface, and cli",
             "  is the top-level multitool binary.",
         ]
@@ -1250,9 +1250,9 @@ fn unordered_list_local_file_link_stays_inline_with_following_text() {
 #[test]
 fn unordered_list_local_file_link_soft_break_before_colon_stays_inline() {
     let text = render_markdown_text_with_width_and_cwd(
-        "- [binary](/Users/example/code/codex/codex-rs/README.md:93)\n  : core is the agent/business logic.",
+        "- [binary](/Users/example/code/ava/ava-rs/README.md:93)\n  : core is the agent/business logic.",
         Some(72),
-        Some(Path::new("/Users/example/code/codex")),
+        Some(Path::new("/Users/example/code/ava")),
     );
     let rendered = text
         .lines
@@ -1266,16 +1266,16 @@ fn unordered_list_local_file_link_soft_break_before_colon_stays_inline() {
         .collect::<Vec<_>>();
     assert_eq!(
         rendered,
-        vec!["- binary (codex-rs/README.md:93): core is the agent/business logic.",]
+        vec!["- binary (ava-rs/README.md:93): core is the agent/business logic.",]
     );
 }
 
 #[test]
 fn consecutive_unordered_list_local_file_links_do_not_detach_paths() {
     let text = render_markdown_text_with_width_and_cwd(
-        "- [binary](/Users/example/code/codex/codex-rs/README.md:93)\n  : cli is the top-level multitool binary.\n- [expectations](/Users/example/code/codex/codex-rs/core/README.md:1)\n  : codex-core owns the real runtime behavior.",
+        "- [binary](/Users/example/code/ava/ava-rs/README.md:93)\n  : cli is the top-level multitool binary.\n- [expectations](/Users/example/code/ava/ava-rs/core/README.md:1)\n  : ava-core owns the real runtime behavior.",
         Some(72),
-        Some(Path::new("/Users/example/code/codex")),
+        Some(Path::new("/Users/example/code/ava")),
     );
     let rendered = text
         .lines
@@ -1290,8 +1290,8 @@ fn consecutive_unordered_list_local_file_links_do_not_detach_paths() {
     assert_eq!(
         rendered,
         vec![
-            "- binary (codex-rs/README.md:93): cli is the top-level multitool binary.",
-            "- expectations (codex-rs/core/README.md:1): codex-core owns the real",
+            "- binary (ava-rs/README.md:93): cli is the top-level multitool binary.",
+            "- expectations (ava-rs/core/README.md:1): ava-core owns the real",
             "  runtime behavior.",
         ]
     );
@@ -1939,13 +1939,13 @@ fn table_separates_logical_rows_after_wrapped_content() {
 fn table_wraps_file_paths_before_collapsing_narrative_columns_snapshot() {
     let md = r#"| Unit | Files | Adds | Removes | What It Adds |
 |---|---:|---:|---:|---|
-| Suggestion engine and unit coverage | [next_prompt_suggestion.rs](/Users/example/code/codex/codex-rs/core/src/next_prompt_suggestion.rs:1), [next_prompt_suggestion_tests.rs](/Users/example/code/codex/codex-rs/core/src/next_prompt_suggestion_tests.rs:1) | 704 | 0 | Sampling workflow, stable-history checks, tool-flow suppression, fast reasoning profile, filtering rules, cancellation and timeout. |
-| Model instruction fragment and contextual isolation | [next_prompt_suggestion.rs](/Users/example/code/codex/codex-rs/core/src/context/next_prompt_suggestion.rs:1), [contextual_user_message_tests.rs](/Users/example/code/codex/codex-rs/core/src/context/contextual_user_message_tests.rs:1) | 54 | 0 | Synthetic suggestion prompt and an isolation test for ordinary user text. |
+| Suggestion engine and unit coverage | [next_prompt_suggestion.rs](/Users/example/code/ava/ava-rs/core/src/next_prompt_suggestion.rs:1), [next_prompt_suggestion_tests.rs](/Users/example/code/ava/ava-rs/core/src/next_prompt_suggestion_tests.rs:1) | 704 | 0 | Sampling workflow, stable-history checks, tool-flow suppression, fast reasoning profile, filtering rules, cancellation and timeout. |
+| Model instruction fragment and contextual isolation | [next_prompt_suggestion.rs](/Users/example/code/ava/ava-rs/core/src/context/next_prompt_suggestion.rs:1), [contextual_user_message_tests.rs](/Users/example/code/ava/ava-rs/core/src/context/contextual_user_message_tests.rs:1) | 54 | 0 | Synthetic suggestion prompt and an isolation test for ordinary user text. |
 "#;
     let text = render_markdown_text_with_width_and_cwd(
         md,
         Some(/*width*/ 120),
-        Some(Path::new("/Users/example/code/codex")),
+        Some(Path::new("/Users/example/code/ava")),
     );
 
     assert_snapshot!(plain_lines(&text).join("\n"));
@@ -1955,9 +1955,9 @@ fn table_wraps_file_paths_before_collapsing_narrative_columns_snapshot() {
 fn table_renders_stacked_key_value_records_when_path_column_becomes_too_narrow_snapshot() {
     let md = r#"| Session | Why useful | Detected table blocks |
 | --- | --- | --- |
-| [2026-05-25 current gallery](/Users/felipe.coury/.codex/sessions/2026/05/25/rollout-2026-05-25T18-13-09-019e60fc-0518-7c21-9596-980fe97225ba.jsonl) | The large gallery from this thread: emojis, links, emphasis, code, alignment, paragraphs, and a 30+ row table | 7 |
-| [2026-05-14 renderer testing](/Users/felipe.coury/.codex/sessions/2026/05/14/rollout-2026-05-14T12-57-18-019e2734-e500-7011-8278-975c94d06000.jsonl) | Explicit "markdown tables for testing" session with several successive assistant samples | 16 |
-| [2026-05-14 five-table test](/Users/felipe.coury/.codex/sessions/2026/05/14/rollout-2026-05-14T12-27-57-019e271a-064c-78c3-a5cd-a6f20a0c1ad5.jsonl) | Explicit request for five tables containing emojis, code, italics, and varied cell content | 10 |
+| [2026-05-25 current gallery](/Users/felipe.coury/.ava-code/sessions/2026/05/25/rollout-2026-05-25T18-13-09-019e60fc-0518-7c21-9596-980fe97225ba.jsonl) | The large gallery from this thread: emojis, links, emphasis, code, alignment, paragraphs, and a 30+ row table | 7 |
+| [2026-05-14 renderer testing](/Users/felipe.coury/.ava-code/sessions/2026/05/14/rollout-2026-05-14T12-57-18-019e2734-e500-7011-8278-975c94d06000.jsonl) | Explicit "markdown tables for testing" session with several successive assistant samples | 16 |
+| [2026-05-14 five-table test](/Users/felipe.coury/.ava-code/sessions/2026/05/14/rollout-2026-05-14T12-27-57-019e271a-064c-78c3-a5cd-a6f20a0c1ad5.jsonl) | Explicit request for five tables containing emojis, code, italics, and varied cell content | 10 |
 "#;
     let text = render_markdown_text_with_width(md, Some(/*width*/ 42));
 
@@ -1970,7 +1970,7 @@ fn table_renders_records_when_multiple_prose_columns_are_starved_snapshot() {
 | --- | ---: | ---: | --- |
 | [#24485: newline shortcut fails in PyCharm terminal on Windows](https://github.com/openai/codex/issues/24485) | `+1` 0, substantive comments 0 | Low | New, deterministic regression range; localized composer/keymap path. |
 | [#23926: Vim composer `e` stalls at word end](https://github.com/openai/codex/issues/23926) | `+1` 0, comments 0 | Low | Standing best quick win; deterministic motion bug. |
-| [#23651: Zellij scrollback misses Codex transcript over SSH](https://github.com/openai/codex/issues/23651) | `+1` 3, human comments 2 | Medium | Clear regression and strong scrollback evidence. |
+| [#23651: Zellij scrollback misses Ava transcript over SSH](https://github.com/openai/codex/issues/23651) | `+1` 3, human comments 2 | Medium | Clear regression and strong scrollback evidence. |
 | [#23740: raw ANSI/control sequences in Windows Terminal](https://github.com/openai/codex/issues/23740) | `+1` 7, human comments 7 | Medium | Highest activity; established Windows rendering regression family. |
 | [#24527: typing lag increases with session length](https://github.com/openai/codex/issues/24527) | `+1` 0, substantive comments 0 | Medium | New TUI-visible performance report; needs profiling before implementation. |
 "#;

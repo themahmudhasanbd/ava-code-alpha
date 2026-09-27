@@ -3,14 +3,14 @@ use std::sync::Mutex;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_api::AuthProvider;
-use codex_exec_server::ExecServerClient;
-use codex_exec_server::NoiseChannelIdentity;
-use codex_exec_server::NoiseRendezvousConnectArgs;
-use codex_exec_server::NoiseRendezvousConnectBundle;
-use codex_exec_server::RemoteEnvironmentConfig;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_api::AuthProvider;
+use ava_exec_server::ExecServerClient;
+use ava_exec_server::NoiseChannelIdentity;
+use ava_exec_server::NoiseRendezvousConnectArgs;
+use ava_exec_server::NoiseRendezvousConnectBundle;
+use ava_exec_server::RemoteEnvironmentConfig;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use http::HeaderMap;
 use http::HeaderValue;
 use tokio::net::TcpListener;
@@ -23,11 +23,11 @@ use wiremock::matchers::header;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-pub(crate) use codex_exec_server_test_support::relay::TEST_TIMEOUT;
-pub(crate) use codex_exec_server_test_support::relay::accept_websocket;
-pub(crate) use codex_exec_server_test_support::relay::assert_relay_data_is_encrypted;
-pub(crate) use codex_exec_server_test_support::relay::proxy_relay_frames;
-pub(crate) use codex_exec_server_test_support::relay::registered_executor_public_key;
+pub(crate) use ava_exec_server_test_support::relay::TEST_TIMEOUT;
+pub(crate) use ava_exec_server_test_support::relay::accept_websocket;
+pub(crate) use ava_exec_server_test_support::relay::assert_relay_data_is_encrypted;
+pub(crate) use ava_exec_server_test_support::relay::proxy_relay_frames;
+pub(crate) use ava_exec_server_test_support::relay::registered_executor_public_key;
 
 pub(crate) const ENVIRONMENT_ID: &str = "env-noise-relay-test";
 pub(crate) const EXECUTOR_REGISTRATION_ID: &str = "registration-1";
@@ -46,7 +46,7 @@ impl AuthProvider for StaticRegistryAuthProvider {
     }
 }
 
-pub(crate) fn static_registry_auth_provider() -> codex_api::SharedAuthProvider {
+pub(crate) fn static_registry_auth_provider() -> ava_api::SharedAuthProvider {
     Arc::new(StaticRegistryAuthProvider)
 }
 

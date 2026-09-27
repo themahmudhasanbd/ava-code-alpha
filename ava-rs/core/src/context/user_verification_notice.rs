@@ -1,7 +1,7 @@
 //! A bounded realtime notice that never includes verification challenge or display text.
 
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 pub(crate) struct UserVerificationNotice;
 

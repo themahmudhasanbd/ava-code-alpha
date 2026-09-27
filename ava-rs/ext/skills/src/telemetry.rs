@@ -4,15 +4,15 @@ use std::sync::Mutex;
 use std::sync::Weak;
 use std::time::Instant;
 
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::TurnAbortInput;
-use codex_extension_api::TurnErrorInput;
-use codex_extension_api::TurnLifecycleContributor;
-use codex_extension_api::TurnStartInput;
-use codex_extension_api::TurnStopInput;
-use codex_otel::sanitize_metric_tag_value;
-use codex_protocol::openai_models::ModelInfo;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::TurnAbortInput;
+use ava_extension_api::TurnErrorInput;
+use ava_extension_api::TurnLifecycleContributor;
+use ava_extension_api::TurnStartInput;
+use ava_extension_api::TurnStopInput;
+use ava_otel::sanitize_metric_tag_value;
+use ava_protocol::openai_models::ModelInfo;
 
 use crate::state::SkillsSessionState;
 
@@ -77,7 +77,7 @@ impl SkillTurnMetrics {
         for plugin_id in usage.plugins {
             let plugin_id = sanitize_metric_tag_value(&plugin_id);
             metrics.histogram(
-                "codex.skill.turn.duration_seconds",
+                "ava.skill.turn.duration_seconds",
                 duration_seconds,
                 &[
                     ("plugin_id", plugin_id.as_str()),

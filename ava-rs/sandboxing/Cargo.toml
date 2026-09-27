@@ -1,11 +1,11 @@
 [package]
-name = "codex-sandboxing"
+name = "ava-sandboxing"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "codex_sandboxing"
+name = "ava_sandboxing"
 path = "src/lib.rs"
 doctest = false
 
@@ -14,14 +14,14 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-codex-mxc-sandbox = { workspace = true }
-codex-network-proxy = { workspace = true }
-codex-protocol = { workspace = true }
-codex-uds = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-path-uri = { workspace = true }
-codex-utils-pty = { workspace = true }
-codex-windows-sandbox = { workspace = true }
+ava-mxc-sandbox = { workspace = true }
+ava-network-proxy = { workspace = true }
+ava-protocol = { workspace = true }
+ava-uds = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-path-uri = { workspace = true }
+ava-utils-pty = { workspace = true }
+ava-windows-sandbox = { workspace = true }
 dunce = { workspace = true }
 libc = { workspace = true }
 serde_json = { workspace = true }
@@ -32,8 +32,8 @@ url = { workspace = true }
 which = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
-codex-otel = { workspace = true }
-codex-utils-home-dir = { workspace = true }
+ava-otel = { workspace = true }
+ava-utils-home-dir = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

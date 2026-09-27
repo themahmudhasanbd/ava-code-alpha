@@ -1,16 +1,16 @@
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_4_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_5_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_6_LUNA_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_6_SOL_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_6_TERRA_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_6_ASTRA_MODEL_ID;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::WebSearchToolType;
-use codex_protocol::protocol::MultiAgentVersion;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_4_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_5_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_6_LUNA_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_6_SOL_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_6_TERRA_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_6_ASTRA_MODEL_ID;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::WebSearchToolType;
+use ava_protocol::protocol::MultiAgentVersion;
 
 const GPT_5_BEDROCK_CONTEXT_WINDOW: i64 = 272_000;
 const GPT_5_6_SOL_OPENAI_MODEL_ID: &str = "gpt-5.6-sol";
@@ -126,7 +126,7 @@ fn bundled_openai_model(slug: &str) -> ModelInfo {
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+    use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
     use pretty_assertions::assert_eq;
 
     use super::*;

@@ -1,0 +1,16 @@
+---
+source: tui/src/model_migration.rs
+expression: terminal.backend()
+---
+
+  Ava just got an upgrade. Introducing
+  gpt-5.1-ava-mini.
+
+  We recommend switching from gpt-5-ava-mini to
+  gpt-5.1-ava-mini.
+
+  Optimized for ava. Cheaper, faster, but less capable.
+  Learn more about gpt-5.1-ava-mini at
+  https://www.codex.com/models/gpt-5.1-codex-mini
+
+  enter/esc continue · ctrl+c quit

@@ -11,9 +11,9 @@ use std::process::Output;
 #[test]
 fn only_matching_enforced_apple_security_events_are_failures() {
     for (event, expected) in [
-        ("denied com.openai.codex", Evidence::Blocked),
+        ("denied com.openai.ava-code", Evidence::Blocked),
         (
-            "denied /Applications/Codex.app/Contents/MacOS/Codex",
+            "denied /Applications/Ava.app/Contents/MacOS/Ava",
             Evidence::Blocked,
         ),
         ("malware detected ChatGPT.app", Evidence::Malware),

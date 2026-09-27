@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Adapt one official MCP client scenario to Codex app-server requests."""
+"""Adapt one official MCP client scenario to Ava app-server requests."""
 
 import ipaddress
 import json
@@ -17,7 +17,7 @@ _MODULE_DIR = Path(__file__).resolve().parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from run_codex_compliance import (  # noqa: E402 - direct scripts must first add their sibling directory.
+from run_ava_compliance import (  # noqa: E402 - direct scripts must first add their sibling directory.
     MODERN_VERSION,
     TEST_SERVER_NAME,
     AppServerClient,
@@ -43,7 +43,7 @@ class AdapterFailure(RuntimeError):
 
 CIMD_CLIENT_METADATA_URL = "https://conformance-test.local/client-metadata.json"
 PRE_REGISTERED_CLIENT_SECRET_ENV_VAR = "MCP_CONFORMANCE_CLIENT_SECRET"
-CLIENT_REGISTRATION_OVERRIDE_ENV_VAR = "CODEX_CONFORMANCE_CLIENT_REGISTRATION"
+CLIENT_REGISTRATION_OVERRIDE_ENV_VAR = "AVA_CONFORMANCE_CLIENT_REGISTRATION"
 AUTH_COMPLETION_METHOD = "mcpServer/oauthLogin/completed"
 EXPECTED_AUTH_REJECTION_SCENARIOS = frozenset(
     {
@@ -140,7 +140,7 @@ def _elicitation_content(
     _params: Mapping[str, object],
 ) -> Mapping[str, object]:
     if scenario == "elicitation-sep1034-client-defaults":
-        # The official scenario deliberately supplies no values. Codex, as the
+        # The official scenario deliberately supplies no values. Ava, as the
         # MCP client under test, must materialize the JSON Schema defaults.
         return {}
     if scenario == "sep-2322-client-request-state":
@@ -225,7 +225,7 @@ def _validated_callback_url(authorization_url: str, location: str) -> str:
         or callback.fragment
     ):
         raise AdapterFailure(
-            "authorization server redirect did not target Codex's exact loopback callback"
+            "authorization server redirect did not target Ava's exact loopback callback"
         )
 
     callback_query = urllib.parse.parse_qs(callback.query, keep_blank_values=True)
@@ -298,7 +298,7 @@ def _drive_headless_authorization(
     # Error callbacks may intentionally return a 4xx after notifying the OAuth
     # waiter. The completion notification is the authoritative outcome.
     if not 200 <= callback_status < 500:
-        raise AdapterFailure("Codex OAuth callback endpoint returned an invalid status")
+        raise AdapterFailure("Ava OAuth callback endpoint returned an invalid status")
 
 
 def _oauth_client_id(
@@ -354,11 +354,11 @@ def _write_auth_registration(
     config_path.write_text(existing.rstrip() + "\n" + block, encoding="utf-8")
 
 
-def _validate_oauth_secret_not_persisted(codex_home: Path, client_secret: str) -> None:
+def _validate_oauth_secret_not_persisted(ava_home: Path, client_secret: str) -> None:
     if not client_secret:
         return
 
-    candidates = [codex_home / "config.toml", *codex_home.rglob(".credentials.json")]
+    candidates = [ava_home / "config.toml", *ava_home.rglob(".credentials.json")]
     secret_bytes = client_secret.encode("utf-8")
     for candidate in dict.fromkeys(candidates):
         if not candidate.is_file():
@@ -366,7 +366,7 @@ def _validate_oauth_secret_not_persisted(codex_home: Path, client_secret: str) -
         if secret_bytes in candidate.read_bytes():
             raise AdapterFailure(
                 "environment-provided OAuth client secret was persisted in "
-                f"{candidate.relative_to(codex_home)}"
+                f"{candidate.relative_to(ava_home)}"
             )
 
 
@@ -493,7 +493,7 @@ def _exercise_auth_scenario(
         _auth_inventory(client)
         if require_automatic_auth:
             _auth_tool_call(client, workspace)
-            return "Codex automatically recovered from the challenged OAuth scope"
+            return "Ava automatically recovered from the challenged OAuth scope"
         try:
             _auth_tool_call(client, workspace)
         except AdapterFailure:
@@ -529,7 +529,7 @@ def _exercise_auth_scenario(
             try:
                 _auth_tool_call(client, workspace)
             except AdapterFailure:
-                return "observed Codex's production OAuth retry-limit behavior"
+                return "observed Ava's production OAuth retry-limit behavior"
             raise AdapterFailure(
                 "retry-limit scenario unexpectedly completed the tool call"
             )
@@ -567,7 +567,7 @@ def _exercise_auth_scenario(
         if require_automatic_auth:
             _auth_tool_call(client, workspace)
             return (
-                "Codex automatically registered with the migrated authorization server"
+                "Ava automatically registered with the migrated authorization server"
             )
         try:
             _auth_tool_call(client, workspace)
@@ -700,25 +700,25 @@ def _exercise_scenario(
 
 
 def run_adapter(server_url: str) -> dict[str, object]:
-    codex_binary = _required_path("CODEX_CONFORMANCE_BINARY")
-    codex_home = _required_path("CODEX_CONFORMANCE_HOME")
+    ava_binary = _required_path("AVA_CONFORMANCE_BINARY")
+    ava_home = _required_path("AVA_CONFORMANCE_HOME")
     scenario = _required_env("MCP_CONFORMANCE_SCENARIO")
     protocol_version = _required_env("MCP_CONFORMANCE_PROTOCOL_VERSION")
-    timeout_seconds = float(os.environ.get("CODEX_CONFORMANCE_TIMEOUT", "30"))
+    timeout_seconds = float(os.environ.get("AVA_CONFORMANCE_TIMEOUT", "30"))
     enable_modern_feature = (
-        os.environ.get("CODEX_CONFORMANCE_ENABLE_MODERN_FEATURE", "1") != "0"
+        os.environ.get("AVA_CONFORMANCE_ENABLE_MODERN_FEATURE", "1") != "0"
     )
     require_automatic_auth = (
-        os.environ.get("CODEX_CONFORMANCE_REQUIRE_AUTOMATIC_AUTH", "0") == "1"
+        os.environ.get("AVA_CONFORMANCE_REQUIRE_AUTOMATIC_AUTH", "0") == "1"
     )
     context = _conformance_context()
 
-    codex_home.mkdir(parents=True, exist_ok=True)
-    workspace = codex_home / "workspace"
+    ava_home.mkdir(parents=True, exist_ok=True)
+    workspace = ava_home / "workspace"
     workspace.mkdir()
-    env = _isolated_environment(codex_home)
+    env = _isolated_environment(ava_home)
     # Scenario context can contain ephemeral OAuth client secrets. The adapter
-    # consumes it directly and does not expose the full blob to Codex.
+    # consumes it directly and does not expose the full blob to Ava.
     env.pop("MCP_CONFORMANCE_CONTEXT", None)
     steps: list[Step] = []
     registered = False
@@ -726,7 +726,7 @@ def run_adapter(server_url: str) -> dict[str, object]:
 
     try:
         if scenario.startswith("auth/"):
-            config_path = codex_home / "config.toml"
+            config_path = ava_home / "config.toml"
             config_path.write_text(
                 'mcp_oauth_credentials_store = "file"\n',
                 encoding="utf-8",
@@ -742,7 +742,7 @@ def run_adapter(server_url: str) -> dict[str, object]:
         if protocol_version == MODERN_VERSION and enable_modern_feature:
             feature = _run_command(
                 [
-                    str(codex_binary),
+                    str(ava_binary),
                     "features",
                     "enable",
                     "mcp_2026_07_28",
@@ -776,7 +776,7 @@ def run_adapter(server_url: str) -> dict[str, object]:
             oauth_client_secret_env_var = PRE_REGISTERED_CLIENT_SECRET_ENV_VAR
         if scenario.startswith("auth/"):
             _write_auth_registration(
-                codex_home / "config.toml",
+                ava_home / "config.toml",
                 server_url=server_url,
                 oauth_client_id=oauth_client_id,
                 oauth_client_secret_env_var=oauth_client_secret_env_var,
@@ -792,7 +792,7 @@ def run_adapter(server_url: str) -> dict[str, object]:
         else:
             add = _run_command(
                 [
-                    str(codex_binary),
+                    str(ava_binary),
                     "mcp",
                     "add",
                     TEST_SERVER_NAME,
@@ -806,11 +806,11 @@ def run_adapter(server_url: str) -> dict[str, object]:
             registered = add.returncode == 0
             steps.append(Step("mcp_add", registered, _command_detail(add)))
             if not registered:
-                raise AdapterFailure("codex mcp add failed")
+                raise AdapterFailure("ava mcp add failed")
 
         get = _run_command(
             [
-                str(codex_binary),
+                str(ava_binary),
                 "mcp",
                 "get",
                 TEST_SERVER_NAME,
@@ -844,10 +844,10 @@ def run_adapter(server_url: str) -> dict[str, object]:
             )
         )
         if not registration_ok:
-            raise AdapterFailure("Codex registration did not preserve the scenario URL")
+            raise AdapterFailure("Ava registration did not preserve the scenario URL")
 
         with AppServerClient(
-            codex_binary,
+            ava_binary,
             env=env,
             cwd=workspace,
             timeout_seconds=timeout_seconds,
@@ -916,7 +916,7 @@ def run_adapter(server_url: str) -> dict[str, object]:
                     str,
                 ):
                     _validate_oauth_secret_not_persisted(
-                        codex_home, oauth_client_secret
+                        ava_home, oauth_client_secret
                     )
                     steps.append(
                         Step(
@@ -948,7 +948,7 @@ def run_adapter(server_url: str) -> dict[str, object]:
     finally:
         if registered:
             remove = _run_command(
-                [str(codex_binary), "mcp", "remove", TEST_SERVER_NAME],
+                [str(ava_binary), "mcp", "remove", TEST_SERVER_NAME],
                 env=env,
                 cwd=workspace,
                 timeout_seconds=timeout_seconds,
@@ -971,7 +971,7 @@ def run_adapter(server_url: str) -> dict[str, object]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     values = list(sys.argv[1:] if argv is None else argv)
-    report_path_value = os.environ.get("CODEX_CONFORMANCE_ADAPTER_REPORT")
+    report_path_value = os.environ.get("AVA_CONFORMANCE_ADAPTER_REPORT")
     report: dict[str, object]
     try:
         if len(values) != 1:

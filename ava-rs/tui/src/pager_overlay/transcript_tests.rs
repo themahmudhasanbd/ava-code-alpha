@@ -249,12 +249,12 @@ async fn focus_loss_stops_edge_drag_and_preserves_selection_after_focus_returns(
 #[tokio::test]
 async fn opening_find_retains_the_selected_mutable_revision() -> Result<()> {
     let cell = history_cell::DynamicToolCallCell::from_item(
-        codex_app_server_protocol::ThreadItem::DynamicToolCall {
+        ava_app_server_protocol::ThreadItem::DynamicToolCall {
             id: "tool".into(),
             namespace: None,
             tool: "inspect".into(),
             arguments: serde_json::json!({}),
-            status: codex_app_server_protocol::DynamicToolCallStatus::InProgress,
+            status: ava_app_server_protocol::DynamicToolCallStatus::InProgress,
             content_items: None,
             success: None,
             duration_ms: None,

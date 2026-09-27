@@ -33,17 +33,17 @@ def main() -> None:
     schema_root = args.schema_root or repository_schema_root
 
     env = os.environ.copy()
-    env["CODEX_APP_SERVER_SCHEMA_ROOT"] = str(schema_root)
-    env["CODEX_APP_SERVER_SCHEMA_EXPERIMENTAL"] = "1" if args.experimental else "0"
+    env["AVA_APP_SERVER_SCHEMA_ROOT"] = str(schema_root)
+    env["AVA_APP_SERVER_SCHEMA_EXPERIMENTAL"] = "1" if args.experimental else "0"
     if args.prettier:
-        env["CODEX_APP_SERVER_SCHEMA_PRETTIER"] = str(args.prettier)
+        env["AVA_APP_SERVER_SCHEMA_PRETTIER"] = str(args.prettier)
 
     subprocess.run(
         [
             "cargo",
             "test",
             "-p",
-            "codex-app-server-protocol",
+            "ava-app-server-protocol",
             "--lib",
             "schema_fixtures_tests::write_schema_fixtures_from_env",
             "--",

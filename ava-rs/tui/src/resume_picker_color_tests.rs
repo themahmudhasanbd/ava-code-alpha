@@ -153,7 +153,7 @@ fn compact_picker_keeps_metadata_and_labeled_primary_actions() {
         Arc::new(|_| {}),
         ProviderFilter::Any,
         /*show_all*/ false,
-        Some(PathBuf::from("/tmp/codex")),
+        Some(PathBuf::from("/tmp/ava")),
         SessionPickerAction::Resume,
     );
     state.relative_time_reference = timestamp;
@@ -165,7 +165,7 @@ fn compact_picker_keeps_metadata_and_labeled_primary_actions() {
             preview: String::new(),
             created_at: timestamp,
             updated_at: timestamp,
-            cwd: Some(PathBuf::from("/tmp/codex")),
+            cwd: Some(PathBuf::from("/tmp/ava")),
             git_branch: Some("fcoury/contrast".into()),
         })
         .collect();
@@ -262,7 +262,7 @@ async fn narrow_toolbar_keeps_keyboard_focused_control_visible() {
                 Arc::new(|_| {}),
                 ProviderFilter::Any,
                 /*show_all*/ false,
-                Some(PathBuf::from("/tmp/codex")),
+                Some(PathBuf::from("/tmp/ava")),
                 action,
             );
             if matches!(action, SessionPickerAction::Resume) {

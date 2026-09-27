@@ -9,8 +9,8 @@ impl Devices {
         Self::open().map(|_| ())
     }
 
-    pub(super) fn take_state(&self) -> io::Result<codex_realtime_webrtc::AudioState> {
-        Self::open().map(|_| codex_realtime_webrtc::AudioState::default())
+    pub(super) fn take_state(&self) -> io::Result<ava_realtime_webrtc::AudioState> {
+        Self::open().map(|_| ava_realtime_webrtc::AudioState::default())
     }
 
     pub(super) fn open() -> io::Result<Self> {
@@ -19,7 +19,7 @@ impl Devices {
         ))
     }
 
-    pub(super) fn set_controls(&self, _: codex_realtime_webrtc::AudioControls) -> io::Result<()> {
+    pub(super) fn set_controls(&self, _: ava_realtime_webrtc::AudioControls) -> io::Result<()> {
         Self::open().map(|_| ())
     }
 

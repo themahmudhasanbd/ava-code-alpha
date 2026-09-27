@@ -1,36 +1,36 @@
-use codex_core::EnvironmentConfig;
-use codex_core::EnvironmentMcpPolicy;
-use codex_core::TurnInputRequest;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_core::EnvironmentConfig;
+use ava_core::EnvironmentMcpPolicy;
+use ava_core::TurnInputRequest;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
-use codex_config::McpServerConfig;
-use codex_config::McpServerOAuthConfig;
-use codex_config::McpServerTransportConfig;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_features::Feature;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::mcp_policy::McpServerIdentity;
-use codex_protocol::mcp_policy::McpServerRequirement;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
+use ava_config::McpServerConfig;
+use ava_config::McpServerOAuthConfig;
+use ava_config::McpServerTransportConfig;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_features::Feature;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::mcp_policy::McpServerIdentity;
+use ava_protocol::mcp_policy::McpServerRequirement;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_target_windows;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -44,9 +44,9 @@ use wiremock::ResponseTemplate;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-const PROXY_TEST_SUBPROCESS_ENV_VAR: &str = "CODEX_MCP_HTTP_PROXY_TEST_SUBPROCESS";
-const SKILL_CALLBACK_PORT_ENV_VAR: &str = "CODEX_MCP_SKILL_CALLBACK_PORT";
-const SKILL_GLOBAL_CALLBACK_PORT_ENV_VAR: &str = "CODEX_MCP_SKILL_GLOBAL_CALLBACK_PORT";
+const PROXY_TEST_SUBPROCESS_ENV_VAR: &str = "AVA_MCP_HTTP_PROXY_TEST_SUBPROCESS";
+const SKILL_CALLBACK_PORT_ENV_VAR: &str = "AVA_MCP_SKILL_CALLBACK_PORT";
+const SKILL_GLOBAL_CALLBACK_PORT_ENV_VAR: &str = "AVA_MCP_SKILL_GLOBAL_CALLBACK_PORT";
 const TEST_NAME: &str = "suite::mcp_startup_refresh_http_proxy::local_mcp_startup_and_refresh_use_configured_http_client";
 const SKILL_TEST_NAME: &str =
     "suite::mcp_startup_refresh_http_proxy::skill_mcp_dependency_oauth_uses_configured_http_client";
@@ -64,15 +64,15 @@ async fn local_mcp_startup_and_refresh_use_configured_http_client() -> Result<()
         let _apps_server = AppsTestServer::mount(&proxy).await?;
         let mut command = Command::new(std::env::current_exe()?);
         command.arg("--exact").arg(TEST_NAME);
-        for &key in codex_network_proxy::PROXY_ENV_KEYS {
+        for &key in ava_network_proxy::PROXY_ENV_KEYS {
             command.env_remove(key);
         }
         command
             .env(PROXY_TEST_SUBPROCESS_ENV_VAR, "1")
             .env("HTTP_PROXY", proxy.uri())
             .env("http_proxy", proxy.uri())
-            .env("NO_PROXY", codex_network_proxy::DEFAULT_NO_PROXY_VALUE)
-            .env("no_proxy", codex_network_proxy::DEFAULT_NO_PROXY_VALUE);
+            .env("NO_PROXY", ava_network_proxy::DEFAULT_NO_PROXY_VALUE)
+            .env("no_proxy", ava_network_proxy::DEFAULT_NO_PROXY_VALUE);
 
         let output = command.output().await?;
         let requests = proxy
@@ -108,7 +108,7 @@ async fn local_mcp_startup_and_refresh_use_configured_http_client() -> Result<()
     }
 
     let responses_server = responses::start_mock_server().await;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(|config| {
             if cfg!(target_os = "linux") {
                 config
@@ -156,7 +156,7 @@ async fn local_mcp_startup_and_refresh_use_configured_http_client() -> Result<()
         })
         .build_with_auto_env(&responses_server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava-code, SERVER_NAME).await?;
 
     let mut refreshed_config = fixture.config.clone();
     let mut servers = refreshed_config.mcp_servers.get().clone();
@@ -175,9 +175,9 @@ async fn local_mcp_startup_and_refresh_use_configured_http_client() -> Result<()
         .mcp_servers
         .set(servers)
         .expect("test MCP servers should accept the refreshed configuration");
-    fixture.codex.refresh_runtime_config(refreshed_config).await;
+    fixture.ava-code.refresh_runtime_config(refreshed_config).await;
     let result = fixture
-        .codex
+        .ava-code
         .call_mcp_tool(
             SERVER_NAME,
             "calendar_create_event",
@@ -202,7 +202,7 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
         let _apps_server = AppsTestServer::mount(&proxy).await?;
         let challenge = "Bearer resource_metadata=\"http://mcp-proxy.invalid/oauth-resource\"";
         Mock::given(method("GET"))
-            .and(path("/api/codex/ps/mcp"))
+            .and(path("/api/ava/ps/mcp"))
             .respond_with(ResponseTemplate::new(401).insert_header("WWW-Authenticate", challenge))
             .mount(&proxy)
             .await;
@@ -239,7 +239,7 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
 
         let mut command = Command::new(std::env::current_exe()?);
         command.arg("--exact").arg(SKILL_TEST_NAME);
-        for &key in codex_network_proxy::PROXY_ENV_KEYS {
+        for &key in ava_network_proxy::PROXY_ENV_KEYS {
             command.env_remove(key);
         }
         command
@@ -251,8 +251,8 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
             )
             .env("HTTP_PROXY", proxy.uri())
             .env("http_proxy", proxy.uri())
-            .env("NO_PROXY", codex_network_proxy::DEFAULT_NO_PROXY_VALUE)
-            .env("no_proxy", codex_network_proxy::DEFAULT_NO_PROXY_VALUE);
+            .env("NO_PROXY", ava_network_proxy::DEFAULT_NO_PROXY_VALUE)
+            .env("no_proxy", ava_network_proxy::DEFAULT_NO_PROXY_VALUE);
 
         let output = command.output().await?;
         let requests = proxy
@@ -294,7 +294,7 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
     let skill_callback_port = std::env::var(SKILL_CALLBACK_PORT_ENV_VAR)?.parse::<u16>()?;
     let global_callback_port = std::env::var(SKILL_GLOBAL_CALLBACK_PORT_ENV_VAR)?.parse::<u16>()?;
     let responses_server = responses::start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_config(move |config| {
             config
                 .features
@@ -384,7 +384,7 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
         selected_capability_roots: Vec::new(),
     });
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![
                 UserInput::Text {
@@ -405,12 +405,12 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
             }),
         )
         .await?;
-    core_test_support::wait_for_event(fixture.codex.as_ref(), |event| {
+    core_test_support::wait_for_event(fixture.ava-code.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    let servers = codex_config::load_global_mcp_servers(&fixture.config.codex_home).await?;
+    let servers = ava_config::load_global_mcp_servers(&fixture.config.ava_home).await?;
     assert_eq!(
         servers
             .get(SERVER_NAME)

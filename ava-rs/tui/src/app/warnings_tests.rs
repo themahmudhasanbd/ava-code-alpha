@@ -185,7 +185,7 @@ async fn warnings_keep_remapped_copy_keys_out_of_composer_handlers() {
     let cells: Vec<Arc<dyn HistoryCell>> =
         vec![Arc::new(history_cell::new_warning_event(diagnostic.into()))];
     for key in ['r', 'u'] {
-        let config: codex_config::types::TuiKeymap = serde_json::from_value(serde_json::json!({
+        let config: ava_config::types::TuiKeymap = serde_json::from_value(serde_json::json!({
             "global": {"copy": format!("ctrl-{key}")},
             "composer": {"history_search_previous": []},
             "editor": {"kill_line_start": []}

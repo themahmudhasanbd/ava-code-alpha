@@ -6,29 +6,29 @@ use std::time::Duration;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use codex_app_server_protocol::CommandExecOutputDeltaNotification;
-use codex_app_server_protocol::CommandExecOutputStream;
-use codex_app_server_protocol::CommandExecResizeParams;
-use codex_app_server_protocol::CommandExecResizeResponse;
-use codex_app_server_protocol::CommandExecResponse;
-use codex_app_server_protocol::CommandExecTerminalSize;
-use codex_app_server_protocol::CommandExecTerminateParams;
-use codex_app_server_protocol::CommandExecTerminateResponse;
-use codex_app_server_protocol::CommandExecWriteParams;
-use codex_app_server_protocol::CommandExecWriteResponse;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::ServerNotification;
-use codex_core::config::StartedNetworkProxy;
-use codex_core::exec::ExecExpiration;
-use codex_core::exec::ExecExpirationOutcome;
-use codex_core::exec::IO_DRAIN_TIMEOUT_MS;
-use codex_core::sandboxing::ExecRequest;
-use codex_protocol::exec_output::bytes_to_string_smart;
-use codex_sandboxing::SandboxType;
-use codex_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
-use codex_utils_pty::ProcessHandle;
-use codex_utils_pty::SpawnedProcess;
-use codex_utils_pty::TerminalSize;
+use ava_app_server_protocol::CommandExecOutputDeltaNotification;
+use ava_app_server_protocol::CommandExecOutputStream;
+use ava_app_server_protocol::CommandExecResizeParams;
+use ava_app_server_protocol::CommandExecResizeResponse;
+use ava_app_server_protocol::CommandExecResponse;
+use ava_app_server_protocol::CommandExecTerminalSize;
+use ava_app_server_protocol::CommandExecTerminateParams;
+use ava_app_server_protocol::CommandExecTerminateResponse;
+use ava_app_server_protocol::CommandExecWriteParams;
+use ava_app_server_protocol::CommandExecWriteResponse;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::ServerNotification;
+use ava_core::config::StartedNetworkProxy;
+use ava_core::exec::ExecExpiration;
+use ava_core::exec::ExecExpirationOutcome;
+use ava_core::exec::IO_DRAIN_TIMEOUT_MS;
+use ava_core::sandboxing::ExecRequest;
+use ava_protocol::exec_output::bytes_to_string_smart;
+use ava_sandboxing::SandboxType;
+use ava_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
+use ava_utils_pty::ProcessHandle;
+use ava_utils_pty::SpawnedProcess;
+use ava_utils_pty::TerminalSize;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
@@ -202,7 +202,7 @@ impl CommandExecManager {
             let sessions = Arc::clone(&self.sessions);
             tokio::spawn(async move {
                 let _started_network_proxy = started_network_proxy;
-                match codex_core::sandboxing::execute_env(exec_request, /*stdout_stream*/ None)
+                match ava_core::sandboxing::execute_env(exec_request, /*stdout_stream*/ None)
                     .await
                 {
                     Ok(output) => {
@@ -268,7 +268,7 @@ impl CommandExecManager {
             );
         }
         let spawned = if tty {
-            codex_utils_pty::spawn_pty_process(
+            ava_utils_pty::spawn_pty_process(
                 program,
                 args,
                 cwd.as_path(),
@@ -279,10 +279,10 @@ impl CommandExecManager {
             )
             .await
         } else if stream_stdin {
-            codex_utils_pty::spawn_pipe_process(program, args, cwd.as_path(), &env, &arg0, &[])
+            ava_utils_pty::spawn_pipe_process(program, args, cwd.as_path(), &env, &arg0, &[])
                 .await
         } else {
-            codex_utils_pty::spawn_pipe_process_no_stdin(
+            ava_utils_pty::spawn_pipe_process_no_stdin(
                 program,
                 args,
                 cwd.as_path(),
@@ -689,9 +689,9 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::error_code::INVALID_REQUEST_ERROR_CODE;
-    use codex_protocol::config_types::WindowsSandboxLevel;
-    use codex_protocol::models::PermissionProfile;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_protocol::config_types::WindowsSandboxLevel;
+    use ava_protocol::models::PermissionProfile;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
     #[cfg(not(target_os = "windows"))]
     use tokio::time::Duration;
@@ -715,7 +715,7 @@ mod tests {
             /*network*/ None,
             /*network_environment_id*/ None,
             ExecExpiration::DefaultTimeout,
-            codex_core::exec::ExecCapturePolicy::ShellTool,
+            ava_core::exec::ExecCapturePolicy::ShellTool,
             SandboxType::WindowsRestrictedToken,
             vec![cwd],
             WindowsSandboxLevel::Disabled,
@@ -732,11 +732,11 @@ mod tests {
             .start(StartCommandExecParams {
                 outgoing: Arc::new(OutgoingMessageSender::new(
                     tx,
-                    codex_analytics::AnalyticsEventsClient::disabled(),
+                    ava_analytics::AnalyticsEventsClient::disabled(),
                 )),
                 request_id: ConnectionRequestId {
                     connection_id: ConnectionId(1),
-                    request_id: codex_app_server_protocol::RequestId::Integer(42),
+                    request_id: ava_app_server_protocol::RequestId::Integer(42),
                 },
                 process_id: Some("proc-42".to_string()),
                 exec_request: windows_sandbox_exec_request(),
@@ -764,14 +764,14 @@ mod tests {
         let manager = CommandExecManager::default();
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(7),
-            request_id: codex_app_server_protocol::RequestId::Integer(99),
+            request_id: ava_app_server_protocol::RequestId::Integer(99),
         };
 
         manager
             .start(StartCommandExecParams {
                 outgoing: Arc::new(OutgoingMessageSender::new(
                     tx,
-                    codex_analytics::AnalyticsEventsClient::disabled(),
+                    ava_analytics::AnalyticsEventsClient::disabled(),
                 )),
                 request_id: request_id.clone(),
                 process_id: Some("proc-99".to_string()),
@@ -813,7 +813,7 @@ mod tests {
         let manager = CommandExecManager::default();
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(8),
-            request_id: codex_app_server_protocol::RequestId::Integer(100),
+            request_id: ava_app_server_protocol::RequestId::Integer(100),
         };
         let cwd = AbsolutePathBuf::current_dir().expect("current dir");
 
@@ -821,7 +821,7 @@ mod tests {
             .start(StartCommandExecParams {
                 outgoing: Arc::new(OutgoingMessageSender::new(
                     tx,
-                    codex_analytics::AnalyticsEventsClient::disabled(),
+                    ava_analytics::AnalyticsEventsClient::disabled(),
                 )),
                 request_id: request_id.clone(),
                 process_id: Some("proc-100".to_string()),
@@ -832,7 +832,7 @@ mod tests {
                     /*network*/ None,
                     /*network_environment_id*/ None,
                     ExecExpiration::Cancellation(CancellationToken::new()),
-                    codex_core::exec::ExecCapturePolicy::ShellTool,
+                    ava_core::exec::ExecCapturePolicy::ShellTool,
                     SandboxType::None,
                     vec![cwd.clone()],
                     WindowsSandboxLevel::Disabled,
@@ -883,7 +883,7 @@ mod tests {
             panic!("expected execution response after termination");
         };
         assert_eq!(response.id, request_id.request_id);
-        let codex_app_server_protocol::ClientResponsePayload::OneOffCommandExec(response) =
+        let ava_app_server_protocol::ClientResponsePayload::OneOffCommandExec(response) =
             *response.result
         else {
             panic!("expected command/exec response");
@@ -901,7 +901,7 @@ mod tests {
         let manager = CommandExecManager::default();
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(9),
-            request_id: codex_app_server_protocol::RequestId::Integer(101),
+            request_id: ava_app_server_protocol::RequestId::Integer(101),
         };
         let cancellation = CancellationToken::new();
         let cancel = cancellation.clone();
@@ -911,7 +911,7 @@ mod tests {
             .start(StartCommandExecParams {
                 outgoing: Arc::new(OutgoingMessageSender::new(
                     tx,
-                    codex_analytics::AnalyticsEventsClient::disabled(),
+                    ava_analytics::AnalyticsEventsClient::disabled(),
                 )),
                 request_id: request_id.clone(),
                 process_id: Some("proc-101".to_string()),
@@ -925,7 +925,7 @@ mod tests {
                         timeout: Duration::from_secs(30),
                         cancellation,
                     },
-                    codex_core::exec::ExecCapturePolicy::ShellTool,
+                    ava_core::exec::ExecCapturePolicy::ShellTool,
                     SandboxType::None,
                     vec![cwd],
                     WindowsSandboxLevel::Disabled,
@@ -961,7 +961,7 @@ mod tests {
             panic!("expected execution response after cancellation");
         };
         assert_eq!(response.id, request_id.request_id);
-        let codex_app_server_protocol::ClientResponsePayload::OneOffCommandExec(response) =
+        let ava_app_server_protocol::ClientResponsePayload::OneOffCommandExec(response) =
             *response.result
         else {
             panic!("expected command/exec response");
@@ -974,7 +974,7 @@ mod tests {
         let manager = CommandExecManager::default();
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(11),
-            request_id: codex_app_server_protocol::RequestId::Integer(1),
+            request_id: ava_app_server_protocol::RequestId::Integer(1),
         };
         let process_id = ConnectionProcessId {
             connection_id: request_id.connection_id,
@@ -1010,7 +1010,7 @@ mod tests {
         let manager = CommandExecManager::default();
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(12),
-            request_id: codex_app_server_protocol::RequestId::Integer(2),
+            request_id: ava_app_server_protocol::RequestId::Integer(2),
         };
         let process_id = ConnectionProcessId {
             connection_id: request_id.connection_id,
@@ -1044,7 +1044,7 @@ mod tests {
         let manager = CommandExecManager::default();
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(13),
-            request_id: codex_app_server_protocol::RequestId::Integer(3),
+            request_id: ava_app_server_protocol::RequestId::Integer(3),
         };
         let process_id = InternalProcessId::Client("proc-13".to_string());
         let (control_tx, mut control_rx) = mpsc::channel(1);

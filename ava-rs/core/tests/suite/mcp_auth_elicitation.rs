@@ -1,34 +1,34 @@
 //! Verify MCP prompts, non-root refusal, and elicitation analytics through actual turns.
 
 use anyhow::Result;
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::AppServerRpcTransport;
-use codex_app_server_protocol as app;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_core::config::Constrained;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpToolResultInput;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::ToolLifecycleFuture;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::MCP_ELICITATION_HANDOFF_MESSAGE;
-use codex_protocol::approvals::ElicitationRequest;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ElicitationAction;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::AppServerRpcTransport;
+use ava_app_server_protocol as app;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_core::config::Constrained;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpToolResultInput;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::ToolLifecycleFuture;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::MCP_ELICITATION_HANDOFF_MESSAGE;
+use ava_protocol::approvals::ElicitationRequest;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ElicitationAction;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::PathExt;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_CREATE_TOOL;
@@ -79,7 +79,7 @@ impl AuthFailureResponder {
             }],
             "isError": true,
             "_meta": {
-                "_codex_apps": {
+                "_ava_apps": {
                     "connector_auth_failure": {
                         "is_auth_failure": true,
                         "auth_reason": "reauthentication_required",
@@ -93,7 +93,7 @@ impl AuthFailureResponder {
             },
         });
         if self.scenario == Scenario::AuthMetadataRemoved {
-            response["_meta"] = json!({"_codex_apps": {"connector_auth_failure": {
+            response["_meta"] = json!({"_ava_apps": {"connector_auth_failure": {
                 "is_auth_failure": true, "connector_id": "calendar",
             }}});
         }
@@ -157,14 +157,14 @@ async fn actual_turn_elicitation_analytics(scenario: Scenario) -> Result<()> {
     let server = responses::start_mock_server().await;
     AppsTestServer::mount_searchable(&server).await?;
     Mock::given(method("POST"))
-        .and(path("/codex/analytics-events/events"))
+        .and(path("/ava/analytics-events/events"))
         .respond_with(ResponseTemplate::new(/*status*/ 200))
         .mount(&server)
         .await;
 
     if auth_failure {
         Mock::given(method("POST"))
-            .and(path_regex("^/api/codex/ps/mcp/?$"))
+            .and(path_regex("^/api/ava/ps/mcp/?$"))
             .and(body_partial_json(json!({
                 "method": "tools/call",
                 "params": {"name": "calendar_create_event"},
@@ -199,8 +199,8 @@ async fn actual_turn_elicitation_analytics(scenario: Scenario) -> Result<()> {
     .await;
 
     let client = AnalyticsEventsClient::new(
-        codex_core::test_support::auth_manager_from_auth(
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        ava_core::test_support::auth_manager_from_auth(
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         ),
         server.uri(),
         /*analytics_enabled*/ Some(true),
@@ -216,7 +216,7 @@ async fn actual_turn_elicitation_analytics(scenario: Scenario) -> Result<()> {
                     .set_enabled(Feature::ToolCallMcpElicitation, modern)
                     .expect("approval feature should be configurable");
             }
-            let user_config_path = config.codex_home.join("config.toml").abs();
+            let user_config_path = config.ava_home.join("config.toml").abs();
             let approval_mode = if scenario == Scenario::DefaultAuth {
                 "auto"
             } else {
@@ -267,7 +267,7 @@ approvals_reviewer = "user"
     );
 
     let submitted = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Use [$calendar](app://calendar) to create a calendar event.".to_string(),
             text_elements: Vec::new(),
@@ -282,7 +282,7 @@ approvals_reviewer = "user"
     let mut target_lifecycle = [0; 2];
     tokio::time::timeout(Duration::from_secs(15), async {
         loop {
-            let event = test.codex.next_event().await?;
+            let event = test.ava-code.next_event().await?;
             let event_turn_id = event.id;
             match event.msg {
                 EventMsg::TurnStarted(started) => {
@@ -311,7 +311,7 @@ approvals_reviewer = "user"
                         assert_eq!(event_turn_id, turn_id);
                         assert_eq!(item_thread_id, &session.thread_id);
                         assert_eq!(item_turn_id, &turn_id);
-                        assert_eq!(item.server, CODEX_APPS_MCP_SERVER_NAME);
+                        assert_eq!(item.server, AVA_APPS_MCP_SERVER_NAME);
                         assert_eq!(item.connector_id.as_deref(), Some("calendar"));
                         target_lifecycle[usize::from(completed)] += 1;
                     }
@@ -330,7 +330,7 @@ approvals_reviewer = "user"
                             "answers": [answer, format!("user_note: {PRIVATE_SENTINEL}")]
                         }
                     }}))?;
-                    test.codex
+                    test.ava-code
                         .submit(Op::UserInputAnswer {
                             id: request.turn_id,
                             response,
@@ -338,7 +338,7 @@ approvals_reviewer = "user"
                         .await?;
                 }
                 EventMsg::ElicitationRequest(request) => {
-                    assert_eq!(request.server_name, CODEX_APPS_MCP_SERVER_NAME);
+                    assert_eq!(request.server_name, AVA_APPS_MCP_SERVER_NAME);
                     let action = match &request.request {
                         ElicitationRequest::UserVerification { .. } => {
                             unreachable!("unexpected verification")
@@ -349,8 +349,8 @@ approvals_reviewer = "user"
                             assert_eq!(recorded_apps_tool_calls(&server).await.len(), 1);
                             assert_eq!(
                                 request.id,
-                                codex_protocol::mcp::RequestId::String(format!(
-                                    "codex_apps_auth_{CALL_ID}"
+                                ava_protocol::mcp::RequestId::String(format!(
+                                    "ava_apps_auth_{CALL_ID}"
                                 ))
                             );
                             auth_request = Some(request.request.clone());
@@ -369,7 +369,7 @@ approvals_reviewer = "user"
                             }
                         }
                     };
-                    test.codex
+                    test.ava-code
                         .submit(Op::ResolveElicitation {
                             server_name: request.server_name,
                             request_id: request.id,
@@ -410,7 +410,7 @@ approvals_reviewer = "user"
     {
         Some(ElicitationRequest::Url {
             meta: Some(json!({
-                "_codex_apps": {
+                "_ava_apps": {
                     "connector_auth_failure": {
                         "is_auth_failure": true,
                         "connector_id": "calendar",
@@ -427,7 +427,7 @@ approvals_reviewer = "user"
             message: "Reconnect Calendar on ChatGPT to restore access for this request."
                 .to_string(),
             url: "https://chatgpt.com/apps/calendar/calendar".to_string(),
-            elicitation_id: format!("codex_apps_auth_{CALL_ID}"),
+            elicitation_id: format!("ava_apps_auth_{CALL_ID}"),
         })
     } else {
         None
@@ -462,7 +462,7 @@ approvals_reviewer = "user"
     tokio::time::timeout(Duration::from_secs(10), client.flush()).await?;
     let mut events = Vec::new();
     for request in server.received_requests().await.unwrap_or_default() {
-        if request.method != "POST" || request.url.path() != "/codex/analytics-events/events" {
+        if request.method != "POST" || request.url.path() != "/ava/analytics-events/events" {
             continue;
         }
         let payload: Value = serde_json::from_slice(&request.body)?;
@@ -472,14 +472,14 @@ approvals_reviewer = "user"
     let mcp_events = events
         .iter()
         .filter(|event| {
-            event["event_type"] == "codex_mcp_tool_call_event"
+            event["event_type"] == "ava_mcp_tool_call_event"
                 && event["event_params"]["item_id"] == CALL_ID
         })
         .collect::<Vec<_>>();
     let app_used_events = events
         .iter()
         .filter(|event| {
-            event["event_type"] == "codex_app_used"
+            event["event_type"] == "ava_app_used"
                 && event["event_params"]["connector_id"] == "calendar"
                 && event["event_params"]["turn_id"] == turn_id
         })
@@ -539,7 +539,7 @@ async fn core_generated_mcp_elicitations_are_root_only(
     let apps = AppsTestServer::mount_searchable(&server).await?;
     if let SubagentRequestKind::ConnectorAuth(format) = kind {
         Mock::given(method("POST"))
-            .and(path_regex("^/api/codex/ps/mcp/?$"))
+            .and(path_regex("^/api/ava/ps/mcp/?$"))
             .and(body_partial_json(json!({
                 "method": "tools/call",
                 "params": {"name": "calendar_create_event"}
@@ -583,7 +583,7 @@ approvals_reviewer = "user"
             .expect("apps config");
             config.config_layer_stack = config
                 .config_layer_stack
-                .with_user_config(&config.codex_home.join("config.toml").abs(), user_config)
+                .with_user_config(&config.ava_home.join("config.toml").abs(), user_config)
                 .expect("apply apps config");
         })
         .build_with_auto_env(&server)
@@ -603,7 +603,7 @@ approvals_reviewer = "user"
         })
         .await?
         .thread;
-    wait_for_mcp_server(&child, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&child, AVA_APPS_MCP_SERVER_NAME).await?;
     responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -717,6 +717,6 @@ approvals_reviewer = "user"
         );
     }
     child.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

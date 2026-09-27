@@ -17,18 +17,18 @@ use crate::tools::handlers::multi_agents_spec::MULTI_AGENT_V1_NAMESPACE;
 use crate::tools::handlers::parse_arguments;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_protocol::ThreadId;
-use codex_protocol::items::CollabAgentTool;
-use codex_protocol::items::CollabAgentToolCallItem;
-use codex_protocol::items::CollabAgentToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::CollabAgentRef;
-use codex_protocol::user_input::UserInput;
-use codex_tools::ToolName;
-use codex_tools::ToolSearchInfo;
-use codex_tools::ToolSearchSourceInfo;
+use ava_protocol::ThreadId;
+use ava_protocol::items::CollabAgentTool;
+use ava_protocol::items::CollabAgentToolCallItem;
+use ava_protocol::items::CollabAgentToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::CollabAgentRef;
+use ava_protocol::user_input::UserInput;
+use ava_tools::ToolName;
+use ava_tools::ToolSearchInfo;
+use ava_tools::ToolSearchSourceInfo;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -59,7 +59,7 @@ pub(crate) fn parse_agent_id_targets(
 
 fn multi_agent_tool_search_info(
     search_text: &str,
-    spec: codex_tools::ToolSpec,
+    spec: ava_tools::ToolSpec,
 ) -> Option<ToolSearchInfo> {
     ToolSearchInfo::from_spec(
         search_text.to_string(),

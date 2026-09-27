@@ -512,9 +512,9 @@ mod tests {
 
     #[test]
     fn footer_hints_display_chords_without_internal_dispatch_keys() {
-        use codex_config::types::KeybindingSpec;
-        use codex_config::types::KeybindingsSpec;
-        use codex_config::types::TuiKeymap;
+        use ava_config::types::KeybindingSpec;
+        use ava_config::types::KeybindingsSpec;
+        use ava_config::types::TuiKeymap;
 
         let mut config = TuiKeymap::default();
         config.pager.page_up = Some(KeybindingsSpec::One(KeybindingSpec(

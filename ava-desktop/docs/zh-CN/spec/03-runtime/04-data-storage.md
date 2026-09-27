@@ -24,7 +24,7 @@
 1. **无损转录** — 存储运行时消息形状（内容块），
    不是 UI 投影； UI 形状是在 RPC 边界处导出的。
 2. **SQLite 是一个索引，而不是有效负载存储 (D119)** — 消息内容有效
-   每个会话一个 JSONL 文件（codex/claude-code 样式）：人类可读，
+   每个会话一个 JSONL 文件（ava/claude-code 样式）：人类可读，
    可 grepable、可复制，并且无论数据库大小如何，数据库都保持很小
    聊天。
 3. **高性能** — O(1) 文件追加，覆盖每个热点的索引
@@ -360,7 +360,7 @@ CREATE TABLE sessions (
                                           'high', 'xhigh', 'max', 'omit')),
   permission_mode TEXT NOT NULL DEFAULT 'inherit' -- D115: inherit follows settings
                 CHECK (permission_mode IN ('inherit', 'ask', 'accept-edits', 'auto')),
-  source      TEXT,                            -- import origin: claude-code | codex | opencode | pi
+  source      TEXT,                            -- import origin: claude-code | ava | opencode | pi
   deleted_at  INTEGER,                         -- plugin trash marker; null means active
   pinned      INTEGER NOT NULL DEFAULT 0,
   last_seq    INTEGER NOT NULL DEFAULT 0,      -- message ordinal allocator

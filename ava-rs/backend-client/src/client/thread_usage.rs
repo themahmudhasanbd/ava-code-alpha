@@ -1,4 +1,4 @@
-//! Authoritative estimated credit and dollar usage for bounded batches of Codex threads.
+//! Authoritative estimated credit and dollar usage for bounded batches of Ava threads.
 
 use super::Client;
 use super::PathStyle;
@@ -111,8 +111,8 @@ impl Client {
 
     fn thread_usage_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => {
-                format!("{}/api/codex/usage/thread_usage/query", self.base_url)
+            PathStyle::AvaApi => {
+                format!("{}/api/ava/usage/thread_usage/query", self.base_url)
             }
             PathStyle::ChatGptApi => {
                 format!("{}/wham/usage/thread_usage/query", self.base_url)

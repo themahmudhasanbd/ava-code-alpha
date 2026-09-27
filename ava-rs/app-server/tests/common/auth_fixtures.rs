@@ -6,19 +6,19 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_login::AuthDotJson;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::save_auth;
-use codex_login::token_data::TokenData;
-use codex_login::token_data::parse_chatgpt_jwt_claims;
-use codex_protocol::auth::AuthMode;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AuthDotJson;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::save_auth;
+use ava_login::token_data::TokenData;
+use ava_login::token_data::parse_chatgpt_jwt_claims;
+use ava_protocol::auth::AuthMode;
 use serde_json::json;
 
 pub async fn mount_workspace_routing(server: &wiremock::MockServer) {
     wiremock::Mock::given(wiremock::matchers::method("GET"))
         .and(wiremock::matchers::path_regex(
-            "^/(backend-api/wham|api/codex)/accounts/check$",
+            "^/(backend-api/wham|api/ava)/accounts/check$",
         ))
         .respond_with(|request: &wiremock::Request| {
             let account_id = request
@@ -168,7 +168,7 @@ pub fn encode_id_token(claims: &ChatGptIdTokenClaims) -> Result<String> {
 }
 
 pub fn write_chatgpt_auth(
-    codex_home: &Path,
+    ava_home: &Path,
     fixture: ChatGptAuthFixture,
     cli_auth_credentials_store_mode: AuthCredentialsStoreMode,
 ) -> Result<()> {
@@ -195,7 +195,7 @@ pub fn write_chatgpt_auth(
     };
 
     save_auth(
-        codex_home,
+        ava_home,
         &auth,
         cli_auth_credentials_store_mode,
         AuthKeyringBackendKind::default(),

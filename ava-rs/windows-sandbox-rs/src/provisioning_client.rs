@@ -17,9 +17,9 @@ use std::time::Instant;
 use anyhow::Context;
 use anyhow::anyhow;
 use anyhow::bail;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
 use windows_sys::Win32::Foundation::ERROR_BROKEN_PIPE;
 use windows_sys::Win32::Foundation::ERROR_FILE_NOT_FOUND;
 use windows_sys::Win32::Foundation::ERROR_NO_DATA;
@@ -115,7 +115,7 @@ enum ProvisioningIntent {
 /// Refreshes only an already-provisioned gated runtime; no helper or setup fallback.
 #[doc(hidden)]
 pub fn refresh_registered_core_via_service(
-    codex_home: &Path,
+    ava_home: &Path,
     settings: WindowsSandboxProvisioningSettings,
     listeners: WindowsSandboxProxyListeners,
 ) -> anyhow::Result<WindowsSandboxProvisioningOutcome> {
@@ -124,7 +124,7 @@ pub fn refresh_registered_core_via_service(
         "registered Core is not enabled"
     );
     provision(
-        codex_home,
+        ava_home,
         settings,
         listeners,
         ProvisioningIntent::RefreshRegistration,
@@ -133,7 +133,7 @@ pub fn refresh_registered_core_via_service(
 
 /// Provisions the elevated Windows sandbox through the authenticated packaged service.
 pub fn provision_windows_sandbox_via_service(
-    codex_home: &Path,
+    ava_home: &Path,
     settings: WindowsSandboxProvisioningSettings,
     listeners: WindowsSandboxProxyListeners,
 ) -> anyhow::Result<WindowsSandboxProvisioningOutcome> {
@@ -145,11 +145,11 @@ pub fn provision_windows_sandbox_via_service(
     {
         return service_unavailable();
     }
-    provision(codex_home, settings, listeners, ProvisioningIntent::Setup)
+    provision(ava_home, settings, listeners, ProvisioningIntent::Setup)
 }
 
 fn provision(
-    codex_home: &Path,
+    ava_home: &Path,
     settings: WindowsSandboxProvisioningSettings,
     listeners: WindowsSandboxProxyListeners,
     intent: ProvisioningIntent,
@@ -158,7 +158,7 @@ fn provision(
         version: crate::PROVISIONING_PROTOCOL_VERSION,
         message: crate::ProvisioningMessage::ProvisionSandboxRequest {
             payload: crate::SandboxProvisioningRequest {
-                codex_home: codex_home
+                ava_home: ava_home
                     .to_str()
                     .context("sandbox provisioning home is not valid UTF-8")?
                     .to_owned(),
@@ -187,11 +187,11 @@ fn service_unavailable() -> anyhow::Result<WindowsSandboxProvisioningOutcome> {
 }
 
 /// Records desktop uninstall ownership without creating or enabling a sandbox.
-pub fn register_desktop_installation(codex_home: &Path) -> anyhow::Result<()> {
+pub fn register_desktop_installation(ava_home: &Path) -> anyhow::Result<()> {
     let request = crate::FramedProvisioningMessage {
         version: crate::PROVISIONING_PROTOCOL_VERSION,
         message: crate::ProvisioningMessage::RegisterInstallationRequest {
-            codex_home: codex_home
+            ava_home: ava_home
                 .to_str()
                 .context("desktop home is not valid UTF-8")?
                 .to_owned(),

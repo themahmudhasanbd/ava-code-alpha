@@ -4,14 +4,14 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_sequence;
-use codex_app_server_protocol::ThreadGoalGetResponse;
-use codex_app_server_protocol::ThreadGoalSetResponse;
-use codex_app_server_protocol::ThreadGoalStatus;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_features::Feature;
+use ava_app_server_protocol::ThreadGoalGetResponse;
+use ava_app_server_protocol::ThreadGoalSetResponse;
+use ava_app_server_protocol::ThreadGoalStatus;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_features::Feature;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -58,13 +58,13 @@ async fn empty_goal_continuations_block_after_three_without_activity(
         scripts.push(responses::sse(events));
     }
     let server = create_mock_responses_server_sequence(scripts).await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_model("gpt-5.4")
         .enable_feature(Feature::Goals)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;

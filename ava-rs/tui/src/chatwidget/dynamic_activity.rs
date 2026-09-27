@@ -7,7 +7,7 @@ impl ChatWidget {
         let started = matches!(
             &item,
             ThreadItem::DynamicToolCall {
-                status: codex_app_server_protocol::DynamicToolCallStatus::InProgress,
+                status: ava_app_server_protocol::DynamicToolCallStatus::InProgress,
                 ..
             }
         );

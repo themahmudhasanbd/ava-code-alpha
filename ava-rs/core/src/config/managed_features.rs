@@ -1,20 +1,20 @@
 use std::collections::BTreeMap;
 
-use codex_config::Constrained;
-use codex_config::ConstrainedWithSource;
-use codex_config::ConstraintError;
-use codex_config::ConstraintResult;
-use codex_config::FeatureRequirementsToml;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
+use ava_config::Constrained;
+use ava_config::ConstrainedWithSource;
+use ava_config::ConstraintError;
+use ava_config::ConstraintResult;
+use ava_config::FeatureRequirementsToml;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
 
-use codex_config::config_toml::ConfigToml;
-use codex_features::Feature;
-use codex_features::FeatureConfigSource;
-use codex_features::FeatureOverrides;
-use codex_features::Features;
-use codex_features::canonical_feature_for_key;
-use codex_features::feature_for_key;
+use ava_config::config_toml::ConfigToml;
+use ava_features::Feature;
+use ava_features::FeatureConfigSource;
+use ava_features::FeatureOverrides;
+use ava_features::Features;
+use ava_features::canonical_feature_for_key;
+use ava_features::feature_for_key;
 
 /// Wrapper around [`Features`] which enforces constraints defined in
 /// `FeatureRequirementsToml` and provides normalization to ensure constraints

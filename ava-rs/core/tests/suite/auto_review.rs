@@ -1,37 +1,37 @@
-use codex_core::TurnInputRequest;
+use ava_core::TurnInputRequest;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::config::Constrained;
-use codex_extension_api::ApprovalReviewContributor;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ApplyPatchToolType;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::openai_models::default_input_modalities;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::user_input::UserInput;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::config::Constrained;
+use ava_extension_api::ApprovalReviewContributor;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ApplyPatchToolType;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::openai_models::default_input_modalities;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::TempDirExt;
 use core_test_support::responses::ev_apply_patch_custom_tool_call;
 use core_test_support::responses::ev_assistant_message;
@@ -43,10 +43,10 @@ use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_with_timeout;
 use pretty_assertions::assert_eq;
@@ -64,12 +64,12 @@ struct ApprovedReviewContributor;
 impl ApprovalReviewContributor for ApprovedReviewContributor {
     fn decide<'a>(
         &'a self,
-        input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-    ) -> ExtensionFuture<'a, Option<codex_extension_api::ApprovalDecision>> {
+        input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+    ) -> ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>> {
         Box::pin(async move {
             assert!(input.metrics.is_some());
             assert_eq!(input.action["tool"], "request_permissions");
-            Some(codex_extension_api::ApprovalDecision::Allow)
+            Some(ava_extension_api::ApprovalDecision::Allow)
         })
     }
 }
@@ -79,11 +79,11 @@ struct EscalationApprovingReviewContributor;
 impl ApprovalReviewContributor for EscalationApprovingReviewContributor {
     fn decide<'a>(
         &'a self,
-        input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-    ) -> ExtensionFuture<'a, Option<codex_extension_api::ApprovalDecision>> {
+        input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+    ) -> ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>> {
         Box::pin(async move {
             assert_eq!(input.action["sandbox_permissions"], "require_escalated");
-            Some(codex_extension_api::ApprovalDecision::Allow)
+            Some(ava_extension_api::ApprovalDecision::Allow)
         })
     }
 }
@@ -126,7 +126,7 @@ async fn approval_review_contributor_skips_existing_guardian_model_call() -> Res
 
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.approval_review_contributor(Arc::new(ApprovedReviewContributor));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
@@ -136,7 +136,7 @@ async fn approval_review_contributor_skips_existing_guardian_model_call() -> Res
                 .expect("test config should allow feature update");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "request low-risk network access".into(),
             text_elements: Vec::new(),
@@ -144,7 +144,7 @@ async fn approval_review_contributor_skips_existing_guardian_model_call() -> Res
         .await?;
 
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::GuardianAssessment(event) => {
                 panic!("approved extension review should not start Guardian: {event:?}")
             }
@@ -218,7 +218,7 @@ async fn require_escalated_bypasses_extension_approval_and_runs_guardian() -> Re
 
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.approval_review_contributor(Arc::new(EscalationApprovingReviewContributor));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
@@ -229,7 +229,7 @@ async fn require_escalated_bypasses_extension_approval_and_runs_guardian() -> Re
                 .expect("set read-only permission profile");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "retry the blocked command outside the sandbox".into(),
             text_elements: Vec::new(),
@@ -237,7 +237,7 @@ async fn require_escalated_bypasses_extension_approval_and_runs_guardian() -> Re
         .await?;
 
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::ExecApprovalRequest(event) => {
                 panic!("escalated command should not prompt the user: {event:?}")
             }
@@ -333,7 +333,7 @@ async fn required_model_bypasses_extension_approval_when_guardian_v2_is_disabled
         format!("{reviewer_requirements}[auto_review]\nrequired_on_models = [\"{model}\"]\n");
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.approval_review_contributor(Arc::new(ApprovedReviewContributor));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model)
         .with_extensions(Arc::new(extensions.build()))
         .with_pre_build_hook(move |home| {
@@ -361,13 +361,13 @@ async fn required_model_bypasses_extension_approval_when_guardian_v2_is_disabled
     let test = builder.build_with_auto_env(&server).await?;
     assert!(!test.config.features.enabled(Feature::GuardianV2));
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: reason.into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -471,8 +471,8 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some("gpt-5.4".to_string());
             config.approvals_reviewer = ApprovalsReviewer::User;
@@ -485,8 +485,8 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
                 .enable(Feature::RequestPermissionsTool)
                 .expect("test config should allow feature update");
         });
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         cwd,
         config,
         thread_manager,
@@ -498,7 +498,7 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
         Duration::from_secs(10),
         models_manager.list_models(
             RefreshStrategy::Online,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         ),
     )
     .await?;
@@ -520,7 +520,7 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
     );
 
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             model: Some(model.to_string()),
             ..Default::default()
@@ -531,7 +531,7 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
     let cwd_path = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), cwd_path.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run the Guardian model override check".into(),
@@ -547,7 +547,7 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
         )
         .await?;
 
-    let permissions_request = wait_for_event(&codex, |event| {
+    let permissions_request = wait_for_event(&ava, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -558,7 +558,7 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
         panic!("expected request_permissions before completion");
     };
     assert_eq!(permissions_request.call_id, permissions_call_id);
-    codex
+    ava
         .submit(Op::RequestPermissionsResponse {
             id: permissions_request.call_id,
             response: RequestPermissionsResponse {
@@ -570,7 +570,7 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
         .await?;
 
     wait_for_event_with_timeout(
-        &codex,
+        &ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         Duration::from_secs(15),
     )
@@ -592,7 +592,7 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
     );
     assert_eq!(guardian_request.path(), "/v1/responses");
 
-    timeout(Duration::from_secs(10), codex.shutdown_and_wait()).await??;
+    timeout(Duration::from_secs(10), ava.shutdown_and_wait()).await??;
 
     Ok(())
 }

@@ -5,9 +5,9 @@ use super::*;
 #[tokio::test]
 async fn approvals_reviewer_error_retains_config_cause() -> Result<()> {
     let (mut app, mut events, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    let config_path = codex_home.path().join("config.toml");
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    let config_path = ava_home.path().join("config.toml");
     std::fs::write(&config_path, "")?;
     let mut app_server = start_config_write_test_app_server(&app).await?;
     let mut tui = crate::tui::test_support::make_test_tui()?;
@@ -30,7 +30,7 @@ async fn approvals_reviewer_error_retains_config_cause() -> Result<()> {
     };
     let rendered = lines_to_single_string(&cell.display_lines(/*width*/ 120)).replace(
         &config_path.to_string_lossy().to_string(),
-        "<CODEX_HOME>/config.toml",
+        "<AVA_HOME>/config.toml",
     );
     assert!(rendered.contains("unclosed array"), "{rendered}");
     insta::assert_snapshot!("approvals_reviewer_config_error", rendered);

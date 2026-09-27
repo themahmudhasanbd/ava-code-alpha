@@ -1,13 +1,13 @@
-//! Plugin path resolution, plaintext mention sigils, and MCP connector helpers shared across Codex
+//! Plugin path resolution, plaintext mention sigils, and MCP connector helpers shared across Ava
 //! crates.
 
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 pub mod mcp_connector;
 pub mod mention_syntax;
 pub mod plugin_namespace;
 
-pub use codex_exec_server_protocol::DISCOVERABLE_PLUGIN_MANIFEST_PATHS;
+pub use ava_exec_server_protocol::DISCOVERABLE_PLUGIN_MANIFEST_PATHS;
 pub use plugin_namespace::AGENT_PLUGIN_MANIFEST_RELATIVE_PATH;
 pub use plugin_namespace::AGENT_PLUGIN_SCHEMA_PREFIX;
 pub use plugin_namespace::AGENT_PLUGIN_SCHEMA_URI;
@@ -41,7 +41,7 @@ pub struct PluginSkillRoot {
 }
 
 /// Directory containing private plugin metadata.
-const PLUGIN_METADATA_DIR: &str = ".codex-plugin";
+const PLUGIN_METADATA_DIR: &str = ".ava-plugin";
 /// Directory containing commands converted into skills during plugin installation.
 const MIGRATED_COMMAND_SKILLS_DIR: &str = "migrated-command-skills";
 

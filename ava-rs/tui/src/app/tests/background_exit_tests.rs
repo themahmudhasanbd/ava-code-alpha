@@ -158,7 +158,7 @@ async fn embedded_exit_keeps_the_session_summary() {
     assert_snapshot!(output, @"
     Token usage: total=2 input=0 output=2
     To continue this session, run:
-      codex resume THREAD_ID
+      ava resume THREAD_ID
     ");
 }
 
@@ -166,7 +166,7 @@ fn prepare_local_daemon_thread(app: &mut App) -> Result<ThreadId> {
     app.app_server_target = AppServerTarget::LocalDaemon {
         allow_embedded_fallback: true,
         endpoint: crate::RemoteAppServerEndpoint::UnixSocket {
-            socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+            socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
         },
     };
     let thread_id = ThreadId::new();
@@ -226,9 +226,9 @@ async fn daemon_ctrl_c_shows_background_exit_menu_and_escape_dismisses_it() -> R
       Choose what happens to the current task.
 
 
-    › 1. Cancel task        Stop the current task and stay in Codex
-      2. Run in background  Exit Codex and leave the task running
-      3. Exit               Stop the current task and exit Codex
+    › 1. Cancel task        Stop the current task and stay in Ava
+      2. Run in background  Exit Ava and leave the task running
+      3. Exit               Stop the current task and exit Ava
 
       enter select · esc back
     ");
@@ -325,18 +325,18 @@ async fn exit_interrupts_before_requesting_shutdown() -> Result<()> {
         .thread_goal_set(
             thread_id,
             Some("test goal".to_string()),
-            Some(codex_app_server_protocol::ThreadGoalStatus::Paused),
+            Some(ava_app_server_protocol::ThreadGoalStatus::Paused),
             /*token_budget*/ None,
         )
         .await?
         .goal;
     app.chat_widget.handle_server_notification(
         ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id: thread_id.to_string(),
                 turn_id: None,
-                goal: codex_app_server_protocol::ThreadGoal {
-                    status: codex_app_server_protocol::ThreadGoalStatus::Active,
+                goal: ava_app_server_protocol::ThreadGoal {
+                    status: ava_app_server_protocol::ThreadGoalStatus::Active,
                     ..goal
                 },
             },
@@ -367,7 +367,7 @@ async fn exit_interrupts_before_requesting_shutdown() -> Result<()> {
                 .next_event()
                 .await
                 .expect("app-server event stream should remain open");
-            if let codex_app_server_client::AppServerEvent::ServerNotification(notification) = event
+            if let ava_app_server_client::AppServerEvent::ServerNotification(notification) = event
             {
                 match notification.as_ref() {
                     ServerNotification::TurnStarted(notification)
@@ -495,8 +495,8 @@ async fn daemon_ctrl_c_hides_background_exit_for_running_background_side_thread(
       Choose what happens to the current task.
 
 
-    › 1. Cancel task  Stop the current task and stay in Codex
-      2. Exit         Stop the current task and exit Codex
+    › 1. Cancel task  Stop the current task and stay in Ava
+      2. Exit         Stop the current task and exit Ava
 
       enter select · esc back
     ");

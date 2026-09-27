@@ -5,11 +5,11 @@
 
 use super::App;
 use crate::app_server_session::AppServerSession;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::ConfigEdit;
-use codex_app_server_protocol::WriteStatus;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::ConfigEdit;
+use ava_app_server_protocol::WriteStatus;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::openai_models::ReasoningEffort;
 use color_eyre::eyre::Result;
 
 impl App {

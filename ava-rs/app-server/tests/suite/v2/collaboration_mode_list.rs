@@ -10,12 +10,12 @@ use std::time::Duration;
 use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::to_response;
-use codex_app_server_protocol::CollaborationModeListParams;
-use codex_app_server_protocol::CollaborationModeListResponse;
-use codex_app_server_protocol::CollaborationModeMask;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_core::test_support::builtin_collaboration_mode_presets;
+use ava_app_server_protocol::CollaborationModeListParams;
+use ava_app_server_protocol::CollaborationModeListResponse;
+use ava_app_server_protocol::CollaborationModeMask;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_core::test_support::builtin_collaboration_mode_presets;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio::time::timeout;
@@ -27,9 +27,9 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 /// Confirms the server returns the default collaboration mode presets in a stable order.
 #[tokio::test]
 async fn list_collaboration_modes_returns_presets() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;

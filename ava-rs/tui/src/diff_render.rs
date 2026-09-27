@@ -46,7 +46,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use unicode_segmentation::UnicodeSegmentation;
 
 /// Replacement for a tab character in rendered diff content.
@@ -103,9 +103,9 @@ use crate::terminal_palette::indexed_color;
 use crate::terminal_palette::rgb_color;
 use crate::terminal_palette::stdout_color_level;
 use crate::width::display_width;
-use codex_git_utils::get_git_repo_root;
-use codex_terminal_detection::TerminalName;
-use codex_terminal_detection::terminal_info;
+use ava_git_utils::get_git_repo_root;
+use ava_terminal_detection::TerminalName;
+use ava_terminal_detection::terminal_info;
 
 /// Classifies a diff line for gutter sign rendering and style selection.
 ///
@@ -1593,9 +1593,9 @@ mod tests {
     #[test]
     fn display_path_prefers_cwd_without_git_repo() {
         let cwd = if cfg!(windows) {
-            PathBuf::from(r"C:\workspace\codex")
+            PathBuf::from(r"C:\workspace\ava")
         } else {
-            PathBuf::from("/workspace/codex")
+            PathBuf::from("/workspace/ava")
         };
         let path = cwd.join("tui").join("example.png");
 

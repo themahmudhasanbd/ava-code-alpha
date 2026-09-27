@@ -1,9 +1,9 @@
-use codex_config::HooksFile;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::AGENT_PLUGIN_MANIFEST_RELATIVE_PATH;
-use codex_utils_plugins::find_plugin_manifest_path;
+use ava_config::HooksFile;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::AGENT_PLUGIN_MANIFEST_RELATIVE_PATH;
+use ava_utils_plugins::find_plugin_manifest_path;
 use serde::Deserialize;
 use serde_json::Value as JsonValue;
 use std::fs;
@@ -22,14 +22,14 @@ mod agent_plugin_manifest_tests;
 
 use agent_plugin_manifest::parse_agent_plugin_manifest_uri;
 
-pub type PluginManifest = codex_plugin::manifest::PluginManifest<AbsolutePathBuf>;
-pub type PluginManifestHooks = codex_plugin::manifest::PluginManifestHooks<AbsolutePathBuf>;
-pub type PluginManifestInterface = codex_plugin::manifest::PluginManifestInterface<AbsolutePathBuf>;
+pub type PluginManifest = ava_plugin::manifest::PluginManifest<AbsolutePathBuf>;
+pub type PluginManifestHooks = ava_plugin::manifest::PluginManifestHooks<AbsolutePathBuf>;
+pub type PluginManifestInterface = ava_plugin::manifest::PluginManifestInterface<AbsolutePathBuf>;
 pub type PluginManifestMcpServers =
-    codex_plugin::manifest::PluginManifestMcpServers<AbsolutePathBuf>;
-pub type PluginManifestPaths = codex_plugin::manifest::PluginManifestPaths<AbsolutePathBuf>;
+    ava_plugin::manifest::PluginManifestMcpServers<AbsolutePathBuf>;
+pub type PluginManifestPaths = ava_plugin::manifest::PluginManifestPaths<AbsolutePathBuf>;
 
-pub type UriPluginManifest = codex_plugin::manifest::PluginManifest<PathUri>;
+pub type UriPluginManifest = ava_plugin::manifest::PluginManifest<PathUri>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum PluginManifestFormat {
@@ -169,7 +169,7 @@ pub(crate) fn load_plugin_manifest_with_format(plugin_root: &Path) -> Option<Loa
     let contents = fs::read_to_string(&manifest_path).ok()?;
     let is_agent_plugin = manifest_path == plugin_root.join(AGENT_PLUGIN_MANIFEST_RELATIVE_PATH);
     let overlay = if is_agent_plugin {
-        let overlay_path = plugin_root.join(".codex-plugin/plugin.json");
+        let overlay_path = plugin_root.join(".ava-plugin/plugin.json");
         fs::read_to_string(&overlay_path)
             .ok()
             .map(|contents| (overlay_path, contents))
@@ -334,7 +334,7 @@ fn resolve_raw_plugin_manifest(
             screenshots,
         } = interface;
 
-        let interface = codex_plugin::manifest::PluginManifestInterface {
+        let interface = ava_plugin::manifest::PluginManifestInterface {
             display_name,
             short_description,
             long_description,
@@ -390,12 +390,12 @@ fn resolve_raw_plugin_manifest(
 
         has_fields.then_some(interface)
     });
-    Ok(codex_plugin::manifest::PluginManifest {
+    Ok(ava_plugin::manifest::PluginManifest {
         name,
         version,
         description,
         keywords,
-        paths: codex_plugin::manifest::PluginManifestPaths {
+        paths: ava_plugin::manifest::PluginManifestPaths {
             skills: resolve_manifest_paths(plugin_root, "skills", skills.as_ref()),
             onboarding_skill: resolve_openai_onboarding_skill(
                 plugin_root,
@@ -420,26 +420,26 @@ fn path_uri_json_error(error: impl std::fmt::Display) -> serde_json::Error {
 fn resolve_manifest_hooks(
     plugin_root: &PathUri,
     hooks: Option<RawPluginManifestHooks>,
-) -> Option<codex_plugin::manifest::PluginManifestHooks<PathUri>> {
+) -> Option<ava_plugin::manifest::PluginManifestHooks<PathUri>> {
     match hooks? {
         RawPluginManifestHooks::Path(path) => {
             resolve_manifest_path(plugin_root, "hooks", Some(&path))
-                .map(|path| codex_plugin::manifest::PluginManifestHooks::Paths(vec![path]))
+                .map(|path| ava_plugin::manifest::PluginManifestHooks::Paths(vec![path]))
         }
         RawPluginManifestHooks::Paths(paths) => {
             let hooks = paths
                 .iter()
                 .filter_map(|path| resolve_manifest_path(plugin_root, "hooks", Some(path)))
                 .collect::<Vec<_>>();
-            (!hooks.is_empty()).then_some(codex_plugin::manifest::PluginManifestHooks::Paths(hooks))
+            (!hooks.is_empty()).then_some(ava_plugin::manifest::PluginManifestHooks::Paths(hooks))
         }
         RawPluginManifestHooks::Inline(hooks) => {
-            Some(codex_plugin::manifest::PluginManifestHooks::Inline(vec![
+            Some(ava_plugin::manifest::PluginManifestHooks::Inline(vec![
                 *hooks,
             ]))
         }
         RawPluginManifestHooks::InlineList(hooks) => (!hooks.is_empty())
-            .then_some(codex_plugin::manifest::PluginManifestHooks::Inline(hooks)),
+            .then_some(ava_plugin::manifest::PluginManifestHooks::Inline(hooks)),
         RawPluginManifestHooks::Invalid(value) => {
             tracing::warn!(
                 "ignoring hooks: expected a string, string array, object, or object array; found {}",
@@ -453,14 +453,14 @@ fn resolve_manifest_hooks(
 fn resolve_manifest_mcp_servers(
     plugin_root: &PathUri,
     mcp_servers: Option<RawPluginManifestMcpServers>,
-) -> Option<codex_plugin::manifest::PluginManifestMcpServers<PathUri>> {
+) -> Option<ava_plugin::manifest::PluginManifestMcpServers<PathUri>> {
     match mcp_servers? {
         RawPluginManifestMcpServers::Path(path) => {
             resolve_manifest_path(plugin_root, "mcpServers", Some(&path))
-                .map(codex_plugin::manifest::PluginManifestMcpServers::Path)
+                .map(ava_plugin::manifest::PluginManifestMcpServers::Path)
         }
         RawPluginManifestMcpServers::Object(servers) => match serde_json::to_string(&servers) {
-            Ok(servers) => Some(codex_plugin::manifest::PluginManifestMcpServers::Object(
+            Ok(servers) => Some(ava_plugin::manifest::PluginManifestMcpServers::Object(
                 servers,
             )),
             Err(err) => {
@@ -676,18 +676,18 @@ mod tests {
     use super::MAX_DEFAULT_PROMPT_LEN;
     use super::PluginManifest;
     use super::load_plugin_manifest;
-    use codex_exec_server::EnvironmentManager;
-    use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-    use codex_plugin::ResolvedPlugin;
-    use codex_plugin::manifest::PluginManifest as GenericPluginManifest;
-    use codex_plugin::manifest::PluginManifestHooks;
-    use codex_plugin::manifest::PluginManifestInterface;
-    use codex_plugin::manifest::PluginManifestMcpServers;
-    use codex_plugin::manifest::PluginManifestPaths;
-    use codex_protocol::capabilities::CapabilityRootLocation;
-    use codex_protocol::capabilities::SelectedCapabilityRoot;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::PathUri;
+    use ava_exec_server::EnvironmentManager;
+    use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+    use ava_plugin::ResolvedPlugin;
+    use ava_plugin::manifest::PluginManifest as GenericPluginManifest;
+    use ava_plugin::manifest::PluginManifestHooks;
+    use ava_plugin::manifest::PluginManifestInterface;
+    use ava_plugin::manifest::PluginManifestMcpServers;
+    use ava_plugin::manifest::PluginManifestPaths;
+    use ava_protocol::capabilities::CapabilityRootLocation;
+    use ava_protocol::capabilities::SelectedCapabilityRoot;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
     use std::fs;
     use std::path::Path;
@@ -698,12 +698,12 @@ mod tests {
     const ALTERNATE_PLUGIN_MANIFEST_RELATIVE_PATH: &str = ".claude-plugin/plugin.json";
 
     fn write_manifest(plugin_root: &Path, version: Option<&str>, interface: &str) {
-        fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create manifest dir");
+        fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create manifest dir");
         let version = version
             .map(|version| format!("  \"version\": \"{version}\",\n"))
             .unwrap_or_default();
         fs::write(
-            plugin_root.join(".codex-plugin/plugin.json"),
+            plugin_root.join(".ava-plugin/plugin.json"),
             format!(
                 r#"{{
   "name": "demo-plugin",
@@ -851,9 +851,9 @@ mod tests {
     fn plugin_manifest_reads_keywords() {
         let tmp = tempdir().expect("tempdir");
         let plugin_root = tmp.path().join("demo-plugin");
-        fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create manifest dir");
+        fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create manifest dir");
         fs::write(
-            plugin_root.join(".codex-plugin/plugin.json"),
+            plugin_root.join(".ava-plugin/plugin.json"),
             r#"{
   "name": "demo-plugin",
   "keywords": ["api-key", "developer tools"]
@@ -917,7 +917,7 @@ mod tests {
 
     fn parse_uri_composer_icon(plugin_root: &PathUri, composer_icon: &str) -> Option<PathUri> {
         let manifest_path = plugin_root
-            .join(".codex-plugin/plugin.json")
+            .join(".ava-plugin/plugin.json")
             .expect("manifest URI");
         let composer_icon_json =
             serde_json::to_string(composer_icon).expect("serialize composer icon");
@@ -967,10 +967,10 @@ mod tests {
             .expect("resolve executor plugin")
             .expect("plugin descriptor");
         let manifest_path = plugin_root_uri
-            .join(".codex-plugin/plugin.json")
+            .join(".ava-plugin/plugin.json")
             .expect("manifest URI");
         let manifest_contents =
-            fs::read_to_string(plugin_root.join(".codex-plugin/plugin.json")).expect("manifest");
+            fs::read_to_string(plugin_root.join(".ava-plugin/plugin.json")).expect("manifest");
         let expected_manifest =
             super::parse_plugin_manifest_uri(&plugin_root_uri, &manifest_path, &manifest_contents)
                 .expect("URI manifest");
@@ -991,7 +991,7 @@ mod tests {
         let plugin_root =
             PathUri::parse("file:///C:/plugins/demo-plugin").expect("plugin root URI");
         let manifest_path = plugin_root
-            .join(".codex-plugin/plugin.json")
+            .join(".ava-plugin/plugin.json")
             .expect("manifest URI");
         let manifest = super::parse_plugin_manifest_uri(
             &plugin_root,

@@ -1,51 +1,51 @@
-use codex_core::CodexThread;
-use codex_core::REVIEW_PROMPT;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_core::find_thread_path_by_id_str;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::Settings;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelServiceTier;
-use codex_protocol::openai_models::ModelTokenBudgetConfig;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ENVIRONMENT_CONTEXT_OPEN_TAG;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExitedReviewModeEvent;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewCodeLocation;
-use codex_protocol::protocol::ReviewFinding;
-use codex_protocol::protocol::ReviewLineRange;
-use codex_protocol::protocol::ReviewOutputEvent;
-use codex_protocol::protocol::ReviewRequest;
-use codex_protocol::protocol::ReviewTarget;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::review_format::render_review_output_text;
-use codex_protocol::user_input::UserInput;
+use ava_core::AvaThread;
+use ava_core::REVIEW_PROMPT;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_core::find_thread_path_by_id_str;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::Settings;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelServiceTier;
+use ava_protocol::openai_models::ModelTokenBudgetConfig;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ENVIRONMENT_CONTEXT_OPEN_TAG;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExitedReviewModeEvent;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewCodeLocation;
+use ava_protocol::protocol::ReviewFinding;
+use ava_protocol::protocol::ReviewLineRange;
+use ava_protocol::protocol::ReviewOutputEvent;
+use ava_protocol::protocol::ReviewRequest;
+use ava_protocol::protocol::ReviewTarget;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::review_format::render_review_output_text;
+use ava_protocol::user_input::UserInput;
 use core_test_support::PathBufExt;
 use core_test_support::responses;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use std::path::PathBuf;
@@ -60,7 +60,7 @@ use wiremock::MockServer;
 /// legacy review events, and TurnComplete when the model returns a structured review payload.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn review_op_emits_lifecycle_and_review_output() {
-    // Skip under Codex sandbox network restrictions.
+    // Skip under Ava sandbox network restrictions.
     skip_if_no_network!();
 
     // Start mock Responses API server. Return a single assistant message whose
@@ -88,11 +88,11 @@ async fn review_op_emits_lifecycle_and_review_output() {
         /*expected_requests*/ 1,
     )
     .await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let codex = new_conversation_for_server(&server, codex_home.clone(), |_| {}).await;
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
     // Submit review request.
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -106,7 +106,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
 
     // Item lifecycle events are emitted first, then the legacy review event is fanned out
     // with the same stable IDs for compatibility consumers.
-    let entered_started = wait_for_event(&codex, |ev| {
+    let entered_started = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ItemStarted(event)
@@ -118,7 +118,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
         EventMsg::ItemStarted(event) => (event.turn_id, event.item.id()),
         other => panic!("expected entered review item start, got {other:?}"),
     };
-    let entered_completed = wait_for_event(&codex, |ev| {
+    let entered_completed = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ItemCompleted(event)
@@ -133,7 +133,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
         }
         other => panic!("expected entered review item completion, got {other:?}"),
     }
-    let entered = wait_for_event(&codex, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
+    let entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
     match entered {
         EventMsg::EnteredReviewMode(event) => {
             assert_eq!(event.turn_id.as_deref(), Some(review_turn_id.as_str()));
@@ -142,7 +142,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
         other => panic!("expected EnteredReviewMode(..), got {other:?}"),
     }
 
-    let exited_started = wait_for_event(&codex, |ev| {
+    let exited_started = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ItemStarted(event)
@@ -157,7 +157,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
         }
         other => panic!("expected exited review item start, got {other:?}"),
     };
-    let exited_completed = wait_for_event(&codex, |ev| {
+    let exited_completed = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ItemCompleted(event)
@@ -172,7 +172,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
         }
         other => panic!("expected exited review item completion, got {other:?}"),
     }
-    let closed = wait_for_event(&codex, |ev| matches!(ev, EventMsg::ExitedReviewMode(_))).await;
+    let closed = wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExitedReviewMode(_))).await;
     let review = match closed {
         EventMsg::ExitedReviewMode(ev) => {
             assert_eq!(ev.turn_id.as_deref(), Some(review_turn_id.as_str()));
@@ -200,15 +200,15 @@ async fn review_op_emits_lifecycle_and_review_output() {
         overall_confidence_score: 0.8,
     };
     assert_eq!(expected, review);
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    let path = codex.rollout_path().expect("rollout path");
+    let path = ava.rollout_path().expect("rollout path");
     let text = std::fs::read_to_string(&path).expect("read rollout file");
     let parent_thread_id = text
         .lines()
         .filter(|line| !line.trim().is_empty())
         .find_map(|line| {
-            let rollout_line = codex_rollout::parse_rollout_line(line).expect("rollout line");
+            let rollout_line = ava_rollout::parse_rollout_line(line).expect("rollout line");
             match rollout_line.item {
                 RolloutItem::SessionMeta(session_meta) => Some(session_meta.meta.id.to_string()),
                 _ => None,
@@ -223,7 +223,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
     );
     let turn_metadata: serde_json::Value = serde_json::from_str(
         &request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("review request turn metadata"),
     )
     .expect("review request turn metadata json");
@@ -250,7 +250,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
             continue;
         }
         let v: serde_json::Value = serde_json::from_str(line).expect("jsonl line");
-        let rl = codex_rollout::decode_rollout_line(v).expect("rollout line");
+        let rl = ava_rollout::decode_rollout_line(v).expect("rollout line");
         if let RolloutItem::ResponseItem(envelope) = rl.item
             && let ResponseItem::Message { role, content, .. } = envelope.item
         {
@@ -293,7 +293,7 @@ async fn review_op_emits_lifecycle_and_review_output() {
         "assistant review output contains user_action markup"
     );
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -310,16 +310,16 @@ async fn cancelled_review_does_not_forward_delegate_mcp_startup() {
         .set_delay(Duration::from_secs(30)),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let codex = new_conversation_for_server(&server, codex_home.clone(), |_| {}).await;
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
     // Consume the parent session's own empty startup round before starting the review.
-    wait_for_event(&codex, |event| {
+    wait_for_event(&ava, |event| {
         matches!(event, EventMsg::McpStartupComplete(_))
     })
     .await;
 
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -333,7 +333,7 @@ async fn cancelled_review_does_not_forward_delegate_mcp_startup() {
 
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            match codex.next_event().await.expect("review event").msg {
+            match ava.next_event().await.expect("review event").msg {
                 event @ (EventMsg::McpStartupUpdate(_) | EventMsg::McpStartupComplete(_)) => {
                     panic!("review forwarded delegate MCP startup: {event:?}")
                 }
@@ -353,12 +353,12 @@ async fn cancelled_review_does_not_forward_delegate_mcp_startup() {
     .await
     .expect("review request did not reach the server");
 
-    codex.submit(Op::Interrupt).await.unwrap();
+    ava.submit(Op::Interrupt).await.unwrap();
 
     let mut exited_review = false;
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            match codex
+            match ava
                 .next_event()
                 .await
                 .expect("review cancellation event")
@@ -382,7 +382,7 @@ async fn cancelled_review_does_not_forward_delegate_mcp_startup() {
 
     assert_eq!(request_log.requests().len(), 1);
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -400,10 +400,10 @@ async fn review_op_with_plain_text_emits_review_fallback() {
         /*expected_requests*/ 1,
     )
     .await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let codex = new_conversation_for_server(&server, codex_home.clone(), |_| {}).await;
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -415,8 +415,8 @@ async fn review_op_with_plain_text_emits_review_fallback() {
         .await
         .unwrap();
 
-    let _entered = wait_for_event(&codex, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
-    let closed = wait_for_event(&codex, |ev| matches!(ev, EventMsg::ExitedReviewMode(_))).await;
+    let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
+    let closed = wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExitedReviewMode(_))).await;
     let review = match closed {
         EventMsg::ExitedReviewMode(ev) => ev
             .review_output
@@ -430,9 +430,9 @@ async fn review_op_with_plain_text_emits_review_fallback() {
         ..Default::default()
     };
     assert_eq!(expected, review);
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -456,10 +456,10 @@ async fn review_filters_agent_message_related_events() {
         /*expected_requests*/ 1,
     )
     .await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let codex = new_conversation_for_server(&server, codex_home.clone(), |_| {}).await;
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -475,7 +475,7 @@ async fn review_filters_agent_message_related_events() {
     let mut saw_exited = false;
 
     // Drain until TurnComplete; assert streaming-related events never surface.
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnComplete(_) => true,
         EventMsg::EnteredReviewMode(_) => {
             saw_entered = true;
@@ -494,7 +494,7 @@ async fn review_filters_agent_message_related_events() {
     .await;
     assert!(saw_entered && saw_exited, "missing review lifecycle events");
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -530,10 +530,10 @@ async fn review_does_not_emit_agent_message_on_structured_output() {
         /*expected_requests*/ 1,
     )
     .await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let codex = new_conversation_for_server(&server, codex_home.clone(), |_| {}).await;
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -550,7 +550,7 @@ async fn review_does_not_emit_agent_message_on_structured_output() {
     let mut saw_entered = false;
     let mut saw_exited = false;
     let mut agent_messages = 0;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnComplete(_) => true,
         EventMsg::AgentMessage(_) => {
             agent_messages += 1;
@@ -570,7 +570,7 @@ async fn review_does_not_emit_agent_message_on_structured_output() {
     assert_eq!(1, agent_messages, "expected exactly one AgentMessage event");
     assert!(saw_entered && saw_exited, "missing review lifecycle events");
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -593,9 +593,9 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
 
     let (server, request_log) =
         start_responses_server_with_sse(completed_sse(), /*expected_requests*/ 1).await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let test = test_codex()
-        .with_home(codex_home.clone())
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let test = test_ava()
+        .with_home(ava_home.clone())
         .with_model_info_override("gpt-5.2", |model_info| {
             model_info.service_tiers.clear();
             model_info
@@ -651,7 +651,7 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
         .build_with_auto_env(&server)
         .await
         .expect("review conversation should be created");
-    let codex = Arc::clone(&test.codex);
+    let ava = Arc::clone(&test.ava-code);
     let updated_cwd = test.config.cwd.join("updated-review-workspace");
     let mut selection = test.executor_environment().selection().clone();
     selection.cwd = selection
@@ -672,7 +672,7 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
         .expect("updated review workspace should be created");
 
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 updated_cwd.clone(),
@@ -696,8 +696,8 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
     .await
     .expect("updated thread permissions should be accepted");
 
-    let stored_settings = codex.thread_settings_snapshot().await;
-    codex
+    let stored_settings = ava.thread_settings_snapshot().await;
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -708,9 +708,9 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
         })
         .await
         .expect("review should start");
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
-    assert_eq!(codex.thread_settings_snapshot().await, stored_settings);
+    assert_eq!(ava.thread_settings_snapshot().await, stored_settings);
     let request = request_log.single_request();
     assert_eq!(request.body_json()["reasoning"]["effort"], "medium");
     assert_eq!(
@@ -750,7 +750,7 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
         .expect("review request should include its thread ID")
         .to_string();
     let review_rollout_path = find_thread_path_by_id_str(
-        codex_home.path(),
+        ava_home.path(),
         &review_thread_id,
         /*state_db_ctx*/ None,
     )
@@ -762,7 +762,7 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
     let review_session_cwd = review_rollout
         .lines()
         .find_map(|line| {
-            let rollout_line = codex_rollout::parse_rollout_line(line)
+            let rollout_line = ava_rollout::parse_rollout_line(line)
                 .expect("review rollout line should be valid");
             match rollout_line.item {
                 RolloutItem::SessionMeta(session_meta) => Some(session_meta.meta.cwd),
@@ -774,7 +774,7 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
     let review_context = review_rollout
         .lines()
         .filter_map(|line| {
-            let rollout_line = codex_rollout::parse_rollout_line(line)
+            let rollout_line = ava_rollout::parse_rollout_line(line)
                 .expect("review rollout line should be valid");
             match rollout_line.item {
                 RolloutItem::TurnContext(turn_context) => Some(turn_context),
@@ -801,7 +801,7 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
         })
     );
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -810,7 +810,7 @@ async fn review_preserves_flex_tier_when_fast_mode_disabled() -> anyhow::Result<
     skip_if_no_network!(Ok(()));
     let (server, request_log) =
         start_responses_server_with_sse(completed_sse(), /*expected_requests*/ 1).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.service_tiers = vec![ModelServiceTier {
                 id: ServiceTier::Flex.request_value().to_string(),
@@ -827,14 +827,14 @@ async fn review_preserves_flex_tier_when_fast_mode_disabled() -> anyhow::Result<
         .build_with_auto_env(&server)
         .await?;
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             service_tier: Some(Some(ServiceTier::Flex.request_value().to_string())),
             ..Default::default()
         },
     )
     .await?;
-    test.codex
+    test.ava-code
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -844,13 +844,13 @@ async fn review_preserves_flex_tier_when_fast_mode_disabled() -> anyhow::Result<
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     assert_eq!(
-        test.codex
+        test.ava-code
             .thread_settings_snapshot()
             .await
             .service_tier
@@ -869,7 +869,7 @@ async fn review_resolves_inherited_summary_preferences() -> anyhow::Result<()> {
     skip_if_no_network!(Ok(()));
     let (server, request_log) =
         start_responses_server_with_sse(completed_sse(), /*expected_requests*/ 2).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", |model| {
             model.default_reasoning_summary = ReasoningSummary::Auto;
         })
@@ -888,7 +888,7 @@ async fn review_resolves_inherited_summary_preferences() -> anyhow::Result<()> {
     for summary in [None, Some(ReasoningSummary::Concise)] {
         if let Some(summary) = summary {
             core_test_support::submit_thread_settings(
-                &test.codex,
+                &test.ava-code,
                 ThreadSettingsOverrides {
                     summary: Some(summary),
                     ..Default::default()
@@ -896,8 +896,8 @@ async fn review_resolves_inherited_summary_preferences() -> anyhow::Result<()> {
             )
             .await?;
         }
-        let stored_settings = test.codex.thread_settings_snapshot().await;
-        test.codex
+        let stored_settings = test.ava-code.thread_settings_snapshot().await;
+        test.ava-code
             .submit(Op::Review {
                 review_request: ReviewRequest {
                     target: ReviewTarget::Custom {
@@ -907,11 +907,11 @@ async fn review_resolves_inherited_summary_preferences() -> anyhow::Result<()> {
                 },
             })
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
-        assert_eq!(test.codex.thread_settings_snapshot().await, stored_settings);
+        assert_eq!(test.ava-code.thread_settings_snapshot().await, stored_settings);
     }
     let actual = request_log
         .requests()
@@ -939,10 +939,10 @@ async fn review_uses_custom_review_model_from_config() {
 
     let (server, request_log) =
         start_responses_server_with_sse(completed_sse(), /*expected_requests*/ 1).await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let test = test_codex()
-        .with_home(Arc::clone(&codex_home))
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let test = test_ava()
+        .with_home(Arc::clone(&ava_home))
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some("gpt-4.1".to_string());
             config.review_model = Some("custom-review-model".to_string());
@@ -951,10 +951,10 @@ async fn review_uses_custom_review_model_from_config() {
         .build_with_auto_env(&server)
         .await
         .expect("custom review conversation should be created");
-    let codex = Arc::clone(&test.codex);
-    std::fs::remove_file(codex_home.path().join("models_cache.json"))
+    let ava = Arc::clone(&test.ava-code);
+    std::fs::remove_file(ava_home.path().join("models_cache.json"))
         .expect("initial empty model catalog should be cached");
-    let mut models = codex_models_manager::bundled_models_response()
+    let mut models = ava_models_manager::bundled_models_response()
         .expect("bundled model catalog should parse");
     let model = models
         .models
@@ -966,7 +966,7 @@ async fn review_uses_custom_review_model_from_config() {
     model.node_repl_disabled = true;
     let models_mock = responses::mount_models_once(&server, models).await;
 
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -979,8 +979,8 @@ async fn review_uses_custom_review_model_from_config() {
         .unwrap();
 
     // Wait for completion
-    let _entered = wait_for_event(&codex, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
-    let _closed = wait_for_event(&codex, |ev| {
+    let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
+    let _closed = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ExitedReviewMode(ExitedReviewModeEvent {
@@ -990,7 +990,7 @@ async fn review_uses_custom_review_model_from_config() {
         )
     })
     .await;
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Assert the request body model equals the configured review model
     let request = request_log.single_request();
@@ -1000,7 +1000,7 @@ async fn review_uses_custom_review_model_from_config() {
     assert_eq!(body["reasoning"]["effort"].as_str(), Some("max"));
     let turn_metadata: serde_json::Value = serde_json::from_str(
         &request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("review request turn metadata"),
     )
     .expect("review request turn metadata json");
@@ -1008,7 +1008,7 @@ async fn review_uses_custom_review_model_from_config() {
     assert_eq!(turn_metadata["node_repl_disabled"], true);
     assert_eq!(models_mock.requests().len(), 1);
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -1020,9 +1020,9 @@ async fn review_uses_session_model_when_review_model_unset() {
 
     let (server, request_log) =
         start_responses_server_with_sse(completed_sse(), /*expected_requests*/ 1).await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let test = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let test = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_config(|config| {
             config.model = Some("gpt-5.4".to_string());
             config.review_model = None;
@@ -1031,9 +1031,9 @@ async fn review_uses_session_model_when_review_model_unset() {
         .build_with_auto_env(&server)
         .await
         .expect("same-model review conversation should be created");
-    let codex = Arc::clone(&test.codex);
+    let ava = Arc::clone(&test.ava-code);
 
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -1045,8 +1045,8 @@ async fn review_uses_session_model_when_review_model_unset() {
         .await
         .unwrap();
 
-    let _entered = wait_for_event(&codex, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
-    let _closed = wait_for_event(&codex, |ev| {
+    let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
+    let _closed = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ExitedReviewMode(ExitedReviewModeEvent {
@@ -1056,7 +1056,7 @@ async fn review_uses_session_model_when_review_model_unset() {
         )
     })
     .await;
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = request_log.single_request();
     assert_eq!(request.path(), "/v1/responses");
@@ -1069,7 +1069,7 @@ async fn review_uses_session_model_when_review_model_unset() {
     );
     assert!(!request.has_content_kinds(&["current_time.reminder"]));
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -1086,9 +1086,9 @@ async fn review_input_isolated_from_parent_history() {
         start_responses_server_with_sse(completed_sse(), /*expected_requests*/ 1).await;
 
     // Seed a parent session history via resume file with both user + assistant items.
-    let codex_home = Arc::new(TempDir::new().unwrap());
+    let ava_home = Arc::new(TempDir::new().unwrap());
 
-    let session_file = codex_home.path().join("resume.jsonl");
+    let session_file = ava_home.path().join("resume.jsonl");
     {
         let mut f = tokio::fs::File::create(&session_file).await.unwrap();
         let convo_id = Uuid::new_v4();
@@ -1111,10 +1111,10 @@ async fn review_input_isolated_from_parent_history() {
             .unwrap();
 
         // Prior user message (enveloped response_item)
-        let user = codex_protocol::models::ResponseItem::Message {
+        let user = ava_protocol::models::ResponseItem::Message {
             id: None,
             role: "user".to_string(),
-            content: vec![codex_protocol::models::ContentItem::InputText {
+            content: vec![ava_protocol::models::ContentItem::InputText {
                 text: "parent: earlier user message".to_string(),
             }],
             phase: None,
@@ -1131,10 +1131,10 @@ async fn review_input_isolated_from_parent_history() {
             .unwrap();
 
         // Prior assistant message (enveloped response_item)
-        let assistant = codex_protocol::models::ResponseItem::Message {
+        let assistant = ava_protocol::models::ResponseItem::Message {
             id: None,
             role: "assistant".to_string(),
-            content: vec![codex_protocol::models::ContentItem::OutputText {
+            content: vec![ava_protocol::models::ContentItem::OutputText {
                 text: "parent: assistant reply".to_string(),
             }],
             phase: None,
@@ -1150,13 +1150,13 @@ async fn review_input_isolated_from_parent_history() {
             .await
             .unwrap();
     }
-    let codex =
-        resume_conversation_for_server(&server, codex_home.clone(), session_file.clone(), |_| {})
+    let ava =
+        resume_conversation_for_server(&server, ava_home.clone(), session_file.clone(), |_| {})
             .await;
 
     // Submit review request; it must start fresh (no parent history in `input`).
     let review_prompt = "Please review only this".to_string();
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -1168,8 +1168,8 @@ async fn review_input_isolated_from_parent_history() {
         .await
         .unwrap();
 
-    let _entered = wait_for_event(&codex, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
-    let _closed = wait_for_event(&codex, |ev| {
+    let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
+    let _closed = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ExitedReviewMode(ExitedReviewModeEvent {
@@ -1179,7 +1179,7 @@ async fn review_input_isolated_from_parent_history() {
         )
     })
     .await;
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Assert the request `input` contains the environment context followed by the user review prompt.
     let request = request_log.single_request();
@@ -1220,7 +1220,7 @@ async fn review_input_isolated_from_parent_history() {
     assert_eq!(instructions, REVIEW_PROMPT);
 
     // Also verify that a user interruption note was recorded in the rollout.
-    let path = codex.rollout_path().expect("rollout path");
+    let path = ava.rollout_path().expect("rollout path");
     let text = std::fs::read_to_string(&path).expect("read rollout file");
     let mut saw_interruption_message = false;
     for line in text.lines() {
@@ -1228,7 +1228,7 @@ async fn review_input_isolated_from_parent_history() {
             continue;
         }
         let v: serde_json::Value = serde_json::from_str(line).expect("jsonl line");
-        let rl = codex_rollout::decode_rollout_line(v).expect("rollout line");
+        let rl = ava_rollout::decode_rollout_line(v).expect("rollout line");
         if let RolloutItem::ResponseItem(envelope) = rl.item
             && let ResponseItem::Message { role, content, .. } = envelope.item
             && role == "user"
@@ -1251,7 +1251,7 @@ async fn review_input_isolated_from_parent_history() {
         "expected user interruption message in rollout"
     );
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -1266,11 +1266,11 @@ async fn review_history_surfaces_in_parent_session() {
         /*expected_requests*/ 2,
     )
     .await;
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let codex = new_conversation_for_server(&server, codex_home.clone(), |_| {}).await;
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
     // 1) Run a review turn that produces an assistant message (isolated in child).
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -1281,8 +1281,8 @@ async fn review_history_surfaces_in_parent_session() {
         })
         .await
         .unwrap();
-    let _entered = wait_for_event(&codex, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
-    let _closed = wait_for_event(&codex, |ev| {
+    let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
+    let _closed = wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ExitedReviewMode(ExitedReviewModeEvent {
@@ -1292,18 +1292,18 @@ async fn review_history_surfaces_in_parent_session() {
         )
     })
     .await;
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // 2) Continue in the parent session; request input must not include any review items.
     let followup = "back to parent".to_string();
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: followup.clone(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Inspect the second request (parent turn) input contents.
     // Parent turns include session initial messages (user_instructions, environment_context).
@@ -1344,7 +1344,7 @@ async fn review_history_surfaces_in_parent_session() {
         "review assistant output missing from parent turn input"
     );
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -1397,15 +1397,15 @@ async fn review_uses_overridden_cwd_for_base_branch_merge_base() {
         .trim()
         .to_string();
 
-    let codex_home = Arc::new(TempDir::new().unwrap());
+    let ava_home = Arc::new(TempDir::new().unwrap());
     let initial_cwd_path = initial_cwd.path().to_path_buf();
-    let codex = new_conversation_for_server(&server, codex_home.clone(), move |config| {
+    let ava = new_conversation_for_server(&server, ava_home.clone(), move |config| {
         config.cwd = initial_cwd_path.abs();
     })
     .await;
 
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             environments: Some(local_selections(repo_path.to_path_buf().abs())),
             ..Default::default()
@@ -1414,7 +1414,7 @@ async fn review_uses_overridden_cwd_for_base_branch_merge_base() {
     .await
     .unwrap();
 
-    codex
+    ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::BaseBranch {
@@ -1426,8 +1426,8 @@ async fn review_uses_overridden_cwd_for_base_branch_merge_base() {
         .await
         .unwrap();
 
-    let _entered = wait_for_event(&codex, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
-    let _complete = wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
+    let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert_eq!(requests.len(), 1);
@@ -1446,7 +1446,7 @@ async fn review_uses_overridden_cwd_for_base_branch_merge_base() {
         "expected review prompt to include merge-base sha {head_sha}"
     );
 
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     server.verify().await;
 }
 
@@ -1476,15 +1476,15 @@ async fn start_responses_server_with_sse(
 /// Create a conversation configured to talk to the provided mock server.
 async fn new_conversation_for_server<F>(
     server: &MockServer,
-    codex_home: Arc<TempDir>,
+    ava_home: Arc<TempDir>,
     mutator: F,
-) -> Arc<CodexThread>
+) -> Arc<AvaThread>
 where
     F: FnOnce(&mut Config) + Send + 'static,
 {
     let base_url = format!("{}/v1", server.uri());
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_config(move |config| {
             config.model_provider.base_url = Some(base_url.clone());
             mutator(config);
@@ -1493,29 +1493,29 @@ where
         .build(server)
         .await
         .expect("create conversation")
-        .codex
+        .ava-code
 }
 
 /// Create a conversation resuming from a rollout file, configured to talk to the provided mock server.
 async fn resume_conversation_for_server<F>(
     server: &MockServer,
-    codex_home: Arc<TempDir>,
+    ava_home: Arc<TempDir>,
     resume_path: std::path::PathBuf,
     mutator: F,
-) -> Arc<CodexThread>
+) -> Arc<AvaThread>
 where
     F: FnOnce(&mut Config) + Send + 'static,
 {
     let base_url = format!("{}/v1", server.uri());
-    let mut builder = test_codex()
-        .with_home(codex_home.clone())
+    let mut builder = test_ava()
+        .with_home(ava_home.clone())
         .with_config(move |config| {
             config.model_provider.base_url = Some(base_url.clone());
             mutator(config);
         });
     builder
-        .resume(server, codex_home, resume_path)
+        .resume(server, ava_home, resume_path)
         .await
         .expect("resume conversation")
-        .codex
+        .ava-code
 }

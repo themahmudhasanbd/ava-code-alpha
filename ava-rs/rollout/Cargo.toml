@@ -1,12 +1,12 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-rollout"
+name = "ava-rollout"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_rollout"
+name = "ava_rollout"
 path = "src/lib.rs"
 
 [lints]
@@ -15,15 +15,15 @@ workspace = true
 [dependencies]
 anyhow = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-codex-extension-items = { workspace = true }
-codex-file-search = { workspace = true }
-codex-git-utils = { workspace = true }
-codex-history = { workspace = true }
-codex-otel = { workspace = true }
-codex-protocol = { workspace = true }
-codex-state = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-path = { workspace = true }
+ava-extension-items = { workspace = true }
+ava-file-search = { workspace = true }
+ava-git-utils = { workspace = true }
+ava-history = { workspace = true }
+ava-otel = { workspace = true }
+ava-protocol = { workspace = true }
+ava-state = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-path = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -48,5 +48,5 @@ uuid = { workspace = true }
 zstd = { workspace = true }
 
 [dev-dependencies]
-codex-utils-absolute-path = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
 pretty_assertions = { workspace = true }

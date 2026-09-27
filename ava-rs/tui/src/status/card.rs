@@ -8,23 +8,23 @@ use crate::line_truncation::line_width;
 use crate::style::accent_color;
 use crate::token_usage::TokenUsage;
 use crate::token_usage::TokenUsageInfo;
-use crate::version::CODEX_CLI_VERSION;
+use crate::version::AVA_CLI_VERSION;
 use crate::width::display_width;
 use chrono::DateTime;
 use chrono::Local;
-use codex_app_server_protocol::AskForApproval;
-use codex_model_provider_info::WireApi;
-use codex_protocol::ThreadId;
-use codex_protocol::account::PlanType;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_utils_path_uri::PathUri;
-use codex_utils_sandbox_summary::summarize_permission_profile;
+use ava_app_server_protocol::AskForApproval;
+use ava_model_provider_info::WireApi;
+use ava_protocol::ThreadId;
+use ava_protocol::account::PlanType;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_utils_path_uri::PathUri;
+use ava_utils_sandbox_summary::summarize_permission_profile;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use std::collections::BTreeSet;
@@ -120,7 +120,7 @@ impl StatusHistoryHandle {
 
     pub(crate) fn set_thread_usage(
         &self,
-        estimate: Option<codex_app_server_protocol::ThreadUsage>,
+        estimate: Option<ava_app_server_protocol::ThreadUsage>,
     ) {
         self.card.thread_usage.set_estimate(estimate);
     }
@@ -738,7 +738,7 @@ impl StatusHistoryCell {
             Span::from(format!("{}>_ ", FieldFormatter::INDENT)).dim(),
             Span::from("AvA").bold(),
             Span::from(" ").dim(),
-            Span::from(format!("(v{CODEX_CLI_VERSION})")).dim(),
+            Span::from(format!("(v{AVA_CLI_VERSION})")).dim(),
         ]));
 
         let available_inner_width = usize::from(width.saturating_sub(4));

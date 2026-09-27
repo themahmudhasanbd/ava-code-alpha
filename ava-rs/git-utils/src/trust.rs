@@ -1,8 +1,8 @@
-use codex_file_system::ExecutorFileSystem;
-use codex_file_system::FindUpErrorPolicy;
-use codex_file_system::find_nearest_native_ancestor_with_markers;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_file_system::ExecutorFileSystem;
+use ava_file_system::FindUpErrorPolicy;
+use ava_file_system::find_nearest_native_ancestor_with_markers;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 
 const MAX_GIT_METADATA_FILE_BYTES: u64 = 64 * 1024;
 

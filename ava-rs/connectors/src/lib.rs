@@ -480,7 +480,7 @@ fn directory_app_to_app_info(app: DirectoryApp) -> AppInfo {
 }
 
 fn connector_install_url(name: &str, connector_id: &str) -> String {
-    let chatgpt_base_url = std::env::var("CODEX_APP_SERVER_CHATGPT_BASE_URL")
+    let chatgpt_base_url = std::env::var("AVA_APP_SERVER_CHATGPT_BASE_URL")
         .unwrap_or_else(|_| "https://chatgpt.com".to_string());
     let chatgpt_origin = chatgpt_base_url
         .trim_end_matches('/')
@@ -546,8 +546,8 @@ mod tests {
         )
     }
 
-    fn cache_context(codex_home: &TempDir, id: &str) -> ConnectorDirectoryCacheContext {
-        ConnectorDirectoryCacheContext::new(codex_home.path().to_path_buf(), cache_key(id))
+    fn cache_context(ava_home: &TempDir, id: &str) -> ConnectorDirectoryCacheContext {
+        ConnectorDirectoryCacheContext::new(ava_home.path().to_path_buf(), cache_key(id))
     }
 
     fn clear_directory_memory_cache() {
@@ -576,7 +576,7 @@ mod tests {
 
     #[test]
     fn connector_install_url_uses_configured_origin() {
-        let chatgpt_base_url = std::env::var("CODEX_APP_SERVER_CHATGPT_BASE_URL")
+        let chatgpt_base_url = std::env::var("AVA_APP_SERVER_CHATGPT_BASE_URL")
             .unwrap_or_else(|_| "https://chatgpt.com".to_string());
         let chatgpt_origin = chatgpt_base_url
             .trim_end_matches('/')
@@ -647,8 +647,8 @@ mod tests {
 
         let calls = Arc::new(AtomicUsize::new(0));
         let call_counter = Arc::clone(&calls);
-        let codex_home = TempDir::new()?;
-        let cache_context = cache_context(&codex_home, "shared");
+        let ava_home = TempDir::new()?;
+        let cache_context = cache_context(&ava_home, "shared");
 
         let first = list_all_connectors_with_options(
             cache_context.clone(),
@@ -690,8 +690,8 @@ mod tests {
     async fn list_all_connectors_merges_and_normalizes_directory_apps() -> anyhow::Result<()> {
         let _cache_guard = CONNECTOR_DIRECTORY_CACHE_TEST_LOCK.lock().await;
 
-        let codex_home = TempDir::new()?;
-        let cache_context = cache_context(&codex_home, "merged");
+        let ava_home = TempDir::new()?;
+        let cache_context = cache_context(&ava_home, "merged");
         let calls = Arc::new(AtomicUsize::new(0));
         let call_counter = Arc::clone(&calls);
 
@@ -768,8 +768,8 @@ mod tests {
     async fn list_all_connectors_overlaps_workspace_and_directory_requests() -> anyhow::Result<()> {
         let _cache_guard = CONNECTOR_DIRECTORY_CACHE_TEST_LOCK.lock().await;
 
-        let codex_home = TempDir::new()?;
-        let cache_context = cache_context(&codex_home, "overlap");
+        let ava_home = TempDir::new()?;
+        let cache_context = cache_context(&ava_home, "overlap");
         let workspace_started = Arc::new(Notify::new());
 
         // The public directory response waits until the workspace request is polled.
@@ -822,8 +822,8 @@ mod tests {
     async fn cached_directory_connectors_reads_directory_disk_cache() -> anyhow::Result<()> {
         let _cache_guard = CONNECTOR_DIRECTORY_CACHE_TEST_LOCK.lock().await;
 
-        let codex_home = TempDir::new()?;
-        let cache_context = cache_context(&codex_home, "disk");
+        let ava_home = TempDir::new()?;
+        let cache_context = cache_context(&ava_home, "disk");
         let calls = Arc::new(AtomicUsize::new(0));
         let call_counter = Arc::clone(&calls);
 
@@ -862,8 +862,8 @@ mod tests {
     -> anyhow::Result<()> {
         let _cache_guard = CONNECTOR_DIRECTORY_CACHE_TEST_LOCK.lock().await;
 
-        let codex_home = TempDir::new()?;
-        let cache_context = cache_context(&codex_home, "disk-refresh");
+        let ava_home = TempDir::new()?;
+        let cache_context = cache_context(&ava_home, "disk-refresh");
         let calls = Arc::new(AtomicUsize::new(0));
         let call_counter = Arc::clone(&calls);
 
@@ -925,8 +925,8 @@ mod tests {
         let _cache_guard = CONNECTOR_DIRECTORY_CACHE_TEST_LOCK.lock().await;
 
         clear_directory_memory_cache();
-        let codex_home = TempDir::new()?;
-        let cache_context = cache_context(&codex_home, "stale-schema");
+        let ava_home = TempDir::new()?;
+        let cache_context = cache_context(&ava_home, "stale-schema");
         let cache_path = cache_context.cache_path();
         std::fs::create_dir_all(cache_path.parent().expect("cache parent"))?;
         std::fs::write(

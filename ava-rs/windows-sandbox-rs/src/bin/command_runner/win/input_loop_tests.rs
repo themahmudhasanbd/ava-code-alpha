@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Context;
-use codex_utils_pty::JobObject;
+use ava_utils_pty::JobObject;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
 use tokio::process::Command;

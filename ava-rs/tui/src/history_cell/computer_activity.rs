@@ -54,7 +54,7 @@ impl ComputerActivityCell {
         &mut self,
         call: McpToolCallCell,
         duration: Duration,
-        result: Result<codex_protocol::mcp::CallToolResult, String>,
+        result: Result<ava_protocol::mcp::CallToolResult, String>,
     ) {
         let id = call.call_id.clone();
         self.start(call);

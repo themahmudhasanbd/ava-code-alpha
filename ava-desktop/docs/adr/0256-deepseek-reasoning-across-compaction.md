@@ -15,7 +15,7 @@ turns that produced no thinking (D389 / #223). OpenCode and third-party relays
 for DeepSeek V4.1 Flash reject empty echoes with HTTP 400 ("reasoning_text must
 be passed back").
 
-Codex-shaped compaction (ADR 0064 / ADR 0136) drops assistant turns from the
+Ava-shaped compaction (ADR 0064 / ADR 0136) drops assistant turns from the
 retained tail so tool-call pairs cannot strand and completed user prompts do
 not look like new tasks. That also drops thinking. Reloading a session rebuilds
 assistant content from `UiMessage.thinking` without a Completions

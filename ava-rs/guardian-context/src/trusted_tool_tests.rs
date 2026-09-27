@@ -1,8 +1,8 @@
 use super::MAX_TRUSTED_TOOL_CONTEXT_TOKENS;
 use super::TRUSTED_TOOL_PREFIX;
 use super::TrustedTool;
-use codex_context_fragments::ContextualUserFragment;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_context_fragments::ContextualUserFragment;
+use ava_protocol::protocol::TruncationPolicy;
 
 #[test]
 fn trusted_tool_context_has_a_hard_token_budget() {

@@ -1,4 +1,4 @@
-//! Shared model metadata types exchanged between Codex services and clients.
+//! Shared model metadata types exchanged between Ava services and clients.
 //!
 //! These types are serialized across core, TUI, app-server, and SDK boundaries, so field defaults
 //! are used to preserve compatibility when older payloads omit newly introduced attributes.
@@ -230,7 +230,7 @@ pub struct ModelServiceTier {
     pub description: String,
 }
 
-/// Metadata describing a Codex-supported model.
+/// Metadata describing a Ava-supported model.
 #[derive(Debug, Clone, Deserialize, Serialize, TS, JsonSchema, PartialEq)]
 pub struct ModelPreset {
     /// Stable identifier for the preset.
@@ -399,7 +399,7 @@ const fn is_true(value: &bool) -> bool {
     *value
 }
 
-/// Model metadata returned by the Codex backend `/models` endpoint.
+/// Model metadata returned by the Ava backend `/models` endpoint.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, TS, JsonSchema)]
 pub struct ModelInfo {
     /// Model-owned approval coverage. Absent preserves legacy settings; an empty map disables
@@ -889,7 +889,7 @@ impl ModelPreset {
 
 impl ModelInfo {
     pub fn supports_service_tier(&self, service_tier: &str) -> bool {
-        // Flex is an API request option, even when the Codex catalog does not advertise it.
+        // Flex is an API request option, even when the Ava catalog does not advertise it.
         service_tier == ServiceTier::Flex.request_value()
             || self
                 .service_tiers

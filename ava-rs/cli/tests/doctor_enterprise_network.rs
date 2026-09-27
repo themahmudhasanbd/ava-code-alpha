@@ -7,7 +7,7 @@ use anyhow::Context as _;
 use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -22,7 +22,7 @@ use wiremock::matchers::path;
 async fn doctor_reports_cloud_filesystem_policy_and_rejects_invalid_requirements() -> Result<()> {
     for valid_requirements in [true, false] {
         let server = MockServer::start().await;
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let workspace = TempDir::new()?;
         let workspace_key = serde_json::to_string(workspace.path())?;
         let private_path = workspace.path().join("private-doctor-control");
@@ -33,7 +33,7 @@ async fn doctor_reports_cloud_filesystem_policy_and_rejects_invalid_requirements
             "[permissions.filesystem]\ndeny_read = false\n".to_string()
         };
         std::fs::write(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
             format!(
                 r#"
 cli_auth_credentials_store = "ephemeral"
@@ -53,13 +53,13 @@ trust_level = "trusted"
             ),
         )?;
         // Cloud authentication must use the project selected by --cd.
-        std::fs::create_dir(workspace.path().join(".codex"))?;
+        std::fs::create_dir(workspace.path().join(".ava-code"))?;
         std::fs::write(
-            workspace.path().join(".codex/config.toml"),
+            workspace.path().join(".ava-code/config.toml"),
             "cli_auth_credentials_store = \"file\"\n",
         )?;
         write_chatgpt_auth(
-            codex_home.path(),
+            ava_home.path(),
             ChatGptAuthFixture::new("doctor-test-token")
                 .account_id("doctor-workspace")
                 .chatgpt_account_id("doctor-workspace")
@@ -82,13 +82,13 @@ trust_level = "trusted"
             .mount(&server)
             .await;
 
-        let output = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
-            .current_dir(codex_home.path())
-            .env("CODEX_HOME", codex_home.path())
+        let output = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
+            .current_dir(ava_home.path())
+            .env("AVA_HOME", ava_home.path())
             .env("NO_PROXY", "127.0.0.1,localhost")
             .env("no_proxy", "127.0.0.1,localhost")
-            .env_remove("CODEX_ACCESS_TOKEN")
-            .env_remove("CODEX_API_KEY")
+            .env_remove("AVA_ACCESS_TOKEN")
+            .env_remove("AVA_API_KEY")
             .env_remove("OPENAI_API_KEY")
             .arg("--cd")
             .arg(workspace.path())
@@ -148,26 +148,26 @@ async fn invalid_custom_ca_falls_back_to_system_roots() -> Result<()> {
             .await;
     }
 
-    let codex_home = TempDir::new()?;
-    let certificate = codex_home.path().join("invalid-ca.pem");
+    let ava_home = TempDir::new()?;
+    let certificate = ava_home.path().join("invalid-ca.pem");
     std::fs::write(&certificate, "not a certificate")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "model_provider = \"local\"\n[model_providers.local]\nname = \"local\"\nbase_url = \"{}/v1\"\nwire_api = \"responses\"\n",
             server.uri()
         ),
     )?;
     for sandbox in [None, Some("seatbelt")] {
-        let mut command = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
+        let mut command = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
         command
             .args(["doctor", "--json"])
-            .env("CODEX_HOME", codex_home.path())
-            .env("CODEX_CA_CERTIFICATE", &certificate)
+            .env("AVA_HOME", ava_home.path())
+            .env("AVA_CA_CERTIFICATE", &certificate)
             .stdin(Stdio::null());
         if let Some(sandbox) = sandbox {
             command
-                .env("CODEX_SANDBOX", sandbox)
+                .env("AVA_SANDBOX", sandbox)
                 .env("HTTP_PROXY", "http://127.0.0.1:1")
                 .env("http_proxy", "http://127.0.0.1:1")
                 .env("HTTPS_PROXY", "http://127.0.0.1:1")
@@ -198,8 +198,8 @@ async fn invalid_custom_ca_falls_back_to_system_roots() -> Result<()> {
 #[cfg(target_os = "macos")]
 #[test]
 fn doctor_reports_macos_system_proxy_configuration_and_policy() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let report = doctor_report(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    let report = doctor_report(ava_home.path())?;
     let details = &report["checks"]["network.env"]["details"];
 
     assert_eq!(details["respect system proxy"], json!("disabled"));
@@ -209,10 +209,10 @@ fn doctor_reports_macos_system_proxy_configuration_and_policy() -> Result<()> {
     ));
 
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[features]\nrespect_system_proxy = true\n",
     )?;
-    let report = doctor_report(codex_home.path())?;
+    let report = doctor_report(ava_home.path())?;
     assert_eq!(
         report["checks"]["network.env"]["details"]["respect system proxy"],
         json!("enabled")
@@ -222,10 +222,10 @@ fn doctor_reports_macos_system_proxy_configuration_and_policy() -> Result<()> {
 }
 
 #[cfg(target_os = "macos")]
-fn doctor_report(codex_home: &Path) -> Result<Value> {
-    let output = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+fn doctor_report(ava_home: &Path) -> Result<Value> {
+    let output = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
         .args(["doctor", "--json"])
-        .env("CODEX_HOME", codex_home)
+        .env("AVA_HOME", ava_home)
         .stdin(Stdio::null())
         .output()
         .context("failed to run the doctor")?;

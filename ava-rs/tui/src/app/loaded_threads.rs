@@ -15,11 +15,11 @@
 //! found. The primary thread itself is never included in the output.
 
 use crate::app_server_session::thread_blocks_direct_input;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadStatus;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadStatus;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SubAgentSource;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -125,12 +125,12 @@ fn thread_spawn_parent_thread_id(source: &SessionSource) -> Option<ThreadId> {
 mod tests {
     use super::LoadedSubagentThread;
     use super::find_loaded_subagent_threads_for_primary;
-    use codex_app_server_protocol::SessionSource;
-    use codex_app_server_protocol::Thread;
-    use codex_app_server_protocol::ThreadStatus;
-    use codex_protocol::ThreadId;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_app_server_protocol::SessionSource;
+    use ava_app_server_protocol::Thread;
+    use ava_app_server_protocol::ThreadStatus;
+    use ava_protocol::ThreadId;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
 
     fn test_thread(thread_id: ThreadId, source: SessionSource) -> Thread {

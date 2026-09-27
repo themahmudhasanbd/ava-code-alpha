@@ -11,38 +11,38 @@ use axum::extract::State;
 use axum::extract::WebSocketUpgrade;
 use axum::response::IntoResponse;
 use axum::routing::any;
-use codex_api::AuthProvider;
+use ava_api::AuthProvider;
 #[cfg(unix)]
-use codex_exec_server::EnvironmentConnectionState;
-use codex_exec_server::EnvironmentInfo;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::EnvironmentObservedStatus;
-use codex_exec_server::EnvironmentStatus;
-use codex_exec_server::EnvironmentStatusKind;
-use codex_exec_server::ExecParams;
+use ava_exec_server::EnvironmentConnectionState;
+use ava_exec_server::EnvironmentInfo;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::EnvironmentObservedStatus;
+use ava_exec_server::EnvironmentStatus;
+use ava_exec_server::EnvironmentStatusKind;
+use ava_exec_server::ExecParams;
 #[cfg(unix)]
-use codex_exec_server::ExecProcessEvent;
-use codex_exec_server::ExecResponse;
-use codex_exec_server::ExecServerClientConnectOptions;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_exec_server::InitializeParams;
-use codex_exec_server::InitializeResponse;
-use codex_exec_server::ProcessId;
-use codex_exec_server::ReadParams;
-use codex_exec_server::ReadResponse;
-use codex_exec_server::RemoteEnvironmentConfig;
-use codex_exec_server::RemoteEnvironmentTransport;
+use ava_exec_server::ExecProcessEvent;
+use ava_exec_server::ExecResponse;
+use ava_exec_server::ExecServerClientConnectOptions;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_exec_server::InitializeParams;
+use ava_exec_server::InitializeResponse;
+use ava_exec_server::ProcessId;
+use ava_exec_server::ReadParams;
+use ava_exec_server::ReadResponse;
+use ava_exec_server::RemoteEnvironmentConfig;
+use ava_exec_server::RemoteEnvironmentTransport;
 #[cfg(unix)]
-use codex_exec_server::WriteStatus;
-use codex_exec_server_protocol::JSONRPCError;
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCNotification;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::JSONRPCResponse;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::WriteStatus;
+use ava_exec_server_protocol::JSONRPCError;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCNotification;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::JSONRPCResponse;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_utils_path_uri::PathUri;
 use common::exec_server::DisconnectableWebSocketProxy;
 use futures::SinkExt;
 use futures::StreamExt;
@@ -158,11 +158,11 @@ async fn accepted_websocket_interoperates_and_recovers_with_real_direct_executor
         Arc::new(DirectExecutorAuth),
         http_client_factory.clone(),
     )?;
-    let (codex_exe, codex_linux_sandbox_exe) = common::current_test_binary_helper_paths()?;
-    let runtime_paths = ExecServerRuntimePaths::new(codex_exe, codex_linux_sandbox_exe)?;
+    let (ava_exe, ava_linux_sandbox_exe) = common::current_test_binary_helper_paths()?;
+    let runtime_paths = ExecServerRuntimePaths::new(ava_exe, ava_linux_sandbox_exe)?;
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
     let executor_task = AbortOnDropHandle::new(tokio::spawn(
-        codex_exec_server::run_remote_environment_until_shutdown(
+        ava_exec_server::run_remote_environment_until_shutdown(
             config,
             runtime_paths,
             async move {

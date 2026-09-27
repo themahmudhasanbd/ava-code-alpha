@@ -28,7 +28,7 @@ pub(super) fn exclusion(
     } else if workload_identity_selected {
         Some("workload identity")
     } else if exec_server_url.is_some() {
-        Some("executor selection (CODEX_EXEC_SERVER_URL)")
+        Some("executor selection (AVA_EXEC_SERVER_URL)")
     } else if cli.agents_overview {
         None
     } else if cli.config_profile_v2.is_some() {
@@ -93,7 +93,7 @@ fn allowed_feature(name: &str) -> bool {
 }
 
 pub(super) fn server_features(overrides: &[(String, toml::Value)]) -> BTreeMap<String, bool> {
-    let layer = codex_config::build_cli_overrides_layer(overrides);
+    let layer = ava_config::build_cli_overrides_layer(overrides);
     SERVER_FEATURES
         .into_iter()
         .filter_map(|feature| {

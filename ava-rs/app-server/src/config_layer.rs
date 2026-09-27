@@ -1,12 +1,12 @@
-use codex_app_server_protocol::ConfigLayer as ApiConfigLayer;
-use codex_app_server_protocol::ConfigLayerMetadata as ApiConfigLayerMetadata;
-use codex_app_server_protocol::ConfigLayerSource as ApiConfigLayerSource;
-use codex_config::ConfigLayer;
-use codex_config::ConfigLayerMetadata;
-use codex_config::ConfigLayerSource;
+use ava_app_server_protocol::ConfigLayer as ApiConfigLayer;
+use ava_app_server_protocol::ConfigLayerMetadata as ApiConfigLayerMetadata;
+use ava_app_server_protocol::ConfigLayerSource as ApiConfigLayerSource;
+use ava_config::ConfigLayer;
+use ava_config::ConfigLayerMetadata;
+use ava_config::ConfigLayerSource;
 
-/// Converts a config-layer source owned by `codex-config` into the app-server wire type owned by
-/// `codex-app-server-protocol`.
+/// Converts a config-layer source owned by `ava-config` into the app-server wire type owned by
+/// `ava-app-server-protocol`.
 ///
 /// The types stay separate so app-server protocol ownership does not leak into the config domain
 /// crate. Because this crate owns neither type, Rust's orphan rules require an explicit conversion
@@ -22,8 +22,8 @@ pub(crate) fn config_layer_source_to_api(source: ConfigLayerSource) -> ApiConfig
             ApiConfigLayerSource::EnterpriseManaged { id, name }
         }
         ConfigLayerSource::User { file, profile } => ApiConfigLayerSource::User { file, profile },
-        ConfigLayerSource::Project { dot_codex_folder } => {
-            ApiConfigLayerSource::Project { dot_codex_folder }
+        ConfigLayerSource::Project { dot_ava_folder } => {
+            ApiConfigLayerSource::Project { dot_ava_folder }
         }
         ConfigLayerSource::SessionFlags => ApiConfigLayerSource::SessionFlags,
         ConfigLayerSource::LegacyManagedConfigTomlFromFile { file } => {
@@ -35,8 +35,8 @@ pub(crate) fn config_layer_source_to_api(source: ConfigLayerSource) -> ApiConfig
     }
 }
 
-/// Converts config-layer metadata owned by `codex-config` into the app-server wire type owned by
-/// `codex-app-server-protocol`.
+/// Converts config-layer metadata owned by `ava-config` into the app-server wire type owned by
+/// `ava-app-server-protocol`.
 ///
 /// The types stay separate so app-server protocol ownership does not leak into the config domain
 /// crate. Because this crate owns neither type, Rust's orphan rules require an explicit conversion
@@ -50,8 +50,8 @@ pub(crate) fn config_layer_metadata_to_api(
     }
 }
 
-/// Converts a config layer owned by `codex-config` into the app-server wire type owned by
-/// `codex-app-server-protocol`.
+/// Converts a config layer owned by `ava-config` into the app-server wire type owned by
+/// `ava-app-server-protocol`.
 ///
 /// The types stay separate so app-server protocol ownership does not leak into the config domain
 /// crate. Because this crate owns neither type, Rust's orphan rules require an explicit conversion

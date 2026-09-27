@@ -103,7 +103,7 @@ test("the hard boundary is enforced by the host, with a model-side escape hatch"
   assert.match(runtime, /pendingOverflow/);
   assert.match(runtime, /runCompaction\(\s*"overflow",\s*true,\s*"active_turn",?\s*\)/);
   assert.match(runtime, /fallback: "retained_tail"/);
-  // Codex's tool, verbatim and parameterless, plus its two-tier reminder.
+  // Ava's tool, verbatim and parameterless, plus its two-tier reminder.
   assert.match(runtime, /CONTEXT_COMPACTION_TOOL_NAME = "new_context"/);
   assert.match(
     runtime,
@@ -192,7 +192,7 @@ test("a checkpoint carries only the active user message past the boundary", () =
   assert.match(contextBudget, /COMPACTION_RETAINED_USER_MESSAGE_MAX_TOKENS = 20_000/);
   assert.match(runtime, /type CompactionRetentionMode = "active_turn" \| "completed_turn"/);
   assert.match(runtime, /retainedTailMode: retentionMode/);
-  assert.match(runtime, /private codexShapedPreparation\(/);
+  assert.match(runtime, /private avaShapedPreparation\(/);
   assert.match(
     runtime,
     /const messagesToSummarize = \[\s*\.\.\.preparation\.messagesToSummarize,\s*\.\.\.preparation\.turnPrefixMessages,\s*\.\.\.preparation\.retainedTail,\s*\]/,
@@ -213,7 +213,7 @@ test("a checkpoint carries only the active user message past the boundary", () =
 });
 
 test("the no-summary rollover family stays an internal switch", () => {
-  // Codex's second path: a fresh context window with no summary request. It is
+  // Ava's second path: a fresh context window with no summary request. It is
   // selectable for development only, so it reaches neither settings nor i18n.
   assert.match(runtime, /type CompactionStrategy = "summary" \| "fresh_window"/);
   assert.match(runtime, /PI_DESKTOP_COMPACTION_STRATEGY === "fresh_window"/);
@@ -226,7 +226,7 @@ test("the no-summary rollover family stays an internal switch", () => {
 });
 
 test("compaction runs inline at the hard boundary, never ahead of it", () => {
-  // Codex has no off-critical-path compaction: the summary is paid for at the
+  // Ava has no off-critical-path compaction: the summary is paid for at the
   // turn boundary the user is already waiting on.
   assert.doesNotMatch(runtime, /maybeStartBackgroundCompaction/);
   assert.doesNotMatch(runtime, /pendingBackgroundCheckpoint/);
@@ -271,7 +271,7 @@ test("every compaction announces itself once, on top of the specific toasts", ()
     events.match(/case "compaction_end":[\s\S]*?\n        case "agent_end":/)?.[0] ??
     "";
   assert.ok(compactionEnd.length > 0, "compaction_end handler not found");
-  // Codex warns after every compaction; ours is unconditional and lands before
+  // Ava warns after every compaction; ours is unconditional and lands before
   // the three that describe something more specific.
   assert.match(
     compactionEnd,

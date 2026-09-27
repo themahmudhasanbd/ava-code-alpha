@@ -12,9 +12,9 @@ pub(super) async fn record_failed_review(
     params: &GuardianReviewSessionParams,
     outcome: &GuardianReviewSessionOutcome,
 ) {
-    let Some(feedback) = codex_guardian_reviewer::FailedReviewFeedback::for_outcome(
+    let Some(feedback) = ava_guardian_reviewer::FailedReviewFeedback::for_outcome(
         outcome,
-        codex_guardian_reviewer::ReviewFeedbackSettings {
+        ava_guardian_reviewer::ReviewFeedbackSettings {
             enabled: params.spawn_config.feedback_enabled,
             ephemeral: params.spawn_config.ephemeral,
         },
@@ -27,7 +27,7 @@ pub(super) async fn record_failed_review(
     };
     let instructions = reviewer.get_prompt_base_instructions().await;
     let history = reviewer.clone_history().await;
-    feedback.store(codex_guardian_reviewer::ReviewFeedbackContext {
+    feedback.store(ava_guardian_reviewer::ReviewFeedbackContext {
         reviewed_thread_id: params.parent_session.thread_id(),
         reviewed_turn_id: guardian_request_turn_id(
             &params.request,

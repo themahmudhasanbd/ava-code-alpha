@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::UserInstructionsProvider;
-use codex_login::AuthManager;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::user_input::UserInput;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::UserInstructionsProvider;
+use ava_login::AuthManager;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::user_input::UserInput;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::Config;
@@ -29,35 +29,35 @@ pub async fn build_prompt_input(
     state_db: Option<StateDbHandle>,
     extensions: Arc<ExtensionRegistry<Config>>,
     user_instructions_provider: Arc<dyn UserInstructionsProvider>,
-) -> CodexResult<Vec<ResponseItem>> {
+) -> AvaResult<Vec<ResponseItem>> {
     config.ephemeral = true;
 
     let auth_manager =
-        AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false)
+        AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false)
             .await
-            .map_err(|err| CodexErr::Fatal(err.to_string()))?;
+            .map_err(|err| AvaErr::Fatal(err.to_string()))?;
 
     let local_runtime_paths = ExecServerRuntimePaths::from_optional_paths(
-        config.codex_self_exe.clone(),
-        config.codex_linux_sandbox_exe.clone(),
+        config.ava_self_exe.clone(),
+        config.ava_linux_sandbox_exe.clone(),
     )?;
 
     let thread_store = thread_store_from_config(&config, state_db.clone());
-    let installation_id = resolve_installation_id(&config.codex_home).await?;
+    let installation_id = resolve_installation_id(&config.ava_home).await?;
     let thread_manager = ThreadManager::new(
         &config,
         Arc::clone(&auth_manager),
         crate::thread_manager::build_models_manager(&config, Arc::clone(&auth_manager)),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
         Arc::new(
-            EnvironmentManager::from_codex_home(
-                config.codex_home.clone(),
+            EnvironmentManager::from_ava_home(
+                config.ava_home.clone(),
                 Some(local_runtime_paths),
                 config.http_client_factory(),
             )
             .await
-            .map_err(|err| CodexErr::Fatal(err.to_string()))?,
+            .map_err(|err| AvaErr::Fatal(err.to_string()))?,
         ),
         extensions,
         user_instructions_provider,
@@ -84,7 +84,7 @@ pub async fn build_prompt_input(
 pub(crate) async fn build_prompt_input_from_session(
     sess: &Arc<Session>,
     input: Vec<UserInput>,
-) -> CodexResult<Vec<ResponseItem>> {
+) -> AvaResult<Vec<ResponseItem>> {
     let turn_context = sess.new_default_turn().await;
     // Prompt debugging builds a standalone request without entering run_turn.
     let step_context = sess

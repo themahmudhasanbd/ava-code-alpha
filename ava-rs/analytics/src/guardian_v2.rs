@@ -1,9 +1,9 @@
 //! Guardian V2 classifier and fast-decision facts, enriched by the existing reducer.
 //! Payloads contain attribution and bounded outcomes, never prompts or tool arguments.
 
-use crate::events::CodexAppServerClientMetadata;
-use crate::events::CodexRuntimeMetadata;
-use codex_protocol::protocol::ThreadSource;
+use crate::events::AvaAppServerClientMetadata;
+use crate::events::AvaRuntimeMetadata;
+use ava_protocol::protocol::ThreadSource;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -39,8 +39,8 @@ pub(crate) struct GuardianV2EventRequest {
 #[derive(Serialize)]
 pub(crate) struct GuardianV2EventParams {
     pub(crate) session_id: String,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) subagent_source: Option<String>,
     pub(crate) parent_thread_id: Option<String>,

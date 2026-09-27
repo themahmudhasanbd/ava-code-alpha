@@ -1,7 +1,7 @@
 //! User profile & personality configuration TOML types.
 
-use codex_protocol::user_profile::PersonalityPreset;
-use codex_protocol::user_profile::UserProfileConfig;
+use ava_protocol::user_profile::PersonalityPreset;
+use ava_protocol::user_profile::UserProfileConfig;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;

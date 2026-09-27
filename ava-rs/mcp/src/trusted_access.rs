@@ -6,13 +6,13 @@ use crate::runtime::McpRuntimeInput;
 use crate::server::McpServerMetadata;
 use crate::server::McpServerOrigin;
 use crate::tools::ToolInfo;
-use codex_exec_server::HttpClient;
-use codex_exec_server::HttpHeader;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestParams;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_protocol::auth::AuthMode;
+use ava_exec_server::HttpClient;
+use ava_exec_server::HttpHeader;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestParams;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_protocol::auth::AuthMode;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Map;
@@ -51,7 +51,7 @@ impl McpConnectionSet {
                 .plugin_id_for_mcp_server_name(&tool.server_name)
                 .is_some()
             && arguments.is_none_or(|arguments| arguments.as_object().is_some_and(Map::is_empty))
-            && server.environment_id == codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID
+            && server.environment_id == ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID
             && matches!(server.origin, Some(McpServerOrigin::Stdio))
             && tool
                 .tool
@@ -112,7 +112,7 @@ enum VerifiedAccessSource {
 /// Fetches account-bound verified access for trusted, host-owned MCP metadata.
 /// Callers must authorize the receiving plugin and tool before attaching it.
 pub struct TrustedAccessContext {
-    auth: CodexAuth,
+    auth: AvaAuth,
     auth_manager: Arc<AuthManager>,
     chatgpt_base_url: String,
     http_client: Arc<dyn HttpClient>,
@@ -136,7 +136,7 @@ impl TrustedAccessContext {
     }
 
     pub fn new(
-        auth: CodexAuth,
+        auth: AvaAuth,
         auth_manager: Arc<AuthManager>,
         chatgpt_base_url: String,
         http_client: Arc<dyn HttpClient>,
@@ -203,7 +203,7 @@ impl TrustedAccessContext {
             return None;
         }
 
-        let headers = codex_model_provider::auth_provider_from_auth(&auth)
+        let headers = ava_model_provider::auth_provider_from_auth(&auth)
             .to_auth_headers()
             .iter()
             .map(|(name, value)| {

@@ -1,5 +1,5 @@
-use codex_protocol::RolloutId;
-use codex_protocol::ThreadId;
+use ava_protocol::RolloutId;
+use ava_protocol::ThreadId;
 use time::OffsetDateTime;
 use time::PrimitiveDateTime;
 use time::format_description::FormatItem;

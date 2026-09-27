@@ -3,8 +3,8 @@
 
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use codex_app_server_protocol as rpc;
-use codex_user_verification as native;
+use ava_app_server_protocol as rpc;
+use ava_user_verification as native;
 
 pub(super) fn validate(
     params: rpc::UserVerificationVerifyParams,

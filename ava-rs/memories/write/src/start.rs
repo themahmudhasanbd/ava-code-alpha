@@ -5,15 +5,15 @@ use crate::metrics::MEMORY_STARTUP;
 use crate::phase1;
 use crate::phase2;
 use crate::runtime::MemoryStartupContext;
-use codex_core::CodexThread;
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_login::AuthManager;
-use codex_protocol::MemoryVersion;
-use codex_protocol::ThreadId;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::SessionSource;
+use ava_core::AvaThread;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_login::AuthManager;
+use ava_protocol::MemoryVersion;
+use ava_protocol::ThreadId;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::SessionSource;
 use std::sync::Arc;
 use tracing::warn;
 
@@ -25,7 +25,7 @@ pub fn start_memories_startup_task(
     thread_manager: Arc<ThreadManager>,
     auth_manager: Arc<AuthManager>,
     thread_id: ThreadId,
-    thread: Arc<CodexThread>,
+    thread: Arc<AvaThread>,
     config: Arc<Config>,
     parent_permission_profile: PermissionProfile,
     source: &SessionSource,
@@ -62,7 +62,7 @@ pub fn start_memories_startup_task(
                 return;
             }
             let root = config
-                .codex_home
+                .ava_home
                 .join(config.memories.version.directory_name());
             if let Err(err) = ensure_layout(&root).await {
                 warn!("failed preparing memories root: {err}");

@@ -135,7 +135,7 @@ fn chatgpt_cookie_url(uri: &Uri) -> Option<reqwest::Url> {
     is_chatgpt_cookie_url(&url).then_some(url)
 }
 
-/// Adds the process-local ChatGPT infrastructure cookie jar used by Codex HTTP clients.
+/// Adds the process-local ChatGPT infrastructure cookie jar used by Ava HTTP clients.
 ///
 /// WARNING: this jar is global within the process. It is only acceptable because it hardcodes a
 /// small allowlist of Cloudflare cookie names plus `__oailb` for routing, and refuses all other
@@ -457,7 +457,7 @@ mod tests {
 
         assert!(!is_chatgpt_cookie_url(&url));
 
-        let url = reqwest::Url::parse("wss://chatgpt.com/backend-api/codex/responses").unwrap();
+        let url = reqwest::Url::parse("wss://chatgpt.com/backend-api/ava/responses").unwrap();
 
         assert!(!is_chatgpt_cookie_url(&url));
     }

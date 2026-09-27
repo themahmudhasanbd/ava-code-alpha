@@ -11,13 +11,13 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::McpServerToolCallParams;
-use codex_app_server_protocol::McpServerToolCallResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::McpServerToolCallParams;
+use ava_app_server_protocol::McpServerToolCallResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -50,13 +50,13 @@ impl CuratedMcpSyncFixture {
         let (mcp_server_url, mcp_server_handle) =
             start_mcp_server(/*sensitive_action*/ None).await?;
         let fixture_root = TempDir::new()?;
-        let codex_home = fixture_root.path().join("codex-home");
+        let ava_home = fixture_root.path().join("ava-home");
         let curated_repo = fixture_root.path().join("plugins.git");
         let git_wrapper_dir = fixture_root.path().join("bin");
         let git_config = fixture_root.path().join("gitconfig");
         let sync_barrier = fixture_root.path().join("allow-curated-sync");
         let malicious_git_helper_marker = fixture_root.path().join("malicious-git-helper-ran");
-        std::fs::create_dir_all(&codex_home)?;
+        std::fs::create_dir_all(&ava_home)?;
         std::fs::create_dir_all(&curated_repo)?;
         std::fs::create_dir_all(&git_wrapper_dir)?;
 
@@ -80,12 +80,12 @@ impl CuratedMcpSyncFixture {
         run_git(
             &real_git,
             &curated_repo,
-            &["config", "user.email", "codex-tests@openai.com"],
+            &["config", "user.email", "ava-tests@openai.com"],
         )?;
         run_git(
             &real_git,
             &curated_repo,
-            &["config", "user.name", "Codex Tests"],
+            &["config", "user.name", "Ava Tests"],
         )?;
         run_git(&real_git, &curated_repo, &["add", "."])?;
         run_git(
@@ -121,17 +121,17 @@ impl CuratedMcpSyncFixture {
         let mut helper_permissions = std::fs::metadata(&malicious_git_helper)?.permissions();
         helper_permissions.set_mode(0o755);
         std::fs::set_permissions(&malicious_git_helper, helper_permissions)?;
-        run_git(&real_git, &codex_home, &["init", "-b", "main"])?;
+        run_git(&real_git, &ava_home, &["init", "-b", "main"])?;
         run_git(
             &real_git,
-            &codex_home,
+            &ava_home,
             &["config", "protocol.ext.allow", "always"],
         )?;
         let malicious_rewrite_key =
             format!("url.ext::{}.insteadOf", malicious_git_helper.display());
         run_git(
             &real_git,
-            &codex_home,
+            &ava_home,
             &["config", &malicious_rewrite_key, GITHUB_PLUGINS_GIT_URL],
         )?;
         let git_wrapper = git_wrapper_dir.join("git");
@@ -163,9 +163,9 @@ enabled = true
 [mcp_servers.{REFRESH_PROBE_SERVER_NAME}]
 url = "{mcp_server_url}/mcp""#
             ))
-            .write(&codex_home)?;
+            .write(&ava_home)?;
         write_chatgpt_auth(
-            &codex_home,
+            &ava_home,
             ChatGptAuthFixture::new("chatgpt-token")
                 .account_id("account-123")
                 .chatgpt_user_id("user-123")
@@ -182,7 +182,7 @@ url = "{mcp_server_url}/mcp""#
         let git_config = git_config.to_string_lossy();
         let sync_barrier_env = sync_barrier.to_string_lossy();
         let mcp = TestAppServer::builder()
-            .with_codex_home(&codex_home)
+            .with_ava_home(&ava_home)
             .with_env_overrides(&[
                 ("PATH", Some(child_path.as_ref())),
                 ("REAL_GIT", Some(real_git.as_ref())),
@@ -332,9 +332,9 @@ fn write_plugin(
     server_name: &str,
     mcp_server_url: &str,
 ) -> Result<()> {
-    std::fs::create_dir_all(root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(root.join(".ava-plugin"))?;
     std::fs::write(
-        root.join(".codex-plugin/plugin.json"),
+        root.join(".ava-plugin/plugin.json"),
         serde_json::to_vec_pretty(&json!({"name": plugin_name}))?,
     )?;
     std::fs::write(

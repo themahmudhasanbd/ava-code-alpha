@@ -5,15 +5,15 @@ use crate::agents_md::LoadedAgentsMd;
 use crate::agents_md::load_project_instructions;
 use crate::config::Config;
 use crate::environment_selection::TurnEnvironmentSnapshot;
-use codex_extension_api::Instructions;
-use codex_extension_api::ThreadInstructionsProvider;
-use codex_extension_api::UserInstructionsProvider;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_utils_string::approx_bytes_for_tokens;
-use codex_utils_string::approx_tokens_from_byte_count;
+use ava_extension_api::Instructions;
+use ava_extension_api::ThreadInstructionsProvider;
+use ava_extension_api::UserInstructionsProvider;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_utils_string::approx_bytes_for_tokens;
+use ava_utils_string::approx_tokens_from_byte_count;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::Semaphore;
@@ -66,11 +66,11 @@ impl AgentsMdManager {
         &self,
         config: &Config,
         environments: &TurnEnvironmentSnapshot,
-    ) -> (CodexResult<Option<Arc<LoadedAgentsMd>>>, Vec<String>) {
+    ) -> (AvaResult<Option<Arc<LoadedAgentsMd>>>, Vec<String>) {
         // Serialize overlapping captures without blocking reads of the applied snapshot.
         let Ok(_refresh_guard) = self.refresh_lock.acquire().await else {
             return (
-                Err(CodexErr::Fatal(
+                Err(AvaErr::Fatal(
                     "instruction refresh semaphore closed".to_string(),
                 )),
                 Vec::new(),
@@ -167,10 +167,10 @@ impl AgentsMdManager {
 // size policy is unchanged; reject oversized thread input rather than truncate it.
 const MAX_THREAD_INSTRUCTIONS_TOKENS: usize = 10_000;
 
-fn validate_thread_instruction_size(bytes: usize) -> CodexResult<()> {
+fn validate_thread_instruction_size(bytes: usize) -> AvaResult<()> {
     if bytes > approx_bytes_for_tokens(MAX_THREAD_INSTRUCTIONS_TOKENS) {
         let estimated_tokens = approx_tokens_from_byte_count(bytes);
-        return Err(CodexErr::InvalidRequest(format!(
+        return Err(AvaErr::InvalidRequest(format!(
             "thread instructions exceed the limit of {MAX_THREAD_INSTRUCTIONS_TOKENS} estimated tokens ({estimated_tokens} estimated tokens provided)"
         )));
     }

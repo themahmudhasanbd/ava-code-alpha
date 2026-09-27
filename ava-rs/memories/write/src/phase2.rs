@@ -14,20 +14,20 @@ use crate::workspace::remove_memory_symlinks;
 use crate::workspace::reset_memory_workspace_baseline;
 use crate::workspace::validate_consolidation_artifacts_for_version;
 use crate::workspace::write_workspace_diff;
-use codex_config::Constrained;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_model_provider::ModelProvider;
-use codex_protocol::MemoryVersion;
-use codex_protocol::ThreadId;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::user_input::UserInput;
-use codex_state::MemoryStore;
-use codex_state::Stage1Output;
+use ava_config::Constrained;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_model_provider::ModelProvider;
+use ava_protocol::MemoryVersion;
+use ava_protocol::ThreadId;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::user_input::UserInput;
+use ava_state::MemoryStore;
+use ava_state::Stage1Output;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -58,7 +58,7 @@ pub async fn run(
         return;
     };
     let root = config
-        .codex_home
+        .ava_home
         .join(config.memories.version.directory_name());
     let max_raw_memories = config.memories.max_raw_memories_for_consolidation;
     let max_unused_days = config.memories.max_unused_days;
@@ -223,7 +223,7 @@ mod job {
                 "failed_claim"
             })?;
         let (token, watermark) = match claim {
-            codex_state::Phase2JobClaimOutcome::Claimed {
+            ava_state::Phase2JobClaimOutcome::Claimed {
                 ownership_token,
                 input_watermark,
             } => {
@@ -234,13 +234,13 @@ mod job {
                 );
                 (ownership_token, input_watermark)
             }
-            codex_state::Phase2JobClaimOutcome::SkippedRetryUnavailable => {
+            ava_state::Phase2JobClaimOutcome::SkippedRetryUnavailable => {
                 return Err("skipped_retry_unavailable");
             }
-            codex_state::Phase2JobClaimOutcome::SkippedCooldown => {
+            ava_state::Phase2JobClaimOutcome::SkippedCooldown => {
                 return Err("skipped_cooldown");
             }
-            codex_state::Phase2JobClaimOutcome::SkippedRunning => return Err("skipped_running"),
+            ava_state::Phase2JobClaimOutcome::SkippedRunning => return Err("skipped_running"),
         };
 
         Ok(Claim { token, watermark })
@@ -277,7 +277,7 @@ mod job {
         db: &MemoryStore,
         claim: &Claim,
         completion_watermark: i64,
-        selected_outputs: &[codex_state::Stage1Output],
+        selected_outputs: &[ava_state::Stage1Output],
         reason: &'static str,
     ) -> bool {
         context.counter(MEMORY_PHASE_TWO_JOBS, /*inc*/ 1, &[("status", reason)]);
@@ -297,7 +297,7 @@ mod agent {
         provider: &dyn ModelProvider,
     ) -> Option<Config> {
         let root = config
-            .codex_home
+            .ava_home
             .join(config.memories.version.directory_name());
         let mut agent_config = config.clone();
 
@@ -321,7 +321,7 @@ mod agent {
             .features
             .disable(Feature::SkillMcpDependencyInstall);
 
-        // Preserve the parent's explicit choice to skip Codex-managed sandboxing.
+        // Preserve the parent's explicit choice to skip Ava-managed sandboxing.
         match parent_permission_profile {
             PermissionProfile::Disabled => agent_config
                 .permissions
@@ -367,11 +367,11 @@ mod agent {
         context: Arc<MemoryStartupContext>,
         claim: Claim,
         new_watermark: i64,
-        selected_outputs: Vec<codex_state::Stage1Output>,
-        memory_root: codex_utils_absolute_path::AbsolutePathBuf,
+        selected_outputs: Vec<ava_state::Stage1Output>,
+        memory_root: ava_utils_absolute_path::AbsolutePathBuf,
         version: MemoryVersion,
         agent: SpawnedConsolidationAgent,
-        phase_two_e2e_timer: Option<codex_otel::Timer>,
+        phase_two_e2e_timer: Option<ava_otel::Timer>,
     ) {
         tokio::spawn(async move {
             let Some(db) = context.memory_store().await else {
@@ -478,7 +478,7 @@ mod agent {
         db: MemoryStore,
         token: String,
         thread_id: ThreadId,
-        thread: &codex_core::CodexThread,
+        thread: &ava_core::AvaThread,
     ) -> AgentStatus {
         let mut heartbeat_interval =
             tokio::time::interval(Duration::from_secs(crate::stage_two::JOB_HEARTBEAT_SECONDS));
@@ -550,7 +550,7 @@ mod workspace_roots_tests;
 
 pub(super) fn get_watermark(
     claimed_watermark: i64,
-    latest_memories: &[codex_state::Stage1Output],
+    latest_memories: &[ava_state::Stage1Output],
 ) -> i64 {
     latest_memories
         .iter()

@@ -3,16 +3,16 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_fake_rollout;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ThreadMemoryMode;
-use codex_app_server_protocol::ThreadMemoryModeSetParams;
-use codex_app_server_protocol::ThreadMemoryModeSetResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_features::Feature;
-use codex_protocol::ThreadId;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ThreadMemoryMode;
+use ava_app_server_protocol::ThreadMemoryModeSetParams;
+use ava_app_server_protocol::ThreadMemoryModeSetResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_features::Feature;
+use ava_protocol::ThreadId;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use std::sync::Arc;
@@ -21,15 +21,15 @@ use tempfile::TempDir;
 #[tokio::test]
 async fn thread_memory_mode_set_updates_loaded_thread_state() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config("suppress_unstable_features_warning = true")
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
-    let state_db = init_state_db(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    let state_db = init_state_db(ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -59,15 +59,15 @@ async fn thread_memory_mode_set_updates_loaded_thread_state() -> Result<()> {
 #[tokio::test]
 async fn thread_memory_mode_set_updates_stored_thread_state() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config("suppress_unstable_features_warning = true")
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
-    let state_db = init_state_db(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    let state_db = init_state_db(ava_home.path()).await?;
 
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T08-30-00",
         "2025-01-06T08:30:00Z",
         "Stored thread preview",
@@ -77,7 +77,7 @@ async fn thread_memory_mode_set_updates_stored_thread_state() -> Result<()> {
     let thread_uuid = ThreadId::from_string(&thread_id)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -99,9 +99,9 @@ async fn thread_memory_mode_set_updates_stored_thread_state() -> Result<()> {
     Ok(())
 }
 
-async fn init_state_db(codex_home: &Path) -> Result<Arc<StateRuntime>> {
+async fn init_state_db(ava_home: &Path) -> Result<Arc<StateRuntime>> {
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.abs()),
         "mock_provider".into(),
     )
     .await?;

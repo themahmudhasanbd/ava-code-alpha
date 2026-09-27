@@ -11,16 +11,16 @@
 
 use std::sync::Arc;
 
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadHistoryBuilder;
-use codex_app_server_protocol::ThreadTokenUsage;
-use codex_app_server_protocol::ThreadTokenUsageUpdatedNotification;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnStatus;
-use codex_core::CodexThread;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_rollout::RolloutItem;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadHistoryBuilder;
+use ava_app_server_protocol::ThreadTokenUsage;
+use ava_app_server_protocol::ThreadTokenUsageUpdatedNotification;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnStatus;
+use ava_core::AvaThread;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_rollout::RolloutItem;
 
 use crate::outgoing_message::ConnectionId;
 use crate::outgoing_message::OutgoingMessageSender;
@@ -36,7 +36,7 @@ pub(super) async fn send_thread_token_usage_update_to_connection(
     outgoing: &Arc<OutgoingMessageSender>,
     connection_id: ConnectionId,
     thread_id: ThreadId,
-    conversation: &CodexThread,
+    conversation: &AvaThread,
     token_usage_turn_id: String,
 ) {
     let Some(info) = conversation.token_usage_info().await else {
@@ -112,10 +112,10 @@ fn latest_token_usage_turn_id(turns: &[Turn]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_app_server_protocol::build_turns_from_rollout_items;
-    use codex_protocol::protocol::AgentMessageEvent;
-    use codex_protocol::protocol::TokenCountEvent;
-    use codex_protocol::protocol::UserMessageEvent;
+    use ava_app_server_protocol::build_turns_from_rollout_items;
+    use ava_protocol::protocol::AgentMessageEvent;
+    use ava_protocol::protocol::TokenCountEvent;
+    use ava_protocol::protocol::UserMessageEvent;
     use pretty_assertions::assert_eq;
 
     #[test]

@@ -7,15 +7,15 @@
 
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestError;
-use codex_protocol::shell_environment::CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_WORKLOAD_IDENTITY_CONTEXT_ENV_VAR;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestError;
+use ava_protocol::shell_environment::AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_WORKLOAD_IDENTITY_CONTEXT_ENV_VAR;
 use futures::FutureExt;
 use futures::StreamExt;
 use futures::future::BoxFuture;
@@ -41,14 +41,14 @@ use crate::rpc::internal_error;
 use crate::rpc::invalid_params;
 
 const HTTP_HEADER_ENV_DENYLIST: &[&str] = &[
-    CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR,
+    AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR,
     OPENAI_FEDERATION_RULE_ID_ENV_VAR,
     OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR,
     OPENAI_WORKLOAD_IDENTITY_CONTEXT_ENV_VAR,
     "OPENAI_API_KEY",
-    "CODEX_API_KEY",
-    "CODEX_ACCESS_TOKEN",
-    "CODEX_CONNECTORS_TOKEN",
+    "AVA_API_KEY",
+    "AVA_ACCESS_TOKEN",
+    "AVA_CONNECTORS_TOKEN",
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
     "AWS_SESSION_TOKEN",
@@ -68,7 +68,7 @@ pub struct RouteAwareHttpClient {
 /// downstream body-delta forwarding.
 pub(crate) struct PendingRouteAwareHttpBodyStream {
     pub(crate) request_id: String,
-    pub(crate) response: codex_http_client::HttpResponse,
+    pub(crate) response: ava_http_client::HttpResponse,
 }
 
 /// Validates `http/request` parameters and runs the actual HTTP call used
@@ -179,7 +179,7 @@ impl RouteAwareHttpRequestRunner {
         }
 
         let request_span = tracing::info_span!(
-            "codex.exec_server.http_request",
+            "ava.exec_server.http_request",
             otel.kind = "client",
             http.request.method = method.as_str(),
             server.address = url.host_str().unwrap_or_default(),
@@ -188,7 +188,7 @@ impl RouteAwareHttpRequestRunner {
             error.type = tracing::field::Empty,
         );
         let mut headers = Self::build_headers(params.headers)?;
-        codex_otel::inject_span_w3c_trace_headers(&request_span, &mut headers);
+        ava_otel::inject_span_w3c_trace_headers(&request_span, &mut headers);
         let mut request = self.client.request(method.clone(), url).headers(headers);
         if let Some(body) = params.body {
             request = request.body(body.into_inner());

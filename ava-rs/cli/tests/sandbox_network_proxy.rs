@@ -11,11 +11,11 @@ const BWRAP_UNAVAILABLE_ERR: &str = "bubblewrap is unavailable";
 
 #[test]
 fn sandbox_with_network_proxy_blocks_direct_loopback_access() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let listener = TcpListener::bind("127.0.0.2:0")?;
     let port = listener.local_addr()?.port();
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 default_permissions = "network-test"
 
@@ -33,8 +33,8 @@ mode = "full"
     )?;
 
     let url = format!("http://127.0.0.2:{port}/");
-    let output = std::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
-        .env("CODEX_HOME", codex_home.path())
+    let output = std::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
+        .env("AVA_HOME", ava_home.path())
         .args([
             "sandbox",
             "--permission-profile",
@@ -73,7 +73,7 @@ mode = "full"
 
 #[test]
 fn sandbox_with_network_proxy_allows_explicit_loopback_access() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let listener = TcpListener::bind("127.0.0.2:0")?;
     let port = listener.local_addr()?.port();
     listener.set_nonblocking(true)?;
@@ -116,7 +116,7 @@ fn sandbox_with_network_proxy_allows_explicit_loopback_access() -> Result<()> {
         }
     });
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 default_permissions = "network-test"
 
@@ -138,8 +138,8 @@ allow_local_binding = false
     )?;
 
     let url = format!("http://127.0.0.2:{port}/");
-    let output = std::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
-        .env("CODEX_HOME", codex_home.path())
+    let output = std::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
+        .env("AVA_HOME", ava_home.path())
         .args([
             "sandbox",
             "--permission-profile",

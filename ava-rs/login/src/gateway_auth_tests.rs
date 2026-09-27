@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::Utc;
-use codex_keyring_store::tests::MockKeyringStore;
+use ava_keyring_store::tests::MockKeyringStore;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -27,7 +27,7 @@ fn client(
     config: GatewayAuthConfig,
     keyring: Arc<MockKeyringStore>,
 ) -> (GatewayAuthManager, tempfile::TempDir) {
-    let home = tempfile::tempdir().expect("Codex home");
+    let home = tempfile::tempdir().expect("Ava home");
     let manager = GatewayAuthManager::new(
         config,
         home.path().to_path_buf(),
@@ -42,7 +42,7 @@ fn config(server: &MockServer) -> GatewayAuthConfig {
     GatewayAuthConfig {
         authorization_url: format!("{}/authorize", server.uri()),
         token_url: format!("{}/token", server.uri()),
-        client_id: "codex-test".to_string(),
+        client_id: "ava-test".to_string(),
         resource: Some("https://gateway.example.test/codex".to_string()),
         scopes: vec!["openid".to_string(), "gateway.inference".to_string()],
         redirect_port: None,
@@ -53,7 +53,7 @@ fn loopback_config() -> GatewayAuthConfig {
     GatewayAuthConfig {
         authorization_url: "http://127.0.0.1:18080/authorize".to_string(),
         token_url: "http://127.0.0.1:18080/token".to_string(),
-        client_id: "codex-test".to_string(),
+        client_id: "ava-test".to_string(),
         resource: None,
         scopes: Vec::new(),
         redirect_port: None,
@@ -153,7 +153,7 @@ async fn expired_tokens_refresh_once_when_the_response_omits_rotation_and_expiry
 
     let other = GatewayAuthManager::new(
         client.state.config.clone(),
-        client.state.codex_home.clone(),
+        client.state.ava_home.clone(),
         transport_default_auth_route_config().http_client_factory(),
         keyring.clone(),
     )
@@ -209,7 +209,7 @@ async fn different_configurations_refresh_under_the_same_store_lock() {
     );
     contender.unlock().expect("release store lock");
     for (client_id, refresh_token, access_token) in [
-        ("codex-test", "refresh-a", "access-a"),
+        ("ava-test", "refresh-a", "access-a"),
         ("other-client", "refresh-b", "access-b"),
     ] {
         let contender = Arc::clone(&contender);
@@ -442,13 +442,13 @@ async fn query_credentials_are_not_exposed_by_echoed_errors_or_truncated_request
 
 #[tokio::test]
 async fn gateway_credentials_use_a_dedicated_encrypted_file_and_reload_large_tokens() {
-    let codex_home = tempfile::tempdir().expect("Codex home");
+    let ava_home = tempfile::tempdir().expect("Ava home");
     let keyring = Arc::new(MockKeyringStore::default());
     let access_token = "gateway-token-".repeat(/*n*/ 512);
     let config = loopback_config();
     let client = GatewayAuthManager::new(
         config.clone(),
-        codex_home.path().to_path_buf(),
+        ava_home.path().to_path_buf(),
         transport_default_auth_route_config().http_client_factory(),
         keyring.clone(),
     )
@@ -462,16 +462,16 @@ async fn gateway_credentials_use_a_dedicated_encrypted_file_and_reload_large_tok
         .expect("save encrypted provider OAuth token");
     assert_eq!(keyring.saved_value(&client.credential_id()), None);
     assert!(
-        codex_home
+        ava_home
             .path()
             .join("secrets/gateway_oauth.age")
             .is_file()
     );
-    assert!(!codex_home.path().join("secrets/codex_auth.age").exists());
+    assert!(!ava_home.path().join("secrets/ava_auth.age").exists());
 
     let reloaded = GatewayAuthManager::new(
         config,
-        codex_home.path().to_path_buf(),
+        ava_home.path().to_path_buf(),
         transport_default_auth_route_config().http_client_factory(),
         keyring,
     )
@@ -498,7 +498,7 @@ async fn browser_authorization_exchanges_and_persists_under_the_store_lock() {
     Mock::given(method("POST"))
         .and(path("/token"))
         .and(body_string_contains("grant_type=authorization_code"))
-        .and(body_string_contains("client_id=codex-test"))
+        .and(body_string_contains("client_id=ava-test"))
         .and(body_string_contains("code=browser-authorization-code"))
         .and(body_string_contains("code_verifier="))
         .and(body_string_contains("redirect_uri="))

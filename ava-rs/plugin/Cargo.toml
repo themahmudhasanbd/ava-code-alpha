@@ -1,23 +1,23 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-plugin"
+name = "ava-plugin"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_plugin"
+name = "ava_plugin"
 path = "src/lib.rs"
 
 [lints]
 workspace = true
 
 [dependencies]
-codex-config = { workspace = true }
-codex-protocol = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-path-uri = { workspace = true }
-codex-utils-plugins = { workspace = true }
+ava-config = { workspace = true }
+ava-protocol = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-path-uri = { workspace = true }
+ava-utils-plugins = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 

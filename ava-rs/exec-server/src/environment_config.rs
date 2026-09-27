@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::McpServerConfig;
-use codex_config::McpServerDisabledReason;
-use codex_config::RequirementSource;
-use codex_config::RequirementsLayerEntry;
-use codex_config::compose_requirements_for_hostname;
-use codex_config::format_config_layer_source;
-use codex_config::host_name;
-use codex_config::loader::LocalTomlLayerStack;
-use codex_config::loader::load_local_config_layers;
-use codex_exec_server_protocol::EnvironmentConfigLayer;
-use codex_exec_server_protocol::EnvironmentConfigLayerStack;
-use codex_exec_server_protocol::EnvironmentConfigReadParams;
-use codex_exec_server_protocol::EnvironmentConfigReadResponse;
-use codex_file_system::ExecutorFileSystem;
-use codex_utils_home_dir::find_codex_home;
-use codex_utils_path_uri::PathUri;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::McpServerConfig;
+use ava_config::McpServerDisabledReason;
+use ava_config::RequirementSource;
+use ava_config::RequirementsLayerEntry;
+use ava_config::compose_requirements_for_hostname;
+use ava_config::format_config_layer_source;
+use ava_config::host_name;
+use ava_config::loader::LocalTomlLayerStack;
+use ava_config::loader::load_local_config_layers;
+use ava_exec_server_protocol::EnvironmentConfigLayer;
+use ava_exec_server_protocol::EnvironmentConfigLayerStack;
+use ava_exec_server_protocol::EnvironmentConfigReadParams;
+use ava_exec_server_protocol::EnvironmentConfigReadResponse;
+use ava_file_system::ExecutorFileSystem;
+use ava_utils_home_dir::find_ava_home;
+use ava_utils_path_uri::PathUri;
 
 use crate::Environment;
 use crate::ExecServerError;
@@ -38,10 +38,10 @@ pub(crate) async fn read_environment_config(
         .cwd
         .to_abs_path()
         .map_err(|error| ReadEnvironmentConfigError::InvalidParams(error.to_string()))?;
-    let codex_home = find_codex_home().map_err(|error| {
-        ReadEnvironmentConfigError::Internal(format!("failed to find Codex home: {error}"))
+    let ava_home = find_ava_home().map_err(|error| {
+        ReadEnvironmentConfigError::Internal(format!("failed to find Ava home: {error}"))
     })?;
-    let layers = load_local_config_layers(file_system, codex_home.as_path(), &cwd)
+    let layers = load_local_config_layers(file_system, ava_home.as_path(), &cwd)
         .await
         .map_err(|error| {
             ReadEnvironmentConfigError::Internal(format!(
@@ -53,7 +53,7 @@ pub(crate) async fn read_environment_config(
     Ok(EnvironmentConfigReadResponse {
         user_home_dir: dirs::home_dir()
             .and_then(|home_dir| PathUri::from_host_native_path(home_dir).ok()),
-        codex_home_dir: PathUri::from_abs_path(&codex_home),
+        ava_home_dir: PathUri::from_abs_path(&ava_home),
         hostname: host_name(),
         config: serialize_layer_stack(layers.config, |source| {
             format_config_layer_source(source, CONFIG_TOML_FILE)
@@ -104,7 +104,7 @@ impl Environment {
             let config = toml::from_str::<toml::Value>(&layer.toml).map_err(|error| {
                 ExecServerError::Protocol(format!("invalid executor-local MCP config: {error}"))
             })?;
-            codex_config::merge_toml_values(&mut merged, &config);
+            ava_config::merge_toml_values(&mut merged, &config);
         }
         let mut servers = merged
             .get("mcp_servers")

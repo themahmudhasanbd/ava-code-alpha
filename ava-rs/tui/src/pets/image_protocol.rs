@@ -9,10 +9,10 @@ use anyhow::Result;
 use anyhow::bail;
 use base64::Engine as _;
 use base64::engine::general_purpose;
-use codex_terminal_detection::Multiplexer;
-use codex_terminal_detection::TerminalInfo;
-use codex_terminal_detection::TerminalName;
-use codex_terminal_detection::terminal_info;
+use ava_terminal_detection::Multiplexer;
+use ava_terminal_detection::TerminalInfo;
+use ava_terminal_detection::TerminalName;
+use ava_terminal_detection::terminal_info;
 use image::imageops::FilterType;
 
 use super::sixel;
@@ -64,16 +64,16 @@ impl PetImageUnsupportedReason {
     fn message(self) -> &'static str {
         match self {
             Self::Tmux => {
-                "Pets are disabled in tmux. Terminal images don’t stay pane-local in tmux and can corrupt scrollback or move between panes. Run Codex outside tmux to use pets."
+                "Pets are disabled in tmux. Terminal images don’t stay pane-local in tmux and can corrupt scrollback or move between panes. Run Ava outside tmux to use pets."
             }
             Self::Zellij => {
-                "Pets are disabled in Zellij. Terminal images don’t stay reliably pane-local in Zellij. Run Codex outside Zellij to use pets."
+                "Pets are disabled in Zellij. Terminal images don’t stay reliably pane-local in Zellij. Run Ava outside Zellij to use pets."
             }
             Self::Iterm2TooOld => {
                 "Pets require iTerm2 3.6 or newer. Upgrade iTerm2 to use terminal pets."
             }
             Self::Terminal => {
-                "Pets aren’t available in this terminal. Terminal pets need image support, and this terminal environment doesn’t expose a supported image protocol. Try a terminal with Kitty graphics or Sixel support, or run Codex outside tmux."
+                "Pets aren’t available in this terminal. Terminal pets need image support, and this terminal environment doesn’t expose a supported image protocol. Try a terminal with Kitty graphics or Sixel support, or run Ava outside tmux."
             }
         }
     }

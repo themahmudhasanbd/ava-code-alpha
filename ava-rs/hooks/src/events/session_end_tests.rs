@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookSource;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookSource;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use pretty_assertions::assert_eq;
 
 use super::parse_completed;

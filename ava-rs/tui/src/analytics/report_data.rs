@@ -2,8 +2,8 @@
 //! This representation is never used to deserialize HTTP responses.
 //! Optional fields select the inputs used by each report; missing backend values stay missing.
 
-use codex_backend_client::AnalyticsResponse;
-use codex_backend_client::analytics_models as backend;
+use ava_backend_client::AnalyticsResponse;
+use ava_backend_client::analytics_models as backend;
 
 /// Report values projected for normalization after endpoint-specific decoding.
 #[derive(Clone, Debug, Default)]

@@ -2,24 +2,24 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
-use codex_core::config::AgentRoleConfig;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelServiceTier;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::openai_models::default_input_modalities;
-use codex_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
+use ava_core::config::AgentRoleConfig;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelServiceTier;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::openai_models::default_input_modalities;
+use ava_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
 use core_test_support::responses::ResponsesRequest;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
@@ -29,7 +29,7 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::namespace_child_tool;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use serde_json::Value;
 use std::time::Duration;
 use std::time::Instant;
@@ -135,7 +135,7 @@ async fn wait_for_model_available(manager: &SharedModelsManager, slug: &str) {
         let available_models = manager
             .list_models(
                 RefreshStrategy::Online,
-                codex_core::test_support::default_http_client_factory(),
+                ava_core::test_support::default_http_client_factory(),
             )
             .await;
         if available_models.iter().any(|model| model.model == slug) {
@@ -203,8 +203,8 @@ async fn spawn_agent_description_lists_visible_models_and_reasoning_efforts() ->
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("visible-model")
         .with_config(|config| {
             config
@@ -295,7 +295,7 @@ async fn configured_agent_roles_control_spawn_agent_type(
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config
                 .features
@@ -350,7 +350,7 @@ async fn multi_agent_v2_wait_guidance_uses_overridable_developer_instructions(
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config
                 .features
@@ -415,7 +415,7 @@ async fn multi_agent_v2_cold_resume_refreshes_legacy_usage_hints_once(
         ]),
     )
     .await;
-    let initial = test_codex()
+    let initial = test_ava()
         .with_pre_build_hook(move |home| {
             std::fs::write(home.join("config.toml"), &config_toml)
                 .expect("write multi-agent configuration");
@@ -451,13 +451,13 @@ async fn multi_agent_v2_cold_resume_refreshes_legacy_usage_hints_once(
         .rollout_path
         .clone()
         .expect("initial session should have a rollout path");
-    initial.codex.shutdown_and_wait().await?;
+    initial.ava-code.shutdown_and_wait().await?;
 
     let mut removed_recorded_usage_hint = false;
     let mut removed_usage_hint_presence = false;
     let legacy_rollout = std::fs::read_to_string(&rollout_path)?
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<std::result::Result<Vec<_>, _>>()?
         .into_iter()
         .map(|mut line| {
@@ -499,7 +499,7 @@ async fn multi_agent_v2_cold_resume_refreshes_legacy_usage_hints_once(
         ],
     )
     .await;
-    let mut resumed_builder = test_codex().with_config(move |config| {
+    let mut resumed_builder = test_ava().with_config(move |config| {
         if let Some(root_agent_usage_hint_text) = resumed_root_agent_usage_hint_text {
             config.multi_agent_v2.root_agent_usage_hint_text = Some(root_agent_usage_hint_text);
         }
@@ -589,7 +589,7 @@ async fn multi_agent_v2_resume_refreshes_changed_wait_guidance(
         ]),
     )
     .await;
-    let initial = test_codex()
+    let initial = test_ava()
         .with_pre_build_hook(move |home| {
             std::fs::write(home.join("config.toml"), &initial_config_toml)
                 .expect("write initial multi-agent configuration");
@@ -618,7 +618,7 @@ async fn multi_agent_v2_resume_refreshes_changed_wait_guidance(
         .rollout_path
         .clone()
         .expect("initial session should have a rollout path");
-    initial.codex.shutdown_and_wait().await?;
+    initial.ava-code.shutdown_and_wait().await?;
     std::fs::write(
         home.path().join("config.toml"),
         format!(
@@ -640,7 +640,7 @@ async fn multi_agent_v2_resume_refreshes_changed_wait_guidance(
         ],
     )
     .await;
-    let resumed = test_codex().resume(&server, home, rollout_path).await?;
+    let resumed = test_ava().resume(&server, home, rollout_path).await?;
 
     resumed
         .submit_turn("first turn with updated wait-agent availability")
@@ -727,7 +727,7 @@ wait_agent_enabled = {wait_agent_enabled}
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(move |home| {
             std::fs::write(home.join("config.toml"), &config_toml)
                 .expect("write multi-agent configuration");

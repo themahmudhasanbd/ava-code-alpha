@@ -5,14 +5,14 @@
 
 #![allow(clippy::unwrap_used)]
 
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::AccountLoginCompletedNotification;
-use codex_app_server_protocol::AccountUpdatedNotification;
-use codex_app_server_protocol::AuthMode as ApiAuthMode;
-use codex_app_server_protocol::CancelLoginAccountParams;
-use codex_app_server_protocol::ClientRequest;
-use codex_login::AuthConfig;
-use codex_protocol::auth::AuthMode;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::AccountLoginCompletedNotification;
+use ava_app_server_protocol::AccountUpdatedNotification;
+use ava_app_server_protocol::AuthMode as ApiAuthMode;
+use ava_app_server_protocol::CancelLoginAccountParams;
+use ava_app_server_protocol::ClientRequest;
+use ava_login::AuthConfig;
+use ava_protocol::auth::AuthMode;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -103,8 +103,8 @@ pub(crate) enum SignInOption {
     Bedrock,
 }
 
-pub(super) fn onboarding_request_id() -> codex_app_server_protocol::RequestId {
-    codex_app_server_protocol::RequestId::String(Uuid::new_v4().to_string())
+pub(super) fn onboarding_request_id() -> ava_app_server_protocol::RequestId {
+    ava_app_server_protocol::RequestId::String(Uuid::new_v4().to_string())
 }
 
 pub(super) async fn cancel_login_attempt(
@@ -112,7 +112,7 @@ pub(super) async fn cancel_login_attempt(
     login_id: String,
 ) {
     let _ = request_handle
-        .request_typed::<codex_app_server_protocol::CancelLoginAccountResponse>(
+        .request_typed::<ava_app_server_protocol::CancelLoginAccountResponse>(
             ClientRequest::CancelLoginAccount {
                 request_id: onboarding_request_id(),
                 params: CancelLoginAccountParams { login_id },
@@ -510,7 +510,7 @@ model = "gemini-3.8-flash"
             for dir in [
                 home.join(".ava-code"),
                 home.join(".config").join("ava"),
-                home.join(".codex"),
+                home.join(".ava-code"),
             ] {
                 let _ = std::fs::create_dir_all(&dir);
                 let _ = std::fs::write(
@@ -548,7 +548,7 @@ wire_api = "responses"
             for dir in [
                 home.join(".ava-code"),
                 home.join(".config").join("ava"),
-                home.join(".codex"),
+                home.join(".ava-code"),
             ] {
                 let _ = std::fs::create_dir_all(&dir);
                 let _ = std::fs::write(

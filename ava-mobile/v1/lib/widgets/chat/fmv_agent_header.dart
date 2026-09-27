@@ -1,10 +1,10 @@
 part of '../formatted_message_view.dart';
 
-// ─── Codex Style Agent Header, Status Indicators & Dynamic Error Card ──────────
+// ─── Ava Style Agent Header, Status Indicators & Dynamic Error Card ──────────
 
 // ignore_for_file: library_private_types_in_public_api, invalid_use_of_protected_member
 extension FmvAgentHeaderExt on _FormattedMessageViewState {
-  // ─── AvA Codex Agent Header ──────────────────────────────────────────────────
+  // ─── AvA Ava Agent Header ──────────────────────────────────────────────────
 
   Widget _buildAgentHeader(ChatMessageModel msg, {required bool isTurnActive}) {
     return Row(

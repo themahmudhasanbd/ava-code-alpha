@@ -1,12 +1,12 @@
 import { spawn } from "node:child_process";
 import readline from "node:readline";
 
-console.log("=== Testing Native AvA Core (codex-app-server) Integration ===");
+console.log("=== Testing Native AvA Core (ava-app-server) Integration ===");
 
-const binPath = "/var/www/ava-code/ava-rs/target/debug/codex-app-server";
+const binPath = "/var/www/ava-code/ava-rs/target/debug/ava-app-server";
 const env = {
   ...process.env,
-  CODEX_HOME: "/root/.ava-code",
+  AVA_HOME: "/root/.ava-code",
   AVA_HOME: "/root/.ava-code",
 };
 

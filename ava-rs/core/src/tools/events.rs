@@ -3,33 +3,33 @@ use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
 use crate::tools::context::SharedTurnDiffTracker;
 use crate::tools::sandboxing::ToolError;
-use codex_analytics::ArtifactOperation;
-use codex_analytics::ArtifactOperationLifecycle;
-use codex_analytics::build_track_events_context;
-use codex_apply_patch::AppliedPatchDelta;
-use codex_core_plugins::PluginCommandAttribution;
-use codex_core_plugins::recognize_artifact_operation;
-use codex_otel::ARTIFACT_OPERATION_EXPECTED_OUTPUT_COUNT_METRIC;
-use codex_otel::ARTIFACT_OPERATION_STARTED_METRIC;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::items::CommandExecutionItem;
-use codex_protocol::items::CommandExecutionStatus;
-use codex_protocol::items::FileChangeItem;
-use codex_protocol::items::ModelInvocationContext;
-use codex_protocol::items::TurnItem;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_protocol::protocol::ExecCommandStatus;
-use codex_protocol::protocol::FileChange;
-use codex_protocol::protocol::PatchApplyStatus;
-use codex_protocol::protocol::TurnDiffEvent;
-use codex_shell_command::parse_command::parse_command;
-use codex_utils_path_uri::PathUri;
-use codex_utils_string::truncate_middle_with_token_budget;
+use ava_analytics::ArtifactOperation;
+use ava_analytics::ArtifactOperationLifecycle;
+use ava_analytics::build_track_events_context;
+use ava_apply_patch::AppliedPatchDelta;
+use ava_core_plugins::PluginCommandAttribution;
+use ava_core_plugins::recognize_artifact_operation;
+use ava_otel::ARTIFACT_OPERATION_EXPECTED_OUTPUT_COUNT_METRIC;
+use ava_otel::ARTIFACT_OPERATION_STARTED_METRIC;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::items::CommandExecutionItem;
+use ava_protocol::items::CommandExecutionStatus;
+use ava_protocol::items::FileChangeItem;
+use ava_protocol::items::ModelInvocationContext;
+use ava_protocol::items::TurnItem;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_protocol::protocol::ExecCommandStatus;
+use ava_protocol::protocol::FileChange;
+use ava_protocol::protocol::PatchApplyStatus;
+use ava_protocol::protocol::TurnDiffEvent;
+use ava_shell_command::parse_command::parse_command;
+use ava_utils_path_uri::PathUri;
+use ava_utils_string::truncate_middle_with_token_budget;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -153,7 +153,7 @@ async fn emit_exec_command_begin(ctx: ToolEventCtx<'_>, exec_input: &ExecCommand
                 ArtifactOperation {
                     item_id: ctx.call_id.to_string(),
                     lifecycle: ArtifactOperationLifecycle::Started,
-                    occurred_at_ms: codex_analytics::now_unix_millis(),
+                    occurred_at_ms: ava_analytics::now_unix_millis(),
                     plugin_id: attribution.plugin_id.as_key(),
                     script_path: operation.script_path.to_string(),
                     skill: operation.plugin_name.to_string(),
@@ -411,15 +411,15 @@ impl ToolEmitter {
                 };
                 (event, result)
             }
-            Err(ToolError::Codex(err)) => match err.details() {
-                CodexErrorDetails::Sandbox(SandboxErr::Timeout { output }) => {
+            Err(ToolError::Ava(err)) => match err.details() {
+                AvaErrorDetails::Sandbox(SandboxErr::Timeout { output }) => {
                     let output = output.as_ref().clone();
                     let response = self.format_exec_output_for_model(&output, ctx);
                     let event = ToolEventStage::Failure(ToolEventFailure::Output(output));
                     let result = Err(FunctionCallError::RespondToModel(response));
                     (event, result)
                 }
-                CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
+                AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
                     let output = output.as_ref().clone();
                     let response = self.format_exec_output_for_model(&output, ctx);
                     // apply_patch can be denied after it has already committed a
@@ -673,13 +673,13 @@ mod tests {
     use super::*;
     use crate::session::tests::make_session_and_context_with_dynamic_tools_and_rx;
     use crate::turn_diff_tracker::TurnDiffTracker;
-    use codex_exec_server::LOCAL_FS;
-    use codex_protocol::error::CodexErr;
-    use codex_protocol::error::SandboxErr;
-    use codex_protocol::exec_output::ExecToolCallOutput;
-    use codex_protocol::items::TurnItem;
-    use codex_protocol::protocol::PatchApplyStatus;
-    use codex_utils_path_uri::PathUri;
+    use ava_exec_server::LOCAL_FS;
+    use ava_protocol::error::AvaErr;
+    use ava_protocol::error::SandboxErr;
+    use ava_protocol::exec_output::ExecToolCallOutput;
+    use ava_protocol::items::TurnItem;
+    use ava_protocol::protocol::PatchApplyStatus;
+    use ava_utils_path_uri::PathUri;
     use std::sync::Arc;
     use tempfile::tempdir;
     use tokio::sync::Mutex;
@@ -695,7 +695,7 @@ mod tests {
         let cwd = PathUri::from_host_native_path(dir.path()).expect("absolute cwd");
         let mut stdout = Vec::new();
         let mut stderr = Vec::new();
-        let delta = codex_apply_patch::apply_patch(
+        let delta = ava_apply_patch::apply_patch(
             "*** Begin Patch\n*** Add File: out/dest.txt\n+after\n*** End Patch",
             &cwd,
             &mut stdout,
@@ -758,7 +758,7 @@ mod tests {
             ..Default::default()
         };
         assert_failed_apply_patch_tracks_committed_delta(
-            Err(ToolError::Codex(CodexErr::Sandbox(SandboxErr::Denied {
+            Err(ToolError::Ava(AvaErr::Sandbox(SandboxErr::Denied {
                 output: Box::new(output),
                 network_policy_decision: None,
             }))),
@@ -790,7 +790,7 @@ mod tests {
         ] {
             let mut stdout = Vec::new();
             let mut stderr = Vec::new();
-            let delta = codex_apply_patch::apply_patch(
+            let delta = ava_apply_patch::apply_patch(
                 patch,
                 &cwd,
                 &mut stdout,
@@ -844,7 +844,7 @@ mod tests {
         let cwd = PathUri::from_host_native_path(dir.path()).expect("absolute cwd");
         let mut stdout = Vec::new();
         let mut stderr = Vec::new();
-        let delta = codex_apply_patch::apply_patch(
+        let delta = ava_apply_patch::apply_patch(
             "*** Begin Patch\n*** Add File: a.txt\n+one\n*** End Patch",
             &cwd,
             &mut stdout,

@@ -1020,7 +1020,7 @@ type OAuthLoginEvent = { loginId: string; vendorId: string } & (
 );
 ```
 
-流程可能在 `start` 回复之前就抛出第一个事件 —— OpenAI Codex 在登录开始的
+流程可能在 `start` 回复之前就抛出第一个事件 —— OpenAI Ava 在登录开始的
 同一个 tick 里就询问「浏览器还是设备码」—— 因此渲染层必须**先**订阅事件通道
 再调用 `start`，把 `loginId` 未知期间到达的事件暂存下来，等回复到达后按序
 放行匹配的那些。回复之后才订阅会丢掉第一个提问，流程便会一直等待一个从未

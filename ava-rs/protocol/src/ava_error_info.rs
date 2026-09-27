@@ -1,7 +1,7 @@
 //! Decodes unknown error classifications as `Other` so enclosing records stay readable.
 //! The wire definition keeps serialization exhaustive and known payload validation strict.
 
-use crate::protocol::CodexErrorInfo;
+use crate::protocol::AvaErrorInfo;
 use crate::protocol::NonSteerableTurnKind;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -12,11 +12,11 @@ use serde_json::Value;
 
 #[derive(Serialize, Deserialize)]
 #[serde(
-    remote = "CodexErrorInfo",
-    rename = "CodexErrorInfo",
+    remote = "AvaErrorInfo",
+    rename = "AvaErrorInfo",
     rename_all = "snake_case"
 )]
-enum CodexErrorInfoWire {
+enum AvaErrorInfoWire {
     ContextWindowExceeded,
     SessionBudgetExceeded,
     UsageLimitExceeded,
@@ -49,16 +49,16 @@ enum CodexErrorInfoWire {
     Other,
 }
 
-impl Serialize for CodexErrorInfo {
+impl Serialize for AvaErrorInfo {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        CodexErrorInfoWire::serialize(self, serializer)
+        AvaErrorInfoWire::serialize(self, serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for CodexErrorInfo {
+impl<'de> Deserialize<'de> for AvaErrorInfo {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -71,12 +71,12 @@ impl<'de> Deserialize<'de> for CodexErrorInfo {
             && let Some(kind) = fields.keys().next()
             && kind != "other"
             && matches!(
-                CodexErrorInfoWire::deserialize(Value::String(kind.clone())),
+                AvaErrorInfoWire::deserialize(Value::String(kind.clone())),
                 Ok(Self::Other)
             )
         {
             return Ok(Self::Other);
         }
-        CodexErrorInfoWire::deserialize(value).map_err(D::Error::custom)
+        AvaErrorInfoWire::deserialize(value).map_err(D::Error::custom)
     }
 }

@@ -1,16 +1,16 @@
 use anyhow::Result;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GitInfo;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenCountEvent;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TokenUsageInfo;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GitInfo;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenCountEvent;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TokenUsageInfo;
 use core_test_support::test_path_buf;
 use serde_json::json;
 use std::fs;
@@ -19,11 +19,11 @@ use std::path::Path;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-pub fn rollout_path(codex_home: &Path, filename_ts: &str, thread_id: &str) -> PathBuf {
+pub fn rollout_path(ava_home: &Path, filename_ts: &str, thread_id: &str) -> PathBuf {
     let year = &filename_ts[0..4];
     let month = &filename_ts[5..7];
     let day = &filename_ts[8..10];
-    codex_home
+    ava_home
         .join("sessions")
         .join(year)
         .join(month)
@@ -31,7 +31,7 @@ pub fn rollout_path(codex_home: &Path, filename_ts: &str, thread_id: &str) -> Pa
         .join(format!("rollout-{filename_ts}-{thread_id}.jsonl"))
 }
 
-/// Create a minimal rollout file under `CODEX_HOME/sessions/YYYY/MM/DD/`.
+/// Create a minimal rollout file under `AVA_HOME/sessions/YYYY/MM/DD/`.
 ///
 /// - `filename_ts` is the filename timestamp component in `YYYY-MM-DDThh-mm-ss` format.
 /// - `meta_rfc3339` is the envelope timestamp used in JSON lines.
@@ -40,7 +40,7 @@ pub fn rollout_path(codex_home: &Path, filename_ts: &str, thread_id: &str) -> Pa
 ///
 /// Returns the generated conversation/session UUID as a string.
 pub fn create_fake_rollout(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
@@ -48,7 +48,7 @@ pub fn create_fake_rollout(
     git_info: Option<GitInfo>,
 ) -> Result<String> {
     create_fake_rollout_with_source(
-        codex_home,
+        ava_home,
         filename_ts,
         meta_rfc3339,
         preview,
@@ -60,7 +60,7 @@ pub fn create_fake_rollout(
 
 /// Creates a minimal paginated rollout with ordinalized JSONL records.
 pub fn create_fake_paginated_rollout(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
@@ -68,14 +68,14 @@ pub fn create_fake_paginated_rollout(
     git_info: Option<GitInfo>,
 ) -> Result<String> {
     let thread_id = create_fake_rollout(
-        codex_home,
+        ava_home,
         filename_ts,
         meta_rfc3339,
         preview,
         model_provider,
         git_info,
     )?;
-    let path = rollout_path(codex_home, filename_ts, &thread_id);
+    let path = rollout_path(ava_home, filename_ts, &thread_id);
     let mut lines = fs::read_to_string(path.as_path())?
         .lines()
         .map(serde_json::from_str::<serde_json::Value>)
@@ -100,14 +100,14 @@ pub fn create_fake_paginated_rollout(
 /// non-zero and asymmetric so assertions catch swapped total/last fields and
 /// dropped cached or reasoning counters.
 pub fn create_fake_rollout_with_token_usage(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
     model_provider: Option<&str>,
 ) -> Result<String> {
     let thread_id = create_fake_rollout(
-        codex_home,
+        ava_home,
         filename_ts,
         meta_rfc3339,
         preview,
@@ -123,7 +123,7 @@ pub fn create_fake_rollout_with_token_usage(
                 output_tokens: 30,
                 reasoning_output_tokens: 10,
                 total_tokens: 150,
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             },
             last_token_usage: TokenUsage {
                 input_tokens: 70,
@@ -132,13 +132,13 @@ pub fn create_fake_rollout_with_token_usage(
                 output_tokens: 20,
                 reasoning_output_tokens: 5,
                 total_tokens: 90,
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             },
             model_context_window: Some(200_000),
         }),
         rate_limits: None,
     }))?;
-    let file_path = rollout_path(codex_home, filename_ts, &thread_id);
+    let file_path = rollout_path(ava_home, filename_ts, &thread_id);
     let line = json!({
         "timestamp": meta_rfc3339,
         "type": "event_msg",
@@ -154,7 +154,7 @@ pub fn create_fake_rollout_with_token_usage(
 
 /// Create a minimal rollout file with an explicit session source.
 pub fn create_fake_rollout_with_source(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
@@ -163,7 +163,7 @@ pub fn create_fake_rollout_with_source(
     source: SessionSource,
 ) -> Result<String> {
     create_fake_rollout_with_session_and_thread_source(
-        codex_home,
+        ava_home,
         filename_ts,
         meta_rfc3339,
         preview,
@@ -177,7 +177,7 @@ pub fn create_fake_rollout_with_source(
 /// Create a minimal rollout file with explicit session and thread sources.
 #[allow(clippy::too_many_arguments)]
 pub fn create_fake_rollout_with_session_and_thread_source(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
@@ -187,7 +187,7 @@ pub fn create_fake_rollout_with_session_and_thread_source(
     thread_source: Option<ThreadSource>,
 ) -> Result<String> {
     create_fake_rollout_with_source_and_parent_thread_id(
-        codex_home,
+        ava_home,
         filename_ts,
         meta_rfc3339,
         preview,
@@ -203,7 +203,7 @@ pub fn create_fake_rollout_with_session_and_thread_source(
 /// Create a minimal rollout file with an explicit root session and control parent.
 #[allow(clippy::too_many_arguments)]
 pub fn create_fake_parented_rollout_with_source(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
@@ -214,7 +214,7 @@ pub fn create_fake_parented_rollout_with_source(
     parent_thread_id: ThreadId,
 ) -> Result<String> {
     create_fake_rollout_with_source_and_parent_thread_id(
-        codex_home,
+        ava_home,
         filename_ts,
         meta_rfc3339,
         preview,
@@ -229,7 +229,7 @@ pub fn create_fake_parented_rollout_with_source(
 
 #[allow(clippy::too_many_arguments)]
 fn create_fake_rollout_with_source_and_parent_thread_id(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
@@ -245,7 +245,7 @@ fn create_fake_rollout_with_source_and_parent_thread_id(
     let conversation_id = ThreadId::from_string(&uuid_str)?;
     let session_id = session_id.unwrap_or_else(|| conversation_id.into());
 
-    let file_path = rollout_path(codex_home, filename_ts, &uuid_str);
+    let file_path = rollout_path(ava_home, filename_ts, &uuid_str);
     let dir = file_path
         .parent()
         .ok_or_else(|| anyhow::anyhow!("missing rollout parent directory"))?;
@@ -261,7 +261,7 @@ fn create_fake_rollout_with_source_and_parent_thread_id(
         timestamp: meta_rfc3339.to_string(),
         cwd: test_path_buf("/"),
         runtime_workspace_roots: None,
-        originator: "codex".to_string(),
+        originator: "ava".to_string(),
         cli_version: "0.0.0".to_string(),
         source,
         thread_source,
@@ -324,7 +324,7 @@ fn create_fake_rollout_with_source_and_parent_thread_id(
 }
 
 pub fn create_fake_rollout_with_text_elements(
-    codex_home: &Path,
+    ava_home: &Path,
     filename_ts: &str,
     meta_rfc3339: &str,
     preview: &str,
@@ -340,7 +340,7 @@ pub fn create_fake_rollout_with_text_elements(
     let year = &filename_ts[0..4];
     let month = &filename_ts[5..7];
     let day = &filename_ts[8..10];
-    let dir = codex_home.join("sessions").join(year).join(month).join(day);
+    let dir = ava_home.join("sessions").join(year).join(month).join(day);
     fs::create_dir_all(&dir)?;
 
     let file_path = dir.join(format!("rollout-{filename_ts}-{uuid}.jsonl"));
@@ -355,7 +355,7 @@ pub fn create_fake_rollout_with_text_elements(
         timestamp: meta_rfc3339.to_string(),
         cwd: test_path_buf("/"),
         runtime_workspace_roots: None,
-        originator: "codex".to_string(),
+        originator: "ava".to_string(),
         cli_version: "0.0.0".to_string(),
         source: SessionSource::Cli,
         thread_source: None,

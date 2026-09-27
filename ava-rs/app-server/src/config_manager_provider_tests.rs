@@ -2,14 +2,14 @@
 
 use super::*;
 use anyhow::Result;
-use codex_config::CloudConfigBundleLoadError;
-use codex_config::CloudConfigBundleLoadErrorCode;
-use codex_config::ThreadConfigContext;
-use codex_config::ThreadConfigLoadError;
-use codex_config::ThreadConfigLoadErrorCode;
-use codex_config::ThreadConfigLoaderFuture;
-use codex_config::ThreadConfigSource;
-use codex_config::test_support::CloudConfigBundleFixture;
+use ava_config::CloudConfigBundleLoadError;
+use ava_config::CloudConfigBundleLoadErrorCode;
+use ava_config::ThreadConfigContext;
+use ava_config::ThreadConfigLoadError;
+use ava_config::ThreadConfigLoadErrorCode;
+use ava_config::ThreadConfigLoaderFuture;
+use ava_config::ThreadConfigSource;
+use ava_config::test_support::CloudConfigBundleFixture;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 use test_case::test_case;
@@ -71,8 +71,8 @@ impl ThreadConfigLoader for UnavailableThreadConfig {
 async fn provider_requirements_do_not_reload_thread_config() -> Result<()> {
     let home = tempdir()?;
     let mut manager = ConfigManager::without_managed_config_for_tests(home.path().to_path_buf());
-    manager.thread_config_loader = Arc::new(codex_config::StaticThreadConfigLoader::new(vec![
-        ThreadConfigSource::Session(codex_config::SessionThreadConfig {
+    manager.thread_config_loader = Arc::new(ava_config::StaticThreadConfigLoader::new(vec![
+        ThreadConfigSource::Session(ava_config::SessionThreadConfig {
             model_provider: Some("retained".into()),
             model_providers: toml::from_str("[retained]\nname = 'Retained'")?,
             ..Default::default()

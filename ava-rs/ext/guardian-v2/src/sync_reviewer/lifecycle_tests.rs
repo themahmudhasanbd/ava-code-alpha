@@ -1,19 +1,19 @@
 //! Exercises Guardian registration and denial cleanup through real turns.
 
 use super::*;
-use codex_core::TurnInputRequest;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -36,7 +36,7 @@ impl TurnLifecycleContributor for StaleDenials {
 async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
     let home = tempfile::tempdir()?;
     let config = core_test_support::load_default_config_for_test(&home).await;
-    let model = codex_core::test_support::construct_model_info_offline("gpt-5", &config);
+    let model = ava_core::test_support::construct_model_info_offline("gpt-5", &config);
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     // Seed stale state before the production Guardian contributor runs its start hook.
     extensions.turn_lifecycle_contributor(Arc::new(StaleDenials(model.clone())));
@@ -60,7 +60,7 @@ async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
     let (streaming, _) = start_streaming_sse_server(streams).await;
     let server = start_mock_server().await;
     let base_url = format!("{}/v1", streaming.uri());
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(move |config| {
             config.model_provider.base_url = Some(base_url);
@@ -68,18 +68,18 @@ async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let denials = ReviewDenials::for_thread(test.codex.thread_extension_data());
+    let denials = ReviewDenials::for_thread(test.ava-code.thread_extension_data());
 
     let mut previous_turn = None;
     // The third turn also checks that an interrupted turn leaves the next turn usable.
     for (index, release) in releases.into_iter().enumerate() {
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Continue.".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
-        let turn_id = wait_for_event_match(&test.codex, |event| match event {
+        let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
             _ => None,
         })
@@ -98,8 +98,8 @@ async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
             assert_eq!(denials.record_denial(&turn_id, &model).await, None);
         }
         if index == 1 {
-            test.codex.submit(Op::Interrupt).await?;
-            wait_for_event(&test.codex, |event| {
+            test.ava-code.submit(Op::Interrupt).await?;
+            wait_for_event(&test.ava-code, |event| {
                 matches!(event, EventMsg::TurnAborted(event)
                     if event.reason == TurnAbortReason::Interrupted
                         && event.turn_id.as_deref() == Some(turn_id.as_str()))
@@ -109,13 +109,13 @@ async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
         } else {
             release.send(()).unwrap();
             wait_for_event(
-                &test.codex,
+                &test.ava-code,
                 |event| matches!(event, EventMsg::TurnComplete(event) if event.turn_id == turn_id),
             )
             .await;
         }
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     assert_eq!(
         denials.record_denial(&previous_turn.unwrap(), &model).await,
         None

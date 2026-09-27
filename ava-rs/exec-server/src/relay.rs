@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_protocol::protocol::W3cTraceContext;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_protocol::protocol::W3cTraceContext;
 use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;
@@ -967,8 +967,8 @@ mod tests {
     use std::task::Poll;
     use std::time::Duration;
 
-    use codex_exec_server_protocol::JSONRPCRequest;
-    use codex_exec_server_protocol::RequestId;
+    use ava_exec_server_protocol::JSONRPCRequest;
+    use ava_exec_server_protocol::RequestId;
     use futures::Sink;
     use futures::Stream;
     use futures::channel::mpsc as futures_mpsc;
@@ -1022,7 +1022,7 @@ mod tests {
         let (client_websocket, mut server_websocket) = websocket_pair().await?;
         let runtime_paths = crate::ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )
         .map_err(anyhow::Error::from)?;
         let environment_task = tokio::spawn(run_multiplexed_environment(

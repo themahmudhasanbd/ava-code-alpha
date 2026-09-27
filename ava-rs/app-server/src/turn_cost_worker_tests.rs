@@ -1,14 +1,14 @@
 use super::*;
-use codex_backend_client::ApiKeyResponseCost;
-use codex_core::config::ConfigBuilder;
-use codex_login::AuthCredentialsStoreMode;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::CodexAuth;
-use codex_login::login_with_api_key;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TurnStartedEvent;
+use ava_backend_client::ApiKeyResponseCost;
+use ava_core::config::ConfigBuilder;
+use ava_login::AuthCredentialsStoreMode;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AvaAuth;
+use ava_login::login_with_api_key;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TurnStartedEvent;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use test_case::test_case;
@@ -21,7 +21,7 @@ use wiremock::matchers::header;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-const TURN_COST_PATH: &str = "/v1/analytics/codex/turn-costs";
+const TURN_COST_PATH: &str = "/v1/analytics/ava/turn-costs";
 
 #[path = "turn_cost_worker_chatgpt_tests.rs"]
 mod chatgpt;
@@ -37,9 +37,9 @@ async fn worker_starts_with_otlp_metrics_exporter_without_log_exporter() {
         .expect(1)
         .mount(&server)
         .await;
-    let codex_home = TempDir::new().expect("temporary Codex home");
+    let ava_home = TempDir::new().expect("temporary Ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("test config");
@@ -50,7 +50,7 @@ async fn worker_starts_with_otlp_metrics_exporter_without_log_exporter() {
         headers: HashMap::new(),
         tls: None,
     };
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("sk-test"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("sk-test"));
 
     let worker = TurnCostWorker::spawn(Arc::new(config), auth_manager)
         .expect("OTLP metrics exporter should enable turn-cost collection");
@@ -61,9 +61,9 @@ async fn worker_starts_with_otlp_metrics_exporter_without_log_exporter() {
 
 #[tokio::test]
 async fn handle_observes_only_matching_model_provider() {
-    let codex_home = TempDir::new().expect("temporary Codex home");
+    let ava_home = TempDir::new().expect("temporary Ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("test config");
@@ -161,14 +161,14 @@ async fn worker_waits_for_late_api_key_login() {
 async fn custom_provider_auth_failure_retries_without_auth_changes() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
-        .and(path("/analytics/codex/turn-costs"))
+        .and(path("/analytics/ava/turn-costs"))
         .and(header("authorization", "Bearer sk-old"))
         .respond_with(ResponseTemplate::new(401))
         .expect(1)
         .mount(&server)
         .await;
     Mock::given(method("POST"))
-        .and(path("/analytics/codex/turn-costs"))
+        .and(path("/analytics/ava/turn-costs"))
         .and(header("authorization", "Bearer sk-new-token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "turns": []
@@ -186,9 +186,9 @@ async fn custom_provider_auth_failure_retries_without_auth_changes() {
     )
     .expect("write initial provider auth");
     let provider_auth_manager = auth_manager_at(provider_auth_home.path()).await;
-    let codex_home = TempDir::new().expect("temporary Codex home");
+    let ava_home = TempDir::new().expect("temporary Ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("test config");
@@ -228,15 +228,15 @@ async fn custom_provider_auth_failure_retries_without_auth_changes() {
 async fn custom_provider_does_not_send_chatgpt_auth_for_turn_costs() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
-        .and(path("/analytics/codex/turn-costs"))
+        .and(path("/analytics/ava/turn-costs"))
         .respond_with(ResponseTemplate::new(500))
         .mount(&server)
         .await;
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
-    let codex_home = TempDir::new().expect("temporary Codex home");
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+    let ava_home = TempDir::new().expect("temporary Ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("test config");
@@ -270,7 +270,7 @@ async fn transient_probe_failure_keeps_worker_alive() {
         .expect(1)
         .mount(&server)
         .await;
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("sk-test"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("sk-test"));
     let runtime = test_runtime(&server, Arc::clone(&auth_manager)).await;
     let backend_availability = runtime.probe_backend().await;
     assert_eq!(backend_availability, BackendAvailability::RetryProbe);
@@ -299,7 +299,7 @@ async fn transient_probe_failure_keeps_worker_alive() {
 #[tokio::test]
 async fn priced_cost_uses_telemetry_captured_before_thread_removal() {
     let server = MockServer::start().await;
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("sk-test"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("sk-test"));
     let mut runtime = test_runtime(&server, auth_manager).await;
     let thread_id = ThreadId::new();
     let turn_id = "turn-1";
@@ -344,7 +344,7 @@ async fn priced_cost_uses_telemetry_captured_before_thread_removal() {
 #[tokio::test]
 async fn priced_cost_waits_for_every_response_when_response_costs_are_available() {
     let server = MockServer::start().await;
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("sk-test"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("sk-test"));
     let mut runtime = test_runtime(&server, auth_manager).await;
     let thread_id = ThreadId::new();
     let turn_id = "turn-1";
@@ -393,9 +393,9 @@ async fn priced_cost_waits_for_every_response_when_response_costs_are_available(
 }
 
 async fn test_runtime(server: &MockServer, auth_manager: Arc<AuthManager>) -> WorkerRuntime {
-    let codex_home = TempDir::new().expect("temporary Codex home");
+    let ava_home = TempDir::new().expect("temporary Ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("test config");
@@ -408,16 +408,16 @@ async fn test_runtime(server: &MockServer, auth_manager: Arc<AuthManager>) -> Wo
     }
 }
 
-async fn auth_manager_at(codex_home: &std::path::Path) -> Arc<AuthManager> {
+async fn auth_manager_at(ava_home: &std::path::Path) -> Arc<AuthManager> {
     Arc::new(
         AuthManager::new(
-            codex_home.to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            codex_login::test_support::transport_default_auth_route_config(),
+            ava_login::test_support::transport_default_auth_route_config(),
         )
         .await,
     )
@@ -467,7 +467,7 @@ async fn turn_cost_failures_do_not_log_response_bodies(status: u16) {
         .await;
     let mut runtime = test_runtime(
         &server,
-        AuthManager::from_auth_for_testing(CodexAuth::from_api_key("sk-test")),
+        AuthManager::from_auth_for_testing(AvaAuth::from_api_key("sk-test")),
     )
     .await;
     let capture = tempfile::NamedTempFile::new().expect("log capture");

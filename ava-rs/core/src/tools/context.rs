@@ -5,23 +5,23 @@ use crate::session::turn_context::TurnContext;
 use crate::turn_diff_tracker::TurnDiffTracker;
 use crate::unified_exec::format_output_omission_marker;
 use crate::unified_exec::resolve_max_tokens;
-use codex_protocol::ResponseItemId;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::function_call_output_content_items_to_text;
-use codex_tools::LoadableToolSpec;
-use codex_tools::ToolName;
-use codex_utils_audio::estimate_audio_token_count;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::approx_token_count;
-use codex_utils_output_truncation::formatted_truncate_text;
-use codex_utils_output_truncation::truncate_function_output_payload;
-use codex_utils_output_truncation::truncate_text;
-use codex_utils_output_truncation::with_serialization_allowance;
+use ava_protocol::ResponseItemId;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::function_call_output_content_items_to_text;
+use ava_tools::LoadableToolSpec;
+use ava_tools::ToolName;
+use ava_utils_audio::estimate_audio_token_count;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::approx_token_count;
+use ava_utils_output_truncation::formatted_truncate_text;
+use ava_utils_output_truncation::truncate_function_output_payload;
+use ava_utils_output_truncation::truncate_text;
+use ava_utils_output_truncation::with_serialization_allowance;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 use std::num::NonZeroUsize;
@@ -30,8 +30,8 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
-pub use codex_tools::ToolOutput;
-pub use codex_tools::ToolPayload;
+pub use ava_tools::ToolOutput;
+pub use ava_tools::ToolPayload;
 
 pub(crate) fn boxed_tool_output<T>(output: T) -> Box<dyn ToolOutput>
 where
@@ -50,7 +50,7 @@ pub enum ToolCallSource {
         /// Runtime cell that issued the nested tool request.
         cell_id: String,
         /// Code-mode's per-cell tool invocation id. This is useful for
-        /// debugging the JS/runtime bridge, but it is not the Codex tool call id
+        /// debugging the JS/runtime bridge, but it is not the Ava tool call id
         /// because the runtime id only needs to be unique within one cell.
         runtime_tool_call_id: String,
     },
@@ -87,7 +87,7 @@ impl ToolInvocation {
                 .session
                 .services
                 .code_mode_service
-                .cell_originating_call(&codex_code_mode::CellId::new(cell_id.clone()));
+                .cell_originating_call(&ava_code_mode::CellId::new(cell_id.clone()));
         }
 
         let item_id = self

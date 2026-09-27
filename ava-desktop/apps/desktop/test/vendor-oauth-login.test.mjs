@@ -192,7 +192,7 @@ async function waitFor(events, kind, maxAttempts = 200) {
 }
 
 test("wire apis map to the provider row's api style and protocol", () => {
-  assert.equal(apiStyleForWireApi("openai-codex-responses"), "openai_codex_responses");
+  assert.equal(apiStyleForWireApi("openai-ava-responses"), "openai_ava_responses");
   assert.equal(apiStyleForWireApi("pi-messages"), "pi_messages");
   assert.equal(apiStyleForWireApi("anthropic-messages"), "anthropic_messages");
   // An api we have no style for still produces a usable row.
@@ -532,7 +532,7 @@ test("the real pi-ai catalog offers every vendor account we ship", async () => {
       "github-copilot",
       "kimi-coding",
       "meta",
-      "openai-codex",
+      "openai-ava",
       "openrouter",
       "radius",
       "xai",
@@ -551,13 +551,13 @@ test("the Meta OAuth catalog includes Muse Spark 1.3", async () => {
 });
 
 test("the ChatGPT OAuth catalog includes GPT-6 Astra", async () => {
-  const { OPENAI_CODEX_MODELS } = await import(
-    "@earendil-works/pi-ai/providers/openai-codex.models"
+  const { OPENAI_AVA_MODELS } = await import(
+    "@earendil-works/pi-ai/providers/openai-ava.models"
   );
-  const model = OPENAI_CODEX_MODELS["gpt-6-astra"];
-  assert.ok(model, "openai-codex catalog must include gpt-6-astra");
+  const model = OPENAI_AVA_MODELS["gpt-6-astra"];
+  assert.ok(model, "openai-ava catalog must include gpt-6-astra");
   assert.equal(model.id, "gpt-6-astra");
-  assert.equal(model.api, "openai-codex-responses");
+  assert.equal(model.api, "openai-ava-responses");
 });
 
 test("credential writes for one account run one at a time", async () => {

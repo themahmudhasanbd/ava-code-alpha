@@ -5,10 +5,10 @@
 
 use super::LocalAgentControl;
 use crate::agent::AgentStatus;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
 
 pub(crate) struct AgentInterruptOutcome {
     pub(crate) agent_path: AgentPath,
@@ -19,7 +19,7 @@ pub(crate) struct AgentInterruptOutcome {
 #[derive(Debug)]
 pub(crate) enum AgentInterruptError {
     InvalidRequest(String),
-    Agent(CodexErr),
+    Agent(AvaErr),
 }
 
 impl LocalAgentControl {
@@ -56,7 +56,7 @@ impl LocalAgentControl {
             Err(err)
                 if matches!(
                     err.details(),
-                    CodexErrorDetails::ThreadNotFound(_) | CodexErrorDetails::InternalAgentDied
+                    AvaErrorDetails::ThreadNotFound(_) | AvaErrorDetails::InternalAgentDied
                 ) => {}
             Err(err) => return Err(AgentInterruptError::Agent(err)),
         }

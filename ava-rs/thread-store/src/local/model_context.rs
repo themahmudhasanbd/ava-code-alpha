@@ -2,14 +2,14 @@
 
 use std::io;
 
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::ModelContextScan;
-use codex_rollout::ModelContextScanProgress;
-use codex_rollout::ReverseJsonlScanner;
-use codex_rollout::RolloutItem;
-use codex_rollout::ScanOutcome;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::ModelContextScan;
+use ava_rollout::ModelContextScanProgress;
+use ava_rollout::ReverseJsonlScanner;
+use ava_rollout::RolloutItem;
+use ava_rollout::ScanOutcome;
 
 use super::LocalThreadStore;
 use super::read_thread;
@@ -50,7 +50,7 @@ pub(super) async fn load_latest_model_context(
                 message: format!("no rollout found for thread id {}", params.thread_id),
             })?;
 
-    let session_meta = codex_rollout::read_session_meta_line(path.as_path())
+    let session_meta = ava_rollout::read_session_meta_line(path.as_path())
         .await
         .map_err(|err| ThreadStoreError::Internal {
             message: format!("failed to read session metadata {}: {err}", path.display()),
@@ -91,7 +91,7 @@ pub(super) async fn load_for_fork(
         .ok_or_else(|| ThreadStoreError::Internal {
             message: "fork lineage has no source segment".to_string(),
         })?;
-    let mut session_meta = codex_rollout::read_session_meta_line(source_path)
+    let mut session_meta = ava_rollout::read_session_meta_line(source_path)
         .await
         .map_err(|err| ThreadStoreError::Internal {
             message: format!(
@@ -106,7 +106,7 @@ pub(super) async fn load_for_fork(
         session_meta.meta.multi_agent_version = tokio::task::spawn_blocking(move || {
             for segment in source_lineage.segments().iter().rev() {
                 let file =
-                    codex_rollout::open_rollout_seekable_reader(segment.rollout_path.as_path())?;
+                    ava_rollout::open_rollout_seekable_reader(segment.rollout_path.as_path())?;
                 let mut scanner = match segment.end.map(|end| end.end_byte_offset) {
                     Some(end_byte_offset) => ReverseJsonlScanner::new_at(file, end_byte_offset)?,
                     None => ReverseJsonlScanner::new(file)?,
@@ -170,7 +170,7 @@ fn scan_model_context_from_lineage_blocking(
 ) -> io::Result<Vec<RolloutItem>> {
     let mut scan = ModelContextScan::default();
     'segments: for segment in lineage.segments().iter().rev() {
-        let file = codex_rollout::open_rollout_seekable_reader(segment.rollout_path.as_path())?;
+        let file = ava_rollout::open_rollout_seekable_reader(segment.rollout_path.as_path())?;
         let mut scanner = match segment.end.map(|end| end.end_byte_offset) {
             Some(end_byte_offset) => ReverseJsonlScanner::new_at(file, end_byte_offset)?,
             None => ReverseJsonlScanner::new(file)?,

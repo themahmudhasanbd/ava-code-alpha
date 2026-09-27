@@ -11,12 +11,12 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_rollout::ARCHIVED_SESSIONS_SUBDIR;
-use codex_rollout::RolloutReferenceIndex;
-use codex_rollout::SESSIONS_SUBDIR;
-use codex_rollout::find_archived_thread_path_by_id_str;
-use codex_rollout::find_thread_path_by_id_str;
-use codex_rollout::remove_thread_name_entries;
+use ava_rollout::ARCHIVED_SESSIONS_SUBDIR;
+use ava_rollout::RolloutReferenceIndex;
+use ava_rollout::SESSIONS_SUBDIR;
+use ava_rollout::find_archived_thread_path_by_id_str;
+use ava_rollout::find_thread_path_by_id_str;
+use ava_rollout::remove_thread_name_entries;
 
 use super::LocalThreadStore;
 use super::helpers::scoped_rollout_path;
@@ -27,15 +27,15 @@ use crate::ThreadStoreError;
 use crate::ThreadStoreResult;
 
 struct ThreadRollouts {
-    thread_id: codex_protocol::ThreadId,
-    rollout_ids: HashSet<codex_protocol::ThreadId>,
+    thread_id: ava_protocol::ThreadId,
+    rollout_ids: HashSet<ava_protocol::ThreadId>,
     paths: Vec<PathBuf>,
 }
 
 impl ThreadRollouts {
     fn from_index(
         reference_index: &RolloutReferenceIndex,
-        thread_id: codex_protocol::ThreadId,
+        thread_id: ava_protocol::ThreadId,
     ) -> Self {
         let mut rollout_ids = HashSet::new();
         let paths = reference_index
@@ -53,7 +53,7 @@ impl ThreadRollouts {
     }
 
     fn add_path(&mut self, path: PathBuf) {
-        if let Some(rollout_id) = codex_rollout::rollout_id_from_path(path.as_path()) {
+        if let Some(rollout_id) = ava_rollout::rollout_id_from_path(path.as_path()) {
             self.rollout_ids.insert(rollout_id);
         }
         if !self.paths.contains(&path) {
@@ -131,7 +131,7 @@ pub(super) async fn delete_threads(
 
 async fn delete_state_rows(
     store: &LocalThreadStore,
-    thread_ids: &[codex_protocol::ThreadId],
+    thread_ids: &[ava_protocol::ThreadId],
 ) -> ThreadStoreResult<u64> {
     let Some(state_db) = store.state_db.as_ref() else {
         return Ok(0);
@@ -180,14 +180,14 @@ fn ensure_no_external_references(
 async fn scan_reference_index(
     store: &LocalThreadStore,
 ) -> ThreadStoreResult<RolloutReferenceIndex> {
-    RolloutReferenceIndex::scan(store.config.codex_home.as_path())
+    RolloutReferenceIndex::scan(store.config.ava_home.as_path())
         .await
         .map_err(|err| ThreadStoreError::Internal {
             message: format!("failed to scan fork history references: {err}"),
         })
 }
 
-fn referenced_thread_error(thread_id: codex_protocol::ThreadId) -> ThreadStoreError {
+fn referenced_thread_error(thread_id: ava_protocol::ThreadId) -> ThreadStoreError {
     ThreadStoreError::InvalidRequest {
         message: format!("cannot delete thread {thread_id}: forked history still references it"),
     }
@@ -202,7 +202,7 @@ async fn delete_thread_after_reference_check(
     let thread_id_str = thread_id.to_string();
     let state_db_ctx = store.state_db().await;
     match find_thread_path_by_id_str(
-        store.config.codex_home.as_path(),
+        store.config.ava_home.as_path(),
         thread_id_str.as_str(),
         state_db_ctx.as_deref(),
     )
@@ -217,7 +217,7 @@ async fn delete_thread_after_reference_check(
         }
     }
     match find_archived_thread_path_by_id_str(
-        store.config.codex_home.as_path(),
+        store.config.ava_home.as_path(),
         thread_id_str.as_str(),
         state_db_ctx.as_deref(),
     )
@@ -252,7 +252,7 @@ async fn delete_thread_after_reference_check(
     for rollout_path in thread_rollouts.paths {
         delete_rollout_file(store, rollout_path.as_path())?;
     }
-    remove_thread_name_entries(store.config.codex_home.as_path(), thread_id)
+    remove_thread_name_entries(store.config.ava_home.as_path(), thread_id)
         .await
         .map_err(|err| ThreadStoreError::Internal {
             message: format!("failed to delete thread name index entries for {thread_id}: {err}"),
@@ -266,7 +266,7 @@ async fn delete_thread_after_reference_check(
 }
 
 fn delete_rollout_file(store: &LocalThreadStore, rollout_path: &Path) -> ThreadStoreResult<bool> {
-    let plain_path = codex_rollout::plain_rollout_path(rollout_path);
+    let plain_path = ava_rollout::plain_rollout_path(rollout_path);
     let compressed_path = plain_path.with_extension("jsonl.zst");
     let deleted_plain = delete_rollout_path(store, plain_path.as_path())?;
     let deleted_compressed = delete_rollout_path(store, compressed_path.as_path())?;
@@ -275,13 +275,13 @@ fn delete_rollout_file(store: &LocalThreadStore, rollout_path: &Path) -> ThreadS
 
 fn delete_rollout_path(store: &LocalThreadStore, rollout_path: &Path) -> ThreadStoreResult<bool> {
     let canonical_rollout_path = scoped_rollout_path(
-        store.config.codex_home.join(SESSIONS_SUBDIR),
+        store.config.ava_home.join(SESSIONS_SUBDIR),
         rollout_path,
         "sessions",
     )
     .or_else(|_| {
         scoped_rollout_path(
-            store.config.codex_home.join(ARCHIVED_SESSIONS_SUBDIR),
+            store.config.ava_home.join(ARCHIVED_SESSIONS_SUBDIR),
             rollout_path,
             "archived sessions",
         )
@@ -305,11 +305,11 @@ fn delete_rollout_path(store: &LocalThreadStore, rollout_path: &Path) -> ThreadS
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::ThreadId;
-    use codex_protocol::protocol::HistoryPosition;
-    use codex_protocol::protocol::ThreadHistoryMode;
-    use codex_protocol::protocol::ThreadMemoryMode;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_protocol::ThreadId;
+    use ava_protocol::protocol::HistoryPosition;
+    use ava_protocol::protocol::ThreadHistoryMode;
+    use ava_protocol::protocol::ThreadMemoryMode;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
     use uuid::Uuid;
@@ -666,7 +666,7 @@ mod tests {
             ThreadHistoryMode::Paginated,
         )
         .expect("session file");
-        let pool = codex_state::open_thread_history_db(&config.sqlite)
+        let pool = ava_state::open_thread_history_db(&config.sqlite)
             .await
             .expect("open existing thread history database");
         let thread_id_string = thread_id.to_string();
@@ -734,7 +734,7 @@ SELECT
     async fn delete_thread_removes_materialized_thread_history() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let state_db = codex_state::StateRuntime::init(
+        let state_db = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -750,8 +750,8 @@ SELECT
             ThreadHistoryMode::Paginated,
         )
         .expect("session file");
-        let pool = codex_state::open_thread_history_db(
-            &codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let pool = ava_state::open_thread_history_db(
+            &ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         )
         .await
         .expect("open thread history db");

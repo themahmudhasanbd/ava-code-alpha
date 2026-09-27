@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use codex_extension_api::ContextualUserFragment;
-use codex_skills::SkillMetadata;
-use codex_skills::normalize_skill_path;
+use ava_extension_api::ContextualUserFragment;
+use ava_skills::SkillMetadata;
+use ava_skills::normalize_skill_path;
 
 use crate::HostSkillsSnapshot;
 use crate::fragments::SkillInstructions;

@@ -2,11 +2,11 @@ use super::LocalThreadStore;
 use crate::CreateThreadParams;
 use crate::ThreadStoreError;
 use crate::ThreadStoreResult;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_rollout::RolloutConfig;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::RolloutRecorderParams;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_rollout::RolloutConfig;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::RolloutRecorderParams;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 pub(super) async fn create_thread(
     store: &LocalThreadStore,
@@ -21,7 +21,7 @@ pub(super) async fn create_thread(
             message: "local thread store requires a cwd".to_string(),
         })?;
     let config = RolloutConfig {
-        codex_home: store.config.codex_home.clone(),
+        ava_home: store.config.ava_home.clone(),
         sqlite: store.config.sqlite.clone(),
         cwd,
         model_provider_id: params.metadata.model_provider.clone(),

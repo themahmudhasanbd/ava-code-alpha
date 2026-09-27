@@ -15,12 +15,12 @@ use super::*;
 use crate::transport::remote_control::protocol::normalize_remote_control_url;
 use crate::transport::remote_control::server_api::remote_control_retry_at;
 use crate::transport::remote_control::tests::remote_control_handle_with_current_enrollment;
-use codex_app_server_protocol::RemoteControlPairingStartParams;
-use codex_app_server_protocol::RemoteControlPairingStatusParams;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::AuthManager;
-use codex_login::save_auth;
+use ava_app_server_protocol::RemoteControlPairingStartParams;
+use ava_app_server_protocol::RemoteControlPairingStatusParams;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AuthManager;
+use ava_login::save_auth;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio::io::AsyncWriteExt;
@@ -84,8 +84,8 @@ async fn proactive_refresh_failure_uses_valid_token_for_websocket_connect() {
             .await;
         accept_test_websocket(&listener).await
     });
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let state_db = remote_control_state_runtime(&codex_home).await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let state_db = remote_control_state_runtime(&ava_home).await;
     let auth_manager = remote_control_auth_manager();
     let mut enrollment = remote_control_enrollment(Some(TEST_REMOTE_CONTROL_SERVER_TOKEN));
     enrollment.expires_at = Some(time::OffsetDateTime::now_utc() + time::Duration::minutes(4));
@@ -140,8 +140,8 @@ async fn proactive_refresh_connection_failure_uses_valid_token_for_websocket_con
         drop(stream);
         accept_test_websocket(&listener).await
     });
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let state_db = remote_control_state_runtime(&codex_home).await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let state_db = remote_control_state_runtime(&ava_home).await;
     let auth_manager = remote_control_auth_manager();
     let mut enrollment = remote_control_enrollment(Some(TEST_REMOTE_CONTROL_SERVER_TOKEN));
     enrollment.expires_at = Some(time::OffsetDateTime::now_utc() + time::Duration::minutes(4));
@@ -190,8 +190,8 @@ async fn websocket_retry_after_throttles_pairing_refresh() {
         .await;
         listener
     });
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let state_db = remote_control_state_runtime(&codex_home).await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let state_db = remote_control_state_runtime(&ava_home).await;
     let auth_manager = remote_control_auth_manager();
     let mut remote_handle =
         remote_control_handle_with_current_enrollment(&remote_control_url, auth_manager.clone());
@@ -284,8 +284,8 @@ async fn pairing_http_date_retry_after_throttles_websocket_refresh() {
             .await;
             listener
         });
-        let codex_home = TempDir::new().expect("temp dir should create");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let ava_home = TempDir::new().expect("temp dir should create");
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let auth_manager = remote_control_auth_manager();
         let mut remote_handle = remote_control_handle_with_current_enrollment(
             &remote_control_url,
@@ -354,8 +354,8 @@ async fn pairing_during_pending_handshake_respects_later_overload() {
     let remote_control_url = remote_control_url_for_listener(&listener);
     let remote_control_target =
         normalize_remote_control_url(&remote_control_url).expect("target should parse");
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let state_db = remote_control_state_runtime(&codex_home).await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let state_db = remote_control_state_runtime(&ava_home).await;
     let auth_manager = remote_control_auth_manager();
     let mut remote_handle =
         remote_control_handle_with_current_enrollment(&remote_control_url, auth_manager.clone());
@@ -440,25 +440,25 @@ async fn pairing_auth_recovery_respects_concurrent_handshake_overload() {
         let remote_control_url = remote_control_url_for_listener(&listener);
         let remote_control_target =
             normalize_remote_control_url(&remote_control_url).expect("target should parse");
-        let codex_home = TempDir::new().expect("temp dir should create");
+        let ava_home = TempDir::new().expect("temp dir should create");
         save_auth(
-            codex_home.path(),
+            ava_home.path(),
             &remote_control_auth_dot_json("stale-token"),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
         )
         .expect("stale auth should save");
         let auth_manager = AuthManager::shared(
-            codex_home.path().to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path().to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            codex_login::test_support::transport_default_auth_route_config(),
+            ava_login::test_support::transport_default_auth_route_config(),
         )
         .await;
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let mut remote_handle = remote_control_handle_with_current_enrollment(
             &remote_control_url,
             auth_manager.clone(),
@@ -517,7 +517,7 @@ async fn pairing_auth_recovery_respects_concurrent_handshake_overload() {
         let retry_at = remote_control_retry_at(&connect_error)
             .expect("the handshake should preserve its retry deadline");
         save_auth(
-            codex_home.path(),
+            ava_home.path(),
             &remote_control_auth_dot_json("fresh-token"),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
@@ -572,8 +572,8 @@ async fn pairing_overload_defers_pairing_and_websocket_requests() {
                     }
                     listener
                 });
-                let codex_home = TempDir::new().expect("temp dir should create");
-                let state_db = remote_control_state_runtime(&codex_home).await;
+                let ava_home = TempDir::new().expect("temp dir should create");
+                let state_db = remote_control_state_runtime(&ava_home).await;
                 let auth_manager = remote_control_auth_manager();
                 let mut remote_handle = remote_control_handle_with_current_enrollment(
                     &remote_control_url,
@@ -666,8 +666,8 @@ async fn assert_refresh_failure_blocks_websocket(
         .await;
         assert_no_connection_until_connect_finishes(&listener, connects_done_rx).await;
     });
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let state_db = remote_control_state_runtime(&codex_home).await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let state_db = remote_control_state_runtime(&ava_home).await;
     let auth_manager = remote_control_auth_manager();
     let mut enrollment = remote_control_enrollment(Some(TEST_REMOTE_CONTROL_SERVER_TOKEN));
     enrollment.expires_at = Some(time::OffsetDateTime::now_utc() + expires_in);

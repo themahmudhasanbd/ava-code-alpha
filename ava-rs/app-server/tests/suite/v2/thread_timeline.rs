@@ -2,39 +2,39 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadItemsListParams;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_app_server_protocol::ThreadRealtimeItemContent;
-use codex_app_server_protocol::ThreadTimelineEntry;
-use codex_app_server_protocol::ThreadTimelineListParams;
-use codex_app_server_protocol::ThreadTimelineListResponse;
-use codex_protocol::ThreadId;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::realtime::RealtimeItem;
-use codex_protocol::realtime::RealtimeItemContent;
-use codex_protocol::realtime::RealtimeTranscriptRole;
-use codex_protocol::user_input::UserInput;
-use codex_rollout::RolloutItem;
-use codex_thread_store::AppendThreadItemsParams;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::LocalThreadStore;
-use codex_thread_store::LocalThreadStoreConfig;
-use codex_thread_store::PersistContext;
-use codex_thread_store::ThreadPersistenceMetadata;
-use codex_thread_store::ThreadStore;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadItemsListParams;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_app_server_protocol::ThreadRealtimeItemContent;
+use ava_app_server_protocol::ThreadTimelineEntry;
+use ava_app_server_protocol::ThreadTimelineListParams;
+use ava_app_server_protocol::ThreadTimelineListResponse;
+use ava_protocol::ThreadId;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::realtime::RealtimeItem;
+use ava_protocol::realtime::RealtimeItemContent;
+use ava_protocol::realtime::RealtimeTranscriptRole;
+use ava_protocol::user_input::UserInput;
+use ava_rollout::RolloutItem;
+use ava_thread_store::AppendThreadItemsParams;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::LocalThreadStore;
+use ava_thread_store::LocalThreadStoreConfig;
+use ava_thread_store::PersistContext;
+use ava_thread_store::ThreadPersistenceMetadata;
+use ava_thread_store::ThreadStore;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -42,16 +42,16 @@ use uuid::Uuid;
 #[tokio::test]
 async fn timeline_pages_mix_items_and_resolve_the_opening_realtime_session() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let thread_id = ThreadId::default();
-    let sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    let sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let state_db =
-        codex_state::StateRuntime::init(sqlite.clone(), "mock_provider".to_string()).await?;
+        ava_state::StateRuntime::init(sqlite.clone(), "mock_provider".to_string()).await?;
     let store = LocalThreadStore::new(
         LocalThreadStoreConfig {
-            codex_home: codex_home.path().to_path_buf(),
+            ava_home: ava_home.path().to_path_buf(),
             sqlite,
             default_model_provider_id: "mock_provider".to_string(),
         },
@@ -77,7 +77,7 @@ async fn timeline_pages_mix_items_and_resolve_the_opening_realtime_session() -> 
             initial_window_id: Uuid::now_v7().to_string(),
             runtime_workspace_roots: None,
             metadata: ThreadPersistenceMetadata {
-                cwd: Some(codex_home.path().to_path_buf()),
+                cwd: Some(ava_home.path().to_path_buf()),
                 model_provider: "mock_provider".to_string(),
                 memory_mode: ThreadMemoryMode::Enabled,
             },
@@ -140,7 +140,7 @@ async fn timeline_pages_mix_items_and_resolve_the_opening_realtime_session() -> 
     store.shutdown_thread(thread_id).await?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;

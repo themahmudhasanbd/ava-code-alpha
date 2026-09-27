@@ -3,9 +3,9 @@
 use super::*;
 use crate::local_settings::LocalSettings;
 use crate::transcript_mode::TranscriptMode;
-use codex_app_server_protocol::DynamicToolCallOutputContentItem;
-use codex_app_server_protocol::DynamicToolCallStatus;
-use codex_config::types::AltScreenMode;
+use ava_app_server_protocol::DynamicToolCallOutputContentItem;
+use ava_app_server_protocol::DynamicToolCallStatus;
+use ava_config::types::AltScreenMode;
 use pretty_assertions::assert_eq;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;

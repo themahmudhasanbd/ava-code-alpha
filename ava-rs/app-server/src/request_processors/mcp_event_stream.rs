@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::McpServerEventNotification;
-use codex_app_server_protocol::McpServerEventStreamNotification;
-use codex_app_server_protocol::McpServerEventStreamStartParams;
-use codex_app_server_protocol::ServerNotification;
-use codex_core::CodexThread;
-use codex_login::AuthManager;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::McpEventStream;
-use codex_protocol::ThreadId;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::McpServerEventNotification;
+use ava_app_server_protocol::McpServerEventStreamNotification;
+use ava_app_server_protocol::McpServerEventStreamStartParams;
+use ava_app_server_protocol::ServerNotification;
+use ava_core::AvaThread;
+use ava_login::AuthManager;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::McpEventStream;
+use ava_protocol::ThreadId;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tokio::sync::oneshot;
@@ -50,7 +50,7 @@ impl McpEventStreams {
         params: McpServerEventStreamStartParams,
         processor: McpRequestProcessor,
     ) -> Result<McpEventStreamReady, JSONRPCErrorError> {
-        if params.server != CODEX_APPS_MCP_SERVER_NAME {
+        if params.server != AVA_APPS_MCP_SERVER_NAME {
             return Err(invalid_request(
                 "MCP event subscriptions are only supported for hosted apps",
             ));
@@ -184,7 +184,7 @@ async fn forward_events(
     connection_id: ConnectionId,
     params: &McpServerEventStreamStartParams,
     outgoing: &OutgoingMessageSender,
-    thread: Arc<CodexThread>,
+    thread: Arc<AvaThread>,
     mut stream: McpEventStream,
     mut auth_changes: McpEventStreamAuthChanges,
     ready: oneshot::Sender<Result<(), JSONRPCErrorError>>,

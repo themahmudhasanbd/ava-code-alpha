@@ -5,7 +5,7 @@ use pretty_assertions::assert_eq;
 
 use super::*;
 
-const CHILD_MODE_ENV_VAR: &str = "CODEX_SHELL_ENVIRONMENT_SCRUBBER_TEST_MODE";
+const CHILD_MODE_ENV_VAR: &str = "AVA_SHELL_ENVIRONMENT_SCRUBBER_TEST_MODE";
 const TEST_NAME: &str =
     "shell_environment::tests::command_scrubber_removes_names_from_real_child_environment";
 
@@ -23,7 +23,7 @@ fn non_inheritable_environment_is_removed_after_policy_overrides() {
             r#"{"instance_id":"box-one"}"#.to_string(),
         ),
         (
-            "codex_exec_server_noise_auth_token".to_string(),
+            "ava_exec_server_noise_auth_token".to_string(),
             "inherited-noise-token".to_string(),
         ),
     ];
@@ -38,7 +38,7 @@ fn non_inheritable_environment_is_removed_after_policy_overrides() {
                 "/run/identity-token".to_string(),
             ),
             (
-                "Codex_Exec_Server_Noise_Auth_Token".to_string(),
+                "Ava_Exec_Server_Noise_Auth_Token".to_string(),
                 "configured-noise-token".to_string(),
             ),
         ]),
@@ -64,7 +64,7 @@ fn command_scrubber_removes_names_from_real_child_environment() {
                 r#"{"instance_id":"box-one"}"#,
             )
             .env(
-                "Codex_Exec_Server_Noise_Auth_Token",
+                "Ava_Exec_Server_Noise_Auth_Token",
                 "inherited-noise-token",
             )
             .output()
@@ -83,7 +83,7 @@ fn command_scrubber_removes_names_from_real_child_environment() {
         .env("NODE_REPL_AUTH_TOKEN", "configured-token")
         .env("openai_identity_token_file", "/run/identity-token")
         .env(
-            CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR,
+            AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR,
             "configured-noise-token",
         )
         .env("SAFE", "value");

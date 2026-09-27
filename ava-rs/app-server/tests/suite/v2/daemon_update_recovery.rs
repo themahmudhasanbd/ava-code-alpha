@@ -6,13 +6,13 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::DISABLE_PLUGIN_STARTUP_TASKS_ARG;
 use app_test_support::create_final_assistant_message_sse_response;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_transport::daemon_recovery;
-use codex_app_server_transport::daemon_recovery_file_path;
-use codex_uds::UnixStream;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_transport::daemon_recovery;
+use ava_app_server_transport::daemon_recovery_file_path;
+use ava_uds::UnixStream;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
 use futures::SinkExt;
@@ -226,9 +226,9 @@ async fn managed_shutdown_skips_nonpersistent_threads_and_tolerates_save_failure
     let home = TempDir::new()?;
     create_config_toml(home.path(), "http://127.0.0.1:1", "never")?;
     let source = if matches!(scenario, SnapshotScenario::Child) {
-        codex_protocol::protocol::SessionSource::SubAgent(
-            codex_protocol::protocol::SubAgentSource::ThreadSpawn {
-                parent_thread_id: codex_protocol::ThreadId::new(),
+        ava_protocol::protocol::SessionSource::SubAgent(
+            ava_protocol::protocol::SubAgentSource::ThreadSpawn {
+                parent_thread_id: ava_protocol::ThreadId::new(),
                 depth: 1,
                 agent_path: None,
                 agent_nickname: None,
@@ -236,7 +236,7 @@ async fn managed_shutdown_skips_nonpersistent_threads_and_tolerates_save_failure
             },
         )
     } else {
-        codex_protocol::protocol::SessionSource::Cli
+        ava_protocol::protocol::SessionSource::Cli
     };
     let stored = if matches!(scenario, SnapshotScenario::Parented) {
         app_test_support::create_fake_parented_rollout_with_source(
@@ -247,8 +247,8 @@ async fn managed_shutdown_skips_nonpersistent_threads_and_tolerates_save_failure
             Some("mock_provider"),
             /*git_info*/ None,
             source,
-            codex_protocol::SessionId::new(),
-            codex_protocol::ThreadId::new(),
+            ava_protocol::SessionId::new(),
+            ava_protocol::ThreadId::new(),
         )?
     } else {
         app_test_support::create_fake_rollout_with_source(
@@ -318,7 +318,7 @@ async fn managed_shutdown_preserves_admitted_resume() -> Result<()> {
         format!(
             "{}\n[mcp_servers.stalled]\nurl = {:?}\nrequired = true\nstartup_timeout_sec = 120\nhttp_headers = {{ Authorization = \"Bearer synthetic-test-token\" }}\n",
             std::fs::read_to_string(&config)?,
-            format!("{}/api/codex/ps/mcp", mcp.chatgpt_base_url),
+            format!("{}/api/ava/ps/mcp", mcp.chatgpt_base_url),
         ),
     )?;
     let id = app_test_support::create_fake_rollout(
@@ -603,7 +603,7 @@ async fn managed_shutdown_records_interrupted_turn(outcome: &str) -> Result<()> 
     }
     if outcome == "running" {
         // A prior recovery can append an older turn's abort after this turn started.
-        codex_rollout::append_rollout_item_to_path(
+        ava_rollout::append_rollout_item_to_path(
             thread.thread.path.as_ref().context("rollout path")?,
             &serde_json::from_value(json!({
                 "type":"event_msg",
@@ -809,14 +809,14 @@ async fn connect_daemon_client(
 }
 
 fn spawn_server(home: &Path, socket_path: &Path) -> Result<Child> {
-    let binary = codex_utils_cargo_bin::cargo_bin("codex-app-server")?;
+    let binary = ava_utils_cargo_bin::cargo_bin("ava-app-server")?;
     Ok(Command::new(binary)
         .args(["--listen", &format!("unix://{}", socket_path.display())])
         .arg(DISABLE_PLUGIN_STARTUP_TASKS_ARG)
-        .env("CODEX_HOME", home)
+        .env("AVA_HOME", home)
         .arg("--managed-daemon")
         .env(
-            codex_app_server_transport::DAEMON_SHUTDOWN_SOCKET_ENV,
+            ava_app_server_transport::DAEMON_SHUTDOWN_SOCKET_ENV,
             socket_path,
         )
         .stdin(Stdio::null())

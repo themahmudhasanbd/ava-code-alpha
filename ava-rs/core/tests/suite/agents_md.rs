@@ -1,45 +1,45 @@
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_core::ForkSnapshot;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-use codex_extension_api::Instructions;
-use codex_extension_api::LoadInstructionsFuture;
-use codex_extension_api::LoadedUserInstructions;
-use codex_extension_api::ThreadInstructionsProvider;
-use codex_extension_api::UserInstructionsProvider;
-use codex_features::Feature;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_home::CodexHomeUserInstructionsProvider;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::ForkBoundary;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::PrepareForkParams;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_string::approx_bytes_for_tokens;
+use ava_core::ForkSnapshot;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+use ava_extension_api::Instructions;
+use ava_extension_api::LoadInstructionsFuture;
+use ava_extension_api::LoadedUserInstructions;
+use ava_extension_api::ThreadInstructionsProvider;
+use ava_extension_api::UserInstructionsProvider;
+use ava_features::Feature;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_home::AvaHomeUserInstructionsProvider;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::ForkBoundary;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::PrepareForkParams;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_string::approx_bytes_for_tokens;
 use core_test_support::PathBufExt;
 use core_test_support::create_directory_symlink;
 use core_test_support::load_default_config_for_test;
@@ -53,12 +53,12 @@ use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_no_remote_env;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_target_windows;
-use core_test_support::test_codex::RecordingUserInstructionsProvider;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::executor_path_uri;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::RecordingUserInstructionsProvider;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::executor_path_uri;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -93,7 +93,7 @@ const SPAWN_SEED_PROMPT: &str = "seed parent history";
 const PROVIDER_WARNING: &str = "global instruction source unavailable; using fallback";
 
 struct WarningInstructionsProvider {
-    inner: CodexHomeUserInstructionsProvider,
+    inner: AvaHomeUserInstructionsProvider,
     warning_active: AtomicBool,
 }
 
@@ -174,7 +174,7 @@ impl ThreadInstructionsProvider for RecordingThreadInstructionsProvider {
     }
 }
 
-async fn agents_instructions(mut builder: TestCodexBuilder) -> Result<String> {
+async fn agents_instructions(mut builder: TestAvaBuilder) -> Result<String> {
     let server = start_mock_server().await;
     let resp_mock = mount_sse_once(
         &server,
@@ -208,7 +208,7 @@ fn remove_agents_md_world_state_section(rollout_path: &Path) -> Result<()> {
     let mut removed_section = false;
     let retained = rollout
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<std::result::Result<Vec<_>, _>>()?
         .into_iter()
         .map(|mut line| {
@@ -251,7 +251,7 @@ fn assert_single_instruction_fragment(request: &responses::ResponsesRequest, exp
 }
 
 pub(super) async fn submit_thread_turn(
-    thread: &Arc<codex_core::CodexThread>,
+    thread: &Arc<ava_core::AvaThread>,
     prompt: &str,
 ) -> Result<()> {
     thread
@@ -265,7 +265,7 @@ pub(super) async fn submit_thread_turn(
 }
 
 pub(super) async fn persisted_resume_history(
-    thread: &Arc<codex_core::CodexThread>,
+    thread: &Arc<ava_core::AvaThread>,
 ) -> Result<(ThreadId, InitialHistory)> {
     thread.ensure_rollout_materialized().await;
     thread.flush_rollout().await?;
@@ -312,7 +312,7 @@ fn request_body_contains(request: &wiremock::Request, text: &str) -> bool {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn agents_override_is_preferred_over_agents_md() -> Result<()> {
     let instructions =
-        agents_instructions(test_codex().with_workspace_setup(|cwd, fs| async move {
+        agents_instructions(test_ava().with_workspace_setup(|cwd, fs| async move {
             let agents_md = cwd.join("AGENTS.md");
             let override_md = cwd.join("AGENTS.override.md");
             let agents_md_uri = executor_path_uri(&agents_md)?;
@@ -350,7 +350,7 @@ async fn agents_override_is_preferred_over_agents_md() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn configured_fallback_is_used_when_agents_candidate_is_directory() -> Result<()> {
     let instructions = agents_instructions(
-        test_codex()
+        test_ava()
             .with_config(|config| {
                 config.project_doc_fallback_filenames = vec!["WORKFLOW.md".to_string()];
             })
@@ -396,7 +396,7 @@ async fn invalid_fallback_paths_do_not_prevent_loading_valid_filenames() -> Resu
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.project_doc_fallback_filenames =
                 [".", "..", "nested/WORKFLOW.md", "WORKFLOW.md"]
@@ -443,7 +443,7 @@ async fn invalid_fallback_paths_do_not_prevent_loading_valid_filenames() -> Resu
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn agents_docs_are_concatenated_from_project_root_to_cwd() -> Result<()> {
     let instructions = agents_instructions(
-        test_codex()
+        test_ava()
             .with_config(|config| {
                 config.cwd = config.cwd.join("nested/workspace");
             })
@@ -519,7 +519,7 @@ async fn symlinked_cwd_uses_logical_parent_for_agents_discovery() -> Result<()> 
     )
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_config(|config| {
             config.cwd = config.cwd.join("logical-repo/workspace");
         })
@@ -569,7 +569,7 @@ async fn symlinked_cwd_uses_logical_parent_for_agents_discovery() -> Result<()> 
         .expect("symlink should have a parent");
 
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![
             PathUri::from_abs_path(&logical_root.join("AGENTS.md")),
             PathUri::from_abs_path(&test.config.cwd.join("AGENTS.md"))
@@ -602,7 +602,7 @@ async fn selected_environment_sources_match_model_visible_instructions() -> Resu
     let global_agents = home.path().join("AGENTS.md");
     std::fs::write(&global_agents, "global doc")?;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_workspace_setup(|cwd, fs| async move {
             let agents_md_uri = executor_path_uri(cwd.join("AGENTS.md"))?;
@@ -619,7 +619,7 @@ async fn selected_environment_sources_match_model_visible_instructions() -> Resu
     let global_agents = global_agents.abs();
 
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![
             PathUri::from_abs_path(&global_agents),
             test.workspace_path_uri("AGENTS.md")?,
@@ -650,7 +650,7 @@ async fn untrusted_project_excludes_project_instructions() -> Result<()> {
     let global_agents =
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_config(|config| {
             config.active_project.trust_level = Some(TrustLevel::Untrusted);
@@ -668,7 +668,7 @@ async fn untrusted_project_excludes_project_instructions() -> Result<()> {
     let test = builder.build_with_auto_env(&server).await?;
 
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&global_agents)]
     );
 
@@ -700,7 +700,7 @@ async fn runtime_trust_reload_refreshes_project_instructions() -> Result<()> {
     let home = Arc::new(TempDir::new()?);
     let global_agents =
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_config(|config| {
             config.active_project.trust_level = Some(TrustLevel::Trusted);
@@ -721,25 +721,25 @@ async fn runtime_trust_reload_refreshes_project_instructions() -> Result<()> {
 
     test.submit_turn("trusted project").await?;
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![global_agents.clone(), project_agents.clone()]
     );
 
-    let mut untrusted_config = (*test.codex.config().await).clone();
+    let mut untrusted_config = (*test.ava-code.config().await).clone();
     untrusted_config.active_project.trust_level = Some(TrustLevel::Untrusted);
-    test.codex.refresh_runtime_config(untrusted_config).await;
+    test.ava-code.refresh_runtime_config(untrusted_config).await;
     test.submit_turn("untrusted project").await?;
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![global_agents.clone()]
     );
 
-    let mut trusted_config = (*test.codex.config().await).clone();
+    let mut trusted_config = (*test.ava-code.config().await).clone();
     trusted_config.active_project.trust_level = Some(TrustLevel::Trusted);
-    test.codex.refresh_runtime_config(trusted_config).await;
+    test.ava-code.refresh_runtime_config(trusted_config).await;
     test.submit_turn("trusted again").await?;
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![global_agents, project_agents]
     );
 
@@ -771,7 +771,7 @@ async fn restricted_project_without_instructions_starts_successfully() -> Result
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         let mut file_system_policy = FileSystemSandboxPolicy::read_only();
         file_system_policy.entries.push(FileSystemSandboxEntry::new(
             config.cwd.join("private.txt").into(),
@@ -788,7 +788,7 @@ async fn restricted_project_without_instructions_starts_successfully() -> Result
     let test = builder.build_with_auto_env(&server).await?;
 
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         Vec::<PathUri>::new()
     );
     test.submit_text_turn("continue without project instructions")
@@ -811,7 +811,7 @@ async fn denied_project_instructions_fail_thread_creation() -> Result<()> {
     let home = Arc::new(TempDir::new()?);
     write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_config(|config| {
             let mut file_system_policy = FileSystemSandboxPolicy::read_only();
@@ -865,7 +865,7 @@ async fn symlinked_writable_root_reports_sandbox_failure_instead_of_session_corr
     let visualization_root = home.path().join("visualizations");
     create_directory_symlink(&visualization_target, &visualization_root);
 
-    let mut builder = test_codex().with_home(home).with_config(move |config| {
+    let mut builder = test_ava().with_home(home).with_config(move |config| {
         config.project_doc_max_bytes = 1;
         let mut file_system_policy = FileSystemSandboxPolicy::read_only();
         file_system_policy.entries.push(FileSystemSandboxEntry::new(
@@ -903,11 +903,11 @@ async fn symlinked_writable_root_reports_sandbox_failure_instead_of_session_corr
         "sandbox preparation failure should not be diagnosed as session corruption: {error}"
     );
     let error = error
-        .replace(&canonical_home_path, "$CODEX_HOME")
-        .replace(&home_path, "$CODEX_HOME");
+        .replace(&canonical_home_path, "$AVA_HOME")
+        .replace(&home_path, "$AVA_HOME");
     insta::assert_snapshot!(error, @"
-    failed to load AGENTS.md instructions for environment `local`: failed to prepare fs sandbox: failed to prepare Seatbelt sandbox: writable root $CODEX_HOME/visualizations contains symlink component $CODEX_HOME/visualizations; symlinked writable roots are not supported.
-    If this writable root is at or beneath CODEX_HOME and you trust its symlink targets, set `allow_symlinked_codex_home = true` at the top level of `$CODEX_HOME/config.toml` (normally `~/.codex/config.toml`) on the execution host, then restart Codex or its executor. This opt-out trusts targets outside CODEX_HOME and targets changed between commands. It does not apply to other writable roots.
+    failed to load AGENTS.md instructions for environment `local`: failed to prepare fs sandbox: failed to prepare Seatbelt sandbox: writable root $AVA_HOME/visualizations contains symlink component $AVA_HOME/visualizations; symlinked writable roots are not supported.
+    If this writable root is at or beneath AVA_HOME and you trust its symlink targets, set `allow_symlinked_ava_home = true` at the top level of `$AVA_HOME/config.toml` (normally `~/.ava-code/config.toml`) on the execution host, then restart Ava or its executor. This opt-out trusts targets outside AVA_HOME and targets changed between commands. It does not apply to other writable roots.
     ");
 
     Ok(())
@@ -932,10 +932,10 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
     let home = Arc::new(TempDir::new()?);
     let global_source = write_global_file(&home, GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
     let provider = Arc::new(WarningInstructionsProvider {
-        inner: CodexHomeUserInstructionsProvider::new(home.path().to_path_buf().abs()),
+        inner: AvaHomeUserInstructionsProvider::new(home.path().to_path_buf().abs()),
         warning_active: AtomicBool::new(/*v*/ false),
     });
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_user_instructions_provider(provider.clone())
         .with_workspace_setup(|cwd, fs| async move {
@@ -951,7 +951,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
     let test = builder.build_with_auto_env(&server).await?;
 
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![
             PathUri::from_abs_path(&global_source),
             test.workspace_path_uri(GLOBAL_AGENTS_FILENAME)?
@@ -972,7 +972,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
     );
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "inspect instructions after tightening permissions".to_string(),
@@ -987,7 +987,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
         .await?;
 
     let mut warnings_before_error = Vec::new();
-    let EventMsg::Error(error) = wait_for_event(&test.codex, |event| {
+    let EventMsg::Error(error) = wait_for_event(&test.ava-code, |event| {
         if let EventMsg::Warning(warning) = event {
             warnings_before_error.push(warning.message.clone());
         }
@@ -1005,7 +1005,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
     );
 
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         Vec::<PathUri>::new()
     );
     assert!(
@@ -1031,12 +1031,12 @@ async fn loads_user_instructions_without_a_primary_environment() -> Result<()> {
     let global_source =
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
     let provider = Arc::new(RecordingUserInstructionsProvider::new(Arc::new(
-        CodexHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
+        AvaHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
             home.path().to_path_buf(),
         )?),
     )));
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_user_instructions_provider(provider.clone())
         .with_workspace_setup(|cwd, fs| async move {
@@ -1087,8 +1087,8 @@ async fn loads_user_instructions_without_a_primary_environment() -> Result<()> {
 }
 
 struct ThreadInstructionsFixture {
-    test: TestCodex,
-    thread: Arc<codex_core::CodexThread>,
+    test: TestAva,
+    thread: Arc<ava_core::AvaThread>,
     provider: Arc<RecordingThreadInstructionsProvider>,
 }
 
@@ -1097,11 +1097,11 @@ impl ThreadInstructionsFixture {
         let home = Arc::new(TempDir::new()?);
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
         let global_provider = Arc::new(RecordingUserInstructionsProvider::new(Arc::new(
-            CodexHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
+            AvaHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
                 home.path().to_path_buf(),
             )?),
         )));
-        let mut builder = test_codex()
+        let mut builder = test_ava()
             .with_home(home)
             .with_user_instructions_provider(global_provider.clone())
             .with_config(|config| {
@@ -1156,7 +1156,7 @@ async fn thread_provider_composes_and_clears_only_its_instructions() -> Result<(
     .await;
     let fixture = ThreadInstructionsFixture::new(&server).await?;
     let sources = vec![
-        PathUri::from_abs_path(&fixture.test.config.codex_home.join(GLOBAL_AGENTS_FILENAME)),
+        PathUri::from_abs_path(&fixture.test.config.ava_home.join(GLOBAL_AGENTS_FILENAME)),
         fixture.test.workspace_path_uri(GLOBAL_AGENTS_FILENAME)?,
     ];
     assert_eq!(fixture.thread.instruction_sources().await, sources);
@@ -1310,12 +1310,12 @@ async fn thread_provider_refreshes_at_the_next_step_of_an_active_turn() -> Resul
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn isolated_guardian_keeps_applied_thread_instructions() -> Result<()> {
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
-            config.permissions.approval_policy = codex_core::config::Constrained::allow_any(
-                codex_protocol::protocol::AskForApproval::OnRequest,
+            config.permissions.approval_policy = ava_core::config::Constrained::allow_any(
+                ava_protocol::protocol::AskForApproval::OnRequest,
             );
-            config.approvals_reviewer = codex_protocol::config_types::ApprovalsReviewer::AutoReview;
+            config.approvals_reviewer = ava_protocol::config_types::ApprovalsReviewer::AutoReview;
         })
         .build_with_auto_env(&server)
         .await?;
@@ -1324,7 +1324,7 @@ async fn isolated_guardian_keeps_applied_thread_instructions() -> Result<()> {
     let parent = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(test.codex.environment_selections().await),
+            environments: Some(test.ava-code.environment_selections().await),
             thread_instructions_provider: Some(provider.clone()),
             ..StartThreadOptions::new(test.config.clone())
         })
@@ -1408,7 +1408,7 @@ async fn thread_provider_enforces_its_own_limit_before_startup_and_sampling() ->
         .ok_or_else(|| anyhow!("oversized instructions must fail before thread creation"))?;
     assert!(matches!(
         error.details(),
-        CodexErrorDetails::InvalidRequest(_)
+        AvaErrorDetails::InvalidRequest(_)
     ));
     assert!(error.to_string().contains("10000 estimated tokens"));
 
@@ -1512,7 +1512,7 @@ async fn fork_preserves_thread_instructions(
         }
         InstructionForkSource::OfflinePrepared => ThreadHistoryMode::Paginated,
     };
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_config(|config| {
             config
                 .features
@@ -1640,7 +1640,7 @@ async fn thread_provider_lives_with_its_session_across_resume() -> Result<()> {
             .to_vec(),
     )
     .await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
     let provider = Arc::new(RecordingThreadInstructionsProvider::new(
         /*instructions*/ None,
@@ -1739,7 +1739,7 @@ async fn fresh_thread_composes_global_before_project_and_reports_sources() -> Re
     let global_source =
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_workspace_setup(|cwd, fs| async move {
             let agents_md_uri = executor_path_uri(cwd.join("AGENTS.md"))?;
@@ -1759,7 +1759,7 @@ async fn fresh_thread_composes_global_before_project_and_reports_sources() -> Re
     ];
 
     // Confirm the thread records both creation-time sources in composition order.
-    assert_eq!(test.codex.instruction_sources().await, creation_sources);
+    assert_eq!(test.ava-code.instruction_sources().await, creation_sources);
 
     // Materialize the initial snapshot, then rewrite both selected files in place before another
     // ordinary turn.
@@ -1828,7 +1828,7 @@ async fn fresh_thread_composes_global_before_project_and_reports_sources() -> Re
         "expected rendered instructions to contain {PROJECT_SEPARATOR:?}; observed: {rendered}"
     );
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         creation_sources,
         "same-path global refresh preserves source paths and composition order"
     );
@@ -1859,7 +1859,7 @@ async fn multi_environment_project_instructions_share_one_byte_budget() -> Resul
     .await;
     let local_root = TempDir::new()?;
     std::fs::write(local_root.path().join(GLOBAL_AGENTS_FILENAME), "VWXYZ")?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_config(|config| config.project_doc_max_bytes = 7)
         .with_workspace_setup(|cwd, fs| async move {
             fs.write_file(
@@ -1934,14 +1934,14 @@ async fn multi_environment_thread_refreshes_global_and_keeps_repository_snapshot
     let global_source =
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
     let provider = Arc::new(RecordingUserInstructionsProvider::new(Arc::new(
-        CodexHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
+        AvaHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
             home.path().to_path_buf(),
         )?),
     )));
     let local_root = TempDir::new()?;
     let local_source = local_root.path().join(GLOBAL_AGENTS_FILENAME);
     std::fs::write(&local_source, "local project instructions")?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_user_instructions_provider(provider.clone())
         .with_workspace_setup(|cwd, fs| async move {
@@ -2075,10 +2075,10 @@ async fn global_instruction_warnings_reappear_only_after_recovery() -> Result<()
         "Failed to read global AGENTS.md instructions from `{}`: {read_error}",
         override_path.display()
     );
-    let mut builder = test_codex().with_home(Arc::clone(&home));
+    let mut builder = test_ava().with_home(Arc::clone(&home));
     let test = builder.build_with_auto_env(&server).await?;
     wait_for_event(
-        &test.codex,
+        &test.ava-code,
         |event| matches!(event, EventMsg::Warning(warning) if warning.message == expected_warning),
     )
     .await;
@@ -2095,14 +2095,14 @@ async fn global_instruction_warnings_reappear_only_after_recovery() -> Result<()
         } else {
             std::fs::write(&override_path, "")?;
         }
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "check the instructions".to_string(),
                 text_elements: Vec::new(),
             }]))
             .await?;
         let mut warnings = Vec::new();
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             if let EventMsg::Warning(warning) = event {
                 warnings.push(warning.message.clone());
             }
@@ -2140,13 +2140,13 @@ async fn invalid_utf8_global_instructions_are_lossy() -> Result<()> {
         b"global\xFFinstructions",
     )?;
 
-    let mut builder = test_codex().with_home(home);
+    let mut builder = test_ava().with_home(home);
     let test = builder.build(&server).await?;
     test.submit_turn("inspect lossy global instructions")
         .await?;
 
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)]
     );
     let expected_fragment =
@@ -2187,12 +2187,12 @@ async fn cold_resume_invalidates_deleted_legacy_agents_md_once() -> Result<()> {
     )?;
 
     // Create the initial thread and persist its creation-time instruction snapshot.
-    let mut initial_builder = test_codex().with_home(Arc::clone(&home));
+    let mut initial_builder = test_ava().with_home(Arc::clone(&home));
     let initial = initial_builder.build(&server).await?;
 
     // Assert the pre-resume thread reports the source used to create its snapshot.
     assert_eq!(
-        initial.codex.instruction_sources().await,
+        initial.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&old_source)],
         "initial thread reports the creation-time global source"
     );
@@ -2202,8 +2202,8 @@ async fn cold_resume_invalidates_deleted_legacy_agents_md_once() -> Result<()> {
         .rollout_path
         .clone()
         .expect("rollout path");
-    initial.codex.submit(Op::Shutdown).await?;
-    wait_for_event(&initial.codex, |event| {
+    initial.ava-code.submit(Op::Shutdown).await?;
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -2212,14 +2212,14 @@ async fn cold_resume_invalidates_deleted_legacy_agents_md_once() -> Result<()> {
     remove_agents_md_world_state_section(&rollout_path)?;
 
     std::fs::remove_file(old_source.as_path())?;
-    let mut resume_builder = test_codex().with_home(Arc::clone(&home));
+    let mut resume_builder = test_ava().with_home(Arc::clone(&home));
     let resumed = resume_builder
         .resume(&server, Arc::clone(&home), rollout_path)
         .await?;
 
     // Model history still contains the old fragment, but the source no longer exists.
     assert_eq!(
-        resumed.codex.instruction_sources().await,
+        resumed.ava-code.instruction_sources().await,
         Vec::<PathUri>::new(),
         "resume reports no deleted instruction source"
     );
@@ -2291,19 +2291,19 @@ async fn fork_injects_changed_agents_md_once() -> Result<()> {
     )?;
 
     // Create the parent and persist its creation-time instruction snapshot.
-    let mut builder = test_codex().with_home(Arc::clone(&home));
+    let mut builder = test_ava().with_home(Arc::clone(&home));
     let parent = builder.build(&server).await?;
 
     // Assert the parent reports the source used to create its snapshot.
     assert_eq!(
-        parent.codex.instruction_sources().await,
+        parent.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "parent reports the creation-time global source"
     );
     parent.submit_turn("persist instructions").await?;
-    parent.codex.ensure_rollout_materialized().await;
-    parent.codex.flush_rollout().await?;
-    let rollout_path = parent.codex.rollout_path().expect("rollout path");
+    parent.ava-code.ensure_rollout_materialized().await;
+    parent.ava-code.flush_rollout().await?;
+    let rollout_path = parent.ava-code.rollout_path().expect("rollout path");
 
     // Add a preferred override source, then fork with freshly loaded configuration.
     let new_source = write_global_file(
@@ -2317,7 +2317,7 @@ async fn fork_injects_changed_agents_md_once() -> Result<()> {
     fork_config.model = parent.config.model.clone();
     fork_config.model_provider = parent.config.model_provider.clone();
     fork_config.model_catalog = parent.config.model_catalog.clone();
-    fork_config.codex_self_exe = parent.config.codex_self_exe.clone();
+    fork_config.ava_self_exe = parent.config.ava_self_exe.clone();
     fork_config
         .features
         .enable(Feature::ContentItemKinds)
@@ -2326,7 +2326,7 @@ async fn fork_injects_changed_agents_md_once() -> Result<()> {
         .thread_manager
         .fork_thread(
             ForkSnapshot::Interrupted,
-            codex_core::StartThreadOptions::new(fork_config),
+            ava_core::StartThreadOptions::new(fork_config),
             rollout_path,
         )
         .await?;
@@ -2461,7 +2461,7 @@ async fn run_subagent_global_instruction_case(fork_context: bool) -> Result<()> 
         GLOBAL_AGENTS_FILENAME,
         OLD_GLOBAL_INSTRUCTIONS,
     )?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_config(|config| {
             let _ = config.features.enable(Feature::Collab);
@@ -2471,7 +2471,7 @@ async fn run_subagent_global_instruction_case(fork_context: bool) -> Result<()> 
 
     // Assert the parent reports the creation-time source before spawning.
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "parent reports the creation-time global source before spawning"
     );
@@ -2526,7 +2526,7 @@ async fn run_subagent_global_instruction_case(fork_context: bool) -> Result<()> 
         );
     }
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&new_source)],
         "parent reports the refreshed global source"
     );

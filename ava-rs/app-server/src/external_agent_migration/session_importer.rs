@@ -6,42 +6,42 @@ use std::sync::Arc;
 
 use chrono::DateTime;
 use chrono::Utc;
-use codex_arg0::Arg0DispatchPaths;
-use codex_core::ThreadManager;
-use codex_core::config::ConfigOverrides;
-use codex_external_agent_migration::ExternalAgentConfigImportItemResult;
-use codex_external_agent_migration::record_import_error;
-use codex_external_agent_migration::sessions::CompletedExternalAgentSessionImport;
-use codex_external_agent_migration::sessions::ExistingSessionAppend;
-use codex_external_agent_migration::sessions::ExternalAgentSessionMigration;
-use codex_external_agent_migration::sessions::ImportedExternalAgentSession;
-use codex_external_agent_migration::sessions::ImportedSessionConnectorAttribution;
-use codex_external_agent_migration::sessions::PendingSessionImport;
-use codex_external_agent_migration::sessions::SessionImportTarget;
-use codex_external_agent_migration::sessions::SessionMetadataMode;
-use codex_external_agent_migration::sessions::append_existing_session;
-use codex_external_agent_migration::sessions::append_imported_session_connector_names;
-use codex_external_agent_migration::sessions::detect_imported_cla_session_connectors_by_source_path;
-use codex_external_agent_migration::sessions::prepare_validated_session_import_with_metadata_mode;
-use codex_external_agent_migration::sessions::record_completed_session_imports;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_prompts::render_model_instructions;
-use codex_protocol::ThreadId;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_rollout::RolloutItem;
-use codex_rollout::is_persisted_rollout_item;
-use codex_thread_store::AppendThreadItemsParams;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::PersistContext;
-use codex_thread_store::ThreadMetadataPatch;
-use codex_thread_store::ThreadPersistenceMetadata;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::UpdateThreadMetadataParams;
+use ava_arg0::Arg0DispatchPaths;
+use ava_core::ThreadManager;
+use ava_core::config::ConfigOverrides;
+use ava_external_agent_migration::ExternalAgentConfigImportItemResult;
+use ava_external_agent_migration::record_import_error;
+use ava_external_agent_migration::sessions::CompletedExternalAgentSessionImport;
+use ava_external_agent_migration::sessions::ExistingSessionAppend;
+use ava_external_agent_migration::sessions::ExternalAgentSessionMigration;
+use ava_external_agent_migration::sessions::ImportedExternalAgentSession;
+use ava_external_agent_migration::sessions::ImportedSessionConnectorAttribution;
+use ava_external_agent_migration::sessions::PendingSessionImport;
+use ava_external_agent_migration::sessions::SessionImportTarget;
+use ava_external_agent_migration::sessions::SessionMetadataMode;
+use ava_external_agent_migration::sessions::append_existing_session;
+use ava_external_agent_migration::sessions::append_imported_session_connector_names;
+use ava_external_agent_migration::sessions::detect_imported_cla_session_connectors_by_source_path;
+use ava_external_agent_migration::sessions::prepare_validated_session_import_with_metadata_mode;
+use ava_external_agent_migration::sessions::record_completed_session_imports;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_prompts::render_model_instructions;
+use ava_protocol::ThreadId;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_rollout::RolloutItem;
+use ava_rollout::is_persisted_rollout_item;
+use ava_thread_store::AppendThreadItemsParams;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::PersistContext;
+use ava_thread_store::ThreadMetadataPatch;
+use ava_thread_store::ThreadPersistenceMetadata;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::UpdateThreadMetadataParams;
 use futures::StreamExt;
 use tokio::sync::Semaphore;
 
@@ -67,7 +67,7 @@ enum SessionImportOutcome {
 
 #[derive(Clone)]
 pub(super) struct ExternalAgentSessionImporter {
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     connector_metadata_roots: Vec<PathBuf>,
     permits: Arc<Semaphore>,
     append_checkpoint_permits: Arc<Semaphore>,
@@ -79,7 +79,7 @@ pub(super) struct ExternalAgentSessionImporter {
 
 impl ExternalAgentSessionImporter {
     pub(super) fn new(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         connector_metadata_roots: Vec<PathBuf>,
         thread_manager: Arc<ThreadManager>,
         thread_store: Arc<dyn ThreadStore>,
@@ -87,7 +87,7 @@ impl ExternalAgentSessionImporter {
         arg0_paths: Arg0DispatchPaths,
     ) -> Self {
         Self {
-            codex_home,
+            ava_home,
             connector_metadata_roots,
             permits: Arc::new(Semaphore::new(1)),
             append_checkpoint_permits: Arc::new(Semaphore::new(1)),
@@ -181,7 +181,7 @@ impl ExternalAgentSessionImporter {
             }
         }
         if let Err(err) = append_imported_session_connector_names(
-            &self.codex_home,
+            &self.ava_home,
             appended_connector_names_by_source_path,
         ) {
             record_import_error(
@@ -246,7 +246,7 @@ impl ExternalAgentSessionImporter {
             .into_iter()
             .map(|completed_import| completed_import.import)
             .collect();
-        if let Err(err) = record_completed_session_imports(&self.codex_home, completed_imports) {
+        if let Err(err) = record_completed_session_imports(&self.ava_home, completed_imports) {
             record_import_error(
                 &mut item_result,
                 "session_ledger_update",
@@ -301,7 +301,7 @@ impl ExternalAgentSessionImporter {
                 let cwd = session.cwd.clone();
                 let title = session.title.clone();
                 let appended = append_existing_session(
-                    &self.codex_home,
+                    &self.ava_home,
                     self.append_checkpoint_permits.as_ref(),
                     self.thread_manager.as_ref(),
                     self.thread_store.as_ref(),
@@ -369,9 +369,9 @@ impl ExternalAgentSessionImporter {
         session: ExternalAgentSessionMigration,
         metadata_mode: SessionMetadataMode,
     ) -> Result<Option<PendingSessionImport>, SessionImportStepFailure> {
-        let codex_home = self.codex_home.clone();
+        let ava_home = self.ava_home.clone();
         tokio::task::spawn_blocking(move || {
-            prepare_validated_session_import_with_metadata_mode(&codex_home, session, metadata_mode)
+            prepare_validated_session_import_with_metadata_mode(&ava_home, session, metadata_mode)
         })
         .await
         .map_err(|err| {
@@ -404,7 +404,7 @@ impl ExternalAgentSessionImporter {
                 /*request_overrides*/ None,
                 ConfigOverrides {
                     cwd: Some(cwd),
-                    codex_linux_sandbox_exe: self.arg0_paths.codex_linux_sandbox_exe.clone(),
+                    ava_linux_sandbox_exe: self.arg0_paths.ava_linux_sandbox_exe.clone(),
                     main_execve_wrapper_exe: self.arg0_paths.main_execve_wrapper_exe.clone(),
                     ..Default::default()
                 },
@@ -463,7 +463,7 @@ impl ExternalAgentSessionImporter {
             parent_thread_id: None,
             source: source.clone(),
             thread_source: None,
-            originator: codex_login::default_client::originator().value,
+            originator: ava_login::default_client::originator().value,
             base_instructions: BaseInstructions {
                 text: config
                     .base_instructions
@@ -520,7 +520,7 @@ impl ExternalAgentSessionImporter {
             .unwrap_or((now, now));
         let title = title
             .as_deref()
-            .and_then(codex_core::util::normalize_thread_name);
+            .and_then(ava_core::util::normalize_thread_name);
         let metadata = ThreadMetadataPatch {
             title,
             preview: first_user_message.clone(),

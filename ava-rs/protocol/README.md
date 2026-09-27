@@ -1,6 +1,6 @@
-# codex-protocol
+# ava-protocol
 
-This crate defines the "types" for the protocol used by Codex CLI, which includes both "internal types" for communication between `codex-core` and `codex-tui`, as well as "external types" used with `codex app-server`.
+This crate defines the "types" for the protocol used by Ava CLI, which includes both "internal types" for communication between `ava-core` and `ava-tui`, as well as "external types" used with `ava app-server`.
 
 This crate should have minimal dependencies.
 

@@ -607,13 +607,13 @@ export function AppDrawer(props: DrawerContentComponentProps) {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.sidebar,
     paddingLeft: 0,
     paddingRight: 0,
   },
   glassModal: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.sidebar,
     borderRadius: 0,
     borderRightWidth: 1,
     borderRightColor: COLORS.glassBorder,
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.sidebarBorder,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    backgroundColor: COLORS.sidebar,
   },
   avatarBox: {
     width: 34,

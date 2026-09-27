@@ -3,7 +3,7 @@
  * tells a later rebuild to replay it verbatim.
  *
  * A successful checkpoint summarizes the whole range behind its boundary and
- * retains at most the latest user message (`codexShapedPreparation`). A
+ * retains at most the latest user message (`avaShapedPreparation`). A
  * retained-tail fallback has no fresh summary at all, so its tail is the only
  * thing carrying the range forward — and a single user sentence left the model
  * with none of the decisions, paths, or unfinished work of the turn it was

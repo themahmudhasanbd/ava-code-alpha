@@ -1,12 +1,12 @@
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
 use core_test_support::responses::ev_apply_patch_custom_tool_call;
 use core_test_support::responses::ev_apply_patch_exec_command_call_via_heredoc;
 use core_test_support::responses::ev_exec_command_call;
-use core_test_support::test_codex::ApplyPatchModelOutput;
+use core_test_support::test_ava::ApplyPatchModelOutput;
 use pretty_assertions::assert_eq;
 use std::fs;
 use std::path::PathBuf;
@@ -16,39 +16,39 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-use codex_exec_server::RemoveOptions;
-use codex_features::Feature;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+use ava_exec_server::RemoveOptions;
+use ava_features::Feature;
 #[cfg(unix)]
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
 #[cfg(unix)]
-use codex_protocol::protocol::Op;
+use ava_protocol::protocol::Op;
 #[cfg(unix)]
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
 #[cfg(target_os = "linux")]
-use codex_sandboxing::landlock::CODEX_LINUX_SANDBOX_ARG0;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_sandboxing::landlock::AVA_LINUX_SANDBOX_ARG0;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::TestTargetOs;
 use core_test_support::assert_regex_match;
@@ -67,12 +67,12 @@ use core_test_support::skip_if_no_remote_env;
 use core_test_support::skip_if_remote;
 use core_test_support::skip_if_target_windows;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::TestCodexHarness;
-use core_test_support::test_codex::executor_path_uri;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::TestAvaHarness;
+use core_test_support::test_ava::executor_path_uri;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::test_target_os;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_with_timeout;
@@ -84,20 +84,20 @@ use wiremock::ResponseTemplate;
 use wiremock::matchers::method;
 use wiremock::matchers::path_regex;
 
-pub async fn apply_patch_harness() -> Result<TestCodexHarness> {
+pub async fn apply_patch_harness() -> Result<TestAvaHarness> {
     apply_patch_harness_with(|builder| builder).await
 }
 
 async fn apply_patch_harness_with(
-    configure: impl FnOnce(TestCodexBuilder) -> TestCodexBuilder,
-) -> Result<TestCodexHarness> {
-    let builder = configure(test_codex());
+    configure: impl FnOnce(TestAvaBuilder) -> TestAvaBuilder,
+) -> Result<TestAvaHarness> {
+    let builder = configure(test_ava());
     // Box harness construction so apply_patch_cli tests do not inline the
     // full test-thread startup path into each test future.
-    Box::pin(TestCodexHarness::with_auto_env_builder(builder)).await
+    Box::pin(TestAvaHarness::with_auto_env_builder(builder)).await
 }
 
-async fn submit_without_wait(harness: &TestCodexHarness, prompt: &str) -> Result<()> {
+async fn submit_without_wait(harness: &TestAvaHarness, prompt: &str) -> Result<()> {
     submit_without_wait_with_turn_permissions(
         harness,
         prompt,
@@ -108,14 +108,14 @@ async fn submit_without_wait(harness: &TestCodexHarness, prompt: &str) -> Result
 }
 
 async fn submit_without_wait_with_turn_permissions(
-    harness: &TestCodexHarness,
+    harness: &TestAvaHarness,
     prompt: &str,
     sandbox_policy: SandboxPolicy,
     permission_profile: Option<PermissionProfile>,
 ) -> Result<()> {
     let test = harness.test();
     let session_model = test.session_configured.model.clone();
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -229,7 +229,7 @@ fn create_file_symlink(_source: &std::path::Path, _link: &std::path::Path) -> st
 }
 
 pub async fn mount_apply_patch(
-    harness: &TestCodexHarness,
+    harness: &TestAvaHarness,
     call_id: &str,
     patch: &str,
     assistant_msg: &str,
@@ -300,7 +300,7 @@ async fn mxc_config_routes_command_and_patch_to_the_windows_executor() -> Result
         &exec_response
             .function_call
             .single_request()
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("turn metadata header"),
     )?;
     assert_eq!(metadata["sandbox"], "windows_mxc");
@@ -309,7 +309,7 @@ async fn mxc_config_routes_command_and_patch_to_the_windows_executor() -> Result
 }
 
 async fn mount_apply_patch_model_output(
-    harness: &TestCodexHarness,
+    harness: &TestAvaHarness,
     call_id: &str,
     patch: &str,
     assistant_msg: &str,
@@ -348,7 +348,7 @@ fn apply_patch_responses(
 }
 
 async fn assert_apply_patch_crlf_update(
-    configure: impl FnOnce(TestCodexBuilder) -> TestCodexBuilder,
+    configure: impl FnOnce(TestAvaBuilder) -> TestAvaBuilder,
     model_output: CrLfApplyPatchModelOutput,
     expected: &str,
 ) -> Result<()> {
@@ -455,21 +455,21 @@ async fn apply_patch_shell_heredoc_preserves_crlf_with_preserve_line_endings_fea
 
 #[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn apply_patch_cli_uses_codex_self_exe_with_linux_sandbox_helper_alias() -> Result<()> {
+async fn apply_patch_cli_uses_ava_self_exe_with_linux_sandbox_helper_alias() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let harness = apply_patch_harness().await?;
-    let codex_linux_sandbox_exe = harness
+    let ava_linux_sandbox_exe = harness
         .test()
         .config
-        .codex_linux_sandbox_exe
+        .ava_linux_sandbox_exe
         .as_ref()
-        .expect("linux test config should include codex-linux-sandbox helper");
+        .expect("linux test config should include ava-linux-sandbox helper");
     assert_eq!(
-        codex_linux_sandbox_exe
+        ava_linux_sandbox_exe
             .file_name()
             .and_then(|name| name.to_str()),
-        Some(CODEX_LINUX_SANDBOX_ARG0),
+        Some(AVA_LINUX_SANDBOX_ARG0),
     );
 
     let patch = "*** Begin Patch\n*** Add File: helper-alias.txt\n+hello\n*** End Patch";
@@ -702,7 +702,7 @@ async fn apply_patch_cli_move_without_content_change_has_no_turn_diff() -> Resul
 
     let harness = apply_patch_harness().await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     harness.write_file("old/name.txt", "same\n").await?;
 
@@ -713,7 +713,7 @@ async fn apply_patch_cli_move_without_content_change_has_no_turn_diff() -> Resul
     submit_without_wait(&harness, "rename without content change").await?;
 
     let mut saw_turn_diff = false;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnDiff(_) => {
             saw_turn_diff = true;
             false
@@ -1103,7 +1103,7 @@ async fn intercepted_apply_patch_updates_absolute_target_after_turn_cwd_is_remov
     )
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "remove the turn cwd, then update the allowed and denied files".into(),
@@ -1121,7 +1121,7 @@ async fn intercepted_apply_patch_updates_absolute_target_after_turn_cwd_is_remov
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1184,7 +1184,7 @@ async fn escalated_patch_rejects_symlink_swapped_after_approval_request() -> Res
         restrictive_workspace_write_profile(),
         test.config.cwd.as_path(),
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "apply the patch".to_string(),
@@ -1199,7 +1199,7 @@ async fn escalated_patch_rejects_symlink_swapped_after_approval_request() -> Res
             }),
         )
         .await?;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ApplyPatchApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -1213,13 +1213,13 @@ async fn escalated_patch_rejects_symlink_swapped_after_approval_request() -> Res
     let target = harness.path("file.txt");
     fs::remove_file(&target)?;
     create_file_symlink(&outside, &target)?;
-    test.codex
+    test.ava-code
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::Approved,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1231,7 +1231,7 @@ async fn escalated_patch_rejects_symlink_swapped_after_approval_request() -> Res
         output.contains("Failed to read file to update"),
         "{output:?}"
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1324,7 +1324,7 @@ async fn apply_patch_cli_does_not_widen_permissions_for_workspace_directory_targ
     let harness_work_dir = work_dir.clone();
     let harness = apply_patch_harness_with(move |builder| {
         builder.with_config(move |config| {
-            config.approvals_reviewer = codex_protocol::config_types::ApprovalsReviewer::User;
+            config.approvals_reviewer = ava_protocol::config_types::ApprovalsReviewer::User;
             config.workspace_roots = vec![harness_work_dir.clone()];
             config
                 .permissions
@@ -1733,7 +1733,7 @@ async fn apply_patch_custom_tool_streaming_emits_updated_changes() -> Result<()>
     })
     .await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let call_id = "apply-patch-streaming";
     let patch = "*** Begin Patch\n*** Add File: streamed.txt\n+hello\n+world\n*** End Patch";
     mount_sse_sequence(
@@ -1779,7 +1779,7 @@ async fn apply_patch_custom_tool_streaming_emits_updated_changes() -> Result<()>
     submit_without_wait(&harness, "create streamed file").await?;
 
     let mut updates = Vec::new();
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::PatchApplyUpdated(update) => {
             updates.push(update.clone());
             false
@@ -1802,7 +1802,7 @@ async fn apply_patch_custom_tool_streaming_emits_updated_changes() -> Result<()>
             .expect("first update")
             .changes
             .get(&std::path::PathBuf::from("streamed.txt")),
-        Some(&codex_protocol::protocol::FileChange::Add {
+        Some(&ava_protocol::protocol::FileChange::Add {
             content: String::new(),
         })
     );
@@ -1812,7 +1812,7 @@ async fn apply_patch_custom_tool_streaming_emits_updated_changes() -> Result<()>
             .expect("last update")
             .changes
             .get(&std::path::PathBuf::from("streamed.txt")),
-        Some(&codex_protocol::protocol::FileChange::Add {
+        Some(&ava_protocol::protocol::FileChange::Add {
             content: "hello\nworld\n".to_string(),
         })
     );
@@ -1831,7 +1831,7 @@ async fn apply_patch_exec_command_heredoc_with_cd_emits_turn_diff() -> Result<()
 
     let harness = apply_patch_harness_with(|builder| builder.with_model("gpt-5.4")).await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     // Prepare a file inside a subdir; update it via cd && apply_patch heredoc form.
     harness.write_file("sub/in_sub.txt", "before\n").await?;
@@ -1857,7 +1857,7 @@ async fn apply_patch_exec_command_heredoc_with_cd_emits_turn_diff() -> Result<()
     let mut saw_turn_diff = None;
     let mut saw_patch_begin = false;
     let mut patch_end_success = None;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::PatchApplyBegin(begin) => {
             saw_patch_begin = true;
             assert_eq!(begin.call_id, call_id);
@@ -1932,7 +1932,7 @@ async fn apply_patch_turn_diff_paths_stay_repo_relative_when_session_cwd_is_nest
     })
     .await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let repo_root = harness
         .test()
         .config
@@ -1947,7 +1947,7 @@ async fn apply_patch_turn_diff_paths_stay_repo_relative_when_session_cwd_is_nest
     submit_without_wait(&harness, "update file outside nested cwd but inside repo").await?;
 
     let mut last_diff: Option<String> = None;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnDiff(ev) => {
             last_diff = Some(ev.unified_diff.clone());
             false
@@ -1969,13 +1969,13 @@ async fn apply_patch_turn_diff_paths_stay_repo_relative_when_session_cwd_is_nest
     Ok(())
 }
 
-#[test_case("codex_work_web", true, "work.txt"; "web work uses cwd when enabled")]
-#[test_case("codex_work_mobile", true, "work.txt"; "mobile work uses cwd when enabled")]
-#[test_case("codex_work_web", false, "subdir/work.txt"; "disabled feature keeps repository root")]
-#[test_case("codex_work_desktop", true, "work.txt"; "desktop uses cwd when enabled")]
-#[test_case("codex_work_cca", true, "work.txt"; "legacy cca uses cwd when enabled")]
-#[test_case("codex_cli_rs", true, "work.txt"; "coding originator uses cwd when enabled")]
-#[test_case("codex_cli_rs", false, "subdir/work.txt"; "coding originator keeps repository root when disabled")]
+#[test_case("ava_work_web", true, "work.txt"; "web work uses cwd when enabled")]
+#[test_case("ava_work_mobile", true, "work.txt"; "mobile work uses cwd when enabled")]
+#[test_case("ava_work_web", false, "subdir/work.txt"; "disabled feature keeps repository root")]
+#[test_case("ava_work_desktop", true, "work.txt"; "desktop uses cwd when enabled")]
+#[test_case("ava_work_cca", true, "work.txt"; "legacy cca uses cwd when enabled")]
+#[test_case("ava_cli_rs", true, "work.txt"; "coding originator uses cwd when enabled")]
+#[test_case("ava_cli_rs", false, "subdir/work.txt"; "coding originator keeps repository root when disabled")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn apply_patch_turn_diff_skips_git_root_when_feature_is_enabled(
     originator: &str,
@@ -2030,11 +2030,11 @@ async fn apply_patch_turn_diff_skips_git_root_when_feature_is_enabled(
     })
     .await?;
     let test = harness.test();
-    let codex = test
+    let ava = test
         .thread_manager
         .start_thread(StartThreadOptions {
             metrics_service_name: Some(originator.to_string()),
-            environments: Some(test.codex.environment_selections().await),
+            environments: Some(test.ava-code.environment_selections().await),
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?
@@ -2042,7 +2042,7 @@ async fn apply_patch_turn_diff_skips_git_root_when_feature_is_enabled(
     let patch = "*** Begin Patch\n*** Update File: work.txt\n@@\n-before\n+after\n*** End Patch";
     mount_apply_patch(&harness, "apply-work-diff-root", patch, "updated work file").await;
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "update the work file".into(),
@@ -2057,7 +2057,7 @@ async fn apply_patch_turn_diff_skips_git_root_when_feature_is_enabled(
         .await?;
 
     let mut last_diff = None;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnDiff(event) => {
             last_diff = Some(event.unified_diff.clone());
             false
@@ -2083,7 +2083,7 @@ async fn apply_patch_exec_command_failure_propagates_error_and_skips_diff() -> R
 
     let harness = apply_patch_harness_with(|builder| builder.with_model("gpt-5.4")).await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     harness.write_file("invalid.txt", "ok\n").await?;
 
@@ -2106,7 +2106,7 @@ async fn apply_patch_exec_command_failure_propagates_error_and_skips_diff() -> R
     submit_without_wait(&harness, "apply patch via shell").await?;
 
     let mut saw_turn_diff = false;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnDiff(_) => {
             saw_turn_diff = true;
             false
@@ -2227,7 +2227,7 @@ async fn apply_patch_emits_turn_diff_event_with_unified_diff() -> Result<()> {
 
     let harness = apply_patch_harness().await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     let call_id = "apply-diff-event";
     let file = "udiff.txt";
@@ -2237,7 +2237,7 @@ async fn apply_patch_emits_turn_diff_event_with_unified_diff() -> Result<()> {
     submit_without_wait(&harness, "emit diff").await?;
 
     let mut saw_turn_diff = None;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnDiff(ev) => {
             saw_turn_diff = Some(ev.unified_diff.clone());
             false
@@ -2262,7 +2262,7 @@ async fn apply_patch_turn_diff_emits_portable_paths_for_remote_cwd() -> Result<(
 
     let harness = apply_patch_harness().await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     let call_id = "apply-foreign-windows-diff";
     let file = "nested/foreign.txt";
@@ -2272,7 +2272,7 @@ async fn apply_patch_turn_diff_emits_portable_paths_for_remote_cwd() -> Result<(
     submit_without_wait(&harness, "emit diff for a foreign Windows cwd").await?;
 
     let mut last_diff = None;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnDiff(ev) => {
             last_diff = Some(ev.unified_diff.clone());
             false
@@ -2323,11 +2323,11 @@ async fn apply_patch_turn_diff_tracks_local_and_remote_environment_paths() -> Re
     skip_if_no_remote_env!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_remote_and_local_env(&server).await?;
     let file_name = "shared-turn-diff.txt";
     let shared_cwd = PathBuf::from(format!(
-        "/tmp/codex-remote-turn-diff-{}",
+        "/tmp/ava-remote-turn-diff-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -2395,14 +2395,14 @@ async fn apply_patch_turn_diff_tracks_local_and_remote_environment_paths() -> Re
             config: EnvironmentConfigState::FromThread,
         },
     ];
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "apply matching patches to local and remote environments".into(),
                 text_elements: Vec::new(),
             }])
             .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(codex_protocol::protocol::TurnEnvironmentSelections::new(
+                environments: Some(ava_protocol::protocol::TurnEnvironmentSelections::new(
                     test.config.cwd.clone(),
                     environments,
                 )),
@@ -2423,7 +2423,7 @@ async fn apply_patch_turn_diff_tracks_local_and_remote_environment_paths() -> Re
         .await?;
 
     let mut last_diff = None;
-    wait_for_event(&test.codex, |event| match event {
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::TurnDiff(ev) => {
             last_diff = Some(ev.unified_diff.clone());
             false
@@ -2486,7 +2486,7 @@ async fn apply_patch_aggregates_diff_across_multiple_tool_calls() -> Result<()> 
 
     let harness = apply_patch_harness().await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     let call1 = "agg-1";
     let call2 = "agg-2";
@@ -2512,7 +2512,7 @@ async fn apply_patch_aggregates_diff_across_multiple_tool_calls() -> Result<()> 
     submit_without_wait(&harness, "aggregate diffs").await?;
 
     let mut last_diff: Option<String> = None;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::TurnDiff(ev) => {
             last_diff = Some(ev.unified_diff.clone());
             false
@@ -2536,7 +2536,7 @@ async fn apply_patch_aggregates_diff_preserves_success_after_failure() -> Result
 
     let harness = apply_patch_harness().await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     let call_success = "agg-success";
     let call_failure = "agg-failure";
@@ -2566,7 +2566,7 @@ async fn apply_patch_aggregates_diff_preserves_success_after_failure() -> Result
 
     let mut last_diff: Option<String> = None;
     wait_for_event_with_timeout(
-        &codex,
+        &ava,
         |event| match event {
             EventMsg::TurnDiff(ev) => {
                 last_diff = Some(ev.unified_diff.clone());
@@ -2622,7 +2622,7 @@ async fn apply_patch_clears_aggregated_diff_after_inexact_delta() -> Result<()> 
     })
     .await?;
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
     let call_success = "agg-success";
     let call_inexact = "agg-inexact";
@@ -2651,7 +2651,7 @@ async fn apply_patch_clears_aggregated_diff_after_inexact_delta() -> Result<()> 
 
     let mut last_diff: Option<String> = None;
     wait_for_event_with_timeout(
-        &codex,
+        &ava,
         |event| match event {
             EventMsg::TurnDiff(ev) => {
                 last_diff = Some(ev.unified_diff.clone());

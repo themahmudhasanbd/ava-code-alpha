@@ -2,12 +2,12 @@ use super::*;
 use crate::app::agents_overview_usage::AgentsOverviewUsage;
 use crate::app::agents_overview_usage::usage_lines;
 use crate::chatwidget::ThreadUsageOutcome;
-use codex_app_server_protocol::AccountUpdatedNotification;
-use codex_app_server_protocol::ThreadTokenUsage;
-use codex_app_server_protocol::ThreadTokenUsageUpdatedNotification;
-use codex_app_server_protocol::ThreadUsage;
-use codex_app_server_protocol::TokenUsageBreakdown;
-use codex_protocol::account::PlanType;
+use ava_app_server_protocol::AccountUpdatedNotification;
+use ava_app_server_protocol::ThreadTokenUsage;
+use ava_app_server_protocol::ThreadTokenUsageUpdatedNotification;
+use ava_app_server_protocol::ThreadUsage;
+use ava_app_server_protocol::TokenUsageBreakdown;
+use ava_protocol::account::PlanType;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -18,7 +18,7 @@ async fn selected_usage_is_cached_and_account_changes_discard_old_results() -> R
         /*status_account_display*/ None,
         Some(PlanType::Business),
         /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ true,
+        /*has_ava_backend_auth*/ true,
     );
     let selected = ThreadId::from_u128(/*value*/ 1);
     let other = ThreadId::new();
@@ -138,7 +138,7 @@ async fn selected_usage_is_cached_and_account_changes_discard_old_results() -> R
             .replace("fwd del", "del")
     );
     for notification in [
-        ServerNotification::ThreadReverted(codex_app_server_protocol::ThreadRevertedNotification {
+        ServerNotification::ThreadReverted(ava_app_server_protocol::ThreadRevertedNotification {
             thread_id: selected.to_string(),
         }),
         ServerNotification::ThreadClosed(ThreadClosedNotification {

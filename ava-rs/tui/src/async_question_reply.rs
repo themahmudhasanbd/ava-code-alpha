@@ -1,7 +1,7 @@
 //! Recognize the desktop's existing async-question reply envelope for display and dismissal.
 //! Only complete envelopes, optionally following the standard IDE context prefix, are interpreted.
 
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::UserInput;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -22,7 +22,7 @@ pub(crate) fn parse(text: &str) -> Option<Vec<AsyncQuestionReply>> {
     let text = text.trim();
     // JSON strings escape newlines, so this cannot match a delimiter inside an answer.
     let text = if text.starts_with("# Context from my IDE setup:\n") {
-        text.rsplit_once("\n## My request for Codex:\n")?.1.trim()
+        text.rsplit_once("\n## My request for Ava:\n")?.1.trim()
     } else {
         text
     };

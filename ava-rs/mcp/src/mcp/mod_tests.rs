@@ -4,18 +4,18 @@ use crate::McpServerRegistration;
 use crate::connection_manager::tests::create_ready_async_managed_client;
 use crate::mcp::auth::McpAuthStatusEntry;
 use crate::rmcp_client::StartupOutcomeError;
-use codex_config::Constrained;
-use codex_config::types::AppToolApproval;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_login::CodexAuth;
-use codex_plugin::AppConnectorId;
-use codex_plugin::PluginCapabilitySummary;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::GranularApprovalConfig;
-use codex_rmcp_client::McpAuthState;
+use ava_config::Constrained;
+use ava_config::types::AppToolApproval;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_login::AvaAuth;
+use ava_plugin::AppConnectorId;
+use ava_plugin::PluginCapabilitySummary;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::GranularApprovalConfig;
+use ava_rmcp_client::McpAuthState;
 use futures::FutureExt;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
@@ -82,12 +82,12 @@ async fn status_snapshot_only_downgrades_oauth_authentication_failures() {
     );
 }
 
-pub(crate) fn test_mcp_config(codex_home: PathBuf) -> McpConfig {
+pub(crate) fn test_mcp_config(ava_home: PathBuf) -> McpConfig {
     McpConfig {
         chatgpt_base_url: "https://chatgpt.com".to_string(),
         apps_mcp_product_sku: None,
         requires_read_only_mcp_tools: false,
-        codex_home,
+        ava_home,
         mcp_enterprise_managed_auth: None,
         xaa_enabled: false,
         mcp_oauth_credentials_store_mode: OAuthCredentialsStoreMode::default(),
@@ -99,11 +99,11 @@ pub(crate) fn test_mcp_config(codex_home: PathBuf) -> McpConfig {
         skill_mcp_dependency_install_enabled: true,
         approval_policy: Constrained::allow_any(AskForApproval::OnRequest),
         permission_profile: PermissionProfile::default(),
-        config_layer_stack: codex_config::ConfigLayerStack::default(),
-        approvals_reviewer: codex_config::types::ApprovalsReviewer::default(),
+        config_layer_stack: ava_config::ConfigLayerStack::default(),
+        approvals_reviewer: ava_config::types::ApprovalsReviewer::default(),
         environment_cwds: HashMap::new(),
         server_permission_profiles: HashMap::new(),
-        codex_linux_sandbox_exe: None,
+        ava_linux_sandbox_exe: None,
         use_legacy_landlock: false,
         apps_enabled: false,
         prefix_mcp_tool_names: true,
@@ -112,7 +112,7 @@ pub(crate) fn test_mcp_config(codex_home: PathBuf) -> McpConfig {
         host_owned_apps_protocol_mode: McpProtocolMode::Legacy,
         client_elicitation_capability: ElicitationCapability::default(),
         mcp_server_catalog: ResolvedMcpCatalog::default(),
-        connector_snapshot: codex_connectors::ConnectorSnapshot::default(),
+        connector_snapshot: ava_connectors::ConnectorSnapshot::default(),
     }
 }
 
@@ -155,11 +155,11 @@ fn ema_catalog_supports_configured_installed_and_selected_plugins_without_wideni
         server,
     ));
     let mut config = test_mcp_config(PathBuf::new());
-    let idp = codex_config::McpServerIdpOAuthConfig {
+    let idp = ava_config::McpServerIdpOAuthConfig {
         issuer: "https://idp.example".into(),
         client_id: "enterprise-client".into(),
     };
-    let deny_all = codex_protocol::mcp_policy::EnvironmentMcpPolicy {
+    let deny_all = ava_protocol::mcp_policy::EnvironmentMcpPolicy {
         servers: Some(Default::default()),
         plugins: None,
     };
@@ -199,7 +199,7 @@ fn qualified_mcp_tool_name_prefix_sanitizes_server_names_without_lowercasing() {
 fn mcp_server_permissions_handle_unattached_and_threadless_servers() {
     let mut config = test_mcp_config(PathBuf::new());
     config.permission_profile = PermissionProfile::Disabled;
-    let mut missing_server = codex_apps_mcp_server_config(
+    let mut missing_server = ava_apps_mcp_server_config(
         "https://example.com",
         /*apps_mcp_product_sku*/ None,
         /*originator*/ None,
@@ -320,7 +320,7 @@ fn tool_plugin_context_collects_app_and_mcp_sources() {
         "alpha".to_string(),
         McpPluginAttribution::new("alpha@test".to_string(), "alpha-plugin".to_string()),
         /*plugin_order*/ 0,
-        codex_apps_mcp_server_config(
+        ava_apps_mcp_server_config(
             "https://alpha.example",
             /*apps_mcp_product_sku*/ None,
             /*originator*/ None,
@@ -328,7 +328,7 @@ fn tool_plugin_context_collects_app_and_mcp_sources() {
     ));
     config.mcp_server_catalog = catalog.build();
     config.connector_snapshot =
-        codex_connectors::ConnectorSnapshot::from_plugin_capability_summaries(&[
+        ava_connectors::ConnectorSnapshot::from_plugin_capability_summaries(&[
             PluginCapabilitySummary {
                 config_name: "alpha@test".to_string(),
                 display_name: "alpha-plugin".to_string(),
@@ -394,7 +394,7 @@ fn selected_mcp_attribution_does_not_join_an_unrelated_local_summary() {
             "Executor GitHub".to_string(),
         ),
         /*selection_order*/ 0,
-        codex_apps_mcp_server_config(
+        ava_apps_mcp_server_config(
             "https://github.example",
             /*apps_mcp_product_sku*/ None,
             /*originator*/ None,
@@ -402,7 +402,7 @@ fn selected_mcp_attribution_does_not_join_an_unrelated_local_summary() {
     ));
     config.mcp_server_catalog = catalog.build();
     config.connector_snapshot =
-        codex_connectors::ConnectorSnapshot::from_plugin_capability_summaries(&[
+        ava_connectors::ConnectorSnapshot::from_plugin_capability_summaries(&[
             PluginCapabilitySummary {
                 config_name: "shared-plugin-id".to_string(),
                 display_name: "Local GitHub".to_string(),
@@ -434,43 +434,43 @@ fn selected_mcp_attribution_does_not_join_an_unrelated_local_summary() {
 }
 
 #[test]
-fn codex_apps_mcp_url_for_base_url_uses_plugin_service_paths() {
+fn ava_apps_mcp_url_for_base_url_uses_plugin_service_paths() {
     assert_eq!(
-        codex_apps_mcp_url_for_base_url("https://chatgpt.com/backend-api"),
+        ava_apps_mcp_url_for_base_url("https://chatgpt.com/backend-api"),
         "https://chatgpt.com/backend-api/ps/mcp"
     );
     assert_eq!(
-        codex_apps_mcp_url_for_base_url("https://chat.openai.com"),
+        ava_apps_mcp_url_for_base_url("https://chat.openai.com"),
         "https://chat.openai.com/backend-api/ps/mcp"
     );
     assert_eq!(
-        codex_apps_mcp_url_for_base_url("http://localhost:8080/api/codex"),
+        ava_apps_mcp_url_for_base_url("http://localhost:8080/api/codex"),
         "http://localhost:8080/api/codex/ps/mcp"
     );
     assert_eq!(
-        codex_apps_mcp_url_for_base_url("http://localhost:8080"),
+        ava_apps_mcp_url_for_base_url("http://localhost:8080"),
         "http://localhost:8080/api/codex/ps/mcp"
     );
 }
 
 #[test]
-fn codex_apps_server_config_uses_plugin_service_path() {
-    let config = codex_apps_mcp_server_config(
+fn ava_apps_server_config_uses_plugin_service_path() {
+    let config = ava_apps_mcp_server_config(
         "https://chatgpt.com",
         /*apps_mcp_product_sku*/ None,
         /*originator*/ None,
     );
     let url = match &config.transport {
         McpServerTransportConfig::StreamableHttp { url, .. } => url,
-        _ => panic!("expected streamable http transport for codex apps"),
+        _ => panic!("expected streamable http transport for ava apps"),
     };
 
     assert_eq!(url, "https://chatgpt.com/backend-api/ps/mcp");
 }
 
 #[test]
-fn codex_apps_server_config_forwards_thread_originator_header() {
-    let config = codex_apps_mcp_server_config(
+fn ava_apps_server_config_forwards_thread_originator_header() {
+    let config = ava_apps_mcp_server_config(
         "https://chatgpt.com",
         /*apps_mcp_product_sku*/ None,
         Some("thread_originator"),
@@ -486,7 +486,7 @@ fn codex_apps_server_config_forwards_thread_originator_header() {
                 http_headers,
                 &Some(HashMap::from([
                     ("originator".to_string(), "thread_originator".to_string()),
-                    ("X-OpenAI-Product-Sku".to_string(), "codex".to_string()),
+                    ("X-OpenAI-Product-Sku".to_string(), "ava".to_string()),
                 ]))
             );
             assert!(env_http_headers.is_none());
@@ -496,9 +496,9 @@ fn codex_apps_server_config_forwards_thread_originator_header() {
 }
 
 #[test]
-fn codex_apps_server_config_sets_product_sku_header() {
-    for (configured_product_sku, expected_product_sku) in [(None, "codex"), (Some("tpp"), "tpp")] {
-        let config = codex_apps_mcp_server_config(
+fn ava_apps_server_config_sets_product_sku_header() {
+    for (configured_product_sku, expected_product_sku) in [(None, "ava"), (Some("tpp"), "tpp")] {
+        let config = ava_apps_mcp_server_config(
             "https://chatgpt.com",
             configured_product_sku,
             /*originator*/ None,
@@ -525,8 +525,8 @@ fn codex_apps_server_config_sets_product_sku_header() {
 }
 
 #[test]
-fn codex_apps_server_config_forwards_originator_and_configured_product_sku_headers() {
-    let config = codex_apps_mcp_server_config(
+fn ava_apps_server_config_forwards_originator_and_configured_product_sku_headers() {
+    let config = ava_apps_mcp_server_config(
         "https://chatgpt.com",
         Some("tpp"),
         Some("thread_originator"),
@@ -559,7 +559,7 @@ fn effective_mcp_servers_preserve_chatgpt_auth_for_staging() {
     ] {
         let mut config = test_mcp_config(PathBuf::new());
         config.chatgpt_base_url = url.to_string();
-        let server = codex_apps_mcp_server_config(
+        let server = ava_apps_mcp_server_config(
             url, /*apps_mcp_product_sku*/ None, /*originator*/ None,
         );
         let configured = HashMap::from([("staging".to_string(), server)]);
@@ -572,10 +572,10 @@ fn effective_mcp_servers_preserve_chatgpt_auth_for_staging() {
 
 #[tokio::test]
 async fn effective_mcp_servers_preserve_runtime_servers() {
-    let codex_home = tempfile::tempdir().expect("tempdir");
-    let mut config = test_mcp_config(codex_home.path().to_path_buf());
+    let ava_home = tempfile::tempdir().expect("tempdir");
+    let mut config = test_mcp_config(ava_home.path().to_path_buf());
     config.apps_enabled = true;
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
     let mut catalog = ResolvedMcpCatalog::builder();
     catalog.register(McpServerRegistration::from_config(
@@ -589,7 +589,7 @@ async fn effective_mcp_servers_preserve_runtime_servers() {
                 env_http_headers: None,
                 http_headers_helper: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -617,7 +617,7 @@ async fn effective_mcp_servers_preserve_runtime_servers() {
                 env_http_headers: None,
                 http_headers_helper: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -635,8 +635,8 @@ async fn effective_mcp_servers_preserve_runtime_servers() {
         },
     ));
     catalog.register(McpServerRegistration::from_config(
-        CODEX_APPS_MCP_SERVER_NAME.to_string(),
-        codex_apps_mcp_server_config(
+        AVA_APPS_MCP_SERVER_NAME.to_string(),
+        ava_apps_mcp_server_config(
             &config.chatgpt_base_url,
             config.apps_mcp_product_sku.as_deref(),
             /*originator*/ None,
@@ -650,13 +650,13 @@ async fn effective_mcp_servers_preserve_runtime_servers() {
     let docs = effective
         .get("docs")
         .expect("configured server should exist");
-    let codex_apps = effective
-        .get(CODEX_APPS_MCP_SERVER_NAME)
-        .expect("codex apps server should exist");
+    let ava_apps = effective
+        .get(AVA_APPS_MCP_SERVER_NAME)
+        .expect("ava apps server should exist");
 
     let sample = sample.config();
     let docs = docs.config();
-    let codex_apps = codex_apps.config();
+    let ava_apps = ava_apps.config();
 
     match &sample.transport {
         McpServerTransportConfig::StreamableHttp { url, .. } => {
@@ -670,7 +670,7 @@ async fn effective_mcp_servers_preserve_runtime_servers() {
         }
         other => panic!("expected streamable http transport, got {other:?}"),
     }
-    match &codex_apps.transport {
+    match &ava_apps.transport {
         McpServerTransportConfig::StreamableHttp { url, .. } => {
             assert_eq!(url, "https://chatgpt.com/backend-api/ps/mcp");
         }

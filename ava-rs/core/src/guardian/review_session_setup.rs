@@ -2,8 +2,8 @@
 //! Context selection and assembly stay on the existing path pending its replacement.
 
 use super::*;
-use codex_guardian_reviewer::ReviewerPool;
-use codex_guardian_reviewer::ReviewerRequest;
+use ava_guardian_reviewer::ReviewerPool;
+use ava_guardian_reviewer::ReviewerRequest;
 
 pub struct PreparedGuardianContext {
     parent: Arc<Session>,
@@ -125,7 +125,7 @@ impl PreparedGuardianContext {
     /// Binds context bookkeeping to an agent that Guardian has already started.
     pub async fn bind_thread(
         &self,
-        thread: &crate::CodexThread,
+        thread: &crate::AvaThread,
         context: GuardianReviewSessionReuseKey,
         state: GuardianReviewState,
         cancellation: CancellationToken,
@@ -234,7 +234,7 @@ pub(super) async fn prepare_review(
 /// Captures the same startup context used by the existing prompt builder.
 /// The caller owns scheduling, cancellation, and the reviewer pool.
 pub async fn prepare_review_prewarm(
-    parent: &crate::CodexThread,
+    parent: &crate::AvaThread,
 ) -> anyhow::Result<PreparedGuardianContext> {
     let turn = parent
         .session

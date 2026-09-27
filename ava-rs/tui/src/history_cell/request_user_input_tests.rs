@@ -1,7 +1,7 @@
 //! Result rendering preserves answer styles and wrapped unanswered questions.
 
 use super::*;
-use codex_app_server_protocol::ToolRequestUserInputOption;
+use ava_app_server_protocol::ToolRequestUserInputOption;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 

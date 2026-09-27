@@ -10,29 +10,29 @@ use crate::tools::approvals::ApprovalAction;
 use crate::tools::approvals::ApprovalContext;
 use crate::tools::events::truncate_rejection_message;
 use crate::tools::sandboxing::ToolError;
-use codex_network_proxy::BlockedRequest;
-use codex_network_proxy::BlockedRequestObserver;
-use codex_network_proxy::EnvironmentNetworkPolicy;
-use codex_network_proxy::NetworkDecision;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkPolicyRequest;
-use codex_network_proxy::NetworkProtocol;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::NetworkRequestCancellation;
-use codex_network_proxy::NetworkRequestCancellationReason;
-use codex_network_proxy::NetworkRequestDisconnect;
-use codex_protocol::approvals::NetworkApprovalContext;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::approvals::NetworkPolicyRuleAction;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::WarningEvent;
-use codex_sandboxing::record_network_sandbox_violation;
-use codex_tools::ToolName;
-use codex_utils_path_uri::Platform;
+use ava_network_proxy::BlockedRequest;
+use ava_network_proxy::BlockedRequestObserver;
+use ava_network_proxy::EnvironmentNetworkPolicy;
+use ava_network_proxy::NetworkDecision;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkPolicyRequest;
+use ava_network_proxy::NetworkProtocol;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::NetworkRequestCancellation;
+use ava_network_proxy::NetworkRequestCancellationReason;
+use ava_network_proxy::NetworkRequestDisconnect;
+use ava_protocol::approvals::NetworkApprovalContext;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::approvals::NetworkPolicyRuleAction;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::WarningEvent;
+use ava_sandboxing::record_network_sandbox_violation;
+use ava_tools::ToolName;
+use ava_utils_path_uri::Platform;
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -841,10 +841,10 @@ impl NetworkApprovalService {
                 pending_owner.complete(PendingApprovalDecision::Deny);
                 return NetworkDecision::deny(REASON_NOT_ALLOWED);
             }
-            Err(ToolError::Codex(err)) => {
+            Err(ToolError::Ava(err)) => {
                 let telemetry_decision = if matches!(
                     err.details(),
-                    codex_protocol::error::CodexErrorDetails::TurnAborted
+                    ava_protocol::error::AvaErrorDetails::TurnAborted
                 ) {
                     ReviewDecision::Abort
                 } else {
@@ -853,7 +853,7 @@ impl NetworkApprovalService {
                 if let Some(owner_call) = owner_call.as_ref() {
                     let rejection = if matches!(
                         err.details(),
-                        codex_protocol::error::CodexErrorDetails::TurnAborted
+                        ava_protocol::error::AvaErrorDetails::TurnAborted
                     ) {
                         "rejected by user".to_string()
                     } else {
@@ -1136,7 +1136,7 @@ pub(crate) async fn begin_network_approval(
                 &permission_profile,
                 session.services.exec_policy.current().as_ref(),
                 environment.map_or(
-                    codex_network_proxy::LocalBindingPolicy::DefaultFalse,
+                    ava_network_proxy::LocalBindingPolicy::DefaultFalse,
                     |environment| {
                         crate::windows_sandbox::local_binding_policy_for_sandbox(
                             environment.config().windows_sandbox_type,
@@ -1177,7 +1177,7 @@ pub(crate) async fn begin_network_approval(
                 .build_state_with_audit_metadata(
                     session.services.network_proxy_audit_metadata.clone(),
                     executor_os,
-                    codex_network_proxy::LocalBindingPolicy::DefaultFalse,
+                    ava_network_proxy::LocalBindingPolicy::DefaultFalse,
                 )
                 .map_err(|error| {
                     ToolError::Rejected(format!(
@@ -1186,7 +1186,7 @@ pub(crate) async fn begin_network_approval(
                 })?;
             NetworkProxy::builder()
                 .state(Arc::new(state))
-                .managed_by_codex(/*managed_by_codex*/ false)
+                .managed_by_ava(/*managed_by_ava*/ false)
                 .build()
                 .await
                 .map_err(|error| {
@@ -1218,7 +1218,7 @@ pub(crate) async fn begin_network_approval(
             fallback_policy_decider,
         )
         .map_err(|err| {
-            ToolError::Codex(codex_protocol::error::CodexErr::Io(io::Error::other(
+            ToolError::Ava(ava_protocol::error::AvaErr::Io(io::Error::other(
                 format!("failed to create execution-scoped network proxy: {err}"),
             )))
         })?;

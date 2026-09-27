@@ -12,15 +12,15 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WriteFileOptions;
-use codex_utils_path_uri::PathUri;
-use codex_utils_path_uri::PathUriParseError;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WriteFileOptions;
+use ava_utils_path_uri::PathUri;
+use ava_utils_path_uri::PathUriParseError;
 pub use parser::Hunk;
 pub use parser::ParseError;
 use parser::ParseError::*;
@@ -45,19 +45,19 @@ pub use standalone_executable::main;
 
 use crate::invocation::ExtractHeredocError;
 
-/// Special argv[1] flag used when the Codex executable self-invokes to run the
+/// Special argv[1] flag used when the Ava executable self-invokes to run the
 /// internal `apply_patch` path.
 ///
-/// Although this constant lives in `codex-apply-patch` (to avoid forcing
-/// `codex-arg0` to depend on `codex-core`), it remains part of the "codex core"
+/// Although this constant lives in `ava-apply-patch` (to avoid forcing
+/// `ava-arg0` to depend on `ava-core`), it remains part of the "ava core"
 /// process-invocation contract for the standalone `apply_patch` command
 /// surface.
-pub const CODEX_CORE_APPLY_PATCH_ARG1: &str = "--codex-run-as-apply-patch";
+pub const AVA_CORE_APPLY_PATCH_ARG1: &str = "--ava-run-as-apply-patch";
 
 /// Internal environment variable used to carry the selected update mode
 /// through the arg0-dispatched standalone executable.
-pub const CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR: &str =
-    "CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS";
+pub const AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR: &str =
+    "AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS";
 
 /// Controls how updates reconstruct the target file after matching a patch.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -89,7 +89,7 @@ impl Default for ApplyPatchOptions {
 /// Reads the update mode selected for an arg0-dispatched `apply_patch` process.
 #[doc(hidden)]
 pub fn apply_patch_file_update_mode_from_env() -> ApplyPatchFileUpdateMode {
-    match std::env::var(CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR).as_deref() {
+    match std::env::var(AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR).as_deref() {
         Ok("1") => ApplyPatchFileUpdateMode::PreserveLineEndings,
         _ => ApplyPatchFileUpdateMode::NormalizeToLf,
     }
@@ -879,7 +879,7 @@ pub fn print_summary(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_exec_server::LOCAL_FS;
+    use ava_exec_server::LOCAL_FS;
     use pretty_assertions::assert_eq;
     use std::fs;
     use tempfile::tempdir;

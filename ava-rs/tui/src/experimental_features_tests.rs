@@ -1,8 +1,8 @@
 use super::*;
-use codex_app_server_client::RemoteAppServerClient;
-use codex_app_server_client::RemoteAppServerConnectArgs;
-use codex_app_server_client::RemoteAppServerEndpoint;
-use codex_app_server_protocol::JSONRPCMessage;
+use ava_app_server_client::RemoteAppServerClient;
+use ava_app_server_client::RemoteAppServerConnectArgs;
+use ava_app_server_client::RemoteAppServerEndpoint;
+use ava_app_server_protocol::JSONRPCMessage;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -97,7 +97,7 @@ async fn experimental_features_rpc_paginates_thread_config_and_bounds_bad_server
                     .into_iter()
                     .map(|name| ExperimentalFeature {
                         name: name.to_string(),
-                        stage: codex_app_server_protocol::ExperimentalFeatureStage::Beta,
+                        stage: ava_app_server_protocol::ExperimentalFeatureStage::Beta,
                         display_name: Some("Server experiment".to_string()),
                         description: Some("Server description".to_string()),
                         announcement: None,

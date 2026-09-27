@@ -9,14 +9,14 @@ pub use cli::Cli;
 
 use anyhow::anyhow;
 use chrono::Utc;
-use codex_cloud_tasks_client::TaskStatus;
-use codex_git_utils::current_branch_name;
-use codex_git_utils::default_branch_name;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::RouteAwareClientPool;
-use codex_login::default_client::get_codex_user_agent;
+use ava_cloud_tasks_client::TaskStatus;
+use ava_git_utils::current_branch_name;
+use ava_git_utils::default_branch_name;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::RouteAwareClientPool;
+use ava_login::default_client::get_ava_user_agent;
 use owo_colors::OwoColorize;
 use owo_colors::Stream;
 use std::cmp::Ordering;
@@ -35,12 +35,12 @@ use util::format_relative_time;
 use util::set_user_agent_suffix;
 
 struct ApplyJob {
-    task_id: codex_cloud_tasks_client::TaskId,
+    task_id: ava_cloud_tasks_client::TaskId,
     diff_override: Option<String>,
 }
 
 struct BackendContext {
-    backend: Arc<dyn codex_cloud_tasks_client::CloudBackend>,
+    backend: Arc<dyn ava_cloud_tasks_client::CloudBackend>,
     base_url: String,
     environment_http: RouteAwareClientPool,
 }
@@ -48,10 +48,10 @@ struct BackendContext {
 async fn init_backend(user_agent_suffix: &str) -> anyhow::Result<BackendContext> {
     #[cfg(debug_assertions)]
     let use_mock = matches!(
-        std::env::var("CODEX_CLOUD_TASKS_MODE").ok().as_deref(),
+        std::env::var("AVA_CLOUD_TASKS_MODE").ok().as_deref(),
         Some("mock") | Some("MOCK")
     );
-    let base_url = std::env::var("CODEX_CLOUD_TASKS_BASE_URL")
+    let base_url = std::env::var("AVA_CLOUD_TASKS_BASE_URL")
         .unwrap_or_else(|_| "https://chatgpt.com/backend-api".to_string());
     let base_url = util::validate_chatgpt_base_url(&base_url)?;
 
@@ -61,7 +61,7 @@ async fn init_backend(user_agent_suffix: &str) -> anyhow::Result<BackendContext>
     if use_mock {
         let http_client_factory = HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault);
         return Ok(BackendContext {
-            backend: Arc::new(codex_cloud_tasks_mock_client::MockClient),
+            backend: Arc::new(ava_cloud_tasks_mock_client::MockClient),
             base_url,
             environment_http: RouteAwareClientPool::new_without_redirects_or_request_logging(
                 http_client_factory,
@@ -70,18 +70,18 @@ async fn init_backend(user_agent_suffix: &str) -> anyhow::Result<BackendContext>
         });
     }
 
-    let ua = get_codex_user_agent();
+    let ua = get_ava_user_agent();
     let (auth_manager, http_client_factory) = util::load_auth_manager(Some(base_url.clone())).await;
     let environment_http = RouteAwareClientPool::new_without_redirects_or_request_logging(
         http_client_factory.clone(),
         ClientRouteClass::Api,
     );
-    let mut http = codex_cloud_tasks_client::HttpClient::new(base_url.clone(), http_client_factory)
+    let mut http = ava_cloud_tasks_client::HttpClient::new(base_url.clone(), http_client_factory)
         .with_user_agent(ua);
     let style = if base_url.contains("/backend-api") {
         "wham"
     } else {
-        "codex-api"
+        "ava-api"
     };
     append_error_log(format!("startup: base_url={base_url} path_style={style}"));
 
@@ -93,7 +93,7 @@ async fn init_backend(user_agent_suffix: &str) -> anyhow::Result<BackendContext>
         Some(auth) => auth,
         None => {
             eprintln!(
-                "Not signed in. Please run 'codex login' to sign in with ChatGPT, then re-run 'codex cloud'."
+                "Not signed in. Please run 'ava login' to sign in with ChatGPT, then re-run 'ava cloud'."
             );
             std::process::exit(1);
         }
@@ -103,14 +103,14 @@ async fn init_backend(user_agent_suffix: &str) -> anyhow::Result<BackendContext>
         append_error_log(format!("auth: mode=ChatGPT account_id={acc}"));
     }
 
-    if !auth.uses_codex_backend() {
+    if !auth.uses_ava_backend() {
         eprintln!(
-            "Not signed in. Please run 'codex login' to sign in with ChatGPT, then re-run 'codex cloud'."
+            "Not signed in. Please run 'ava login' to sign in with ChatGPT, then re-run 'ava cloud'."
         );
         std::process::exit(1);
     }
 
-    let auth_provider = codex_model_provider::auth_provider_from_auth(&auth);
+    let auth_provider = ava_model_provider::auth_provider_from_auth(&auth);
     http = http.with_auth_provider(auth_provider);
     if let Some(acc) = auth.get_account_id() {
         append_error_log(format!("auth: set ChatGPT-Account-Id header: {acc}"));
@@ -182,11 +182,11 @@ async fn run_exec_command(args: crate::cli::ExecCommand) -> anyhow::Result<()> {
         branch,
         attempts,
     } = args;
-    let ctx = init_backend("codex_cloud_tasks_exec").await?;
+    let ctx = init_backend("ava_cloud_tasks_exec").await?;
     let prompt = resolve_query_input(query)?;
     let env_id = resolve_environment_id(&ctx, &environment).await?;
     let git_ref = resolve_git_ref(branch.as_ref()).await;
-    let created = codex_cloud_tasks_client::CloudBackend::create_task(
+    let created = ava_cloud_tasks_client::CloudBackend::create_task(
         &*ctx.backend,
         &env_id,
         &prompt,
@@ -230,7 +230,7 @@ async fn resolve_environment_id(ctx: &BackendContext, requested: &str) -> anyhow
         .collect::<Vec<_>>();
     match label_matches.as_slice() {
         [] => Err(anyhow!(
-            "environment '{trimmed}' not found; run `codex cloud` to list available environments"
+            "environment '{trimmed}' not found; run `ava cloud` to list available environments"
         )),
         [single] => Ok(single.id.clone()),
         [first, rest @ ..] => {
@@ -239,7 +239,7 @@ async fn resolve_environment_id(ctx: &BackendContext, requested: &str) -> anyhow
                 Ok(first_id.clone())
             } else {
                 Err(anyhow!(
-                    "environment label '{trimmed}' is ambiguous; run `codex cloud` to pick the desired environment id"
+                    "environment label '{trimmed}' is ambiguous; run `ava cloud` to pick the desired environment id"
                 ))
             }
         }
@@ -273,7 +273,7 @@ fn resolve_query_input(query_arg: Option<String>) -> anyhow::Result<String> {
     }
 }
 
-fn parse_task_id(raw: &str) -> anyhow::Result<codex_cloud_tasks_client::TaskId> {
+fn parse_task_id(raw: &str) -> anyhow::Result<ava_cloud_tasks_client::TaskId> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
         anyhow::bail!("task id must not be empty");
@@ -291,7 +291,7 @@ fn parse_task_id(raw: &str) -> anyhow::Result<codex_cloud_tasks_client::TaskId> 
     if id.is_empty() {
         anyhow::bail!("task id must not be empty");
     }
-    Ok(codex_cloud_tasks_client::TaskId(id.to_string()))
+    Ok(ava_cloud_tasks_client::TaskId(id.to_string()))
 }
 
 #[derive(Clone, Debug)]
@@ -316,14 +316,14 @@ fn cmp_attempt(lhs: &AttemptDiffData, rhs: &AttemptDiffData) -> Ordering {
 }
 
 async fn collect_attempt_diffs(
-    backend: &dyn codex_cloud_tasks_client::CloudBackend,
-    task_id: &codex_cloud_tasks_client::TaskId,
+    backend: &dyn ava_cloud_tasks_client::CloudBackend,
+    task_id: &ava_cloud_tasks_client::TaskId,
 ) -> anyhow::Result<Vec<AttemptDiffData>> {
     let text =
-        codex_cloud_tasks_client::CloudBackend::get_task_text(backend, task_id.clone()).await?;
+        ava_cloud_tasks_client::CloudBackend::get_task_text(backend, task_id.clone()).await?;
     let mut attempts = Vec::new();
     if let Some(diff) =
-        codex_cloud_tasks_client::CloudBackend::get_task_diff(backend, task_id.clone()).await?
+        ava_cloud_tasks_client::CloudBackend::get_task_diff(backend, task_id.clone()).await?
     {
         attempts.push(AttemptDiffData {
             placement: text.attempt_placement,
@@ -332,7 +332,7 @@ async fn collect_attempt_diffs(
         });
     }
     if let Some(turn_id) = text.turn_id {
-        let siblings = codex_cloud_tasks_client::CloudBackend::list_sibling_attempts(
+        let siblings = ava_cloud_tasks_client::CloudBackend::list_sibling_attempts(
             backend,
             task_id.clone(),
             turn_id,
@@ -387,7 +387,7 @@ fn task_status_label(status: &TaskStatus) -> &'static str {
     }
 }
 
-fn summary_line(summary: &codex_cloud_tasks_client::DiffSummary, colorize: bool) -> String {
+fn summary_line(summary: &ava_cloud_tasks_client::DiffSummary, colorize: bool) -> String {
     if summary.files_changed == 0 && summary.lines_added == 0 && summary.lines_removed == 0 {
         let base = "no diff";
         return if colorize {
@@ -427,7 +427,7 @@ fn summary_line(summary: &codex_cloud_tasks_client::DiffSummary, colorize: bool)
 }
 
 fn format_task_status_lines(
-    task: &codex_cloud_tasks_client::TaskSummary,
+    task: &ava_cloud_tasks_client::TaskSummary,
     now: chrono::DateTime<Utc>,
     colorize: bool,
 ) -> Vec<String> {
@@ -494,7 +494,7 @@ fn format_task_status_lines(
 }
 
 fn format_task_list_lines(
-    tasks: &[codex_cloud_tasks_client::TaskSummary],
+    tasks: &[ava_cloud_tasks_client::TaskSummary],
     base_url: &str,
     now: chrono::DateTime<Utc>,
     colorize: bool,
@@ -513,10 +513,10 @@ fn format_task_list_lines(
 }
 
 async fn run_status_command(args: crate::cli::StatusCommand) -> anyhow::Result<()> {
-    let ctx = init_backend("codex_cloud_tasks_status").await?;
+    let ctx = init_backend("ava_cloud_tasks_status").await?;
     let task_id = parse_task_id(&args.task_id)?;
     let summary =
-        codex_cloud_tasks_client::CloudBackend::get_task_summary(&*ctx.backend, task_id).await?;
+        ava_cloud_tasks_client::CloudBackend::get_task_summary(&*ctx.backend, task_id).await?;
     let now = Utc::now();
     let colorize = supports_color::on(SupportStream::Stdout).is_some();
     for line in format_task_status_lines(&summary, now, colorize) {
@@ -529,13 +529,13 @@ async fn run_status_command(args: crate::cli::StatusCommand) -> anyhow::Result<(
 }
 
 async fn run_list_command(args: crate::cli::ListCommand) -> anyhow::Result<()> {
-    let ctx = init_backend("codex_cloud_tasks_list").await?;
+    let ctx = init_backend("ava_cloud_tasks_list").await?;
     let env_filter = if let Some(env) = args.environment {
         Some(resolve_environment_id(&ctx, &env).await?)
     } else {
         None
     };
-    let page = codex_cloud_tasks_client::CloudBackend::list_tasks(
+    let page = ava_cloud_tasks_client::CloudBackend::list_tasks(
         &*ctx.backend,
         env_filter.as_deref(),
         Some(args.limit),
@@ -582,7 +582,7 @@ async fn run_list_command(args: crate::cli::ListCommand) -> anyhow::Result<()> {
         println!("{line}");
     }
     if let Some(cursor) = page.cursor {
-        let command = format!("codex cloud list --cursor='{cursor}'");
+        let command = format!("ava cloud list --cursor='{cursor}'");
         if colorize {
             println!(
                 "\nTo fetch the next page, run {}",
@@ -596,7 +596,7 @@ async fn run_list_command(args: crate::cli::ListCommand) -> anyhow::Result<()> {
 }
 
 async fn run_diff_command(args: crate::cli::DiffCommand) -> anyhow::Result<()> {
-    let ctx = init_backend("codex_cloud_tasks_diff").await?;
+    let ctx = init_backend("ava_cloud_tasks_diff").await?;
     let task_id = parse_task_id(&args.task_id)?;
     let attempts = collect_attempt_diffs(&*ctx.backend, &task_id).await?;
     let selected = select_attempt(&attempts, args.attempt)?;
@@ -605,11 +605,11 @@ async fn run_diff_command(args: crate::cli::DiffCommand) -> anyhow::Result<()> {
 }
 
 async fn run_apply_command(args: crate::cli::ApplyCommand) -> anyhow::Result<()> {
-    let ctx = init_backend("codex_cloud_tasks_apply").await?;
+    let ctx = init_backend("ava_cloud_tasks_apply").await?;
     let task_id = parse_task_id(&args.task_id)?;
     let attempts = collect_attempt_diffs(&*ctx.backend, &task_id).await?;
     let selected = select_attempt(&attempts, args.attempt)?;
-    let outcome = codex_cloud_tasks_client::CloudBackend::apply_task(
+    let outcome = ava_cloud_tasks_client::CloudBackend::apply_task(
         &*ctx.backend,
         task_id,
         Some(selected.diff.clone()),
@@ -618,24 +618,24 @@ async fn run_apply_command(args: crate::cli::ApplyCommand) -> anyhow::Result<()>
     println!("{}", outcome.message);
     if !matches!(
         outcome.status,
-        codex_cloud_tasks_client::ApplyStatus::Success
+        ava_cloud_tasks_client::ApplyStatus::Success
     ) {
         std::process::exit(1);
     }
     Ok(())
 }
 
-fn level_from_status(status: codex_cloud_tasks_client::ApplyStatus) -> app::ApplyResultLevel {
+fn level_from_status(status: ava_cloud_tasks_client::ApplyStatus) -> app::ApplyResultLevel {
     match status {
-        codex_cloud_tasks_client::ApplyStatus::Success => app::ApplyResultLevel::Success,
-        codex_cloud_tasks_client::ApplyStatus::Partial => app::ApplyResultLevel::Partial,
-        codex_cloud_tasks_client::ApplyStatus::Error => app::ApplyResultLevel::Error,
+        ava_cloud_tasks_client::ApplyStatus::Success => app::ApplyResultLevel::Success,
+        ava_cloud_tasks_client::ApplyStatus::Partial => app::ApplyResultLevel::Partial,
+        ava_cloud_tasks_client::ApplyStatus::Error => app::ApplyResultLevel::Error,
     }
 }
 
 fn spawn_preflight(
     app: &mut app::App,
-    backend: &Arc<dyn codex_cloud_tasks_client::CloudBackend>,
+    backend: &Arc<dyn ava_cloud_tasks_client::CloudBackend>,
     tx: &UnboundedSender<app::AppEvent>,
     frame_tx: &UnboundedSender<Instant>,
     title: String,
@@ -660,7 +660,7 @@ fn spawn_preflight(
             task_id,
             diff_override,
         } = job;
-        let result = codex_cloud_tasks_client::CloudBackend::apply_task_preflight(
+        let result = ava_cloud_tasks_client::CloudBackend::apply_task_preflight(
             &*backend,
             task_id.clone(),
             diff_override,
@@ -697,7 +697,7 @@ fn spawn_preflight(
 
 fn spawn_apply(
     app: &mut app::App,
-    backend: &Arc<dyn codex_cloud_tasks_client::CloudBackend>,
+    backend: &Arc<dyn ava_cloud_tasks_client::CloudBackend>,
     tx: &UnboundedSender<app::AppEvent>,
     frame_tx: &UnboundedSender<Instant>,
     job: ApplyJob,
@@ -721,7 +721,7 @@ fn spawn_apply(
             task_id,
             diff_override,
         } = job;
-        let result = codex_cloud_tasks_client::CloudBackend::apply_task(
+        let result = ava_cloud_tasks_client::CloudBackend::apply_task(
             &*backend,
             task_id.clone(),
             diff_override,
@@ -749,8 +749,8 @@ fn spawn_apply(
 
 // (no standalone patch summarizer needed – UI displays raw diffs)
 
-/// Entry point for the `codex cloud` subcommand.
-pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> anyhow::Result<()> {
+/// Entry point for the `ava cloud` subcommand.
+pub async fn run_main(cli: Cli, _ava_linux_sandbox_exe: Option<PathBuf>) -> anyhow::Result<()> {
     if let Some(command) = cli.command {
         return match command {
             crate::cli::Command::Exec(args) => run_exec_command(args).await,
@@ -779,7 +779,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
         backend,
         base_url,
         environment_http,
-    } = init_backend("codex_cloud_tasks_tui").await?;
+    } = init_backend("ava_cloud_tasks_tui").await?;
 
     // Terminal setup
     use crossterm::ExecutableCommand;
@@ -816,7 +816,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
     let mut app = app::App::new();
     // Initial load
     let force_internal = matches!(
-        std::env::var("CODEX_CLOUD_TASKS_FORCE_INTERNAL")
+        std::env::var("AVA_CLOUD_TASKS_FORCE_INTERNAL")
             .ok()
             .as_deref(),
         Some("1") | Some("true") | Some("TRUE")
@@ -824,7 +824,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
     append_error_log(format!(
         "startup: wham_force_internal={} ua={}",
         force_internal,
-        get_codex_user_agent()
+        get_ava_user_agent()
     ));
     // Non-blocking initial load so the in-box spinner can animate
     app.status = "Loading tasks…".to_string();
@@ -952,7 +952,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                     page.composer.flush_paste_burst_if_due();
                     if page.composer.is_in_paste_burst() {
                         let _ = frame_tx
-                            .send(Instant::now() + codex_tui::ComposerInput::recommended_flush_delay());
+                            .send(Instant::now() + ava_tui::ComposerInput::recommended_flush_delay());
                     }
                 }
                 // Keep spinner pulsing only while loading.
@@ -1178,7 +1178,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                         let tx = tx.clone();
                                         let task_id = id.clone();
                                         tokio::spawn(async move {
-                                            match codex_cloud_tasks_client::CloudBackend::list_sibling_attempts(
+                                            match ava_cloud_tasks_client::CloudBackend::list_sibling_attempts(
                                                 &*backend,
                                                 task_id.clone(),
                                                 turn_id,
@@ -1307,7 +1307,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                             match result {
                                 Ok(outcome) => {
                                     app.status = outcome.message.clone();
-                                    if matches!(outcome.status, codex_cloud_tasks_client::ApplyStatus::Success) {
+                                    if matches!(outcome.status, ava_cloud_tasks_client::ApplyStatus::Success) {
                                         app.apply_modal = None;
                                         app.diff_overlay = None;
                                         // Refresh tasks after successful apply
@@ -1504,7 +1504,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                 _ => {
                                     if page.submitting {
                                         // Ignore input while submitting
-                                    } else if let codex_tui::ComposerAction::Submitted(text) =
+                                    } else if let ava_tui::ComposerAction::Submitted(text) =
                                         page.composer.input(key)
                                     {
                                             // Submit only if we have an env id
@@ -1522,7 +1522,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                                 tokio::spawn(async move {
                                                     let git_ref = resolve_git_ref(/*branch_override*/ None).await;
 
-                                                    let result = codex_cloud_tasks_client::CloudBackend::create_task(&*backend, &env, &text, &git_ref, /*qa_mode*/ false, best_of_n).await;
+                                                    let result = ava_cloud_tasks_client::CloudBackend::create_task(&*backend, &env, &text, &git_ref, /*qa_mode*/ false, best_of_n).await;
                                                     let evt = match result {
                                                         Ok(ok) => app::AppEvent::NewTaskSubmitted(Ok(ok)),
                                                         Err(e) => app::AppEvent::NewTaskSubmitted(Err(format!("{e}"))),
@@ -1538,7 +1538,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                     if page.composer.is_in_paste_burst() {
                                         let _ = frame_tx.send(
                                             Instant::now()
-                                                + codex_tui::ComposerInput::recommended_flush_delay(),
+                                                + ava_tui::ComposerInput::recommended_flush_delay(),
                                         );
                                     }
                                     // Always schedule an immediate redraw for key edits in the composer.
@@ -1871,12 +1871,12 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                             let diff_id = id.clone();
                                             let diff_title = title.clone();
                                             tokio::spawn(async move {
-                                                match codex_cloud_tasks_client::CloudBackend::get_task_diff(&*backend, diff_id.clone()).await {
+                                                match ava_cloud_tasks_client::CloudBackend::get_task_diff(&*backend, diff_id.clone()).await {
                                                     Ok(Some(diff)) => {
                                                         let _ = tx.send(app::AppEvent::DetailsDiffLoaded { id: diff_id, title: diff_title, diff });
                                                     }
                                                     Ok(None) => {
-                                                        match codex_cloud_tasks_client::CloudBackend::get_task_text(&*backend, diff_id.clone()).await {
+                                                        match ava_cloud_tasks_client::CloudBackend::get_task_text(&*backend, diff_id.clone()).await {
                                                             Ok(text) => {
                                                                 let evt = app::AppEvent::DetailsMessagesLoaded {
                                                                     id: diff_id,
@@ -1897,7 +1897,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                                     }
                                                     Err(e) => {
                                                         append_error_log(format!("get_task_diff failed for {}: {e}", diff_id.0));
-                                                        match codex_cloud_tasks_client::CloudBackend::get_task_text(&*backend, diff_id.clone()).await {
+                                                        match ava_cloud_tasks_client::CloudBackend::get_task_text(&*backend, diff_id.clone()).await {
                                                             Ok(text) => {
                                                                 let evt = app::AppEvent::DetailsMessagesLoaded {
                                                                     id: diff_id,
@@ -1926,7 +1926,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                             let msg_id = id;
                                             let msg_title = title;
                                             tokio::spawn(async move {
-                                                if let Ok(text) = codex_cloud_tasks_client::CloudBackend::get_task_text(&*backend, msg_id.clone()).await {
+                                                if let Ok(text) = ava_cloud_tasks_client::CloudBackend::get_task_text(&*backend, msg_id.clone()).await {
                                                     let evt = app::AppEvent::DetailsMessagesLoaded {
                                                         id: msg_id,
                                                         title: msg_title,
@@ -1953,7 +1953,7 @@ pub async fn run_main(cli: Cli, _codex_linux_sandbox_exe: Option<PathBuf>) -> an
                                     }
 
                                     if let Some(task) = app.tasks.get(app.selected).cloned() {
-                                        match codex_cloud_tasks_client::CloudBackend::get_task_diff(&*backend, task.id.clone()).await {
+                                        match ava_cloud_tasks_client::CloudBackend::get_task_diff(&*backend, task.id.clone()).await {
                                             Ok(Some(diff)) => {
                                                 let diff_override = Some(diff.clone());
                                                 let task_id = task.id.clone();
@@ -2149,11 +2149,11 @@ fn pretty_lines_from_error(raw: &str) -> Vec<String> {
 mod tests {
     use super::*;
     use crate::resolve_git_ref_with_git_info;
-    use codex_cloud_tasks_client::DiffSummary;
-    use codex_cloud_tasks_client::TaskId;
-    use codex_cloud_tasks_client::TaskStatus;
-    use codex_cloud_tasks_client::TaskSummary;
-    use codex_cloud_tasks_mock_client::MockClient;
+    use ava_cloud_tasks_client::DiffSummary;
+    use ava_cloud_tasks_client::TaskId;
+    use ava_cloud_tasks_client::TaskStatus;
+    use ava_cloud_tasks_client::TaskSummary;
+    use ava_cloud_tasks_mock_client::MockClient;
     use pretty_assertions::assert_eq;
 
     struct StubGitInfo {

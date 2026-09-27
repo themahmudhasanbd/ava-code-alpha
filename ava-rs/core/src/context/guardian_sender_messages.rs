@@ -1,9 +1,9 @@
 //! Reviewer-only snapshot of original user instructions for one accepted delegation.
 
 use super::ContextualUserFragment;
-use codex_guardian_context::GuardianRootMessage;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ContentItemKind;
+use ava_guardian_context::GuardianRootMessage;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ContentItemKind;
 
 /// A bounded fragment rendered once at admission and never added to the worker prompt.
 pub(crate) struct GuardianSenderMessages {

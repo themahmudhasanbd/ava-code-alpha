@@ -27,8 +27,8 @@ proxy_url = "http://127.0.0.1:43128"
 "#,
     )?;
     let proxied = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
-        .loader_overrides(codex_config::LoaderOverrides::without_managed_config_for_tests())
+        .ava_home(home.path().to_path_buf())
+        .loader_overrides(ava_config::LoaderOverrides::without_managed_config_for_tests())
         .build()
         .await?;
     assert!(proxied.permissions.network.is_some());

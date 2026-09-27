@@ -1,8 +1,8 @@
 //! Resolves Guardian policy, feedback, and classifier text from catalog values or bundled defaults.
 //! Configuration overlays and prompt composition remain with consumers.
 
-use codex_protocol::openai_models::AutoReviewMessages;
-use codex_protocol::openai_models::ModelMessages;
+use ava_protocol::openai_models::AutoReviewMessages;
+use ava_protocol::openai_models::ModelMessages;
 
 const POLICY: &str = include_str!("../../templates/guardian/policy.md");
 const POLICY_TEMPLATE: &str = include_str!("../../templates/guardian/policy_template.md");

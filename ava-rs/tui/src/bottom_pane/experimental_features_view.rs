@@ -3,11 +3,11 @@
 //! Server voice discovery is gated by the client package's native runtime.
 
 use crate::experimental_features::FeatureWriteResult;
-use codex_app_server_protocol::ExperimentalFeature;
-use codex_app_server_protocol::ExperimentalFeatureStage;
-use codex_features::FEATURES;
-use codex_features::Feature;
-use codex_protocol::ThreadId;
+use ava_app_server_protocol::ExperimentalFeature;
+use ava_app_server_protocol::ExperimentalFeatureStage;
+use ava_features::FEATURES;
+use ava_features::Feature;
+use ava_protocol::ThreadId;
 use std::time::Duration;
 use std::time::Instant;
 use tokio::sync::oneshot;
@@ -84,7 +84,7 @@ impl ExperimentalFeaturesView {
             }
             .to_string(),
             thread_id,
-            voice_supported: codex_realtime_webrtc::RealtimeWebrtcSession::is_supported(),
+            voice_supported: ava_realtime_webrtc::RealtimeWebrtcSession::is_supported(),
             write_rx: None,
             catalog_rx,
             unconfirmed: Vec::new(),
@@ -106,7 +106,7 @@ impl ExperimentalFeaturesView {
             Paragraph::new(Line::from("Experimental features".bold())).wrap(Wrap { trim: false }),
         );
         for text in [
-            "Checked features are configured on. Some experimental features take effect only in new tasks or after restarting the Codex server.",
+            "Checked features are configured on. Some experimental features take effect only in new tasks or after restarting the Ava server.",
             self.discovery_status.as_str(),
         ].into_iter().filter(|text| !text.is_empty()) {
             for line in textwrap::wrap(text, usize::from(width.max(1))) {
@@ -359,7 +359,7 @@ impl BottomPaneView for ExperimentalFeaturesView {
             }
             Err(error) => {
                 tracing::warn!(%error, "experimental feature discovery failed");
-                self.discovery_status = "Server experiments unavailable. Reopen /experimental to retry; restart this Codex client if requests remain unanswered.".to_string();
+                self.discovery_status = "Server experiments unavailable. Reopen /experimental to retry; restart this Ava client if requests remain unanswered.".to_string();
             }
         }
         true

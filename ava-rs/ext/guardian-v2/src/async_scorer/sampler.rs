@@ -11,28 +11,28 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use codex_api::ApiError;
-use codex_api::Reasoning;
-use codex_api::ReasoningContext;
-use codex_api::ResponsesApiRequest;
-use codex_context_fragments::RenderedFragment;
-use codex_extension_api::ExtensionMetrics;
-use codex_http_client::HttpClientFactory;
-use codex_login::AgentIdentityAuthPolicy;
-use codex_model_provider::SharedModelProvider;
-use codex_protocol::ResponseItemId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::SessionSource;
+use ava_api::ApiError;
+use ava_api::Reasoning;
+use ava_api::ReasoningContext;
+use ava_api::ResponsesApiRequest;
+use ava_context_fragments::RenderedFragment;
+use ava_extension_api::ExtensionMetrics;
+use ava_http_client::HttpClientFactory;
+use ava_login::AgentIdentityAuthPolicy;
+use ava_model_provider::SharedModelProvider;
+use ava_protocol::ResponseItemId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::SessionSource;
 use thiserror::Error;
 use tokio::sync::oneshot;
 use uuid::Uuid;
 
 pub(crate) const MODEL: &str = "gpt-5.6-luna";
 pub(crate) const CLASSIFICATION_TOKEN_USAGE_METRIC: &str =
-    "codex.guardian_v2.classification.token_usage";
+    "ava.guardian_v2.classification.token_usage";
 const MAX_OUTPUT_BYTES: usize = 8 * 1024;
 pub(super) const INITIAL_WEBSOCKET_CONNECTIONS: usize = if cfg!(test) { 2 } else { 8 };
 const MAX_CONCURRENT_REQUESTS: usize = 16;
@@ -88,7 +88,7 @@ pub struct LunaSamplingRequest {
 pub enum LunaSamplerError {
     /// The thread's provider or scoped credentials could not be resolved.
     #[error("could not resolve the Luna model provider: {0}")]
-    Provider(#[source] CodexErr),
+    Provider(#[source] AvaErr),
     /// The Responses request could not be opened or streamed.
     #[error("Luna Responses request failed: {0}")]
     Api(#[source] ApiError),
@@ -193,7 +193,7 @@ impl LunaSampler {
         }
         let total_tokens = input
             .iter()
-            .map(codex_guardian_context::estimate_input_tokens)
+            .map(ava_guardian_context::estimate_input_tokens)
             .fold(0usize, usize::saturating_add);
         if let Some(metrics) = self.config.metrics.as_deref() {
             for (component, tokens) in [
@@ -202,9 +202,9 @@ impl LunaSampler {
                 ("total", total_tokens),
             ] {
                 metrics.histogram_with_boundaries(
-                    codex_guardian_context::REQUEST_TOKENS_METRIC,
+                    ava_guardian_context::REQUEST_TOKENS_METRIC,
                     i64::try_from(tokens).unwrap_or(i64::MAX),
-                    codex_guardian_context::REQUEST_TOKENS_BOUNDARIES,
+                    ava_guardian_context::REQUEST_TOKENS_BOUNDARIES,
                     &[("target", "async"), ("component", component)],
                 );
             }

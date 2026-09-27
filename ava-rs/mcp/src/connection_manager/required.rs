@@ -1,6 +1,6 @@
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_protocol::protocol::McpStartupFailure;
+use ava_protocol::protocol::McpStartupFailure;
 use tracing::Instrument;
 use tracing::info_span;
 

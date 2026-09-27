@@ -24,16 +24,16 @@ mod runtime;
 #[cfg(test)]
 pub(crate) mod test_host;
 
-use codex_protocol::items::ModelInvocationContext;
+use ava_protocol::items::ModelInvocationContext;
 use std::sync::Arc;
 
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::GuardianAssessmentOutcome;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::GuardianAssessmentOutcome;
 
 use crate::environment_selection::TurnEnvironmentSnapshot;
 use crate::session::step_context::StepContext;
@@ -62,11 +62,11 @@ pub use review_session::prepare_review_prewarm;
 pub(crate) use review_session::prompt_cache_key_override_for_review_session;
 pub(crate) use runtime::ReviewAction;
 
-pub(crate) use codex_guardian_reviewer::REVIEW_TIMEOUT as GUARDIAN_REVIEW_TIMEOUT;
+pub(crate) use ava_guardian_reviewer::REVIEW_TIMEOUT as GUARDIAN_REVIEW_TIMEOUT;
 pub(crate) const GUARDIAN_REVIEWER_NAME: &str = "guardian";
 pub(crate) const AUTO_REVIEW_DENIED_ACTION_APPROVAL_DEVELOPER_PREFIX: &str =
-    codex_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX;
-const GUARDIAN_MAX_TOOL_ENTRY_TOKENS: usize = codex_guardian_context::ContextProfile::synchronous()
+    ava_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX;
+const GUARDIAN_MAX_TOOL_ENTRY_TOKENS: usize = ava_guardian_context::ContextProfile::synchronous()
     .transcript
     .entry_limits
     .tool_tokens;
@@ -113,7 +113,7 @@ impl GuardianReviewContext {
         Self {
             parent_response_id: turn
                 .extension_data
-                .get::<codex_api::ResponseId>()
+                .get::<ava_api::ResponseId>()
                 .map(|id| id.0.clone()),
             environments: environments.clone(),
             model_info: Arc::clone(&settings.model_info),
@@ -141,7 +141,7 @@ impl From<&Arc<StepContext>> for GuardianReviewContext {
             parent_response_id: step
                 .turn
                 .extension_data
-                .get::<codex_api::ResponseId>()
+                .get::<ava_api::ResponseId>()
                 .map(|id| id.0.clone()),
             turn: Arc::clone(&step.turn),
             environments: step.environments.clone(),
@@ -160,7 +160,7 @@ impl From<Arc<TurnContext>> for GuardianReviewContext {
         Self {
             parent_response_id: turn
                 .extension_data
-                .get::<codex_api::ResponseId>()
+                .get::<ava_api::ResponseId>()
                 .map(|id| id.0.clone()),
             environments: turn.initial_environments.clone(),
             model_info: Arc::clone(turn.model_info()),
@@ -181,7 +181,7 @@ impl From<&Arc<TurnContext>> for GuardianReviewContext {
 }
 
 #[cfg(test)]
-use codex_guardian_reviewer::guardian_output_schema;
+use ava_guardian_reviewer::guardian_output_schema;
 
 pub(crate) use approval_request::format_guardian_action_pretty;
 #[cfg(test)]
@@ -189,7 +189,7 @@ use approval_request::guardian_assessment_action;
 #[cfg(test)]
 use approval_request::guardian_request_turn_id;
 #[cfg(test)]
-use codex_guardian_reviewer::GuardianReviewOutcome;
+use ava_guardian_reviewer::GuardianReviewOutcome;
 #[cfg(test)]
 use prompt::GuardianPromptMode;
 #[cfg(test)]

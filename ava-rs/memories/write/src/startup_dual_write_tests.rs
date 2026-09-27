@@ -1,7 +1,7 @@
 //! Exercises both startup pipelines through model requests and committed versioned state.
 
 use super::*;
-use codex_protocol::MemoryVersion;
+use ava_protocol::MemoryVersion;
 use core_test_support::responses::sse_response;
 use pretty_assertions::assert_eq;
 use wiremock::Mock;
@@ -14,8 +14,8 @@ async fn dual_write_extracts_and_consolidates_into_independent_stores() -> anyho
     let home = Arc::new(TempDir::new()?);
     let mut memories = startup_test_memories_config();
     memories.dual_write = true;
-    let test = build_test_codex_with_memories_config(&server, Arc::clone(&home), memories).await?;
-    let db = test.codex.state_db().expect("memory state");
+    let test = build_test_ava_with_memories_config(&server, Arc::clone(&home), memories).await?;
+    let db = test.ava-code.state_db().expect("memory state");
     let source = seed_stage1_candidate(
         &db,
         home.path(),
@@ -105,6 +105,6 @@ async fn dual_write_extracts_and_consolidates_into_independent_stores() -> anyho
     );
     assert!(!v2_root.join("MEMORY.md").exists());
     assert!(!v2_root.join("raw_memories.md").exists());
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }

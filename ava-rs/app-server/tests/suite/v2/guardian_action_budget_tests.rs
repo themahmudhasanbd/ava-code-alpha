@@ -94,8 +94,8 @@ async fn oversized_async_action_requires_sync_review_and_later_scores_recover() 
         let _ = axum::serve(listener, router).await;
     });
     let (mcp_url, mcp_server) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
-    let hook_path = codex_home.path().join("approval-barrier.py");
+    let ava_home = TempDir::new()?;
+    let hook_path = ava_home.path().join("approval-barrier.py");
     let endpoint = format!("{responses_url}/approval-barrier");
     std::fs::write(
         &hook_path,
@@ -116,9 +116,9 @@ with urllib.request.urlopen(request, timeout=30) as response:
                 "[[hooks.{event}]]\nmatcher = '^mcp__'\n[[hooks.{event}.hooks]]\ntype = 'command'\ncommand = {command}\n"
         ))
         .join("\n");
-    std::fs::write(codex_home.path().join("requirements.toml"), hooks)?;
+    std::fs::write(ava_home.path().join("requirements.toml"), hooks)?;
     let analytics_server = responses::start_mock_server().await;
-    mount_analytics_capture(&analytics_server, codex_home.path()).await?;
+    mount_analytics_capture(&analytics_server, ava_home.path()).await?;
     MockResponsesConfig::new(&responses_url)
         .with_model(MODEL)
         .with_provider_config("supports_websockets = false")
@@ -128,9 +128,9 @@ with urllib.request.urlopen(request, timeout=30) as response:
             "[mcp_servers.{TEST_SERVER_NAME}]\nurl = \"{mcp_url}/mcp\"\ndefault_tools_approval_mode = \"prompt\"\n\n[analytics]\nenabled = true\n\n[features.guardianv2]\nenabled = true\nmax_action_tokens = 128\n\n[features.guardianv2.review_scope]\ncomputer_use_only = false"
         ))
         .enable_feature(Feature::GuardianApproval)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     let thread = app_server
@@ -162,7 +162,7 @@ with urllib.request.urlopen(request, timeout=30) as response:
                 if events
                     .iter()
                     .filter(|event| {
-                        event["event_type"] == "codex_guardian_v2_classification"
+                        event["event_type"] == "ava_guardian_v2_classification"
                             && event["event_params"]["outcome"] == "success"
                     })
                     .count()

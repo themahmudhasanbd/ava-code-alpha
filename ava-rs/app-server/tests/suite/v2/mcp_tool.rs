@@ -11,41 +11,41 @@ use app_test_support::create_fake_rollout_with_session_and_thread_source;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
 use axum::Router;
-use codex_app_server_protocol::CapabilityRootLocation;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::EnvironmentAddResponse;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::McpElicitationSchema;
-use codex_app_server_protocol::McpServerElicitationAction;
-use codex_app_server_protocol::McpServerElicitationRequest;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::McpServerElicitationRequestResponse;
-use codex_app_server_protocol::McpServerToolCallParams;
-use codex_app_server_protocol::McpServerToolCallResponse;
-use codex_app_server_protocol::McpToolCallStatus;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SelectedCapabilityRoot;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnEnvironmentParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_features::Feature;
-use codex_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
-use codex_protocol::protocol::SessionSource as CoreSessionSource;
-use codex_protocol::protocol::ThreadSource as CoreThreadSource;
-use codex_utils_path_uri::PathUri;
-use codex_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
+use ava_app_server_protocol::CapabilityRootLocation;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::EnvironmentAddResponse;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::McpElicitationSchema;
+use ava_app_server_protocol::McpServerElicitationAction;
+use ava_app_server_protocol::McpServerElicitationRequest;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::McpServerElicitationRequestResponse;
+use ava_app_server_protocol::McpServerToolCallParams;
+use ava_app_server_protocol::McpServerToolCallResponse;
+use ava_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SelectedCapabilityRoot;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnEnvironmentParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_features::Feature;
+use ava_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
+use ava_protocol::protocol::SessionSource as CoreSessionSource;
+use ava_protocol::protocol::ThreadSource as CoreThreadSource;
+use ava_utils_path_uri::PathUri;
+use ava_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
 use core_test_support::responses;
 use futures::SinkExt;
 use pretty_assertions::assert_eq;
@@ -104,12 +104,12 @@ const LATE_ENVIRONMENT_ID: &str = "late-environment";
 async fn mcp_server_tool_call_returns_tool_result() -> Result<()> {
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
@@ -172,16 +172,16 @@ async fn mcp_server_tool_call_returns_tool_result() -> Result<()> {
 async fn mcp_server_tool_call_preserves_protocol_errors(protocol: ProtocolVersion) -> Result<()> {
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT);
     let config = if protocol == ProtocolVersion::V_2026_07_28 {
         config.enable_feature(Feature::Mcp20260728)
     } else {
         config.disable_feature(Feature::Mcp20260728)
     };
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp.start_thread(ThreadStartParams::default()).await?;
@@ -195,7 +195,7 @@ async fn mcp_server_tool_call_preserves_protocol_errors(protocol: ProtocolVersio
                 "data": {
                     "tool": TEST_TOOL_NAME,
                     "protocolVersion": protocol,
-                    "_meta": {"_codex_apps": {"connector_auth_failure": {
+                    "_meta": {"_ava_apps": {"connector_auth_failure": {
                         "is_auth_failure": true,
                         "connector_id": "calendar",
                         "requested_scopes": ["calendar.read"],
@@ -237,9 +237,9 @@ async fn mcp_server_tool_call_preserves_protocol_errors(protocol: ProtocolVersio
 async fn mcp_server_tool_call_forwards_only_server_extensions() -> Result<()> {
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let app_ui = json!({
         "mimeTypes": [
@@ -249,12 +249,12 @@ async fn mcp_server_tool_call_forwards_only_server_extensions() -> Result<()> {
         "futureField": {"preserved": true},
     });
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     mcp.initialize_with_capabilities(
         ClientInfo {
-            name: "codex_test".to_string(),
+            name: "ava_test".to_string(),
             title: None,
             version: "0.1.0".to_string(),
         },
@@ -332,9 +332,9 @@ async fn model_mcp_tool_call_uses_session_client_extensions() -> Result<()> {
     ];
     let responses_server = create_mock_responses_server_sequence(responses).await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let app_ui = json!({
         "mimeTypes": [
@@ -344,12 +344,12 @@ async fn model_mcp_tool_call_uses_session_client_extensions() -> Result<()> {
         "futureField": {"preserved": true},
     });
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     mcp.initialize_with_capabilities(
         ClientInfo {
-            name: "codex_test".to_string(),
+            name: "ava_test".to_string(),
             title: None,
             version: "0.1.0".to_string(),
         },
@@ -419,9 +419,9 @@ async fn model_mcp_tool_call_uses_session_client_extensions() -> Result<()> {
 
 #[tokio::test]
 async fn mcp_server_tool_call_returns_error_for_unknown_thread() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -454,7 +454,7 @@ async fn mcp_server_tool_call_round_trips_elicitation() -> Result<()> {
     mcp_server_tool_call_round_trips_elicitation_for_thread(ElicitationThread::Start {
         params: ThreadStartParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::UnlessTrusted),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::UnlessTrusted),
             ..Default::default()
         },
         session_source: "vscode",
@@ -469,9 +469,9 @@ async fn mcp_server_tool_call_round_trips_user_input_in_full_access_for_user_thr
     mcp_server_tool_call_round_trips_elicitation_for_thread(ElicitationThread::Start {
         params: ThreadStartParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::Never),
-            sandbox: Some(codex_app_server_protocol::SandboxMode::DangerFullAccess),
-            thread_source: Some(codex_app_server_protocol::ThreadSource::User),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::Never),
+            sandbox: Some(ava_app_server_protocol::SandboxMode::DangerFullAccess),
+            thread_source: Some(ava_app_server_protocol::ThreadSource::User),
             ..Default::default()
         },
         session_source: "vscode",
@@ -486,9 +486,9 @@ async fn mcp_server_tool_call_round_trips_user_input_for_custom_frontend_user_th
     mcp_server_tool_call_round_trips_elicitation_for_thread(ElicitationThread::Start {
         params: ThreadStartParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::Never),
-            sandbox: Some(codex_app_server_protocol::SandboxMode::DangerFullAccess),
-            thread_source: Some(codex_app_server_protocol::ThreadSource::User),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::Never),
+            sandbox: Some(ava_app_server_protocol::SandboxMode::DangerFullAccess),
+            thread_source: Some(ava_app_server_protocol::ThreadSource::User),
             ..Default::default()
         },
         session_source: "chatgpt",
@@ -503,8 +503,8 @@ async fn mcp_server_tool_call_uses_current_frontend_for_full_access_elicitation(
         source: CoreSessionSource::Exec,
         params: ThreadResumeParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::Never),
-            sandbox: Some(codex_app_server_protocol::SandboxMode::DangerFullAccess),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::Never),
+            sandbox: Some(ava_app_server_protocol::SandboxMode::DangerFullAccess),
             ..Default::default()
         },
     })
@@ -515,7 +515,7 @@ async fn mcp_server_tool_call_uses_current_frontend_for_full_access_elicitation(
 async fn mcp_server_tool_call_declines_full_access_elicitation_without_form_input_capability()
 -> Result<()> {
     assert_full_access_form_elicitation_is_declined(FullAccessElicitationCase {
-        thread_source: Some(codex_app_server_protocol::ThreadSource::User),
+        thread_source: Some(ava_app_server_protocol::ThreadSource::User),
         client_advertises_standard_form_input: false,
     })
     .await
@@ -535,7 +535,7 @@ async fn mcp_server_tool_call_declines_full_access_elicitation_with_unspecified_
 async fn mcp_server_tool_call_declines_full_access_elicitation_for_automation_thread() -> Result<()>
 {
     assert_full_access_form_elicitation_is_declined(FullAccessElicitationCase {
-        thread_source: Some(codex_app_server_protocol::ThreadSource::Feature(
+        thread_source: Some(ava_app_server_protocol::ThreadSource::Feature(
             "automation".to_string(),
         )),
         client_advertises_standard_form_input: true,
@@ -546,14 +546,14 @@ async fn mcp_server_tool_call_declines_full_access_elicitation_for_automation_th
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mcp_server_tool_call_declines_full_access_elicitation_for_subagent_thread() -> Result<()> {
     assert_full_access_form_elicitation_is_declined(FullAccessElicitationCase {
-        thread_source: Some(codex_app_server_protocol::ThreadSource::Subagent),
+        thread_source: Some(ava_app_server_protocol::ThreadSource::Subagent),
         client_advertises_standard_form_input: true,
     })
     .await
 }
 
 struct FullAccessElicitationCase {
-    thread_source: Option<codex_app_server_protocol::ThreadSource>,
+    thread_source: Option<ava_app_server_protocol::ThreadSource>,
     client_advertises_standard_form_input: bool,
 }
 
@@ -562,12 +562,12 @@ async fn assert_full_access_form_elicitation_is_declined(
 ) -> Result<()> {
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = initialize_elicitation_app_server(
-        codex_home.path(),
+        ava_home.path(),
         "vscode",
         case.client_advertises_standard_form_input,
     )
@@ -580,19 +580,19 @@ async fn assert_full_access_form_elicitation_is_declined(
     } = mcp
         .start_thread(ThreadStartParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::Never),
-            sandbox: Some(codex_app_server_protocol::SandboxMode::DangerFullAccess),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::Never),
+            sandbox: Some(ava_app_server_protocol::SandboxMode::DangerFullAccess),
             thread_source: case.thread_source,
             ..Default::default()
         })
         .await?;
     assert_eq!(
         approval_policy,
-        codex_app_server_protocol::AskForApproval::Never
+        ava_app_server_protocol::AskForApproval::Never
     );
     assert_eq!(
         sandbox,
-        codex_app_server_protocol::SandboxPolicy::DangerFullAccess
+        ava_app_server_protocol::SandboxPolicy::DangerFullAccess
     );
 
     let request_id = mcp
@@ -636,13 +636,13 @@ async fn mcp_server_tool_call_round_trips_elicitation_for_thread(
 ) -> Result<()> {
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     if let ElicitationThread::Resume { source, params } = &mut elicitation_thread {
         params.thread_id = create_fake_rollout_with_session_and_thread_source(
-            codex_home.path(),
+            ava_home.path(),
             "2025-02-01T10-00-00",
             "2025-02-01T10:00:00Z",
             "Saved user message",
@@ -662,7 +662,7 @@ async fn mcp_server_tool_call_round_trips_elicitation_for_thread(
         ElicitationThread::Resume { .. } => ("vscode", true),
     };
     let mut mcp = initialize_elicitation_app_server(
-        codex_home.path(),
+        ava_home.path(),
         session_source,
         client_advertises_standard_form_input,
     )
@@ -679,15 +679,15 @@ async fn mcp_server_tool_call_round_trips_elicitation_for_thread(
             } = timeout(DEFAULT_READ_TIMEOUT, mcp.read_response(resume_id)).await??;
             assert_eq!(
                 thread.source,
-                codex_app_server_protocol::SessionSource::from(source)
+                ava_app_server_protocol::SessionSource::from(source)
             );
             assert_eq!(
                 approval_policy,
-                codex_app_server_protocol::AskForApproval::Never
+                ava_app_server_protocol::AskForApproval::Never
             );
             assert_eq!(
                 sandbox,
-                codex_app_server_protocol::SandboxPolicy::DangerFullAccess
+                ava_app_server_protocol::SandboxPolicy::DangerFullAccess
             );
             thread
         }
@@ -764,18 +764,18 @@ async fn mcp_server_tool_call_round_trips_elicitation_for_thread(
 }
 
 async fn initialize_elicitation_app_server(
-    codex_home: &Path,
+    ava_home: &Path,
     session_source: &str,
     client_advertises_standard_form_input: bool,
 ) -> Result<TestAppServer> {
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home)
+        .with_ava_home(ava_home)
         .with_args(&["--session-source", session_source])
         .build()
         .await?;
     mcp.initialize_with_capabilities(
         ClientInfo {
-            name: "codex_test".to_string(),
+            name: "ava_test".to_string(),
             title: None,
             version: "0.1.0".to_string(),
         },
@@ -800,13 +800,13 @@ async fn mcp_server_elicitation_survives_environment_runtime_refresh() -> Result
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
     let exec_listener = TcpListener::bind("127.0.0.1:0").await?;
     let exec_server_url = format!("ws://{}", exec_listener.local_addr()?);
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
         .enable_feature(Feature::DeferredExecutor)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         // This test adds and refreshes an explicitly selected runtime environment.
         .without_auto_env()
         .build_initialized()
@@ -828,10 +828,10 @@ async fn mcp_server_elicitation_survives_environment_runtime_refresh() -> Result
     let thread_start_id = mcp
         .send_thread_start_request(ThreadStartParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::UnlessTrusted),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::UnlessTrusted),
             environments: Some(vec![TurnEnvironmentParams {
                 environment_id: LATE_ENVIRONMENT_ID.to_string(),
-                cwd: codex_utils_absolute_path::AbsolutePathBuf::try_from(
+                cwd: ava_utils_absolute_path::AbsolutePathBuf::try_from(
                     capability_root.path().to_path_buf(),
                 )?
                 .into(),
@@ -918,18 +918,18 @@ async fn mcp_server_elicitation_survives_environment_runtime_refresh() -> Result
 async fn mcp_server_tool_call_forwards_url_elicitation() -> Result<()> {
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
         .start_thread(ThreadStartParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::UnlessTrusted),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::UnlessTrusted),
             ..Default::default()
         })
         .await?;
@@ -1015,16 +1015,16 @@ async fn mcp_tool_call_completion_notification_contains_truncated_large_result()
     ];
     let responses_server = create_mock_responses_server_sequence(responses).await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(
         &responses_server.uri(),
         &mcp_server_url,
         LARGE_OUTPUT_AUTO_COMPACT_LIMIT,
     )
-    .write(codex_home.path())?;
+    .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
@@ -1129,18 +1129,18 @@ async fn mcp_tool_call_hint_survives_mid_call_thread_read_and_resume() -> Result
     ];
     let responses_server = create_mock_responses_server_sequence(responses).await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mcp_tool_config(&responses_server.uri(), &mcp_server_url, AUTO_COMPACT_LIMIT)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
         .start_thread(ThreadStartParams {
             model: Some("mock-model".to_string()),
-            approval_policy: Some(codex_app_server_protocol::AskForApproval::UnlessTrusted),
+            approval_policy: Some(ava_app_server_protocol::AskForApproval::UnlessTrusted),
             ..Default::default()
         })
         .await?;
@@ -1353,19 +1353,19 @@ impl ServerHandler for ToolAppsMcpServer {
         meta.0.insert("calledBy".to_string(), json!("mcp-app"));
 
         // Node REPL requests strict review inside tools/call, despite its read-only annotation.
-        let turn_metadata = context.meta.0.0.get("x-codex-turn-metadata");
+        let turn_metadata = context.meta.0.0.get("x-ava-turn-metadata");
         if turn_metadata
             .and_then(|metadata| metadata.get("node_repl_auto_review_required"))
             .and_then(serde_json::Value::as_bool)
             == Some(true)
         {
             let mut approval_meta = json!({
-                "codex_request_type": "approval_request",
-                "codex_approval_kind": "mcp_tool_call",
-                "codex_strict_auto_review": true,
+                "ava_request_type": "approval_request",
+                "ava_approval_kind": "mcp_tool_call",
+                "ava_strict_auto_review": true,
                 "tool_name": request.name,
                 "tool_params": request.arguments,
-                "x-codex-turn-metadata": turn_metadata,
+                "x-ava-turn-metadata": turn_metadata,
             });
             if request.name == "js" {
                 // Match the execution approval emitted by the real Node REPL server.
@@ -1375,7 +1375,7 @@ impl ServerHandler for ToolAppsMcpServer {
                 .sensitive_action
                 .or((message == "sensitive").then_some(true))
             {
-                approval_meta["codex_sensitive_action"] = json!(sensitive_action);
+                approval_meta["ava_sensitive_action"] = json!(sensitive_action);
             }
             let result = context
                 .peer
@@ -1426,7 +1426,7 @@ impl ServerHandler for ToolAppsMcpServer {
                 Some(json!({
                     "tool": request.name,
                     "protocolVersion": context.protocol_version(),
-                    "_meta": {"_codex_apps": {"connector_auth_failure": {
+                    "_meta": {"_ava_apps": {"connector_auth_failure": {
                         "is_auth_failure": true,
                         "connector_id": "calendar",
                         "requested_scopes": ["calendar.read"],

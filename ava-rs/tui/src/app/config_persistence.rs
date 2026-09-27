@@ -5,7 +5,7 @@
 //! loop.
 
 use super::*;
-use codex_config::ConfigLayerSource;
+use ava_config::ConfigLayerSource;
 
 async fn build_config_on_runtime_worker(
     builder: ConfigBuilder,
@@ -85,7 +85,7 @@ impl App {
         overrides.cwd = Some(cwd.clone());
         let cwd_display = cwd.display().to_string();
         let builder = ConfigBuilder::default()
-            .codex_home(self.config.codex_home.to_path_buf())
+            .ava_home(self.config.ava_home.to_path_buf())
             .cli_overrides(self.cli_kv_overrides.clone())
             .harness_overrides(overrides)
             .loader_overrides(self.loader_overrides.clone())
@@ -107,7 +107,7 @@ impl App {
         overrides.permission_profile = None;
         overrides.default_permissions = Some(profile_id.to_string());
         let builder = ConfigBuilder::default()
-            .codex_home(self.config.codex_home.to_path_buf())
+            .ava_home(self.config.ava_home.to_path_buf())
             .cli_overrides(self.cli_kv_overrides.clone())
             .harness_overrides(overrides)
             .loader_overrides(self.loader_overrides.clone())
@@ -222,7 +222,7 @@ impl App {
         self.sync_active_thread_permission_settings_to_cached_session()
             .await;
         self.app_event_tx
-            .send(AppEvent::CodexOp(AppCommand::override_turn_context(
+            .send(AppEvent::AvaOp(AppCommand::override_turn_context(
                 /*cwd*/ None,
                 approval_policy,
                 approvals_reviewer,
@@ -401,7 +401,7 @@ impl App {
             .await?;
         self.apply_runtime_policy_overrides(&mut config, RuntimePolicyOverrideScope::All);
         self.local_settings = self.local_settings.reloaded(&config);
-        self.refresh_server_version_overview_notice(CODEX_CLI_VERSION);
+        self.refresh_server_version_overview_notice(AVA_CLI_VERSION);
         // Other preferences have runtime caches and are adopted when the widget is replaced.
         self.chat_widget
             .local_settings
@@ -438,7 +438,7 @@ impl App {
                     "failed to refresh effective config after an overridden write"
                 );
                 self.chat_widget.add_error_message(format!(
-                    "{setting} were saved, but Codex could not refresh the effective config: {err}"
+                    "{setting} were saved, but Ava could not refresh the effective config: {err}"
                 ));
                 None
             }
@@ -944,7 +944,7 @@ impl App {
         model: &str,
         reasoning_effort: Option<&ReasoningEffortConfig>,
     ) -> Option<String> {
-        (!model.starts_with("codex-auto-")).then(|| Self::reasoning_label(reasoning_effort))
+        (!model.starts_with("ava-auto-")).then(|| Self::reasoning_label(reasoning_effort))
     }
 
     pub(crate) fn token_usage(&self) -> crate::token_usage::TokenUsage {
@@ -1085,7 +1085,7 @@ impl App {
         if let Some(name) = self.local_settings.tui.theme.as_deref()
             && let Some(theme) = crate::render::highlight::resolve_theme_by_name(
                 name,
-                Some(&self.local_settings.codex_home),
+                Some(&self.local_settings.ava_home),
             )
         {
             crate::render::highlight::set_syntax_theme(theme);
@@ -1095,7 +1095,7 @@ impl App {
         let auto_theme_name = crate::render::highlight::adaptive_default_theme_name();
         if let Some(theme) = crate::render::highlight::resolve_theme_by_name(
             auto_theme_name,
-            Some(&self.local_settings.codex_home),
+            Some(&self.local_settings.ava_home),
         ) {
             crate::render::highlight::set_syntax_theme(theme);
         }
@@ -1249,7 +1249,7 @@ impl App {
     pub(super) async fn verify_windows_sandbox_mode_after_setup(
         &mut self,
         app_server: &mut AppServerSession,
-        requested_mode: codex_app_server_protocol::WindowsSandboxSetupMode,
+        requested_mode: ava_app_server_protocol::WindowsSandboxSetupMode,
     ) -> bool {
         if !self.refresh_windows_sandbox_config(app_server).await {
             return false;
@@ -1296,7 +1296,7 @@ fn approvals_reviewer_from_effective_config(
     effective_config
         .config
         .approvals_reviewer
-        .map(codex_app_server_protocol::ApprovalsReviewer::to_core)
+        .map(ava_app_server_protocol::ApprovalsReviewer::to_core)
 }
 
 fn approval_policy_from_effective_config(
@@ -1332,10 +1332,10 @@ mod tests {
     use crate::app::test_support::make_test_app;
     use crate::legacy_core::config::edit::ConfigEdit;
     use crate::test_support::PathBufExt;
-    use codex_config::ConfigLayerEntry;
-    use codex_config::ConfigLayerStack;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::openai_models::ReasoningEffortPreset;
+    use ava_config::ConfigLayerEntry;
+    use ava_config::ConfigLayerStack;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::openai_models::ReasoningEffortPreset;
     use crossterm::event::KeyCode;
     use crossterm::event::KeyEvent;
     use pretty_assertions::assert_eq;
@@ -1540,7 +1540,7 @@ mod tests {
         );
         let profile_path = test_path_buf("/tmp/work.config.toml").abs();
         let profile = "work"
-            .parse::<codex_config::ProfileV2Name>()
+            .parse::<ava_config::ProfileV2Name>()
             .expect("valid profile name");
         for (key, expected) in [
             (
@@ -1605,8 +1605,8 @@ mod tests {
     #[tokio::test]
     async fn refresh_in_memory_config_from_disk_loads_latest_apps_state() -> Result<()> {
         let mut app = make_test_app().await;
-        let codex_home = tempdir()?;
-        app.config.codex_home = codex_home.path().to_path_buf().abs();
+        let ava_home = tempdir()?;
+        app.config.ava_home = ava_home.path().to_path_buf().abs();
         let app_id = "unit_test_refresh_in_memory_config_connector".to_string();
 
         assert_eq!(app_enabled_in_effective_config(&app.config, &app_id), None);
@@ -1647,15 +1647,15 @@ mod tests {
     async fn refresh_in_memory_config_from_disk_keeps_cloud_requirements_for_thread_transitions()
     -> Result<()> {
         let mut app = make_test_app().await;
-        let codex_home = tempdir()?;
-        let required_policy = codex_protocol::protocol::AskForApproval::Never;
+        let ava_home = tempdir()?;
+        let required_policy = ava_protocol::protocol::AskForApproval::Never;
         let cloud_config_bundle =
-            codex_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_requirement(
+            ava_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_approval_policies = ["never"]"#,
             );
 
         let config = ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .cloud_config_bundle(cloud_config_bundle.clone())
             .build()
@@ -1664,7 +1664,7 @@ mod tests {
         app.cloud_config_bundle = cloud_config_bundle;
         let app_id = "unit_test_cloud_requirements_reload_marker";
         std::fs::write(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
             format!(
                 r#"
 [apps.{app_id}]
@@ -1705,9 +1705,9 @@ enabled = false
     async fn refresh_in_memory_config_from_disk_best_effort_keeps_current_config_on_error()
     -> Result<()> {
         let mut app = make_test_app().await;
-        let codex_home = tempdir()?;
-        app.config.codex_home = codex_home.path().to_path_buf().abs();
-        std::fs::write(codex_home.path().join("config.toml"), "[broken")?;
+        let ava_home = tempdir()?;
+        app.config.ava_home = ava_home.path().to_path_buf().abs();
+        std::fs::write(ava_home.path().join("config.toml"), "[broken")?;
         let original_config = app.config.clone();
 
         app.refresh_in_memory_config_from_disk_best_effort("starting a new thread")
@@ -1763,10 +1763,10 @@ enabled = false
         let mut app = make_test_app().await;
         let mut expected_widget_settings = app.chat_widget.local_settings.clone();
         expected_widget_settings.tui.terminal_resize_reflow_max_rows = Some(9000);
-        let codex_home = tempdir()?;
-        app.config.codex_home = codex_home.path().to_path_buf().abs();
+        let ava_home = tempdir()?;
+        app.config.ava_home = ava_home.path().to_path_buf().abs();
         std::fs::write(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
             r#"
 [tui]
 terminal_resize_reflow_max_rows = 9000
@@ -1792,7 +1792,7 @@ theme = "dracula"
         let effective_config: ConfigReadResponse = serde_json::from_value(serde_json::json!({
             "config": {
                 "approval_policy": AskForApproval::OnRequest,
-                "approvals_reviewer": codex_app_server_protocol::ApprovalsReviewer::AutoReview,
+                "approvals_reviewer": ava_app_server_protocol::ApprovalsReviewer::AutoReview,
                 "sandbox_mode": AppServerSandboxMode::WorkspaceWrite,
                 "features": {
                     "guardian_approval": false,
@@ -1830,9 +1830,9 @@ theme = "dracula"
     -> Result<()> {
         let mut app = make_test_app().await;
         app.sync_tui_theme_selection("dracula".to_string());
-        let codex_home = tempdir()?;
-        app.config.codex_home = codex_home.path().to_path_buf().abs();
-        std::fs::write(codex_home.path().join("config.toml"), "[broken")?;
+        let ava_home = tempdir()?;
+        app.config.ava_home = ava_home.path().to_path_buf().abs();
+        std::fs::write(ava_home.path().join("config.toml"), "[broken")?;
         let current_config = app.config.clone();
         let current_cwd = current_config.cwd.clone();
 
@@ -1847,9 +1847,9 @@ theme = "dracula"
     #[tokio::test]
     async fn rebuild_config_for_resume_or_fallback_errors_when_cwd_changes() -> Result<()> {
         let mut app = make_test_app().await;
-        let codex_home = tempdir()?;
-        app.config.codex_home = codex_home.path().to_path_buf().abs();
-        std::fs::write(codex_home.path().join("config.toml"), "[broken")?;
+        let ava_home = tempdir()?;
+        app.config.ava_home = ava_home.path().to_path_buf().abs();
+        std::fs::write(ava_home.path().join("config.toml"), "[broken")?;
         let current_cwd = app.config.cwd.clone();
         let next_cwd_tmp = tempdir()?;
         let next_cwd = next_cwd_tmp.path().to_path_buf();

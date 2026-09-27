@@ -1,14 +1,14 @@
 use anyhow::Result;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_protocol::SanitizedGitUrl;
-use codex_protocol::ThreadId;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
+use ava_protocol::SanitizedGitUrl;
+use ava_protocol::ThreadId;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Row;
@@ -718,10 +718,10 @@ mod tests {
     use super::ThreadRow;
     use chrono::DateTime;
     use chrono::Utc;
-    use codex_protocol::SanitizedGitUrl;
-    use codex_protocol::ThreadId;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::protocol::ThreadHistoryMode;
+    use ava_protocol::SanitizedGitUrl;
+    use ava_protocol::ThreadId;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::protocol::ThreadHistoryMode;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 

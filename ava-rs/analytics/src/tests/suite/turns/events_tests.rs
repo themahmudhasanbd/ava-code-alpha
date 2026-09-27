@@ -1,6 +1,6 @@
 //! Turn lifecycle, prerequisites, counts, image preparation, and event payload tests.
 
-use crate::events::CodexTurnEventRequest;
+use crate::events::AvaTurnEventRequest;
 use crate::events::TrackEventRequest;
 use crate::facts::AnalyticsFact;
 use crate::facts::ControlToolCallFact;
@@ -10,7 +10,7 @@ use crate::facts::ImageDetailSetting;
 use crate::facts::ImagePreparationFact;
 use crate::facts::ImagePreparationMetadata;
 use crate::facts::ThreadInitializationMode;
-use crate::facts::TurnCodexErrorFact;
+use crate::facts::TurnAvaErrorFact;
 use crate::facts::TurnResolvedConfigFact;
 use crate::facts::TurnStatus;
 use crate::reducer::AnalyticsReducer;
@@ -21,25 +21,25 @@ use crate::tests::support::sample_runtime_metadata;
 use crate::tests::support::sample_turn_completed_notification;
 use crate::tests::support::sample_turn_resolved_config;
 use crate::tests::support::test_turn_metadata;
-use codex_app_server_protocol::CollabAgentTool;
-use codex_app_server_protocol::CollabAgentToolCallStatus;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::DynamicToolCallStatus;
-use codex_app_server_protocol::ImageGenerationItem;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::McpToolCallAppContext;
-use codex_app_server_protocol::McpToolCallStatus;
-use codex_app_server_protocol::PatchApplyStatus;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SubAgentActivityKind;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadRealtimeStartedNotification;
-use codex_app_server_protocol::TurnStatus as AppServerTurnStatus;
-use codex_app_server_protocol::WebSearchItem;
-use codex_protocol::error::CodexErr;
-use codex_protocol::protocol::RealtimeConversationVersion;
-use codex_protocol::protocol::ThreadSource;
+use ava_app_server_protocol::CollabAgentTool;
+use ava_app_server_protocol::CollabAgentToolCallStatus;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::DynamicToolCallStatus;
+use ava_app_server_protocol::ImageGenerationItem;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::McpToolCallAppContext;
+use ava_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::PatchApplyStatus;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SubAgentActivityKind;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadRealtimeStartedNotification;
+use ava_app_server_protocol::TurnStatus as AppServerTurnStatus;
+use ava_app_server_protocol::WebSearchItem;
+use ava_protocol::error::AvaErr;
+use ava_protocol::protocol::RealtimeConversationVersion;
+use ava_protocol::protocol::ThreadSource;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -83,7 +83,7 @@ async fn image_preparation_fact_is_included_in_turn_event() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut events,
         )
@@ -97,9 +97,9 @@ async fn image_preparation_fact_is_included_in_turn_event() {
 
 #[test]
 fn turn_event_serializes_expected_shape() {
-    let event = TrackEventRequest::TurnEvent(Box::new(CodexTurnEventRequest {
-        event_type: "codex_turn_event",
-        event_params: crate::events::CodexTurnEventParams {
+    let event = TrackEventRequest::TurnEvent(Box::new(AvaTurnEventRequest {
+        event_type: "ava_turn_event",
+        event_params: crate::events::AvaTurnEventParams {
             thread_id: "thread-2".to_string(),
             session_id: "session-thread-2".to_string(),
             turn_id: "turn-2".to_string(),
@@ -110,7 +110,7 @@ fn turn_event_serializes_expected_shape() {
             voice_session_id: None,
             root_turn_id: Some("turn-2".to_string()),
             turn_trigger: Some("user".to_string()),
-            codex_turn_source: Some("composer".to_string()),
+            ava_turn_source: Some("composer".to_string()),
             app_server_client: sample_app_server_client_metadata(),
             runtime: sample_runtime_metadata(),
             submission_type: None,
@@ -146,8 +146,8 @@ fn turn_event_serializes_expected_shape() {
             status: Some(TurnStatus::Completed),
             explicit_client_interrupt_requested_at_ms: None,
             turn_error: None,
-            codex_error_kind: None,
-            codex_error_http_status_code: None,
+            ava_error_kind: None,
+            ava_error_http_status_code: None,
             steer_count: Some(0),
             total_tool_call_count: None,
             shell_command_count: None,
@@ -180,7 +180,7 @@ fn turn_event_serializes_expected_shape() {
     let payload = serde_json::to_value(&event).expect("serialize turn event");
     let expected = serde_json::from_str::<serde_json::Value>(
         r#"{
-            "event_type": "codex_turn_event",
+            "event_type": "ava_turn_event",
             "event_params": {
                 "thread_id": "thread-2",
                 "session_id": "session-thread-2",
@@ -189,17 +189,17 @@ fn turn_event_serializes_expected_shape() {
                 "voice_session_id": null,
                 "root_turn_id": "turn-2",
                 "turn_trigger": "user",
-                "codex_turn_source": "composer",
+                "ava_turn_source": "composer",
                 "submission_type": null,
                 "app_server_client": {
-                    "product_client_id": "codex_cli_rs",
-                    "client_name": "codex-tui",
+                    "product_client_id": "ava_cli_rs",
+                    "client_name": "ava-tui",
                     "client_version": "1.0.0",
                     "rpc_transport": "stdio",
                     "experimental_api_enabled": true
                 },
                 "runtime": {
-                    "codex_rs_version": "0.1.0",
+                    "ava_rs_version": "0.1.0",
                     "runtime_os": "macos",
                     "runtime_os_version": "15.3.1",
                     "runtime_arch": "aarch64"
@@ -236,8 +236,8 @@ fn turn_event_serializes_expected_shape() {
                 "status": "completed",
                 "explicit_client_interrupt_requested_at_ms": null,
                 "turn_error": null,
-                "codex_error_kind": null,
-                "codex_error_http_status_code": null,
+                "ava_error_kind": null,
+                "ava_error_http_status_code": null,
                 "steer_count": 0,
                 "total_tool_call_count": null,
                 "shell_command_count": null,
@@ -309,7 +309,7 @@ async fn turn_event_preserves_first_received_plugin_inventory() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
         ] {
             reducer.ingest(fact, &mut out).await;
@@ -348,7 +348,7 @@ async fn turn_lifecycle_emits_turn_event() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -356,7 +356,7 @@ async fn turn_lifecycle_emits_turn_event() {
 
     assert_eq!(out.len(), 1);
     let payload = serde_json::to_value(&out[0]).expect("serialize turn event");
-    assert_eq!(payload["event_type"], json!("codex_turn_event"));
+    assert_eq!(payload["event_type"], json!("ava_turn_event"));
     assert_eq!(payload["event_params"]["thread_id"], json!("thread-2"));
     assert_eq!(
         payload["event_params"]["session_id"],
@@ -366,7 +366,7 @@ async fn turn_lifecycle_emits_turn_event() {
     assert_eq!(
         (
             payload["event_params"].get("turn_trigger"),
-            payload["event_params"].get("codex_turn_source"),
+            payload["event_params"].get("ava_turn_source"),
         ),
         (
             Some(&serde_json::Value::Null),
@@ -376,8 +376,8 @@ async fn turn_lifecycle_emits_turn_event() {
     assert_eq!(
         payload["event_params"]["app_server_client"],
         json!({
-            "product_client_id": "codex-tui",
-            "client_name": "codex-tui",
+            "product_client_id": "ava-tui",
+            "client_name": "ava-tui",
             "client_version": "1.0.0",
             "rpc_transport": "stdio",
             "experimental_api_enabled": null,
@@ -386,7 +386,7 @@ async fn turn_lifecycle_emits_turn_event() {
     assert_eq!(
         payload["event_params"]["runtime"],
         json!({
-            "codex_rs_version": "0.1.0",
+            "ava_rs_version": "0.1.0",
             "runtime_os": "macos",
             "runtime_os_version": "15.3.1",
             "runtime_arch": "aarch64",
@@ -531,7 +531,7 @@ async fn turn_event_counts_completed_tool_items() {
         },
         ThreadItem::WebSearch(WebSearchItem {
             id: "web-1".to_string(),
-            query: "codex".to_string(),
+            query: "ava".to_string(),
             action: None,
             results: None,
         }),
@@ -622,14 +622,14 @@ async fn turn_event_counts_completed_tool_items() {
     assert_eq!(
         emitted_tool_events,
         [
-            ("codex_command_execution_event", None),
-            ("codex_file_change_event", None),
-            ("codex_mcp_tool_call_event", None),
-            ("codex_dynamic_tool_call_event", None),
-            ("codex_web_search_event", None),
-            ("codex_image_generation_event", None),
-            ("codex_collab_agent_tool_call_event", None),
-            ("codex_control_tool_call_event", None),
+            ("ava_command_execution_event", None),
+            ("ava_file_change_event", None),
+            ("ava_mcp_tool_call_event", None),
+            ("ava_dynamic_tool_call_event", None),
+            ("ava_web_search_event", None),
+            ("ava_image_generation_event", None),
+            ("ava_collab_agent_tool_call_event", None),
+            ("ava_control_tool_call_event", None),
         ]
         .map(|(event_type, tool_event_type)| {
             (
@@ -679,7 +679,7 @@ async fn turn_event_counts_completed_tool_items() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -728,7 +728,7 @@ async fn turn_does_not_emit_without_required_prerequisites() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -753,7 +753,7 @@ async fn turn_does_not_emit_without_required_prerequisites() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -777,11 +777,11 @@ async fn turn_lifecycle_emits_failed_turn_event() {
     .await;
     reducer
         .ingest(
-            AnalyticsFact::Custom(CustomAnalyticsFact::TurnCodexError(Box::new(
-                TurnCodexErrorFact::from_codex_err(
+            AnalyticsFact::Custom(CustomAnalyticsFact::TurnAvaError(Box::new(
+                TurnAvaErrorFact::from_ava_err(
                     "thread-2".to_string(),
                     "turn-2".to_string(),
-                    &CodexErr::InvalidRequest("unknown turn environment id `env-2`".to_string()),
+                    &AvaErr::InvalidRequest("unknown turn environment id `env-2`".to_string()),
                 ),
             ))),
             &mut out,
@@ -793,7 +793,7 @@ async fn turn_lifecycle_emits_failed_turn_event() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Failed,
-                Some(codex_app_server_protocol::CodexErrorInfo::BadRequest),
+                Some(ava_app_server_protocol::AvaErrorInfo::BadRequest),
             ))),
             &mut out,
         )
@@ -804,11 +804,11 @@ async fn turn_lifecycle_emits_failed_turn_event() {
     assert_eq!(payload["event_params"]["status"], json!("failed"));
     assert_eq!(payload["event_params"]["turn_error"], json!("badRequest"));
     assert_eq!(
-        payload["event_params"]["codex_error_kind"],
+        payload["event_params"]["ava_error_kind"],
         json!("invalid_request")
     );
     assert_eq!(
-        payload["event_params"]["codex_error_http_status_code"],
+        payload["event_params"]["ava_error_http_status_code"],
         json!(null)
     );
 }
@@ -833,7 +833,7 @@ async fn turn_completed_without_started_notification_emits_null_started_at() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )

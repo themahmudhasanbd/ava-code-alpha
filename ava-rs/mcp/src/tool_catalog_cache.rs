@@ -12,11 +12,11 @@ use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_config::McpServerAuth;
-use codex_config::McpServerConfig;
-use codex_config::McpServerTransportConfig;
-use codex_exec_server::Environment;
-use codex_protocol::mcp::ClientMcpExtensions;
+use ava_config::McpServerAuth;
+use ava_config::McpServerConfig;
+use ava_config::McpServerTransportConfig;
+use ava_exec_server::Environment;
+use ava_protocol::mcp::ClientMcpExtensions;
 use lru::LruCache;
 use rmcp::model::ElicitationCapability;
 use sha1::Digest;
@@ -367,7 +367,7 @@ impl ToolCatalogTransportIdentity {
         };
         if env_vars
             .iter()
-            .any(codex_config::McpServerEnvVar::is_remote_source)
+            .any(ava_config::McpServerEnvVar::is_remote_source)
         {
             return None;
         }

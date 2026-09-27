@@ -1,6 +1,6 @@
 //! Integration coverage for model catalogs supplied through the public cache interface.
 
-use codex_core::TurnInputRequest;
+use ava_core::TurnInputRequest;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
@@ -9,30 +9,30 @@ use std::sync::atomic::Ordering;
 use anyhow::Result;
 use base64::Engine;
 use chrono::Utc;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::built_in_model_providers;
-use codex_models_manager::cache::ModelsCache;
-use codex_models_manager::cache::ModelsCacheEntry;
-use codex_models_manager::cache::ModelsCacheError;
-use codex_models_manager::cache::ModelsCacheFuture;
-use codex_models_manager::manager::ModelsEndpointClient;
-use codex_models_manager::manager::ModelsEndpointFuture;
-use codex_models_manager::manager::ModelsEndpointResponse;
-use codex_models_manager::manager::OpenAiModelsManager;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::error::Result as CoreResult;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::built_in_model_providers;
+use ava_models_manager::cache::ModelsCache;
+use ava_models_manager::cache::ModelsCacheEntry;
+use ava_models_manager::cache::ModelsCacheError;
+use ava_models_manager::cache::ModelsCacheFuture;
+use ava_models_manager::manager::ModelsEndpointClient;
+use ava_models_manager::manager::ModelsEndpointFuture;
+use ava_models_manager::manager::ModelsEndpointResponse;
+use ava_models_manager::manager::OpenAiModelsManager;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::error::Result as CoreResult;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -40,7 +40,7 @@ use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_sse_once;
 use core_test_support::responses::sse;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -149,7 +149,7 @@ impl ModelsEndpointClient for TestModelsEndpoint {
         false
     }
 
-    fn uses_codex_backend(&self) -> ModelsEndpointFuture<'_, bool> {
+    fn uses_ava_backend(&self) -> ModelsEndpointFuture<'_, bool> {
         Box::pin(async { true })
     }
 
@@ -185,7 +185,7 @@ fn models_manager(
         cache,
         endpoint,
         Some(AuthManager::from_auth_for_testing(
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         )),
     ))
 }
@@ -201,8 +201,8 @@ async fn run_agent_with_model(models_manager: SharedModelsManager, model_slug: &
         ]),
     )
     .await;
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_models_manager(models_manager);
     let test = builder.build(&server).await?;
     let available_models = test
@@ -210,7 +210,7 @@ async fn run_agent_with_model(models_manager: SharedModelsManager, model_slug: &
         .get_models_manager()
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert!(
@@ -220,14 +220,14 @@ async fn run_agent_with_model(models_manager: SharedModelsManager, model_slug: &
     );
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(model_slug.to_string()),
             ..Default::default()
         },
     )
     .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".to_string(),
             text_elements: Vec::new(),
@@ -235,7 +235,7 @@ async fn run_agent_with_model(models_manager: SharedModelsManager, model_slug: &
         .await?;
     loop {
         if matches!(
-            wait_for_event(&test.codex, |_| true).await,
+            wait_for_event(&test.ava-code, |_| true).await,
             EventMsg::TurnComplete(_)
         ) {
             break;
@@ -257,7 +257,7 @@ async fn injected_cache_hit_drives_agent_model_selection() -> Result<()> {
             identity: Some("test-provider".to_string()),
             fetched_at: Utc::now(),
             etag: None,
-            client_version: Some(codex_models_manager::client_version_to_whole()),
+            client_version: Some(ava_models_manager::client_version_to_whole()),
             models: vec![remote_model(model_slug)],
         }),
         load_error: false,
@@ -300,7 +300,7 @@ async fn injected_cache_error_falls_back_for_agent_model_selection() -> Result<(
 async fn account_switch_during_cache_store_preserves_new_catalog_for_next_turn() -> Result<()> {
     let server = wiremock::MockServer::start().await;
     let home = Arc::new(TempDir::new()?);
-    let initial_auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let initial_auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let auth = AuthManager::from_auth_for_testing_with_home(
         initial_auth.clone(),
         home.path().to_path_buf(),
@@ -325,7 +325,7 @@ async fn account_switch_during_cache_store_preserves_new_catalog_for_next_turn()
         },
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_home(home.clone())
         .with_auth(initial_auth.clone())
         .with_model("gpt-5.4")
@@ -358,7 +358,7 @@ async fn account_switch_during_cache_store_preserves_new_catalog_for_next_turn()
             manager
                 .list_models(
                     RefreshStrategy::Online,
-                    codex_core::test_support::default_http_client_factory(),
+                    ava_core::test_support::default_http_client_factory(),
                 )
                 .await
         }
@@ -394,7 +394,7 @@ async fn account_switch_during_cache_store_preserves_new_catalog_for_next_turn()
     manager
         .list_models(
             RefreshStrategy::Online,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(manager.get_remote_models().await, vec![new_model.clone()]);

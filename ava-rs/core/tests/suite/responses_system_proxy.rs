@@ -1,11 +1,11 @@
 use anyhow::Result;
-use codex_features::Feature;
-use codex_models_manager::bundled_models_response;
+use ava_features::Feature;
+use ava_models_manager::bundled_models_response;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
 use tokio::io::AsyncReadExt;
@@ -14,7 +14,7 @@ use tokio::net::TcpListener;
 use tokio::process::Command;
 use wiremock::MockServer;
 
-const SYSTEM_PROXY_TEST_SUBPROCESS_ENV_VAR: &str = "CODEX_SYSTEM_PROXY_TEST_SUBPROCESS";
+const SYSTEM_PROXY_TEST_SUBPROCESS_ENV_VAR: &str = "AVA_SYSTEM_PROXY_TEST_SUBPROCESS";
 const TEST_NAME: &str =
     "suite::responses_system_proxy::regular_responses_turn_honors_respect_system_proxy";
 
@@ -74,7 +74,7 @@ async fn regular_responses_turn_honors_respect_system_proxy() -> Result<()> {
 
         let mut command = Command::new(std::env::current_exe()?);
         command.arg("--exact").arg(TEST_NAME);
-        for &key in codex_network_proxy::PROXY_ENV_KEYS {
+        for &key in ava_network_proxy::PROXY_ENV_KEYS {
             command.env_remove(key);
         }
         // Keep the test harness's loopback HTTP and WebSocket traffic out of the proxy. The fake
@@ -83,8 +83,8 @@ async fn regular_responses_turn_honors_respect_system_proxy() -> Result<()> {
             .env(SYSTEM_PROXY_TEST_SUBPROCESS_ENV_VAR, "1")
             .env("HTTP_PROXY", &proxy_url)
             .env("http_proxy", proxy_url)
-            .env("NO_PROXY", codex_network_proxy::DEFAULT_NO_PROXY_VALUE)
-            .env("no_proxy", codex_network_proxy::DEFAULT_NO_PROXY_VALUE);
+            .env("NO_PROXY", ava_network_proxy::DEFAULT_NO_PROXY_VALUE)
+            .env("no_proxy", ava_network_proxy::DEFAULT_NO_PROXY_VALUE);
 
         let output = command.output().await?;
         if !output.status.success() {
@@ -105,7 +105,7 @@ async fn regular_responses_turn_honors_respect_system_proxy() -> Result<()> {
     }
 
     let server = MockServer::start().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         // The proxy serves one inference response; model discovery must not consume it.
         config.model_catalog =
             Some(bundled_models_response().expect("bundled models.json should parse"));

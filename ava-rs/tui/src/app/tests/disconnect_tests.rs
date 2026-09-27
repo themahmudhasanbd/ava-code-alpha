@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::app_server_session::ThreadParamsMode;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCRequest;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCRequest;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -55,13 +55,13 @@ async fn lost_mutation_reply_preserves_work_without_resubmitting() -> Result<()>
     app.chat_widget.show_selection_view(SelectionViewParams {
         items: vec![SelectionItem {
             name: "Stale server action".into(),
-            actions: vec![Box::new(|tx| tx.send(AppEvent::CodexOp(Op::Interrupt)))],
+            actions: vec![Box::new(|tx| tx.send(AppEvent::AvaOp(Op::Interrupt)))],
             ..Default::default()
         }],
         ..Default::default()
     });
     assert!(matches!(
-        app.handle_event(&mut tui, &mut session, AppEvent::CodexOp(op))
+        app.handle_event(&mut tui, &mut session, AppEvent::AvaOp(op))
             .await?,
         AppRunControl::Continue
     ));
@@ -96,9 +96,9 @@ async fn lost_mutation_reply_preserves_work_without_resubmitting() -> Result<()>
     let history = tokio::time::timeout(Duration::from_secs(/*secs*/ 5), async {
         loop {
             if let Ok(text) =
-                tokio::fs::read_to_string(app.config.codex_home.join("history.jsonl")).await
+                tokio::fs::read_to_string(app.config.ava_home.join("history.jsonl")).await
                 && let Ok(entry) =
-                    serde_json::from_str::<codex_message_history::HistoryEntry>(&text)
+                    serde_json::from_str::<ava_message_history::HistoryEntry>(&text)
             {
                 break entry;
             }
@@ -123,9 +123,9 @@ async fn lost_mutation_reply_preserves_work_without_resubmitting() -> Result<()>
             render_bottom_popup(&app.chat_widget, /*width*/ 80)
         )
     );
-    let mut keymap = codex_config::types::TuiKeymap::default();
-    keymap.chat.edit_queued_message = Some(codex_config::types::KeybindingsSpec::One(
-        codex_config::types::KeybindingSpec("ctrl-x up".into()),
+    let mut keymap = ava_config::types::TuiKeymap::default();
+    keymap.chat.edit_queued_message = Some(ava_config::types::KeybindingsSpec::One(
+        ava_config::types::KeybindingSpec("ctrl-x up".into()),
     ));
     let runtime =
         RuntimeKeymap::from_config(&keymap).map_err(|error| color_eyre::eyre::eyre!(error))?;

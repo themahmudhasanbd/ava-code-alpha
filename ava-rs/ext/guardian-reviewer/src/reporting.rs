@@ -3,20 +3,20 @@
 
 use std::sync::Arc;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::GuardianApprovalRequestSource;
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_analytics::GuardianReviewTrackContext;
-use codex_analytics::GuardianReviewedAction;
-use codex_extension_api::ExtensionData;
-use codex_otel::SessionTelemetry;
-use codex_protocol::approvals::GuardianAssessmentAction;
-use codex_protocol::approvals::GuardianReviewReason;
-use codex_protocol::items::ModelInvocationContext;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::GuardianAssessmentDecisionSource;
-use codex_protocol::protocol::GuardianAssessmentEvent;
-use codex_protocol::protocol::GuardianAssessmentStatus;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::GuardianApprovalRequestSource;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_analytics::GuardianReviewTrackContext;
+use ava_analytics::GuardianReviewedAction;
+use ava_extension_api::ExtensionData;
+use ava_otel::SessionTelemetry;
+use ava_protocol::approvals::GuardianAssessmentAction;
+use ava_protocol::approvals::GuardianReviewReason;
+use ava_protocol::items::ModelInvocationContext;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::GuardianAssessmentDecisionSource;
+use ava_protocol::protocol::GuardianAssessmentEvent;
+use ava_protocol::protocol::GuardianAssessmentStatus;
 use tokio::sync::Mutex;
 
 use crate::GuardianRejectionCircuitBreaker;

@@ -7,12 +7,12 @@ use crate::SectionContributor;
 use crate::SectionError;
 use crate::SectionInput;
 use crate::SectionScope;
-use codex_context_fragments::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::ImageReference;
-use codex_protocol::user_input::UserInput;
-use codex_protocol::user_input::UserInput::Image;
-use codex_protocol::user_input::UserInput::Text;
+use ava_context_fragments::ContextualUserFragment;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::ImageReference;
+use ava_protocol::user_input::UserInput;
+use ava_protocol::user_input::UserInput::Image;
+use ava_protocol::user_input::UserInput::Text;
 use std::collections::HashSet;
 
 /// Existing maximum rendered text size, including markers and omission notices.

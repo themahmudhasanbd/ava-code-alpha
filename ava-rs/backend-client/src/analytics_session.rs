@@ -3,11 +3,11 @@
 
 use crate::Client;
 use crate::RequestError;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_login::AuthManagerConfig;
-use codex_login::CodexAuth;
-use codex_protocol::account::PlanType;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_login::AuthManagerConfig;
+use ava_login::AvaAuth;
+use ava_protocol::account::PlanType;
 use std::sync::Arc;
 
 /// Non-secret account metadata associated with an analytics session.
@@ -22,7 +22,7 @@ pub struct AnalyticsAccount {
 pub struct AnalyticsSession {
     client: Client,
     auth_manager: Arc<AuthManager>,
-    auth: CodexAuth,
+    auth: AvaAuth,
     account: AnalyticsAccount,
 }
 
@@ -33,7 +33,7 @@ impl AnalyticsSession {
         http_client_factory: HttpClientFactory,
     ) -> Result<Self, String> {
         let auth_manager =
-            AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false)
+            AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false)
                 .await
                 .map_err(|_| {
                     "Couldn't load local sign-in. Sign in with ChatGPT and retry.".to_string()
@@ -41,7 +41,7 @@ impl AnalyticsSession {
         let auth = auth_manager
             .auth()
             .await
-            .filter(CodexAuth::is_chatgpt_auth)
+            .filter(AvaAuth::is_chatgpt_auth)
             .ok_or("Sign in locally with ChatGPT to view Analytics.")?;
         let (Some(id), Some(_)) = (auth.get_account_id(), auth.get_chatgpt_user_id()) else {
             return Err("Analytics requires a ChatGPT account and user identity.".into());
@@ -52,7 +52,7 @@ impl AnalyticsSession {
             plan_type: None,
         };
         let client = Client::new_without_redirects(config.chatgpt_base_url(), http_client_factory)
-            .with_auth_provider(codex_model_provider::auth_provider_from_auth_manager(
+            .with_auth_provider(ava_model_provider::auth_provider_from_auth_manager(
                 Arc::clone(&auth_manager),
                 &auth,
             ));

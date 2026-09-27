@@ -1,5 +1,5 @@
-use codex_protocol::config_types::Personality;
-use codex_protocol::openai_models::ModelsResponse;
+use ava_protocol::config_types::Personality;
+use ava_protocol::openai_models::ModelsResponse;
 
 #[derive(Debug, Clone, Default)]
 pub struct ModelsManagerConfig {

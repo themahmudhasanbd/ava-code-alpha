@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use codex_protocol::mcp::McpServerConnectionStatus;
+use ava_protocol::mcp::McpServerConnectionStatus;
 
 use super::McpConnectionSet;
 

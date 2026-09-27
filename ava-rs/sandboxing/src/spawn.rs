@@ -3,11 +3,11 @@ use std::path::Path;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_pty::SpawnedProcess;
-use codex_utils_pty::TerminalSize;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_pty::SpawnedProcess;
+use ava_utils_pty::TerminalSize;
 
 use crate::SandboxType;
 use crate::WindowsSandboxFilesystemOverrides;
@@ -57,16 +57,16 @@ pub async fn spawn_process(request: SpawnRequest<'_>) -> Result<SpawnedProcess> 
             let windows = request
                 .windows_sandbox
                 .context("missing Windows sandbox spawn request")?;
-            let codex_home = codex_utils_home_dir::find_codex_home()
-                .context("windows sandbox: failed to resolve codex_home")?;
+            let ava_home = ava_utils_home_dir::find_ava_home()
+                .context("windows sandbox: failed to resolve ava_home")?;
             let empty_paths = &[];
             let overrides = windows.filesystem_overrides;
 
-            return codex_windows_sandbox::spawn_windows_sandbox_session_for_level(
-                codex_windows_sandbox::WindowsSandboxSessionRequest {
+            return ava_windows_sandbox::spawn_windows_sandbox_session_for_level(
+                ava_windows_sandbox::WindowsSandboxSessionRequest {
                     permission_profile: windows.permission_profile,
                     workspace_roots: windows.workspace_roots,
-                    codex_home: codex_home.as_path(),
+                    ava_home: ava_home.as_path(),
                     command: request.command.to_vec(),
                     cwd: request.cwd,
                     env_map: request.env.clone(),
@@ -106,7 +106,7 @@ pub async fn spawn_process(request: SpawnRequest<'_>) -> Result<SpawnedProcess> 
         .split_first()
         .context("missing program for process spawn")?;
     let spawned = if tty {
-        codex_utils_pty::pty::spawn_process(
+        ava_utils_pty::pty::spawn_process(
             program,
             args,
             request.cwd,
@@ -117,7 +117,7 @@ pub async fn spawn_process(request: SpawnRequest<'_>) -> Result<SpawnedProcess> 
         )
         .await
     } else if request.stdin_open {
-        codex_utils_pty::pipe::spawn_process(
+        ava_utils_pty::pipe::spawn_process(
             program,
             args,
             request.cwd,
@@ -127,7 +127,7 @@ pub async fn spawn_process(request: SpawnRequest<'_>) -> Result<SpawnedProcess> 
         )
         .await
     } else {
-        codex_utils_pty::pipe::spawn_process_no_stdin(
+        ava_utils_pty::pipe::spawn_process_no_stdin(
             program,
             args,
             request.cwd,

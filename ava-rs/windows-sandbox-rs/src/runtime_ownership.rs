@@ -32,7 +32,7 @@ impl SetupRuntime {
 }
 
 /// Package-scoped execution alias declared for the app's sandbox runner.
-pub const APP_CORE_RUNNER_ALIAS: &str = "codex-core-command-runner.exe";
+pub const APP_CORE_RUNNER_ALIAS: &str = "ava-core-command-runner.exe";
 
 /// The service may register its package only for these managed sandbox accounts.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -59,7 +59,7 @@ use crate::winutil::to_wide;
 // Old services overwrite the parent value and delete its key on uninstall.
 // A child key preserves Core state and makes that old whole-key delete fail.
 pub const CORE_INSTALLATION_KEY: &str =
-    r"SOFTWARE\OpenAI\Codex\WindowsSandboxService\RegisteredCore";
+    r"SOFTWARE\OpenAI\Ava\WindowsSandboxService\RegisteredCore";
 
 /// Written before registration so a service restart cannot lose cleanup ownership.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -114,7 +114,7 @@ impl InstallationRecord {
     pub fn admit_owner(&self, owner: &InstallationRecord, family: &str) -> Result<()> {
         ensure!(
             self.user_sid == owner.user_sid
-                && self.codex_home == owner.codex_home
+                && self.ava_home == owner.ava_home
                 && self.runtime()?.package_family.eq_ignore_ascii_case(family),
             "registered sandbox resources belong to a different owner or package"
         );

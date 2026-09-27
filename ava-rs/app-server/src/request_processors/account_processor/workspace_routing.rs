@@ -4,14 +4,14 @@
 //! Model sessions retain their original bootstrap scope across configuration changes.
 
 use super::*;
-use codex_app_server_protocol::AccountRoutingOverride;
-use codex_backend_client::AccountEntry;
-use codex_login::WorkspaceRouting;
-use codex_login::WorkspaceRoutingRequest;
-use codex_login::WorkspaceRoutingResolver;
-use codex_model_provider::ProviderAccount;
-use codex_model_provider::ProviderAccountError;
-use codex_model_provider::ProviderAccountState;
+use ava_app_server_protocol::AccountRoutingOverride;
+use ava_backend_client::AccountEntry;
+use ava_login::WorkspaceRouting;
+use ava_login::WorkspaceRoutingRequest;
+use ava_login::WorkspaceRoutingResolver;
+use ava_model_provider::ProviderAccount;
+use ava_model_provider::ProviderAccountError;
+use ava_model_provider::ProviderAccountState;
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
@@ -171,7 +171,7 @@ impl AccountRequestProcessor {
                 account: read.account_state.account.map(Account::from),
                 requires_openai_auth: read.account_state.requires_openai_auth,
                 workspace_routing: read.workspace_routing.map(|routing| {
-                    codex_app_server_protocol::WorkspaceRouting {
+                    ava_app_server_protocol::WorkspaceRouting {
                         chatgpt_account_id: routing.chatgpt_account_id,
                         backend_origin: routing.backend_origin,
                         account_routing_override: match routing.account_routing_override.as_str() {
@@ -216,7 +216,7 @@ impl AccountRequestProcessor {
                         .auth_manager
                         .auth_cached()
                         .as_ref()
-                        .is_some_and(CodexAuth::is_chatgpt_auth) =>
+                        .is_some_and(AvaAuth::is_chatgpt_auth) =>
                 {
                     self.config.as_ref().clone()
                 }
@@ -391,7 +391,7 @@ impl AccountRequestProcessor {
                     .as_ref()
                     .is_some_and(|routing| routing.backend_origin == origin.ascii_serialization());
                 let workspace_bound = request.previously_routed
-                    || request.provider_base_url == codex_model_provider::CHATGPT_CODEX_BASE_URL
+                    || request.provider_base_url == ava_model_provider::CHATGPT_AVA_BASE_URL
                     || origin == session_bootstrap_origin
                     || (session_bootstrap_origin == bootstrap_origin && selected_backend);
                 if !workspace_bound {

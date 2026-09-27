@@ -64,19 +64,19 @@ async fn explicit_update_migrates_running_and_stopped_installations() {
         if local {
             let package = root.join("releases/local-development");
             std::fs::create_dir(&package).unwrap();
-            std::fs::copy(&legacy.managed_codex_bin, package.join("codex")).unwrap();
+            std::fs::copy(&legacy.managed_ava_bin, package.join("ava")).unwrap();
             std::fs::remove_file(root.join("current")).unwrap();
             std::os::unix::fs::symlink(&package, root.join("current")).unwrap();
             std::fs::remove_file(root.join("auto-update-version")).unwrap();
         }
         let previous = root.join("current").canonicalize().unwrap();
         let scheduled = FakeInstallerHttp::new(InstallerResponse::Success(
-        b"# CODEX_INSTALL_IF_LATEST\ntest \"$CODEX_INSTALL_DEFER_SELECTION\" = 0 && test \"$CODEX_INSTALL_DAEMON_ONLY\" = 0\n".to_vec(),
+        b"# AVA_INSTALL_IF_LATEST\ntest \"$AVA_INSTALL_DEFER_SELECTION\" = 0 && test \"$AVA_INSTALL_DAEMON_ONLY\" = 0\n".to_vec(),
     ));
         super::update_once(
             &scheduled,
             &legacy,
-            &executable_identity(&legacy.managed_codex_bin)
+            &executable_identity(&legacy.managed_ava_bin)
                 .await
                 .unwrap(),
             &mut test_terminate(),
@@ -111,7 +111,7 @@ async fn explicit_update_migrates_running_and_stopped_installations() {
         } else {
             None
         };
-        let legacy_bin = std::fs::read(&legacy.managed_codex_bin).unwrap();
+        let legacy_bin = std::fs::read(&legacy.managed_ava_bin).unwrap();
         let dedicated = home.path().join("packages/app-server-daemon");
         let old_installer = FakeInstallerHttp::new(InstallerResponse::Success(b"exit 99".to_vec()));
         assert!(
@@ -123,16 +123,16 @@ async fn explicit_update_migrates_running_and_stopped_installations() {
         );
 
         let script = format!(
-            r#"# CODEX_INSTALL_DEFER_SELECTION
+            r#"# AVA_INSTALL_DEFER_SELECTION
 set -eu
-test "$CODEX_INSTALL_DEFER_SELECTION" = 1
-test "$CODEX_INSTALL_IF_CURRENT" = 0
-test "$CODEX_INSTALL_DAEMON_ONLY" = 1
-test "$CODEX_INSTALL_IF_LATEST" = 0
-root="$CODEX_HOME/packages/app-server-daemon"
+test "$AVA_INSTALL_DEFER_SELECTION" = 1
+test "$AVA_INSTALL_IF_CURRENT" = 0
+test "$AVA_INSTALL_DAEMON_ONLY" = 1
+test "$AVA_INSTALL_IF_LATEST" = 0
+root="$AVA_HOME/packages/app-server-daemon"
 mkdir -p "$root/releases/{release}/bin"
-printf '#!/bin/sh\nif [ "$1" = --version ]; then echo codex 1.0.0; else exit 2; fi\n' > "$root/releases/{release}/bin/codex"
-chmod +x "$root/releases/{release}/bin/codex"
+printf '#!/bin/sh\nif [ "$1" = --version ]; then echo ava 1.0.0; else exit 2; fi\n' > "$root/releases/{release}/bin/ava"
+chmod +x "$root/releases/{release}/bin/ava"
 ln -sfn 'releases/{release}' "$root/.migration-current"
 printf '{release}' > "$root/auto-update-version"
 "#
@@ -162,7 +162,7 @@ printf '{release}' > "$root/auto-update-version"
         status: UpdateStatus::Updated,
         installed_version: Some("1.0.0".to_string()),
         running_version: (running).then(|| "1.0.0".to_string()),
-        managed_codex_path: dedicated.join("current/bin/codex"),
+        managed_ava_path: dedicated.join("current/bin/ava"),
         message: "The daemon was updated and moved to its dedicated package. The legacy CLI package was left unchanged.".to_string(),
     });
         assert_eq!(
@@ -172,7 +172,7 @@ printf '{release}' > "$root/auto-update-version"
         assert!(!dedicated.join(".migration-current").exists());
         assert_eq!(root.join("current").canonicalize().unwrap(), previous);
         assert_eq!(
-            std::fs::read(&legacy.managed_codex_bin).unwrap(),
+            std::fs::read(&legacy.managed_ava_bin).unwrap(),
             legacy_bin
         );
         assert_eq!(
@@ -184,7 +184,7 @@ printf '{release}' > "$root/auto-update-version"
             update_pid_file: legacy
                 .update_pid_file
                 .with_file_name(crate::DAEMON_UPDATE_PID_FILE_NAME),
-            managed_codex_bin: dedicated.join("current/bin/codex"),
+            managed_ava_bin: dedicated.join("current/bin/ava"),
             ..legacy.clone()
         };
         let new_backend = crate::backend::pid_backend(selected.backend_paths(&daemon_settings));
@@ -284,11 +284,11 @@ fn manual_update_daemon(home: &TempDir) -> (Daemon, String) {
     };
     let release = format!("1.0.0-{target}");
     let standalone = home.path().join("packages/standalone");
-    let bin = standalone.join("releases").join(&release).join("codex");
+    let bin = standalone.join("releases").join(&release).join("ava");
     std::fs::create_dir_all(bin.parent().expect("binary parent")).expect("release directory");
     std::fs::write(
         &bin,
-        b"#!/bin/sh\nif [ \"$1\" = '--version' ]; then echo codex 1.0.0; else exec sleep 30; fi\n",
+        b"#!/bin/sh\nif [ \"$1\" = '--version' ]; then echo ava 1.0.0; else exec sleep 30; fi\n",
     )
     .expect("managed binary");
     std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755))
@@ -306,7 +306,7 @@ fn manual_update_daemon(home: &TempDir) -> (Daemon, String) {
             update_pid_file: state.join("app-server-updater.pid"),
             operation_lock_file: state.join("daemon.lock"),
             settings_file: state.join("settings.json"),
-            managed_codex_bin: standalone.join("current/codex"),
+            managed_ava_bin: standalone.join("current/ava"),
         },
         release,
     )
@@ -327,15 +327,15 @@ async fn manual_request_retries_after_updater_replacement() {
     let home = TempDir::new().expect("home");
     let (daemon, _) = manual_update_daemon(&home);
     let socket_path = daemon.manual_update_socket_path();
-    codex_uds::prepare_private_socket_directory(socket_path.parent().expect("socket parent"))
+    ava_uds::prepare_private_socket_directory(socket_path.parent().expect("socket parent"))
         .await
         .expect("socket directory");
-    let mut listener = codex_uds::UnixListener::bind(&socket_path)
+    let mut listener = ava_uds::UnixListener::bind(&socket_path)
         .await
         .expect("old updater socket");
     let expected = UpdateOutput {
         status: UpdateStatus::NoUpdate,
-        managed_codex_path: daemon.managed_codex_bin.clone(),
+        managed_ava_path: daemon.managed_ava_bin.clone(),
         installed_version: None,
         running_version: None,
         message: "already current".to_string(),
@@ -350,7 +350,7 @@ async fn manual_request_retries_after_updater_replacement() {
         tokio::fs::remove_file(&socket_path)
             .await
             .expect("remove old socket");
-        let mut successor = codex_uds::UnixListener::bind(&socket_path)
+        let mut successor = ava_uds::UnixListener::bind(&socket_path)
             .await
             .expect("successor socket");
         let mut connection = successor.accept().await.expect("retried connection");
@@ -380,10 +380,10 @@ async fn manual_request_recovers_when_one_shot_updater_exits() {
     let home = TempDir::new().expect("home");
     let (daemon, _) = manual_update_daemon(&home);
     let socket_path = daemon.manual_update_socket_path();
-    codex_uds::prepare_private_socket_directory(socket_path.parent().expect("socket parent"))
+    ava_uds::prepare_private_socket_directory(socket_path.parent().expect("socket parent"))
         .await
         .expect("socket directory");
-    let mut listener = codex_uds::UnixListener::bind(&socket_path)
+    let mut listener = ava_uds::UnixListener::bind(&socket_path)
         .await
         .expect("one-shot updater socket");
     let server = tokio::spawn(async move {
@@ -398,7 +398,7 @@ async fn manual_request_recovers_when_one_shot_updater_exits() {
     });
     // Without the selected executable, the startup path reports unsupported. A
     // retry that only waits for a successor would time out instead.
-    std::fs::remove_file(&daemon.managed_codex_bin).expect("remove selected binary");
+    std::fs::remove_file(&daemon.managed_ava_bin).expect("remove selected binary");
     let result = tokio::time::timeout(
         Duration::from_secs(5),
         super::manual_update::request(&daemon),
@@ -419,7 +419,7 @@ async fn unsupported_request_preserves_updater_schedule() {
     let home = TempDir::new().expect("home");
     let (daemon, _) = manual_update_daemon(&home);
     let daemon = std::sync::Arc::new(daemon);
-    let identity = executable_identity(&daemon.managed_codex_bin)
+    let identity = executable_identity(&daemon.managed_ava_bin)
         .await
         .expect("updater identity");
     let socket_path = daemon.manual_update_socket_path();
@@ -450,7 +450,7 @@ async fn unsupported_request_preserves_updater_schedule() {
         .join("auto-update-version");
     let previous_marker = std::fs::read(&marker).unwrap();
     std::fs::remove_file(&marker).unwrap();
-    let mut pinned = codex_uds::UnixStream::connect(&socket_path).await.unwrap();
+    let mut pinned = ava_uds::UnixStream::connect(&socket_path).await.unwrap();
     pinned.write_all(b"update\n").await.unwrap();
     let mut response = Vec::new();
     pinned.read_to_end(&mut response).await.unwrap();
@@ -458,8 +458,8 @@ async fn unsupported_request_preserves_updater_schedule() {
     assert_eq!(response.unwrap().status, UpdateStatus::Unsupported);
     assert!(!marker.exists());
     std::fs::write(&marker, previous_marker).unwrap();
-    std::fs::remove_file(&daemon.managed_codex_bin).expect("remove selected binary");
-    let mut malformed = codex_uds::UnixStream::connect(&socket_path)
+    std::fs::remove_file(&daemon.managed_ava_bin).expect("remove selected binary");
+    let mut malformed = ava_uds::UnixStream::connect(&socket_path)
         .await
         .expect("connect malformed request");
     malformed
@@ -495,10 +495,10 @@ async fn test_control_server(
     use futures::StreamExt;
     std::fs::create_dir_all(daemon.socket_path.parent().expect("socket parent"))
         .expect("socket directory");
-    let mut listener = codex_uds::UnixListener::bind(&daemon.socket_path)
+    let mut listener = ava_uds::UnixListener::bind(&daemon.socket_path)
         .await
         .expect("control listener");
-    let codex_home = home.to_path_buf();
+    let ava_home = home.to_path_buf();
     tokio::spawn(async move {
         loop {
             let connection = listener.accept().await.expect("control connection");
@@ -511,7 +511,7 @@ async fn test_control_server(
                 .expect("initialize request")
                 .expect("frame");
             let version = if std::fs::read_to_string(
-                crate::managed_install::package_root(&codex_home).join("auto-update-version"),
+                crate::managed_install::package_root(&ava_home).join("auto-update-version"),
             )
             .unwrap_or_default()
             .starts_with("1.1.0")
@@ -522,8 +522,8 @@ async fn test_control_server(
             };
             websocket.send(tokio_tungstenite::tungstenite::Message::Text(
                 serde_json::json!({"id": 1, "result": {
-                    "userAgent": format!("codex_app_server_daemon/{version}"),
-                    "codexHome": codex_home, "platformFamily": "unix", "platformOs": std::env::consts::OS,
+                    "userAgent": format!("ava_app_server_daemon/{version}"),
+                    "avaHome": ava_home, "platformFamily": "unix", "platformOs": std::env::consts::OS,
                 }}).to_string().into(),
             )).await.expect("initialize response");
             websocket
@@ -559,8 +559,8 @@ async fn daemon_start_and_restart_preserve_launch_features() {
         r#"{"featureOverrides":{"auth_elicitation":true},"updater":{"autoUpdateEnabled":false}}"#,
     )
     .unwrap();
-        std::fs::write(&daemon.managed_codex_bin, format!(
-        "#!/bin/sh\nif [ \"$1\" = --version ]; then echo codex 1.0.0; exit; fi\nif [ \"$3\" = --help ]; then exit; fi\nprintf '%s\\n' \"$@\" > '{}'\nexec sleep 30\n",
+        std::fs::write(&daemon.managed_ava_bin, format!(
+        "#!/bin/sh\nif [ \"$1\" = --version ]; then echo ava 1.0.0; exit; fi\nif [ \"$3\" = --help ]; then exit; fi\nprintf '%s\\n' \"$@\" > '{}'\nexec sleep 30\n",
         args_path.display(),
     )).unwrap();
         let control = async {
@@ -644,7 +644,7 @@ async fn check_manual_update_restart(package_directory: &str) {
         std::os::unix::fs::symlink(format!("releases/{local}"), standalone.join("current"))
             .unwrap();
         std::fs::remove_file(standalone.join("auto-update-version")).unwrap();
-        daemon.managed_codex_bin = standalone.join("current/codex");
+        daemon.managed_ava_bin = standalone.join("current/ava");
         release = local;
     }
     let daemon = std::sync::Arc::new(daemon);
@@ -673,26 +673,26 @@ async fn check_manual_update_restart(package_directory: &str) {
         .trim_start_matches("local-development-")
         .replacen("1.0.0", version, 1);
     let guard = if local_package {
-        "CODEX_INSTALL_IF_CURRENT"
+        "AVA_INSTALL_IF_CURRENT"
     } else {
-        "CODEX_INSTALL_IF_LATEST"
+        "AVA_INSTALL_IF_LATEST"
     };
     let install_binary = if local_package {
         // Same binary and version, but a different package: it must still restart.
         format!(
-            "cp '{root}/releases/{release}/codex' '{root}/releases/{next}/bin/codex'",
+            "cp '{root}/releases/{release}/ava' '{root}/releases/{next}/bin/ava'",
             root = standalone.display()
         )
     } else {
         format!(
-            r#"printf '#!/bin/sh\nif [ "$1" = --version ]; then echo codex 1.1.0; else exec sleep 30; fi\n' > '{root}/releases/{next}/bin/codex'"#,
+            r#"printf '#!/bin/sh\nif [ "$1" = --version ]; then echo ava 1.1.0; else exec sleep 30; fi\n' > '{root}/releases/{next}/bin/ava'"#,
             root = standalone.display()
         )
     };
     let ready = home.path().join("installer-ready");
     let proceed = home.path().join("installer-proceed");
     let script = format!(
-        "#!/bin/sh\n# CODEX_INSTALL_IF_LATEST CODEX_INSTALL_IF_CURRENT CODEX_INSTALL_DAEMON_ONLY\nif [ \"$CODEX_UPDATE_FROM_RELEASE\" = '{next}' ]; then exit 0; fi\ntest \"${guard}\" = 1 || exit 4\ntest \"$CODEX_UPDATE_FROM_RELEASE\" = '{release}' || exit 5\ntouch '{ready}'\nwhile [ ! -e '{proceed}' ]; do sleep .05; done\nmkdir -p '{root}/releases/{next}/bin'\n{install_binary}\nchmod +x '{root}/releases/{next}/bin/codex'\nln -sfn 'releases/{next}' '{root}/current'\nprintf '{next}' > '{root}/auto-update-version'\n",
+        "#!/bin/sh\n# AVA_INSTALL_IF_LATEST AVA_INSTALL_IF_CURRENT AVA_INSTALL_DAEMON_ONLY\nif [ \"$AVA_UPDATE_FROM_RELEASE\" = '{next}' ]; then exit 0; fi\ntest \"${guard}\" = 1 || exit 4\ntest \"$AVA_UPDATE_FROM_RELEASE\" = '{release}' || exit 5\ntouch '{ready}'\nwhile [ ! -e '{proceed}' ]; do sleep .05; done\nmkdir -p '{root}/releases/{next}/bin'\n{install_binary}\nchmod +x '{root}/releases/{next}/bin/ava'\nln -sfn 'releases/{next}' '{root}/current'\nprintf '{next}' > '{root}/auto-update-version'\n",
         root = standalone.display(),
         ready = ready.display(),
         proceed = proceed.display(),
@@ -726,7 +726,7 @@ async fn check_manual_update_restart(package_directory: &str) {
         );
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
-    let mut queued = codex_uds::UnixStream::connect(&daemon.manual_update_socket_path())
+    let mut queued = ava_uds::UnixStream::connect(&daemon.manual_update_socket_path())
         .await
         .expect("queue a second update");
     queued
@@ -742,8 +742,8 @@ async fn check_manual_update_restart(package_directory: &str) {
     assert_eq!(output.installed_version.as_deref(), Some(version));
     assert_eq!(output.running_version.as_deref(), Some(version));
     assert_eq!(
-        output.managed_codex_path,
-        standalone.join("current/bin/codex")
+        output.managed_ava_path,
+        standalone.join("current/bin/ava")
     );
     let restarted = current_pid();
     assert_ne!(restarted, before);
@@ -765,14 +765,14 @@ async fn check_manual_update_restart(package_directory: &str) {
         .expect("updater task")
         .expect("updater loop");
     let no_op = FakeInstallerHttp::new(InstallerResponse::Success(
-        b"#!/bin/sh\n# CODEX_INSTALL_IF_LATEST CODEX_INSTALL_DAEMON_ONLY\nexit 0\n".to_vec(),
+        b"#!/bin/sh\n# AVA_INSTALL_IF_LATEST AVA_INSTALL_DAEMON_ONLY\nexit 0\n".to_vec(),
     ));
     use std::io::Write;
     std::fs::OpenOptions::new()
         .append(true)
         .open(
             daemon
-                .current_managed_codex_bin()
+                .current_managed_ava_bin()
                 .expect("current executable"),
         )
         .expect("managed executable")
@@ -799,9 +799,9 @@ async fn powershell_installer_is_noninteractive_and_reports_script_failure() {
     let valid = FakeInstallerHttp::new(InstallerResponse::Success(
         br#"
 function Test-Installer {
-    if ($env:CODEX_NON_INTERACTIVE -ne '1') { throw 'interactive installer' }
-    if ($env:CODEX_INSTALL_DAEMON_ONLY -ne '1') { throw 'wrong package destination' }
-    if ($env:CODEX_INSTALL_IF_CURRENT -ne '1' -or $env:CODEX_INSTALL_IF_LATEST -ne '0') { throw 'wrong update guard' }
+    if ($env:AVA_NON_INTERACTIVE -ne '1') { throw 'interactive installer' }
+    if ($env:AVA_INSTALL_DAEMON_ONLY -ne '1') { throw 'wrong package destination' }
+    if ($env:AVA_INSTALL_IF_CURRENT -ne '1' -or $env:AVA_INSTALL_IF_LATEST -ne '0') { throw 'wrong update guard' }
 }
 Test-Installer
 "#
@@ -845,13 +845,13 @@ async fn update_rejects_a_package_root_change_during_download() {
                 self.0.join("packages/app-server-daemon"),
             )?;
             Ok(InstallerResponse::Success(
-                b"# CODEX_INSTALL_IF_LATEST\nexit 99\n".to_vec(),
+                b"# AVA_INSTALL_IF_LATEST\nexit 99\n".to_vec(),
             ))
         }
     }
     let home = TempDir::new().unwrap();
     let (daemon, _) = manual_update_daemon(&home);
-    let identity = executable_identity(&daemon.managed_codex_bin)
+    let identity = executable_identity(&daemon.managed_ava_bin)
         .await
         .unwrap();
     let error = manual_update_once(
@@ -873,12 +873,12 @@ async fn daemon_owned_updates_require_and_request_an_isolated_installer() {
     let (mut daemon, release) = manual_update_daemon(&home);
     let root = home.path().join("packages/app-server-daemon");
     std::fs::rename(home.path().join("packages/standalone"), &root).unwrap();
-    daemon.managed_codex_bin = root.join("current/codex");
-    let identity = executable_identity(&daemon.managed_codex_bin)
+    daemon.managed_ava_bin = root.join("current/ava");
+    let identity = executable_identity(&daemon.managed_ava_bin)
         .await
         .unwrap();
     let old = FakeInstallerHttp::new(InstallerResponse::Success(
-        b"# CODEX_INSTALL_IF_LATEST\nexit 0\n".to_vec(),
+        b"# AVA_INSTALL_IF_LATEST\nexit 0\n".to_vec(),
     ));
     let error = manual_update_once(
         &old,
@@ -895,7 +895,7 @@ async fn daemon_owned_updates_require_and_request_an_isolated_installer() {
             .contains("does not support daemon-owned packages")
     );
     let current = FakeInstallerHttp::new(InstallerResponse::Success(
-        b"# CODEX_INSTALL_IF_LATEST\ntest \"$CODEX_INSTALL_IF_LATEST\" = 1 && test \"$CODEX_INSTALL_DAEMON_ONLY\" = 1\n".to_vec(),
+        b"# AVA_INSTALL_IF_LATEST\ntest \"$AVA_INSTALL_IF_LATEST\" = 1 && test \"$AVA_INSTALL_DAEMON_ONLY\" = 1\n".to_vec(),
     ));
     let output = manual_update_once(
         &current,
@@ -912,16 +912,16 @@ async fn daemon_owned_updates_require_and_request_an_isolated_installer() {
     // Reuse the stopped daemon to verify explicit unpinning with either preference.
     let marker = root.join("auto-update-version");
     let no_op = FakeInstallerHttp::new(InstallerResponse::Success(
-        b"# CODEX_INSTALL_IF_CURRENT CODEX_INSTALL_DAEMON_ONLY\nexit 0\n".to_vec(),
+        b"# AVA_INSTALL_IF_CURRENT AVA_INSTALL_DAEMON_ONLY\nexit 0\n".to_vec(),
     ));
     let script = format!(
-        r#"# CODEX_INSTALL_IF_CURRENT CODEX_INSTALL_DAEMON_ONLY
+        r#"# AVA_INSTALL_IF_CURRENT AVA_INSTALL_DAEMON_ONLY
 set -eu
-test "$CODEX_INSTALL_IF_CURRENT" = 1
-test "$CODEX_INSTALL_IF_LATEST" = 0
-test "$CODEX_INSTALL_DAEMON_ONLY" = 1
-test "$CODEX_RELEASE" = latest
-test "$CODEX_UPDATE_FROM_RELEASE" = '{release}'
+test "$AVA_INSTALL_IF_CURRENT" = 1
+test "$AVA_INSTALL_IF_LATEST" = 0
+test "$AVA_INSTALL_DAEMON_ONLY" = 1
+test "$AVA_RELEASE" = latest
+test "$AVA_UPDATE_FROM_RELEASE" = '{release}'
 printf '%s' '{release}' > '{marker}'
 "#,
         marker = marker.display()

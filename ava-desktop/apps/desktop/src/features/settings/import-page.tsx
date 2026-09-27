@@ -475,7 +475,7 @@ export function SessionImportPanel() {
       sources: {
         "claude-code": t("settings.importSourceClaudeCode"),
         opencode: t("settings.importSourceOpenCode"),
-        codex: t("settings.importSourceCodex"),
+        ava: t("settings.importSourceAva"),
         pi: t("settings.importSourcePi"),
       } as Record<ImportCandidate["source"], string>,
     }),
@@ -677,7 +677,7 @@ export function ModelConfigImportPanel() {
     () => ({
       "claude-code": t("settings.importSourceClaudeCode"),
       opencode: t("settings.importSourceOpenCode"),
-      codex: t("settings.importSourceCodex"),
+      ava: t("settings.importSourceAva"),
       pi: t("settings.importSourcePi"),
       "cc-switch": t("settings.importSourceCcSwitch"),
     }),

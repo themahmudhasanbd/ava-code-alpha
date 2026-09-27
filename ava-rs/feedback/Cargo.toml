@@ -1,5 +1,5 @@
 [package]
-name = "codex-feedback"
+name = "ava-feedback"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,10 +10,10 @@ workspace = true
 [dependencies]
 anyhow = { workspace = true }
 bytes = { workspace = true }
-codex-http-client = { workspace = true }
-codex-login = { workspace = true }
-codex-protocol = { workspace = true }
-codex-rollout = { workspace = true }
+ava-http-client = { workspace = true }
+ava-login = { workspace = true }
+ava-protocol = { workspace = true }
+ava-rollout = { workspace = true }
 flate2 = { workspace = true }
 http = { workspace = true }
 httpdate = { workspace = true }

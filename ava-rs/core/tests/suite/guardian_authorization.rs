@@ -2,33 +2,33 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::GuardianContextMode;
-use codex_core::context::InternalContextSource;
-use codex_core::context::InternalModelContextFragment;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ImageReference;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::GuardianContextMode;
+use ava_core::context::InternalContextSource;
+use ava_core::context::InternalModelContextFragment;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ImageReference;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_wine_exec;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -136,8 +136,8 @@ async fn guardian_revalidates_owning_session_before_allow(
     ]).await;
     let base_url = format!("{}/v1", streaming_server.uri());
     let server = responses::start_mock_server().await;
-    let mut test = test_codex()
-        .with_model_info_override("test-gpt-5.1-codex", |model| {
+    let mut test = test_ava()
+        .with_model_info_override("test-gpt-5.1-ava", |model| {
             model.comp_hash = Some("compatible".to_owned());
             model.auto_review_model_override = Some(model.slug.clone());
         })
@@ -160,14 +160,14 @@ async fn guardian_revalidates_owning_session_before_allow(
                     .expect("enable test feature");
             }
         })
-        .with_code_mode_host_program(codex_utils_cargo_bin::cargo_bin("codex-code-mode-host")?)
+        .with_code_mode_host_program(ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")?)
         .build_with_auto_env(&server)
         .await?;
     if review_mode == GuardianContextMode::Legacy {
-        test.codex.ensure_rollout_materialized().await;
-        test.codex = super::guardian_checkpoint_migration::resume(
+        test.ava-code.ensure_rollout_materialized().await;
+        test.ava-code = super::guardian_checkpoint_migration::resume(
             &test,
-            &test.codex,
+            &test.ava-code,
             vec![RolloutItem::Compacted(serde_json::from_value(json!({
                 "message": "old checkpoint",
                 "replacement_history": [{
@@ -179,11 +179,11 @@ async fn guardian_revalidates_owning_session_before_allow(
     }
     assert_eq!(
         GuardianContextMode::from_history(
-            test.codex.conversation_history_snapshot().await.as_ref()
+            test.ava-code.conversation_history_snapshot().await.as_ref()
         ),
         review_mode,
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Run the command in a background cell.".into(),
@@ -213,12 +213,12 @@ async fn guardian_revalidates_owning_session_before_allow(
         .send(())
         .expect("release parent completion");
     if matches!(change, PendingReviewChange::VerifiedAnswer) {
-        let request = wait_for_event_match(&test.codex, |event| match event {
+        let request = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::RequestUserInput(request) => Some(request.clone()),
             _ => None,
         })
         .await;
-        test.codex
+        test.ava-code
             .submit(Op::UserInputAnswer {
                 id: request.turn_id,
                 response: RequestUserInputResponse {
@@ -232,7 +232,7 @@ async fn guardian_revalidates_owning_session_before_allow(
             })
             .await?;
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -241,9 +241,9 @@ async fn guardian_revalidates_owning_session_before_allow(
     }
     let mut completed_status = None;
     if matches!(change, PendingReviewChange::Compaction) {
-        test.codex.submit(Op::Compact).await?;
+        test.ava-code.submit(Op::Compact).await?;
         loop {
-            match test.codex.next_event().await?.msg {
+            match test.ava-code.next_event().await?.msg {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status != GuardianAssessmentStatus::InProgress =>
                 {
@@ -262,7 +262,7 @@ async fn guardian_revalidates_owning_session_before_allow(
     let status = match completed_status {
         Some(status) => status,
         None => {
-            wait_for_event_match(&test.codex, |event| match event {
+            wait_for_event_match(&test.ava-code, |event| match event {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status != GuardianAssessmentStatus::InProgress =>
                 {
@@ -274,7 +274,7 @@ async fn guardian_revalidates_owning_session_before_allow(
         }
     };
     assert_eq!(status, expected_status);
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     streaming_server.shutdown().await;
     Ok(())
 }
@@ -289,7 +289,7 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
         responses::sse(vec![responses::ev_completed("initial")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config
                 .features
@@ -299,17 +299,17 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
         .build_with_auto_env(&server)
         .await?;
     test.submit_text_turn("Inspect the deployment.").await?;
-    let mut expected = test.codex.guardian_authorization_version().await;
+    let mut expected = test.ava-code.guardian_authorization_version().await;
 
     let internal_context = InternalModelContextFragment::new(
         InternalContextSource::from_static("goal"),
         "Inspecting the deployment.",
     );
     let notification_text = internal_context.render();
-    test.codex
+    test.ava-code
         .inject_response_items(vec![ContextualUserFragment::into(internal_context)])
         .await?;
-    assert_eq!(test.codex.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
 
     // The same text submitted by the user must invalidate, even if it looks internal.
     responses::mount_sse_once(
@@ -319,7 +319,7 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
     .await;
     test.submit_text_turn(&notification_text).await?;
     expected.user_message_revision += 1;
-    assert_eq!(test.codex.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
 
     // Failed image preparation must not turn a real user message into internal context.
     responses::mount_sse_once(
@@ -327,7 +327,7 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
         responses::sse(vec![responses::ev_completed("user-image")]),
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Image {
             image: ImageReference::Inline {
                 image_url: "data:image/png;base64,not-an-image".to_owned(),
@@ -335,19 +335,19 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
             detail: None,
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     expected.user_message_revision += 1;
-    assert_eq!(test.codex.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
 
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    assert_eq!(test.codex.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
 
     Ok(())
 }

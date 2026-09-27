@@ -33,80 +33,80 @@ use crate::shell_snapshot::ShellSnapshot;
 use crate::test_support::models_manager_with_provider;
 use crate::tools::format_exec_output_str;
 use crate::tools::registry::ToolRegistry;
-use codex_analytics::CompactionPhase;
-use codex_analytics::CompactionReason;
-use codex_config::ConfigLayerStack;
-use codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
-use codex_config::LoaderOverrides;
-use codex_config::NetworkConstraints;
-use codex_config::NetworkDomainPermissionToml;
-use codex_config::NetworkDomainPermissionsToml;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
-use codex_config::loader::project_trust_key;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_config::types::ToolSuggestDisabledTool;
-use codex_config::types::WindowsSandboxModeToml;
-use core_test_support::test_codex::TurnInputRequest as ExternalTurnInputRequest;
+use ava_analytics::CompactionPhase;
+use ava_analytics::CompactionReason;
+use ava_config::ConfigLayerStack;
+use ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
+use ava_config::LoaderOverrides;
+use ava_config::NetworkConstraints;
+use ava_config::NetworkDomainPermissionToml;
+use ava_config::NetworkDomainPermissionsToml;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
+use ava_config::loader::project_trust_key;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_config::types::ToolSuggestDisabledTool;
+use ava_config::types::WindowsSandboxModeToml;
+use core_test_support::test_ava::TurnInputRequest as ExternalTurnInputRequest;
 
-use codex_features::Feature;
-use codex_file_system::FileSystemSandboxContext;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::RouteAwareClientPool;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::built_in_model_providers;
-use codex_models_manager::model_info;
-use codex_models_manager::test_support::construct_model_info_offline_for_tests;
-use codex_models_manager::test_support::get_model_offline_for_tests;
-use codex_prompts::render_model_instructions;
-use codex_protocol::AgentPath;
-use codex_protocol::ResponseItemId;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::models::AgentMessageInputContent;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::SandboxEnforcement;
-use codex_protocol::openai_models::ModelServiceTier;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::turn_input::TurnInput as SubmittedTurnInput;
-use codex_protocol::turn_input::TurnInputMode;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnInputSubmission;
-use codex_tools::ToolSpec;
-use codex_utils_path_uri::PathUri;
+use ava_features::Feature;
+use ava_file_system::FileSystemSandboxContext;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::RouteAwareClientPool;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::built_in_model_providers;
+use ava_models_manager::model_info;
+use ava_models_manager::test_support::construct_model_info_offline_for_tests;
+use ava_models_manager::test_support::get_model_offline_for_tests;
+use ava_prompts::render_model_instructions;
+use ava_protocol::AgentPath;
+use ava_protocol::ResponseItemId;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::models::AgentMessageInputContent;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::SandboxEnforcement;
+use ava_protocol::openai_models::ModelServiceTier;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::turn_input::TurnInput as SubmittedTurnInput;
+use ava_protocol::turn_input::TurnInputMode;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnInputSubmission;
+use ava_tools::ToolSpec;
+use ava_utils_path_uri::PathUri;
 use std::collections::BTreeMap;
 use tracing::Span;
 
 use crate::connectors::AppInfo;
-use crate::responses_metadata::CodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesRequestKind;
 use crate::rollout::recorder::RolloutRecorder;
 use crate::state::ActiveTurn;
 use crate::state::TaskKind;
@@ -122,67 +122,67 @@ use crate::tools::handlers::RequestPermissionsHandler;
 use crate::tools::registry::ToolExecutor;
 use crate::tools::router::ToolCallSource;
 use crate::turn_diff_tracker::TurnDiffTracker;
-use codex_config::config_toml::ConfigToml;
-use codex_config::config_toml::ProjectConfig;
-use codex_config::permissions_toml::FilesystemPermissionToml;
-use codex_config::permissions_toml::FilesystemPermissionsToml;
-use codex_config::permissions_toml::NetworkToml;
-use codex_config::permissions_toml::PermissionProfileToml;
-use codex_config::permissions_toml::PermissionsToml;
-use codex_execpolicy::Decision;
-use codex_execpolicy::NetworkRuleProtocol;
-use codex_execpolicy::Policy;
-use codex_history::CodexHarnessMetadata;
-use codex_history::CompactedItem;
-use codex_history::InitialHistory;
-use codex_history::ResponseItemEnvelope;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
+use ava_config::config_toml::ConfigToml;
+use ava_config::config_toml::ProjectConfig;
+use ava_config::permissions_toml::FilesystemPermissionToml;
+use ava_config::permissions_toml::FilesystemPermissionsToml;
+use ava_config::permissions_toml::NetworkToml;
+use ava_config::permissions_toml::PermissionProfileToml;
+use ava_config::permissions_toml::PermissionsToml;
+use ava_execpolicy::Decision;
+use ava_execpolicy::NetworkRuleProtocol;
+use ava_execpolicy::Policy;
+use ava_history::AvaHarnessMetadata;
+use ava_history::CompactedItem;
+use ava_history::InitialHistory;
+use ava_history::ResponseItemEnvelope;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
 #[cfg(windows)]
-use codex_network_proxy::ManagedProxyRouting;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_otel::MetricsClient;
-use codex_otel::MetricsConfig;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::items::HookPromptFragment;
-use codex_protocol::items::build_hook_prompt_message;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::ConversationAudioParams;
-use codex_protocol::protocol::CreditsSnapshot;
-use codex_protocol::protocol::GranularApprovalConfig;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::NetworkApprovalProtocol;
-use codex_protocol::protocol::RateLimitSnapshot;
-use codex_protocol::protocol::RateLimitWindow;
-use codex_protocol::protocol::RealtimeAudioFrame;
-use codex_protocol::protocol::RealtimeConversationListVoicesResponseEvent;
-use codex_protocol::protocol::RealtimeVoice;
-use codex_protocol::protocol::RealtimeVoicesList;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::Submission;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TokenCountEvent;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TokenUsageInfo;
-use codex_protocol::protocol::TokenUsageRecord;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_rmcp_client::ElicitationAction;
+use ava_network_proxy::ManagedProxyRouting;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_otel::MetricsClient;
+use ava_otel::MetricsConfig;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::items::HookPromptFragment;
+use ava_protocol::items::build_hook_prompt_message;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::ConversationAudioParams;
+use ava_protocol::protocol::CreditsSnapshot;
+use ava_protocol::protocol::GranularApprovalConfig;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::NetworkApprovalProtocol;
+use ava_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::RateLimitWindow;
+use ava_protocol::protocol::RealtimeAudioFrame;
+use ava_protocol::protocol::RealtimeConversationListVoicesResponseEvent;
+use ava_protocol::protocol::RealtimeVoice;
+use ava_protocol::protocol::RealtimeVoicesList;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::Submission;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TokenCountEvent;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TokenUsageInfo;
+use ava_protocol::protocol::TokenUsageRecord;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_rmcp_client::ElicitationAction;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use core_test_support::context_snapshot;
@@ -199,8 +199,8 @@ use core_test_support::responses::strip_response_item_ids;
 use core_test_support::responses::strip_response_item_ids_from_json;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
 use core_test_support::test_path_buf;
 use core_test_support::tracing::install_test_tracing;
 use core_test_support::wait_for_event;
@@ -223,7 +223,7 @@ use wiremock::ResponseTemplate;
 
 use uuid::Uuid;
 
-use codex_protocol::mcp::CallToolResult as McpCallToolResult;
+use ava_protocol::mcp::CallToolResult as McpCallToolResult;
 use pretty_assertions::assert_eq;
 use serde::Deserialize;
 use serde_json::json;
@@ -232,9 +232,9 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use std::time::Duration as StdDuration;
 
-pub(crate) fn mcp_config_for_test(config: &crate::config::Config) -> Arc<codex_mcp::McpConfig> {
+pub(crate) fn mcp_config_for_test(config: &crate::config::Config) -> Arc<ava_mcp::McpConfig> {
     Arc::new(config.to_mcp_config_with_loaded_plugins(
-        &codex_core_plugins::PluginLoadOutcome::default(),
+        &ava_core_plugins::PluginLoadOutcome::default(),
         std::iter::empty(),
     ))
 }
@@ -277,7 +277,7 @@ impl StepContext {
             environments,
             selected_capability_roots: Vec::new(),
             executor_capability_discovery: None,
-            mcp: Arc::new(codex_mcp::McpBinding::empty(mcp_config_for_test(
+            mcp: Arc::new(ava_mcp::McpBinding::empty(mcp_config_for_test(
                 &turn.config,
             ))),
             tool_router: Arc::new(ToolRouter::from_parts(
@@ -429,7 +429,7 @@ fn extension_metrics_preserve_session_metadata_tags() {
     let metrics = MetricsClient::new(
         MetricsConfig::in_memory(
             "test",
-            "codex-core",
+            "ava-core",
             env!("CARGO_PKG_VERSION"),
             InMemoryMetricExporter::default(),
         )
@@ -453,7 +453,7 @@ fn extension_metrics_preserve_session_metadata_tags() {
     let extension_metrics = super::extension_metrics::from_session_telemetry(session_telemetry);
 
     extension_metrics.histogram(
-        "codex.test.extension",
+        "ava.test.extension",
         /*value*/ 7,
         &[
             ("component", "skills"),
@@ -467,14 +467,14 @@ fn extension_metrics_preserve_session_metadata_tags() {
     );
 
     extension_metrics.counter(
-        "codex.test.extension.counter",
+        "ava.test.extension.counter",
         /*inc*/ 2,
         &[("component", "skills"), ("model", "extension-model")],
     );
 
     let snapshot = metrics.snapshot().expect("metrics snapshot");
-    let attributes = single_histogram_attributes(&snapshot, "codex.test.extension");
-    let counter = find_metric(&snapshot, "codex.test.extension.counter");
+    let attributes = single_histogram_attributes(&snapshot, "ava.test.extension");
+    let counter = find_metric(&snapshot, "ava.test.extension.counter");
     let AggregatedMetrics::U64(MetricData::Sum(sum)) = counter.data() else {
         panic!("expected counter");
     };
@@ -515,19 +515,19 @@ fn extension_metrics_preserve_session_metadata_tags() {
 async fn world_state_extension_metrics_follow_turn_model_switch() {
     struct WorldStateMetricsRecorder;
 
-    impl codex_extension_api::ContextContributor for WorldStateMetricsRecorder {
+    impl ava_extension_api::ContextContributor for WorldStateMetricsRecorder {
         fn contribute_world_state<'a>(
             &'a self,
-            input: codex_extension_api::WorldStateContributionInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<
+            input: ava_extension_api::WorldStateContributionInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<
             'a,
-            Vec<codex_extension_api::WorldStateSectionContribution>,
+            Vec<ava_extension_api::WorldStateSectionContribution>,
         > {
             Box::pin(async move {
                 input
                     .extension_metrics
                     .expect("turn metrics should be available")
-                    .histogram("codex.test.extension.turn", /*value*/ 1, &[]);
+                    .histogram("ava.test.extension.turn", /*value*/ 1, &[]);
                 Vec::new()
             })
         }
@@ -536,7 +536,7 @@ async fn world_state_extension_metrics_follow_turn_model_switch() {
     let metrics = MetricsClient::new(
         MetricsConfig::in_memory(
             "test",
-            "codex-core",
+            "ava-core",
             env!("CARGO_PKG_VERSION"),
             InMemoryMetricExporter::default(),
         )
@@ -558,14 +558,14 @@ async fn world_state_extension_metrics_follow_turn_model_switch() {
             .with_model(next_model.to_string(), &session.services.models_manager)
             .await,
     );
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.prompt_contributor(Arc::new(WorldStateMetricsRecorder));
     session.services.extensions = Arc::new(builder.build());
 
     let _world_state = build_world_state_from_turn_context(&session, &turn_context).await;
 
     let snapshot = metrics.snapshot().expect("metrics snapshot");
-    let attributes = single_histogram_attributes(&snapshot, "codex.test.extension.turn");
+    let attributes = single_histogram_attributes(&snapshot, "ava.test.extension.turn");
     assert_eq!(
         attributes.get("model").map(String::as_str),
         Some(next_model)
@@ -586,7 +586,7 @@ fn skill_message(text: &str) -> ResponseItem {
 
 #[tokio::test]
 async fn regular_turn_emits_turn_started_with_trace_id_without_waiting_for_startup_prewarm() {
-    let _trace_test_context = install_test_tracing("codex-core-tests");
+    let _trace_test_context = install_test_tracing("ava-core-tests");
     let request_parent = W3cTraceContext {
         traceparent: Some("00-00000000000000000000000000000011-0000000000000022-01".into()),
         tracestate: Some("vendor=value".into()),
@@ -649,7 +649,7 @@ async fn request_mcp_server_elicitation_auto_accepts_when_auto_deny_is_enabled()
     let response = session
         .request_mcp_server_elicitation(
             turn_context.as_ref(),
-            "codex_apps".to_string(),
+            "ava_apps".to_string(),
             RequestId::String("request-1".into()),
             ElicitationRequest::Form {
                 meta: None,
@@ -698,7 +698,7 @@ async fn request_mcp_server_elicitation_rejects_non_root_threads(auto_deny: bool
             Duration::from_secs(1),
             session.request_mcp_server_elicitation(
                 turn_context.as_ref(),
-                "codex_apps".to_string(),
+                "ava_apps".to_string(),
                 RequestId::String("request-1".into()),
                 ElicitationRequest::Url {
                     meta: None,
@@ -715,7 +715,7 @@ async fn request_mcp_server_elicitation_rejects_non_root_threads(auto_deny: bool
 
         assert_eq!(
             error.to_string(),
-            codex_mcp::MCP_ELICITATION_HANDOFF_MESSAGE
+            ava_mcp::MCP_ELICITATION_HANDOFF_MESSAGE
         );
         assert!(rx.try_recv().is_err());
         assert!(!*paused.borrow());
@@ -797,7 +797,7 @@ fn test_model_client_session() -> crate::client::ModelClientSession {
         AgentIdentityAuthPolicy::JwtOnly,
         thread_id,
         ModelProviderInfo::create_openai_provider(/* base_url */ /*base_url*/ None),
-        codex_protocol::protocol::SessionSource::Exec,
+        ava_protocol::protocol::SessionSource::Exec,
         "test_originator".to_string(),
         /*model_verbosity*/ None,
         /*content_item_kinds_enabled*/ true,
@@ -808,7 +808,7 @@ fn test_model_client_session() -> crate::client::ModelClientSession {
         /*concurrent_reasoning_summaries_enabled*/ false,
         /*attestation_provider*/ None,
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
-        codex_model_provider::WorkspaceRoutingContext::new(
+        ava_model_provider::WorkspaceRoutingContext::new(
             "https://chatgpt.com/backend-api".into(),
         ),
     )
@@ -878,10 +878,10 @@ fn user_input_texts(items: &[ResponseItem]) -> Vec<&str> {
         .collect()
 }
 
-fn write_project_hooks(dot_codex: &Path) -> std::io::Result<()> {
-    std::fs::create_dir_all(dot_codex)?;
+fn write_project_hooks(dot_ava: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dot_ava)?;
     std::fs::write(
-        dot_codex.join("hooks.json"),
+        dot_ava.join("hooks.json"),
         r#"{
   "hooks": {
     "SessionStart": [
@@ -900,11 +900,11 @@ fn write_project_hooks(dot_codex: &Path) -> std::io::Result<()> {
 }
 
 async fn write_project_trust_config(
-    codex_home: &Path,
+    ava_home: &Path,
     trusted_projects: &[(&Path, TrustLevel)],
 ) -> std::io::Result<()> {
     tokio::fs::write(
-        codex_home.join(codex_config::CONFIG_TOML_FILE),
+        ava_home.join(ava_config::CONFIG_TOML_FILE),
         toml::to_string(&ConfigToml {
             projects: Some(
                 trusted_projects
@@ -928,7 +928,7 @@ async fn write_project_trust_config(
 
 async fn preview_session_start_hooks(
     config: &crate::config::Config,
-) -> std::io::Result<Vec<codex_protocol::protocol::HookRunSummary>> {
+) -> std::io::Result<Vec<ava_protocol::protocol::HookRunSummary>> {
     let thread_id = ThreadId::new();
     let (hooks, _result_receiver) = Hooks::new(
         HooksConfig {
@@ -945,14 +945,14 @@ async fn preview_session_start_hooks(
     .expect("initialize hooks for session-start preview");
 
     Ok(
-        hooks.preview_session_start(&codex_hooks::SessionStartRequest {
+        hooks.preview_session_start(&ava_hooks::SessionStartRequest {
             session_id: thread_id,
             cwd: config.cwd.clone(),
             transcript_path: None,
             model: "gpt-5.2".to_string(),
             permission_mode: "default".to_string(),
-            target: codex_hooks::StartHookTarget::SessionStart {
-                source: codex_hooks::SessionStartSource::Startup,
+            target: ava_hooks::StartHookTarget::SessionStart {
+                source: ava_hooks::SessionStartSource::Startup,
             },
         }),
     )
@@ -1207,11 +1207,11 @@ async fn managed_network_proxy_decider_survives_full_access_start() -> anyhow::R
     )?;
     let exec_policy = Policy::empty();
     let decider_calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let network_policy_decider: Arc<dyn codex_network_proxy::NetworkPolicyDecider> = Arc::new({
+    let network_policy_decider: Arc<dyn ava_network_proxy::NetworkPolicyDecider> = Arc::new({
         let decider_calls = Arc::clone(&decider_calls);
         move |_request| {
             decider_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            async { codex_network_proxy::NetworkDecision::ask("not_allowed") }
+            async { ava_network_proxy::NetworkDecision::ask("not_allowed") }
         }
     });
 
@@ -1292,8 +1292,8 @@ async fn new_turn_refreshes_managed_network_proxy_for_sandbox_change() -> anyhow
         Some(requirements),
         &initial_permission_profile,
     )?;
-    let network_policy_decider: Arc<dyn codex_network_proxy::NetworkPolicyDecider> =
-        Arc::new(|_request| async { codex_network_proxy::NetworkDecision::ask("not_allowed") });
+    let network_policy_decider: Arc<dyn ava_network_proxy::NetworkPolicyDecider> =
+        Arc::new(|_request| async { ava_network_proxy::NetworkDecision::ask("not_allowed") });
     let (started_proxy, _) = Session::start_managed_network_proxy(
         &spec,
         &Policy::empty(),
@@ -1456,7 +1456,7 @@ async fn danger_full_access_tool_attempts_do_not_enforce_managed_network() -> an
         ) -> std::io::Result<crate::tools::sandboxing::ApprovalAction> {
             Ok(crate::tools::sandboxing::ApprovalAction::ExecCommand {
                 id: call_id.to_string(),
-                environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+                environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
                 command: Vec::new(),
                 hook_command: String::new(),
                 cwd: PathUri::from_abs_path(&std::env::temp_dir().abs()),
@@ -1470,8 +1470,8 @@ async fn danger_full_access_tool_attempts_do_not_enforce_managed_network() -> an
     }
 
     impl crate::tools::sandboxing::Sandboxable for ProbeToolRuntime {
-        fn sandbox_preference(&self) -> codex_sandboxing::SandboxablePreference {
-            codex_sandboxing::SandboxablePreference::Auto
+        fn sandbox_preference(&self) -> ava_sandboxing::SandboxablePreference {
+            ava_sandboxing::SandboxablePreference::Auto
         }
     }
 
@@ -1522,7 +1522,7 @@ async fn danger_full_access_tool_attempts_do_not_enforce_managed_network() -> an
             RequirementSource::LegacyManagedConfigTomlFromMdm,
         ));
         let mut requirements_toml = config.config_layer_stack.requirements_toml().clone();
-        requirements_toml.network = Some(codex_config::NetworkRequirementsToml {
+        requirements_toml.network = Some(ava_config::NetworkRequirementsToml {
             enabled: Some(true),
             ..Default::default()
         });
@@ -1541,7 +1541,7 @@ async fn danger_full_access_tool_attempts_do_not_enforce_managed_network() -> an
         session: Arc::clone(&session),
         step_context: StepContext::for_test(Arc::clone(&turn)),
         call_id: "probe-call".to_string(),
-        tool_name: codex_tools::ToolName::plain("probe"),
+        tool_name: ava_tools::ToolName::plain("probe"),
     };
 
     orchestrator
@@ -1709,9 +1709,9 @@ async fn user_shell_commands_remain_login_shells_when_model_login_shells_are_dis
 #[tokio::test]
 async fn reload_user_config_layer_updates_effective_apps_config() {
     let (session, _turn_context) = make_session_and_context().await;
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
-    let config_toml_path = codex_home.join(CONFIG_TOML_FILE);
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
+    let config_toml_path = ava_home.join(CONFIG_TOML_FILE);
     std::fs::write(
         &config_toml_path,
         "[apps.calendar]\nenabled = false\ndestructive_enabled = false\n",
@@ -1728,7 +1728,7 @@ async fn reload_user_config_layer_updates_effective_apps_config() {
         .and_then(|table| table.get("apps"))
         .cloned()
         .expect("apps table");
-    let apps = codex_config::types::AppsConfigToml::deserialize(apps_toml)
+    let apps = ava_config::types::AppsConfigToml::deserialize(apps_toml)
         .expect("deserialize apps config");
     let app = apps
         .apps
@@ -1742,9 +1742,9 @@ async fn reload_user_config_layer_updates_effective_apps_config() {
 #[tokio::test]
 async fn reload_user_config_layer_keeps_previous_config_for_malformed_shell_policy() {
     let (session, _turn_context) = make_session_and_context().await;
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
-    let config_toml_path = codex_home.join(CONFIG_TOML_FILE);
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
+    let config_toml_path = ava_home.join(CONFIG_TOML_FILE);
     std::fs::write(&config_toml_path, "[apps.calendar]\nenabled = false\n")
         .expect("write valid user config");
     session.reload_user_config_layer().await;
@@ -1781,10 +1781,10 @@ exclude = ["SECRET_*", 17]
 #[tokio::test]
 async fn reload_user_config_layer_updates_base_and_selected_profile_layers() {
     let (session, _turn_context) = make_session_and_context().await;
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
-    let base_config_path = codex_home.join(CONFIG_TOML_FILE);
-    let profile_config_path = codex_home.join("work.config.toml");
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
+    let base_config_path = ava_home.join(CONFIG_TOML_FILE);
+    let profile_config_path = ava_home.join("work.config.toml");
     std::fs::write(
         &base_config_path,
         "model = \"base\"\napproval_policy = \"on-request\"\n",
@@ -1793,7 +1793,7 @@ async fn reload_user_config_layer_updates_base_and_selected_profile_layers() {
     std::fs::write(&profile_config_path, "model = \"profile-old\"\n")
         .expect("write profile user config");
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.to_path_buf())
+        .ava_home(ava_home.to_path_buf())
         .loader_overrides(LoaderOverrides {
             user_config_path: Some(profile_config_path.abs()),
             user_config_profile: Some("work".parse().expect("profile-v2 name")),
@@ -1821,7 +1821,7 @@ async fn reload_user_config_layer_updates_base_and_selected_profile_layers() {
         config
             .config_layer_stack
             .get_user_config_file()
-            .map(codex_utils_absolute_path::AbsolutePathBuf::as_path),
+            .map(ava_utils_absolute_path::AbsolutePathBuf::as_path),
         Some(profile_config_path.as_path())
     );
     let effective_user_config = config
@@ -1847,14 +1847,14 @@ async fn reload_user_config_layer_refreshes_hooks() -> anyhow::Result<()> {
     let session = make_session_with_config(|config| {
         config
             .features
-            .enable(Feature::CodexHooks)
-            .expect("enable Codex hooks");
+            .enable(Feature::AvaHooks)
+            .expect("enable Ava hooks");
     })
     .await?;
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home)?;
-    let config_toml_path = codex_home.join(CONFIG_TOML_FILE);
-    let user_config: codex_config::TomlValue = serde_json::from_value(serde_json::json!({
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home)?;
+    let config_toml_path = ava_home.join(CONFIG_TOML_FILE);
+    let user_config: ava_config::TomlValue = serde_json::from_value(serde_json::json!({
         "hooks": {
             "SessionStart": [{
                 "hooks": [{
@@ -1865,20 +1865,20 @@ async fn reload_user_config_layer_refreshes_hooks() -> anyhow::Result<()> {
         },
     }))?;
 
-    let request = codex_hooks::SessionStartRequest {
+    let request = ava_hooks::SessionStartRequest {
         session_id: session.thread_id,
         cwd: session.get_config().await.cwd.clone(),
         transcript_path: None,
         model: "gpt-5.2".to_string(),
         permission_mode: "default".to_string(),
-        target: codex_hooks::StartHookTarget::SessionStart {
-            source: codex_hooks::SessionStartSource::Startup,
+        target: ava_hooks::StartHookTarget::SessionStart {
+            source: ava_hooks::SessionStartSource::Startup,
         },
     };
     assert!(session.hooks().preview_session_start(&request).is_empty());
 
     let config = session.get_config().await;
-    let hook_list = codex_hooks::list_hooks(codex_hooks::HooksConfig {
+    let hook_list = ava_hooks::list_hooks(ava_hooks::HooksConfig {
         feature_enabled: true,
         config_layer_stack: Some(
             config
@@ -1886,15 +1886,15 @@ async fn reload_user_config_layer_refreshes_hooks() -> anyhow::Result<()> {
                 .with_user_config(&config_toml_path, user_config.clone())
                 .expect("hook user config should be valid"),
         ),
-        ..codex_hooks::HooksConfig::default()
+        ..ava_hooks::HooksConfig::default()
     });
     assert_eq!(hook_list.hooks.len(), 1);
     assert_eq!(
         hook_list.hooks[0].trust_status,
-        codex_protocol::protocol::HookTrustStatus::Untrusted
+        ava_protocol::protocol::HookTrustStatus::Untrusted
     );
 
-    let trusted_user_config: codex_config::TomlValue = serde_json::from_value(serde_json::json!({
+    let trusted_user_config: ava_config::TomlValue = serde_json::from_value(serde_json::json!({
         "hooks": {
             "SessionStart": [{
                 "hooks": [{
@@ -1925,25 +1925,25 @@ async fn refresh_runtime_config_refreshes_hooks() -> anyhow::Result<()> {
         let mut config = (*state.session_configuration.original_config_do_not_use).clone();
         config
             .features
-            .enable(Feature::CodexHooks)
-            .expect("enable Codex hooks");
+            .enable(Feature::AvaHooks)
+            .expect("enable Ava hooks");
         state.session_configuration.original_config_do_not_use = Arc::new(config);
     }
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home)?;
-    let config_toml_path = codex_home.join(CONFIG_TOML_FILE);
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home)?;
+    let config_toml_path = ava_home.join(CONFIG_TOML_FILE);
     #[derive(serde::Serialize)]
     struct NormalizedHookIdentity {
         event_name: &'static str,
         #[serde(flatten)]
-        group: codex_config::MatcherGroup,
+        group: ava_config::MatcherGroup,
     }
     let trusted_hash = {
         let identity = NormalizedHookIdentity {
             event_name: "session_start",
-            group: codex_config::MatcherGroup {
+            group: ava_config::MatcherGroup {
                 matcher: None,
-                hooks: vec![codex_config::HookHandlerConfig::Command {
+                hooks: vec![ava_config::HookHandlerConfig::Command {
                     command: "python3 /tmp/user.py".to_string(),
                     command_windows: None,
                     timeout_sec: Some(600),
@@ -1953,11 +1953,11 @@ async fn refresh_runtime_config_refreshes_hooks() -> anyhow::Result<()> {
                 }],
             },
         };
-        let identity = codex_config::TomlValue::try_from(identity)?;
-        codex_config::version_for_toml(&identity)
+        let identity = ava_config::TomlValue::try_from(identity)?;
+        ava_config::version_for_toml(&identity)
     };
     let hook_key = format!("{}:session_start:0:0", config_toml_path.display());
-    let trusted_user_config: codex_config::TomlValue = serde_json::from_value(serde_json::json!({
+    let trusted_user_config: ava_config::TomlValue = serde_json::from_value(serde_json::json!({
         "hooks": {
             "SessionStart": [{
                 "hooks": [{
@@ -1974,14 +1974,14 @@ async fn refresh_runtime_config_refreshes_hooks() -> anyhow::Result<()> {
     }))?;
     std::fs::write(&config_toml_path, toml::to_string(&trusted_user_config)?)?;
 
-    let request = codex_hooks::SessionStartRequest {
+    let request = ava_hooks::SessionStartRequest {
         session_id: session.thread_id,
         cwd: session.get_config().await.cwd.clone(),
         transcript_path: None,
         model: "gpt-5.2".to_string(),
         permission_mode: "default".to_string(),
-        target: codex_hooks::StartHookTarget::SessionStart {
-            source: codex_hooks::SessionStartSource::Startup,
+        target: ava_hooks::StartHookTarget::SessionStart {
+            source: ava_hooks::SessionStartSource::Startup,
         },
     };
     assert!(session.hooks().preview_session_start(&request).is_empty());
@@ -1996,9 +1996,9 @@ async fn refresh_runtime_config_refreshes_hooks() -> anyhow::Result<()> {
 #[tokio::test]
 async fn reload_user_config_layer_updates_effective_tool_suggest_config() {
     let (session, _turn_context) = make_session_and_context().await;
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
-    let config_toml_path = codex_home.join(CONFIG_TOML_FILE);
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
+    let config_toml_path = ava_home.join(CONFIG_TOML_FILE);
     std::fs::write(
         &config_toml_path,
         r#"[tool_suggest]
@@ -2026,10 +2026,10 @@ disabled_tools = [
 async fn refresh_runtime_config_updates_runtime_refreshable_fields_and_keeps_session_static_settings()
  {
     let (session, _turn_context) = make_session_and_context().await;
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
     std::fs::write(
-        codex_home.join(CONFIG_TOML_FILE),
+        ava_home.join(CONFIG_TOML_FILE),
         r#"[apps.calendar]
 enabled = false
 destructive_enabled = false
@@ -2058,7 +2058,7 @@ disabled_tools = [
         .and_then(|table| table.get("apps"))
         .cloned()
         .expect("apps table");
-    let apps = codex_config::types::AppsConfigToml::deserialize(apps_toml)
+    let apps = ava_config::types::AppsConfigToml::deserialize(apps_toml)
         .expect("deserialize apps config");
     let app = apps
         .apps
@@ -2086,13 +2086,13 @@ async fn refresh_mcp_config_replaces_managed_server_and_plugin_requirements() {
         "enabled": true
     }))
     .expect("valid test MCP server");
-    let requirement = serde_json::from_value::<codex_config::McpServerRequirement>(json!({
+    let requirement = serde_json::from_value::<ava_config::McpServerRequirement>(json!({
         "identity": { "url": "https://example.com/mcp" }
     }))
     .expect("valid managed MCP requirement");
     let plugin_requirements = std::collections::BTreeMap::from([(
         "example-plugin".to_string(),
-        codex_config::PluginRequirementsToml {
+        ava_config::PluginRequirementsToml {
             mcp_servers: Some(std::collections::BTreeMap::from([(
                 "beta".to_string(),
                 requirement,
@@ -2101,7 +2101,7 @@ async fn refresh_mcp_config_replaces_managed_server_and_plugin_requirements() {
     )]);
 
     let mut next_config = session.get_config().await.as_ref().clone();
-    next_config.mcp_servers = codex_config::Constrained::normalized(
+    next_config.mcp_servers = ava_config::Constrained::normalized(
         HashMap::from([("beta".to_string(), server.clone())]),
         |mut servers: HashMap<String, McpServerConfig>| {
             servers.retain(|name, _| name == "beta");
@@ -2238,7 +2238,7 @@ async fn reconstruct_history_uses_replacement_history_verbatim() {
     let replacement_history = vec![
         ResponseItemEnvelope {
             item: summary_item.clone(),
-            metadata: Some(CodexHarnessMetadata::default()),
+            metadata: Some(AvaHarnessMetadata::default()),
         },
         ResponseItemEnvelope::new(ResponseItem::Message {
             id: None,
@@ -2394,9 +2394,9 @@ async fn item_completion_without_a_start_uses_completion_timestamp() {
 #[tokio::test]
 async fn subagent_activity_emits_matching_start_and_completion() {
     let (session, turn_context, rx) = make_session_and_context_with_rx().await;
-    let item = codex_protocol::items::SubAgentActivityItem {
+    let item = ava_protocol::items::SubAgentActivityItem {
         id: "activity-1".to_string(),
-        kind: codex_protocol::protocol::SubAgentActivityKind::Started,
+        kind: ava_protocol::protocol::SubAgentActivityKind::Started,
         agent_thread_id: ThreadId::new(),
         agent_path: AgentPath::root(),
     };
@@ -2490,7 +2490,7 @@ async fn record_inter_agent_communication_sets_turn_id_in_rollout_and_resume() {
 #[tokio::test]
 async fn record_inter_agent_communication_preserves_item_id_in_rollout_and_resume() {
     let (mut session, turn_context, _rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |_| {},
     )
@@ -2542,7 +2542,7 @@ async fn record_inter_agent_communication_preserves_item_id_in_rollout_and_resum
 
     let (resumed_session, _resumed_turn_context, _rx) =
         make_session_and_context_with_auth_and_config_and_rx(
-            CodexAuth::from_api_key("Test API Key"),
+            AvaAuth::from_api_key("Test API Key"),
             Vec::new(),
             |_| {},
         )
@@ -2573,7 +2573,7 @@ async fn annotated_history_uses_explicit_model_without_a_step(
     expected_budget: usize,
 ) {
     let (session, turn_context, _rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config
@@ -2585,9 +2585,9 @@ async fn annotated_history_uses_explicit_model_without_a_step(
     .await;
     let mut model_info = turn_context.model_info().as_ref().clone();
     model_info.truncation_policy = if byte_policy {
-        codex_protocol::openai_models::TruncationPolicyConfig::bytes(/*limit*/ 101)
+        ava_protocol::openai_models::TruncationPolicyConfig::bytes(/*limit*/ 101)
     } else {
-        codex_protocol::openai_models::TruncationPolicyConfig::tokens(/*limit*/ 4)
+        ava_protocol::openai_models::TruncationPolicyConfig::tokens(/*limit*/ 4)
     };
     let text = "diagnostic line\n".repeat(50);
     let mut item = ResponseItem::FunctionCallOutput {
@@ -2605,7 +2605,7 @@ async fn annotated_history_uses_explicit_model_without_a_step(
     item.set_create_time_if_missing(123.into());
     let expected = ResponseItemEnvelope {
         item,
-        metadata: retain_metadata.then_some(CodexHarnessMetadata {
+        metadata: retain_metadata.then_some(AvaHarnessMetadata {
             client_authored: true,
             history_truncation_token_limit: saved_budget,
             ..Default::default()
@@ -2621,7 +2621,7 @@ async fn annotated_history_uses_explicit_model_without_a_step(
                 output: FunctionCallOutputPayload::from_text(text.clone()),
                 internal_chat_message_metadata_passthrough: None,
             },
-            metadata: retain_metadata.then_some(CodexHarnessMetadata {
+            metadata: retain_metadata.then_some(AvaHarnessMetadata {
                 client_authored: true,
                 history_truncation_token_limit: saved_budget,
                 ..Default::default()
@@ -2643,9 +2643,9 @@ async fn annotated_history_uses_explicit_model_without_a_step(
         else {
             unreachable!("fixture is a tool output");
         };
-        output.body = FunctionCallOutputBody::Text(codex_utils_output_truncation::truncate_text(
+        output.body = FunctionCallOutputBody::Text(ava_utils_output_truncation::truncate_text(
             &text,
-            codex_utils_output_truncation::TruncationPolicy::Tokens(expected_budget),
+            ava_utils_output_truncation::TruncationPolicy::Tokens(expected_budget),
         ));
     }
     assert_eq!(session.clone_history().await.annotated_items(), &expected);
@@ -2654,7 +2654,7 @@ async fn annotated_history_uses_explicit_model_without_a_step(
 #[tokio::test]
 async fn prepares_image_failures_before_history_insertion() {
     let (session, turn_context, _rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |_| {},
     )
@@ -2767,7 +2767,7 @@ async fn prepares_resumed_history_before_installing_it() {
             conversation_id: ThreadId::default(),
             history: Arc::new(vec![RolloutItem::ResponseItem(ResponseItemEnvelope {
                 item: resumed_item,
-                metadata: Some(CodexHarnessMetadata::default()),
+                metadata: Some(AvaHarnessMetadata::default()),
             })]),
             rollout_path: Some(PathBuf::from("/tmp/resume.jsonl")),
         }))
@@ -2806,7 +2806,7 @@ async fn prepares_resumed_history_before_installing_it() {
     );
     assert_eq!(
         history.annotated_items()[0].metadata,
-        Some(CodexHarnessMetadata::default())
+        Some(AvaHarnessMetadata::default())
     );
 }
 
@@ -2959,7 +2959,7 @@ async fn record_initial_history_seeds_token_info_from_rollout() {
             output_tokens: 20,
             reasoning_output_tokens: 0,
             total_tokens: 30,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         },
         last_token_usage: TokenUsage {
             input_tokens: 3,
@@ -2968,7 +2968,7 @@ async fn record_initial_history_seeds_token_info_from_rollout() {
             output_tokens: 4,
             reasoning_output_tokens: 0,
             total_tokens: 7,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         },
         model_context_window: Some(1_000),
     };
@@ -2980,7 +2980,7 @@ async fn record_initial_history_seeds_token_info_from_rollout() {
             output_tokens: 200,
             reasoning_output_tokens: 25,
             total_tokens: 375,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         },
         last_token_usage: TokenUsage {
             input_tokens: 10,
@@ -2989,7 +2989,7 @@ async fn record_initial_history_seeds_token_info_from_rollout() {
             output_tokens: 20,
             reasoning_output_tokens: 5,
             total_tokens: 35,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         },
         model_context_window: Some(2_000),
     };
@@ -3164,14 +3164,14 @@ async fn record_token_usage_info_notifies_extension_contributors() {
         records: Arc<std::sync::Mutex<Vec<RecordedTokenUsage>>>,
     }
 
-    impl codex_extension_api::TokenUsageContributor for TokenUsageRecorder {
+    impl ava_extension_api::TokenUsageContributor for TokenUsageRecorder {
         fn on_token_usage<'a>(
             &'a self,
-            session_store: &'a codex_extension_api::ExtensionData,
-            thread_store: &'a codex_extension_api::ExtensionData,
-            turn_store: &'a codex_extension_api::ExtensionData,
+            session_store: &'a ava_extension_api::ExtensionData,
+            thread_store: &'a ava_extension_api::ExtensionData,
+            turn_store: &'a ava_extension_api::ExtensionData,
             token_usage: &'a TokenUsageInfo,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 self.records
                     .lock()
@@ -3190,7 +3190,7 @@ async fn record_token_usage_info_notifies_extension_contributors() {
 
     let (mut session, turn_context) = make_session_and_context().await;
     let records = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.token_usage_contributor(Arc::new(TokenUsageRecorder {
         records: Arc::clone(&records),
     }));
@@ -3211,7 +3211,7 @@ async fn record_token_usage_info_notifies_extension_contributors() {
         output_tokens: 20,
         reasoning_output_tokens: 3,
         total_tokens: 33,
-        codex_rollout_budget_units: None,
+        ava_rollout_budget_units: None,
     };
     let second_usage = TokenUsage {
         input_tokens: 7,
@@ -3220,7 +3220,7 @@ async fn record_token_usage_info_notifies_extension_contributors() {
         output_tokens: 8,
         reasoning_output_tokens: 5,
         total_tokens: 20,
-        codex_rollout_budget_units: None,
+        ava_rollout_budget_units: None,
     };
 
     session
@@ -3297,11 +3297,11 @@ async fn turn_start_lifecycle_exposes_turn_metadata_and_token_baseline() {
         records: Arc<std::sync::Mutex<Vec<RecordedTurnStart>>>,
     }
 
-    impl codex_extension_api::TurnLifecycleContributor for TurnStartRecorder {
+    impl ava_extension_api::TurnLifecycleContributor for TurnStartRecorder {
         fn on_turn_start<'a>(
             &'a self,
-            input: codex_extension_api::TurnStartInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            input: ava_extension_api::TurnStartInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 self.records
                     .lock()
@@ -3328,7 +3328,7 @@ async fn turn_start_lifecycle_exposes_turn_metadata_and_token_baseline() {
 
     let (mut session, turn_context) = make_session_and_context().await;
     let records = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.turn_lifecycle_contributor(Arc::new(TurnStartRecorder {
         records: Arc::clone(&records),
     }));
@@ -3349,7 +3349,7 @@ async fn turn_start_lifecycle_exposes_turn_metadata_and_token_baseline() {
         output_tokens: 25,
         reasoning_output_tokens: 5,
         total_tokens: 130,
-        codex_rollout_budget_units: None,
+        ava_rollout_budget_units: None,
     };
     set_total_token_usage(&session, token_usage_at_turn_start.clone()).await;
 
@@ -3395,7 +3395,7 @@ async fn turn_error_lifecycle_exposes_error_and_stores() {
         thread_level_id: String,
         turn_level_id: String,
         turn_id: String,
-        error: CodexErrorInfo,
+        error: AvaErrorInfo,
         saw_session_store: bool,
         saw_thread_store: bool,
     }
@@ -3404,11 +3404,11 @@ async fn turn_error_lifecycle_exposes_error_and_stores() {
         records: Arc<std::sync::Mutex<Vec<RecordedTurnError>>>,
     }
 
-    impl codex_extension_api::TurnLifecycleContributor for TurnErrorRecorder {
+    impl ava_extension_api::TurnLifecycleContributor for TurnErrorRecorder {
         fn on_turn_error<'a>(
             &'a self,
-            input: codex_extension_api::TurnErrorInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            input: ava_extension_api::TurnErrorInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 self.records
                     .lock()
@@ -3434,7 +3434,7 @@ async fn turn_error_lifecycle_exposes_error_and_stores() {
 
     let (mut session, turn_context) = make_session_and_context().await;
     let records = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.turn_lifecycle_contributor(Arc::new(TurnErrorRecorder {
         records: Arc::clone(&records),
     }));
@@ -3453,13 +3453,13 @@ async fn turn_error_lifecycle_exposes_error_and_stores() {
         thread_level_id: session.thread_id.to_string(),
         turn_level_id: turn_context.sub_id.clone(),
         turn_id: turn_context.sub_id.clone(),
-        error: CodexErrorInfo::UsageLimitExceeded,
+        error: AvaErrorInfo::UsageLimitExceeded,
         saw_session_store: true,
         saw_thread_store: true,
     };
 
     session
-        .emit_turn_error_lifecycle(&turn_context, CodexErrorInfo::UsageLimitExceeded)
+        .emit_turn_error_lifecycle(&turn_context, AvaErrorInfo::UsageLimitExceeded)
         .await;
 
     let actual = records
@@ -3489,11 +3489,11 @@ async fn config_change_contributor_observes_effective_config_changes() {
         records: Arc<std::sync::Mutex<Vec<RecordedConfigChange>>>,
     }
 
-    impl codex_extension_api::ConfigContributor<crate::config::Config> for ConfigRecorder {
+    impl ava_extension_api::ConfigContributor<crate::config::Config> for ConfigRecorder {
         fn on_config_changed(
             &self,
-            session_store: &codex_extension_api::ExtensionData,
-            thread_store: &codex_extension_api::ExtensionData,
+            session_store: &ava_extension_api::ExtensionData,
+            thread_store: &ava_extension_api::ExtensionData,
             previous_config: &crate::config::Config,
             new_config: &crate::config::Config,
         ) {
@@ -3513,7 +3513,7 @@ async fn config_change_contributor_observes_effective_config_changes() {
 
     let (mut session, _turn_context) = make_session_and_context().await;
     let records = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.config_contributor(Arc::new(ConfigRecorder {
         records: Arc::clone(&records),
     }));
@@ -3555,10 +3555,10 @@ async fn config_change_contributor_observes_effective_config_changes() {
         .await
         .expect("update settings");
 
-    let codex_home = session.codex_home().await;
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
+    let ava_home = session.ava_home().await;
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
     std::fs::write(
-        codex_home.join(CONFIG_TOML_FILE),
+        ava_home.join(CONFIG_TOML_FILE),
         r#"[tool_suggest]
 disabled_tools = [
   { type = "connector", id = " calendar " },
@@ -3619,7 +3619,7 @@ async fn record_initial_history_reconstructs_forked_transcript() {
 #[tokio::test]
 async fn start_new_context_window_persists_checkpoint_state() {
     let (mut session, turn_context, _rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |_| {},
     )
@@ -3696,7 +3696,7 @@ async fn start_new_context_window_persists_checkpoint_state() {
 #[tokio::test]
 async fn record_initial_history_assigns_and_persists_id_for_forked_response_item() {
     let (mut session, _turn_context, _rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |_| {},
     )
@@ -3721,7 +3721,7 @@ async fn record_initial_history_assigns_and_persists_id_for_forked_response_item
     };
     let response_item = ResponseItemEnvelope {
         item: response_item,
-        metadata: Some(CodexHarnessMetadata::default()),
+        metadata: Some(AvaHarnessMetadata::default()),
     };
 
     session
@@ -3744,7 +3744,7 @@ async fn record_initial_history_assigns_and_persists_id_for_forked_response_item
     assert_eq!(raw_history_items(&live_history), vec![expected_item]);
     assert_eq!(
         live_history.annotated_items()[0].metadata,
-        Some(CodexHarnessMetadata::default())
+        Some(AvaHarnessMetadata::default())
     );
 
     session.flush_rollout().await.expect("rollout should flush");
@@ -3775,7 +3775,7 @@ async fn record_initial_history_assigns_and_persists_id_for_forked_response_item
     );
     assert_eq!(
         persisted_item.metadata,
-        Some(CodexHarnessMetadata::default())
+        Some(AvaHarnessMetadata::default())
     );
 }
 
@@ -3784,13 +3784,13 @@ async fn session_configured_reports_permission_profile_for_external_sandbox() ->
 {
     let server = start_mock_server().await;
     let sandbox_policy = SandboxPolicy::ExternalSandbox {
-        network_access: codex_protocol::protocol::NetworkAccess::Restricted,
+        network_access: ava_protocol::protocol::NetworkAccess::Restricted,
     };
     let permission_profile = PermissionProfile::External {
         network: NetworkSandboxPolicy::Restricted,
     };
     let expected_permission_profile = permission_profile.clone();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config
             .permissions
             .set_permission_profile(permission_profile.clone())
@@ -3823,10 +3823,10 @@ async fn fork_startup_context_then_first_turn_diff_snapshot() -> anyhow::Result<
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.update_plan_enabled = true;
         config.permissions.approval_policy =
-            codex_config::Constrained::allow_any(AskForApproval::OnRequest);
+            ava_config::Constrained::allow_any(AskForApproval::OnRequest);
     });
     let initial = builder.build(&server).await?;
     let rollout_path = initial
@@ -3836,7 +3836,7 @@ async fn fork_startup_context_then_first_turn_diff_snapshot() -> anyhow::Result<
         .expect("rollout path");
 
     initial
-        .codex
+        .ava-code
         .start_or_steer_turn(ExternalTurnInputRequest::user_input(vec![
             UserInput::Text {
                 text: "fork seed".into(),
@@ -3844,24 +3844,24 @@ async fn fork_startup_context_then_first_turn_diff_snapshot() -> anyhow::Result<
             },
         ]))
         .await?;
-    wait_for_event(&initial.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&initial.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     // Forking reads the persisted rollout JSONL, so force the completed source turn to disk
     // before snapshotting from it.
-    initial.codex.ensure_rollout_materialized().await;
+    initial.ava-code.ensure_rollout_materialized().await;
     initial
-        .codex
+        .ava-code
         .flush_rollout()
         .await
         .expect("source rollout should flush before fork");
 
     let mut fork_config = initial.config.clone();
     fork_config.permissions.approval_policy =
-        codex_config::Constrained::allow_any(AskForApproval::UnlessTrusted);
+        ava_config::Constrained::allow_any(AskForApproval::UnlessTrusted);
     let forked = initial
         .thread_manager
         .fork_thread(
             usize::MAX,
-            core_test_support::test_codex::StartThreadOptions::new(fork_config.clone()),
+            core_test_support::test_ava::StartThreadOptions::new(fork_config.clone()),
             rollout_path,
         )
         .await?;
@@ -3902,7 +3902,7 @@ async fn fork_startup_context_then_first_turn_diff_snapshot() -> anyhow::Result<
     settings.set_prepend_module_to_snapshot(false);
     settings.bind(|| {
         insta::assert_snapshot!(
-            "codex_core__codex_tests__fork_startup_context_then_first_turn_diff",
+            "ava_core__ava_tests__fork_startup_context_then_first_turn_diff",
             snapshot
         );
     });
@@ -3939,7 +3939,7 @@ async fn record_initial_history_forked_hydrates_previous_turn_settings() {
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
     let turn_id = previous_context_item
         .turn_id
@@ -3947,7 +3947,7 @@ async fn record_initial_history_forked_hydrates_previous_turn_settings() {
         .expect("thread settings should have turn_id");
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -3957,7 +3957,7 @@ async fn record_initial_history_forked_hydrates_previous_turn_settings() {
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "forked seed".to_string(),
                 images: None,
@@ -3968,7 +3968,7 @@ async fn record_initial_history_forked_hydrates_previous_turn_settings() {
         )),
         RolloutItem::TurnContext(previous_context_item.clone()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id,
                 last_agent_message: None,
                 error: None,
@@ -4004,8 +4004,8 @@ async fn record_initial_history_forked_hydrates_previous_turn_settings() {
 
 #[tokio::test]
 async fn set_rate_limits_retains_previous_credits() {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
-    let config = build_test_config(codex_home.path()).await;
+    let ava_home = tempfile::tempdir().expect("create temp dir");
+    let config = build_test_config(ava_home.path()).await;
     let config = Arc::new(config);
     let model = get_model_offline_for_tests(config.model.as_deref());
     let model_info =
@@ -4044,7 +4044,7 @@ async fn set_rate_limits_retains_previous_credits() {
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -4080,14 +4080,14 @@ async fn set_rate_limits_retains_previous_credits() {
         }),
         individual_limit: None,
         spend_control_reached: None,
-        plan_type: Some(codex_protocol::account::PlanType::Plus),
+        plan_type: Some(ava_protocol::account::PlanType::Plus),
         rate_limit_reached_type: None,
     };
     state.set_rate_limits(initial.clone());
 
     let update = RateLimitSnapshot {
-        limit_id: Some("codex_other".to_string()),
-        limit_name: Some("codex_other".to_string()),
+        limit_id: Some("ava_other".to_string()),
+        limit_name: Some("ava_other".to_string()),
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
             used_percent: 40.0,
@@ -4110,8 +4110,8 @@ async fn set_rate_limits_retains_previous_credits() {
     assert_eq!(
         state.latest_rate_limits,
         Some(RateLimitSnapshot {
-            limit_id: Some("codex_other".to_string()),
-            limit_name: Some("codex_other".to_string()),
+            limit_id: Some("ava_other".to_string()),
+            limit_name: Some("ava_other".to_string()),
             normal_model_slug: None,
             primary: update.primary.clone(),
             secondary: update.secondary,
@@ -4126,8 +4126,8 @@ async fn set_rate_limits_retains_previous_credits() {
 
 #[tokio::test]
 async fn set_rate_limits_updates_plan_type_when_present() {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
-    let config = build_test_config(codex_home.path()).await;
+    let ava_home = tempfile::tempdir().expect("create temp dir");
+    let config = build_test_config(ava_home.path()).await;
     let config = Arc::new(config);
     let model = get_model_offline_for_tests(config.model.as_deref());
     let model_info =
@@ -4166,7 +4166,7 @@ async fn set_rate_limits_updates_plan_type_when_present() {
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -4206,7 +4206,7 @@ async fn set_rate_limits_updates_plan_type_when_present() {
         }),
         individual_limit: None,
         spend_control_reached: None,
-        plan_type: Some(codex_protocol::account::PlanType::Plus),
+        plan_type: Some(ava_protocol::account::PlanType::Plus),
         rate_limit_reached_type: None,
     };
     state.set_rate_limits(initial.clone());
@@ -4224,7 +4224,7 @@ async fn set_rate_limits_updates_plan_type_when_present() {
         credits: None,
         individual_limit: None,
         spend_control_reached: None,
-        plan_type: Some(codex_protocol::account::PlanType::Pro),
+        plan_type: Some(ava_protocol::account::PlanType::Pro),
         rate_limit_reached_type: None,
     };
     state.set_rate_limits(update.clone());
@@ -4232,7 +4232,7 @@ async fn set_rate_limits_updates_plan_type_when_present() {
     assert_eq!(
         state.latest_rate_limits,
         Some(RateLimitSnapshot {
-            limit_id: Some("codex".to_string()),
+            limit_id: Some("ava".to_string()),
             limit_name: None,
             normal_model_slug: None,
             primary: update.primary,
@@ -4529,9 +4529,9 @@ fn text_block(s: &str) -> serde_json::Value {
     })
 }
 
-async fn build_test_config(codex_home: &Path) -> Config {
+async fn build_test_config(ava_home: &Path) -> Config {
     ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.to_path_buf())
+        .ava_home(ava_home.to_path_buf())
         .harness_overrides(ConfigOverrides {
             model: Some("gpt-5.5".to_string()),
             ..Default::default()
@@ -4750,8 +4750,8 @@ async fn session_settings_legacy_fast_service_tier_update_uses_priority_request_
 }
 
 pub(crate) async fn make_session_configuration_for_tests() -> SessionConfiguration {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
-    let config = build_test_config(codex_home.path()).await;
+    let ava_home = tempfile::tempdir().expect("create temp dir");
+    let config = build_test_config(ava_home.path()).await;
     let config = Arc::new(config);
     let model = get_model_offline_for_tests(config.model.as_deref());
     let model_info =
@@ -4791,7 +4791,7 @@ pub(crate) async fn make_session_configuration_for_tests() -> SessionConfigurati
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -4812,8 +4812,8 @@ pub(crate) async fn make_session_configuration_for_tests() -> SessionConfigurati
 
 #[tokio::test]
 async fn emit_subagent_session_started_includes_fork_lineage_and_originator() {
-    use codex_app_server_protocol::ServerNotification;
-    use codex_app_server_protocol::ThreadArchivedNotification;
+    use ava_app_server_protocol::ServerNotification;
+    use ava_app_server_protocol::ThreadArchivedNotification;
     use wiremock::Mock;
     use wiremock::MockServer;
     use wiremock::ResponseTemplate;
@@ -4822,13 +4822,13 @@ async fn emit_subagent_session_started_includes_fork_lineage_and_originator() {
 
     let server = MockServer::start().await;
     Mock::given(method("POST"))
-        .and(path("/codex/analytics-events/events"))
+        .and(path("/ava/analytics-events/events"))
         .respond_with(ResponseTemplate::new(200))
         .mount(&server)
         .await;
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let analytics_events_client = AnalyticsEventsClient::new(
         auth_manager,
         server.uri(),
@@ -4845,7 +4845,7 @@ async fn emit_subagent_session_started_includes_fork_lineage_and_originator() {
     emit_subagent_session_started(
         &analytics_events_client,
         AppServerClientMetadata {
-            client_name: Some("codex-tui".to_string()),
+            client_name: Some("ava-tui".to_string()),
             client_version: Some("1.0.0".to_string()),
         },
         SessionId::from(child_thread_id),
@@ -4864,7 +4864,7 @@ async fn emit_subagent_session_started_includes_fork_lineage_and_originator() {
                     if let Some(event) = payload["events"].as_array().and_then(|events| {
                         events
                             .iter()
-                            .find(|event| event["event_type"] == "codex_thread_initialized")
+                            .find(|event| event["event_type"] == "ava_thread_initialized")
                     }) {
                         break 'wait_for_event event.clone();
                     }
@@ -4936,7 +4936,7 @@ async fn emit_subagent_session_started_includes_fork_lineage_and_originator() {
             archive["event_params"]["parent_thread_id"],
         ]),
         json!([
-            "codex_thread_archive_event",
+            "ava_thread_archive_event",
             prewarmed_thread_id.to_string(),
             "guardian_review",
             parent_thread_id.to_string(),
@@ -4995,7 +4995,7 @@ async fn session_configuration_apply_client_metadata_preserves_permissions() {
     let updated = configuration
         .apply(
             &SessionSettingsUpdate {
-                app_server_client_name: Some("codex-tui".to_string()),
+                app_server_client_name: Some("ava-tui".to_string()),
                 app_server_client_version: Some("1.0.0".to_string()),
                 ..Default::default()
             },
@@ -5009,7 +5009,7 @@ async fn session_configuration_apply_client_metadata_preserves_permissions() {
             updated.app_server_client_name,
             updated.app_server_client_version
         ),
-        (Some("codex-tui".to_string()), Some("1.0.0".to_string())),
+        (Some("ava-tui".to_string()), Some("1.0.0".to_string())),
     );
 }
 
@@ -5109,7 +5109,7 @@ async fn session_configuration_apply_permission_profile_preserves_existing_deny_
         &workspace_policy,
         session_configuration.cwd().as_path(),
     );
-    let permission_profile = codex_protocol::models::PermissionProfile::from_runtime_permissions(
+    let permission_profile = ava_protocol::models::PermissionProfile::from_runtime_permissions(
         &requested_file_system_policy,
         NetworkSandboxPolicy::Restricted,
     );
@@ -5140,7 +5140,7 @@ async fn session_configuration_apply_permission_profile_accepts_direct_write_roo
     session_configuration.legacy_fallback_cwd = cwd.path().abs();
     let external_write_dir = tempfile::tempdir().expect("create external write root");
     let external_write_path = AbsolutePathBuf::from_absolute_path(
-        codex_utils_absolute_path::canonicalize_preserving_symlinks(external_write_dir.path())
+        ava_utils_absolute_path::canonicalize_preserving_symlinks(external_write_dir.path())
             .expect("canonical temp dir"),
     )
     .expect("canonical temp dir should be absolute");
@@ -5189,7 +5189,7 @@ async fn session_configuration_apply_permission_profile_accepts_direct_write_roo
 async fn active_profile_update_rebuilds_network_proxy_config(
     credential_broker: bool,
 ) -> std::io::Result<()> {
-    let codex_home = tempfile::tempdir().expect("create codex home");
+    let ava_home = tempfile::tempdir().expect("create ava home");
     let cwd = tempfile::tempdir().expect("create cwd");
     let permissions = PermissionsToml {
         entries: std::collections::BTreeMap::from([
@@ -5246,12 +5246,12 @@ async fn active_profile_update_rebuilds_network_proxy_config(
         ..Default::default()
     };
     std::fs::write(
-        codex_home.path().join(codex_config::CONFIG_TOML_FILE),
+        ava_home.path().join(ava_config::CONFIG_TOML_FILE),
         toml::to_string(&base_config).expect("serialize config"),
     )?;
     let locked_config = Arc::new(
         ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .harness_overrides(ConfigOverrides {
                 cwd: Some(cwd.path().to_path_buf()),
                 ..Default::default()
@@ -5269,7 +5269,7 @@ async fn active_profile_update_rebuilds_network_proxy_config(
         Some("127.0.0.1:43128")
     );
     let selected_config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(cwd.path().to_path_buf()),
             default_permissions: Some("web-enabled".to_string()),
@@ -5311,8 +5311,8 @@ async fn active_profile_update_rebuilds_network_proxy_config(
 async fn new_default_turn_uses_config_aware_skills_for_role_overrides() {
     let (session, _turn_context) = make_session_and_context().await;
     let parent_config = session.get_config().await;
-    let codex_home = parent_config.codex_home.clone();
-    let skill_dir = codex_home.join("skills").join("demo");
+    let ava_home = parent_config.ava_home.clone();
+    let skill_dir = ava_home.join("skills").join("demo");
     std::fs::create_dir_all(&skill_dir).expect("create skill dir");
     let skill_path = skill_dir.join("SKILL.md");
     std::fs::write(
@@ -5327,7 +5327,7 @@ async fn new_default_turn_uses_config_aware_skills_for_role_overrides() {
         .environment_manager()
         .default_environment()
         .map(|environment| environment.get_filesystem())
-        .unwrap_or_else(|| std::sync::Arc::clone(&codex_exec_server::LOCAL_FS));
+        .unwrap_or_else(|| std::sync::Arc::clone(&ava_exec_server::LOCAL_FS));
     let parent_snapshot = session
         .services
         .skills_service
@@ -5346,7 +5346,7 @@ async fn new_default_turn_uses_config_aware_skills_for_role_overrides() {
         .expect("demo skill should be discovered");
     assert_eq!(parent_outcome.is_skill_enabled(parent_skill), true);
 
-    let role_path = codex_home.join("skills-role.toml");
+    let role_path = ava_home.join("skills-role.toml");
     std::fs::write(
         &role_path,
         format!(
@@ -5464,7 +5464,7 @@ async fn session_configuration_apply_preserves_absolute_cwd_write_root_on_cwd_up
 #[tokio::test]
 async fn settings_checkpoint_waits_for_accepted_settings_persistence() {
     let (mut session, _turn_context, rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config
@@ -5577,7 +5577,7 @@ async fn settings_checkpoint_waits_for_accepted_settings_persistence() {
 #[tokio::test]
 async fn session_settings_commit_keeps_snapshot_across_postcommit_wait() {
     let (session, _turn_context, _rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config
@@ -5829,8 +5829,8 @@ async fn absolute_cwd_update_with_turn_environment_is_allowed() {
 
 #[tokio::test]
 async fn session_new_fails_when_zsh_fork_enabled_without_packaged_zsh() {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
-    let mut config = build_test_config(codex_home.path()).await;
+    let ava_home = tempfile::tempdir().expect("create temp dir");
+    let mut config = build_test_config(ava_home.path()).await;
     config
         .features
         .enable(Feature::ShellZshFork)
@@ -5838,9 +5838,9 @@ async fn session_new_fails_when_zsh_fork_enabled_without_packaged_zsh() {
     config.zsh_path = None;
     let config = Arc::new(config);
 
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("Test API Key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("Test API Key"));
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         auth_manager.clone(),
         config.model_provider.clone(),
     );
@@ -5883,7 +5883,7 @@ async fn session_new_fails_when_zsh_fork_enabled_without_packaged_zsh() {
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -5909,7 +5909,7 @@ async fn session_new_fails_when_zsh_fork_enabled_without_packaged_zsh() {
     ));
     let mcp_manager = Arc::new(McpManager::new(Arc::clone(&plugins_manager)));
     let skills_service = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ true,
     ));
     let environment_manager = Arc::new(EnvironmentManager::default_for_tests());
@@ -5933,9 +5933,9 @@ async fn session_new_fails_when_zsh_fork_enabled_without_packaged_zsh() {
         skills_service,
         plugins_manager,
         mcp_manager,
-        Arc::new(codex_code_mode::DisabledCodeModeSessionProvider),
-        Arc::new(codex_extension_api::ExtensionRegistryBuilder::new().build()),
-        codex_extension_api::ExtensionDataInit::default(),
+        Arc::new(ava_code_mode::DisabledCodeModeSessionProvider),
+        Arc::new(ava_extension_api::ExtensionRegistryBuilder::new().build()),
+        ava_extension_api::ExtensionDataInit::default(),
         ClientMcpExtensions::default(),
         LocalAgentControl::default(),
         /*reserved_thread_id*/ None,
@@ -5943,16 +5943,16 @@ async fn session_new_fails_when_zsh_fork_enabled_without_packaged_zsh() {
         /*inherited_environments*/ None,
         /*analytics_events_client*/ None,
         crate::passthrough_image_store(),
-        Arc::new(codex_thread_store::LocalThreadStore::new(
-            codex_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
+        Arc::new(ava_thread_store::LocalThreadStore::new(
+            ava_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
             /*state_db*/ None,
         )),
-        codex_rollout_trace::ThreadTraceContext::disabled(),
+        ava_rollout_trace::ThreadTraceContext::disabled(),
         /*attestation_provider*/ None,
         /*external_time_provider*/ None,
         Some(config.multi_agent_version_from_features()),
         GitEnrichmentPolicy::Fresh,
-        codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+        ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
     )
     .await;
 
@@ -6001,7 +6001,7 @@ async fn responses_metadata_uses_selected_harness_analytics_client() {
         Arc::make_mut(&mut turn_context.config).analytics_enabled = Some(!enabled);
         let step_context = StepContext::for_test(Arc::new(turn_context));
         let metadata = session
-            .responses_metadata(&step_context, CodexResponsesRequestKind::Turn)
+            .responses_metadata(&step_context, AvaResponsesRequestKind::Turn)
             .await;
         assert_eq!(metadata.analytics_enabled, Some(enabled));
     }
@@ -6010,13 +6010,13 @@ async fn responses_metadata_uses_selected_harness_analytics_client() {
 // todo: use online model info
 pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
     let (tx_event, _rx_event) = async_channel::unbounded();
-    let codex_home = tempfile::tempdir().expect("create temp dir");
-    let config = build_test_config(codex_home.path()).await;
+    let ava_home = tempfile::tempdir().expect("create temp dir");
+    let config = build_test_config(ava_home.path()).await;
     let config = Arc::new(config);
     let thread_id = ThreadId::default();
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("Test API Key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("Test API Key"));
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         auth_manager.clone(),
         config.model_provider.clone(),
     );
@@ -6064,7 +6064,7 @@ pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -6113,11 +6113,11 @@ pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
     ));
     let mcp_manager = Arc::new(McpManager::new(Arc::clone(&plugins_manager)));
     let skills_service = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ true,
     ));
     let network_approval = Arc::new(NetworkApprovalService::default());
-    let mcp_runtime = Arc::new(codex_mcp::McpRuntime::empty(config.prefix_mcp_tool_names()));
+    let mcp_runtime = Arc::new(ava_mcp::McpRuntime::empty(config.prefix_mcp_tool_names()));
     let executed_tool_calls =
         crate::state::ExecutedToolCalls::new(&config.features, &InitialHistory::Forked(Vec::new()));
     let (hooks, async_hook_results) = Hooks::new(
@@ -6147,7 +6147,7 @@ pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
             config.analytics_enabled,
         ),
         hooks: arc_swap::ArcSwap::from_pointee(hooks),
-        rollout_thread_trace: codex_rollout_trace::ThreadTraceContext::disabled(),
+        rollout_thread_trace: ava_rollout_trace::ThreadTraceContext::disabled(),
         user_shell: Arc::new(default_user_shell()),
         show_raw_agent_reasoning: config.show_raw_agent_reasoning,
         exec_policy,
@@ -6166,13 +6166,13 @@ pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
         agents_md_manager: Arc::new(AgentsMdManager::new(SessionInstructions::default())),
         plugins_manager,
         mcp_manager,
-        extensions: Arc::new(codex_extension_api::ExtensionRegistryBuilder::new().build()),
-        session_extension_data: codex_extension_api::ExtensionData::new(
+        extensions: Arc::new(ava_extension_api::ExtensionRegistryBuilder::new().build()),
+        session_extension_data: ava_extension_api::ExtensionData::new(
             agent_control.session_id().to_string(),
         ),
-        thread_extension_data: codex_extension_api::ExtensionData::new(thread_id.to_string()),
+        thread_extension_data: ava_extension_api::ExtensionData::new(thread_id.to_string()),
         selected_capability_roots: Vec::new(),
-        mcp_thread_init: codex_extension_api::ExtensionDataInit::default(),
+        mcp_thread_init: ava_extension_api::ExtensionDataInit::default(),
         client_mcp_extensions: ClientMcpExtensions::default(),
         agent_control,
         network_proxy: arc_swap::ArcSwapOption::from(None),
@@ -6182,8 +6182,8 @@ pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
         state_db: None,
         live_thread: None,
         image_store: crate::passthrough_image_store(),
-        thread_store: Arc::new(codex_thread_store::LocalThreadStore::new(
-            codex_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
+        thread_store: Arc::new(ava_thread_store::LocalThreadStore::new(
+            ava_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
             /*state_db*/ None,
         )),
         attestation_provider: None,
@@ -6212,7 +6212,7 @@ pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
         executed_tool_calls: executed_tool_calls.clone(),
         code_mode_service: crate::tools::code_mode::CodeModeService::new(
             thread_id,
-            Arc::new(codex_code_mode::DisabledCodeModeSessionProvider),
+            Arc::new(ava_code_mode::DisabledCodeModeSessionProvider),
             &config.code_mode,
             executed_tool_calls,
         ),
@@ -6230,10 +6230,10 @@ pub(crate) async fn make_session_and_context() -> (Session, TurnContext) {
         managed_network_proxy_refresh_lock: Semaphore::new(/*permits*/ 1),
         features: config.features.clone(),
         guardian_context_mode: GuardianContextMode::from_features(&config.features),
-        isolation: codex_extension_api::SessionIsolation::Inherit,
+        isolation: ava_extension_api::SessionIsolation::Inherit,
         allowed_tools: None,
         windows_sandbox_proxy_settings_mode:
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
         multi_agent_version: OnceLock::from(config.multi_agent_version_from_features()),
         mcp_refresh: McpRefresh::new(),
         mcp_tool_approval_metadata: Default::default(),
@@ -6319,7 +6319,7 @@ async fn make_session_with_config(
 async fn load_latest_config_for_session(session: &Session) -> Config {
     let config = session.get_config().await;
     ConfigBuilder::default()
-        .codex_home(config.codex_home.to_path_buf())
+        .ava_home(config.ava_home.to_path_buf())
         .fallback_cwd(Some(config.cwd.to_path_buf()))
         .build()
         .await
@@ -6329,13 +6329,13 @@ async fn load_latest_config_for_session(session: &Session) -> Config {
 async fn make_session_with_config_and_rx(
     mutator: impl FnOnce(&mut Config),
 ) -> anyhow::Result<(Arc<Session>, async_channel::Receiver<Event>)> {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
-    let mut config = build_test_config(codex_home.path()).await;
+    let ava_home = tempfile::tempdir().expect("create temp dir");
+    let mut config = build_test_config(ava_home.path()).await;
     mutator(&mut config);
     let config = Arc::new(config);
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("Test API Key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("Test API Key"));
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         auth_manager.clone(),
         config.model_provider.clone(),
     );
@@ -6379,7 +6379,7 @@ async fn make_session_with_config_and_rx(
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -6405,7 +6405,7 @@ async fn make_session_with_config_and_rx(
     ));
     let mcp_manager = Arc::new(McpManager::new(Arc::clone(&plugins_manager)));
     let skills_service = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ true,
     ));
     let environment_manager = Arc::new(EnvironmentManager::default_for_tests());
@@ -6430,9 +6430,9 @@ async fn make_session_with_config_and_rx(
         skills_service,
         plugins_manager,
         mcp_manager,
-        Arc::new(codex_code_mode::DisabledCodeModeSessionProvider),
-        Arc::new(codex_extension_api::ExtensionRegistryBuilder::new().build()),
-        codex_extension_api::ExtensionDataInit::default(),
+        Arc::new(ava_code_mode::DisabledCodeModeSessionProvider),
+        Arc::new(ava_extension_api::ExtensionRegistryBuilder::new().build()),
+        ava_extension_api::ExtensionDataInit::default(),
         ClientMcpExtensions::default(),
         LocalAgentControl::default(),
         /*reserved_thread_id*/ None,
@@ -6440,16 +6440,16 @@ async fn make_session_with_config_and_rx(
         /*inherited_environments*/ None,
         /*analytics_events_client*/ None,
         crate::passthrough_image_store(),
-        Arc::new(codex_thread_store::LocalThreadStore::new(
-            codex_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
+        Arc::new(ava_thread_store::LocalThreadStore::new(
+            ava_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
             /*state_db*/ None,
         )),
-        codex_rollout_trace::ThreadTraceContext::disabled(),
+        ava_rollout_trace::ThreadTraceContext::disabled(),
         /*attestation_provider*/ None,
         /*external_time_provider*/ None,
         Some(config.multi_agent_version_from_features()),
         GitEnrichmentPolicy::Fresh,
-        codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+        ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
     )
     .await?;
 
@@ -6461,13 +6461,13 @@ async fn make_session_with_history_source_and_agent_control_and_rx(
     session_source: SessionSource,
     agent_control: LocalAgentControl,
 ) -> anyhow::Result<(Arc<Session>, async_channel::Receiver<Event>)> {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
-    let mut config = build_test_config(codex_home.path()).await;
+    let ava_home = tempfile::tempdir().expect("create temp dir");
+    let mut config = build_test_config(ava_home.path()).await;
     config.ephemeral = true;
     let config = Arc::new(config);
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("Test API Key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("Test API Key"));
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         auth_manager.clone(),
         config.model_provider.clone(),
     );
@@ -6511,7 +6511,7 @@ async fn make_session_with_history_source_and_agent_control_and_rx(
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -6537,7 +6537,7 @@ async fn make_session_with_history_source_and_agent_control_and_rx(
     ));
     let mcp_manager = Arc::new(McpManager::new(Arc::clone(&plugins_manager)));
     let skills_service = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ true,
     ));
     let environment_manager = Arc::new(EnvironmentManager::default_for_tests());
@@ -6562,9 +6562,9 @@ async fn make_session_with_history_source_and_agent_control_and_rx(
         skills_service,
         plugins_manager,
         mcp_manager,
-        Arc::new(codex_code_mode::DisabledCodeModeSessionProvider),
-        Arc::new(codex_extension_api::ExtensionRegistryBuilder::new().build()),
-        codex_extension_api::ExtensionDataInit::default(),
+        Arc::new(ava_code_mode::DisabledCodeModeSessionProvider),
+        Arc::new(ava_extension_api::ExtensionRegistryBuilder::new().build()),
+        ava_extension_api::ExtensionDataInit::default(),
         ClientMcpExtensions::default(),
         agent_control,
         /*reserved_thread_id*/ None,
@@ -6572,10 +6572,10 @@ async fn make_session_with_history_source_and_agent_control_and_rx(
         /*inherited_environments*/ None,
         /*analytics_events_client*/ None,
         crate::passthrough_image_store(),
-        Arc::new(codex_thread_store::LocalThreadStore::new(
-            codex_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
+        Arc::new(ava_thread_store::LocalThreadStore::new(
+            ava_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
             Some(
-                codex_state::StateRuntime::init(
+                ava_state::StateRuntime::init(
                     config.sqlite.clone(),
                     config.model_provider_id.clone(),
                 )
@@ -6583,12 +6583,12 @@ async fn make_session_with_history_source_and_agent_control_and_rx(
                 .expect("state db should initialize"),
             ),
         )),
-        codex_rollout_trace::ThreadTraceContext::disabled(),
+        ava_rollout_trace::ThreadTraceContext::disabled(),
         /*attestation_provider*/ None,
         /*external_time_provider*/ None,
         Some(config.multi_agent_version_from_features()),
         GitEnrichmentPolicy::Fresh,
-        codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+        ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
     )
     .await?;
 
@@ -6718,9 +6718,9 @@ async fn notify_request_permissions_response_ignores_unmatched_call_id() {
     session
         .notify_request_permissions_response(
             "missing",
-            codex_protocol::request_permissions::RequestPermissionsResponse {
+            ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: RequestPermissionProfile {
-                    network: Some(codex_protocol::models::NetworkPermissions {
+                    network: Some(ava_protocol::models::NetworkPermissions {
                         enabled: Some(true),
                     }),
                     ..RequestPermissionProfile::default()
@@ -6733,7 +6733,7 @@ async fn notify_request_permissions_response_ignores_unmatched_call_id() {
 
     assert_eq!(
         session
-            .granted_turn_permissions(codex_exec_server::LOCAL_ENVIRONMENT_ID)
+            .granted_turn_permissions(ava_exec_server::LOCAL_ENVIRONMENT_ID)
             .await,
         None
     );
@@ -6751,19 +6751,19 @@ async fn record_granted_request_permissions_for_turn_uses_originating_turn() {
     *session.active_turn.lock().await = Some(current_active_turn);
 
     let requested_permissions = RequestPermissionProfile {
-        network: Some(codex_protocol::models::NetworkPermissions {
+        network: Some(ava_protocol::models::NetworkPermissions {
             enabled: Some(true),
         }),
         ..RequestPermissionProfile::default()
     };
     session
         .record_granted_request_permissions_for_turn(
-            &codex_protocol::request_permissions::RequestPermissionsResponse {
+            &ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: requested_permissions.clone(),
                 scope: PermissionGrantScope::Turn,
                 strict_auto_review: false,
             },
-            codex_exec_server::LOCAL_ENVIRONMENT_ID,
+            ava_exec_server::LOCAL_ENVIRONMENT_ID,
             Some(&originating_turn_state),
         )
         .await;
@@ -6772,19 +6772,19 @@ async fn record_granted_request_permissions_for_turn_uses_originating_turn() {
         originating_turn_state
             .lock()
             .await
-            .granted_permissions(codex_exec_server::LOCAL_ENVIRONMENT_ID),
+            .granted_permissions(ava_exec_server::LOCAL_ENVIRONMENT_ID),
         Some(requested_permissions.into())
     );
     assert_eq!(
         current_turn_state
             .lock()
             .await
-            .granted_permissions(codex_exec_server::LOCAL_ENVIRONMENT_ID),
+            .granted_permissions(ava_exec_server::LOCAL_ENVIRONMENT_ID),
         None
     );
     assert_eq!(
         session
-            .granted_turn_permissions(codex_exec_server::LOCAL_ENVIRONMENT_ID)
+            .granted_turn_permissions(ava_exec_server::LOCAL_ENVIRONMENT_ID)
             .await,
         None
     );
@@ -6798,14 +6798,14 @@ async fn request_permission_grants_are_environment_keyed() {
     *session.active_turn.lock().await = Some(originating_active_turn);
 
     let requested_permissions = RequestPermissionProfile {
-        network: Some(codex_protocol::models::NetworkPermissions {
+        network: Some(ava_protocol::models::NetworkPermissions {
             enabled: Some(true),
         }),
         ..RequestPermissionProfile::default()
     };
     session
         .record_granted_request_permissions_for_turn(
-            &codex_protocol::request_permissions::RequestPermissionsResponse {
+            &ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: requested_permissions.clone(),
                 scope: PermissionGrantScope::Turn,
                 strict_auto_review: false,
@@ -6826,7 +6826,7 @@ async fn request_permission_grants_are_environment_keyed() {
 
     session
         .record_granted_request_permissions_for_turn(
-            &codex_protocol::request_permissions::RequestPermissionsResponse {
+            &ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: requested_permissions.clone(),
                 scope: PermissionGrantScope::Session,
                 strict_auto_review: false,
@@ -6851,19 +6851,19 @@ async fn enable_strict_auto_review_for_turn_uses_originating_turn() {
     *session.active_turn.lock().await = Some(originating_active_turn);
 
     let requested_permissions = RequestPermissionProfile {
-        network: Some(codex_protocol::models::NetworkPermissions {
+        network: Some(ava_protocol::models::NetworkPermissions {
             enabled: Some(true),
         }),
         ..RequestPermissionProfile::default()
     };
     session
         .record_granted_request_permissions_for_turn(
-            &codex_protocol::request_permissions::RequestPermissionsResponse {
+            &ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: requested_permissions.clone(),
                 scope: PermissionGrantScope::Turn,
                 strict_auto_review: true,
             },
-            codex_exec_server::LOCAL_ENVIRONMENT_ID,
+            ava_exec_server::LOCAL_ENVIRONMENT_ID,
             Some(&originating_turn_state),
         )
         .await;
@@ -6879,7 +6879,7 @@ async fn enable_strict_auto_review_for_turn_uses_originating_turn() {
 #[test]
 fn strict_auto_review_session_scope_grants_no_permissions() {
     let requested_permissions = RequestPermissionProfile {
-        network: Some(codex_protocol::models::NetworkPermissions {
+        network: Some(ava_protocol::models::NetworkPermissions {
             enabled: Some(true),
         }),
         ..RequestPermissionProfile::default()
@@ -6894,7 +6894,7 @@ fn strict_auto_review_session_scope_grants_no_permissions() {
     };
     let response = Session::normalize_request_permissions_response(
         requested_permissions.clone(),
-        codex_protocol::request_permissions::RequestPermissionsResponse {
+        ava_protocol::request_permissions::RequestPermissionsResponse {
             permissions: requested_permissions,
             scope: PermissionGrantScope::Session,
             strict_auto_review: true,
@@ -6904,7 +6904,7 @@ fn strict_auto_review_session_scope_grants_no_permissions() {
 
     assert_eq!(
         response,
-        codex_protocol::request_permissions::RequestPermissionsResponse {
+        ava_protocol::request_permissions::RequestPermissionsResponse {
             permissions: RequestPermissionProfile::default(),
             scope: PermissionGrantScope::Turn,
             strict_auto_review: false,
@@ -6932,9 +6932,9 @@ async fn request_permissions_emits_event_when_granular_policy_allows_requests() 
     let session = Arc::new(session);
     let turn_context = Arc::new(turn_context);
     let call_id = "call-1".to_string();
-    let expected_response = codex_protocol::request_permissions::RequestPermissionsResponse {
+    let expected_response = ava_protocol::request_permissions::RequestPermissionsResponse {
         permissions: RequestPermissionProfile {
-            network: Some(codex_protocol::models::NetworkPermissions {
+            network: Some(ava_protocol::models::NetworkPermissions {
                 enabled: Some(true),
             }),
             ..RequestPermissionProfile::default()
@@ -6957,11 +6957,11 @@ async fn request_permissions_emits_event_when_granular_policy_allows_requests() 
                 .request_permissions_for_environment(
                     &StepContext::for_test(Arc::clone(turn_context.as_ref())),
                     call_id,
-                    codex_protocol::request_permissions::RequestPermissionsArgs {
+                    ava_protocol::request_permissions::RequestPermissionsArgs {
                         environment_id: None,
                         reason: Some("need network".to_string()),
                         permissions: RequestPermissionProfile {
-                            network: Some(codex_protocol::models::NetworkPermissions {
+                            network: Some(ava_protocol::models::NetworkPermissions {
                                 enabled: Some(true),
                             }),
                             ..RequestPermissionProfile::default()
@@ -6984,7 +6984,7 @@ async fn request_permissions_emits_event_when_granular_policy_allows_requests() 
     assert_eq!(request.call_id, call_id);
     assert_eq!(
         request.environment_id.as_deref(),
-        Some(codex_exec_server::LOCAL_ENVIRONMENT_ID)
+        Some(ava_exec_server::LOCAL_ENVIRONMENT_ID)
     );
     #[allow(deprecated)]
     let turn_cwd = turn_context.cwd.clone();
@@ -7067,7 +7067,7 @@ async fn request_permissions_tool_resolves_legacy_paths_against_selected_environ
                     cancellation_token: CancellationToken::new(),
                     tracker,
                     call_id,
-                    tool_name: codex_tools::ToolName::plain("request_permissions"),
+                    tool_name: ava_tools::ToolName::plain("request_permissions"),
                     source: ToolCallSource::Direct,
                     payload: ToolPayload::Function {
                         arguments: json!({
@@ -7110,7 +7110,7 @@ async fn request_permissions_tool_resolves_legacy_paths_against_selected_environ
     session
         .notify_request_permissions_response(
             &request.call_id,
-            codex_protocol::request_permissions::RequestPermissionsResponse {
+            ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: request.permissions,
                 scope: PermissionGrantScope::Turn,
                 strict_auto_review: false,
@@ -7134,7 +7134,7 @@ async fn request_permissions_tool_rejects_invalid_requests(
     let (session, mut turn_context) = make_session_and_context().await;
     Arc::make_mut(&mut turn_context.config)
         .permissions
-        .approval_policy = codex_config::Constrained::allow_any(AskForApproval::Never);
+        .approval_policy = ava_config::Constrained::allow_any(AskForApproval::Never);
     let TurnEnvironmentState::Ready(environment) =
         &mut turn_context.initial_environments.environments[0]
     else {
@@ -7151,7 +7151,7 @@ async fn request_permissions_tool_rejects_invalid_requests(
             cancellation_token: CancellationToken::new(),
             tracker: Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new())),
             call_id: "call-1".to_string(),
-            tool_name: codex_tools::ToolName::plain("request_permissions"),
+            tool_name: ava_tools::ToolName::plain("request_permissions"),
             source: ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: json!({
@@ -7222,7 +7222,7 @@ async fn request_permissions_response_materializes_session_cwd_grants_before_rec
                 .request_permissions_for_environment(
                     &StepContext::for_test(Arc::clone(turn_context.as_ref())),
                     call_id,
-                    codex_protocol::request_permissions::RequestPermissionsArgs {
+                    ava_protocol::request_permissions::RequestPermissionsArgs {
                         environment_id: None,
                         reason: Some("need cwd write".to_string()),
                         permissions: requested_permissions,
@@ -7243,7 +7243,7 @@ async fn request_permissions_response_materializes_session_cwd_grants_before_rec
     };
     assert_eq!(
         request.environment_id.as_deref(),
-        Some(codex_exec_server::LOCAL_ENVIRONMENT_ID)
+        Some(ava_exec_server::LOCAL_ENVIRONMENT_ID)
     );
     let request_cwd =
         PathUri::try_from(request.cwd.clone().expect("request cwd")).expect("request cwd URI");
@@ -7251,7 +7251,7 @@ async fn request_permissions_response_materializes_session_cwd_grants_before_rec
     session
         .notify_request_permissions_response(
             &request.call_id,
-            codex_protocol::request_permissions::RequestPermissionsResponse {
+            ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: request.permissions,
                 scope: PermissionGrantScope::Session,
                 strict_auto_review: false,
@@ -7266,7 +7266,7 @@ async fn request_permissions_response_materializes_session_cwd_grants_before_rec
         )),
         ..Default::default()
     };
-    let expected_response = codex_protocol::request_permissions::RequestPermissionsResponse {
+    let expected_response = ava_protocol::request_permissions::RequestPermissionsResponse {
         permissions: expected_permissions.clone(),
         scope: PermissionGrantScope::Session,
         strict_auto_review: false,
@@ -7280,7 +7280,7 @@ async fn request_permissions_response_materializes_session_cwd_grants_before_rec
     assert_eq!(response, Some(expected_response));
     assert_eq!(
         session
-            .granted_session_permissions(codex_exec_server::LOCAL_ENVIRONMENT_ID)
+            .granted_session_permissions(ava_exec_server::LOCAL_ENVIRONMENT_ID)
             .await,
         Some(expected_permissions.into())
     );
@@ -7315,11 +7315,11 @@ async fn request_permissions_is_auto_denied_when_granular_policy_blocks_tool_req
         .request_permissions_for_environment(
             &StepContext::for_test(Arc::clone(turn_context.as_ref())),
             call_id,
-            codex_protocol::request_permissions::RequestPermissionsArgs {
+            ava_protocol::request_permissions::RequestPermissionsArgs {
                 environment_id: None,
                 reason: Some("need network".to_string()),
                 permissions: RequestPermissionProfile {
-                    network: Some(codex_protocol::models::NetworkPermissions {
+                    network: Some(ava_protocol::models::NetworkPermissions {
                         enabled: Some(true),
                     }),
                     ..RequestPermissionProfile::default()
@@ -7333,7 +7333,7 @@ async fn request_permissions_is_auto_denied_when_granular_policy_blocks_tool_req
     assert_eq!(
         response,
         Some(
-            codex_protocol::request_permissions::RequestPermissionsResponse {
+            ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: RequestPermissionProfile::default(),
                 scope: PermissionGrantScope::Turn,
                 strict_auto_review: false,
@@ -7360,7 +7360,7 @@ async fn submit_with_trace_captures_current_span_trace_context() {
         session_loop_termination: completed_session_loop_termination(),
     };
 
-    let _trace_test_context = install_test_tracing("codex-core-tests");
+    let _trace_test_context = install_test_tracing("ava-core-tests");
 
     let request_parent = W3cTraceContext {
         traceparent: Some("00-00000000000000000000000000000011-0000000000000022-01".into()),
@@ -7396,7 +7396,7 @@ async fn submit_with_trace_captures_current_span_trace_context() {
 async fn new_default_turn_captures_current_span_trace_id() {
     let (session, _turn_context) = make_session_and_context().await;
 
-    let _trace_test_context = install_test_tracing("codex-core-tests");
+    let _trace_test_context = install_test_tracing("ava-core-tests");
 
     let request_parent = W3cTraceContext {
         traceparent: Some("00-00000000000000000000000000000011-0000000000000022-01".into()),
@@ -7430,7 +7430,7 @@ async fn new_default_turn_captures_current_span_trace_id() {
 
 #[test]
 fn submission_dispatch_span_prefers_submission_trace_context() {
-    let _trace_test_context = install_test_tracing("codex-core-tests");
+    let _trace_test_context = install_test_tracing("ava-core-tests");
 
     let ambient_parent = W3cTraceContext {
         traceparent: Some("00-00000000000000000000000000000033-0000000000000044-01".into()),
@@ -7465,7 +7465,7 @@ fn submission_dispatch_span_prefers_submission_trace_context() {
 
 #[test]
 fn submission_dispatch_span_uses_debug_for_realtime_audio() {
-    let _trace_test_context = install_test_tracing("codex-core-tests");
+    let _trace_test_context = install_test_tracing("ava-core-tests");
 
     let dispatch_span = submission_dispatch_span(&Submission {
         id: "sub-1".into(),
@@ -7698,7 +7698,7 @@ async fn primary_environment_uses_first_turn_environment() {
         .clone();
     #[allow(deprecated)]
     let second_cwd = turn_context.cwd.join("second");
-    let second_cwd_uri = codex_utils_path_uri::PathUri::from_abs_path(&second_cwd);
+    let second_cwd_uri = ava_utils_path_uri::PathUri::from_abs_path(&second_cwd);
     let first_environment_config = first_environment.config().clone();
     turn_context
         .initial_environments
@@ -7815,7 +7815,7 @@ async fn spawn_task_turn_span_inherits_dispatch_trace_context() {
         }
     }
 
-    let _trace_test_context = install_test_tracing("codex-core-tests");
+    let _trace_test_context = install_test_tracing("ava-core-tests");
 
     let request_parent = W3cTraceContext {
         traceparent: Some("00-00000000000000000000000000000011-0000000000000022-01".into()),
@@ -7876,8 +7876,8 @@ async fn spawn_task_turn_span_inherits_dispatch_trace_context() {
         .clone()
         .expect("turn task should capture the current span trace context");
     let submission_context =
-        codex_otel::context_from_w3c_trace_context(&submission_trace).expect("submission");
-    let task_context = codex_otel::context_from_w3c_trace_context(&task_trace).expect("task trace");
+        ava_otel::context_from_w3c_trace_context(&submission_trace).expect("submission");
+    let task_context = ava_otel::context_from_w3c_trace_context(&task_trace).expect("task trace");
 
     assert_eq!(
         task_context.span().span_context().trace_id(),
@@ -7893,8 +7893,8 @@ async fn spawn_task_turn_span_inherits_dispatch_trace_context() {
 #[tokio::test]
 async fn shutdown_complete_does_not_append_to_thread_store_after_shutdown() {
     let (mut session, _turn_context) = make_session_and_context().await;
-    let store = Arc::new(codex_thread_store::InMemoryThreadStore::default());
-    let thread_store: Arc<dyn codex_thread_store::ThreadStore> = store.clone();
+    let store = Arc::new(ava_thread_store::InMemoryThreadStore::default());
+    let thread_store: Arc<dyn ava_thread_store::ThreadStore> = store.clone();
     let config = session.get_config().await;
     let live_thread = LiveThread::create(
         Arc::clone(&thread_store),
@@ -7934,7 +7934,7 @@ async fn shutdown_complete_does_not_append_to_thread_store_after_shutdown() {
     let (result_sender, result_receiver) = async_channel::unbounded();
     result_sender
         .try_send(
-            serde_json::from_value::<codex_protocol::protocol::HookCompletedEvent>(json!({
+            serde_json::from_value::<ava_protocol::protocol::HookCompletedEvent>(json!({
                 "turn_id": "turn-1",
                 "run": {
                     "id": "user_prompt_submit:0:hooks.json",
@@ -7968,7 +7968,7 @@ async fn shutdown_complete_does_not_append_to_thread_store_after_shutdown() {
     assert!(result_sender.is_closed());
 
     assert_eq!(
-        codex_thread_store::InMemoryThreadStoreCalls {
+        ava_thread_store::InMemoryThreadStoreCalls {
             create_thread: 1,
             shutdown_thread: 1,
             ..Default::default()
@@ -7987,11 +7987,11 @@ async fn submission_loop_channel_close_runs_full_thread_teardown() {
         expected_thread_id: ThreadId,
     }
 
-    impl codex_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadStopRecorder {
+    impl ava_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadStopRecorder {
         fn on_thread_stop<'a>(
             &'a self,
-            input: codex_extension_api::ThreadStopInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            input: ava_extension_api::ThreadStopInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 assert_eq!(
                     self.expected_thread_id.to_string(),
@@ -8005,8 +8005,8 @@ async fn submission_loop_channel_close_runs_full_thread_teardown() {
     }
 
     let (mut session, turn_context) = make_session_and_context().await;
-    let store = Arc::new(codex_thread_store::InMemoryThreadStore::default());
-    let thread_store: Arc<dyn codex_thread_store::ThreadStore> = store.clone();
+    let store = Arc::new(ava_thread_store::InMemoryThreadStore::default());
+    let thread_store: Arc<dyn ava_thread_store::ThreadStore> = store.clone();
     let config = session.get_config().await;
     let live_thread = LiveThread::create(
         Arc::clone(&thread_store),
@@ -8044,7 +8044,7 @@ async fn submission_loop_channel_close_runs_full_thread_teardown() {
     session.services.thread_store = thread_store;
     session.services.live_thread = Some(live_thread);
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.thread_lifecycle_contributor(Arc::new(ThreadStopRecorder {
         calls: Arc::clone(&calls),
         expected_thread_id: session.thread_id,
@@ -8066,7 +8066,7 @@ async fn submission_loop_channel_close_runs_full_thread_teardown() {
 
     assert_eq!(1, calls.load(std::sync::atomic::Ordering::SeqCst));
     assert_eq!(
-        codex_thread_store::InMemoryThreadStoreCalls {
+        ava_thread_store::InMemoryThreadStoreCalls {
             create_thread: 1,
             shutdown_thread: 1,
             ..Default::default()
@@ -8083,11 +8083,11 @@ async fn submission_loop_channel_close_aborts_active_turn_before_thread_stop_lif
         expected_turn_id: String,
     }
 
-    impl codex_extension_api::ThreadLifecycleContributor<crate::config::Config> for LifecycleRecorder {
+    impl ava_extension_api::ThreadLifecycleContributor<crate::config::Config> for LifecycleRecorder {
         fn on_thread_stop<'a>(
             &'a self,
-            input: codex_extension_api::ThreadStopInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            input: ava_extension_api::ThreadStopInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 assert_eq!(
                     self.expected_thread_id.to_string(),
@@ -8101,11 +8101,11 @@ async fn submission_loop_channel_close_aborts_active_turn_before_thread_stop_lif
         }
     }
 
-    impl codex_extension_api::TurnLifecycleContributor for LifecycleRecorder {
+    impl ava_extension_api::TurnLifecycleContributor for LifecycleRecorder {
         fn on_turn_abort<'a>(
             &'a self,
-            input: codex_extension_api::TurnAbortInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            input: ava_extension_api::TurnAbortInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 assert_eq!(
                     self.expected_thread_id.to_string(),
@@ -8128,7 +8128,7 @@ async fn submission_loop_channel_close_aborts_active_turn_before_thread_stop_lif
         expected_thread_id: session.thread_id,
         expected_turn_id: turn_context.sub_id.clone(),
     });
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.thread_lifecycle_contributor(recorder.clone());
     builder.turn_lifecycle_contributor(recorder);
     session.services.extensions = Arc::new(builder.build());
@@ -8229,7 +8229,7 @@ async fn shutdown_and_wait_waits_when_shutdown_is_already_in_progress() {
 }
 
 pub(crate) async fn make_session_and_context_with_auth_and_config_and_rx<F>(
-    auth: CodexAuth,
+    auth: AvaAuth,
     dynamic_tools: Vec<DynamicToolSpec>,
     configure_config: F,
 ) -> (
@@ -8240,20 +8240,20 @@ pub(crate) async fn make_session_and_context_with_auth_and_config_and_rx<F>(
 where
     F: FnOnce(&mut Config),
 {
-    let codex_home = tempfile::tempdir().expect("create temp dir");
+    let ava_home = tempfile::tempdir().expect("create temp dir");
     make_session_and_context_with_auth_config_home_and_rx(
         auth,
         dynamic_tools,
-        codex_home.path(),
+        ava_home.path(),
         configure_config,
     )
     .await
 }
 
 async fn make_session_and_context_with_auth_config_home_and_rx<F>(
-    auth: CodexAuth,
+    auth: AvaAuth,
     dynamic_tools: Vec<DynamicToolSpec>,
-    codex_home: &Path,
+    ava_home: &Path,
     configure_config: F,
 ) -> (
     Arc<Session>,
@@ -8264,14 +8264,14 @@ where
     F: FnOnce(&mut Config),
 {
     let (tx_event, rx_event) = async_channel::unbounded();
-    let mut config = build_test_config(codex_home).await;
+    let mut config = build_test_config(ava_home).await;
     configure_config(&mut config);
     let state_db = None;
     let config = Arc::new(config);
     let thread_id = ThreadId::default();
-    let auth_manager = AuthManager::from_auth_for_testing_with_home(auth, codex_home.to_path_buf());
+    let auth_manager = AuthManager::from_auth_for_testing_with_home(auth, ava_home.to_path_buf());
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         auth_manager.clone(),
         config.model_provider.clone(),
     );
@@ -8319,7 +8319,7 @@ where
         use_legacy_landlock: config.features.use_legacy_landlock(),
         legacy_fallback_cwd: config.cwd.clone(),
         runtime_workspace_roots: config.workspace_roots.clone(),
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         thread_name: None,
         disabled_plugin_ids: Vec::new(),
         original_config_do_not_use: Arc::clone(&config),
@@ -8371,11 +8371,11 @@ where
     ));
     let mcp_manager = Arc::new(McpManager::new(Arc::clone(&plugins_manager)));
     let skills_service = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ true,
     ));
     let network_approval = Arc::new(NetworkApprovalService::default());
-    let mcp_runtime = Arc::new(codex_mcp::McpRuntime::empty(config.prefix_mcp_tool_names()));
+    let mcp_runtime = Arc::new(ava_mcp::McpRuntime::empty(config.prefix_mcp_tool_names()));
     let executed_tool_calls =
         crate::state::ExecutedToolCalls::new(&config.features, &InitialHistory::Forked(Vec::new()));
     let (hooks, async_hook_results) = Hooks::new(
@@ -8405,7 +8405,7 @@ where
             config.analytics_enabled,
         ),
         hooks: arc_swap::ArcSwap::from_pointee(hooks),
-        rollout_thread_trace: codex_rollout_trace::ThreadTraceContext::disabled(),
+        rollout_thread_trace: ava_rollout_trace::ThreadTraceContext::disabled(),
         user_shell: Arc::new(default_user_shell()),
         show_raw_agent_reasoning: config.show_raw_agent_reasoning,
         exec_policy,
@@ -8424,13 +8424,13 @@ where
         agents_md_manager: Arc::new(AgentsMdManager::new(SessionInstructions::default())),
         plugins_manager,
         mcp_manager,
-        extensions: Arc::new(codex_extension_api::ExtensionRegistryBuilder::new().build()),
-        session_extension_data: codex_extension_api::ExtensionData::new(
+        extensions: Arc::new(ava_extension_api::ExtensionRegistryBuilder::new().build()),
+        session_extension_data: ava_extension_api::ExtensionData::new(
             agent_control.session_id().to_string(),
         ),
-        thread_extension_data: codex_extension_api::ExtensionData::new(thread_id.to_string()),
+        thread_extension_data: ava_extension_api::ExtensionData::new(thread_id.to_string()),
         selected_capability_roots: Vec::new(),
-        mcp_thread_init: codex_extension_api::ExtensionDataInit::default(),
+        mcp_thread_init: ava_extension_api::ExtensionDataInit::default(),
         client_mcp_extensions: ClientMcpExtensions::default(),
         agent_control,
         network_proxy: arc_swap::ArcSwapOption::from(None),
@@ -8440,8 +8440,8 @@ where
         state_db: state_db.clone(),
         live_thread: None,
         image_store: crate::passthrough_image_store(),
-        thread_store: Arc::new(codex_thread_store::LocalThreadStore::new(
-            codex_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
+        thread_store: Arc::new(ava_thread_store::LocalThreadStore::new(
+            ava_thread_store::LocalThreadStoreConfig::from_config(config.as_ref()),
             state_db,
         )),
         attestation_provider: None,
@@ -8470,7 +8470,7 @@ where
         executed_tool_calls: executed_tool_calls.clone(),
         code_mode_service: crate::tools::code_mode::CodeModeService::new(
             thread_id,
-            Arc::new(codex_code_mode::DisabledCodeModeSessionProvider),
+            Arc::new(ava_code_mode::DisabledCodeModeSessionProvider),
             &config.code_mode,
             executed_tool_calls,
         ),
@@ -8488,10 +8488,10 @@ where
         managed_network_proxy_refresh_lock: Semaphore::new(/*permits*/ 1),
         features: config.features.clone(),
         guardian_context_mode: GuardianContextMode::from_features(&config.features),
-        isolation: codex_extension_api::SessionIsolation::Inherit,
+        isolation: ava_extension_api::SessionIsolation::Inherit,
         allowed_tools: None,
         windows_sandbox_proxy_settings_mode:
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
         multi_agent_version: OnceLock::from(config.multi_agent_version_from_features()),
         mcp_refresh: McpRefresh::new(),
         mcp_tool_approval_metadata: Default::default(),
@@ -8575,7 +8575,7 @@ pub(crate) async fn make_session_and_context_with_dynamic_tools_and_rx(
     async_channel::Receiver<Event>,
 ) {
     make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         dynamic_tools,
         |_config| {},
     )
@@ -8617,7 +8617,7 @@ async fn refresh_mcp_servers_uses_latest_state_for_existing_turns() {
             .set(refreshed_mcp_servers.clone())
             .expect("set refreshed MCP servers");
         config.mcp_oauth_credentials_store_mode =
-            codex_config::types::OAuthCredentialsStoreMode::Auto;
+            ava_config::types::OAuthCredentialsStoreMode::Auto;
         config
             .features
             .set_enabled(Feature::SecretAuthStorage, /*enabled*/ true)
@@ -8652,17 +8652,17 @@ async fn refresh_mcp_servers_uses_latest_state_for_existing_turns() {
         )
         .await;
 
-    let configured_servers = codex_mcp::configured_mcp_servers(new_step.mcp.config());
+    let configured_servers = ava_mcp::configured_mcp_servers(new_step.mcp.config());
     assert_eq!(
         configured_servers.get("refreshed"),
         refreshed_mcp_servers.get("refreshed")
     );
     assert!(
-        !codex_mcp::configured_mcp_servers(old_step.mcp.config()).contains_key("refreshed"),
+        !ava_mcp::configured_mcp_servers(old_step.mcp.config()).contains_key("refreshed"),
         "an already-bound step must keep its captured config"
     );
     assert!(
-        codex_mcp::configured_mcp_servers(rematerialized_old.config()).contains_key("refreshed"),
+        ava_mcp::configured_mcp_servers(rematerialized_old.config()).contains_key("refreshed"),
         "an older turn should resolve the latest MCP state"
     );
     let current = session
@@ -8672,7 +8672,7 @@ async fn refresh_mcp_servers_uses_latest_state_for_existing_turns() {
         .await
         .expect("current MCP binding");
     assert!(
-        codex_mcp::configured_mcp_servers(current.config()).contains_key("refreshed"),
+        ava_mcp::configured_mcp_servers(current.config()).contains_key("refreshed"),
         "the refreshed state should remain globally current"
     );
 }
@@ -8769,7 +8769,7 @@ async fn mcp_elicitation_reviewer_uses_active_reviewer_and_latest_runtime_policy
     )
     .await;
     let (session, old_turn, rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config.model_provider.base_url = Some(format!("{}/v1", guardian_server.uri()));
@@ -8804,13 +8804,13 @@ async fn mcp_elicitation_reviewer_uses_active_reviewer_and_latest_runtime_policy
             session
                 .apply_turn_settings(
                     &old_turn.sub_id,
-                    codex_protocol::protocol::TurnSettingsUpdate {
+                    ava_protocol::protocol::TurnSettingsUpdate {
                         approvals_reviewer: Some(ApprovalsReviewer::AutoReview),
                         ..Default::default()
                     },
                 )
                 .await,
-            codex_protocol::protocol::TurnSettingsUpdateOutcome::Applied
+            ava_protocol::protocol::TurnSettingsUpdateOutcome::Applied
         );
     } else {
         session
@@ -8826,15 +8826,15 @@ async fn mcp_elicitation_reviewer_uses_active_reviewer_and_latest_runtime_policy
         session.refresh_mcp_if_dirty().await;
     }
 
-    let request = codex_mcp::ElicitationReviewRequest {
+    let request = ava_mcp::ElicitationReviewRequest {
         server_name: "browser-use".to_string(),
         request_id: rmcp::model::NumberOrString::Number(7),
-        elicitation: codex_rmcp_client::Elicitation::Mcp(
+        elicitation: ava_rmcp_client::Elicitation::Mcp(
             rmcp::model::ElicitRequestParams::FormElicitationParams {
                 meta: Some(rmcp::model::RequestMetaObject::from(
                     serde_json::Map::from_iter([
-                        ("codex_approval_kind".to_string(), json!("mcp_tool_call")),
-                        ("codex_request_type".to_string(), json!("approval_request")),
+                        ("ava_approval_kind".to_string(), json!("mcp_tool_call")),
+                        ("ava_request_type".to_string(), json!("approval_request")),
                         ("tool_name".to_string(), json!("access_browser_origin")),
                     ]),
                 )),
@@ -9012,7 +9012,7 @@ async fn mcp_refresh_detects_shared_auth_manager_changes() {
 
     assert_eq!(
         session.services.plugins_manager.auth_mode(),
-        Some(codex_protocol::auth::AuthMode::ApiKey)
+        Some(ava_protocol::auth::AuthMode::ApiKey)
     );
     session.refresh_mcp_if_dirty().await;
     assert!(
@@ -9059,9 +9059,9 @@ async fn mcp_refresh_detects_shared_auth_manager_changes() {
 async fn conflicting_ready_environment_root_ids_keep_first_location() {
     let (session, turn_context) = make_session_and_context().await;
     let selected_root =
-        |environment_id: &str, path: &str| codex_protocol::capabilities::SelectedCapabilityRoot {
+        |environment_id: &str, path: &str| ava_protocol::capabilities::SelectedCapabilityRoot {
             id: "shared-root".to_string(),
-            location: codex_protocol::capabilities::CapabilityRootLocation::Environment {
+            location: ava_protocol::capabilities::CapabilityRootLocation::Environment {
                 environment_id: environment_id.to_string(),
                 path: PathUri::parse(path).expect("root URI"),
             },
@@ -9076,7 +9076,7 @@ async fn conflicting_ready_environment_root_ids_keep_first_location() {
         .expect("ready local environment");
     let mut turn_environments = Vec::new();
     for selected_root in &selected_roots {
-        let codex_protocol::capabilities::CapabilityRootLocation::Environment {
+        let ava_protocol::capabilities::CapabilityRootLocation::Environment {
             environment_id,
             ..
         } = &selected_root.location;
@@ -9091,7 +9091,7 @@ async fn conflicting_ready_environment_root_ids_keep_first_location() {
             },
             EnvironmentConfigOrigin::Owner,
             Arc::new(
-                codex_exec_server::Environment::create_for_tests(/*exec_server_url*/ None)
+                ava_exec_server::Environment::create_for_tests(/*exec_server_url*/ None)
                     .expect("create test environment"),
             ),
             local_environment.shell.clone(),
@@ -9171,9 +9171,9 @@ async fn capability_discovery_uses_environment_permission_profile() {
         user_home_dir: environment.user_home_dir.clone(),
         temporary_directories: environment.temporary_directories.clone(),
         windows_sandbox_selection: if cfg!(windows) {
-            codex_file_system::WindowsSandboxSelection::Elevated
+            ava_file_system::WindowsSandboxSelection::Elevated
         } else {
-            codex_file_system::WindowsSandboxSelection::Disabled
+            ava_file_system::WindowsSandboxSelection::Disabled
         },
         windows_sandbox_proxy_settings_mode: None,
         use_legacy_landlock: true,
@@ -9246,7 +9246,7 @@ async fn step_context_keeps_its_mcp_runtime_for_tools() -> anyhow::Result<()> {
         .capture_step_context(Arc::clone(&step_context.turn), &CancellationToken::new())
         .await
         .expect("a fresh cancellation token cannot be cancelled");
-    assert!(codex_mcp::configured_mcp_servers(next_step.mcp.config()).contains_key("newer"));
+    assert!(ava_mcp::configured_mcp_servers(next_step.mcp.config()).contains_key("newer"));
 
     session.mark_mcp_runtime_dirty();
     session.refresh_mcp_if_dirty().await;
@@ -9256,7 +9256,7 @@ async fn step_context_keeps_its_mcp_runtime_for_tools() -> anyhow::Result<()> {
         .current_binding()
         .await
         .expect("refreshed runtime should be available");
-    assert!(codex_mcp::configured_mcp_servers(current.config()).contains_key("newer"));
+    assert!(ava_mcp::configured_mcp_servers(current.config()).contains_key("newer"));
 
     let router = &step_context.tool_router;
     assert!(
@@ -9613,7 +9613,7 @@ async fn build_initial_context_reuses_in_flight_recommendation_prewarm() {
 
     let server = start_mock_server().await;
     Mock::given(method("GET"))
-        .and(path("/ps/plugins/suggested/codex"))
+        .and(path("/ps/plugins/suggested/ava"))
         .and(query_param("scope", "GLOBAL"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "enabled": true,
@@ -9627,7 +9627,7 @@ async fn build_initial_context_reuses_in_flight_recommendation_prewarm() {
         .mount(&server)
         .await;
     let (session, turn_context, _rx_event) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         /*dynamic_tools*/ Vec::new(),
         |config| {
             config.chatgpt_base_url = server.uri();
@@ -9702,7 +9702,7 @@ async fn make_multi_agent_v2_usage_hint_test_session(
     enable_multi_agent_v2: bool,
 ) -> (Arc<Session>, Arc<TurnContext>) {
     let (session, turn_context, _rx_event) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             if enable_multi_agent_v2 {
@@ -9723,22 +9723,22 @@ struct TurnContextExtensionTestState {
     expected_model_context_window: Option<i64>,
 }
 
-impl codex_extension_api::ContextContributor for PromptExtensionTestContributor {
+impl ava_extension_api::ContextContributor for PromptExtensionTestContributor {
     fn contribute_thread_context<'a>(
         &'a self,
-        _session_store: &'a codex_extension_api::ExtensionData,
-        thread_store: &'a codex_extension_api::ExtensionData,
+        _session_store: &'a ava_extension_api::ExtensionData,
+        thread_store: &'a ava_extension_api::ExtensionData,
     ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Vec<codex_extension_api::PromptFragment>> + Send + 'a>,
+        Box<dyn std::future::Future<Output = Vec<ava_extension_api::PromptFragment>> + Send + 'a>,
     > {
         Box::pin(async move {
             thread_store
                 .get::<PromptExtensionTestState>()
                 .is_some()
                 .then(|| {
-                    codex_extension_api::PromptFragment::developer_policy(
+                    ava_extension_api::PromptFragment::developer_policy(
                         "prompt extension enabled",
-                        codex_extension_api::ContentItemKind("test.prompt_extension".to_string()),
+                        ava_extension_api::ContentItemKind("test.prompt_extension".to_string()),
                     )
                 })
                 .into_iter()
@@ -9748,18 +9748,18 @@ impl codex_extension_api::ContextContributor for PromptExtensionTestContributor 
 }
 
 fn prompt_extension_test_registry()
--> Arc<codex_extension_api::ExtensionRegistry<crate::config::Config>> {
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+-> Arc<ava_extension_api::ExtensionRegistry<crate::config::Config>> {
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.prompt_contributor(Arc::new(PromptExtensionTestContributor));
     Arc::new(builder.build())
 }
 
-impl codex_extension_api::ContextContributor for TurnContextExtensionTestContributor {
+impl ava_extension_api::ContextContributor for TurnContextExtensionTestContributor {
     fn contribute_turn_context<'a>(
         &'a self,
-        input: codex_extension_api::TurnContextContributionInput<'a>,
+        input: ava_extension_api::TurnContextContributionInput<'a>,
     ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Vec<codex_extension_api::PromptFragment>> + Send + 'a>,
+        Box<dyn std::future::Future<Output = Vec<ava_extension_api::PromptFragment>> + Send + 'a>,
     > {
         Box::pin(async move {
             let Some(state) = input.turn_store.get::<TurnContextExtensionTestState>() else {
@@ -9769,9 +9769,9 @@ impl codex_extension_api::ContextContributor for TurnContextExtensionTestContrib
                 && input.model_context_window.is_some()
                 && !input.turn_id.is_empty())
             .then(|| {
-                codex_extension_api::PromptFragment::developer_policy(
+                ava_extension_api::PromptFragment::developer_policy(
                     "turn context extension enabled",
-                    codex_extension_api::ContentItemKind("test.turn_context".to_string()),
+                    ava_extension_api::ContentItemKind("test.turn_context".to_string()),
                 )
             })
             .into_iter()
@@ -9805,7 +9805,7 @@ async fn build_initial_context_includes_prompt_fragments_from_extensions() {
 #[tokio::test]
 async fn build_initial_context_includes_turn_context_fragments_from_extensions() {
     let (mut session, mut turn_context) = make_session_and_context().await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.prompt_contributor(Arc::new(TurnContextExtensionTestContributor));
     session.services.extensions = Arc::new(builder.build());
     update_turn_settings_for_test(&mut turn_context, |settings| {
@@ -9834,7 +9834,7 @@ async fn build_initial_context_includes_turn_context_fragments_from_extensions()
 #[tokio::test]
 async fn record_context_updates_includes_turn_context_fragments_on_steady_state_turns() {
     let (mut session, mut turn_context) = make_session_and_context().await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.prompt_contributor(Arc::new(TurnContextExtensionTestContributor));
     session.services.extensions = Arc::new(builder.build());
     update_turn_settings_for_test(&mut turn_context, |settings| {
@@ -9989,7 +9989,7 @@ async fn build_initial_context_omits_multi_agent_v2_usage_hints_when_feature_dis
 #[tokio::test]
 async fn build_initial_context_omits_multi_agent_v2_usage_hints_when_hint_is_empty() {
     let (session, turn_context, _rx_event) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             let _ = config.features.enable(Feature::MultiAgentV2);
@@ -10355,14 +10355,14 @@ async fn record_context_updates_and_set_reference_context_item_persists_split_fi
 async fn build_initial_context_uses_retained_step_after_model_change() {
     let (mut session, mut turn_context, _rx_event) =
         make_session_and_context_with_auth_and_config_and_rx(
-            CodexAuth::from_api_key("Test API Key"),
+            AvaAuth::from_api_key("Test API Key"),
             Vec::new(),
             |config| {
                 config.features.enable(Feature::TokenBudget).unwrap();
             },
         )
         .await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.prompt_contributor(Arc::new(TurnContextExtensionTestContributor));
     Arc::get_mut(&mut session)
         .expect("unshared test session")
@@ -10666,9 +10666,9 @@ enum TerminalEventKind {
 
 async fn attach_in_memory_thread_store(
     session: &mut Session,
-) -> Arc<codex_thread_store::InMemoryThreadStore> {
-    let store = Arc::new(codex_thread_store::InMemoryThreadStore::default());
-    let thread_store: Arc<dyn codex_thread_store::ThreadStore> = store.clone();
+) -> Arc<ava_thread_store::InMemoryThreadStore> {
+    let store = Arc::new(ava_thread_store::InMemoryThreadStore::default());
+    let thread_store: Arc<dyn ava_thread_store::ThreadStore> = store.clone();
     let config = session.get_config().await;
     let live_thread = LiveThread::create(
         Arc::clone(&thread_store),
@@ -10716,7 +10716,7 @@ async fn hook_transcript_path_does_not_persist_non_local_thread_store() {
     assert_eq!(session.hook_transcript_path().await, None);
     assert_eq!(
         store.calls().await,
-        codex_thread_store::InMemoryThreadStoreCalls {
+        ava_thread_store::InMemoryThreadStoreCalls {
             create_thread: 1,
             ..Default::default()
         }
@@ -10744,9 +10744,9 @@ async fn hook_transcript_path_materializes_lazy_local_thread() {
 }
 
 async fn wait_for_flush_count(
-    store: &codex_thread_store::InMemoryThreadStore,
+    store: &ava_thread_store::InMemoryThreadStore,
     expected_flushes: usize,
-) -> codex_thread_store::InMemoryThreadStoreCalls {
+) -> ava_thread_store::InMemoryThreadStoreCalls {
     timeout(Duration::from_secs(2), async {
         loop {
             let calls = store.calls().await;
@@ -10835,7 +10835,7 @@ impl SessionTask for ExtensionInterruptedTask {
         session
             .interrupt_turn_with_warning(
                 &ctx.sub_id,
-                EventMsg::Warning(codex_protocol::protocol::WarningEvent {
+                EventMsg::Warning(ava_protocol::protocol::WarningEvent {
                     message: "extension interrupted this turn".into(),
                 }),
             )
@@ -10937,7 +10937,7 @@ async fn make_remote_compaction_session(
     provider.base_url = Some(format!("{server_uri}/v1"));
     provider.supports_websockets = false;
     make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         Vec::new(),
         move |config| {
             config.model = Some("gpt-5.2".to_string());
@@ -11156,11 +11156,11 @@ async fn interrupting_compaction_fallback_retains_last_known_step_context() {
 async fn extension_interrupt_emits_thread_idle() {
     struct ThreadIdleRecorder(async_channel::Sender<()>);
 
-    impl codex_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadIdleRecorder {
+    impl ava_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadIdleRecorder {
         fn on_thread_idle<'a>(
             &'a self,
-            _input: codex_extension_api::ThreadIdleInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            _input: ava_extension_api::ThreadIdleInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 self.0.send(()).await.expect("idle receiver open");
             })
@@ -11169,7 +11169,7 @@ async fn extension_interrupt_emits_thread_idle() {
 
     let (mut session, turn_context) = make_session_and_context().await;
     let (idle_tx, idle_rx) = async_channel::bounded(1);
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.thread_lifecycle_contributor(Arc::new(ThreadIdleRecorder(idle_tx)));
     session.services.extensions = Arc::new(builder.build());
 
@@ -11214,7 +11214,7 @@ async fn extension_interrupt_survives_the_calling_runtime() {
             session_for_review
                 .interrupt_turn_with_warning(
                     &tc.sub_id,
-                    EventMsg::Warning(codex_protocol::protocol::WarningEvent {
+                    EventMsg::Warning(ava_protocol::protocol::WarningEvent {
                         message: "extension interrupted this turn".into(),
                     }),
                 )
@@ -11425,7 +11425,7 @@ async fn submit_steer_only(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn task_finish_emits_turn_item_lifecycle_for_leftover_pending_user_input() {
     let (sess, mut tc, rx) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config.features.enable(Feature::UnifiedImageBudget).unwrap();
@@ -11464,9 +11464,9 @@ async fn task_finish_emits_turn_item_lifecycle_for_leftover_pending_user_input()
     image::DynamicImage::new_rgba8(/*w*/ 8, /*h*/ 8)
         .write_to(&mut encoded, image::ImageFormat::Png)
         .expect("encode image");
-    let image_url = codex_utils_image::data_url_from_bytes("image/png", &encoded.into_inner());
-    let text_element = codex_protocol::user_input::TextElement::new(
-        codex_protocol::user_input::ByteRange { start: 5, end: 12 },
+    let image_url = ava_utils_image::data_url_from_bytes("image/png", &encoded.into_inner());
+    let text_element = ava_protocol::user_input::TextElement::new(
+        ava_protocol::user_input::ByteRange { start: 5, end: 12 },
         Some("pending marker".to_string()),
     );
     let pending_user_input = vec![
@@ -11591,11 +11591,11 @@ async fn task_finish_emits_thread_idle_lifecycle_after_active_turn_clears() {
         expected_thread_id: ThreadId,
     }
 
-    impl codex_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadIdleRecorder {
+    impl ava_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadIdleRecorder {
         fn on_thread_idle<'a>(
             &'a self,
-            input: codex_extension_api::ThreadIdleInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            input: ava_extension_api::ThreadIdleInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 assert_eq!(
                     self.expected_thread_id.to_string(),
@@ -11610,7 +11610,7 @@ async fn task_finish_emits_thread_idle_lifecycle_after_active_turn_clears() {
     let (mut session, turn_context) = make_session_and_context().await;
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let (idle_tx, idle_rx) = async_channel::bounded(1);
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.thread_lifecycle_contributor(Arc::new(ThreadIdleRecorder {
         calls: Arc::clone(&calls),
         idle_tx,
@@ -11637,11 +11637,11 @@ async fn thread_idle_lifecycle_waits_for_trigger_turn_mailbox_work() {
         calls: Arc<std::sync::atomic::AtomicUsize>,
     }
 
-    impl codex_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadIdleRecorder {
+    impl ava_extension_api::ThreadLifecycleContributor<crate::config::Config> for ThreadIdleRecorder {
         fn on_thread_idle<'a>(
             &'a self,
-            _input: codex_extension_api::ThreadIdleInput<'a>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            _input: ava_extension_api::ThreadIdleInput<'a>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             })
@@ -11650,7 +11650,7 @@ async fn thread_idle_lifecycle_waits_for_trigger_turn_mailbox_work() {
 
     let (mut session, _turn_context) = make_session_and_context().await;
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     builder.thread_lifecycle_contributor(Arc::new(ThreadIdleRecorder {
         calls: Arc::clone(&calls),
     }));
@@ -11670,7 +11670,7 @@ async fn thread_idle_lifecycle_waits_for_trigger_turn_mailbox_work() {
         .await;
 
     session
-        .emit_thread_idle_lifecycle_if_idle(codex_extension_api::ThreadIdleCause::Completed)
+        .emit_thread_idle_lifecycle_if_idle(ava_extension_api::ThreadIdleCause::Completed)
         .await;
 
     assert_eq!(0, calls.load(std::sync::atomic::Ordering::SeqCst));
@@ -11838,7 +11838,7 @@ async fn active_turn_keeps_first_root_when_mail_coalesces(inherited_root: Option
         sess.input_queue
             .enqueue_mailbox_communication(
                 communication,
-                codex_protocol::turn_input::TurnStartOptions {
+                ava_protocol::turn_input::TurnStartOptions {
                     parent_turn_id: Some(parent_turn_id.to_string()),
                     root_turn_id: Some(root_turn_id.to_string()),
                     ..Default::default()
@@ -12025,7 +12025,7 @@ async fn tool_calls_reopen_mailbox_delivery_for_current_turn() {
     let mut ctx = HandleOutputCtx {
         sess: Arc::clone(&sess),
         step_context: StepContext::for_test(Arc::clone(&tc)),
-        turn_store: Arc::new(codex_extension_api::ExtensionData::new(tc.sub_id.clone())),
+        turn_store: Arc::new(ava_extension_api::ExtensionData::new(tc.sub_id.clone())),
         tool_runtime: test_tool_runtime(Arc::clone(&sess), Arc::clone(&tc)),
         cancellation_token: CancellationToken::new(),
     };
@@ -12277,7 +12277,7 @@ async fn sample_rollout(
 async fn unified_exec_rejects_escalated_permissions_when_policy_not_on_request() {
     use crate::sandboxing::SandboxPermissions;
     use crate::turn_diff_tracker::TurnDiffTracker;
-    use codex_protocol::protocol::AskForApproval;
+    use ava_protocol::protocol::AskForApproval;
 
     let (session, mut turn_context_raw) = make_session_and_context().await;
     Arc::make_mut(&mut turn_context_raw.config)
@@ -12299,7 +12299,7 @@ async fn unified_exec_rejects_escalated_permissions_when_policy_not_on_request()
             cancellation_token: CancellationToken::new(),
             tracker: Arc::clone(&tracker),
             call_id: "exec-call".to_string(),
-            tool_name: codex_tools::ToolName::plain("exec_command"),
+            tool_name: ava_tools::ToolName::plain("exec_command"),
             source: crate::tools::context::ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: serde_json::json!({
@@ -12327,32 +12327,32 @@ async fn unified_exec_rejects_escalated_permissions_when_policy_not_on_request()
 #[tokio::test]
 async fn session_start_hooks_only_load_from_trusted_project_layers() -> std::io::Result<()> {
     let temp = tempfile::tempdir()?;
-    let codex_home = temp.path().join("home");
+    let ava_home = temp.path().join("home");
     let project_root = temp.path().join("project");
     let nested = project_root.join("nested");
-    let root_dot_codex = project_root.join(".codex");
-    let nested_dot_codex = nested.join(".codex");
+    let root_dot_ava = project_root.join(".ava-code");
+    let nested_dot_ava = nested.join(".ava-code");
 
-    std::fs::create_dir_all(&codex_home)?;
-    std::fs::create_dir_all(&nested_dot_codex)?;
+    std::fs::create_dir_all(&ava_home)?;
+    std::fs::create_dir_all(&nested_dot_ava)?;
     std::fs::write(project_root.join(".git"), "gitdir: here")?;
-    write_project_hooks(&root_dot_codex)?;
-    write_project_hooks(&nested_dot_codex)?;
-    write_project_trust_config(&codex_home, &[(&nested, TrustLevel::Trusted)]).await?;
+    write_project_hooks(&root_dot_ava)?;
+    write_project_hooks(&nested_dot_ava)?;
+    write_project_trust_config(&ava_home, &[(&nested, TrustLevel::Trusted)]).await?;
 
     let config = ConfigBuilder::default()
-        .codex_home(codex_home)
+        .ava_home(ava_home)
         .fallback_cwd(Some(nested))
         .build()
         .await?;
 
-    let hook_list = codex_hooks::list_hooks(codex_hooks::HooksConfig {
+    let hook_list = ava_hooks::list_hooks(ava_hooks::HooksConfig {
         feature_enabled: true,
         config_layer_stack: Some(config.config_layer_stack.clone()),
-        ..codex_hooks::HooksConfig::default()
+        ..ava_hooks::HooksConfig::default()
     });
-    let expected_source_path = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
-        nested_dot_codex.join("hooks.json"),
+    let expected_source_path = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
+        nested_dot_ava.join("hooks.json"),
     )?;
     assert_eq!(
         hook_list
@@ -12364,7 +12364,7 @@ async fn session_start_hooks_only_load_from_trusted_project_layers() -> std::io:
     );
     assert_eq!(
         hook_list.hooks[0].trust_status,
-        codex_protocol::protocol::HookTrustStatus::Untrusted
+        ava_protocol::protocol::HookTrustStatus::Untrusted
     );
     assert!(preview_session_start_hooks(&config).await?.is_empty());
 
@@ -12376,10 +12376,10 @@ async fn session_start_hooks_require_project_trust_without_config_toml() -> std:
     let temp = tempfile::tempdir()?;
     let project_root = temp.path().join("project");
     let nested = project_root.join("nested");
-    let dot_codex = project_root.join(".codex");
+    let dot_ava = project_root.join(".ava-code");
     std::fs::create_dir_all(&nested)?;
     std::fs::write(project_root.join(".git"), "gitdir: here")?;
-    write_project_hooks(&dot_codex)?;
+    write_project_hooks(&dot_ava)?;
 
     let cases = [
         ("unknown", Vec::<(&Path, TrustLevel)>::new(), 0_usize),
@@ -12396,20 +12396,20 @@ async fn session_start_hooks_require_project_trust_without_config_toml() -> std:
     ];
 
     for (name, trust_entries, expected_hooks) in cases {
-        let codex_home = temp.path().join(format!("home_{name}"));
-        std::fs::create_dir_all(&codex_home)?;
-        write_project_trust_config(&codex_home, &trust_entries).await?;
+        let ava_home = temp.path().join(format!("home_{name}"));
+        std::fs::create_dir_all(&ava_home)?;
+        write_project_trust_config(&ava_home, &trust_entries).await?;
 
         let config = ConfigBuilder::default()
-            .codex_home(codex_home)
+            .ava_home(ava_home)
             .fallback_cwd(Some(nested.clone()))
             .build()
             .await?;
 
-        let hook_list = codex_hooks::list_hooks(codex_hooks::HooksConfig {
+        let hook_list = ava_hooks::list_hooks(ava_hooks::HooksConfig {
             feature_enabled: true,
             config_layer_stack: Some(config.config_layer_stack.clone()),
-            ..codex_hooks::HooksConfig::default()
+            ..ava_hooks::HooksConfig::default()
         });
         assert_eq!(
             hook_list.hooks.len(),
@@ -12420,7 +12420,7 @@ async fn session_start_hooks_require_project_trust_without_config_toml() -> std:
         if expected_hooks == 1 {
             assert_eq!(
                 hook_list.hooks[0].trust_status,
-                codex_protocol::protocol::HookTrustStatus::Untrusted
+                ava_protocol::protocol::HookTrustStatus::Untrusted
             );
         }
     }

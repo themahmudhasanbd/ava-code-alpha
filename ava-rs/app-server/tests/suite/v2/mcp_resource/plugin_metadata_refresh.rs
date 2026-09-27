@@ -3,8 +3,8 @@
 use super::*;
 use axum::Json;
 use axum::routing::get;
-use codex_app_server_protocol::PluginInstalledResponse;
-use codex_app_server_protocol::PluginReconcileResponse;
+use ava_app_server_protocol::PluginInstalledResponse;
+use ava_app_server_protocol::PluginReconcileResponse;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use pretty_assertions::assert_eq;
@@ -39,7 +39,7 @@ async fn signed_image_renewal_preserves_live_mcp_and_skills() -> Result<()> {
     header.set_size(manifest.len() as u64);
     header.set_mode(/*mode*/ 0o644);
     header.set_cksum();
-    archive.append_data(&mut header, ".codex-plugin/plugin.json", &manifest[..])?;
+    archive.append_data(&mut header, ".ava-plugin/plugin.json", &manifest[..])?;
     let bundle = archive.into_inner()?.finish()?;
 
     let calls = Arc::new(ResourceAppsMcpCalls::default());
@@ -58,7 +58,7 @@ async fn signed_image_renewal_preserves_live_mcp_and_skills() -> Result<()> {
     );
     let server_installed = Arc::clone(&installed);
     let router = Router::new()
-        .nest_service("/api/codex/ps/mcp", mcp_service)
+        .nest_service("/api/ava/ps/mcp", mcp_service)
         .route(
             "/ps/plugins/installed",
             get(move || {
@@ -76,7 +76,7 @@ async fn signed_image_renewal_preserves_live_mcp_and_skills() -> Result<()> {
         let _ = axum::serve(listener, router).await;
     });
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{base_url}\""))
         .enable_feature(Feature::Apps)
@@ -84,9 +84,9 @@ async fn signed_image_renewal_preserves_live_mcp_and_skills() -> Result<()> {
         .enable_feature(Feature::RemotePlugin)
         .disable_feature(Feature::PluginSharing)
         .with_extra_config("[skills]\ninclude_instructions = true")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -94,10 +94,10 @@ async fn signed_image_renewal_preserves_live_mcp_and_skills() -> Result<()> {
         AuthCredentialsStoreMode::File,
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .with_env_overrides(&[(
-            "CODEX_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS",
+            "AVA_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS",
             Some("1"),
         )])
         .build_initialized()

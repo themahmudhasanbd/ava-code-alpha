@@ -75,7 +75,7 @@ pub(crate) enum StatusLineItem {
     )]
     ProjectRoot,
 
-    /// Hostname of the machine running Codex.
+    /// Hostname of the machine running Ava.
     Hostname,
 
     /// Current git branch name (if in a repository).
@@ -113,8 +113,8 @@ pub(crate) enum StatusLineItem {
     /// Remaining usage on the secondary rate limit.
     WeeklyLimit,
 
-    /// Codex application version.
-    CodexVersion,
+    /// Ava application version.
+    AvaVersion,
 
     /// Total context window size in tokens.
     ContextWindowSize,
@@ -189,7 +189,7 @@ impl StatusLineItem {
             StatusLineItem::WeeklyLimit => {
                 "Remaining usage on the secondary usage limit (omitted when unavailable)"
             }
-            StatusLineItem::CodexVersion => "Codex application version",
+            StatusLineItem::AvaVersion => "Ava application version",
             StatusLineItem::ContextWindowSize => {
                 "Total context window size in tokens (omitted when unknown)"
             }
@@ -236,7 +236,7 @@ impl StatusLineItem {
             StatusLineItem::ContextUsed => StatusSurfacePreviewItem::ContextUsed,
             StatusLineItem::FiveHourLimit => StatusSurfacePreviewItem::FiveHourLimit,
             StatusLineItem::WeeklyLimit => StatusSurfacePreviewItem::WeeklyLimit,
-            StatusLineItem::CodexVersion => StatusSurfacePreviewItem::CodexVersion,
+            StatusLineItem::AvaVersion => StatusSurfacePreviewItem::AvaVersion,
             StatusLineItem::ContextWindowSize => StatusSurfacePreviewItem::ContextWindowSize,
             StatusLineItem::UsedTokens => StatusSurfacePreviewItem::UsedTokens,
             StatusLineItem::TotalInputTokens => StatusSurfacePreviewItem::TotalInputTokens,
@@ -689,11 +689,11 @@ mod tests {
             StatusSurfacePreviewData::from_iter([
                 (
                     StatusLineItem::ModelName.preview_item(),
-                    "gpt-5-codex".to_string(),
+                    "gpt-5-ava".to_string(),
                 ),
                 (
                     StatusLineItem::CurrentDir.preview_item(),
-                    "~/codex-rs".to_string(),
+                    "~/ava-rs".to_string(),
                 ),
                 (
                     StatusLineItem::GitBranch.preview_item(),
@@ -753,7 +753,7 @@ mod tests {
                 ),
                 (
                     StatusLineItem::CurrentDir.preview_item(),
-                    "~/codex-rs".to_string(),
+                    "~/ava-rs".to_string(),
                 ),
             ]),
             AppEventSender::new(tx_raw),

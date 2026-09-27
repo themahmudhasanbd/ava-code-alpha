@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-cloud-tasks"
+name = "ava-cloud-tasks"
 version.workspace = true
 
 [lib]
-name = "codex_cloud_tasks"
+name = "ava_cloud_tasks"
 path = "src/lib.rs"
 doctest = false
 
@@ -16,16 +16,16 @@ workspace = true
 anyhow = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 clap = { workspace = true, features = ["derive"] }
-codex-http-client = { workspace = true }
-codex-cloud-tasks-client = { workspace = true }
-# TODO: codex-cloud-tasks-mock-client should be in dev-dependencies.
-codex-cloud-tasks-mock-client = { workspace = true }
-codex-core = { workspace = true }
-codex-git-utils = { workspace = true }
-codex-login = { path = "../login" }
-codex-model-provider = { workspace = true }
-codex-tui = { workspace = true }
-codex-utils-cli = { workspace = true }
+ava-http-client = { workspace = true }
+ava-cloud-tasks-client = { workspace = true }
+# TODO: ava-cloud-tasks-mock-client should be in dev-dependencies.
+ava-cloud-tasks-mock-client = { workspace = true }
+ava-core = { workspace = true }
+ava-git-utils = { workspace = true }
+ava-login = { path = "../login" }
+ava-model-provider = { workspace = true }
+ava-tui = { workspace = true }
+ava-utils-cli = { workspace = true }
 crossterm = { workspace = true, features = ["event-stream"] }
 http = { workspace = true }
 owo-colors = { workspace = true, features = ["supports-colors"] }

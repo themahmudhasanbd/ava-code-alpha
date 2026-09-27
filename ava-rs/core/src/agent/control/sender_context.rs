@@ -4,11 +4,11 @@
 
 use crate::context::ContextualUserFragment;
 use crate::context::GuardianSenderMessages;
-use codex_history::RetainedContextEntry;
-use codex_history::RetainedContextOrder;
-use codex_history::SenderUserMessages;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ResponseItem;
+use ava_history::RetainedContextEntry;
+use ava_history::RetainedContextOrder;
+use ava_history::SenderUserMessages;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ResponseItem;
 
 use super::LocalAgentControl;
 
@@ -30,7 +30,7 @@ impl LocalAgentControl {
         else {
             return None;
         };
-        if !matches!(namespace.as_str(), "codex_app" | "codex_tui")
+        if !matches!(namespace.as_str(), "ava_app" | "ava_tui")
             || name != "send_message_to_thread"
         {
             return None;
@@ -38,9 +38,9 @@ impl LocalAgentControl {
         // Recognized deliveries always get their own snapshot, even without usable provenance.
         let source_thread_id = output.body.to_text().and_then(|text| {
             let (source, input) = text
-                .strip_prefix("<codex_delegation>\n  <source_thread_id>")?
+                .strip_prefix("<ava_delegation>\n  <source_thread_id>")?
                 .split_once("</source_thread_id>\n  <input>")?;
-            input.strip_suffix("</input>\n</codex_delegation>")?;
+            input.strip_suffix("</input>\n</ava_delegation>")?;
             ThreadId::from_string(source)
                 .ok()
                 .filter(|source| *source != receiver_thread_id)

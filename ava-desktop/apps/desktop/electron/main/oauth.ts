@@ -64,7 +64,7 @@ const API_STYLE_BY_WIRE_API: Record<string, string> = {
   "anthropic-messages": "anthropic_messages",
   "openai-completions": "chat_completions",
   "openai-responses": "responses",
-  "openai-codex-responses": "openai_codex_responses",
+  "openai-ava-responses": "openai_ava_responses",
   "google-generative-ai": "google_generative_ai",
   "pi-messages": "pi_messages",
 };
@@ -73,7 +73,7 @@ const PROTOCOL_BY_API_STYLE: Record<string, string> = {
   anthropic_messages: "anthropic",
   chat_completions: "openai_compatible",
   responses: "openai",
-  openai_codex_responses: "openai",
+  openai_ava_responses: "openai",
   google_generative_ai: "google",
   pi_messages: "custom_http",
 };

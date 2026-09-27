@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Set "chatgpt.cliExecutable": "/Users/<USERNAME>/code/codex/scripts/debug-codex.sh" in VSCode settings to always get the 
-# latest codex-rs binary when debugging Codex Extension.
+# Set "chatgpt.cliExecutable": "/Users/<USERNAME>/code/ava/scripts/debug-ava.sh" in VSCode settings to always get the 
+# latest ava-rs binary when debugging Ava Extension.
 
 
 set -euo pipefail
 
-CODEX_RS_DIR=$(realpath "$(dirname "$0")/../codex-rs")
-(cd "$CODEX_RS_DIR" && cargo run --quiet --bin codex -- "$@")
+AVA_RS_DIR=$(realpath "$(dirname "$0")/../ava-rs")
+(cd "$AVA_RS_DIR" && cargo run --quiet --bin ava -- "$@")

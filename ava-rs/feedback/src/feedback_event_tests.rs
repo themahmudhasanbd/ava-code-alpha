@@ -1,6 +1,6 @@
 //! Feedback event contracts for caller-provided titles and independent report grouping.
 
-use crate::CodexFeedback;
+use crate::AvaFeedback;
 use pretty_assertions::assert_eq;
 use sentry::protocol::Event;
 use sentry::protocol::Exception;
@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 
 #[test]
 fn custom_titles_preserve_comments_and_keep_submissions_separate() {
-    let snapshot = CodexFeedback::new().snapshot(/*session_id*/ None);
+    let snapshot = AvaFeedback::new().snapshot(/*session_id*/ None);
     let tags = BTreeMap::from([
         (
             "feedback_title".to_string(),
@@ -66,7 +66,7 @@ fn custom_titles_preserve_comments_and_keep_submissions_separate() {
 
 #[test]
 fn missing_or_blank_titles_preserve_session_titles_and_default_grouping() {
-    let snapshot = CodexFeedback::new().snapshot(/*session_id*/ None);
+    let snapshot = AvaFeedback::new().snapshot(/*session_id*/ None);
     let reason = "  Feedback\nwith 🌍 context.  ";
     for custom_title in [None, Some(""), Some(" \t\n\u{2003} ")] {
         let tags = custom_title
@@ -77,7 +77,7 @@ fn missing_or_blank_titles_preserve_session_titles_and_default_grouping() {
             tags.as_ref(),
             /*session_source*/ None,
         );
-        let title = format!("[Bug]: Codex session {}", snapshot.thread_id);
+        let title = format!("[Bug]: Ava session {}", snapshot.thread_id);
         let mut expected_tags = tags.unwrap_or_default();
         expected_tags.extend([
             ("thread_id".to_string(), snapshot.thread_id.clone()),

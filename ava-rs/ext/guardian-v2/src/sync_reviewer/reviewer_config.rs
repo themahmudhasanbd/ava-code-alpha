@@ -5,8 +5,8 @@
 use super::Config;
 use super::Constrained;
 use super::TokenBudgetConfig;
-use codex_features::Feature;
-use codex_protocol::protocol::AskForApproval;
+use ava_features::Feature;
+use ava_protocol::protocol::AskForApproval;
 use std::collections::HashMap;
 
 pub(crate) fn build_reviewer_config(parent_config: &Config) -> anyhow::Result<Config> {
@@ -26,7 +26,7 @@ pub(crate) fn build_reviewer_config(parent_config: &Config) -> anyhow::Result<Co
     config.permissions.approval_policy = Constrained::allow_only(AskForApproval::Never);
     config
         .permissions
-        .set_permission_profile(codex_guardian_reviewer::reviewer_permission_profile(
+        .set_permission_profile(ava_guardian_reviewer::reviewer_permission_profile(
             config.permissions.permission_profile(),
         ))
         .map_err(|err| {
@@ -42,7 +42,7 @@ pub(crate) fn build_reviewer_config(parent_config: &Config) -> anyhow::Result<Co
         Feature::GuardianV2,
         Feature::TokenBudget,
         Feature::ContextManagement,
-        Feature::CodexHooks,
+        Feature::AvaHooks,
         Feature::Apps,
         Feature::Plugins,
         Feature::WebSearchRequest,

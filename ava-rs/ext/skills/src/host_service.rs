@@ -6,28 +6,28 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::Weak;
 
-use codex_config::ConfigLayerStack;
-use codex_config::SkillConfigRules;
-use codex_config::bundled_skills_enabled_from_stack;
-use codex_config::skill_config_rules_from_stack;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::LOCAL_FS;
-use codex_protocol::protocol::Product;
-use codex_protocol::protocol::SkillScope;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
+use ava_config::ConfigLayerStack;
+use ava_config::SkillConfigRules;
+use ava_config::bundled_skills_enabled_from_stack;
+use ava_config::skill_config_rules_from_stack;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::LOCAL_FS;
+use ava_protocol::protocol::Product;
+use ava_protocol::protocol::SkillScope;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
 use tokio::sync::OnceCell;
 use tokio::sync::Semaphore;
 use tracing::info;
 use tracing::instrument;
 
-use codex_skills::LoadedSkills;
-use codex_skills::SkillLoadFuture;
-use codex_skills::SkillRootLoadRequest;
-use codex_skills::SkillRootLoader;
-use codex_skills::SkillRootSnapshots;
-use codex_skills::install_system_skills;
+use ava_skills::LoadedSkills;
+use ava_skills::SkillLoadFuture;
+use ava_skills::SkillRootLoadRequest;
+use ava_skills::SkillRootLoader;
+use ava_skills::SkillRootSnapshots;
+use ava_skills::install_system_skills;
 
 use crate::HostSkillsSnapshot;
 use crate::SkillLoadOutcome;
@@ -81,7 +81,7 @@ impl HostSkillsLoadInput {
 ///
 /// Source-specific model exposure remains the responsibility of the skills extension.
 pub struct HostSkillsService {
-    codex_home: AbsolutePathBuf,
+    ava_home: AbsolutePathBuf,
     restriction_product: Option<Product>,
     extra_roots: RwLock<Vec<AbsolutePathBuf>>,
     cache_by_cwd: RwLock<HashMap<AbsolutePathBuf, HostSkillsSnapshot>>,
@@ -118,24 +118,24 @@ impl HostSkillsRequest<'_> {
 }
 
 impl HostSkillsService {
-    pub fn new(codex_home: AbsolutePathBuf, bundled_skills_enabled: bool) -> Self {
-        Self::new_with_restriction_product(codex_home, bundled_skills_enabled, Some(Product::Codex))
+    pub fn new(ava_home: AbsolutePathBuf, bundled_skills_enabled: bool) -> Self {
+        Self::new_with_restriction_product(ava_home, bundled_skills_enabled, Some(Product::Ava))
     }
 
     pub fn new_with_restriction_product(
-        codex_home: AbsolutePathBuf,
+        ava_home: AbsolutePathBuf,
         bundled_skills_enabled: bool,
         restriction_product: Option<Product>,
     ) -> Self {
         let service = Self {
-            codex_home,
+            ava_home,
             restriction_product,
             extra_roots: RwLock::new(Vec::new()),
             cache_by_cwd: RwLock::new(HashMap::new()),
             cache_by_config: RwLock::new(VecDeque::new()),
             root_scan_slots: Arc::new(Semaphore::new(MAX_CONCURRENT_ROOT_SCANS)),
         };
-        // The cache is shared by every process using this CODEX_HOME. Disabled services filter
+        // The cache is shared by every process using this AVA_HOME. Disabled services filter
         // system roots when loading rather than mutating shared state.
         if bundled_skills_enabled {
             service.ensure_system_skills_installed();
@@ -410,7 +410,7 @@ impl HostSkillsService {
     }
 
     fn ensure_system_skills_installed(&self) {
-        if let Err(err) = install_system_skills(&self.codex_home) {
+        if let Err(err) = install_system_skills(&self.ava_home) {
             tracing::error!("failed to install system skills: {err}");
         }
     }

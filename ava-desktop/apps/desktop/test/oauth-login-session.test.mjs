@@ -12,7 +12,7 @@ const { beginOAuthLogin } = await import("../src/lib/oauth-login-session.ts");
 /**
  * The preload API, with the start call held open so a test can emit events
  * while the renderer still does not know the login id — the window in which
- * OpenAI Codex asks its browser-or-device-code question.
+ * OpenAI Ava asks its browser-or-device-code question.
  */
 function fakeApi({ loginId = "login-1" } = {}) {
   const listeners = new Set();
@@ -71,10 +71,10 @@ function watch(session) {
 
 test("a prompt raised before the login id is known still reaches the dialog", async () => {
   const fake = fakeApi();
-  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-codex" });
+  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-ava" });
   const seen = watch(session);
 
-  // pi-ai's Codex flow asks its first question in the same tick the login
+  // pi-ai's Ava flow asks its first question in the same tick the login
   // begins, long before the start reply carries the id back.
   fake.emit({
     kind: "prompt",
@@ -93,7 +93,7 @@ test("a prompt raised before the login id is known still reaches the dialog", as
 
 test("held events are released in order, and later ones flow straight through", async () => {
   const fake = fakeApi();
-  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-codex" });
+  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-ava" });
   const seen = watch(session);
 
   fake.emit({ kind: "info", loginId: "login-1", message: "one" });
@@ -110,7 +110,7 @@ test("held events are released in order, and later ones flow straight through", 
 
 test("a dialog that remounts is replayed the conversation, and starts nothing", async () => {
   const fake = fakeApi();
-  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-codex" });
+  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-ava" });
 
   // StrictMode: subscribe, tear down, subscribe again on the same session.
   const first = watch(session);
@@ -140,7 +140,7 @@ test("a dialog that remounts is replayed the conversation, and starts nothing", 
 
 test("another attempt's events are dropped, held or live", async () => {
   const fake = fakeApi();
-  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-codex" });
+  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-ava" });
   const seen = watch(session);
 
   fake.emit({ kind: "info", loginId: "other", message: "held-stranger" });
@@ -157,7 +157,7 @@ test("another attempt's events are dropped, held or live", async () => {
 
 test("respond and cancel wait for the id rather than racing it", async () => {
   const fake = fakeApi();
-  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-codex" });
+  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-ava" });
 
   const responded = session.respond("p1", "browser");
   const cancelled = session.cancel();
@@ -171,7 +171,7 @@ test("respond and cancel wait for the id rather than racing it", async () => {
   await responded;
   assert.equal(await cancelled, true);
   assert.deepEqual(fake.calls, [
-    { method: "start", vendorId: "openai-codex" },
+    { method: "start", vendorId: "openai-ava" },
     { method: "respond", loginId: "login-1", promptId: "p1", value: "browser" },
     { method: "cancel", loginId: "login-1" },
   ]);
@@ -180,7 +180,7 @@ test("respond and cancel wait for the id rather than racing it", async () => {
 
 test("a start that fails reports down the stream and answers nothing after", async () => {
   const fake = fakeApi();
-  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-codex" });
+  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-ava" });
   const seen = watch(session);
 
   await fake.failStart(new Error("no flow registered"));
@@ -188,7 +188,7 @@ test("a start that fails reports down the stream and answers nothing after", asy
   assert.deepEqual(seen.events, [
     {
       loginId: "",
-      vendorId: "openai-codex",
+      vendorId: "openai-ava",
       kind: "error",
       message: "no flow registered",
     },
@@ -207,7 +207,7 @@ test("a start that fails reports down the stream and answers nothing after", asy
 
 test("disposing stops delivery and unsubscribes", async () => {
   const fake = fakeApi();
-  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-codex" });
+  const session = beginOAuthLogin({ api: fake.api, vendorId: "openai-ava" });
   const seen = watch(session);
 
   fake.emit({ kind: "info", loginId: "login-1", message: "held" });

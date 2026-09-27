@@ -152,7 +152,7 @@ async fn plan_gate_prevents_requests_and_unavailable_plan_does_not_block_other_r
     let (mut config, handle, frame) = view.connection.clone().unwrap();
     std::sync::Arc::make_mut(&mut config)
         .features
-        .enable(codex_features::Feature::AnalyticsPlanHistory)
+        .enable(ava_features::Feature::AnalyticsPlanHistory)
         .unwrap();
     view.open(handle, frame, Vec::new(), config);
     test_support::settle(&mut view).await;
@@ -176,7 +176,7 @@ async fn plan_gate_prevents_requests_and_unavailable_plan_does_not_block_other_r
     let (mut config, handle, frame) = business.connection.clone().unwrap();
     std::sync::Arc::make_mut(&mut config)
         .features
-        .enable(codex_features::Feature::AnalyticsPlanHistory)
+        .enable(ava_features::Feature::AnalyticsPlanHistory)
         .unwrap();
     business.open(handle, frame, Vec::new(), config);
     test_support::settle(&mut business).await;

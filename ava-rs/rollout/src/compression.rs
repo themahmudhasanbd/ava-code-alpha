@@ -47,10 +47,10 @@ impl RolloutCompressionTrigger {
 /// Starts a best-effort background job that compresses cold local rollout files.
 ///
 /// The worker is fire-and-forget: failures are logged, startup is not blocked,
-/// and a run marker under `codex_home` prevents overlapping or too-frequent
+/// and a run marker under `ava_home` prevents overlapping or too-frequent
 /// compression runs from the same local store.
-pub fn spawn_rollout_compression_worker(codex_home: PathBuf, trigger: RolloutCompressionTrigger) {
-    worker::spawn(codex_home, trigger)
+pub fn spawn_rollout_compression_worker(ava_home: PathBuf, trigger: RolloutCompressionTrigger) {
+    worker::spawn(ava_home, trigger)
 }
 
 /// Returns the modified time for the existing plain or compressed rollout file.
@@ -348,8 +348,8 @@ mod worker {
     }
 
     impl CompressionRunMarker {
-        pub(super) fn try_claim(codex_home: &Path) -> io::Result<Option<Self>> {
-            let marker_dir = codex_home.join(".tmp");
+        pub(super) fn try_claim(ava_home: &Path) -> io::Result<Option<Self>> {
+            let marker_dir = ava_home.join(".tmp");
             std::fs::create_dir_all(marker_dir.as_path())?;
             let path = marker_dir.join(RUN_MARKER_FILE_NAME);
             match create_run_marker_file(path.as_path()) {
@@ -398,47 +398,47 @@ mod worker {
         }
     }
 
-    pub(super) fn spawn(codex_home: PathBuf, trigger: RolloutCompressionTrigger) {
+    pub(super) fn spawn(ava_home: PathBuf, trigger: RolloutCompressionTrigger) {
         let Ok(handle) = tokio::runtime::Handle::try_current() else {
             metrics::run(trigger, "skipped_no_runtime");
             warn!(
                 "failed to start rollout compression worker for {}: no Tokio runtime",
-                codex_home.display()
+                ava_home.display()
             );
             return;
         };
         handle.spawn(async move {
-            if let Err(err) = run(codex_home.clone(), trigger).await {
+            if let Err(err) = run(ava_home.clone(), trigger).await {
                 warn!(
                     "rollout compression worker failed for {}: {err}",
-                    codex_home.display()
+                    ava_home.display()
                 );
             }
         });
     }
 
     pub(super) async fn run(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         trigger: RolloutCompressionTrigger,
     ) -> io::Result<()> {
         let Some(_maintenance_guard) =
-            crate::try_acquire_rollout_maintenance_lock(codex_home.as_path())
+            crate::try_acquire_rollout_maintenance_lock(ava_home.as_path())
                 .inspect_err(|err| FailureMetric::Run(trigger).record("maintenance_lock", err))?
         else {
             metrics::run(trigger, "skipped_maintenance");
             debug!(
                 "rollout maintenance is already running for {}",
-                codex_home.display()
+                ava_home.display()
             );
             return Ok(());
         };
-        let marker = match CompressionRunMarker::try_claim(codex_home.as_path()) {
+        let marker = match CompressionRunMarker::try_claim(ava_home.as_path()) {
             Ok(Some(marker)) => marker,
             Ok(None) => {
                 metrics::run(trigger, "skipped_already_running");
                 debug!(
                     "rollout compression worker recently ran or is already running for {}",
-                    codex_home.display()
+                    ava_home.display()
                 );
                 return Ok(());
             }
@@ -450,17 +450,17 @@ mod worker {
 
         metrics::run(trigger, "started");
         let started_at = Instant::now();
-        let writer_locks = Arc::new(crate::WriterLockCoordinator::new(&codex_home));
+        let writer_locks = Arc::new(crate::WriterLockCoordinator::new(&ava_home));
         let mut stage = "temp_cleanup";
         let result = async {
             let mut stats = CompressionStats {
-                cleanup_errors: cleanup_stale_temps(codex_home.as_path(), trigger).await?,
+                cleanup_errors: cleanup_stale_temps(ava_home.as_path(), trigger).await?,
                 ..Default::default()
             };
             stage = "scan";
             for root in [
-                codex_home.join(ARCHIVED_SESSIONS_SUBDIR),
-                codex_home.join(SESSIONS_SUBDIR),
+                ava_home.join(ARCHIVED_SESSIONS_SUBDIR),
+                ava_home.join(SESSIONS_SUBDIR),
             ] {
                 if started_at.elapsed() >= WORKER_MAX_RUNTIME {
                     stats.time_budget_exhausted = true;
@@ -767,7 +767,7 @@ mod worker {
     fn compress_rollout_if_cold_blocking(
         path: &Path,
         writer_locks: &Arc<crate::WriterLockCoordinator>,
-        thread_id: codex_protocol::ThreadId,
+        thread_id: ava_protocol::ThreadId,
         trigger: RolloutCompressionTrigger,
     ) -> io::Result<CompressionMeasurement> {
         let before = match cold_file_state(path)
@@ -957,13 +957,13 @@ mod worker {
     }
 
     async fn cleanup_stale_temps(
-        codex_home: &Path,
+        ava_home: &Path,
         trigger: RolloutCompressionTrigger,
     ) -> io::Result<bool> {
         let mut errors = false;
         for root in [
-            codex_home.join(SESSIONS_SUBDIR),
-            codex_home.join(ARCHIVED_SESSIONS_SUBDIR),
+            ava_home.join(SESSIONS_SUBDIR),
+            ava_home.join(ARCHIVED_SESSIONS_SUBDIR),
         ] {
             errors |= cleanup_stale_temps_in_root(root.as_path(), trigger).await?;
         }
@@ -1060,17 +1060,17 @@ mod metrics {
     use super::RolloutCompressionTrigger;
     use std::time::Duration;
 
-    const FILE_COMPRESSED_BYTES_HISTOGRAM: &str = "codex.rollout_compression.file.compressed_bytes";
-    pub(super) const FILE_COUNTER: &str = "codex.rollout_compression.file";
-    const FILE_DURATION_HISTOGRAM: &str = "codex.rollout_compression.file.duration_ms";
-    const FILE_SOURCE_BYTES_HISTOGRAM: &str = "codex.rollout_compression.file.source_bytes";
+    const FILE_COMPRESSED_BYTES_HISTOGRAM: &str = "ava.rollout_compression.file.compressed_bytes";
+    pub(super) const FILE_COUNTER: &str = "ava.rollout_compression.file";
+    const FILE_DURATION_HISTOGRAM: &str = "ava.rollout_compression.file.duration_ms";
+    const FILE_SOURCE_BYTES_HISTOGRAM: &str = "ava.rollout_compression.file.source_bytes";
     const FILE_COMPRESSION_RATIO_HISTOGRAM: &str =
-        "codex.rollout_compression.file.compression_ratio";
-    pub(super) const MATERIALIZE_COUNTER: &str = "codex.rollout_compression.materialize";
-    pub(super) const RUN_COUNTER: &str = "codex.rollout_compression.run";
-    pub(super) const RUN_DURATION_HISTOGRAM: &str = "codex.rollout_compression.run.duration_ms";
+        "ava.rollout_compression.file.compression_ratio";
+    pub(super) const MATERIALIZE_COUNTER: &str = "ava.rollout_compression.materialize";
+    pub(super) const RUN_COUNTER: &str = "ava.rollout_compression.run";
+    pub(super) const RUN_DURATION_HISTOGRAM: &str = "ava.rollout_compression.run.duration_ms";
     const RATIO_BASIS_POINTS: u128 = 10_000;
-    pub(super) const TEMP_CLEANUP_COUNTER: &str = "codex.rollout_compression.temp_cleanup";
+    pub(super) const TEMP_CLEANUP_COUNTER: &str = "ava.rollout_compression.temp_cleanup";
 
     pub(super) fn file(trigger: RolloutCompressionTrigger, outcome: &'static str) {
         counter(
@@ -1139,7 +1139,7 @@ mod metrics {
 
     pub(super) fn materialize_duration(outcome: &'static str, duration: Duration) {
         duration_histogram(
-            "codex.rollout_compression.materialize.duration_ms",
+            "ava.rollout_compression.materialize.duration_ms",
             duration,
             &[("outcome", outcome)],
         );
@@ -1172,21 +1172,21 @@ mod metrics {
     }
 
     pub(super) fn counter(name: &str, tags: &[(&str, &str)]) {
-        let Some(metrics) = codex_otel::global() else {
+        let Some(metrics) = ava_otel::global() else {
             return;
         };
         let _ = metrics.counter(name, /*inc*/ 1, tags);
     }
 
     fn histogram(name: &str, value: i64, tags: &[(&str, &str)]) {
-        let Some(metrics) = codex_otel::global() else {
+        let Some(metrics) = ava_otel::global() else {
             return;
         };
         let _ = metrics.histogram(name, value, tags);
     }
 
     pub(super) fn duration_histogram(name: &str, duration: Duration, tags: &[(&str, &str)]) {
-        let Some(metrics) = codex_otel::global() else {
+        let Some(metrics) = ava_otel::global() else {
             return;
         };
         let _ = metrics.record_duration(name, duration, tags);

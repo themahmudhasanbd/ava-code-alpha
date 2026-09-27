@@ -2,10 +2,10 @@
 //! This snapshot is in memory only; transcript durability remains part of turn completion.
 
 use super::session::Session;
-use codex_history::CompactedItem;
-use codex_history::RolloutItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::TokenCountEvent;
+use ava_history::CompactedItem;
+use ava_history::RolloutItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::TokenCountEvent;
 
 impl Session {
     pub(crate) async fn guardian_fork_history(&self) -> Vec<RolloutItem> {

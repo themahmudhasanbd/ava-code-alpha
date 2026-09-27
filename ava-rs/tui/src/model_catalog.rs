@@ -1,7 +1,7 @@
 //! TUI model and collaboration inventories; refreshing models preserves the server mode catalog.
 
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::openai_models::ModelPreset;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::openai_models::ModelPreset;
 use std::convert::Infallible;
 
 pub(crate) const LUNA_RESERVE_MODEL: &str = "gpt-reserve";

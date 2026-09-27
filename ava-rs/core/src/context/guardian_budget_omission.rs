@@ -1,7 +1,7 @@
 //! Bounded reviewer notice for evidence omitted by the aggregate input budget.
 
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 /// Identifies incomplete evidence without implying additional authority.
 pub struct GuardianBudgetOmission;

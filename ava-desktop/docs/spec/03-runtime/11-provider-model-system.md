@@ -76,7 +76,7 @@ conversation id (or a per-call UUID when the caller has no session),
 host is `opencode.ai` receives the same headers. pi-ai is not relied on to
 emit `x-opencode-session`. Each provider row (AI service or OAuth account)
 may set optional `headers`; empty keeps adapter defaults. A fetch wrapper is
-the last writer so Codex and Anthropic cannot overwrite them.
+the last writer so Ava and Anthropic cannot overwrite them.
 
 When an OAuth vendor is rebuilt around a local provider-row id, runtime keeps
 the native pi-ai transport metadata instead of treating the row as a generic
@@ -171,7 +171,7 @@ PI-Desktop must not permanently restrict users to a short fixed model list.
    identity, and vendor-prefixed IDs such as `deepseek/deepseek-v4`; a provider
    model ID without the catalog prefix is matched to the exact unprefixed
    suffix only when the provider identity is unambiguous. Native adapter keys
-   may use a catalog alias — for example, pi-ai's `openai-codex` ChatGPT
+   may use a catalog alias — for example, pi-ai's `openai-ava` ChatGPT
    subscription adapter resolves model metadata through the `openai` record —
    while the adapter keeps its own transport identity. They cannot invent or
    replace model metadata. A configured free-form ID remains selectable with
@@ -315,7 +315,7 @@ type ProviderConfig = {
     | "responses"
     | "anthropic_messages"
     | "google_generative_ai"
-    | "openai_codex_responses" // vendor account only
+    | "openai_ava_responses" // vendor account only
     | "pi_messages"            // vendor account only
     | "auto"
   compatibility?: {
@@ -450,7 +450,7 @@ token, and holds an access token only for the provider its session is bound to.
 Model discovery for such a row reads the authenticated catalog
 (`models.getAvailable`, which applies the vendor's own `filterModels`) rather
 than probing `/models`, and the connection test proves the account by resolving
-auth. For static OAuth vendors such as ChatGPT Plus/Pro (`openai-codex`), that
+auth. For static OAuth vendors such as ChatGPT Plus/Pro (`openai-ava`), that
 catalog is the pinned pi-ai model list rather than a live vendor `/models`
 probe, so a newly published account model such as `gpt-6-astra` appears only
 after the pin includes it. xAI (`xai`, the Grok/X subscription) is the
@@ -549,7 +549,7 @@ type ModelDescriptor = {
 - keep model cards compact by default, expand metadata/configuration on demand,
   and keep dialog actions outside the independently scrollable content
 - do not expose raw catalog compatibility internals or provider secrets
-- Settings → Import can copy provider/model rows from Claude Code, Codex,
+- Settings → Import can copy provider/model rows from Claude Code, Ava,
   OpenCode, Pi, and CC Switch. The scan is explicit. Stored API keys are
   copied into the host secret store; OAuth/subscription grants are not.
   An equivalent provider (normalized URL + API style + same credential) is

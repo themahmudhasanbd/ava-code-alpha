@@ -5,16 +5,16 @@ use std::path::Path;
 use std::time::Duration;
 
 #[cfg(windows)]
-use codex_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::config_types::WindowsSandboxLevel;
 #[cfg(windows)]
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfile;
 #[cfg(windows)]
-use codex_sandboxing::SandboxExecRequest;
+use ava_sandboxing::SandboxExecRequest;
 #[cfg(windows)]
-use codex_sandboxing::SandboxType;
+use ava_sandboxing::SandboxType;
 #[cfg(windows)]
-use codex_utils_path_uri::PathUri;
-use codex_utils_pty::Command;
+use ava_utils_path_uri::PathUri;
+use ava_utils_pty::Command;
 use pretty_assertions::assert_eq;
 #[cfg(windows)]
 use tokio::io::AsyncReadExt;
@@ -155,12 +155,12 @@ async fn completed_windows_image_read_does_not_wait_for_a_stuck_helper() {
     let path = directory.path().join("image.png");
     let operations = [
         (
-            r#"[IO.File]::WriteAllText($env:CODEX_FS_HELPER_TEST_PATH, 'image')
+            r#"[IO.File]::WriteAllText($env:AVA_FS_HELPER_TEST_PATH, 'image')
 [Console]::Out.WriteLine('{"status":"ok","payload":{"operation":"fs/writeFile","response":{}}}')"#,
             FsHelperPayload::WriteFile(FsWriteFileResponse {}),
         ),
         (
-            r#"$data = [Convert]::ToBase64String([IO.File]::ReadAllBytes($env:CODEX_FS_HELPER_TEST_PATH))
+            r#"$data = [Convert]::ToBase64String([IO.File]::ReadAllBytes($env:AVA_FS_HELPER_TEST_PATH))
 [Console]::Out.WriteLine('{"status":"ok","payload":{"operation":"fs/readFile","response":{"dataBase64":"' + $data + '"}}}')"#,
             FsHelperPayload::ReadFile(FsReadFileResponse {
                 data_base64: "aW1hZ2U=".to_string(),
@@ -194,7 +194,7 @@ async fn duplicated_windows_file_handle_survives_bounded_helper_cleanup() {
     std::fs::write(&path, b"image").expect("image file");
     let command = powershell_command(
         r#"[Console]::In.ReadLine() | Out-Null
-$file = [IO.File]::OpenRead($env:CODEX_FS_HELPER_TEST_PATH)
+$file = [IO.File]::OpenRead($env:AVA_FS_HELPER_TEST_PATH)
 $handle = $file.SafeFileHandle.DangerousGetHandle().ToInt64()
 [Console]::Out.WriteLine('{"status":"ok","payload":{"operation":"fs/open","response":{"processId":' + $PID + ',"fileHandle":' + $handle + '}}}')
 [Console]::Out.Flush()
@@ -241,7 +241,7 @@ fn powershell_command(script: &str, path: &Path) -> anyhow::Result<SandboxExecRe
         env: HashMap::from([
             ("SystemRoot".to_string(), system_root),
             (
-                "CODEX_FS_HELPER_TEST_PATH".to_string(),
+                "AVA_FS_HELPER_TEST_PATH".to_string(),
                 path.to_string_lossy().into_owned(),
             ),
         ]),

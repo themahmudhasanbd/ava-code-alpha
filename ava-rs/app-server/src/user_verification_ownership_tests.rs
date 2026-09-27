@@ -1,11 +1,11 @@
 use super::*;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::McpServerElicitationRequest;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
+use ava_app_server_protocol::McpServerElicitationRequest;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::future::Future;
@@ -173,7 +173,7 @@ async fn verification_without_a_connected_app_has_no_pending_callback() {
 
 async fn auth_manager(home: &std::path::Path) -> Arc<AuthManager> {
     let auth = AuthManager::from_auth_for_testing_with_home(
-        CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         home.to_path_buf(),
     );
     write_auth(home, "token-1", "account-1");

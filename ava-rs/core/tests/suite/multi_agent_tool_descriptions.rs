@@ -1,15 +1,15 @@
 //! Verifies V2 catalog tool messages change only their selected description or parameter schema.
 
 use anyhow::Result;
-use codex_core::config::AgentRoleConfig;
-use codex_features::Feature;
-use codex_protocol::openai_models::ToolMessages;
-use codex_protocol::protocol::MultiAgentVersion;
+use ava_core::config::AgentRoleConfig;
+use ava_features::Feature;
+use ava_protocol::openai_models::ToolMessages;
+use ava_protocol::protocol::MultiAgentVersion;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse_completed;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -121,7 +121,7 @@ async fn multi_agent_catalog_messages_change_only_selected_tool_fields(
         None,
         serde_json::from_value::<Option<ToolMessages>>(tool_messages.clone())?,
     ] {
-        let test = test_codex()
+        let test = test_ava()
             .with_model_info_override("gpt-5.2", move |model| {
                 model.multi_agent_version = Some(if matches!(exposure, Exposure::V1) {
                     MultiAgentVersion::V1

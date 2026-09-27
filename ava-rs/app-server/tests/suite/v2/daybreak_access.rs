@@ -3,20 +3,20 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::CapabilityRootLocation;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::McpServerToolCallParams;
-use codex_app_server_protocol::McpServerToolCallResponse;
-use codex_app_server_protocol::SelectedCapabilityRoot;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_protocol::CapabilityRootLocation;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::McpServerToolCallParams;
+use ava_app_server_protocol::McpServerToolCallResponse;
+use ava_app_server_protocol::SelectedCapabilityRoot;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
+use ava_utils_path_uri::PathUri;
 use core_test_support::responses;
 use core_test_support::stdio_server_bin;
 use pretty_assertions::assert_eq;
@@ -54,9 +54,9 @@ async fn daybreak_access_respects_plugin_provenance(case: AccessCall) -> Result<
     } else {
         home.path().join("plugins/cache/test/sample/local")
     };
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample"}"#,
     )?;
     let mut mcp_config = json!({
@@ -95,7 +95,7 @@ async fn daybreak_access_respects_plugin_provenance(case: AccessCall) -> Result<
         )?;
     }
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", api_key)])
         // Daybreak metadata is local-host-only, even when the test runner provides a remote executor.
         .without_auto_env()
@@ -154,7 +154,7 @@ async fn daybreak_access_respects_plugin_provenance(case: AccessCall) -> Result<
                 responses::sse(vec![
                     responses::ev_tool_search_call(
                         "search",
-                        &json!({"query":"get_codex_security_daybreak_access"}),
+                        &json!({"query":"get_ava_security_daybreak_access"}),
                     ),
                     responses::ev_completed("resp-1"),
                 ]),
@@ -162,7 +162,7 @@ async fn daybreak_access_respects_plugin_provenance(case: AccessCall) -> Result<
                     responses::ev_function_call_with_namespace(
                         "daybreak-call",
                         "mcp__sample",
-                        "get_codex_security_daybreak_access",
+                        "get_ava_security_daybreak_access",
                         "{}",
                     ),
                     responses::ev_completed("resp-2"),

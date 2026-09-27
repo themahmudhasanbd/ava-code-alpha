@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use ts_rs::TS;
 
-// Types for the TODO tool arguments matching codex-vscode/todo-mcp/src/main.rs
+// Types for the TODO tool arguments matching ava-vscode/todo-mcp/src/main.rs
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, TS)]
 #[serde(rename_all = "snake_case")]
 pub enum StepStatus {

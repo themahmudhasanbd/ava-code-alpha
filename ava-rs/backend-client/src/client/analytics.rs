@@ -3,7 +3,7 @@
 use super::Client;
 use super::PathStyle;
 use super::RequestError;
-use codex_backend_openapi_models::models::analytics as models;
+use ava_backend_openapi_models::models::analytics as models;
 use http::Method;
 
 /// The bounded set of reports used by consumer and workspace Analytics views.
@@ -50,7 +50,7 @@ impl Client {
             AnalyticsReport::Skills { .. } => "analytics/daily-skill-usage-metrics",
         };
         let prefix = match self.path_style {
-            PathStyle::CodexApi => "api/codex",
+            PathStyle::AvaApi => "api/ava",
             PathStyle::ChatGptApi => "wham",
         };
         let mut url = url::Url::parse(&format!("{}/{prefix}/{route}", self.base_url))
@@ -77,7 +77,7 @@ impl Client {
             AnalyticsReport::EnterpriseTokens => {
                 url.query_pairs_mut()
                     .append_pair("breakdown_by", "model")
-                    .append_pair("modes", "codex")
+                    .append_pair("modes", "ava")
                     .append_pair("modes", "work");
             }
             AnalyticsReport::Plugins { limit } => {

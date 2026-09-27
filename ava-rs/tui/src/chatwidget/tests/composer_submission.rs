@@ -3,13 +3,13 @@ use crate::app_event::ConnectorsSnapshot;
 use crate::bottom_pane::RestrictedInputMode;
 use crate::history_cell::ThreadRecapLoadingCell;
 use base64::Engine;
-use codex_app_server_protocol::ImageReference;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_app_server_protocol::ImageReference;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use pretty_assertions::assert_eq;
 use std::collections::VecDeque;
 
@@ -1692,7 +1692,7 @@ async fn output_free_esc_interrupt_keeps_prompt_and_opens_blank_composer() {
                     saw_prompt = true;
                 }
             }
-            Ok(AppEvent::CodexOp(Op::Interrupt)) => break,
+            Ok(AppEvent::AvaOp(Op::Interrupt)) => break,
             Ok(_) => {}
             Err(error) => panic!("expected Esc interrupt command, got {error:?}"),
         }
@@ -2021,9 +2021,9 @@ async fn shift_left_edits_most_recent_queued_message_in_tmux() {
 
 #[test]
 fn queued_message_edit_hint_displays_configured_chords() {
-    use codex_config::types::KeybindingSpec;
-    use codex_config::types::KeybindingsSpec;
-    use codex_config::types::TuiKeymap;
+    use ava_config::types::KeybindingSpec;
+    use ava_config::types::KeybindingsSpec;
+    use ava_config::types::TuiKeymap;
 
     let terminal_info = || TerminalInfo {
         name: TerminalName::Iterm2,
@@ -2246,7 +2246,7 @@ fn user_message_display_from_inputs_matches_flattened_user_message_shape() {
 
 #[test]
 fn user_message_display_from_inputs_hides_prompt_context() {
-    let raw_message = "# Context from my IDE setup:\n\n## Active file: src/lib.rs\n\n## My request for Codex:\nAsk $figma";
+    let raw_message = "# Context from my IDE setup:\n\n## Active file: src/lib.rs\n\n## My request for Ava:\nAsk $figma";
     let mention_start = raw_message.find("$figma").expect("mention in raw message");
     let rendered = ChatWidget::user_message_display_from_inputs(&[UserInput::Text {
         text: raw_message.to_string(),
@@ -2373,7 +2373,7 @@ async fn committed_user_message_with_hidden_prompt_context_renders_local_images(
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let local_image = PathBuf::from("/tmp/context-image.png");
     let raw_message =
-        "# Context from my IDE setup:\n\n## Active file: src/lib.rs\n\n## My request for Codex:\n";
+        "# Context from my IDE setup:\n\n## Active file: src/lib.rs\n\n## My request for Ava:\n";
 
     complete_user_message_for_inputs(
         &mut chat,
@@ -2540,7 +2540,7 @@ async fn image_submission_is_portable_for_new_turns_and_steers() {
         let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
         chat.thread_id = Some(ThreadId::new());
         chat.snapshot_local_images = true;
-        chat.codex_op_target = CodexOpTarget::AppEvent;
+        chat.ava_op_target = AvaOpTarget::AppEvent;
         // Repeated identical submissions each render once, across supported receipt shapes.
         for (echo_client_id, omit_media) in [(false, false), (true, false), (true, true)] {
             let mut message = message.clone();
@@ -2564,7 +2564,7 @@ async fn image_submission_is_portable_for_new_turns_and_steers() {
                     AppEvent::InsertHistoryCell(cell) => {
                         rendered.push(cell.display_lines(/*width*/ 80))
                     }
-                    AppEvent::CodexOp(AppCommand::UserTurn {
+                    AppEvent::AvaOp(AppCommand::UserTurn {
                         items,
                         client_user_message_id,
                         ..
@@ -2827,7 +2827,7 @@ fn image_preparation_keeps_input_responsive_and_preserves_pending_input() {
                     }
                     chat.on_images_prepared(id);
                 } else if scenario == "parent_owned" || scenario == "external_writer" {
-                    chat.codex_op_target = CodexOpTarget::AppEvent;
+                    chat.ava_op_target = AvaOpTarget::AppEvent;
                     if scenario == "parent_owned" {
                         chat.set_parent_owned_thread();
                     } else {

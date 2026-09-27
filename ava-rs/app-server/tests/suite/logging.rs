@@ -9,22 +9,22 @@ use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::encode_id_token;
 use app_test_support::write_models_cache;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
-use codex_state::LogQuery;
-use codex_state::SqliteConfig;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
+use ava_state::LogQuery;
+use ava_state::SqliteConfig;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -81,7 +81,7 @@ async fn credentials_stay_out_of_persisted_and_feedback_logs() -> Result<()> {
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server_uri = server.uri();
     MockResponsesConfig::new(&server_uri)
         .with_root_config(&format!("chatgpt_base_url = \"{server_uri}/backend-api\""))
@@ -96,17 +96,17 @@ http_headers = {{ X-Credential = "{header}" }}
 supports_websockets = false
 "#
         ))
-        .write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build()
         .await?;
     let initialized = app_server
         .initialize_with_capabilities(
             ClientInfo {
-                name: "codex_desktop".into(),
+                name: "ava_desktop".into(),
                 title: None,
                 version: "0.1.0".into(),
             },
@@ -210,7 +210,7 @@ supports_websockets = false
         .send_response(RequestId::String(barrier.into()), json!({}))
         .await?;
     let state = StateRuntime::init(
-        SqliteConfig::new_for_testing(codex_home.path().abs()),
+        SqliteConfig::new_for_testing(ava_home.path().abs()),
         "mock_provider".into(),
     )
     .await?;
@@ -250,8 +250,8 @@ supports_websockets = false
 
 #[test]
 fn standalone_app_server_emits_json_info_events() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let event = app_server_json_shutdown_event("codex-app-server", &[], codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    let event = app_server_json_shutdown_event("ava-app-server", &[], ava_home.path())?;
 
     assert_eq!(
         event,
@@ -263,7 +263,7 @@ fn standalone_app_server_emits_json_info_events() -> Result<()> {
                 "remaining_connection_count": 0,
                 "shutdown_forced": false,
             },
-            "target": "codex_app_server",
+            "target": "ava_app_server",
         })
     );
 
@@ -272,7 +272,7 @@ fn standalone_app_server_emits_json_info_events() -> Result<()> {
 
 #[tokio::test]
 async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
-    let quiet_period = codex_state::log_db::LogSinkQueueConfig::default().flush_interval
+    let quiet_period = ava_state::log_db::LogSinkQueueConfig::default().flush_interval
         + Duration::from_millis(600);
     let export_timeout = quiet_period * 3;
 
@@ -284,21 +284,21 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
             .mount(&collector)
             .await;
 
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let endpoint = format!("{}/v1/metrics", collector.uri());
         std::fs::write(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
             format!(
                 "[analytics]\nenabled = true\n\n[otel.metrics_exporter.otlp-http]\nendpoint = {endpoint:?}\nprotocol = \"json\"\n"
             ),
         )?;
 
         let _app_server = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .with_env_overrides(&[
                 ("OTEL_METRIC_EXPORT_INTERVAL", Some("200")),
                 (
-                    codex_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR,
+                    ava_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR,
                     Some("1"),
                 ),
             ])
@@ -309,7 +309,7 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
             loop {
                 let requests = collector.received_requests().await.unwrap_or_default();
                 if requests.iter().any(|request| {
-                    String::from_utf8_lossy(&request.body).contains(codex_state::LOG_WRITE_METRIC)
+                    String::from_utf8_lossy(&request.body).contains(ava_state::LOG_WRITE_METRIC)
                 }) {
                     break requests.len();
                 }
@@ -335,11 +335,11 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
         })?;
 
         let expected_metrics = [
-            (codex_state::LOG_WRITE_METRIC, "sum"),
-            (codex_state::LOG_WRITE_DURATION_METRIC, "histogram"),
-            (codex_state::LOG_WRITE_BYTES_METRIC, "histogram"),
-            (codex_state::LOG_WRITE_ENTRIES_METRIC, "histogram"),
-            (codex_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC, "histogram"),
+            (ava_state::LOG_WRITE_METRIC, "sum"),
+            (ava_state::LOG_WRITE_DURATION_METRIC, "histogram"),
+            (ava_state::LOG_WRITE_BYTES_METRIC, "histogram"),
+            (ava_state::LOG_WRITE_ENTRIES_METRIC, "histogram"),
+            (ava_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC, "histogram"),
         ];
         let payloads = requests
             .iter()
@@ -376,7 +376,7 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
                     attributes,
                     BTreeMap::from([
                         ("error", "none"),
-                        ("originator", "codex-app-server"),
+                        ("originator", "ava-app-server"),
                         ("status", "success"),
                     ]),
                     "metric {name} must preserve its production dimensions"
@@ -400,8 +400,8 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
 
                 if matches!(
                     name,
-                    codex_state::LOG_WRITE_BYTES_METRIC
-                        | codex_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC
+                    ava_state::LOG_WRITE_BYTES_METRIC
+                        | ava_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC
                 ) {
                     let bounds = point["explicitBounds"]
                         .as_array()
@@ -412,7 +412,7 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
             }
         }
 
-        let write_count = observed_metrics[codex_state::LOG_WRITE_METRIC].0;
+        let write_count = observed_metrics[ava_state::LOG_WRITE_METRIC].0;
         assert!(write_count > 0, "at least one SQLite batch must be written");
         for (name, _) in expected_metrics {
             assert_eq!(
@@ -421,20 +421,20 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
             );
         }
 
-        let state = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        let state = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
             "test-provider".to_string(),
         )
         .await?;
-        let persisted_logs = state.query_logs(&codex_state::LogQuery::default()).await?;
+        let persisted_logs = state.query_logs(&ava_state::LogQuery::default()).await?;
         assert_eq!(
-            observed_metrics[codex_state::LOG_WRITE_ENTRIES_METRIC].1,
+            observed_metrics[ava_state::LOG_WRITE_ENTRIES_METRIC].1,
             persisted_logs.len() as f64,
             "exported batch sizes must equal the number of persisted SQLite log rows"
         );
         assert!(
-            observed_metrics[codex_state::LOG_WRITE_BYTES_METRIC].1
-                >= observed_metrics[codex_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC].1,
+            observed_metrics[ava_state::LOG_WRITE_BYTES_METRIC].1
+                >= observed_metrics[ava_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC].1,
             "each batch's largest entry cannot exceed the total batch size"
         );
     }
@@ -448,7 +448,7 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
 #[test_case("14"; "unavailable")]
 #[tokio::test]
 async fn sqlite_log_metrics_grpc_exports_do_not_create_log_cycles(grpc_status: &str) -> Result<()> {
-    let quiet_period = codex_state::log_db::LogSinkQueueConfig::default().flush_interval
+    let quiet_period = ava_state::log_db::LogSinkQueueConfig::default().flush_interval
         + Duration::from_millis(600);
     let export_timeout = quiet_period * 3;
     let (export_count, mut exports) = watch::channel(/*init*/ 0_usize);
@@ -467,7 +467,7 @@ async fn sqlite_log_metrics_grpc_exports_do_not_create_log_cycles(grpc_status: &
             "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export",
         ))
         .respond_with(move |request: &wiremock::Request| {
-            let metric_name = codex_state::LOG_WRITE_METRIC.as_bytes();
+            let metric_name = ava_state::LOG_WRITE_METRIC.as_bytes();
             if request
                 .body
                 .windows(metric_name.len())
@@ -520,19 +520,19 @@ async fn sqlite_log_metrics_grpc_exports_do_not_create_log_cycles(grpc_status: &
         Ok::<(), std::io::Error>(())
     });
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "[analytics]\nenabled = true\n\n[otel.metrics_exporter.otlp-grpc]\nendpoint = {endpoint:?}\n"
         ),
     )?;
     let _app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("OTEL_METRIC_EXPORT_INTERVAL", Some("200")),
             (
-                codex_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR,
+                ava_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR,
                 Some("1"),
             ),
         ])
@@ -581,16 +581,16 @@ async fn app_server_emits_structured_tool_call_timing_event() -> Result<()> {
         create_final_assistant_message_sse_response("done")?,
     ])
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::UnifiedExec)
         .with_root_config("compact_prompt = \"compact\"\nmodel_auto_compact_token_limit = 100000")
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
-        .with_json_logging("warn,codex_core::tools::parallel=info")
+        .with_ava_home(ava_home.path())
+        .with_json_logging("warn,ava_core::tools::parallel=info")
         .build_initialized()
         .await?;
 
@@ -623,7 +623,7 @@ async fn app_server_emits_structured_tool_call_timing_event() -> Result<()> {
     .await??;
 
     let mut tool_call = app_server
-        .wait_for_json_log_event("codex.tool_call")
+        .wait_for_json_log_event("ava.tool_call")
         .await?;
     let tool_call_object = tool_call
         .as_object_mut()
@@ -667,7 +667,7 @@ async fn app_server_emits_structured_tool_call_timing_event() -> Result<()> {
             "level": "INFO",
             "fields": {
                 "message": "tool call completed",
-                "event.name": "codex.tool_call",
+                "event.name": "ava.tool_call",
                 "conversation.id": thread.id,
                 "turn_id": turn.id,
                 "tool_name": "exec_command",
@@ -675,7 +675,7 @@ async fn app_server_emits_structured_tool_call_timing_event() -> Result<()> {
                 "tool_source": "direct",
                 "execution_started": true,
             },
-            "target": "codex_core::tools::parallel",
+            "target": "ava_core::tools::parallel",
         })
     );
 

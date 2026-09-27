@@ -1,5 +1,5 @@
-use codex_app_server_protocol::ExternalAgentConfigMigrationItem;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItemType;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItem;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItemType;
 use std::collections::BTreeSet;
 
 #[derive(Clone, Debug)]
@@ -56,7 +56,7 @@ pub(crate) fn external_agent_config_migration_groups(
             } else {
                 format!("Projects ({project_count})")
             },
-            description: "Add Codex files alongside your existing project files",
+            description: "Add Ava files alongside your existing project files",
             item_indices: projects,
         });
     }

@@ -5,78 +5,78 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use anyhow::Result;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_exec_server::RemoveOptions;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ExtensionWarning;
-use codex_extension_api::SkillInvocationContributor;
-use codex_extension_api::SkillInvocationInput;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_models_manager::bundled_models_response;
-use codex_otel::OtelExporter;
-use codex_otel::OtelHttpProtocol;
-use codex_otel::OtelProvider;
-use codex_otel::OtelSettings;
-use codex_otel::THREAD_SKILLS_KEPT_TOTAL_METRIC;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnSettingsUpdate;
-use codex_protocol::protocol::TurnSettingsUpdateOutcome;
-use codex_protocol::user_input::UserInput;
-use codex_skills_extension::ExecutorSkillProvider;
-use codex_skills_extension::HostSkillProvider;
-use codex_skills_extension::OrchestratorSkillProvider;
-use codex_skills_extension::SkillProvider;
-use codex_skills_extension::SkillProviderSource;
-use codex_skills_extension::SkillProviders;
-use codex_skills_extension::SkillsExtensionConfig;
-use codex_skills_extension::catalog::SkillAuthority;
-use codex_skills_extension::catalog::SkillCatalog;
-use codex_skills_extension::catalog::SkillCatalogEntry;
-use codex_skills_extension::catalog::SkillPackageId;
-use codex_skills_extension::catalog::SkillProviderError;
-use codex_skills_extension::catalog::SkillReadResult;
-use codex_skills_extension::catalog::SkillResourceId;
-use codex_skills_extension::catalog::SkillSearchResult;
-use codex_skills_extension::catalog::SkillSourceKind;
-use codex_skills_extension::install;
-use codex_skills_extension::install_with_providers;
-use codex_skills_extension::provider::SkillListQuery;
-use codex_skills_extension::provider::SkillProviderFuture;
-use codex_skills_extension::provider::SkillReadRequest;
-use codex_skills_extension::provider::SkillSearchRequest;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_string::approx_token_count;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_exec_server::RemoveOptions;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ExtensionWarning;
+use ava_extension_api::SkillInvocationContributor;
+use ava_extension_api::SkillInvocationInput;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_models_manager::bundled_models_response;
+use ava_otel::OtelExporter;
+use ava_otel::OtelHttpProtocol;
+use ava_otel::OtelProvider;
+use ava_otel::OtelSettings;
+use ava_otel::THREAD_SKILLS_KEPT_TOTAL_METRIC;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnSettingsUpdate;
+use ava_protocol::protocol::TurnSettingsUpdateOutcome;
+use ava_protocol::user_input::UserInput;
+use ava_skills_extension::ExecutorSkillProvider;
+use ava_skills_extension::HostSkillProvider;
+use ava_skills_extension::OrchestratorSkillProvider;
+use ava_skills_extension::SkillProvider;
+use ava_skills_extension::SkillProviderSource;
+use ava_skills_extension::SkillProviders;
+use ava_skills_extension::SkillsExtensionConfig;
+use ava_skills_extension::catalog::SkillAuthority;
+use ava_skills_extension::catalog::SkillCatalog;
+use ava_skills_extension::catalog::SkillCatalogEntry;
+use ava_skills_extension::catalog::SkillPackageId;
+use ava_skills_extension::catalog::SkillProviderError;
+use ava_skills_extension::catalog::SkillReadResult;
+use ava_skills_extension::catalog::SkillResourceId;
+use ava_skills_extension::catalog::SkillSearchResult;
+use ava_skills_extension::catalog::SkillSourceKind;
+use ava_skills_extension::install;
+use ava_skills_extension::install_with_providers;
+use ava_skills_extension::provider::SkillListQuery;
+use ava_skills_extension::provider::SkillProviderFuture;
+use ava_skills_extension::provider::SkillReadRequest;
+use ava_skills_extension::provider::SkillSearchRequest;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_string::approx_token_count;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::apps_enabled_builder;
 use core_test_support::responses;
@@ -89,9 +89,9 @@ use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_remote;
 use core_test_support::skip_if_target_windows;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::test_env;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::test_env;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use opentelemetry_sdk::metrics::data::AggregatedMetrics;
@@ -315,9 +315,9 @@ fn executor_catalog(skills: &[(&str, &str)]) -> SkillCatalog {
     }
 }
 
-fn write_host_skills(codex_home: &std::path::Path, skills: &[(&str, &str)]) -> Result<()> {
+fn write_host_skills(ava_home: &std::path::Path, skills: &[(&str, &str)]) -> Result<()> {
     for (name, description) in skills {
-        let skill_dir = codex_home.join("skills").join(name);
+        let skill_dir = ava_home.join("skills").join(name);
         std::fs::create_dir_all(&skill_dir)?;
         std::fs::write(
             skill_dir.join("SKILL.md"),
@@ -331,7 +331,7 @@ fn catalog_extensions(
     executor_catalog: SkillCatalog,
     include_host_provider: bool,
 ) -> (
-    Arc<codex_extension_api::ExtensionRegistry<Config>>,
+    Arc<ava_extension_api::ExtensionRegistry<Config>>,
     std::sync::mpsc::Receiver<CapturedExtensionEvent>,
 ) {
     let (event_tx, event_rx) = std::sync::mpsc::channel();
@@ -368,7 +368,7 @@ async fn wait_for_analytics_events(
             .await
             .unwrap_or_default()
             .into_iter()
-            .filter(|request| request.url.path() == "/codex/analytics-events/events")
+            .filter(|request| request.url.path() == "/ava/analytics-events/events")
             .filter_map(|request| serde_json::from_slice::<Value>(&request.body).ok())
             .flat_map(|payload| payload["events"].as_array().cloned().unwrap_or_default())
             .filter(|event| event["event_type"] == event_type)
@@ -392,7 +392,7 @@ fn configure_catalog_test(config: &mut Config) {
         .expect("executor capability discovery should be configurable in tests");
     // A user layer also discovers the real `$HOME/.agents/skills`. Use a temporary system layer so
     // exact catalog and omission assertions only see the skills written under this test's home.
-    let system_config_path = config.codex_home.join("config.toml");
+    let system_config_path = config.ava_home.join("config.toml");
     config.config_layer_stack = ConfigLayerStack::new(
         vec![ConfigLayerEntry::new(
             ConfigLayerSource::System {
@@ -520,14 +520,14 @@ async fn rendered_catalogs_for_turns(
             .collect(),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     if !host_skills.is_empty() {
-        write_host_skills(codex_home.path(), host_skills)?;
+        write_host_skills(ava_home.path(), host_skills)?;
     }
     let (extensions, event_rx) =
         catalog_extensions(executor_catalog(executor_skills), !host_skills.is_empty());
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.5", move |model_info| {
             model_info.context_window = Some(context_window);
@@ -538,14 +538,14 @@ async fn rendered_catalogs_for_turns(
 
     let mut client_warning_messages = Vec::new();
     for _ in 0..turn_count {
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Inspect the available skills.".to_string(),
                 text_elements: Vec::new(),
             }]))
             .await?;
         loop {
-            match core_test_support::wait_for_event(&test.codex, |_| true).await {
+            match core_test_support::wait_for_event(&test.ava-code, |_| true).await {
                 EventMsg::Warning(warning) => client_warning_messages.push(warning.message),
                 EventMsg::TurnComplete(_) => break,
                 _ => {}
@@ -557,13 +557,13 @@ async fn rendered_catalogs_for_turns(
         .expect("production turn should issue a responses request")
         .message_input_texts("developer");
     // Extension warnings are client-visible through the app-server event sink,
-    // while core warnings are delivered through the TestCodex event stream.
+    // while core warnings are delivered through the TestAva event stream.
     // Count both paths so duplicate warning ownership cannot hide in this test.
     client_warning_messages.extend(event_rx.try_iter().filter_map(|event| match event {
         CapturedExtensionEvent::Warning(warning) => Some(warning.message),
         CapturedExtensionEvent::Event(_) => None,
     }));
-    let _codex_home_guard = codex_home;
+    let _ava_home_guard = ava_home;
     Ok((developer_texts, client_warning_messages))
 }
 
@@ -587,8 +587,8 @@ async fn capability_sections_render_in_order_with_host_repo_and_plugin_skills() 
     )
     .await;
 
-    let codex_home = Arc::new(TempDir::new()?);
-    let host_skill_dir = codex_home.path().join("skills/host-search");
+    let ava_home = Arc::new(TempDir::new()?);
+    let host_skill_dir = ava_home.path().join("skills/host-search");
     std::fs::create_dir_all(&host_skill_dir)?;
     let host_skill_path = host_skill_dir.join("SKILL.md");
     std::fs::write(
@@ -598,10 +598,10 @@ async fn capability_sections_render_in_order_with_host_repo_and_plugin_skills() 
         ),
     )?;
     let host_skill_path = dunce::canonicalize(host_skill_path)?;
-    let plugin_root = codex_home.path().join("plugins/cache/test/sample/local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    let plugin_root = ava_home.path().join("plugins/cache/test/sample/local");
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","description":"inspect sample data"}"#,
     )?;
     let plugin_skill_dir = plugin_root.join("skills/sample-search");
@@ -617,7 +617,7 @@ async fn capability_sections_render_in_order_with_host_repo_and_plugin_skills() 
         r#"{"apps":{"sample":{"id":"calendar"}}}"#,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[features]\nplugins = true\n\n[plugins.\"sample@test\"]\nenabled = true\n",
     )?;
 
@@ -629,10 +629,10 @@ async fn capability_sections_render_in_order_with_host_repo_and_plugin_skills() 
         orchestrator_skills_enabled: config.orchestrator_skills_enabled,
         shadow_selection_enabled: config.features.enabled(Feature::SkillSearch),
     });
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(Arc::new(extensions.build()))
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_workspace_setup(|cwd, fs| async move {
             let skill_dir = cwd.join(".agents/skills/repo-search");
             fs.create_directory(
@@ -670,7 +670,7 @@ async fn capability_sections_render_in_order_with_host_repo_and_plugin_skills() 
         .to_abs_path()?
         .to_path_buf();
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Text {
                 text: "use all skills".to_string(),
@@ -691,7 +691,7 @@ async fn capability_sections_render_in_order_with_host_repo_and_plugin_skills() 
         ]))
         .await?;
 
-    core_test_support::wait_for_event(&test.codex, |event| {
+    core_test_support::wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -770,8 +770,8 @@ async fn agent_plugin_skill_prompt_stays_bounded_without_skills_extension() -> R
     )
     .await;
 
-    let codex_home = Arc::new(TempDir::new()?);
-    let plugin_root = codex_home
+    let ava_home = Arc::new(TempDir::new()?);
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache/test/acme.tools/local");
     let skill_dir = plugin_root.join("skills/review");
@@ -788,20 +788,20 @@ async fn agent_plugin_skill_prompt_stays_bounded_without_skills_extension() -> R
         ),
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[features]\nplugins = true\n\n[plugins.\"acme.tools@test\"]\nenabled = true\n",
     )?;
     let skill_path = dunce::canonicalize(skill_dir.join("SKILL.md"))?;
-    let mut builder = test_codex().with_home(codex_home);
+    let mut builder = test_ava().with_home(ava_home);
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Skill {
             name: "acme.tools:review".into(),
             path: skill_path,
         }]))
         .await?;
-    let warning = core_test_support::wait_for_event(&test.codex, |event| {
+    let warning = core_test_support::wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::Warning(warning)
@@ -809,7 +809,7 @@ async fn agent_plugin_skill_prompt_stays_bounded_without_skills_extension() -> R
         )
     })
     .await;
-    core_test_support::wait_for_event(&test.codex, |event| {
+    core_test_support::wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -838,13 +838,13 @@ async fn explicit_skill_prompt_precedes_plugin_instructions() -> Result<()> {
     )
     .await;
 
-    let codex_home = Arc::new(TempDir::new()?);
-    let plugin_root = codex_home.path().join("plugins/cache/test/sample/local");
+    let ava_home = Arc::new(TempDir::new()?);
+    let plugin_root = ava_home.path().join("plugins/cache/test/sample/local");
     let skill_dir = plugin_root.join("skills/sample-search");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::create_dir_all(&skill_dir)?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","description":"inspect sample data"}"#,
     )?;
     std::fs::write(
@@ -852,18 +852,18 @@ async fn explicit_skill_prompt_precedes_plugin_instructions() -> Result<()> {
         "---\ndescription: inspect sample data\n---\n\n# body\n",
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[features]\nplugins = true\n\n[plugins.\"sample@test\"]\nenabled = true\n",
     )?;
     let skill_path = dunce::canonicalize(skill_dir.join("SKILL.md"))?;
     let (extensions, _) =
         catalog_extensions(SkillCatalog::default(), /*include_host_provider*/ true);
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_extensions(extensions);
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Skill {
                 name: "sample:sample-search".to_string(),
@@ -875,7 +875,7 @@ async fn explicit_skill_prompt_precedes_plugin_instructions() -> Result<()> {
             },
         ]))
         .await?;
-    core_test_support::wait_for_event(&test.codex, |event| {
+    core_test_support::wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -966,7 +966,7 @@ text({ names: result.skills.map(skill => skill.name), warnings: result.warnings,
     .await;
 
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(|request: &Request| {
             serde_json::from_slice::<Value>(&request.body).is_ok_and(|body| {
                 matches!(
@@ -1063,7 +1063,7 @@ text({ names: result.skills.map(skill => skill.name), warnings: result.warnings,
                 .expect("code mode should be configurable in tests");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
 
     test.submit_turn("Use $demo:explicit-only.").await?;
 
@@ -1363,7 +1363,7 @@ async fn production_turn_reuses_orchestrator_skills_until_mcp_invalidation() -> 
     let resource_updated = Arc::clone(&updated);
 
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(|request: &Request| {
             serde_json::from_slice::<Value>(&request.body).is_ok_and(|body| {
                 matches!(
@@ -1446,7 +1446,7 @@ async fn production_turn_reuses_orchestrator_skills_until_mcp_invalidation() -> 
                 .expect("orchestrator skills must not depend on host discovery");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
 
     test.submit_turn("Use $demo:search.").await?;
 
@@ -1506,7 +1506,7 @@ async fn production_turn_reuses_orchestrator_skills_until_mcp_invalidation() -> 
     );
 
     // A forced reconnect must also refresh the skills snapshot.
-    test.codex.submit(Op::RefreshMcpServers).await?;
+    test.ava-code.submit(Op::RefreshMcpServers).await?;
     test.submit_text_turn("Use $demo:search after reconnecting.")
         .await?;
     assert_eq!(startup.initialize_attempts(), 2);
@@ -1546,7 +1546,7 @@ async fn production_turn_aliases_executor_skill_roots() -> Result<()> {
         warnings: Vec::new(),
     };
     let (extensions, _) = catalog_extensions(catalog, /*include_host_provider*/ false);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.6-sol", |model_info| {
             model_info.context_window = Some(3_000);
@@ -1623,12 +1623,12 @@ async fn opted_in_executor_provider_skips_host_discovery_but_injects_discovered_
         vec![ev_response_created("resp-2"), ev_completed("resp-2")],
     ]])
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     write_host_skills(
-        codex_home.path(),
+        ava_home.path(),
         &[(HOST_SKILL_NAME, HOST_SKILL_DESCRIPTION)],
     )?;
-    let host_skill_path = codex_home
+    let host_skill_path = ava_home
         .path()
         .join("skills")
         .join(HOST_SKILL_NAME)
@@ -1650,8 +1650,8 @@ async fn opted_in_executor_provider_skips_host_discovery_but_injects_discovered_
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_extensions(Arc::new(extensions.build()))
         .with_workspace_setup(|cwd, fs| async move {
             for (skill_dir, name, description, body) in [
@@ -1819,7 +1819,7 @@ async fn opted_in_executor_provider_skips_host_discovery_but_injects_discovered_
     }
 
     executor_thread.thread.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     websocket_server.shutdown().await;
 
     let logs = String::from_utf8(buffer.lock().unwrap().clone())?;
@@ -1876,7 +1876,7 @@ async fn executor_only_provider_preserves_structured_repo_skill_without_discover
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_workspace_setup(|cwd, fs| async move {
             let skill_dir = cwd.join(".agents/skills").join(AMBIENT_SKILL_NAME);
@@ -1904,7 +1904,7 @@ async fn executor_only_provider_preserves_structured_repo_skill_without_discover
         .with_config(configure_catalog_test);
     let test = builder.build_with_auto_env(&server).await?;
     assert!(
-        test.codex
+        test.ava-code
             .inspect_selected_capability_roots()
             .ready_roots
             .is_empty(),
@@ -1927,7 +1927,7 @@ async fn executor_only_provider_preserves_structured_repo_skill_without_discover
         .to_abs_path()?
         .to_path_buf();
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Text {
                 text: format!("Use ${AMBIENT_SKILL_NAME}."),
@@ -1939,7 +1939,7 @@ async fn executor_only_provider_preserves_structured_repo_skill_without_discover
             },
         ]))
         .await?;
-    core_test_support::wait_for_event(&test.codex, |event| {
+    core_test_support::wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2020,7 +2020,7 @@ async fn executor_skill_tool_reads_references_under_current_permissions(
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_model_info_override("gpt-5.4", |model_info| {
             model_info.truncation_policy = TruncationPolicyConfig::bytes(/*limit*/ 8192);
@@ -2028,7 +2028,7 @@ async fn executor_skill_tool_reads_references_under_current_permissions(
         .with_config(configure_catalog_test);
     let test = builder.build_with_auto_env(&server).await?;
     let selection = test
-        .codex
+        .ava-code
         .environment_selections()
         .await
         .into_iter()
@@ -2322,7 +2322,7 @@ async fn explicit_executor_skill_prompt_rejects_oversized_resource() -> Result<(
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(configure_catalog_test);
     let test = builder.build_with_environment(&server, environment).await?;
@@ -2385,8 +2385,8 @@ async fn executor_skill_invocation_is_environment_scoped_and_deduplicated() -> R
     const SELECTED_RESOURCE: &str = "skill://selected-root/demo/SKILL.md";
 
     let server = responses::start_mock_server().await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let skill_path = codex_home.path().join("executor-skill/SKILL.md");
+    let ava_home = Arc::new(TempDir::new()?);
+    let skill_path = ava_home.path().join("executor-skill/SKILL.md");
     std::fs::create_dir_all(
         skill_path
             .parent()
@@ -2443,9 +2443,9 @@ async fn executor_skill_invocation_is_environment_scoped_and_deduplicated() -> R
 
     let (extensions, _) = catalog_extensions(catalog, /*include_host_provider*/ false);
     let chatgpt_base_url = server.uri();
-    let mut builder = test_codex()
-        .with_home(codex_home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_home(ava_home)
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_extensions(extensions)
         .with_config(move |config| {
             configure_catalog_test(config);
@@ -2488,13 +2488,13 @@ async fn production_turn_aliases_combined_skill_catalogs_under_shared_budget() -
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let codex_home = Arc::new(
+    let ava_home = Arc::new(
         tempfile::Builder::new()
-            .prefix("codex-integration-shared-skill-catalog-roots-")
+            .prefix("ava-integration-shared-skill-catalog-roots-")
             .tempdir()?,
     );
     write_host_skills(
-        codex_home.path(),
+        ava_home.path(),
         &[
             ("host-search", "Inspect host resources."),
             ("host-review", "Review host resources."),
@@ -2552,8 +2552,8 @@ async fn production_turn_aliases_combined_skill_catalogs_under_shared_budget() -
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_exec_server_url("none")
         .with_extensions(Arc::new(extensions.build()))
         .with_model_info_override("gpt-5.5", |model_info| {
@@ -2572,7 +2572,7 @@ async fn production_turn_aliases_combined_skill_catalogs_under_shared_budget() -
         .single_request()
         .message_input_texts("developer")
         .join("\n");
-    let host_root = dunce::canonicalize(codex_home.path().join("skills"))?
+    let host_root = dunce::canonicalize(ava_home.path().join("skills"))?
         .to_string_lossy()
         .replace('\\', "/");
     for (alias, root) in [
@@ -2630,13 +2630,13 @@ async fn assert_catalog_model_switch(max_context_tokens: Option<usize>) -> Resul
         ],
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     // Use the normal metrics sink to verify core's model attribution.
     let telemetry = OtelProvider::try_new(&OtelSettings {
         environment: "test".to_string(),
         service_name: "skills-model-switch".to_string(),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
-        codex_home: codex_home.path().to_path_buf(),
+        ava_home: ava_home.path().to_path_buf(),
         exporter: OtelExporter::None,
         trace_exporter: OtelExporter::None,
         metrics_exporter: OtelExporter::OtlpHttp {
@@ -2689,8 +2689,8 @@ async fn assert_catalog_model_switch(max_context_tokens: Option<usize>) -> Resul
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_model(MODEL_A)
         .with_extensions(Arc::new(extensions.build()))
         .with_config(move |config| {
@@ -2727,7 +2727,7 @@ async fn assert_catalog_model_switch(max_context_tokens: Option<usize>) -> Resul
             });
         });
     let test = builder.build_with_auto_env(&server).await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the available skills.".to_string(),
             text_elements: Vec::new(),
@@ -2737,7 +2737,7 @@ async fn assert_catalog_model_switch(max_context_tokens: Option<usize>) -> Resul
         .await?
         .expect("A catalog discovery started");
     let (reply, outcome) = tokio::sync::oneshot::channel();
-    test.codex
+    test.ava-code
         .submit(Op::TurnSettings {
             turn_id,
             update: TurnSettingsUpdate {
@@ -2752,7 +2752,7 @@ async fn assert_catalog_model_switch(max_context_tokens: Option<usize>) -> Resul
         TurnSettingsUpdateOutcome::Applied
     );
     provider.resume.add_permits(/*n*/ 1);
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2917,18 +2917,18 @@ async fn production_turn_uses_configured_skill_catalog_token_budget() -> Result<
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[skills]\nmax_context_tokens = 800\n",
     )?;
-    write_host_skills(codex_home.path(), &HOST_CATALOG)?;
+    write_host_skills(ava_home.path(), &HOST_CATALOG)?;
     let (extensions, _event_rx) = catalog_extensions(
         executor_catalog(&EXECUTOR_CATALOG),
         /*include_host_provider*/ true,
     );
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.5", |model_info| {
             model_info.context_window = Some(SHORTENING_CONTEXT_WINDOW);
@@ -2988,9 +2988,9 @@ async fn production_turn_preserves_host_alias_root_order_across_turns() -> Resul
     let temp_parent = TempDir::new()?;
     let long_parent = temp_parent
         .path()
-        .join("codex-home-with-long-shared-prefix-for-production-alias-order-test");
+        .join("ava-home-with-long-shared-prefix-for-production-alias-order-test");
     std::fs::create_dir_all(&long_parent)?;
-    let codex_home = Arc::new(TempDir::new_in(&long_parent)?);
+    let ava_home = Arc::new(TempDir::new_in(&long_parent)?);
     let first_root_path = long_parent.join("first-discovered-skills-root-with-long-shared-prefix");
     let second_root_path =
         long_parent.join("second-discovered-skills-root-with-long-shared-prefix");
@@ -3012,8 +3012,8 @@ async fn production_turn_preserves_host_alias_root_order_across_turns() -> Resul
     let second_root = AbsolutePathBuf::try_from(std::fs::canonicalize(&second_root_path)?)?;
     let (extensions, _) =
         catalog_extensions(SkillCatalog::default(), /*include_host_provider*/ true);
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.5", |model_info| {
             model_info.context_window = Some(SHORTENING_CONTEXT_WINDOW);
@@ -3083,11 +3083,11 @@ async fn production_turn_uses_provider_host_catalog_and_core_snapshot_injection(
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     let skill_name = "snapshot-backed";
     let snapshot_description = "This description comes from Core's host skills snapshot.";
-    write_host_skills(codex_home.path(), &[(skill_name, snapshot_description)])?;
-    let skill_path = codex_home
+    write_host_skills(ava_home.path(), &[(skill_name, snapshot_description)])?;
+    let skill_path = ava_home
         .path()
         .join("skills")
         .join(skill_name)
@@ -3128,11 +3128,11 @@ async fn production_turn_uses_provider_host_catalog_and_core_snapshot_injection(
         },
     );
     let mut builder = apps_enabled_builder(apps_server.chatgpt_base_url)
-        .with_home(Arc::clone(&codex_home))
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(Arc::new(extensions.build()))
         .with_config(configure_catalog_test);
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
 
     test.submit_turn(&format!("Use ${skill_name}.")).await?;
     let request = response.single_request();
@@ -3154,7 +3154,7 @@ async fn production_turn_uses_provider_host_catalog_and_core_snapshot_injection(
     assert!(user_text.contains(&snapshot_contents));
     assert!(!user_text.contains(provider_contents));
     let app_mentioned_events =
-        wait_for_analytics_events(&server, "codex_app_mentioned", /*expected_count*/ 1).await;
+        wait_for_analytics_events(&server, "ava_app_mentioned", /*expected_count*/ 1).await;
     let app_mentioned_event = &app_mentioned_events[0];
     assert_eq!(
         app_mentioned_event["event_params"]["connector_id"],
@@ -3192,16 +3192,16 @@ async fn production_turn_suppresses_only_the_superseded_host_skill_prompt() -> R
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     write_host_skills(
-        codex_home.path(),
+        ava_home.path(),
         &[
             ("first-host", "First host skill."),
             ("second-host", "Second host skill."),
         ],
     )?;
-    let first_skill_path = codex_home.path().join("skills/first-host/SKILL.md");
-    let second_skill_path = codex_home.path().join("skills/second-host/SKILL.md");
+    let first_skill_path = ava_home.path().join("skills/first-host/SKILL.md");
+    let second_skill_path = ava_home.path().join("skills/second-host/SKILL.md");
     let first_host_contents =
         "---\nname: first-host\ndescription: First host skill.\n---\n\nFIRST_HOST_BODY\n";
     let second_host_contents =
@@ -3247,8 +3247,8 @@ async fn production_turn_suppresses_only_the_superseded_host_skill_prompt() -> R
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_extensions(Arc::new(extensions.build()))
         .with_config(configure_catalog_test);
     let test = builder.build_with_auto_env(&server).await?;
@@ -3292,29 +3292,29 @@ async fn production_turn_warns_and_omits_unreadable_host_skill() -> Result<()> {
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     write_host_skills(
-        codex_home.path(),
+        ava_home.path(),
         &[
             ("missing-host", "Missing host skill."),
             ("available-host", "Available host skill."),
         ],
     )?;
     let missing_skill_path =
-        dunce::canonicalize(codex_home.path().join("skills/missing-host/SKILL.md"))?;
+        dunce::canonicalize(ava_home.path().join("skills/missing-host/SKILL.md"))?;
     let available_skill_path =
-        dunce::canonicalize(codex_home.path().join("skills/available-host/SKILL.md"))?;
+        dunce::canonicalize(ava_home.path().join("skills/available-host/SKILL.md"))?;
     let available_skill_contents = std::fs::read_to_string(&available_skill_path)?;
     let (extensions, _) =
         catalog_extensions(SkillCatalog::default(), /*include_host_provider*/ true);
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(extensions)
         .with_config(configure_catalog_test);
     let test = builder.build_with_auto_env(&server).await?;
 
     std::fs::remove_file(&missing_skill_path)?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Skill {
                 name: "missing-host".to_string(),
@@ -3329,7 +3329,7 @@ async fn production_turn_warns_and_omits_unreadable_host_skill() -> Result<()> {
 
     let mut warnings = Vec::new();
     loop {
-        match core_test_support::wait_for_event(&test.codex, |_| true).await {
+        match core_test_support::wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Warning(warning) => warnings.push(warning.message),
             EventMsg::TurnComplete(_) => break,
             _ => {}
@@ -3371,8 +3371,8 @@ async fn production_turn_keeps_full_snapshot_host_skill_prompt() -> Result<()> {
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let skill_dir = codex_home.path().join("skills").join("long-host");
+    let ava_home = Arc::new(TempDir::new()?);
+    let skill_dir = ava_home.path().join("skills").join("long-host");
     std::fs::create_dir_all(&skill_dir)?;
     let prompt_tail = "full host prompt tail";
     let skill_contents = format!(
@@ -3382,8 +3382,8 @@ async fn production_turn_keeps_full_snapshot_host_skill_prompt() -> Result<()> {
     std::fs::write(skill_dir.join("SKILL.md"), &skill_contents)?;
     let (extensions, _) =
         catalog_extensions(SkillCatalog::default(), /*include_host_provider*/ true);
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(extensions)
         .with_config(|config| {
             configure_catalog_test(config);
@@ -3418,8 +3418,8 @@ async fn production_turn_keeps_core_host_injection_when_catalog_listings_are_dis
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let skill_dir = codex_home.path().join("skills").join("long-host");
+    let ava_home = Arc::new(TempDir::new()?);
+    let skill_dir = ava_home.path().join("skills").join("long-host");
     std::fs::create_dir_all(&skill_dir)?;
     let prompt_tail = "full host prompt tail";
     let skill_contents = format!(
@@ -3429,8 +3429,8 @@ async fn production_turn_keeps_core_host_injection_when_catalog_listings_are_dis
     std::fs::write(skill_dir.join("SKILL.md"), &skill_contents)?;
     let (extensions, _) =
         catalog_extensions(SkillCatalog::default(), /*include_host_provider*/ true);
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(extensions)
         .with_config(configure_catalog_test)
         .with_config(|config| {
@@ -3482,12 +3482,12 @@ async fn production_turn_keeps_orchestrator_world_state_incremental_across_turns
     .await;
     let skill_name = "orchestrator-search";
     let skill_description = "Search available company knowledge.";
-    let skill_resource = "skill://codex_apps/orchestrator-search/SKILL.md";
+    let skill_resource = "skill://ava_apps/orchestrator-search/SKILL.md";
     let catalog = SkillCatalog {
         entries: vec![
             SkillCatalogEntry::new(
                 SkillPackageId("orchestrator/orchestrator-search".to_string()),
-                SkillAuthority::new(SkillSourceKind::Orchestrator, CODEX_APPS_MCP_SERVER_NAME),
+                SkillAuthority::new(SkillSourceKind::Orchestrator, AVA_APPS_MCP_SERVER_NAME),
                 skill_name,
                 skill_description,
                 SkillResourceId::new(skill_resource),
@@ -3509,7 +3509,7 @@ async fn production_turn_keeps_orchestrator_world_state_incremental_across_turns
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             configure_catalog_test(config);
@@ -3773,7 +3773,7 @@ async fn production_turn_fairly_shortens_extension_catalog_descriptions() -> Res
             shadow_selection_enabled: false,
         },
     );
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_model_info_override("gpt-5.5", |model_info| {
             model_info.context_window = Some(100_000);

@@ -7,22 +7,22 @@ use app_test_support::create_command_execution_sse_response;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerRequestResolvedNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput as V2UserInput;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerRequestResolvedNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput as V2UserInput;
 use core_test_support::skip_if_remote;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -50,8 +50,8 @@ async fn turn_interrupt_aborts_running_turn() -> Result<()> {
     let shell_command = vec!["sleep".to_string(), "10".to_string()];
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let working_directory = tmp.path().join("workdir");
     std::fs::create_dir(&working_directory)?;
 
@@ -68,10 +68,10 @@ async fn turn_interrupt_aborts_running_turn() -> Result<()> {
     MockResponsesConfig::new(&server.uri())
         .with_sandbox_mode("workspace-write")
         .with_root_config(r#"approvals_reviewer = "user""#)
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -152,8 +152,8 @@ async fn turn_interrupt_aborts_running_turn() -> Result<()> {
 #[tokio::test]
 async fn turn_interrupt_rejects_completed_turn() -> Result<()> {
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
 
     let server = create_mock_responses_server_sequence_unchecked(vec![
         create_final_assistant_message_sse_response("done")?,
@@ -162,10 +162,10 @@ async fn turn_interrupt_rejects_completed_turn() -> Result<()> {
     MockResponsesConfig::new(&server.uri())
         .with_sandbox_mode("workspace-write")
         .with_root_config(r#"approvals_reviewer = "user""#)
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -239,8 +239,8 @@ async fn turn_interrupt_resolves_pending_command_approval_request() -> Result<()
     ];
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let working_directory = tmp.path().join("workdir");
     std::fs::create_dir(&working_directory)?;
 
@@ -255,10 +255,10 @@ async fn turn_interrupt_resolves_pending_command_approval_request() -> Result<()
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
         .with_root_config(r#"approvals_reviewer = "user""#)
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -280,7 +280,7 @@ async fn turn_interrupt_resolves_pending_command_approval_request() -> Result<()
                     text_elements: Vec::new(),
                 }],
                 cwd: Some(working_directory),
-                approval_policy: Some(codex_app_server_protocol::AskForApproval::UnlessTrusted),
+                approval_policy: Some(ava_app_server_protocol::AskForApproval::UnlessTrusted),
                 ..Default::default()
             },
         })

@@ -46,8 +46,8 @@ const ALIASES: &[Alias] = &[
         feature: Feature::Chronicle,
     },
     Alias {
-        legacy_key: "codex_hooks",
-        feature: Feature::CodexHooks,
+        legacy_key: "ava_hooks",
+        feature: Feature::AvaHooks,
     },
 ];
 

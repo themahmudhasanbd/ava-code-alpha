@@ -1,14 +1,14 @@
-use codex_protocol::ThreadId;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_rollout::RolloutItem;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_protocol::ThreadId;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_rollout::RolloutItem;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -29,7 +29,7 @@ use crate::ThreadStore;
 async fn revert_keeps_thread_id_and_hides_suffix_across_repeated_reverts() {
     let home = TempDir::new().expect("temp dir");
     let config = test_config(home.path());
-    let state_db = codex_state::StateRuntime::init(
+    let state_db = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -58,7 +58,7 @@ async fn revert_keeps_thread_id_and_hides_suffix_across_repeated_reverts() {
         .shutdown_thread(thread_id)
         .await
         .expect("close source writer");
-    codex_rollout::state_db::reconcile_rollout(
+    ava_rollout::state_db::reconcile_rollout(
         Some(state_db.as_ref()),
         original_path.as_path(),
         "test-provider",
@@ -86,10 +86,10 @@ async fn revert_keeps_thread_id_and_hides_suffix_across_repeated_reverts() {
         .rollout_path;
     assert_ne!(first_replacement_path, original_path);
     assert_ne!(
-        codex_rollout::rollout_id_from_path(first_replacement_path.as_path()),
+        ava_rollout::rollout_id_from_path(first_replacement_path.as_path()),
         Some(thread_id)
     );
-    let replacement_meta = codex_rollout::read_session_meta_line(first_replacement_path.as_path())
+    let replacement_meta = ava_rollout::read_session_meta_line(first_replacement_path.as_path())
         .await
         .expect("read replacement metadata")
         .meta;
@@ -146,7 +146,7 @@ async fn revert_keeps_thread_id_and_hides_suffix_across_repeated_reverts() {
 async fn revert_preserves_resolved_multi_agent_version_in_session_metadata() {
     let home = TempDir::new().expect("temp dir");
     let config = test_config(home.path());
-    let state_db = codex_state::StateRuntime::init(
+    let state_db = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -181,7 +181,7 @@ async fn revert_preserves_resolved_multi_agent_version_in_session_metadata() {
             .shutdown_thread(thread_id)
             .await
             .expect("close source writer");
-        codex_rollout::state_db::reconcile_rollout(
+        ava_rollout::state_db::reconcile_rollout(
             Some(state_db.as_ref()),
             path.as_path(),
             "test-provider",
@@ -208,7 +208,7 @@ async fn revert_preserves_resolved_multi_agent_version_in_session_metadata() {
                 .expect("read metadata")
                 .expect("thread metadata")
                 .rollout_path;
-            let meta = codex_rollout::read_session_meta_line(&path)
+            let meta = ava_rollout::read_session_meta_line(&path)
                 .await
                 .expect("read replacement metadata");
             assert_eq!(meta.meta.multi_agent_version, Some(version));
@@ -220,7 +220,7 @@ async fn rollout_paths_for_thread(
     home: &std::path::Path,
     thread_id: ThreadId,
 ) -> Vec<std::path::PathBuf> {
-    codex_rollout::RolloutReferenceIndex::scan(home)
+    ava_rollout::RolloutReferenceIndex::scan(home)
         .await
         .expect("scan rollout references")
         .rollouts_for_thread(thread_id)
@@ -247,7 +247,7 @@ async fn create_paginated_thread(store: &LocalThreadStore, thread_id: ThreadId) 
             history_base: None,
             subagent_history_start_ordinal: None,
             initial_window_id: "window-1".to_string(),
-            runtime_workspace_roots: Some(vec![store.config.codex_home.join("workspace").abs()]),
+            runtime_workspace_roots: Some(vec![store.config.ava_home.join("workspace").abs()]),
             metadata: ThreadPersistenceMetadata {
                 cwd: Some(std::env::current_dir().expect("cwd")),
                 model_provider: "test-provider".to_string(),

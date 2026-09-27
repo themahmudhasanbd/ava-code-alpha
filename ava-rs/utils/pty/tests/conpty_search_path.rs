@@ -1,6 +1,6 @@
 #![cfg(windows)]
 
-use codex_utils_pty::RawConPty;
+use ava_utils_pty::RawConPty;
 use std::ffi::OsStr;
 use std::fs;
 use std::os::windows::ffi::OsStrExt;
@@ -29,7 +29,7 @@ impl Drop for CurrentDirGuard {
 #[test]
 fn conpty_ignores_dll_in_current_directory() -> anyhow::Result<()> {
     let temp_dir = std::env::temp_dir().join(format!(
-        "codex-conpty-search-path-{}-{}",
+        "ava-conpty-search-path-{}-{}",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?

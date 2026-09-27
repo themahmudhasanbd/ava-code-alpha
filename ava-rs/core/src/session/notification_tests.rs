@@ -27,7 +27,7 @@ async fn task_finish_preserves_notification_budget_and_queued_user_input() {
     session
         .inject_if_running(vec![ResponseItemEnvelope {
             item: notification(text.clone()),
-            metadata: Some(CodexHarnessMetadata {
+            metadata: Some(AvaHarnessMetadata {
                 history_truncation_token_limit: Some(120),
                 ..Default::default()
             }),
@@ -44,7 +44,7 @@ async fn task_finish_preserves_notification_budget_and_queued_user_input() {
     ));
     let mut current = turn.initial_settings.as_ref().clone();
     Arc::make_mut(&mut current.model_info).truncation_policy =
-        codex_protocol::openai_models::TruncationPolicyConfig::tokens(/*limit*/ 400);
+        ava_protocol::openai_models::TruncationPolicyConfig::tokens(/*limit*/ 400);
     turn.next_step_input.store(Arc::new(StepInputs {
         settings: Arc::new(current),
         environments: turn.next_step_input.load().environments.clone(),
@@ -55,9 +55,9 @@ async fn task_finish_preserves_notification_budget_and_queued_user_input() {
         .await;
 
     let expected = vec![
-        notification(codex_utils_output_truncation::truncate_text(
+        notification(ava_utils_output_truncation::truncate_text(
             &text,
-            codex_utils_output_truncation::TruncationPolicy::Tokens(120),
+            ava_utils_output_truncation::TruncationPolicy::Tokens(120),
         )),
         session.response_item_from_user_input(user_input),
     ];

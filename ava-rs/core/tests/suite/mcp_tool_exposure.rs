@@ -1,34 +1,34 @@
 use anyhow::Result;
-use codex_config::Constrained;
-use codex_core::EnvironmentConfig;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadStartInput;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::CodexAppsResourceListParams;
-use codex_mcp::McpResourceClient;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
+use ava_config::Constrained;
+use ava_core::EnvironmentConfig;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadStartInput;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::AvaAppsResourceListParams;
+use ava_mcp::McpResourceClient;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_CREATE_TOOL;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_NAMESPACE;
@@ -167,7 +167,7 @@ impl McpServerContributor<Config> for AppsMcpServerContributor {
                 }
             } else {
                 McpServerContribution::Set {
-                    name: CODEX_APPS_MCP_SERVER_NAME.to_string(),
+                    name: AVA_APPS_MCP_SERVER_NAME.to_string(),
                     config,
                 }
             };
@@ -336,7 +336,7 @@ async fn root_and_spawned_subagent_receive_distinct_mcp_session_sources() -> Res
     extensions.mcp_server_contributor(Arc::new(SessionSourceMcpContributor {
         observed_sources: observed_sources.clone(),
     }));
-    let test = core_test_support::test_codex::test_codex()
+    let test = core_test_support::test_ava::test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build(&server)
         .await?;
@@ -379,13 +379,13 @@ async fn rapid_mcp_refreshes_coalesce_to_the_latest_config() -> Result<()> {
     let contributor = Arc::new(CoalescingMcpContributor::new());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.mcp_server_contributor(contributor.clone());
-    let test = core_test_support::test_codex::test_codex()
+    let test = core_test_support::test_ava::test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build(&server)
         .await?;
 
     contributor.block_next.store(true, Ordering::SeqCst);
-    test.codex
+    test.ava-code
         .refresh_runtime_config(config_with_mcp_marker(&test.config, "config-a"))
         .await;
     tokio::time::timeout(Duration::from_secs(5), contributor.entered.acquire())
@@ -394,10 +394,10 @@ async fn rapid_mcp_refreshes_coalesce_to_the_latest_config() -> Result<()> {
         .expect("entered semaphore should remain open")
         .forget();
 
-    test.codex
+    test.ava-code
         .refresh_runtime_config(config_with_mcp_marker(&test.config, "config-b"))
         .await;
-    test.codex
+    test.ava-code
         .refresh_runtime_config(config_with_mcp_marker(&test.config, "config-c"))
         .await;
     contributor.release.add_permits(1);
@@ -457,7 +457,7 @@ async fn root_reconciliation_reuses_pending_apps_startup() -> Result<()> {
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.mcp_server_contributor(Arc::new(AppsMcpServerContributor {
         id: "pending_apps_root_reconciliation_test",
-        url: format!("{}/api/codex/ps/mcp", gated_apps_server.chatgpt_base_url),
+        url: format!("{}/api/ava/ps/mcp", gated_apps_server.chatgpt_base_url),
         root_resolved: Some(Arc::clone(&root_resolved)),
     }));
     let mut builder = search_capable_apps_builder(apps_server.chatgpt_base_url)
@@ -480,13 +480,13 @@ async fn root_reconciliation_reuses_pending_apps_startup() -> Result<()> {
     .expect("initial Apps startup should begin before root reconciliation");
 
     let selection = test
-        .codex
+        .ava-code
         .environment_selections()
         .await
         .into_iter()
         .next()
         .expect("thread should select its executor environment");
-    test.codex
+    test.ava-code
         .environment_ready(
             &selection,
             EnvironmentConfig {
@@ -512,7 +512,7 @@ async fn root_reconciliation_reuses_pending_apps_startup() -> Result<()> {
             },
         )
         .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "inspect Calendar tools after root discovery".into(),
             text_elements: Vec::new(),
@@ -528,7 +528,7 @@ async fn root_reconciliation_reuses_pending_apps_startup() -> Result<()> {
     release_startup
         .send(())
         .expect("initial Apps startup should remain in flight");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -578,7 +578,7 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
     let ready_mock = responses::start_mock_server().await;
     let (ready_server, ready_startup) =
         AppsTestServer::mount_with_startup_control(&ready_mock).await?;
-    let test = core_test_support::test_codex::test_codex()
+    let test = core_test_support::test_ava::test_ava()
         .with_config(move |config| {
             config
                 .mcp_servers
@@ -589,7 +589,7 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
                             (
                                 name.to_string(),
                                 serde_json::from_value(json!({
-                                    "url": format!("{}/api/codex/ps/mcp", server.chatgpt_base_url),
+                                    "url": format!("{}/api/ava/ps/mcp", server.chatgpt_base_url),
                                     "startup_timeout_sec": 60,
                                 }))
                                 .expect("valid MCP config"),
@@ -609,7 +609,7 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
     .await
     .expect("pending startup should begin before refresh");
     let ready_result = test
-        .codex
+        .ava-code
         .call_mcp_tool(
             "ready",
             "calendar_list_events",
@@ -624,10 +624,10 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
         config.startup_timeout_sec = None;
     }
     refresh_config.mcp_servers.set(servers)?;
-    test.codex.refresh_mcp_config(refresh_config).await;
+    test.ava-code.refresh_mcp_config(refresh_config).await;
     // Publish without waiting for the held initialize to finish.
     let error = test
-        .codex
+        .ava-code
         .read_mcp_resource("unknown", ReadResourceRequestParams::new("test://resource"))
         .await
         .expect_err("the unknown server should not exist");
@@ -638,7 +638,7 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
 
     for name in ["pending", "ready"] {
         let result = test
-            .codex
+            .ava-code
             .call_mcp_tool(
                 name,
                 "calendar_list_events",
@@ -659,7 +659,7 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn codex_apps_resource_filter_sends_mime_type_on_each_page() -> Result<()> {
+async fn ava_apps_resource_filter_sends_mime_type_on_each_page() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
@@ -677,7 +677,7 @@ async fn codex_apps_resource_filter_sends_mime_type_on_each_page() -> Result<()>
     let first_response_resource = first_resource.clone();
     let second_response_resource = second_resource.clone();
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(body_partial_json(json!({ "method": "resources/list" })))
         .respond_with(move |request: &Request| {
             let body: Value = serde_json::from_slice(&request.body).expect("valid MCP request");
@@ -708,18 +708,18 @@ async fn codex_apps_resource_filter_sends_mime_type_on_each_page() -> Result<()>
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
     let client = captured_client
         .lock()
         .expect("capture lock should not be poisoned")
         .clone()
         .expect("thread start should capture the MCP resource client");
     let expected_pages = [
-        codex_mcp::McpResourcePage {
+        ava_mcp::McpResourcePage {
             resources: vec![serde_json::from_value(first_resource)?],
             next_cursor: Some("next-page".to_string()),
         },
-        codex_mcp::McpResourcePage {
+        ava_mcp::McpResourcePage {
             resources: vec![serde_json::from_value(second_resource)?],
             next_cursor: None,
         },
@@ -730,7 +730,7 @@ async fn codex_apps_resource_filter_sends_mime_type_on_each_page() -> Result<()>
         (Some("next-page".to_string()), &expected_pages[1]),
     ] {
         let page = client
-            .list_codex_apps_resources(CodexAppsResourceListParams {
+            .list_ava_apps_resources(AvaAppsResourceListParams {
                 cursor,
                 mime_type: "mcp/plugin".to_string(),
             })
@@ -757,12 +757,12 @@ async fn codex_apps_resource_filter_sends_mime_type_on_each_page() -> Result<()>
             json!({ "cursor": "next-page", "mimeType": "mcp/plugin" }),
         ]
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn codex_apps_resource_filter_rejects_extension_name_collision() -> Result<()> {
+async fn ava_apps_resource_filter_rejects_extension_name_collision() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
@@ -771,7 +771,7 @@ async fn codex_apps_resource_filter_rejects_extension_name_collision() -> Result
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.mcp_server_contributor(Arc::new(AppsMcpServerContributor {
         id: "test-extension",
-        url: format!("{}/api/codex/ps/mcp", apps_server.chatgpt_base_url),
+        url: format!("{}/api/ava/ps/mcp", apps_server.chatgpt_base_url),
         root_resolved: None,
     }));
     extensions.thread_lifecycle_contributor(Arc::new(McpResourceClientCapture {
@@ -781,24 +781,24 @@ async fn codex_apps_resource_filter_rejects_extension_name_collision() -> Result
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
     let client = captured_client
         .lock()
         .expect("capture lock should not be poisoned")
         .clone()
         .expect("thread start should capture the MCP resource client");
-    assert!(client.has_server(CODEX_APPS_MCP_SERVER_NAME).await);
+    assert!(client.has_server(AVA_APPS_MCP_SERVER_NAME).await);
 
     let error = client
-        .list_codex_apps_resources(CodexAppsResourceListParams {
+        .list_ava_apps_resources(AvaAppsResourceListParams {
             cursor: None,
             mime_type: "mcp/plugin".to_string(),
         })
         .await
-        .expect_err("an extension named codex_apps must not inherit the Apps resource filter");
+        .expect_err("an extension named ava_apps must not inherit the Apps resource filter");
     assert_eq!(
         error.to_string(),
-        "MCP server 'codex_apps' is not registered by the hosted runtime"
+        "MCP server 'ava_apps' is not registered by the hosted runtime"
     );
     let requests = server.received_requests().await.expect("recorded requests");
     assert!(
@@ -806,9 +806,9 @@ async fn codex_apps_resource_filter_rejects_extension_name_collision() -> Result
             serde_json::from_slice::<Value>(&request.body)
                 .is_ok_and(|body| body["method"] == "resources/list")
         }),
-        "an extension named codex_apps must not receive filtered resource requests"
+        "an extension named ava_apps must not receive filtered resource requests"
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -821,7 +821,7 @@ async fn out_of_band_resource_read_reconciles_the_published_mcp_runtime() -> Res
     extensions.thread_lifecycle_contributor(Arc::new(McpResourceClientCapture {
         client: Arc::clone(&captured_client),
     }));
-    let test = core_test_support::test_codex::test_codex()
+    let test = core_test_support::test_ava::test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build(&server)
         .await?;
@@ -833,7 +833,7 @@ async fn out_of_band_resource_read_reconciles_the_published_mcp_runtime() -> Res
     assert!(!resource_client.has_server("refreshed").await);
 
     let mut refresh_config = test.config.clone();
-    let user_config_path = refresh_config.codex_home.join("config.toml");
+    let user_config_path = refresh_config.ava_home.join("config.toml");
     let user_config: toml::Value = toml::from_str(&format!(
         r#"
 [mcp_servers.refreshed]
@@ -845,7 +845,7 @@ startup_timeout_sec = 0.1
     let refreshed_servers = user_config
         .get("mcp_servers")
         .cloned()
-        .map(HashMap::<String, codex_config::types::McpServerConfig>::deserialize)
+        .map(HashMap::<String, ava_config::types::McpServerConfig>::deserialize)
         .transpose()?
         .expect("test config should define MCP servers");
     refresh_config
@@ -855,11 +855,11 @@ startup_timeout_sec = 0.1
     refresh_config.config_layer_stack = refresh_config
         .config_layer_stack
         .with_user_config(&user_config_path, user_config)?;
-    test.codex.refresh_runtime_config(refresh_config).await;
-    test.codex.submit(Op::RefreshMcpServers).await?;
+    test.ava-code.refresh_runtime_config(refresh_config).await;
+    test.ava-code.submit(Op::RefreshMcpServers).await?;
 
     let _ = test
-        .codex
+        .ava-code
         .read_mcp_resource(
             "refreshed",
             ReadResourceRequestParams::new("test://resource"),
@@ -873,7 +873,7 @@ startup_timeout_sec = 0.1
 async fn elevated_apps_catalog_limit_requires_host_owned_registration() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     for extension_id in [None, Some("hosted_plugin_runtime"), Some("test-extension")] {
         let server = responses::start_mock_server().await;
         let apps_server = AppsTestServer::mount_searchable(&server).await?;
@@ -898,7 +898,7 @@ async fn elevated_apps_catalog_limit_requires_host_owned_registration() -> Resul
                 .collect::<Vec<_>>(),
         );
         Mock::given(method("POST"))
-            .and(path_regex("^/api/codex/ps/mcp/?$"))
+            .and(path_regex("^/api/ava/ps/mcp/?$"))
             .and(body_partial_json(json!({ "method": "tools/list" })))
             .respond_with(move |request: &Request| {
                 let body: Value = serde_json::from_slice(&request.body)
@@ -916,24 +916,24 @@ async fn elevated_apps_catalog_limit_requires_host_owned_registration() -> Resul
             .await;
 
         let mut builder = search_capable_apps_builder(apps_server.chatgpt_base_url.clone())
-            .with_home(Arc::clone(&codex_home));
+            .with_home(Arc::clone(&ava_home));
         if let Some(id) = extension_id {
             let mut extensions = ExtensionRegistryBuilder::new();
             extensions.mcp_server_contributor(Arc::new(AppsMcpServerContributor {
                 id,
-                url: format!("{}/api/codex/ps/mcp", apps_server.chatgpt_base_url),
+                url: format!("{}/api/ava/ps/mcp", apps_server.chatgpt_base_url),
                 root_resolved: None,
             }));
             builder = builder.with_extensions(Arc::new(extensions.build()));
         }
         let test = builder.build_with_auto_env(&server).await?;
-        let startup = wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await;
+        let startup = wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await;
 
         if extension_id == Some("test-extension") {
             let error = startup.expect_err("an extension must retain the standard catalog limit");
             assert!(
                 error.to_string().contains("catalog limit of 2048 items"),
-                "an extension named codex_apps must not inherit the trusted Apps limit: {error}"
+                "an extension named ava_apps must not inherit the trusted Apps limit: {error}"
             );
             continue;
         }
@@ -965,7 +965,7 @@ async fn elevated_apps_catalog_limit_requires_host_owned_registration() -> Resul
             description.contains("Calendar"),
             "the accepted Apps catalog should remain model-discoverable: {description}"
         );
-        test.codex.shutdown_and_wait().await?;
+        test.ava-code.shutdown_and_wait().await?;
     }
 
     Ok(())
@@ -1030,7 +1030,7 @@ async fn code_mode_only_exposes_direct_model_only_mcp_namespaces() -> Result<()>
     });
     assert!(
         exec_description.is_some_and(|description| {
-            !description.contains("mcp__codex_apps__calendar_create_event(args:")
+            !description.contains("mcp__ava_apps__calendar_create_event(args:")
         }),
         "direct-model-only MCP namespace should not be available through exec: {body}"
     );
@@ -1090,14 +1090,14 @@ async fn deferred_tool_world_state_tracks_initial_unchanged_and_removed_namespac
     let mut builder = search_capable_apps_builder(apps_server.chatgpt_base_url.clone())
         .with_config(enable_deferred_tool_world_state_without_agents);
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
 
     test.submit_turn("inspect initially available deferred tools")
         .await?;
     test.submit_turn("inspect unchanged deferred tools").await?;
 
     let mut refresh_config = test.config.clone();
-    let user_config_path = refresh_config.codex_home.join("config.toml");
+    let user_config_path = refresh_config.ava_home.join("config.toml");
     let user_config = toml::from_str(
         r#"
 [apps.calendar]
@@ -1107,8 +1107,8 @@ enabled = false
     refresh_config.config_layer_stack = refresh_config
         .config_layer_stack
         .with_user_config(&user_config_path, user_config)?;
-    test.codex.refresh_runtime_config(refresh_config).await;
-    test.codex.submit(Op::RefreshMcpServers).await?;
+    test.ava-code.refresh_runtime_config(refresh_config).await;
+    test.ava-code.submit(Op::RefreshMcpServers).await?;
     test.submit_turn("inspect removed deferred tools").await?;
 
     let requests = response.requests();
@@ -1142,20 +1142,20 @@ async fn initially_empty_deferred_tool_world_state_is_not_rendered_or_persisted(
 
     let server = responses::start_mock_server().await;
     let response = mount_sse_sequence(&server, completed_response_sequence(/*count*/ 1)).await;
-    let mut builder = core_test_support::test_codex::test_codex()
+    let mut builder = core_test_support::test_ava::test_ava()
         .with_config(enable_deferred_tool_world_state_without_agents);
     let test = builder.build_with_auto_env(&server).await?;
     test.submit_turn("inspect empty deferred tools").await?;
 
     let request = response.single_request();
     assert!(tools_state_sections(&request).is_empty());
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.flush_rollout().await?;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.flush_rollout().await?;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let world_states = tokio::fs::read_to_string(rollout_path)
         .await?
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<serde_json::Result<Vec<_>>>()?
         .into_iter()
         .filter_map(|line| match line.item {
@@ -1183,13 +1183,13 @@ async fn deferred_tool_world_state_survives_resume_without_duplicate_updates() -
     let mut builder = search_capable_apps_builder(apps_server.chatgpt_base_url.clone())
         .with_config(enable_deferred_tool_world_state_without_agents);
     let initial = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&initial.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&initial.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
     initial
         .submit_turn("inspect deferred tools before resume")
         .await?;
 
-    initial.codex.ensure_rollout_materialized().await;
-    initial.codex.flush_rollout().await?;
+    initial.ava-code.ensure_rollout_materialized().await;
+    initial.ava-code.flush_rollout().await?;
     let rollout_path = initial
         .session_configured
         .rollout_path
@@ -1198,7 +1198,7 @@ async fn deferred_tool_world_state_survives_resume_without_duplicate_updates() -
     let persisted_tools = tokio::fs::read_to_string(&rollout_path)
         .await?
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<serde_json::Result<Vec<_>>>()?
         .into_iter()
         .filter_map(|line| match line.item {
@@ -1210,14 +1210,14 @@ async fn deferred_tool_world_state_survives_resume_without_duplicate_updates() -
     assert_eq!(
         persisted_tools,
         json!({
-            "mcp__codex_apps__calendar": "Plan events and manage your calendar."
+            "mcp__ava_apps__calendar": "Plan events and manage your calendar."
         })
     );
     let mut resume_builder = search_capable_apps_builder(apps_server.chatgpt_base_url)
         .with_config(enable_deferred_tool_world_state_without_agents);
     let resumed = resume_builder.restart(&server, &initial).await?;
     drop(initial);
-    wait_for_mcp_server(&resumed.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&resumed.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
     resumed
         .submit_turn("inspect unchanged deferred tools after resume")
         .await?;
@@ -1261,7 +1261,7 @@ async fn apps_guidance_and_deferred_namespace_appear_after_recovery_within_a_tur
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.mcp_server_contributor(Arc::new(AppsMcpServerContributor {
         id: "deferred_apps_recovery_test",
-        url: format!("{}/api/codex/ps/mcp", gated_apps_server.chatgpt_base_url),
+        url: format!("{}/api/ava/ps/mcp", gated_apps_server.chatgpt_base_url),
         root_resolved: None,
     }));
     let call_id = "pause-for-apps";
@@ -1314,13 +1314,13 @@ async fn apps_guidance_and_deferred_namespace_appear_after_recovery_within_a_tur
         });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "use an app after it recovers".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let EventMsg::RequestUserInput(request) = wait_for_event(&test.codex, |event| {
+    let EventMsg::RequestUserInput(request) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::RequestUserInput(_))
     })
     .await
@@ -1352,17 +1352,17 @@ async fn apps_guidance_and_deferred_namespace_appear_after_recovery_within_a_tur
     release_apps_recovery
         .send(())
         .expect("background Apps recovery should still be waiting");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::McpStartupUpdate(update)
-                if update.server == CODEX_APPS_MCP_SERVER_NAME
-                    && matches!(update.status, codex_protocol::protocol::McpStartupStatus::Ready)
+                if update.server == AVA_APPS_MCP_SERVER_NAME
+                    && matches!(update.status, ava_protocol::protocol::McpStartupStatus::Ready)
         )
     })
     .await;
 
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -1375,7 +1375,7 @@ async fn apps_guidance_and_deferred_namespace_appear_after_recovery_within_a_tur
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1479,7 +1479,7 @@ async fn later_follow_up_uses_background_recovered_apps_after_mid_thread_startup
                 vec![SEARCH_CALENDAR_NAMESPACE.to_string()];
         });
     let test = builder.build(&server).await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
     test.submit_turn("use Calendar before refreshing MCP")
         .await?;
 
@@ -1494,10 +1494,10 @@ async fn later_follow_up_uses_background_recovered_apps_after_mid_thread_startup
         "Calendar should be available before the MCP refresh: {initial_request}"
     );
 
-    tokio::fs::remove_dir_all(test.codex_home_path().join("cache/codex_apps_tools")).await?;
+    tokio::fs::remove_dir_all(test.ava_home_path().join("cache/ava_apps_tools")).await?;
     startup_control.fail_next_initialize_attempts(/*attempts*/ 1);
-    test.codex.submit(Op::RefreshMcpServers).await?;
-    test.codex
+    test.ava-code.submit(Op::RefreshMcpServers).await?;
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "use Calendar after transient Apps startup failures".into(),
             text_elements: Vec::new(),
@@ -1508,17 +1508,17 @@ async fn later_follow_up_uses_background_recovered_apps_after_mid_thread_startup
         let mut apps_ready = false;
         while !turn_complete || !apps_ready {
             let event = test
-                .codex
+                .ava-code
                 .next_event()
                 .await
                 .expect("event stream should stay open");
             match event.msg {
                 EventMsg::TurnComplete(_) => turn_complete = true,
                 EventMsg::McpStartupUpdate(update)
-                    if update.server == CODEX_APPS_MCP_SERVER_NAME
+                    if update.server == AVA_APPS_MCP_SERVER_NAME
                         && matches!(
                             update.status,
-                            codex_protocol::protocol::McpStartupStatus::Ready
+                            ava_protocol::protocol::McpStartupStatus::Ready
                         ) =>
                 {
                     apps_ready = true;

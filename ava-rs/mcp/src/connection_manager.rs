@@ -1,4 +1,4 @@
-//! Aggregates MCP server connections for Codex.
+//! Aggregates MCP server connections for Ava.
 //!
 //! [`McpConnectionSet`] is the private connection set behind
 //! [`crate::McpRuntime`] and [`crate::McpBinding`]. It coordinates startup status
@@ -20,7 +20,7 @@ use startup::chatgpt_auth_provider_for_server;
 use startup::emit_update;
 use startup::mcp_init_error_display;
 use startup::mcp_startup_failure_reason;
-use startup::should_share_codex_apps_tools_cache;
+use startup::should_share_ava_apps_tools_cache;
 pub(crate) use tool_catalog::BindingCatalogRevision;
 pub use tool_catalog::tool_is_model_visible;
 
@@ -35,16 +35,16 @@ use crate::catalog::McpServerSource;
 use crate::elicitation::ElicitationRequestManager;
 use crate::elicitation::ElicitationRequestRouter;
 use crate::event_stream::EventStreamConnectionSettings;
-use crate::mcp::CODEX_APPS_MCP_SERVER_NAME;
+use crate::mcp::AVA_APPS_MCP_SERVER_NAME;
 use crate::mcp::ToolPluginContext;
-use crate::pagination::MAX_CODEX_APPS_TOOL_CATALOG_ITEMS;
+use crate::pagination::MAX_AVA_APPS_TOOL_CATALOG_ITEMS;
 use crate::pagination::MAX_MCP_CATALOG_ITEMS;
 use crate::rmcp_client::AsyncManagedClient;
 use crate::rmcp_client::DEFAULT_STARTUP_TIMEOUT;
 use crate::rmcp_client::DEFAULT_TOOL_TIMEOUT;
 use crate::rmcp_client::ManagedClient;
 use crate::rmcp_client::StartupOutcomeError;
-use crate::rmcp_client::prepare_codex_apps_tools_for_model;
+use crate::rmcp_client::prepare_ava_apps_tools_for_model;
 use crate::rmcp_client::prepare_regular_mcp_tools_for_model;
 use crate::runtime::McpPublicationGate;
 use crate::runtime::McpRuntimeInput;
@@ -61,19 +61,19 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
-use codex_config::McpServerTransportConfig;
-use codex_diagnostics::Gauge;
-use codex_diagnostics::GaugeGuard;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::mcp::McpServerInfo;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::McpStartupCompleteEvent;
-use codex_protocol::protocol::McpStartupFailure;
-use codex_protocol::protocol::McpStartupFailureReason;
-use codex_protocol::protocol::McpStartupStatus;
-use codex_protocol::protocol::McpStartupUpdateEvent;
-use codex_rmcp_client::determine_streamable_http_auth_status_from_credentials;
+use ava_config::McpServerTransportConfig;
+use ava_diagnostics::Gauge;
+use ava_diagnostics::GaugeGuard;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::McpServerInfo;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::McpStartupCompleteEvent;
+use ava_protocol::protocol::McpStartupFailure;
+use ava_protocol::protocol::McpStartupFailureReason;
+use ava_protocol::protocol::McpStartupStatus;
+use ava_protocol::protocol::McpStartupUpdateEvent;
+use ava_rmcp_client::determine_streamable_http_auth_status_from_credentials;
 use tokio::sync::watch;
 use tokio::task::JoinSet;
 use tracing::warn;
@@ -174,8 +174,8 @@ impl McpServerView {
     ) -> Result<Vec<ToolInfo>, StartupOutcomeError> {
         let tools = self.connection.client.listed_tools().await?;
         let tools = filter_tools(tools, &self.tool_filter);
-        Ok(if self.connection.client.is_codex_apps_mcp_server {
-            prepare_codex_apps_tools_for_model(tools, tool_plugin_context)
+        Ok(if self.connection.client.is_ava_apps_mcp_server {
+            prepare_ava_apps_tools_for_model(tools, tool_plugin_context)
         } else {
             prepare_regular_mcp_tools_for_model(tools, tool_plugin_context)
         })
@@ -216,9 +216,9 @@ impl McpConnectionSet {
             tx_event,
             startup_cancellation_token,
             runtime_context,
-            codex_apps_tools_cache,
+            ava_apps_tools_cache,
             tool_catalog_cache,
-            codex_apps_tools_cache_key,
+            ava_apps_tools_cache_key,
             client_mcp_extensions,
             auth,
             auth_manager,
@@ -229,7 +229,7 @@ impl McpConnectionSet {
         let store_mode = config.mcp_oauth_credentials_store_mode;
         let keyring_backend_kind = config.auth_keyring_backend_kind;
         let oauth_refresh_mode = config.oauth_refresh_mode;
-        let codex_home = config.codex_home.clone();
+        let ava_home = config.ava_home.clone();
         let prefix_mcp_tool_names = config.prefix_mcp_tool_names;
         let non_prefixed_mcp_tool_servers = config.non_prefixed_mcp_tool_servers.clone();
         let default_protocol_mode = config.protocol_mode;
@@ -278,11 +278,11 @@ impl McpConnectionSet {
         let tool_plugin_context = Arc::new(tool_plugin_context);
         let startup_submit_id = submit_id;
         let static_chatgpt_auth_provider = auth
-            .filter(|auth| auth.uses_codex_backend())
-            .map(codex_model_provider::auth_provider_from_auth);
-        let codex_apps_auth_provider = auth_manager.as_ref().and_then(|auth_manager| {
-            auth.filter(|auth| auth.uses_codex_backend()).map(|auth| {
-                codex_model_provider::auth_provider_from_auth_manager(
+            .filter(|auth| auth.uses_ava_backend())
+            .map(ava_model_provider::auth_provider_from_auth);
+        let ava_apps_auth_provider = auth_manager.as_ref().and_then(|auth_manager| {
+            auth.filter(|auth| auth.uses_ava_backend()).map(|auth| {
+                ava_model_provider::auth_provider_from_auth_manager(
                     Arc::clone(auth_manager),
                     auth,
                 )
@@ -299,7 +299,7 @@ impl McpConnectionSet {
                 &server_name,
                 registration,
             );
-            let is_host_owned_codex_apps = registration.is_some_and(|server| {
+            let is_host_owned_ava_apps = registration.is_some_and(|server| {
                 server
                     .source()
                     .is_host_owned_apps(&server_name, server.config())
@@ -311,8 +311,8 @@ impl McpConnectionSet {
                 | McpServerSource::Compatibility { .. }
                 | McpServerSource::Extension { .. } => None,
             });
-            let catalog_item_limit = if is_host_owned_codex_apps {
-                MAX_CODEX_APPS_TOOL_CATALOG_ITEMS
+            let catalog_item_limit = if is_host_owned_ava_apps {
+                MAX_AVA_APPS_TOOL_CATALOG_ITEMS
             } else {
                 MAX_MCP_CATALOG_ITEMS
             };
@@ -324,7 +324,7 @@ impl McpConnectionSet {
             ) {
                 registration
                     .and_then(crate::ResolvedMcpServer::protocol_mode)
-                    .unwrap_or(if is_host_owned_codex_apps {
+                    .unwrap_or(if is_host_owned_ava_apps {
                         host_owned_apps_protocol_mode
                     } else {
                         default_protocol_mode
@@ -343,7 +343,7 @@ impl McpConnectionSet {
             );
             let resolved_environment =
                 runtime_context.resolve_server_environment(&server_name, &configured_config);
-            // For built-in Codex Apps, `CODEX_CONNECTORS_TOKEN` is a debug
+            // For built-in Ava Apps, `AVA_CONNECTORS_TOKEN` is a debug
             // override: it supplies runtime auth but bypasses the shared tools
             // cache.
             let uses_env_bearer_token = match &configured_config.transport {
@@ -354,10 +354,10 @@ impl McpConnectionSet {
                 McpServerTransportConfig::Stdio { .. } => false,
             };
             // Filtered catalogs must not read or populate an unrestricted shared cache.
-            let shares_codex_apps_tools_cache = is_host_owned_codex_apps
+            let shares_ava_apps_tools_cache = is_host_owned_ava_apps
                 && !server.requires_read_only_mcp_tools()
-                && should_share_codex_apps_tools_cache(&server_name, uses_env_bearer_token);
-            let codex_apps_tools_cache_context = shares_codex_apps_tools_cache.then(|| {
+                && should_share_ava_apps_tools_cache(&server_name, uses_env_bearer_token);
+            let ava_apps_tools_cache_context = shares_ava_apps_tools_cache.then(|| {
                 // Only equivalent discovery inputs may share executable Apps tools.
                 let mut transport = configured_config.transport.clone();
                 if let McpServerTransportConfig::StreamableHttp {
@@ -365,7 +365,7 @@ impl McpConnectionSet {
                     ..
                 } = &mut transport
                 {
-                    // mcp_server_config_for_url in codex-rs/codex-mcp/src/mcp/mod.rs
+                    // mcp_server_config_for_url in ava-rs/ava-mcp/src/mcp/mod.rs
                     // adds thread attribution that threadless discovery does not carry.
                     headers.retain(|name, _| !name.eq_ignore_ascii_case("originator"));
                 }
@@ -376,30 +376,30 @@ impl McpConnectionSet {
                     catalog_item_limit,
                 ]);
                 scope.sort_all_objects();
-                codex_apps_tools_cache
-                    .context(codex_home.clone(), codex_apps_tools_cache_key.clone())
+                ava_apps_tools_cache
+                    .context(ava_home.clone(), ava_apps_tools_cache_key.clone())
                     .with_live_scope(scope.to_string())
             });
-            // The reserved Codex Apps registration follows the shared
+            // The reserved Ava Apps registration follows the shared
             // AuthManager across refreshes. In the hosted-plugin path, this
             // is the ChatGPT /ps/mcp connection. User-configured MCP
             // registrations keep their existing configured auth path.
-            let chatgpt_auth_provider = if server_name == CODEX_APPS_MCP_SERVER_NAME {
-                codex_apps_auth_provider
+            let chatgpt_auth_provider = if server_name == AVA_APPS_MCP_SERVER_NAME {
+                ava_apps_auth_provider
                     .clone()
                     .or_else(|| static_chatgpt_auth_provider.clone())
             } else {
                 static_chatgpt_auth_provider.clone()
             };
-            // If Codex Apps has an env bearer token, that is its auth path. Do
-            // not also attach the ambient CodexAuth provider.
+            // If Ava Apps has an env bearer token, that is its auth path. Do
+            // not also attach the ambient AvaAuth provider.
             let runtime_auth_provider =
-                if server_name == CODEX_APPS_MCP_SERVER_NAME && uses_env_bearer_token {
+                if server_name == AVA_APPS_MCP_SERVER_NAME && uses_env_bearer_token {
                     None
                 } else {
                     chatgpt_auth_provider_for_server(&server, chatgpt_auth_provider)
                 };
-            if is_host_owned_codex_apps {
+            if is_host_owned_ava_apps {
                 event_stream_connection = Some(Arc::new(EventStreamConnectionSettings {
                     server: server.clone(),
                     store_mode,
@@ -425,8 +425,8 @@ impl McpConnectionSet {
                 &runtime_context,
                 runtime_auth_provider.as_ref(),
                 auth,
-                shares_codex_apps_tools_cache
-                    .then(|| (codex_home.clone(), codex_apps_tools_cache_key.clone())),
+                shares_ava_apps_tools_cache
+                    .then(|| (ava_home.clone(), ava_apps_tools_cache_key.clone())),
                 client_elicitation_capability.clone(),
                 client_mcp_extensions.clone(),
                 previous
@@ -442,7 +442,7 @@ impl McpConnectionSet {
                 }
                 McpServerTransportConfig::Stdio { env, .. } => match env
                     .as_ref()
-                    .and_then(|variables| variables.get("CODEX_MCP_PROTOCOL_VERSION"))
+                    .and_then(|variables| variables.get("AVA_MCP_PROTOCOL_VERSION"))
                 {
                     None => Some(crate::McpProtocolMode::Legacy),
                     Some(version)
@@ -557,7 +557,7 @@ impl McpConnectionSet {
                 }
             }
             let cancel_token = startup_cancellation_token.child_token();
-            let tool_catalog_cache_context = if server_name == CODEX_APPS_MCP_SERVER_NAME
+            let tool_catalog_cache_context = if server_name == AVA_APPS_MCP_SERVER_NAME
                 || server.requires_read_only_mcp_tools()
             {
                 None
@@ -588,7 +588,7 @@ impl McpConnectionSet {
                 cancel_token.clone(),
                 tx_event.clone(),
                 elicitation_requests.clone(),
-                codex_apps_tools_cache_context,
+                ava_apps_tools_cache_context,
                 tool_catalog_cache_context,
                 runtime_context.clone(),
                 resolved_environment,
@@ -1024,7 +1024,7 @@ impl McpConnectionSet {
     }
 
     /// Returns presentation metadata from the current connection.
-    /// Codex Apps metadata may come from its existing cache; regular MCP server information is
+    /// Ava Apps metadata may come from its existing cache; regular MCP server information is
     /// connection-specific, so pending regular clients are awaited.
     pub(crate) async fn list_available_server_infos(&self) -> HashMap<String, McpServerInfo> {
         let mut server_infos = HashMap::new();

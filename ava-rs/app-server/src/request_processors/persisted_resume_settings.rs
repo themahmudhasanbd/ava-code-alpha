@@ -1,8 +1,8 @@
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_rollout::RolloutItem;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_rollout::RolloutItem;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct PersistedResumeSettings {

@@ -21,12 +21,12 @@ use crate::sandbox_bin_dir;
 use crate::setup::SetupRuntime;
 
 const DEV_BUILD_VERSION_SENTINEL: &str = "0.0.0";
-const COMMAND_RUNNER_EXE: &str = "codex-command-runner.exe";
+const COMMAND_RUNNER_EXE: &str = "ava-command-runner.exe";
 pub(crate) const BIN_DIRNAME: &str = "bin";
-pub(crate) const RESOURCES_DIRNAME: &str = "codex-resources";
+pub(crate) const RESOURCES_DIRNAME: &str = "ava-resources";
 
-pub(crate) fn helper_bin_dir(codex_home: &Path) -> PathBuf {
-    sandbox_bin_dir(codex_home)
+pub(crate) fn helper_bin_dir(ava_home: &Path) -> PathBuf {
+    sandbox_bin_dir(ava_home)
 }
 
 fn legacy_lookup() -> PathBuf {
@@ -38,7 +38,7 @@ fn legacy_lookup() -> PathBuf {
     PathBuf::from(COMMAND_RUNNER_EXE)
 }
 
-pub(crate) fn resolve_command_runner(codex_home: &Path, log_dir: Option<&Path>) -> Result<PathBuf> {
+pub(crate) fn resolve_command_runner(ava_home: &Path, log_dir: Option<&Path>) -> Result<PathBuf> {
     if registered_core_requested() {
         let exe = std::env::current_exe().context("resolve registered Core helper source")?;
         let direct_path = exe.with_file_name(COMMAND_RUNNER_EXE);
@@ -52,7 +52,7 @@ pub(crate) fn resolve_command_runner(codex_home: &Path, log_dir: Option<&Path>) 
         // Missing packaged helpers must fail rather than search PATH or create a copy.
         return Ok(direct_path);
     }
-    Ok(match copy_runner_if_needed(codex_home, log_dir) {
+    Ok(match copy_runner_if_needed(ava_home, log_dir) {
         Ok(path) => {
             log_note(
                 &format!(
@@ -77,13 +77,13 @@ pub(crate) fn resolve_command_runner(codex_home: &Path, log_dir: Option<&Path>) 
     })
 }
 
-pub fn resolve_exe_for_launch(source: &Path, codex_home: &Path) -> PathBuf {
+pub fn resolve_exe_for_launch(source: &Path, ava_home: &Path) -> PathBuf {
     let runtime = crate::setup::current_setup_runtime();
-    resolve_exe_for_runtime(source, codex_home, runtime)
+    resolve_exe_for_runtime(source, ava_home, runtime)
 }
 
-fn resolve_exe_for_runtime(source: &Path, codex_home: &Path, runtime: SetupRuntime) -> PathBuf {
-    let sandbox_log_dir = crate::sandbox_dir(codex_home);
+fn resolve_exe_for_runtime(source: &Path, ava_home: &Path, runtime: SetupRuntime) -> PathBuf {
+    let sandbox_log_dir = crate::sandbox_dir(ava_home);
     if runtime == SetupRuntime::Registered {
         log_note(
             &format!(
@@ -98,7 +98,7 @@ fn resolve_exe_for_runtime(source: &Path, codex_home: &Path, runtime: SetupRunti
     let Some(file_name) = source.file_name() else {
         return source.to_path_buf();
     };
-    let destination = helper_bin_dir(codex_home).join(file_name);
+    let destination = helper_bin_dir(ava_home).join(file_name);
     match copy_from_source_if_needed(source, &destination) {
         Ok(_) => {
             log_note(
@@ -124,10 +124,10 @@ fn resolve_exe_for_runtime(source: &Path, codex_home: &Path, runtime: SetupRunti
     }
 }
 
-fn copy_runner_if_needed(codex_home: &Path, log_dir: Option<&Path>) -> Result<PathBuf> {
+fn copy_runner_if_needed(ava_home: &Path, log_dir: Option<&Path>) -> Result<PathBuf> {
     let source = sibling_source_path()?;
     let suffix = helper_version_suffix(&source)?;
-    let destination = helper_bin_dir(codex_home).join(materialized_file_name(&suffix));
+    let destination = helper_bin_dir(ava_home).join(materialized_file_name(&suffix));
     log_note(
         &format!(
             "helper copy: validating command-runner source={} destination={}",
@@ -189,7 +189,7 @@ pub(crate) fn bundled_executable_path_for_exe(exe: &Path, file_name: &str) -> Op
 }
 
 fn materialized_file_name(suffix: &str) -> String {
-    format!("codex-command-runner-{suffix}.exe")
+    format!("ava-command-runner-{suffix}.exe")
 }
 
 fn helper_version_suffix(source: &Path) -> Result<String> {
@@ -235,18 +235,18 @@ mod tests {
 
     #[test]
     fn helper_bin_dir_is_under_sandbox_bin() {
-        let codex_home = Path::new(r"C:\Users\example\.codex");
+        let ava_home = Path::new(r"C:\Users\example\.ava-code");
 
         assert_eq!(
-            PathBuf::from(r"C:\Users\example\.codex\.sandbox-bin"),
-            helper_bin_dir(codex_home)
+            PathBuf::from(r"C:\Users\example\.ava-code\.sandbox-bin"),
+            helper_bin_dir(ava_home)
         );
     }
 
     #[test]
     fn registered_request_does_not_materialize_or_replace_a_missing_source() {
         let tmp = TempDir::new().expect("tempdir");
-        let executable = tmp.path().join("codex.exe");
+        let executable = tmp.path().join("ava.exe");
         let home = tmp.path().join("home");
         for content in [None, Some(b"fixture".as_slice())] {
             if let Some(content) = content {
@@ -263,10 +263,10 @@ mod tests {
     #[test]
     fn legacy_request_materializes_the_same_source() {
         let tmp = TempDir::new().expect("tempdir");
-        let executable = tmp.path().join("codex.exe");
+        let executable = tmp.path().join("ava.exe");
         let home = tmp.path().join("home");
         fs::write(&executable, b"fixture").expect("write source");
-        let destination = helper_bin_dir(&home).join("codex.exe");
+        let destination = helper_bin_dir(&home).join("ava.exe");
         assert_eq!(
             resolve_exe_for_runtime(&executable, &home, SetupRuntime::Legacy),
             destination
@@ -277,14 +277,14 @@ mod tests {
     #[test]
     fn copy_runner_into_shared_bin_dir() {
         let tmp = TempDir::new().expect("tempdir");
-        let codex_home = tmp.path().join("codex-home");
+        let ava_home = tmp.path().join("ava-home");
         let source_dir = tmp.path().join("sibling-source");
         fs::create_dir_all(&source_dir).expect("create source dir");
-        let runner_source = source_dir.join("codex-command-runner.exe");
+        let runner_source = source_dir.join("ava-command-runner.exe");
         fs::write(&runner_source, b"runner").expect("runner");
         let runner_suffix = helper_version_suffix(&runner_source).expect("runner suffix");
         let runner_destination =
-            helper_bin_dir(&codex_home).join(materialized_file_name(&runner_suffix));
+            helper_bin_dir(&ava_home).join(materialized_file_name(&runner_suffix));
 
         let runner_outcome =
             copy_from_source_if_needed(&runner_source, &runner_destination).expect("runner copy");
@@ -302,13 +302,13 @@ mod tests {
         let release_dir = tmp.path().join("release");
         let resources_dir = release_dir.join(RESOURCES_DIRNAME);
         fs::create_dir_all(&resources_dir).expect("create resources dir");
-        let exe = release_dir.join("codex.exe");
-        let helper = resources_dir.join("codex-command-runner.exe");
-        fs::write(&exe, b"codex").expect("write exe");
+        let exe = release_dir.join("ava.exe");
+        let helper = resources_dir.join("ava-command-runner.exe");
+        fs::write(&exe, b"ava").expect("write exe");
         fs::write(&helper, b"runner").expect("write helper");
 
         let resolved =
-            bundled_executable_path_for_exe(&exe, /*file_name*/ "codex-command-runner.exe")
+            bundled_executable_path_for_exe(&exe, /*file_name*/ "ava-command-runner.exe")
                 .expect("helper path");
 
         assert_eq!(resolved, helper);
@@ -322,13 +322,13 @@ mod tests {
         let resources_dir = package_dir.join(RESOURCES_DIRNAME);
         fs::create_dir_all(&bin_dir).expect("create bin dir");
         fs::create_dir_all(&resources_dir).expect("create resources dir");
-        let exe = bin_dir.join("codex.exe");
-        let helper = resources_dir.join("codex-command-runner.exe");
-        fs::write(&exe, b"codex").expect("write exe");
+        let exe = bin_dir.join("ava.exe");
+        let helper = resources_dir.join("ava-command-runner.exe");
+        fs::write(&exe, b"ava").expect("write exe");
         fs::write(&helper, b"runner").expect("write helper");
 
         let resolved =
-            bundled_executable_path_for_exe(&exe, /*file_name*/ "codex-command-runner.exe")
+            bundled_executable_path_for_exe(&exe, /*file_name*/ "ava-command-runner.exe")
                 .expect("helper path");
 
         assert_eq!(resolved, helper);
@@ -344,8 +344,8 @@ mod tests {
         fs::create_dir_all(&bin_dir).expect("create bin dir");
         fs::create_dir_all(&resources_dir).expect("create resources dir");
         fs::create_dir_all(&install_dir).expect("create install dir");
-        fs::write(bin_dir.join("codex.exe"), b"codex").expect("write exe");
-        let helper = resources_dir.join("codex-windows-sandbox-setup.exe");
+        fs::write(bin_dir.join("ava.exe"), b"ava").expect("write exe");
+        let helper = resources_dir.join("ava-windows-sandbox-setup.exe");
         fs::write(&helper, b"setup").expect("write helper");
 
         let junction = install_dir.join(BIN_DIRNAME);
@@ -359,8 +359,8 @@ mod tests {
 
         assert_eq!(
             bundled_executable_path_for_exe(
-                &junction.join("codex.exe"),
-                /*file_name*/ "codex-windows-sandbox-setup.exe"
+                &junction.join("ava.exe"),
+                /*file_name*/ "ava-windows-sandbox-setup.exe"
             ),
             Some(dunce::canonicalize(&helper).expect("canonical helper"))
         );
@@ -375,15 +375,15 @@ mod tests {
         let bin_resources_dir = bin_dir.join(RESOURCES_DIRNAME);
         fs::create_dir_all(&package_resources_dir).expect("create package resources dir");
         fs::create_dir_all(&bin_resources_dir).expect("create bin resources dir");
-        let exe = bin_dir.join("codex.exe");
-        let package_helper = package_resources_dir.join("codex-command-runner.exe");
-        let bin_helper = bin_resources_dir.join("codex-command-runner.exe");
-        fs::write(&exe, b"codex").expect("write exe");
+        let exe = bin_dir.join("ava.exe");
+        let package_helper = package_resources_dir.join("ava-command-runner.exe");
+        let bin_helper = bin_resources_dir.join("ava-command-runner.exe");
+        fs::write(&exe, b"ava").expect("write exe");
         fs::write(&package_helper, b"package runner").expect("write package helper");
         fs::write(&bin_helper, b"bin runner").expect("write bin helper");
 
         let resolved =
-            bundled_executable_path_for_exe(&exe, /*file_name*/ "codex-command-runner.exe")
+            bundled_executable_path_for_exe(&exe, /*file_name*/ "ava-command-runner.exe")
                 .expect("helper path");
 
         assert_eq!(resolved, package_helper);
@@ -395,15 +395,15 @@ mod tests {
         let release_dir = tmp.path().join("release");
         let resources_dir = release_dir.join(RESOURCES_DIRNAME);
         fs::create_dir_all(&resources_dir).expect("create resources dir");
-        let exe = release_dir.join("codex.exe");
-        let sibling_helper = release_dir.join("codex-command-runner.exe");
-        let resource_helper = resources_dir.join("codex-command-runner.exe");
-        fs::write(&exe, b"codex").expect("write exe");
+        let exe = release_dir.join("ava.exe");
+        let sibling_helper = release_dir.join("ava-command-runner.exe");
+        let resource_helper = resources_dir.join("ava-command-runner.exe");
+        fs::write(&exe, b"ava").expect("write exe");
         fs::write(&sibling_helper, b"sibling runner").expect("write sibling helper");
         fs::write(&resource_helper, b"resource runner").expect("write resource helper");
 
         let resolved =
-            bundled_executable_path_for_exe(&exe, /*file_name*/ "codex-command-runner.exe")
+            bundled_executable_path_for_exe(&exe, /*file_name*/ "ava-command-runner.exe")
                 .expect("helper path");
 
         assert_eq!(resolved, sibling_helper);
@@ -427,6 +427,6 @@ mod tests {
     fn materialized_file_name_adds_suffix_before_extension() {
         let file_name = materialized_file_name("test-suffix");
 
-        assert_eq!(file_name, "codex-command-runner-test-suffix.exe");
+        assert_eq!(file_name, "ava-command-runner-test-suffix.exe");
     }
 }

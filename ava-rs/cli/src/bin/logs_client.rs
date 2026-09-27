@@ -5,23 +5,23 @@ use anyhow::Context;
 use chrono::DateTime;
 use clap::Parser;
 use clap::ValueEnum;
-use codex_core::config::ConfigBuilder;
-use codex_state::LogQuery;
-use codex_state::LogRow;
-use codex_state::SqliteConfig;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_core::config::ConfigBuilder;
+use ava_state::LogQuery;
+use ava_state::LogRow;
+use ava_state::SqliteConfig;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use owo_colors::OwoColorize;
 
 #[derive(Debug, Parser)]
-#[command(name = "codex-state-logs")]
-#[command(about = "Tail Codex logs from the dedicated logs SQLite DB with simple filters")]
+#[command(name = "ava-state-logs")]
+#[command(about = "Tail Ava logs from the dedicated logs SQLite DB with simple filters")]
 struct Args {
     /// Path to AvA home. Defaults to $AVA_CODE_HOME or ~/.ava-code.
     #[arg(long, env = "AVA_CODE_HOME")]
-    codex_home: Option<PathBuf>,
+    ava_home: Option<PathBuf>,
 
-    /// Direct path to the logs SQLite database. Overrides --codex-home.
+    /// Direct path to the logs SQLite database. Overrides --ava-home.
     #[arg(long)]
     db: Option<PathBuf>,
 
@@ -140,8 +140,8 @@ async fn resolve_sqlite_config(args: &Args) -> anyhow::Result<SqliteConfig> {
     }
 
     let mut config_builder = ConfigBuilder::default();
-    if let Some(codex_home) = args.codex_home.as_ref() {
-        config_builder = config_builder.codex_home(codex_home.clone());
+    if let Some(ava_home) = args.ava_home.as_ref() {
+        config_builder = config_builder.ava_home(ava_home.clone());
     }
     let config = config_builder.build().await?;
     Ok(config.sqlite_config().clone())
@@ -403,31 +403,31 @@ mod tests {
 
     #[test]
     fn log_level_rejects_aliases_and_unknown_values() {
-        assert!(Args::try_parse_from(["codex-state-logs", "--level", "warning"]).is_err());
-        assert!(Args::try_parse_from(["codex-state-logs", "--level", "err"]).is_err());
-        assert!(Args::try_parse_from(["codex-state-logs", "--level", "warn,error"]).is_err());
+        assert!(Args::try_parse_from(["ava-state-logs", "--level", "warning"]).is_err());
+        assert!(Args::try_parse_from(["ava-state-logs", "--level", "err"]).is_err());
+        assert!(Args::try_parse_from(["ava-state-logs", "--level", "warn,error"]).is_err());
     }
 
     #[test]
     fn log_level_accepts_canonical_values_case_insensitively() {
-        let args = Args::try_parse_from(["codex-state-logs", "--level", "WARN"])
+        let args = Args::try_parse_from(["ava-state-logs", "--level", "WARN"])
             .expect("parse uppercase log level");
 
         assert_eq!(args.level, Some(LogLevelThreshold::Warn));
     }
 
-    /// Explicit database selection must not parse an overridden Codex home.
+    /// Explicit database selection must not parse an overridden Ava home.
     #[tokio::test]
-    async fn direct_db_skips_codex_home_config() {
-        let codex_home = tempfile::tempdir().expect("create Codex home");
-        std::fs::write(codex_home.path().join("config.toml"), "model = [")
+    async fn direct_db_skips_ava_home_config() {
+        let ava_home = tempfile::tempdir().expect("create Ava home");
+        std::fs::write(ava_home.path().join("config.toml"), "model = [")
             .expect("write invalid config");
         let sqlite_home = tempfile::tempdir().expect("create SQLite home");
         let db_path = sqlite_home.path().join("logs_2.sqlite");
         let args = Args::try_parse_from([
-            OsString::from("codex-state-logs"),
-            OsString::from("--codex-home"),
-            codex_home.path().as_os_str().to_owned(),
+            OsString::from("ava-state-logs"),
+            OsString::from("--ava-home"),
+            ava_home.path().as_os_str().to_owned(),
             OsString::from("--db"),
             db_path.as_os_str().to_owned(),
         ])
@@ -452,7 +452,7 @@ mod tests {
         db_path.extend_from_slice(b"/non-utf8-\xff/logs_2.sqlite");
         let db_path = PathBuf::from(OsString::from_vec(db_path));
         let args = Args::try_parse_from([
-            OsString::from("codex-state-logs"),
+            OsString::from("ava-state-logs"),
             OsString::from("--db"),
             db_path.as_os_str().to_owned(),
         ])

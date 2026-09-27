@@ -1,8 +1,8 @@
-use codex_extension_api::ExtensionMetrics;
-use codex_otel::THREAD_SKILLS_DESCRIPTION_TRUNCATED_CHARS_METRIC;
-use codex_otel::THREAD_SKILLS_ENABLED_TOTAL_METRIC;
-use codex_otel::THREAD_SKILLS_KEPT_TOTAL_METRIC;
-use codex_otel::THREAD_SKILLS_TRUNCATED_METRIC;
+use ava_extension_api::ExtensionMetrics;
+use ava_otel::THREAD_SKILLS_DESCRIPTION_TRUNCATED_CHARS_METRIC;
+use ava_otel::THREAD_SKILLS_ENABLED_TOTAL_METRIC;
+use ava_otel::THREAD_SKILLS_KEPT_TOTAL_METRIC;
+use ava_otel::THREAD_SKILLS_TRUNCATED_METRIC;
 
 use crate::render::SkillMetadataBudget;
 use crate::render::SkillRenderReport;

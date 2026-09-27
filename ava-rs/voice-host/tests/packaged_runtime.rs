@@ -6,19 +6,19 @@ use std::time::Duration;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_install_context::InstallContext;
-use codex_realtime_webrtc::VoiceHost;
-use codex_utils_cargo_bin::cargo_bin;
+use ava_install_context::InstallContext;
+use ava_realtime_webrtc::VoiceHost;
+use ava_utils_cargo_bin::cargo_bin;
 use tokio::process::Command;
 use tokio::time::timeout;
 
 const DEADLINE: Duration = Duration::from_secs(/*secs*/ 10);
 
 #[tokio::test]
-#[ignore = "requires CODEX_TEST_VOICE_RUNTIME containing real prepared native libraries"]
+#[ignore = "requires AVA_TEST_VOICE_RUNTIME containing real prepared native libraries"]
 async fn relocated_runtime_initializes_closes_and_rejects_duplicate_initialization() -> Result<()> {
-    let source = std::env::var_os("CODEX_TEST_VOICE_RUNTIME")
-        .context("set CODEX_TEST_VOICE_RUNTIME to a matching prepared runtime")?;
+    let source = std::env::var_os("AVA_TEST_VOICE_RUNTIME")
+        .context("set AVA_TEST_VOICE_RUNTIME to a matching prepared runtime")?;
     let source = fs::canonicalize(source)?;
     ensure!(
         source.join("runtime.json").is_file(),
@@ -28,7 +28,7 @@ async fn relocated_runtime_initializes_closes_and_rejects_duplicate_initializati
         .prefix("voice native package ")
         .tempdir()?;
     let root = directory.path().join("staging");
-    let runtime = root.join("codex-resources/voice");
+    let runtime = root.join("ava-resources/voice");
     fs::create_dir_all(&runtime)?;
     let mut pending = vec![(source, runtime.clone())];
     while let Some((source, destination)) = pending.pop() {
@@ -45,14 +45,14 @@ async fn relocated_runtime_initializes_closes_and_rejects_duplicate_initializati
             }
         }
     }
-    let helper_source = cargo_bin("codex-voice-host")?;
+    let helper_source = cargo_bin("ava-voice-host")?;
     let name = helper_source.file_name().context("helper filename")?;
     fs::create_dir_all(runtime.join("bin"))?;
     fs::copy(&helper_source, runtime.join("bin").join(name))?;
     fs::create_dir(root.join("bin"))?;
-    let app_name = if cfg!(windows) { "codex.exe" } else { "codex" };
+    let app_name = if cfg!(windows) { "ava.exe" } else { "ava" };
     fs::write(root.join("bin").join(app_name), [])?;
-    fs::write(root.join("codex-package.json"), "{}")?;
+    fs::write(root.join("ava-package.json"), "{}")?;
     let moved = directory.path().join("relocated package");
     fs::rename(root, &moved)?;
     let package = InstallContext::from_exe(

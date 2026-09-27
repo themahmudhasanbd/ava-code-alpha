@@ -7,20 +7,20 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::RequestId;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_network_proxy::RemoteNetworkProxyConfig;
-use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
-use codex_otel::OtelExporter;
-use codex_otel::OtelHttpProtocol;
-use codex_otel::OtelProvider;
-use codex_otel::OtelSettings;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::RequestId;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::RemoteNetworkProxyConfig;
+use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
+use ava_otel::OtelExporter;
+use ava_otel::OtelHttpProtocol;
+use ava_otel::OtelProvider;
+use ava_otel::OtelSettings;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -152,7 +152,7 @@ fn exported_process_and_network_logs_keep_the_validated_launch_reference() {
             let trace = attribute(record, "launch.trace_id");
             let span = attribute(record, "launch.span_id");
             if export_traces
-                && name.starts_with("codex.exec_server.process_")
+                && name.starts_with("ava.exec_server.process_")
                 && let Some(span) = span
             {
                 assert_eq!(record["traceId"].as_str(), trace);
@@ -174,9 +174,9 @@ fn exported_process_and_network_logs_keep_the_validated_launch_reference() {
             .enumerate()
         {
             for name in [
-                "codex.exec_server.process_start",
-                "codex.exec_server.process_exit",
-                "codex.network_proxy.policy_decision",
+                "ava.exec_server.process_start",
+                "ava.exec_server.process_exit",
+                "ava.network_proxy.policy_decision",
             ] {
                 expected.push((
                     name.to_string(),
@@ -269,7 +269,7 @@ fn launch_rpc_span_finishes_before_its_process_exits() {
     );
     let exit_record = records
         .iter()
-        .find(|record| attribute(record, "event.name") == Some("codex.exec_server.process_exit"))
+        .find(|record| attribute(record, "event.name") == Some("ava.exec_server.process_exit"))
         .expect("process exit log");
     let exit_span_id = exit_record["spanId"]
         .as_str()
@@ -285,7 +285,7 @@ fn launch_rpc_span_finishes_before_its_process_exits() {
         "process completion has its own span"
     );
     let process_span = process_spans[0];
-    assert_eq!(process_span["name"], "codex.exec_server.process");
+    assert_eq!(process_span["name"], "ava.exec_server.process");
     assert_eq!(
         (
             process_span["traceId"].as_str(),
@@ -295,7 +295,7 @@ fn launch_rpc_span_finishes_before_its_process_exits() {
     );
     assert_ne!(process_span["spanId"], launch_span["spanId"]);
     let mut expected_exit =
-        expected_process_attributes("codex.exec_server.process_exit", /*index*/ 0, "None");
+        expected_process_attributes("ava.exec_server.process_exit", /*index*/ 0, "None");
     expected_exit["process.exit_code"] =
         json!({"intValue": exited.exit_code.expect("exit code").to_string()});
     expected_exit["process.termination_requested"] = json!({"boolValue": true});
@@ -303,7 +303,7 @@ fn launch_rpc_span_finishes_before_its_process_exits() {
         &records,
         vec![
             expected_process_attributes(
-                "codex.exec_server.process_start",
+                "ava.exec_server.process_start",
                 /*index*/ 0,
                 "None",
             ),
@@ -312,7 +312,7 @@ fn launch_rpc_span_finishes_before_its_process_exits() {
     );
     for record in &records {
         assert_eq!(record["traceId"].as_str(), Some(TRACE_ID));
-        let span = if attribute(record, "event.name") == Some("codex.exec_server.process_start") {
+        let span = if attribute(record, "event.name") == Some("ava.exec_server.process_start") {
             launch_span
         } else {
             process_span
@@ -388,7 +388,7 @@ fn exported_spawn_failure_keeps_launch_identity_without_outcome_or_error_text() 
     assert_exported_attributes(
         &records,
         vec![expected_process_attributes(
-            "codex.exec_server.process_spawn_failed",
+            "ava.exec_server.process_spawn_failed",
             /*index*/ 0,
             "None",
         )],
@@ -407,7 +407,7 @@ fn exported_sandbox_denial_keeps_launch_identity_and_separate_exit_outcome() {
             std::fs::write(&private_file, PRIVATE_PAYLOAD).expect("write test file");
             let cwd = PathUri::from_host_native_path(directory.path()).expect("cwd URI");
             let sandbox = crate::FileSystemSandboxContext::from_legacy_sandbox_policy(
-                codex_protocol::protocol::SandboxPolicy::new_read_only_policy(), cwd.clone(),
+                ava_protocol::protocol::SandboxPolicy::new_read_only_policy(), cwd.clone(),
             ).expect("read-only sandbox");
             for (index, span) in LAUNCH_SPANS.into_iter().enumerate() {
                 let process_id = format!("{PRIVATE_PAYLOAD}-{index}");
@@ -453,18 +453,18 @@ fn exported_sandbox_denial_keeps_launch_identity_and_separate_exit_outcome() {
     let mut expected = Vec::new();
     for index in 0..2 {
         expected.push(expected_process_attributes(
-            "codex.exec_server.process_start",
+            "ava.exec_server.process_start",
             index,
             "MacosSeatbelt",
         ));
         let mut exited =
-            expected_process_attributes("codex.exec_server.process_exit", index, "MacosSeatbelt");
+            expected_process_attributes("ava.exec_server.process_exit", index, "MacosSeatbelt");
         exited["process.exit_code"] = json!({"intValue": if index == 0 { "0" } else { "23" }});
         exited["process.termination_requested"] = json!({"boolValue": false});
         expected.push(exited);
     }
     let mut denied = expected_process_attributes(
-        "codex.exec_server.sandbox_denied",
+        "ava.exec_server.sandbox_denied",
         /*index*/ 1,
         "MacosSeatbelt",
     );
@@ -623,9 +623,9 @@ fn exported_logs(
     };
     let otel = OtelProvider::try_new(&OtelSettings {
         environment: "test".to_string(),
-        service_name: "codex-exec-server".to_string(),
+        service_name: "ava-exec-server".to_string(),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
-        codex_home: std::env::current_dir().expect("cwd"),
+        ava_home: std::env::current_dir().expect("cwd"),
         exporter,
         trace_exporter: if export_traces {
             OtelExporter::OtlpHttp {
@@ -738,7 +738,7 @@ fn new_handler(
         RpcNotificationSender::new(outgoing),
         ExecServerRuntimePaths::new(
             std::env::current_exe().expect("test executable"),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )
         .expect("runtime paths"),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),

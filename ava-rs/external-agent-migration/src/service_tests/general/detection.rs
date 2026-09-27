@@ -4,8 +4,8 @@ use pretty_assertions::assert_eq;
 
 #[tokio::test]
 async fn detect_home_lists_config_skills_and_agents_md() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
-    let agents_skills = codex_home
+    let (_root, external_agent_home, ava_home) = fixture_paths();
+    let agents_skills = ava_home
         .parent()
         .map(|parent| parent.join(".agents").join("skills"))
         .unwrap_or_else(|| PathBuf::from(".agents").join("skills"));
@@ -21,7 +21,7 @@ async fn detect_home_lists_config_skills_and_agents_md() {
     )
     .expect("write settings");
 
-    let items = service_for_paths(external_agent_home.clone(), codex_home.clone())
+    let items = service_for_paths(external_agent_home.clone(), ava_home.clone())
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
             include_memory: false,
@@ -36,7 +36,7 @@ async fn detect_home_lists_config_skills_and_agents_md() {
             description: format!(
                 "Migrate {} into {}",
                 external_agent_home.join("settings.json").display(),
-                codex_home.join("config.toml").display()
+                ava_home.join("config.toml").display()
             ),
             cwd: None,
             details: None,
@@ -59,7 +59,7 @@ async fn detect_home_lists_config_skills_and_agents_md() {
             description: format!(
                 "Migrate {} to {}",
                 external_agent_home.join(EXTERNAL_AGENT_CONFIG_MD).display(),
-                codex_home.join("AGENTS.md").display()
+                ava_home.join("AGENTS.md").display()
             ),
             cwd: None,
             details: None,
@@ -71,10 +71,10 @@ async fn detect_home_lists_config_skills_and_agents_md() {
 
 #[tokio::test]
 async fn detect_and_import_claude_commands_without_frontmatter() {
-    let (root, external_agent_home, codex_home) = fixture_paths();
+    let (root, external_agent_home, ava_home) = fixture_paths();
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
-    let service = service_for_paths(external_agent_home.clone(), codex_home);
+    let service = service_for_paths(external_agent_home.clone(), ava_home);
 
     for (cwd, source_commands, target_skills) in [
         (
@@ -128,7 +128,7 @@ async fn detect_and_import_claude_commands_without_frontmatter() {
                     .join("SKILL.md")
             )
             .expect("read migrated command"),
-            "---\nname: \"source-command-pr-review\"\ndescription: \"Migrated source command `pr-review`\"\n---\n\n# source-command-pr-review\n\nUse this skill when the user asks to run the migrated source command `pr-review`.\n\n## Command Template\n\nReview changes with Codex and AGENTS.md.\n"
+            "---\nname: \"source-command-pr-review\"\ndescription: \"Migrated source command `pr-review`\"\n---\n\n# source-command-pr-review\n\nUse this skill when the user asks to run the migrated source command `pr-review`.\n\n## Command Template\n\nReview changes with Ava and AGENTS.md.\n"
         );
         assert!(!target_skills.join("source-command-deploy").exists());
         assert_eq!(
@@ -140,10 +140,10 @@ async fn detect_and_import_claude_commands_without_frontmatter() {
 
 #[tokio::test]
 async fn detect_and_import_claude_commands_preserves_described_commands_on_collision() {
-    let (root, external_agent_home, codex_home) = fixture_paths();
+    let (root, external_agent_home, ava_home) = fixture_paths();
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
-    let service = service_for_paths(external_agent_home.clone(), codex_home);
+    let service = service_for_paths(external_agent_home.clone(), ava_home);
 
     for (cwd, source_commands, target_skills) in [
         (
@@ -257,16 +257,16 @@ async fn detect_and_import_claude_commands_preserves_described_commands_on_colli
 async fn detect_cursor_home_lists_user_and_managed_skills() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".cursor");
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     let user_skills = external_agent_home.join("skills");
     let managed_skills = external_agent_home.join("skills-cursor");
-    let target_skills = codex_home
+    let target_skills = ava_home
         .parent()
         .map(|parent| parent.join(".agents").join("skills"))
         .unwrap_or_else(|| PathBuf::from(".agents").join("skills"));
     fs::create_dir_all(user_skills.join("user-skill")).expect("create user skill");
     fs::create_dir_all(managed_skills.join("managed-skill")).expect("create managed skill");
-    let mut service = service_for_paths(external_agent_home, codex_home);
+    let mut service = service_for_paths(external_agent_home, ava_home);
     service.source = ExternalAgentSource::Cur;
 
     let items = service
@@ -304,11 +304,11 @@ async fn detect_cursor_home_lists_user_and_managed_skills() {
 async fn detect_cursor_repo_lists_skills_from_skills() {
     let root = TempDir::new().expect("create tempdir");
     let repo_root = root.path().join("repo");
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     let source_skills = repo_root.join(".cursor").join("skills");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(source_skills.join("skill-a")).expect("create repo skill");
-    let mut service = service_for_paths(root.path().join(".cursor"), codex_home);
+    let mut service = service_for_paths(root.path().join(".cursor"), ava_home);
     service.source = ExternalAgentSource::Cur;
 
     let items = service
@@ -340,7 +340,7 @@ async fn detect_cursor_repo_lists_skills_from_skills() {
 
 #[tokio::test]
 async fn detect_home_lists_recent_sessions() {
-    let (root, external_agent_home, codex_home) = fixture_paths();
+    let (root, external_agent_home, ava_home) = fixture_paths();
     let project_root = root.path().join("repo");
     let recent_timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     let session_path = external_agent_home
@@ -361,7 +361,7 @@ async fn detect_home_lists_recent_sessions() {
     )
     .expect("write session");
 
-    let items = service_for_paths(external_agent_home.clone(), codex_home)
+    let items = service_for_paths(external_agent_home.clone(), ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
             include_memory: false,
@@ -407,7 +407,7 @@ async fn detect_repo_lists_agents_md_for_each_cwd() {
 
     let items = service_for_paths(
         root.path().join(EXTERNAL_AGENT_DIR),
-        root.path().join(".codex"),
+        root.path().join(".ava-code"),
     )
     .detect(ExternalAgentConfigDetectOptions {
         include_home: false,
@@ -447,7 +447,7 @@ async fn detect_repo_lists_agents_md_for_each_cwd() {
 async fn detect_repo_still_reports_non_plugin_items_when_home_config_is_invalid() {
     let root = TempDir::new().expect("create tempdir");
     let repo_root = root.path().join("repo");
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(
         repo_root
@@ -456,9 +456,9 @@ async fn detect_repo_still_reports_non_plugin_items_when_home_config_is_invalid(
             .join("skill-a"),
     )
     .expect("create repo skills");
-    fs::create_dir_all(&codex_home).expect("create codex home");
-    fs::write(codex_home.join("config.toml"), "this is not valid = [toml")
-        .expect("write invalid codex config");
+    fs::create_dir_all(&ava_home).expect("create ava home");
+    fs::write(ava_home.join("config.toml"), "this is not valid = [toml")
+        .expect("write invalid ava config");
     fs::write(
         repo_root.join(EXTERNAL_AGENT_DIR).join("settings.json"),
         r#"{"env":{"FOO":"bar"}}"#,
@@ -483,7 +483,7 @@ async fn detect_repo_still_reports_non_plugin_items_when_home_config_is_invalid(
     )
     .expect("write agents");
 
-    let items = service_for_paths(root.path().join(EXTERNAL_AGENT_DIR), codex_home)
+    let items = service_for_paths(root.path().join(EXTERNAL_AGENT_DIR), ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: false,
             include_memory: false,
@@ -503,7 +503,7 @@ async fn detect_repo_still_reports_non_plugin_items_when_home_config_is_invalid(
                         .join(EXTERNAL_AGENT_DIR)
                         .join("settings.json")
                         .display(),
-                    repo_root.join(".codex").join("config.toml").display()
+                    repo_root.join(".ava-code").join("config.toml").display()
                 ),
                 cwd: Some(repo_root.clone()),
                 details: None,
@@ -581,7 +581,7 @@ async fn detect_repo_lists_mcp_hooks_commands_and_subagents() {
 
     let items = service_for_paths(
         root.path().join(EXTERNAL_AGENT_DIR),
-        root.path().join(".codex"),
+        root.path().join(".ava-code"),
     )
     .detect(ExternalAgentConfigDetectOptions {
         include_home: false,
@@ -599,7 +599,7 @@ async fn detect_repo_lists_mcp_hooks_commands_and_subagents() {
                 description: format!(
                     "Migrate MCP servers from {} into {}",
                     repo_root.display(),
-                    repo_root.join(".codex").join("config.toml").display()
+                    repo_root.join(".ava-code").join("config.toml").display()
                 ),
                 cwd: Some(repo_root.clone()),
                 details: Some(MigrationDetails {
@@ -614,7 +614,7 @@ async fn detect_repo_lists_mcp_hooks_commands_and_subagents() {
                 description: format!(
                     "Migrate hooks from {} to {}",
                     repo_root.join(EXTERNAL_AGENT_DIR).display(),
-                    repo_root.join(".codex").join("hooks.json").display()
+                    repo_root.join(".ava-code").join("hooks.json").display()
                 ),
                 cwd: Some(repo_root.clone()),
                 details: Some(MigrationDetails {
@@ -647,7 +647,7 @@ async fn detect_repo_lists_mcp_hooks_commands_and_subagents() {
                 description: format!(
                     "Migrate subagents from {} to {}",
                     repo_root.join(EXTERNAL_AGENT_DIR).join("agents").display(),
-                    repo_root.join(".codex").join("agents").display()
+                    repo_root.join(".ava-code").join("agents").display()
                 ),
                 cwd: Some(repo_root),
                 details: Some(MigrationDetails {
@@ -675,7 +675,7 @@ async fn detect_repo_skips_hooks_when_only_unsupported_hooks_exist() {
 
     let items = service_for_paths(
         root.path().join(EXTERNAL_AGENT_DIR),
-        root.path().join(".codex"),
+        root.path().join(".ava-code"),
     )
     .detect(ExternalAgentConfigDetectOptions {
         include_home: false,
@@ -749,7 +749,7 @@ async fn import_repo_migrates_mcp_hooks_commands_and_subagents() {
 
     service_for_paths(
         root.path().join(EXTERNAL_AGENT_DIR),
-        root.path().join(".codex"),
+        root.path().join(".ava-code"),
     )
     .import(vec![
         ExternalAgentConfigMigrationItem {
@@ -780,7 +780,7 @@ async fn import_repo_migrates_mcp_hooks_commands_and_subagents() {
     .await;
 
     let config: TomlValue = toml::from_str(
-        &fs::read_to_string(repo_root.join(".codex").join("config.toml")).expect("read config"),
+        &fs::read_to_string(repo_root.join(".ava-code").join("config.toml")).expect("read config"),
     )
     .expect("parse config");
     let expected_config: TomlValue = toml::from_str(
@@ -810,16 +810,16 @@ STATIC = "yes"
         .expect("mcp servers");
     let _supported_mcp_config: std::collections::HashMap<
         String,
-        codex_config::types::McpServerConfig,
+        ava_config::types::McpServerConfig,
     > = mcp_servers
         .try_into()
         .expect("migrated MCP config should be supported");
 
     let hooks: JsonValue = serde_json::from_str(
-        &fs::read_to_string(repo_root.join(".codex").join("hooks.json")).expect("read hooks"),
+        &fs::read_to_string(repo_root.join(".ava-code").join("hooks.json")).expect("read hooks"),
     )
     .expect("parse hooks");
-    let _supported_hooks: codex_config::HooksFile =
+    let _supported_hooks: ava_config::HooksFile =
         serde_json::from_value(hooks.clone()).expect("migrated hooks should be supported");
     assert_eq!(
         hooks,
@@ -844,7 +844,7 @@ STATIC = "yes"
     );
     assert!(
         !repo_root
-            .join(".codex")
+            .join(".ava-code")
             .join("hooks.migration-notes.md")
             .exists()
     );
@@ -864,7 +864,7 @@ STATIC = "yes"
     let agent: TomlValue = toml::from_str(
         &fs::read_to_string(
             repo_root
-                .join(".codex")
+                .join(".ava-code")
                 .join("agents")
                 .join("researcher.toml"),
         )
@@ -878,7 +878,7 @@ description = "Research role"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = """
-Research with Codex carefully."""
+Research with Ava carefully."""
 "#,
     )
     .expect("parse expected agent");

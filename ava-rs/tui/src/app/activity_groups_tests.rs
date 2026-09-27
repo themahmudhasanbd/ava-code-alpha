@@ -4,7 +4,7 @@ use super::*;
 use crate::app::test_support::make_test_app;
 use crate::thread_transcript::RawReasoningVisibility;
 use crate::thread_transcript::thread_items_to_transcript_cells;
-use codex_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnItemsView;
 use pretty_assertions::assert_eq;
 
 #[derive(Clone, Copy, Debug)]

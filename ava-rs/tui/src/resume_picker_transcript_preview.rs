@@ -16,13 +16,13 @@ use crate::app_server_session::ThreadParamsMode;
 use crate::git_action_directives::parse_assistant_markdown;
 use crate::inline_visualization::InlineVisualizationContext;
 use crate::legacy_core::config::Config;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_rollout::ReverseJsonlScanner;
-use codex_rollout::RolloutItem;
-use codex_rollout::ScanOutcome;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItem;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_rollout::ReverseJsonlScanner;
+use ava_rollout::RolloutItem;
+use ava_rollout::ScanOutcome;
 
 const MAX_TRANSCRIPT_PREVIEW_LINES: usize = 6;
 const TRANSCRIPT_PREVIEW_ITEMS_PAGE_SIZE: u32 = 6;
@@ -238,7 +238,7 @@ fn append_transcript_preview_lines<'a>(
                 let text = content
                     .iter()
                     .filter_map(|input| match input {
-                        codex_app_server_protocol::UserInput::Text { text, .. } => {
+                        ava_app_server_protocol::UserInput::Text { text, .. } => {
                             Some(text.as_str())
                         }
                         _ => None,

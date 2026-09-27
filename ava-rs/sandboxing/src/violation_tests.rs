@@ -1,9 +1,9 @@
 use super::*;
-use codex_network_proxy::BlockedRequest;
-use codex_network_proxy::BlockedRequestArgs;
-use codex_network_proxy::NetworkMode;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::exec_output::StreamOutput;
+use ava_network_proxy::BlockedRequest;
+use ava_network_proxy::BlockedRequestArgs;
+use ava_network_proxy::NetworkMode;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::exec_output::StreamOutput;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
 

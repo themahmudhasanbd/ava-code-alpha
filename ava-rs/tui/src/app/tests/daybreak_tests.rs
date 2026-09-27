@@ -2,12 +2,12 @@ use super::*;
 use crate::daybreak::Notice;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::AccountUpdatedNotification;
-use codex_app_server_protocol::AuthMode;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::ErrorNotification;
-use codex_login::AuthCredentialsStoreMode;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::AccountUpdatedNotification;
+use ava_app_server_protocol::AuthMode;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::ErrorNotification;
+use ava_login::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -18,13 +18,13 @@ async fn cyber_refusal_reads_eligibility_without_changing_the_model() -> Result<
     app.config.chatgpt_base_url = backend.uri();
     // Embedded account discovery reloads the bootstrap URL from disk.
     std::fs::write(
-        app.config.codex_home.join("config.toml"),
+        app.config.ava_home.join("config.toml"),
         format!("chatgpt_base_url = {:?}\n", backend.uri()),
     )?;
     app_test_support::mount_workspace_routing(&backend).await;
     app.config.cli_auth_credentials_store_mode = AuthCredentialsStoreMode::File;
     write_chatgpt_auth(
-        &app.config.codex_home,
+        &app.config.ava_home,
         ChatGptAuthFixture::new("test-token")
             .account_id("account")
             .chatgpt_user_id("user"),
@@ -50,7 +50,7 @@ async fn cyber_refusal_reads_eligibility_without_changing_the_model() -> Result<
     ] {
         backend.reset().await;
         app_test_support::mount_workspace_routing(&backend).await;
-        let codex_home = app.config.codex_home.clone();
+        let ava_home = app.config.ava_home.clone();
         let response = wiremock::ResponseTemplate::new(status)
             .set_delay(if model == "gpt-5.6-sol" && enrolled { Duration::from_secs(1) } else { Duration::ZERO })
             .set_body_json(json!({"programs": [{"program":"cyber", "state": if enrolled { "active" } else { "inactive" }, "grants": if enrolled { json!([{"level":"tac2"}]) } else { json!([]) }}]}));
@@ -62,7 +62,7 @@ async fn cyber_refusal_reads_eligibility_without_changing_the_model() -> Result<
             .respond_with(move |_: &wiremock::Request| {
                 if replace_account {
                     write_chatgpt_auth(
-                        &codex_home,
+                        &ava_home,
                         ChatGptAuthFixture::new("test-token").account_id("other-account"),
                         AuthCredentialsStoreMode::File,
                     )
@@ -101,7 +101,7 @@ async fn cyber_refusal_reads_eligibility_without_changing_the_model() -> Result<
                         error: AppServerTurnError {
                             misalignment: None,
                             message: "server fallback".into(),
-                            codex_error_info: Some(CodexErrorInfo::CyberPolicy),
+                            ava_error_info: Some(AvaErrorInfo::CyberPolicy),
                             additional_details: None,
                         },
                         will_retry: false,

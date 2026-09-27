@@ -8,10 +8,10 @@ use crate::app_server_approval_conversions::file_update_changes_to_display;
 use crate::history_cell;
 use crate::history_cell::PlainHistoryCell;
 use crate::multi_agents;
-use codex_app_server_protocol::PatchApplyStatus;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::WebSearchAction;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::PatchApplyStatus;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::WebSearchAction;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use ratatui::style::Stylize as _;
 use std::sync::Arc;
 

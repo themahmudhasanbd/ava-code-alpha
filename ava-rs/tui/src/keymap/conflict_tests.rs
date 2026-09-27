@@ -1,7 +1,7 @@
 //! Regression coverage for conflict diagnostics and validation pass ordering.
 
 use super::RuntimeKeymap;
-use codex_config::types::TuiKeymap;
+use ava_config::types::TuiKeymap;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -30,8 +30,8 @@ fn conflicting_contexts_report_the_first_conflict_in_validation_order() {
             RuntimeKeymap::from_config(&keymap).expect_err("expected binding conflict"),
             format!(
                 "Ambiguous `tui.keymap.{context}` bindings: `{first}` and `{second}` use the same key. \
-Set unique keys in `~/.codex/config.toml` and retry. \
-See the Codex keymap documentation for supported actions and examples."
+Set unique keys in `~/.ava-code/config.toml` and retry. \
+See the Ava keymap documentation for supported actions and examples."
             )
         );
         config.remove(context);

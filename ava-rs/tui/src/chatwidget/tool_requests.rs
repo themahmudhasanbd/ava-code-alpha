@@ -166,30 +166,30 @@ impl ChatWidget {
                 match &ev.action {
                     GuardianAssessmentAction::WriteStdin { .. } => {
                         history_cell::new_guardian_timed_out_action_request(format!(
-                            "codex could {}",
+                            "ava could {}",
                             auto_review_denials::action_summary(&ev.action)
                         ))
                     }
                     GuardianAssessmentAction::ApplyPatch { files, .. } => {
                         let files = files
                             .iter()
-                            .map(codex_utils_path_uri::LegacyAppPathString::render_for_ui)
+                            .map(ava_utils_path_uri::LegacyAppPathString::render_for_ui)
                             .collect::<Vec<_>>();
                         history_cell::new_guardian_timed_out_patch_request(files)
                     }
                     GuardianAssessmentAction::McpToolCall {
                         server, tool_name, ..
                     } => history_cell::new_guardian_timed_out_action_request(format!(
-                        "codex could call MCP tool {server}.{tool_name}"
+                        "ava could call MCP tool {server}.{tool_name}"
                     )),
                     GuardianAssessmentAction::NetworkAccess { target, .. } => {
                         history_cell::new_guardian_timed_out_action_request(format!(
-                            "codex could access {target}"
+                            "ava could access {target}"
                         ))
                     }
                     GuardianAssessmentAction::RequestPermissions { reason, .. } => {
                         history_cell::new_guardian_timed_out_action_request(
-                            permission_request_summary("codex could request permissions", reason),
+                            permission_request_summary("ava could request permissions", reason),
                         )
                     }
                     GuardianAssessmentAction::Command { .. } => unreachable!(),
@@ -216,30 +216,30 @@ impl ChatWidget {
             match &ev.action {
                 GuardianAssessmentAction::WriteStdin { .. } => {
                     history_cell::new_guardian_denied_action_request(format!(
-                        "codex to {}",
+                        "ava to {}",
                         auto_review_denials::action_summary(&ev.action)
                     ))
                 }
                 GuardianAssessmentAction::ApplyPatch { files, .. } => {
                     let files = files
                         .iter()
-                        .map(codex_utils_path_uri::LegacyAppPathString::render_for_ui)
+                        .map(ava_utils_path_uri::LegacyAppPathString::render_for_ui)
                         .collect::<Vec<_>>();
                     history_cell::new_guardian_denied_patch_request(files)
                 }
                 GuardianAssessmentAction::McpToolCall {
                     server, tool_name, ..
                 } => history_cell::new_guardian_denied_action_request(format!(
-                    "codex to call MCP tool {server}.{tool_name}"
+                    "ava to call MCP tool {server}.{tool_name}"
                 )),
                 GuardianAssessmentAction::NetworkAccess { target, .. } => {
                     history_cell::new_guardian_denied_action_request(format!(
-                        "codex to access {target}"
+                        "ava to access {target}"
                     ))
                 }
                 GuardianAssessmentAction::RequestPermissions { reason, .. } => {
                     history_cell::new_guardian_denied_action_request(permission_request_summary(
-                        "codex to request permissions",
+                        "ava to request permissions",
                         reason,
                     ))
                 }
@@ -394,7 +394,7 @@ impl ChatWidget {
                         thread_id,
                         params.server_name,
                         request_id,
-                        codex_app_server_protocol::McpServerElicitationAction::Decline,
+                        ava_app_server_protocol::McpServerElicitationAction::Decline,
                         /*content*/ None,
                         /*meta*/ None,
                     );

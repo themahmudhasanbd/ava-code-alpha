@@ -5104,7 +5104,7 @@ describe("DesktopAgentRuntime per-turn context protection", () => {
       (candidate: any) => candidate.name === "new_context",
     );
 
-    // Codex's tool takes no arguments: the model cannot steer the checkpoint,
+    // Ava's tool takes no arguments: the model cannot steer the checkpoint,
     // it can only ask for one.
     expect(tool).toBeDefined();
     expect(Object.keys(tool.parameters.properties ?? {})).toEqual([]);
@@ -6209,7 +6209,7 @@ describe("DesktopAgentRuntime inline context compaction", () => {
       strategy: "fresh_window",
       generation: 1,
     });
-    // Nothing but the rollover notice survives, matching Codex clearing history.
+    // Nothing but the rollover notice survives, matching Ava clearing history.
     expect(
       buildSessionContext((runtime as any).entriesWithCompaction()).messages.map(
         (message: any) => message.role,

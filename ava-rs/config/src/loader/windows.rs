@@ -1,4 +1,4 @@
-use super::windows_codex_system_dir;
+use super::windows_ava_system_dir;
 use std::path::Path;
 
 /// Coarse compatibility result for the default Windows system-config namespace.
@@ -16,10 +16,10 @@ pub enum WindowsSystemConfigNamespaceProbe {
 /// This is not a trust decision: it only checks directory owner and broad
 /// standard-user mutation ACLs.
 pub fn probe_windows_system_config_namespace() -> WindowsSystemConfigNamespaceProbe {
-    let codex_dir = windows_codex_system_dir();
+    let ava_dir = windows_ava_system_dir();
     let has_system_file = match (
-        codex_dir.join("config.toml").try_exists(),
-        codex_dir.join("requirements.toml").try_exists(),
+        ava_dir.join("config.toml").try_exists(),
+        ava_dir.join("requirements.toml").try_exists(),
     ) {
         (Ok(true), _) | (_, Ok(true)) => true,
         (Ok(false), Ok(false)) => false,
@@ -28,19 +28,19 @@ pub fn probe_windows_system_config_namespace() -> WindowsSystemConfigNamespacePr
     if !has_system_file {
         return WindowsSystemConfigNamespaceProbe::Missing;
     }
-    let Some(openai_dir) = codex_dir.parent() else {
+    let Some(openai_dir) = ava_dir.parent() else {
         return WindowsSystemConfigNamespaceProbe::CheckError;
     };
     let result = probe_directory(
         openai_dir,
-        codex_windows_sandbox::path_has_standard_user_mutation_allow,
+        ava_windows_sandbox::path_has_standard_user_mutation_allow,
     );
     if !matches!(result, WindowsSystemConfigNamespaceProbe::Expected) {
         return result;
     }
     let result = probe_directory(
-        codex_dir.as_path(),
-        codex_windows_sandbox::path_or_child_file_has_standard_user_mutation_allow,
+        ava_dir.as_path(),
+        ava_windows_sandbox::path_or_child_file_has_standard_user_mutation_allow,
     );
     if !matches!(result, WindowsSystemConfigNamespaceProbe::Expected) {
         return result;
@@ -55,7 +55,7 @@ fn probe_directory(
     if !path.is_dir() {
         return WindowsSystemConfigNamespaceProbe::UnexpectedType;
     }
-    match codex_windows_sandbox::path_has_trusted_system_owner(path) {
+    match ava_windows_sandbox::path_has_trusted_system_owner(path) {
         Ok(true) => {}
         Ok(false) => return WindowsSystemConfigNamespaceProbe::UnexpectedOwner,
         Err(_) => return WindowsSystemConfigNamespaceProbe::CheckError,

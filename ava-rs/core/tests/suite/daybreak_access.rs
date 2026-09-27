@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::stdio_server_bin;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -73,7 +73,7 @@ async fn daybreak_metadata_follows_the_actual_plugin_call(case: AccessCase) -> R
     ) {
         "get_daybreak_access"
     } else {
-        "get_codex_security_daybreak_access"
+        "get_ava_security_daybreak_access"
     };
     let server = responses::start_mock_server().await;
     Mock::given(method("GET"))
@@ -145,18 +145,18 @@ async fn daybreak_metadata_follows_the_actual_plugin_call(case: AccessCase) -> R
         )?;
     }
     let auth = if matches!(case, AccessCase::ApiKey) {
-        CodexAuth::from_api_key("test-api-key")
+        AvaAuth::from_api_key("test-api-key")
     } else if matches!(case, AccessCase::ExternalTokens) {
-        CodexAuth::from_external_chatgpt_tokens(
+        AvaAuth::from_external_chatgpt_tokens(
             "header.e30.external",
             "external-account",
             /*chatgpt_plan_type*/ None,
         )?
     } else {
-        CodexAuth::create_dummy_chatgpt_auth_for_testing()
+        AvaAuth::create_dummy_chatgpt_auth_for_testing()
     };
     let base_url = server.uri();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_auth(auth)
         .with_config(move |config| config.chatgpt_base_url = base_url);
@@ -172,13 +172,13 @@ async fn daybreak_metadata_follows_the_actual_plugin_call(case: AccessCase) -> R
                 .expect("remote executor")
                 .is_remote()
         );
-        let (config, _) = test.codex.current_mcp_config_and_runtime_context().await;
+        let (config, _) = test.ava-code.current_mcp_config_and_runtime_context().await;
         assert_eq!(
             config.mcp_server_catalog.configured_servers()["sample"].environment_id,
             "remote"
         );
     }
-    wait_for_mcp_server(&test.codex, "sample").await?;
+    wait_for_mcp_server(&test.ava-code, "sample").await?;
     let mock = responses::mount_sse_sequence(
         &server,
         vec![
@@ -202,21 +202,21 @@ async fn daybreak_metadata_follows_the_actual_plugin_call(case: AccessCase) -> R
         ],
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Call the sample Daybreak access tool".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let end = wait_for_event(&test.codex, |event| {
+    let end = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     let EventMsg::McpToolCallEnd(end) = end else {
         unreachable!()
     };
@@ -286,14 +286,14 @@ async fn daybreak_metadata_follows_the_actual_plugin_call(case: AccessCase) -> R
     Ok(())
 }
 
-struct SelectedAuth(CodexAuth);
+struct SelectedAuth(AvaAuth);
 
 impl ExternalAuth for SelectedAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 }
@@ -351,9 +351,9 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
                 "env":{"MCP_TEST_DAYBREAK_READ_ONLY":"true"}}}
         }))?,
     )?;
-    let test = test_codex()
+    let test = test_ava()
         .with_home(home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.chatgpt_base_url = base_url;
             config
@@ -363,14 +363,14 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
         })
         .build_with_remote_and_local_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, "sample").await?;
+    wait_for_mcp_server(&test.ava-code, "sample").await?;
     responses::mount_sse_sequence(
         &server,
         vec![
             responses::sse(vec![
                 responses::ev_tool_search_call(
                     "search",
-                    &json!({"query":"get_codex_security_daybreak_access"}),
+                    &json!({"query":"get_ava_security_daybreak_access"}),
                 ),
                 responses::ev_completed("resp-1"),
             ]),
@@ -378,7 +378,7 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
                 responses::ev_function_call_with_namespace(
                     "daybreak-call",
                     "mcp__sample",
-                    "get_codex_security_daybreak_access",
+                    "get_ava_security_daybreak_access",
                     "{}",
                 ),
                 responses::ev_completed("resp-2"),
@@ -390,13 +390,13 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
         ],
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Call the sample Daybreak access tool".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let call = wait_for_event(&test.codex, |event| {
+    let call = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     });
     let switch = async {
@@ -411,7 +411,7 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
         test.thread_manager
             .auth_manager()
             .set_external_auth(Arc::new(SelectedAuth(
-                CodexAuth::from_external_chatgpt_tokens(
+                AvaAuth::from_external_chatgpt_tokens(
                     "header.e30.changed",
                     "other-account",
                     /*chatgpt_plan_type*/ None,
@@ -424,11 +424,11 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
     let (result, switched) = tokio::join!(call, switch);
     switched?;
     response_task.await??;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     let EventMsg::McpToolCallEnd(result) = result else {
         unreachable!()
     };

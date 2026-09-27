@@ -1,23 +1,23 @@
 //! Exercises retained terminal grants and strict stdin review through the agent API.
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_protocol::approvals::ExecApprovalKind;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GranularApprovalConfig;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_protocol::approvals::ExecApprovalKind;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GranularApprovalConfig;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -28,9 +28,9 @@ use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_target_windows;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::TestCodexHarness;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::TestAvaHarness;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -46,8 +46,8 @@ fn tool_response(id: &str, tool: &str, args: Value) -> String {
     ])
 }
 
-async fn harness(builder: TestCodexBuilder) -> Result<TestCodexHarness> {
-    TestCodexHarness::with_auto_env_builder(builder.with_config(|config| {
+async fn harness(builder: TestAvaBuilder) -> Result<TestAvaHarness> {
+    TestAvaHarness::with_auto_env_builder(builder.with_config(|config| {
         for feature in [
             Feature::WriteStdinApproval,
             Feature::ExecPermissionApprovals,
@@ -72,7 +72,7 @@ async fn stdin_reviews_retained_grants_after_turn_permissions_expire() -> Result
     skip_if_target_windows!(Ok(()), "uses a POSIX interactive shell");
     skip_if_no_network!(Ok(()));
     skip_if_sandbox!(Ok(()));
-    let harness = harness(test_codex()).await?;
+    let harness = harness(test_ava()).await?;
     let test = harness.test();
     harness.create_dir_all("allowed").await?;
     let directory = test
@@ -96,18 +96,18 @@ async fn stdin_reviews_retained_grants_after_turn_permissions_expire() -> Result
         "exec_command",
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "open terminal".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestPermissions(request) => Some(request.clone()),
         _ => None,
     })
     .await;
-    test.codex
+    test.ava-code
         .submit(Op::RequestPermissionsResponse {
             id: request.call_id,
             response: RequestPermissionsResponse {
@@ -117,7 +117,7 @@ async fn stdin_reviews_retained_grants_after_turn_permissions_expire() -> Result
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -139,7 +139,7 @@ async fn stdin_reviews_retained_grants_after_turn_permissions_expire() -> Result
         tool_response("allowed", "write_stdin", json!({"session_id":1000, "chars":"test -z \"${REJECTED-}\" && printf allowed > allowed/result; exit\n"})),
         sse(vec![ev_completed("done")]),
     ]).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "send input".into(),
             text_elements: Vec::new(),
@@ -149,7 +149,7 @@ async fn stdin_reviews_retained_grants_after_turn_permissions_expire() -> Result
         ("denied", ReviewDecision::denied("blocked input")),
         ("allowed", ReviewDecision::Approved),
     ] {
-        let request = wait_for_event_match(&test.codex, |event| match event {
+        let request = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::ExecApprovalRequest(request) => Some(request.clone()),
             _ => None,
         })
@@ -168,7 +168,7 @@ async fn stdin_reviews_retained_grants_after_turn_permissions_expire() -> Result
                 permissions.clone()
             )?)
         );
-        test.codex
+        test.ava-code
             .submit(Op::ExecApproval {
                 id: id.into(),
                 turn_id: Some(request.turn_id),
@@ -176,7 +176,7 @@ async fn stdin_reviews_retained_grants_after_turn_permissions_expire() -> Result
             })
             .await?;
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -201,11 +201,11 @@ async fn strict_stdin_review_reaches_guardian_with_sandbox_prompts_disabled() ->
     #[derive(Default)]
     struct ReviewedCalls(Mutex<Vec<String>>);
 
-    impl codex_extension_api::ApprovalReviewContributor for ReviewedCalls {
+    impl ava_extension_api::ApprovalReviewContributor for ReviewedCalls {
         fn decide<'a>(
             &'a self,
-            input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Option<codex_extension_api::ApprovalDecision>>
+            input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>>
         {
             self.0
                 .lock()
@@ -218,7 +218,7 @@ async fn strict_stdin_review_reaches_guardian_with_sandbox_prompts_disabled() ->
     let calls = Arc::new(ReviewedCalls::default());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.approval_review_contributor(calls.clone());
-    let harness = harness(test_codex().with_extensions(Arc::new(extensions.build()))).await?;
+    let harness = harness(test_ava().with_extensions(Arc::new(extensions.build()))).await?;
     let test = harness.test();
     let opened = mount_sse_sequence(
         harness.server(),
@@ -256,7 +256,7 @@ async fn strict_stdin_review_reaches_guardian_with_sandbox_prompts_disabled() ->
         decision("allow"),
         sse(vec![ev_completed("done")]),
     ]).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "send input".into(),
@@ -274,12 +274,12 @@ async fn strict_stdin_review_reaches_guardian_with_sandbox_prompts_disabled() ->
             }),
         )
         .await?;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestPermissions(request) => Some(request.clone()),
         _ => None,
     })
     .await;
-    test.codex
+    test.ava-code
         .submit(Op::RequestPermissionsResponse {
             id: request.call_id,
             response: RequestPermissionsResponse {
@@ -289,7 +289,7 @@ async fn strict_stdin_review_reaches_guardian_with_sandbox_prompts_disabled() ->
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

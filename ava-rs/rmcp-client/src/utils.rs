@@ -1,8 +1,8 @@
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_config::types::McpServerEnvVar;
-use codex_network_proxy::CUSTOM_CA_ENV_KEYS;
-use codex_protocol::shell_environment::is_non_inheritable_env_var;
+use ava_config::types::McpServerEnvVar;
+use ava_network_proxy::CUSTOM_CA_ENV_KEYS;
+use ava_protocol::shell_environment::is_non_inheritable_env_var;
 use http::HeaderMap;
 use http::HeaderName;
 use http::HeaderValue;
@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::env;
 use std::ffi::OsString;
 
-pub(crate) const MCP_USER_AGENT: &str = concat!("codex-mcp-client/", env!("CARGO_PKG_VERSION"));
+pub(crate) const MCP_USER_AGENT: &str = concat!("ava-mcp-client/", env!("CARGO_PKG_VERSION"));
 
 pub(crate) fn create_env_for_mcp_server(
     extra_env: Option<HashMap<OsString, OsString>>,
@@ -176,7 +176,7 @@ pub(crate) const DEFAULT_ENV_VARS: &[&str] = &[
 
 #[cfg(windows)]
 pub(crate) const DEFAULT_ENV_VARS: &[&str] =
-    codex_protocol::shell_environment::WINDOWS_CORE_ENV_VARS;
+    ava_protocol::shell_environment::WINDOWS_CORE_ENV_VARS;
 
 #[cfg(test)]
 mod tests {
@@ -345,7 +345,7 @@ mod tests {
     fn create_env_preserves_path_when_it_is_not_utf8() {
         use std::os::unix::ffi::OsStrExt;
 
-        let raw_path = std::ffi::OsStr::from_bytes(b"/tmp/codex-\xFF/bin");
+        let raw_path = std::ffi::OsStr::from_bytes(b"/tmp/ava-\xFF/bin");
         let expected = raw_path.to_os_string();
         let _guard = EnvVarGuard::set("PATH", raw_path);
 

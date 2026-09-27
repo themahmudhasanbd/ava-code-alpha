@@ -1,10 +1,10 @@
 //! Drives automatic reconnect through the real binary and terminal event loop.
 
-use super::focus_palette::PtyCodex;
+use super::focus_palette::PtyAva;
 use super::focus_palette::write_test_config;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCMessage;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -16,17 +16,17 @@ use tokio_tungstenite::tungstenite::Message;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn automatic_reconnect_restores_draft_and_routes_new_notifications() -> Result<()> {
-    let repo_root = codex_utils_cargo_bin::repo_root()?;
+    let repo_root = ava_utils_cargo_bin::repo_root()?;
     // macOS's default temporary directory leaves too little room for the control socket path.
-    let codex_home = tempfile::tempdir_in("/tmp")?;
-    write_test_config(codex_home.path(), &repo_root)?;
-    let config_path = codex_home.path().join("config.toml");
+    let ava_home = tempfile::tempdir_in("/tmp")?;
+    write_test_config(ava_home.path(), &repo_root)?;
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         config_path,
         format!("{config}\n[tui]\nstatus_line = [\"thread-id\"]\n"),
     )?;
-    let socket = codex_app_server_client::app_server_control_socket_path(codex_home.path())?;
+    let socket = ava_app_server_client::app_server_control_socket_path(ava_home.path())?;
     std::fs::create_dir_all(socket.parent().unwrap())?;
     let listener = UnixListener::bind(socket.as_path())?;
     let (disconnect_tx, mut disconnect_rx) = tokio::sync::oneshot::channel();
@@ -151,7 +151,7 @@ async fn automatic_reconnect_restores_draft_and_routes_new_notifications() -> Re
         }
         Ok::<_, anyhow::Error>(methods)
     });
-    let mut terminal = PtyCodex::start(&repo_root, codex_home, &["--no-alt-screen"])?;
+    let mut terminal = PtyAva::start(&repo_root, ava_home, &["--no-alt-screen"])?;
     terminal.wait_for_startup()?;
     let mut disconnect_tx = Some(disconnect_tx);
     let mut restore_tx = Some(restore_tx);

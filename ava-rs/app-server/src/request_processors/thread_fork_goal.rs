@@ -1,6 +1,6 @@
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::validate_thread_goal_objective;
-use codex_state::StateRuntime;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::validate_thread_goal_objective;
+use ava_state::StateRuntime;
 
 pub(super) async fn inherit_thread_goal_snapshot(
     state_db: &StateRuntime,

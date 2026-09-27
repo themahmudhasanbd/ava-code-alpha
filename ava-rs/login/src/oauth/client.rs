@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use codex_http_client::HttpClient;
+use ava_http_client::HttpClient;
 use serde::de::DeserializeOwned;
 
 use crate::oauth::ErrorBodyLimit;

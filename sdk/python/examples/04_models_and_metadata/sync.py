@@ -9,10 +9,10 @@ from _bootstrap import ensure_local_sdk_src, runtime_config, server_label
 
 ensure_local_sdk_src()
 
-from openai_codex import Codex
+from openai_ava import Ava
 
-with Codex(config=runtime_config()) as codex:
-    print("server:", server_label(codex.metadata))
-    models = codex.models()
+with Ava(config=runtime_config()) as ava:
+    print("server:", server_label(ava.metadata))
+    models = ava.models()
     print("models.count:", len(models.data))
     print("models:", ", ".join(model.id for model in models.data[:5]))

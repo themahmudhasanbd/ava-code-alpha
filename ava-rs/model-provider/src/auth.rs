@@ -2,22 +2,22 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use codex_agent_identity::AgentIdentityKey;
-use codex_agent_identity::authorization_header_for_agent_task;
-use codex_api::AgentIdentityTelemetry;
-use codex_api::AuthError;
-use codex_api::AuthHeadersFuture;
-use codex_api::AuthProvider;
-use codex_api::SharedAuthProvider;
-use codex_login::AuthHeaders;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuth;
-use codex_login::auth::AgentIdentityAuthError;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::error::CodexErr;
-use codex_protocol::protocol::SessionSource;
+use ava_agent_identity::AgentIdentityKey;
+use ava_agent_identity::authorization_header_for_agent_task;
+use ava_api::AgentIdentityTelemetry;
+use ava_api::AuthError;
+use ava_api::AuthHeadersFuture;
+use ava_api::AuthProvider;
+use ava_api::SharedAuthProvider;
+use ava_login::AuthHeaders;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuth;
+use ava_login::auth::AgentIdentityAuthError;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::error::AvaErr;
+use ava_protocol::protocol::SessionSource;
 use http::HeaderMap;
 use http::HeaderValue;
 
@@ -127,18 +127,18 @@ struct AuthManagerAuthProvider {
     auth_manager: Arc<AuthManager>,
     // Startup auth is only the account-scoped identity anchor. Request
     // headers always come from the current AuthManager snapshot below.
-    expected_auth: CodexAuth,
+    expected_auth: AvaAuth,
 }
 
 impl AuthManagerAuthProvider {
-    fn is_expected_auth(&self, auth: &CodexAuth) -> bool {
-        auth.uses_codex_backend()
+    fn is_expected_auth(&self, auth: &AvaAuth) -> bool {
+        auth.uses_ava_backend()
             && auth.get_account_id() == self.expected_auth.get_account_id()
             && auth.get_chatgpt_user_id() == self.expected_auth.get_chatgpt_user_id()
             && auth.is_workspace_account() == self.expected_auth.is_workspace_account()
     }
 
-    fn current_auth(&self) -> Option<CodexAuth> {
+    fn current_auth(&self) -> Option<AvaAuth> {
         self.auth_manager
             .auth_cached()
             .filter(|auth| self.is_expected_auth(auth))
@@ -195,9 +195,9 @@ pub(crate) fn auth_manager_for_provider(
 }
 
 pub(crate) fn resolve_provider_auth(
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     provider: &ModelProviderInfo,
-) -> codex_protocol::error::Result<SharedAuthProvider> {
+) -> ava_protocol::error::Result<SharedAuthProvider> {
     if let Some(auth) = bearer_auth_for_provider(provider)? {
         return Ok(Arc::new(auth));
     }
@@ -208,9 +208,9 @@ pub(crate) fn resolve_provider_auth(
 
     if matches!(
         auth,
-        Some(CodexAuth::BedrockApiKey(_) | CodexAuth::BedrockAccessKeys(_))
+        Some(AvaAuth::BedrockApiKey(_) | AvaAuth::BedrockAccessKeys(_))
     ) {
-        return Err(CodexErr::UnsupportedOperation(
+        return Err(AvaErr::UnsupportedOperation(
             BEDROCK_API_KEY_UNSUPPORTED_MESSAGE.to_string(),
         ));
     }
@@ -223,16 +223,16 @@ pub(crate) fn resolve_provider_auth(
 
 pub(crate) async fn resolve_provider_auth_for_scope(
     auth_manager: Option<Arc<AuthManager>>,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     provider: &ModelProviderInfo,
     scope: ProviderAuthScope,
-) -> codex_protocol::error::Result<ResolvedProviderAuth> {
+) -> ava_protocol::error::Result<ResolvedProviderAuth> {
     let ProviderAuthScope {
         agent_identity_policy,
         session_source,
         agent_identity_session_fallback,
     } = scope;
-    if let Some(CodexAuth::AgentIdentity(agent_identity_auth)) = auth {
+    if let Some(AvaAuth::AgentIdentity(agent_identity_auth)) = auth {
         return Ok(ResolvedProviderAuth::for_agent_identity(
             agent_identity_auth.clone(),
         ));
@@ -283,15 +283,15 @@ pub(crate) async fn resolve_provider_auth_for_scope(
 
 fn should_bootstrap_chatgpt_agent_identity(
     agent_identity_policy: AgentIdentityAuthPolicy,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> bool {
     agent_identity_policy == AgentIdentityAuthPolicy::ChatGptAuth
-        && matches!(auth, Some(CodexAuth::Chatgpt(_)))
+        && matches!(auth, Some(AvaAuth::Chatgpt(_)))
 }
 
 fn bearer_auth_for_provider(
     provider: &ModelProviderInfo,
-) -> codex_protocol::error::Result<Option<BearerAuthProvider>> {
+) -> ava_protocol::error::Result<Option<BearerAuthProvider>> {
     if let Some(api_key) = provider.api_key()? {
         return Ok(Some(BearerAuthProvider::new(api_key)));
     }
@@ -303,20 +303,20 @@ fn bearer_auth_for_provider(
     Ok(None)
 }
 
-/// Builds request-header auth for a first-party Codex auth snapshot.
-pub fn auth_provider_from_auth(auth: &CodexAuth) -> SharedAuthProvider {
+/// Builds request-header auth for a first-party Ava auth snapshot.
+pub fn auth_provider_from_auth(auth: &AvaAuth) -> SharedAuthProvider {
     match auth {
-        CodexAuth::AgentIdentity(auth) => {
+        AvaAuth::AgentIdentity(auth) => {
             Arc::new(AgentIdentityAuthProvider { auth: auth.clone() })
         }
-        CodexAuth::Headers(auth) => Arc::new(HeaderAuthProvider { auth: auth.clone() }),
-        CodexAuth::BedrockApiKey(_) | CodexAuth::BedrockAccessKeys(_) => {
+        AvaAuth::Headers(auth) => Arc::new(HeaderAuthProvider { auth: auth.clone() }),
+        AvaAuth::BedrockApiKey(_) | AvaAuth::BedrockAccessKeys(_) => {
             unreachable!("{BEDROCK_API_KEY_UNSUPPORTED_MESSAGE}")
         }
-        CodexAuth::ApiKey(_)
-        | CodexAuth::Chatgpt(_)
-        | CodexAuth::ChatgptAuthTokens(_)
-        | CodexAuth::PersonalAccessToken(_) => Arc::new(BearerAuthProvider {
+        AvaAuth::ApiKey(_)
+        | AvaAuth::Chatgpt(_)
+        | AvaAuth::ChatgptAuthTokens(_)
+        | AvaAuth::PersonalAccessToken(_) => Arc::new(BearerAuthProvider {
             token: auth.get_token().ok(),
             account_id: auth.get_account_id(),
             is_fedramp_account: auth.is_fedramp_account(),
@@ -331,7 +331,7 @@ pub fn auth_provider_from_auth(auth: &CodexAuth) -> SharedAuthProvider {
 /// that state so a later account switch cannot reuse it.
 pub fn auth_provider_from_auth_manager(
     auth_manager: Arc<AuthManager>,
-    expected_auth: &CodexAuth,
+    expected_auth: &AvaAuth,
 ) -> SharedAuthProvider {
     Arc::new(AuthManagerAuthProvider {
         auth_manager,
@@ -341,17 +341,17 @@ pub fn auth_provider_from_auth_manager(
 
 #[cfg(test)]
 mod tests {
-    use codex_agent_identity::generate_agent_key_material;
-    use codex_login::AuthCredentialsStoreMode;
-    use codex_login::AuthKeyringBackendKind;
-    use codex_login::auth::AgentIdentityAuthRecord;
-    use codex_login::auth::BedrockApiKeyAuth;
-    use codex_login::auth::login_with_chatgpt_auth_tokens;
-    use codex_model_provider_info::WireApi;
-    use codex_model_provider_info::create_oss_provider_with_base_url;
-    use codex_protocol::account::PlanType;
-    use codex_protocol::config_types::ModelProviderAuthInfo;
-    use codex_protocol::error::CodexErrorDetails;
+    use ava_agent_identity::generate_agent_key_material;
+    use ava_login::AuthCredentialsStoreMode;
+    use ava_login::AuthKeyringBackendKind;
+    use ava_login::auth::AgentIdentityAuthRecord;
+    use ava_login::auth::BedrockApiKeyAuth;
+    use ava_login::auth::login_with_chatgpt_auth_tokens;
+    use ava_model_provider_info::WireApi;
+    use ava_model_provider_info::create_oss_provider_with_base_url;
+    use ava_protocol::account::PlanType;
+    use ava_protocol::config_types::ModelProviderAuthInfo;
+    use ava_protocol::error::AvaErrorDetails;
     use http::header::AUTHORIZATION;
     use pretty_assertions::assert_eq;
     use serde_json::json;
@@ -368,7 +368,7 @@ mod tests {
 
     use super::*;
 
-    static NEXT_CODEX_HOME_ID: AtomicUsize = AtomicUsize::new(0);
+    static NEXT_AVA_HOME_ID: AtomicUsize = AtomicUsize::new(0);
     const TEST_CHATGPT_ID_TOKEN: &str = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiaHR0cHM6Ly9hcGkub3BlbmFpLmNvbS9hdXRoIjp7ImNoYXRncHRfdXNlcl9pZCI6InVzZXItMTIzNDUiLCJ1c2VyX2lkIjoidXNlci0xMjM0NSIsImNoYXRncHRfcGxhbl90eXBlIjoicHJvIiwiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjb3VudC0xMjMifX0.c2ln";
 
     async fn agent_identity_auth(chatgpt_account_is_fedramp: bool) -> AgentIdentityAuth {
@@ -385,7 +385,7 @@ mod tests {
                 task_id: Some("task-run-1".to_string()),
             },
             "https://auth.openai.com/api/accounts",
-            &codex_login::test_support::transport_default_auth_route_config(),
+            &ava_login::test_support::transport_default_auth_route_config(),
         )
         .await
         .expect("agent identity auth record should include task id")
@@ -402,18 +402,18 @@ mod tests {
         }
     }
 
-    fn test_codex_home() -> PathBuf {
-        let id = NEXT_CODEX_HOME_ID.fetch_add(1, Ordering::Relaxed);
+    fn test_ava_home() -> PathBuf {
+        let id = NEXT_AVA_HOME_ID.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!(
-            "codex-model-provider-agent-identity-{pid}-{id}",
+            "ava-model-provider-agent-identity-{pid}-{id}",
             pid = std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&path);
-        std::fs::create_dir_all(&path).expect("create temp codex home");
+        std::fs::create_dir_all(&path).expect("create temp ava home");
         path
     }
 
-    fn write_chatgpt_auth_json(codex_home: &Path) {
+    fn write_chatgpt_auth_json(ava_home: &Path) {
         let auth_json = json!({
             "tokens": {
                 "id_token": TEST_CHATGPT_ID_TOKEN,
@@ -424,7 +424,7 @@ mod tests {
             "last_refresh": "2099-01-01T00:00:00Z"
         });
         std::fs::write(
-            codex_home.join("auth.json"),
+            ava_home.join("auth.json"),
             serde_json::to_string_pretty(&auth_json).expect("serialize auth.json"),
         )
         .expect("write auth.json");
@@ -432,17 +432,17 @@ mod tests {
 
     async fn chatgpt_auth_manager(
         agent_identity_authapi_base_url: String,
-    ) -> (PathBuf, Arc<AuthManager>, CodexAuth) {
-        let codex_home = test_codex_home();
-        write_chatgpt_auth_json(&codex_home);
+    ) -> (PathBuf, Arc<AuthManager>, AvaAuth) {
+        let ava_home = test_ava_home();
+        write_chatgpt_auth_json(&ava_home);
         let auth_manager = AuthManager::shared(
-            codex_home.clone(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.clone(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            codex_login::test_support::transport_default_auth_route_config(),
+            ava_login::test_support::transport_default_auth_route_config(),
         )
         .await;
         let auth = auth_manager.auth().await.expect("auth should load");
@@ -450,7 +450,7 @@ mod tests {
             auth.clone(),
             agent_identity_authapi_base_url,
         );
-        (codex_home, auth_manager, auth)
+        (ava_home, auth_manager, auth)
     }
 
     async fn mount_transient_agent_registration(
@@ -490,7 +490,7 @@ mod tests {
             "ChatGPT-Account-ID",
             HeaderValue::from_static("account-123"),
         );
-        let ambient_auth = CodexAuth::Headers(AuthHeaders::new(ambient_headers));
+        let ambient_auth = AvaAuth::Headers(AuthHeaders::new(ambient_headers));
 
         let auth =
             resolve_provider_auth(Some(&ambient_auth), &provider).expect("auth should resolve");
@@ -502,7 +502,7 @@ mod tests {
     fn custom_provider_does_not_inherit_ambient_bedrock_auth() {
         let provider =
             create_oss_provider_with_base_url("http://localhost:11434/v1", WireApi::Responses);
-        let ambient_auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        let ambient_auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
             api_key: "bedrock-api-key-test".to_string(),
             region: "us-east-1".to_string(),
         });
@@ -518,7 +518,7 @@ mod tests {
         let mut provider =
             create_oss_provider_with_base_url("http://localhost:11434/v1", WireApi::Responses);
         provider.experimental_bearer_token = Some("provider-token".into());
-        let ambient_auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        let ambient_auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
             api_key: "bedrock-api-key-test".to_string(),
             region: "us-east-1".to_string(),
         });
@@ -548,7 +548,7 @@ mod tests {
                 .try_into()
                 .expect("current directory should be absolute"),
         });
-        let command_auth = CodexAuth::from_api_key("command-token");
+        let command_auth = AvaAuth::from_api_key("command-token");
 
         let headers = resolve_provider_auth(Some(&command_auth), &provider)
             .expect("auth should resolve")
@@ -572,7 +572,7 @@ mod tests {
             "ChatGPT-Account-ID",
             HeaderValue::from_static("account-123"),
         );
-        let ambient_auth = CodexAuth::Headers(AuthHeaders::new(expected.clone()));
+        let ambient_auth = AvaAuth::Headers(AuthHeaders::new(expected.clone()));
 
         let auth =
             resolve_provider_auth(Some(&ambient_auth), &provider).expect("auth should resolve");
@@ -588,7 +588,7 @@ mod tests {
             HeaderValue::from_static("Bearer external"),
         );
         expected.insert("x-external-auth", HeaderValue::from_static("enabled"));
-        let auth = CodexAuth::Headers(AuthHeaders::new(expected.clone()));
+        let auth = AvaAuth::Headers(AuthHeaders::new(expected.clone()));
 
         let actual = auth_provider_from_auth(&auth).to_auth_headers();
 
@@ -598,14 +598,14 @@ mod tests {
     #[test]
     fn openai_provider_rejects_bedrock_api_key_auth() {
         let provider = ModelProviderInfo::create_openai_provider(/*base_url*/ None);
-        let auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        let auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
             api_key: "bedrock-api-key-test".to_string(),
             region: "us-east-1".to_string(),
         });
 
         match resolve_provider_auth(Some(&auth), &provider) {
             Err(err) => match err.details() {
-                CodexErrorDetails::UnsupportedOperation(message) => {
+                AvaErrorDetails::UnsupportedOperation(message) => {
                     assert_eq!(message, BEDROCK_API_KEY_UNSUPPORTED_MESSAGE);
                 }
                 details => panic!("unexpected auth error: {details:?}"),
@@ -616,9 +616,9 @@ mod tests {
 
     #[tokio::test]
     async fn auth_manager_provider_follows_refreshes_but_not_account_switches() {
-        let codex_home = test_codex_home();
+        let ava_home = test_ava_home();
         login_with_chatgpt_auth_tokens(
-            &codex_home,
+            &ava_home,
             "header.e30.first",
             "test-account",
             /*chatgpt_plan_type*/ None,
@@ -626,13 +626,13 @@ mod tests {
         .expect("save initial auth");
         let auth_manager = Arc::new(
             AuthManager::new(
-                codex_home.clone(),
-                /*enable_codex_api_key_env*/ false,
+                ava_home.clone(),
+                /*enable_ava_api_key_env*/ false,
                 AuthCredentialsStoreMode::Ephemeral,
                 /*forced_chatgpt_workspace_id*/ None,
                 /*chatgpt_base_url*/ None,
                 AuthKeyringBackendKind::default(),
-                codex_login::test_support::transport_default_auth_route_config(),
+                ava_login::test_support::transport_default_auth_route_config(),
             )
             .await,
         );
@@ -647,7 +647,7 @@ mod tests {
         );
 
         login_with_chatgpt_auth_tokens(
-            &codex_home,
+            &ava_home,
             "header.e30.reloaded",
             "test-account",
             /*chatgpt_plan_type*/ None,
@@ -665,7 +665,7 @@ mod tests {
         );
 
         login_with_chatgpt_auth_tokens(
-            &codex_home,
+            &ava_home,
             "header.e30.other-account",
             "other-account",
             /*chatgpt_plan_type*/ None,
@@ -678,7 +678,7 @@ mod tests {
 
     #[tokio::test]
     async fn first_party_run_scope_uses_agent_assertion_and_exposes_telemetry() {
-        let auth = CodexAuth::AgentIdentity(
+        let auth = AvaAuth::AgentIdentity(
             agent_identity_auth(/*chatgpt_account_is_fedramp*/ false).await,
         );
         let provider = ModelProviderInfo::create_openai_provider(/*base_url*/ None);
@@ -714,7 +714,7 @@ mod tests {
     #[tokio::test]
     async fn agent_identity_auth_provider_preserves_account_routing_headers() {
         let auth = agent_identity_auth(/*chatgpt_account_is_fedramp*/ true).await;
-        let provider = auth_provider_from_auth(&CodexAuth::AgentIdentity(auth));
+        let provider = auth_provider_from_auth(&AvaAuth::AgentIdentity(auth));
 
         let headers = provider.to_auth_headers();
 
@@ -748,7 +748,7 @@ mod tests {
             Arc::clone(&registration_count),
         )
         .await;
-        let (_codex_home, auth_manager, auth) = chatgpt_auth_manager(server.uri()).await;
+        let (_ava_home, auth_manager, auth) = chatgpt_auth_manager(server.uri()).await;
         let provider = ModelProviderInfo::create_openai_provider(/*base_url*/ None);
         let fallback = AgentIdentitySessionFallback::default();
 
@@ -788,7 +788,7 @@ mod tests {
             Arc::clone(&registration_count),
         )
         .await;
-        let (_codex_home, auth_manager, auth) = chatgpt_auth_manager(server.uri()).await;
+        let (_ava_home, auth_manager, auth) = chatgpt_auth_manager(server.uri()).await;
         let provider = ModelProviderInfo::create_openai_provider(/*base_url*/ None);
         let fallback = AgentIdentitySessionFallback::default();
 
@@ -822,7 +822,7 @@ mod tests {
             Arc::clone(&registration_count),
         )
         .await;
-        let (_codex_home, auth_manager, auth) = chatgpt_auth_manager(server.uri()).await;
+        let (_ava_home, auth_manager, auth) = chatgpt_auth_manager(server.uri()).await;
         let provider = ModelProviderInfo::create_openai_provider(/*base_url*/ None);
         let first_fallback = AgentIdentitySessionFallback::default();
         let second_fallback = AgentIdentitySessionFallback::default();

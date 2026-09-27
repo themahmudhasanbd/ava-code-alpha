@@ -1,11 +1,11 @@
 use std::num::NonZeroU64;
 
-use codex_api::ApiError;
-use codex_api::TransportError;
-use codex_model_provider_info::AwsCredentialExportConfig;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::error::CodexErrorDetails;
+use ava_api::ApiError;
+use ava_api::TransportError;
+use ava_model_provider_info::AwsCredentialExportConfig;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::error::AvaErrorDetails;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::StatusCode;
@@ -38,7 +38,7 @@ fn expired_signature_has_actionable_guidance() {
         "Signature expired: 20260609T133205Z is now earlier than 20260614T062525Z",
     ));
 
-    let CodexErrorDetails::UnexpectedStatus(response) = error.details() else {
+    let AvaErrorDetails::UnexpectedStatus(response) = error.details() else {
         panic!("expected unexpected status error, got {error:?}");
     };
     assert_eq!(
@@ -60,7 +60,7 @@ fn other_unauthorized_errors_remain_generic() {
         "The security token included in the request is invalid",
     ));
 
-    let CodexErrorDetails::UnexpectedStatus(response) = error.details() else {
+    let AvaErrorDetails::UnexpectedStatus(response) = error.details() else {
         panic!("expected unexpected status error, got {error:?}");
     };
     assert_eq!(response.user_message, None);
@@ -79,7 +79,7 @@ fn signature_errors_with_other_statuses_remain_generic() {
         "Signature expired: old is now earlier than new",
     ));
 
-    let CodexErrorDetails::UnexpectedStatus(response) = error.details() else {
+    let AvaErrorDetails::UnexpectedStatus(response) = error.details() else {
         panic!("expected unexpected status error, got {error:?}");
     };
     assert_eq!(response.user_message, None);

@@ -2,10 +2,10 @@ use std::time::Duration;
 
 use crate::AuthProvider;
 use bytes::Bytes;
-use codex_http_client::HttpResponse;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestBuilder;
-use codex_http_client::RouteAwareRequestError;
+use ava_http_client::HttpResponse;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestBuilder;
+use ava_http_client::RouteAwareRequestError;
 use futures::Stream;
 use http::Method;
 use http::StatusCode;
@@ -20,7 +20,7 @@ pub const OPENAI_FILE_UPLOAD_LIMIT_BYTES: u64 = 512 * 1024 * 1024;
 const OPENAI_FILE_REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
 const OPENAI_FILE_FINALIZE_TIMEOUT: Duration = Duration::from_secs(30);
 const OPENAI_FILE_FINALIZE_RETRY_DELAY: Duration = Duration::from_millis(250);
-const OPENAI_FILE_USE_CASE: &str = "codex";
+const OPENAI_FILE_USE_CASE: &str = "ava";
 
 #[derive(Debug)]
 pub struct HostedFileUploadContext {
@@ -147,9 +147,9 @@ pub async fn upload_openai_file(
             "file_name": file_name.as_str(),
             "file_size": file_size_bytes,
             "use_case": OPENAI_FILE_USE_CASE,
-            "codex_connector_id": context.connector_id,
-            "codex_action_name": context.action_name,
-            "codex_model": context.model,
+            "ava_connector_id": context.connector_id,
+            "ava_action_name": context.action_name,
+            "ava_model": context.model,
         }),
         None => create_request,
     };
@@ -205,9 +205,9 @@ pub async fn upload_openai_file(
                 "other"
             };
             tracing::event!(
-                target: "codex_otel.log_only",
+                target: "ava_otel.log_only",
                 tracing::Level::WARN,
-                event.name = "codex.openai_file_blob_upload_failed",
+                event.name = "ava.openai_file_blob_upload_failed",
                 file_id = %create_payload.file_id,
                 host = %upload_host,
                 file_size_bytes,
@@ -230,9 +230,9 @@ pub async fn upload_openai_file(
     let azure_error_code = upload_response_header(&upload_response, "x-ms-error-code");
     if !upload_status.is_success() {
         tracing::event!(
-            target: "codex_otel.log_only",
+            target: "ava_otel.log_only",
             tracing::Level::WARN,
-            event.name = "codex.openai_file_blob_upload_failed",
+            event.name = "ava.openai_file_blob_upload_failed",
             file_id = %create_payload.file_id,
             host = %upload_host,
             file_size_bytes,
@@ -353,9 +353,9 @@ fn upload_response_header(response: &HttpResponse, header: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_http_client::ClientRouteClass;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
+    use ava_http_client::ClientRouteClass;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
     use http::header::HeaderValue;
     use pretty_assertions::assert_eq;
     use std::sync::Arc;
@@ -409,7 +409,7 @@ mod tests {
             .and(body_json(serde_json::json!({
                 "file_name": "hello.txt",
                 "file_size": 5,
-                "use_case": "codex",
+                "use_case": "ava",
             })))
             .respond_with(
                 ResponseTemplate::new(200)
@@ -478,10 +478,10 @@ mod tests {
         let create_request = serde_json::json!({
             "file_name": "report.pdf",
             "file_size": 8,
-            "use_case": "codex",
-            "codex_connector_id": "library",
-            "codex_action_name": "create_library_file",
-            "codex_model": "gpt-work",
+            "use_case": "ava",
+            "ava_connector_id": "library",
+            "ava_action_name": "create_library_file",
+            "ava_model": "gpt-work",
         });
         Mock::given(method("POST"))
             .and(path("/backend-api/files"))
@@ -607,7 +607,7 @@ mod tests {
                 .and(body_json(serde_json::json!({
                     "file_name": file_name,
                     "file_size": contents.len(),
-                    "use_case": "codex",
+                    "use_case": "ava",
                 })))
                 .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                     "file_id": file_id,

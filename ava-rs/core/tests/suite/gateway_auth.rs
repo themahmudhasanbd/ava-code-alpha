@@ -3,23 +3,23 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::ConfigBuilder;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_model_provider::AgentIdentitySessionFallback;
-use codex_model_provider::ProviderAuthScope;
-use codex_model_provider::create_model_provider;
-use codex_model_provider::test_support::seed_gateway_auth;
-use codex_model_provider_info::GatewayOAuthConfig;
-use codex_model_provider_info::GatewayOAuthDelivery;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::ConfigBuilder;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_model_provider::AgentIdentitySessionFallback;
+use ava_model_provider::ProviderAuthScope;
+use ava_model_provider::create_model_provider;
+use ava_model_provider::test_support::seed_gateway_auth;
+use ava_model_provider_info::GatewayOAuthConfig;
+use ava_model_provider_info::GatewayOAuthDelivery;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -82,7 +82,7 @@ async fn sampling_requires_gateway_and_primary_auth(expected_error: Option<&str>
         },
     });
     let primary = AuthManager::from_auth_for_testing_with_home(
-        CodexAuth::from_api_key("primary-token"),
+        AvaAuth::from_api_key("primary-token"),
         home.path().to_path_buf(),
     );
     let _gateway = seed_gateway_auth(
@@ -90,22 +90,22 @@ async fn sampling_requires_gateway_and_primary_auth(expected_error: Option<&str>
         &primary,
         json!({"access_token": "gateway-token", "refresh_token": "refresh-token", "expires_at": if expected_error.is_some() { 0 } else { i64::MAX }}),
     );
-    let test = test_codex()
+    let test = test_ava()
         .with_home(home)
-        .with_auth(CodexAuth::from_api_key("primary-token"))
+        .with_auth(AvaAuth::from_api_key("primary-token"))
         .with_config(move |config| {
             config.model_provider = provider;
         })
         .build_with_auto_env(&server)
         .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: vec![],
         }]))
         .await?;
     let mut error_message = None;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         if let EventMsg::Error(error) = event {
             error_message = Some(error.message.clone());
         }
@@ -142,7 +142,7 @@ async fn sampling_requires_gateway_and_primary_auth(expected_error: Option<&str>
 
 #[tokio::test]
 async fn configured_gateway_http_initialization_fails_closed() -> Result<()> {
-    const CHILD_ENV: &str = "CODEX_TEST_GATEWAY_INVALID_CA_CHILD";
+    const CHILD_ENV: &str = "AVA_TEST_GATEWAY_INVALID_CA_CHILD";
     if std::env::var_os(CHILD_ENV).is_none() {
         let home = TempDir::new()?;
         let invalid_ca = home.path().join("invalid-ca.pem");
@@ -152,7 +152,7 @@ async fn configured_gateway_http_initialization_fails_closed() -> Result<()> {
             .arg("suite::gateway_auth::configured_gateway_http_initialization_fails_closed")
             .arg("--nocapture")
             .env(CHILD_ENV, "1")
-            .env("CODEX_CA_CERTIFICATE", invalid_ca)
+            .env("AVA_CA_CERTIFICATE", invalid_ca)
             .output()?;
         assert!(
             output.status.success(),
@@ -166,11 +166,11 @@ async fn configured_gateway_http_initialization_fails_closed() -> Result<()> {
     let home = TempDir::new()?;
     // An invalid custom CA must not introduce a gateway dependency when none is configured.
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await?;
     let primary =
-        AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false).await?;
+        AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false).await?;
     create_model_provider(config.model_provider, Some(primary))
         .api_auth()
         .await?;
@@ -191,11 +191,11 @@ delivery = { kind = "header", name = "x-gateway-auth" }
 "#,
     )?;
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await?;
     let primary =
-        AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false).await?;
+        AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false).await?;
     let provider = create_model_provider(config.model_provider.clone(), Some(primary));
     let error = provider.api_auth().await.err().unwrap();
     assert_eq!(
@@ -221,7 +221,7 @@ delivery = { kind = "header", name = "x-gateway-auth" }
         contents.replace("client_id = \"client\"", "client_id = \"\""),
     )?;
     let error = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await
         .unwrap_err();

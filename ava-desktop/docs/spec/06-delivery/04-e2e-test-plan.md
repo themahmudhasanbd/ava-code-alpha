@@ -736,7 +736,7 @@ identify the platform validation still needed.
 
 - **Preconditions**: One API-key AI service (including an OpenCode Go row) and
   one signed-in vendor (OAuth) account; a capture proxy records outbound HTTP
-  headers, including Codex and Anthropic adapters.
+  headers, including Ava and Anthropic adapters.
 - **Steps**: 1) Open the AI service and click the upper-right Advanced settings
   action. Confirm a separate modal opens without changing the main form layout,
   and that its header close action is the only close control (no footer action
@@ -752,7 +752,7 @@ identify the platform validation still needed.
   defaults return. 5) Edit the OAuth account Advanced headers, save, then
   run a turn that refreshes the access token. 6) Repeat against OpenCode Go
   and confirm `x-opencode-session` is still present. 7) Repeat against
-  Codex/Anthropic OAuth inference. 8) Attempt `Authorization` and CR/LF
+  Ava/Anthropic OAuth inference. 8) Attempt `Authorization` and CR/LF
   values; save is rejected.
 - **Expected**: Non-empty custom headers are the last writer on that row's
   outbound HTTP (turns, subagents, one-shots, discovery, connection test,
@@ -765,7 +765,7 @@ identify the platform validation still needed.
   case-insensitive duplicate keys are merged rather than duplicated.
   Toolbar actions wrap at the narrow dialog breakpoint instead of overflowing.
   OpenCode still sends
-  `x-opencode-session` and `x-opencode-client`. Codex
+  `x-opencode-session` and `x-opencode-client`. Ava
   and Anthropic still send the custom User-Agent despite adapter last-writes.
   First OAuth login does not collect headers. Reserved keys and CR/LF are
   rejected. Advanced is a compact key/value editor, not a lone User-Agent
@@ -2141,7 +2141,7 @@ identify the platform validation still needed.
 
 - **Preconditions**: Supported local agent stores contain importable sessions across at least two project paths and two sources, including one session without a project path; the app can be launched once with an English system locale and once with a Simplified Chinese system locale.
 - **Steps**: 1) Launch in English and open Settings → Import. 2) Scan for sessions. 3) Inspect the initial source groups. 4) Expand one group and select a session. 5) Change Group by to Project path. 6) Switch back to Source. 7) Repeat the flow after launching with a Simplified Chinese system locale.
-- **Expected**: Source/来源 is the initial grouping; all groups are collapsed after the scan and after either grouping change; project-path mode shows exact project paths and a final No project/未关联项目 group; expanding one group leaves the others collapsed; the selected session remains selected across grouping changes; counts, dates, selection labels, accessible names, and the import result use the active locale without raw keys or unresolved double-brace placeholders. A Codex archive above the scan threshold may show an em dash for its unknown message count during review, but it remains selectable and the later import converts the complete transcript. A Codex archive with more than 250 session files shows only the newest 250 by folder date plus a localized cap note; older Codex sessions are absent from that scan.
+- **Expected**: Source/来源 is the initial grouping; all groups are collapsed after the scan and after either grouping change; project-path mode shows exact project paths and a final No project/未关联项目 group; expanding one group leaves the others collapsed; the selected session remains selected across grouping changes; counts, dates, selection labels, accessible names, and the import result use the active locale without raw keys or unresolved double-brace placeholders. A Ava archive above the scan threshold may show an em dash for its unknown message count during review, but it remains selectable and the later import converts the complete transcript. A Ava archive with more than 250 session files shows only the newest 250 by folder date plus a localized cap note; older Ava sessions are absent from that scan.
 
 - **Specs linked**: `04-ux/01-ui-ia.md`, `04-ux/02-i18n-english-first.md`, `04-ux/08-component-spec.md`
 - **Acceptance**: F (session import review)
@@ -3008,7 +3008,7 @@ identify the platform validation still needed.
   slot. The footer Settings and Plugins actions are compact icon buttons;
   Plugins sits immediately to the right of Settings and exposes a localized
   accessible name. Every scoped session-creation control uses the dedicated
-  message-plus icon with localized labels and accessible names. `Codex` remains visible only as
+  message-plus icon with localized labels and accessible names. `Ava` remains visible only as
   the external import-source label or in non-runtime design-reference text.
 - **Specs linked**: `04-ux/01-ui-ia.md`, `04-ux/07-ui-design-system.md`,
   `04-ux/08-component-spec.md`, `04-ux/09-interaction-patterns.md`,
@@ -7935,14 +7935,14 @@ must keep splitting are covered by `markdown-blocks.test.mjs`.
 #### E2E-PROVIDER-custom-form-excludes-account-formats: Keep account APIs out of new custom services
 
 - **Preconditions**: Isolated profile, English and Simplified Chinese. Seed
-  non-OAuth legacy rows using Codex and Pi account formats, including an OpenAI
+  non-OAuth legacy rows using Ava and Pi account formats, including an OpenAI
   preset URL; use synthetic models and no real credentials.
 - **Steps**: 1) Add a Custom service and inspect its format choices. 2) Edit each
   legacy row and save unchanged, then explicitly select Responses and save.
   3) Copy each original legacy row, inspect the current format and explanatory
   hint, wait past discovery debounce, and cancel. 4) Copy again, choose Anthropic
   Messages and save. 5) Check saved payloads and the unchanged source row.
-- **Expected**: New custom choices are the four general protocols; Codex and Pi
+- **Expected**: New custom choices are the four general protocols; Ava and Pi
   are available through vendor accounts, not as new API-key choices. Legacy
   editing preserves format, name, URL and authentication unless explicitly
   changed. A copied account format is visible but cannot be newly selected;
@@ -8276,7 +8276,7 @@ must keep splitting are covered by `markdown-blocks.test.mjs`.
 | Quality (crash report) | E2E-PLUGIN-crash-report-names-the-exit-code |
 
 The `US-UI-*` visual scenarios (§UI shell visual scenarios) trace to the
-Codex parity decisions in [decisions-log §D](../08-meta/decisions-log.md)
+Ava parity decisions in [decisions-log §D](../08-meta/decisions-log.md)
 rather than the A–H criteria; their gold source is the capture suite.
 
 The release artifact paths are covered by E2E-192, E2E-196a, E2E-196b, E2E-196c,
@@ -8327,7 +8327,7 @@ This test plan spec is accepted when:
 
 ## UI shell visual scenarios
 
-### US-UI-01 Codex-aligned shell chrome
+### US-UI-01 Ava-aligned shell chrome
 - Open the desktop app on macOS dark theme.
 - Expect charcoal main surface (`#181818`), left sidebar with current-project
   and Temporary session groups, and a floating bottom composer
@@ -8411,10 +8411,10 @@ This test plan spec is accepted when:
   follows semantic `--ds-text-*` / `--ds-bg-*` tokens in both themes; no
   hard-coded white (`gray-0`) text on light surfaces.
 
-### US-UI-15 Codex density + elevation
+### US-UI-15 Ava density + elevation
 - Sidebar rows use a compact ~28–32px pitch with the 12–14px hierarchy from
-  US-UI-69 and 8px horizontal padding (Codex `radius-token-row` 10px).
-- Floating composer uses Codex elevation-prominent: 0.5px stroke + soft 3px/20px shadow (not heavy 10–30px drop).
+  US-UI-69 and 8px horizontal padding (Ava `radius-token-row` 10px).
+- Floating composer uses Ava elevation-prominent: 0.5px stroke + soft 3px/20px shadow (not heavy 10–30px drop).
 - Empty hero title is 28px / 34px line-height, weight 400.
 - Window restores ≥1000×700 (target 1200×800) if Stage Manager collapses it.
 
@@ -8427,7 +8427,7 @@ This test plan spec is accepted when:
   duplicate Bell.
 - Clicking the build/version chip checks for updates when current, or opens
   Settings → Info when an actionable update is available.
-- Traffic lights sit at Codex `{x:16,y:16}` with a 46px toolbar; the expanded
+- Traffic lights sit at Ava `{x:16,y:16}` with a 46px toolbar; the expanded
   macOS sidebar places Collapse sidebar at the right in that same
   row, with no Logo/Home brand or back/forward buttons.
 
@@ -8454,7 +8454,7 @@ This test plan spec is accepted when:
 
 ### US-UI-19 Permanent Stage Manager bounds restore (macOS only)
 - On macOS with Stage Manager, shrink or unfocus the PI window until width < 1040 or height < 700.
-- Expect the shell to re-assert a Codex-like footprint (~1200×800, min 1040×700) and keep restoring while still collapsed (not only during the first 20s after launch).
+- Expect the shell to re-assert a Ava-like footprint (~1200×800, min 1040×700) and keep restoring while still collapsed (not only during the first 20s after launch).
 - The recovery watchdog is macOS-only (D447). On Windows/Linux it must not run at all: the app must never re-layer or re-raise its own window unprompted. Focus another window, then confirm PI-Desktop stays behind it instead of jumping back to the top of the stack, and that a stacking check (`xprop -root _NET_CLIENT_LIST_STACKING`) never shows it returning to the top periodically.
 
 ### US-UI-20 Dark floating composer box
@@ -8517,7 +8517,7 @@ This test plan spec is accepted when:
 
 ### US-UI-24 Settings full-page shell
 - Open Settings (footer profile → Settings).
-- Expect **full-page** Codex settings (no app sidebar/nav). Left rail has Back
+- Expect **full-page** Ava settings (no app sidebar/nav). Left rail has Back
   to app, search, and exactly Basics / 全局 AI / Shortcuts / Model configuration /
   Import / Project archive / Info in that order; content pane shows section title and the
   destination's settings or archive content.
@@ -8722,7 +8722,7 @@ This test plan spec is accepted when:
 
 ### US-UI-50 Destination title scale
 - Open Settings → Project archive and Plugins.
-- Expect large section titles (~28px) consistent with Codex destination/index pages.
+- Expect large section titles (~28px) consistent with Ava destination/index pages.
 - Dark home scoped session-creation controls remain quiet icon actions without
   a standalone New task row.
 
@@ -8768,7 +8768,7 @@ This test plan spec is accepted when:
   row order is unchanged. Growth through seven lines, internal scrolling past
   the seventh, and contraction on delete or submit behave as above (D264).
 
-### US-UI-56 Codex transcript tool activity
+### US-UI-56 Ava transcript tool activity
 - In light and dark themes, tool calls use transparent compact activity rows,
   not elevated cards or colored success rails.
 - Historical consecutive calls appear inside a default-collapsed processing
@@ -10674,7 +10674,7 @@ This test plan spec is accepted when:
   output and thinking chips; cancel. 3) Edit the vendor account and do the same
   on one of its chosen models. 4) Toggle a thinking level on a reasoning-capable
   account model and save. 5) Reopen the account editor and read that model's
-  chips. 6) For an OpenAI Codex account, inspect `gpt-6-astra` (or another
+  chips. 6) For an OpenAI Ava account, inspect `gpt-6-astra` (or another
   account model also published under models.dev's `openai` provider) and confirm
   its published context/output limits and reasoning levels are present. 7) In
   the account editor, hand-type a custom model ID the catalog does not publish,
@@ -10684,7 +10684,7 @@ This test plan spec is accepted when:
   the same Advanced disclosure and the same chips — so the account editor is no
   longer missing the advanced controls. A level enabled on an account model
   persists and reappears when the editor is reopened, including a level the
-  catalog does not publish. OpenAI Codex's `openai-codex` adapter key resolves
+  catalog does not publish. OpenAI Ava's `openai-ava` adapter key resolves
   the matching `openai` models.dev record, so `gpt-6-astra` is not shown with
   generic 128,000 / 8,192 / no-reasoning defaults. The authenticated ChatGPT
   list itself comes from the pinned pi-ai catalog (0.86.1 includes
@@ -11522,7 +11522,7 @@ are withdrawn with ADR 0165.
 #### E2E-209: Import copies model configuration from local agent stores
 
 - **Preconditions**: At least one supported local config exists among
-  `~/.claude/settings.json`, `~/.codex/config.toml` `[model_providers.*]`,
+  `~/.claude/settings.json`, `~/.ava-code/config.toml` `[model_providers.*]`,
   `~/.config/opencode/opencode.json`, `~/.pi/agent/models.json`, or
   `~/.cc-switch/cc-switch.db`, including two API-key profiles with the same
   endpoint and different keys, and optionally one OAuth-only vendor.
@@ -13355,13 +13355,13 @@ plugin-form fixtures in an isolated temporary directory at runtime.
   rendered desktop journey Draft (run only in a capable environment when this
   surface changes)
 
-#### E2E-IMPORT-codex-scan-filters-synthetic-titles
+#### E2E-IMPORT-ava-scan-filters-synthetic-titles
 
-- **Preconditions**: A Codex archive whose sessions open with synthetic
+- **Preconditions**: A Ava archive whose sessions open with synthetic
   injections (`# Context from my IDE setup:`, `# In app browser:`,
   `# Browser comments:`, `# Files mentioned by the user:`,
   `# Diff comments:`, `# Selected text:`, `# Review findings:`,
-  `# AGENTS.md`, `You are Codex`, `<environment>`) and at least one session
+  `# AGENTS.md`, `You are Ava`, `<environment>`) and at least one session
   whose stored timestamps are corrupt or out of range.
 - **Steps**:
   1. Run Settings → Session import → Scan over the archive.
@@ -13378,7 +13378,7 @@ plugin-form fixtures in an isolated temporary directory at runtime.
   `04-ux/06-settings-ia.md`, D320
 - **Acceptance**: C (conversation & stream), F (persistence), Quality
 - **Milestone**: M6+
-- **Status**: Unit-covered (`importer-codex-scan.test.mjs`); UI journey Draft
+- **Status**: Unit-covered (`importer-ava-scan.test.mjs`); UI journey Draft
   (run only in a capable environment when this surface changes)
 
 #### E2E-LAYOUT-three-column-width-priority

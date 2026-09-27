@@ -24,7 +24,7 @@ const TEST_CURATED_PLUGIN_SHA: &str = "0123456789abcdef0123456789abcdef01234567"
 #[cfg(unix)]
 #[test]
 fn pretrust_startup_sync_uses_installed_git_with_hostile_path() {
-    const CHILD_HOME: &str = "CODEX_TEST_CURATED_SYNC_HOME";
+    const CHILD_HOME: &str = "AVA_TEST_CURATED_SYNC_HOME";
     if let Some(home) = std::env::var_os(CHILD_HOME) {
         // Call the public entry point, synchronously. The parent joins this
         // process before checking the marker, so no detached work can escape it.
@@ -114,7 +114,7 @@ fn pretrust_startup_sync_uses_installed_git_with_hostile_path() {
         for plugin in plugins {
             assert!(
                 curated_plugins_repo_path(&home)
-                    .join(format!("plugins/{plugin}/.codex-plugin/plugin.json"))
+                    .join(format!("plugins/{plugin}/.ava-plugin/plugin.json"))
                     .is_file()
             );
         }
@@ -199,7 +199,7 @@ fn git_command_sanitizes_ambient_repository_environment() {
         command.get_args().collect::<Vec<_>>(),
         [
             OsStr::new("-c"),
-            OsStr::new(codex_git_utils::SAFE_BARE_REPOSITORY_CONFIG),
+            OsStr::new(ava_git_utils::SAFE_BARE_REPOSITORY_CONFIG),
         ]
     );
 
@@ -219,10 +219,10 @@ fn git_command_sanitizes_ambient_repository_environment() {
 #[test]
 fn pretrust_git_sync_ignores_repository_local_transport_config() {
     let fixture = tempdir().expect("tempdir");
-    let codex_home = fixture.path().join("codex-home");
+    let ava_home = fixture.path().join("ava-home");
     let repository = fixture.path().join("untrusted-project");
     let marker = fixture.path().join("transport-config-ran");
-    std::fs::create_dir_all(&codex_home).expect("create Codex home");
+    std::fs::create_dir_all(&ava_home).expect("create Ava home");
     std::fs::create_dir_all(&repository).expect("create repository");
     run_git(&repository, &["init", "--quiet"]);
 
@@ -264,7 +264,7 @@ fn pretrust_git_sync_ignores_repository_local_transport_config() {
         ),
     );
 
-    let err = sync_openai_plugins_repo_via_git(&codex_home, &git_wrapper)
+    let err = sync_openai_plugins_repo_via_git(&ava_home, &git_wrapper)
         .expect_err("isolated probe should use the missing global-config remote");
 
     assert!(err.contains("git ls-remote curated plugins repo"));
@@ -320,9 +320,9 @@ async fn ordinary_clone_rejects_tracked_embedded_bare_repository() {
         &source,
         &[
             "-c",
-            "user.name=Codex Tests",
+            "user.name=Ava Tests",
             "-c",
-            "user.email=codex-tests@example.com",
+            "user.email=ava-tests@example.com",
             "commit",
             "--quiet",
             "-m",
@@ -374,7 +374,7 @@ async fn ordinary_clone_rejects_tracked_embedded_bare_repository() {
         "startup Git must reject the repository before executing its helper"
     );
 
-    let apply_error = codex_git_utils::apply_git_patch(&codex_git_utils::ApplyGitRequest {
+    let apply_error = ava_git_utils::apply_git_patch(&ava_git_utils::ApplyGitRequest {
         cwd: nested.clone(),
         diff: String::new(),
         revert: false,
@@ -382,8 +382,8 @@ async fn ordinary_clone_rejects_tracked_embedded_bare_repository() {
     })
     .expect_err("patch root discovery should reject the tracked embedded repository");
     assert!(apply_error.to_string().contains("not a git repository"));
-    assert!(codex_git_utils::collect_git_info(&nested).await.is_none());
-    assert!(codex_git_utils::git_diff_to_remote(&nested).await.is_none());
+    assert!(ava_git_utils::collect_git_info(&nested).await.is_none());
+    assert!(ava_git_utils::git_diff_to_remote(&nested).await.is_none());
     assert!(
         !marker.exists(),
         "Rust-owned Git inspection must not execute the tracked helper"
@@ -404,7 +404,7 @@ async fn ordinary_clone_rejects_tracked_embedded_bare_repository() {
     );
 
     let explicit_environment = Command::new("git")
-        .args(["-c", codex_git_utils::SAFE_BARE_REPOSITORY_CONFIG])
+        .args(["-c", ava_git_utils::SAFE_BARE_REPOSITORY_CONFIG])
         .args(["rev-parse", "--git-dir"])
         .env("GIT_DIR", &nested)
         .current_dir(&clone)
@@ -425,7 +425,7 @@ fn write_file(path: &Path, contents: &str) {
 fn write_curated_plugin(root: &Path, plugin_name: &str) {
     let plugin_root = root.join("plugins").join(plugin_name);
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         &format!(r#"{{"name":"{plugin_name}"}}"#),
     );
 }
@@ -462,15 +462,15 @@ fn write_openai_curated_marketplace(root: &Path, plugin_names: &[&str]) {
     }
 }
 
-fn write_curated_plugin_sha(codex_home: &Path) {
+fn write_curated_plugin_sha(ava_home: &Path) {
     write_file(
-        &codex_home.join(".tmp/plugins.sha"),
+        &ava_home.join(".tmp/plugins.sha"),
         &format!("{TEST_CURATED_PLUGIN_SHA}\n"),
     );
 }
 
-fn has_plugins_clone_dirs(codex_home: &Path) -> bool {
-    let Ok(entries) = std::fs::read_dir(codex_home.join(".tmp")) else {
+fn has_plugins_clone_dirs(ava_home: &Path) -> bool {
+    let Ok(entries) = std::fs::read_dir(ava_home.join(".tmp")) else {
         return false;
     };
 
@@ -575,7 +575,7 @@ async fn mount_export_archive(server: &MockServer, bytes: Vec<u8>) -> String {
 }
 
 async fn run_sync_with_transport_overrides(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     git_binary: impl Into<String>,
     api_base_url: impl Into<String>,
     backup_archive_api_url: impl Into<String>,
@@ -586,7 +586,7 @@ async fn run_sync_with_transport_overrides(
     tokio::task::spawn_blocking(move || {
         let git_binary = PathBuf::from(git_binary);
         sync_openai_plugins_repo_with_transport_overrides(
-            codex_home.as_path(),
+            ava_home.as_path(),
             Some(git_binary.as_path()),
             &api_base_url,
             &backup_archive_api_url,
@@ -598,7 +598,7 @@ async fn run_sync_with_transport_overrides(
 }
 
 async fn run_sync_without_git(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     api_base_url: impl Into<String>,
     backup_archive_api_url: impl Into<String>,
 ) -> Result<String, String> {
@@ -606,7 +606,7 @@ async fn run_sync_without_git(
     let backup_archive_api_url = backup_archive_api_url.into();
     tokio::task::spawn_blocking(move || {
         sync_openai_plugins_repo_with_transport_overrides(
-            codex_home.as_path(),
+            ava_home.as_path(),
             /*git_binary*/ None,
             &api_base_url,
             &backup_archive_api_url,
@@ -618,13 +618,13 @@ async fn run_sync_without_git(
 }
 
 async fn run_http_sync(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     api_base_url: impl Into<String>,
 ) -> Result<String, String> {
     let api_base_url = api_base_url.into();
     tokio::task::spawn_blocking(move || {
         sync_openai_plugins_repo_via_http(
-            codex_home.as_path(),
+            ava_home.as_path(),
             &api_base_url,
             &crate::test_support::test_http_client_factory(),
         )
@@ -637,13 +637,13 @@ fn assert_curated_gmail_repo(repo_path: &Path) {
     assert!(repo_path.join(".agents/plugins/marketplace.json").is_file());
     assert!(
         repo_path
-            .join("plugins/gmail/.codex-plugin/plugin.json")
+            .join("plugins/gmail/.ava-plugin/plugin.json")
             .is_file()
     );
 }
 
 #[test]
-fn curated_plugins_repo_path_uses_codex_home_tmp_dir() {
+fn curated_plugins_repo_path_uses_ava_home_tmp_dir() {
     let tmp = tempdir().expect("tempdir");
     assert_eq!(
         curated_plugins_repo_path(tmp.path()),
@@ -737,11 +737,11 @@ if [ "$1" = "-C" ] && [ "$3" = "fetch" ]; then
   exit 0
 fi
 if [ "$1" = "-C" ] && [ "$3" = "reset" ]; then
-  mkdir -p "$2/.agents/plugins" "$2/plugins/gmail/.codex-plugin"
+  mkdir -p "$2/.agents/plugins" "$2/plugins/gmail/.ava-plugin"
   cat > "$2/.agents/plugins/marketplace.json" <<'EOF'
 {{"name":"openai-curated","plugins":[{{"name":"gmail","source":{{"source":"local","path":"./plugins/gmail"}}}}]}}
 EOF
-  printf '%s\n' '{{"name":"gmail"}}' > "$2/plugins/gmail/.codex-plugin/plugin.json"
+  printf '%s\n' '{{"name":"gmail"}}' > "$2/plugins/gmail/.ava-plugin/plugin.json"
   exit 0
 fi
 if [ "$1" = "-C" ] && [ "$3" = "clean" ]; then
@@ -816,7 +816,7 @@ fn sync_openai_plugins_repo_via_git_succeeds_with_local_rewritten_remote() {
     let work_repo = repo_root.path().join("work/plugins");
     let remote_repo = repo_root.path().join("remotes/openai/plugins.git");
     std::fs::create_dir_all(work_repo.join(".agents/plugins")).expect("create marketplace dir");
-    std::fs::create_dir_all(work_repo.join("plugins/gmail/.codex-plugin"))
+    std::fs::create_dir_all(work_repo.join("plugins/gmail/.ava-plugin"))
         .expect("create plugin dir");
     std::fs::write(
         work_repo.join(".agents/plugins/marketplace.json"),
@@ -824,7 +824,7 @@ fn sync_openai_plugins_repo_via_git_succeeds_with_local_rewritten_remote() {
     )
     .expect("write marketplace");
     std::fs::write(
-        work_repo.join("plugins/gmail/.codex-plugin/plugin.json"),
+        work_repo.join("plugins/gmail/.ava-plugin/plugin.json"),
         r#"{"name":"gmail"}"#,
     )
     .expect("write plugin manifest");
@@ -835,9 +835,9 @@ fn sync_openai_plugins_repo_via_git_succeeds_with_local_rewritten_remote() {
         &work_repo,
         &[
             "-c",
-            "user.name=Codex Test",
+            "user.name=Ava Test",
             "-c",
-            "user.email=codex@example.com",
+            "user.email=ava@example.com",
             "commit",
             "-m",
             "init",
@@ -918,9 +918,9 @@ fn sync_openai_plugins_repo_via_git_succeeds_with_local_rewritten_remote() {
         &work_repo,
         &[
             "-c",
-            "user.name=Codex Test",
+            "user.name=Ava Test",
             "-c",
-            "user.email=codex@example.com",
+            "user.email=ava@example.com",
             "commit",
             "-m",
             "update",
@@ -944,7 +944,7 @@ fn sync_openai_plugins_repo_via_git_succeeds_with_local_rewritten_remote() {
     assert_eq!(synced_sha, updated_sha);
     assert!(
         curated_plugins_repo_path(tmp.path())
-            .join("plugins/linear/.codex-plugin/plugin.json")
+            .join("plugins/linear/.ava-plugin/plugin.json")
             .is_file()
     );
     assert_eq!(
@@ -1178,8 +1178,8 @@ if [ "$1" = "-C" ] && [ "$3" = "fetch" ]; then
   exit 0
 fi
 if [ "$1" = "-C" ] && [ "$3" = "reset" ]; then
-  mkdir -p "$2/plugins/linear/.codex-plugin"
-  printf '%s\n' '{{"name":"linear"}}' > "$2/plugins/linear/.codex-plugin/plugin.json"
+  mkdir -p "$2/plugins/linear/.ava-plugin"
+  printf '%s\n' '{{"name":"linear"}}' > "$2/plugins/linear/.ava-plugin/plugin.json"
   exit 0
 fi
 if [ "$1" = "-C" ] && [ "$3" = "clean" ]; then
@@ -1296,7 +1296,7 @@ async fn sync_openai_plugins_repo_skips_export_archive_when_snapshot_exists() {
     write_openai_curated_marketplace(&curated_root, &["linear"]);
     write_curated_plugin_sha(tmp.path());
 
-    let plugin_manifest_path = curated_root.join("plugins/linear/.codex-plugin/plugin.json");
+    let plugin_manifest_path = curated_root.join("plugins/linear/.ava-plugin/plugin.json");
     let original_manifest =
         std::fs::read_to_string(&plugin_manifest_path).expect("read existing plugin manifest");
 
@@ -1403,7 +1403,7 @@ fn curated_repo_zipball_bytes(sha: &str) -> Vec<u8> {
         .expect("write marketplace");
     writer
         .start_file(
-            format!("{root}/plugins/gmail/.codex-plugin/plugin.json"),
+            format!("{root}/plugins/gmail/.ava-plugin/plugin.json"),
             options,
         )
         .expect("start plugin manifest entry");
@@ -1451,7 +1451,7 @@ fn curated_repo_backup_archive_zip_bytes(sha: &str) -> Vec<u8> {
         )
         .expect("write marketplace");
     writer
-        .start_file("plugins/plugins/gmail/.codex-plugin/plugin.json", options)
+        .start_file("plugins/plugins/gmail/.ava-plugin/plugin.json", options)
         .expect("start plugin manifest entry");
     writer
         .write_all(br#"{"name":"gmail"}"#)

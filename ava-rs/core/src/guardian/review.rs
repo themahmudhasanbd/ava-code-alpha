@@ -5,21 +5,21 @@
 mod request;
 
 use crate::context::GuardianContextMode;
-use codex_analytics::GuardianApprovalRequestSource;
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_core_plugins::PluginCommandAttribution;
-use codex_features::Feature;
-use codex_guardian_reviewer::GuardianReviewError;
-use codex_guardian_reviewer::GuardianReviewOutcome;
+use ava_analytics::GuardianApprovalRequestSource;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_core_plugins::PluginCommandAttribution;
+use ava_features::Feature;
+use ava_guardian_reviewer::GuardianReviewError;
+use ava_guardian_reviewer::GuardianReviewOutcome;
 #[cfg(test)]
-use codex_guardian_reviewer::GuardianReviewSessionLimits;
-use codex_guardian_reviewer::ReviewModel;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_guardian_reviewer::GuardianReviewSessionLimits;
+use ava_guardian_reviewer::ReviewModel;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::Instant;
@@ -43,7 +43,7 @@ use super::approval_request::guardian_request_turn_id;
 use super::approval_request::guardian_reviewed_action;
 use super::review_session::GuardianReviewSessionParams;
 use super::review_session::build_guardian_review_session_config;
-use codex_guardian_reviewer::guardian_output_schema;
+use ava_guardian_reviewer::guardian_output_schema;
 
 const GUARDIAN_PLUGIN_ATTRIBUTION_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -97,7 +97,7 @@ pub(crate) fn new_guardian_review_id() -> String {
     uuid::Uuid::new_v4().to_string()
 }
 
-pub(crate) use codex_guardian_reviewer::routes_approval_policy_to_guardian;
+pub(crate) use ava_guardian_reviewer::routes_approval_policy_to_guardian;
 
 pub(crate) fn is_basic_session_source(session_source: &SessionSource) -> bool {
     match session_source {
@@ -140,7 +140,7 @@ pub(super) async fn guardian_review_session_config(
     let reviewer_config = session
         .services
         .thread_extension_data
-        .get::<codex_guardian_reviewer::ReviewerConfig<crate::config::Config>>()
+        .get::<ava_guardian_reviewer::ReviewerConfig<crate::config::Config>>()
         .ok_or_else(|| anyhow::anyhow!("Guardian reviewer configuration is not installed"))?;
     let model_messages = ResolvedModelMessages::from_model(&guardian_model_info);
     let mut spawn_config = build_guardian_review_session_config(
@@ -275,7 +275,7 @@ async fn run_guardian_review_session_with_retry_before_deadline(
     limits: GuardianReviewSessionLimits,
 ) -> (GuardianReviewOutcome, GuardianReviewAnalyticsResult) {
     let context = context.into();
-    codex_guardian_reviewer::run_with_retry(limits, external_cancel.as_ref(), |deadline| {
+    ava_guardian_reviewer::run_with_retry(limits, external_cancel.as_ref(), |deadline| {
         run_guardian_review_session_before_deadline(
             Arc::clone(&session),
             context.clone(),

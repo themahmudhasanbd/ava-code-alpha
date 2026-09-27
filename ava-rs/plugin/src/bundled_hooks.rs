@@ -1,8 +1,8 @@
 //! Temporary cleanup-hook allowlist shared by local and executor plugin discovery.
 //! This narrowly authorizes known MCP cleanup calls; it does not verify plugin signatures.
 
-use codex_config::HookHandlerConfig;
-use codex_protocol::protocol::HookEventName;
+use ava_config::HookHandlerConfig;
+use ava_protocol::protocol::HookEventName;
 
 struct BundledHook {
     plugin_id: &'static str,
@@ -104,7 +104,7 @@ const ALLOWLISTED_BUNDLED_HOOKS: &[BundledHook] = &[
             HookEventName::SubagentStop,
         ],
         target: BundledHookTarget::App {
-            server: "codex_apps",
+            server: "ava_apps",
             connector_id: "connector_openai_browser",
             tool: "browser.turn_ended",
         },

@@ -14,19 +14,19 @@ use std::process::Stdio;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_config::ConfigPathContext;
-use codex_config::format_config_layer_source;
-use codex_config::permissions_toml::FilesystemPermissionToml;
-use codex_core::config::Config;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::permissions::ReadDenyMatcher;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::AbsolutePathBufGuard;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigPathContext;
+use ava_config::format_config_layer_source;
+use ava_config::permissions_toml::FilesystemPermissionToml;
+use ava_core::config::Config;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::permissions::ReadDenyMatcher;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBufGuard;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use tokio::process::Command;
 
 use super::CheckStatus;
@@ -108,7 +108,7 @@ pub(super) async fn check(config: &Config) -> DoctorCheck {
                     Err(_) => {
                         check.status = CheckStatus::Warning;
                         check.summary =
-                            "filesystem path probes unavailable: cannot locate Codex executable"
+                            "filesystem path probes unavailable: cannot locate Ava executable"
                                 .to_string();
                         return check;
                     }
@@ -297,7 +297,7 @@ fn source(config: &Config, path: &PathUri) -> String {
             .map(|(key, origin)| {
                 format!(
                     "{key} in {}",
-                    format_config_layer_source(&origin.name, codex_config::CONFIG_TOML_FILE)
+                    format_config_layer_source(&origin.name, ava_config::CONFIG_TOML_FILE)
                 )
             })
             .collect::<BTreeSet<_>>();

@@ -110,7 +110,7 @@ async fn persisted_default_loads_and_renders_without_animation() -> anyhow::Resu
     use crate::status_indicator_widget::StatusIndicatorWidget;
     use crate::status_indicator_widget::StatusTimer;
     use crate::tui::FrameRequester;
-    use codex_config::LoaderOverrides;
+    use ava_config::LoaderOverrides;
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
 
@@ -122,7 +122,7 @@ async fn persisted_default_loads_and_renders_without_animation() -> anyhow::Resu
     )
     .await?;
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .build()
         .await?;
@@ -151,11 +151,11 @@ async fn persisted_default_loads_and_renders_without_animation() -> anyhow::Resu
 #[tokio::test]
 async fn temporary_cli_override_does_not_suppress_the_saved_default() -> anyhow::Result<()> {
     use crate::legacy_core::config::ConfigBuilder;
-    use codex_config::LoaderOverrides;
+    use ava_config::LoaderOverrides;
 
     let home = tempfile::tempdir()?;
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .cli_overrides(vec![("tui.animations".into(), toml::Value::Boolean(true))])
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .build()
@@ -173,11 +173,11 @@ async fn temporary_cli_override_does_not_suppress_the_saved_default() -> anyhow:
 #[tokio::test]
 async fn detected_preference_survives_failed_persistence() -> anyhow::Result<()> {
     use crate::legacy_core::config::ConfigBuilder;
-    use codex_config::LoaderOverrides;
+    use ava_config::LoaderOverrides;
 
     let home = tempfile::tempdir()?;
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .build()
         .await?;

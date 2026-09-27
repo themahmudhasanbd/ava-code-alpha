@@ -1,5 +1,5 @@
 use super::*;
-use codex_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnItemsView;
 
 fn turn(id: &str, status: TurnStatus) -> Turn {
     Turn {

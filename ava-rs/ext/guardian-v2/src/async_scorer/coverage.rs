@@ -1,10 +1,10 @@
 //! Selects tool calls for classification using the resolved model policy.
 
-use codex_extension_api::ToolPayload;
-use codex_protocol::ToolName;
-use codex_protocol::openai_models::GuardianModelPolicy;
-use codex_protocol::openai_models::GuardianReviewMode::Adaptive;
-use codex_protocol::openai_models::GuardianScope;
+use ava_extension_api::ToolPayload;
+use ava_protocol::ToolName;
+use ava_protocol::openai_models::GuardianModelPolicy;
+use ava_protocol::openai_models::GuardianReviewMode::Adaptive;
+use ava_protocol::openai_models::GuardianScope;
 
 pub(super) fn scores_tool(
     policy: &GuardianModelPolicy,

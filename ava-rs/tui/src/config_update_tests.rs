@@ -2,9 +2,9 @@ use super::*;
 use crate::history_cell::HistoryCell;
 use crate::legacy_core::config::ConfigBuilder;
 use crate::legacy_core::config::ConfigOverrides;
-use codex_app_server_client::AppServerClient;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
+use ava_app_server_client::AppServerClient;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
 use color_eyre::eyre::WrapErr;
 use pretty_assertions::assert_eq;
 use std::path::Path;
@@ -33,31 +33,31 @@ fn trusted_project_edit_targets_project_trust_level() {
 async fn remote_project_trust_guards_thread_start_and_preserves_repository_decisions() -> Result<()>
 {
     let temp_dir = tempfile::tempdir()?;
-    let codex_home = temp_dir.path().join("codex-home");
+    let ava_home = temp_dir.path().join("ava-home");
     let project_root = temp_dir
         .path()
         .join("project as a trusted project in sibling");
     let project_cwd = project_root.join("nested");
-    std::fs::create_dir_all(&codex_home)?;
+    std::fs::create_dir_all(&ava_home)?;
     std::fs::create_dir_all(&project_cwd)?;
     std::fs::create_dir(project_root.join(".git"))?;
     std::fs::write(project_root.join(".git/HEAD"), "ref: refs/heads/main\n")?;
-    std::fs::create_dir(project_cwd.join(".codex"))?;
+    std::fs::create_dir(project_cwd.join(".ava-code"))?;
     let undecided_config = format!(
         "[{}]\n",
         trusted_project_edit(&project_root)
             .key_path
             .trim_end_matches(".trust_level")
     );
-    std::fs::write(codex_home.join("config.toml"), &undecided_config)?;
+    std::fs::write(ava_home.join("config.toml"), &undecided_config)?;
     std::fs::write(
-        project_cwd.join(".codex/config.toml"),
+        project_cwd.join(".ava-code/config.toml"),
         "model_reasoning_effort = \"high\"\n",
     )?;
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.clone())
+        .ava_home(ava_home.clone())
         .harness_overrides(ConfigOverrides {
-            cwd: Some(codex_home.clone()),
+            cwd: Some(ava_home.clone()),
             ..ConfigOverrides::default()
         })
         .build()
@@ -79,13 +79,13 @@ async fn remote_project_trust_guards_thread_start_and_preserves_repository_decis
         })
     );
     assert_eq!(
-        std::fs::read_to_string(codex_home.join("config.toml"))?,
+        std::fs::read_to_string(ava_home.join("config.toml"))?,
         undecided_config
     );
 
     write_trusted_project(app_server.request_handle(), &project_root).await?;
     let persisted_config: toml::Value =
-        toml::from_str(&std::fs::read_to_string(codex_home.join("config.toml"))?)?;
+        toml::from_str(&std::fs::read_to_string(ava_home.join("config.toml"))?)?;
     assert_eq!(
         persisted_config["projects"][project_trust_key(&project_root)]["trust_level"].as_str(),
         Some("trusted")
@@ -151,9 +151,9 @@ async fn remote_project_trust_guards_thread_start_and_preserves_repository_decis
     "
     );
 
-    std::fs::create_dir(project_root.join(".codex"))?;
+    std::fs::create_dir(project_root.join(".ava-code"))?;
     std::fs::write(
-        project_root.join(".codex/config.toml"),
+        project_root.join(".ava-code/config.toml"),
         "model_reasoning_effort = \"low\"\n",
     )?;
     for (parent, child) in [("untrusted", "trusted"), ("trusted", "untrusted")] {
@@ -174,7 +174,7 @@ async fn remote_project_trust_guards_thread_start_and_preserves_repository_decis
             (child == "untrusted").then_some(Some(TrustLevel::Untrusted))
         );
     }
-    std::fs::remove_dir_all(project_root.join(".codex"))?;
+    std::fs::remove_dir_all(project_root.join(".ava-code"))?;
     let untrusted_projects = replace_config_value(
         "projects",
         serde_json::json!({
@@ -187,8 +187,8 @@ async fn remote_project_trust_guards_thread_start_and_preserves_repository_decis
     )
     .await?;
 
-    std::fs::remove_file(project_cwd.join(".codex/config.toml"))?;
-    std::fs::remove_dir(project_cwd.join(".codex"))?;
+    std::fs::remove_file(project_cwd.join(".ava-code/config.toml"))?;
+    std::fs::remove_dir(project_cwd.join(".ava-code"))?;
     let canonical_project_cwd = PathBuf::from(project_trust_key(&project_root)).join("nested");
     let error = read_trust(&canonical_project_cwd, ProjectTrustHost::Remote)
         .await

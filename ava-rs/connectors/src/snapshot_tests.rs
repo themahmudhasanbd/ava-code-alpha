@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use codex_plugin::AppConnectorId;
+use ava_plugin::AppConnectorId;
 use pretty_assertions::assert_eq;
 
 use super::ConnectorSnapshot;

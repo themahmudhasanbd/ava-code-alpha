@@ -1,14 +1,14 @@
-use codex_core::TurnInputRequest;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use wiremock::Mock;
 use wiremock::MockServer;
@@ -86,7 +86,7 @@ async fn continue_after_stream_error() {
         supports_standalone_web_search: false,
     };
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_config(move |config| {
             config.base_instructions = Some("You are a helpful assistant".to_string());
             config.model_provider = provider;
@@ -95,7 +95,7 @@ async fn continue_after_stream_error() {
         .await
         .unwrap();
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "first message".into(),
             text_elements: Vec::new(),
@@ -105,13 +105,13 @@ async fn continue_after_stream_error() {
 
     // Expect an Error followed by TurnComplete so the session is released.
     let EventMsg::Error(error) =
-        wait_for_event(&codex, |ev| matches!(ev, EventMsg::Error(_))).await
+        wait_for_event(&ava, |ev| matches!(ev, EventMsg::Error(_))).await
     else {
         unreachable!("predicate guarantees an error event");
     };
 
     let EventMsg::TurnComplete(completed) =
-        wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await
+        wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await
     else {
         unreachable!("predicate guarantees a turn complete event");
     };
@@ -120,7 +120,7 @@ async fn continue_after_stream_error() {
     // 2) Second turn: now send another prompt that should succeed using the
     // mock server SSE stream. If the agent failed to clear the running task on
     // error above, this submission would be rejected/queued indefinitely.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "follow up".into(),
             text_elements: Vec::new(),
@@ -128,5 +128,5 @@ async fn continue_after_stream_error() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }

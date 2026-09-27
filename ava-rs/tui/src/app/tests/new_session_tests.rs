@@ -10,7 +10,7 @@ use pretty_assertions::assert_eq;
 async fn new_session_preserves_vim_line_yank() -> Result<()> {
     let (mut app, _events, _ops) = make_test_app_with_channels().await;
     let home = tempdir()?;
-    app.config.codex_home = home.path().to_path_buf().abs();
+    app.config.ava_home = home.path().to_path_buf().abs();
     app.config.sqlite = SqliteConfig::new_for_testing(home.path().abs());
     app.chat_widget.toggle_vim_mode_and_notify();
     app.chat_widget.insert_str("saved line");
@@ -100,7 +100,7 @@ async fn replacement_uses_server_defaults_and_preserves_explicit_launch_settings
             )?;
         }
         let mut server_config = app.config.clone();
-        server_config.codex_home = server_home.path().to_path_buf().abs();
+        server_config.ava_home = server_home.path().to_path_buf().abs();
         server_config.sqlite = SqliteConfig::new_for_testing(server_home.path().abs());
         let (mut server, requests, proxy) = start_recording_app_server_with_history(
             &server_config,
@@ -118,7 +118,7 @@ async fn replacement_uses_server_defaults_and_preserves_explicit_launch_settings
         .await?;
         server = server.with_remote_cwd_override(Some(server_config.cwd.to_path_buf()));
         server.bootstrap(&server_config).await?;
-        app.config.codex_home = client_home.path().to_path_buf().abs();
+        app.config.ava_home = client_home.path().to_path_buf().abs();
         app.config.sqlite = SqliteConfig::new_for_testing(client_home.path().abs());
         app.chat_widget
             .handle_thread_session_quiet(test_thread_session(
@@ -176,7 +176,7 @@ async fn replacement_uses_server_defaults_and_preserves_explicit_launch_settings
             let rendered = render_bottom_popup(&app.chat_widget, /*width*/ 80)
                 .replace(&server_config.cwd.display().to_string(), "<PROJECT>");
             insta::assert_snapshot!(rendered, @r"
-            › Ask Codex to do anything
+            › Ask Ava to do anything
 
               server-model high · <PROJECT>
             ");
@@ -192,7 +192,7 @@ async fn replacement_failure_keeps_current_task_and_restores_input() -> Result<(
     for fail_read in [false, true] {
         let (mut app, mut events, _ops) = make_test_app_with_channels().await;
         let home = tempdir()?;
-        app.config.codex_home = home.path().to_path_buf().abs();
+        app.config.ava_home = home.path().to_path_buf().abs();
         app.config.sqlite = SqliteConfig::new_for_testing(home.path().abs());
         let current = ThreadId::new();
         app.enqueue_primary_thread_session(
@@ -266,7 +266,7 @@ async fn replacement_preserves_remote_launch_paths_and_older_servers() -> Result
     ] {
         let (mut app, _events, _ops) = make_test_app_with_channels().await;
         let home = tempdir()?;
-        app.config.codex_home = home.path().to_path_buf().abs();
+        app.config.ava_home = home.path().to_path_buf().abs();
         app.config.sqlite = SqliteConfig::new_for_testing(home.path().abs());
         std::fs::write(
             home.path().join("config.toml"),

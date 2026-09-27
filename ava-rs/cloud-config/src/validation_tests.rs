@@ -1,5 +1,5 @@
 use super::*;
-use codex_config::CloudRequirementsFragment;
+use ava_config::CloudRequirementsFragment;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 

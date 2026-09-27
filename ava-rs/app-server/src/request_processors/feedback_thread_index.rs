@@ -1,9 +1,9 @@
 //! Selects a bounded feedback subtree, preserving the reported thread and prioritizing
 //! children with retained failed reviews. The index describes selection, not delivery.
 
-use codex_feedback::FeedbackAttachment;
-use codex_feedback::GuardianReviewFailures;
-use codex_protocol::ThreadId;
+use ava_feedback::FeedbackAttachment;
+use ava_feedback::GuardianReviewFailures;
+use ava_protocol::ThreadId;
 use serde::Serialize;
 use std::cmp::Reverse;
 use std::collections::HashSet;

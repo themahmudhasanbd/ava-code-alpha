@@ -220,7 +220,7 @@ fn connect_pipe_with_timeout(
     let (connect_result_tx, connect_result_rx) = mpsc::sync_channel(1);
     let mut connect_thread = Some(
         thread::Builder::new()
-            .name(format!("codex-runner-connect-{pipe_label}"))
+            .name(format!("ava-runner-connect-{pipe_label}"))
             .spawn(move || {
                 let current_process = unsafe { GetCurrentProcess() };
                 let mut thread_handle = 0;
@@ -322,17 +322,17 @@ fn connect_pipe_with_timeout(
 }
 
 pub(crate) fn spawn_runner_transport(
-    codex_home: &Path,
+    ava_home: &Path,
     cwd: &Path,
     sandbox_creds: &SandboxCreds,
     log_dir: Option<&Path>,
     mut spawn_request: SpawnRequest,
     desktop_policy: Option<&DesktopPolicy>,
 ) -> Result<RunnerTransport> {
-    let runner_exe = find_runner_exe(codex_home, log_dir)?;
+    let runner_exe = find_runner_exe(ava_home, log_dir)?;
     let registered_alias = if registered_core_requested() {
         Some(crate::app_package::registered_runner_alias(
-            codex_home,
+            ava_home,
             &sandbox_creds.username,
         )?)
     } else {
@@ -368,7 +368,7 @@ pub(crate) fn spawn_runner_transport(
         .unwrap_or(&runner_exe)
         .to_str()
         .map(str::to_owned)
-        .unwrap_or_else(|| "codex-command-runner.exe".to_string());
+        .unwrap_or_else(|| "ava-command-runner.exe".to_string());
     let runner_full_cmd = format!(
         "{} {} {}",
         quote_windows_arg(&runner_cmdline),

@@ -1,5 +1,5 @@
 use super::*;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -223,7 +223,7 @@ async fn owner_notification_completion_cannot_cross_account_change() {
         .expect("start previous account request");
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ true, /*has_codex_backend_auth*/ true,
+        /*has_chatgpt_account*/ true, /*has_ava_backend_auth*/ true,
     );
     let current = chat
         .start_add_credits_nudge_email_request(AddCreditsNudgeCreditType::UsageLimit)
@@ -296,7 +296,7 @@ async fn backend_banner_invalid_content_and_absence_restore_fallback() {
         }
         chat.update_backend_banner(&response);
         assert!(!chat.has_applicable_backend_banner());
-        chat.codex_rate_limit_reached_type =
+        chat.ava_rate_limit_reached_type =
             Some(RateLimitReachedType::WorkspaceMemberCreditsDepleted);
         chat.on_rate_limit_error(RateLimitErrorKind::Generic, "limit".into());
         assert!(render_bottom_popup(&chat, /*width*/ 90).contains("workspace owner"));

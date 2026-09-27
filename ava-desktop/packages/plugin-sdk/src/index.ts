@@ -439,7 +439,7 @@ export const PLUGIN_PROVIDER_API_STYLES = [
   "responses",
   "anthropic_messages",
   "google_generative_ai",
-  "openai_codex_responses",
+  "openai_ava_responses",
   "pi_messages",
 ] as const;
 

@@ -23,8 +23,8 @@ use crate::telemetry::DbKind;
 use crate::telemetry::DbTelemetry;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_history::RolloutItem;
-use codex_protocol::ThreadId;
+use ava_history::RolloutItem;
+use ava_protocol::ThreadId;
 use serde_json::Value;
 use sqlx::QueryBuilder;
 use sqlx::Row;
@@ -268,7 +268,7 @@ impl StateRuntime {
         // Keep creation lazy for users who have never used v2.
         if has_memories_v2
             && let Err(err) = runtime
-                .memories_for_version(codex_protocol::MemoryVersion::V2)
+                .memories_for_version(ava_protocol::MemoryVersion::V2)
                 .await
         {
             runtime.close().await;
@@ -316,18 +316,18 @@ impl StateRuntime {
     pub async fn clear_memory_data_in_sqlite_home(sqlite: &SqliteConfig) -> anyhow::Result<bool> {
         let mut cleared = false;
         for version in [
-            codex_protocol::MemoryVersion::V1,
-            codex_protocol::MemoryVersion::V2,
+            ava_protocol::MemoryVersion::V1,
+            ava_protocol::MemoryVersion::V2,
         ] {
             let path = match version {
-                codex_protocol::MemoryVersion::V1 => sqlite.memories_db_path(),
-                codex_protocol::MemoryVersion::V2 => sqlite.memories_v2_db_path(),
+                ava_protocol::MemoryVersion::V1 => sqlite.memories_db_path(),
+                ava_protocol::MemoryVersion::V2 => sqlite.memories_v2_db_path(),
             };
             if !tokio::fs::try_exists(path).await? {
                 continue;
             }
             let pool = match version {
-                codex_protocol::MemoryVersion::V1 => {
+                ava_protocol::MemoryVersion::V1 => {
                     sqlite
                         .open_memories_db(
                             &runtime_memories_migrator(),
@@ -335,7 +335,7 @@ impl StateRuntime {
                         )
                         .await?
                 }
-                codex_protocol::MemoryVersion::V2 => sqlite.open_memories_v2_db().await?,
+                ava_protocol::MemoryVersion::V2 => sqlite.open_memories_v2_db().await?,
             };
             let result = memories::clear_memory_data_in_pool(&pool).await;
             pool.close().await;
@@ -464,8 +464,8 @@ mod tests {
     use crate::DB_INIT_METRIC;
     use crate::DbTelemetry;
     use crate::migrations::STATE_MIGRATOR;
-    use codex_protocol::ThreadId;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_protocol::ThreadId;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use sqlx::SqlitePool;
     use sqlx::migrate::MigrateError;
@@ -539,11 +539,11 @@ mod tests {
 
     #[tokio::test]
     async fn sqlite_integrity_check_can_be_interrupted_and_retried() {
-        let codex_home = unique_temp_dir();
-        tokio::fs::create_dir_all(&codex_home)
+        let ava_home = unique_temp_dir();
+        tokio::fs::create_dir_all(&ava_home)
             .await
-            .expect("create codex home");
-        let sqlite = crate::SqliteConfig::new_for_testing(codex_home.as_path().abs());
+            .expect("create ava home");
+        let sqlite = crate::SqliteConfig::new_for_testing(ava_home.as_path().abs());
         let path = sqlite.state_db_path();
         let pool = sqlite
             .open_read_write_pool(&path)
@@ -621,16 +621,16 @@ mod tests {
                 "row 1 missing from index sample_value".to_string()
             ]),
         );
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn open_state_sqlite_tolerates_newer_applied_migrations() {
-        let codex_home = unique_temp_dir();
-        tokio::fs::create_dir_all(&codex_home)
+        let ava_home = unique_temp_dir();
+        tokio::fs::create_dir_all(&ava_home)
             .await
-            .expect("create codex home");
-        let sqlite = crate::SqliteConfig::new_for_testing(codex_home.as_path().abs());
+            .expect("create ava home");
+        let sqlite = crate::SqliteConfig::new_for_testing(ava_home.as_path().abs());
         let state_path = sqlite.state_db_path();
         let pool = sqlite
             .open_read_write_pool(&state_path)
@@ -668,16 +668,16 @@ mod tests {
             .expect("runtime migrator should tolerate newer applied migrations");
         tolerant_pool.close().await;
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn init_records_successful_sqlite_init_phases_to_explicit_telemetry() {
-        let codex_home = unique_temp_dir();
+        let ava_home = unique_temp_dir();
         let telemetry = TestTelemetry::default();
 
         let runtime = StateRuntime::init_with_telemetry_for_tests(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
             &telemetry,
         )
@@ -711,13 +711,13 @@ mod tests {
         assert_eq!(phases, expected);
 
         runtime.close().await;
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn init_restores_independent_thread_timestamp_maxima() {
-        let codex_home = unique_temp_dir();
-        let sqlite = crate::SqliteConfig::new_for_testing(codex_home.as_path().abs());
+        let ava_home = unique_temp_dir();
+        let sqlite = crate::SqliteConfig::new_for_testing(ava_home.as_path().abs());
         let runtime = StateRuntime::init(sqlite.clone(), "test-provider".to_string())
             .await
             .expect("state runtime should initialize");
@@ -729,9 +729,9 @@ mod tests {
             let thread_id = ThreadId::from_string(thread_id).expect("valid thread id");
             runtime
                 .upsert_thread(&test_thread_metadata(
-                    &codex_home,
+                    &ava_home,
                     thread_id,
-                    codex_home.clone(),
+                    ava_home.clone(),
                 ))
                 .await
                 .expect("thread should be stored");
@@ -759,6 +759,6 @@ mod tests {
         );
 
         runtime.close().await;
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 }

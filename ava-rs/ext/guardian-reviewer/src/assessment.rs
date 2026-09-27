@@ -1,9 +1,9 @@
 //! The production synchronous reviewer's output schema and tolerant JSON parser.
 //! Parsing defaults and error text are shared unchanged by all reviewer callers.
 
-use codex_protocol::protocol::GuardianAssessmentOutcome;
-use codex_protocol::protocol::GuardianRiskLevel;
-use codex_protocol::protocol::GuardianUserAuthorization;
+use ava_protocol::protocol::GuardianAssessmentOutcome;
+use ava_protocol::protocol::GuardianRiskLevel;
+use ava_protocol::protocol::GuardianUserAuthorization;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -11,8 +11,8 @@ use serde_json::Value;
 /// Structured output contract that the guardian reviewer must satisfy.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GuardianAssessment {
-    pub risk_level: codex_protocol::protocol::GuardianRiskLevel,
-    pub user_authorization: codex_protocol::protocol::GuardianUserAuthorization,
+    pub risk_level: ava_protocol::protocol::GuardianRiskLevel,
+    pub user_authorization: ava_protocol::protocol::GuardianUserAuthorization,
     pub outcome: GuardianAssessmentOutcome,
     pub rationale: String,
 }

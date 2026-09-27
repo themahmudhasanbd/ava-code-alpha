@@ -1,12 +1,12 @@
 use crate::session::tests::make_session_and_context_with_rx;
-use codex_features::Feature;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_history::RolloutItem;
-use codex_protocol::models::ConfigurationReasoning;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::EventMsg;
+use ava_features::Feature;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_history::RolloutItem;
+use ava_protocol::models::ConfigurationReasoning;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::EventMsg;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -20,7 +20,7 @@ async fn harness_authored_configuration_updates_preserve_metadata_and_resume() {
                 effort: ReasoningEffort::High,
             },
         },
-        metadata: Some(CodexHarnessMetadata {
+        metadata: Some(AvaHarnessMetadata {
             harness_authored_configuration: true,
             ..Default::default()
         }),

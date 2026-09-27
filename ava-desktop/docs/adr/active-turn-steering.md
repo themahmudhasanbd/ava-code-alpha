@@ -8,7 +8,7 @@
 
 The Composer queues follow-ups, but cannot redirect a running turn. A second
 prompt is correctly rejected with `AGENT_BUSY`. pi-agent-core already supplies
-`Agent.steer`; Codex's [turn/steer contract](https://learn.chatgpt.com/docs/app-server#steer-an-active-turn)
+`Agent.steer`; Ava's [turn/steer contract](https://learn.chatgpt.com/docs/app-server#steer-an-active-turn)
 provides the expected-turn admission model.
 
 ## Decision

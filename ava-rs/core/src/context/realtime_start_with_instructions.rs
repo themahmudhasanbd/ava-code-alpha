@@ -1,7 +1,7 @@
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::protocol::REALTIME_CONVERSATION_CLOSE_TAG;
-use codex_protocol::protocol::REALTIME_CONVERSATION_OPEN_TAG;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::protocol::REALTIME_CONVERSATION_CLOSE_TAG;
+use ava_protocol::protocol::REALTIME_CONVERSATION_OPEN_TAG;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RealtimeStartWithInstructions {

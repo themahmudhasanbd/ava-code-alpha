@@ -1,12 +1,12 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
-use codex_extension_api::ExtensionData;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::ResponseItemId;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::items::TurnItem;
-use codex_utils_stream_parser::strip_citations;
+use ava_extension_api::ExtensionData;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::ResponseItemId;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::items::TurnItem;
+use ava_utils_stream_parser::strip_citations;
 use tokio_util::sync::CancellationToken;
 
 use crate::function_tool::FunctionCallError;
@@ -18,18 +18,18 @@ use crate::tools::call_trace;
 use crate::tools::parallel::ToolCallRuntime;
 use crate::tools::router::ToolRouter;
 use crate::tools::router::tool_log_payload;
-use codex_memories_read::citations::parse_memory_citation;
-use codex_memories_read::citations::thread_ids_from_memory_citation;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
-use codex_protocol::memory_citation::MemoryCitation;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_rollout::state_db;
-use codex_utils_stream_parser::strip_proposed_plan_blocks;
+use ava_memories_read::citations::parse_memory_citation;
+use ava_memories_read::citations::thread_ids_from_memory_citation;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
+use ava_protocol::memory_citation::MemoryCitation;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_rollout::state_db;
+use ava_utils_stream_parser::strip_proposed_plan_blocks;
 use futures::Future;
 use tracing::debug;
 use tracing::instrument;
@@ -49,7 +49,7 @@ fn strip_hidden_assistant_markup_and_parse_memory_citation(
     plan_mode: bool,
 ) -> (
     String,
-    Option<codex_protocol::memory_citation::MemoryCitation>,
+    Option<ava_protocol::memory_citation::MemoryCitation>,
 ) {
     let (without_citations, citations) = strip_citations(text);
     let visible_text = if plan_mode {
@@ -67,7 +67,7 @@ pub(crate) fn raw_assistant_output_text_from_item(item: &ResponseItem) -> Option
         let combined = content
             .iter()
             .filter_map(|ci| match ci {
-                codex_protocol::models::ContentItem::OutputText { text } => Some(text.as_str()),
+                ava_protocol::models::ContentItem::OutputText { text } => Some(text.as_str()),
                 _ => None,
             })
             .collect::<String>();
@@ -169,7 +169,7 @@ pub(crate) async fn mark_thread_memory_mode_polluted_if_external_context(
 }
 
 async fn record_stage1_output_usage_and_detect_memory_citation(
-    state_db_ctx: Option<&codex_state::MemoryStore>,
+    state_db_ctx: Option<&ava_state::MemoryStore>,
     item: &ResponseItem,
 ) -> bool {
     let Some(raw_text) = raw_assistant_output_text_from_item(item) else {
@@ -184,7 +184,7 @@ async fn record_stage1_output_usage_and_detect_memory_citation(
 }
 
 async fn record_stage1_output_usage_for_memory_citation(
-    state_db_ctx: Option<&codex_state::MemoryStore>,
+    state_db_ctx: Option<&ava_state::MemoryStore>,
     memory_citation: &MemoryCitation,
 ) -> bool {
     let thread_ids = thread_ids_from_memory_citation(memory_citation);
@@ -267,7 +267,7 @@ pub(crate) async fn finalize_non_tool_response_item(
                     .content
                     .iter()
                     .map(|entry| match entry {
-                        codex_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
+                        ava_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
                     })
                     .collect::<String>();
                 let last_agent_message = if combined.trim().is_empty() {
@@ -412,7 +412,7 @@ pub(crate) async fn handle_output_item_done(
         }
         // A fatal error occurred; surface it back into history.
         Err(FunctionCallError::Fatal(message)) => {
-            return Err(CodexErr::Fatal(message));
+            return Err(AvaErr::Fatal(message));
         }
     }
 
@@ -483,13 +483,13 @@ pub(crate) async fn finalize_turn_item(
             .content
             .iter()
             .map(|entry| match entry {
-                codex_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
+                ava_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
             })
             .collect::<String>();
         let (stripped, memory_citation) =
             strip_hidden_assistant_markup_and_parse_memory_citation(&combined, plan_mode);
         agent_message.content =
-            vec![codex_protocol::items::AgentMessageContent::Text { text: stripped }];
+            vec![ava_protocol::items::AgentMessageContent::Text { text: stripped }];
         if agent_message.memory_citation.is_none() {
             agent_message.memory_citation = memory_citation;
         }

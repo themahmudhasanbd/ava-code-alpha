@@ -1,16 +1,16 @@
-use codex_app_server_protocol::AppBranding as ApiAppBranding;
-use codex_app_server_protocol::AppInfo as ApiAppInfo;
-use codex_app_server_protocol::AppMetadata as ApiAppMetadata;
-use codex_app_server_protocol::AppReview as ApiAppReview;
-use codex_app_server_protocol::AppScreenshot as ApiAppScreenshot;
-use codex_connectors::AppBranding;
-use codex_connectors::AppInfo;
-use codex_connectors::AppMetadata;
-use codex_connectors::AppReview;
-use codex_connectors::AppScreenshot;
+use ava_app_server_protocol::AppBranding as ApiAppBranding;
+use ava_app_server_protocol::AppInfo as ApiAppInfo;
+use ava_app_server_protocol::AppMetadata as ApiAppMetadata;
+use ava_app_server_protocol::AppReview as ApiAppReview;
+use ava_app_server_protocol::AppScreenshot as ApiAppScreenshot;
+use ava_connectors::AppBranding;
+use ava_connectors::AppInfo;
+use ava_connectors::AppMetadata;
+use ava_connectors::AppReview;
+use ava_connectors::AppScreenshot;
 
-/// Converts the app-server wire type owned by `codex-app-server-protocol` into connector-domain
-/// app metadata owned by `codex-connectors`.
+/// Converts the app-server wire type owned by `ava-app-server-protocol` into connector-domain
+/// app metadata owned by `ava-connectors`.
 ///
 /// The types stay separate so app-server protocol ownership does not leak into the connector
 /// domain crate. Because this crate owns neither type, Rust's orphan rules require an explicit

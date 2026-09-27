@@ -7,7 +7,7 @@
 - Backend policy: **Rust host core + pi agent sidecar**
 
 > Version history: `0.3.4` froze provider/runtime-safety decisions
-> (D001–D033). `0.4.0` absorbs the Codex visual-parity decision series
+> (D001–D033). `0.4.0` absorbs the Ava visual-parity decision series
 > (D034+, gold source = decisions-log §D) and the M5 hardening decisions
 > (D078–D083: signing lanes, brand icon, supervision, renderer sandbox,
 > log channels, window state). `0.4.1` freezes the compact four-destination
@@ -39,7 +39,7 @@
 > context-recovery amendment in ADR 0049 adds a durable retained-tail
 > fallback for automatic compaction failures. D200 / ADR 0061 derives the
 > budgets from the model window instead of settings and removes the compaction
-> settings. D203 / ADR 0064 then rebuilds the mechanism to match Codex:
+> settings. D203 / ADR 0064 then rebuilds the mechanism to match Ava:
 > compaction is inline only, a checkpoint carries the summary plus the latest
 > active user message only while a turn continues; completed turns
 > carry no naked historical user messages. The model-facing `new_context` tool
@@ -168,7 +168,7 @@
     `project.set`; group sessions and context default to the primary root,
     while explicit absolute paths under registered group roots use host
     canonical containment**
-43. Context management: **pi-native checkpoint summaries in Codex's shape —
+43. Context management: **pi-native checkpoint summaries in Ava's shape —
      inline compaction at the deterministic pre-request hard guard, the summary
      plus only the latest active user message while a turn continues (and no
      naked historical user messages after a completed turn), durable host

@@ -5,32 +5,32 @@
 use std::sync::Arc;
 use std::sync::Weak;
 
-use codex_core::CodexResponsesHeaders;
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_core::config::TokenBudgetConfig;
-use codex_core::guardian_review::GuardianReviewSession;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::SessionIsolation;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadReadyInput;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ThreadStopInput;
-use codex_extension_api::TurnAbortInput;
-use codex_extension_api::TurnLifecycleContributor;
-use codex_extension_api::TurnStartInput;
-use codex_extension_api::TurnStopInput;
-use codex_guardian_reviewer::ReviewDenials;
-use codex_guardian_reviewer::ReviewerPool;
-use codex_guardian_reviewer::ReviewerTasks;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadSource;
+use ava_core::AvaResponsesHeaders;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_core::config::TokenBudgetConfig;
+use ava_core::guardian_review::GuardianReviewSession;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::SessionIsolation;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadReadyInput;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ThreadStopInput;
+use ava_extension_api::TurnAbortInput;
+use ava_extension_api::TurnLifecycleContributor;
+use ava_extension_api::TurnStartInput;
+use ava_extension_api::TurnStopInput;
+use ava_guardian_reviewer::ReviewDenials;
+use ava_guardian_reviewer::ReviewerPool;
+use ava_guardian_reviewer::ReviewerTasks;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadSource;
 
 mod reviewer_config;
 
@@ -51,7 +51,7 @@ impl ThreadLifecycleContributor<Config> for GuardianExtension {
             }
             input
                 .thread_store
-                .insert(codex_guardian_reviewer::ReviewerConfig::<Config>(
+                .insert(ava_guardian_reviewer::ReviewerConfig::<Config>(
                     reviewer_config::build_reviewer_config,
                 ));
             let manager = self.thread_manager.clone();
@@ -79,7 +79,7 @@ impl ThreadLifecycleContributor<Config> for GuardianExtension {
                             let (mut options, state) = context.thread_options(snapshot).await;
                             if matches!(
                                 kind,
-                                codex_analytics::GuardianReviewSessionKind::EphemeralForked
+                                ava_analytics::GuardianReviewSessionKind::EphemeralForked
                             ) {
                                 options.config.ephemeral = true;
                             }
@@ -88,14 +88,14 @@ impl ThreadLifecycleContributor<Config> for GuardianExtension {
                             options.thread_source = Some(ThreadSource::GuardianReview);
                             // This is the backend reviewer model, independent of current login.
                             // Core checks the selected model and auth on each request attempt.
-                            let provider = codex_model_provider::create_model_provider(
+                            let provider = ava_model_provider::create_model_provider(
                                 options.config.model_provider.clone(),
                                 /*auth_manager*/ None,
                             );
-                            options.thread_extension_init.insert(CodexResponsesHeaders {
+                            options.thread_extension_init.insert(AvaResponsesHeaders {
                                 model: provider.approval_review_preferred_model().to_owned(),
                                 headers: http::HeaderMap::from_iter([(
-                                    http::HeaderName::from_static("x-codex-guardian"),
+                                    http::HeaderName::from_static("x-ava-guardian"),
                                     http::HeaderValue::from_static("reviewer"),
                                 )]),
                             });
@@ -104,7 +104,7 @@ impl ThreadLifecycleContributor<Config> for GuardianExtension {
                                 .insert(SessionIsolation::Isolated);
                             options
                                 .thread_extension_init
-                                .insert(codex_guardian_reviewer::reviewer_allowed_tools());
+                                .insert(ava_guardian_reviewer::reviewer_allowed_tools());
                             let session_cancel = cancel.clone();
                             let until = async move {
                                 let _cancel_on_exit = cancel.clone().drop_guard();
@@ -167,7 +167,7 @@ impl ThreadLifecycleContributor<Config> for GuardianExtension {
                 let _task = task;
                 let prepare = async {
                     let context =
-                        codex_core::guardian_review::prepare_review_prewarm(&parent).await?;
+                        ava_core::guardian_review::prepare_review_prewarm(&parent).await?;
                     let key = context.reuse_key(/*previous*/ None);
                     pool.prewarm(Arc::new(context), key).await
                 };

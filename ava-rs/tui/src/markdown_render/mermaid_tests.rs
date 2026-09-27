@@ -30,7 +30,7 @@ fn mermaid_fences_use_native_renderer_for_every_family() {
         let markdown = format!("```mermaid title=example\n{source}\n```\n");
         assert_eq!(
             markdown_text(&markdown, /*width*/ 100),
-            codex_mermaid::render(source, /*max_width*/ 100).unwrap()
+            ava_mermaid::render(source, /*max_width*/ 100).unwrap()
         );
     }
 }

@@ -3,19 +3,19 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadStatusChangedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_features::Feature;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadStatusChangedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_features::Feature;
 use tempfile::TempDir;
 use tokio::time::timeout;
 
@@ -23,16 +23,16 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn thread_status_changed_emits_runtime_updates() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let responses = vec![create_final_assistant_message_sse_response("done")?];
     let server = create_mock_responses_server_sequence(responses).await;
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
         .enable_feature(Feature::CollaborationModes)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("RUST_LOG", Some("info"))])
         .build_initialized()
         .await?;
@@ -127,24 +127,24 @@ async fn thread_status_changed_emits_runtime_updates() -> Result<()> {
 
 #[tokio::test]
 async fn thread_status_changed_can_be_opted_out() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let responses = vec![create_final_assistant_message_sse_response("done")?];
     let server = create_mock_responses_server_sequence(responses).await;
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
         .enable_feature(Feature::CollaborationModes)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     let message = timeout(
         DEFAULT_READ_TIMEOUT,
         mcp.initialize_with_capabilities(
             ClientInfo {
-                name: "codex_vscode".to_string(),
-                title: Some("Codex VS Code Extension".to_string()),
+                name: "ava_vscode".to_string(),
+                title: Some("Ava VS Code Extension".to_string()),
                 version: "0.1.0".to_string(),
             },
             Some(InitializeCapabilities {

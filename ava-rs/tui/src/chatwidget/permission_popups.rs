@@ -6,7 +6,7 @@
 
 use super::*;
 use crate::style::accent_color;
-use codex_protocol::openai_models::MODEL_SPECIALTY_CYBER;
+use ava_protocol::openai_models::MODEL_SPECIALTY_CYBER;
 
 impl ChatWidget {
     /// Open the permissions popup.
@@ -272,7 +272,7 @@ impl ChatWidget {
         approvals_reviewer: ApprovalsReviewer,
     ) -> Vec<SelectionAction> {
         vec![Box::new(move |tx| {
-            tx.send(AppEvent::CodexOp(AppCommand::override_turn_context(
+            tx.send(AppEvent::AvaOp(AppCommand::override_turn_context(
                 /*cwd*/ None,
                 Some(approval),
                 Some(approvals_reviewer),
@@ -447,7 +447,7 @@ impl ChatWidget {
             vec![
                 Line::default(),
                 Line::from(
-                    "When Codex runs with full access, it can edit any file on your computer and run commands with network, without your approval.",
+                    "When Ava runs with full access, it can edit any file on your computer and run commands with network, without your approval.",
                 ),
                 Line::default(),
                 Line::from(vec![
@@ -458,7 +458,7 @@ impl ChatWidget {
             ]
         } else {
             vec![Line::from(vec![
-                "When Codex runs with full access, it can edit any file on your computer and run commands with network, without your approval. "
+                "When Ava runs with full access, it can edit any file on your computer and run commands with network, without your approval. "
                     .into(),
                 "Exercise caution when enabling full access. This significantly increases the risk of data loss, leaks, or unexpected behavior."
                     .red(),

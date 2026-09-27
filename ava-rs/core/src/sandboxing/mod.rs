@@ -2,7 +2,7 @@
 Module: sandboxing
 
 Core-owned adapter types for exec/runtime plumbing. Policy selection and
-command transformation live in the codex-sandboxing crate; this module keeps
+command transformation live in the ava-sandboxing crate; this module keeps
 the exec-only metadata and translates transformed sandbox commands back into
 ExecRequest for execution.
 */
@@ -12,26 +12,26 @@ use crate::exec::ExecExpiration;
 use crate::exec::StdoutStream;
 use crate::exec::execute_exec_request;
 #[cfg(target_os = "macos")]
-use crate::spawn::CODEX_SANDBOX_ENV_VAR;
-use crate::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR;
-use codex_file_system::FileSystemSandboxContext;
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::error::CodexErr;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::models::PermissionProfile;
-pub use codex_protocol::models::SandboxPermissions;
-use codex_sandboxing::SandboxExecRequest;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::WindowsSandboxFilesystemOverrides;
-use codex_sandboxing::resolve_windows_elevated_filesystem_overrides;
-use codex_sandboxing::resolve_windows_restricted_token_filesystem_overrides;
-use codex_sandboxing::windows_sandbox_uses_elevated_backend;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_string::truncate_middle_with_token_budget;
+use crate::spawn::AVA_SANDBOX_ENV_VAR;
+use crate::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR;
+use ava_file_system::FileSystemSandboxContext;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::error::AvaErr;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::models::PermissionProfile;
+pub use ava_protocol::models::SandboxPermissions;
+use ava_sandboxing::SandboxExecRequest;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::WindowsSandboxFilesystemOverrides;
+use ava_sandboxing::resolve_windows_elevated_filesystem_overrides;
+use ava_sandboxing::resolve_windows_restricted_token_filesystem_overrides;
+use ava_sandboxing::windows_sandbox_uses_elevated_backend;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_string::truncate_middle_with_token_budget;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -42,7 +42,7 @@ pub(crate) struct ExecOptions {
 
 #[derive(Clone, Debug)]
 pub(crate) struct ExecServerEnvConfig {
-    pub(crate) policy: codex_exec_server::ExecEnvPolicy,
+    pub(crate) policy: ava_exec_server::ExecEnvPolicy,
     pub(crate) local_policy_env: HashMap<String, String>,
 }
 
@@ -52,7 +52,7 @@ pub struct ExecRequest {
     pub cwd: PathUri,
     pub env: HashMap<String, String>,
     pub(crate) exec_server_env_config: Option<ExecServerEnvConfig>,
-    pub(crate) exec_server_shell_snapshot: Option<codex_exec_server::ShellSnapshotRequest>,
+    pub(crate) exec_server_shell_snapshot: Option<ava_exec_server::ShellSnapshotRequest>,
     pub network: Option<NetworkProxy>,
     pub network_environment_id: Option<String>,
     pub expiration: ExecExpiration,
@@ -118,7 +118,7 @@ impl ExecRequest {
         request: SandboxExecRequest,
         options: ExecOptions,
         windows_sandbox_workspace_roots: Vec<AbsolutePathBuf>,
-    ) -> Result<Self, CodexErr> {
+    ) -> Result<Self, AvaErr> {
         let SandboxExecRequest {
             command,
             cwd,
@@ -140,7 +140,7 @@ impl ExecRequest {
         {
             let sandbox_policy_cwd = windows_sandbox_policy_cwd
                 .to_abs_path()
-                .map_err(|err| CodexErr::InvalidRequest(format!("invalid sandbox cwd: {err}")))?;
+                .map_err(|err| AvaErr::InvalidRequest(format!("invalid sandbox cwd: {err}")))?;
             let use_windows_elevated_backend =
                 windows_sandbox_uses_elevated_backend(windows_sandbox_level);
             if use_windows_elevated_backend {
@@ -159,7 +159,7 @@ impl ExecRequest {
                 )
             }
             .map_err(|error| {
-                CodexErr::UnsupportedOperation(
+                AvaErr::UnsupportedOperation(
                     truncate_middle_with_token_budget(&error, /*max_tokens*/ 900).0,
                 )
             })?
@@ -169,13 +169,13 @@ impl ExecRequest {
         let network_sandbox_policy = permission_profile.network_sandbox_policy();
         if !network_sandbox_policy.is_enabled() {
             env.insert(
-                CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR.to_string(),
+                AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR.to_string(),
                 "1".to_string(),
             );
         }
         #[cfg(target_os = "macos")]
         if sandbox == SandboxType::MacosSeatbelt {
-            env.insert(CODEX_SANDBOX_ENV_VAR.to_string(), "seatbelt".to_string());
+            env.insert(AVA_SANDBOX_ENV_VAR.to_string(), "seatbelt".to_string());
         }
         Ok(Self {
             command,
@@ -205,7 +205,7 @@ impl ExecRequest {
 pub async fn execute_env(
     exec_request: ExecRequest,
     stdout_stream: Option<StdoutStream>,
-) -> codex_protocol::error::Result<ExecToolCallOutput> {
+) -> ava_protocol::error::Result<ExecToolCallOutput> {
     execute_exec_request(exec_request, stdout_stream, /*after_spawn*/ None).await
 }
 
@@ -213,6 +213,6 @@ pub async fn execute_exec_request_with_after_spawn(
     exec_request: ExecRequest,
     stdout_stream: Option<StdoutStream>,
     after_spawn: Option<Box<dyn FnOnce() + Send>>,
-) -> codex_protocol::error::Result<ExecToolCallOutput> {
+) -> ava_protocol::error::Result<ExecToolCallOutput> {
     execute_exec_request(exec_request, stdout_stream, after_spawn).await
 }

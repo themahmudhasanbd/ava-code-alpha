@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use codex_aws_auth::AwsAccessKeys;
+use ava_aws_auth::AwsAccessKeys;
 use http::HeaderValue;
 use http::Method;
 use pretty_assertions::assert_eq;

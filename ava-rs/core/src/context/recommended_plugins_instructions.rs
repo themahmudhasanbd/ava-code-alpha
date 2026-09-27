@@ -1,6 +1,6 @@
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_tools::DiscoverableTool;
+use ava_protocol::models::ContentItemKind;
+use ava_tools::DiscoverableTool;
 
 const RECOMMENDED_PLUGINS_INTRO: &str =
     "Here is a list of plugins that are available but not installed.";

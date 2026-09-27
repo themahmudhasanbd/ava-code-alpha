@@ -9,9 +9,9 @@
 //! into paginated history.
 
 use chrono::DateTime;
-use codex_rollout::RolloutLine;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_rollout::RolloutLine;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use serde_json::Map;
 use serde_json::Value;
 
@@ -39,7 +39,7 @@ pub(super) fn parse_legacy_rollout_value(mut value: Value) -> Result<Option<Roll
     normalize_legacy_rate_limit_resets(&mut value);
     normalize_legacy_review_entry(&mut value);
     normalize_legacy_command_cwd(&mut value)?;
-    codex_rollout::decode_rollout_line(value)
+    ava_rollout::decode_rollout_line(value)
         .map(Some)
         .map_err(|error| error.to_string())
 }

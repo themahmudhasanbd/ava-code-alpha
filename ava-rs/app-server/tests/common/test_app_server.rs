@@ -15,123 +15,123 @@ use tokio::process::ChildStdout;
 
 use anyhow::Context;
 use anyhow::ensure;
-use codex_app_server_protocol::AppsInstalledParams;
-use codex_app_server_protocol::AppsListParams;
-use codex_app_server_protocol::AppsReadParams;
-use codex_app_server_protocol::CancelLoginAccountParams;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientNotification;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CollaborationModeListParams;
-use codex_app_server_protocol::CommandExecParams;
-use codex_app_server_protocol::CommandExecResizeParams;
-use codex_app_server_protocol::CommandExecTerminateParams;
-use codex_app_server_protocol::CommandExecWriteParams;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigValueWriteParams;
-use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditParams;
-use codex_app_server_protocol::ExperimentalFeatureListParams;
-use codex_app_server_protocol::FsCopyParams;
-use codex_app_server_protocol::FsCreateDirectoryParams;
-use codex_app_server_protocol::FsGetMetadataParams;
-use codex_app_server_protocol::FsReadDirectoryParams;
-use codex_app_server_protocol::FsReadFileParams;
-use codex_app_server_protocol::FsRemoveParams;
-use codex_app_server_protocol::FsUnwatchParams;
-use codex_app_server_protocol::FsWatchParams;
-use codex_app_server_protocol::FsWriteFileParams;
-use codex_app_server_protocol::GetAccountParams;
-use codex_app_server_protocol::GetAuthStatusParams;
-use codex_app_server_protocol::GetConversationSummaryParams;
-use codex_app_server_protocol::HooksListParams;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::JSONRPCRequest;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::ListMcpServerStatusParams;
-use codex_app_server_protocol::LoginAccountParams;
-use codex_app_server_protocol::MarketplaceAddParams;
-use codex_app_server_protocol::MarketplaceRemoveParams;
-use codex_app_server_protocol::MarketplaceUpgradeParams;
-use codex_app_server_protocol::McpResourceReadParams;
-use codex_app_server_protocol::McpServerToolCallParams;
-use codex_app_server_protocol::MockExperimentalMethodParams;
-use codex_app_server_protocol::ModelListParams;
-use codex_app_server_protocol::ModelProviderCapabilitiesReadParams;
-use codex_app_server_protocol::PermissionProfileListParams;
-use codex_app_server_protocol::PluginInstallParams;
-use codex_app_server_protocol::PluginInstalledParams;
-use codex_app_server_protocol::PluginListParams;
-use codex_app_server_protocol::PluginReadParams;
-use codex_app_server_protocol::PluginSearchParams;
-use codex_app_server_protocol::PluginSkillReadParams;
-use codex_app_server_protocol::PluginUninstallParams;
-use codex_app_server_protocol::ProcessKillParams;
-use codex_app_server_protocol::ProcessSpawnParams;
-use codex_app_server_protocol::ProjectImportParams;
-use codex_app_server_protocol::ProjectListParams;
-use codex_app_server_protocol::ProjectReadParams;
-use codex_app_server_protocol::RemoteControlClientsListParams;
-use codex_app_server_protocol::RemoteControlClientsRevokeParams;
-use codex_app_server_protocol::RemoteControlPairingStartParams;
-use codex_app_server_protocol::RemoteControlPairingStatusParams;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ReviewStartParams;
-use codex_app_server_protocol::SendAddCreditsNudgeEmailParams;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::SkillsExtraRootsSetParams;
-use codex_app_server_protocol::SkillsListParams;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadCompactStartParams;
-use codex_app_server_protocol::ThreadDeleteParams;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadInjectItemsParams;
-use codex_app_server_protocol::ThreadItemsListParams;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadMemoryModeSetParams;
-use codex_app_server_protocol::ThreadMetadataUpdateParams;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadRealtimeAppendAudioParams;
-use codex_app_server_protocol::ThreadRealtimeAppendSpeechParams;
-use codex_app_server_protocol::ThreadRealtimeAppendTextParams;
-use codex_app_server_protocol::ThreadRealtimeListVoicesParams;
-use codex_app_server_protocol::ThreadRealtimeStartParams;
-use codex_app_server_protocol::ThreadRealtimeStopParams;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadSearchOccurrencesParams;
-use codex_app_server_protocol::ThreadSearchParams;
-use codex_app_server_protocol::ThreadSectionMoveParams;
-use codex_app_server_protocol::ThreadSetNameParams;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_app_server_protocol::ThreadShellCommandParams;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadTimelineListParams;
-use codex_app_server_protocol::ThreadTurnsListParams;
-use codex_app_server_protocol::ThreadUnarchiveParams;
-use codex_app_server_protocol::ThreadUnsubscribeParams;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnEnvironmentParams;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::WindowsSandboxSetupStartParams;
-use codex_exec_server::CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
-use codex_exec_server::CODEX_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR;
-use codex_exec_server::CODEX_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR;
-use codex_exec_server::CODEX_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR;
-use codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR;
-use codex_login::default_client::CODEX_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR;
+use ava_app_server_protocol::AppsInstalledParams;
+use ava_app_server_protocol::AppsListParams;
+use ava_app_server_protocol::AppsReadParams;
+use ava_app_server_protocol::CancelLoginAccountParams;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientNotification;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CollaborationModeListParams;
+use ava_app_server_protocol::CommandExecParams;
+use ava_app_server_protocol::CommandExecResizeParams;
+use ava_app_server_protocol::CommandExecTerminateParams;
+use ava_app_server_protocol::CommandExecWriteParams;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConsumeAccountRateLimitResetCreditParams;
+use ava_app_server_protocol::ExperimentalFeatureListParams;
+use ava_app_server_protocol::FsCopyParams;
+use ava_app_server_protocol::FsCreateDirectoryParams;
+use ava_app_server_protocol::FsGetMetadataParams;
+use ava_app_server_protocol::FsReadDirectoryParams;
+use ava_app_server_protocol::FsReadFileParams;
+use ava_app_server_protocol::FsRemoveParams;
+use ava_app_server_protocol::FsUnwatchParams;
+use ava_app_server_protocol::FsWatchParams;
+use ava_app_server_protocol::FsWriteFileParams;
+use ava_app_server_protocol::GetAccountParams;
+use ava_app_server_protocol::GetAuthStatusParams;
+use ava_app_server_protocol::GetConversationSummaryParams;
+use ava_app_server_protocol::HooksListParams;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::JSONRPCRequest;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::ListMcpServerStatusParams;
+use ava_app_server_protocol::LoginAccountParams;
+use ava_app_server_protocol::MarketplaceAddParams;
+use ava_app_server_protocol::MarketplaceRemoveParams;
+use ava_app_server_protocol::MarketplaceUpgradeParams;
+use ava_app_server_protocol::McpResourceReadParams;
+use ava_app_server_protocol::McpServerToolCallParams;
+use ava_app_server_protocol::MockExperimentalMethodParams;
+use ava_app_server_protocol::ModelListParams;
+use ava_app_server_protocol::ModelProviderCapabilitiesReadParams;
+use ava_app_server_protocol::PermissionProfileListParams;
+use ava_app_server_protocol::PluginInstallParams;
+use ava_app_server_protocol::PluginInstalledParams;
+use ava_app_server_protocol::PluginListParams;
+use ava_app_server_protocol::PluginReadParams;
+use ava_app_server_protocol::PluginSearchParams;
+use ava_app_server_protocol::PluginSkillReadParams;
+use ava_app_server_protocol::PluginUninstallParams;
+use ava_app_server_protocol::ProcessKillParams;
+use ava_app_server_protocol::ProcessSpawnParams;
+use ava_app_server_protocol::ProjectImportParams;
+use ava_app_server_protocol::ProjectListParams;
+use ava_app_server_protocol::ProjectReadParams;
+use ava_app_server_protocol::RemoteControlClientsListParams;
+use ava_app_server_protocol::RemoteControlClientsRevokeParams;
+use ava_app_server_protocol::RemoteControlPairingStartParams;
+use ava_app_server_protocol::RemoteControlPairingStatusParams;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ReviewStartParams;
+use ava_app_server_protocol::SendAddCreditsNudgeEmailParams;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::SkillsExtraRootsSetParams;
+use ava_app_server_protocol::SkillsListParams;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadCompactStartParams;
+use ava_app_server_protocol::ThreadDeleteParams;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadInjectItemsParams;
+use ava_app_server_protocol::ThreadItemsListParams;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadMemoryModeSetParams;
+use ava_app_server_protocol::ThreadMetadataUpdateParams;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadRealtimeAppendAudioParams;
+use ava_app_server_protocol::ThreadRealtimeAppendSpeechParams;
+use ava_app_server_protocol::ThreadRealtimeAppendTextParams;
+use ava_app_server_protocol::ThreadRealtimeListVoicesParams;
+use ava_app_server_protocol::ThreadRealtimeStartParams;
+use ava_app_server_protocol::ThreadRealtimeStopParams;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadSearchOccurrencesParams;
+use ava_app_server_protocol::ThreadSearchParams;
+use ava_app_server_protocol::ThreadSectionMoveParams;
+use ava_app_server_protocol::ThreadSetNameParams;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::ThreadShellCommandParams;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadTimelineListParams;
+use ava_app_server_protocol::ThreadTurnsListParams;
+use ava_app_server_protocol::ThreadUnarchiveParams;
+use ava_app_server_protocol::ThreadUnsubscribeParams;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnEnvironmentParams;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::WindowsSandboxSetupStartParams;
+use ava_exec_server::AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
+use ava_exec_server::AVA_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR;
+use ava_exec_server::AVA_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR;
+use ava_exec_server::AVA_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR;
+use ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR;
+use ava_login::default_client::AVA_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR;
 use core_test_support::is_remote_test_environment;
-use core_test_support::test_codex::TestEnv;
-use core_test_support::test_codex::test_env;
+use core_test_support::test_ava::TestEnv;
+use core_test_support::test_ava::test_env;
 use serde::de::DeserializeOwned;
 use tempfile::TempDir;
 use tokio::process::Command;
@@ -158,27 +158,27 @@ pub struct TestAppServer {
     auto_env: Option<TestEnv>,
     json_logs: JsonLogCapture,
     // Fields drop in declaration order. Tear down the delayed child before
-    // removing an owned CODEX_HOME that may still be its cwd on Windows.
+    // removing an owned AVA_HOME that may still be its cwd on Windows.
     _delayed_exec_server: Option<(LocalWebsocketExecServer, WebsocketDelayInterposer)>,
     _attribution_settings_server: Option<MockServer>,
     _owned_install_dir: Option<TempDir>,
-    _owned_codex_home: Option<TempDir>,
+    _owned_ava_home: Option<TempDir>,
 }
 
-pub const DEFAULT_CLIENT_NAME: &str = "codex-app-server-tests";
+pub const DEFAULT_CLIENT_NAME: &str = "ava-app-server-tests";
 pub const DISABLE_PLUGIN_STARTUP_TASKS_ARG: &str = "--disable-plugin-startup-tasks-for-tests";
-const DISABLE_MANAGED_CONFIG_ENV_VAR: &str = "CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG";
+const DISABLE_MANAGED_CONFIG_ENV_VAR: &str = "AVA_APP_SERVER_DISABLE_MANAGED_CONFIG";
 #[cfg(windows)]
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(25);
 #[cfg(not(windows))]
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
 impl TestAppServer {
-    /// Starts building a server with a temporary CODEX_HOME and the standard
+    /// Starts building a server with a temporary AVA_HOME and the standard
     /// automatic test environment.
     pub fn builder() -> TestAppServerBuilder {
         TestAppServerBuilder {
-            codex_home: None,
+            ava_home: None,
             environment: TestAppServerEnvironment::Auto,
             program: None,
             env_overrides: Vec::new(),
@@ -252,7 +252,7 @@ impl TestAppServer {
     }
 
     async fn new_with_program_env_and_args(
-        codex_home: &Path,
+        ava_home: &Path,
         program: &Path,
         env_overrides: &[(&str, Option<&str>)],
         args: &[&str],
@@ -262,15 +262,15 @@ impl TestAppServer {
         cmd.stdin(Stdio::piped());
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
-        cmd.current_dir(codex_home);
-        cmd.env("CODEX_HOME", codex_home);
+        cmd.current_dir(ava_home);
+        cmd.env("AVA_HOME", ava_home);
         cmd.env("RUST_LOG", "warn");
         // Keep integration tests isolated from host managed configuration.
         cmd.env(
-            "CODEX_APP_SERVER_MANAGED_CONFIG_PATH",
-            codex_home.join("managed_config.toml"),
+            "AVA_APP_SERVER_MANAGED_CONFIG_PATH",
+            ava_home.join("managed_config.toml"),
         );
-        cmd.env_remove(CODEX_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR);
+        cmd.env_remove(AVA_INTERNAL_ORIGINATOR_OVERRIDE_ENV_VAR);
         cmd.args(args);
 
         for (k, v) in env_overrides {
@@ -293,7 +293,7 @@ impl TestAppServer {
                 .is_err_and(|error| error.kind() == std::io::ErrorKind::ExecutableFileBusy)
                 || retries == 2
             {
-                break process.context("codex app-server proc should start")?;
+                break process.context("ava app-server proc should start")?;
             }
             retries += 1;
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -332,7 +332,7 @@ impl TestAppServer {
             _delayed_exec_server: None,
             _attribution_settings_server: None,
             _owned_install_dir: None,
-            _owned_codex_home: None,
+            _owned_ava_home: None,
         })
     }
 
@@ -762,7 +762,7 @@ impl TestAppServer {
     /// Send an `experimentalFeature/enablement/set` JSON-RPC request.
     pub async fn send_experimental_feature_enablement_set_request(
         &mut self,
-        params: codex_app_server_protocol::ExperimentalFeatureEnablementSetParams,
+        params: ava_app_server_protocol::ExperimentalFeatureEnablementSetParams,
     ) -> anyhow::Result<i64> {
         let params = Some(serde_json::to_value(params)?);
         self.send_request("experimentalFeature/enablement/set", params)
@@ -1851,7 +1851,7 @@ impl TestAppServer {
 
 /// Builder for TestAppServer.
 pub struct TestAppServerBuilder {
-    codex_home: Option<PathBuf>,
+    ava_home: Option<PathBuf>,
     environment: TestAppServerEnvironment,
     program: Option<PathBuf>,
     env_overrides: Vec<(String, Option<String>)>,
@@ -1871,9 +1871,9 @@ impl TestAppServerBuilder {
         self
     }
 
-    /// Uses this existing CODEX_HOME instead of a temporary one.
-    pub fn with_codex_home(mut self, codex_home: &Path) -> Self {
-        self.codex_home = Some(codex_home.to_path_buf());
+    /// Uses this existing AVA_HOME instead of a temporary one.
+    pub fn with_ava_home(mut self, ava_home: &Path) -> Self {
+        self.ava_home = Some(ava_home.to_path_buf());
         self
     }
 
@@ -1955,11 +1955,11 @@ impl TestAppServerBuilder {
         Ok(server)
     }
 
-    /// Builds a server with a temporary CODEX_HOME and automatic environment
+    /// Builds a server with a temporary AVA_HOME and automatic environment
     /// by default.
     pub async fn build(self) -> anyhow::Result<TestAppServer> {
         let Self {
-            codex_home,
+            ava_home,
             environment,
             program,
             mut env_overrides,
@@ -1967,20 +1967,20 @@ impl TestAppServerBuilder {
             exec_server_delay,
             mock_chatgpt_backend,
         } = self;
-        let (codex_home, owned_codex_home) = match codex_home {
-            Some(codex_home) => (codex_home, None),
+        let (ava_home, owned_ava_home) = match ava_home {
+            Some(ava_home) => (ava_home, None),
             None => {
-                let owned_codex_home = TempDir::new()?;
+                let owned_ava_home = TempDir::new()?;
                 (
-                    owned_codex_home.path().to_path_buf(),
-                    Some(owned_codex_home),
+                    owned_ava_home.path().to_path_buf(),
+                    Some(owned_ava_home),
                 )
             }
         };
         let attribution_settings_server = if mock_chatgpt_backend
-            || codex_home.join("auth.json").is_file()
+            || ava_home.join("auth.json").is_file()
         {
-            let config_path = codex_home.join("config.toml");
+            let config_path = ava_home.join("config.toml");
             let config = std::fs::read_to_string(&config_path)?;
             if config
                 .lines()
@@ -2016,7 +2016,7 @@ impl TestAppServerBuilder {
         };
         let (auto_env, delayed_exec_server) = match environment {
             TestAppServerEnvironment::Auto => {
-                let environments_toml = codex_home.join("environments.toml");
+                let environments_toml = ava_home.join("environments.toml");
                 ensure!(
                     !environments_toml.try_exists().with_context(|| format!(
                         "check whether {} exists",
@@ -2032,13 +2032,13 @@ impl TestAppServerBuilder {
                             "TestAppServer exec-server delay only supports the local test environment"
                         );
                         let exec_server_program =
-                            codex_utils_cargo_bin::cargo_bin("exec-server")
+                            ava_utils_cargo_bin::cargo_bin("exec-server")
                                 .context("should find binary for delayed exec-server fixture")?;
                         // Local auto environments normally use stdio. Start a
                         // host-local WebSocket fixture so the delay interposer has a
                         // socket stream to wrap.
                         let local_websocket_exec_server =
-                            LocalWebsocketExecServer::start(&codex_home, &exec_server_program)
+                            LocalWebsocketExecServer::start(&ava_home, &exec_server_program)
                                 .await?;
                         let interposer = WebsocketDelayInterposer::start(
                             local_websocket_exec_server.websocket_url(),
@@ -2057,20 +2057,20 @@ impl TestAppServerBuilder {
                 // provider, so clear inherited values to keep the selection hermetic.
                 let mut auto_env_overrides = vec![
                     (
-                        CODEX_EXEC_SERVER_URL_ENV_VAR.to_string(),
+                        AVA_EXEC_SERVER_URL_ENV_VAR.to_string(),
                         auto_env.exec_server_url().map(str::to_string),
                     ),
                     (
-                        CODEX_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR.to_string(),
+                        AVA_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR.to_string(),
                         None,
                     ),
                     (
-                        CODEX_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR.to_string(),
+                        AVA_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR.to_string(),
                         None,
                     ),
-                    (CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR.to_string(), None),
+                    (AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR.to_string(), None),
                     (
-                        CODEX_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR.to_string(),
+                        AVA_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR.to_string(),
                         None,
                     ),
                 ];
@@ -2089,14 +2089,14 @@ impl TestAppServerBuilder {
         let custom_program = program.is_some();
         let mut program = match program {
             Some(program) => program,
-            None => codex_utils_cargo_bin::cargo_bin("codex-app-server")
-                .context("should find binary for codex-app-server")?,
+            None => ava_utils_cargo_bin::cargo_bin("ava-app-server")
+                .context("should find binary for ava-app-server")?,
         };
         let mut owned_install_dir = None;
         if !custom_program
-            && codex_utils_cargo_bin::runfiles_available()
+            && ava_utils_cargo_bin::runfiles_available()
             && let Ok(code_mode_host_program) =
-                codex_utils_cargo_bin::cargo_bin("codex-code-mode-host")
+                ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")
         {
             // Bazel keeps binary targets in separate package directories.
             // Recreate the installed sibling layout without a path override.
@@ -2133,7 +2133,7 @@ impl TestAppServerBuilder {
             .collect::<Vec<_>>();
         let args = args.iter().map(String::as_str).collect::<Vec<_>>();
         let mut app_server = TestAppServer::new_with_program_env_and_args(
-            &codex_home,
+            &ava_home,
             &program,
             &env_overrides,
             &args,
@@ -2141,7 +2141,7 @@ impl TestAppServerBuilder {
         .await?;
         app_server.auto_env = auto_env;
         app_server._owned_install_dir = owned_install_dir;
-        app_server._owned_codex_home = owned_codex_home;
+        app_server._owned_ava_home = owned_ava_home;
         app_server._delayed_exec_server = delayed_exec_server;
         app_server._attribution_settings_server = attribution_settings_server;
         Ok(app_server)
@@ -2150,7 +2150,7 @@ impl TestAppServerBuilder {
 
 impl Drop for TestAppServer {
     fn drop(&mut self) {
-        // These tests spawn a `codex-app-server` child process.
+        // These tests spawn a `ava-app-server` child process.
         //
         // We keep that child alive for the test and rely on Tokio's `kill_on_drop(true)` when this
         // helper is dropped. Tokio documents kill-on-drop as best-effort: dropping requests

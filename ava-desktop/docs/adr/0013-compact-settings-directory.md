@@ -5,7 +5,7 @@
 
 ## Context
 
-Baseline 0.4.0 froze the broad Codex-aligned settings rail in D062–D065.
+Baseline 0.4.0 froze the broad Ava-aligned settings rail in D062–D065.
 That directory exposed Personal, Integrations, and Coding groups containing
 standalone Appearance and Providers destinations plus numerous placeholder
 rows. The shipped local-first workflows need fewer top-level choices, while
@@ -57,7 +57,7 @@ destination, where users can load, enable, disable, and uninstall plugins.
 
 ## Alternatives
 
-### Keep the broad Codex directory
+### Keep the broad Ava directory
 
 Rejected because empty and low-value destinations obscure the implemented
 local workflows.

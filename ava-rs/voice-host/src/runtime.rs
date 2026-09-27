@@ -13,7 +13,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::ptr;
 
-use codex_realtime_webrtc::RUNTIME_ENVIRONMENT;
+use ava_realtime_webrtc::RUNTIME_ENVIRONMENT;
 use libloading::Library;
 
 type Init = unsafe extern "C" fn(*mut i32, *mut *mut *mut c_char, *mut *mut c_void) -> i32;
@@ -39,7 +39,7 @@ impl Runtime {
             || root
                 .parent()
                 .and_then(Path::file_name)
-                .is_none_or(|name| name != "codex-resources")
+                .is_none_or(|name| name != "ava-resources")
         {
             return Err(runtime_error());
         }

@@ -9,7 +9,7 @@
 ## Context
 
 ADR 0176 added a per-row User-Agent override because gateways inspect that
-header and Codex overwrites it after extra headers. Users then needed the same
+header and Ava overwrites it after extra headers. Users then needed the same
 last-writer path for other non-secret request headers (routing, tenant, or
 client identification), not a dedicated User-Agent field. The provider schema
 already listed `headers`; 0176 left that map unimplemented and said User-Agent
@@ -27,7 +27,7 @@ optional `headers` map in `config_json.headers`.
 - A non-empty map is last-writer on that row's outbound HTTP: session turns,
   builtin subagents, prompt enhancement, plugin one-shots, `/models` discovery
   (including unsaved form values), connection tests, and OAuth token refresh.
-- A fetch wrapper is the last writer so Codex and the Anthropic SDK cannot
+- A fetch wrapper is the last writer so Ava and the Anthropic SDK cannot
   overwrite the map. The same values are also placed on pi-ai stream-option
   headers so OpenCode's caller-wins rule stays true.
 - Stored `config_json.userAgent` migrates to `headers["User-Agent"]` on read.

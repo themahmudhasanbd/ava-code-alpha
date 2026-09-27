@@ -122,7 +122,7 @@ Core infrastructure is complete and verified against live AvA server at `ava.mah
 |------|--------|---------|
 | Health check | ✅ PASS | `GET /healthz` returns 200 |
 | WebSocket connect | ✅ PASS | `ws://127.0.0.1:4096/ws` connects |
-| `initialize` | ✅ PASS | Returns `{userAgent, codexHome, platformOs}` |
+| `initialize` | ✅ PASS | Returns `{userAgent, avaHome, platformOs}` |
 | `thread/list` | ✅ PASS | Returns `{data: [...]}`, 5 threads found |
 | `model/list` | ✅ PASS | Returns `{data: [...]}`, 5 models (gpt-6-astra, gpt-5.6-sol, gpt-5.6-terra) |
 | `thread/start` | ✅ PASS | Returns `{thread: {id: UUID, ...}}` |

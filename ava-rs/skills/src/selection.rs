@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use codex_protocol::user_input::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::user_input::UserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 use crate::SkillMetadata;
 use crate::ToolMentionKind;

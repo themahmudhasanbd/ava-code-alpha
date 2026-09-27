@@ -1,14 +1,14 @@
 use super::*;
 use crate::legacy_core::config::PermissionProfileCatalogEntry;
 use crate::permission_discovery::PermissionDiscovery as Discovery;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use pretty_assertions::assert_eq;
 
 #[cfg(target_os = "windows")]
@@ -29,7 +29,7 @@ async fn remote_windows_agent_permission_uses_server_selection() {
         /*return_to_permissions*/ false,
     );
     actions[0](&chat.app_event_tx);
-    assert!(matches!(events.try_recv(), Ok(AppEvent::CodexOp(_))));
+    assert!(matches!(events.try_recv(), Ok(AppEvent::AvaOp(_))));
     assert!(matches!(
         events.try_recv(),
         Ok(AppEvent::UpdateAskForApprovalPolicy(_))
@@ -48,7 +48,7 @@ async fn permission_discovery_uses_server_catalog_for_remote_custom_selection() 
     let mut discovery = Discovery::local(&chat.config);
     discovery
         .profiles
-        .push(codex_app_server_protocol::PermissionProfileSummary {
+        .push(ava_app_server_protocol::PermissionProfileSummary {
             id: "server-only".to_string(),
             description: Some("Description from the connected server.".to_string()),
             allowed: true,
@@ -106,7 +106,7 @@ async fn permission_discovery_discards_stale_results_and_preserves_covering_moda
     assert!(chat.permission_popup_request_is_current(second));
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ false, /*has_codex_backend_auth*/ false,
+        /*has_chatgpt_account*/ false, /*has_ava_backend_auth*/ false,
     );
     chat.on_permission_profiles_loaded(second, Ok(Discovery::local(&chat.config)));
     assert!(!chat.bottom_pane.has_active_view());
@@ -205,12 +205,12 @@ fn app_server_workspace_write_profile(extra_root: AbsolutePathBuf) -> Permission
 }
 
 pub(super) fn requirements_stack(
-    requirements_toml: codex_config::ConfigRequirementsToml,
+    requirements_toml: ava_config::ConfigRequirementsToml,
 ) -> ConfigLayerStack {
-    let mut requirements_with_sources = codex_config::ConfigRequirementsWithSources::default();
+    let mut requirements_with_sources = ava_config::ConfigRequirementsWithSources::default();
     requirements_with_sources
         .merge_unset_fields(RequirementSource::Unknown, requirements_toml.clone());
-    let requirements = codex_config::ConfigRequirements::try_from(requirements_with_sources)
+    let requirements = ava_config::ConfigRequirements::try_from(requirements_with_sources)
         .expect("windows sandbox requirements");
 
     ConfigLayerStack::new(Vec::new(), requirements, requirements_toml)
@@ -257,10 +257,10 @@ async fn profile_permissions_selection_popup_snapshot() {
 async fn profile_permissions_selection_popup_with_disallowed_full_access_snapshot() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.config.explicit_permission_profile_mode = true;
-    chat.config.config_layer_stack = requirements_stack(codex_config::ConfigRequirementsToml {
+    chat.config.config_layer_stack = requirements_stack(ava_config::ConfigRequirementsToml {
         allowed_sandbox_modes: Some(vec![
-            codex_config::SandboxModeRequirement::ReadOnly,
-            codex_config::SandboxModeRequirement::WorkspaceWrite,
+            ava_config::SandboxModeRequirement::ReadOnly,
+            ava_config::SandboxModeRequirement::WorkspaceWrite,
         ]),
         ..Default::default()
     });
@@ -611,7 +611,7 @@ async fn startup_windows_sandbox_prompt_blocks_disallowed_unelevated_fallback() 
 
     let popup = render_bottom_popup(&chat, /*width*/ 120);
     assert!(
-        popup.contains("Your organization requires the default Codex agent sandbox"),
+        popup.contains("Your organization requires the default Ava agent sandbox"),
         "expected required sandbox prompt copy: {popup}"
     );
     assert!(
@@ -960,7 +960,7 @@ async fn approvals_popup_navigation_skips_disabled() {
     assert!(
         app_events.iter().any(|ev| matches!(
             ev,
-            AppEvent::CodexOp(Op::OverrideTurnContext {
+            AppEvent::AvaOp(Op::OverrideTurnContext {
                 approval_policy: Some(AskForApproval::OnRequest),
                 personality: None,
                 ..
@@ -971,7 +971,7 @@ async fn approvals_popup_navigation_skips_disabled() {
     assert!(
         !app_events.iter().any(|ev| matches!(
             ev,
-            AppEvent::CodexOp(Op::OverrideTurnContext {
+            AppEvent::AvaOp(Op::OverrideTurnContext {
                 approval_policy: Some(AskForApproval::Never),
                 personality: None,
                 ..
@@ -1336,7 +1336,7 @@ async fn permissions_selection_sends_approvals_reviewer_in_override_turn_context
 
     let op = std::iter::from_fn(|| rx.try_recv().ok())
         .find_map(|event| match event {
-            AppEvent::CodexOp(op @ Op::OverrideTurnContext { .. }) => Some(op),
+            AppEvent::AvaOp(op @ Op::OverrideTurnContext { .. }) => Some(op),
             _ => None,
         })
         .expect("expected OverrideTurnContext op");

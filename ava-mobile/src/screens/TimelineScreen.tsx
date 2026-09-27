@@ -48,7 +48,7 @@ import { formatDuration } from "@/components/chat/message-parts";
 import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
 import { font, mono } from "@/theme/fonts";
 import { displayToolName, getToolIcon, isMcpTool } from "@/components/chat/tool-icons";
-import { COLORS } from "@/theme/colors";
+import { COLORS, useTheme } from "@/theme/colors";
 import { Tabs, TabsList, TabsTrigger } from "@/components/kit";
 
 interface Props {
@@ -114,6 +114,7 @@ const subTreeStyles = StyleSheet.create({
 });
 
 export function TimelineScreen({ route, navigation }: Props) {
+  const { isDark } = useTheme();
   const { activeSessionId } = useAva();
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const targetMessageId = route?.params?.messageId;
@@ -326,7 +327,7 @@ export function TimelineScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={COLORS.background} />
 
       <PanGestureHandler onHandlerStateChange={onHandlerStateChange} activeOffsetX={[-20, 20]}>
         <Animated.View style={{ flex: 1 }}>

@@ -284,7 +284,7 @@ type PluginProviderApiStyle =
  | "responses"
  | "anthropic_messages"
  | "google_generative_ai"
- | "openai_codex_responses"
+ | "openai_ava_responses"
  | "pi_messages";
 
 type PluginProviderModelContrib = {

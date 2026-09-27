@@ -61,40 +61,40 @@ use crate::tools::registry::ToolExposure;
 use crate::tools::registry::ToolRegistry;
 use crate::tools::router::ToolRouter;
 use crate::tools::tool_namespaces_info::collect_tool_namespaces_info;
-use codex_connectors::apps_config_from_layer_stack;
-use codex_extension_api::ExtensionData;
-use codex_features::Feature;
-use codex_features::SleepToolMode;
-use codex_login::AuthManager;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
-use codex_protocol::account::PlanType;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::TOOL_SEARCH_TOOL_NAME;
-use codex_tools::ToolCall as ExtensionToolCall;
-use codex_tools::ToolEnvironmentMode;
-use codex_tools::ToolExecutor;
-use codex_tools::ToolExposures;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
-use codex_tools::UnifiedExecShellMode;
-use codex_tools::can_request_original_image_detail;
-use codex_tools::collect_code_mode_exec_prompt_tool_definitions;
-use codex_tools::collect_request_plugin_install_entries;
-use codex_tools::default_namespace_description;
-use codex_tools::request_user_input_available_modes;
+use ava_connectors::apps_config_from_layer_stack;
+use ava_extension_api::ExtensionData;
+use ava_features::Feature;
+use ava_features::SleepToolMode;
+use ava_login::AuthManager;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::DEFAULT_FUNCTION_NAMESPACE;
+use ava_protocol::account::PlanType;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::TOOL_SEARCH_TOOL_NAME;
+use ava_tools::ToolCall as ExtensionToolCall;
+use ava_tools::ToolEnvironmentMode;
+use ava_tools::ToolExecutor;
+use ava_tools::ToolExposures;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
+use ava_tools::UnifiedExecShellMode;
+use ava_tools::can_request_original_image_detail;
+use ava_tools::collect_code_mode_exec_prompt_tool_definitions;
+use ava_tools::collect_request_plugin_install_entries;
+use ava_tools::default_namespace_description;
+use ava_tools::request_user_input_available_modes;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -110,7 +110,7 @@ struct CoreToolPlanContext<'a> {
     turn_context: &'a TurnContext,
     model_info: &'a ModelInfo,
     environments: &'a TurnEnvironmentSnapshot,
-    mcp: &'a codex_mcp::McpBinding,
+    mcp: &'a ava_mcp::McpBinding,
     tool_suggest_candidates: Option<&'a crate::tools::router::ToolSuggestCandidates>,
     wait_for_environment_tool_config: Option<&'a Arc<crate::WaitForEnvironmentToolConfig>>,
     default_agent_type_description: &'a str,
@@ -124,11 +124,11 @@ pub(crate) fn build_tool_router(
     turn_context: &TurnContext,
     model_info: &ModelInfo,
     environments: &TurnEnvironmentSnapshot,
-    mcp: &Arc<codex_mcp::McpBinding>,
+    mcp: &Arc<ava_mcp::McpBinding>,
     apps_enabled: bool,
     step_store: &ExtensionData,
     tool_suggest_candidates: Option<&crate::tools::router::ToolSuggestCandidates>,
-) -> CodexResult<ToolRouter> {
+) -> AvaResult<ToolRouter> {
     let default_agent_type_description =
         crate::agent::role::spawn_tool_spec::build(&std::collections::BTreeMap::new());
     let wait_for_environment_tool_config = session
@@ -188,7 +188,7 @@ pub(crate) fn build_tool_router(
 fn apply_mcp_tool_exposure_policy(
     turn_context: &TurnContext,
     model_info: &ModelInfo,
-    mcp: &codex_mcp::McpBinding,
+    mcp: &ava_mcp::McpBinding,
     registered_mcp_tools: &HashSet<ToolName>,
     registry: &mut ToolRegistry,
 ) {
@@ -205,7 +205,7 @@ fn apply_mcp_tool_exposure_policy(
         omitted_exposures_by_tool
             .entry(tool_name)
             .or_insert_with(|| {
-                let connector_omissions = (tool.server_name == CODEX_APPS_MCP_SERVER_NAME)
+                let connector_omissions = (tool.server_name == AVA_APPS_MCP_SERVER_NAME)
                     .then_some(tool.connector_id.as_deref())
                     .flatten()
                     .and_then(|id| apps_config.as_ref()?.apps.get(id))
@@ -273,7 +273,7 @@ pub(crate) fn build_core_tool_registry(
     turn_context: &TurnContext,
     model_info: &ModelInfo,
     environments: &TurnEnvironmentSnapshot,
-    mcp: &codex_mcp::McpBinding,
+    mcp: &ava_mcp::McpBinding,
     tool_suggest_candidates: Option<&crate::tools::router::ToolSuggestCandidates>,
     wait_for_environment_tool_config: Option<&Arc<crate::WaitForEnvironmentToolConfig>>,
 ) -> ToolRegistry {
@@ -349,7 +349,7 @@ pub(crate) fn finalize_tool_router(
     mut registry: ToolRegistry,
     mut hosted_specs: Vec<ToolSpec>,
     tool_search_handler_cache: &ToolSearchHandlerCache,
-) -> CodexResult<ToolRouter> {
+) -> AvaResult<ToolRouter> {
     if let Some(allowed) = &registry.allowed_tools {
         hosted_specs.retain(|spec| allowed.contains(&ToolName::plain(spec.name())));
     }
@@ -358,8 +358,8 @@ pub(crate) fn finalize_tool_router(
     let code_mode_enabled = matches!(tool_mode, ToolMode::CodeMode | ToolMode::CodeModeOnly);
     if code_mode_enabled {
         for tool_name in [
-            ToolName::plain(codex_code_mode::PUBLIC_TOOL_NAME),
-            ToolName::plain(codex_code_mode::WAIT_TOOL_NAME),
+            ToolName::plain(ava_code_mode::PUBLIC_TOOL_NAME),
+            ToolName::plain(ava_code_mode::WAIT_TOOL_NAME),
         ] {
             if registry.remove(&tool_name).is_some() {
                 registry.record_collision(tool_name);
@@ -415,7 +415,7 @@ pub(crate) fn finalize_tool_router(
         if let Some(tool_name) = registry.first_collision() {
             let namespace = tool_name.namespace.as_deref().unwrap_or("functions");
             let name = format!("{namespace}.{}", tool_name.name);
-            return Err(CodexErrorDetails::ToolCollision(name).into());
+            return Err(AvaErrorDetails::ToolCollision(name).into());
         }
 
         let mut namespace_descriptions = BTreeMap::new();
@@ -439,7 +439,7 @@ pub(crate) fn finalize_tool_router(
                 match namespace_owners.get(namespace_name) {
                     Some(existing_owner) if existing_owner != &owner => {
                         return Err(
-                            CodexErrorDetails::ToolCollision(namespace_name.to_string()).into()
+                            AvaErrorDetails::ToolCollision(namespace_name.to_string()).into()
                         );
                     }
                     Some(_) => {}
@@ -460,7 +460,7 @@ pub(crate) fn finalize_tool_router(
                     entry.insert(namespace.description.clone());
                 }
                 Entry::Occupied(entry) if entry.get() != &namespace.description => {
-                    return Err(CodexErrorDetails::ToolCollision(entry.key().clone()).into());
+                    return Err(AvaErrorDetails::ToolCollision(entry.key().clone()).into());
                 }
                 Entry::Occupied(_) => {}
             }
@@ -576,14 +576,14 @@ fn spec_for_model_request(
     if matches!(tool_mode, ToolMode::CodeMode | ToolMode::CodeModeOnly)
         && exposure.is_available_in_code_mode()
         && !is_excluded_from_code_mode(turn_context, tool_name)
-        && codex_code_mode::is_code_mode_nested_tool(spec.name())
+        && ava_code_mode::is_code_mode_nested_tool(spec.name())
         && code_mode_tool_names
-            .get(&codex_code_mode::normalize_code_mode_identifier(
-                &codex_tools::code_mode_name_for_tool_name(tool_name),
+            .get(&ava_code_mode::normalize_code_mode_identifier(
+                &ava_tools::code_mode_name_for_tool_name(tool_name),
             ))
             .is_some_and(|winner| winner == tool_name)
     {
-        codex_tools::augment_tool_spec_for_code_mode(spec)
+        ava_tools::augment_tool_spec_for_code_mode(spec)
     } else {
         spec
     }
@@ -726,7 +726,7 @@ fn image_generation_available(turn_context: &TurnContext, model_info: &ModelInfo
             && turn_context
                 .auth_manager
                 .as_deref()
-                .is_some_and(AuthManager::current_auth_uses_codex_backend))
+                .is_some_and(AuthManager::current_auth_uses_ava_backend))
 }
 
 fn wait_agent_timeout_options(turn_context: &TurnContext) -> WaitAgentTimeoutOptions {
@@ -767,7 +767,7 @@ fn is_hidden_by_code_mode_only(
     let tool_mode = effective_tool_mode(turn_context, model_info);
     tool_mode == ToolMode::CodeModeOnly
         && exposure.is_available_in_code_mode()
-        && codex_code_mode::is_code_mode_nested_tool(&codex_tools::code_mode_name_for_tool_name(
+        && ava_code_mode::is_code_mode_nested_tool(&ava_tools::code_mode_name_for_tool_name(
             tool_name,
         ))
 }
@@ -818,19 +818,19 @@ fn register_code_mode_executors(
         // Derive the name without serializing and augmenting every tool schema.
         let code_mode_name = match spec.as_ref() {
             ToolSpec::Function(_) | ToolSpec::Freeform(_) => {
-                codex_tools::code_mode_name_for_tool_name(&tool_name)
+                ava_tools::code_mode_name_for_tool_name(&tool_name)
             }
             ToolSpec::Namespace(namespace) if !namespace.tools.is_empty() => {
-                codex_tools::code_mode_name_for_tool_name(&tool_name)
+                ava_tools::code_mode_name_for_tool_name(&tool_name)
             }
             ToolSpec::Namespace(_) | ToolSpec::ToolSearch { .. } | ToolSpec::WebSearch { .. } => {
                 continue;
             }
         };
-        if !codex_code_mode::is_code_mode_nested_tool(&code_mode_name) {
+        if !ava_code_mode::is_code_mode_nested_tool(&code_mode_name) {
             continue;
         }
-        match code_mode_tool_names.entry(codex_code_mode::normalize_code_mode_identifier(
+        match code_mode_tool_names.entry(ava_code_mode::normalize_code_mode_identifier(
             &code_mode_name,
         )) {
             Entry::Vacant(entry) => {
@@ -877,9 +877,9 @@ fn register_code_mode_executors(
             turn_context.config.code_mode.default_exec_yield_time_ms,
             tool_mode == ToolMode::CodeModeOnly,
             if unified_image_budget_enabled(&turn_context.config.features, model_info) {
-                codex_code_mode::ImageDetailVisibility::Hidden
+                ava_code_mode::ImageDetailVisibility::Hidden
             } else {
-                codex_code_mode::ImageDetailVisibility::Visible
+                ava_code_mode::ImageDetailVisibility::Visible
             },
         ),
         code_mode_nested_tool_specs,
@@ -945,7 +945,7 @@ fn merge_into_namespaces(specs: Vec<ToolSpec>) -> Vec<ToolSpec> {
 
 fn code_mode_namespace_descriptions(
     specs: &[ToolSpec],
-) -> BTreeMap<String, codex_code_mode::ToolNamespaceDescription> {
+) -> BTreeMap<String, ava_code_mode::ToolNamespaceDescription> {
     let mut namespace_descriptions = BTreeMap::new();
     for spec in specs {
         let ToolSpec::Namespace(namespace) = spec else {
@@ -954,7 +954,7 @@ fn code_mode_namespace_descriptions(
 
         let entry = namespace_descriptions
             .entry(namespace.name.clone())
-            .or_insert_with(|| codex_code_mode::ToolNamespaceDescription {
+            .or_insert_with(|| ava_code_mode::ToolNamespaceDescription {
                 name: namespace.name.clone(),
                 description: namespace.description.clone(),
             });
@@ -1448,9 +1448,9 @@ fn append_extension_tool_executors(
 }
 
 fn compare_code_mode_tools(
-    left: &codex_code_mode::ToolDefinition,
-    right: &codex_code_mode::ToolDefinition,
-    namespace_descriptions: &BTreeMap<String, codex_code_mode::ToolNamespaceDescription>,
+    left: &ava_code_mode::ToolDefinition,
+    right: &ava_code_mode::ToolDefinition,
+    namespace_descriptions: &BTreeMap<String, ava_code_mode::ToolNamespaceDescription>,
 ) -> std::cmp::Ordering {
     let left_namespace = code_mode_namespace_name(left, namespace_descriptions);
     let right_namespace = code_mode_namespace_name(right, namespace_descriptions);
@@ -1462,8 +1462,8 @@ fn compare_code_mode_tools(
 }
 
 fn code_mode_namespace_name<'a>(
-    tool: &codex_code_mode::ToolDefinition,
-    namespace_descriptions: &'a BTreeMap<String, codex_code_mode::ToolNamespaceDescription>,
+    tool: &ava_code_mode::ToolDefinition,
+    namespace_descriptions: &'a BTreeMap<String, ava_code_mode::ToolNamespaceDescription>,
 ) -> Option<&'a str> {
     tool.tool_name
         .namespace

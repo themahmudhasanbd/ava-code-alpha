@@ -4,7 +4,7 @@ use std::io;
 use rmcp::model::ProtocolVersion;
 use rmcp::service::ClientLifecycleMode;
 
-/// MCP compatibility policy selected once when a Codex session is created.
+/// MCP compatibility policy selected once when a Ava session is created.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum McpProtocolMode {
     /// Preserve the existing MCP initialization and OAuth behavior.
@@ -43,7 +43,7 @@ impl McpProtocolMode {
             (_, Some(version)) => Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 format!(
-                    "unsupported CODEX_MCP_PROTOCOL_VERSION `{}` for stdio MCP server; expected `2026-07-28`",
+                    "unsupported AVA_MCP_PROTOCOL_VERSION `{}` for stdio MCP server; expected `2026-07-28`",
                     version.to_string_lossy()
                 ),
             )),

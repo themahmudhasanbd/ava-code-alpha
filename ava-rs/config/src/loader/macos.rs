@@ -12,7 +12,7 @@ use crate::diagnostics::io_error_from_config_error;
 use crate::strict_config::config_error_from_ignored_toml_value_fields_for_source_name;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
-use codex_utils_absolute_path::AbsolutePathBufGuard;
+use ava_utils_absolute_path::AbsolutePathBufGuard;
 use core_foundation::base::Boolean;
 use core_foundation::base::CFType;
 use core_foundation::base::TCFType;
@@ -24,7 +24,7 @@ use std::path::Path;
 use tokio::task;
 use toml::Value as TomlValue;
 
-const MANAGED_PREFERENCES_APPLICATION_ID: &str = "com.openai.codex";
+const MANAGED_PREFERENCES_APPLICATION_ID: &str = "com.openai.ava-code";
 const MANAGED_PREFERENCES_CONFIG_KEY: &str = "config_toml_base64";
 const MANAGED_PREFERENCES_REQUIREMENTS_KEY: &str = "requirements_toml_base64";
 

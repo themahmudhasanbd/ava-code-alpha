@@ -1,8 +1,8 @@
 import path from "node:path";
 
-export function codexPathOverride() {
+export function avaPathOverride() {
   return (
-    process.env.CODEX_EXECUTABLE ??
-    path.join(process.cwd(), "..", "..", "codex-rs", "target", "debug", "codex")
+    process.env.AVA_EXECUTABLE ??
+    path.join(process.cwd(), "..", "..", "ava-rs", "target", "debug", "ava")
   );
 }

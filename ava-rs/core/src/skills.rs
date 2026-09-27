@@ -1,23 +1,23 @@
 use crate::config::Config;
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
-use codex_analytics::InvocationType;
-use codex_analytics::SkillInvocation;
-use codex_analytics::SkillInvocationLocation;
-use codex_analytics::TrackEventsContext;
-use codex_analytics::build_track_events_context;
-use codex_extension_api::SkillInvocationInput;
-use codex_extension_api::SkillInvocationKind;
-use codex_otel::sanitize_metric_tag_value;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::SkillMetadata;
-use codex_skills_extension::HostSkillsLoadInput;
-use codex_skills_extension::InjectedHostSkillPrompts;
-use codex_skills_extension::detect_implicit_skill_invocation;
-use codex_skills_extension::record_plugin_turn_usage;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::PluginSkillRoot;
+use ava_analytics::InvocationType;
+use ava_analytics::SkillInvocation;
+use ava_analytics::SkillInvocationLocation;
+use ava_analytics::TrackEventsContext;
+use ava_analytics::build_track_events_context;
+use ava_extension_api::SkillInvocationInput;
+use ava_extension_api::SkillInvocationKind;
+use ava_otel::sanitize_metric_tag_value;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::SkillMetadata;
+use ava_skills_extension::HostSkillsLoadInput;
+use ava_skills_extension::InjectedHostSkillPrompts;
+use ava_skills_extension::detect_implicit_skill_invocation;
+use ava_skills_extension::record_plugin_turn_usage;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::PluginSkillRoot;
 use std::collections::HashSet;
 use tokio::sync::Mutex;
 
@@ -62,7 +62,7 @@ pub(crate) async fn emit_explicit_skill_invocations(
             "error"
         };
         turn_context.session_telemetry.counter(
-            "codex.skill.injected",
+            "ava.skill.injected",
             /*inc*/ 1,
             &[
                 ("status", status),
@@ -184,7 +184,7 @@ pub(crate) async fn maybe_emit_implicit_skill_invocation(
     }
 
     turn_context.session_telemetry.counter(
-        "codex.skill.injected",
+        "ava.skill.injected",
         /*inc*/ 1,
         &[
             ("status", "ok"),

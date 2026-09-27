@@ -84,7 +84,7 @@ async fn round_trip_preserves_supported_effective_settings() {
         state.add_allowed_domain("added.example.com").await.unwrap();
         let proxy = NetworkProxy::builder()
             .state(state)
-            .managed_by_codex(/*managed_by_codex*/ false)
+            .managed_by_ava(/*managed_by_ava*/ false)
             .build()
             .await
             .unwrap();
@@ -176,7 +176,7 @@ fn launch_config_materializes_audit_and_execution_attribution() {
     let audit_metadata = NetworkProxyAuditMetadata {
         conversation_id: Some("conversation-1".to_string()),
         user_account_id: Some("account-1".to_string()),
-        originator: Some("codex_cli_rs".to_string()),
+        originator: Some("ava_cli_rs".to_string()),
         model: Some("model-1".to_string()),
         ..NetworkProxyAuditMetadata::default()
     };
@@ -232,7 +232,7 @@ async fn local_binding_is_resolved_for_each_executor() -> anyhow::Result<()> {
         state.local_binding_policy = RequireTrue;
         let proxy = NetworkProxy::builder()
             .state(Arc::new(state))
-            .managed_by_codex(false)
+            .managed_by_ava(false)
             .build()
             .await?;
         assert_eq!(

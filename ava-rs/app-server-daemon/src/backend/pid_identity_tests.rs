@@ -4,7 +4,7 @@ use pretty_assertions::assert_eq;
 #[test]
 fn parses_start_ticks_after_comm_with_spaces_and_parentheses() {
     let stat =
-        b"123 (codex \xff) worker) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 987654321 20";
+        b"123 (ava \xff) worker) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 987654321 20";
     assert_eq!(parse_stat(stat).unwrap(), ("S".to_string(), 987654321));
 }
 
@@ -76,7 +76,7 @@ async fn promotes_timestamp_only_macos_record() {
     };
     std::fs::write(&path, serde_json::to_vec(&record).unwrap()).unwrap();
     let backend = PidBackend::new(
-        temp.path().join("codex"),
+        temp.path().join("ava"),
         path.clone(),
         /*remote_control_enabled*/ false,
     );

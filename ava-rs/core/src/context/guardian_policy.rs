@@ -1,5 +1,5 @@
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 /// The isolated developer policy provided to a Guardian reviewer.
 #[derive(Debug, Clone, PartialEq, Eq)]

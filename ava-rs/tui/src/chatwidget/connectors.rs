@@ -280,7 +280,7 @@ impl ChatWidget {
         });
         let mut items: Vec<SelectionItem> = Vec::with_capacity(connectors.len());
         for connector in connectors {
-            let connector_label = codex_connectors::metadata::connector_display_label(connector);
+            let connector_label = ava_connectors::metadata::connector_display_label(connector);
             let connector_title = connector_label.clone();
             let link_description = Self::connector_description(connector);
             let description = Self::connector_brief_description(connector);
@@ -304,7 +304,7 @@ impl ChatWidget {
             let instructions = if connector.is_accessible {
                 "Manage this app in your browser."
             } else {
-                "Install this app in your browser, then reload Codex."
+                "Install this app in your browser, then reload Ava."
             };
             if let Some(install_url) = connector.install_url.clone() {
                 let app_id = connector.id.clone();

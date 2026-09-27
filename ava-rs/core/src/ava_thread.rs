@@ -10,64 +10,64 @@ use crate::session::new_submission_id;
 use crate::session::session::Session;
 use crate::session::step_settings::StepSettingsUpdate;
 use crate::thread_startup_metadata::ThreadStartupMetadata;
-use codex_diagnostics::Gauge;
-use codex_diagnostics::GaugeGuard;
-use codex_exec_server::SelectedCapabilityRootsStatus;
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_extension_api::ThreadIdleCause;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_otel::SessionTelemetry;
-use codex_otel::current_span_w3c_trace_context;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ProfileWorkspaceRoot;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfig;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::Submission;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenUsageInfo;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_protocol::turn_input::RecoverTurnRequest;
-use codex_protocol::turn_input::StartIfIdleSubmission;
-use codex_protocol::turn_input::SteerSubmission;
-use codex_protocol::turn_input::SuspendTurnOutcome;
-use codex_protocol::turn_input::TurnInputMode;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnInputSubmission;
-use codex_protocol::turn_input::TurnStartOptions;
-use codex_thread_store::PersistContext;
-use codex_thread_store::StoredThread;
-use codex_thread_store::StoredThreadHistory;
-use codex_thread_store::ThreadMetadataPatch;
-use codex_thread_store::ThreadStoreError;
-use codex_thread_store::ThreadStoreResult;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_diagnostics::Gauge;
+use ava_diagnostics::GaugeGuard;
+use ava_exec_server::SelectedCapabilityRootsStatus;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_extension_api::ThreadIdleCause;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_otel::SessionTelemetry;
+use ava_otel::current_span_w3c_trace_context;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ProfileWorkspaceRoot;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::Submission;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenUsageInfo;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_protocol::turn_input::RecoverTurnRequest;
+use ava_protocol::turn_input::StartIfIdleSubmission;
+use ava_protocol::turn_input::SteerSubmission;
+use ava_protocol::turn_input::SuspendTurnOutcome;
+use ava_protocol::turn_input::TurnInputMode;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnInputSubmission;
+use ava_protocol::turn_input::TurnStartOptions;
+use ava_thread_store::PersistContext;
+use ava_thread_store::StoredThread;
+use ava_thread_store::StoredThreadHistory;
+use ava_thread_store::ThreadMetadataPatch;
+use ava_thread_store::ThreadStoreError;
+use ava_thread_store::ThreadStoreResult;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use rmcp::model::ReadResourceRequestParams;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -76,7 +76,7 @@ use tokio::sync::oneshot;
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 
-use codex_rollout::state_db::StateDbHandle;
+use ava_rollout::state_db::StateDbHandle;
 
 static LIVE_THREADS: Gauge = Gauge::new("core.threads.live");
 
@@ -130,7 +130,7 @@ impl ThreadConfigSnapshot {
     }
 
     pub fn sandbox_policy(&self) -> SandboxPolicy {
-        codex_sandboxing::compatibility_sandbox_policy_for_permission_profile(
+        ava_sandboxing::compatibility_sandbox_policy_for_permission_profile(
             &self.permission_profile,
             self.cwd().as_path(),
         )
@@ -139,7 +139,7 @@ impl ThreadConfigSnapshot {
 
 /// Thread settings overrides that app-server validates before starting a turn.
 #[derive(Clone, Default)]
-pub struct CodexThreadSettingsOverrides {
+pub struct AvaThreadSettingsOverrides {
     pub environments: Option<TurnEnvironmentSelections>,
     pub runtime_workspace_roots: Option<Vec<AbsolutePathBuf>>,
     pub profile_workspace_roots: Option<Vec<ProfileWorkspaceRoot>>,
@@ -158,7 +158,7 @@ pub struct CodexThreadSettingsOverrides {
     pub disabled_plugin_ids: Option<Vec<String>>,
 }
 
-pub use codex_guardian_context::GuardianRootMessage;
+pub use ava_guardian_context::GuardianRootMessage;
 
 /// Authorization state that changes on genuine user input or history resets.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -181,7 +181,7 @@ pub struct GuardianRootSnapshot {
     pub trusted_skill_paths: Vec<String>,
 }
 
-pub struct CodexThread {
+pub struct AvaThread {
     pub(crate) session: Arc<Session>,
     pub(crate) io: SessionIo,
     // Registration source controls live access and lifecycle hooks. Managed Guardian
@@ -208,8 +208,8 @@ pub struct BackgroundTerminalInfo {
 }
 
 /// Conduit for the bidirectional stream of messages that compose a thread
-/// (formerly called a conversation) in Codex.
-impl CodexThread {
+/// (formerly called a conversation) in Ava.
+impl AvaThread {
     pub(crate) fn new(
         session: Arc<Session>,
         io: SessionIo,
@@ -228,7 +228,7 @@ impl CodexThread {
         }
     }
 
-    pub async fn submit(&self, op: Op) -> CodexResult<String> {
+    pub async fn submit(&self, op: Op) -> AvaResult<String> {
         self.io.submit(op).await
     }
 
@@ -243,11 +243,11 @@ impl CodexThread {
     }
 
     /// Returns extension-owned data attached to this thread runtime.
-    pub fn thread_extension_data(&self) -> &codex_extension_api::ExtensionData {
+    pub fn thread_extension_data(&self) -> &ava_extension_api::ExtensionData {
         &self.session.services.thread_extension_data
     }
 
-    pub async fn shutdown_and_wait(&self) -> CodexResult<()> {
+    pub async fn shutdown_and_wait(&self) -> AvaResult<()> {
         self.io.shutdown_and_wait().await
     }
 
@@ -270,7 +270,7 @@ impl CodexThread {
         let config = self.config().await;
         for contributor in contributors {
             contributor
-                .on_thread_ready(codex_extension_api::ThreadReadyInput {
+                .on_thread_ready(ava_extension_api::ThreadReadyInput {
                     config: config.as_ref(),
                     session_source: &self.session_source,
                     session_store: &self.session.services.session_extension_data,
@@ -288,7 +288,7 @@ impl CodexThread {
             .thread_lifecycle_contributors()
         {
             contributor
-                .on_thread_resume(codex_extension_api::ThreadResumeInput {
+                .on_thread_resume(ava_extension_api::ThreadResumeInput {
                     session_store: &self.session.services.session_extension_data,
                     thread_store: &self.session.services.thread_extension_data,
                 })
@@ -316,7 +316,7 @@ impl CodexThread {
         &self,
         op: Op,
         trace: Option<W3cTraceContext>,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         self.io
             .submit_with_trace(
                 op, trace, /*parent_turn_id*/ None, /*root_turn_id*/ None,
@@ -332,7 +332,7 @@ impl CodexThread {
     pub async fn start_or_steer_turn(
         &self,
         request: TurnInputRequest,
-    ) -> CodexResult<TurnInputSubmission> {
+    ) -> AvaResult<TurnInputSubmission> {
         self.submit_turn_input_with_mode(request, TurnInputMode::StartOrSteer)
             .await
     }
@@ -344,7 +344,7 @@ impl CodexThread {
     pub async fn start_turn_if_idle(
         &self,
         request: TurnInputRequest,
-    ) -> CodexResult<StartIfIdleSubmission> {
+    ) -> AvaResult<StartIfIdleSubmission> {
         match self
             .submit_turn_input_with_mode(request, TurnInputMode::StartIfIdle)
             .await?
@@ -368,7 +368,7 @@ impl CodexThread {
         &self,
         request: TurnInputRequest,
         expected_previous_turn_id: String,
-    ) -> CodexResult<TurnInputSubmission> {
+    ) -> AvaResult<TurnInputSubmission> {
         self.submit_turn_input_with_mode(
             request,
             TurnInputMode::ContinueIfIdle {
@@ -385,7 +385,7 @@ impl CodexThread {
     pub async fn recover_turn_if_idle(
         &self,
         request: RecoverTurnRequest,
-    ) -> CodexResult<StartIfIdleSubmission> {
+    ) -> AvaResult<StartIfIdleSubmission> {
         self.session
             .services
             .agent_control
@@ -436,9 +436,9 @@ impl CodexThread {
     /// The session processes an accepted request even if its caller disconnects.
     /// Callers must not transfer ownership until suspension succeeds, which
     /// requires stopping execution, flushing history, and closing its writer.
-    pub async fn suspend_turn_and_shutdown(&self) -> CodexResult<SuspendTurnOutcome> {
+    pub async fn suspend_turn_and_shutdown(&self) -> AvaResult<SuspendTurnOutcome> {
         if self.session_source.is_non_root_agent() {
-            return Err(CodexErr::UnsupportedOperation(
+            return Err(AvaErr::UnsupportedOperation(
                 "turn suspension requires the owning root thread".to_string(),
             ));
         }
@@ -456,10 +456,10 @@ impl CodexThread {
                 root_turn_id: None,
             })
             .await
-            .map_err(|_| CodexErr::Fatal("thread session has stopped".to_string()))?;
+            .map_err(|_| AvaErr::Fatal("thread session has stopped".to_string()))?;
         let outcome = result
             .await
-            .map_err(|_| CodexErr::Fatal("thread suspension reply was lost".to_string()))??;
+            .map_err(|_| AvaErr::Fatal("thread suspension reply was lost".to_string()))??;
         if matches!(&outcome, SuspendTurnOutcome::Suspended { .. }) {
             self.io.session_loop_termination.clone().await;
         }
@@ -471,7 +471,7 @@ impl CodexThread {
         &self,
         request: TurnInputRequest,
         expected_turn_id: String,
-    ) -> CodexResult<SteerSubmission> {
+    ) -> AvaResult<SteerSubmission> {
         match self
             .submit_turn_input_with_mode(request, TurnInputMode::Steer { expected_turn_id })
             .await?
@@ -490,7 +490,7 @@ impl CodexThread {
         &self,
         request: TurnInputRequest,
         mode: TurnInputMode,
-    ) -> CodexResult<TurnInputSubmission> {
+    ) -> AvaResult<TurnInputSubmission> {
         if !matches!(mode, TurnInputMode::Steer { .. }) {
             self.session
                 .services
@@ -509,7 +509,7 @@ impl CodexThread {
     /// Injects model-visible items into the currently active turn.
     ///
     /// This is the thread-level bridge to `Session::inject_if_running` for
-    /// callers that only hold a `CodexThread`.
+    /// callers that only hold a `AvaThread`.
     /// It returns the unchanged items when this thread has no active turn.
     pub async fn inject_if_running(
         &self,
@@ -575,7 +575,7 @@ impl CodexThread {
     /// Preview persistent thread settings overrides without committing them.
     pub async fn preview_thread_settings_overrides(
         &self,
-        overrides: CodexThreadSettingsOverrides,
+        overrides: AvaThreadSettingsOverrides,
     ) -> ConstraintResult<ThreadConfigSnapshot> {
         let updates = Self::thread_settings_update(overrides);
         self.session.preview_settings(&updates).await
@@ -587,7 +587,7 @@ impl CodexThread {
     /// rather than reverting to the original layer-backed config.
     pub async fn restore_thread_settings(
         &self,
-        settings: CodexThreadSettingsOverrides,
+        settings: AvaThreadSettingsOverrides,
     ) -> ConstraintResult<()> {
         let updates = Self::thread_settings_update(settings);
         self.session.update_settings(updates).await.map(|_| ())
@@ -600,8 +600,8 @@ impl CodexThread {
         self.session.checkpoint_thread_settings().await
     }
 
-    fn thread_settings_update(overrides: CodexThreadSettingsOverrides) -> SessionSettingsUpdate {
-        let CodexThreadSettingsOverrides {
+    fn thread_settings_update(overrides: AvaThreadSettingsOverrides) -> SessionSettingsUpdate {
+        let AvaThreadSettingsOverrides {
             environments,
             runtime_workspace_roots,
             profile_workspace_roots,
@@ -642,7 +642,7 @@ impl CodexThread {
         }
     }
 
-    pub async fn next_event(&self) -> CodexResult<Event> {
+    pub async fn next_event(&self) -> AvaResult<Event> {
         self.io.next_event().await
     }
 
@@ -690,7 +690,7 @@ impl CodexThread {
     }
 
     /// Record raw Responses API items without starting a new turn.
-    pub async fn inject_response_items(&self, items: Vec<ResponseItem>) -> CodexResult<()> {
+    pub async fn inject_response_items(&self, items: Vec<ResponseItem>) -> AvaResult<()> {
         self.inject_response_items_for_turn(items).await?;
         self.session.flush_rollout().await?;
         Ok(())
@@ -704,9 +704,9 @@ impl CodexThread {
     pub async fn inject_response_items_for_turn(
         &self,
         items: Vec<ResponseItem>,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         if items.is_empty() {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "items must not be empty".to_string(),
             ));
         }
@@ -842,7 +842,7 @@ impl CodexThread {
     }
 
     /// Captures thread-owned settings and environment selections for runtime restoration.
-    pub async fn restorable_thread_settings(&self) -> CodexThreadSettingsOverrides {
+    pub async fn restorable_thread_settings(&self) -> AvaThreadSettingsOverrides {
         self.session.restorable_thread_settings().await
     }
 
@@ -872,8 +872,8 @@ impl CodexThread {
     /// Observes this thread's published MCP connections that match the requested config.
     pub async fn mcp_connection_statuses(
         &self,
-        config: &codex_mcp::McpConfig,
-    ) -> std::collections::HashMap<String, codex_protocol::mcp::McpServerConnectionStatus> {
+        config: &ava_mcp::McpConfig,
+    ) -> std::collections::HashMap<String, ava_protocol::mcp::McpServerConnectionStatus> {
         self.session
             .services
             .mcp_runtime
@@ -885,14 +885,14 @@ impl CodexThread {
     pub async fn runtime_mcp_config_and_context(
         &self,
         config: &crate::config::Config,
-    ) -> (codex_mcp::McpConfig, codex_mcp::McpRuntimeContext) {
+    ) -> (ava_mcp::McpConfig, ava_mcp::McpRuntimeContext) {
         self.session.runtime_mcp_config_and_context(config).await
     }
 
     /// Captures the exact MCP config and environment bindings for the current thread state.
     pub async fn current_mcp_config_and_runtime_context(
         &self,
-    ) -> (Arc<codex_mcp::McpConfig>, codex_mcp::McpRuntimeContext) {
+    ) -> (Arc<ava_mcp::McpConfig>, ava_mcp::McpRuntimeContext) {
         let config = self.session.get_config().await;
         let (mcp_config, runtime_context) = self.runtime_mcp_config_and_context(&config).await;
         (Arc::new(mcp_config), runtime_context)
@@ -937,10 +937,10 @@ impl CodexThread {
     }
 
     /// Refreshes this thread's Apps tools before returning their runtime state.
-    pub async fn refresh_codex_apps_tools(
+    pub async fn refresh_ava_apps_tools(
         &self,
-    ) -> anyhow::Result<codex_mcp::CodexAppsToolSnapshot> {
-        self.session.refresh_codex_apps_tools().await
+    ) -> anyhow::Result<ava_mcp::AvaAppsToolSnapshot> {
+        self.session.refresh_ava_apps_tools().await
     }
 
     /// Returns the environments configured for future turns.
@@ -953,7 +953,7 @@ impl CodexThread {
         &self,
         selection: &TurnEnvironmentSelection,
         config: EnvironmentConfig,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         self.session.environment_ready(selection, config).await
     }
 
@@ -962,7 +962,7 @@ impl CodexThread {
         &self,
         selection: &TurnEnvironmentSelection,
         error: String,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         self.session.environment_failed(selection, error).await
     }
 
@@ -1009,7 +1009,7 @@ impl CodexThread {
         name: &str,
         arguments: serde_json::Value,
         meta: Option<serde_json::Value>,
-    ) -> anyhow::Result<codex_mcp::McpEventStream> {
+    ) -> anyhow::Result<ava_mcp::McpEventStream> {
         let meta = match meta.as_ref() {
             Some(serde_json::Value::Object(meta)) => Some(meta),
             Some(other) => {
@@ -1019,7 +1019,7 @@ impl CodexThread {
         };
         let _ = self.session.services.auth_manager.auth().await;
         self.session.refresh_mcp_if_dirty().await;
-        codex_mcp::McpResourceClient::new(Arc::clone(&self.session.services.mcp_runtime))
+        ava_mcp::McpResourceClient::new(Arc::clone(&self.session.services.mcp_runtime))
             .open_event_stream(name, &arguments, meta)
             .await
     }
@@ -1046,10 +1046,10 @@ impl CodexThread {
         self.session.enabled(feature)
     }
 
-    pub async fn increment_out_of_band_elicitation_count(&self) -> CodexResult<i64> {
+    pub async fn increment_out_of_band_elicitation_count(&self) -> AvaResult<i64> {
         let mut elicitations = self.out_of_band_elicitations.lock().await;
         let incremented = elicitations.count.checked_add(1).ok_or_else(|| {
-            CodexErr::Fatal("out-of-band elicitation count overflowed".to_string())
+            AvaErr::Fatal("out-of-band elicitation count overflowed".to_string())
         })?;
         if elicitations.count == 0 {
             elicitations.registration = Some(self.session.services.elicitations.register());
@@ -1058,10 +1058,10 @@ impl CodexThread {
         Ok(incremented)
     }
 
-    pub async fn decrement_out_of_band_elicitation_count(&self) -> CodexResult<i64> {
+    pub async fn decrement_out_of_band_elicitation_count(&self) -> AvaResult<i64> {
         let mut elicitations = self.out_of_band_elicitations.lock().await;
         if elicitations.count == 0 {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "out-of-band elicitation count is already zero".to_string(),
             ));
         }

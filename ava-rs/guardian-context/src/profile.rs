@@ -4,7 +4,7 @@
 //! User messages and manual approvals stay complete until whole-request admission.
 //! They may be shortened with explicit markers only during budget recovery.
 
-use codex_protocol::protocol::TruncationPolicy;
+use ava_protocol::protocol::TruncationPolicy;
 
 use crate::BudgetPriority;
 use crate::Budgeted;

@@ -7,34 +7,34 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codex_exec_server::EnvironmentManager;
-use codex_extension_api::LoadInstructionsFuture;
-use codex_extension_api::LoadedUserInstructions;
-use codex_extension_api::UserInstructionsProvider;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::collaboration_mode_presets;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_models_manager::test_support::construct_model_info_offline_for_tests;
-use codex_models_manager::test_support::get_model_offline_for_tests;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::protocol::SessionSource;
+use ava_exec_server::EnvironmentManager;
+use ava_extension_api::LoadInstructionsFuture;
+use ava_extension_api::LoadedUserInstructions;
+use ava_extension_api::UserInstructionsProvider;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::collaboration_mode_presets;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_models_manager::test_support::construct_model_info_offline_for_tests;
+use ava_models_manager::test_support::get_model_offline_for_tests;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::protocol::SessionSource;
 use once_cell::sync::Lazy;
 
 use crate::ThreadManager;
 use crate::config::Config;
-use crate::responses_metadata::CodexResponsesMetadata;
-use crate::responses_metadata::CodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesMetadata;
+use crate::responses_metadata::AvaResponsesRequestKind;
 use crate::responses_metadata::subagent_header_value;
 use crate::responses_metadata::subagent_metadata_kind;
 use crate::thread_manager;
@@ -52,8 +52,8 @@ static TEST_MODEL_PRESETS: Lazy<Vec<ModelPreset>> = Lazy::new(|| {
 /// Reattaches request-only observations to a completed turn's history for capture assertions.
 /// Tests inspect this separately from the destination-filtered HTTP/WS request.
 pub async fn history_with_tool_call_metadata(
-    thread: &crate::CodexThread,
-) -> Vec<codex_protocol::models::ResponseItem> {
+    thread: &crate::AvaThread,
+) -> Vec<ava_protocol::models::ResponseItem> {
     let history = thread.conversation_history_snapshot().await;
     let mut items = history.items().cloned().collect::<Vec<_>>();
     thread
@@ -82,12 +82,12 @@ pub fn set_deterministic_process_ids(enabled: bool) {
     unified_exec::set_deterministic_process_ids_for_tests(enabled);
 }
 
-pub fn auth_manager_from_auth(auth: CodexAuth) -> Arc<AuthManager> {
+pub fn auth_manager_from_auth(auth: AvaAuth) -> Arc<AuthManager> {
     AuthManager::from_auth_for_testing(auth)
 }
 
-pub fn auth_manager_from_auth_with_home(auth: CodexAuth, codex_home: PathBuf) -> Arc<AuthManager> {
-    AuthManager::from_auth_for_testing_with_home(auth, codex_home)
+pub fn auth_manager_from_auth_with_home(auth: AvaAuth, ava_home: PathBuf) -> Arc<AuthManager> {
+    AuthManager::from_auth_for_testing_with_home(auth, ava_home)
 }
 
 pub fn with_code_mode_host_program(
@@ -99,22 +99,22 @@ pub fn with_code_mode_host_program(
 }
 
 pub fn thread_manager_with_models_provider(
-    auth: CodexAuth,
+    auth: AvaAuth,
     provider: ModelProviderInfo,
 ) -> ThreadManager {
     ThreadManager::with_models_provider_for_tests(auth, provider)
 }
 
 pub fn thread_manager_with_models_provider_and_home(
-    auth: CodexAuth,
+    auth: AvaAuth,
     provider: ModelProviderInfo,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     environment_manager: Arc<EnvironmentManager>,
 ) -> ThreadManager {
     ThreadManager::with_models_provider_and_home_for_tests(
         auth,
         provider,
-        codex_home,
+        ava_home,
         environment_manager,
     )
 }
@@ -124,7 +124,7 @@ pub async fn start_thread_with_user_shell_override(
     config: Config,
     user_shell_override: crate::shell::Shell,
     supports_openai_form_elicitation: bool,
-) -> codex_protocol::error::Result<crate::NewThread> {
+) -> ava_protocol::error::Result<crate::NewThread> {
     thread_manager
         .start_thread_with_user_shell_override_for_tests(
             config,
@@ -144,7 +144,7 @@ pub async fn resume_thread_from_rollout_with_user_shell_override(
     auth_manager: Arc<AuthManager>,
     user_shell_override: crate::shell::Shell,
     supports_openai_form_elicitation: bool,
-) -> codex_protocol::error::Result<crate::NewThread> {
+) -> ava_protocol::error::Result<crate::NewThread> {
     thread_manager
         .resume_thread_from_rollout_with_user_shell_override_for_tests(
             config,
@@ -160,12 +160,12 @@ pub async fn resume_thread_from_rollout_with_user_shell_override(
 }
 
 pub fn models_manager_with_provider(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     auth_manager: Arc<AuthManager>,
     provider: ModelProviderInfo,
 ) -> SharedModelsManager {
     let provider = create_model_provider(provider, Some(auth_manager));
-    provider.models_manager(codex_home, /*config_model_catalog*/ None)
+    provider.models_manager(ava_home, /*config_model_catalog*/ None)
 }
 
 pub fn default_http_client_factory() -> HttpClientFactory {
@@ -181,7 +181,7 @@ pub fn construct_model_info_offline(model: &str, config: &Config) -> ModelInfo {
 }
 
 #[derive(Clone, Copy)]
-pub enum TestCodexResponsesRequestKind {
+pub enum TestAvaResponsesRequestKind {
     Turn,
     Prewarm,
     WebsocketConnection,
@@ -196,20 +196,20 @@ pub fn responses_metadata(
     window_id: String,
     session_source: &SessionSource,
     parent_thread_id: Option<ThreadId>,
-    request_kind: TestCodexResponsesRequestKind,
-) -> CodexResponsesMetadata {
+    request_kind: TestAvaResponsesRequestKind,
+) -> AvaResponsesMetadata {
     let request_kind = match request_kind {
-        TestCodexResponsesRequestKind::Turn => Some(CodexResponsesRequestKind::Turn),
-        TestCodexResponsesRequestKind::Prewarm => Some(CodexResponsesRequestKind::Prewarm),
-        TestCodexResponsesRequestKind::WebsocketConnection => None,
+        TestAvaResponsesRequestKind::Turn => Some(AvaResponsesRequestKind::Turn),
+        TestAvaResponsesRequestKind::Prewarm => Some(AvaResponsesRequestKind::Prewarm),
+        TestAvaResponsesRequestKind::WebsocketConnection => None,
     };
-    CodexResponsesMetadata {
+    AvaResponsesMetadata {
         turn_id: request_kind.and(turn_id.map(ToString::to_string)),
         request_kind,
         parent_thread_id,
         subagent_header: subagent_header_value(session_source),
         subagent_kind: request_kind.and_then(|_| subagent_metadata_kind(session_source)),
-        ..CodexResponsesMetadata::new(
+        ..AvaResponsesMetadata::new(
             installation_id.to_string(),
             session_id.to_string(),
             thread_id.to_string(),
@@ -218,7 +218,7 @@ pub fn responses_metadata(
     }
 }
 
-pub fn with_parent_turn(mut metadata: CodexResponsesMetadata, id: &str) -> CodexResponsesMetadata {
+pub fn with_parent_turn(mut metadata: AvaResponsesMetadata, id: &str) -> AvaResponsesMetadata {
     metadata.parent_turn_id = Some(id.to_string());
     metadata
 }

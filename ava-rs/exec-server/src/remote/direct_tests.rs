@@ -5,9 +5,9 @@ use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Result;
-use codex_api::AuthProvider;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_api::AuthProvider;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use http::HeaderMap;
 use http::HeaderValue;
 use pretty_assertions::assert_eq;
@@ -42,8 +42,8 @@ impl AuthProvider for StaticAuthProvider {
 
     fn apply_auth(
         &self,
-        mut request: codex_http_client::Request,
-    ) -> codex_api::AuthProviderFuture<'_> {
+        mut request: ava_http_client::Request,
+    ) -> ava_api::AuthProviderFuture<'_> {
         Box::pin(async move {
             if request.method == http::Method::GET {
                 assert_eq!(request.headers.len(), 1);
@@ -64,11 +64,11 @@ impl AuthProvider for QueryAuthProvider {
 
     fn apply_auth(
         &self,
-        mut request: codex_http_client::Request,
-    ) -> codex_api::AuthProviderFuture<'_> {
+        mut request: ava_http_client::Request,
+    ) -> ava_api::AuthProviderFuture<'_> {
         Box::pin(async move {
             let mut url = url::Url::parse(&request.url)
-                .map_err(|error| codex_api::AuthError::Build(error.to_string()))?;
+                .map_err(|error| ava_api::AuthError::Build(error.to_string()))?;
             url.query_pairs_mut().append_pair("auth", "signed-query");
             request.url = url.into();
             Ok(request)
@@ -209,18 +209,18 @@ async fn direct_registration_uses_proxy_policy_without_logging_secrets() -> Resu
             .with_writer(move || writer.try_clone().expect("clone log file"))
             .with_filter(
                 tracing_subscriber::filter::Targets::new()
-                    .with_target("codex_http_client", tracing::Level::TRACE)
-                    .with_target("codex_exec_server", tracing::Level::TRACE),
+                    .with_target("ava_http_client", tracing::Level::TRACE)
+                    .with_target("ava_exec_server", tracing::Level::TRACE),
             ),
     );
     let _guard = tracing::subscriber::set_default(subscriber);
-    tracing::debug!(target: "codex_exec_server", "direct registry log capture sentinel");
+    tracing::debug!(target: "ava_exec_server", "direct registry log capture sentinel");
 
     let proxy = MockServer::start().await;
     let registry_url = "http://direct-registry-proxy.invalid/registry-path-secret";
     let request_url =
         format!("{registry_url}/cloud/environment/environment-requested/direct/register");
-    codex_http_client::cache_system_proxy_route_for_test(&request_url, proxy.uri());
+    ava_http_client::cache_system_proxy_route_for_test(&request_url, proxy.uri());
     Mock::given(method("POST"))
         .and(path(
             "/registry-path-secret/cloud/environment/environment-requested/direct/register",
@@ -317,7 +317,7 @@ async fn direct_registration_failure_stops_initial_and_conflict_attempts() -> Re
         )?;
         let runtime_paths = ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?;
         let task = tokio::spawn(crate::run_remote_environment(config, runtime_paths));
         if successful_registrations == 1 {
@@ -395,7 +395,7 @@ async fn direct_websocket_reuses_registration_and_stops_on_permanent_errors() ->
         )?;
         let runtime_paths = ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?;
         let task = tokio::spawn(crate::run_remote_environment(config, runtime_paths));
 

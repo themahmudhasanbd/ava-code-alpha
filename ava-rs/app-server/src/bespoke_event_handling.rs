@@ -8,113 +8,113 @@ use crate::thread_state::TurnSummary;
 use crate::thread_state::resolve_server_request_on_thread_listener;
 use crate::thread_status::ThreadWatchActiveGuard;
 use crate::thread_status::ThreadWatchManager;
-use codex_app_server_protocol::AccountRateLimitsUpdatedNotification;
-use codex_app_server_protocol::AdditionalPermissionProfile as V2AdditionalPermissionProfile;
-use codex_app_server_protocol::AuthRecoveryNotification;
-use codex_app_server_protocol::CodexErrorInfo as V2CodexErrorInfo;
-use codex_app_server_protocol::CommandAction as V2ParsedCommand;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionPresentation;
-use codex_app_server_protocol::CommandExecutionRequestApprovalParams;
-use codex_app_server_protocol::CommandExecutionRequestApprovalResponse;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::DeprecationNoticeNotification;
-use codex_app_server_protocol::DynamicToolCallParams;
-use codex_app_server_protocol::EnvironmentConnectionNotification;
-use codex_app_server_protocol::ErrorNotification;
-use codex_app_server_protocol::ExecPolicyAmendment as V2ExecPolicyAmendment;
-use codex_app_server_protocol::FileChangeApprovalDecision;
-use codex_app_server_protocol::FileChangeRequestApprovalParams;
-use codex_app_server_protocol::FileChangeRequestApprovalResponse;
-use codex_app_server_protocol::GrantedPermissionProfile as V2GrantedPermissionProfile;
-use codex_app_server_protocol::GuardianWarningNotification;
-use codex_app_server_protocol::HookCompletedNotification;
-use codex_app_server_protocol::HookStartedNotification;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::McpServerElicitationAction;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::McpServerElicitationRequestResponse;
-use codex_app_server_protocol::McpServerStartupState;
-use codex_app_server_protocol::McpServerStatusUpdatedNotification;
-use codex_app_server_protocol::ModelReroutedNotification;
-use codex_app_server_protocol::ModelSafetyBufferingUpdatedNotification;
-use codex_app_server_protocol::ModelVerificationNotification;
-use codex_app_server_protocol::NetworkApprovalContext as V2NetworkApprovalContext;
-use codex_app_server_protocol::NetworkPolicyAmendment as V2NetworkPolicyAmendment;
-use codex_app_server_protocol::NetworkPolicyRuleAction as V2NetworkPolicyRuleAction;
-use codex_app_server_protocol::PermissionsRequestApprovalParams;
-use codex_app_server_protocol::PermissionsRequestApprovalResponse;
-use codex_app_server_protocol::RawResponseCompletedNotification;
-use codex_app_server_protocol::RawResponseItemCompletedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequestPayload;
-use codex_app_server_protocol::StrictReviewRequiredNotification;
-use codex_app_server_protocol::ThreadGoalUpdatedNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadRealtimeClosedNotification;
-use codex_app_server_protocol::ThreadRealtimeErrorNotification;
-use codex_app_server_protocol::ThreadRealtimeItemAddedNotification;
-use codex_app_server_protocol::ThreadRealtimeItemCompletedNotification;
-use codex_app_server_protocol::ThreadRealtimeItemStartedNotification;
-use codex_app_server_protocol::ThreadRealtimeItemTranscriptDeltaNotification;
-use codex_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
-use codex_app_server_protocol::ThreadRealtimeSdpNotification;
-use codex_app_server_protocol::ThreadRealtimeStartedNotification;
-use codex_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification;
-use codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-use codex_app_server_protocol::ThreadTokenUsage;
-use codex_app_server_protocol::ThreadTokenUsageUpdatedNotification;
-use codex_app_server_protocol::ToolRequestUserInputOption;
-use codex_app_server_protocol::ToolRequestUserInputParams;
-use codex_app_server_protocol::ToolRequestUserInputQuestion;
-use codex_app_server_protocol::ToolRequestUserInputResponse;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnDiffUpdatedNotification;
-use codex_app_server_protocol::TurnError;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnModerationMetadataNotification;
-use codex_app_server_protocol::TurnPlanStep;
-use codex_app_server_protocol::TurnPlanUpdatedNotification;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::WarningNotification;
-use codex_app_server_protocol::build_item_from_guardian_event;
-use codex_app_server_protocol::guardian_auto_approval_review_notification;
-use codex_app_server_protocol::item_event_to_server_notification;
-use codex_core::CodexThread;
-use codex_core::ThreadManager;
-use codex_features::Feature;
-use codex_protocol::ThreadId;
-use codex_protocol::items::CollabAgentTool as CoreCollabAgentTool;
-use codex_protocol::items::ModelInvocationContext;
-use codex_protocol::items::TurnItem as CoreTurnItem;
-use codex_protocol::models::AdditionalPermissionProfile as CoreAdditionalPermissionProfile;
-use codex_protocol::plan_tool::UpdatePlanArgs;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecApprovalRequestEvent;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SubAgentActivityKind;
-use codex_protocol::protocol::TokenCountEvent;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnDiffEvent;
-use codex_protocol::request_permissions::PermissionGrantScope as CorePermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile as CoreRequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse as CoreRequestPermissionsResponse;
-use codex_protocol::request_user_input::RequestUserInputAnswer as CoreRequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse as CoreRequestUserInputResponse;
-use codex_shell_command::parse_command::shlex_join;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_protocol::AccountRateLimitsUpdatedNotification;
+use ava_app_server_protocol::AdditionalPermissionProfile as V2AdditionalPermissionProfile;
+use ava_app_server_protocol::AuthRecoveryNotification;
+use ava_app_server_protocol::AvaErrorInfo as V2AvaErrorInfo;
+use ava_app_server_protocol::CommandAction as V2ParsedCommand;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionPresentation;
+use ava_app_server_protocol::CommandExecutionRequestApprovalParams;
+use ava_app_server_protocol::CommandExecutionRequestApprovalResponse;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::DeprecationNoticeNotification;
+use ava_app_server_protocol::DynamicToolCallParams;
+use ava_app_server_protocol::EnvironmentConnectionNotification;
+use ava_app_server_protocol::ErrorNotification;
+use ava_app_server_protocol::ExecPolicyAmendment as V2ExecPolicyAmendment;
+use ava_app_server_protocol::FileChangeApprovalDecision;
+use ava_app_server_protocol::FileChangeRequestApprovalParams;
+use ava_app_server_protocol::FileChangeRequestApprovalResponse;
+use ava_app_server_protocol::GrantedPermissionProfile as V2GrantedPermissionProfile;
+use ava_app_server_protocol::GuardianWarningNotification;
+use ava_app_server_protocol::HookCompletedNotification;
+use ava_app_server_protocol::HookStartedNotification;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::McpServerElicitationAction;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::McpServerElicitationRequestResponse;
+use ava_app_server_protocol::McpServerStartupState;
+use ava_app_server_protocol::McpServerStatusUpdatedNotification;
+use ava_app_server_protocol::ModelReroutedNotification;
+use ava_app_server_protocol::ModelSafetyBufferingUpdatedNotification;
+use ava_app_server_protocol::ModelVerificationNotification;
+use ava_app_server_protocol::NetworkApprovalContext as V2NetworkApprovalContext;
+use ava_app_server_protocol::NetworkPolicyAmendment as V2NetworkPolicyAmendment;
+use ava_app_server_protocol::NetworkPolicyRuleAction as V2NetworkPolicyRuleAction;
+use ava_app_server_protocol::PermissionsRequestApprovalParams;
+use ava_app_server_protocol::PermissionsRequestApprovalResponse;
+use ava_app_server_protocol::RawResponseCompletedNotification;
+use ava_app_server_protocol::RawResponseItemCompletedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequestPayload;
+use ava_app_server_protocol::StrictReviewRequiredNotification;
+use ava_app_server_protocol::ThreadGoalUpdatedNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadRealtimeClosedNotification;
+use ava_app_server_protocol::ThreadRealtimeErrorNotification;
+use ava_app_server_protocol::ThreadRealtimeItemAddedNotification;
+use ava_app_server_protocol::ThreadRealtimeItemCompletedNotification;
+use ava_app_server_protocol::ThreadRealtimeItemStartedNotification;
+use ava_app_server_protocol::ThreadRealtimeItemTranscriptDeltaNotification;
+use ava_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
+use ava_app_server_protocol::ThreadRealtimeSdpNotification;
+use ava_app_server_protocol::ThreadRealtimeStartedNotification;
+use ava_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification;
+use ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+use ava_app_server_protocol::ThreadTokenUsage;
+use ava_app_server_protocol::ThreadTokenUsageUpdatedNotification;
+use ava_app_server_protocol::ToolRequestUserInputOption;
+use ava_app_server_protocol::ToolRequestUserInputParams;
+use ava_app_server_protocol::ToolRequestUserInputQuestion;
+use ava_app_server_protocol::ToolRequestUserInputResponse;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnDiffUpdatedNotification;
+use ava_app_server_protocol::TurnError;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnModerationMetadataNotification;
+use ava_app_server_protocol::TurnPlanStep;
+use ava_app_server_protocol::TurnPlanUpdatedNotification;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::WarningNotification;
+use ava_app_server_protocol::build_item_from_guardian_event;
+use ava_app_server_protocol::guardian_auto_approval_review_notification;
+use ava_app_server_protocol::item_event_to_server_notification;
+use ava_core::AvaThread;
+use ava_core::ThreadManager;
+use ava_features::Feature;
+use ava_protocol::ThreadId;
+use ava_protocol::items::CollabAgentTool as CoreCollabAgentTool;
+use ava_protocol::items::ModelInvocationContext;
+use ava_protocol::items::TurnItem as CoreTurnItem;
+use ava_protocol::models::AdditionalPermissionProfile as CoreAdditionalPermissionProfile;
+use ava_protocol::plan_tool::UpdatePlanArgs;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecApprovalRequestEvent;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SubAgentActivityKind;
+use ava_protocol::protocol::TokenCountEvent;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnDiffEvent;
+use ava_protocol::request_permissions::PermissionGrantScope as CorePermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile as CoreRequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse as CoreRequestPermissionsResponse;
+use ava_protocol::request_user_input::RequestUserInputAnswer as CoreRequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse as CoreRequestUserInputResponse;
+use ava_shell_command::parse_command::shlex_join;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -141,7 +141,7 @@ struct CommandExecutionCompletionItem {
 pub(crate) async fn apply_bespoke_event_handling(
     event: Event,
     conversation_id: ThreadId,
-    conversation: Arc<CodexThread>,
+    conversation: Arc<AvaThread>,
     thread_manager: Arc<ThreadManager>,
     outgoing: ThreadScopedOutgoingMessageSender,
     thread_state: Arc<tokio::sync::Mutex<ThreadState>>,
@@ -201,18 +201,18 @@ pub(crate) async fn apply_bespoke_event_handling(
         }
         EventMsg::McpStartupUpdate(update) => {
             let (status, error, failure_reason) = match update.status {
-                codex_protocol::protocol::McpStartupStatus::Starting => {
+                ava_protocol::protocol::McpStartupStatus::Starting => {
                     (McpServerStartupState::Starting, None, None)
                 }
-                codex_protocol::protocol::McpStartupStatus::Ready => {
+                ava_protocol::protocol::McpStartupStatus::Ready => {
                     (McpServerStartupState::Ready, None, None)
                 }
-                codex_protocol::protocol::McpStartupStatus::Failed { error, reason } => (
+                ava_protocol::protocol::McpStartupStatus::Failed { error, reason } => (
                     McpServerStartupState::Failed,
                     Some(error),
                     reason.map(Into::into),
                 ),
-                codex_protocol::protocol::McpStartupStatus::Cancelled => {
+                ava_protocol::protocol::McpStartupStatus::Cancelled => {
                     (McpServerStartupState::Cancelled, None, None)
                 }
             };
@@ -321,7 +321,7 @@ pub(crate) async fn apply_bespoke_event_handling(
             } else {
                 assessment.turn_id.clone()
             };
-            if assessment.status == codex_protocol::protocol::GuardianAssessmentStatus::InProgress
+            if assessment.status == ava_protocol::protocol::GuardianAssessmentStatus::InProgress
                 && let Some((target_item_id, completion_item)) = pending_command_execution.as_ref()
             {
                 start_command_execution_item(
@@ -346,15 +346,15 @@ pub(crate) async fn apply_bespoke_event_handling(
                 &assessment,
             );
             outgoing.send_server_notification(notification).await;
-            if assessment.status == codex_protocol::protocol::GuardianAssessmentStatus::InProgress
+            if assessment.status == ava_protocol::protocol::GuardianAssessmentStatus::InProgress
                 && matches!(
                     assessment.review_reason,
                     Some(
-                        codex_protocol::approvals::GuardianReviewReason::ElevatedRisk
-                            | codex_protocol::approvals::GuardianReviewReason::StaleScore
-                            | codex_protocol::approvals::GuardianReviewReason::IncompatibleCompaction
-                            | codex_protocol::approvals::GuardianReviewReason::ScoringFailure
-                            | codex_protocol::approvals::GuardianReviewReason::AuthorizationChanged
+                        ava_protocol::approvals::GuardianReviewReason::ElevatedRisk
+                            | ava_protocol::approvals::GuardianReviewReason::StaleScore
+                            | ava_protocol::approvals::GuardianReviewReason::IncompatibleCompaction
+                            | ava_protocol::approvals::GuardianReviewReason::ScoringFailure
+                            | ava_protocol::approvals::GuardianReviewReason::AuthorizationChanged
                     )
                 )
             {
@@ -369,15 +369,15 @@ pub(crate) async fn apply_bespoke_event_handling(
                     .await;
             }
             let completion_status = match assessment.status {
-                codex_protocol::protocol::GuardianAssessmentStatus::Denied
-                | codex_protocol::protocol::GuardianAssessmentStatus::Aborted => {
+                ava_protocol::protocol::GuardianAssessmentStatus::Denied
+                | ava_protocol::protocol::GuardianAssessmentStatus::Aborted => {
                     Some(CommandExecutionStatus::Declined)
                 }
-                codex_protocol::protocol::GuardianAssessmentStatus::TimedOut => {
+                ava_protocol::protocol::GuardianAssessmentStatus::TimedOut => {
                     Some(CommandExecutionStatus::Failed)
                 }
-                codex_protocol::protocol::GuardianAssessmentStatus::InProgress
-                | codex_protocol::protocol::GuardianAssessmentStatus::Approved => None,
+                ava_protocol::protocol::GuardianAssessmentStatus::InProgress
+                | ava_protocol::protocol::GuardianAssessmentStatus::Approved => None,
             };
             if let Some(completion_status) = completion_status
                 && let Some((target_item_id, completion_item)) = pending_command_execution
@@ -872,7 +872,7 @@ pub(crate) async fn apply_bespoke_event_handling(
         EventMsg::ElicitationRequest(request) => {
             let user_verification = matches!(
                 &request.request,
-                codex_protocol::approvals::ElicitationRequest::UserVerification { .. }
+                ava_protocol::approvals::ElicitationRequest::UserVerification { .. }
             );
             let permission_guard = thread_watch_manager
                 .note_permission_requested(&conversation_id.to_string())
@@ -898,7 +898,7 @@ pub(crate) async fn apply_bespoke_event_handling(
                         .submit(Op::ResolveElicitation {
                             server_name: request.server_name,
                             request_id: request.id,
-                            decision: codex_protocol::approvals::ElicitationAction::Cancel,
+                            decision: ava_protocol::approvals::ElicitationAction::Cancel,
                             content: None,
                             meta: None,
                         })
@@ -1039,7 +1039,7 @@ pub(crate) async fn apply_bespoke_event_handling(
             let turn_error = TurnError {
                 misalignment: ev.misalignment.map(Into::into),
                 message: ev.message,
-                codex_error_info: ev.codex_error_info.map(V2CodexErrorInfo::from),
+                ava_error_info: ev.ava_error_info.map(V2AvaErrorInfo::from),
                 additional_details: None,
             };
             handle_error_notification(
@@ -1057,7 +1057,7 @@ pub(crate) async fn apply_bespoke_event_handling(
             let turn_error = TurnError {
                 misalignment: None,
                 message: ev.message,
-                codex_error_info: ev.codex_error_info.map(V2CodexErrorInfo::from),
+                ava_error_info: ev.ava_error_info.map(V2AvaErrorInfo::from),
                 additional_details: ev.additional_details,
             };
             outgoing
@@ -1628,7 +1628,7 @@ async fn on_request_user_input_response(
     event_turn_id: String,
     pending_request_id: RequestId,
     receiver: oneshot::Receiver<ClientRequestResult>,
-    conversation: Arc<CodexThread>,
+    conversation: Arc<AvaThread>,
     thread_state: Arc<Mutex<ThreadState>>,
     user_input_guard: ThreadWatchActiveGuard,
 ) {
@@ -1712,10 +1712,10 @@ struct PendingMcpElicitationResponse {
 
 async fn on_mcp_server_elicitation_response(
     server_name: String,
-    request_id: codex_protocol::mcp::RequestId,
+    request_id: ava_protocol::mcp::RequestId,
     pending_request_id: RequestId,
     pending: PendingMcpElicitationResponse,
-    conversation: Arc<CodexThread>,
+    conversation: Arc<AvaThread>,
     thread_state: Arc<Mutex<ThreadState>>,
     permission_guard: ThreadWatchActiveGuard,
 ) {
@@ -1783,7 +1783,7 @@ fn mcp_server_elicitation_response_from_client_result(
 
 async fn on_request_permissions_response(
     pending_response: PendingRequestPermissionsResponse,
-    conversation: Arc<CodexThread>,
+    conversation: Arc<AvaThread>,
     thread_state: Arc<Mutex<ThreadState>>,
 ) {
     let PendingRequestPermissionsResponse {
@@ -1811,7 +1811,7 @@ async fn on_request_permissions_response(
                 TurnError {
                     misalignment: None,
                     message,
-                    codex_error_info: None,
+                    ava_error_info: None,
                     additional_details: None,
                 },
                 &outgoing,
@@ -1876,7 +1876,7 @@ fn request_permissions_response_from_client_result(
             error!("failed to deserialize PermissionsRequestApprovalResponse: {err}");
             PermissionsRequestApprovalResponse {
                 permissions: V2GrantedPermissionProfile::default(),
-                scope: codex_app_server_protocol::PermissionGrantScope::Turn,
+                scope: ava_app_server_protocol::PermissionGrantScope::Turn,
                 strict_auto_review: None,
             }
         });
@@ -1884,7 +1884,7 @@ fn request_permissions_response_from_client_result(
     if strict_auto_review
         && matches!(
             response.scope,
-            codex_app_server_protocol::PermissionGrantScope::Session
+            ava_app_server_protocol::PermissionGrantScope::Session
         )
     {
         error!("strict auto review is only supported for turn-scoped permission grants");
@@ -1917,7 +1917,7 @@ async fn on_file_change_request_approval_response(
     item_id: String,
     pending_request_id: RequestId,
     receiver: oneshot::Receiver<ClientRequestResult>,
-    codex: Arc<CodexThread>,
+    ava: Arc<AvaThread>,
     thread_state: Arc<Mutex<ThreadState>>,
     permission_guard: ThreadWatchActiveGuard,
 ) {
@@ -1943,7 +1943,7 @@ async fn on_file_change_request_approval_response(
         }
     };
 
-    if let Err(err) = codex
+    if let Err(err) = ava
         .submit(Op::PatchApproval {
             id: item_id,
             decision,
@@ -1963,7 +1963,7 @@ async fn on_command_execution_request_approval_response(
     completion_item: Option<CommandExecutionCompletionItem>,
     pending_request_id: RequestId,
     receiver: oneshot::Receiver<ClientRequestResult>,
-    conversation: Arc<CodexThread>,
+    conversation: Arc<AvaThread>,
     outgoing: ThreadScopedOutgoingMessageSender,
     thread_state: Arc<Mutex<ThreadState>>,
     permission_guard: ThreadWatchActiveGuard,
@@ -2101,38 +2101,38 @@ mod tests {
     use anyhow::Result;
     use anyhow::anyhow;
     use anyhow::bail;
-    use codex_app_server_protocol::AutoReviewDecisionSource;
-    use codex_app_server_protocol::GuardianApprovalReviewStatus;
-    use codex_app_server_protocol::JSONRPCErrorError;
-    use codex_app_server_protocol::ServerRequest;
-    use codex_app_server_protocol::ThreadStatus;
-    use codex_app_server_protocol::TurnPlanStepStatus;
-    use codex_login::CodexAuth;
-    use codex_protocol::AgentPath;
-    use codex_protocol::items::AgentMessageContent as CoreAgentMessageContent;
-    use codex_protocol::items::AgentMessageItem as CoreAgentMessageItem;
-    use codex_protocol::items::DynamicToolCallItem;
-    use codex_protocol::items::DynamicToolCallStatus as CoreDynamicToolCallStatus;
-    use codex_protocol::items::SubAgentActivityItem;
-    use codex_protocol::items::TurnItem as CoreTurnItem;
-    use codex_protocol::models::FileSystemPermissions as CoreFileSystemPermissions;
-    use codex_protocol::models::NetworkPermissions as CoreNetworkPermissions;
-    use codex_protocol::plan_tool::PlanItemArg;
-    use codex_protocol::plan_tool::StepStatus;
-    use codex_protocol::protocol::AuthRecoveryEvent;
-    use codex_protocol::protocol::CreditsSnapshot;
-    use codex_protocol::protocol::EventMsg;
-    use codex_protocol::protocol::GuardianAssessmentEvent;
-    use codex_protocol::protocol::GuardianAssessmentStatus;
-    use codex_protocol::protocol::ItemCompletedEvent;
-    use codex_protocol::protocol::ItemStartedEvent;
-    use codex_protocol::protocol::RateLimitSnapshot;
-    use codex_protocol::protocol::RateLimitWindow;
-    use codex_protocol::protocol::TokenUsage;
-    use codex_protocol::protocol::TokenUsageInfo;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_app_server_protocol::AutoReviewDecisionSource;
+    use ava_app_server_protocol::GuardianApprovalReviewStatus;
+    use ava_app_server_protocol::JSONRPCErrorError;
+    use ava_app_server_protocol::ServerRequest;
+    use ava_app_server_protocol::ThreadStatus;
+    use ava_app_server_protocol::TurnPlanStepStatus;
+    use ava_login::AvaAuth;
+    use ava_protocol::AgentPath;
+    use ava_protocol::items::AgentMessageContent as CoreAgentMessageContent;
+    use ava_protocol::items::AgentMessageItem as CoreAgentMessageItem;
+    use ava_protocol::items::DynamicToolCallItem;
+    use ava_protocol::items::DynamicToolCallStatus as CoreDynamicToolCallStatus;
+    use ava_protocol::items::SubAgentActivityItem;
+    use ava_protocol::items::TurnItem as CoreTurnItem;
+    use ava_protocol::models::FileSystemPermissions as CoreFileSystemPermissions;
+    use ava_protocol::models::NetworkPermissions as CoreNetworkPermissions;
+    use ava_protocol::plan_tool::PlanItemArg;
+    use ava_protocol::plan_tool::StepStatus;
+    use ava_protocol::protocol::AuthRecoveryEvent;
+    use ava_protocol::protocol::CreditsSnapshot;
+    use ava_protocol::protocol::EventMsg;
+    use ava_protocol::protocol::GuardianAssessmentEvent;
+    use ava_protocol::protocol::GuardianAssessmentStatus;
+    use ava_protocol::protocol::ItemCompletedEvent;
+    use ava_protocol::protocol::ItemStartedEvent;
+    use ava_protocol::protocol::RateLimitSnapshot;
+    use ava_protocol::protocol::RateLimitWindow;
+    use ava_protocol::protocol::TokenUsage;
+    use ava_protocol::protocol::TokenUsageInfo;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use core_test_support::load_default_config_for_test;
     use pretty_assertions::assert_eq;
     use serde_json::json;
@@ -2186,7 +2186,7 @@ mod tests {
         TurnAbortedEvent {
             turn_id: Some(turn_id.to_string()),
             started_at: None,
-            reason: codex_protocol::protocol::TurnAbortReason::Interrupted,
+            reason: ava_protocol::protocol::TurnAbortReason::Interrupted,
             completed_at: Some(TEST_TURN_COMPLETED_AT),
             duration_ms: Some(TEST_TURN_DURATION_MS),
         }
@@ -2213,13 +2213,13 @@ mod tests {
         let (risk_level, user_authorization, rationale) = match status {
             GuardianAssessmentStatus::InProgress => (None, None, None),
             GuardianAssessmentStatus::Approved => (
-                Some(codex_protocol::protocol::GuardianRiskLevel::Low),
-                Some(codex_protocol::protocol::GuardianUserAuthorization::High),
+                Some(ava_protocol::protocol::GuardianRiskLevel::Low),
+                Some(ava_protocol::protocol::GuardianUserAuthorization::High),
                 Some("looks safe".to_string()),
             ),
             GuardianAssessmentStatus::Denied => (
-                Some(codex_protocol::protocol::GuardianRiskLevel::High),
-                Some(codex_protocol::protocol::GuardianUserAuthorization::Low),
+                Some(ava_protocol::protocol::GuardianRiskLevel::High),
+                Some(ava_protocol::protocol::GuardianUserAuthorization::Low),
                 Some("too risky".to_string()),
             ),
             GuardianAssessmentStatus::TimedOut => {
@@ -2245,7 +2245,7 @@ mod tests {
             decision_source: if matches!(status, GuardianAssessmentStatus::InProgress) {
                 None
             } else {
-                Some(codex_protocol::protocol::GuardianAssessmentDecisionSource::Agent)
+                Some(ava_protocol::protocol::GuardianAssessmentDecisionSource::Agent)
             },
             action: serde_json::from_value(json!({
                 "type": "command",
@@ -2259,7 +2259,7 @@ mod tests {
 
     struct GuardianAssessmentTestContext {
         conversation_id: ThreadId,
-        conversation: Arc<CodexThread>,
+        conversation: Arc<AvaThread>,
         thread_manager: Arc<ThreadManager>,
         outgoing: ThreadScopedOutgoingMessageSender,
         thread_state: Arc<Mutex<ThreadState>>,
@@ -2288,8 +2288,8 @@ mod tests {
     #[test]
     fn guardian_assessment_started_uses_event_turn_id_fallback() {
         let conversation_id = ThreadId::new();
-        let action = codex_protocol::protocol::GuardianAssessmentAction::Command {
-            source: codex_protocol::protocol::GuardianCommandSource::Shell,
+        let action = ava_protocol::protocol::GuardianAssessmentAction::Command {
+            source: ava_protocol::protocol::GuardianCommandSource::Shell,
             command: "rm -rf /tmp/example.sqlite".to_string(),
             cwd: test_path_buf("/tmp").abs().into(),
         };
@@ -2306,7 +2306,7 @@ mod tests {
                 turn_id: String::new(),
                 started_at_ms: 1_000,
                 completed_at_ms: None,
-                status: codex_protocol::protocol::GuardianAssessmentStatus::InProgress,
+                status: ava_protocol::protocol::GuardianAssessmentStatus::InProgress,
                 risk_level: None,
                 user_authorization: None,
                 rationale: None,
@@ -2338,8 +2338,8 @@ mod tests {
     #[test]
     fn guardian_assessment_completed_emits_review_payload() {
         let conversation_id = ThreadId::new();
-        let action = codex_protocol::protocol::GuardianAssessmentAction::Command {
-            source: codex_protocol::protocol::GuardianCommandSource::Shell,
+        let action = ava_protocol::protocol::GuardianAssessmentAction::Command {
+            source: ava_protocol::protocol::GuardianCommandSource::Shell,
             command: "rm -rf /tmp/example.sqlite".to_string(),
             cwd: test_path_buf("/tmp").abs().into(),
         };
@@ -2356,12 +2356,12 @@ mod tests {
                 turn_id: "turn-from-assessment".to_string(),
                 started_at_ms: 1_000,
                 completed_at_ms: Some(1_042),
-                status: codex_protocol::protocol::GuardianAssessmentStatus::Denied,
-                risk_level: Some(codex_protocol::protocol::GuardianRiskLevel::High),
-                user_authorization: Some(codex_protocol::protocol::GuardianUserAuthorization::Low),
+                status: ava_protocol::protocol::GuardianAssessmentStatus::Denied,
+                risk_level: Some(ava_protocol::protocol::GuardianRiskLevel::High),
+                user_authorization: Some(ava_protocol::protocol::GuardianUserAuthorization::Low),
                 rationale: Some("too risky".to_string()),
                 decision_source: Some(
-                    codex_protocol::protocol::GuardianAssessmentDecisionSource::Agent,
+                    ava_protocol::protocol::GuardianAssessmentDecisionSource::Agent,
                 ),
                 action: action.clone(),
             },
@@ -2379,11 +2379,11 @@ mod tests {
                 assert_eq!(payload.review.status, GuardianApprovalReviewStatus::Denied);
                 assert_eq!(
                     payload.review.risk_level,
-                    Some(codex_app_server_protocol::GuardianRiskLevel::High)
+                    Some(ava_app_server_protocol::GuardianRiskLevel::High)
                 );
                 assert_eq!(
                     payload.review.user_authorization,
-                    Some(codex_app_server_protocol::GuardianUserAuthorization::Low)
+                    Some(ava_app_server_protocol::GuardianUserAuthorization::Low)
                 );
                 assert_eq!(payload.review.rationale.as_deref(), Some("too risky"));
                 assert_eq!(payload.action, action.into());
@@ -2395,10 +2395,10 @@ mod tests {
     #[test]
     fn guardian_assessment_aborted_emits_completed_review_payload() {
         let conversation_id = ThreadId::new();
-        let action = codex_protocol::protocol::GuardianAssessmentAction::NetworkAccess {
+        let action = ava_protocol::protocol::GuardianAssessmentAction::NetworkAccess {
             target: "api.openai.com:443".to_string(),
             host: "api.openai.com".to_string(),
-            protocol: codex_protocol::protocol::NetworkApprovalProtocol::Https,
+            protocol: ava_protocol::protocol::NetworkApprovalProtocol::Https,
             port: 443,
         };
         let notification = guardian_auto_approval_review_notification(
@@ -2414,12 +2414,12 @@ mod tests {
                 turn_id: "turn-from-assessment".to_string(),
                 started_at_ms: 1_000,
                 completed_at_ms: Some(1_042),
-                status: codex_protocol::protocol::GuardianAssessmentStatus::Aborted,
+                status: ava_protocol::protocol::GuardianAssessmentStatus::Aborted,
                 risk_level: None,
                 user_authorization: None,
                 rationale: None,
                 decision_source: Some(
-                    codex_protocol::protocol::GuardianAssessmentDecisionSource::Agent,
+                    ava_protocol::protocol::GuardianAssessmentDecisionSource::Agent,
                 ),
                 action: action.clone(),
             },
@@ -2449,7 +2449,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -2530,7 +2530,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -2611,29 +2611,29 @@ mod tests {
 
     #[tokio::test]
     async fn guardian_command_execution_notifications_wrap_review_lifecycle() -> Result<()> {
-        let codex_home = TempDir::new()?;
-        let config = load_default_config_for_test(&codex_home).await;
+        let ava_home = TempDir::new()?;
+        let config = load_default_config_for_test(&ava_home).await;
         let thread_manager = Arc::new(
-            codex_core::test_support::thread_manager_with_models_provider_and_home(
-                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            ava_core::test_support::thread_manager_with_models_provider_and_home(
+                AvaAuth::create_dummy_chatgpt_auth_for_testing(),
                 config.model_provider.clone(),
-                config.codex_home.to_path_buf(),
-                Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+                config.ava_home.to_path_buf(),
+                Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
             ),
         );
-        let codex_core::NewThread {
+        let ava_core::NewThread {
             thread_id: conversation_id,
             thread: conversation,
             ..
         } = thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(config.clone()))
+            .start_thread(ava_core::StartThreadOptions::new(config.clone()))
             .await?;
         let thread_state = new_thread_state();
         let thread_watch_manager = ThreadWatchManager::new();
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3035,7 +3035,7 @@ mod tests {
             TurnError {
                 misalignment: None,
                 message: "boom".to_string(),
-                codex_error_info: Some(V2CodexErrorInfo::InternalServerError),
+                ava_error_info: Some(V2AvaErrorInfo::InternalServerError),
                 additional_details: None,
             },
             &thread_state,
@@ -3048,7 +3048,7 @@ mod tests {
             Some(TurnError {
                 misalignment: None,
                 message: "boom".to_string(),
-                codex_error_info: Some(V2CodexErrorInfo::InternalServerError),
+                ava_error_info: Some(V2AvaErrorInfo::InternalServerError),
                 additional_details: None,
             })
         );
@@ -3057,29 +3057,29 @@ mod tests {
 
     #[tokio::test]
     async fn turn_started_omits_active_snapshot_items() -> Result<()> {
-        let codex_home = TempDir::new()?;
-        let config = load_default_config_for_test(&codex_home).await;
+        let ava_home = TempDir::new()?;
+        let config = load_default_config_for_test(&ava_home).await;
         let thread_manager = Arc::new(
-            codex_core::test_support::thread_manager_with_models_provider_and_home(
-                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            ava_core::test_support::thread_manager_with_models_provider_and_home(
+                AvaAuth::create_dummy_chatgpt_auth_for_testing(),
                 config.model_provider.clone(),
-                config.codex_home.to_path_buf(),
-                Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+                config.ava_home.to_path_buf(),
+                Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
             ),
         );
-        let codex_core::NewThread {
+        let ava_core::NewThread {
             thread_id: conversation_id,
             thread: conversation,
             ..
         } = thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(config.clone()))
+            .start_thread(ava_core::StartThreadOptions::new(config.clone()))
             .await?;
         let thread_state = new_thread_state();
         {
             let mut state = thread_state.lock().await;
             state.track_current_turn_event(
                 "turn-1",
-                &EventMsg::TurnStarted(codex_protocol::protocol::TurnStartedEvent {
+                &EventMsg::TurnStarted(ava_protocol::protocol::TurnStartedEvent {
                     turn_id: "turn-1".to_string(),
                     root_turn_id: None,
                     trace_id: None,
@@ -3090,7 +3090,7 @@ mod tests {
             );
             state.track_current_turn_event(
                 "turn-1",
-                &EventMsg::UserMessage(codex_protocol::protocol::UserMessageEvent {
+                &EventMsg::UserMessage(ava_protocol::protocol::UserMessageEvent {
                     client_id: None,
                     message: "already tracked".to_string(),
                     images: None,
@@ -3104,7 +3104,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3115,7 +3115,7 @@ mod tests {
         apply_bespoke_event_handling(
             Event {
                 id: "turn-1".to_string(),
-                msg: EventMsg::TurnStarted(codex_protocol::protocol::TurnStartedEvent {
+                msg: EventMsg::TurnStarted(ava_protocol::protocol::TurnStartedEvent {
                     turn_id: "turn-1".to_string(),
                     root_turn_id: None,
                     trace_id: None,
@@ -3192,22 +3192,22 @@ mod tests {
 
     #[tokio::test]
     async fn interrupted_subagent_activity_removes_missing_thread_watch() -> Result<()> {
-        let codex_home = TempDir::new()?;
-        let config = load_default_config_for_test(&codex_home).await;
+        let ava_home = TempDir::new()?;
+        let config = load_default_config_for_test(&ava_home).await;
         let thread_manager = Arc::new(
-            codex_core::test_support::thread_manager_with_models_provider_and_home(
-                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            ava_core::test_support::thread_manager_with_models_provider_and_home(
+                AvaAuth::create_dummy_chatgpt_auth_for_testing(),
                 config.model_provider.clone(),
-                config.codex_home.to_path_buf(),
-                Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+                config.ava_home.to_path_buf(),
+                Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
             ),
         );
-        let codex_core::NewThread {
+        let ava_core::NewThread {
             thread_id: conversation_id,
             thread: conversation,
             ..
         } = thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(config))
+            .start_thread(ava_core::StartThreadOptions::new(config))
             .await?;
         let child_thread_id = ThreadId::new();
         let child_thread_id_string = child_thread_id.to_string();
@@ -3219,7 +3219,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3269,7 +3269,7 @@ mod tests {
             ItemCompletedNotification {
                 item: ThreadItem::SubAgentActivity {
                     id: "activity-1".to_string(),
-                    kind: codex_app_server_protocol::SubAgentActivityKind::Interrupted,
+                    kind: ava_app_server_protocol::SubAgentActivityKind::Interrupted,
                     agent_thread_id: child_thread_id_string,
                     agent_path: "/root/worker".to_string(),
                 },
@@ -3283,27 +3283,27 @@ mod tests {
 
     #[tokio::test]
     async fn canonical_dynamic_tool_start_emits_item_and_requests_client() -> Result<()> {
-        let codex_home = TempDir::new()?;
-        let config = load_default_config_for_test(&codex_home).await;
+        let ava_home = TempDir::new()?;
+        let config = load_default_config_for_test(&ava_home).await;
         let thread_manager = Arc::new(
-            codex_core::test_support::thread_manager_with_models_provider_and_home(
-                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            ava_core::test_support::thread_manager_with_models_provider_and_home(
+                AvaAuth::create_dummy_chatgpt_auth_for_testing(),
                 config.model_provider.clone(),
-                config.codex_home.to_path_buf(),
-                Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+                config.ava_home.to_path_buf(),
+                Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
             ),
         );
-        let codex_core::NewThread {
+        let ava_core::NewThread {
             thread_id: conversation_id,
             thread: conversation,
             ..
         } = thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(config))
+            .start_thread(ava_core::StartThreadOptions::new(config))
             .await?;
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3372,7 +3372,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3385,7 +3385,7 @@ mod tests {
             let mut state = thread_state.lock().await;
             state.track_current_turn_event(
                 &event_turn_id,
-                &EventMsg::TurnStarted(codex_protocol::protocol::TurnStartedEvent {
+                &EventMsg::TurnStarted(ava_protocol::protocol::TurnStartedEvent {
                     turn_id: event_turn_id.clone(),
                     root_turn_id: None,
                     trace_id: None,
@@ -3481,7 +3481,7 @@ mod tests {
             TurnError {
                 misalignment: None,
                 message: "oops".to_string(),
-                codex_error_info: None,
+                ava_error_info: None,
                 additional_details: None,
             },
             &thread_state,
@@ -3490,7 +3490,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3532,7 +3532,7 @@ mod tests {
             TurnError {
                 misalignment: None,
                 message: "bad".to_string(),
-                codex_error_info: Some(V2CodexErrorInfo::Other),
+                ava_error_info: Some(V2AvaErrorInfo::Other),
                 additional_details: None,
             },
             &thread_state,
@@ -3541,7 +3541,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3568,7 +3568,7 @@ mod tests {
                     Some(TurnError {
                         misalignment: None,
                         message: "bad".to_string(),
-                        codex_error_info: Some(V2CodexErrorInfo::Other),
+                        ava_error_info: Some(V2AvaErrorInfo::Other),
                         additional_details: None,
                     })
                 );
@@ -3586,7 +3586,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3636,7 +3636,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3652,7 +3652,7 @@ mod tests {
                 output_tokens: 50,
                 reasoning_output_tokens: 9,
                 total_tokens: 200,
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             },
             last_token_usage: TokenUsage {
                 input_tokens: 10,
@@ -3661,12 +3661,12 @@ mod tests {
                 output_tokens: 7,
                 reasoning_output_tokens: 1,
                 total_tokens: 23,
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             },
             model_context_window: Some(4096),
         };
         let rate_limits = RateLimitSnapshot {
-            limit_id: Some("codex".to_string()),
+            limit_id: Some("ava".to_string()),
             limit_name: None,
             normal_model_slug: None,
             primary: Some(RateLimitWindow {
@@ -3714,7 +3714,7 @@ mod tests {
         let second = recv_broadcast_notification(&mut rx).await?;
         match second {
             ServerNotification::AccountRateLimitsUpdated(payload) => {
-                assert_eq!(payload.rate_limits.limit_id.as_deref(), Some("codex"));
+                assert_eq!(payload.rate_limits.limit_id.as_deref(), Some("ava"));
                 assert_eq!(payload.rate_limits.limit_name, None);
                 assert!(payload.rate_limits.primary.is_some());
                 assert!(payload.rate_limits.credits.is_some());
@@ -3731,7 +3731,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3767,7 +3767,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,
@@ -3782,7 +3782,7 @@ mod tests {
             TurnError {
                 misalignment: None,
                 message: "a1".to_string(),
-                codex_error_info: Some(V2CodexErrorInfo::BadRequest),
+                ava_error_info: Some(V2AvaErrorInfo::BadRequest),
                 additional_details: None,
             },
             &thread_state,
@@ -3804,7 +3804,7 @@ mod tests {
             TurnError {
                 misalignment: None,
                 message: "b1".to_string(),
-                codex_error_info: None,
+                ava_error_info: None,
                 additional_details: None,
             },
             &thread_state,
@@ -3841,7 +3841,7 @@ mod tests {
                     Some(TurnError {
                         misalignment: None,
                         message: "a1".to_string(),
-                        codex_error_info: Some(V2CodexErrorInfo::BadRequest),
+                        ava_error_info: Some(V2AvaErrorInfo::BadRequest),
                         additional_details: None,
                     })
                 );
@@ -3860,7 +3860,7 @@ mod tests {
                     Some(TurnError {
                         misalignment: None,
                         message: "b1".to_string(),
-                        codex_error_info: None,
+                        ava_error_info: None,
                         additional_details: None,
                     })
                 );
@@ -3888,7 +3888,7 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
             tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         ));
         let outgoing = ThreadScopedOutgoingMessageSender::new(
             outgoing,

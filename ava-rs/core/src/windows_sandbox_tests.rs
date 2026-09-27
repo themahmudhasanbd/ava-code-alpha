@@ -1,8 +1,8 @@
 use super::*;
-use codex_features::Features;
-use codex_features::FeaturesToml;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_protocol::models::PermissionProfile;
+use ava_features::Features;
+use ava_features::FeaturesToml;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_protocol::models::PermissionProfile;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 
@@ -116,7 +116,7 @@ fn provisioning_settings_omit_the_disabled_socks_proxy() {
 
     assert_eq!(
         provisioning_settings(Some(&spec)).expect("provisioning settings should resolve"),
-        codex_windows_sandbox::WindowsSandboxProvisioningSettings {
+        ava_windows_sandbox::WindowsSandboxProvisioningSettings {
             proxy_ports: vec![43128],
             allow_local_binding: true,
         }
@@ -134,6 +134,6 @@ fn provisioning_settings_are_empty_when_managed_network_is_disabled() {
 
     assert_eq!(
         provisioning_settings(Some(&spec)).expect("provisioning settings should resolve"),
-        codex_windows_sandbox::WindowsSandboxProvisioningSettings::default()
+        ava_windows_sandbox::WindowsSandboxProvisioningSettings::default()
     );
 }

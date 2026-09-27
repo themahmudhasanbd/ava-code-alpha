@@ -7,38 +7,38 @@ mod fake_bwrap;
 use anyhow::Context as _;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
-use codex_exec_server::CAPABILITY_ROOTS_DISCOVER_METHOD;
-use codex_exec_server::CapabilityRootDiscovery;
-use codex_exec_server::CapabilityRootsDiscoverParams;
-use codex_exec_server::CapabilityRootsDiscoverResponse;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::InitializeParams;
-use codex_exec_server::InitializeResponse;
-use codex_exec_server::WindowsSandboxSelection;
-use codex_exec_server_protocol::CapabilityRootDiscoverRequest;
-use codex_exec_server_protocol::EXEC_METHOD;
+use ava_exec_server::CAPABILITY_ROOTS_DISCOVER_METHOD;
+use ava_exec_server::CapabilityRootDiscovery;
+use ava_exec_server::CapabilityRootsDiscoverParams;
+use ava_exec_server::CapabilityRootsDiscoverResponse;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::InitializeParams;
+use ava_exec_server::InitializeResponse;
+use ava_exec_server::WindowsSandboxSelection;
+use ava_exec_server_protocol::CapabilityRootDiscoverRequest;
+use ava_exec_server_protocol::EXEC_METHOD;
 #[cfg(unix)]
-use codex_exec_server_protocol::EXEC_READ_METHOD;
-use codex_exec_server_protocol::FS_OPEN_METHOD;
+use ava_exec_server_protocol::EXEC_READ_METHOD;
+use ava_exec_server_protocol::FS_OPEN_METHOD;
 #[cfg(unix)]
-use codex_exec_server_protocol::FS_READ_BLOCK_METHOD;
-use codex_exec_server_protocol::FS_READ_FILE_METHOD;
+use ava_exec_server_protocol::FS_READ_BLOCK_METHOD;
+use ava_exec_server_protocol::FS_READ_FILE_METHOD;
 #[cfg(unix)]
-use codex_exec_server_protocol::FsReadBlockResponse;
-use codex_exec_server_protocol::FsReadFileResponse;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCResponse;
+use ava_exec_server_protocol::FsReadBlockResponse;
+use ava_exec_server_protocol::FsReadFileResponse;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCResponse;
 #[cfg(unix)]
-use codex_exec_server_protocol::ReadResponse;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server_protocol::ReadResponse;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use common::exec_server::exec_server;
 #[cfg(target_os = "linux")]
 use common::exec_server::exec_server_with_env;
@@ -50,7 +50,7 @@ use pretty_assertions::assert_eq;
 async fn discovers_a_complete_capability_bundle_in_one_request() -> anyhow::Result<()> {
     let root = tempfile::tempdir()?;
     write_file(
-        &root.path().join(".codex-plugin/plugin.json"),
+        &root.path().join(".ava-plugin/plugin.json"),
         r#"{
   "name": "demo",
   "interface": {"displayName": "Demo Plugin"},
@@ -111,7 +111,7 @@ async fn discovers_a_complete_capability_bundle_in_one_request() -> anyhow::Resu
     let plugin = discovery.plugin.as_ref().expect("root plugin");
     assert_eq!(
         plugin.manifest.path,
-        root_uri.join(".codex-plugin/plugin.json")?
+        root_uri.join(".ava-plugin/plugin.json")?
     );
     assert!(plugin.manifest.contents.contains("Demo Plugin"));
     assert_eq!(
@@ -129,7 +129,7 @@ async fn discovers_a_complete_capability_bundle_in_one_request() -> anyhow::Resu
             .map(|file| file.path.clone())
             .collect::<Vec<_>>(),
         vec![
-            root_uri.join(".codex-plugin/plugin.json")?,
+            root_uri.join(".ava-plugin/plugin.json")?,
             root_uri.join("nested/.claude-plugin/plugin.json")?,
             root_uri.join("nested-cursor/.cursor-plugin/plugin.json")?,
         ]
@@ -1112,7 +1112,7 @@ async fn sandboxed_discovery_follows_only_permitted_external_symlinks() -> anyho
     let root = tempfile::tempdir()?;
     let external = tempfile::tempdir()?;
     write_file(
-        &root.path().join(".codex-plugin/plugin.json"),
+        &root.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"linked-plugin","mcpServers":"./external-mcp.json"}"#,
     )?;
     write_file(

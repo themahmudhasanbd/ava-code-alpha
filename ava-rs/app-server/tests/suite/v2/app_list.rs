@@ -19,24 +19,24 @@ use axum::http::StatusCode;
 use axum::http::Uri;
 use axum::http::header::AUTHORIZATION;
 use axum::routing::get;
-use codex_app_server_protocol::AppBranding;
-use codex_app_server_protocol::AppInfo;
-use codex_app_server_protocol::AppListUpdatedNotification;
-use codex_app_server_protocol::AppMetadata;
-use codex_app_server_protocol::AppReview;
-use codex_app_server_protocol::AppScreenshot;
-use codex_app_server_protocol::AppsListParams;
-use codex_app_server_protocol::AppsListResponse;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_login::AuthDotJson;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::save_auth;
-use codex_protocol::auth::AuthMode;
+use ava_app_server_protocol::AppBranding;
+use ava_app_server_protocol::AppInfo;
+use ava_app_server_protocol::AppListUpdatedNotification;
+use ava_app_server_protocol::AppMetadata;
+use ava_app_server_protocol::AppReview;
+use ava_app_server_protocol::AppScreenshot;
+use ava_app_server_protocol::AppsListParams;
+use ava_app_server_protocol::AppsListResponse;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AuthDotJson;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::save_auth;
+use ava_protocol::auth::AuthMode;
 use pretty_assertions::assert_eq;
 use rmcp::handler::server::ServerHandler;
 use rmcp::model::JsonObject;
@@ -61,9 +61,9 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[tokio::test]
 async fn list_apps_returns_empty_when_connectors_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -108,10 +108,10 @@ async fn list_apps_returns_empty_with_api_key_auth() -> Result<()> {
     let (server_url, server_handle) =
         start_apps_server_with_delays(connectors, tools, Duration::ZERO, Duration::ZERO).await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &AuthDotJson {
             auth_mode: Some(AuthMode::ApiKey),
             openai_api_key: Some("test-api-key".to_string()),
@@ -127,7 +127,7 @@ async fn list_apps_returns_empty_with_api_key_auth() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -186,11 +186,11 @@ async fn list_apps_uses_external_chatgpt_auth() -> Result<()> {
     )
     .await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -232,11 +232,11 @@ async fn list_apps_includes_plugin_apps_for_chatgpt_auth() -> Result<()> {
         start_apps_server_with_delays(Vec::new(), Vec::new(), Duration::ZERO, Duration::ZERO)
             .await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_and_plugins_config(codex_home.path(), &server_url)?;
-    write_plugin_app_fixture(codex_home.path(), "sample", "connector_sample")?;
+    let ava_home = TempDir::new()?;
+    write_connectors_and_plugins_config(ava_home.path(), &server_url)?;
+    write_plugin_app_fixture(ava_home.path(), "sample", "connector_sample")?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-plugin-apps")
@@ -245,7 +245,7 @@ async fn list_apps_includes_plugin_apps_for_chatgpt_auth() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -292,10 +292,10 @@ async fn list_apps_uses_thread_feature_flag_when_thread_id_is_provided() -> Resu
     let (server_url, server_handle) =
         start_apps_server_with_delays(connectors, tools, Duration::ZERO, Duration::ZERO).await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -304,7 +304,7 @@ async fn list_apps_uses_thread_feature_flag_when_thread_id_is_provided() -> Resu
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -315,7 +315,7 @@ async fn list_apps_uses_thread_feature_flag_when_thread_id_is_provided() -> Resu
         timeout(DEFAULT_TIMEOUT, mcp.read_response(start_request)).await??;
 
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{server_url}"
@@ -393,10 +393,10 @@ async fn list_apps_keeps_apps_with_app_only_tools_accessible() -> Result<()> {
     let (server_url, server_handle) =
         start_apps_server_with_delays(connectors, tools, Duration::ZERO, Duration::ZERO).await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-app-only")
@@ -405,7 +405,7 @@ async fn list_apps_keeps_apps_with_app_only_tools_accessible() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -454,9 +454,9 @@ async fn list_apps_reports_is_enabled_from_config() -> Result<()> {
     let (server_url, server_handle) =
         start_apps_server_with_delays(connectors, tools, Duration::ZERO, Duration::ZERO).await?;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{server_url}"
@@ -470,7 +470,7 @@ enabled = false
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -479,7 +479,7 @@ enabled = false
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -587,10 +587,10 @@ async fn list_apps_emits_updates_and_returns_after_both_lists_load() -> Result<(
     )
     .await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -599,7 +599,7 @@ async fn list_apps_emits_updates_and_returns_after_both_lists_load() -> Result<(
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -734,10 +734,10 @@ async fn list_apps_waits_for_accessible_data_before_emitting_directory_updates()
     )
     .await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-directory-first")
@@ -746,7 +746,7 @@ async fn list_apps_waits_for_accessible_data_before_emitting_directory_updates()
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -845,10 +845,10 @@ async fn list_apps_does_not_emit_empty_interim_updates() -> Result<()> {
     )
     .await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-empty-interim")
@@ -857,7 +857,7 @@ async fn list_apps_does_not_emit_empty_interim_updates() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -959,10 +959,10 @@ async fn list_apps_paginates_results() -> Result<()> {
     )
     .await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -971,7 +971,7 @@ async fn list_apps_paginates_results() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -1089,10 +1089,10 @@ async fn list_apps_force_refetch_preserves_previous_cache_on_failure() -> Result
     let (server_url, server_handle) =
         start_apps_server_with_delays(connectors, tools, Duration::ZERO, Duration::ZERO).await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -1101,7 +1101,7 @@ async fn list_apps_force_refetch_preserves_previous_cache_on_failure() -> Result
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -1123,7 +1123,7 @@ async fn list_apps_force_refetch_preserves_previous_cache_on_failure() -> Result
     assert!(initial_data.iter().all(|app| app.is_accessible));
 
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token-invalid")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -1212,10 +1212,10 @@ async fn list_apps_force_refetch_patches_updates_from_cached_snapshots() -> Resu
     )
     .await?;
 
-    let codex_home = TempDir::new()?;
-    write_connectors_config(codex_home.path(), &server_url)?;
+    let ava_home = TempDir::new()?;
+    write_connectors_config(ava_home.path(), &server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -1224,7 +1224,7 @@ async fn list_apps_force_refetch_patches_updates_from_cached_snapshots() -> Resu
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -1592,7 +1592,7 @@ async fn start_apps_server_with_delays_and_control_inner(
             get(list_directory_connectors),
         )
         .with_state(state)
-        .nest_service("/api/codex/ps/mcp", mcp_service);
+        .nest_service("/api/ava/ps/mcp", mcp_service);
 
     let handle = tokio::spawn(async move {
         let _ = axum::serve(listener, router).await;
@@ -1657,8 +1657,8 @@ pub(super) fn connector_tool(connector_id: &str, connector_name: &str) -> Result
     Ok(tool)
 }
 
-fn write_connectors_config(codex_home: &std::path::Path, base_url: &str) -> std::io::Result<()> {
-    let config_toml = codex_home.join("config.toml");
+fn write_connectors_config(ava_home: &std::path::Path, base_url: &str) -> std::io::Result<()> {
+    let config_toml = ava_home.join("config.toml");
     std::fs::write(
         config_toml,
         format!(
@@ -1673,8 +1673,8 @@ connectors = true
     )
 }
 
-fn write_connectors_and_plugins_config(codex_home: &Path, base_url: &str) -> std::io::Result<()> {
-    let config_toml = codex_home.join("config.toml");
+fn write_connectors_and_plugins_config(ava_home: &Path, base_url: &str) -> std::io::Result<()> {
+    let config_toml = ava_home.join("config.toml");
     std::fs::write(
         config_toml,
         format!(
@@ -1693,15 +1693,15 @@ enabled = true
     )
 }
 
-fn write_plugin_app_fixture(codex_home: &Path, plugin_name: &str, app_id: &str) -> Result<()> {
-    let plugin_root = codex_home
+fn write_plugin_app_fixture(ava_home: &Path, plugin_name: &str, app_id: &str) -> Result<()> {
+    let plugin_root = ava_home
         .join("plugins/cache")
         .join("test")
         .join(plugin_name)
         .join("local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         format!(r#"{{"name":"{plugin_name}"}}"#),
     )?;
     std::fs::write(

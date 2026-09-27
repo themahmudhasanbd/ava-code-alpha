@@ -13,9 +13,9 @@ use wiremock::matchers::path;
 #[tokio::test]
 async fn consumer_roots_include_paginated_archived_descendants_and_keep_missing_usage() {
     for (unsupported, status) in [(false, 200), (true, 200), (false, 404), (false, 503)] {
-        use codex_app_server_client::RemoteAppServerClient;
-        use codex_app_server_client::RemoteAppServerConnectArgs;
-        use codex_app_server_client::RemoteAppServerEndpoint;
+        use ava_app_server_client::RemoteAppServerClient;
+        use ava_app_server_client::RemoteAppServerConnectArgs;
+        use ava_app_server_client::RemoteAppServerEndpoint;
         use futures::SinkExt;
         use tokio_tungstenite::tungstenite::Message;
 
@@ -31,7 +31,7 @@ async fn consumer_roots_include_paginated_archived_descendants_and_keep_missing_
                 let request: serde_json::Value = serde_json::from_str(&text).unwrap();
                 let result = match request["method"].as_str() {
                     Some("initialize") => {
-                        json!({"userAgent":"analytics-test", "codexHome":"/unused"})
+                        json!({"userAgent":"analytics-test", "avaHome":"/unused"})
                     }
                     Some("thread/list") => {
                         pages += 1;
@@ -123,7 +123,7 @@ async fn consumer_roots_include_paginated_archived_descendants_and_keep_missing_
                 if unsupported || status != 200 {
                     vec![]
                 } else {
-                    vec![codex_backend_client::TaskUsageStatus::Partial]
+                    vec![ava_backend_client::TaskUsageStatus::Partial]
                 }
             )
         );

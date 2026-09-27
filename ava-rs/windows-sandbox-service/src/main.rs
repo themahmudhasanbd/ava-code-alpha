@@ -1,8 +1,8 @@
 use anyhow::Result;
-use codex_windows_sandbox_service::RunMode;
+use ava_windows_sandbox_service::RunMode;
 
 fn main() -> Result<()> {
-    codex_windows_sandbox_service::run(parse_mode(std::env::args().skip(1))?)
+    ava_windows_sandbox_service::run(parse_mode(std::env::args().skip(1))?)
 }
 
 fn parse_mode(arguments: impl Iterator<Item = String>) -> Result<RunMode> {

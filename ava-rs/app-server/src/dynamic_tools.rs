@@ -1,9 +1,9 @@
-use codex_app_server_protocol::DynamicToolCallOutputContentItem;
-use codex_app_server_protocol::DynamicToolCallResponse;
-use codex_core::CodexThread;
-use codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem as CoreDynamicToolCallOutputContentItem;
-use codex_protocol::dynamic_tools::DynamicToolResponse as CoreDynamicToolResponse;
-use codex_protocol::protocol::Op;
+use ava_app_server_protocol::DynamicToolCallOutputContentItem;
+use ava_app_server_protocol::DynamicToolCallResponse;
+use ava_core::AvaThread;
+use ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem as CoreDynamicToolCallOutputContentItem;
+use ava_protocol::dynamic_tools::DynamicToolResponse as CoreDynamicToolResponse;
+use ava_protocol::protocol::Op;
 use std::sync::Arc;
 use tokio::sync::oneshot;
 use tracing::error;
@@ -18,7 +18,7 @@ const INVALID_AUDIO_URL_ERROR: &str = "audio URLs must use an inline data URL";
 pub(crate) async fn on_call_response(
     call_id: String,
     receiver: oneshot::Receiver<ClientRequestResult>,
-    conversation: Arc<CodexThread>,
+    conversation: Arc<AvaThread>,
 ) {
     let response = receiver.await;
     let (response, _error) = match response {

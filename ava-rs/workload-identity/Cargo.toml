@@ -1,19 +1,19 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-workload-identity"
+name = "ava-workload-identity"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_workload_identity"
+name = "ava_workload_identity"
 path = "src/lib.rs"
 
 [lints]
 workspace = true
 
 [dependencies]
-codex-http-client = { workspace = true }
+ava-http-client = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

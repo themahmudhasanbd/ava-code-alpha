@@ -13,25 +13,25 @@ use crate::tools::spec_plan::append_source_tools;
 use crate::tools::spec_plan::build_core_tool_registry;
 use crate::tools::spec_plan::extension_tool_executors;
 use crate::turn_diff_tracker::TurnDiffTracker;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ResponsesApiTool;
-use codex_extension_api::ToolCall as ExtensionToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::ResponseItem;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
-use codex_tools::default_namespace_description;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ResponsesApiTool;
+use ava_extension_api::ToolCall as ExtensionToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_protocol::DEFAULT_FUNCTION_NAMESPACE;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::ResponseItem;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
+use ava_tools::default_namespace_description;
 use core_test_support::responses::strip_response_item_ids_from_json;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -59,7 +59,7 @@ fn tool_log_payload_redacts_plaintext_multi_agent_messages() {
     );
 }
 
-impl codex_extension_api::ToolContributor for ExtensionEchoContributor {
+impl ava_extension_api::ToolContributor for ExtensionEchoContributor {
     fn tools(
         &self,
         _session_store: &ExtensionData,
@@ -84,7 +84,7 @@ impl<'call> ToolExecutor<ExtensionToolCall<'call>> for ExtensionEchoExecutor {
                 name: "echo".to_string(),
                 description: "Echoes arguments through an extension tool.".to_string(),
                 strict: true,
-                parameters: codex_extension_api::parse_tool_input_schema(&json!({
+                parameters: ava_extension_api::parse_tool_input_schema(&json!({
                     "type": "object",
                     "properties": {
                         "message": { "type": "string" },
@@ -99,7 +99,7 @@ impl<'call> ToolExecutor<ExtensionToolCall<'call>> for ExtensionEchoExecutor {
         })
     }
 
-    fn handle<'a>(&'a self, call: ExtensionToolCall<'call>) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, call: ExtensionToolCall<'call>) -> ava_tools::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -111,15 +111,15 @@ impl ExtensionEchoExecutor {
     async fn handle_call(
         &self,
         call: ExtensionToolCall<'_>,
-    ) -> Result<Box<dyn codex_tools::ToolOutput>, codex_tools::FunctionCallError> {
+    ) -> Result<Box<dyn ava_tools::ToolOutput>, ava_tools::FunctionCallError> {
         let arguments: serde_json::Value =
             serde_json::from_str(call.function_arguments()?).expect("test arguments should parse");
-        Ok(Box::new(codex_tools::JsonToolOutput::new(json!({
+        Ok(Box::new(ava_tools::JsonToolOutput::new(json!({
             "arguments": arguments,
             "callId": call.call_id,
             "conversationHistory": call.conversation_history.items(),
             "ok": true,
-        }))) as Box<dyn codex_tools::ToolOutput>)
+        }))) as Box<dyn ava_tools::ToolOutput>)
     }
 }
 
@@ -214,7 +214,7 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
     let call = ToolRouter::build_tool_call(ResponseItem::FunctionCall {
         id: None,
         name: tool_name.clone(),
-        namespace: Some("mcp__codex_apps__calendar".to_string()),
+        namespace: Some("mcp__ava_apps__calendar".to_string()),
         arguments: "{}".to_string(),
         encrypted_function_args: Some(Vec::new()),
         call_id: "call-namespace".to_string(),
@@ -224,7 +224,7 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
 
     assert_eq!(
         call.tool_name,
-        ToolName::namespaced("mcp__codex_apps__calendar", tool_name)
+        ToolName::namespaced("mcp__ava_apps__calendar", tool_name)
     );
     assert_eq!(call.call_id, "call-namespace");
     assert_eq!(call.encrypted_function_args, Some(Vec::new()));
@@ -439,8 +439,8 @@ async fn specs_filter_deferred_dynamic_tools() -> anyhow::Result<()> {
     let hidden_tool = "hidden_dynamic_tool";
     let visible_tool = "visible_dynamic_tool";
     let dynamic_tools = vec![DynamicToolSpec::Namespace(DynamicToolNamespaceSpec {
-        name: "codex_app".to_string(),
-        description: "Codex app tools.".to_string(),
+        name: "ava_app".to_string(),
+        description: "Ava app tools.".to_string(),
         tools: vec![
             DynamicToolNamespaceTool::Function(DynamicToolFunctionSpec {
                 name: hidden_tool.to_string(),
@@ -475,18 +475,18 @@ async fn specs_filter_deferred_dynamic_tools() -> anyhow::Result<()> {
 
     assert!(Arc::ptr_eq(&visible_specs, &router.model_visible_specs()));
     assert_eq!(
-        namespace_function_names(&visible_specs, "codex_app"),
+        namespace_function_names(&visible_specs, "ava_app"),
         vec![visible_tool.to_string()]
     );
     assert_eq!(
         router.deferred_tool_namespaces(),
-        BTreeMap::from([("codex_app".to_string(), "Codex app tools.".to_string())])
+        BTreeMap::from([("ava_app".to_string(), "Ava app tools.".to_string())])
     );
 
     let updated_router = test_tool_router(step_context.as_ref(), Vec::new(), Vec::new(), &[]);
     let updated_specs = updated_router.model_visible_specs();
     assert!(!Arc::ptr_eq(&visible_specs, &updated_specs));
-    assert!(namespace_function_names(&updated_specs, "codex_app").is_empty());
+    assert!(namespace_function_names(&updated_specs, "ava_app").is_empty());
 
     Ok(())
 }
@@ -496,8 +496,8 @@ fn mcp_tool_info(
     supports_parallel_tool_calls: bool,
     callable_namespace: &str,
     tool_name: &str,
-) -> codex_mcp::ToolInfo {
-    codex_mcp::ToolInfo {
+) -> ava_mcp::ToolInfo {
+    ava_mcp::ToolInfo {
         server_name: server_name.to_string(),
         supports_parallel_tool_calls,
         server_origin: None,
@@ -518,7 +518,7 @@ fn mcp_tool_info(
     }
 }
 
-fn mcp_runtime(tool_info: codex_mcp::ToolInfo) -> RegisteredTool {
+fn mcp_runtime(tool_info: ava_mcp::ToolInfo) -> RegisteredTool {
     let runtime = Arc::new(McpHandler::new(tool_info).expect("MCP tool spec should build"))
         as Arc<dyn CoreToolRuntime>;
     RegisteredTool {
@@ -562,7 +562,7 @@ async fn extension_tool_executors_are_model_visible_and_dispatchable() -> anyhow
         Vec::new(),
         extension_tool_executors(
             &session,
-            &codex_extension_api::ExtensionData::new(turn.sub_id.clone()),
+            &ava_extension_api::ExtensionData::new(turn.sub_id.clone()),
         ),
         &turn.dynamic_tools,
     );

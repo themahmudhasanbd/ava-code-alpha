@@ -477,7 +477,7 @@ async fn run_git_command(
     let mut argv = Vec::with_capacity(args.len() + 3);
     argv.push("git".to_string());
     argv.push("-c".to_string());
-    argv.push(codex_git_utils::SAFE_BARE_REPOSITORY_CONFIG.to_string());
+    argv.push(ava_git_utils::SAFE_BARE_REPOSITORY_CONFIG.to_string());
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
     runner
         .run(
@@ -608,7 +608,7 @@ mod tests {
             response(
                 &["gh", "repo", "view", "--json", "nameWithOwner,parent"],
                 /*exit_code*/ 0,
-                r#"{"nameWithOwner":"fcoury/codex","parent":{"nameWithOwner":"openai/codex"}}"#,
+                r#"{"nameWithOwner":"fcoury/ava","parent":{"nameWithOwner":"openai/ava"}}"#,
             ),
             response(
                 &[
@@ -616,7 +616,7 @@ mod tests {
                     "api",
                     "-H",
                     "Accept: application/vnd.github+json",
-                    "repos/openai/codex/commits/head-sha/pulls",
+                    "repos/openai/ava/commits/head-sha/pulls",
                 ],
                 /*exit_code*/ 0,
                 r#"[{"number":20252,"html_url":"https://github.com/openai/codex/pull/20252","state":"open"}]"#,
@@ -639,7 +639,7 @@ mod tests {
             "api",
             "-H",
             "Accept: application/vnd.github+json",
-            "repos/openai/codex/commits/head-sha/pulls",
+            "repos/openai/ava/commits/head-sha/pulls",
         ]));
     }
 
@@ -667,9 +667,9 @@ mod tests {
     fn status_line_pr_fallback_searches_parent_repo_first() {
         assert_eq!(
             repo_search_order_from_output(
-                r#"{"nameWithOwner":"fcoury/codex","parent":{"nameWithOwner":"openai/codex"}}"#
+                r#"{"nameWithOwner":"fcoury/ava","parent":{"nameWithOwner":"openai/ava"}}"#
             ),
-            Some(vec!["openai/codex".to_string(), "fcoury/codex".to_string()])
+            Some(vec!["openai/ava".to_string(), "fcoury/ava".to_string()])
         );
     }
 
@@ -680,7 +680,7 @@ mod tests {
                 1..1,
                 [
                     "-c".to_string(),
-                    codex_git_utils::SAFE_BARE_REPOSITORY_CONFIG.to_string(),
+                    ava_git_utils::SAFE_BARE_REPOSITORY_CONFIG.to_string(),
                 ],
             );
         }
@@ -719,7 +719,7 @@ mod tests {
                     1..1,
                     [
                         "-c".to_string(),
-                        codex_git_utils::SAFE_BARE_REPOSITORY_CONFIG.to_string(),
+                        ava_git_utils::SAFE_BARE_REPOSITORY_CONFIG.to_string(),
                     ],
                 );
             }

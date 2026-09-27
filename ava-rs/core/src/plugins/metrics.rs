@@ -1,11 +1,11 @@
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
 use crate::tools::sandboxing::ToolCtx;
-use codex_analytics::PluginMeasurementsInput;
-use codex_core_plugins::PluginMetricsSidecar;
-use codex_exec_server::Environment;
-use codex_protocol::items::ModelInvocationContext;
-use codex_utils_path_uri::PathUri;
+use ava_analytics::PluginMeasurementsInput;
+use ava_core_plugins::PluginMetricsSidecar;
+use ava_exec_server::Environment;
+use ava_protocol::items::ModelInvocationContext;
+use ava_utils_path_uri::PathUri;
 
 /// Creates a metrics sidecar for one plugin command.
 pub(crate) async fn sidecar_for_command(

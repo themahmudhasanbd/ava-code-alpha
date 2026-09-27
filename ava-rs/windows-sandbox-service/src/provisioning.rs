@@ -10,9 +10,9 @@ use std::sync::atomic::AtomicBool;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_windows_sandbox::SandboxProvisioningResponse;
-use codex_windows_sandbox::SetupRuntime;
-use codex_windows_sandbox::run_elevated_provisioning_setup_with_retained_handles;
+use ava_windows_sandbox::SandboxProvisioningResponse;
+use ava_windows_sandbox::SetupRuntime;
+use ava_windows_sandbox::run_elevated_provisioning_setup_with_retained_handles;
 use windows_sys::Win32::Storage::FileSystem as filesystem;
 
 use crate::installation_record::InstallationRecord;
@@ -26,7 +26,7 @@ fn register_owner(
     on_authenticated_user: &dyn Fn(
         InstallationRecord,
         OwnedHandle,
-        codex_windows_sandbox::SetupRuntime,
+        ava_windows_sandbox::SetupRuntime,
     ) -> Result<InstallationRecord>,
 ) -> Result<InstallationRecord> {
     let token = unsafe { BorrowedHandle::borrow_raw(identity.token.0 as _) }
@@ -34,7 +34,7 @@ fn register_owner(
         .context("retain authenticated uninstall owner")?;
     on_authenticated_user(
         InstallationRecord {
-            codex_home: identity.codex_home.clone(),
+            ava_home: identity.ava_home.clone(),
             user_sid: identity.user_sid.clone(),
             session_id: identity.session_id,
             desktop_installation: identity.desktop_installation.clone(),
@@ -47,12 +47,12 @@ fn register_owner(
 
 fn setup_is_complete(
     identity: &ClientIdentity,
-    settings: &codex_windows_sandbox::WindowsSandboxProvisioningSettings,
+    settings: &ava_windows_sandbox::WindowsSandboxProvisioningSettings,
 ) -> Result<bool> {
     crate::package_lifecycle::with_owner_impersonation(identity.token.0, || {
         Ok(
-            codex_windows_sandbox::sandbox_setup_is_complete_with_settings(
-                &identity.codex_home,
+            ava_windows_sandbox::sandbox_setup_is_complete_with_settings(
+                &identity.ava_home,
                 settings,
             ),
         )
@@ -67,13 +67,13 @@ pub(crate) fn run(
     on_authenticated_user: &dyn Fn(
         InstallationRecord,
         OwnedHandle,
-        codex_windows_sandbox::SetupRuntime,
+        ava_windows_sandbox::SetupRuntime,
     ) -> Result<InstallationRecord>,
 ) -> Result<SandboxProvisioningResponse> {
     let request = match request {
         ServiceRequest::RegisterInstallation { .. } => {
             let installation = InstallationRecord {
-                codex_home: identity.codex_home,
+                ava_home: identity.ava_home,
                 user_sid: identity.user_sid,
                 session_id: identity.session_id,
                 desktop_installation: identity.desktop_installation,
@@ -100,7 +100,7 @@ pub(crate) fn run(
     }
     let helper = std::env::current_exe()
         .context("locate the provisioning service executable")?
-        .with_file_name("codex-windows-sandbox-setup.exe");
+        .with_file_name("ava-windows-sandbox-setup.exe");
     let helper_metadata = helper
         .symlink_metadata()
         .with_context(|| format!("inspect packaged setup helper {}", helper.display()))?;
@@ -119,7 +119,7 @@ pub(crate) fn run(
         .map(|handle| unsafe { BorrowedHandle::borrow_raw(handle.0 as _) })
         .collect::<Vec<_>>();
     match run_elevated_provisioning_setup_with_retained_handles(
-        &identity.codex_home,
+        &identity.ava_home,
         &identity.account,
         settings,
         identity.runtime,
@@ -128,14 +128,14 @@ pub(crate) fn run(
         Ok(()) => {
             crate::service::log_information(
                 crate::service::EVENT_PROVISIONING_SUCCEEDED,
-                "Codex sandbox provisioning completed successfully.",
+                "Ava sandbox provisioning completed successfully.",
             );
             Ok(SandboxProvisioningResponse::Ok)
         }
         Err(error) => {
             crate::service::log_error(
                 crate::service::EVENT_PROVISIONING_FAILED,
-                &format!("Codex sandbox provisioning failed: {error}"),
+                &format!("Ava sandbox provisioning failed: {error}"),
             );
             Err(error).context("sandbox provisioning failed")
         }

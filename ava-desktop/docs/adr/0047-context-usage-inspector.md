@@ -20,7 +20,7 @@ anchor, but providers do not expose exact per-tool allocation.
 
 ## Decision
 
-1. Replace the standalone ring with a compact Codex-style context inspector
+1. Replace the standalone ring with a compact Ava-style context inspector
    trigger. *(Amended by D225: hover and focus no longer open the panel;
    clicking or keyboard-activating the trigger toggles it.)* Activating the
    trigger reveals one scrollable, non-modal panel.

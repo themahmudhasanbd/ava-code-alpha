@@ -16,16 +16,16 @@ use crate::app_server_session::ResumeModelSettings;
 use crate::chatwidget::tests::helpers::normalize_snapshot_paths;
 use crate::chatwidget::tests::helpers::render_bottom_popup;
 use crate::test_support::PathBufExt;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadSource;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::models::MessagePhase;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadSource;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::models::MessagePhase;
 use core_test_support::responses;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -139,7 +139,7 @@ async fn automatic_thread_title_respects_origin_metadata_after_switching() -> co
             AppEvent::GeneratedThreadTitle {
                 cancellation: CancellationToken::new(),
                 thread_id,
-                temporary_thread_id: codex_protocol::ThreadId::new(),
+                temporary_thread_id: ava_protocol::ThreadId::new(),
                 destination: ThreadTitleDestination::Automatic,
                 result: Ok(r#"{"title":"Generated title"}"#.to_string()),
             },
@@ -217,10 +217,10 @@ async fn check_thread_title_generation(scenario: TitleScenario) -> color_eyre::R
         template = template.set_delay(std::time::Duration::from_secs(/*secs*/ 60));
     }
     let response = responses::mount_response_once(&server, template).await;
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let provider_id = "thread-title-test";
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "model = \"gpt-5.2\"\n\
              model_provider = \"{provider_id}\"\n\n\
@@ -238,9 +238,9 @@ async fn check_thread_title_generation(scenario: TitleScenario) -> color_eyre::R
     let (event_tx, mut event_rx) = unbounded_channel();
     app.local_settings.tui.animations = false;
     app.app_event_tx = AppEventSender::new(event_tx);
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
     app.config.sqlite =
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().to_path_buf().abs());
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().to_path_buf().abs());
     app.config.model = Some("gpt-5.2".to_string());
     app.config.model_provider_id = provider_id.to_string();
     app.config.model_provider = ModelProviderInfo {
@@ -367,7 +367,7 @@ async fn check_thread_title_generation(scenario: TitleScenario) -> color_eyre::R
                 let name = "Keep this title".to_string();
                 let event = match scenario {
                     TitleScenario::ManualRename => {
-                        AppEvent::CodexOp(AppCommand::set_thread_name(name))
+                        AppEvent::AvaOp(AppCommand::set_thread_name(name))
                     }
                     TitleScenario::OverviewRename => {
                         AppEvent::RenameAgentsOverviewThread { thread_id, name }
@@ -537,7 +537,7 @@ fn recent_conversation_messages_escape_markup_and_ignore_commentary() {
 fn recent_conversation_messages_strip_ide_context_before_escaping() {
     let ide_context = "x".repeat(THREAD_TITLE_PROMPT_MAX_BYTES + 1);
     let user_message = format!(
-        "# Context from my IDE setup:\n{ide_context}\n## My request for Codex:\n\nEarlier request\n## My request for Codex:\n  Fix <login> & retries  "
+        "# Context from my IDE setup:\n{ide_context}\n## My request for Ava:\n\nEarlier request\n## My request for Ava:\n  Fix <login> & retries  "
     );
     let items = vec![title_user_message("user-1", &user_message)];
 
@@ -831,7 +831,7 @@ async fn thread_title_progress_clears_failed_requests_and_follows_thread_switche
         AppEvent::GeneratedThreadTitle {
             cancellation: CancellationToken::new(),
             thread_id,
-            temporary_thread_id: codex_protocol::ThreadId::new(),
+            temporary_thread_id: ava_protocol::ThreadId::new(),
             destination: ThreadTitleDestination::Automatic,
             result: Err("generation failed".to_string()),
         },

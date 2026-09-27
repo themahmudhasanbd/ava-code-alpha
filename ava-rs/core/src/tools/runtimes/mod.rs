@@ -4,31 +4,31 @@ Module: runtimes
 Concrete ToolRuntime implementations for specific tools. Each runtime stays
 small and focused and reuses the orchestrator for approvals + sandbox + retry.
 */
-use crate::exec_env::CODEX_PERMISSION_PROFILE_ENV_VAR;
-use crate::exec_env::CODEX_SESSION_ID_ENV_VAR;
-use crate::exec_env::CODEX_THREAD_ID_ENV_VAR;
-use crate::exec_env::CODEX_VERSION_ENV_VAR;
+use crate::exec_env::AVA_PERMISSION_PROFILE_ENV_VAR;
+use crate::exec_env::AVA_SESSION_ID_ENV_VAR;
+use crate::exec_env::AVA_THREAD_ID_ENV_VAR;
+use crate::exec_env::AVA_VERSION_ENV_VAR;
 use crate::sandboxing::SandboxPermissions;
 use crate::shell::Shell;
 use crate::shell::ShellType;
-use codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR;
-use codex_core_plugins::PLUGIN_METRICS_OUTPUT_ENV_VAR;
+use ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR;
+use ava_core_plugins::PLUGIN_METRICS_OUTPUT_ENV_VAR;
 #[cfg(unix)]
-use codex_install_context::InstallContext;
+use ava_install_context::InstallContext;
 #[cfg(target_os = "macos")]
-use codex_network_proxy::CODEX_PROXY_GIT_SSH_COMMAND_MARKER;
-use codex_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY;
-use codex_network_proxy::CUSTOM_CA_ENV_KEYS;
-use codex_network_proxy::PROXY_ACTIVE_ENV_KEY;
-use codex_network_proxy::PROXY_ENV_KEYS;
+use ava_network_proxy::AVA_PROXY_GIT_SSH_COMMAND_MARKER;
+use ava_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY;
+use ava_network_proxy::CUSTOM_CA_ENV_KEYS;
+use ava_network_proxy::PROXY_ACTIVE_ENV_KEY;
+use ava_network_proxy::PROXY_ENV_KEYS;
 #[cfg(target_os = "macos")]
-use codex_network_proxy::PROXY_GIT_SSH_COMMAND_ENV_KEY;
-pub(crate) use codex_network_proxy::is_managed_proxy_env_var;
-pub(crate) use codex_network_proxy::strip_managed_proxy_env;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::shell_environment::is_non_inheritable_env_var;
-use codex_shell_command::shell_snapshot::posix_env_path_expansion_function;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_network_proxy::PROXY_GIT_SSH_COMMAND_ENV_KEY;
+pub(crate) use ava_network_proxy::is_managed_proxy_env_var;
+pub(crate) use ava_network_proxy::strip_managed_proxy_env;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::shell_environment::is_non_inheritable_env_var;
+use ava_shell_command::shell_snapshot::posix_env_path_expansion_function;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -36,11 +36,11 @@ pub(crate) mod apply_patch;
 pub(crate) mod unified_exec;
 pub(crate) mod zsh_fork;
 
-const SNAPSHOT_ORIGINAL_BASH_ENV_ENV_KEY: &str = "CODEX_NETWORK_PROXY_SNAPSHOT_ORIGINAL_BASH_ENV";
-const SNAPSHOT_ORIGINAL_POSIX_ENV_ENV_KEY: &str = "CODEX_NETWORK_PROXY_SNAPSHOT_ORIGINAL_POSIX_ENV";
-const SNAPSHOT_ORIGINAL_ZDOTDIR_ENV_KEY: &str = "CODEX_NETWORK_PROXY_SNAPSHOT_ORIGINAL_ZDOTDIR";
-const SNAPSHOT_BROKERED_VALUE_ENV_PREFIX: &str = "CODEX_NETWORK_PROXY_SNAPSHOT_BROKERED_VALUE_";
-const SNAPSHOT_BROKERED_UNSET_ENV_PREFIX: &str = "CODEX_NETWORK_PROXY_SNAPSHOT_BROKERED_UNSET_";
+const SNAPSHOT_ORIGINAL_BASH_ENV_ENV_KEY: &str = "AVA_NETWORK_PROXY_SNAPSHOT_ORIGINAL_BASH_ENV";
+const SNAPSHOT_ORIGINAL_POSIX_ENV_ENV_KEY: &str = "AVA_NETWORK_PROXY_SNAPSHOT_ORIGINAL_POSIX_ENV";
+const SNAPSHOT_ORIGINAL_ZDOTDIR_ENV_KEY: &str = "AVA_NETWORK_PROXY_SNAPSHOT_ORIGINAL_ZDOTDIR";
+const SNAPSHOT_BROKERED_VALUE_ENV_PREFIX: &str = "AVA_NETWORK_PROXY_SNAPSHOT_BROKERED_VALUE_";
+const SNAPSHOT_BROKERED_UNSET_ENV_PREFIX: &str = "AVA_NETWORK_PROXY_SNAPSHOT_BROKERED_UNSET_";
 
 pub(crate) fn exec_env_for_sandbox_permissions(
     env: &HashMap<String, String>,
@@ -48,7 +48,7 @@ pub(crate) fn exec_env_for_sandbox_permissions(
 ) -> HashMap<String, String> {
     let mut env = env.clone();
     // Escalated commands intentionally use the original, unbrokered environment. This branch is
-    // defensive cleanup for a caller that passes an environment already prepared by Codex.
+    // defensive cleanup for a caller that passes an environment already prepared by Ava.
     if sandbox_permissions.requires_escalated_permissions()
         && env.contains_key(PROXY_ACTIVE_ENV_KEY)
     {
@@ -83,7 +83,7 @@ fn prepend_path_entry(env: &mut HashMap<String, String>, path_entry: &str) -> Op
     }
 }
 
-/// PATH entries owned by Codex runtime setup.
+/// PATH entries owned by Ava runtime setup.
 ///
 /// These are applied to the live exec environment immediately and replayed after
 /// restoring a shell snapshot, unless the user explicitly overrides `PATH`.
@@ -166,7 +166,7 @@ pub(crate) fn prepare_powershell_command_for_elevated_windows_sandbox(
         windows_sandbox_level,
         environment_is_remote,
         |path| {
-            codex_shell_command::shell_detect::fallback_powershell_shell_for_elevated_windows_sandbox(
+            ava_shell_command::shell_detect::fallback_powershell_shell_for_elevated_windows_sandbox(
                 path,
             )
         },
@@ -179,7 +179,7 @@ fn prepare_powershell_command_for_elevated_windows_sandbox_with_fallback(
     sandbox_requested: bool,
     windows_sandbox_level: WindowsSandboxLevel,
     environment_is_remote: bool,
-    find_fallback: impl FnOnce(&Path) -> Option<codex_shell_command::shell_detect::DetectedShell>,
+    find_fallback: impl FnOnce(&Path) -> Option<ava_shell_command::shell_detect::DetectedShell>,
 ) -> Vec<String> {
     if shell_type != Some(&ShellType::PowerShell)
         || !sandbox_requested
@@ -223,14 +223,14 @@ pub(crate) fn prepare_brokered_shell_snapshot_env(
                 !key.starts_with(SNAPSHOT_BROKERED_VALUE_ENV_PREFIX)
                     && !key.starts_with(SNAPSHOT_BROKERED_UNSET_ENV_PREFIX)
             });
-            for key in codex_network_proxy::brokered_credential_value_env_keys(env) {
+            for key in ava_network_proxy::brokered_credential_value_env_keys(env) {
                 if is_valid_shell_variable_name(&key)
                     && let Some(value) = env.get(&key).cloned()
                 {
                     env.insert(format!("{SNAPSHOT_BROKERED_VALUE_ENV_PREFIX}{key}"), value);
                 }
             }
-            for key in codex_network_proxy::brokered_credential_marker_env_keys(env) {
+            for key in ava_network_proxy::brokered_credential_marker_env_keys(env) {
                 if !is_valid_shell_variable_name(&key) {
                     continue;
                 }
@@ -288,10 +288,10 @@ pub(crate) fn prepare_brokered_shell_snapshot_env(
 /// `explicit_env_overrides` contains policy-driven shell env overrides that
 /// should win after the snapshot is sourced, while `env` is the full live exec
 /// environment. We need access to both so snapshot restore logic can preserve
-/// runtime-only vars like `CODEX_THREAD_ID` without pretending they came from
+/// runtime-only vars like `AVA_THREAD_ID` without pretending they came from
 /// the explicit override policy.
 ///
-/// `runtime_path_prepends` contains Codex-owned PATH entries already applied to
+/// `runtime_path_prepends` contains Ava-owned PATH entries already applied to
 /// the live `env`; snapshot wrapping replays them after restoring the snapshot
 /// PATH unless the user explicitly overrides `PATH`.
 pub(crate) fn maybe_wrap_shell_lc_with_snapshot(
@@ -334,7 +334,7 @@ pub(crate) fn maybe_wrap_shell_lc_with_snapshot(
         && command[0] == shell_path.as_ref()
         && matches!(session_shell.shell_type, ShellType::Bash | ShellType::Zsh);
     let original_shell_is_zsh = command_uses_session_zsh
-        || codex_shell_command::shell_detect::detect_shell_type(&command[0])
+        || ava_shell_command::shell_detect::detect_shell_type(&command[0])
             == Some(ShellType::Zsh);
     let brokered_zsh_flag = if flag == "-lc" { "-lfc" } else { "-fc" };
     let original_shell_flag = if brokered && original_shell_is_zsh {
@@ -350,11 +350,11 @@ pub(crate) fn maybe_wrap_shell_lc_with_snapshot(
         .collect::<String>();
     let mut override_env = explicit_env_overrides.clone();
     for key in [
-        CODEX_SESSION_ID_ENV_VAR,
-        CODEX_THREAD_ID_ENV_VAR,
-        CODEX_VERSION_ENV_VAR,
-        CODEX_PERMISSION_PROFILE_ENV_VAR,
-        CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR,
+        AVA_SESSION_ID_ENV_VAR,
+        AVA_THREAD_ID_ENV_VAR,
+        AVA_VERSION_ENV_VAR,
+        AVA_PERMISSION_PROFILE_ENV_VAR,
+        AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR,
         PLUGIN_METRICS_OUTPUT_ENV_VAR,
     ] {
         if let Some(value) = env.get(key) {
@@ -365,8 +365,8 @@ pub(crate) fn maybe_wrap_shell_lc_with_snapshot(
     let (override_captures, override_exports) = build_override_exports(
         &override_env,
         &[
-            CODEX_PERMISSION_PROFILE_ENV_VAR,
-            CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR,
+            AVA_PERMISSION_PROFILE_ENV_VAR,
+            AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR,
             PLUGIN_METRICS_OUTPUT_ENV_VAR,
         ],
     );
@@ -389,65 +389,65 @@ pub(crate) fn maybe_wrap_shell_lc_with_snapshot(
         let expand_env_function = posix_env_path_expansion_function();
         (
             format!(
-                r#"__CODEX_SNAPSHOT_ORIGINAL_ENV_SET="${{ENV+x}}"
-__CODEX_SNAPSHOT_ORIGINAL_ENV="${{ENV-}}"
+                r#"__AVA_SNAPSHOT_ORIGINAL_ENV_SET="${{ENV+x}}"
+__AVA_SNAPSHOT_ORIGINAL_ENV="${{ENV-}}"
 {expand_env_function}
-__codex_snapshot_expand_env_with_zdotdir() (
+__ava_snapshot_expand_env_with_zdotdir() (
   if [ -n "${{{zdotdir_key}+x}}" ]; then
     export ZDOTDIR="${{{zdotdir_key}}}"
   elif [ -n "${{ZSH_VERSION-}}" ] && [ "${{ZDOTDIR-}}" = /dev/null ]; then
     unset ZDOTDIR
   fi
-  __codex_snapshot_expand_env "$1"
+  __ava_snapshot_expand_env "$1"
 )
-__CODEX_SNAPSHOT_PROTECTED_ENV=$(
-  __codex_snapshot_expand_env_with_zdotdir "${{{startup_env_key}-}}"
+__AVA_SNAPSHOT_PROTECTED_ENV=$(
+  __ava_snapshot_expand_env_with_zdotdir "${{{startup_env_key}-}}"
 )
-__CODEX_SNAPSHOT_ALTERNATE_PROTECTED_ENV=$(
-  __codex_snapshot_expand_env_with_zdotdir "${{{alternate_startup_env_key}-}}"
+__AVA_SNAPSHOT_ALTERNATE_PROTECTED_ENV=$(
+  __ava_snapshot_expand_env_with_zdotdir "${{{alternate_startup_env_key}-}}"
 )"#
             ),
-            "__CODEX_SNAPSHOT_REPLAYED_BASH_ENV=\"${BASH_ENV-}\"".to_string(),
+            "__AVA_SNAPSHOT_REPLAYED_BASH_ENV=\"${BASH_ENV-}\"".to_string(),
             format!(
-                r#"__CODEX_SNAPSHOT_CURRENT_ENV=$(
-  __codex_snapshot_expand_env_with_zdotdir "${{ENV-}}"
+                r#"__AVA_SNAPSHOT_CURRENT_ENV=$(
+  __ava_snapshot_expand_env_with_zdotdir "${{ENV-}}"
 )
-__CODEX_SNAPSHOT_ORIGINAL_EXPANDED_ENV=$(
-  __codex_snapshot_expand_env_with_zdotdir "$__CODEX_SNAPSHOT_ORIGINAL_ENV"
+__AVA_SNAPSHOT_ORIGINAL_EXPANDED_ENV=$(
+  __ava_snapshot_expand_env_with_zdotdir "$__AVA_SNAPSHOT_ORIGINAL_ENV"
 )
-__CODEX_SNAPSHOT_REPLAYED_PROTECTED_ENV=$(
-  __codex_snapshot_expand_env_with_zdotdir "$__CODEX_SNAPSHOT_REPLAYED_BASH_ENV"
+__AVA_SNAPSHOT_REPLAYED_PROTECTED_ENV=$(
+  __ava_snapshot_expand_env_with_zdotdir "$__AVA_SNAPSHOT_REPLAYED_BASH_ENV"
 )
-unset -f __codex_snapshot_expand_env __codex_snapshot_expand_env_with_zdotdir
-__codex_snapshot_env_is_protected() (
-  for __codex_protected_env in \
-    "$__CODEX_SNAPSHOT_PROTECTED_ENV" \
-    "$__CODEX_SNAPSHOT_ALTERNATE_PROTECTED_ENV" \
-    "$__CODEX_SNAPSHOT_REPLAYED_PROTECTED_ENV"; do
-    if [ -n "$__codex_protected_env" ] &&
-      {{ [ "$1" = "$__codex_protected_env" ] ||
-        [ "$1" -ef "$__codex_protected_env" ] 2>/dev/null; }}; then
+unset -f __ava_snapshot_expand_env __ava_snapshot_expand_env_with_zdotdir
+__ava_snapshot_env_is_protected() (
+  for __ava_protected_env in \
+    "$__AVA_SNAPSHOT_PROTECTED_ENV" \
+    "$__AVA_SNAPSHOT_ALTERNATE_PROTECTED_ENV" \
+    "$__AVA_SNAPSHOT_REPLAYED_PROTECTED_ENV"; do
+    if [ -n "$__ava_protected_env" ] &&
+      {{ [ "$1" = "$__ava_protected_env" ] ||
+        [ "$1" -ef "$__ava_protected_env" ] 2>/dev/null; }}; then
       return 0
     fi
   done
   return 1
 )
-if __codex_snapshot_env_is_protected "$__CODEX_SNAPSHOT_CURRENT_ENV"; then
-  if [ -n "$__CODEX_SNAPSHOT_ORIGINAL_ENV_SET" ] &&
-    ! __codex_snapshot_env_is_protected "$__CODEX_SNAPSHOT_ORIGINAL_EXPANDED_ENV"; then
-    builtin export ENV="$__CODEX_SNAPSHOT_ORIGINAL_ENV" 2>/dev/null ||
-      command export ENV="$__CODEX_SNAPSHOT_ORIGINAL_ENV" || exit 1
-    [ "${{ENV-}}" = "$__CODEX_SNAPSHOT_ORIGINAL_ENV" ] || exit 1
+if __ava_snapshot_env_is_protected "$__AVA_SNAPSHOT_CURRENT_ENV"; then
+  if [ -n "$__AVA_SNAPSHOT_ORIGINAL_ENV_SET" ] &&
+    ! __ava_snapshot_env_is_protected "$__AVA_SNAPSHOT_ORIGINAL_EXPANDED_ENV"; then
+    builtin export ENV="$__AVA_SNAPSHOT_ORIGINAL_ENV" 2>/dev/null ||
+      command export ENV="$__AVA_SNAPSHOT_ORIGINAL_ENV" || exit 1
+    [ "${{ENV-}}" = "$__AVA_SNAPSHOT_ORIGINAL_ENV" ] || exit 1
   else
     builtin unset ENV 2>/dev/null || command unset ENV || exit 1
     [ -z "${{ENV+x}}" ] || exit 1
   fi
 fi
-unset -f __codex_snapshot_env_is_protected
-unset __CODEX_SNAPSHOT_ORIGINAL_ENV_SET __CODEX_SNAPSHOT_ORIGINAL_ENV \
-  __CODEX_SNAPSHOT_PROTECTED_ENV __CODEX_SNAPSHOT_ALTERNATE_PROTECTED_ENV \
-  __CODEX_SNAPSHOT_REPLAYED_BASH_ENV __CODEX_SNAPSHOT_REPLAYED_PROTECTED_ENV \
-  __CODEX_SNAPSHOT_CURRENT_ENV __CODEX_SNAPSHOT_ORIGINAL_EXPANDED_ENV \
+unset -f __ava_snapshot_env_is_protected
+unset __AVA_SNAPSHOT_ORIGINAL_ENV_SET __AVA_SNAPSHOT_ORIGINAL_ENV \
+  __AVA_SNAPSHOT_PROTECTED_ENV __AVA_SNAPSHOT_ALTERNATE_PROTECTED_ENV \
+  __AVA_SNAPSHOT_REPLAYED_BASH_ENV __AVA_SNAPSHOT_REPLAYED_PROTECTED_ENV \
+  __AVA_SNAPSHOT_CURRENT_ENV __AVA_SNAPSHOT_ORIGINAL_EXPANDED_ENV \
   {bash_env_key} {posix_env_key}"#
             ),
         )
@@ -577,7 +577,7 @@ fn build_brokered_credential_exports(env: &HashMap<String, String>, remove_copie
         return exports;
     }
     format!(
-        "case $- in\n  *x*) __CODEX_SNAPSHOT_BROKER_XTRACE=1; set +x ;;\n  *) __CODEX_SNAPSHOT_BROKER_XTRACE= ;;\nesac\n{exports}\nif [ -n \"$__CODEX_SNAPSHOT_BROKER_XTRACE\" ]; then\n  unset __CODEX_SNAPSHOT_BROKER_XTRACE\n  set -x\nelse\n  unset __CODEX_SNAPSHOT_BROKER_XTRACE\nfi"
+        "case $- in\n  *x*) __AVA_SNAPSHOT_BROKER_XTRACE=1; set +x ;;\n  *) __AVA_SNAPSHOT_BROKER_XTRACE= ;;\nesac\n{exports}\nif [ -n \"$__AVA_SNAPSHOT_BROKER_XTRACE\" ]; then\n  unset __AVA_SNAPSHOT_BROKER_XTRACE\n  set -x\nelse\n  unset __AVA_SNAPSHOT_BROKER_XTRACE\nfi"
     )
 }
 
@@ -595,14 +595,14 @@ fn build_override_exports(
     keys.sort_unstable();
     keys.dedup();
 
-    build_override_exports_for_keys("__CODEX_SNAPSHOT_OVERRIDE", &keys)
+    build_override_exports_for_keys("__AVA_SNAPSHOT_OVERRIDE", &keys)
 }
 
 fn build_proxy_env_exports(env: &HashMap<String, String>) -> (String, String) {
     let mut keys = PROXY_ENV_KEYS
         .iter()
         .copied()
-        .chain(codex_network_proxy::brokered_credential_env_keys(env))
+        .chain(ava_network_proxy::brokered_credential_env_keys(env))
         .chain(CUSTOM_CA_ENV_KEYS)
         .chain(
             env.get(CREDENTIAL_BROKER_ACTIVE_ENV_KEY)
@@ -615,15 +615,15 @@ fn build_proxy_env_exports(env: &HashMap<String, String>) -> (String, String) {
     keys.dedup();
 
     let (captures, restores) =
-        build_override_exports_for_keys("__CODEX_SNAPSHOT_PROXY_OVERRIDE", &keys);
+        build_override_exports_for_keys("__AVA_SNAPSHOT_PROXY_OVERRIDE", &keys);
     let key = PROXY_ACTIVE_ENV_KEY;
     let proxy_blocks = (
-        format!("{captures}\n__CODEX_SNAPSHOT_PROXY_ENV_SET=\"${{{key}+x}}\""),
+        format!("{captures}\n__AVA_SNAPSHOT_PROXY_ENV_SET=\"${{{key}+x}}\""),
         format!(
-            "if [ -n \"$__CODEX_SNAPSHOT_PROXY_ENV_SET\" ] || [ -n \"${{{key}+x}}\" ]; then\n{restores}\nfi"
+            "if [ -n \"$__AVA_SNAPSHOT_PROXY_ENV_SET\" ] || [ -n \"${{{key}+x}}\" ]; then\n{restores}\nfi"
         ),
     );
-    let git_blocks = build_codex_proxy_git_ssh_command_exports();
+    let git_blocks = build_ava_proxy_git_ssh_command_exports();
     (
         join_shell_blocks([proxy_blocks.0, git_blocks.0]),
         join_shell_blocks([proxy_blocks.1, git_blocks.1]),
@@ -631,21 +631,21 @@ fn build_proxy_env_exports(env: &HashMap<String, String>) -> (String, String) {
 }
 
 #[cfg(target_os = "macos")]
-fn build_codex_proxy_git_ssh_command_exports() -> (String, String) {
+fn build_ava_proxy_git_ssh_command_exports() -> (String, String) {
     let key = PROXY_GIT_SSH_COMMAND_ENV_KEY;
-    let marker_pattern = format!("{}\\ *", CODEX_PROXY_GIT_SSH_COMMAND_MARKER.trim_end());
+    let marker_pattern = format!("{}\\ *", AVA_PROXY_GIT_SSH_COMMAND_MARKER.trim_end());
     (
         format!(
-            "__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_SET=\"${{{key}+x}}\"\n__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND=\"${{{key}-}}\"\ncase \"$__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND\" in\n  {marker_pattern}) __CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_LIVE_MARKED=1 ;;\n  *) __CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_LIVE_MARKED= ;;\nesac"
+            "__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_SET=\"${{{key}+x}}\"\n__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND=\"${{{key}-}}\"\ncase \"$__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND\" in\n  {marker_pattern}) __AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_LIVE_MARKED=1 ;;\n  *) __AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_LIVE_MARKED= ;;\nesac"
         ),
         format!(
-            "case \"${{{key}-}}\" in\n  {marker_pattern}) __CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED=1 ;;\n  *) __CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED= ;;\nesac\nif [ -n \"$__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_LIVE_MARKED\" ]; then\n  if [ -z \"${{{key}+x}}\" ] || [ -n \"$__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED\" ]; then\n    export {key}=\"$__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND\"\n  fi\nelif [ -n \"$__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED\" ]; then\n  if [ -n \"$__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND_SET\" ]; then\n    export {key}=\"$__CODEX_SNAPSHOT_PROXY_GIT_SSH_COMMAND\"\n  else\n    unset {key}\n  fi\nfi"
+            "case \"${{{key}-}}\" in\n  {marker_pattern}) __AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED=1 ;;\n  *) __AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED= ;;\nesac\nif [ -n \"$__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_LIVE_MARKED\" ]; then\n  if [ -z \"${{{key}+x}}\" ] || [ -n \"$__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED\" ]; then\n    export {key}=\"$__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND\"\n  fi\nelif [ -n \"$__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_AFTER_MARKED\" ]; then\n  if [ -n \"$__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND_SET\" ]; then\n    export {key}=\"$__AVA_SNAPSHOT_PROXY_GIT_SSH_COMMAND\"\n  else\n    unset {key}\n  fi\nfi"
         ),
     )
 }
 
 #[cfg(not(target_os = "macos"))]
-fn build_codex_proxy_git_ssh_command_exports() -> (String, String) {
+fn build_ava_proxy_git_ssh_command_exports() -> (String, String) {
     (String::new(), String::new())
 }
 
@@ -857,7 +857,7 @@ mod prepare_powershell_command_tests {
             WindowsSandboxLevel::Elevated,
             /*environment_is_remote*/ false,
             |_| {
-                Some(codex_shell_command::shell_detect::DetectedShell {
+                Some(ava_shell_command::shell_detect::DetectedShell {
                     shell_type: ShellType::PowerShell,
                     shell_path: fallback_path.clone(),
                 })
@@ -893,7 +893,7 @@ mod prepare_powershell_command_tests {
             /*environment_is_remote*/ true,
             |_| {
                 discovery_called = true;
-                Some(codex_shell_command::shell_detect::DetectedShell {
+                Some(ava_shell_command::shell_detect::DetectedShell {
                     shell_type: ShellType::PowerShell,
                     shell_path: std::path::PathBuf::from(r"C:\Program Files\PowerShell\7\pwsh.exe"),
                 })

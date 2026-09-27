@@ -12,19 +12,19 @@ use crate::pull::PullEvent;
 use crate::pull::PullProgressReporter;
 use crate::url::base_url_to_host_root;
 use crate::url::is_openai_compatible_base_url;
-use codex_core::config::Config;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
+use ava_core::config::Config;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
 #[cfg(test)]
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestError;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestError;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
 #[cfg(test)]
-use codex_model_provider_info::WireApi;
+use ava_model_provider_info::WireApi;
 #[cfg(test)]
-use codex_model_provider_info::create_oss_provider_with_base_url;
+use ava_model_provider_info::create_oss_provider_with_base_url;
 
 const OLLAMA_CONNECTION_ERROR: &str = "No running Ollama server detected. Start it with: `ollama serve` (after installing). Install instructions: https://github.com/ollama/ollama?tab=readme-ov-file#ollama";
 const OLLAMA_CONNECTION_TIMEOUT: Duration = Duration::from_secs(5);
@@ -297,10 +297,10 @@ mod tests {
     // Happy-path tests using a mock HTTP server; skip if sandbox network is disabled.
     #[tokio::test]
     async fn test_fetch_models_happy_path() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_fetch_models_happy_path",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -328,10 +328,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_fetch_version() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_fetch_version",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -364,10 +364,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_pull_model_stream_parses_large_json_lines() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} set; skipping test_pull_model_stream_parses_large_json_lines",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -408,10 +408,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_probe_server_happy_path_openai_compat_and_native() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} set; skipping test_probe_server_happy_path_openai_compat_and_native",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -445,10 +445,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_from_oss_provider_ok_when_server_running() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} set; skipping test_try_from_oss_provider_ok_when_server_running",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -469,10 +469,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_from_provider_preserves_outbound_proxy_policy() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} set; skipping test_try_from_provider_preserves_outbound_proxy_policy",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -480,7 +480,7 @@ mod tests {
         let proxy = wiremock::MockServer::start().await;
         let base_url = "http://ollama-proxy.invalid";
         let request_url = format!("{base_url}/api/tags");
-        codex_http_client::cache_system_proxy_route_for_test(&request_url, proxy.uri());
+        ava_http_client::cache_system_proxy_route_for_test(&request_url, proxy.uri());
 
         wiremock::Mock::given(wiremock::matchers::method("GET"))
             .and(wiremock::matchers::path("/api/tags"))
@@ -505,25 +505,25 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_from_provider_handles_invalid_custom_ca_by_proxy_policy() {
-        const CHILD_POLICY_ENV: &str = "CODEX_OLLAMA_INVALID_CA_TEST_POLICY";
+        const CHILD_POLICY_ENV: &str = "AVA_OLLAMA_INVALID_CA_TEST_POLICY";
 
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} set; skipping test_try_from_provider_handles_invalid_custom_ca_by_proxy_policy",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
 
         let Ok(policy_name) = std::env::var(CHILD_POLICY_ENV) else {
             let invalid_ca_path = std::env::temp_dir().join(format!(
-                "codex-ollama-invalid-ca-{}.pem",
+                "ava-ollama-invalid-ca-{}.pem",
                 std::process::id()
             ));
             std::fs::write(&invalid_ca_path, "not a PEM certificate")
                 .expect("invalid CA fixture should be written");
 
-            for ca_env in ["CODEX_CA_CERTIFICATE", "SSL_CERT_FILE"] {
+            for ca_env in ["AVA_CA_CERTIFICATE", "SSL_CERT_FILE"] {
                 for policy_name in ["reqwest-default", "respect-system-proxy"] {
                     let output = std::process::Command::new(
                         std::env::current_exe().expect("test executable should be available"),
@@ -531,7 +531,7 @@ mod tests {
                     .arg("--exact")
                     .arg("client::tests::test_try_from_provider_handles_invalid_custom_ca_by_proxy_policy")
                     .arg("--nocapture")
-                    .env_remove("CODEX_CA_CERTIFICATE")
+                    .env_remove("AVA_CA_CERTIFICATE")
                     .env_remove("SSL_CERT_FILE")
                     .env(ca_env, &invalid_ca_path)
                     .env(CHILD_POLICY_ENV, policy_name)
@@ -586,8 +586,8 @@ mod tests {
                 let error = result
                     .err()
                     .expect("system-proxy Ollama should reject invalid custom CAs");
-                let ca_env = if std::env::var_os("CODEX_CA_CERTIFICATE").is_some() {
-                    "CODEX_CA_CERTIFICATE"
+                let ca_env = if std::env::var_os("AVA_CA_CERTIFICATE").is_some() {
+                    "AVA_CA_CERTIFICATE"
                 } else {
                     "SSL_CERT_FILE"
                 };
@@ -609,10 +609,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_from_oss_provider_err_when_server_missing() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} set; skipping test_try_from_oss_provider_err_when_server_missing",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }

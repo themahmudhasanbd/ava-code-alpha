@@ -1,8 +1,8 @@
-use codex_tools::JsonSchema;
-use codex_tools::TOOL_SEARCH_TOOL_NAME;
-use codex_tools::ToolSearchSourceInfo;
-use codex_tools::ToolSpec;
-use codex_utils_string::take_bytes_at_char_boundary;
+use ava_tools::JsonSchema;
+use ava_tools::TOOL_SEARCH_TOOL_NAME;
+use ava_tools::ToolSearchSourceInfo;
+use ava_tools::ToolSpec;
+use ava_utils_string::take_bytes_at_char_boundary;
 use std::collections::BTreeMap;
 
 const MAX_TOOL_SEARCH_SOURCE_DESCRIPTION_BYTES: usize = 512 * 1024;
@@ -108,7 +108,7 @@ pub(crate) fn create_tool_search_tool(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_tools::JsonSchema;
+    use ava_tools::JsonSchema;
     use pretty_assertions::assert_eq;
     use std::collections::BTreeMap;
 

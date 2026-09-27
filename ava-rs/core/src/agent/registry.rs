@@ -1,12 +1,12 @@
 use crate::agent::types::AgentMetadata;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::TurnEnvironmentSelection;
 use rand::prelude::IndexedRandom;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
-/// This structure is used to add some limits on the multi-agent capabilities for Codex. In
+/// This structure is used to add some limits on the multi-agent capabilities for Ava. In
 /// the current implementation, it limits:
 /// * Total number of sub-agents (i.e. threads) per user session
 ///
@@ -92,7 +92,7 @@ impl AgentRegistry {
     ) -> Result<SpawnReservation> {
         if let Some(max_threads) = max_threads {
             if !self.try_increment_spawned(max_threads) {
-                return Err(CodexErr::new(CodexErrorDetails::AgentLimitReached {
+                return Err(AvaErr::new(AvaErrorDetails::AgentLimitReached {
                     max_threads,
                 }));
             }
@@ -275,9 +275,9 @@ impl AgentRegistry {
             } else {
                 active_agents.used_agent_nicknames.clear();
                 active_agents.nickname_reset_count += 1;
-                if let Some(metrics) = codex_otel::global() {
+                if let Some(metrics) = ava_otel::global() {
                     let _ = metrics.counter(
-                        "codex.multi_agent.nickname_pool_reset",
+                        "ava.multi_agent.nickname_pool_reset",
                         /*inc*/ 1,
                         &[],
                     );
@@ -300,7 +300,7 @@ impl AgentRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         match active_agents.agent_tree.entry(agent_path.to_string()) {
-            Entry::Occupied(_) => Err(CodexErr::UnsupportedOperation(format!(
+            Entry::Occupied(_) => Err(AvaErr::UnsupportedOperation(format!(
                 "agent path `{agent_path}` already exists"
             ))),
             Entry::Vacant(entry) => {
@@ -363,7 +363,7 @@ impl SpawnReservation {
             .state
             .reserve_agent_nickname(names, preferred)
             .ok_or_else(|| {
-                CodexErr::UnsupportedOperation("no available agent nicknames".to_string())
+                AvaErr::UnsupportedOperation("no available agent nicknames".to_string())
             })?;
         self.reserved_agent_nickname = Some(agent_nickname.clone());
         Ok(agent_nickname)

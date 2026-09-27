@@ -17,32 +17,32 @@ fn daemon(home: &std::path::Path) -> crate::Daemon {
         update_pid_file: state.join("app-server-updater.pid"),
         operation_lock_file: state.join("daemon.lock"),
         settings_file: state.join("settings.json"),
-        managed_codex_bin: crate::managed_install::managed_codex_bin(home),
+        managed_ava_bin: crate::managed_install::managed_ava_bin(home),
     }
 }
 
 fn package(root: &Path, version: &str) -> PathBuf {
     let target = super::platform_target().expect("target");
-    for dir in ["bin", "codex-path", "codex-resources/nested"] {
+    for dir in ["bin", "ava-path", "ava-resources/nested"] {
         std::fs::create_dir_all(root.join(dir)).expect("package directory");
     }
-    let bin = root.join("bin/codex");
-    std::fs::write(&bin, format!("#!/bin/sh\necho 'codex {version}'\n")).expect("codex executable");
+    let bin = root.join("bin/ava");
+    std::fs::write(&bin, format!("#!/bin/sh\necho 'ava {version}'\n")).expect("ava executable");
     for file in [
-        "bin/codex-code-mode-host",
-        "codex-path/rg",
-        "codex-resources/nested/runtime",
+        "bin/ava-code-mode-host",
+        "ava-path/rg",
+        "ava-resources/nested/runtime",
     ] {
         std::fs::write(root.join(file), b"runtime").expect("package file");
-        if file != "codex-resources/nested/runtime" {
+        if file != "ava-resources/nested/runtime" {
             std::fs::set_permissions(root.join(file), std::fs::Permissions::from_mode(0o755))
                 .expect("executable helper");
         }
     }
     if cfg!(target_os = "linux") {
-        std::fs::write(root.join("codex-resources/bwrap"), b"runtime").expect("bwrap");
+        std::fs::write(root.join("ava-resources/bwrap"), b"runtime").expect("bwrap");
         std::fs::set_permissions(
-            root.join("codex-resources/bwrap"),
+            root.join("ava-resources/bwrap"),
             std::fs::Permissions::from_mode(0o755),
         )
         .expect("executable bwrap");
@@ -50,9 +50,9 @@ fn package(root: &Path, version: &str) -> PathBuf {
     std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755))
         .expect("executable permission");
     std::fs::write(
-        root.join("codex-package.json"),
+        root.join("ava-package.json"),
         serde_json::json!({
-            "version": version, "target": target, "entrypoint": "bin/codex"
+            "version": version, "target": target, "entrypoint": "bin/ava"
         })
         .to_string(),
     )
@@ -82,7 +82,7 @@ async fn seeds_full_package() {
     let standalone = home.join("packages/app-server-daemon");
     let selected = std::fs::canonicalize(standalone.join("current")).expect("selected");
     assert_eq!(
-        std::fs::read(selected.join("codex-resources/nested/runtime")).expect("runtime"),
+        std::fs::read(selected.join("ava-resources/nested/runtime")).expect("runtime"),
         b"runtime"
     );
     assert_eq!(
@@ -97,7 +97,7 @@ async fn incomplete_source_fails_without_selecting_it() {
     let temp = tempfile::TempDir::new().expect("temp");
     let source = temp.path().join("package");
     let bin = package(&source, "0.152.0");
-    std::fs::remove_file(source.join("bin/codex-code-mode-host")).expect("remove helper");
+    std::fs::remove_file(source.join("bin/ava-code-mode-host")).expect("remove helper");
     let home = temp.path().join("home");
     let error = prepare_from_package(
         &daemon(&home),
@@ -109,7 +109,7 @@ async fn incomplete_source_fails_without_selecting_it() {
     )
     .await
     .expect_err("incomplete package");
-    assert!(error.to_string().contains("bin/codex-code-mode-host"));
+    assert!(error.to_string().contains("bin/ava-code-mode-host"));
     assert!(!home.join("packages/app-server-daemon/current").exists());
 }
 
@@ -119,8 +119,8 @@ async fn provisioned_macos_bundle_seeds_from_its_running_executable() {
     let temp = tempfile::TempDir::new().expect("temp");
     let source = temp.path().join("package");
     let launcher = package(&source, "0.1.0-internal-test.202609091200.1");
-    std::fs::write(&launcher, b"#!/bin/sh\necho codex 0.0.0\n").expect("launcher");
-    let bundle = source.join("CodexCLI.app/Contents/MacOS/codex");
+    std::fs::write(&launcher, b"#!/bin/sh\necho ava 0.0.0\n").expect("launcher");
+    let bundle = source.join("AvaCLI.app/Contents/MacOS/ava");
     std::fs::create_dir_all(bundle.parent().expect("bundle parent")).expect("bundle dir");
     std::fs::write(&bundle, b"provisioned executable").expect("bundle executable");
     let home = temp.path().join("home");
@@ -137,7 +137,7 @@ async fn provisioned_macos_bundle_seeds_from_its_running_executable() {
     let selected = std::fs::canonicalize(home.join("packages/app-server-daemon/current"))
         .expect("selected release");
     assert_eq!(
-        std::fs::read(selected.join("CodexCLI.app/Contents/MacOS/codex"))
+        std::fs::read(selected.join("AvaCLI.app/Contents/MacOS/ava"))
             .expect("bundled executable"),
         b"provisioned executable"
     );
@@ -171,7 +171,7 @@ async fn legacy_selection_is_not_migrated_or_refreshed() {
     .await
     .unwrap();
     assert_eq!(
-        crate::managed_install::managed_codex_bin(&home)
+        crate::managed_install::managed_ava_bin(&home)
             .canonicalize()
             .unwrap(),
         bin.canonicalize().unwrap()
@@ -293,11 +293,11 @@ async fn explicit_selection_requires_unchanged_cli_and_pins_all_versions() {
             let previous_root = crate::managed_install::package_root(&home);
             package(&source, version);
             std::fs::write(
-                source.join("codex-resources/nested/runtime"),
+                source.join("ava-resources/nested/runtime"),
                 previous.to_string_lossy().as_bytes(),
             )
             .unwrap();
-            let before = std::fs::read(previous.join("bin/codex")).unwrap();
+            let before = std::fs::read(previous.join("bin/ava")).unwrap();
             assert!(
                 !prepare_from_package(
                     &daemon,
@@ -342,10 +342,10 @@ async fn explicit_selection_requires_unchanged_cli_and_pins_all_versions() {
             }
             assert_ne!(selected, previous);
             assert_eq!(
-                std::fs::read(selected.join("bin/codex")).unwrap(),
+                std::fs::read(selected.join("bin/ava")).unwrap(),
                 std::fs::read(&bin).unwrap()
             );
-            assert_eq!(std::fs::read(previous.join("bin/codex")).unwrap(), before);
+            assert_eq!(std::fs::read(previous.join("bin/ava")).unwrap(), before);
             assert!(!root.join("auto-update-version").exists());
             assert!(daemon.running_backend(&settings).await.unwrap().is_none());
             previous = selected;

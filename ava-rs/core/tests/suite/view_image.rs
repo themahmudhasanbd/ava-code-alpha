@@ -3,38 +3,38 @@
 use anyhow::Context;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_core::TurnInputRequest;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-use codex_exec_server::RemoveOptions;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_core::TurnInputRequest;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+use ava_exec_server::RemoveOptions;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathExt;
 use core_test_support::is_remote_test_environment;
 use core_test_support::responses;
@@ -48,10 +48,10 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_no_remote_env;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::test_target_os;
 use core_test_support::wait_for_event_with_timeout;
 use image::DynamicImage;
@@ -85,7 +85,7 @@ enum ImageBudgetPolicy {
     UnifiedResponsesLiteWithoutOriginalSupport,
 }
 
-fn disabled_user_turn(test: &TestCodex, items: Vec<UserInput>, model: String) -> TurnInputRequest {
+fn disabled_user_turn(test: &TestAva, items: Vec<UserInput>, model: String) -> TurnInputRequest {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
     TurnInputRequest::user_input(items).with_thread_settings(ThreadSettingsOverrides {
@@ -161,7 +161,7 @@ fn png_bytes(width: u32, height: u32, rgba: [u8; 4]) -> anyhow::Result<Vec<u8>> 
     Ok(cursor.into_inner())
 }
 
-async fn create_workspace_directory(test: &TestCodex, rel_path: &str) -> anyhow::Result<PathUri> {
+async fn create_workspace_directory(test: &TestAva, rel_path: &str) -> anyhow::Result<PathUri> {
     let abs_path_uri = test.workspace_path_uri(rel_path)?;
     test.fs()
         .create_directory(
@@ -177,7 +177,7 @@ async fn create_workspace_directory(test: &TestCodex, rel_path: &str) -> anyhow:
 }
 
 async fn write_workspace_file(
-    test: &TestCodex,
+    test: &TestAva,
     rel_path: &str,
     contents: Vec<u8>,
 ) -> anyhow::Result<PathBuf> {
@@ -206,7 +206,7 @@ async fn write_workspace_file(
 }
 
 async fn write_workspace_png(
-    test: &TestCodex,
+    test: &TestAva,
     rel_path: &str,
     width: u32,
     height: u32,
@@ -224,8 +224,8 @@ async fn assert_user_turn_local_image_resizes_to(
     let server = start_mock_server().await;
 
     let builder = match image_budget_policy {
-        ImageBudgetPolicy::DetailBased | ImageBudgetPolicy::Unified => test_codex(),
-        ImageBudgetPolicy::UnifiedResponsesLiteWithoutOriginalSupport => test_codex()
+        ImageBudgetPolicy::DetailBased | ImageBudgetPolicy::Unified => test_ava(),
+        ImageBudgetPolicy::UnifiedResponsesLiteWithoutOriginalSupport => test_ava()
             .with_model_info_override("gpt-5.4", |model_info| {
                 model_info.supports_image_detail_original = false;
                 model_info.use_responses_lite = true;
@@ -240,8 +240,8 @@ async fn assert_user_turn_local_image_resizes_to(
         }
     });
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -261,7 +261,7 @@ async fn assert_user_turn_local_image_resizes_to(
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::LocalImage {
@@ -273,7 +273,7 @@ async fn assert_user_turn_local_image_resizes_to(
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         // Empirically, image attachment can be slow under Bazel/RBE.
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
@@ -421,12 +421,12 @@ async fn view_image_tool_attaches_local_image() -> anyhow::Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         let _ = config.features.enable(Feature::ImageResizeNotice);
     });
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -461,7 +461,7 @@ async fn view_image_tool_attaches_local_image() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -476,16 +476,16 @@ async fn view_image_tool_attaches_local_image() -> anyhow::Result<()> {
     let mut item_completed = None;
     let mut legacy_event = None;
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| match event {
             EventMsg::ItemStarted(event) => {
-                if matches!(&event.item, codex_protocol::items::TurnItem::ImageView(_)) {
+                if matches!(&event.item, ava_protocol::items::TurnItem::ImageView(_)) {
                     item_started = Some(event.item.clone());
                 }
                 false
             }
             EventMsg::ItemCompleted(event) => {
-                if matches!(&event.item, codex_protocol::items::TurnItem::ImageView(_)) {
+                if matches!(&event.item, ava_protocol::items::TurnItem::ImageView(_)) {
                     item_completed = Some(event.item.clone());
                 }
                 false
@@ -504,14 +504,14 @@ async fn view_image_tool_attaches_local_image() -> anyhow::Result<()> {
     .await;
 
     match item_started.expect("view image item started event emitted") {
-        codex_protocol::items::TurnItem::ImageView(item) => {
+        ava_protocol::items::TurnItem::ImageView(item) => {
             assert_eq!(item.id, call_id);
             assert_eq!(item.path, path_uri);
         }
         other => panic!("expected ImageView item, got {other:?}"),
     }
     match item_completed.expect("view image item completed event emitted") {
-        codex_protocol::items::TurnItem::ImageView(item) => {
+        ava_protocol::items::TurnItem::ImageView(item) => {
             assert_eq!(item.id, call_id);
             assert_eq!(item.path, path_uri);
         }
@@ -587,7 +587,7 @@ async fn view_image_routes_to_selected_local_environment() -> anyhow::Result<()>
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build(&server).await?;
     write_workspace_file(
         &test,
@@ -653,7 +653,7 @@ async fn view_image_tool_applies_local_sandbox_read_denies() -> anyhow::Result<(
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build(&server).await?;
     let rel_path = "denied.png";
     let denied_path = test.config.cwd.join(rel_path);
@@ -733,7 +733,7 @@ async fn view_image_routes_to_selected_remote_environment() -> anyhow::Result<()
     skip_if_no_remote_env!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_remote_and_local_env(&server).await?;
     let local_cwd = TempDir::new()?;
     fs::write(local_cwd.path().join("remote.png"), b"not a remote image")?;
@@ -844,10 +844,10 @@ async fn view_image_tool_can_preserve_original_resolution_when_requested_on_gpt5
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let mut builder = test_ava().with_model("gpt-5.4");
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -882,7 +882,7 @@ async fn view_image_tool_can_preserve_original_resolution_when_requested_on_gpt5
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -894,7 +894,7 @@ async fn view_image_tool_can_preserve_original_resolution_when_requested_on_gpt5
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -935,7 +935,7 @@ async fn view_image_unified_budget_hides_detail_but_accepts_legacy_hints() -> an
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         let _ = config.features.enable(Feature::UnifiedImageBudget);
     });
     let test = builder.build_with_auto_env(&server).await?;
@@ -1011,10 +1011,10 @@ async fn view_image_tool_errors_clearly_for_unsupported_detail_values() -> anyho
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let mut builder = test_ava().with_model("gpt-5.4");
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -1047,7 +1047,7 @@ async fn view_image_tool_errors_clearly_for_unsupported_detail_values() -> anyho
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1059,7 +1059,7 @@ async fn view_image_tool_errors_clearly_for_unsupported_detail_values() -> anyho
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -1089,10 +1089,10 @@ async fn view_image_tool_treats_null_detail_as_omitted() -> anyhow::Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let mut builder = test_ava().with_model("gpt-5.4");
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -1127,7 +1127,7 @@ async fn view_image_tool_treats_null_detail_as_omitted() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1139,7 +1139,7 @@ async fn view_image_tool_treats_null_detail_as_omitted() -> anyhow::Result<()> {
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -1192,7 +1192,7 @@ async fn assert_view_image_tool_resizes_without_original_support(
     image_budget_policy: ImageBudgetPolicy,
 ) -> anyhow::Result<()> {
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.2")
         .with_config(move |config| {
             if image_budget_policy == ImageBudgetPolicy::Unified {
@@ -1200,8 +1200,8 @@ async fn assert_view_image_tool_resizes_without_original_support(
             }
         });
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -1236,7 +1236,7 @@ async fn assert_view_image_tool_resizes_without_original_support(
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1248,7 +1248,7 @@ async fn assert_view_image_tool_resizes_without_original_support(
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -1292,10 +1292,10 @@ async fn view_image_tool_does_not_force_original_resolution_with_capability_only
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let mut builder = test_ava().with_model("gpt-5.4");
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -1330,7 +1330,7 @@ async fn view_image_tool_does_not_force_original_resolution_with_capability_only
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1342,7 +1342,7 @@ async fn view_image_tool_does_not_force_original_resolution_with_capability_only
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -1383,10 +1383,10 @@ async fn view_image_tool_errors_when_path_is_directory() -> anyhow::Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -1412,7 +1412,7 @@ async fn view_image_tool_errors_when_path_is_directory() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1424,7 +1424,7 @@ async fn view_image_tool_errors_when_path_is_directory() -> anyhow::Result<()> {
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -1453,10 +1453,10 @@ async fn view_image_tool_rejects_invalid_image_before_tool_output() -> anyhow::R
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -1484,7 +1484,7 @@ async fn view_image_tool_rejects_invalid_image_before_tool_output() -> anyhow::R
     )
     .await;
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1495,7 +1495,7 @@ async fn view_image_tool_rejects_invalid_image_before_tool_output() -> anyhow::R
         ))
         .await?;
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -1525,10 +1525,10 @@ async fn view_image_tool_errors_when_file_missing() -> anyhow::Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         session_configured,
         ..
     } = &test;
@@ -1556,7 +1556,7 @@ async fn view_image_tool_errors_when_file_missing() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1568,7 +1568,7 @@ async fn view_image_tool_errors_when_file_missing() -> anyhow::Result<()> {
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )
@@ -1667,13 +1667,13 @@ async fn view_image_tool_returns_unsupported_message_for_text_only_model() -> an
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some(model_slug.to_string());
         });
     let test = builder.build_with_auto_env(&server).await?;
-    let TestCodex { codex, .. } = &test;
+    let TestAva { ava, .. } = &test;
 
     let rel_path = "assets/example.png";
     write_workspace_png(
@@ -1700,7 +1700,7 @@ async fn view_image_tool_returns_unsupported_message_for_text_only_model() -> an
     ]);
     let mock = responses::mount_sse_once(&server, second_response).await;
 
-    codex
+    ava
         .start_or_steer_turn(disabled_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1712,7 +1712,7 @@ async fn view_image_tool_returns_unsupported_message_for_text_only_model() -> an
         .await?;
 
     wait_for_event_with_timeout(
-        codex,
+        ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         VIEW_IMAGE_TURN_COMPLETE_TIMEOUT,
     )

@@ -5,14 +5,14 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Weak;
 
-use codex_connectors::AppToolPolicyEvaluator;
-use codex_connectors::AppToolPolicyInput;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::McpBinding;
-use codex_mcp::ToolInfo as McpToolInfo;
-use codex_mcp::tool_is_model_visible;
-use codex_tools::ToolExposure;
-use codex_tools::ToolName;
+use ava_connectors::AppToolPolicyEvaluator;
+use ava_connectors::AppToolPolicyInput;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::McpBinding;
+use ava_mcp::ToolInfo as McpToolInfo;
+use ava_mcp::tool_is_model_visible;
+use ava_tools::ToolExposure;
+use ava_tools::ToolName;
 use tracing::instrument;
 use tracing::warn;
 
@@ -39,7 +39,7 @@ impl McpHandlerCache {
         binding: &Arc<McpBinding>,
         config: &Config,
         apps_enabled: bool,
-        mcp_server_catalog: &codex_mcp::ResolvedMcpCatalog,
+        mcp_server_catalog: &ava_mcp::ResolvedMcpCatalog,
         search_tool_enabled: bool,
         registry: &mut ToolRegistry,
     ) -> HashSet<ToolName> {
@@ -76,15 +76,15 @@ fn append_mcp_tools(
     all_mcp_tools: &[McpToolInfo],
     config: &Config,
     apps_enabled: bool,
-    mcp_server_catalog: &codex_mcp::ResolvedMcpCatalog,
+    mcp_server_catalog: &ava_mcp::ResolvedMcpCatalog,
     search_tool_enabled: bool,
     handlers: &mut HashMap<ToolName, Arc<McpHandler>>,
     registry: &mut ToolRegistry,
 ) -> HashSet<ToolName> {
     // Keep regular MCP tools first; Apps tools also require connector and policy checks.
-    let non_app_tools = filter_non_codex_apps_mcp_tools_only(all_mcp_tools);
+    let non_app_tools = filter_non_ava_apps_mcp_tools_only(all_mcp_tools);
     let app_tools = apps_enabled
-        .then(|| filter_codex_apps_mcp_tools(all_mcp_tools, config))
+        .then(|| filter_ava_apps_mcp_tools(all_mcp_tools, config))
         .into_iter()
         .flatten();
     let exposure = if search_tool_enabled {
@@ -146,22 +146,22 @@ fn append_mcp_tools(
     registered_tools
 }
 
-fn filter_non_codex_apps_mcp_tools_only(
+fn filter_non_ava_apps_mcp_tools_only(
     mcp_tools: &[McpToolInfo],
 ) -> impl Iterator<Item = &McpToolInfo> + '_ {
     mcp_tools.iter().filter(|tool| {
-        tool.server_name != CODEX_APPS_MCP_SERVER_NAME && tool_is_model_visible(tool)
+        tool.server_name != AVA_APPS_MCP_SERVER_NAME && tool_is_model_visible(tool)
     })
 }
 
-fn filter_codex_apps_mcp_tools<'a>(
+fn filter_ava_apps_mcp_tools<'a>(
     mcp_tools: &'a [McpToolInfo],
     config: &'a Config,
 ) -> impl Iterator<Item = &'a McpToolInfo> + 'a {
     let app_tool_policy = AppToolPolicyEvaluator::new(&config.config_layer_stack);
 
     mcp_tools.iter().filter(move |tool| {
-        if tool.server_name != CODEX_APPS_MCP_SERVER_NAME {
+        if tool.server_name != AVA_APPS_MCP_SERVER_NAME {
             return false;
         }
         if !tool_is_model_visible(tool) {

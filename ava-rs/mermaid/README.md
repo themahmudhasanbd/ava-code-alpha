@@ -1,4 +1,4 @@
-# codex-mermaid
+# ava-mermaid
 
 Standalone, bounded Mermaid text renderer.
 It uses the existing `unicode-width` dependency; no Mermaid runtime or new external
@@ -57,13 +57,13 @@ and 4 fragment levels. Source labels and identifiers are limited to 40 display
 cells/ASCII bytes respectively. Rendered canvases are capped at 65,536 cells,
 independent of the caller's maximum width. The library performs no I/O.
 
-From `codex-rs`, preview a file, optionally specifying the available width:
+From `ava-rs`, preview a file, optionally specifying the available width:
 
 ```sh
-cargo run -p codex-mermaid --example render -- 180 < diagram.mmd
+cargo run -p ava-mermaid --example render -- 180 < diagram.mmd
 ```
 
-Run `just test -p codex-mermaid --lib`. Coverage includes complex snapshots for every
+Run `just test -p ava-mermaid --lib`. Coverage includes complex snapshots for every
 family, relationship endpoints, all ER cardinalities, width/error bounds,
 truncated input, and reconstruction of every edge in all 512 directed three-node
 graphs in each of the four layout directions.

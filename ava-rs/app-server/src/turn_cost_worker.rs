@@ -1,17 +1,17 @@
-use codex_backend_client::ApiKeyTurnCost;
-use codex_backend_client::ApiKeyTurnCostStatus;
-use codex_backend_client::Client as BackendClient;
-use codex_backend_client::RequestError;
-use codex_config::types::OtelExporterKind;
-use codex_core::config::Config;
-use codex_login::AuthManager;
-use codex_model_provider::SharedModelProvider;
-use codex_model_provider::create_model_provider;
-use codex_otel::SessionTelemetry;
-use codex_protocol::ThreadId;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
+use ava_backend_client::ApiKeyTurnCost;
+use ava_backend_client::ApiKeyTurnCostStatus;
+use ava_backend_client::Client as BackendClient;
+use ava_backend_client::RequestError;
+use ava_config::types::OtelExporterKind;
+use ava_core::config::Config;
+use ava_login::AuthManager;
+use ava_model_provider::SharedModelProvider;
+use ava_model_provider::create_model_provider;
+use ava_otel::SessionTelemetry;
+use ava_protocol::ThreadId;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -444,7 +444,7 @@ impl WorkerRuntime {
                     .api_auth()
                     .await
                     .map_err(|error| RequestError::Other(error.into()))?;
-                let endpoint = provider.url_for_path("analytics/codex/turn-costs");
+                let endpoint = provider.url_for_path("analytics/ava/turn-costs");
                 let client = BackendClient::new(
                     provider.base_url.clone(),
                     self.config.http_client_factory(),

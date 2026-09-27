@@ -1,31 +1,31 @@
 use super::super::*;
 use crate::migration_source::MarketplaceImportSource;
 use crate::source_cla;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
 async fn authenticated_plugin_migration_uses_chatgpt_curated_marketplace() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
-    let curated_root = codex_home.join(".tmp/plugins");
+    let (_root, external_agent_home, ava_home) = fixture_paths();
+    let curated_root = ava_home.join(".tmp/plugins");
     let plugin_root = curated_root.join("plugins/sample");
     fs::create_dir_all(&external_agent_home).expect("create external agent home");
     fs::create_dir_all(curated_root.join(".agents/plugins"))
         .expect("create curated marketplace directory");
-    fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create curated plugin directory");
+    fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create curated plugin directory");
     fs::write(
         external_agent_home.join("settings.json"),
         r#"{"enabledPlugins":{"sample@openai-curated":true}}"#,
     )
     .expect("write external agent settings");
     fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         "[features]\nplugins = true\n",
     )
-    .expect("write Codex config");
+    .expect("write Ava config");
     fs::write(
-        codex_home.join(".tmp/plugins.sha"),
+        ava_home.join(".tmp/plugins.sha"),
         "0123456789abcdef0123456789abcdef01234567\n",
     )
     .expect("write curated plugin version");
@@ -41,14 +41,14 @@ async fn authenticated_plugin_migration_uses_chatgpt_curated_marketplace() {
     )
     .expect("write curated marketplace");
     fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","version":"0.1.0"}"#,
     )
     .expect("write curated plugin manifest");
 
-    let mut service = service_for_paths(external_agent_home.clone(), codex_home);
+    let mut service = service_for_paths(external_agent_home.clone(), ava_home);
     service.auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let items = service
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
@@ -95,7 +95,7 @@ async fn authenticated_plugin_migration_uses_chatgpt_curated_marketplace() {
 
 #[tokio::test]
 async fn detect_home_lists_enabled_plugins_from_settings() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
+    let (_root, external_agent_home, ava_home) = fixture_paths();
     fs::create_dir_all(&external_agent_home).expect("create external agent home");
     fs::write(
         external_agent_home.join("settings.json"),
@@ -114,7 +114,7 @@ async fn detect_home_lists_enabled_plugins_from_settings() {
     )
     .expect("write settings");
 
-    let items = service_for_paths(external_agent_home.clone(), codex_home)
+    let items = service_for_paths(external_agent_home.clone(), ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
             include_memory: false,
@@ -145,7 +145,7 @@ async fn detect_home_lists_enabled_plugins_from_settings() {
 
 #[tokio::test]
 async fn detect_home_uses_materialized_known_marketplace_for_inline_npm_source() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
+    let (_root, external_agent_home, ava_home) = fixture_paths();
     let marketplace_root = external_agent_home
         .join("plugins")
         .join("marketplaces")
@@ -200,7 +200,7 @@ async fn detect_home_uses_materialized_known_marketplace_for_inline_npm_source()
     )
     .expect("write known marketplaces");
 
-    let items = service_for_paths(external_agent_home.clone(), codex_home)
+    let items = service_for_paths(external_agent_home.clone(), ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
             include_memory: false,
@@ -231,7 +231,7 @@ async fn detect_home_uses_materialized_known_marketplace_for_inline_npm_source()
 
 #[test]
 fn marketplace_import_sources_prefers_scoped_source_over_registry_name_collision() {
-    let (root, external_agent_home, _codex_home) = fixture_paths();
+    let (root, external_agent_home, _ava_home) = fixture_paths();
     let source_root = root.path().join("repo");
     let scoped_marketplace = source_root.join("repo-marketplace");
     let cached_marketplace = external_agent_home.join("plugins/marketplaces/debug");
@@ -276,7 +276,7 @@ fn marketplace_import_sources_prefers_scoped_source_over_registry_name_collision
 
 #[test]
 fn marketplace_import_sources_prefers_supported_declaration_over_materialization() {
-    let (_root, external_agent_home, _codex_home) = fixture_paths();
+    let (_root, external_agent_home, _ava_home) = fixture_paths();
     let cached_marketplace = external_agent_home.join("plugins/marketplaces/acme-tools");
     fs::create_dir_all(&cached_marketplace).expect("create cached marketplace");
     fs::write(
@@ -312,7 +312,7 @@ fn marketplace_import_sources_prefers_supported_declaration_over_materialization
 
 #[test]
 fn marketplace_import_sources_infers_bundled_claude_code_marketplace() {
-    let (_root, external_agent_home, _codex_home) = fixture_paths();
+    let (_root, external_agent_home, _ava_home) = fixture_paths();
     let settings = serde_json::json!({
         "enabledPlugins": {
             "code-review@claude-code-plugins": true,
@@ -336,7 +336,7 @@ fn marketplace_import_sources_infers_bundled_claude_code_marketplace() {
 
 #[tokio::test]
 async fn detect_home_plugins_uses_local_settings_over_project_settings() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
+    let (_root, external_agent_home, ava_home) = fixture_paths();
     fs::create_dir_all(&external_agent_home).expect("create external agent home");
     fs::write(
         external_agent_home.join("settings.json"),
@@ -364,7 +364,7 @@ async fn detect_home_plugins_uses_local_settings_over_project_settings() {
     )
     .expect("write local settings");
 
-    let items = service_for_paths(external_agent_home.clone(), codex_home)
+    let items = service_for_paths(external_agent_home.clone(), ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
             include_memory: false,
@@ -397,11 +397,11 @@ async fn detect_home_plugins_uses_local_settings_over_project_settings() {
 async fn detect_repo_skips_plugins_from_remote_marketplace() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(EXTERNAL_AGENT_DIR);
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(EXTERNAL_AGENT_DIR)).expect("create repo external agent dir");
-    fs::create_dir_all(&codex_home).expect("create codex home");
+    fs::create_dir_all(&ava_home).expect("create ava home");
     fs::write(
         repo_root.join(EXTERNAL_AGENT_DIR).join("settings.json"),
         r#"{
@@ -418,15 +418,15 @@ async fn detect_repo_skips_plugins_from_remote_marketplace() {
     )
     .expect("write repo settings");
     fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         r#"
 [plugins."formatter@acme-tools"]
 enabled = true
 "#,
     )
-    .expect("write codex config");
+    .expect("write ava config");
 
-    let items = service_for_paths(external_agent_home, codex_home)
+    let items = service_for_paths(external_agent_home, ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: false,
             include_memory: false,
@@ -439,14 +439,14 @@ enabled = true
 }
 
 #[tokio::test]
-async fn detect_repo_skips_plugins_that_are_disabled_in_codex() {
+async fn detect_repo_skips_plugins_that_are_disabled_in_ava() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(EXTERNAL_AGENT_DIR);
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(EXTERNAL_AGENT_DIR)).expect("create repo external agent dir");
-    fs::create_dir_all(&codex_home).expect("create codex home");
+    fs::create_dir_all(&ava_home).expect("create ava home");
     fs::write(
         repo_root.join(EXTERNAL_AGENT_DIR).join("settings.json"),
         r#"{
@@ -462,15 +462,15 @@ async fn detect_repo_skips_plugins_that_are_disabled_in_codex() {
     )
     .expect("write repo settings");
     fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         r#"
 [plugins."formatter@acme-tools"]
 enabled = false
 "#,
     )
-    .expect("write codex config");
+    .expect("write ava config");
 
-    let items = service_for_paths(external_agent_home, codex_home)
+    let items = service_for_paths(external_agent_home, ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: false,
             include_memory: false,
@@ -483,14 +483,14 @@ enabled = false
 }
 
 #[tokio::test]
-async fn detect_repo_skips_plugins_without_explicit_enabled_in_codex() {
+async fn detect_repo_skips_plugins_without_explicit_enabled_in_ava() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(EXTERNAL_AGENT_DIR);
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(EXTERNAL_AGENT_DIR)).expect("create repo external agent dir");
-    fs::create_dir_all(&codex_home).expect("create codex home");
+    fs::create_dir_all(&ava_home).expect("create ava home");
     fs::write(
         repo_root.join(EXTERNAL_AGENT_DIR).join("settings.json"),
         r#"{
@@ -506,14 +506,14 @@ async fn detect_repo_skips_plugins_without_explicit_enabled_in_codex() {
     )
     .expect("write repo settings");
     fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         r#"
 [plugins."formatter@acme-tools"]
 "#,
     )
-    .expect("write codex config");
+    .expect("write ava config");
 
-    let items = service_for_paths(external_agent_home, codex_home)
+    let items = service_for_paths(external_agent_home, ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: false,
             include_memory: false,
@@ -527,9 +527,9 @@ async fn detect_repo_skips_plugins_without_explicit_enabled_in_codex() {
 
 #[tokio::test]
 async fn import_plugins_requires_details() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
+    let (_root, external_agent_home, ava_home) = fixture_paths();
 
-    let err = service_for_paths(external_agent_home, codex_home)
+    let err = service_for_paths(external_agent_home, ava_home)
         .import_plugins(/*cwd*/ None, /*details*/ None)
         .await
         .expect_err("expected missing details error");
@@ -539,15 +539,15 @@ async fn import_plugins_requires_details() {
 }
 
 #[tokio::test]
-async fn detect_repo_skips_plugins_only_configured_in_project_codex() {
+async fn detect_repo_skips_plugins_only_configured_in_project_ava() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(EXTERNAL_AGENT_DIR);
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(EXTERNAL_AGENT_DIR)).expect("create repo external agent dir");
-    fs::create_dir_all(repo_root.join(".codex")).expect("create repo codex dir");
-    fs::create_dir_all(&codex_home).expect("create codex home");
+    fs::create_dir_all(repo_root.join(".ava-code")).expect("create repo ava dir");
+    fs::create_dir_all(&ava_home).expect("create ava home");
     fs::write(
         repo_root.join(EXTERNAL_AGENT_DIR).join("settings.json"),
         r#"{
@@ -563,15 +563,15 @@ async fn detect_repo_skips_plugins_only_configured_in_project_codex() {
     )
     .expect("write repo settings");
     fs::write(
-        repo_root.join(".codex").join("config.toml"),
+        repo_root.join(".ava-code").join("config.toml"),
         r#"
 [plugins."formatter@acme-tools"]
 enabled = true
 "#,
     )
-    .expect("write project codex config");
+    .expect("write project ava config");
 
-    let items = service_for_paths(external_agent_home, codex_home)
+    let items = service_for_paths(external_agent_home, ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: false,
             include_memory: false,
@@ -585,7 +585,7 @@ enabled = true
 
 #[tokio::test]
 async fn detect_home_skips_plugins_without_marketplace_source() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
+    let (_root, external_agent_home, ava_home) = fixture_paths();
     fs::create_dir_all(&external_agent_home).expect("create external agent home");
     fs::write(
         external_agent_home.join("settings.json"),
@@ -597,7 +597,7 @@ async fn detect_home_skips_plugins_without_marketplace_source() {
     )
     .expect("write settings");
 
-    let items = service_for_paths(external_agent_home, codex_home)
+    let items = service_for_paths(external_agent_home, ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
             include_memory: false,
@@ -611,7 +611,7 @@ async fn detect_home_skips_plugins_without_marketplace_source() {
 
 #[tokio::test]
 async fn detect_home_skips_plugins_with_invalid_marketplace_source() {
-    let (_root, external_agent_home, codex_home) = fixture_paths();
+    let (_root, external_agent_home, ava_home) = fixture_paths();
     fs::create_dir_all(&external_agent_home).expect("create external agent home");
     fs::write(
         external_agent_home.join("settings.json"),
@@ -628,7 +628,7 @@ async fn detect_home_skips_plugins_with_invalid_marketplace_source() {
     )
     .expect("write settings");
 
-    let items = service_for_paths(external_agent_home, codex_home)
+    let items = service_for_paths(external_agent_home, ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: true,
             include_memory: false,
@@ -644,9 +644,9 @@ async fn detect_home_skips_plugins_with_invalid_marketplace_source() {
 async fn detect_repo_skips_plugins_even_with_installed_marketplace() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(EXTERNAL_AGENT_DIR);
-    let codex_home = root.path().join(".codex");
+    let ava_home = root.path().join(".ava-code");
     let repo_root = root.path().join("repo");
-    let marketplace_root = codex_home.join(".tmp").join("marketplaces").join("debug");
+    let marketplace_root = ava_home.join(".tmp").join("marketplaces").join("debug");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(EXTERNAL_AGENT_DIR)).expect("create repo external agent dir");
     fs::create_dir_all(marketplace_root.join(".agents").join("plugins"))
@@ -655,14 +655,14 @@ async fn detect_repo_skips_plugins_even_with_installed_marketplace() {
         marketplace_root
             .join("plugins")
             .join("sample")
-            .join(".codex-plugin"),
+            .join(".ava-plugin"),
     )
     .expect("create sample plugin");
     fs::create_dir_all(
         marketplace_root
             .join("plugins")
             .join("available")
-            .join(".codex-plugin"),
+            .join(".ava-plugin"),
     )
     .expect("create available plugin");
     fs::write(
@@ -682,14 +682,14 @@ async fn detect_repo_skips_plugins_even_with_installed_marketplace() {
     )
     .expect("write repo settings");
     fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         r#"
 [marketplaces.debug]
 source_type = "git"
 source = "owner/debug-marketplace"
 "#,
     )
-    .expect("write codex config");
+    .expect("write ava config");
     fs::write(
         marketplace_root
             .join(".agents")
@@ -723,7 +723,7 @@ source = "owner/debug-marketplace"
         marketplace_root
             .join("plugins")
             .join("sample")
-            .join(".codex-plugin")
+            .join(".ava-plugin")
             .join("plugin.json"),
         r#"{"name":"sample"}"#,
     )
@@ -732,13 +732,13 @@ source = "owner/debug-marketplace"
         marketplace_root
             .join("plugins")
             .join("available")
-            .join(".codex-plugin")
+            .join(".ava-plugin")
             .join("plugin.json"),
         r#"{"name":"available"}"#,
     )
     .expect("write available plugin manifest");
 
-    let items = service_for_paths(external_agent_home, codex_home)
+    let items = service_for_paths(external_agent_home, ava_home)
         .detect(ExternalAgentConfigDetectOptions {
             include_home: false,
             include_memory: false,

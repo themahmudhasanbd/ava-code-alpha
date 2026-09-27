@@ -8,10 +8,10 @@ use crate::GuardianReviewFailureReason;
 use crate::GuardianReviewTerminalStatus;
 use crate::GuardianReviewedAction;
 use crate::events::AppServerRpcTransport;
-use crate::events::CodexAppServerClientMetadata;
-use crate::events::CodexReviewEventParams;
-use crate::events::CodexReviewEventRequest;
-use crate::events::CodexRuntimeMetadata;
+use crate::events::AvaAppServerClientMetadata;
+use crate::events::AvaReviewEventParams;
+use crate::events::AvaReviewEventRequest;
+use crate::events::AvaRuntimeMetadata;
 use crate::events::ReviewResolution;
 use crate::events::ReviewStatus;
 use crate::events::ReviewSubjectKind;
@@ -19,7 +19,7 @@ use crate::events::ReviewTrigger;
 use crate::events::Reviewer;
 use crate::events::TrackEventRequest;
 use crate::facts::AnalyticsFact;
-use crate::facts::CodexCompactionEvent;
+use crate::facts::AvaCompactionEvent;
 use crate::facts::CompactionImplementation;
 use crate::facts::CompactionPhase;
 use crate::facts::CompactionReason;
@@ -38,36 +38,36 @@ use crate::tests::support::sample_thread_start_response;
 use crate::tests::support::sample_turn_start_request;
 use crate::tests::support::sample_turn_start_response;
 use crate::tests::support::sample_turn_token_usage_fact;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionRequestApprovalParams;
-use codex_app_server_protocol::CommandExecutionRequestApprovalResponse;
-use codex_app_server_protocol::GuardianApprovalReview;
-use codex_app_server_protocol::GuardianApprovalReviewAction;
-use codex_app_server_protocol::GuardianApprovalReviewStatus;
-use codex_app_server_protocol::GuardianCommandSource as AppServerGuardianCommandSource;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::ItemGuardianApprovalReviewCompletedNotification;
-use codex_app_server_protocol::PermissionsRequestApprovalParams;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::RequestPermissionProfile;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerResponse;
-use codex_login::default_client::DEFAULT_ORIGINATOR;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::NetworkPermissions as CoreNetworkPermissions;
-use codex_protocol::models::SandboxPermissions;
-use codex_protocol::protocol::GuardianCommandSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::request_permissions::PermissionGrantScope as CorePermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile as CoreRequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse as CoreRequestPermissionsResponse;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionRequestApprovalParams;
+use ava_app_server_protocol::CommandExecutionRequestApprovalResponse;
+use ava_app_server_protocol::GuardianApprovalReview;
+use ava_app_server_protocol::GuardianApprovalReviewAction;
+use ava_app_server_protocol::GuardianApprovalReviewStatus;
+use ava_app_server_protocol::GuardianCommandSource as AppServerGuardianCommandSource;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::ItemGuardianApprovalReviewCompletedNotification;
+use ava_app_server_protocol::PermissionsRequestApprovalParams;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::RequestPermissionProfile;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerResponse;
+use ava_login::default_client::DEFAULT_ORIGINATOR;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::NetworkPermissions as CoreNetworkPermissions;
+use ava_protocol::models::SandboxPermissions;
+use ava_protocol::protocol::GuardianCommandSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::request_permissions::PermissionGrantScope as CorePermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile as CoreRequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse as CoreRequestPermissionsResponse;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -117,7 +117,7 @@ fn sample_permissions_approval_request(request_id: i64) -> ServerRequest {
             cwd: test_path_buf("/tmp").abs().into(),
             reason: Some("need network".to_string()),
             permissions: RequestPermissionProfile {
-                network: Some(codex_app_server_protocol::AdditionalNetworkPermissions {
+                network: Some(ava_app_server_protocol::AdditionalNetworkPermissions {
                     enabled: Some(true),
                 }),
                 file_system: None,
@@ -151,7 +151,7 @@ fn sample_guardian_review_completed(
             completed_at_ms: 1_042,
             review_id: review_id.to_string(),
             target_item_id: target_item_id.map(str::to_string),
-            decision_source: codex_app_server_protocol::AutoReviewDecisionSource::Agent,
+            decision_source: ava_app_server_protocol::AutoReviewDecisionSource::Agent,
             review: GuardianApprovalReview {
                 status,
                 risk_level: None,
@@ -165,22 +165,22 @@ fn sample_guardian_review_completed(
 
 #[test]
 fn review_event_serializes_expected_shape() {
-    let event = TrackEventRequest::ReviewEvent(CodexReviewEventRequest {
-        event_type: "codex_review_event",
-        event_params: CodexReviewEventParams {
+    let event = TrackEventRequest::ReviewEvent(AvaReviewEventRequest {
+        event_type: "ava_review_event",
+        event_params: AvaReviewEventParams {
             thread_id: "thread-1".to_string(),
             turn_id: "turn-1".to_string(),
             item_id: None,
             review_id: "review-1".to_string(),
-            app_server_client: CodexAppServerClientMetadata {
-                product_client_id: "codex_tui".to_string(),
-                client_name: Some("codex-tui".to_string()),
+            app_server_client: AvaAppServerClientMetadata {
+                product_client_id: "ava_tui".to_string(),
+                client_name: Some("ava-tui".to_string()),
                 client_version: Some("1.2.3".to_string()),
                 rpc_transport: AppServerRpcTransport::Websocket,
                 experimental_api_enabled: Some(true),
             },
-            runtime: CodexRuntimeMetadata {
-                codex_rs_version: "0.99.0".to_string(),
+            runtime: AvaRuntimeMetadata {
+                ava_rs_version: "0.99.0".to_string(),
                 runtime_os: "macos".to_string(),
                 runtime_os_version: "15.3.1".to_string(),
                 runtime_arch: "aarch64".to_string(),
@@ -204,21 +204,21 @@ fn review_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_review_event",
+            "event_type": "ava_review_event",
             "event_params": {
                 "thread_id": "thread-1",
                 "turn_id": "turn-1",
                 "item_id": null,
                 "review_id": "review-1",
                 "app_server_client": {
-                    "product_client_id": "codex_tui",
-                    "client_name": "codex-tui",
+                    "product_client_id": "ava_tui",
+                    "client_name": "ava-tui",
                     "client_version": "1.2.3",
                     "rpc_transport": "websocket",
                     "experimental_api_enabled": true
                 },
                 "runtime": {
-                    "codex_rs_version": "0.99.0",
+                    "ava_rs_version": "0.99.0",
                     "runtime_os": "macos",
                     "runtime_os_version": "15.3.1",
                     "runtime_arch": "aarch64"
@@ -251,7 +251,7 @@ async fn guardian_review_event_ingests_custom_fact_with_optional_target_item() {
                 connection_id: 7,
                 params: InitializeParams {
                     client_info: ClientInfo {
-                        name: "codex-tui".to_string(),
+                        name: "ava-tui".to_string(),
                         title: None,
                         version: "1.0.0".to_string(),
                     },
@@ -312,7 +312,7 @@ async fn guardian_review_event_ingests_custom_fact_with_optional_target_item() {
                     guardian_session_kind: None,
                     guardian_model: None,
                     guardian_reasoning_effort: None,
-                    guardian_default_review_model_id: Some("codex-auto-review".to_string()),
+                    guardian_default_review_model_id: Some("ava-auto-review".to_string()),
                     guardian_catalog_contains_auto_review: Some(false),
                     guardian_review_model_overridden: Some(false),
                     guardian_review_model_override: None,
@@ -338,7 +338,7 @@ async fn guardian_review_event_ingests_custom_fact_with_optional_target_item() {
 
     let payload = serde_json::to_value(&events).expect("serialize events");
     assert_eq!(payload.as_array().expect("events array").len(), 1);
-    assert_eq!(payload[0]["event_type"], "codex_guardian_review");
+    assert_eq!(payload[0]["event_type"], "ava_guardian_review");
     assert_eq!(
         payload[0]["event_params"]["session_id"],
         "session-thread-guardian"
@@ -356,7 +356,7 @@ async fn guardian_review_event_ingests_custom_fact_with_optional_target_item() {
         DEFAULT_ORIGINATOR
     );
     assert_eq!(
-        payload[0]["event_params"]["runtime"]["codex_rs_version"],
+        payload[0]["event_params"]["runtime"]["ava_rs_version"],
         "0.1.0"
     );
     assert_eq!(
@@ -386,7 +386,7 @@ async fn guardian_review_event_ingests_custom_fact_with_optional_target_item() {
     assert_eq!(payload[0]["event_params"]["review_timeout_ms"], 90_000);
     assert_eq!(
         payload[0]["event_params"]["guardian_default_review_model_id"],
-        "codex-auto-review"
+        "ava-auto-review"
     );
     assert_eq!(
         payload[0]["event_params"]["guardian_catalog_contains_auto_review"],
@@ -466,7 +466,7 @@ async fn command_execution_approval_response_publishes_user_review_event() {
 
         let payload = serde_json::to_value(&events).expect("serialize events");
         assert_eq!(payload.as_array().expect("events array").len(), 1);
-        assert_eq!(payload[0]["event_type"], "codex_review_event");
+        assert_eq!(payload[0]["event_type"], "ava_review_event");
         assert_eq!(payload[0]["event_params"]["thread_id"], "thread-1");
         assert_eq!(payload[0]["event_params"]["turn_id"], "turn-1");
         assert_eq!(payload[0]["event_params"]["item_id"], "item-1");
@@ -526,7 +526,7 @@ async fn permissions_reviews_emit_events_without_denormalizing_onto_tool_items()
 
     let payload = serde_json::to_value(&events).expect("serialize events");
     assert_eq!(payload.as_array().expect("events array").len(), 1);
-    assert_eq!(payload[0]["event_type"], "codex_review_event");
+    assert_eq!(payload[0]["event_type"], "ava_review_event");
     assert_eq!(payload[0]["event_params"]["review_id"], "user:51");
     assert_eq!(payload[0]["event_params"]["subject_kind"], "permissions");
     assert_eq!(payload[0]["event_params"]["reviewer"], "user");
@@ -581,7 +581,7 @@ async fn effective_session_permissions_response_publishes_session_user_review_ev
 
     let payload = serde_json::to_value(&events).expect("serialize events");
     assert_eq!(payload.as_array().expect("events array").len(), 1);
-    assert_eq!(payload[0]["event_type"], "codex_review_event");
+    assert_eq!(payload[0]["event_type"], "ava_review_event");
     assert_eq!(payload[0]["event_params"]["review_id"], "user:52");
     assert_eq!(payload[0]["event_params"]["subject_kind"], "permissions");
     assert_eq!(payload[0]["event_params"]["reviewer"], "user");
@@ -661,7 +661,7 @@ async fn guardian_completed_notification_publishes_review_event_with_thread_meta
         .await;
 
     let payload = serde_json::to_value(&events[0]).expect("serialize review event");
-    assert_eq!(payload["event_type"], "codex_review_event");
+    assert_eq!(payload["event_type"], "ava_review_event");
     assert_eq!(payload["event_params"]["review_id"], "guardian-review-1");
     assert_eq!(payload["event_params"]["item_id"], "item-1");
     assert_eq!(payload["event_params"]["thread_source"], "user");
@@ -801,7 +801,7 @@ async fn guardian_events_keep_thread_source_and_originator_with_explicit_turn_co
     let mut reducer = AnalyticsReducer::default();
     let mut events = Vec::new();
     let parent_thread_id =
-        codex_protocol::ThreadId::from_string("44444444-4444-4444-4444-444444444444")
+        ava_protocol::ThreadId::from_string("44444444-4444-4444-4444-444444444444")
             .expect("valid parent thread id");
     let parent_thread_id_string = parent_thread_id.to_string();
 
@@ -866,7 +866,7 @@ async fn guardian_events_keep_thread_source_and_originator_with_explicit_turn_co
     reducer
         .ingest(
             AnalyticsFact::Custom(CustomAnalyticsFact::Compaction(Box::new(
-                CodexCompactionEvent {
+                AvaCompactionEvent {
                     thread_id: "thread-review".to_string(),
                     turn_id: "turn-compact".to_string(),
                     trigger: CompactionTrigger::Manual,
@@ -875,8 +875,8 @@ async fn guardian_events_keep_thread_source_and_originator_with_explicit_turn_co
                     phase: CompactionPhase::StandaloneTurn,
                     strategy: CompactionStrategy::Memento,
                     status: CompactionStatus::Completed,
-                    codex_error_kind: None,
-                    codex_error_http_status_code: None,
+                    ava_error_kind: None,
+                    ava_error_http_status_code: None,
                     active_context_tokens_before: 131_000,
                     active_context_tokens_after: 64_000,
                     retained_image_count: None,
@@ -918,7 +918,7 @@ async fn guardian_events_keep_thread_source_and_originator_with_explicit_turn_co
         Some("44444444-4444-4444-4444-444444444444")
     );
     assert_eq!(params.app_server_client.product_client_id, "parent-client");
-    assert_eq!(params.runtime.codex_rs_version, "0.1.0");
+    assert_eq!(params.runtime.ava_rs_version, "0.1.0");
 
     reducer
         .ingest(
@@ -968,7 +968,7 @@ async fn guardian_events_keep_thread_source_and_originator_with_explicit_turn_co
     );
     assert_eq!(
         event.event_params.app_server_client.client_name.as_deref(),
-        Some("codex-tui")
+        Some("ava-tui")
     );
 }
 

@@ -13,9 +13,9 @@
 //! advertised order. Raising never silently crosses into Max or Ultra; those
 //! efforts require the explicit advanced-reasoning picker.
 
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
 use crossterm::event::KeyEvent;
 
 use super::ChatWidget;
@@ -130,7 +130,7 @@ impl ChatWidget {
             } else {
                 "is"
             };
-            let model_path = if current_model.starts_with("codex-auto-") {
+            let model_path = if current_model.starts_with("ava-auto-") {
                 current_model
             } else {
                 format!("All models → {current_model}")

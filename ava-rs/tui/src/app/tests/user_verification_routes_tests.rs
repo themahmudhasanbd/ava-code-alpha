@@ -181,7 +181,7 @@ async fn discarding_side_cancels_verification_and_ignores_late_proof() -> Result
         "deployments".to_string(),
         request.id().clone(),
         attempt.id,
-        Ok(codex_app_server_protocol::UserVerificationProof {
+        Ok(ava_app_server_protocol::UserVerificationProof {
             credential_id: "discarded-credential".to_string(),
             signature: "discarded-signature".to_string(),
         }),
@@ -238,7 +238,7 @@ async fn inactive_thread_user_verification_preserves_foreground_stream() -> Resu
         /*replay_kind*/ None,
     );
     app.chat_widget.handle_server_notification(
-        ServerNotification::ItemCompleted(codex_app_server_protocol::ItemCompletedNotification {
+        ServerNotification::ItemCompleted(ava_app_server_protocol::ItemCompletedNotification {
             thread_id: foreground_thread_id.to_string(),
             turn_id: "turn-foreground".to_string(),
             completed_at_ms: 0,

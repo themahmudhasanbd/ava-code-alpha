@@ -11,12 +11,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 register(pathToFileURL(join(here, "helpers/ts-import-hooks.mjs")));
 const { scanModelConfigs } = await import("../electron/main/importers/model-config.ts");
 
-test("scanModelConfigs reads Claude Code, OpenCode, Codex, and Pi stores", async () => {
+test("scanModelConfigs reads Claude Code, OpenCode, Ava, and Pi stores", async () => {
   const home = await mkdtemp(join(tmpdir(), "pi-model-import-"));
   await mkdir(join(home, ".claude"), { recursive: true });
   await mkdir(join(home, ".config", "opencode"), { recursive: true });
   await mkdir(join(home, ".local", "share", "opencode"), { recursive: true });
-  await mkdir(join(home, ".codex"), { recursive: true });
+  await mkdir(join(home, ".ava-code"), { recursive: true });
   await mkdir(join(home, ".pi", "agent"), { recursive: true });
 
   await writeFile(
@@ -43,7 +43,7 @@ test("scanModelConfigs reads Claude Code, OpenCode, Codex, and Pi stores", async
     }),
   );
   await writeFile(
-    join(home, ".codex", "config.toml"),
+    join(home, ".ava-code", "config.toml"),
     `model = "llama3"
 [model_providers.local]
 name = "Local"
@@ -69,7 +69,7 @@ wire_api = "chat"
   const drafts = await scanModelConfigs({ homeDir: home, env: {} });
   assert.deepEqual(
     drafts.map((d) => `${d.source}:${d.externalId}`).sort(),
-    ["claude-code:default", "codex:local", "opencode:ink", "pi:custom"].sort(),
+    ["claude-code:default", "ava:local", "opencode:ink", "pi:custom"].sort(),
   );
   assert.equal(
     drafts.find((d) => d.source === "claude-code")?.secretValue,

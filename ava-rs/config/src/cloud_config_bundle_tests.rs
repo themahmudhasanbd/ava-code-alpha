@@ -10,7 +10,7 @@ use crate::config_requirements::FilesystemRequirementsToml;
 use crate::config_requirements::PermissionsRequirementsToml;
 use crate::config_toml::ConfigToml;
 use crate::types::SandboxWorkspaceWrite;
-use codex_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::AskForApproval;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -176,8 +176,8 @@ fn bundle_layers_can_strict_validate_enterprise_managed_config() {
 fn bundle_layers_resolve_paths_and_requirements_for_the_execution_host() {
     let temp_dir = tempdir().expect("temporary directories");
     let executor_home = temp_dir.path().join("executor-home");
-    let executor_codex_home = AbsolutePathBuf::from_absolute_path(executor_home.join(".codex"))
-        .expect("absolute executor Codex home");
+    let executor_ava_home = AbsolutePathBuf::from_absolute_path(executor_home.join(".ava-code"))
+        .expect("absolute executor Ava home");
     let bundle = CloudConfigBundle {
         config_toml: CloudConfigTomlBundle {
             enterprise_managed: vec![CloudConfigFragment {
@@ -209,7 +209,7 @@ allowed_sandbox_modes = ["read-only"]
 
     let (config, requirements) = AbsolutePathBufGuard::with_home_directory(&executor_home, || {
         let layers =
-            CloudConfigBundleLayers::from_bundle_strict_config(bundle, &executor_codex_home)
+            CloudConfigBundleLayers::from_bundle_strict_config(bundle, &executor_ava_home)
                 .expect("executor bundle should convert into layers");
         let config: ConfigToml = layers.enterprise_managed_config[0]
             .config
@@ -233,7 +233,7 @@ allowed_sandbox_modes = ["read-only"]
                 AbsolutePathBuf::from_absolute_path(executor_home.join("cloud-root"))
                     .expect("absolute cloud root"),
                 AbsolutePathBuf::from_absolute_path(
-                    executor_codex_home.as_path().join("relative-root"),
+                    executor_ava_home.as_path().join("relative-root"),
                 )
                 .expect("absolute relative root"),
             ],

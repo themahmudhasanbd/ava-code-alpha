@@ -15,21 +15,21 @@ use crate::session::turn_context::TurnContext;
 use crate::tools::ToolRouter;
 use crate::tools::parallel::ToolCallRuntime;
 use crate::turn_diff_tracker::TurnDiffTracker;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::TurnItemContributor;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_protocol::ResponseItemId;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::TurnItem;
-use codex_protocol::memory_citation::MemoryCitation;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::LocalShellAction;
-use codex_protocol::models::LocalShellExecAction;
-use codex_protocol::models::LocalShellStatus;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::TurnItemContributor;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_protocol::ResponseItemId;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::TurnItem;
+use ava_protocol::memory_citation::MemoryCitation;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::LocalShellAction;
+use ava_protocol::models::LocalShellExecAction;
+use ava_protocol::models::LocalShellStatus;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Arc;
@@ -175,7 +175,7 @@ async fn handle_non_tool_response_item_strips_citations_from_assistant_message()
         .content
         .iter()
         .map(|entry| match entry {
-            codex_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
+            ava_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
         })
         .collect::<String>();
     assert_eq!(text, "hello world");
@@ -201,7 +201,7 @@ impl TurnItemContributor for TestTurnItemContributor {
         _thread_store: &'a ExtensionData,
         turn_store: &'a ExtensionData,
         item: &'a mut TurnItem,
-    ) -> codex_extension_api::ExtensionFuture<'a, Result<(), String>> {
+    ) -> ava_extension_api::ExtensionFuture<'a, Result<(), String>> {
         Box::pin(async move {
             turn_store.insert(TurnItemContributorRan);
             if let TurnItem::AgentMessage(agent_message) = item {
@@ -223,7 +223,7 @@ impl TurnItemContributor for RewriteAgentMessageContributor {
         _thread_store: &'a ExtensionData,
         _turn_store: &'a ExtensionData,
         item: &'a mut TurnItem,
-    ) -> codex_extension_api::ExtensionFuture<'a, Result<(), String>> {
+    ) -> ava_extension_api::ExtensionFuture<'a, Result<(), String>> {
         Box::pin(async move {
             if let TurnItem::AgentMessage(agent_message) = item {
                 agent_message.content = vec![AgentMessageContent::Text {
@@ -238,7 +238,7 @@ impl TurnItemContributor for RewriteAgentMessageContributor {
 #[tokio::test]
 async fn handle_non_tool_response_item_runs_turn_item_contributors_only_when_requested() {
     let (mut session, turn_context) = make_session_and_context().await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.turn_item_contributor(Arc::new(TestTurnItemContributor));
     session.services.extensions = Arc::new(builder.build());
     let turn_store = ExtensionData::new(turn_context.sub_id.clone());
@@ -279,7 +279,7 @@ async fn handle_non_tool_response_item_runs_turn_item_contributors_only_when_req
         .content
         .iter()
         .map(|entry| match entry {
-            codex_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
+            ava_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
         })
         .collect::<String>();
     assert_eq!(text, "hello world");
@@ -311,7 +311,7 @@ fn output_context(session: Arc<Session>, turn_context: Arc<TurnContext>) -> Hand
 #[tokio::test]
 async fn handle_output_item_done_returns_contributed_last_agent_message() {
     let (mut session, turn_context) = make_session_and_context().await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.turn_item_contributor(Arc::new(RewriteAgentMessageContributor));
     session.services.extensions = Arc::new(builder.build());
     let mut ctx = output_context(Arc::new(session), Arc::new(turn_context));
@@ -330,7 +330,7 @@ async fn handle_output_item_done_returns_contributed_last_agent_message() {
 #[tokio::test]
 async fn direct_results_keep_their_own_records_when_call_ids_repeat() {
     let (session, turn_context, _events) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config
@@ -450,7 +450,7 @@ async fn direct_results_keep_their_own_records_when_call_ids_repeat() {
 #[tokio::test]
 async fn finalized_turn_item_defers_mailbox_for_contributed_visible_text() {
     let (mut session, turn_context) = make_session_and_context().await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.turn_item_contributor(Arc::new(RewriteAgentMessageContributor));
     session.services.extensions = Arc::new(builder.build());
     let turn_store = ExtensionData::new(turn_context.sub_id.clone());
@@ -475,7 +475,7 @@ async fn finalized_turn_item_defers_mailbox_for_contributed_visible_text() {
 #[tokio::test]
 async fn finalized_turn_item_keeps_mailbox_open_for_commentary_text() {
     let (mut session, turn_context) = make_session_and_context().await;
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.turn_item_contributor(Arc::new(RewriteAgentMessageContributor));
     session.services.extensions = Arc::new(builder.build());
     let turn_store = ExtensionData::new(turn_context.sub_id.clone());

@@ -5,7 +5,7 @@
 //! fallback, without adding history to whichever thread is currently visible.
 
 use super::*;
-use codex_protocol::models::MessagePhase;
+use ava_protocol::models::MessagePhase;
 use std::collections::HashMap;
 use std::collections::HashSet;
 

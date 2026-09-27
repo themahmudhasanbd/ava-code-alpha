@@ -1,35 +1,35 @@
-use codex_api::ImageEditRequest;
-use codex_api::ImageGenerationRequest;
-use codex_api::ImageResponse;
-use codex_api::ImagesClient;
-use codex_api::ReqwestTransport;
-use codex_api::map_api_error;
-use codex_login::default_client::add_originator_header;
-use codex_login::default_client::create_client;
-use codex_model_provider::SharedModelProvider;
-use codex_protocol::error::CodexErr;
+use ava_api::ImageEditRequest;
+use ava_api::ImageGenerationRequest;
+use ava_api::ImageResponse;
+use ava_api::ImagesClient;
+use ava_api::ReqwestTransport;
+use ava_api::map_api_error;
+use ava_login::default_client::add_originator_header;
+use ava_login::default_client::create_client;
+use ava_model_provider::SharedModelProvider;
+use ava_protocol::error::AvaErr;
 use http::HeaderMap;
 use http::HeaderValue;
 
-const X_CODEX_IMAGE_TURN_ID_HEADER: &str = "x-codex-image-turn-id";
+const X_AVA_IMAGE_TURN_ID_HEADER: &str = "x-ava-image-turn-id";
 
 pub(crate) struct ImageBackendError {
     message: String,
-    codex_error: CodexErr,
+    ava_error: AvaErr,
 }
 
 impl ImageBackendError {
-    fn from_api(error: codex_api::ApiError) -> Self {
+    fn from_api(error: ava_api::ApiError) -> Self {
         let message = error.to_string();
         Self {
             message,
-            codex_error: map_api_error(error),
+            ava_error: map_api_error(error),
         }
     }
 
     fn from_message(message: String) -> Self {
         Self {
-            codex_error: CodexErr::Stream(message.clone()),
+            ava_error: AvaErr::Stream(message.clone()),
             message,
         }
     }
@@ -38,18 +38,18 @@ impl ImageBackendError {
         &self.message
     }
 
-    pub(crate) fn codex_error(&self) -> &CodexErr {
-        &self.codex_error
+    pub(crate) fn ava_error(&self) -> &AvaErr {
+        &self.ava_error
     }
 }
 
 #[derive(Clone)]
-pub(crate) struct CodexImagesBackend {
+pub(crate) struct AvaImagesBackend {
     provider: SharedModelProvider,
     originator: Option<String>,
 }
 
-impl CodexImagesBackend {
+impl AvaImagesBackend {
     /// Creates a backend that sends image requests through the active model provider.
     pub(crate) fn new(provider: SharedModelProvider, originator: Option<String>) -> Self {
         Self {
@@ -113,7 +113,7 @@ impl CodexImagesBackend {
 fn image_request_headers(originator: Option<&str>, turn_id: &str) -> HeaderMap {
     let mut headers = HeaderMap::new();
     if let Ok(turn_id) = HeaderValue::from_str(turn_id) {
-        headers.insert(X_CODEX_IMAGE_TURN_ID_HEADER, turn_id);
+        headers.insert(X_AVA_IMAGE_TURN_ID_HEADER, turn_id);
     }
     if let Some(originator) = originator {
         add_originator_header(&mut headers, originator);

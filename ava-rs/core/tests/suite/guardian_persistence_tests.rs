@@ -1,35 +1,35 @@
 //! Checks the save boundary between a private Guardian decision and the reviewed action.
 
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_history::RolloutItem;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::AppendThreadItemsParams;
-use codex_thread_store::ArchiveThreadParams;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::DeleteThreadParams;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::ListThreadsParams;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::PersistContext;
-use codex_thread_store::ReadThreadByRolloutPathParams;
-use codex_thread_store::ReadThreadParams;
-use codex_thread_store::ResumeThreadParams;
-use codex_thread_store::StoredThread;
-use codex_thread_store::StoredThreadHistory;
-use codex_thread_store::ThreadPage;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::ThreadStoreFuture;
-use codex_thread_store::UpdateThreadMetadataParams;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_history::RolloutItem;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::AppendThreadItemsParams;
+use ava_thread_store::ArchiveThreadParams;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::DeleteThreadParams;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::ListThreadsParams;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::PersistContext;
+use ava_thread_store::ReadThreadByRolloutPathParams;
+use ava_thread_store::ReadThreadParams;
+use ava_thread_store::ResumeThreadParams;
+use ava_thread_store::StoredThread;
+use ava_thread_store::StoredThreadHistory;
+use ava_thread_store::ThreadPage;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::ThreadStoreFuture;
+use ava_thread_store::UpdateThreadMetadataParams;
 use core_test_support::responses;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -152,7 +152,7 @@ async fn guardian_saves_each_completed_review_before_releasing_its_action() -> a
         reviewer: Mutex::new(ReviewerSaves::default()),
         saves,
     });
-    let test = test_codex()
+    let test = test_ava()
         .with_thread_store(store)
         .with_history_mode(ThreadHistoryMode::Legacy)
         .with_config(|config| {
@@ -180,7 +180,7 @@ async fn guardian_saves_each_completed_review_before_releasing_its_action() -> a
     }
     turns.push(responses::sse(vec![responses::ev_completed("parent-done")]));
     let mock = responses::mount_sse_sequence(&server, turns).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run both commands.".to_owned(),
             text_elements: Vec::new(),
@@ -210,7 +210,7 @@ async fn guardian_saves_each_completed_review_before_releasing_its_action() -> a
         assert!(
             timeout(
                 Duration::from_millis(50),
-                wait_for_event(&test.codex, |event| {
+                wait_for_event(&test.ava-code, |event| {
                     matches!(event, EventMsg::ExecCommandBegin(_))
                 })
             )
@@ -219,16 +219,16 @@ async fn guardian_saves_each_completed_review_before_releasing_its_action() -> a
         );
         assert_eq!(mock.requests().len(), review * 2);
         pending.complete.send(()).expect("finish save");
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::ExecCommandEnd(_))
         })
         .await;
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     assert_eq!(mock.requests().len(), 5);
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

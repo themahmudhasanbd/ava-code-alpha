@@ -27,42 +27,42 @@ use crate::protocol::v2::UserInput;
 use crate::protocol::v2::WebSearchAction;
 use crate::protocol::v2::WebSearchItem;
 use crate::protocol::v2::web_search_action_from_core;
-use codex_extension_items::image_generation::ImageGenerationItem;
-use codex_protocol::items::parse_hook_prompt_message;
-use codex_protocol::protocol::AgentMessageEvent;
-use codex_protocol::protocol::AgentReasoningEvent;
-use codex_protocol::protocol::AgentReasoningRawContentEvent;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::ApplyPatchApprovalRequestEvent;
-use codex_protocol::protocol::ContextCompactedEvent;
-use codex_protocol::protocol::DynamicToolCallResponseEvent;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandBeginEvent;
-use codex_protocol::protocol::ExecCommandEndEvent;
-use codex_protocol::protocol::GuardianAssessmentEvent;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::ImageGenerationBeginEvent;
-use codex_protocol::protocol::ImageGenerationEndEvent;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ItemStartedEvent;
-use codex_protocol::protocol::McpToolCallBeginEvent;
-use codex_protocol::protocol::McpToolCallEndEvent;
-use codex_protocol::protocol::PatchApplyBeginEvent;
-use codex_protocol::protocol::PatchApplyEndEvent;
-use codex_protocol::protocol::ThreadRolledBackEvent;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::UserMessageImageKind;
-use codex_protocol::protocol::ViewImageToolCallEvent;
-use codex_protocol::protocol::WebSearchBeginEvent;
-use codex_protocol::protocol::WebSearchEndEvent;
+use ava_extension_items::image_generation::ImageGenerationItem;
+use ava_protocol::items::parse_hook_prompt_message;
+use ava_protocol::protocol::AgentMessageEvent;
+use ava_protocol::protocol::AgentReasoningEvent;
+use ava_protocol::protocol::AgentReasoningRawContentEvent;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::ApplyPatchApprovalRequestEvent;
+use ava_protocol::protocol::ContextCompactedEvent;
+use ava_protocol::protocol::DynamicToolCallResponseEvent;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandBeginEvent;
+use ava_protocol::protocol::ExecCommandEndEvent;
+use ava_protocol::protocol::GuardianAssessmentEvent;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::ImageGenerationBeginEvent;
+use ava_protocol::protocol::ImageGenerationEndEvent;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ItemStartedEvent;
+use ava_protocol::protocol::McpToolCallBeginEvent;
+use ava_protocol::protocol::McpToolCallEndEvent;
+use ava_protocol::protocol::PatchApplyBeginEvent;
+use ava_protocol::protocol::PatchApplyEndEvent;
+use ava_protocol::protocol::ThreadRolledBackEvent;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::UserMessageImageKind;
+use ava_protocol::protocol::ViewImageToolCallEvent;
+use ava_protocol::protocol::WebSearchBeginEvent;
+use ava_protocol::protocol::WebSearchEndEvent;
 #[cfg(test)]
-use codex_protocol::review_format::REVIEW_FALLBACK_MESSAGE;
-use codex_rollout::CompactedItem;
-use codex_rollout::RolloutItem;
+use ava_protocol::review_format::REVIEW_FALLBACK_MESSAGE;
+use ava_rollout::CompactedItem;
+use ava_rollout::RolloutItem;
 use std::collections::HashMap;
 use tracing::warn;
 use uuid::Uuid;
@@ -76,9 +76,9 @@ use crate::protocol::v2::PatchApplyStatus;
 #[cfg(test)]
 use crate::protocol::v2::PatchChangeKind;
 #[cfg(test)]
-use codex_protocol::protocol::ExecCommandStatus as CoreExecCommandStatus;
+use ava_protocol::protocol::ExecCommandStatus as CoreExecCommandStatus;
 #[cfg(test)]
-use codex_protocol::protocol::PatchApplyStatus as CorePatchApplyStatus;
+use ava_protocol::protocol::PatchApplyStatus as CorePatchApplyStatus;
 
 /// Convert persisted [`RolloutItem`] entries into a sequence of [`Turn`] values.
 ///
@@ -356,7 +356,7 @@ impl ThreadHistoryBuilder {
     /// tracking used by running thread resume/rejoin.
     ///
     /// This function should handle all EventMsg variants that can be persisted in a rollout file.
-    /// See `should_persist_event_msg` in `codex-rs/core/rollout/policy.rs`.
+    /// See `should_persist_event_msg` in `ava-rs/core/rollout/policy.rs`.
     pub fn handle_event(&mut self, event: &EventMsg) {
         match event {
             EventMsg::UserMessage(payload) => self.handle_user_message(payload),
@@ -474,8 +474,8 @@ impl ThreadHistoryBuilder {
         self.active_change_set.take().unwrap_or_default()
     }
 
-    fn handle_response_item(&mut self, item: &codex_protocol::models::ResponseItem) {
-        let codex_protocol::models::ResponseItem::Message {
+    fn handle_response_item(&mut self, item: &ava_protocol::models::ResponseItem) {
+        let ava_protocol::models::ResponseItem::Message {
             role, content, id, ..
         } = item
         else {
@@ -626,33 +626,33 @@ impl ThreadHistoryBuilder {
     fn handle_materialized_item_lifecycle(
         &mut self,
         turn_id: &str,
-        item: &codex_protocol::items::TurnItem,
+        item: &ava_protocol::items::TurnItem,
     ) {
         let is_review_mode_item = matches!(
             item,
-            codex_protocol::items::TurnItem::EnteredReviewMode(_)
-                | codex_protocol::items::TurnItem::ExitedReviewMode(_)
+            ava_protocol::items::TurnItem::EnteredReviewMode(_)
+                | ava_protocol::items::TurnItem::ExitedReviewMode(_)
         );
         let should_upsert = match item {
-            codex_protocol::items::TurnItem::Plan(plan) => !plan.text.is_empty(),
-            codex_protocol::items::TurnItem::HookPrompt(_)
-            | codex_protocol::items::TurnItem::FunctionCallOutput(_)
-            | codex_protocol::items::TurnItem::CommandExecution(_)
-            | codex_protocol::items::TurnItem::DynamicToolCall(_)
-            | codex_protocol::items::TurnItem::CollabAgentToolCall(_)
-            | codex_protocol::items::TurnItem::SubAgentActivity(_)
-            | codex_protocol::items::TurnItem::Extension(_)
-            | codex_protocol::items::TurnItem::EnteredReviewMode(_)
-            | codex_protocol::items::TurnItem::ExitedReviewMode(_) => true,
-            codex_protocol::items::TurnItem::UserMessage(_)
-            | codex_protocol::items::TurnItem::AgentMessage(_)
-            | codex_protocol::items::TurnItem::Reasoning(_)
-            | codex_protocol::items::TurnItem::WebSearch(_)
-            | codex_protocol::items::TurnItem::ImageView(_)
-            | codex_protocol::items::TurnItem::ImageGeneration(_)
-            | codex_protocol::items::TurnItem::FileChange(_)
-            | codex_protocol::items::TurnItem::McpToolCall(_)
-            | codex_protocol::items::TurnItem::ContextCompaction(_) => false,
+            ava_protocol::items::TurnItem::Plan(plan) => !plan.text.is_empty(),
+            ava_protocol::items::TurnItem::HookPrompt(_)
+            | ava_protocol::items::TurnItem::FunctionCallOutput(_)
+            | ava_protocol::items::TurnItem::CommandExecution(_)
+            | ava_protocol::items::TurnItem::DynamicToolCall(_)
+            | ava_protocol::items::TurnItem::CollabAgentToolCall(_)
+            | ava_protocol::items::TurnItem::SubAgentActivity(_)
+            | ava_protocol::items::TurnItem::Extension(_)
+            | ava_protocol::items::TurnItem::EnteredReviewMode(_)
+            | ava_protocol::items::TurnItem::ExitedReviewMode(_) => true,
+            ava_protocol::items::TurnItem::UserMessage(_)
+            | ava_protocol::items::TurnItem::AgentMessage(_)
+            | ava_protocol::items::TurnItem::Reasoning(_)
+            | ava_protocol::items::TurnItem::WebSearch(_)
+            | ava_protocol::items::TurnItem::ImageView(_)
+            | ava_protocol::items::TurnItem::ImageGeneration(_)
+            | ava_protocol::items::TurnItem::FileChange(_)
+            | ava_protocol::items::TurnItem::McpToolCall(_)
+            | ava_protocol::items::TurnItem::ContextCompaction(_) => false,
         };
 
         if should_upsert {
@@ -748,7 +748,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_dynamic_tool_call_request(
         &mut self,
-        payload: &codex_protocol::dynamic_tools::DynamicToolCallRequest,
+        payload: &ava_protocol::dynamic_tools::DynamicToolCallRequest,
     ) {
         let item = ThreadItem::DynamicToolCall {
             id: payload.call_id.clone(),
@@ -925,7 +925,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_agent_spawn_begin(
         &mut self,
-        payload: &codex_protocol::protocol::CollabAgentSpawnBeginEvent,
+        payload: &ava_protocol::protocol::CollabAgentSpawnBeginEvent,
     ) {
         let item = ThreadItem::CollabAgentToolCall {
             id: payload.call_id.clone(),
@@ -943,7 +943,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_agent_spawn_end(
         &mut self,
-        payload: &codex_protocol::protocol::CollabAgentSpawnEndEvent,
+        payload: &ava_protocol::protocol::CollabAgentSpawnEndEvent,
     ) {
         let has_receiver = payload.new_thread_id.is_some();
         let status = match &payload.status {
@@ -977,7 +977,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_agent_interaction_begin(
         &mut self,
-        payload: &codex_protocol::protocol::CollabAgentInteractionBeginEvent,
+        payload: &ava_protocol::protocol::CollabAgentInteractionBeginEvent,
     ) {
         let item = ThreadItem::CollabAgentToolCall {
             id: payload.call_id.clone(),
@@ -995,7 +995,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_agent_interaction_end(
         &mut self,
-        payload: &codex_protocol::protocol::CollabAgentInteractionEndEvent,
+        payload: &ava_protocol::protocol::CollabAgentInteractionEndEvent,
     ) {
         let status = match &payload.status {
             AgentStatus::Errored(_) | AgentStatus::NotFound => CollabAgentToolCallStatus::Failed,
@@ -1018,7 +1018,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_sub_agent_activity(
         &mut self,
-        payload: &codex_protocol::protocol::SubAgentActivityEvent,
+        payload: &ava_protocol::protocol::SubAgentActivityEvent,
     ) {
         self.upsert_item_in_current_turn(ThreadItem::SubAgentActivity {
             id: payload.event_id.clone(),
@@ -1030,7 +1030,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_waiting_begin(
         &mut self,
-        payload: &codex_protocol::protocol::CollabWaitingBeginEvent,
+        payload: &ava_protocol::protocol::CollabWaitingBeginEvent,
     ) {
         let item = ThreadItem::CollabAgentToolCall {
             id: payload.call_id.clone(),
@@ -1052,7 +1052,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_waiting_end(
         &mut self,
-        payload: &codex_protocol::protocol::CollabWaitingEndEvent,
+        payload: &ava_protocol::protocol::CollabWaitingEndEvent,
     ) {
         let status = if payload
             .statuses
@@ -1086,7 +1086,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_close_begin(
         &mut self,
-        payload: &codex_protocol::protocol::CollabCloseBeginEvent,
+        payload: &ava_protocol::protocol::CollabCloseBeginEvent,
     ) {
         let item = ThreadItem::CollabAgentToolCall {
             id: payload.call_id.clone(),
@@ -1102,7 +1102,7 @@ impl ThreadHistoryBuilder {
         self.upsert_item_in_current_turn(item);
     }
 
-    fn handle_collab_close_end(&mut self, payload: &codex_protocol::protocol::CollabCloseEndEvent) {
+    fn handle_collab_close_end(&mut self, payload: &ava_protocol::protocol::CollabCloseEndEvent) {
         let status = match &payload.status {
             AgentStatus::Errored(_) | AgentStatus::NotFound => CollabAgentToolCallStatus::Failed,
             _ => CollabAgentToolCallStatus::Completed,
@@ -1129,7 +1129,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_resume_begin(
         &mut self,
-        payload: &codex_protocol::protocol::CollabResumeBeginEvent,
+        payload: &ava_protocol::protocol::CollabResumeBeginEvent,
     ) {
         let item = ThreadItem::CollabAgentToolCall {
             id: payload.call_id.clone(),
@@ -1147,7 +1147,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_collab_resume_end(
         &mut self,
-        payload: &codex_protocol::protocol::CollabResumeEndEvent,
+        payload: &ava_protocol::protocol::CollabResumeEndEvent,
     ) {
         let status = match &payload.status {
             AgentStatus::Errored(_) | AgentStatus::NotFound => CollabAgentToolCallStatus::Failed,
@@ -1180,7 +1180,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_entered_review_mode(
         &mut self,
-        payload: &codex_protocol::protocol::EnteredReviewModeEvent,
+        payload: &ava_protocol::protocol::EnteredReviewModeEvent,
     ) {
         let review = payload
             .user_facing_hint
@@ -1198,7 +1198,7 @@ impl ThreadHistoryBuilder {
 
     fn handle_exited_review_mode(
         &mut self,
-        payload: &codex_protocol::protocol::ExitedReviewModeEvent,
+        payload: &ava_protocol::protocol::ExitedReviewModeEvent,
     ) {
         let review = review_output_text(payload.review_output.as_ref());
         let id = payload
@@ -1239,7 +1239,7 @@ impl ThreadHistoryBuilder {
             turn.error = Some(V2TurnError {
                 misalignment: payload.misalignment.clone().map(Into::into),
                 message: payload.message.clone(),
-                codex_error_info: payload.codex_error_info.clone().map(Into::into),
+                ava_error_info: payload.ava_error_info.clone().map(Into::into),
                 additional_details: None,
             });
             tracking_changes.then(|| ThreadHistoryTurnMetadata::from_pending_turn(turn))
@@ -1299,7 +1299,7 @@ impl ThreadHistoryBuilder {
         let terminal_error = payload.error.as_ref().map(|error| V2TurnError {
             misalignment: error.misalignment.clone().map(Into::into),
             message: error.message.clone(),
-            codex_error_info: error.codex_error_info.clone().map(Into::into),
+            ava_error_info: error.ava_error_info.clone().map(Into::into),
             additional_details: None,
         });
         let apply_completion = |turn: &mut PendingTurn| {
@@ -1621,19 +1621,19 @@ impl ThreadHistoryBuilder {
 }
 
 fn convert_dynamic_tool_content_items(
-    items: &[codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem],
+    items: &[ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem],
 ) -> Vec<DynamicToolCallOutputContentItem> {
     items
         .iter()
         .cloned()
         .map(|item| match item {
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputText { text } => {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputText { text } => {
                 DynamicToolCallOutputContentItem::InputText { text }
             }
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputImage {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputImage {
                 image_url,
             } => DynamicToolCallOutputContentItem::InputImage { image_url },
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputAudio {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputAudio {
                 audio_url,
             } => DynamicToolCallOutputContentItem::InputAudio { audio_url },
         })
@@ -1761,51 +1761,51 @@ mod tests {
     use crate::protocol::v2::AgentMessageDelivery;
     use crate::protocol::v2::AsyncUserInputQuestion;
     use crate::protocol::v2::CommandExecutionSource;
-    use codex_extension_items::ExtensionItem as CoreExtensionItem;
-    use codex_extension_items::sleep::SleepItem as CoreSleepItem;
-    use codex_protocol::ThreadId;
-    use codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem as CoreDynamicToolCallOutputContentItem;
-    use codex_protocol::items::CommandExecutionItem as CoreCommandExecutionItem;
-    use codex_protocol::items::CommandExecutionStatus as CoreCommandExecutionStatus;
-    use codex_protocol::items::EnteredReviewModeItem as CoreEnteredReviewModeItem;
-    use codex_protocol::items::ExitedReviewModeItem as CoreExitedReviewModeItem;
-    use codex_protocol::items::HookPromptFragment as CoreHookPromptFragment;
-    use codex_protocol::items::SubAgentActivityItem as CoreSubAgentActivityItem;
-    use codex_protocol::items::TurnItem as CoreTurnItem;
-    use codex_protocol::items::UserMessageItem as CoreUserMessageItem;
-    use codex_protocol::items::build_hook_prompt_message;
-    use codex_protocol::mcp::CallToolResult;
-    use codex_protocol::models::ImageDetail;
-    use codex_protocol::models::MessagePhase as CoreMessagePhase;
-    use codex_protocol::models::WebSearchAction as CoreWebSearchAction;
-    use codex_protocol::parse_command::ParsedCommand;
-    use codex_protocol::protocol::AgentReasoningEvent;
-    use codex_protocol::protocol::AgentReasoningRawContentEvent;
-    use codex_protocol::protocol::ApplyPatchApprovalRequestEvent;
-    use codex_protocol::protocol::CodexErrorInfo;
-    use codex_protocol::protocol::DynamicToolCallResponseEvent;
-    use codex_protocol::protocol::EnteredReviewModeEvent;
-    use codex_protocol::protocol::ExecCommandBeginEvent;
-    use codex_protocol::protocol::ExecCommandEndEvent;
-    use codex_protocol::protocol::ExecCommandSource;
-    use codex_protocol::protocol::ExitedReviewModeEvent;
-    use codex_protocol::protocol::ItemStartedEvent;
-    use codex_protocol::protocol::McpInvocation;
-    use codex_protocol::protocol::McpToolCallEndEvent;
-    use codex_protocol::protocol::PatchApplyBeginEvent;
-    use codex_protocol::protocol::ReviewTarget;
-    use codex_protocol::protocol::SubAgentActivityKind as CoreSubAgentActivityKind;
-    use codex_protocol::protocol::ThreadRolledBackEvent;
-    use codex_protocol::protocol::TurnAbortReason;
-    use codex_protocol::protocol::TurnAbortedEvent;
-    use codex_protocol::protocol::TurnCompleteEvent;
-    use codex_protocol::protocol::TurnStartedEvent;
-    use codex_protocol::protocol::UserMessageEvent;
-    use codex_protocol::protocol::WebSearchBeginEvent;
-    use codex_protocol::protocol::WebSearchEndEvent;
-    use codex_rollout::CompactedItem;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_extension_items::ExtensionItem as CoreExtensionItem;
+    use ava_extension_items::sleep::SleepItem as CoreSleepItem;
+    use ava_protocol::ThreadId;
+    use ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem as CoreDynamicToolCallOutputContentItem;
+    use ava_protocol::items::CommandExecutionItem as CoreCommandExecutionItem;
+    use ava_protocol::items::CommandExecutionStatus as CoreCommandExecutionStatus;
+    use ava_protocol::items::EnteredReviewModeItem as CoreEnteredReviewModeItem;
+    use ava_protocol::items::ExitedReviewModeItem as CoreExitedReviewModeItem;
+    use ava_protocol::items::HookPromptFragment as CoreHookPromptFragment;
+    use ava_protocol::items::SubAgentActivityItem as CoreSubAgentActivityItem;
+    use ava_protocol::items::TurnItem as CoreTurnItem;
+    use ava_protocol::items::UserMessageItem as CoreUserMessageItem;
+    use ava_protocol::items::build_hook_prompt_message;
+    use ava_protocol::mcp::CallToolResult;
+    use ava_protocol::models::ImageDetail;
+    use ava_protocol::models::MessagePhase as CoreMessagePhase;
+    use ava_protocol::models::WebSearchAction as CoreWebSearchAction;
+    use ava_protocol::parse_command::ParsedCommand;
+    use ava_protocol::protocol::AgentReasoningEvent;
+    use ava_protocol::protocol::AgentReasoningRawContentEvent;
+    use ava_protocol::protocol::ApplyPatchApprovalRequestEvent;
+    use ava_protocol::protocol::AvaErrorInfo;
+    use ava_protocol::protocol::DynamicToolCallResponseEvent;
+    use ava_protocol::protocol::EnteredReviewModeEvent;
+    use ava_protocol::protocol::ExecCommandBeginEvent;
+    use ava_protocol::protocol::ExecCommandEndEvent;
+    use ava_protocol::protocol::ExecCommandSource;
+    use ava_protocol::protocol::ExitedReviewModeEvent;
+    use ava_protocol::protocol::ItemStartedEvent;
+    use ava_protocol::protocol::McpInvocation;
+    use ava_protocol::protocol::McpToolCallEndEvent;
+    use ava_protocol::protocol::PatchApplyBeginEvent;
+    use ava_protocol::protocol::ReviewTarget;
+    use ava_protocol::protocol::SubAgentActivityKind as CoreSubAgentActivityKind;
+    use ava_protocol::protocol::ThreadRolledBackEvent;
+    use ava_protocol::protocol::TurnAbortReason;
+    use ava_protocol::protocol::TurnAbortedEvent;
+    use ava_protocol::protocol::TurnCompleteEvent;
+    use ava_protocol::protocol::TurnStartedEvent;
+    use ava_protocol::protocol::UserMessageEvent;
+    use ava_protocol::protocol::WebSearchBeginEvent;
+    use ava_protocol::protocol::WebSearchEndEvent;
+    use ava_rollout::CompactedItem;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
     use std::time::Duration;
@@ -2543,7 +2543,7 @@ mod tests {
                 item: CoreTurnItem::UserMessage(CoreUserMessageItem {
                     id: "user-item-id".to_string(),
                     client_id: Some("client-message-1".to_string()),
-                    content: vec![codex_protocol::user_input::UserInput::Text {
+                    content: vec![ava_protocol::user_input::UserInput::Text {
                         text: "hello".into(),
                         text_elements: Vec::new(),
                     }],
@@ -2653,7 +2653,7 @@ mod tests {
                 result: "Zm9v".into(),
                 transparent_background: Some(true),
                 failure: Some(
-                    codex_extension_items::image_generation::ImageGenerationFailure::UsageLimitExceeded {
+                    ava_extension_items::image_generation::ImageGenerationFailure::UsageLimitExceeded {
                         limit_id: "image_gen".into(),
                         resets_at: Some(1_786_150_800),
                     },
@@ -2699,7 +2699,7 @@ mod tests {
                         result: "Zm9v".into(),
                         transparent_background: Some(true),
                         failure: Some(
-                            codex_extension_items::image_generation::ImageGenerationFailure::UsageLimitExceeded {
+                            ava_extension_items::image_generation::ImageGenerationFailure::UsageLimitExceeded {
                                 limit_id: "image_gen".into(),
                                 resets_at: Some(1_786_150_800),
                             },
@@ -3110,9 +3110,9 @@ mod tests {
             }),
             EventMsg::WebSearchEnd(WebSearchEndEvent {
                 call_id: "search-1".into(),
-                query: "codex".into(),
+                query: "ava".into(),
                 action: CoreWebSearchAction::Search {
-                    query: Some("codex".into()),
+                    query: Some("ava".into()),
                     queries: None,
                 },
                 results: Some(vec![serde_json::json!({
@@ -3175,9 +3175,9 @@ mod tests {
             turns[0].items[1],
             ThreadItem::WebSearch(WebSearchItem {
                 id: "search-1".into(),
-                query: "codex".into(),
+                query: "ava".into(),
                 action: Some(WebSearchAction::Search {
-                    query: Some("codex".into()),
+                    query: Some("ava".into()),
                     queries: None,
                 }),
                 results: Some(vec![serde_json::json!({
@@ -3332,11 +3332,11 @@ mod tests {
                 ..Default::default()
             }),
             EventMsg::DynamicToolCallRequest(
-                codex_protocol::dynamic_tools::DynamicToolCallRequest {
+                ava_protocol::dynamic_tools::DynamicToolCallRequest {
                     call_id: "dyn-1".into(),
                     turn_id: "turn-1".into(),
                     started_at_ms: 0,
-                    namespace: Some("codex_app".into()),
+                    namespace: Some("ava_app".into()),
                     tool: "lookup_ticket".into(),
                     arguments: serde_json::json!({"id":"ABC-123"}),
                 },
@@ -3345,7 +3345,7 @@ mod tests {
                 call_id: "dyn-1".into(),
                 turn_id: "turn-1".into(),
                 completed_at_ms: 0,
-                namespace: Some("codex_app".into()),
+                namespace: Some("ava_app".into()),
                 tool: "lookup_ticket".into(),
                 arguments: serde_json::json!({"id":"ABC-123"}),
                 content_items: vec![
@@ -3376,7 +3376,7 @@ mod tests {
             turns[0].items[1],
             ThreadItem::DynamicToolCall {
                 id: "dyn-1".into(),
-                namespace: Some("codex_app".into()),
+                namespace: Some("ava_app".into()),
                 tool: "lookup_ticket".into(),
                 arguments: serde_json::json!({"id":"ABC-123"}),
                 status: DynamicToolCallStatus::Completed,
@@ -3444,7 +3444,7 @@ mod tests {
                 success: false,
                 changes: [(
                     PathBuf::from("README.md"),
-                    codex_protocol::protocol::FileChange::Add {
+                    ava_protocol::protocol::FileChange::Add {
                         content: "hello\n".into(),
                     },
                 )]
@@ -3548,11 +3548,11 @@ mod tests {
                 started_at_ms: 1_000,
                 completed_at_ms: Some(1_042),
                 status: GuardianAssessmentStatus::Denied,
-                risk_level: Some(codex_protocol::protocol::GuardianRiskLevel::High),
-                user_authorization: Some(codex_protocol::protocol::GuardianUserAuthorization::Low),
+                risk_level: Some(ava_protocol::protocol::GuardianRiskLevel::High),
+                user_authorization: Some(ava_protocol::protocol::GuardianUserAuthorization::Low),
                 rationale: Some("Would delete user data.".into()),
                 decision_source: Some(
-                    codex_protocol::protocol::GuardianAssessmentDecisionSource::Agent,
+                    ava_protocol::protocol::GuardianAssessmentDecisionSource::Agent,
                 ),
                 action: serde_json::from_value(serde_json::json!({
                     "type": "command",
@@ -3669,9 +3669,9 @@ mod tests {
 
     #[test]
     fn assigns_late_legacy_mcp_completion_to_original_turn() {
-        use codex_protocol::items::McpToolCallItem;
-        use codex_protocol::items::McpToolCallStatus as CoreMcpToolCallStatus;
-        use codex_protocol::protocol::HasLegacyEvent;
+        use ava_protocol::items::McpToolCallItem;
+        use ava_protocol::items::McpToolCallStatus as CoreMcpToolCallStatus;
+        use ava_protocol::protocol::HasLegacyEvent;
 
         let completion = ItemCompletedEvent {
             thread_id: ThreadId::new(),
@@ -4116,7 +4116,7 @@ mod tests {
                 auto_approved: false,
                 changes: [(
                     PathBuf::from("README.md"),
-                    codex_protocol::protocol::FileChange::Add {
+                    ava_protocol::protocol::FileChange::Add {
                         content: "hello\n".into(),
                     },
                 )]
@@ -4185,7 +4185,7 @@ mod tests {
                 started_at_ms: 0,
                 changes: [(
                     PathBuf::from("README.md"),
-                    codex_protocol::protocol::FileChange::Add {
+                    ava_protocol::protocol::FileChange::Add {
                         content: "hello\n".into(),
                     },
                 )]
@@ -4353,7 +4353,7 @@ mod tests {
                 error: Some(ErrorEvent {
                     misalignment: None,
                     message: "Selected model is at capacity. Please try a different model.".into(),
-                    codex_error_info: Some(CodexErrorInfo::ServerOverloaded),
+                    ava_error_info: Some(AvaErrorInfo::ServerOverloaded),
                 }),
                 completed_at: Some(20),
                 duration_ms: Some(10_000),
@@ -4385,8 +4385,8 @@ mod tests {
                         misalignment: None,
                         message: "Selected model is at capacity. Please try a different model."
                             .into(),
-                        codex_error_info: Some(
-                            crate::protocol::v2::CodexErrorInfo::ServerOverloaded,
+                        ava_error_info: Some(
+                            crate::protocol::v2::AvaErrorInfo::ServerOverloaded,
                         ),
                         additional_details: None,
                     }),
@@ -4549,7 +4549,7 @@ mod tests {
                 local_images: Vec::new(),
                 ..Default::default()
             }),
-            EventMsg::CollabResumeEnd(codex_protocol::protocol::CollabResumeEndEvent {
+            EventMsg::CollabResumeEnd(ava_protocol::protocol::CollabResumeEndEvent {
                 call_id: "resume-1".into(),
                 completed_at_ms: 0,
                 sender_thread_id: ThreadId::try_from("00000000-0000-0000-0000-000000000001")
@@ -4608,7 +4608,7 @@ mod tests {
                 local_images: Vec::new(),
                 ..Default::default()
             }),
-            EventMsg::CollabAgentSpawnEnd(codex_protocol::protocol::CollabAgentSpawnEndEvent {
+            EventMsg::CollabAgentSpawnEnd(ava_protocol::protocol::CollabAgentSpawnEndEvent {
                 call_id: "spawn-1".into(),
                 completed_at_ms: 0,
                 sender_thread_id,
@@ -4617,7 +4617,7 @@ mod tests {
                 new_agent_role: Some("explorer".into()),
                 prompt: "inspect the repo".into(),
                 model: "gpt-5.4-mini".into(),
-                reasoning_effort: codex_protocol::openai_models::ReasoningEffort::Medium,
+                reasoning_effort: ava_protocol::openai_models::ReasoningEffort::Medium,
                 status: AgentStatus::Running,
             }),
         ];
@@ -4639,7 +4639,7 @@ mod tests {
                 receiver_thread_ids: vec!["00000000-0000-0000-0000-000000000002".into()],
                 prompt: Some("inspect the repo".into()),
                 model: Some("gpt-5.4-mini".into()),
-                reasoning_effort: Some(codex_protocol::openai_models::ReasoningEffort::Medium),
+                reasoning_effort: Some(ava_protocol::openai_models::ReasoningEffort::Medium),
                 agents_states: [(
                     "00000000-0000-0000-0000-000000000002".into(),
                     CollabAgentState {
@@ -4672,7 +4672,7 @@ mod tests {
                 ..Default::default()
             }),
             EventMsg::CollabAgentInteractionBegin(
-                codex_protocol::protocol::CollabAgentInteractionBeginEvent {
+                ava_protocol::protocol::CollabAgentInteractionBeginEvent {
                     call_id: "send-1".into(),
                     started_at_ms: 0,
                     sender_thread_id: sender,
@@ -4681,7 +4681,7 @@ mod tests {
                 },
             ),
             EventMsg::CollabAgentInteractionEnd(
-                codex_protocol::protocol::CollabAgentInteractionEndEvent {
+                ava_protocol::protocol::CollabAgentInteractionEndEvent {
                     call_id: "send-1".into(),
                     completed_at_ms: 0,
                     sender_thread_id: sender,
@@ -4746,7 +4746,7 @@ mod tests {
             EventMsg::Error(ErrorEvent {
                 misalignment: None,
                 message: "rollback failed".into(),
-                codex_error_info: Some(CodexErrorInfo::ThreadRollbackFailed),
+                ava_error_info: Some(AvaErrorInfo::ThreadRollbackFailed),
             }),
         ];
 
@@ -4791,7 +4791,7 @@ mod tests {
             EventMsg::Error(ErrorEvent {
                 misalignment: None,
                 message: "request-level failure".into(),
-                codex_error_info: Some(CodexErrorInfo::BadRequest),
+                ava_error_info: Some(AvaErrorInfo::BadRequest),
             }),
         ];
 
@@ -4845,7 +4845,7 @@ mod tests {
             EventMsg::Error(ErrorEvent {
                 misalignment: None,
                 message: "stream failure".into(),
-                codex_error_info: Some(CodexErrorInfo::ResponseStreamDisconnected {
+                ava_error_info: Some(AvaErrorInfo::ResponseStreamDisconnected {
                     http_status_code: Some(502),
                 }),
             }),
@@ -4873,8 +4873,8 @@ mod tests {
             Some(TurnError {
                 misalignment: None,
                 message: "stream failure".into(),
-                codex_error_info: Some(
-                    crate::protocol::v2::CodexErrorInfo::ResponseStreamDisconnected {
+                ava_error_info: Some(
+                    crate::protocol::v2::AvaErrorInfo::ResponseStreamDisconnected {
                         http_status_code: Some(502),
                     }
                 ),
@@ -4909,7 +4909,7 @@ mod tests {
                 error: Some(ErrorEvent {
                     misalignment: None,
                     message: "Selected model is at capacity. Please try a different model.".into(),
-                    codex_error_info: Some(CodexErrorInfo::ServerOverloaded),
+                    ava_error_info: Some(AvaErrorInfo::ServerOverloaded),
                 }),
                 completed_at: Some(20),
                 duration_ms: Some(10_000),
@@ -4939,7 +4939,7 @@ mod tests {
                 error: Some(TurnError {
                     misalignment: None,
                     message: "Selected model is at capacity. Please try a different model.".into(),
-                    codex_error_info: Some(crate::protocol::v2::CodexErrorInfo::ServerOverloaded),
+                    ava_error_info: Some(crate::protocol::v2::AvaErrorInfo::ServerOverloaded),
                     additional_details: None,
                 }),
                 started_at: Some(10),
@@ -5009,7 +5009,7 @@ mod tests {
 
     #[test]
     fn canonical_hook_prompt_completion_updates_turn_history() {
-        let hook_prompt = CoreTurnItem::HookPrompt(codex_protocol::items::HookPromptItem {
+        let hook_prompt = CoreTurnItem::HookPrompt(ava_protocol::items::HookPromptItem {
             id: "hook-prompt-1".into(),
             fragments: vec![CoreHookPromptFragment::from_single_hook(
                 "Retry with tests.",
@@ -5043,7 +5043,7 @@ mod tests {
     #[test]
     fn completed_sub_agent_activity_updates_completed_parent_turn() {
         let child_thread_id = ThreadId::new();
-        let child_path = codex_protocol::AgentPath::root()
+        let child_path = ava_protocol::AgentPath::root()
             .join("worker")
             .expect("worker path");
         let items = vec![
@@ -5104,10 +5104,10 @@ mod tests {
                 collaboration_mode_kind: Default::default(),
             })),
             RolloutItem::ResponseItem(
-                codex_protocol::models::ResponseItem::Message {
-                    id: Some(codex_protocol::ResponseItemId::with_suffix("msg", "1")),
+                ava_protocol::models::ResponseItem::Message {
+                    id: Some(ava_protocol::ResponseItemId::with_suffix("msg", "1")),
                     role: "user".into(),
-                    content: vec![codex_protocol::models::ContentItem::InputText {
+                    content: vec![ava_protocol::models::ContentItem::InputText {
                         text: "plain text".into(),
                     }],
                     phase: None,
@@ -5187,9 +5187,9 @@ mod tests {
         let changes = builder.handle_rollout_item_with_changes(&RolloutItem::EventMsg(
             EventMsg::WebSearchEnd(WebSearchEndEvent {
                 call_id: "search-1".into(),
-                query: "codex".into(),
+                query: "ava".into(),
                 action: CoreWebSearchAction::Search {
-                    query: Some("codex".into()),
+                    query: Some("ava".into()),
                     queries: None,
                 },
                 results: None,
@@ -5202,9 +5202,9 @@ mod tests {
                     turn_id: "rollout-0".into(),
                     item: ThreadItem::WebSearch(WebSearchItem {
                         id: "search-1".into(),
-                        query: "codex".into(),
+                        query: "ava".into(),
                         action: Some(WebSearchAction::Search {
-                            query: Some("codex".into()),
+                            query: Some("ava".into()),
                             queries: None,
                         }),
                         results: None,
@@ -5331,9 +5331,9 @@ mod tests {
             })),
             RolloutItem::EventMsg(EventMsg::WebSearchEnd(WebSearchEndEvent {
                 call_id: "search-1".into(),
-                query: "codex".into(),
+                query: "ava".into(),
                 action: CoreWebSearchAction::Search {
-                    query: Some("codex".into()),
+                    query: Some("ava".into()),
                     queries: None,
                 },
                 results: None,
@@ -5346,9 +5346,9 @@ mod tests {
                     turn_id: "rollout-0".into(),
                     item: ThreadItem::WebSearch(WebSearchItem {
                         id: "search-1".into(),
-                        query: "codex".into(),
+                        query: "ava".into(),
                         action: Some(WebSearchAction::Search {
-                            query: Some("codex".into()),
+                            query: Some("ava".into()),
                             queries: None,
                         }),
                         results: None,

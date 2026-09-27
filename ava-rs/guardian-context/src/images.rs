@@ -8,11 +8,11 @@ use crate::SectionContributor;
 use crate::SectionError;
 use crate::SectionInput;
 use crate::SectionScope;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
 use std::collections::VecDeque;
 
 const MAX_TRANSCRIPT_IMAGES: usize = 4;

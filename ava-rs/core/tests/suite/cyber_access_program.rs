@@ -1,22 +1,22 @@
 use anyhow::Result;
-use codex_core::RecoverTurnRequest;
-use codex_core::StartIfIdleSubmission;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_core::TurnStartOptions;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::turn_input::CyberAccessProgram;
-use codex_protocol::user_input::UserInput;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutRecorder;
+use ava_core::RecoverTurnRequest;
+use ava_core::StartIfIdleSubmission;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_core::TurnStartOptions;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::turn_input::CyberAccessProgram;
+use ava_protocol::user_input::UserInput;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutRecorder;
 use core_test_support::responses;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -36,10 +36,10 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
             body: responses::sse(vec![responses::ev_completed("resp-initial")]),
         }]])
         .await;
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let initial = builder.build_with_streaming_server(&initial_server).await?;
     let TurnInputSubmission::Started { turn_id } = initial
-        .codex
+        .ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "recover this turn".to_owned(),
@@ -55,20 +55,20 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
         panic!("expected a new turn");
     };
     initial_server.wait_for_request_count(/*count*/ 1).await;
-    initial.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&initial.codex, |event| {
+    initial.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
     drop(release_response);
     initial_server.shutdown().await;
-    initial.codex.flush_rollout().await?;
+    initial.ava-code.flush_rollout().await?;
 
     let server = responses::start_mock_server().await;
     let test = builder.restart(&server, &initial).await?;
     let (rollout, _, _) = RolloutRecorder::load_rollout_items(
         &test
-            .codex
+            .ava-code
             .rollout_path()
             .expect("recovered turn rollout path"),
     )
@@ -93,7 +93,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
     let response_mock =
         responses::mount_sse_once(&server, responses::sse_completed("resp-1")).await;
     let submission = test
-        .codex
+        .ava-code
         .recover_turn_if_idle(RecoverTurnRequest {
             turn_id: turn_id.clone(),
             thread_settings: Default::default(),
@@ -107,7 +107,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
             turn_id: turn_id.clone(),
         }
     );
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -133,7 +133,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
     let TurnInputSubmission::Started {
         turn_id: next_turn_id,
     } = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "start a new turn".to_owned(),
             text_elements: Vec::new(),
@@ -143,7 +143,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
         panic!("expected a new turn");
     };
     assert_ne!(next_turn_id, turn_id);
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -154,7 +154,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
             .get("access_programs"),
         None
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -162,8 +162,8 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
 async fn cyber_access_program_omits_api_key_and_spoofed_custom_provider() -> Result<()> {
     core_test_support::skip_if_no_network!(Ok(()));
     for (auth, provider_id) in [
-        (CodexAuth::from_api_key("test-key"), "openai"),
-        (CodexAuth::create_dummy_chatgpt_auth_for_testing(), "custom"),
+        (AvaAuth::from_api_key("test-key"), "openai"),
+        (AvaAuth::create_dummy_chatgpt_auth_for_testing(), "custom"),
     ] {
         let server = responses::start_mock_server().await;
         let request = responses::mount_sse_once(
@@ -171,7 +171,7 @@ async fn cyber_access_program_omits_api_key_and_spoofed_custom_provider() -> Res
             responses::sse(vec![responses::ev_completed("resp-1")]),
         )
         .await;
-        let test = test_codex()
+        let test = test_ava()
             .with_auth(auth)
             .with_config(move |config| {
                 // Keep the display name "OpenAI": provider identity must not use it.
@@ -215,8 +215,8 @@ async fn cyber_access_program_survives_mid_turn_remote_compaction_v2() -> Result
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| config.model_auto_compact_token_limit = Some(200))
         .build_with_auto_env(&server)
         .await?;
@@ -284,8 +284,8 @@ async fn cyber_access_program_is_inherited_by_child_turns() -> Result<()> {
             final_response("resp-child-initial"),
         )
         .await;
-        let test = test_codex()
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        let test = test_ava()
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
             .with_model(if is_v2 { "gpt-5.6-sol" } else { "gpt-5.1" })
             .with_config(move |config| {
                 config
@@ -404,8 +404,8 @@ async fn cyber_access_program_changes_on_one_websocket_with_response_reuse() -> 
             .collect(),
     ])
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .build_with_websocket_server(&server)
         .await?;
     for program in [
@@ -447,13 +447,13 @@ async fn cyber_access_program_changes_on_one_websocket_with_response_reuse() -> 
             .map(|id| Some(json!(id)))
             .collect::<Vec<_>>()
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     server.shutdown().await;
     Ok(())
 }
 
-async fn submit(test: &TestCodex, program: Option<CyberAccessProgram>) -> Result<()> {
-    test.codex
+async fn submit(test: &TestAva, program: Option<CyberAccessProgram>) -> Result<()> {
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".to_owned(),
@@ -465,7 +465,7 @@ async fn submit(test: &TestCodex, program: Option<CyberAccessProgram>) -> Result
             }),
         )
         .await?;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_) | EventMsg::Error(_))
     })
     .await;

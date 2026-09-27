@@ -5,32 +5,32 @@ use std::sync::Mutex as StdMutex;
 use std::sync::Weak;
 use std::time::Duration;
 
-use codex_core::CodexThread;
-use codex_core::StartIfIdleSubmission;
-use codex_core::ThreadManager;
-use codex_core::TurnInput;
-use codex_core::TurnInputRequest;
-use codex_core::TurnStartOptions;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ThreadIdleCause;
-use codex_extension_api::ThreadIdleInput;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadResumeInput;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::models::snapshot_local_user_input;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadQueueChangedEvent;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::MAX_QUEUE_ITEMS;
-use codex_thread_store::QueueStore;
-use codex_thread_store::QueuedUserSubmissionRecord;
-use codex_thread_store::ThreadStoreError;
+use ava_core::AvaThread;
+use ava_core::StartIfIdleSubmission;
+use ava_core::ThreadManager;
+use ava_core::TurnInput;
+use ava_core::TurnInputRequest;
+use ava_core::TurnStartOptions;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ThreadIdleCause;
+use ava_extension_api::ThreadIdleInput;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadResumeInput;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::models::snapshot_local_user_input;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadQueueChangedEvent;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::MAX_QUEUE_ITEMS;
+use ava_thread_store::QueueStore;
+use ava_thread_store::QueuedUserSubmissionRecord;
+use ava_thread_store::ThreadStoreError;
 use thiserror::Error;
 use tokio::sync::Mutex;
 use tokio::sync::OwnedMutexGuard;
@@ -53,7 +53,7 @@ pub enum QueueServiceError {
     #[error("local queued attachment is invalid: {0}")]
     InvalidAttachment(#[from] std::io::Error),
     #[error("Core failed to submit queued user message: {0}")]
-    CoreSubmissionError(#[from] CodexErr),
+    CoreSubmissionError(#[from] AvaErr),
     #[error("only user input can be added to the user-message queue")]
     InvalidInput,
     #[error(
@@ -367,7 +367,7 @@ impl QueuedItemService {
     /// Starts the selected queued message only when its thread is idle.
     pub async fn start(
         &self,
-        thread: &CodexThread,
+        thread: &AvaThread,
         queued_item_id: Option<String>,
         trace: Option<W3cTraceContext>,
     ) -> Result<StartIfIdleSubmission, QueueServiceError> {

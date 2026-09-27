@@ -2,19 +2,19 @@
 
 use std::time::Duration;
 
-use codex_api::ApiError;
-use codex_api::TransportError;
-use codex_extension_api::ExtensionMetrics;
+use ava_api::ApiError;
+use ava_api::TransportError;
+use ava_extension_api::ExtensionMetrics;
 
 use super::sampler::LunaSamplerError;
 
-pub(super) const CLASSIFICATION_METRIC: &str = "codex.guardian_v2.classification";
+pub(super) const CLASSIFICATION_METRIC: &str = "ava.guardian_v2.classification";
 pub(super) const CLASSIFICATION_DURATION_METRIC: &str =
-    "codex.guardian_v2.classification.duration_ms";
-pub(super) const CLASSIFICATION_RISK_METRIC: &str = "codex.guardian_v2.classification.risk";
-pub(super) const FAST_DECISION_METRIC: &str = "codex.guardian_v2.fast_decision";
-pub(super) const REVIEW_FALLBACK_METRIC: &str = "codex.guardian_v2.review_fallback";
-pub(super) const TOOL_CALL_LAG_METRIC: &str = "codex.guardian_v2.tool_call_lag";
+    "ava.guardian_v2.classification.duration_ms";
+pub(super) const CLASSIFICATION_RISK_METRIC: &str = "ava.guardian_v2.classification.risk";
+pub(super) const FAST_DECISION_METRIC: &str = "ava.guardian_v2.fast_decision";
+pub(super) const REVIEW_FALLBACK_METRIC: &str = "ava.guardian_v2.review_fallback";
+pub(super) const TOOL_CALL_LAG_METRIC: &str = "ava.guardian_v2.tool_call_lag";
 
 // Never use error messages as metric tags: they may contain server responses or credentials.
 pub(super) fn sampler_failure_reason(error: &LunaSamplerError) -> &'static str {

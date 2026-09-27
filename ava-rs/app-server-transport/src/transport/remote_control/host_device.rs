@@ -1,7 +1,7 @@
 #[cfg(any(target_os = "macos", test))]
 use serde::Deserialize;
 
-pub(super) const REMOTE_CONTROL_HOST_DEVICE_KIND_HEADER: &str = "x-codex-host-device-kind";
+pub(super) const REMOTE_CONTROL_HOST_DEVICE_KIND_HEADER: &str = "x-ava-host-device-kind";
 #[cfg(any(target_os = "macos", test))]
 const MAC_MINI_HOST_DEVICE_KIND: &str = "mac_mini";
 

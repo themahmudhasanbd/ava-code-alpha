@@ -13,10 +13,10 @@ use crate::context::ContextualUserFragment;
 use crate::context::InterAgentMessage;
 use crate::context::InterAgentMessageType;
 use crate::session::turn_context::TurnContext;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::protocol::InterAgentCommunication;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::protocol::InterAgentCommunication;
 
 impl AgentMessage {
     pub(crate) fn into_communication(
@@ -56,7 +56,7 @@ impl AgentMessage {
 #[derive(Debug)]
 pub(crate) enum MessageDeliveryError {
     InvalidRequest(String),
-    Agent(CodexErr),
+    Agent(AvaErr),
 }
 
 impl LocalAgentControl {

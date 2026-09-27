@@ -1,9 +1,9 @@
 use crate::MEMORY_TOOL_DEVELOPER_INSTRUCTIONS_SUMMARY_TOKEN_LIMIT;
-use codex_protocol::MemoryVersion;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
-use codex_utils_template::Template;
+use ava_protocol::MemoryVersion;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
+use ava_utils_template::Template;
 use std::sync::LazyLock;
 use tokio::fs;
 
@@ -33,10 +33,10 @@ fn parse_embedded_template(source: &'static str, template_name: &str) -> Templat
 /// Large `memory_summary.md` files are truncated at
 /// [MEMORY_TOOL_DEVELOPER_INSTRUCTIONS_SUMMARY_TOKEN_LIMIT].
 pub(crate) async fn build_memory_tool_developer_instructions(
-    codex_home: &AbsolutePathBuf,
+    ava_home: &AbsolutePathBuf,
     version: MemoryVersion,
 ) -> Option<String> {
-    let base_path = codex_home.join(version.directory_name());
+    let base_path = ava_home.join(version.directory_name());
     let memory_summary_path = base_path.join("memory_summary.md");
     let memory_summary = fs::read_to_string(&memory_summary_path)
         .await

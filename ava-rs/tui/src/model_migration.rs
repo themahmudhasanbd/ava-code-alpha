@@ -89,7 +89,7 @@ pub(crate) fn migration_copy_for_models(
     }
 
     let heading_text = Span::from(format!(
-        "Codex just got an upgrade. Introducing {target_display_name}."
+        "Ava just got an upgrade. Introducing {target_display_name}."
     ))
     .bold();
     let description_line: Line<'static>;
@@ -433,16 +433,16 @@ mod tests {
         let screen = ModelMigrationScreen::new(
             FrameRequester::test_dummy(),
             migration_copy_for_models(
-                "gpt-5.1-codex-mini",
-                "gpt-5.1-codex-max",
+                "gpt-5.1-ava-mini",
+                "gpt-5.1-ava-max",
                 /*model_link*/ None,
                 Some(
-                    "Upgrade to gpt-5.2-codex for the latest and greatest agentic coding model."
+                    "Upgrade to gpt-5.2-ava for the latest and greatest agentic coding model."
                         .to_string(),
                 ),
                 /*migration_markdown*/ None,
-                "gpt-5.1-codex-max".to_string(),
-                Some("Codex-optimized flagship for deep and fast reasoning.".to_string()),
+                "gpt-5.1-ava-max".to_string(),
+                Some("Ava-optimized flagship for deep and fast reasoning.".to_string()),
                 /*can_opt_out*/ true,
             ),
         );
@@ -484,7 +484,7 @@ mod tests {
     }
 
     #[test]
-    fn prompt_snapshot_gpt5_codex() {
+    fn prompt_snapshot_gpt5_ava() {
         let backend = VT100Backend::new(/*width*/ 60, /*height*/ 22);
         let mut terminal = Terminal::with_options(backend).expect("terminal");
         terminal.set_viewport_area(Rect::new(0, 0, 60, 22));
@@ -492,13 +492,13 @@ mod tests {
         let screen = ModelMigrationScreen::new(
             FrameRequester::test_dummy(),
             migration_copy_for_models(
-                "gpt-5-codex",
-                "gpt-5.1-codex-max",
+                "gpt-5-ava",
+                "gpt-5.1-ava-max",
                 Some("https://www.codex.com/models/gpt-5.1-codex-max".to_string()),
                 /*migration_copy*/ None,
                 /*migration_markdown*/ None,
-                "gpt-5.1-codex-max".to_string(),
-                Some("Codex-optimized flagship for deep and fast reasoning.".to_string()),
+                "gpt-5.1-ava-max".to_string(),
+                Some("Ava-optimized flagship for deep and fast reasoning.".to_string()),
                 /*can_opt_out*/ false,
             ),
         );
@@ -507,11 +507,11 @@ mod tests {
             frame.render_widget_ref(&screen, frame.area());
         }
         terminal.flush().expect("flush");
-        assert_snapshot!("model_migration_prompt_gpt5_codex", terminal.backend());
+        assert_snapshot!("model_migration_prompt_gpt5_ava", terminal.backend());
     }
 
     #[test]
-    fn prompt_snapshot_gpt5_codex_mini() {
+    fn prompt_snapshot_gpt5_ava_mini() {
         let backend = VT100Backend::new(/*width*/ 60, /*height*/ 22);
         let mut terminal = Terminal::with_options(backend).expect("terminal");
         terminal.set_viewport_area(Rect::new(0, 0, 60, 22));
@@ -519,13 +519,13 @@ mod tests {
         let screen = ModelMigrationScreen::new(
             FrameRequester::test_dummy(),
             migration_copy_for_models(
-                "gpt-5-codex-mini",
-                "gpt-5.1-codex-mini",
+                "gpt-5-ava-mini",
+                "gpt-5.1-ava-mini",
                 Some("https://www.codex.com/models/gpt-5.1-codex-mini".to_string()),
                 /*migration_copy*/ None,
                 /*migration_markdown*/ None,
-                "gpt-5.1-codex-mini".to_string(),
-                Some("Optimized for codex. Cheaper, faster, but less capable.".to_string()),
+                "gpt-5.1-ava-mini".to_string(),
+                Some("Optimized for ava. Cheaper, faster, but less capable.".to_string()),
                 /*can_opt_out*/ false,
             ),
         );
@@ -534,7 +534,7 @@ mod tests {
             frame.render_widget_ref(&screen, frame.area());
         }
         terminal.flush().expect("flush");
-        assert_snapshot!("model_migration_prompt_gpt5_codex_mini", terminal.backend());
+        assert_snapshot!("model_migration_prompt_gpt5_ava_mini", terminal.backend());
     }
 
     #[test]

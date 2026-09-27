@@ -128,9 +128,9 @@ test("cursor global and project trees each report their own candidates", async (
 test("the native harness home is never scanned for MCP configuration", async () => {
   const { root, home } = await makeHome();
   try {
-    await mkdir(join(home, ".codex"), { recursive: true });
+    await mkdir(join(home, ".ava-code"), { recursive: true });
     await writeFile(
-      join(home, ".codex", "config.toml"),
+      join(home, ".ava-code", "config.toml"),
       [
         "# top comment",
         "[mcp_servers.playwright]",
@@ -144,8 +144,8 @@ test("the native harness home is never scanned for MCP configuration", async () 
       ].join("\n"),
     );
     const result = await scanExternalMcp({ homeDir: home, platform: "linux", env: {} });
-    assert.equal(result.candidates.some((candidate) => candidate.source === "codex"), false);
-    assert.equal(result.sources.some((source) => source.kind === "codex"), false);
+    assert.equal(result.candidates.some((candidate) => candidate.source === "ava"), false);
+    assert.equal(result.sources.some((source) => source.kind === "ava"), false);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -3,10 +3,10 @@ use crate::app::rate_limit_refresh::RateLimitReadStatus;
 use crate::app::rate_limit_refresh::RateLimitRefreshOutcome;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::ErrorNotification;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::ErrorNotification;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -63,16 +63,16 @@ async fn luna_reserve_periodic_refresh_adapts_without_an_experiment_banner() -> 
         ),
     )?;
     let (mut app, mut events, _ops) = make_test_app_with_channels().await;
-    app.config.codex_home = home.path().to_path_buf().abs();
+    app.config.ava_home = home.path().to_path_buf().abs();
     app.config.chatgpt_base_url = backend.uri();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(home.path().abs());
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(home.path().abs());
     set_chatgpt_auth(&mut app.chat_widget);
     let mut session = Box::pin(crate::start_embedded_app_server_for_picker(&app.config)).await?;
     let mut tui = crate::tui::test_support::make_test_tui()?;
     for (used, seconds) in [(10, 60), (75, 30), (90, 15), (99, 5), (20, 60)] {
         backend.reset().await;
         Mock::given(method("GET"))
-            .and(path("/api/codex/usage"))
+            .and(path("/api/ava/usage"))
             .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_json(json!({
                 "account_id": "workspace-a", "user_id": "user-a", "plan_type": "plus",
                 "rate_limit": {"allowed": true, "limit_reached": false,
@@ -84,7 +84,7 @@ async fn luna_reserve_periodic_refresh_adapts_without_an_experiment_banner() -> 
             .mount(&backend)
             .await;
         Mock::given(method("GET"))
-            .and(path("/api/codex/rate-limit-reset-credits"))
+            .and(path("/api/ava/rate-limit-reset-credits"))
             .respond_with(ResponseTemplate::new(/*s*/ 200))
             .expect(/*r*/ 0)
             .mount(&backend)
@@ -112,9 +112,9 @@ async fn luna_reserve_periodic_refresh_adapts_without_an_experiment_banner() -> 
         let requests = backend.received_requests().await.unwrap();
         let usage = requests
             .iter()
-            .find(|request| request.url.path() == "/api/codex/usage")
+            .find(|request| request.url.path() == "/api/ava/usage")
             .unwrap();
-        assert!(usage.headers.contains_key("x-openai-codex-luna-reserve"));
+        assert!(usage.headers.contains_key("x-openai-ava-luna-reserve"));
         backend.verify().await;
     }
     session.shutdown().await?;
@@ -143,9 +143,9 @@ async fn backend_banner_limit_error_refreshes_again_after_intervening_rolling_ha
         ),
     )?;
     let (mut app, mut events, _ops) = make_test_app_with_channels().await;
-    app.config.codex_home = home.path().to_path_buf().abs();
+    app.config.ava_home = home.path().to_path_buf().abs();
     app.config.chatgpt_base_url = server.uri();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(home.path().abs());
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(home.path().abs());
     set_chatgpt_auth(&mut app.chat_widget);
     app.chat_widget.set_model("test-model-a");
     let mut healthy = response_with_banner();
@@ -156,7 +156,7 @@ async fn backend_banner_limit_error_refreshes_again_after_intervening_rolling_ha
             .contains("Selected model usage exhausted")
     );
     Mock::given(method("GET"))
-        .and(path("/api/codex/usage"))
+        .and(path("/api/ava/usage"))
         .respond_with(
             ResponseTemplate::new(200)
                 .set_delay(std::time::Duration::from_millis(/*millis*/ 100))
@@ -171,7 +171,7 @@ async fn backend_banner_limit_error_refreshes_again_after_intervening_rolling_ha
         .mount(&server)
         .await;
     Mock::given(method("GET"))
-        .and(path("/api/codex/rate-limit-reset-credits"))
+        .and(path("/api/ava/rate-limit-reset-credits"))
         .respond_with(
             ResponseTemplate::new(200).set_body_json(json!({"available_count":0,"credits":[]})),
         )
@@ -186,7 +186,7 @@ async fn backend_banner_limit_error_refreshes_again_after_intervening_rolling_ha
             error: AppServerTurnError {
                 misalignment: None,
                 message: "credits exhausted".into(),
-                codex_error_info: Some(CodexErrorInfo::UsageLimitExceeded),
+                ava_error_info: Some(AvaErrorInfo::UsageLimitExceeded),
                 additional_details: None,
             },
             will_retry: false,
@@ -219,12 +219,12 @@ async fn backend_banner_limit_error_refreshes_again_after_intervening_rolling_ha
     .await?;
     let mut rolling = response_with_banner().rate_limits;
     rolling.rate_limit_reached_type =
-        Some(codex_app_server_protocol::RateLimitReachedType::WorkspaceMemberCreditsDepleted);
+        Some(ava_app_server_protocol::RateLimitReachedType::WorkspaceMemberCreditsDepleted);
     app.handle_app_server_event(
         &session,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::AccountRateLimitsUpdated(
-                codex_app_server_protocol::AccountRateLimitsUpdatedNotification {
+                ava_app_server_protocol::AccountRateLimitsUpdatedNotification {
                     rate_limits: rolling.clone(),
                 },
             ),
@@ -251,9 +251,9 @@ async fn backend_banner_limit_error_refreshes_again_after_intervening_rolling_ha
     // aggregate reached_type: included usage for other models is still available.
     app.handle_app_server_event(
         &session,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::AccountRateLimitsUpdated(
-                codex_app_server_protocol::AccountRateLimitsUpdatedNotification {
+                ava_app_server_protocol::AccountRateLimitsUpdatedNotification {
                     rate_limits: rolling,
                 },
             ),
@@ -309,9 +309,9 @@ async fn backend_banner_rolling_only_recovery_holds_new_input() -> Result<()> {
     rolling.spend_control_reached = Some(true);
     app.handle_app_server_event(
         &session,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::AccountRateLimitsUpdated(
-                codex_app_server_protocol::AccountRateLimitsUpdatedNotification {
+                ava_app_server_protocol::AccountRateLimitsUpdatedNotification {
                     rate_limits: rolling,
                 },
             ),
@@ -368,9 +368,9 @@ async fn backend_banner_account_changes_invalidate_pending_recovery() -> Result<
         .unwrap();
     app.handle_app_server_event(
         &session,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::AccountUpdated(
-                codex_app_server_protocol::AccountUpdatedNotification {
+                ava_app_server_protocol::AccountUpdatedNotification {
                     auth_mode: None,
                     plan_type: None,
                 },
@@ -445,9 +445,9 @@ async fn backend_banner_reset_redemption_rejects_pre_reset_content() -> Result<(
             idempotency_key: "mock-reset".into(),
             credit_id: None,
             result: Ok(
-                codex_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse {
+                ava_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse {
                     outcome:
-                        codex_app_server_protocol::ConsumeAccountRateLimitResetCreditOutcome::Reset,
+                        ava_app_server_protocol::ConsumeAccountRateLimitResetCreditOutcome::Reset,
                 },
             ),
         },
@@ -456,7 +456,7 @@ async fn backend_banner_reset_redemption_rejects_pre_reset_content() -> Result<(
     let mut recovered = banner.clone();
     recovered.rate_limit_upsell = None;
     recovered.rate_limit_reset_credits =
-        Some(codex_app_server_protocol::RateLimitResetCreditsSummary {
+        Some(ava_app_server_protocol::RateLimitResetCreditsSummary {
             available_count: 0,
             credits: None,
         });

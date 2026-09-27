@@ -7,10 +7,10 @@ use crate::session::TurnInput;
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
 use crate::state::TaskKind;
-use codex_features::Feature;
-use codex_model_provider::RemoteCompactionSupport;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::user_input::UserInput;
+use ava_features::Feature;
+use ava_model_provider::RemoteCompactionSupport;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::user_input::UserInput;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Clone, Copy, Default)]
@@ -67,7 +67,7 @@ impl SessionTask for CompactTask {
             }
         };
         if let Err(err) = result
-            && matches!(err.details(), CodexErrorDetails::TurnAborted)
+            && matches!(err.details(), AvaErrorDetails::TurnAborted)
         {
             return Err(err);
         }

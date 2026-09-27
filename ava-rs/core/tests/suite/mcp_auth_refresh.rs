@@ -1,26 +1,26 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
-use codex_config::McpServerTransportConfig;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::Constrained;
-use codex_core::plugins_manager_for_config;
-use codex_exec_server_test_support::environment_manager_without_environments;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::CodexAppsToolsCache;
-use codex_mcp::EffectiveMcpServer;
-use codex_mcp::McpRuntime;
-use codex_mcp::McpRuntimeContext;
-use codex_mcp::McpRuntimeInput;
-use codex_mcp::McpStartupPolicy;
-use codex_mcp::McpToolCatalogCache;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::protocol::AskForApproval;
+use ava_config::McpServerTransportConfig;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::Constrained;
+use ava_core::plugins_manager_for_config;
+use ava_exec_server_test_support::environment_manager_without_environments;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::AvaAppsToolsCache;
+use ava_mcp::EffectiveMcpServer;
+use ava_mcp::McpRuntime;
+use ava_mcp::McpRuntimeContext;
+use ava_mcp::McpRuntimeInput;
+use ava_mcp::McpStartupPolicy;
+use ava_mcp::McpToolCatalogCache;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::protocol::AskForApproval;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
@@ -33,14 +33,14 @@ use tempfile::TempDir;
 use tokio_util::sync::CancellationToken;
 
 // Installs a known snapshot through AuthManager's public external-auth path.
-struct StaticExternalAuth(CodexAuth);
+struct StaticExternalAuth(AvaAuth);
 
 impl ExternalAuth for StaticExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 }
@@ -52,7 +52,7 @@ async fn hosted_plugin_runtime_ps_mcp_tool_calls_use_current_auth_manager_token(
     let server = start_mock_server().await;
     let apps_server = AppsTestServer::mount_hosted_plugin_runtime_searchable(&server).await?;
     let home = Arc::new(TempDir::new()?);
-    let expected_auth = CodexAuth::from_external_chatgpt_tokens(
+    let expected_auth = AvaAuth::from_external_chatgpt_tokens(
         "header.e30.first",
         "test-account",
         /*chatgpt_plan_type*/ None,
@@ -64,7 +64,7 @@ async fn hosted_plugin_runtime_ps_mcp_tool_calls_use_current_auth_manager_token(
     // Build the hosted-plugin config directly so the local test origin can
     // exercise the connection-manager auth path. Effective server resolution
     // correctly strips ChatGPT auth from untrusted localhost origins.
-    let mut hosted_plugin_runtime_config = codex_mcp::hosted_plugin_runtime_mcp_server_config(
+    let mut hosted_plugin_runtime_config = ava_mcp::hosted_plugin_runtime_mcp_server_config(
         &apps_server.chatgpt_base_url,
         /*apps_mcp_product_sku*/ None,
         /*originator*/ None,
@@ -80,11 +80,11 @@ async fn hosted_plugin_runtime_ps_mcp_tool_calls_use_current_auth_manager_token(
     // debug bearer override in their environment.
     *bearer_token_env_var = None;
     let mcp_servers = HashMap::from([(
-        CODEX_APPS_MCP_SERVER_NAME.to_string(),
+        AVA_APPS_MCP_SERVER_NAME.to_string(),
         EffectiveMcpServer::configured(hosted_plugin_runtime_config),
     )]);
     let mut config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await?;
     config.permissions.approval_policy = Constrained::allow_any(AskForApproval::Never);
@@ -103,9 +103,9 @@ async fn hosted_plugin_runtime_ps_mcp_tool_calls_use_current_auth_manager_token(
             Arc::new(environment_manager_without_environments()),
             home.path().to_path_buf(),
         ),
-        codex_apps_tools_cache: CodexAppsToolsCache::default(),
+        ava_apps_tools_cache: AvaAppsToolsCache::default(),
         tool_catalog_cache: McpToolCatalogCache::default(),
-        codex_apps_tools_cache_key: codex_mcp::codex_apps_tools_cache_key(Some(&expected_auth)),
+        ava_apps_tools_cache_key: ava_mcp::ava_apps_tools_cache_key(Some(&expected_auth)),
         client_mcp_extensions: ClientMcpExtensions::default(),
         auth: Some(expected_auth.clone()),
         auth_manager: Some(Arc::clone(&auth_manager)),
@@ -119,7 +119,7 @@ async fn hosted_plugin_runtime_ps_mcp_tool_calls_use_current_auth_manager_token(
     // manager after the MCP client has been created.
     auth_manager
         .set_external_auth(Arc::new(StaticExternalAuth(
-            CodexAuth::from_external_chatgpt_tokens(
+            AvaAuth::from_external_chatgpt_tokens(
                 "header.e30.reloaded",
                 "test-account",
                 /*chatgpt_plan_type*/ None,
@@ -128,11 +128,11 @@ async fn hosted_plugin_runtime_ps_mcp_tool_calls_use_current_auth_manager_token(
         .await?;
 
     // The manager and its static fallback were created before the auth update,
-    // so this tool call only sees the new token if the Codex Apps provider
+    // so this tool call only sees the new token if the Ava Apps provider
     // reads the shared AuthManager at request time.
     let tool_result = runtime
         .latest_call_tool(
-            CODEX_APPS_MCP_SERVER_NAME,
+            AVA_APPS_MCP_SERVER_NAME,
             "calendar_create_event",
             /*environment_id*/ None,
             Some(json!({
@@ -153,14 +153,14 @@ async fn hosted_plugin_runtime_ps_mcp_tool_calls_use_current_auth_manager_token(
     let tool_call_request = requests
         .iter()
         .find(|request| {
-            request.url.path() == "/api/codex/ps/mcp"
+            request.url.path() == "/api/ava/ps/mcp"
                 && serde_json::from_slice::<Value>(&request.body)
                     .ok()
                     .is_some_and(|body| {
                         body.get("method").and_then(Value::as_str) == Some("tools/call")
                     })
         })
-        .expect("Codex Apps should receive a tool call");
+        .expect("Ava Apps should receive a tool call");
     assert_eq!(
         tool_call_request
             .headers

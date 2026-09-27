@@ -2,8 +2,8 @@ use super::CONTEXT_APPEND_MAX_BYTES;
 use super::context_append_chunks;
 use super::session_json;
 use crate::endpoint::realtime_websocket::protocol::RealtimeVoice;
-use codex_protocol::protocol::ConversationTextParams;
-use codex_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::ConversationTextParams;
+use ava_protocol::protocol::ConversationTextRole;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 

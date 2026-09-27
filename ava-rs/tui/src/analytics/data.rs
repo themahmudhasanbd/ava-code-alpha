@@ -109,7 +109,7 @@ impl<T: Send + 'static> Load<T> {
 }
 
 /// Keep untyped server and transport diagnostics out of account reports.
-pub(super) fn error(_error: codex_app_server_client::TypedRequestError) -> String {
+pub(super) fn error(_error: ava_app_server_client::TypedRequestError) -> String {
     "Couldn't load analytics. Press R to retry.".into()
 }
 

@@ -26,10 +26,10 @@ use crate::tools::registry::AnyToolResult;
 use crate::tools::registry::ToolArgumentDiffConsumer;
 use crate::tools::router::ToolCall;
 use crate::tools::router::ToolCallSource;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::error::CodexErr;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ToolResultMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::error::AvaErr;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ToolResultMetadata;
 
 struct ToolCallTimingGuard {
     started_at: Option<Instant>,
@@ -37,7 +37,7 @@ struct ToolCallTimingGuard {
     conversation_id: String,
     turn_id: String,
     call_id: String,
-    tool_name: codex_tools::ToolName,
+    tool_name: ava_tools::ToolName,
 }
 
 #[derive(Clone)]
@@ -65,7 +65,7 @@ impl ToolCallRuntime {
 
     pub(crate) fn create_diff_consumer(
         &self,
-        tool_name: &codex_tools::ToolName,
+        tool_name: &ava_tools::ToolName,
     ) -> Option<Box<dyn ToolArgumentDiffConsumer>> {
         self.step_context
             .tool_router
@@ -77,7 +77,7 @@ impl ToolCallRuntime {
         self,
         call: ToolCall,
         cancellation_token: CancellationToken,
-    ) -> impl std::future::Future<Output = Result<ResponseItemEnvelope, CodexErr>> {
+    ) -> impl std::future::Future<Output = Result<ResponseItemEnvelope, AvaErr>> {
         let error_call = call.clone();
         let source = call.direct_source();
         let recorder = self.session.services.executed_tool_calls.clone();
@@ -98,7 +98,7 @@ impl ToolCallRuntime {
                     }
                     result.into_response()
                 }
-                Err(FunctionCallError::Fatal(message)) => return Err(CodexErr::Fatal(message)),
+                Err(FunctionCallError::Fatal(message)) => return Err(AvaErr::Fatal(message)),
                 Err(other) => {
                     ResponseItemEnvelope::new(Self::failure_response(error_call, other).into())
                 }
@@ -286,15 +286,15 @@ impl ToolCallRuntime {
             ToolPayload::Custom { .. } => ResponseInputItem::CustomToolCallOutput {
                 call_id: call.call_id,
                 name: None,
-                output: codex_protocol::models::FunctionCallOutputPayload {
-                    body: codex_protocol::models::FunctionCallOutputBody::Text(message),
+                output: ava_protocol::models::FunctionCallOutputPayload {
+                    body: ava_protocol::models::FunctionCallOutputBody::Text(message),
                     success: Some(false),
                 },
             },
             _ => ResponseInputItem::FunctionCallOutput {
                 call_id: call.call_id,
-                output: codex_protocol::models::FunctionCallOutputPayload {
-                    body: codex_protocol::models::FunctionCallOutputBody::Text(message),
+                output: ava_protocol::models::FunctionCallOutputPayload {
+                    body: ava_protocol::models::FunctionCallOutputBody::Text(message),
                     success: Some(false),
                 },
             },
@@ -376,8 +376,8 @@ impl ToolCallTimingGuard {
         macro_rules! log_tool_call {
             ($dispatch_duration_ms:expr, $handler_duration_ms:expr, $total_duration_ms:expr) => {
                 info!(
-                    event.name = "codex.tool_call",
-                    trace_id = %codex_otel::current_span_trace_id().unwrap_or_default(),
+                    event.name = "ava.tool_call",
+                    trace_id = %ava_otel::current_span_trace_id().unwrap_or_default(),
                     conversation.id = %self.conversation_id,
                     turn_id = %self.turn_id,
                     tool_name = %self.tool_name,
@@ -429,10 +429,10 @@ mod tests {
     use crate::tools::registry::ToolRegistry;
     use crate::tools::router::ToolRouter;
     use crate::turn_diff_tracker::TurnDiffTracker;
-    use codex_extension_api::ToolCallOutcome;
-    use codex_protocol::models::FunctionCallOutputBody;
-    use codex_protocol::models::FunctionCallOutputPayload;
-    use codex_protocol::openai_models::ToolMode;
+    use ava_extension_api::ToolCallOutcome;
+    use ava_protocol::models::FunctionCallOutputBody;
+    use ava_protocol::models::FunctionCallOutputPayload;
+    use ava_protocol::openai_models::ToolMode;
     use pretty_assertions::assert_eq;
     use tokio::sync::Notify;
     use tokio::sync::oneshot;
@@ -445,7 +445,7 @@ mod tests {
             .finish();
         tracing::subscriber::with_default(subscriber, || {
             let call = ToolCall {
-                tool_name: codex_tools::ToolName::plain("test_tool"),
+                tool_name: ava_tools::ToolName::plain("test_tool"),
                 call_id: "call-1".to_string(),
                 payload: ToolPayload::Function {
                     arguments: "{}".to_string(),
@@ -488,7 +488,7 @@ mod tests {
     fn output_timing_works_without_logs_and_excludes_dispatch_waiting() {
         tracing::subscriber::with_default(tracing::subscriber::NoSubscriber::default(), || {
             let call = ToolCall {
-                tool_name: codex_tools::ToolName::plain("exec"),
+                tool_name: ava_tools::ToolName::plain("exec"),
                 call_id: "call-1".to_string(),
                 payload: ToolPayload::Custom {
                     input: "text('ready')".to_string(),
@@ -522,7 +522,7 @@ mod tests {
         let (session, turn_context) = crate::session::tests::make_session_and_context().await;
         let session = Arc::new(session);
         let turn_context = Arc::new(turn_context);
-        let tool_name = codex_tools::ToolName::plain("test_tool");
+        let tool_name = ava_tools::ToolName::plain("test_tool");
         let handler = Arc::new(ImmediateHandler {
             tool_name: tool_name.clone(),
         }) as Arc<dyn CoreToolRuntime>;
@@ -585,7 +585,7 @@ mod tests {
         )?;
         let timing_events = logs
             .lines()
-            .filter(|line| line.contains("event.name=\"codex.tool_call\""))
+            .filter(|line| line.contains("event.name=\"ava.tool_call\""))
             .collect::<Vec<_>>();
         assert_eq!(
             timing_events.len(),
@@ -627,26 +627,26 @@ mod tests {
     }
 
     struct ImmediateHandler {
-        tool_name: codex_tools::ToolName,
+        tool_name: ava_tools::ToolName,
     }
 
     impl ToolExecutor<ToolInvocation> for ImmediateHandler {
-        fn tool_name(&self) -> codex_tools::ToolName {
+        fn tool_name(&self) -> ava_tools::ToolName {
             self.tool_name.clone()
         }
 
-        fn spec(&self) -> codex_tools::ToolSpec {
-            codex_tools::ToolSpec::Function(codex_tools::ResponsesApiTool {
+        fn spec(&self) -> ava_tools::ToolSpec {
+            ava_tools::ToolSpec::Function(ava_tools::ResponsesApiTool {
                 name: self.tool_name.name.clone(),
                 description: "Immediate test tool.".to_string(),
                 strict: false,
                 defer_loading: None,
-                parameters: codex_tools::JsonSchema::default(),
+                parameters: ava_tools::JsonSchema::default(),
                 output_schema: None,
             })
         }
 
-        fn handle<'a>(&'a self, _invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+        fn handle<'a>(&'a self, _invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
         where
             ToolInvocation: 'a,
         {
@@ -667,11 +667,11 @@ mod tests {
         allow_finish: Arc<Notify>,
     }
 
-    impl codex_extension_api::ToolLifecycleContributor for BlockingFinishContributor {
+    impl ava_extension_api::ToolLifecycleContributor for BlockingFinishContributor {
         fn on_tool_finish<'a>(
             &'a self,
-            input: codex_extension_api::ToolFinishInput<'a>,
-        ) -> codex_extension_api::ToolLifecycleFuture<'a> {
+            input: ava_extension_api::ToolFinishInput<'a>,
+        ) -> ava_extension_api::ToolLifecycleFuture<'a> {
             let records = Arc::clone(&self.records);
             let allow_finish = Arc::clone(&self.allow_finish);
             let finish_started = self
@@ -701,7 +701,7 @@ mod tests {
         let (finish_started_tx, finish_started_rx) = oneshot::channel();
         let allow_finish = Arc::new(Notify::new());
         let mut builder =
-            codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+            ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
         builder.tool_lifecycle_contributor(Arc::new(BlockingFinishContributor {
             records: Arc::clone(&records),
             finish_started: std::sync::Mutex::new(Some(finish_started_tx)),
@@ -711,7 +711,7 @@ mod tests {
 
         let session = Arc::new(session);
         let turn_context = Arc::new(turn_context);
-        let tool_name = codex_tools::ToolName::plain("test_tool");
+        let tool_name = ava_tools::ToolName::plain("test_tool");
         let handler = Arc::new(ImmediateHandler {
             tool_name: tool_name.clone(),
         }) as Arc<dyn CoreToolRuntime>;

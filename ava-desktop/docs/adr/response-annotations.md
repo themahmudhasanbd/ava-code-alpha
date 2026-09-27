@@ -28,7 +28,7 @@ prompt carries the excerpts in a structured block:
 
 ```text
 # Response annotations:
-Each item contains text selected from an earlier Codex response and may include a user comment. …
+Each item contains text selected from an earlier Ava response and may include a user comment. …
 <response-annotations>
 [{"text":"…","annotation":"…","source":{…}}]
 </response-annotations>
@@ -56,7 +56,7 @@ prompt as data, numbered so the model can address `Annotation 1`,
 3. Rendering:
    - The answer body is **never decorated by this app**. An annotation shows up in
      the model's answer only where the model cites it, exactly as in the
-     reference: a `:codex-annotation{index="N"}` directive in the answer's source
+     reference: a `:ava-annotation{index="N"}` directive in the answer's source
      becomes a small accent-colored numbered reference (a remark pass turns the
      token into a marker element; the sanitizer keeps the marker scheme on its
      href), whose tooltip is the annotated excerpt and any comment. A marker is
@@ -79,7 +79,7 @@ prompt as data, numbered so the model can address `Annotation 1`,
    reduces it back to the request.
 5. The instruction sentence is the reference's own text, including its
    requirement that the model cite every annotation it addresses with
-   `:codex-annotation{index="N"}`; that directive is what renders as the numbered
+   `:ava-annotation{index="N"}`; that directive is what renders as the numbered
    reference in decision 3. An app that decorates the answer itself would put
    markers where the model never claimed to answer them, which is also what made
    the first implementation unreadable.

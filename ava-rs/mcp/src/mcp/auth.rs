@@ -2,22 +2,22 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
-use codex_config::McpServerAuth;
-use codex_config::McpServerConfig;
-use codex_config::McpServerTransportConfig;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::HttpClient;
-use codex_login::CodexAuth;
-use codex_rmcp_client::McpAuthState;
-use codex_rmcp_client::McpOAuthCallbackMode;
-use codex_rmcp_client::OAuthDiscoveryTimeout;
-use codex_rmcp_client::OAuthProviderError;
-use codex_rmcp_client::StreamableHttpRedirectMode;
-use codex_rmcp_client::determine_streamable_http_auth_status;
-use codex_rmcp_client::determine_streamable_http_auth_status_from_credentials;
-use codex_rmcp_client::discover_streamable_http_oauth;
-use codex_rmcp_client::resolve_mcp_oauth_callback_url;
+use ava_config::McpServerAuth;
+use ava_config::McpServerConfig;
+use ava_config::McpServerTransportConfig;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::HttpClient;
+use ava_login::AvaAuth;
+use ava_rmcp_client::McpAuthState;
+use ava_rmcp_client::McpOAuthCallbackMode;
+use ava_rmcp_client::OAuthDiscoveryTimeout;
+use ava_rmcp_client::OAuthProviderError;
+use ava_rmcp_client::StreamableHttpRedirectMode;
+use ava_rmcp_client::determine_streamable_http_auth_status;
+use ava_rmcp_client::determine_streamable_http_auth_status_from_credentials;
+use ava_rmcp_client::discover_streamable_http_oauth;
+use ava_rmcp_client::resolve_mcp_oauth_callback_url;
 use futures::FutureExt;
 use futures::future::join_all;
 use tracing::warn;
@@ -198,7 +198,7 @@ pub async fn compute_auth_statuses<'a, I>(
     servers: I,
     store_mode: OAuthCredentialsStoreMode,
     keyring_backend_kind: AuthKeyringBackendKind,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     runtime_context: &McpRuntimeContext,
 ) -> HashMap<String, McpAuthStatusEntry>
 where
@@ -247,7 +247,7 @@ async fn compute_auth_status(
     config: &McpServerConfig,
     store_mode: OAuthCredentialsStoreMode,
     keyring_backend_kind: AuthKeyringBackendKind,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     runtime_context: &McpRuntimeContext,
     redirect_mode: StreamableHttpRedirectMode,
 ) -> Result<McpAuthState> {
@@ -259,7 +259,7 @@ async fn compute_auth_status(
         return Ok(McpAuthState::Unsupported);
     }
     let has_runtime_auth = matches!(config.auth, McpServerAuth::ChatGpt)
-        && auth.is_some_and(CodexAuth::uses_codex_backend)
+        && auth.is_some_and(AvaAuth::uses_ava_backend)
         && matches!(
             &config.transport,
             McpServerTransportConfig::StreamableHttp {

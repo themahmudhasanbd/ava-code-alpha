@@ -3,20 +3,20 @@ use crate::session::tests::make_session_and_context_with_auth_and_config_and_rx;
 use crate::tools::context::ToolCallSource;
 use crate::tools::context::ToolPayload;
 use crate::tools::router::ToolCall;
-use codex_code_mode::CellId;
-use codex_features::Feature;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::ResponseItemId;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::ExecutedToolCall;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_tools::ToolName;
+use ava_code_mode::CellId;
+use ava_features::Feature;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::ResponseItemId;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::ExecutedToolCall;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_tools::ToolName;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -33,7 +33,7 @@ async fn local_compaction_respects_tool_metadata_state(
     let server = responses::start_mock_server().await;
     let provider = ModelProviderInfo::create_openai_provider(Some(format!("{}/v1", server.uri())));
     let (session, turn, _events) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         Vec::new(),
         move |config| {
             config.model = Some("gpt-5.2".to_string());
@@ -304,7 +304,7 @@ fn collect_annotated_user_messages_extracts_user_text_only() {
     let items = vec![
         ResponseItemEnvelope {
             item: user_message("first"),
-            metadata: Some(CodexHarnessMetadata::default()),
+            metadata: Some(AvaHarnessMetadata::default()),
         },
         ResponseItemEnvelope::new(ResponseItem::Other),
     ];
@@ -316,7 +316,7 @@ fn collect_annotated_user_messages_extracts_user_text_only() {
             id: None,
             message: "first".to_string(),
             internal_chat_message_metadata_passthrough: None,
-            harness_metadata: Some(CodexHarnessMetadata::default()),
+            harness_metadata: Some(AvaHarnessMetadata::default()),
         }],
         collected
     );
@@ -374,7 +374,7 @@ fn collect_user_messages_filters_legacy_warnings() {
             "Warning: apply_patch was requested via exec_command. Use the apply_patch tool instead of exec_command.",
         ),
         user_message(
-            "Warning: Your account was flagged for potentially high-risk cyber activity and this request was routed to gpt-5.2 as a fallback. To regain access to gpt-5.3-codex, apply for trusted access: https://chatgpt.com/cyber or learn more: https://developers.openai.com/codex/concepts/cyber-safety",
+            "Warning: Your account was flagged for potentially high-risk cyber activity and this request was routed to gpt-5.2 as a fallback. To regain access to gpt-5.3-ava, apply for trusted access: https://chatgpt.com/cyber or learn more: https://developers.openai.com/codex/concepts/cyber-safety",
         ),
         user_message("real user message"),
     ];
@@ -394,7 +394,7 @@ fn build_token_limited_compacted_history_truncates_overlong_user_messages() {
         id: Some(ResponseItemId::with_suffix("msg", "long-user")),
         message: big.clone(),
         internal_chat_message_metadata_passthrough: None,
-        harness_metadata: Some(CodexHarnessMetadata::default()),
+        harness_metadata: Some(AvaHarnessMetadata::default()),
     };
     let history = super::build_compacted_history_with_limit(
         Vec::new(),
@@ -431,7 +431,7 @@ fn build_token_limited_compacted_history_truncates_overlong_user_messages() {
     };
     assert_eq!(summary_text, "SUMMARY");
     assert_eq!(history[0].id(), user_message.id.as_ref());
-    assert_eq!(history[0].metadata, Some(CodexHarnessMetadata::default()));
+    assert_eq!(history[0].metadata, Some(AvaHarnessMetadata::default()));
     assert_eq!(history[1].metadata, None);
 }
 
@@ -475,7 +475,7 @@ fn build_compacted_history_preserves_user_message_passthrough_metadata() {
                     ..Default::default()
                 },
             ),
-            harness_metadata: Some(CodexHarnessMetadata::default()),
+            harness_metadata: Some(AvaHarnessMetadata::default()),
         }],
         "summary text",
     );
@@ -501,7 +501,7 @@ fn build_compacted_history_preserves_user_message_passthrough_metadata() {
                         },
                     ),
                 },
-                metadata: Some(CodexHarnessMetadata::default()),
+                metadata: Some(AvaHarnessMetadata::default()),
             },
             ResponseItemEnvelope::new(ContextualUserFragment::into(CompactionSummary::new(
                 "summary text",

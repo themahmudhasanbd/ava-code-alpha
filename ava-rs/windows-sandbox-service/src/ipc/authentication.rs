@@ -3,10 +3,10 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_windows_sandbox::DirectoryOpenDisposition;
-use codex_windows_sandbox::SetupRuntime;
-use codex_windows_sandbox::create_directory_guard;
-use codex_windows_sandbox::string_from_sid_bytes;
+use ava_windows_sandbox::DirectoryOpenDisposition;
+use ava_windows_sandbox::SetupRuntime;
+use ava_windows_sandbox::create_directory_guard;
+use ava_windows_sandbox::string_from_sid_bytes;
 use std::ffi::OsString;
 use std::ffi::c_void;
 use std::mem::size_of;
@@ -21,12 +21,12 @@ use windows_sys::Win32::System::Pipes as pipes;
 use windows_sys::Win32::System::Threading as threading;
 
 use super::home::OwnedHandle;
-use super::home::prepare_codex_home;
+use super::home::prepare_ava_home;
 use super::request::ServiceRequest;
 
 pub(crate) struct ClientIdentity {
     pub(crate) account: String,
-    pub(crate) codex_home: PathBuf,
+    pub(crate) ava_home: PathBuf,
     pub(crate) user_sid: String,
     pub(crate) session_id: u32,
     // The requested route, authenticated against the held client's installed image.
@@ -57,7 +57,7 @@ pub(super) fn authenticate_client(
                     ServiceRequest::RegisterInstallation { .. } => Ok(()),
                     ServiceRequest::ProvisionSandbox(request) => {
                         crate::machine_policy::validate_provisioning_settings(
-                            &identity.codex_home,
+                            &identity.ava_home,
                             &request.settings,
                             &request.listeners,
                             identity.token.0,
@@ -79,11 +79,11 @@ fn authenticate_impersonated_client(
 ) -> Result<ClientIdentity> {
     // Pin the group generation through identity capture.
     // Release this lock before the provisioning worker checks machine policy.
-    let _setup_lock = codex_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
+    let _setup_lock = ava_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
     anyhow::ensure!(
-        codex_windows_sandbox::resolve_sid(codex_windows_sandbox::SANDBOX_USERS_GROUP)
+        ava_windows_sandbox::resolve_sid(ava_windows_sandbox::SANDBOX_USERS_GROUP)
             .is_ok_and(|current| current == sandbox_sid),
-        codex_windows_sandbox::SANDBOX_GROUP_CHANGED
+        ava_windows_sandbox::SANDBOX_GROUP_CHANGED
     );
     if unsafe { pipes::ImpersonateNamedPipeClient(pipe) } == 0 {
         return Err(std::io::Error::last_os_error()).context("impersonate provisioning client");
@@ -102,7 +102,7 @@ fn authenticate_impersonated_client(
     }
     let token = OwnedHandle(raw_token);
     crate::package_identity::authorize_client(authorized_process, token.0)
-        .context("authorize the packaged Codex provisioning client")?;
+        .context("authorize the packaged Ava provisioning client")?;
     let mut session = 0_u32;
     let mut returned = 0_u32;
     if unsafe {
@@ -136,18 +136,18 @@ fn authenticate_impersonated_client(
         bail!("sandbox accounts cannot request provisioning");
     }
 
-    let user = unsafe { codex_windows_sandbox::get_user_sid_bytes(token.0) }
+    let user = unsafe { ava_windows_sandbox::get_user_sid_bytes(token.0) }
         .context("read provisioning client identity")?;
     let user_sid = string_from_sid_bytes(&user).map_err(anyhow::Error::msg)?;
-    let account = unsafe { codex_windows_sandbox::account_name_from_sid(user.as_ptr() as _) }
+    let account = unsafe { ava_windows_sandbox::account_name_from_sid(user.as_ptr() as _) }
         .context("resolve provisioning client account")?;
     let runtime = crate::package_identity::authorize_setup_runtime(authorized_process, request)?;
     let requested_home = match request {
-        ServiceRequest::RegisterInstallation { codex_home } => codex_home,
-        ServiceRequest::ProvisionSandbox(request) => &request.codex_home,
+        ServiceRequest::RegisterInstallation { ava_home } => ava_home,
+        ServiceRequest::ProvisionSandbox(request) => &request.ava_home,
     };
-    let (codex_home, handles) = match request {
-        ServiceRequest::ProvisionSandbox(request) => prepare_codex_home(
+    let (ava_home, handles) = match request {
+        ServiceRequest::ProvisionSandbox(request) => prepare_ava_home(
             requested_home,
             runtime,
             if request.refresh_only {
@@ -158,7 +158,7 @@ fn authenticate_impersonated_client(
         )?,
         ServiceRequest::RegisterInstallation { .. } => {
             // Registration must not create the sandbox directories or change their ACLs.
-            codex_windows_sandbox::validate_local_directory_path(requested_home)?;
+            ava_windows_sandbox::validate_local_directory_path(requested_home)?;
             let mut handles = Vec::new();
             super::home::pin_existing_ancestors(requested_home, &mut handles)?;
             // Uninstall removes sandbox files as SYSTEM; read access cannot grant that authority.
@@ -202,7 +202,7 @@ fn authenticate_impersonated_client(
         }
     };
     let desktop_installation =
-        crate::installation_record::read_desktop_installation(&codex_home, token.0)
+        crate::installation_record::read_desktop_installation(&ava_home, token.0)
             .inspect_err(|_| {
                 crate::service::log_error(
                     crate::service::EVENT_SERVICE_FAILED,
@@ -212,7 +212,7 @@ fn authenticate_impersonated_client(
             .ok();
     Ok(ClientIdentity {
         account,
-        codex_home,
+        ava_home,
         user_sid,
         session_id: session,
         runtime,

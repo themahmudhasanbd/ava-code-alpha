@@ -1,11 +1,11 @@
 use clap::Parser;
-use codex_arg0::Arg0DispatchPaths;
-use codex_arg0::arg0_dispatch_or_else;
-use codex_config::LoaderOverrides;
-use codex_tui::Cli;
-use codex_tui::ExitReason;
-use codex_tui::run_main;
-use codex_utils_cli::CliConfigOverrides;
+use ava_arg0::Arg0DispatchPaths;
+use ava_arg0::arg0_dispatch_or_else;
+use ava_config::LoaderOverrides;
+use ava_tui::Cli;
+use ava_tui::ExitReason;
+use ava_tui::run_main;
+use ava_utils_cli::CliConfigOverrides;
 use std::io::Write;
 use supports_color::Stream;
 
@@ -19,7 +19,7 @@ struct TopCli {
 }
 
 fn main() -> anyhow::Result<()> {
-    codex_build_info::initialize!();
+    ava_build_info::initialize!();
     arg0_dispatch_or_else(|arg0_paths: Arg0DispatchPaths| async move {
         let top_cli = TopCli::parse();
         let mut inner = top_cli.inner;

@@ -15,7 +15,7 @@ test("model discovery reads AvA configuration but never the native harness home"
   const home = join(root, "home");
   try {
     const avaConfig = join(home, ".ava-code", "config.toml");
-    const harnessConfig = join(home, ".codex", "config.toml");
+    const harnessConfig = join(home, ".ava-code", "config.toml");
     await mkdir(dirname(avaConfig), { recursive: true });
     await mkdir(dirname(harnessConfig), { recursive: true });
     await writeFile(

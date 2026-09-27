@@ -1,37 +1,37 @@
 use crate::events::AppServerRpcTransport;
-use crate::events::CodexRuntimeMetadata;
+use crate::events::AvaRuntimeMetadata;
 use crate::events::GuardianReviewEventParams;
 use crate::guardian_v2::GuardianV2Event;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerResponse;
-use codex_plugin::PluginTelemetryMetadata;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::error::CodexErr;
-pub use codex_protocol::error::CodexErrKind;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookExecutionMode;
-use codex_protocol::protocol::HookHandlerType;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookSource;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SkillScope;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerResponse;
+use ava_plugin::PluginTelemetryMetadata;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::error::AvaErr;
+pub use ava_protocol::error::AvaErrKind;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookExecutionMode;
+use ava_protocol::protocol::HookHandlerType;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookSource;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SkillScope;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -153,7 +153,7 @@ pub enum ImageDetailSetting {
     Original,
 }
 
-/// Measurements for one successfully decoded image at the point where Codex prepares it for
+/// Measurements for one successfully decoded image at the point where Ava prepares it for
 /// durable conversation history.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ImagePreparationMetadata {
@@ -220,7 +220,7 @@ pub trait TurnAnalyticsMetadata: Send + Sync {
     /// The caller-provided trigger recorded when this turn started.
     fn turn_trigger(&self) -> Option<String>;
     /// The effective Responses source at event emission, including accepted steers.
-    fn codex_turn_source(&self) -> Option<String>;
+    fn ava_turn_source(&self) -> Option<String>;
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -257,30 +257,30 @@ pub struct TurnProfileFact {
 }
 
 #[derive(Clone)]
-pub struct TurnCodexErrorFact {
+pub struct TurnAvaErrorFact {
     pub(crate) turn_id: String,
     pub(crate) thread_id: String,
-    pub(crate) error: TurnCodexError,
+    pub(crate) error: TurnAvaError,
 }
 
-impl TurnCodexErrorFact {
-    pub fn from_codex_err(thread_id: String, turn_id: String, error: &CodexErr) -> Self {
+impl TurnAvaErrorFact {
+    pub fn from_ava_err(thread_id: String, turn_id: String, error: &AvaErr) -> Self {
         Self {
             turn_id,
             thread_id,
-            error: TurnCodexError::from_codex_err(error),
+            error: TurnAvaError::from_ava_err(error),
         }
     }
 }
 
 #[derive(Clone)]
-pub(crate) struct TurnCodexError {
-    pub(crate) kind: CodexErrKind,
+pub(crate) struct TurnAvaError {
+    pub(crate) kind: AvaErrKind,
     pub(crate) http_status_code: Option<u16>,
 }
 
-impl TurnCodexError {
-    fn from_codex_err(error: &CodexErr) -> Self {
+impl TurnAvaError {
+    fn from_ava_err(error: &AvaErr) -> Self {
         Self {
             kind: error.into(),
             http_status_code: error.http_status_code_value(),
@@ -315,7 +315,7 @@ pub enum TurnSteerRejectionReason {
 }
 
 #[derive(Clone)]
-pub struct CodexTurnSteerEvent {
+pub struct AvaTurnSteerEvent {
     pub expected_turn_id: Option<String>,
     pub accepted_turn_id: Option<String>,
     pub num_input_images: usize,
@@ -484,7 +484,7 @@ pub enum CompactionStatus {
 }
 
 #[derive(Clone)]
-pub struct CodexCompactionEvent {
+pub struct AvaCompactionEvent {
     pub thread_id: String,
     pub turn_id: String,
     pub trigger: CompactionTrigger,
@@ -493,8 +493,8 @@ pub struct CodexCompactionEvent {
     pub phase: CompactionPhase,
     pub strategy: CompactionStrategy,
     pub status: CompactionStatus,
-    pub codex_error_kind: Option<CodexErrKind>,
-    pub codex_error_http_status_code: Option<u16>,
+    pub ava_error_kind: Option<AvaErrKind>,
+    pub ava_error_http_status_code: Option<u16>,
     pub active_context_tokens_before: i64,
     pub active_context_tokens_after: i64,
     pub retained_image_count: Option<usize>,
@@ -516,12 +516,12 @@ pub enum GoalEventKind {
 }
 
 #[derive(Clone)]
-pub struct CodexGoalEvent {
+pub struct AvaGoalEvent {
     pub thread_id: String,
     pub turn_id: Option<String>,
     pub goal_id: String,
     pub event_kind: GoalEventKind,
-    pub goal_status: codex_state::ThreadGoalStatus,
+    pub goal_status: ava_state::ThreadGoalStatus,
     pub has_token_budget: bool,
     pub cumulative_tokens_accounted: Option<i64>,
     pub cumulative_time_accounted_seconds: Option<i64>,
@@ -533,7 +533,7 @@ pub(crate) enum AnalyticsFact {
         connection_id: u64,
         params: InitializeParams,
         product_client_id: String,
-        runtime: CodexRuntimeMetadata,
+        runtime: AvaRuntimeMetadata,
         rpc_transport: AppServerRpcTransport,
     },
     ClientRequest {
@@ -590,15 +590,15 @@ pub(crate) enum CustomAnalyticsFact {
     CodeModeToolCall(CodeModeToolCallFact),
     ControlToolCall(ControlToolCallFact),
     SubAgentThreadStarted(SubAgentThreadStartedInput),
-    Compaction(Box<CodexCompactionEvent>),
-    Goal(Box<CodexGoalEvent>),
+    Compaction(Box<AvaCompactionEvent>),
+    Goal(Box<AvaGoalEvent>),
     ThreadHintStatus(Box<crate::thread_hint::ThreadHintStatusEvent>),
     GuardianReview(Box<GuardianReviewEventParams>),
     GuardianV2(Box<GuardianV2Event>),
     TurnResolvedConfig(Box<TurnResolvedConfigFact>),
     TurnTokenUsage(Box<TurnTokenUsageFact>),
     TurnProfile(Box<TurnProfileFact>),
-    TurnCodexError(Box<TurnCodexErrorFact>),
+    TurnAvaError(Box<TurnAvaErrorFact>),
     ImagePreparation(Box<ImagePreparationFact>),
     SkillInvoked(SkillInvokedInput),
     AppMentioned(AppMentionedInput),

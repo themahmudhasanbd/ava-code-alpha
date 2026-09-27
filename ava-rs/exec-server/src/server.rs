@@ -22,7 +22,7 @@ pub use transport::ExecServerListenUrlParseError;
 
 use crate::ExecServerRuntimePaths;
 use crate::ExecServerTelemetry;
-use codex_http_client::HttpClientFactory;
+use ava_http_client::HttpClientFactory;
 
 pub async fn run_main(
     listen_url: &str,
@@ -40,7 +40,7 @@ pub async fn run_main(
 }
 
 #[tracing::instrument(
-    name = "codex.exec_server",
+    name = "ava.exec_server",
     skip_all,
     fields(otel.kind = "internal")
 )]
@@ -64,8 +64,8 @@ pub async fn run_main_with_telemetry(
 
 #[cfg(test)]
 mod tests {
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
     use opentelemetry::trace::TracerProvider as _;
     use opentelemetry_sdk::trace::InMemorySpanExporter;
     use opentelemetry_sdk::trace::SdkTracerProvider;
@@ -91,7 +91,7 @@ mod tests {
                 "invalid",
                 ExecServerRuntimePaths::new(
                     std::env::current_exe().expect("current executable"),
-                    /*codex_linux_sandbox_exe*/ None,
+                    /*ava_linux_sandbox_exe*/ None,
                 )
                 .expect("runtime paths"),
                 ExecServerTelemetry::default(),
@@ -107,7 +107,7 @@ mod tests {
         provider.force_flush().expect("flush traces");
         let spans = exporter.get_finished_spans().expect("span export");
         assert!(
-            spans.iter().any(|span| span.name == "codex.exec_server"),
+            spans.iter().any(|span| span.name == "ava.exec_server"),
             "root exec-server span missing: {spans:?}"
         );
     }

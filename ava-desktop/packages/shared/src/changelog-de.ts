@@ -686,7 +686,7 @@ export const deEntries: ChangelogEntry[] = [
     "version": "0.2.10",
     "date": "2026-07-30",
     "highlights": [
-      "Fügen Sie eine obere Konversationsleiste im Codex/WorkBuddy-Stil mit verbesserten Steuerelementen hinzu.",
+      "Fügen Sie eine obere Konversationsleiste im Ava/WorkBuddy-Stil mit verbesserten Steuerelementen hinzu.",
       "Aktualisieren Sie das Chat-Transkript und den Markdown-Prosa-Stil für eine bessere Lesbarkeit.",
       "Vereinheitlichen Sie die Kopfzeile des Arbeitspanels mit dem Kontextmenü und animieren Sie das Zusammenklappen der Seitenleiste.",
       "Kombinieren Sie Tool-Launcher in einem Erstellungs-Dropdown für eine übersichtlichere Benutzeroberfläche.",

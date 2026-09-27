@@ -6,9 +6,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::StatusCode;
@@ -109,7 +109,7 @@ async fn production_http_forwards_headers_and_decodes_response() {
             label: Some("Real".to_string()),
         }
     );
-    assert!(request.starts_with("GET /api/codex/environments HTTP/1.1\r\n"));
+    assert!(request.starts_with("GET /api/ava/environments HTTP/1.1\r\n"));
     assert!(
         request
             .to_ascii_lowercase()
@@ -285,7 +285,7 @@ async fn list_requests_exact_repository_and_global_endpoints_and_merges_results(
                 "env-repo".to_string(),
                 Some("Repository".to_string()),
                 true,
-                Some("openai/codex".to_string()),
+                Some("openai/ava".to_string()),
             ),
             (
                 "env-global".to_string(),

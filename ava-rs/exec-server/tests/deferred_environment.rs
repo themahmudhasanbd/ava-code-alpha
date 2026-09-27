@@ -2,15 +2,15 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
-use codex_exec_server::EnvironmentReadyInfo;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::NoiseChannelPublicKey;
-use codex_exec_server::NoiseRendezvousConnectBundle;
-use codex_exec_server::NoiseRendezvousConnectProvider;
-use codex_exec_server_test_support::environment_manager_without_environments;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::EnvironmentReadyInfo;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::NoiseChannelPublicKey;
+use ava_exec_server::NoiseRendezvousConnectBundle;
+use ava_exec_server::NoiseRendezvousConnectProvider;
+use ava_exec_server_test_support::environment_manager_without_environments;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_utils_path_uri::PathUri;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use futures::poll;
@@ -157,7 +157,7 @@ async fn failure_before_materialization_is_reported_without_connecting() -> anyh
     assert!(Arc::ptr_eq(&failed, &materialized));
     assert_eq!(
         failed.status().await,
-        codex_exec_server::EnvironmentObservedStatus::Disconnected {
+        ava_exec_server::EnvironmentObservedStatus::Disconnected {
             error: "environment unavailable: provisioning failed".to_string(),
         }
     );

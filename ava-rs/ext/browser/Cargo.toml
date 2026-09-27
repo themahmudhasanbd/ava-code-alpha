@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-browser-extension"
+name = "ava-browser-extension"
 version.workspace = true
 
 [lib]
-name = "codex_browser_extension"
+name = "ava_browser_extension"
 path = "src/lib.rs"
 doctest = false
 
@@ -15,13 +15,13 @@ workspace = true
 [dependencies]
 base64 = { workspace = true }
 chrono = { workspace = true }
-codex-config = { workspace = true }
-codex-core = { workspace = true }
-codex-extension-api = { workspace = true }
-codex-otel = { workspace = true }
-codex-protocol = { workspace = true }
-codex-tools = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
+ava-config = { workspace = true }
+ava-core = { workspace = true }
+ava-extension-api = { workspace = true }
+ava-otel = { workspace = true }
+ava-protocol = { workspace = true }
+ava-tools = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
 futures = { workspace = true }
 http = { workspace = true }
 reqwest = { workspace = true }

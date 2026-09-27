@@ -3,17 +3,17 @@ use crate::app::safety_buffering::SafetyBufferedRetry;
 use crate::app::session_lifecycle::ThreadAttachPresentation;
 use crate::chatwidget::UserMessage;
 use crate::chatwidget::tests::helpers::normalize_completion_timestamps;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::ModelSafetyBufferingUpdatedNotification;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::ModelSafetyBufferingUpdatedNotification;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -82,7 +82,7 @@ fn next_user_turn_event(
     app_event_rx: &mut tokio::sync::mpsc::UnboundedReceiver<AppEvent>,
 ) -> AppCommand {
     while let Ok(event) = app_event_rx.try_recv() {
-        if let AppEvent::CodexOp(turn @ AppCommand::UserTurn { .. }) = event {
+        if let AppEvent::AvaOp(turn @ AppCommand::UserTurn { .. }) = event {
             return turn;
         }
     }
@@ -187,9 +187,9 @@ async fn interrupt_after_inactive_steer(switch: SteerSwitch) -> Result<()> {
         gated_response_chunks("steered-response", ev_completed("steered-response"));
     let (server, _completions) = start_streaming_sse_server(vec![chunks, steered_chunks]).await;
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 model = "{CURRENT_MODEL}"
@@ -205,8 +205,8 @@ stream_max_retries = 0
             server.uri()
         ),
     )?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     app.config.model = Some(CURRENT_MODEL.to_string());
     app.config.model_provider_id = MODEL_PROVIDER_ID.to_string();
     app.config.model_provider = ModelProviderInfo {
@@ -258,7 +258,7 @@ stream_max_retries = 0
         .await?;
     let other_id = ThreadId::from_string(
         &app_test_support::create_fake_rollout(
-            app.config.codex_home.as_path(),
+            app.config.ava_home.as_path(),
             "2025-01-05T12-00-00",
             "2025-01-05T12:00:00Z",
             "Other task",
@@ -277,9 +277,9 @@ stream_max_retries = 0
         .await?;
     for cwd in [&app.config.cwd, &other.session.cwd] {
         crate::legacy_core::config::set_project_trust_level(
-            app.config.codex_home.as_path(),
+            app.config.ava_home.as_path(),
             cwd.as_path(),
-            codex_protocol::config_types::TrustLevel::Trusted,
+            ava_protocol::config_types::TrustLevel::Trusted,
         )
         .map_err(std::io::Error::other)?;
     }
@@ -400,7 +400,7 @@ stream_max_retries = 0
     insta::assert_snapshot!(app.chat_widget.composer_text_with_pending(), @"");
     assert!(
         std::iter::from_fn(|| app_event_rx.try_recv().ok())
-            .all(|event| !matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })))
+            .all(|event| !matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })))
     );
     let source = app_server
         .thread_read(thread_id, /*include_turns*/ true)
@@ -518,9 +518,9 @@ async fn run_safety_retry(
     let (server, _completions) = start_streaming_sse_server(response_sequences).await;
 
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     // Keep text-only retry fixtures independent of the optional Code Mode host.
-    let mut model_catalog = codex_models_manager::bundled_models_response()?;
+    let mut model_catalog = ava_models_manager::bundled_models_response()?;
     for model in model_catalog
         .models
         .iter_mut()
@@ -528,11 +528,11 @@ async fn run_safety_retry(
     {
         model.tool_mode = Some(ToolMode::Direct);
     }
-    let model_catalog_path = codex_home.path().join("models.json");
+    let model_catalog_path = ava_home.path().join("models.json");
     std::fs::write(&model_catalog_path, serde_json::to_vec(&model_catalog)?)?;
     let model_catalog_path = toml::Value::String(model_catalog_path.display().to_string());
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 model = "{CURRENT_MODEL}"
@@ -552,8 +552,8 @@ goals = true
             server.uri()
         ),
     )?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     app.config.model = Some(CURRENT_MODEL.to_string());
     app.config.model_catalog = Some(model_catalog);
     app.config.model_provider_id = MODEL_PROVIDER_ID.to_string();
@@ -610,7 +610,7 @@ goals = true
         }
     }
 
-    let state_db = codex_state::StateRuntime::init(
+    let state_db = ava_state::StateRuntime::init(
         app.config.sqlite.clone(),
         app.config.model_provider_id.clone(),
     )
@@ -621,7 +621,7 @@ goals = true
         .replace_thread_goal(
             source_thread_id,
             RETRY_GOAL,
-            codex_state::ThreadGoalStatus::Active,
+            ava_state::ThreadGoalStatus::Active,
             /*token_budget*/ Some(1_000),
         )
         .await
@@ -639,7 +639,7 @@ goals = true
             source_thread_id,
             /*time_delta_seconds*/ 12,
             /*token_delta*/ 50,
-            codex_state::GoalAccountingMode::ActiveOrStopped,
+            ava_state::GoalAccountingMode::ActiveOrStopped,
             Some(source_goal_id.as_str()),
         )
         .await

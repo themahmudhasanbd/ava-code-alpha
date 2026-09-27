@@ -2,14 +2,14 @@ use crate::agent::types::ResolvedMultiAgentV2UsageHints;
 use crate::config::MultiAgentV2Config;
 use crate::context::MultiAgentRoleInstructions;
 use crate::session::step_context::StepContext;
-use codex_prompts::ResolvedMessage;
-use codex_prompts::ResolvedModelMessages;
-use codex_prompts::ResolvedMultiAgentMessages;
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_prompts::ResolvedMessage;
+use ava_prompts::ResolvedModelMessages;
+use ava_prompts::ResolvedMultiAgentMessages;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 
 pub(super) fn usage_hint_text(step_context: &StepContext) -> Option<MultiAgentRoleInstructions> {
     let turn_context = step_context.turn.as_ref();

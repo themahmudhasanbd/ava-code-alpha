@@ -1,19 +1,19 @@
 use std::fs;
 use std::path::Path;
 
-use codex_extension_api::Instructions;
-use codex_extension_api::LoadedUserInstructions;
-use codex_extension_api::UserInstructionsProvider;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_extension_api::Instructions;
+use ava_extension_api::LoadedUserInstructions;
+use ava_extension_api::UserInstructionsProvider;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
-use super::CodexHomeUserInstructionsProvider;
+use super::AvaHomeUserInstructionsProvider;
 use super::DEFAULT_AGENTS_MD_FILENAME;
 use super::LOCAL_AGENTS_MD_FILENAME;
 
-fn provider(home: &TempDir) -> CodexHomeUserInstructionsProvider {
-    CodexHomeUserInstructionsProvider::new(
+fn provider(home: &TempDir) -> AvaHomeUserInstructionsProvider {
+    AvaHomeUserInstructionsProvider::new(
         AbsolutePathBuf::try_from(home.path().to_path_buf()).expect("absolute temp dir"),
     )
 }

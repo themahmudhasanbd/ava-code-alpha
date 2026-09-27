@@ -3,14 +3,14 @@
 use super::client::Live;
 use super::client::Session;
 use super::data;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadSortKey;
-use codex_backend_client::ThreadUsage;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadSortKey;
+use ava_backend_client::ThreadUsage;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -106,7 +106,7 @@ pub(super) async fn read(
 /// Recent local roots are shared by consumer task and business credit reporting.
 pub(super) async fn roots(
     handle: &AppServerRequestHandle,
-) -> Result<Vec<codex_app_server_protocol::Thread>, String> {
+) -> Result<Vec<ava_app_server_protocol::Thread>, String> {
     let cutoff = chrono::Utc::now().timestamp() - 30 * 24 * 60 * 60;
     let mut threads = Vec::new();
     let mut cursor = None;

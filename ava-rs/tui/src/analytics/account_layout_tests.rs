@@ -1,8 +1,8 @@
 //! Account layouts, authenticated report loading, independent ranges, and model filters.
 use super::*;
-use codex_config::types::KeybindingSpec;
-use codex_config::types::KeybindingsSpec;
-use codex_config::types::TuiKeymap;
+use ava_config::types::KeybindingSpec;
+use ava_config::types::KeybindingsSpec;
+use ava_config::types::TuiKeymap;
 use pretty_assertions::assert_eq;
 
 use crate::analytics::sections::Section;
@@ -269,7 +269,7 @@ async fn grouping_cycle_uses_current_server_capabilities() {
     let server = test_support::server().await;
     let (_home, _app_server, mut view) = client::tests::connected_view(&server, "plus").await;
     view.section = Section::Usage;
-    view.account = Load::Ready(codex_protocol::account::PlanType::Plus);
+    view.account = Load::Ready(ava_protocol::account::PlanType::Plus);
     view.sections[Section::Usage].group = 3;
     view.start_reports();
     test_support::settle(&mut view).await;
@@ -375,7 +375,7 @@ async fn unsupported_workspace_plans_hide_top_chats_and_skip_loading() {
         assert_eq!(view.section, Section::Chats);
     }
     let mut view = fixture::view(models::AccountKind::Enterprise);
-    view.account = Load::Ready(codex_protocol::account::PlanType::Enterprise);
+    view.account = Load::Ready(ava_protocol::account::PlanType::Enterprise);
     insta::assert_snapshot!(screen(&mut view, /*width*/ 110, /*height*/ 24));
 }
 

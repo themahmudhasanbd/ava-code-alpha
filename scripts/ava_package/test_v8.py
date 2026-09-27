@@ -13,7 +13,7 @@ from ava_package import v8
 from ava_package.targets import TARGET_SPECS, TargetSpec
 
 
-class FetchCodexV8ArtifactsTest(unittest.TestCase):
+class FetchAvaV8ArtifactsTest(unittest.TestCase):
     version = "150.4.0"
 
     def setUp(self) -> None:
@@ -82,7 +82,7 @@ class FetchCodexV8ArtifactsTest(unittest.TestCase):
             download,
             manifest_name,
         ):
-            artifacts = v8.fetch_codex_v8_artifacts(
+            artifacts = v8.fetch_ava_v8_artifacts(
                 spec, version=self.version, cache_root=self.root / "cache"
             )
 
@@ -97,7 +97,7 @@ class FetchCodexV8ArtifactsTest(unittest.TestCase):
             download,
             _manifest_name,
         ):
-            artifacts = v8.fetch_codex_v8_artifacts(
+            artifacts = v8.fetch_ava_v8_artifacts(
                 spec, version=self.version, cache_root=self.root / "cache"
             )
 
@@ -114,7 +114,7 @@ class FetchCodexV8ArtifactsTest(unittest.TestCase):
             with self.assertRaisesRegex(
                 RuntimeError, "does not match its trusted SHA-256"
             ):
-                v8.fetch_codex_v8_artifacts(
+                v8.fetch_ava_v8_artifacts(
                     spec, version=self.version, cache_root=self.root / "cache"
                 )
 
@@ -126,7 +126,7 @@ class FetchCodexV8ArtifactsTest(unittest.TestCase):
             "x86_64-unknown-linux-gnu", trusted_name="another-target.sha256"
         ) as (spec, download, manifest_name):
             with self.assertRaisesRegex(RuntimeError, "has no trusted SHA-256"):
-                v8.fetch_codex_v8_artifacts(
+                v8.fetch_ava_v8_artifacts(
                     spec, version=self.version, cache_root=self.root / "cache"
                 )
 
@@ -140,7 +140,7 @@ class FetchCodexV8ArtifactsTest(unittest.TestCase):
             manifest_name,
         ):
             with self.assertRaises(FileNotFoundError):
-                v8.fetch_codex_v8_artifacts(
+                v8.fetch_ava_v8_artifacts(
                     spec, version=self.version, cache_root=self.root / "cache"
                 )
 

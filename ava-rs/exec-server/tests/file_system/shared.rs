@@ -1,39 +1,39 @@
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::CopyOptions;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::EnvironmentAccess;
-use codex_exec_server::EnvironmentAccessExt;
+use ava_exec_server::CopyOptions;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::EnvironmentAccess;
+use ava_exec_server::EnvironmentAccessExt;
 #[cfg(unix)]
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::FILE_READ_CHUNK_SIZE;
-use codex_exec_server::FileMetadata;
-use codex_exec_server::FileSystemEnvironmentAccessor;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::LocalFileSystem;
-use codex_exec_server::ReadDirectoryEntry;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WalkEntry;
-use codex_exec_server::WalkEntryKind;
-use codex_exec_server::WalkOptions;
-use codex_exec_server::WalkOutcome;
-use codex_exec_server::WriteFileOptions;
-use codex_file_system::MAX_WALK_DEPTH;
-use codex_file_system::MAX_WALK_DIRECTORIES;
-use codex_file_system::MAX_WALK_ENTRIES;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_sandboxing::policy_transforms::effective_file_system_sandbox_policy;
-use codex_sandboxing::policy_transforms::effective_network_sandbox_policy;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::FILE_READ_CHUNK_SIZE;
+use ava_exec_server::FileMetadata;
+use ava_exec_server::FileSystemEnvironmentAccessor;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::LocalFileSystem;
+use ava_exec_server::ReadDirectoryEntry;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WalkEntry;
+use ava_exec_server::WalkEntryKind;
+use ava_exec_server::WalkOptions;
+use ava_exec_server::WalkOutcome;
+use ava_exec_server::WriteFileOptions;
+use ava_file_system::MAX_WALK_DEPTH;
+use ava_file_system::MAX_WALK_DIRECTORIES;
+use ava_file_system::MAX_WALK_ENTRIES;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_sandboxing::policy_transforms::effective_file_system_sandbox_policy;
+use ava_sandboxing::policy_transforms::effective_network_sandbox_policy;
+use ava_utils_path_uri::PathUri;
 use futures::TryStreamExt;
 use pretty_assertions::assert_eq;
 use std::path::Path;
@@ -1136,18 +1136,18 @@ async fn file_system_restricted_reads_require_sandbox() -> Result<()> {
 #[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn sandboxed_file_operations_cannot_read_helper_siblings() -> Result<()> {
-    let helper_paths = crate::common::exec_server::test_codex_helper_paths()?;
+    let helper_paths = crate::common::exec_server::test_ava_helper_paths()?;
     let root = TempDir::new()?;
     let runtime_dir = root.path().join("runtime");
     let workspace = root.path().join("workspace");
     std::fs::create_dir(&runtime_dir)?;
     std::fs::create_dir(&workspace)?;
 
-    let helper = runtime_dir.join("codex-test-helper");
-    std::fs::hard_link(&helper_paths.codex_exe, &helper)
-        .or_else(|_| std::fs::copy(&helper_paths.codex_exe, &helper).map(|_| ()))?;
-    let linux_sandbox = if helper_paths.codex_linux_sandbox_exe.is_some() {
-        let alias = runtime_dir.join("codex-linux-sandbox");
+    let helper = runtime_dir.join("ava-test-helper");
+    std::fs::hard_link(&helper_paths.ava_exe, &helper)
+        .or_else(|_| std::fs::copy(&helper_paths.ava_exe, &helper).map(|_| ()))?;
+    let linux_sandbox = if helper_paths.ava_linux_sandbox_exe.is_some() {
+        let alias = runtime_dir.join("ava-linux-sandbox");
         std::fs::hard_link(&helper, &alias)
             .or_else(|_| std::fs::copy(&helper, &alias).map(|_| ()))?;
         Some(alias)

@@ -1,8 +1,8 @@
 use super::MAX_TRUSTED_SKILL_TOKENS;
 use super::TRUSTED_SKILLS_PREFIX;
 use super::TrustedSkills;
-use codex_context_fragments::ContextualUserFragment;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_context_fragments::ContextualUserFragment;
+use ava_protocol::protocol::TruncationPolicy;
 use pretty_assertions::assert_eq;
 
 fn rendered_paths(paths: Vec<String>) -> Vec<String> {
@@ -21,7 +21,7 @@ fn bounds_escaped_skill_paths_without_corrupting_json_or_utf8() {
     let paths = (0..16)
         .map(|index| {
             format!(
-                "/home/user/.codex/skills/{index:03}/{}SKILL.md",
+                "/home/user/.ava-code/skills/{index:03}/{}SKILL.md",
                 "\u{0001}é".repeat(80)
             )
         })
@@ -37,12 +37,12 @@ fn bounds_escaped_skill_paths_without_corrupting_json_or_utf8() {
 fn preserves_multiple_invoked_skill_paths() {
     assert_eq!(
         rendered_paths(vec![
-            "/home/user/.codex/skills/first/SKILL.md".to_owned(),
-            "/home/user/.codex/skills/second/SKILL.md".to_owned(),
+            "/home/user/.ava-code/skills/first/SKILL.md".to_owned(),
+            "/home/user/.ava-code/skills/second/SKILL.md".to_owned(),
         ]),
         vec![
-            "/home/user/.codex/skills/first/SKILL.md",
-            "/home/user/.codex/skills/second/SKILL.md",
+            "/home/user/.ava-code/skills/first/SKILL.md",
+            "/home/user/.ava-code/skills/second/SKILL.md",
         ],
     );
 }

@@ -4,23 +4,23 @@ use super::SandboxPolicy;
 use super::Turn;
 use crate::JsonSchema;
 use crate::TS;
-use codex_experimental_api_macros::ExperimentalApi;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference as CoreImageReference;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::plan_tool::PlanItemArg as CorePlanItemArg;
-use codex_protocol::plan_tool::StepStatus as CorePlanStepStatus;
-use codex_protocol::turn_input::CyberAccessProgram as CoreCyberAccessProgram;
-use codex_protocol::user_input::ByteRange as CoreByteRange;
-use codex_protocol::user_input::TextElement as CoreTextElement;
-use codex_protocol::user_input::UserInput as CoreUserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_experimental_api_macros::ExperimentalApi;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference as CoreImageReference;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::plan_tool::PlanItemArg as CorePlanItemArg;
+use ava_protocol::plan_tool::StepStatus as CorePlanStepStatus;
+use ava_protocol::turn_input::CyberAccessProgram as CoreCyberAccessProgram;
+use ava_protocol::user_input::ByteRange as CoreByteRange;
+use ava_protocol::user_input::TextElement as CoreTextElement;
+use ava_protocol::user_input::UserInput as CoreUserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::LegacyAppPathString;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -118,7 +118,7 @@ pub struct AdditionalContextEntry {
     pub kind: AdditionalContextKind,
 }
 
-/// Requested cyber treatment for a ChatGPT-authenticated Codex turn.
+/// Requested cyber treatment for a ChatGPT-authenticated Ava turn.
 /// Authorization and model-tier restrictions remain server-owned.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
@@ -179,10 +179,10 @@ pub struct TurnStartParams {
     pub turn_trigger: Option<String>,
     #[ts(optional = nullable)]
     pub tool_output: Option<Box<TurnToolOutput>>,
-    /// Optional metadata to enrich Codex's ResponsesAPI turn metadata.
+    /// Optional metadata to enrich Ava's ResponsesAPI turn metadata.
     ///
     /// Entries are flattened into the JSON string sent as
-    /// `client_metadata["x-codex-turn-metadata"]` on ResponsesAPI HTTP and websocket requests.
+    /// `client_metadata["x-ava-turn-metadata"]` on ResponsesAPI HTTP and websocket requests.
     ///
     /// They are not sent as top-level ResponsesAPI `client_metadata` keys, and reserved keys
     /// such as `session_id`, `thread_id`, `turn_id`, and `window_id` cannot be overridden.
@@ -295,10 +295,10 @@ pub struct TurnSteerParams {
     #[ts(optional = nullable)]
     pub client_user_message_id: Option<String>,
     pub input: Vec<UserInput>,
-    /// Optional metadata to enrich Codex's ResponsesAPI turn metadata.
+    /// Optional metadata to enrich Ava's ResponsesAPI turn metadata.
     ///
     /// Entries are flattened into the JSON string sent as
-    /// `client_metadata["x-codex-turn-metadata"]` on ResponsesAPI HTTP and websocket requests.
+    /// `client_metadata["x-ava-turn-metadata"]` on ResponsesAPI HTTP and websocket requests.
     ///
     /// They are not sent as top-level ResponsesAPI `client_metadata` keys, and reserved keys
     /// such as `session_id`, `thread_id`, `turn_id`, and `window_id` cannot be overridden.

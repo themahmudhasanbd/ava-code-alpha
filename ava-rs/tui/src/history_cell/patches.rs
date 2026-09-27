@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
-use codex_ansi_escape::ansi_escape;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_ansi_escape::ansi_escape;
+use ava_utils_path_uri::LegacyAppPathString;
 
 #[cfg(test)]
 #[path = "patches_tests.rs"]

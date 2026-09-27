@@ -1,4 +1,4 @@
-"""Codex-built V8 artifact overrides for package Cargo builds."""
+"""Ava-built V8 artifact overrides for package Cargo builds."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ class RustyV8ArtifactPair:
     binding: Path
 
 
-def resolve_codex_v8_cargo_env(
+def resolve_ava_v8_cargo_env(
     spec: TargetSpec,
     *,
     environ: Mapping[str, str] | None = None,
@@ -42,14 +42,14 @@ def resolve_codex_v8_cargo_env(
             "Cargo package builds need RUSTY_V8_ARCHIVE and RUSTY_V8_SRC_BINDING_PATH set together."
         )
 
-    artifacts = fetch_codex_v8_artifacts(spec, cache_root=cache_root)
+    artifacts = fetch_ava_v8_artifacts(spec, cache_root=cache_root)
     return {
         "RUSTY_V8_ARCHIVE": str(artifacts.archive),
         "RUSTY_V8_SRC_BINDING_PATH": str(artifacts.binding),
     }
 
 
-def fetch_codex_v8_artifacts(
+def fetch_ava_v8_artifacts(
     spec: TargetSpec,
     *,
     version: str | None = None,
@@ -89,7 +89,7 @@ def fetch_codex_v8_artifacts(
 def resolved_v8_crate_version() -> str:
     import tomllib
 
-    cargo_lock = tomllib.loads((REPO_ROOT / "codex-rs" / "Cargo.lock").read_text())
+    cargo_lock = tomllib.loads((REPO_ROOT / "ava-rs" / "Cargo.lock").read_text())
     versions = sorted(
         {
             package["version"]
@@ -105,7 +105,7 @@ def resolved_v8_crate_version() -> str:
 
 
 def default_cache_root() -> Path:
-    return Path(tempfile.gettempdir()) / "codex-package"
+    return Path(tempfile.gettempdir()) / "ava-package"
 
 
 def verify_release_checksum_manifest(checksums_path: Path, *, version: str) -> None:
@@ -178,7 +178,7 @@ def ensure_valid_artifact(artifact: Path, checksum: str, url: str) -> None:
 
     artifact.unlink(missing_ok=True)
     raise RuntimeError(
-        f"Codex-built V8 artifact {artifact} failed checksum validation."
+        f"Ava-built V8 artifact {artifact} failed checksum validation."
     )
 
 

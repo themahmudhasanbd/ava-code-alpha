@@ -4,10 +4,10 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_exec_server::HttpClient;
-use codex_exec_server::HttpHeader;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestParams;
+use ava_exec_server::HttpClient;
+use ava_exec_server::HttpHeader;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestParams;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::Method;

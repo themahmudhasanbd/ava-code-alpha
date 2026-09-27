@@ -1,12 +1,12 @@
-use codex_core::config::Config;
-use codex_http_client::HttpClient;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::default_client::RESIDENCY_HEADER_NAME;
-use codex_login::default_client::create_client;
-use codex_login::default_client::create_client_with_chatgpt_cookies;
-use codex_login::default_client::default_headers;
+use ava_core::config::Config;
+use ava_http_client::HttpClient;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::default_client::RESIDENCY_HEADER_NAME;
+use ava_login::default_client::create_client;
+use ava_login::default_client::create_client_with_chatgpt_cookies;
+use ava_login::default_client::default_headers;
 
 use anyhow::Context;
 use serde::Serialize;
@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 const OAI_PRODUCT_SKU_HEADER: &str = "OAI-Product-Sku";
-const CODEX_PRODUCT_SKU: &str = "codex";
+const AVA_PRODUCT_SKU: &str = "ava";
 
 struct CachedChatGptClient {
     factory: HttpClientFactory,
@@ -66,18 +66,18 @@ pub(crate) async fn chatgpt_get_request_with_timeout<T: DeserializeOwned>(
 ) -> anyhow::Result<T> {
     let chatgpt_base_url = &config.chatgpt_base_url;
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false).await?;
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false).await?;
     let auth = auth_manager
         .auth()
         .await
         .ok_or_else(|| anyhow::anyhow!("ChatGPT auth not available"))?;
     anyhow::ensure!(
-        auth.uses_codex_backend(),
-        "ChatGPT backend requests require Codex backend auth"
+        auth.uses_ava_backend(),
+        "ChatGPT backend requests require Ava backend auth"
     );
     anyhow::ensure!(
         auth.get_account_id().is_some(),
-        "ChatGPT account ID not available, please re-run `codex login`"
+        "ChatGPT account ID not available, please re-run `ava login`"
     );
 
     let url = format!(
@@ -95,8 +95,8 @@ pub(crate) async fn chatgpt_get_request_with_timeout<T: DeserializeOwned>(
     let mut request = client
         .get(&url)
         .headers(default_headers())
-        .headers(codex_model_provider::auth_provider_from_auth(&auth).to_auth_headers())
-        .header(OAI_PRODUCT_SKU_HEADER, CODEX_PRODUCT_SKU)
+        .headers(ava_model_provider::auth_provider_from_auth(&auth).to_auth_headers())
+        .header(OAI_PRODUCT_SKU_HEADER, AVA_PRODUCT_SKU)
         .header("Content-Type", "application/json");
     if let Some(timeout) = timeout {
         request = request.timeout(timeout);
@@ -125,19 +125,19 @@ pub(crate) async fn chatgpt_post_request_with_timeout<
     TRequest: Serialize + ?Sized,
 >(
     config: &Config,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     path: String,
     body: &TRequest,
     timeout: Duration,
     product_sku: &str,
 ) -> anyhow::Result<TResponse> {
     anyhow::ensure!(
-        auth.uses_codex_backend(),
-        "ChatGPT backend requests require Codex backend auth"
+        auth.uses_ava_backend(),
+        "ChatGPT backend requests require Ava backend auth"
     );
     anyhow::ensure!(
         auth.get_account_id().is_some(),
-        "ChatGPT account ID not available, please re-run codex login"
+        "ChatGPT account ID not available, please re-run ava login"
     );
 
     let url = format!(
@@ -154,7 +154,7 @@ pub(crate) async fn chatgpt_post_request_with_timeout<
     let response = client
         .post(&url)
         .headers(default_headers())
-        .headers(codex_model_provider::auth_provider_from_auth(auth).to_auth_headers())
+        .headers(ava_model_provider::auth_provider_from_auth(auth).to_auth_headers())
         .header(OAI_PRODUCT_SKU_HEADER, product_sku)
         .header("Content-Type", "application/json")
         .timeout(timeout)

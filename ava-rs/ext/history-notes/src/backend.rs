@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use codex_api::ReqwestTransport;
-use codex_client::HttpTransport;
-use codex_client::RequestBody;
-use codex_login::default_client::create_client;
-use codex_model_provider::SharedModelProvider;
-use codex_utils_output_truncation::TruncationPolicy;
+use ava_api::ReqwestTransport;
+use ava_client::HttpTransport;
+use ava_client::RequestBody;
+use ava_login::default_client::create_client;
+use ava_model_provider::SharedModelProvider;
+use ava_utils_output_truncation::TruncationPolicy;
 use http::HeaderValue;
 use http::Method;
 use serde_json::Value;

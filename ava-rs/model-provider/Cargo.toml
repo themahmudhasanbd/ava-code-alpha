@@ -1,12 +1,12 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-model-provider"
+name = "ava-model-provider"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_model_provider"
+name = "ava_model_provider"
 path = "src/lib.rs"
 
 [lints]
@@ -14,19 +14,19 @@ workspace = true
 
 [dependencies]
 chrono = { workspace = true }
-codex-api = { workspace = true }
-codex-agent-identity = { workspace = true }
-codex-aws-auth = { workspace = true }
-codex-http-client = { workspace = true }
-codex-feedback = { workspace = true }
-codex-login = { workspace = true }
-codex-keyring-store = { workspace = true }
-codex-model-provider-info = { workspace = true }
-codex-models-manager = { workspace = true }
-codex-otel = { workspace = true }
-codex-protocol = { workspace = true }
-codex-response-debug-context = { workspace = true }
-codex-secrets = { workspace = true }
+ava-api = { workspace = true }
+ava-agent-identity = { workspace = true }
+ava-aws-auth = { workspace = true }
+ava-http-client = { workspace = true }
+ava-feedback = { workspace = true }
+ava-login = { workspace = true }
+ava-keyring-store = { workspace = true }
+ava-model-provider-info = { workspace = true }
+ava-models-manager = { workspace = true }
+ava-otel = { workspace = true }
+ava-protocol = { workspace = true }
+ava-response-debug-context = { workspace = true }
+ava-secrets = { workspace = true }
 http = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -37,7 +37,7 @@ url = { workspace = true }
 
 [dev-dependencies]
 base64 = { workspace = true }
-codex-utils-redacted-string = { workspace = true }
+ava-utils-redacted-string = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }

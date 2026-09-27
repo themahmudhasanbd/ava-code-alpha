@@ -2,18 +2,18 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_channel::Sender;
-use codex_api::SharedAuthProvider;
-use codex_config::McpServerAuth;
-use codex_config::McpServerConfig;
-use codex_config::McpServerTransportConfig;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::McpStartupFailureReason;
-use codex_protocol::protocol::McpStartupUpdateEvent;
-use codex_rmcp_client::McpAuthState;
-use codex_rmcp_client::McpLoginRequirement;
+use ava_api::SharedAuthProvider;
+use ava_config::McpServerAuth;
+use ava_config::McpServerConfig;
+use ava_config::McpServerTransportConfig;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::McpStartupFailureReason;
+use ava_protocol::protocol::McpStartupUpdateEvent;
+use ava_rmcp_client::McpAuthState;
+use ava_rmcp_client::McpLoginRequirement;
 
-use crate::mcp::CODEX_APPS_MCP_SERVER_NAME;
+use crate::mcp::AVA_APPS_MCP_SERVER_NAME;
 use crate::rmcp_client::DEFAULT_STARTUP_TIMEOUT;
 use crate::rmcp_client::StartupOutcomeError;
 use crate::server::EffectiveMcpServer;
@@ -31,11 +31,11 @@ pub(super) fn chatgpt_auth_provider_for_server(
     chatgpt_auth_provider
 }
 
-pub(super) fn should_share_codex_apps_tools_cache(
+pub(super) fn should_share_ava_apps_tools_cache(
     server_name: &str,
     uses_env_bearer_token: bool,
 ) -> bool {
-    server_name == CODEX_APPS_MCP_SERVER_NAME && !uses_env_bearer_token
+    server_name == AVA_APPS_MCP_SERVER_NAME && !uses_env_bearer_token
 }
 
 pub(super) async fn emit_update(
@@ -98,13 +98,13 @@ pub(super) fn mcp_init_error_display(
         && http_headers.as_ref().map(HashMap::is_empty).unwrap_or(true)
     {
         format!(
-            "GitHub MCP does not support OAuth. Log in by adding a personal access token (https://github.com/settings/personal-access-tokens) to your environment and config.toml:\n[mcp_servers.{server_key}]\nbearer_token_env_var = CODEX_GITHUB_PERSONAL_ACCESS_TOKEN"
+            "GitHub MCP does not support OAuth. Log in by adding a personal access token (https://github.com/settings/personal-access-tokens) to your environment and config.toml:\n[mcp_servers.{server_key}]\nbearer_token_env_var = AVA_GITHUB_PERSONAL_ACCESS_TOKEN"
         )
     } else if error.is_authentication_required() {
         let recovery_hint = if config.is_some_and(|config| !config.is_local_environment()) {
             "Use your client's MCP OAuth sign-in flow.".to_string()
         } else {
-            format!("Run `codex mcp login {server_name}`.")
+            format!("Run `ava mcp login {server_name}`.")
         };
         let auth_status = match reason {
             Some(McpStartupFailureReason::ReauthenticationRequired) => {

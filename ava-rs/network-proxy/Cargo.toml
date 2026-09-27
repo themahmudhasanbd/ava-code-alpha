@@ -1,16 +1,16 @@
 [package]
-name = "codex-network-proxy"
+name = "ava-network-proxy"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
 
 [lib]
-name = "codex_network_proxy"
+name = "ava_network_proxy"
 path = "src/lib.rs"
 doctest = false
 
 [[bin]]
-name = "codex-network-proxy"
+name = "ava-network-proxy"
 path = "src/main.rs"
 
 [lints]
@@ -21,10 +21,10 @@ anyhow = { workspace = true }
 base64 = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 chrono = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-home-dir = { workspace = true }
-codex-utils-path-uri = { workspace = true }
-codex-utils-rustls-provider = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-home-dir = { workspace = true }
+ava-utils-path-uri = { workspace = true }
+ava-utils-rustls-provider = { workspace = true }
 globset = { workspace = true }
 opentelemetry = { workspace = true }
 rand = { workspace = true }
@@ -75,4 +75,4 @@ windows-sys = { version = "0.52", features = [
 ] }
 
 [target.'cfg(windows)'.dev-dependencies]
-codex-windows-sandbox = { path = "../windows-sandbox-rs" }
+ava-windows-sandbox = { path = "../windows-sandbox-rs" }

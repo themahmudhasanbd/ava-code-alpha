@@ -5,11 +5,11 @@ use std::collections::VecDeque;
 use crate::app::app_server_requests::ResolvedAppServerRequest;
 use crate::approval_events::ApplyPatchApprovalRequestEvent;
 use crate::approval_events::ExecApprovalRequestEvent;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::RequestId as AppServerRequestId;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ToolRequestUserInputParams;
-use codex_protocol::request_permissions::RequestPermissionsEvent;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::RequestId as AppServerRequestId;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ToolRequestUserInputParams;
+use ava_protocol::request_permissions::RequestPermissionsEvent;
 
 use super::ChatWidget;
 
@@ -155,10 +155,10 @@ impl QueuedInterrupt {
 #[cfg(test)]
 mod tests {
     use crate::approval_events::ExecApprovalRequestEvent;
-    use codex_app_server_protocol::CommandExecutionSource;
-    use codex_app_server_protocol::CommandExecutionStatus;
-    use codex_app_server_protocol::ThreadItem;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_app_server_protocol::CommandExecutionSource;
+    use ava_app_server_protocol::CommandExecutionStatus;
+    use ava_app_server_protocol::ThreadItem;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
 
     use super::*;

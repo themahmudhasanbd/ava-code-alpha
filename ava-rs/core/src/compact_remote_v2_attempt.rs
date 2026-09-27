@@ -9,17 +9,17 @@ use crate::compact_remote_history::trim_function_call_history_to_fit_context_win
 use crate::responses_metadata::CompactionTurnMetadata;
 use crate::session::session::Session;
 use crate::session::step_context::StepContext;
-use codex_history::CodexHarnessMetadata;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::TokenUsage;
-use codex_rollout_trace::CompactionTraceContext;
+use ava_history::AvaHarnessMetadata;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::TokenUsage;
+use ava_rollout_trace::CompactionTraceContext;
 use tracing::info;
 
 pub(super) struct RemoteCompactV2Attempt {
     pub(super) trace_input_history: Option<Vec<ResponseItem>>,
     pub(super) prompt_input: Vec<ResponseItem>,
-    pub(super) prompt_input_metadata: Vec<Option<CodexHarnessMetadata>>,
+    pub(super) prompt_input_metadata: Vec<Option<AvaHarnessMetadata>>,
     pub(super) compaction_output: ResponseItem,
     pub(super) compaction_response_id: String,
     pub(super) token_usage: Option<TokenUsage>,
@@ -34,7 +34,7 @@ pub(super) async fn run_remote_compact_v2_attempt(
     compaction_trace: &CompactionTraceContext,
     compaction_metadata: CompactionTurnMetadata,
     analytics_details: &mut CompactionAnalyticsDetails,
-) -> CodexResult<RemoteCompactV2Attempt> {
+) -> AvaResult<RemoteCompactV2Attempt> {
     let turn_context = &step_context.turn;
     let mut history = sess.clone_history().await;
     let base_instructions = sess.get_prompt_base_instructions().await;

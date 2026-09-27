@@ -1,9 +1,9 @@
 use crate::config::Config;
-use codex_config::types::ToolSuggestDiscoverableType;
-use codex_core_plugins::PluginsManager;
-use codex_core_plugins::ToolSuggestPluginDiscoveryInput;
-use codex_login::CodexAuth;
-use codex_tools::DiscoverablePluginInfo;
+use ava_config::types::ToolSuggestDiscoverableType;
+use ava_core_plugins::PluginsManager;
+use ava_core_plugins::ToolSuggestPluginDiscoveryInput;
+use ava_login::AvaAuth;
+use ava_tools::DiscoverablePluginInfo;
 use std::collections::HashSet;
 use tracing::instrument;
 
@@ -11,7 +11,7 @@ use tracing::instrument;
 pub(crate) async fn list_tool_suggest_discoverable_plugins(
     config: &Config,
     plugins_manager: &PluginsManager,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     loaded_plugin_app_connector_ids: &[String],
 ) -> anyhow::Result<Vec<DiscoverablePluginInfo>> {
     let input = ToolSuggestPluginDiscoveryInput {

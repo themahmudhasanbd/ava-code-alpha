@@ -2,19 +2,19 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ThreadEnvironment;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::ThreadEnvironment;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -34,7 +34,7 @@ async fn thread_environments_follow_the_loaded_thread_selection() -> Result<()> 
     let home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri()).write(home.path())?;
     let mut first = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized()
         .await?;
     let selection = first.auto_env_params()?;
@@ -95,7 +95,7 @@ async fn thread_environments_follow_the_loaded_thread_selection() -> Result<()> 
 
     // Unloaded reads have no live selection. Resume reports its newly selected defaults.
     let mut second = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized()
         .await?;
     assert_read_and_list_environments(&mut second, &thread_id, &None).await?;

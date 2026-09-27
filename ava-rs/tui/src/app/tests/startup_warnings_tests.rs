@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::history_cell::StartupWarningsCell;
-use codex_app_server_protocol::McpServerStartupFailureReason;
+use ava_app_server_protocol::McpServerStartupFailureReason;
 use pretty_assertions::assert_eq;
 use tokio::sync::mpsc::UnboundedReceiver;
 
@@ -168,7 +168,7 @@ async fn startup_skill_load_order_preserves_runtime_error_recurrence() -> Result
         let mut server = start_config_write_test_app_server(&app).await?;
         let cwd = app.config.cwd.to_path_buf();
         let response = SkillsListResponse {
-            data: vec![codex_app_server_protocol::SkillsListEntry {
+            data: vec![ava_app_server_protocol::SkillsListEntry {
                 cwd: cwd.clone(),
                 skills: vec![],
                 errors: vec![SkillErrorInfo {

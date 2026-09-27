@@ -31,9 +31,9 @@ describe("apiBindingForStyle", () => {
   });
 
   it("binds the two vendor-account wire APIs", () => {
-    const codex = apiBindingForStyle("openai_codex_responses");
-    expect(codex.api).toBe("openai-codex-responses");
-    expect(codex.defaultBaseUrl).toBe("https://chatgpt.com/backend-api");
+    const ava = apiBindingForStyle("openai_ava_responses");
+    expect(ava.api).toBe("openai-ava-responses");
+    expect(ava.defaultBaseUrl).toBe("https://chatgpt.com/backend-api");
 
     const radius = apiBindingForStyle("pi_messages");
     expect(radius.api).toBe("pi-messages");

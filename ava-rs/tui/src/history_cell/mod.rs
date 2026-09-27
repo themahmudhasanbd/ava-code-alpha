@@ -1,4 +1,4 @@
-//! Transcript/history cells for the Codex TUI.
+//! Transcript/history cells for the Ava TUI.
 //!
 //! A `HistoryCell` is the unit of display in the conversation UI, representing both committed
 //! transcript entries and, transiently, an in-flight active cell that can mutate in place while
@@ -46,41 +46,41 @@ use crate::text_formatting::truncate_text;
 use crate::tooltips;
 use crate::ui_consts::LIVE_PREFIX_COLS;
 use crate::update_action::UpdateAction;
-use crate::version::CODEX_CLI_VERSION;
+use crate::version::AVA_CLI_VERSION;
 use crate::wrapping::RtOptions;
 use crate::wrapping::adaptive_wrap_line;
 use crate::wrapping::adaptive_wrap_lines;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::McpAuthStatus;
-use codex_app_server_protocol::McpServerStatus;
-use codex_app_server_protocol::McpServerStatusDetail;
-use codex_app_server_protocol::ToolRequestUserInputAnswer;
-use codex_app_server_protocol::ToolRequestUserInputQuestion;
-use codex_app_server_protocol::WebSearchAction;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::McpAuthStatus;
+use ava_app_server_protocol::McpServerStatus;
+use ava_app_server_protocol::McpServerStatusDetail;
+use ava_app_server_protocol::ToolRequestUserInputAnswer;
+use ava_app_server_protocol::ToolRequestUserInputQuestion;
+use ava_app_server_protocol::WebSearchAction;
 #[cfg(test)]
-use codex_config::types::McpServerTransportConfig;
+use ava_config::types::McpServerTransportConfig;
 #[cfg(test)]
-use codex_mcp::qualified_mcp_tool_name_prefix;
-use codex_otel::RuntimeMetricsSummary;
-use codex_protocol::account::PlanType;
-use codex_protocol::approvals::ExecPolicyAmendment;
-use codex_protocol::approvals::NetworkPolicyAmendment;
+use ava_mcp::qualified_mcp_tool_name_prefix;
+use ava_otel::RuntimeMetricsSummary;
+use ava_protocol::account::PlanType;
+use ava_protocol::approvals::ExecPolicyAmendment;
+use ava_protocol::approvals::NetworkPolicyAmendment;
 #[cfg(test)]
-use codex_protocol::mcp::Resource;
+use ava_protocol::mcp::Resource;
 #[cfg(test)]
-use codex_protocol::mcp::ResourceTemplate;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::local_image_label_text;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::plan_tool::PlanItemArg;
-use codex_protocol::plan_tool::StepStatus;
-use codex_protocol::plan_tool::UpdatePlanArgs;
-use codex_protocol::user_input::TextElement;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::mcp::ResourceTemplate;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::local_image_label_text;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::plan_tool::PlanItemArg;
+use ava_protocol::plan_tool::StepStatus;
+use ava_protocol::plan_tool::UpdatePlanArgs;
+use ava_protocol::user_input::TextElement;
+use ava_utils_absolute_path::AbsolutePathBuf;
 #[cfg(test)]
-use codex_utils_cli::format_env_display;
+use ava_utils_cli::format_env_display;
 use ratatui::prelude::*;
 #[cfg(test)]
 use ratatui::style::Color;

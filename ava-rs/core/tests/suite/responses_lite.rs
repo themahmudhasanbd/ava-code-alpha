@@ -3,44 +3,44 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_image_generation_extension::install as install_image_generation_extension;
-use codex_login::CodexAuth;
-use codex_login::auth::BedrockApiKeyAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
-use codex_web_search_extension::install as install_web_search_extension;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_image_generation_extension::install as install_image_generation_extension;
+use ava_login::AvaAuth;
+use ava_login::auth::BedrockApiKeyAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
+use ava_web_search_extension::install as install_web_search_extension;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_CREATE_TOOL;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_NAMESPACE;
 use core_test_support::apps_test_server::apps_enabled_builder;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 
-const RESPONSES_LITE_HEADER: &str = "x-openai-internal-codex-responses-lite";
+const RESPONSES_LITE_HEADER: &str = "x-openai-internal-ava-responses-lite";
 
-fn responses_extensions(auth: &CodexAuth) -> Arc<ExtensionRegistry<Config>> {
-    let auth_manager = codex_core::test_support::auth_manager_from_auth(auth.clone());
+fn responses_extensions(auth: &AvaAuth) -> Arc<ExtensionRegistry<Config>> {
+    let auth_manager = ava_core::test_support::auth_manager_from_auth(auth.clone());
     let mut extension_builder = ExtensionRegistryBuilder::<Config>::new();
     install_web_search_extension(&mut extension_builder, Arc::clone(&auth_manager));
     install_image_generation_extension(&mut extension_builder, auth_manager, |config| {
-        Some(config.codex_home.clone())
+        Some(config.ava_home.clone())
     });
     Arc::new(extension_builder.build())
 }
@@ -55,7 +55,7 @@ fn configure_responses_tools(config: &mut Config) {
     );
 }
 
-fn configure_image_capable_model(model_info: &mut codex_protocol::openai_models::ModelInfo) {
+fn configure_image_capable_model(model_info: &mut ava_protocol::openai_models::ModelInfo) {
     model_info.input_modalities = vec![InputModality::Text, InputModality::Image];
 }
 
@@ -104,7 +104,7 @@ async fn responses_lite_uses_input_items_for_instructions_and_tools() -> Result<
     .await;
 
     let builder = || {
-        test_codex()
+        test_ava()
             .with_model_info_override("gpt-5.4", |model_info| {
                 model_info.use_responses_lite = true;
                 model_info.tool_mode = Some(ToolMode::CodeMode);
@@ -171,7 +171,7 @@ async fn responses_lite_uses_input_items_for_instructions_and_tools() -> Result<
         .as_object()
         .context("Responses request should include client metadata")?;
     let turn_metadata: Value = serde_json::from_str(
-        client_metadata["x-codex-turn-metadata"]
+        client_metadata["x-ava-turn-metadata"]
             .as_str()
             .context("Responses request should include turn metadata")?,
     )?;
@@ -216,14 +216,14 @@ async fn responses_lite_includes_tool_namespaces_info_when_enabled() -> Result<(
             config.tool_registry.turn_metadata_includes_tool_info = true;
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
 
     test.submit_turn("hello").await?;
 
     let request = response_mock.single_request();
     let body = request.body_json();
     let turn_metadata: Value = serde_json::from_str(
-        body["client_metadata"]["x-codex-turn-metadata"]
+        body["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .context("Responses request should include turn metadata")?,
     )?;
@@ -236,17 +236,17 @@ async fn responses_lite_includes_tool_namespaces_info_when_enabled() -> Result<(
             "name": SEARCH_CALENDAR_CREATE_TOOL,
             "direct": true,
             "deferred": false,
-            "code_mode_name": "mcp__codex_apps__calendar_create_event",
+            "code_mode_name": "mcp__ava_apps__calendar_create_event",
             "source": {
                 "kind": "mcp",
-                "server_name": "codex_apps",
+                "server_name": "ava_apps",
             },
         })
     );
 
     let compatibility_metadata: Value = serde_json::from_str(
         request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .as_deref()
             .context("Responses request should include compatibility turn metadata")?,
     )?;
@@ -270,13 +270,13 @@ async fn responses_lite_prepares_images() -> Result<()> {
     .await;
     let image_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==";
     let remote_image_url = "https://example.com/image.png";
-    let mut builder = test_codex().with_model_info_override("gpt-5.4", |model_info| {
+    let mut builder = test_ava().with_model_info_override("gpt-5.4", |model_info| {
         model_info.use_responses_lite = true;
         configure_image_capable_model(model_info);
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Image {
                 image: ImageReference::Inline {
@@ -292,7 +292,7 @@ async fn responses_lite_prepares_images() -> Result<()> {
             },
         ]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -338,10 +338,10 @@ async fn responses_lite_uses_standalone_web_search_and_image_generation() -> Res
     )
     .await;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let extensions = responses_extensions(&auth);
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", |model_info| {
@@ -383,9 +383,9 @@ async fn responses_lite_exposes_standalone_tools_for_actor_authorized_provider()
     )
     .await;
 
-    let auth = CodexAuth::from_api_key("dummy");
+    let auth = AvaAuth::from_api_key("dummy");
     let extensions = responses_extensions(&auth);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", |model_info| {
@@ -459,12 +459,12 @@ async fn responses_lite_does_not_expose_standalone_web_search_for_bedrock_provid
     )
     .await;
 
-    let auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+    let auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
         api_key: "dummy".to_string(),
         region: "us-east-1".to_string(),
     });
     let extensions = responses_extensions(&auth);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", |model_info| {
@@ -513,9 +513,9 @@ async fn assert_responses_lite_custom_provider_web_search(
     )
     .await;
 
-    let auth = CodexAuth::from_api_key("dummy");
+    let auth = AvaAuth::from_api_key("dummy");
     let extensions = responses_extensions(&auth);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", |model_info| {
@@ -573,14 +573,14 @@ async fn responses_lite_compact_request_uses_lite_transport_contract() -> Result
     )
     .await;
 
-    let mut builder = test_codex().with_model_info_override("gpt-5.4", |model_info| {
+    let mut builder = test_ava().with_model_info_override("gpt-5.4", |model_info| {
         model_info.use_responses_lite = true;
     });
     let test = builder.build(&server).await?;
 
     test.submit_turn("Compact this conversation").await?;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -627,8 +627,8 @@ async fn responses_lite_omits_hosted_tools_without_standalone_extensions() -> Re
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model_info_override("gpt-5.4", |model_info| {
             model_info.use_responses_lite = true;
             configure_image_capable_model(model_info);
@@ -661,9 +661,9 @@ async fn non_lite_uses_standalone_image_generation_by_default() -> Result<()> {
     )
     .await;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let extensions = responses_extensions(&auth);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", configure_image_capable_model)

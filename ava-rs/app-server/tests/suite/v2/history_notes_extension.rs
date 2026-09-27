@@ -3,9 +3,9 @@ use std::time::Duration;
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
 use core_test_support::load_default_config_for_test;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
@@ -103,7 +103,7 @@ async fn app_server_uses_configured_notes_backend_for_context_window_hints(
         .mount(&server)
         .await;
     Mock::given(method("POST"))
-        .and(path("/backend-api/codex/alpha/notes/v2/thread_hint"))
+        .and(path("/backend-api/ava/alpha/notes/v2/thread_hint"))
         .respond_with(
             ResponseTemplate::new(hint_status).set_body_json(serde_json::json!({
                 "text": hint_text
@@ -112,11 +112,11 @@ async fn app_server_uses_configured_notes_backend_for_context_window_hints(
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let mut model = codex_core::test_support::construct_model_info_offline("mock-model", &config);
+    let ava_home = TempDir::new()?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let mut model = ava_core::test_support::construct_model_info_offline("mock-model", &config);
     model.supports_experimental_context = true;
-    let catalog_path = codex_home.path().join("models.json");
+    let catalog_path = ava_home.path().join("models.json");
     std::fs::write(
         &catalog_path,
         serde_json::to_vec(&json!({"models": [model]}))?,
@@ -129,17 +129,17 @@ async fn app_server_uses_configured_notes_backend_for_context_window_hints(
         ))
         .with_model_provider("openai-custom")
         .with_provider_name("OpenAI")
-        .with_provider_base_url(&format!("{}/backend-api/codex", server.uri()))
+        .with_provider_base_url(&format!("{}/backend-api/ava", server.uri()))
         .with_provider_config("supports_websockets = false\nrequires_openai_auth = true")
         .with_extra_config(&format!(
             "[features.token_budget]\nenabled = true\nuse_history_notes_extension = {use_history_notes_extension}\n\n[mcp_servers.notes]\nurl = \"{}/mcp\"\nstartup_timeout_sec = 10\n",
             server.uri(),
         ))
-        .write(codex_home.path())?;
-    mount_analytics_capture(&backend, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&backend, ava_home.path()).await?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized()
         .await?;
@@ -190,7 +190,7 @@ async fn app_server_uses_configured_notes_backend_for_context_window_hints(
     let requests = server.received_requests().await.expect("recorded requests");
     let native_requests = requests
         .iter()
-        .filter(|request| request.url.path() == "/backend-api/codex/alpha/notes/v2/thread_hint")
+        .filter(|request| request.url.path() == "/backend-api/ava/alpha/notes/v2/thread_hint")
         .count();
     assert_eq!(native_requests, usize::from(use_history_notes_extension));
     let bridge_calls = requests
@@ -227,7 +227,7 @@ async fn app_server_uses_configured_notes_backend_for_context_window_hints(
 
     if use_history_notes_extension {
         let event = wait_for_matching_analytics_event(&backend, DEFAULT_READ_TIMEOUT, |event| {
-            event["event_type"] == "codex_thread_hint_status"
+            event["event_type"] == "ava_thread_hint_status"
                 && event["event_params"]["thread_id"] == thread.id
         })
         .await?;
@@ -302,7 +302,7 @@ async fn history_notes_and_async_message_emit_control_tool_analytics() -> Result
     for (namespace, tool, arguments) in &calls[..9] {
         Mock::given(method("POST"))
             .and(path(format!(
-                "/backend-api/codex/alpha/{namespace}/v2/{tool}"
+                "/backend-api/ava/alpha/{namespace}/v2/{tool}"
             )))
             .and(body_partial_json(arguments.clone()))
             .respond_with(
@@ -332,14 +332,14 @@ async fn history_notes_and_async_message_emit_control_tool_analytics() -> Result
     sequence.push(responses::sse(vec![responses::ev_completed("resp-final")]));
     let response_mock = responses::mount_sse_sequence(&server, sequence).await;
 
-    let codex_home = TempDir::new()?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let mut model = codex_core::test_support::construct_model_info_offline("mock-model", &config);
+    let ava_home = TempDir::new()?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let mut model = ava_core::test_support::construct_model_info_offline("mock-model", &config);
     model.supports_experimental_context = true;
     model
         .experimental_supported_tools
         .push("send_user_message_async".to_string());
-    let catalog_path = codex_home.path().join("models.json");
+    let catalog_path = ava_home.path().join("models.json");
     std::fs::write(
         &catalog_path,
         serde_json::to_vec(&json!({"models": [model]}))?,
@@ -347,7 +347,7 @@ async fn history_notes_and_async_message_emit_control_tool_analytics() -> Result
     MockResponsesConfig::new(&server.uri())
         .with_model_provider("openai-custom")
         .with_provider_name("OpenAI")
-        .with_provider_base_url(&format!("{}/backend-api/codex", server.uri()))
+        .with_provider_base_url(&format!("{}/backend-api/ava", server.uri()))
         .with_provider_config("supports_websockets = false\nrequires_openai_auth = true")
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", backend.uri()))
         .with_root_config(&format!(
@@ -357,11 +357,11 @@ async fn history_notes_and_async_message_emit_control_tool_analytics() -> Result
         .with_extra_config(
             "[features.token_budget]\nenabled = true\nuse_history_notes_extension = true",
         )
-        .write(codex_home.path())?;
-    mount_analytics_capture(&backend, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&backend, ava_home.path()).await?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .without_managed_config()
         .build_initialized()
@@ -396,7 +396,7 @@ async fn history_notes_and_async_message_emit_control_tool_analytics() -> Result
 
     for (index, (namespace, tool, _)) in calls.iter().enumerate() {
         let event = wait_for_matching_analytics_event(&backend, DEFAULT_READ_TIMEOUT, |event| {
-            event["event_type"] == "codex_control_tool_call_event"
+            event["event_type"] == "ava_control_tool_call_event"
                 && event["event_params"]["item_id"] == format!("call-{index}")
         })
         .await?;
@@ -422,7 +422,7 @@ async fn history_notes_and_async_message_emit_control_tool_analytics() -> Result
         assert!(!event.to_string().contains("PRIVATE_"));
     }
     let turn_event = wait_for_matching_analytics_event(&backend, DEFAULT_READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_turn_event"
+        event["event_type"] == "ava_turn_event"
             && event["event_params"]["turn_id"] == completed.turn.id
     })
     .await?;

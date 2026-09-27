@@ -1,21 +1,21 @@
 use anyhow::Context;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandEndEvent;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_protocol::protocol::ExecOutputStream;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandEndEvent;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_protocol::protocol::ExecOutputStream;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use core_test_support::assert_regex_match;
@@ -29,10 +29,10 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_event_with_timeout;
@@ -57,25 +57,25 @@ async fn user_shell_cmd_ls_and_cat_in_temp_dir() {
     // Pin cwd to the temp dir so ls/cat operate there.
     let server = start_mock_server().await;
     let cwd_path = cwd.path().to_path_buf();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.cwd = cwd_path.abs();
     });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
     // 1) shell command should list the file
     let list_cmd = "ls".to_string();
-    codex
+    ava
         .submit(Op::RunUserShellCommand {
             command: list_cmd,
             timeout_ms: None,
         })
         .await
         .unwrap();
-    let msg = wait_for_event(&codex, |ev| matches!(ev, EventMsg::ExecCommandEnd(_))).await;
+    let msg = wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExecCommandEnd(_))).await;
     let EventMsg::ExecCommandEnd(ExecCommandEndEvent {
         stdout, exit_code, ..
     }) = msg
@@ -90,14 +90,14 @@ async fn user_shell_cmd_ls_and_cat_in_temp_dir() {
 
     // 2) shell command should print the file contents verbatim
     let cat_cmd = format!("cat {file_name}");
-    codex
+    ava
         .submit(Op::RunUserShellCommand {
             command: cat_cmd,
             timeout_ms: None,
         })
         .await
         .unwrap();
-    let msg = wait_for_event(&codex, |ev| matches!(ev, EventMsg::ExecCommandEnd(_))).await;
+    let msg = wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExecCommandEnd(_))).await;
     let EventMsg::ExecCommandEnd(ExecCommandEndEvent {
         mut stdout,
         exit_code,
@@ -117,12 +117,12 @@ async fn user_shell_cmd_ls_and_cat_in_temp_dir() {
 #[tokio::test]
 async fn user_shell_command_without_local_environment_emits_error() -> anyhow::Result<()> {
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build(&server).await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
-            environments: Some(codex_protocol::protocol::TurnEnvironmentSelections::new(
+            environments: Some(ava_protocol::protocol::TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
                 vec![],
             )),
@@ -131,7 +131,7 @@ async fn user_shell_command_without_local_environment_emits_error() -> anyhow::R
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RunUserShellCommand {
             command: "echo shell".to_string(),
             timeout_ms: None,
@@ -139,12 +139,12 @@ async fn user_shell_command_without_local_environment_emits_error() -> anyhow::R
         .await?;
 
     let EventMsg::Error(error) =
-        wait_for_event(&test.codex, |event| matches!(event, EventMsg::Error(_))).await
+        wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await
     else {
         unreachable!()
     };
     assert_eq!(error.message, "shell is unavailable in this session");
-    assert_eq!(error.codex_error_info, None);
+    assert_eq!(error.ava_error_info, None);
 
     Ok(())
 }
@@ -153,15 +153,15 @@ async fn user_shell_command_without_local_environment_emits_error() -> anyhow::R
 async fn user_shell_cmd_can_be_interrupted() {
     // Set up isolated config and conversation.
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let fixture = builder
         .build(&server)
         .await
         .expect("create new conversation");
-    let codex = &fixture.codex;
+    let ava = &fixture.ava-code;
 
     // Start a long-running command and then interrupt it before its deadline.
-    codex
+    ava
         .submit(Op::RunUserShellCommand {
             command: slow_user_shell_command().to_string(),
             timeout_ms: Some(28_800_000),
@@ -170,16 +170,16 @@ async fn user_shell_cmd_can_be_interrupted() {
         .unwrap();
 
     // Output proves that the process was spawned before cancellation.
-    wait_for_event(codex, |event| {
+    wait_for_event(ava, |event| {
         matches!(event, EventMsg::ExecCommandOutputDelta(delta)
             if String::from_utf8_lossy(&delta.chunk).contains("shell-timeout-ready"))
     })
     .await;
-    codex.submit(Op::Interrupt).await.unwrap();
+    ava.submit(Op::Interrupt).await.unwrap();
 
     // Expect a TurnAborted(Interrupted) notification.
     let msg = wait_for_event_with_timeout(
-        codex,
+        ava,
         |ev| matches!(ev, EventMsg::TurnAborted(_)),
         Duration::from_secs(60),
     )
@@ -195,7 +195,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
     for (timeout_ms, expected_ms) in [(None, 3_600_000), (Some(28_800_000), 28_800_000)] {
         let server = start_mock_server().await;
         // Honor the CI executor while retaining the local environment used by user shell commands.
-        let mut builder = test_codex();
+        let mut builder = test_ava();
         let fixture = builder.build_with_remote_and_local_env(&server).await?;
         // The remote cwd need not exist on the host, and may use a different path convention.
         let local_cwd = fixture.cwd_path().abs();
@@ -207,7 +207,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
             );
         }
         submit_thread_settings(
-            &fixture.codex,
+            &fixture.ava-code,
             ThreadSettingsOverrides {
                 environments: Some(TurnEnvironmentSelections::new(local_cwd, environments)),
                 ..Default::default()
@@ -215,13 +215,13 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
         )
         .await?;
         fixture
-            .codex
+            .ava-code
             .submit(Op::RunUserShellCommand {
                 command: slow_user_shell_command().to_string(),
                 timeout_ms,
             })
             .await?;
-        wait_for_event(&fixture.codex, |event| {
+        wait_for_event(&fixture.ava-code, |event| {
             matches!(event, EventMsg::ExecCommandOutputDelta(delta)
                 if String::from_utf8_lossy(&delta.chunk).contains("shell-timeout-ready"))
         })
@@ -229,7 +229,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
 
         let completed = async {
             loop {
-                let event = fixture.codex.next_event().await.expect("read shell event");
+                let event = fixture.ava-code.next_event().await.expect("read shell event");
                 if let EventMsg::ExecCommandEnd(end) = event.msg {
                     break end;
                 }
@@ -255,7 +255,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
         assert_eq!(end.exit_code, -1);
         assert!(end.aggregated_output.contains("Timeout"));
         assert!(end.aggregated_output.contains("shell-timeout-ready"));
-        wait_for_event(&fixture.codex, |event| {
+        wait_for_event(&fixture.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -264,7 +264,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
 }
 
 fn slow_user_shell_command() -> &'static str {
-    match codex_core::shell::default_user_shell().name() {
+    match ava_core::shell::default_user_shell().name() {
         "powershell" => "Write-Output shell-timeout-ready; Start-Sleep -Seconds 60",
         "cmd" => "echo shell-timeout-ready & ping -n 61 127.0.0.1 > nul",
         _ => "printf 'shell-timeout-ready\\n'; exec sleep 60",
@@ -274,7 +274,7 @@ fn slow_user_shell_command() -> &'static str {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()> {
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let mut builder = test_ava().with_model("gpt-5.4");
     let fixture = builder.build(&server).await?;
 
     let call_id = "active-turn-shell-call";
@@ -305,7 +305,7 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
 
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run model shell command".to_string(),
@@ -329,7 +329,7 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
         )
         .await?;
 
-    let _ = wait_for_event_match(&fixture.codex, |ev| match ev {
+    let _ = wait_for_event_match(&fixture.ava-code, |ev| match ev {
         EventMsg::ExecCommandBegin(event)
             if event.source == ExecCommandSource::UnifiedExecStartup =>
         {
@@ -344,7 +344,7 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
     #[cfg(not(windows))]
     let user_shell_command = "printf user-shell".to_string();
     fixture
-        .codex
+        .ava-code
         .submit(Op::RunUserShellCommand {
             command: user_shell_command,
             timeout_ms: None,
@@ -355,7 +355,7 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
     let mut saw_user_shell_end = false;
     let mut saw_turn_complete = false;
     for _ in 0..200 {
-        let event = timeout(Duration::from_secs(20), fixture.codex.next_event())
+        let event = timeout(Duration::from_secs(20), fixture.ava-code.next_event())
             .await
             .context("timed out waiting for event")?
             .context("event stream ended unexpectedly")?;
@@ -397,7 +397,7 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
 async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyhow::Result<()> {
     let server = responses::start_mock_server().await;
     // Disable it to ease command matching.
-    let mut builder = core_test_support::test_codex::test_codex().with_config(move |config| {
+    let mut builder = core_test_support::test_ava::test_ava().with_config(move |config| {
         config
             .features
             .disable(Feature::ShellSnapshot)
@@ -406,18 +406,18 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
     let test = builder.build(&server).await?;
 
     #[cfg(windows)]
-    let command = r#"$val = $env:CODEX_SANDBOX; if ([string]::IsNullOrEmpty($val)) { $val = 'not-set' } ; [System.Console]::Write($val)"#.to_string();
+    let command = r#"$val = $env:AVA_SANDBOX; if ([string]::IsNullOrEmpty($val)) { $val = 'not-set' } ; [System.Console]::Write($val)"#.to_string();
     #[cfg(not(windows))]
-    let command = r#"sh -c "printf '%s' \"${CODEX_SANDBOX:-not-set}\"""#.to_string();
+    let command = r#"sh -c "printf '%s' \"${AVA_SANDBOX:-not-set}\"""#.to_string();
 
-    test.codex
+    test.ava-code
         .submit(Op::RunUserShellCommand {
             command: command.clone(),
             timeout_ms: None,
         })
         .await?;
 
-    let begin_event = wait_for_event_match(&test.codex, |ev| match ev {
+    let begin_event = wait_for_event_match(&test.ava-code, |ev| match ev {
         EventMsg::ExecCommandBegin(event) => Some(event.clone()),
         _ => None,
     })
@@ -431,7 +431,7 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
         begin_event.command
     );
 
-    let delta_event = wait_for_event_match(&test.codex, |ev| match ev {
+    let delta_event = wait_for_event_match(&test.ava-code, |ev| match ev {
         EventMsg::ExecCommandOutputDelta(event) => Some(event.clone()),
         _ => None,
     })
@@ -441,7 +441,7 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
         String::from_utf8(delta_event.chunk.clone()).expect("user command chunk is valid utf-8");
     assert_eq!(chunk_text.trim(), "not-set");
 
-    let end_event = wait_for_event_match(&test.codex, |ev| match ev {
+    let end_event = wait_for_event_match(&test.ava-code, |ev| match ev {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
     })
@@ -449,7 +449,7 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
     assert_eq!(end_event.exit_code, 0);
     assert_eq!(end_event.stdout.trim(), "not-set");
 
-    let _ = wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _ = wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let responses = vec![responses::sse(vec![
         responses::ev_response_created("resp-1"),
@@ -480,7 +480,7 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
 #[tokio::test]
 async fn user_shell_command_does_not_set_network_sandbox_env_var() -> anyhow::Result<()> {
     let server = responses::start_mock_server().await;
-    let mut builder = core_test_support::test_codex::test_codex().with_config(|config| {
+    let mut builder = core_test_support::test_ava::test_ava().with_config(|config| {
         let file_system_sandbox_policy = config.permissions.file_system_sandbox_policy();
         config
             .permissions
@@ -493,12 +493,12 @@ async fn user_shell_command_does_not_set_network_sandbox_env_var() -> anyhow::Re
     let test = builder.build(&server).await?;
 
     #[cfg(windows)]
-    let command = r#"$val = $env:CODEX_SANDBOX_NETWORK_DISABLED; if ([string]::IsNullOrEmpty($val)) { $val = 'not-set' } ; [System.Console]::Write($val)"#.to_string();
+    let command = r#"$val = $env:AVA_SANDBOX_NETWORK_DISABLED; if ([string]::IsNullOrEmpty($val)) { $val = 'not-set' } ; [System.Console]::Write($val)"#.to_string();
     #[cfg(not(windows))]
     let command =
-        r#"sh -c "printf '%s' \"${CODEX_SANDBOX_NETWORK_DISABLED:-not-set}\"""#.to_string();
+        r#"sh -c "printf '%s' \"${AVA_SANDBOX_NETWORK_DISABLED:-not-set}\"""#.to_string();
 
-    test.codex
+    test.ava-code
         .submit(Op::RunUserShellCommand {
             command,
             timeout_ms: None,
@@ -510,7 +510,7 @@ async fn user_shell_command_does_not_set_network_sandbox_env_var() -> anyhow::Re
         stdout,
         stderr,
         ..
-    } = wait_for_event_match(&test.codex, |ev| match ev {
+    } = wait_for_event_match(&test.ava-code, |ev| match ev {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
     })
@@ -529,7 +529,7 @@ async fn user_shell_command_does_not_set_network_sandbox_env_var() -> anyhow::Re
 #[cfg(not(target_os = "windows"))] // TODO: unignore on windows
 async fn user_shell_command_output_is_truncated_in_history() -> anyhow::Result<()> {
     let server = responses::start_mock_server().await;
-    let builder = core_test_support::test_codex::test_codex();
+    let builder = core_test_support::test_ava::test_ava();
     let test = builder
         .with_config(|config| {
             config.tool_output_token_limit = Some(100);
@@ -542,21 +542,21 @@ async fn user_shell_command_output_is_truncated_in_history() -> anyhow::Result<(
     #[cfg(not(windows))]
     let command = "seq 1 400".to_string();
 
-    test.codex
+    test.ava-code
         .submit(Op::RunUserShellCommand {
             command: command.clone(),
             timeout_ms: None,
         })
         .await?;
 
-    let end_event = wait_for_event_match(&test.codex, |ev| match ev {
+    let end_event = wait_for_event_match(&test.ava-code, |ev| match ev {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
     })
     .await;
     assert_eq!(end_event.exit_code, 0);
 
-    let _ = wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _ = wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let responses = vec![responses::sse(vec![
         responses::ev_response_created("resp-1"),
@@ -596,7 +596,7 @@ async fn user_shell_command_is_truncated_only_once() -> anyhow::Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config.tool_output_token_limit = Some(100);
     });
     let fixture = builder.build(&server).await?;

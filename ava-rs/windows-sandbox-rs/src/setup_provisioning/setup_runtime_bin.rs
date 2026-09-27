@@ -19,7 +19,7 @@ use windows_sys::Win32::Storage::FileSystem::FILE_GENERIC_READ;
 #[path = "setup_runtime_bin_tests.rs"]
 mod tests;
 
-pub(super) fn ensure_codex_app_runtime_paths_readable(
+pub(super) fn ensure_ava_app_runtime_paths_readable(
     sandbox_group_psid: *mut c_void,
     refresh_errors: &mut Vec<String>,
     log: &mut dyn Write,
@@ -93,7 +93,7 @@ pub(super) fn ensure_codex_app_runtime_paths_readable(
         }
     }
     if let Some(local_app_data) = local_app_data {
-        let runtime_root = local_app_data.join("OpenAI").join("Codex").join("runtimes");
+        let runtime_root = local_app_data.join("OpenAI").join("Ava").join("runtimes");
         if let Err(err) = ensure_runtime_tree_readable(&runtime_root, sandbox_group_psid) {
             let message = format!("runtime read/execute validation failed: {err:#}");
             super::log_line(log, &message)?;
@@ -185,12 +185,12 @@ fn ensure_runtime_tree_readable(
 fn runtime_paths(local_app_data: Option<PathBuf>, user_profile: Option<PathBuf>) -> Vec<PathBuf> {
     let mut runtime_paths = Vec::new();
     if let Some(local_app_data) = local_app_data {
-        let codex_root = local_app_data.join("OpenAI").join("Codex");
-        runtime_paths.push(codex_root);
+        let ava_root = local_app_data.join("OpenAI").join("Ava");
+        runtime_paths.push(ava_root);
     }
     // The managed primary runtime is installed outside the LocalAppData runtime roots.
     if let Some(user_profile) = user_profile {
-        runtime_paths.push(user_profile.join(".cache").join("codex-runtimes"));
+        runtime_paths.push(user_profile.join(".cache").join("ava-runtimes"));
     }
 
     runtime_paths

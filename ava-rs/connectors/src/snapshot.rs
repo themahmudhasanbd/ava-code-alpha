@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use codex_plugin::AppConnectorId;
-use codex_plugin::AppDeclaration;
-use codex_plugin::PluginCapabilitySummary;
+use ava_plugin::AppConnectorId;
+use ava_plugin::AppDeclaration;
+use ava_plugin::PluginCapabilitySummary;
 
 /// Connector declarations contributed by one plugin package.
 #[derive(Clone, Debug, PartialEq, Eq)]

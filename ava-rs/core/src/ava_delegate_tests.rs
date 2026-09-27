@@ -1,19 +1,19 @@
 use super::*;
 use async_channel::bounded;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadStartInput;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::McpStartupCompleteEvent;
-use codex_protocol::protocol::McpStartupStatus;
-use codex_protocol::protocol::McpStartupUpdateEvent;
-use codex_protocol::protocol::RawResponseItemEvent;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadStartInput;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::McpStartupCompleteEvent;
+use ava_protocol::protocol::McpStartupStatus;
+use ava_protocol::protocol::McpStartupUpdateEvent;
+use ava_protocol::protocol::RawResponseItemEvent;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
@@ -146,7 +146,7 @@ async fn forward_ops_preserves_submission_trace_context() {
     let submission = Submission {
         id: "sub-1".to_string(),
         op: Op::Interrupt,
-        trace: Some(codex_protocol::protocol::W3cTraceContext {
+        trace: Some(ava_protocol::protocol::W3cTraceContext {
             traceparent: Some(
                 "00-1234567890abcdef1234567890abcdef-1234567890abcdef-01".to_string(),
             ),
@@ -166,7 +166,7 @@ async fn forward_ops_preserves_submission_trace_context() {
     assert!(matches!(forwarded.op, Op::Interrupt));
     assert_eq!(
         forwarded.trace,
-        Some(codex_protocol::protocol::W3cTraceContext {
+        Some(ava_protocol::protocol::W3cTraceContext {
             traceparent: Some(
                 "00-1234567890abcdef1234567890abcdef-1234567890abcdef-01".to_string(),
             ),
@@ -182,7 +182,7 @@ async fn forward_ops_preserves_submission_trace_context() {
 }
 
 #[tokio::test]
-async fn run_codex_thread_interactive_respects_pre_cancelled_spawn() {
+async fn run_ava_thread_interactive_respects_pre_cancelled_spawn() {
     let (parent_session, parent_ctx, _rx_events) =
         crate::session::tests::make_session_and_context_with_rx().await;
     let mut config = parent_ctx.config.as_ref().clone();
@@ -193,7 +193,7 @@ async fn run_codex_thread_interactive_respects_pre_cancelled_spawn() {
 
     let result = timeout(
         Duration::from_secs(/*secs*/ 1),
-        run_codex_thread_interactive(
+        run_ava_thread_interactive(
             config,
             Arc::clone(&parent_session.services.auth_manager),
             Arc::clone(&parent_session.services.models_manager),
@@ -202,10 +202,10 @@ async fn run_codex_thread_interactive_respects_pre_cancelled_spawn() {
             parent_environments,
             cancel_token,
             SubAgentSource::Review,
-            codex_extension_api::SessionIsolation::Inherit,
+            ava_extension_api::SessionIsolation::Inherit,
             /*initial_history*/ None,
             crate::session::GitEnrichmentPolicy::Fresh,
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
         ),
     )
     .await
@@ -213,26 +213,26 @@ async fn run_codex_thread_interactive_respects_pre_cancelled_spawn() {
 
     assert!(matches!(
         result,
-        Err(err) if matches!(err.details(), CodexErrorDetails::TurnAborted)
+        Err(err) if matches!(err.details(), AvaErrorDetails::TurnAborted)
     ));
 }
 
 #[tokio::test]
 async fn delegate_start_analytics_honors_child_opt_out_with_enabled_parent() {
-    use codex_analytics::AnalyticsEventsClient;
-    use codex_login::CodexAuth;
+    use ava_analytics::AnalyticsEventsClient;
+    use ava_login::AvaAuth;
     use wiremock::Mock;
     use wiremock::MockServer;
     use wiremock::ResponseTemplate;
     use wiremock::matchers::path;
 
     let server = MockServer::start().await;
-    Mock::given(path("/codex/analytics-events/events"))
+    Mock::given(path("/ava/analytics-events/events"))
         .respond_with(ResponseTemplate::new(200))
         .mount(&server)
         .await;
     let client = AnalyticsEventsClient::new(
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
         server.uri(),
         /*analytics_enabled*/ Some(true),
     );
@@ -244,7 +244,7 @@ async fn delegate_start_analytics_honors_child_opt_out_with_enabled_parent() {
         .analytics_events_client = client.clone();
     parent_session
         .set_app_server_client_info(
-            Some("codex-test".to_string()),
+            Some("ava-test".to_string()),
             Some("1.0.0".to_string()),
             /*mcp_elicitations_auto_deny*/ false,
         )
@@ -256,7 +256,7 @@ async fn delegate_start_analytics_honors_child_opt_out_with_enabled_parent() {
         let mut config = parent_ctx.config.as_ref().clone();
         config.permissions.approval_policy = Constrained::allow_only(AskForApproval::Never);
         config.analytics_enabled = Some(analytics_enabled);
-        let (session, io) = run_codex_thread_interactive(
+        let (session, io) = run_ava_thread_interactive(
             config,
             Arc::clone(&parent_session.services.auth_manager),
             Arc::clone(&parent_session.services.models_manager),
@@ -265,16 +265,16 @@ async fn delegate_start_analytics_honors_child_opt_out_with_enabled_parent() {
             parent_ctx.initial_environments.clone(),
             CancellationToken::new(),
             SubAgentSource::Review,
-            codex_extension_api::SessionIsolation::Inherit,
+            ava_extension_api::SessionIsolation::Inherit,
             /*initial_history*/ None,
             crate::session::GitEnrichmentPolicy::Fresh,
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
         )
         .await
         .expect("delegate session should start");
         if analytics_enabled {
             expected_events.push(serde_json::json!([
-                "codex_thread_initialized",
+                "ava_thread_initialized",
                 session.thread_id().to_string(),
             ]));
         }
@@ -313,26 +313,26 @@ async fn delegate_isolation_does_not_depend_on_attribution() {
     for (subagent_source, isolation, expected_thread_starts, expected_thread_source) in [
         (
             SubAgentSource::Other(crate::guardian::GUARDIAN_REVIEWER_NAME.to_string()),
-            codex_extension_api::SessionIsolation::Isolated,
+            ava_extension_api::SessionIsolation::Isolated,
             0,
             ThreadSource::GuardianReview,
         ),
         (
             SubAgentSource::Review,
-            codex_extension_api::SessionIsolation::Isolated,
+            ava_extension_api::SessionIsolation::Isolated,
             0,
             ThreadSource::Subagent,
         ),
         (
             SubAgentSource::Review,
-            codex_extension_api::SessionIsolation::Inherit,
+            ava_extension_api::SessionIsolation::Inherit,
             1,
             ThreadSource::Subagent,
         ),
     ] {
         let mut config = parent_ctx.config.as_ref().clone();
         config.permissions.approval_policy = Constrained::allow_only(AskForApproval::Never);
-        let (session, io) = run_codex_thread_interactive(
+        let (session, io) = run_ava_thread_interactive(
             config,
             Arc::clone(&parent_session.services.auth_manager),
             Arc::clone(&parent_session.services.models_manager),
@@ -344,7 +344,7 @@ async fn delegate_isolation_does_not_depend_on_attribution() {
             isolation,
             /*initial_history*/ None,
             crate::session::GitEnrichmentPolicy::Fresh,
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
         )
         .await
         .expect("delegate session should start");
@@ -369,14 +369,14 @@ async fn delegate_isolation_does_not_depend_on_attribution() {
 }
 
 #[tokio::test]
-async fn run_codex_thread_interactive_rejects_approval_policy_that_can_prompt() {
+async fn run_ava_thread_interactive_rejects_approval_policy_that_can_prompt() {
     let (parent_session, parent_ctx, _rx_events) =
         crate::session::tests::make_session_and_context_with_rx().await;
     let mut config = parent_ctx.config.as_ref().clone();
     config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
     let parent_environments = parent_ctx.initial_environments.clone();
 
-    let result = run_codex_thread_interactive(
+    let result = run_ava_thread_interactive(
         config,
         Arc::clone(&parent_session.services.auth_manager),
         Arc::clone(&parent_session.services.models_manager),
@@ -385,10 +385,10 @@ async fn run_codex_thread_interactive_rejects_approval_policy_that_can_prompt() 
         parent_environments,
         CancellationToken::new(),
         SubAgentSource::Review,
-        codex_extension_api::SessionIsolation::Inherit,
+        ava_extension_api::SessionIsolation::Inherit,
         /*initial_history*/ None,
         crate::session::GitEnrichmentPolicy::Fresh,
-        codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+        ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
     )
     .await;
 
@@ -397,8 +397,8 @@ async fn run_codex_thread_interactive_rejects_approval_policy_that_can_prompt() 
         Err(err)
             if matches!(
                 err.details(),
-                CodexErrorDetails::InvalidRequest(message)
-                    if message == "Codex delegates require approval policy `never`"
+                AvaErrorDetails::InvalidRequest(message)
+                    if message == "Ava delegates require approval policy `never`"
             )
     ));
 }

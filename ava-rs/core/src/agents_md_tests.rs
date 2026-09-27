@@ -6,34 +6,34 @@ use crate::environment_selection::EnvironmentConfigOrigin;
 use crate::environment_selection::TurnEnvironmentSnapshot;
 use crate::environment_selection::TurnEnvironmentState;
 use crate::session::turn_context::TurnEnvironment;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
-use codex_exec_server::CopyOptions;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::Environment;
-use codex_exec_server::ExecutorFileSystemFuture;
-use codex_exec_server::FileMetadata;
-use codex_exec_server::FileSystemReadStream;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::LOCAL_FS;
-use codex_exec_server::ReadDirectoryEntry;
-use codex_exec_server::ReadFileOptions;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WalkOptions;
-use codex_exec_server::WalkOutcome;
-use codex_exec_server::WriteFileOptions;
-use codex_extension_api::Instructions;
-use codex_features::Feature;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::EnvironmentConfig;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
+use ava_exec_server::CopyOptions;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::Environment;
+use ava_exec_server::ExecutorFileSystemFuture;
+use ava_exec_server::FileMetadata;
+use ava_exec_server::FileSystemReadStream;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::LOCAL_FS;
+use ava_exec_server::ReadDirectoryEntry;
+use ava_exec_server::ReadFileOptions;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WalkOptions;
+use ava_exec_server::WalkOutcome;
+use ava_exec_server::WriteFileOptions;
+use ava_extension_api::Instructions;
+use ava_features::Feature;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::TempDirExt;
 use core_test_support::create_directory_symlink;
@@ -375,7 +375,7 @@ fn resolved_local_environments<const N: usize>(
                             allow_login_shell: true,
                             workspace_roots: Vec::new(),
                             windows_sandbox_level: WindowsSandboxLevel::Disabled,
-                            windows_sandbox_type: codex_protocol::sandbox::SandboxType::None,
+                            windows_sandbox_type: ava_protocol::sandbox::SandboxType::None,
                             use_legacy_landlock: false,
                             permission_profile: PermissionProfileSnapshot::legacy(
                                 PermissionProfile::read_only(),
@@ -411,13 +411,13 @@ fn project_provenance(path: AbsolutePathBuf, cwd: AbsolutePathBuf) -> Instructio
 fn foreign_agents_md_uses_environment_native_paths() {
     let (cwd, rendered_cwd) = if cfg!(windows) {
         (
-            PathUri::parse("file:///codex%20runtime").expect("POSIX cwd URI"),
-            "/codex runtime",
+            PathUri::parse("file:///ava%20runtime").expect("POSIX cwd URI"),
+            "/ava runtime",
         )
     } else {
         (
-            PathUri::parse("file:///C:/codex%20runtime").expect("Windows cwd URI"),
-            r"C:\codex runtime",
+            PathUri::parse("file:///C:/ava%20runtime").expect("Windows cwd URI"),
+            r"C:\ava runtime",
         )
     };
     let source_path = cwd.join("AGENTS.md").expect("AGENTS.md URI");
@@ -504,9 +504,9 @@ Windows instructions
 /// value is cleared to mimic a scenario where no system instructions have
 /// been configured.
 async fn make_config(root: &TempDir, limit: usize, instructions: Option<&str>) -> TestConfig {
-    let codex_home = TempDir::new().unwrap();
+    let ava_home = TempDir::new().unwrap();
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("defaults for test should always succeed");
@@ -516,7 +516,7 @@ async fn make_config(root: &TempDir, limit: usize, instructions: Option<&str>) -
 
     let user_instructions = instructions.map(|text| Instructions {
         text: text.to_owned(),
-        source: Some(config.codex_home.join(DEFAULT_AGENTS_MD_FILENAME)),
+        source: Some(config.ava_home.join(DEFAULT_AGENTS_MD_FILENAME)),
     });
     TestConfig {
         config,
@@ -544,7 +544,7 @@ async fn make_config_with_project_root_markers(
     instructions: Option<&str>,
     markers: &[&str],
 ) -> TestConfig {
-    let codex_home = TempDir::new().unwrap();
+    let ava_home = TempDir::new().unwrap();
     let cli_overrides = vec![(
         "project_root_markers".to_string(),
         TomlValue::Array(
@@ -555,7 +555,7 @@ async fn make_config_with_project_root_markers(
         ),
     )];
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cli_overrides(cli_overrides)
         .build()
         .await
@@ -565,7 +565,7 @@ async fn make_config_with_project_root_markers(
     config.project_doc_max_bytes = limit;
     let user_instructions = instructions.map(|text| Instructions {
         text: text.to_owned(),
-        source: Some(config.codex_home.join(DEFAULT_AGENTS_MD_FILENAME)),
+        source: Some(config.ava_home.join(DEFAULT_AGENTS_MD_FILENAME)),
     });
     TestConfig {
         config,
@@ -1415,7 +1415,7 @@ async fn concatenates_root_and_cwd_docs() {
 #[tokio::test]
 async fn project_root_markers_are_honored_for_agents_discovery() {
     let root = tempfile::tempdir().expect("tempdir");
-    fs::write(root.path().join(".codex-root"), "").unwrap();
+    fs::write(root.path().join(".ava-root"), "").unwrap();
     fs::write(root.path().join("AGENTS.md"), "parent doc").unwrap();
 
     let nested = root.path().join("dir1");
@@ -1426,7 +1426,7 @@ async fn project_root_markers_are_honored_for_agents_discovery() {
         &root,
         /*limit*/ 4096,
         /*instructions*/ None,
-        &[".codex-root"],
+        &[".ava-root"],
     )
     .await;
     cfg.cwd = nested.abs();
@@ -1453,9 +1453,9 @@ async fn project_layers_do_not_override_project_root_markers() {
 
     let mut config = make_config(&root, /*limit*/ 4096, /*instructions*/ None).await;
     config.cwd = nested.abs();
-    let project_layer = |dot_codex_folder: AbsolutePathBuf, marker: &str| {
+    let project_layer = |dot_ava_folder: AbsolutePathBuf, marker: &str| {
         ConfigLayerEntry::new(
-            ConfigLayerSource::Project { dot_codex_folder },
+            ConfigLayerSource::Project { dot_ava_folder },
             TomlValue::Table(
                 [(
                     "project_root_markers".to_string(),
@@ -1468,8 +1468,8 @@ async fn project_layers_do_not_override_project_root_markers() {
     };
     config.config_layer_stack = ConfigLayerStack::new(
         vec![
-            project_layer(root.path().join(".codex").abs(), ".ignored-root-marker"),
-            project_layer(config.cwd.join(".codex"), ".ignored-nested-marker"),
+            project_layer(root.path().join(".ava-code").abs(), ".ignored-root-marker"),
+            project_layer(config.cwd.join(".ava-code"), ".ignored-nested-marker"),
         ],
         ConfigRequirements::default(),
         ConfigRequirementsToml::default(),
@@ -1516,8 +1516,8 @@ async fn instruction_sources_include_global_before_agents_md_docs() {
     fs::write(tmp.path().join("AGENTS.md"), "project doc").unwrap();
 
     let cfg = make_config(&tmp, /*limit*/ 4096, Some("global doc")).await;
-    let global_agents = cfg.codex_home.join(DEFAULT_AGENTS_MD_FILENAME);
-    fs::create_dir_all(&cfg.codex_home).unwrap();
+    let global_agents = cfg.ava_home.join(DEFAULT_AGENTS_MD_FILENAME);
+    fs::create_dir_all(&cfg.ava_home).unwrap();
     fs::write(&global_agents, "global doc").unwrap();
 
     let loaded = load_agents_md(&cfg).await.expect("instructions expected");
@@ -1752,7 +1752,7 @@ async fn skills_are_not_appended_to_agents_md() {
 
     let cfg = make_config(&tmp, /*limit*/ 4096, /*instructions*/ None).await;
     create_skill(
-        cfg.codex_home.to_path_buf(),
+        cfg.ava_home.to_path_buf(),
         "pdf-processing",
         "extract from pdfs",
     );
@@ -1791,8 +1791,8 @@ async fn apps_feature_does_not_append_to_agents_md_user_instructions() {
     assert_eq!(res, "base doc");
 }
 
-fn create_skill(codex_home: PathBuf, name: &str, description: &str) {
-    let skill_dir = codex_home.join(format!("skills/{name}"));
+fn create_skill(ava_home: PathBuf, name: &str, description: &str) {
+    let skill_dir = ava_home.join(format!("skills/{name}"));
     fs::create_dir_all(&skill_dir).unwrap();
     let content = format!("---\nname: {name}\ndescription: {description}\n---\n\n# Body\n");
     fs::write(skill_dir.join("SKILL.md"), content).unwrap();

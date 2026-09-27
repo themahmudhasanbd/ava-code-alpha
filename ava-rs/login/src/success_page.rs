@@ -4,7 +4,7 @@ use url::Url;
 
 use crate::server::DEFAULT_ISSUER;
 
-pub const CODEX_OPEN_APP_URL: &str = "https://chatgpt.com/codex/open-app";
+pub const AVA_OPEN_APP_URL: &str = "https://chatgpt.com/codex/open-app";
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub enum LoginSuccessPage {
@@ -18,14 +18,14 @@ pub enum LoginSuccessPage {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum LoginSuccessPageBrand {
-    Codex,
+    Ava,
     Chatgpt,
 }
 
 impl LoginSuccessPageBrand {
     fn as_str(self) -> &'static str {
         match self {
-            Self::Codex => "codex",
+            Self::Ava => "ava",
             Self::Chatgpt => "chatgpt",
         }
     }
@@ -42,7 +42,7 @@ pub(crate) fn compose_success_url(
     issuer: &str,
     id_token: &str,
     access_token: &str,
-    codex_streamlined_login: bool,
+    ava_streamlined_login: bool,
     login_success_page: &LoginSuccessPage,
 ) -> LoginSuccessRedirect {
     let token_claims = jwt_auth_claims(id_token);
@@ -92,8 +92,8 @@ pub(crate) fn compose_success_url(
         ("plan_type", plan_type.to_string()),
         ("platform_url", platform_url.to_string()),
     ];
-    if codex_streamlined_login {
-        params.push(("codex_streamlined_login", "true".to_string()));
+    if ava_streamlined_login {
+        params.push(("ava_streamlined_login", "true".to_string()));
     }
     let query = params
         .into_iter()

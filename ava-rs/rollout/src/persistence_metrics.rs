@@ -2,21 +2,21 @@ use std::io::Write;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use codex_otel::MetricsClient;
-use codex_protocol::ThreadId;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadHistoryMode;
+use ava_otel::MetricsClient;
+use ava_protocol::ThreadId;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadHistoryMode;
 
 use crate::ResponseItemEnvelope;
 use crate::RolloutItem;
 use crate::policy::is_persisted_rollout_item;
 
-const ITEM_BYTES_METRIC: &str = "codex.rollout.persistence.item_bytes";
-const APPEND_METRIC: &str = "codex.rollout.persistence.append";
-const TURN_BYTES_METRIC: &str = "codex.rollout.persistence.turn_bytes";
-const MEASUREMENT_ERROR_METRIC: &str = "codex.rollout.persistence.measurement_error";
+const ITEM_BYTES_METRIC: &str = "ava.rollout.persistence.item_bytes";
+const APPEND_METRIC: &str = "ava.rollout.persistence.append";
+const TURN_BYTES_METRIC: &str = "ava.rollout.persistence.turn_bytes";
+const MEASUREMENT_ERROR_METRIC: &str = "ava.rollout.persistence.measurement_error";
 const SAMPLE_DENOMINATOR: u64 = 100;
 const SAMPLE_RATE_LABEL: &str = "0.01";
 
@@ -240,16 +240,16 @@ fn rollout_item_type(item: &RolloutItem) -> String {
         RolloutItem::RetainedContext(_) => "retained_context".to_string(),
         RolloutItem::SecurityRiskScore(_) => "security_risk_score".to_string(),
         RolloutItem::RealtimeItem(item) => match &item.content {
-            codex_protocol::realtime::RealtimeItemContent::RealtimeSessionStarted => {
+            ava_protocol::realtime::RealtimeItemContent::RealtimeSessionStarted => {
                 "realtime.session_started".to_string()
             }
-            codex_protocol::realtime::RealtimeItemContent::TranscriptSegment { .. } => {
+            ava_protocol::realtime::RealtimeItemContent::TranscriptSegment { .. } => {
                 "realtime.transcript_segment".to_string()
             }
-            codex_protocol::realtime::RealtimeItemContent::BemItemPromoted { .. } => {
+            ava_protocol::realtime::RealtimeItemContent::BemItemPromoted { .. } => {
                 "realtime.bem_item_promoted".to_string()
             }
-            codex_protocol::realtime::RealtimeItemContent::RealtimeSessionClosed { .. } => {
+            ava_protocol::realtime::RealtimeItemContent::RealtimeSessionClosed { .. } => {
                 "realtime.session_closed".to_string()
             }
         },
@@ -316,7 +316,7 @@ pub struct RolloutPersistenceTelemetry {
 
 impl RolloutPersistenceTelemetry {
     pub fn new(thread_id: ThreadId) -> Self {
-        let metrics = codex_otel::global();
+        let metrics = ava_otel::global();
         let sampled = metrics.is_some() && is_thread_sampled(thread_id);
         Self {
             metrics,

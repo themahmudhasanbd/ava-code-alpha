@@ -2,15 +2,15 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadReadyInput;
-use codex_extension_api::ThreadStartInput;
-use codex_login::CodexAuth;
-use codex_mcp::McpEventStreamOpener;
-use codex_mcp::McpResourceClient;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadReadyInput;
+use ava_extension_api::ThreadStartInput;
+use ava_login::AvaAuth;
+use ava_mcp::McpEventStreamOpener;
+use ava_mcp::McpResourceClient;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Arc;
@@ -327,7 +327,7 @@ async fn access_changes_cancel_streams_with_full_output() -> Result<()> {
             fixture
                 .auth
                 .set_external_auth(Arc::new(StaticAuth(
-                    CodexAuth::from_external_chatgpt_tokens(
+                    AvaAuth::from_external_chatgpt_tokens(
                         "header.e30.other",
                         "other-account",
                         /*chatgpt_plan_type*/ None,

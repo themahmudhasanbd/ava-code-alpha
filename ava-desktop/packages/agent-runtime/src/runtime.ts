@@ -761,12 +761,12 @@ function compactionEnabled(value?: Partial<ContextCompactionSettings>): boolean 
 }
 
 /**
- * The two compaction families Codex has. `summary` spends a model request on a
+ * The two compaction families Ava has. `summary` spends a model request on a
  * structured summary of the boundary range; `fresh_window` rolls the context
- * over without summarizing it, the way Codex's token-budget compaction calls
+ * over without summarizing it, the way Ava's token-budget compaction calls
  * `start_new_context_window()`.
  *
- * This is not a user-facing setting — Codex does not expose it either, and a
+ * This is not a user-facing setting — Ava does not expose it either, and a
  * user cannot judge the trade-off from the UI. It exists so the no-summary
  * family is implemented and reachable, not configurable.
  */
@@ -793,7 +793,7 @@ const CONTEXT_ROLLOVER_SUMMARY = [
 ].join("\n\n");
 
 /**
- * Codex's model-facing compaction tool: no parameters, and the description is
+ * Ava's model-facing compaction tool: no parameters, and the description is
  * its wording verbatim. The model cannot know how much room is left, so the
  * tool is only useful together with the budget reminders below.
  */
@@ -807,7 +807,7 @@ function turnAbortedError(message: string): Error {
 const CONTEXT_COMPACTION_TOOL_NAME = "new_context";
 const CONTEXT_COMPACTION_TOOL_DESCRIPTION =
   "Start a new context window. Does not clear, reset, or otherwise affect environment state.";
-/** Codex's `NEW_CONTEXT_WINDOW_MESSAGE`, one per family. */
+/** Ava's `NEW_CONTEXT_WINDOW_MESSAGE`, one per family. */
 const CONTEXT_COMPACTION_TOOL_REPLY: Record<CompactionStrategy, string> = {
   fresh_window:
     "A new context window will start without summarizing conversation history.",
@@ -816,8 +816,8 @@ const CONTEXT_COMPACTION_TOOL_REPLY: Record<CompactionStrategy, string> = {
 };
 
 /**
- * Two-tier budget reminder, matching Codex's `TokenBudgetReminder` and
- * `AutoCompactFallbackPrompt`. Codex reads both thresholds and both texts from
+ * Two-tier budget reminder, matching Ava's `TokenBudgetReminder` and
+ * `AutoCompactFallbackPrompt`. Ava reads both thresholds and both texts from
  * per-model metadata; we have no such feed, so the thresholds are derived from
  * the same hard limit the compaction guard uses and the texts are ours.
  */
@@ -1020,7 +1020,7 @@ type CompactionRetentionMode = "active_turn" | "completed_turn";
  * compaction entry it writes *is* the boundary, so nothing needs to name the
  * first kept entry. We still record ours — it becomes
  * `ContextCompactionRecord.firstKeptMessageId`, which is persisted and reported
- * on `compaction_end` — so the Codex-shaped reshape below carries it alongside
+ * on `compaction_end` — so the Ava-shaped reshape below carries it alongside
  * pi's fields.
  */
 type ShapedPreparation = CompactionPreparation & {
@@ -1373,7 +1373,7 @@ function truncateUserMessageForCheckpoint(
 /**
  * Choose the user messages that survive a compaction boundary: newest first up
  * to `maxTokens`, truncating the one that crosses the budget instead of
- * dropping it, then restored to chronological order. This is Codex's
+ * dropping it, then restored to chronological order. This is Ava's
  * `build_compacted_history_with_limit` selection.
  */
 function selectRetainedUserMessages(
@@ -1733,7 +1733,7 @@ export class DesktopAgentRuntime {
   private pendingModelCompaction = false;
   /** One-shot request to finish the current turn at the next boundary. */
   private gracefulStopRequested = false;
-  /** Codex's `claim_*` flags: one of each reminder per context window. */
+  /** Ava's `claim_*` flags: one of each reminder per context window. */
   private contextReminderClaimed = false;
   private contextFallbackReminderClaimed = false;
   private activeToolProgressCleanups = new Set<(flush: boolean) => void>();
@@ -5389,7 +5389,7 @@ Delegation rules:
   }
 
   /**
-   * The model side of compaction, copied from Codex: a parameterless request
+   * The model side of compaction, copied from Ava: a parameterless request
    * for a new context window. It only records the request — compaction happens
    * at the next turn boundary, where the host already owns it, so a model that
    * calls this mid-batch does not lose the results it is still holding.
@@ -5921,14 +5921,14 @@ Delegation rules:
   }
 
   /**
-   * Prepare a checkpoint in Codex's shape: the summary covers every message
+   * Prepare a checkpoint in Ava's shape: the summary covers every message
    * since the previous boundary, and the only messages carried past the
    * boundary are the latest user message only when the provider is still
    * continuing the same turn. A completed turn carries no naked historical
    * user messages into the next task.
    *
    * pi's cut point is still what marks the boundary, but the split it produces
-   * is folded back together (see `codexShapedPreparation`), so
+   * is folded back together (see `avaShapedPreparation`), so
    * `budget.keepRecentTokens` no longer decides what survives — it only decides
    * which messages pi attributes file operations to.
    */
@@ -5955,7 +5955,7 @@ Delegation rules:
     );
     return {
       ok: true as const,
-      value: this.codexShapedPreparation(
+      value: this.avaShapedPreparation(
         {
           ...prepared.value,
           ...(previousSummary === prepared.value.previousSummary
@@ -5969,7 +5969,7 @@ Delegation rules:
   }
 
   /**
-   * Reshape a pi preparation the way Codex compacts:
+   * Reshape a pi preparation the way Ava compacts:
    *
    * - Everything pi would have split across `messagesToSummarize`,
    *   `turnPrefixMessages` and `retainedTail` is summarized as one range. The
@@ -5987,7 +5987,7 @@ Delegation rules:
    *   boundary from the compaction entry, so this only feeds the persisted
    *   record and the `compaction_end` event.
    */
-  private codexShapedPreparation(
+  private avaShapedPreparation(
     preparation: CompactionPreparation,
     retainedUserTokens: number,
     retentionMode: CompactionRetentionMode,
@@ -6067,7 +6067,7 @@ Delegation rules:
 
     const budget = this.contextBudget(context.messages);
     const hardLimitReached = budget.tokens >= budget.hardLimit;
-    // Codex's `should_roll_over`: either the model asked for a new window or
+    // Ava's `should_roll_over`: either the model asked for a new window or
     // the limit forces one. A model request that fails to compact is not fatal
     // — nothing is over the boundary yet — so only the limit throws.
     const modelRequested = this.pendingModelCompaction;
@@ -6111,8 +6111,8 @@ Delegation rules:
   }
 
   /**
-   * Codex's two-tier `maybe_record`, as a system-prompt append for this turn
-   * only. Codex writes its reminders into conversation history; we have no
+   * Ava's two-tier `maybe_record`, as a system-prompt append for this turn
+   * only. Ava writes its reminders into conversation history; we have no
    * channel for a synthetic message that stays out of the transcript, and the
    * append is equivalent without persisting anything.
    */
@@ -6552,7 +6552,7 @@ Delegation rules:
     }
 
     this.activeCompaction = checkpoint;
-    // A new window means both reminders are available again, matching Codex
+    // A new window means both reminders are available again, matching Ava
     // resetting its `claim_*` flags when the context window turns over.
     this.contextReminderClaimed = false;
     this.contextFallbackReminderClaimed = false;
@@ -6869,7 +6869,7 @@ Delegation rules:
   }
 
   /**
-   * Roll the context over without summarizing it, the way Codex's token-budget
+   * Roll the context over without summarizing it, the way Ava's token-budget
    * compaction does. No model request, so nothing here can fail on the provider
    * and the ADR 0049 summary fallback has nothing to catch. The rest of the
    * lifecycle is shared with the summary family: this still produces a durable
@@ -6892,7 +6892,7 @@ Delegation rules:
         recoverable: false,
       };
     }
-    // Codex clears history outright. Retaining nothing is the point of this
+    // Ava clears history outright. Retaining nothing is the point of this
     // family: it buys the whole window back instead of a summary's worth.
     const rollover: ShapedPreparation = { ...preparation, retainedTail: [] };
     return {

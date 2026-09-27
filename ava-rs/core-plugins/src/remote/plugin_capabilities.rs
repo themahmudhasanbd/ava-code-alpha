@@ -10,8 +10,8 @@ use crate::loader::plugin_skill_roots;
 use crate::manifest::PluginManifestFormat;
 use crate::manifest::load_plugin_manifest_with_format;
 use crate::store::PluginStore;
-use codex_hooks::plugin_hook_declarations;
-use codex_plugin::PluginId;
+use ava_hooks::plugin_hook_declarations;
+use ava_plugin::PluginId;
 
 /// Runtime categories affected by a plugin change, before runtime policy filtering.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

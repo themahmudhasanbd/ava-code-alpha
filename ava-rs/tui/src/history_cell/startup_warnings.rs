@@ -2,7 +2,7 @@
 //! Affected sources are unique; sign-in servers are a subset of MCP servers.
 
 use super::*;
-use codex_app_server_protocol::McpServerStartupFailureReason;
+use ava_app_server_protocol::McpServerStartupFailureReason;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 

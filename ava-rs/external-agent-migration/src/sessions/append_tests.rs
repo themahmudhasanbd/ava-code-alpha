@@ -3,11 +3,11 @@ use super::super::MessageRole;
 use super::super::export::EXTERNAL_SESSION_IMPORTED_MARKER;
 use super::super::export::rollout_items_from_messages;
 use super::*;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::ContextCompactedEvent;
-use codex_protocol::protocol::ThreadRolledBackEvent;
-use codex_protocol::security_risk::SecurityRiskScore;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::ContextCompactedEvent;
+use ava_protocol::protocol::ThreadRolledBackEvent;
+use ava_protocol::security_risk::SecurityRiskScore;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 

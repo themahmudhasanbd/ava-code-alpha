@@ -10,7 +10,7 @@
 
 ## Context
 
-Settings → Import already scans Claude Code, Codex, OpenCode, and Pi session
+Settings → Import already scans Claude Code, Ava, OpenCode, and Pi session
 stores. The same tools keep provider URLs, model ids, and often API keys in
 well-known files. Users who switch to PI-Desktop otherwise retype those
 endpoints on Settings → Models.
@@ -22,7 +22,7 @@ nothing is written until Import selected.
 Secrets cannot cross the renderer. Session import already keeps `filePath`
 in the main-process scan cache; model import must keep keys the same way.
 
-OAuth/subscription grants from those tools (Codex ChatGPT login, Claude
+OAuth/subscription grants from those tools (Ava ChatGPT login, Claude
 subscription, OpenCode `type: oauth`) are not PI-Desktop vendor-account
 credentials. Copying refresh tokens would be the wrong security boundary.
 
@@ -34,14 +34,14 @@ credentials. Copying refresh tokens would be the wrong security boundary.
 2. **Sources** (same family as session import):
    - Claude Code: `~/.claude/settings.json` plus `settings.local.json`
      overlay (`env.ANTHROPIC_*`, `model`)
-   - Codex: `~/.codex/config.toml` `[model_providers.<id>]`
+   - Ava: `~/.ava-code/config.toml` `[model_providers.<id>]`
    - OpenCode: `~/.config/opencode/opencode.json` `provider` map plus
      `~/.local/share/opencode/auth.json` API keys
    - Pi: `~/.pi/agent/models.json` (fallback `~/.pi/models.json`)
    - CC Switch: `~/.cc-switch/cc-switch.db` `providers` table (legacy
      `config.json`). Each row's `settings_config` is converted by app type.
      Empty official seeds and OAuth-only rows are omitted. A live Claude /
-     Codex / OpenCode / Pi file that matches a CC Switch endpoint and
+     Ava / OpenCode / Pi file that matches a CC Switch endpoint and
      credential is not listed twice; a different credential remains visible.
 
 3. **IPC** (Electron only, no host protocol bump):
@@ -53,7 +53,7 @@ credentials. Copying refresh tokens would be the wrong security boundary.
 4. **Secrets.** A stored API key, `env:` / `env_key` resolution, or
    `Authorization: Bearer` header is copied into the host secret store.
    Placeholder values (`YOUR_API_KEY`, `${VAR}`) are treated as missing.
-   OAuth auth.json entries and Codex `requires_openai_auth` tables without
+   OAuth auth.json entries and Ava `requires_openai_auth` tables without
    a key are omitted or imported without a secret.
 
 5. **Idempotence.** A candidate whose normalized base URL, API style, and

@@ -1,7 +1,7 @@
-use codex_protocol::AgentPath;
+use ava_protocol::AgentPath;
 
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct InterAgentCompletionMessage {

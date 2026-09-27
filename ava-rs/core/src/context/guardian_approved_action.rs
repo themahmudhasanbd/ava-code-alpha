@@ -1,6 +1,6 @@
 use super::ContextualUserFragment;
 use crate::guardian::AUTO_REVIEW_DENIED_ACTION_APPROVAL_DEVELOPER_PREFIX;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct GuardianApprovedAction {

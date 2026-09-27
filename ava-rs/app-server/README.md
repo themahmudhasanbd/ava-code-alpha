@@ -45,14 +45,14 @@ late proofs after the approval is canceled or resolved. Only one native worker
 runs per app-server; if an OS call remains active after cancellation or timeout,
 subsequent local operations return `failed/providerError` until that worker exits.
 
-# Hosted Codex Apps MCP protocol
+# Hosted Ava Apps MCP protocol
 
-The host-owned HTTP `codex_apps` server uses Legacy by default in app-server and
-standalone Codex. To discover the 2026-07-28 protocol, set
-`codex_apps_mcp_2026_07_28 = true` under `[features]`, or send a true runtime
+The host-owned HTTP `ava_apps` server uses Legacy by default in app-server and
+standalone Ava. To discover the 2026-07-28 protocol, set
+`ava_apps_mcp_2026_07_28 = true` under `[features]`, or send a true runtime
 override via `experimentalFeature/enablement/set`. Discovery falls back to Legacy
 when the server does not support it. Explicit config takes precedence.
-The dedicated setting does not apply to third-party HTTP or local `codex_app`
+The dedicated setting does not apply to third-party HTTP or local `ava_app`
 stdio servers. The existing `mcp_2026_07_28` flag still governs eligible other
 servers, regardless of whether their names or URLs resemble hosted Apps.
 App-server does not persist this selection.
@@ -60,7 +60,7 @@ App-server does not persist this selection.
 # Project trust
 
 `thread/start` does not persist project trust for a directory where configuration
-discovery finds no project-root marker, Git checkout, or project-local `.codex`
+discovery finds no project-root marker, Git checkout, or project-local `.ava-code`
 directory. Starting a task there does not preapprove project configuration added
 later. Existing trust decisions and permission checks for projects are unchanged.
 
@@ -76,9 +76,9 @@ deleted normally. Ordinary client-controlled threads keep their existing behavio
 
 ## User verification (experimental)
 
-Codex app-server advertises `openai/elicitation.userVerification` to the
-host-owned plugin service for bundled, in-process TUI sessions (`codex-tui`) and
-local stdio desktop sessions (`Codex Desktop`) on devices with supported biometric
+Ava app-server advertises `openai/elicitation.userVerification` to the
+host-owned plugin service for bundled, in-process TUI sessions (`ava-tui`) and
+local stdio desktop sessions (`Ava Desktop`) on devices with supported biometric
 hardware and the `experimentalApi` opt-in. This is an app-server decision,
 independent of whether a key exists; TUI/Desktop/mobile do not advertise this MCP
 capability. Mobile integration requires a separate rollout. Other clients and
@@ -155,7 +155,7 @@ The worker retains its existing cold-file checks, maintenance and writer locks,
 concurrency limit, and cooldown. Acknowledgement does not imply completion or that
 any files were compressed; failures are reported through existing logs and metrics.
 There are no progress notifications or cancellation API. Clients sharing this
-Codex home must support compressed rollout files, including shared histories.
+Ava home must support compressed rollout files, including shared histories.
 
 ## Managed model provider requirements
 
@@ -187,7 +187,7 @@ Attachments record the resources currently associated with a thread, independent
 { "method": "thread/attachment/add", "id": 20, "params": {
     "threadId": "thr_123",
     "attachmentType": "pull_request",
-    "identityKey": "[\"github.com\",\"openai\",\"codex\",123]",
+    "identityKey": "[\"github.com\",\"openai\",\"ava\",123]",
     "payload": { "url": "https://github.com/openai/codex/pull/123" }
 } }
 { "id": 20, "result": {
@@ -195,7 +195,7 @@ Attachments record the resources currently associated with a thread, independent
     "attachment": {
         "id": "01984de2-8f74-7c91-a3b2-5c5e937cf318",
         "attachmentType": "pull_request",
-        "identityKey": "[\"github.com\",\"openai\",\"codex\",123]",
+        "identityKey": "[\"github.com\",\"openai\",\"ava\",123]",
         "payload": { "url": "https://github.com/openai/codex/pull/123" },
         "createdAt": 1750000000
     }
@@ -209,7 +209,7 @@ Attachments record the resources currently associated with a thread, independent
     "data": [{
         "id": "01984de2-8f74-7c91-a3b2-5c5e937cf318",
         "attachmentType": "pull_request",
-        "identityKey": "[\"github.com\",\"openai\",\"codex\",123]",
+        "identityKey": "[\"github.com\",\"openai\",\"ava\",123]",
         "payload": { "url": "https://github.com/openai/codex/pull/123" },
         "createdAt": 1750000000
     }],
@@ -219,14 +219,14 @@ Attachments record the resources currently associated with a thread, independent
 { "method": "thread/attachment/remove", "id": 22, "params": {
     "threadId": "thr_123",
     "attachmentType": "pull_request",
-    "identityKey": "[\"github.com\",\"openai\",\"codex\",123]"
+    "identityKey": "[\"github.com\",\"openai\",\"ava\",123]"
 } }
 { "id": 22, "result": {} }
 
 { "method": "thread/attachment/updated", "params": {
     "threadId": "thr_123",
     "attachmentType": "pull_request",
-    "identityKey": "[\"github.com\",\"openai\",\"codex\",123]",
+    "identityKey": "[\"github.com\",\"openai\",\"ava\",123]",
     "attachmentId": "01984de2-8f74-7c91-a3b2-5c5e937cf318",
     "operation": "deleted"
 } }
@@ -258,7 +258,7 @@ requested fork boundary.
 accept `personality`, but `friendly` and `pragmatic` no longer select a style.
 `model/list` returns `supportsPersonality: false` for every model.
 
-`none` removes the literal `# Personality` section when Codex prepares
+`none` removes the literal `# Personality` section when Ava prepares
 instructions from the model catalog, for example when starting a thread or
 switching models. Setting `friendly` or `pragmatic` can replace a previous
 `none` setting for that purpose. Changing the setting does not rewrite the

@@ -36,7 +36,7 @@ fn forwards_only_explicit_device_network_and_os_inputs() {
 #[cfg(unix)]
 #[tokio::test]
 async fn cancelling_initialization_terminates_the_owned_helper() -> anyhow::Result<()> {
-    let spawned = codex_utils_pty::spawn_pipe_process(
+    let spawned = ava_utils_pty::spawn_pipe_process(
         std::path::Path::new("/bin/sleep"),
         &["30".to_owned()],
         std::path::Path::new("/"),
@@ -67,7 +67,7 @@ async fn cancelling_initialization_terminates_the_owned_helper() -> anyhow::Resu
 #[cfg(unix)]
 #[tokio::test]
 async fn negotiation_timeout_waits_for_helper_exit_before_allowing_retry() -> anyhow::Result<()> {
-    let spawned = codex_utils_pty::spawn_pipe_process(
+    let spawned = ava_utils_pty::spawn_pipe_process(
         std::path::Path::new("/bin/sleep"),
         &["30".to_owned()],
         std::path::Path::new("/"),
@@ -117,7 +117,7 @@ async fn negotiation_timeout_waits_for_helper_exit_before_allowing_retry() -> an
 #[cfg(unix)]
 #[tokio::test]
 async fn close_after_output_eof_reuses_observed_exit() -> anyhow::Result<()> {
-    let spawned = codex_utils_pty::spawn_pipe_process(
+    let spawned = ava_utils_pty::spawn_pipe_process(
         std::path::Path::new("/bin/sleep"),
         &["30".to_owned()],
         std::path::Path::new("/"),

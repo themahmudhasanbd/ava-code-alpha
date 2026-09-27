@@ -4,11 +4,11 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_api::AuthProvider;
-use codex_api::SharedAuthProvider;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::cache_system_proxy_route_for_test;
+use ava_api::AuthProvider;
+use ava_api::SharedAuthProvider;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::cache_system_proxy_route_for_test;
 use http::HeaderMap;
 use http::HeaderValue;
 use tokio::io::AsyncReadExt;
@@ -57,12 +57,12 @@ async fn registry_requests_do_not_log_sensitive_urls_or_response_headers() -> Re
             .with_writer(move || RegistryLogWriter(Arc::clone(&writer_buffer)))
             .with_filter(
                 tracing_subscriber::filter::Targets::new()
-                    .with_target("codex_http_client", tracing::Level::TRACE)
-                    .with_target("codex_exec_server", tracing::Level::TRACE),
+                    .with_target("ava_http_client", tracing::Level::TRACE)
+                    .with_target("ava_exec_server", tracing::Level::TRACE),
             ),
     );
     let _guard = tracing::subscriber::set_default(subscriber);
-    tracing::debug!(target: "codex_exec_server", "registry log capture sentinel");
+    tracing::debug!(target: "ava_exec_server", "registry log capture sentinel");
 
     let server = MockServer::start().await;
     let harness_public_key = NoiseChannelIdentity::generate()?.public_key();
@@ -190,7 +190,7 @@ async fn reconnect_reuses_registration_until_url_is_rejected() -> Result<()> {
         config,
         ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?,
     ));
 

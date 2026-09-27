@@ -8,11 +8,11 @@ mod host;
 mod orchestrator;
 
 use crate::HostSkillsSnapshot;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::ResolvedSelectedCapabilityRoot;
-use codex_mcp::McpResourceClient;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::ResolvedSelectedCapabilityRoot;
+use ava_mcp::McpResourceClient;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
 
 use crate::catalog::SkillAuthority;
 use crate::catalog::SkillCatalog;

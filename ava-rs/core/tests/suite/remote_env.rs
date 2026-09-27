@@ -2,82 +2,82 @@ use anyhow::Context;
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_api::AuthProvider;
-use codex_config::types::ApprovalsReviewer;
-use codex_core::CodexThreadSettingsOverrides;
-use codex_core::EnvironmentConfig;
-use codex_core::EnvironmentNetworkPolicy;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_core::WaitForEnvironmentToolConfig;
-use codex_core::compact::SUMMARIZATION_PROMPT;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_exec_server::CopyOptions;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::EnvironmentReadyInfo;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_exec_server::NoiseChannelPublicKey;
-use codex_exec_server::NoiseRendezvousConnectBundle;
-use codex_exec_server::NoiseRendezvousConnectProvider;
-use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-use codex_exec_server::RemoteEnvironmentConfig;
-use codex_exec_server::RemoveOptions;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::RenderedWorldStateFragment;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::WorldStateContributionInput;
-use codex_extension_api::WorldStateSectionContribution;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::models::SandboxPermissions;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::ApplyPatchApprovalRequestEvent;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ENVIRONMENTS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_api::AuthProvider;
+use ava_config::types::ApprovalsReviewer;
+use ava_core::AvaThreadSettingsOverrides;
+use ava_core::EnvironmentConfig;
+use ava_core::EnvironmentNetworkPolicy;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_core::WaitForEnvironmentToolConfig;
+use ava_core::compact::SUMMARIZATION_PROMPT;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_exec_server::CopyOptions;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::EnvironmentReadyInfo;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_exec_server::NoiseChannelPublicKey;
+use ava_exec_server::NoiseRendezvousConnectBundle;
+use ava_exec_server::NoiseRendezvousConnectProvider;
+use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+use ava_exec_server::RemoteEnvironmentConfig;
+use ava_exec_server::RemoveOptions;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::RenderedWorldStateFragment;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::WorldStateContributionInput;
+use ava_extension_api::WorldStateSectionContribution;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::models::SandboxPermissions;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::ApplyPatchApprovalRequestEvent;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ENVIRONMENTS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use core_test_support::TestTargetOs;
@@ -99,12 +99,12 @@ use core_test_support::skip_if_no_remote_env;
 use core_test_support::skip_if_target_windows;
 use core_test_support::startup::expect_startup;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::test_env;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::test_env;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::test_docker_container_name;
 use core_test_support::test_target_os;
 use core_test_support::wait_for_event;
@@ -200,28 +200,28 @@ impl ContextContributor for ReadyCapabilityRootsTestExtension {
     }
 }
 
-fn test_codex_with_wait_for_environment() -> TestCodexBuilder {
+fn test_ava_with_wait_for_environment() -> TestAvaBuilder {
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.thread_lifecycle_contributor(Arc::new(WaitForEnvironmentTestExtension));
-    test_codex().with_extensions(Arc::new(extensions.build()))
+    test_ava().with_extensions(Arc::new(extensions.build()))
 }
 
-async fn unified_exec_test(server: &wiremock::MockServer) -> Result<TestCodex> {
-    let mut builder = test_codex();
+async fn unified_exec_test(server: &wiremock::MockServer) -> Result<TestAva> {
+    let mut builder = test_ava();
     builder.build_with_remote_and_local_env(server).await
 }
 
 async fn submit_turn_with_approval_and_environments(
-    test: &TestCodex,
+    test: &TestAva,
     prompt: &str,
     environments: Vec<TurnEnvironmentSelection>,
     approval_policy: AskForApproval,
 ) -> Result<()> {
-    let turn_environment_selections = codex_protocol::protocol::TurnEnvironmentSelections::new(
+    let turn_environment_selections = ava_protocol::protocol::TurnEnvironmentSelections::new(
         test.config.cwd.clone(),
         environments,
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -249,10 +249,10 @@ async fn submit_turn_with_approval_and_environments(
 }
 
 async fn expect_patch_approval(
-    test: &TestCodex,
+    test: &TestAva,
     expected_call_id: &str,
 ) -> ApplyPatchApprovalRequestEvent {
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ApplyPatchApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -270,8 +270,8 @@ async fn expect_patch_approval(
     }
 }
 
-async fn wait_for_completion_without_patch_approval(test: &TestCodex) {
-    let event = wait_for_event(&test.codex, |event| {
+async fn wait_for_completion_without_patch_approval(test: &TestAva) {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ApplyPatchApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -340,7 +340,7 @@ async fn remote_test_env_exposes_target_shell_and_exec_guidance_to_model() -> Re
         ]),
     )
     .await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     test.submit_turn("report remote environment").await?;
@@ -392,11 +392,11 @@ async fn approved_remote_shell_runs_in_remote_cwd() -> Result<()> {
     let (shell, command) = match test_target_os() {
         TestTargetOs::Linux => (
             "bash",
-            r#"case "$PWD" in /tmp/codex-core-test-cwd-*) ;; *) echo "unexpected cwd: $PWD" >&2; exit 1 ;; esac"#,
+            r#"case "$PWD" in /tmp/ava-core-test-cwd-*) ;; *) echo "unexpected cwd: $PWD" >&2; exit 1 ;; esac"#,
         ),
         TestTargetOs::Windows => (
             "powershell",
-            r#"$cwd = (Get-Location).Path; if ($cwd -notlike 'C:\codex-core-test-cwd-*') { Write-Error "unexpected cwd: $cwd"; exit 1 }"#,
+            r#"$cwd = (Get-Location).Path; if ($cwd -notlike 'C:\ava-core-test-cwd-*') { Write-Error "unexpected cwd: $cwd"; exit 1 }"#,
         ),
         TestTargetOs::MacOs => unreachable!("remote test targets do not run macOS"),
     };
@@ -410,7 +410,7 @@ async fn approved_remote_shell_runs_in_remote_cwd() -> Result<()> {
         "sandbox_permissions": SandboxPermissions::RequireEscalated,
         "justification": "Test target-native command approval cwd.",
     }))?;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         config.approvals_reviewer = ApprovalsReviewer::User;
     });
@@ -441,7 +441,7 @@ async fn approved_remote_shell_runs_in_remote_cwd() -> Result<()> {
     )
     .await?;
 
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -455,14 +455,14 @@ async fn approved_remote_shell_runs_in_remote_cwd() -> Result<()> {
         approval.cwd.to_inferred_path_uri().as_ref(),
         Some(&selection.cwd)
     );
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
             decision: ReviewDecision::Approved,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -493,7 +493,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
     );
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .permissions
             .set_permission_profile(PermissionProfile::workspace_write())
@@ -565,7 +565,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
     .await;
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             permission_profile: Some(PermissionProfile::read_only()),
             ..Default::default()
@@ -587,7 +587,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
     assert!(!output.contains("WRITE_SUCCEEDED"));
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
@@ -612,7 +612,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
         },
     )
     .await?;
-    test.codex
+    test.ava-code
         .submit(Op::ThreadSettings {
             thread_settings: ThreadSettingsOverrides {
                 permission_profile: Some(PermissionProfile::workspace_write()),
@@ -620,12 +620,12 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
             },
         })
         .await?;
-    let persisted_settings = wait_for_event_match(&test.codex, |event| match event {
+    let persisted_settings = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::ThreadSettingsApplied(event) => Some(event.thread_settings.clone()),
         _ => None,
     })
     .await;
-    let snapshot = test.codex.config_snapshot().await;
+    let snapshot = test.ava-code.config_snapshot().await;
     assert_eq!(snapshot.permission_profile, PermissionProfile::read_only());
     assert_eq!(
         snapshot.active_permission_profile,
@@ -637,16 +637,16 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
     );
     assert_eq!(
         persisted_settings,
-        test.codex.thread_settings_snapshot().await
+        test.ava-code.thread_settings_snapshot().await
     );
     assert_ne!(
         persisted_settings.active_permission_profile,
         snapshot.active_permission_profile
     );
-    test.codex
-        .restore_thread_settings(test.codex.restorable_thread_settings().await)
+    test.ava-code
+        .restore_thread_settings(test.ava-code.restorable_thread_settings().await)
         .await?;
-    let (mcp_config, _) = test.codex.current_mcp_config_and_runtime_context().await;
+    let (mcp_config, _) = test.ava-code.current_mcp_config_and_runtime_context().await;
     assert_eq!(
         mcp_config.permission_profile,
         PermissionProfile::workspace_write()
@@ -672,7 +672,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
         "read-only attachment unexpectedly wrote {FILE_NAME}"
     );
     let turn_context = test
-        .codex
+        .ava-code
         .load_history(/*include_archived*/ false)
         .await?
         .items
@@ -706,7 +706,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn executor_profile_roots_survive_settings_restore_and_turn_recording() -> Result<()> {
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.workspace_roots = vec![config.cwd.clone()];
             config
@@ -715,7 +715,7 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
         })
         .build_with_auto_env(&server)
         .await?;
-    let runtime_roots = test.codex.config_snapshot().await.workspace_roots;
+    let runtime_roots = test.ava-code.config_snapshot().await.workspace_roots;
     // Include a foreign convention on every host, plus case-distinct Windows roots.
     let roots = [
         "file:///workspace/profile",
@@ -736,7 +736,7 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
     let profile_roots = roots.into_iter().map(Into::into).collect::<Vec<_>>();
     let active_profile = ActivePermissionProfile::new("executor");
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             permission_profile: Some(profile.clone()),
             active_permission_profile: Some(active_profile.clone()),
@@ -745,10 +745,10 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
         },
     )
     .await?;
-    let saved = test.codex.restorable_thread_settings().await;
+    let saved = test.ava-code.restorable_thread_settings().await;
     assert_eq!(saved.profile_workspace_roots, Some(profile_roots.clone()));
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             permission_profile: Some(profile),
             profile_workspace_roots: Some(Vec::new()),
@@ -757,14 +757,14 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
     )
     .await?;
     assert!(
-        test.codex
+        test.ava-code
             .config_snapshot()
             .await
             .profile_workspace_roots
             .is_empty()
     );
-    test.codex.restore_thread_settings(saved).await?;
-    let snapshot = test.codex.config_snapshot().await;
+    test.ava-code.restore_thread_settings(saved).await?;
+    let snapshot = test.ava-code.config_snapshot().await;
     assert_eq!(
         (snapshot.profile_workspace_roots, snapshot.workspace_roots),
         (profile_roots, runtime_roots)
@@ -777,9 +777,9 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
     .await;
     test.submit_text_turn("record the executor profile").await?;
     response_mock.single_request();
-    test.codex.flush_rollout().await?;
+    test.ava-code.flush_rollout().await?;
     let context = test
-        .codex
+        .ava-code
         .load_history(/*include_archived*/ false)
         .await?
         .items
@@ -816,9 +816,9 @@ async fn step_world_state_gates_deferred_prompt_independently_of_host_config() -
             )
             .await;
             let builder = if host_config_present {
-                test_codex_with_wait_for_environment()
+                test_ava_with_wait_for_environment()
             } else {
-                test_codex()
+                test_ava()
             };
             let mut builder = builder.with_config(move |config| {
                 if deferred_executor_enabled {
@@ -895,7 +895,7 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
         ],
     )
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         assert!(config.features.enable(Feature::DeferredExecutor).is_ok());
         assert!(
             config
@@ -906,33 +906,33 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
     });
     let test = builder.build(&server).await?;
     let initial_cwd = test.config.cwd.clone();
-    let initial_environments = test.codex.environment_selections().await;
-    assert_eq!(test.codex.active_turn_environment_selections().await, None);
+    let initial_environments = test.ava-code.environment_selections().await;
+    assert_eq!(test.ava-code.active_turn_environment_selections().await, None);
     let next_workspace = TempDir::new()?;
     let next_cwd = next_workspace.path().abs();
     let next_environments =
         TurnEnvironmentSelections::new(next_cwd.clone(), vec![local(next_cwd.clone())]);
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "pause before continuing".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
     assert_eq!(
-        test.codex.active_turn_environment_selections().await,
+        test.ava-code.active_turn_environment_selections().await,
         Some(initial_environments.clone())
     );
 
     let preview = test
-        .codex
-        .preview_thread_settings_overrides(CodexThreadSettingsOverrides {
+        .ava-code
+        .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
             environments: Some(next_environments.clone()),
             ..Default::default()
         })
@@ -944,12 +944,12 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
     assert_eq!(preview.cwd(), &next_cwd);
     assert_eq!(preview.workspace_roots, vec![next_cwd.clone()]);
     assert_eq!(
-        test.codex.environment_selections().await,
+        test.ava-code.environment_selections().await,
         initial_environments
     );
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             environments: Some(next_environments.clone()),
             ..Default::default()
@@ -957,21 +957,21 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
     )
     .await?;
     assert_eq!(
-        test.codex.environment_selections().await,
+        test.ava-code.environment_selections().await,
         next_environments.environments
     );
     assert_eq!(
-        test.codex.active_turn_environment_selections().await,
+        test.ava-code.active_turn_environment_selections().await,
         Some(initial_environments)
     );
-    let snapshot = test.codex.config_snapshot().await;
+    let snapshot = test.ava-code.config_snapshot().await;
     assert_eq!(
         snapshot.environment_selections(),
         next_environments.environments
     );
     assert_eq!(snapshot.cwd(), &next_cwd);
     assert_eq!(snapshot.workspace_roots, vec![next_cwd.clone()]);
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -984,11 +984,11 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    assert_eq!(test.codex.active_turn_environment_selections().await, None);
+    assert_eq!(test.ava-code.active_turn_environment_selections().await, None);
     test.submit_turn("start the next turn").await?;
 
     let request_texts = response_mock
@@ -1016,7 +1016,7 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let server = start_mock_server().await;
     let apps = core_test_support::apps_test_server::AppsTestServer::mount(&server).await?;
-    let mcp_url = format!("{}/api/codex/ps/mcp", apps.chatgpt_base_url);
+    let mcp_url = format!("{}/api/ava/ps/mcp", apps.chatgpt_base_url);
     let response_mock = mount_sse_sequence(
         &server,
         vec![
@@ -1056,7 +1056,7 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
         ],
     )
     .await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_exec_server_url(format!("ws://{}", listener.local_addr()?))
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
@@ -1095,7 +1095,7 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
         Some(vec![local_selection.clone(), remote_selection.clone()]),
     )
     .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "wait for the primary environment".into(),
@@ -1110,14 +1110,14 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
             }),
         )
         .await?;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
     let active_environments = test
-        .codex
+        .ava-code
         .active_turn_environment_selections()
         .await
         .context("active turn environments")?;
@@ -1147,7 +1147,7 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
     let mut websocket = accept_initialized_exec_server(listener).await;
     // Forward MCP HTTP through the fake executor while keeping startup under test control.
     let http_client =
-        codex_exec_server::Environment::create_for_tests(/*exec_server_url*/ None)?
+        ava_exec_server::Environment::create_for_tests(/*exec_server_url*/ None)?
             .get_http_client();
     let executor = tokio::spawn(async move {
         loop {
@@ -1187,12 +1187,12 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
             }
         }
     });
-    core_test_support::wait_for_mcp_server(&test.codex, "deferred").await?;
+    core_test_support::wait_for_mcp_server(&test.ava-code, "deferred").await?;
     assert_eq!(
-        test.codex.active_turn_environment_selections().await,
+        test.ava-code.active_turn_environment_selections().await,
         Some(active_environments)
     );
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -1205,12 +1205,12 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    assert_eq!(test.codex.active_turn_environment_selections().await, None);
+    assert_eq!(test.ava-code.active_turn_environment_selections().await, None);
 
     let requests = response_mock.requests();
     assert!(
@@ -1227,12 +1227,12 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
     assert!(updated_context.contains("<environment id=\"remote\" primary=\"true\">"));
     assert!(updated_context.contains("<shell>zsh</shell>"));
 
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.flush_rollout().await?;
-    let rollout = fs::read_to_string(test.codex.rollout_path().context("rollout path")?)?;
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.flush_rollout().await?;
+    let rollout = fs::read_to_string(test.ava-code.rollout_path().context("rollout path")?)?;
     let world_state_patch = rollout
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<serde_json::Result<Vec<_>>>()?
         .into_iter()
         .filter_map(|line| match line.item {
@@ -1462,10 +1462,10 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
     let server = start_mock_server().await;
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.prompt_contributor(Arc::new(ReadyCapabilityRootsTestExtension::default()));
-    let mut builder = test_codex().with_extensions(Arc::new(extensions.build()));
+    let mut builder = test_ava().with_extensions(Arc::new(extensions.build()));
     let test = builder.build_with_auto_env(&server).await?;
     let selection = test
-        .codex
+        .ava-code
         .environment_selections()
         .await
         .into_iter()
@@ -1503,8 +1503,8 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
             ..selection.clone()
         };
         let preview = test
-            .codex
-            .preview_thread_settings_overrides(CodexThreadSettingsOverrides {
+            .ava-code
+            .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
                 environments: Some(TurnEnvironmentSelections::new(
                     test.config.cwd.clone(),
                     vec![selection_override],
@@ -1514,7 +1514,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
             .await;
         assert_eq!(preview.is_ok(), should_succeed);
         assert_eq!(
-            test.codex.environment_selections().await,
+            test.ava-code.environment_selections().await,
             vec![selection.clone()]
         );
     }
@@ -1546,7 +1546,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
         .await?;
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
@@ -1595,9 +1595,9 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
     .await;
 
     for (index, (thread, prompt)) in [
-        (&test.codex, "first"),
+        (&test.ava-code, "first"),
         (&second.thread, "second"),
-        (&test.codex, "first-updated"),
+        (&test.ava-code, "first-updated"),
         (&second.thread, "second-again"),
     ]
     .into_iter()
@@ -1637,7 +1637,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
     }
 
     assert_eq!(
-        test.codex.inspect_selected_capability_roots().ready_roots,
+        test.ava-code.inspect_selected_capability_roots().ready_roots,
         vec![root("first-updated-root")]
     );
     let requests = response_mock.requests();
@@ -1684,8 +1684,8 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn owner_network_policy_rejects_unsupported_environment_authority() -> Result<()> {
     let server = start_mock_server().await;
-    let test = test_codex().build_with_auto_env(&server).await?;
-    let selections = test.codex.environment_selections().await;
+    let test = test_ava().build_with_auto_env(&server).await?;
+    let selections = test.ava-code.environment_selections().await;
     let selection = selections
         .first()
         .context("thread should select its executor environment")?;
@@ -1706,8 +1706,8 @@ async fn owner_network_policy_rejects_unsupported_environment_authority() -> Res
         selected_capability_roots: Vec::new(),
     };
     let preview_error = test
-        .codex
-        .preview_thread_settings_overrides(CodexThreadSettingsOverrides {
+        .ava-code
+        .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
                 vec![TurnEnvironmentSelection {
@@ -1721,7 +1721,7 @@ async fn owner_network_policy_rejects_unsupported_environment_authority() -> Res
         .err()
         .context("preview must not accept an unsupported environment policy")?;
     let ready_error = test
-        .codex
+        .ava-code
         .environment_ready(selection, owner_config)
         .await
         .expect_err("readiness must not accept an unsupported environment policy");
@@ -1737,7 +1737,7 @@ async fn owner_network_policy_rejects_unsupported_environment_authority() -> Res
             "unexpected validation error: {error}"
         );
     }
-    assert_eq!(test.codex.environment_selections().await, selections);
+    assert_eq!(test.ava-code.environment_selections().await, selections);
     Ok(())
 }
 
@@ -1749,7 +1749,7 @@ async fn pending_attachment_installs_configuration_before_waiting_turn_resumes()
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.thread_lifecycle_contributor(Arc::new(WaitForEnvironmentTestExtension));
     extensions.prompt_contributor(Arc::new(ReadyCapabilityRootsTestExtension::default()));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             assert!(config.features.enable(Feature::DeferredExecutor).is_ok());
@@ -1760,7 +1760,7 @@ async fn pending_attachment_installs_configuration_before_waiting_turn_resumes()
         });
     let test = builder.build_with_auto_env(&server).await?;
     let selection = test
-        .codex
+        .ava-code
         .environment_selections()
         .await
         .into_iter()
@@ -1880,7 +1880,7 @@ async fn pending_attachment_installs_configuration_before_waiting_turn_resumes()
     );
     for thread in [&waiting.thread, &independent.thread, &failed.thread] {
         let error = thread
-            .preview_thread_settings_overrides(CodexThreadSettingsOverrides {
+            .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
                 environments: Some(downgraded_environments.clone()),
                 ..Default::default()
             })
@@ -1996,13 +1996,13 @@ async fn future_pending_environment_can_finish_without_retargeting_the_active_tu
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.thread_lifecycle_contributor(Arc::new(WaitForEnvironmentTestExtension));
     extensions.prompt_contributor(Arc::new(ReadyCapabilityRootsTestExtension::default()));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             assert!(config.features.enable(Feature::DeferredExecutor).is_ok());
         });
     let test = builder.build_with_auto_env(&server).await?;
-    let selection = test.codex.environment_selections().await.remove(0);
+    let selection = test.ava-code.environment_selections().await.remove(0);
     let active = TurnEnvironmentSelection {
         config: EnvironmentConfigState::Pending,
         ..selection
@@ -2165,7 +2165,7 @@ async fn ready_before_selection_resolves_resumed_thread_capability_root_after_wa
 
     let runtime_paths = ExecServerRuntimePaths::new(
         std::env::current_exe()?,
-        /*codex_linux_sandbox_exe*/ None,
+        /*ava_linux_sandbox_exe*/ None,
     )?;
     let remote_config = RemoteEnvironmentConfig::new(
         registry.uri(),
@@ -2173,7 +2173,7 @@ async fn ready_before_selection_resolves_resumed_thread_capability_root_after_wa
         Arc::new(NoopRegistryAuthProvider),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
     )?;
-    let remote_environment = tokio::spawn(codex_exec_server::run_remote_environment(
+    let remote_environment = tokio::spawn(ava_exec_server::run_remote_environment(
         remote_config,
         runtime_paths,
     ));
@@ -2225,7 +2225,7 @@ async fn ready_before_selection_resolves_resumed_thread_capability_root_after_wa
     extensions.prompt_contributor(Arc::new(ReadyCapabilityRootsTestExtension {
         observed_roots: Some(Arc::clone(&observed_roots)),
     }));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             config.project_doc_max_bytes = 0;
@@ -2420,7 +2420,7 @@ async fn deferred_executor_stays_pending_after_materialization() -> Result<()> {
         ])],
     )
     .await;
-    let mut builder = test_codex_with_wait_for_environment().with_config(|config| {
+    let mut builder = test_ava_with_wait_for_environment().with_config(|config| {
         assert!(config.features.enable(Feature::DeferredExecutor).is_ok());
     });
     let test = expect_startup(builder.build(&server)).await;
@@ -2431,7 +2431,7 @@ async fn deferred_executor_stays_pending_after_materialization() -> Result<()> {
         provider.clone(),
     )?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "wait for the environment".into(),
@@ -2477,8 +2477,8 @@ async fn deferred_executor_stays_pending_after_materialization() -> Result<()> {
         Some(WAIT_FOR_ENVIRONMENT_TEST_ENVIRONMENT_ID_DESCRIPTION)
     );
 
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -2550,7 +2550,7 @@ async fn deferred_executor_spawn_agent_inherits_ready_step_environments(
         ]),
     )
     .await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_exec_server_url(format!("ws://{}", listener.local_addr()?))
         .with_config(move |config| {
             config.project_doc_max_bytes = 0;
@@ -2602,7 +2602,7 @@ async fn deferred_executor_spawn_agent_inherits_ready_step_environments(
     let expected_environments = vec![remote_selection, local(test.config.cwd.clone())];
     let mut created_threads = test.thread_manager.subscribe_thread_created();
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "spawn after the environment becomes ready".into(),
@@ -2619,7 +2619,7 @@ async fn deferred_executor_spawn_agent_inherits_ready_step_environments(
         .await?;
     wait_for_response_request_count(&response_mock, /*expected_count*/ 1).await;
     attach_tx.send(()).expect("attach remote environment");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2715,7 +2715,7 @@ async fn deferred_executor_guardian_uses_newly_ready_step_environment() -> Resul
         ],
     )
     .await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_exec_server_url(format!("ws://{}", listener.local_addr()?))
         .with_config(|config| {
             config.project_doc_max_bytes = 0;
@@ -2764,7 +2764,7 @@ async fn deferred_executor_guardian_uses_newly_ready_step_environment() -> Resul
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "review a command after the remote environment becomes ready".into(),
@@ -2783,7 +2783,7 @@ async fn deferred_executor_guardian_uses_newly_ready_step_environment() -> Resul
         .await?;
     wait_for_response_request_count(&responses, /*expected_count*/ 1).await;
     attach_tx.send(()).expect("attach remote environment");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2865,7 +2865,7 @@ async fn deferred_executor_loads_agents_md_when_environment_becomes_ready() -> R
         ],
     )
     .await;
-    let mut builder = test_codex_with_wait_for_environment()
+    let mut builder = test_ava_with_wait_for_environment()
         .with_exec_server_url(format!("ws://{}", listener.local_addr()?))
         .with_config(|config| {
             assert!(config.features.enable(Feature::DeferredExecutor).is_ok());
@@ -2880,7 +2880,7 @@ async fn deferred_executor_loads_agents_md_when_environment_becomes_ready() -> R
     ));
     let test = expect_startup(builder.build(&server)).await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "load the environment instructions".into(),
             text_elements: Vec::new(),
@@ -2889,7 +2889,7 @@ async fn deferred_executor_loads_agents_md_when_environment_becomes_ready() -> R
     wait_for_response_request_count(&response_mock, /*expected_count*/ 1).await;
     let agents_path = PathUri::from_abs_path(&test.config.cwd).join("AGENTS.md")?;
     attach_tx.send(()).expect("attach environment");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2905,7 +2905,7 @@ async fn deferred_executor_loads_agents_md_when_environment_becomes_ready() -> R
     assert_eq!(environment_instructions_occurrences(&requests[0]), 1);
     assert_eq!(environment_instructions_occurrences(&requests[1]), 1);
     assert_eq!(environment_instructions_occurrences(&requests[2]), 1);
-    assert_eq!(test.codex.instruction_sources().await, vec![agents_path]);
+    assert_eq!(test.ava-code.instruction_sources().await, vec![agents_path]);
 
     Ok(())
 }
@@ -2968,7 +2968,7 @@ async fn deferred_executor_compaction_preserves_then_updates_environment_once() 
         ],
     )
     .await;
-    let mut builder = test_codex_with_wait_for_environment()
+    let mut builder = test_ava_with_wait_for_environment()
         .with_exec_server_url(format!("ws://{}", listener.local_addr()?))
         .with_config(|config| {
             config.project_doc_max_bytes = 0;
@@ -2986,20 +2986,20 @@ async fn deferred_executor_compaction_preserves_then_updates_environment_once() 
         });
     let test = expect_startup(builder.build(&server)).await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "wait for the environment".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
     serve_environment_info(listener).await;
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -3012,7 +3012,7 @@ async fn deferred_executor_compaction_preserves_then_updates_environment_once() 
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3051,13 +3051,13 @@ async fn deferred_executor_compaction_preserves_then_updates_environment_once() 
         .expect("the next sampling step should report that the environment is ready");
     assert!(starting_index < ready_index);
 
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.flush_rollout().await?;
-    let rollout_path = test.codex.rollout_path().context("rollout path")?;
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.flush_rollout().await?;
+    let rollout_path = test.ava-code.rollout_path().context("rollout path")?;
     let rollout = fs::read_to_string(rollout_path)?;
     let world_state_items = rollout
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<serde_json::Result<Vec<_>>>()?
         .into_iter()
         .filter_map(|line| match line.item {
@@ -3159,7 +3159,7 @@ fn remote_exec(script: &str) -> Result<()> {
 }
 
 async fn exec_command_routing_output(
-    test: &TestCodex,
+    test: &TestAva,
     server: &wiremock::MockServer,
     call_id: &str,
     arguments: Value,
@@ -3213,7 +3213,7 @@ async fn exec_command_routes_to_selected_remote_environment() -> Result<()> {
     fs::write(local_cwd.path().join("marker.txt"), "local-routing")?;
     let local_selection = local(local_cwd.path().abs());
     let remote_cwd = PathBuf::from(format!(
-        "/tmp/codex-remote-routing-{}",
+        "/tmp/ava-remote-routing-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -3298,7 +3298,7 @@ async fn remote_exec_materializes_target_roots_before_sandbox_selection() -> Res
     let test = unified_exec_test(&server).await?;
     let local_cwd = TempDir::new()?;
     let remote_cwd = PathBuf::from(format!(
-        "/tmp/codex-remote-target-roots-{}",
+        "/tmp/ava-remote-target-roots-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -3372,7 +3372,7 @@ async fn remote_exec_materializes_target_roots_before_sandbox_selection() -> Res
     );
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "try to read the denied remote workspace root".into(),
@@ -3411,7 +3411,7 @@ async fn remote_exec_materializes_target_roots_before_sandbox_selection() -> Res
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3451,7 +3451,7 @@ async fn remote_request_permissions_grant_unblocks_later_remote_exec() -> Result
     skip_if_no_remote_env!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         config.approvals_reviewer = ApprovalsReviewer::User;
         config
@@ -3467,7 +3467,7 @@ async fn remote_request_permissions_grant_unblocks_later_remote_exec() -> Result
 
     let local_cwd = TempDir::new()?;
     let remote_cwd = PathBuf::from(format!(
-        "/tmp/codex-remote-request-permissions-{}",
+        "/tmp/ava-remote-request-permissions-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -3567,7 +3567,7 @@ async fn remote_request_permissions_grant_unblocks_later_remote_exec() -> Result
     )
     .await?;
 
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -3594,14 +3594,14 @@ async fn remote_request_permissions_grant_unblocks_later_remote_exec() -> Result
     assert_eq!(request_cwd, expected_cwd);
     assert_eq!(request.permissions, expected_permissions);
 
-    test.codex
+    test.ava-code
         .submit(Op::RequestPermissionsResponse {
             id: "permissions-call".to_string(),
             response: approved_response.clone(),
         })
         .await?;
 
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -3667,12 +3667,12 @@ async fn apply_patch_freeform_routes_to_selected_remote_environment() -> Result<
     skip_if_no_remote_env!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_remote_and_local_env(&server).await?;
     let local_cwd = TempDir::new()?;
     let file_name = "apply_patch_remote_freeform.txt";
     let remote_cwd = PathBuf::from(format!(
-        "/tmp/codex-remote-apply-patch-freeform-{}",
+        "/tmp/ava-remote-apply-patch-freeform-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -3760,14 +3760,14 @@ async fn apply_patch_approvals_are_remembered_per_environment() -> Result<()> {
     skip_if_no_remote_env!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         config.approvals_reviewer = ApprovalsReviewer::User;
     });
     let test = builder.build_with_remote_and_local_env(&server).await?;
     let local_cwd = TempDir::new()?;
     let remote_cwd = PathBuf::from(format!(
-        "/tmp/codex-remote-apply-patch-approval-cwd-{}",
+        "/tmp/ava-remote-apply-patch-approval-cwd-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -3784,7 +3784,7 @@ async fn apply_patch_approvals_are_remembered_per_environment() -> Result<()> {
         .await?;
 
     let target_path = PathBuf::from(format!(
-        "/tmp/codex-apply-patch-approval-scope-{}.txt",
+        "/tmp/ava-apply-patch-approval-scope-{}.txt",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -3869,13 +3869,13 @@ async fn apply_patch_approvals_are_remembered_per_environment() -> Result<()> {
     )
     .await?;
     let approval = expect_patch_approval(&test, "call-local").await;
-    test.codex
+    test.ava-code
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::ApprovedForSession,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3889,13 +3889,13 @@ async fn apply_patch_approvals_are_remembered_per_environment() -> Result<()> {
     )
     .await?;
     let approval = expect_patch_approval(&test, "call-remote").await;
-    test.codex
+    test.ava-code
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::ApprovedForSession,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3961,7 +3961,7 @@ async fn apply_patch_intercepted_exec_command_routes_to_selected_remote_environm
     let local_cwd = TempDir::new()?;
     let file_name = "apply_patch_remote_exec.txt";
     let remote_cwd = PathBuf::from(format!(
-        "/tmp/codex-remote-apply-patch-exec-{}",
+        "/tmp/ava-remote-apply-patch-exec-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -4061,7 +4061,7 @@ async fn remote_test_env_sandboxed_read_allows_readable_root() -> Result<()> {
     let test_env = test_env().await?;
     let file_system = test_env.environment().get_filesystem();
 
-    let allowed_dir = PathBuf::from(format!("/tmp/codex-remote-readable-{}", std::process::id()));
+    let allowed_dir = PathBuf::from(format!("/tmp/ava-remote-readable-{}", std::process::id()));
     let file_path = allowed_dir.join("note.txt");
     let allowed_dir_uri = PathUri::from_host_native_path(&allowed_dir)?;
     let file_path_uri = PathUri::from_host_native_path(&file_path)?;
@@ -4114,7 +4114,7 @@ async fn remote_test_env_sandboxed_read_rejects_symlink_parent_dotdot_escape() -
     let test_env = test_env().await?;
     let file_system = test_env.environment().get_filesystem();
 
-    let root = PathBuf::from(format!("/tmp/codex-remote-dotdot-{}", std::process::id()));
+    let root = PathBuf::from(format!("/tmp/ava-remote-dotdot-{}", std::process::id()));
     let allowed_dir = root.join("allowed");
     let outside_dir = root.join("outside");
     let secret_path = root.join("secret.txt");
@@ -4152,7 +4152,7 @@ async fn remote_test_env_remove_removes_symlink_not_target() -> Result<()> {
     let file_system = test_env.environment().get_filesystem();
 
     let root = PathBuf::from(format!(
-        "/tmp/codex-remote-remove-link-{}",
+        "/tmp/ava-remote-remove-link-{}",
         std::process::id()
     ));
     let allowed_dir = root.join("allowed");
@@ -4228,7 +4228,7 @@ async fn remote_test_env_copy_preserves_symlink_source() -> Result<()> {
     let file_system = test_env.environment().get_filesystem();
 
     let root = PathBuf::from(format!(
-        "/tmp/codex-remote-copy-link-{}",
+        "/tmp/ava-remote-copy-link-{}",
         std::process::id()
     ));
     let allowed_dir = root.join("allowed");

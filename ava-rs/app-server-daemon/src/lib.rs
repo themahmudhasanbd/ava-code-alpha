@@ -27,13 +27,13 @@ use anyhow::Result;
 use anyhow::anyhow;
 pub use backend::BackendKind;
 use backend::BackendPaths;
-use codex_app_server_protocol::RemoteControlConnectionStatus;
-use codex_app_server_protocol::RemoteControlPairingStartResponse;
-use codex_app_server_transport::app_server_control_socket_path;
-use codex_utils_home_dir::find_codex_home;
-use managed_install::managed_codex_bin;
+use ava_app_server_protocol::RemoteControlConnectionStatus;
+use ava_app_server_protocol::RemoteControlPairingStartResponse;
+use ava_app_server_transport::app_server_control_socket_path;
+use ava_utils_home_dir::find_ava_home;
+use managed_install::managed_ava_bin;
 #[cfg(any(unix, windows))]
-use managed_install::managed_codex_version;
+use managed_install::managed_ava_version;
 use serde::Serialize;
 use settings::DaemonSettings;
 use settings::MAX_SHUTDOWN_GRACE_SECONDS;
@@ -79,8 +79,8 @@ pub struct LifecycleOutput {
     pub backend: Option<BackendKind>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pid: Option<u32>,
-    pub managed_codex_path: PathBuf,
-    pub managed_codex_version: Option<String>,
+    pub managed_ava_path: PathBuf,
+    pub managed_ava_version: Option<String>,
     pub socket_path: PathBuf,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cli_version: Option<String>,
@@ -112,8 +112,8 @@ pub struct BootstrapOutput {
     pub backend: BackendKind,
     pub auto_update_enabled: bool,
     pub remote_control_enabled: bool,
-    pub managed_codex_path: PathBuf,
-    pub managed_codex_version: Option<String>,
+    pub managed_ava_path: PathBuf,
+    pub managed_ava_version: Option<String>,
     pub socket_path: PathBuf,
     pub cli_version: String,
     pub app_server_version: String,
@@ -131,7 +131,7 @@ pub enum UpdateStatus {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateOutput {
     pub status: UpdateStatus,
-    pub managed_codex_path: PathBuf,
+    pub managed_ava_path: PathBuf,
     pub installed_version: Option<String>,
     pub running_version: Option<String>,
     pub message: String,
@@ -271,7 +271,7 @@ pub async fn set_remote_control(mode: RemoteControlMode) -> Result<RemoteControl
 }
 
 pub async fn run_pid_update_loop(
-    http_client_factory: codex_http_client::HttpClientFactory,
+    http_client_factory: ava_http_client::HttpClientFactory,
     restore_release: Option<String>,
 ) -> Result<()> {
     ensure_supported_platform()?;
@@ -281,7 +281,7 @@ pub async fn run_pid_update_loop(
 }
 
 pub async fn update(
-    http_client_factory: codex_http_client::HttpClientFactory,
+    http_client_factory: ava_http_client::HttpClientFactory,
 ) -> Result<UpdateOutput> {
     ensure_supported_platform()?;
     #[cfg(windows)]
@@ -297,7 +297,7 @@ fn ensure_supported_platform() -> Result<()> {
 #[cfg(not(any(unix, windows)))]
 fn ensure_supported_platform() -> Result<()> {
     Err(anyhow!(
-        "codex app-server daemon lifecycle is only supported on Unix and Windows platforms"
+        "ava app-server daemon lifecycle is only supported on Unix and Windows platforms"
     ))
 }
 
@@ -308,20 +308,20 @@ struct Daemon {
     update_pid_file: PathBuf,
     operation_lock_file: PathBuf,
     settings_file: PathBuf,
-    managed_codex_bin: PathBuf,
+    managed_ava_bin: PathBuf,
 }
 
 impl Daemon {
     fn from_environment() -> Result<Self> {
-        let codex_home = find_codex_home().context("failed to resolve CODEX_HOME")?;
-        let socket_path = app_server_control_socket_path(codex_home.as_path())?
+        let ava_home = find_ava_home().context("failed to resolve AVA_HOME")?;
+        let socket_path = app_server_control_socket_path(ava_home.as_path())?
             .as_path()
             .to_path_buf();
-        let state_dir = codex_home.as_path().join(STATE_DIR_NAME);
-        let managed_codex_bin = managed_codex_bin(codex_home.as_path());
+        let state_dir = ava_home.as_path().join(STATE_DIR_NAME);
+        let managed_ava_bin = managed_ava_bin(ava_home.as_path());
         // Old CLIs must not mistake a daemon-owned installation for their backend.
         let (pid_file, update_pid_file) =
-            if managed_codex_bin.starts_with(codex_home.as_path().join("packages/standalone")) {
+            if managed_ava_bin.starts_with(ava_home.as_path().join("packages/standalone")) {
                 (LEGACY_PID_FILE_NAME, LEGACY_UPDATE_PID_FILE_NAME)
             } else {
                 (DAEMON_PID_FILE_NAME, DAEMON_UPDATE_PID_FILE_NAME)
@@ -332,35 +332,35 @@ impl Daemon {
             update_pid_file: state_dir.join(update_pid_file),
             operation_lock_file: state_dir.join(OPERATION_LOCK_FILE_NAME),
             settings_file: state_dir.join(SETTINGS_FILE_NAME),
-            managed_codex_bin,
+            managed_ava_bin,
         })
     }
 
     fn recovery_file(&self) -> Result<PathBuf> {
-        Ok(codex_app_server_transport::daemon_recovery_file_path(
+        Ok(ava_app_server_transport::daemon_recovery_file_path(
             self.settings_file
                 .parent()
                 .and_then(Path::parent)
-                .context("daemon settings path has no Codex home")?,
+                .context("daemon settings path has no Ava home")?,
         ))
     }
 
     // Call only after taking the operation lock: an explicit update may have
     // migrated the package and PID namespace while this command was waiting.
     fn current_installation(&self) -> Result<Self> {
-        let managed_codex_bin = self.current_managed_codex_bin()?;
+        let managed_ava_bin = self.current_managed_ava_bin()?;
         let home = self
             .settings_file
             .parent()
             .and_then(Path::parent)
-            .context("daemon settings path has no Codex home")?;
-        let (pid, updater) = if managed_codex_bin.starts_with(home.join("packages/standalone")) {
+            .context("daemon settings path has no Ava home")?;
+        let (pid, updater) = if managed_ava_bin.starts_with(home.join("packages/standalone")) {
             (LEGACY_PID_FILE_NAME, LEGACY_UPDATE_PID_FILE_NAME)
         } else {
             (DAEMON_PID_FILE_NAME, DAEMON_UPDATE_PID_FILE_NAME)
         };
         Ok(Self {
-            managed_codex_bin,
+            managed_ava_bin,
             pid_file: self.pid_file.with_file_name(pid),
             update_pid_file: self.update_pid_file.with_file_name(updater),
             ..self.clone()
@@ -411,8 +411,8 @@ impl Daemon {
                 eprintln!("warning: failed to clear stale daemon recovery before start: {err}");
             }
             prepare_install::prepare(self, &settings).await?;
-            managed.managed_codex_bin = self.current_managed_codex_bin()?;
-            managed.ensure_managed_codex_bin()?;
+            managed.managed_ava_bin = self.current_managed_ava_bin()?;
+            managed.ensure_managed_ava_bin()?;
             // Only a fresh launch may replace these settings. Keep them for restarts
             // and updates, without changing the user's config or a running daemon.
             if settings.feature_overrides != *feature_overrides {
@@ -443,19 +443,19 @@ impl Daemon {
             && self.running_backend(&settings).await?.is_none()
         {
             return Err(anyhow!(
-                "app server is running but is not managed by codex app-server daemon"
+                "app server is running but is not managed by ava app-server daemon"
             ));
         }
         prepare_install::prepare(self, &settings).await?;
         let mut managed = self.clone();
-        managed.managed_codex_bin = self.current_managed_codex_bin()?;
+        managed.managed_ava_bin = self.current_managed_ava_bin()?;
         if !settings.auto_update_enabled {
             backend::pid_update_loop_backend(self.backend_paths(&settings))
                 .stop()
                 .await?;
         }
 
-        managed.ensure_managed_codex_bin()?;
+        managed.ensure_managed_ava_bin()?;
         if let Some(backend) = self.running_backend_instance(&settings).await? {
             if let Err(err) = thread_recovery::discard_pending(self) {
                 eprintln!("warning: failed to clear stale daemon recovery before restart: {err}");
@@ -486,7 +486,7 @@ impl Daemon {
     pub(crate) async fn try_restart_if_running(
         &self,
         mode: RestartMode,
-        managed_codex_bin: &Path,
+        managed_ava_bin: &Path,
     ) -> Result<RestartIfRunningOutcome> {
         let operation_lock = self.open_operation_lock_file().await?;
         if !try_lock_file(&operation_lock)? {
@@ -496,7 +496,7 @@ impl Daemon {
         let outcome = if let Some(backend) = self.running_backend_instance(&settings).await? {
             let info = client::probe(&self.socket_path).await.ok();
             let managed_version = if info.is_some() {
-                Some(managed_codex_version(managed_codex_bin).await?)
+                Some(managed_ava_version(managed_ava_bin).await?)
             } else {
                 None
             };
@@ -504,17 +504,17 @@ impl Daemon {
             // this lock or probes the running server. Never restart from a
             // release that is no longer the selected latest-channel binary.
             if !self.is_stable_standalone_release()?
-                || managed_install::resolved_managed_codex_bin(&self.current_managed_codex_bin()?)
+                || managed_install::resolved_managed_ava_bin(&self.current_managed_ava_bin()?)
                     .await
                     .ok()
                     .as_deref()
-                    != Some(managed_codex_bin)
+                    != Some(managed_ava_bin)
             {
                 return Ok(RestartIfRunningOutcome::AlreadyCurrent);
             }
             let mode = if mode == RestartMode::IfBinaryOrVersionChanged {
                 let managed_identity =
-                    managed_install::executable_identity(managed_codex_bin).await?;
+                    managed_install::executable_identity(managed_ava_bin).await?;
                 if backend.running_executable_identity().await?.as_ref() == Some(&managed_identity)
                 {
                     RestartMode::IfVersionChanged
@@ -529,7 +529,7 @@ impl Daemon {
                 RestartDecision::AlreadyCurrent => RestartIfRunningOutcome::AlreadyCurrent,
                 RestartDecision::Restart => {
                     #[cfg(windows)]
-                    backend::windows::ensure_detached_launch(managed_codex_bin)?;
+                    backend::windows::ensure_detached_launch(managed_ava_bin)?;
                     if let Err(err) = thread_recovery::discard_pending(self) {
                         eprintln!(
                             "warning: failed to clear stale daemon recovery before update: {err}"
@@ -539,7 +539,7 @@ impl Daemon {
                         .stop_with_grace(settings.shutdown_grace_seconds)
                         .await?;
                     let _ = self
-                        .start_managed_backend_with_bin(&settings, managed_codex_bin)
+                        .start_managed_backend_with_bin(&settings, managed_ava_bin)
                         .await?;
                     self.wait_until_ready().await?;
                     RestartIfRunningOutcome::Restarted
@@ -547,18 +547,18 @@ impl Daemon {
             }
         } else if client::probe(&self.socket_path).await.is_ok() {
             return Err(anyhow!(
-                "app server is running but is not managed by codex app-server daemon"
+                "app server is running but is not managed by ava app-server daemon"
             ));
         } else {
             RestartIfRunningOutcome::NotRunning
         };
 
         if !self.is_stable_standalone_release()?
-            || managed_install::resolved_managed_codex_bin(&self.current_managed_codex_bin()?)
+            || managed_install::resolved_managed_ava_bin(&self.current_managed_ava_bin()?)
                 .await
                 .ok()
                 .as_deref()
-                != Some(managed_codex_bin)
+                != Some(managed_ava_bin)
         {
             return Ok(RestartIfRunningOutcome::AlreadyCurrent);
         }
@@ -583,7 +583,7 @@ impl Daemon {
 
         if client::probe(&self.socket_path).await.is_ok() {
             return Err(anyhow!(
-                "app server is running but is not managed by codex app-server daemon"
+                "app server is running but is not managed by ava app-server daemon"
             ));
         }
 
@@ -638,13 +638,13 @@ impl Daemon {
     }
 
     async fn append_daemon_app_server_context(&self, context: &mut String) {
-        let managed_codex_version = self
-            .managed_codex_version_best_effort()
+        let managed_ava_version = self
+            .managed_ava_version_best_effort()
             .await
             .unwrap_or_else(|| "unknown".to_string());
         context.push_str(&format!(
-            "\n\nDaemon used app-server:\n  path: {}\n  version: {managed_codex_version}",
-            self.managed_codex_bin.display()
+            "\n\nDaemon used app-server:\n  path: {}\n  version: {managed_ava_version}",
+            self.managed_ava_bin.display()
         ));
     }
 
@@ -701,7 +701,7 @@ impl Daemon {
 
         if backend.is_none() && client::probe(&self.socket_path).await.is_ok() {
             return Err(anyhow!(
-                "app server is running but is not managed by codex app-server daemon"
+                "app server is running but is not managed by ava app-server daemon"
             ));
         }
 
@@ -730,7 +730,7 @@ impl Daemon {
         }
 
         if backend.is_some() {
-            self.ensure_managed_codex_bin()?;
+            self.ensure_managed_ava_bin()?;
         }
         settings.remote_control_enabled = remote_control_enabled;
         settings.save(&self.settings_file).await?;
@@ -771,13 +771,13 @@ impl Daemon {
             && self.running_backend(&settings).await?.is_none()
         {
             return Err(anyhow!(
-                "app server is running but is not managed by codex app-server daemon"
+                "app server is running but is not managed by ava app-server daemon"
             ));
         }
         prepare_install::prepare(self, &settings).await?;
         let mut managed = self.clone();
-        managed.managed_codex_bin = self.current_managed_codex_bin()?;
-        managed.ensure_managed_codex_bin()?;
+        managed.managed_ava_bin = self.current_managed_ava_bin()?;
+        managed.ensure_managed_ava_bin()?;
         settings.save(&self.settings_file).await?;
 
         backend::pid_update_loop_backend(self.backend_paths(&settings))
@@ -796,14 +796,14 @@ impl Daemon {
         backend.start().await?;
         let info = self.wait_until_ready().await?;
         let auto_update_enabled = managed.ensure_managed_updater(&settings).await?;
-        let managed_codex_version = managed.managed_codex_version_best_effort().await;
+        let managed_ava_version = managed.managed_ava_version_best_effort().await;
         Ok(BootstrapOutput {
             status: BootstrapStatus::Bootstrapped,
             backend: BackendKind::Pid,
             auto_update_enabled,
             remote_control_enabled: settings.remote_control_enabled,
-            managed_codex_path: managed.managed_codex_bin,
-            managed_codex_version,
+            managed_ava_path: managed.managed_ava_bin,
+            managed_ava_version,
             socket_path: self.socket_path.clone(),
             cli_version: env!("CARGO_PKG_VERSION").to_string(),
             app_server_version: info.app_server_version,
@@ -829,17 +829,17 @@ impl Daemon {
     }
 
     async fn start_managed_backend(&self, settings: &DaemonSettings) -> Result<Option<u32>> {
-        self.start_managed_backend_with_bin(settings, &self.managed_codex_bin)
+        self.start_managed_backend_with_bin(settings, &self.managed_ava_bin)
             .await
     }
 
     async fn start_managed_backend_with_bin(
         &self,
         settings: &DaemonSettings,
-        managed_codex_bin: &Path,
+        managed_ava_bin: &Path,
     ) -> Result<Option<u32>> {
         let backend =
-            backend::pid_backend(self.backend_paths_with_bin(settings, managed_codex_bin));
+            backend::pid_backend(self.backend_paths_with_bin(settings, managed_ava_bin));
         backend.start().await
     }
 
@@ -857,51 +857,51 @@ impl Daemon {
             }
             return Ok(false);
         }
-        let Ok(codex_bin) =
-            managed_install::resolved_managed_codex_bin(&self.managed_codex_bin).await
+        let Ok(ava_bin) =
+            managed_install::resolved_managed_ava_bin(&self.managed_ava_bin).await
         else {
             if !self.has_latest_selection_marker() {
                 updater.stop().await?;
             }
             return Ok(false);
         };
-        if !managed_install::supports_daemon_update_loop(&codex_bin).await
+        if !managed_install::supports_daemon_update_loop(&ava_bin).await
             || !self.is_stable_standalone_release()?
-            || !managed_install::resolved_managed_codex_bin(&self.managed_codex_bin)
+            || !managed_install::resolved_managed_ava_bin(&self.managed_ava_bin)
                 .await
-                .is_ok_and(|selected| selected == codex_bin)
+                .is_ok_and(|selected| selected == ava_bin)
         {
             if !self.has_latest_selection_marker() {
                 updater.stop().await?;
             }
             return Ok(false);
         }
-        backend::pid_update_loop_backend(self.backend_paths_with_bin(settings, &codex_bin))
+        backend::pid_update_loop_backend(self.backend_paths_with_bin(settings, &ava_bin))
             .start()
             .await?;
         Ok(true)
     }
 
     fn is_stable_standalone_release(&self) -> Result<bool> {
-        let codex_home = self
+        let ava_home = self
             .settings_file
             .parent()
             .and_then(Path::parent)
-            .context("daemon settings path has no Codex home")?;
+            .context("daemon settings path has no Ava home")?;
         Ok(managed_install::is_stable_standalone_release(
-            codex_home,
-            &self.current_managed_codex_bin()?,
+            ava_home,
+            &self.current_managed_ava_bin()?,
         ))
     }
 
-    fn current_managed_codex_bin(&self) -> Result<PathBuf> {
+    fn current_managed_ava_bin(&self) -> Result<PathBuf> {
         // An installer can move a legacy binary into bin/ while this updater runs.
         let home = self
             .settings_file
             .parent()
             .and_then(Path::parent)
-            .context("daemon settings path has no Codex home")?;
-        Ok(managed_install::managed_codex_bin(home))
+            .context("daemon settings path has no Ava home")?;
+        Ok(managed_install::managed_ava_bin(home))
     }
 
     fn has_latest_selection_marker(&self) -> bool {
@@ -918,7 +918,7 @@ impl Daemon {
     async fn is_bootstrapped(&self, settings: &DaemonSettings) -> Result<bool> {
         if !settings.auto_update_enabled
             || !self.is_stable_standalone_release()?
-            || !managed_install::supports_daemon_update_loop(&self.managed_codex_bin).await
+            || !managed_install::supports_daemon_update_loop(&self.managed_ava_bin).await
         {
             return Ok(self.running_backend_instance(settings).await?.is_some());
         }
@@ -926,40 +926,40 @@ impl Daemon {
         updater.is_starting_or_running().await
     }
 
-    fn ensure_managed_codex_bin(&self) -> Result<()> {
-        if self.managed_codex_bin.is_file() {
+    fn ensure_managed_ava_bin(&self) -> Result<()> {
+        if self.managed_ava_bin.is_file() {
             #[cfg(windows)]
-            backend::windows::ensure_detached_launch(&self.managed_codex_bin)?;
+            backend::windows::ensure_detached_launch(&self.managed_ava_bin)?;
             return Ok(());
         }
 
-        let managed_codex_path = self.managed_codex_bin.display();
+        let managed_ava_path = self.managed_ava_bin.display();
         Err(anyhow!(
-            "daemon executable not found at {managed_codex_path}; repair the existing installation, or run `codex app-server daemon start` to install a missing daemon"
+            "daemon executable not found at {managed_ava_path}; repair the existing installation, or run `ava app-server daemon start` to install a missing daemon"
         ))
     }
 
     #[cfg(any(unix, windows))]
-    async fn managed_codex_version_best_effort(&self) -> Option<String> {
-        managed_codex_version(&self.managed_codex_bin).await.ok()
+    async fn managed_ava_version_best_effort(&self) -> Option<String> {
+        managed_ava_version(&self.managed_ava_bin).await.ok()
     }
 
     #[cfg(not(any(unix, windows)))]
-    async fn managed_codex_version_best_effort(&self) -> Option<String> {
+    async fn managed_ava_version_best_effort(&self) -> Option<String> {
         None
     }
 
     fn backend_paths(&self, settings: &DaemonSettings) -> BackendPaths {
-        self.backend_paths_with_bin(settings, &self.managed_codex_bin)
+        self.backend_paths_with_bin(settings, &self.managed_ava_bin)
     }
 
     fn backend_paths_with_bin(
         &self,
         settings: &DaemonSettings,
-        managed_codex_bin: &Path,
+        managed_ava_bin: &Path,
     ) -> BackendPaths {
         BackendPaths {
-            codex_bin: managed_codex_bin.to_path_buf(),
+            ava_bin: managed_ava_bin.to_path_buf(),
             pid_file: self.pid_file.clone(),
             update_pid_file: self.update_pid_file.clone(),
             remote_control_enabled: settings.remote_control_enabled,
@@ -996,7 +996,7 @@ impl Daemon {
             if let Some(home) = parent.parent() {
                 tokio::fs::create_dir_all(home).await?;
             }
-            codex_uds::prepare_private_socket_directory(parent)
+            ava_uds::prepare_private_socket_directory(parent)
                 .await
                 .with_context(|| {
                     format!(
@@ -1026,13 +1026,13 @@ impl Daemon {
         pid: Option<u32>,
         app_server_version: Option<String>,
     ) -> LifecycleOutput {
-        let managed_codex_version = self.managed_codex_version_best_effort().await;
+        let managed_ava_version = self.managed_ava_version_best_effort().await;
         LifecycleOutput {
             status,
             backend,
             pid,
-            managed_codex_path: self.managed_codex_bin.clone(),
-            managed_codex_version,
+            managed_ava_path: self.managed_ava_bin.clone(),
+            managed_ava_version,
             socket_path: self.socket_path.clone(),
             cli_version: Some(env!("CARGO_PKG_VERSION").to_string()),
             app_server_version,
@@ -1180,9 +1180,9 @@ mod tests {
             status: LifecycleStatus::AlreadyRunning,
             backend: Some(BackendKind::Pid),
             pid: None,
-            managed_codex_path: "codex".into(),
-            managed_codex_version: Some("1.2.3".to_string()),
-            socket_path: "codex.sock".into(),
+            managed_ava_path: "ava".into(),
+            managed_ava_version: Some("1.2.3".to_string()),
+            socket_path: "ava.sock".into(),
             cli_version: Some("1.2.3".to_string()),
             app_server_version: Some("1.2.4".to_string()),
         };
@@ -1193,9 +1193,9 @@ mod tests {
             serde_json::json!({
                 "status": "alreadyRunning",
                 "backend": "pid",
-                "managedCodexPath": "codex",
-                "managedCodexVersion": "1.2.3",
-                "socketPath": "codex.sock",
+                "managedAvaPath": "ava",
+                "managedAvaVersion": "1.2.3",
+                "socketPath": "ava.sock",
                 "cliVersion": "1.2.3",
                 "appServerVersion": "1.2.4",
             })
@@ -1210,9 +1210,9 @@ mod tests {
             backend: BackendKind::Pid,
             auto_update_enabled: true,
             remote_control_enabled: true,
-            managed_codex_path: "codex".into(),
-            managed_codex_version: Some("1.2.3".to_string()),
-            socket_path: "codex.sock".into(),
+            managed_ava_path: "ava".into(),
+            managed_ava_version: Some("1.2.3".to_string()),
+            socket_path: "ava.sock".into(),
             cli_version: "1.2.3".to_string(),
             app_server_version: "1.2.4".to_string(),
         };
@@ -1225,9 +1225,9 @@ mod tests {
                 "backend": "pid",
                 "autoUpdateEnabled": true,
                 "remoteControlEnabled": true,
-                "managedCodexPath": "codex",
-                "managedCodexVersion": "1.2.3",
-                "socketPath": "codex.sock",
+                "managedAvaPath": "ava",
+                "managedAvaVersion": "1.2.3",
+                "socketPath": "ava.sock",
                 "cliVersion": "1.2.3",
                 "appServerVersion": "1.2.4",
             })
@@ -1250,7 +1250,7 @@ mod tests {
             update_pid_file: state.join(super::LEGACY_UPDATE_PID_FILE_NAME),
             operation_lock_file: state.join("daemon.lock"),
             settings_file: state.join("settings.json"),
-            managed_codex_bin: super::managed_codex_bin(home.path()),
+            managed_ava_bin: super::managed_ava_bin(home.path()),
         };
         let lock = daemon.acquire_operation_lock().await.expect("lock");
         let stop = daemon.run(super::LifecycleCommand::Stop);
@@ -1265,10 +1265,10 @@ mod tests {
         drop(lock);
         let output = stop.await.expect("stop");
         assert_eq!(
-            (output.status, output.managed_codex_path),
+            (output.status, output.managed_ava_path),
             (
                 LifecycleStatus::NotRunning,
-                super::managed_codex_bin(home.path())
+                super::managed_ava_bin(home.path())
             )
         );
     }
@@ -1283,7 +1283,7 @@ mod tests {
             update_pid_file: state.join("updater.pid"),
             operation_lock_file: state.join("daemon.lock"),
             settings_file: state.join("settings.json"),
-            managed_codex_bin: state.join("missing-codex"),
+            managed_ava_bin: state.join("missing-ava"),
         };
         assert_eq!(
             daemon
@@ -1299,7 +1299,7 @@ mod tests {
     async fn stop_and_fresh_start_discard_pending_thread_restore() {
         let home = TempDir::new().expect("home");
         let state = home.path().join("app-server-daemon");
-        codex_uds::prepare_private_socket_directory(&state)
+        ava_uds::prepare_private_socket_directory(&state)
             .await
             .expect("private state directory");
         let daemon = Daemon {
@@ -1308,9 +1308,9 @@ mod tests {
             update_pid_file: state.join("updater.pid"),
             operation_lock_file: state.join("daemon.lock"),
             settings_file: state.join("settings.json"),
-            managed_codex_bin: home.path().join("codex"),
+            managed_ava_bin: home.path().join("ava"),
         };
-        codex_app_server_transport::daemon_recovery::write_candidates(
+        ava_app_server_transport::daemon_recovery::write_candidates(
             &daemon.recovery_file().expect("recovery path"),
             &["thread".to_string()].into_iter().collect(),
         )
@@ -1344,7 +1344,7 @@ mod tests {
 
         let home = TempDir::new().expect("home");
         let standalone = home.path().join("packages/standalone");
-        let local_bin = standalone.join("local-main/bin/codex");
+        let local_bin = standalone.join("local-main/bin/ava");
         tokio::fs::create_dir_all(local_bin.parent().expect("bin parent"))
             .await
             .expect("local bin directory");
@@ -1364,7 +1364,7 @@ mod tests {
             update_pid_file: state.join("app-server-updater.pid"),
             operation_lock_file: state.join("daemon.lock"),
             settings_file: state.join("settings.json"),
-            managed_codex_bin: standalone.join("current/bin/codex"),
+            managed_ava_bin: standalone.join("current/bin/ava"),
         };
         let settings = DaemonSettings::default();
         assert!(
@@ -1389,7 +1389,7 @@ mod tests {
             update_pid_file: temp_dir.path().join("app-server-updater.pid"),
             operation_lock_file: temp_dir.path().join("daemon.lock"),
             settings_file: temp_dir.path().join("settings.json"),
-            managed_codex_bin: temp_dir.path().join("missing-codex"),
+            managed_ava_bin: temp_dir.path().join("missing-ava"),
         };
         let stderr_log = daemon.pid_file.with_extension("stderr.log");
         tokio::fs::write(&stderr_log, "unexpected argument")
@@ -1403,7 +1403,7 @@ mod tests {
                  Daemon used app-server:\n  path: {}\n  version: unknown\n\n\
                  Managed app-server stderr ({}):\n  unexpected argument",
                 daemon.socket_path.display(),
-                daemon.managed_codex_bin.display(),
+                daemon.managed_ava_bin.display(),
                 stderr_log.display()
             )
         );

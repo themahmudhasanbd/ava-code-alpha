@@ -28,7 +28,7 @@ Analyze what makes the design feel too safe or boring:
    - Who is the audience?
    - What design system, tokens, components, and visual conventions already exist?
 
-If any of these are unclear from the codebase, STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer.
+If any of these are unclear from the codebase, STOP and use Ava's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer.
 
 **CRITICAL**: "Bolder" does not mean chaotic or garish. It means distinctive, memorable, and confident. Think intentional drama, not random noise.
 

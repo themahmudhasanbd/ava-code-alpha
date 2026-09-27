@@ -12,7 +12,7 @@ use crate::hook_runtime::PostCompactHookOutcome;
 use crate::hook_runtime::PreCompactHookOutcome;
 use crate::hook_runtime::run_post_compact_hooks;
 use crate::hook_runtime::run_pre_compact_hooks;
-use crate::responses_metadata::CodexResponsesMetadata;
+use crate::responses_metadata::AvaResponsesMetadata;
 use crate::responses_metadata::CompactionTurnMetadata;
 use crate::session::RequestEffortUsage;
 use crate::session::session::Session;
@@ -21,42 +21,42 @@ use crate::session::turn::get_last_assistant_message_from_turn;
 use crate::session::turn_context::TurnContext;
 use crate::state::AutoCompactWindowIds;
 use crate::util::backoff;
-use codex_analytics::CodexCompactionEvent;
-use codex_analytics::CompactionImplementation;
-use codex_analytics::CompactionPhase;
-use codex_analytics::CompactionReason;
-use codex_analytics::CompactionStatus;
-use codex_analytics::CompactionStrategy;
-use codex_analytics::CompactionTrigger;
-use codex_analytics::now_unix_seconds;
-use codex_context_fragments::AnnotatedContent;
-use codex_context_fragments::set_annotated_content;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::ResponseItemId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::items::ContextCompactionItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::AgentMessageInputContent;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::WarningEvent;
-use codex_protocol::user_input::UserInput;
-use codex_rollout_trace::InferenceTraceContext;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::approx_token_count;
-use codex_utils_output_truncation::truncate_text;
+use ava_analytics::AvaCompactionEvent;
+use ava_analytics::CompactionImplementation;
+use ava_analytics::CompactionPhase;
+use ava_analytics::CompactionReason;
+use ava_analytics::CompactionStatus;
+use ava_analytics::CompactionStrategy;
+use ava_analytics::CompactionTrigger;
+use ava_analytics::now_unix_seconds;
+use ava_context_fragments::AnnotatedContent;
+use ava_context_fragments::set_annotated_content;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::ResponseItemId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::items::ContextCompactionItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::AgentMessageInputContent;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::WarningEvent;
+use ava_protocol::user_input::UserInput;
+use ava_rollout_trace::InferenceTraceContext;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::approx_token_count;
+use ava_utils_output_truncation::truncate_text;
 use futures::prelude::*;
 use tracing::error;
 
-pub use codex_prompts::SUMMARIZATION_PROMPT;
-pub use codex_prompts::SUMMARY_PREFIX;
+pub use ava_prompts::SUMMARIZATION_PROMPT;
+pub use ava_prompts::SUMMARY_PREFIX;
 const COMPACT_USER_MESSAGE_MAX_TOKENS: usize = 20_000;
 
 /// Controls whether compaction replacement history must include initial context.
@@ -117,7 +117,7 @@ pub(crate) async fn run_inline_auto_compact_task(
     initial_context_injection: InitialContextInjection,
     reason: CompactionReason,
     phase: CompactionPhase,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let prompt = turn_context
         .config
         .compact_prompt
@@ -147,7 +147,7 @@ pub(crate) async fn run_compact_task(
     sess: Arc<Session>,
     turn_context: Arc<TurnContext>,
     input: Vec<UserInput>,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     sess.emit_turn_started(&turn_context).await;
     run_compact_task_inner(
         sess.clone(),
@@ -170,7 +170,7 @@ async fn run_compact_task_inner(
     trigger: CompactionTrigger,
     reason: CompactionReason,
     phase: CompactionPhase,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let compaction_metadata =
         CompactionTurnMetadata::new(trigger, reason, CompactionImplementation::Responses, phase);
     let attempt = CompactionAnalyticsAttempt::begin(
@@ -186,7 +186,7 @@ async fn run_compact_task_inner(
     match pre_compact_outcome {
         PreCompactHookOutcome::Continue => {}
         PreCompactHookOutcome::Stopped => {
-            let error = CodexErr::TurnAborted;
+            let error = AvaErr::TurnAborted;
             attempt
                 .track(
                     sess.as_ref(),
@@ -207,7 +207,7 @@ async fn run_compact_task_inner(
     )
     .await;
     let status = compaction_status_from_result(&result);
-    let codex_error = result.as_ref().err();
+    let ava_error = result.as_ref().err();
     if result.is_ok() {
         let post_compact_outcome = run_post_compact_hooks(&sess, &turn_context, trigger).await;
         if let PostCompactHookOutcome::Stopped = post_compact_outcome {
@@ -215,18 +215,18 @@ async fn run_compact_task_inner(
                 .track(
                     sess.as_ref(),
                     status,
-                    codex_error,
+                    ava_error,
                     CompactionAnalyticsDetails::default(),
                 )
                 .await;
-            return Err(CodexErr::TurnAborted);
+            return Err(AvaErr::TurnAborted);
         }
     }
     attempt
         .track(
             sess.as_ref(),
             status,
-            codex_error,
+            ava_error,
             CompactionAnalyticsDetails::default(),
         )
         .await;
@@ -234,10 +234,10 @@ async fn run_compact_task_inner(
         && !matches!(phase, CompactionPhase::PostTurn)
         && !matches!(
             err.details(),
-            CodexErrorDetails::Interrupted | CodexErrorDetails::TurnAborted
+            AvaErrorDetails::Interrupted | AvaErrorDetails::TurnAborted
         )
     {
-        sess.track_turn_codex_error(turn_context.as_ref(), err);
+        sess.track_turn_ava_error(turn_context.as_ref(), err);
         // Pre-turn failures are reported after preserving the incoming prompt.
         if !matches!(phase, CompactionPhase::PreTurn) {
             let event = EventMsg::Error(err.to_error_event(/*message_prefix*/ None));
@@ -253,7 +253,7 @@ async fn run_compact_task_inner_impl(
     input: Vec<UserInput>,
     initial_context_injection: InitialContextInjection,
     compaction_metadata: CompactionTurnMetadata,
-) -> CodexResult<String> {
+) -> AvaResult<String> {
     let compaction_item = TurnItem::ContextCompaction(ContextCompactionItem::new());
     sess.emit_turn_item_started(&turn_context, &compaction_item)
         .await;
@@ -306,15 +306,15 @@ async fn run_compact_task_inner_impl(
             Err(err)
                 if matches!(
                     err.details(),
-                    CodexErrorDetails::Interrupted | CodexErrorDetails::TurnAborted
+                    AvaErrorDetails::Interrupted | AvaErrorDetails::TurnAborted
                 ) =>
             {
                 return Err(err);
             }
-            Err(e) if matches!(e.details(), CodexErrorDetails::SessionBudgetExceeded) => {
+            Err(e) if matches!(e.details(), AvaErrorDetails::SessionBudgetExceeded) => {
                 return Err(e);
             }
-            Err(e) if matches!(e.details(), CodexErrorDetails::ContextWindowExceeded) => {
+            Err(e) if matches!(e.details(), AvaErrorDetails::ContextWindowExceeded) => {
                 if turn_input_len > 1 {
                     // Trim from the beginning to preserve cache (prefix-based) and keep recent messages intact.
                     error!(
@@ -352,7 +352,7 @@ async fn run_compact_task_inner_impl(
         get_last_assistant_message_from_turn(compaction_response.output.iter())
             .filter(|summary| !summary.trim().is_empty())
             .ok_or_else(|| {
-                CodexErr::Stream(
+                AvaErr::Stream(
                     "Post-turn compaction completed without an assistant summary".to_string(),
                 )
             })?
@@ -460,7 +460,7 @@ impl CompactionAnalyticsAttempt {
         self,
         sess: &Session,
         status: CompactionStatus,
-        codex_error: Option<&CodexErr>,
+        ava_error: Option<&AvaErr>,
         details: CompactionAnalyticsDetails,
     ) {
         let CompactionAnalyticsDetails {
@@ -475,7 +475,7 @@ impl CompactionAnalyticsAttempt {
         let active_context_tokens_after = sess.get_total_token_usage().await;
         sess.services
             .analytics_events_client
-            .track_compaction(CodexCompactionEvent {
+            .track_compaction(AvaCompactionEvent {
                 thread_id: self.thread_id,
                 turn_id: self.turn_id,
                 trigger: self.trigger,
@@ -484,9 +484,9 @@ impl CompactionAnalyticsAttempt {
                 phase: self.phase,
                 strategy: CompactionStrategy::Memento,
                 status,
-                codex_error_kind: codex_error.map(Into::into),
-                codex_error_http_status_code: codex_error
-                    .and_then(CodexErr::http_status_code_value),
+                ava_error_kind: ava_error.map(Into::into),
+                ava_error_http_status_code: ava_error
+                    .and_then(AvaErr::http_status_code_value),
                 active_context_tokens_before,
                 active_context_tokens_after,
                 retained_image_count,
@@ -502,13 +502,13 @@ impl CompactionAnalyticsAttempt {
     }
 }
 
-pub(crate) fn compaction_status_from_result<T>(result: &CodexResult<T>) -> CompactionStatus {
+pub(crate) fn compaction_status_from_result<T>(result: &AvaResult<T>) -> CompactionStatus {
     match result {
         Ok(_) => CompactionStatus::Completed,
         Err(err)
             if matches!(
                 err.details(),
-                CodexErrorDetails::Interrupted | CodexErrorDetails::TurnAborted
+                AvaErrorDetails::Interrupted | AvaErrorDetails::TurnAborted
             ) =>
         {
             CompactionStatus::Interrupted
@@ -543,7 +543,7 @@ pub(crate) struct CompactedUserMessage {
     id: Option<ResponseItemId>,
     message: String,
     internal_chat_message_metadata_passthrough: Option<InternalChatMessageMetadataPassthrough>,
-    harness_metadata: Option<CodexHarnessMetadata>,
+    harness_metadata: Option<AvaHarnessMetadata>,
 }
 
 #[cfg(test)]
@@ -577,7 +577,7 @@ pub(crate) fn collect_annotated_user_messages(
 
 fn compacted_user_message(
     item: &ResponseItem,
-    harness_metadata: Option<CodexHarnessMetadata>,
+    harness_metadata: Option<AvaHarnessMetadata>,
 ) -> Option<CompactedUserMessage> {
     let Some(TurnItem::UserMessage(user)) = crate::event_mapping::parse_turn_item(item) else {
         return None;
@@ -772,10 +772,10 @@ async fn drain_to_completed(
     sess: &Session,
     turn_context: &TurnContext,
     client_session: &mut ModelClientSession,
-    responses_metadata: &CodexResponsesMetadata,
+    responses_metadata: &AvaResponsesMetadata,
     prompt: &Prompt,
     phase: CompactionPhase,
-) -> CodexResult<CompactionResponse> {
+) -> AvaResult<CompactionResponse> {
     let mut stream = client_session
         .stream(
             prompt,
@@ -798,7 +798,7 @@ async fn drain_to_completed(
     loop {
         let maybe_event = stream.next().await;
         let Some(event) = maybe_event else {
-            return Err(CodexErr::Stream(
+            return Err(AvaErr::Stream(
                 "stream closed before response.completed".into(),
             ));
         };

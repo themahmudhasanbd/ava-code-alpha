@@ -21,24 +21,24 @@ use crate::AppServerEvent;
 use crate::RequestResult;
 use crate::SHUTDOWN_TIMEOUT;
 use crate::TypedRequestError;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientNotification;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::JSONRPCRequest;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::Result as JsonRpcResult;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_uds::UnixStream;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientNotification;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::JSONRPCRequest;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::Result as JsonRpcResult;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_uds::UnixStream;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_rustls_provider::ensure_rustls_crypto_provider;
 use futures::SinkExt;
 use futures::StreamExt;
 use serde::de::DeserializeOwned;
@@ -151,7 +151,7 @@ enum RemoteClientCommand {
 #[derive(Default)]
 struct RemoteServerMetadata {
     server_version: Option<String>,
-    codex_home: Option<String>,
+    ava_home: Option<String>,
     platform_family: Option<String>,
     platform_os: Option<String>,
 }
@@ -222,8 +222,8 @@ impl RemoteAppServerClient {
         self.metadata.server_version.as_deref()
     }
 
-    pub fn codex_home(&self) -> Option<&str> {
-        self.metadata.codex_home.as_deref()
+    pub fn ava_home(&self) -> Option<&str> {
+        self.metadata.ava_home.as_deref()
     }
 
     pub fn platform_family(&self) -> Option<&str> {
@@ -884,11 +884,11 @@ where
                                     let (_, rest) = user_agent.split_once('/')?;
                                     rest.split_whitespace().next().map(str::to_string)
                                 });
-                            metadata.codex_home = response
+                            metadata.ava_home = response
                                 .result
-                                .get("codexHome")
+                                .get("avaHome")
                                 .and_then(serde_json::Value::as_str)
-                                .filter(|codex_home| !codex_home.is_empty())
+                                .filter(|ava_home| !ava_home.is_empty())
                                 .map(str::to_string);
                             metadata.platform_family = response.result.get("platformFamily")
                                 .and_then(serde_json::Value::as_str).map(str::to_string);

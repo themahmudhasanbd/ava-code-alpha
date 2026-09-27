@@ -3,8 +3,8 @@
 use super::*;
 use crate::app::reconnect::ReconnectPresentation;
 use crate::app::reconnect::reconnect;
-use codex_config::types::KeybindingSpec;
-use codex_config::types::KeybindingsSpec;
+use ava_config::types::KeybindingSpec;
+use ava_config::types::KeybindingsSpec;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tokio::net::TcpListener;
@@ -159,7 +159,7 @@ async fn reconnect_restores_history_permissions_and_keeps_old_input_paused() -> 
         let mut session = crate::start_embedded_app_server_for_picker(&app.config).await?;
         std::fs::write(
             app.config
-                .codex_home
+                .ava_home
                 .join("tui-thread-reference-capabilities"),
             "not a directory",
         )?;
@@ -167,7 +167,7 @@ async fn reconnect_restores_history_permissions_and_keeps_old_input_paused() -> 
         let transport = crate::dynamic_tools_mcp::ThreadToolTransport::Mcp(Arc::new(
             crate::dynamic_tools_mcp::DynamicToolMcpServer::start(
                 session.request_handle(),
-                codex_app_server_protocol::ThreadStartParams::default(),
+                ava_app_server_protocol::ThreadStartParams::default(),
                 app.app_event_tx.clone(),
                 app.dynamic_tool_status_updates.clone(),
                 /*managed_requirement*/ None,
@@ -176,8 +176,8 @@ async fn reconnect_restores_history_permissions_and_keeps_old_input_paused() -> 
         ));
         let mut overrides = None;
         transport.configure_mcp(&mut overrides);
-        let mcp = overrides.unwrap().remove("mcp_servers.codex_tui").unwrap();
-        let client = codex_http_client::HttpClientBuilder::new().build_direct()?;
+        let mcp = overrides.unwrap().remove("mcp_servers.ava_tui").unwrap();
+        let client = ava_http_client::HttpClientBuilder::new().build_direct()?;
         let call_mcp = || {
             client
                 .post(mcp["url"].as_str().unwrap())
@@ -358,14 +358,14 @@ async fn reconnect_restores_history_permissions_and_keeps_old_input_paused() -> 
         let notices = history
             .lines()
             .filter(|line| {
-                line.contains("Reconnected.") || line.contains("background Codex service")
+                line.contains("Reconnected.") || line.contains("background Ava service")
             })
             .collect::<Vec<_>>()
             .join("\n");
         if deferred_notice {
             assert_snapshot!(notices, @r###"
 • Reconnected. No input was resent. Review uncertain submissions before retrying; recovered queues remain paused.
-⚠ A background Codex service is running v2.0.0, older than your Codex CLI
+⚠ A background Ava service is running v2.0.0, older than your Ava CLI
 "###);
         } else {
             insta::allow_duplicates! {
@@ -526,7 +526,7 @@ async fn reconnect_reconciles_offscreen_pending_profile_before_restoring_permiss
         &mut session,
         &mut events,
         connected,
-        CODEX_CLI_VERSION,
+        AVA_CLI_VERSION,
     )
     .await?;
     assert!(app.pending_server_profiles.contains_key(&primary));
@@ -556,7 +556,7 @@ async fn reconnect_reconciles_offscreen_pending_profile_before_restoring_permiss
     app.chat_widget
         .handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     while let Ok(event) = events.try_recv() {
-        if matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })) {
+        if matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })) {
             app.handle_event(&mut tui, &mut session, event).await?;
         }
     }
@@ -667,7 +667,7 @@ async fn reconnect_allows_slow_hydration_but_bounds_a_stalled_server() -> Result
                 &mut session,
                 &mut events,
                 result?,
-                CODEX_CLI_VERSION,
+                AVA_CLI_VERSION,
             )
             .await?;
             assert!(app.thread_unavailable(id));
@@ -723,7 +723,7 @@ pub(super) async fn drain_history(
     while let Ok(event) = events.try_recv() {
         assert!(!matches!(
             event,
-            AppEvent::CodexOp(AppCommand::UserTurn { .. })
+            AppEvent::AvaOp(AppCommand::UserTurn { .. })
         ));
         if matches!(
             event,

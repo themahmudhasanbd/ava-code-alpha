@@ -58,40 +58,40 @@ use crate::thread_state::ThreadStateManager;
 use crate::transport::AppServerTransport;
 use crate::transport::RemoteControlHandle;
 use crate::turn_cost_worker::TurnCostWorker;
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::AppServerRpcTransport;
-use codex_app_server_protocol::ClientNotification;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::ExperimentalApi;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::JSONRPCRequest;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::UserVerificationCancelResponse;
-use codex_app_server_protocol::experimental_required_message;
-use codex_arg0::Arg0DispatchPaths;
-use codex_code_mode::CodeModeSessionProvider;
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_core::config::ThreadStoreConfig;
-use codex_exec_server::EnvironmentManager;
-use codex_extension_api::TurnStartAdmission;
-use codex_feedback::CodexFeedback;
-use codex_goal_extension::GoalService;
-use codex_home::CodexHomeUserInstructionsProvider;
-use codex_login::AuthManager;
-use codex_protocol::ThreadId;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_queue_extension::QueuedItemService;
-use codex_rollout::StateDbHandle;
-use codex_state::log_db::LogDbLayer;
-use codex_thread_store::LocalQueueStore;
-use codex_thread_store::QueueStore;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::AppServerRpcTransport;
+use ava_app_server_protocol::ClientNotification;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::ExperimentalApi;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::JSONRPCRequest;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::UserVerificationCancelResponse;
+use ava_app_server_protocol::experimental_required_message;
+use ava_arg0::Arg0DispatchPaths;
+use ava_code_mode::CodeModeSessionProvider;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_core::config::ThreadStoreConfig;
+use ava_exec_server::EnvironmentManager;
+use ava_extension_api::TurnStartAdmission;
+use ava_feedback::AvaFeedback;
+use ava_goal_extension::GoalService;
+use ava_home::AvaHomeUserInstructionsProvider;
+use ava_login::AuthManager;
+use ava_protocol::ThreadId;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_queue_extension::QueuedItemService;
+use ava_rollout::StateDbHandle;
+use ava_state::log_db::LogDbLayer;
+use ava_thread_store::LocalQueueStore;
+use ava_thread_store::QueueStore;
 use tokio::sync::Mutex;
 use tokio::sync::Semaphore;
 use tokio::sync::broadcast;
@@ -251,7 +251,7 @@ pub(crate) struct MessageProcessorArgs {
     pub(crate) config: Arc<Config>,
     pub(crate) config_manager: ConfigManager,
     pub(crate) environment_manager: Arc<EnvironmentManager>,
-    pub(crate) feedback: CodexFeedback,
+    pub(crate) feedback: AvaFeedback,
     pub(crate) log_db: Option<LogDbLayer>,
     pub(crate) state_db: Option<StateDbHandle>,
     pub(crate) config_warnings: Vec<ConfigWarningNotification>,
@@ -295,7 +295,7 @@ impl MessageProcessor {
         // The thread store is intentionally process-scoped. Config reloads can
         // affect per-thread behavior, but they must not move newly started,
         // resumed, or forked threads to a different persistence backend/root.
-        let thread_store = codex_core::thread_store_from_config(config.as_ref(), state_db.clone());
+        let thread_store = ava_core::thread_store_from_config(config.as_ref(), state_db.clone());
         // Queue persistence requires SQLite, so in-memory thread stores and
         // app servers without a state database do not have a queue backend.
         let queue_store: Option<Arc<dyn QueueStore>> = match &config.experimental_thread_store {
@@ -307,8 +307,8 @@ impl MessageProcessor {
         let environment_manager_for_requests = Arc::clone(&environment_manager);
         let environment_manager_for_extensions = Arc::clone(&environment_manager);
         let restriction_product = session_source.restriction_product();
-        let executor_skill_provider: Arc<dyn codex_skills_extension::SkillProvider> = Arc::new(
-            codex_skills_extension::ExecutorSkillProvider::new_with_restriction_product(
+        let executor_skill_provider: Arc<dyn ava_skills_extension::SkillProvider> = Arc::new(
+            ava_skills_extension::ExecutorSkillProvider::new_with_restriction_product(
                 Arc::clone(&environment_manager_for_extensions),
                 restriction_product,
             ),
@@ -330,8 +330,8 @@ impl MessageProcessor {
             let manager = ThreadManager::new(
                 config.as_ref(),
                 auth_manager.clone(),
-                codex_core::build_models_manager(config.as_ref(), auth_manager.clone()),
-                codex_core::CodexAppsToolsCache::default(),
+                ava_core::build_models_manager(config.as_ref(), auth_manager.clone()),
+                ava_core::AvaAppsToolsCache::default(),
                 session_source,
                 environment_manager,
                 thread_extensions(ThreadExtensionDependencies {
@@ -348,13 +348,13 @@ impl MessageProcessor {
                     queue_service: queue_service.clone(),
                     turn_start_admission: Some(Arc::clone(&turn_start_admission)),
                 }),
-                Arc::new(CodexHomeUserInstructionsProvider::new(
-                    config.codex_home.clone(),
+                Arc::new(AvaHomeUserInstructionsProvider::new(
+                    config.ava_home.clone(),
                 )),
                 Some(analytics_events_client.clone()),
-                codex_core::passthrough_image_store(),
+                ava_core::passthrough_image_store(),
                 Arc::clone(&thread_store),
-                codex_core::local_agent_graph_store_from_state_db(state_db.as_ref()),
+                ava_core::local_agent_graph_store_from_state_db(state_db.as_ref()),
                 installation_id,
                 Some(app_server_attestation_provider(
                     outgoing.clone(),
@@ -380,7 +380,7 @@ impl MessageProcessor {
             .set_analytics_events_client(analytics_events_client.clone());
         let skills_watcher = SkillsWatcher::new(
             thread_manager.skills_service(),
-            &config.codex_home,
+            &config.ava_home,
             outgoing.clone(),
         );
 
@@ -558,7 +558,7 @@ impl MessageProcessor {
                 state_db,
                 analytics_events_client,
                 arg0_paths,
-                codex_home: config.codex_home.to_path_buf(),
+                ava_home: config.ava_home.to_path_buf(),
             });
         let environment_processor =
             EnvironmentRequestProcessor::new(thread_manager.environment_manager());
@@ -646,16 +646,16 @@ impl MessageProcessor {
             Arc::clone(&self.outgoing),
             request_context.clone(),
             async {
-                let codex_request = deserialize_client_request(request);
-                let result = match codex_request {
-                    Ok(codex_request) => {
+                let ava_request = deserialize_client_request(request);
+                let result = match ava_request {
+                    Ok(ava_request) => {
                         // Websocket callers finalize outbound readiness in lib.rs after mirroring
                         // session state into outbound state and sending initialize notifications to
                         // this specific connection. Passing `None` avoids marking the connection
                         // ready too early from inside the shared request handler.
                         self.handle_client_request(
                             request_id.clone(),
-                            codex_request,
+                            ava_request,
                             Arc::clone(&session),
                             /*outbound_initialized*/ None,
                             request_context.clone(),
@@ -758,13 +758,13 @@ impl MessageProcessor {
 
     pub(crate) async fn daemon_recovery_snapshot(
         &self,
-    ) -> codex_app_server_transport::daemon_recovery::RecoverySnapshot {
+    ) -> ava_app_server_transport::daemon_recovery::RecoverySnapshot {
         self.thread_processor.daemon_recovery_snapshot().await
     }
 
     pub(crate) async fn restore_daemon_threads(
         &self,
-        mut snapshot: codex_app_server_transport::daemon_recovery::RecoverySnapshot,
+        mut snapshot: ava_app_server_transport::daemon_recovery::RecoverySnapshot,
     ) {
         for thread_id in snapshot.loaded {
             let Ok(_permit) = self.turn_admission.admit() else {
@@ -774,7 +774,7 @@ impl MessageProcessor {
                 .thread_processor
                 .thread_resume(
                     ThreadResumeTarget::DaemonRecovery(snapshot.interrupted.remove(&thread_id)),
-                    codex_app_server_protocol::ThreadResumeParams {
+                    ava_app_server_protocol::ThreadResumeParams {
                         thread_id: thread_id.clone(),
                         exclude_turns: true,
                         ..Default::default()
@@ -914,7 +914,7 @@ impl MessageProcessor {
     async fn handle_client_request(
         self: &Arc<Self>,
         connection_request_id: ConnectionRequestId,
-        codex_request: ClientRequest,
+        ava_request: ClientRequest,
         session: Arc<ConnectionSessionState>,
         // `Some(...)` means the caller wants initialize to immediately mark the
         // connection outbound-ready. Websocket JSON-RPC calls pass `None` so
@@ -923,7 +923,7 @@ impl MessageProcessor {
         request_context: RequestContext,
     ) -> Result<(), JSONRPCErrorError> {
         let connection_id = connection_request_id.connection_id;
-        if let ClientRequest::Initialize { request_id, params } = codex_request {
+        if let ClientRequest::Initialize { request_id, params } = ava_request {
             let connection_initialized = self
                 .initialize_processor
                 .initialize(
@@ -943,7 +943,7 @@ impl MessageProcessor {
 
         self.dispatch_initialized_client_request(
             connection_request_id,
-            codex_request,
+            ava_request,
             session,
             request_context,
         )
@@ -953,7 +953,7 @@ impl MessageProcessor {
     async fn dispatch_initialized_client_request(
         self: &Arc<Self>,
         connection_request_id: ConnectionRequestId,
-        codex_request: ClientRequest,
+        ava_request: ClientRequest,
         session: Arc<ConnectionSessionState>,
         request_context: RequestContext,
     ) -> Result<(), JSONRPCErrorError> {
@@ -961,7 +961,7 @@ impl MessageProcessor {
             return Err(invalid_request("Not initialized"));
         }
 
-        if let Some(reason) = codex_request.experimental_reason()
+        if let Some(reason) = ava_request.experimental_reason()
             && !session.experimental_api_enabled()
         {
             return Err(invalid_request(experimental_required_message(reason)));
@@ -970,10 +970,10 @@ impl MessageProcessor {
         self.initialize_processor.track_initialized_request(
             connection_id,
             connection_request_id.request_id.clone(),
-            &codex_request,
+            &ava_request,
         );
 
-        let (turn_admission, recheck_turn_admission) = match &codex_request {
+        let (turn_admission, recheck_turn_admission) = match &ava_request {
             ClientRequest::ThreadStart { .. }
             | ClientRequest::ThreadFork { .. }
             | ClientRequest::ThreadResume { .. }
@@ -994,7 +994,7 @@ impl MessageProcessor {
             _ => (None, false),
         };
 
-        let event_stream_ready = match &codex_request {
+        let event_stream_ready = match &ava_request {
             ClientRequest::McpServerEventStreamStart { params, .. } => Some(
                 session
                     .mcp_event_streams
@@ -1003,7 +1003,7 @@ impl MessageProcessor {
             ),
             _ => None,
         };
-        let serialization_scope = codex_request.serialization_scope();
+        let serialization_scope = ava_request.serialization_scope();
         let error_request_id = connection_request_id.clone();
         let rpc_gate = Arc::clone(&session.rpc_gate);
         let processor = Arc::clone(self);
@@ -1022,7 +1022,7 @@ impl MessageProcessor {
                 // Keep queued requests small to avoid large stack temporaries during construction.
                 let result = Box::pin(processor_for_request.handle_initialized_client_request(
                     connection_request_id,
-                    codex_request,
+                    ava_request,
                     request_context,
                     session,
                     event_stream_ready,
@@ -1051,7 +1051,7 @@ impl MessageProcessor {
     async fn handle_initialized_client_request(
         self: Arc<Self>,
         connection_request_id: ConnectionRequestId,
-        codex_request: ClientRequest,
+        ava_request: ClientRequest,
         request_context: RequestContext,
         session: Arc<ConnectionSessionState>,
         event_stream_ready: Option<McpEventStreamReady>,
@@ -1062,9 +1062,9 @@ impl MessageProcessor {
         let client_mcp_extensions = session.client_mcp_extensions();
         let request_id = ConnectionRequestId {
             connection_id,
-            request_id: codex_request.id().clone(),
+            request_id: ava_request.id().clone(),
         };
-        let result: Result<Option<ClientResponsePayload>, JSONRPCErrorError> = match codex_request {
+        let result: Result<Option<ClientResponsePayload>, JSONRPCErrorError> = match ava_request {
             ClientRequest::Initialize { .. } => {
                 panic!("Initialize should be handled before initialized request dispatch");
             }
@@ -1708,7 +1708,7 @@ impl MessageProcessor {
                     .wait_for_activation(&params.subscription_id, ready)
                     .await?;
                 Ok(Some(
-                    codex_app_server_protocol::McpServerEventStreamStartResponse {}.into(),
+                    ava_app_server_protocol::McpServerEventStreamStartResponse {}.into(),
                 ))
             }
             ClientRequest::McpServerEventStreamStop { params, .. } => {
@@ -1717,7 +1717,7 @@ impl MessageProcessor {
                     .stop(&params.subscription_id)
                     .await;
                 Ok(Some(
-                    codex_app_server_protocol::McpServerEventStreamStopResponse {}.into(),
+                    ava_app_server_protocol::McpServerEventStreamStopResponse {}.into(),
                 ))
             }
             ClientRequest::McpServerToolCall { params, .. } => {

@@ -2,21 +2,21 @@ use super::*;
 use crate::agents_md_manager::AgentsMdManager;
 use crate::context::ContextualUserFragment;
 use crate::context_manager::ContextManager;
-use codex_guardian_reviewer::ReviewerRequest;
-use codex_guardian_reviewer::guardian_output_contract_prompt;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_prompts::GuardianPolicyInstructions;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::openai_models::AutoReviewMessages;
-use codex_protocol::openai_models::ModelMessages;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::Submission;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
+use ava_guardian_reviewer::ReviewerRequest;
+use ava_guardian_reviewer::guardian_output_contract_prompt;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_prompts::GuardianPolicyInstructions;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::openai_models::AutoReviewMessages;
+use ava_protocol::openai_models::ModelMessages;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::Submission;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -24,7 +24,7 @@ async fn run_review_preserves_evidence_during_parent_compaction() {
     const EVIDENCE: &str = "The inspected repository is public.";
     let (parent, turn, _events) =
         crate::session::tests::make_session_and_context_with_auth_and_config_and_rx(
-            codex_login::CodexAuth::from_api_key("Test API Key"),
+            ava_login::AvaAuth::from_api_key("Test API Key"),
             Vec::new(),
             |config| {
                 config
@@ -105,7 +105,7 @@ async fn run_review_preserves_evidence_during_parent_compaction() {
         let Op::TurnInput { request, reply, .. } = submission.op else {
             panic!("expected reviewer prompt");
         };
-        let codex_protocol::turn_input::TurnInput::UserInput { content, .. } = request.input else {
+        let ava_protocol::turn_input::TurnInput::UserInput { content, .. } = request.input else {
             panic!("expected user input");
         };
         let text = serde_json::to_string(&content).unwrap();
@@ -232,10 +232,10 @@ async fn test_review_params() -> GuardianReviewSessionParams {
         node_repl_policy: GuardianNodeReplPolicy::from_messages(ResolvedModelMessages::bundled()),
         request: GuardianApprovalRequest::ExecCommand {
             id: "shell-1".to_string(),
-            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
             command: vec!["git".to_string(), "status".to_string()],
             cwd: cwd.clone().into(),
-            guardian_cwd: codex_utils_path_uri::LegacyAppPathString::from_abs_path(&cwd),
+            guardian_cwd: ava_utils_path_uri::LegacyAppPathString::from_abs_path(&cwd),
             sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
             additional_permissions: None,
             justification: Some("Inspect repo state.".to_string()),
@@ -246,7 +246,7 @@ async fn test_review_params() -> GuardianReviewSessionParams {
         review_model: ReviewModel {
             model,
             reasoning_effort,
-            default_review_model_id: "codex-auto-review".to_string(),
+            default_review_model_id: "ava-auto-review".to_string(),
             catalog_contains_auto_review: true,
             model_overridden: false,
             model_override: None,
@@ -262,12 +262,12 @@ async fn test_review_params() -> GuardianReviewSessionParams {
 #[tokio::test]
 async fn spawned_guardian_reuse_key_matches_inherited_instructions() {
     struct SharedProvider;
-    impl codex_extension_api::ThreadInstructionsProvider for SharedProvider {
+    impl ava_extension_api::ThreadInstructionsProvider for SharedProvider {
         fn share_with_subagents(&self) -> bool {
             true
         }
 
-        fn load_thread_instructions(&self) -> codex_extension_api::LoadInstructionsFuture<'_> {
+        fn load_thread_instructions(&self) -> ava_extension_api::LoadInstructionsFuture<'_> {
             panic!("isolated reviewers must not load the parent's provider")
         }
     }
@@ -461,7 +461,7 @@ async fn encrypted_parent_compaction_requires_original_item_id(thread_context_en
     let policy =
         ReviewContextPolicy::for_context(GuardianContextMode::from_features(&features), &features);
     let item = ResponseItem::Compaction {
-        id: Some(codex_protocol::ResponseItemId::from_server(
+        id: Some(ava_protocol::ResponseItemId::from_server(
             "cmp_guardian_parent_summary".to_string(),
         )),
         encrypted_content: "encrypted guardian parent summary".to_string(),
@@ -471,7 +471,7 @@ async fn encrypted_parent_compaction_requires_original_item_id(thread_context_en
     let mut history = ContextManager::new();
     history.replace_annotated(vec![ResponseItemEnvelope {
         item: item.clone(),
-        metadata: Some(CodexHarnessMetadata {
+        metadata: Some(AvaHarnessMetadata {
             compaction_model_hash: Some("compatible".to_owned()),
             ..Default::default()
         }),
@@ -674,7 +674,7 @@ fn token_usage_delta_never_reports_negative_usage() {
         output_tokens: 6,
         reasoning_output_tokens: 4,
         total_tokens: 28,
-        codex_rollout_budget_units: None,
+        ava_rollout_budget_units: None,
     };
     let end = TokenUsage {
         input_tokens: 15,
@@ -683,7 +683,7 @@ fn token_usage_delta_never_reports_negative_usage() {
         output_tokens: 10,
         reasoning_output_tokens: 2,
         total_tokens: 34,
-        codex_rollout_budget_units: None,
+        ava_rollout_budget_units: None,
     };
 
     assert_eq!(
@@ -695,7 +695,7 @@ fn token_usage_delta_never_reports_negative_usage() {
             output_tokens: 4,
             reasoning_output_tokens: 0,
             total_tokens: 6,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         }
     );
 }
@@ -815,7 +815,7 @@ async fn wait_for_guardian_review_ignores_prior_turn_errors() {
             msg: EventMsg::Error(ErrorEvent {
                 misalignment: None,
                 message: "stale guardian error".to_string(),
-                codex_error_info: None,
+                ava_error_info: None,
             }),
         })
         .await
@@ -830,7 +830,7 @@ async fn wait_for_guardian_review_ignores_prior_turn_errors() {
         .expect("queue current turn completion");
 
     let mut analytics_result = GuardianReviewAnalyticsResult::without_session();
-    let codex_guardian_reviewer::ReviewTurnResult {
+    let ava_guardian_reviewer::ReviewTurnResult {
         outcome,
         disposition,
         turn_completed,
@@ -861,7 +861,7 @@ async fn wait_for_guardian_review_preserves_structured_session_error() {
             msg: EventMsg::Error(ErrorEvent {
                 misalignment: None,
                 message: "temporary failure".to_string(),
-                codex_error_info: Some(CodexErrorInfo::ServerOverloaded),
+                ava_error_info: Some(AvaErrorInfo::ServerOverloaded),
             }),
         })
         .await
@@ -876,7 +876,7 @@ async fn wait_for_guardian_review_preserves_structured_session_error() {
         .expect("queue current turn completion");
 
     let mut analytics_result = GuardianReviewAnalyticsResult::without_session();
-    let codex_guardian_reviewer::ReviewTurnResult {
+    let ava_guardian_reviewer::ReviewTurnResult {
         outcome,
         disposition,
         turn_completed,
@@ -896,7 +896,7 @@ async fn wait_for_guardian_review_preserves_structured_session_error() {
         panic!("expected structured session failure");
     };
     assert_eq!(error.to_string(), "temporary failure");
-    assert_eq!(error_info, Some(CodexErrorInfo::ServerOverloaded));
+    assert_eq!(error_info, Some(AvaErrorInfo::ServerOverloaded));
     assert_eq!(disposition, SessionDisposition::Reusable);
     assert!(turn_completed);
 }
@@ -914,7 +914,7 @@ async fn wait_for_guardian_review_ignores_prior_turn_aborts() {
         .expect("queue current turn completion");
 
     let mut analytics_result = GuardianReviewAnalyticsResult::without_session();
-    let codex_guardian_reviewer::ReviewTurnResult {
+    let ava_guardian_reviewer::ReviewTurnResult {
         outcome,
         disposition,
         turn_completed,
@@ -954,7 +954,7 @@ async fn wait_for_guardian_review_timeout_drains_expected_turn_after_stale_termi
     });
 
     let mut analytics_result = GuardianReviewAnalyticsResult::without_session();
-    let codex_guardian_reviewer::ReviewTurnResult {
+    let ava_guardian_reviewer::ReviewTurnResult {
         outcome,
         disposition,
         turn_completed,
@@ -995,7 +995,7 @@ async fn wait_for_guardian_review_cancel_drains_expected_turn_after_stale_termin
     external_cancel.cancel();
 
     let mut analytics_result = GuardianReviewAnalyticsResult::without_session();
-    let codex_guardian_reviewer::ReviewTurnResult {
+    let ava_guardian_reviewer::ReviewTurnResult {
         outcome,
         disposition,
         turn_completed,
@@ -1051,14 +1051,14 @@ async fn prewarm_test_session(
     let key = session.reuse_key.clone();
     let session = Arc::new(Mutex::new(Some(session)));
     let pool = GuardianReviewSessionManager::new(
-        Arc::new(codex_guardian_reviewer::ReviewerTasks::default()),
+        Arc::new(ava_guardian_reviewer::ReviewerTasks::default()),
         move |_, _, _, _, _| {
             let session = Arc::clone(&session);
             Box::pin(async move { Ok(session.lock().await.take().expect("one fixture spawn")) })
         },
     );
     params.parent_session.services.thread_extension_data.insert(
-        codex_guardian_reviewer::ReviewerConfig::<Config>(
+        ava_guardian_reviewer::ReviewerConfig::<Config>(
             crate::guardian::test_host::build_reviewer_config,
         ),
     );

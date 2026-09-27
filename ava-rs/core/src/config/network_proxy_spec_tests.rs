@@ -1,17 +1,17 @@
 use super::*;
 use crate::config::EnvironmentNetworkConfigError;
 use crate::config::validate_environment_network_policy;
-use codex_config::NetworkDomainPermissionToml;
-use codex_config::NetworkDomainPermissionsToml;
-use codex_execpolicy::Decision::Allow;
-use codex_execpolicy::NetworkRuleProtocol::Https;
-use codex_network_proxy::LocalBindingPolicy::DefaultFalse;
-use codex_network_proxy::NetworkDomainPermission;
-use codex_network_proxy::NetworkUnixSocketPermission;
-use codex_network_proxy::NetworkUnixSocketPermissions;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_config::NetworkDomainPermissionToml;
+use ava_config::NetworkDomainPermissionsToml;
+use ava_execpolicy::Decision::Allow;
+use ava_execpolicy::NetworkRuleProtocol::Https;
+use ava_network_proxy::LocalBindingPolicy::DefaultFalse;
+use ava_network_proxy::NetworkDomainPermission;
+use ava_network_proxy::NetworkUnixSocketPermission;
+use ava_network_proxy::NetworkUnixSocketPermissions;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use pretty_assertions::assert_eq;
 
 fn domain_permissions(
@@ -64,7 +64,7 @@ async fn attachment_socket_grants_respect_configured_restrictions_at_remote_laun
             false,
         ),
     ] {
-        let configured: codex_config::permissions_toml::NetworkToml = toml::from_str(toml)?;
+        let configured: ava_config::permissions_toml::NetworkToml = toml::from_str(toml)?;
         let controller = NetworkProxySpec::from_config_and_constraints(
             configured.to_network_proxy_config(),
             Some(NetworkConstraints {
@@ -93,7 +93,7 @@ async fn attachment_socket_grants_respect_configured_restrictions_at_remote_laun
         )?);
         let proxy = NetworkProxy::builder()
             .state(Arc::clone(&state))
-            .managed_by_codex(false)
+            .managed_by_ava(false)
             .build()
             .await?;
         let scoped = proxy.for_execution(
@@ -200,11 +200,11 @@ fn windows_sandbox_proxy_listeners_preserve_effective_protocol_roles() {
         spec.windows_sandbox_proxy_listeners()
             .expect("effective proxy listeners should resolve"),
         (
-            codex_windows_sandbox::WindowsSandboxProvisioningSettings {
+            ava_windows_sandbox::WindowsSandboxProvisioningSettings {
                 proxy_ports: vec![3128, 48081],
                 allow_local_binding: true,
             },
-            codex_windows_sandbox::WindowsSandboxProxyListeners {
+            ava_windows_sandbox::WindowsSandboxProxyListeners {
                 http_ports: vec![48081],
                 socks_ports: vec![3128],
             },

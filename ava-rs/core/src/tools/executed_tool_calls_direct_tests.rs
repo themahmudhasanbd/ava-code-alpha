@@ -1,8 +1,8 @@
 //! Tests Direct metadata admission and permit lifetimes.
 //! Metadata limits must leave ordinary tool outputs unchanged.
 
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseInputItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseInputItem;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -23,7 +23,7 @@ async fn direct_pending_limit_releases_on_completion_or_dropped_future() {
     features.enable(Feature::ExecutedToolCallMetadata);
     let recorder = ExecutedToolCalls::new(&features, &InitialHistory::New);
     let call = ToolCall {
-        tool_name: codex_tools::ToolName::plain("test_tool"),
+        tool_name: ava_tools::ToolName::plain("test_tool"),
         call_id: "direct".to_string(),
         payload: ToolPayload::Function {
             arguments: json!({ "argument": "kept" }).to_string(),
@@ -97,7 +97,7 @@ async fn direct_budget_counts_the_encoded_argument_before_it_enters_history() {
     assert!(invalid_json.len() < MAX_EXECUTED_TOOL_CALL_ARGUMENT_BYTES);
     assert!(wire_bytes > MAX_EXECUTED_TOOL_CALL_ARGUMENT_BYTES);
     let call = ToolCall {
-        tool_name: codex_tools::ToolName::plain("test_tool"),
+        tool_name: ava_tools::ToolName::plain("test_tool"),
         call_id: "direct".to_string(),
         payload: ToolPayload::Function {
             arguments: invalid_json,
@@ -116,7 +116,7 @@ async fn direct_budget_counts_the_encoded_argument_before_it_enters_history() {
     let arguments = &metadata["executed_tool_calls"][0]["arguments"];
     assert!(serialized_json_bytes(arguments).unwrap() < MAX_EXECUTED_TOOL_CALL_ARGUMENT_BYTES);
     assert_eq!(
-        arguments["_codex_executed_tool_call_truncated"]["original_bytes"],
+        arguments["_ava_executed_tool_call_truncated"]["original_bytes"],
         wire_bytes,
     );
     assert!(metadata.get("tool_calls_complete").is_none());

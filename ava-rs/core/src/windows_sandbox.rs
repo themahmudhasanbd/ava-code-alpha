@@ -1,17 +1,17 @@
 use crate::config::Config;
 use crate::config::edit::ConfigEditsBuilder;
-use codex_config::config_toml::ConfigToml;
-use codex_config::types::WindowsSandboxModeToml;
-use codex_features::Feature;
-use codex_features::Features;
-use codex_features::FeaturesToml;
-use codex_login::default_client::originator;
-use codex_otel::sanitize_metric_tag_value;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::sandbox::effective_windows_sandbox_type;
-use codex_sandboxing::SandboxType;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::config_toml::ConfigToml;
+use ava_config::types::WindowsSandboxModeToml;
+use ava_features::Feature;
+use ava_features::Features;
+use ava_features::FeaturesToml;
+use ava_login::default_client::originator;
+use ava_otel::sanitize_metric_tag_value;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::sandbox::effective_windows_sandbox_type;
+use ava_sandboxing::SandboxType;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::path::Path;
@@ -22,21 +22,21 @@ use std::time::Instant;
 pub fn local_binding_policy_for_sandbox(
     sandbox_type: SandboxType,
     platform_os: Option<&str>,
-) -> codex_network_proxy::LocalBindingPolicy {
+) -> ava_network_proxy::LocalBindingPolicy {
     if sandbox_type == SandboxType::WindowsMxc && platform_os == Some("windows") {
-        codex_network_proxy::LocalBindingPolicy::RequireTrue
+        ava_network_proxy::LocalBindingPolicy::RequireTrue
     } else {
-        codex_network_proxy::LocalBindingPolicy::DefaultFalse
+        ava_network_proxy::LocalBindingPolicy::DefaultFalse
     }
 }
 
 pub fn managed_proxy_routing_for_windows_sandbox(
     sandbox_type: SandboxType,
-) -> codex_network_proxy::ManagedProxyRouting {
+) -> ava_network_proxy::ManagedProxyRouting {
     if cfg!(windows) && sandbox_type == SandboxType::WindowsMxc {
-        codex_network_proxy::ManagedProxyRouting::DedicatedListeners
+        ava_network_proxy::ManagedProxyRouting::DedicatedListeners
     } else {
-        codex_network_proxy::ManagedProxyRouting::SharedIngress
+        ava_network_proxy::ManagedProxyRouting::SharedIngress
     }
 }
 
@@ -120,12 +120,12 @@ pub fn legacy_windows_sandbox_mode_from_entries(
 }
 
 #[cfg(target_os = "windows")]
-pub fn sandbox_setup_is_complete(codex_home: &Path) -> bool {
-    codex_windows_sandbox::sandbox_setup_is_complete(codex_home)
+pub fn sandbox_setup_is_complete(ava_home: &Path) -> bool {
+    ava_windows_sandbox::sandbox_setup_is_complete(ava_home)
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn sandbox_setup_is_complete(_codex_home: &Path) -> bool {
+pub fn sandbox_setup_is_complete(_ava_home: &Path) -> bool {
     false
 }
 
@@ -135,28 +135,28 @@ pub fn prepare_elevated_sandbox(
     workspace_roots: &[AbsolutePathBuf],
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> anyhow::Result<()> {
-    if !sandbox_setup_is_complete(codex_home) {
+    if !sandbox_setup_is_complete(ava_home) {
         let permissions =
-            codex_windows_sandbox::ResolvedWindowsSandboxPermissions::try_from_permission_profile_for_workspace_roots(
+            ava_windows_sandbox::ResolvedWindowsSandboxPermissions::try_from_permission_profile_for_workspace_roots(
                 permission_profile,
                 workspace_roots,
             )?;
-        codex_windows_sandbox::run_elevated_setup(codex_windows_sandbox::SandboxSetupRequest {
+        ava_windows_sandbox::run_elevated_setup(ava_windows_sandbox::SandboxSetupRequest {
             permissions: &permissions,
             command_cwd,
             env_map,
-            codex_home,
+            ava_home,
             proxy_enforced: false,
         })?;
     }
-    codex_windows_sandbox::run_setup_refresh(
+    ava_windows_sandbox::run_setup_refresh(
         permission_profile,
         workspace_roots,
         command_cwd,
         env_map,
-        codex_home,
+        ava_home,
         /*proxy_enforced*/ false,
     )
 }
@@ -164,11 +164,11 @@ pub fn prepare_elevated_sandbox(
 #[cfg(any(target_os = "windows", test))]
 fn provisioning_settings(
     network: Option<&crate::config::NetworkProxySpec>,
-) -> std::io::Result<codex_windows_sandbox::WindowsSandboxProvisioningSettings> {
+) -> std::io::Result<ava_windows_sandbox::WindowsSandboxProvisioningSettings> {
     let Some(network) = network.filter(|network| network.enabled()) else {
-        return Ok(codex_windows_sandbox::WindowsSandboxProvisioningSettings::default());
+        return Ok(ava_windows_sandbox::WindowsSandboxProvisioningSettings::default());
     };
-    Ok(codex_windows_sandbox::WindowsSandboxProvisioningSettings {
+    Ok(ava_windows_sandbox::WindowsSandboxProvisioningSettings {
         proxy_ports: network.configured_proxy_ports()?,
         allow_local_binding: network.allow_local_binding(),
     })
@@ -176,12 +176,12 @@ fn provisioning_settings(
 
 #[cfg(target_os = "windows")]
 pub fn run_elevated_provisioning_setup(
-    codex_home: &Path,
+    ava_home: &Path,
     real_user: &str,
     network: Option<&crate::config::NetworkProxySpec>,
 ) -> anyhow::Result<()> {
-    codex_windows_sandbox::run_elevated_provisioning_setup(
-        codex_home,
+    ava_windows_sandbox::run_elevated_provisioning_setup(
+        ava_home,
         real_user,
         provisioning_settings(network)?,
     )
@@ -193,14 +193,14 @@ pub fn prepare_elevated_sandbox(
     _workspace_roots: &[AbsolutePathBuf],
     _command_cwd: &Path,
     _env_map: &HashMap<String, String>,
-    _codex_home: &Path,
+    _ava_home: &Path,
 ) -> anyhow::Result<()> {
     anyhow::bail!("elevated Windows sandbox setup is only supported on Windows")
 }
 
 #[cfg(not(target_os = "windows"))]
 pub fn run_elevated_provisioning_setup(
-    _codex_home: &Path,
+    _ava_home: &Path,
     _real_user: &str,
     _network: Option<&crate::config::NetworkProxySpec>,
 ) -> anyhow::Result<()> {
@@ -213,12 +213,12 @@ pub fn run_legacy_setup_preflight(
     workspace_roots: &[AbsolutePathBuf],
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> anyhow::Result<()> {
-    codex_windows_sandbox::run_windows_sandbox_legacy_preflight(
+    ava_windows_sandbox::run_windows_sandbox_legacy_preflight(
         permission_profile,
         workspace_roots,
-        codex_home,
+        ava_home,
         command_cwd,
         env_map,
     )
@@ -230,15 +230,15 @@ pub fn run_setup_refresh_with_extra_read_roots(
     workspace_roots: &[AbsolutePathBuf],
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     extra_read_roots: Vec<PathBuf>,
 ) -> anyhow::Result<()> {
-    codex_windows_sandbox::run_setup_refresh_with_extra_read_roots(
+    ava_windows_sandbox::run_setup_refresh_with_extra_read_roots(
         permission_profile,
         workspace_roots,
         command_cwd,
         env_map,
-        codex_home,
+        ava_home,
         extra_read_roots,
         /*proxy_enforced*/ false,
     )
@@ -250,7 +250,7 @@ pub fn run_legacy_setup_preflight(
     _workspace_roots: &[AbsolutePathBuf],
     _command_cwd: &Path,
     _env_map: &HashMap<String, String>,
-    _codex_home: &Path,
+    _ava_home: &Path,
 ) -> anyhow::Result<()> {
     anyhow::bail!("legacy Windows sandbox setup is only supported on Windows")
 }
@@ -261,7 +261,7 @@ pub fn run_setup_refresh_with_extra_read_roots(
     _workspace_roots: &[AbsolutePathBuf],
     _command_cwd: &Path,
     _env_map: &HashMap<String, String>,
-    _codex_home: &Path,
+    _ava_home: &Path,
     _extra_read_roots: Vec<PathBuf>,
 ) -> anyhow::Result<()> {
     anyhow::bail!("Windows sandbox read-root refresh is only supported on Windows")
@@ -280,7 +280,7 @@ pub struct WindowsSandboxSetupRequest {
     pub workspace_roots: Vec<AbsolutePathBuf>,
     pub command_cwd: PathBuf,
     pub env_map: HashMap<String, String>,
-    pub codex_home: PathBuf,
+    pub ava_home: PathBuf,
 }
 
 pub async fn run_windows_sandbox_setup(request: WindowsSandboxSetupRequest) -> anyhow::Result<()> {
@@ -313,8 +313,8 @@ async fn run_windows_sandbox_setup_and_persist(
     let workspace_roots = request.workspace_roots;
     let command_cwd = request.command_cwd;
     let env_map = request.env_map;
-    let codex_home = request.codex_home;
-    let setup_codex_home = codex_home.clone();
+    let ava_home = request.ava_home;
+    let setup_ava_home = ava_home.clone();
 
     let setup_result = tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
         match mode {
@@ -324,7 +324,7 @@ async fn run_windows_sandbox_setup_and_persist(
                     workspace_roots.as_slice(),
                     command_cwd.as_path(),
                     &env_map,
-                    setup_codex_home.as_path(),
+                    setup_ava_home.as_path(),
                 )?;
             }
             WindowsSandboxSetupMode::Unelevated => {
@@ -333,7 +333,7 @@ async fn run_windows_sandbox_setup_and_persist(
                     workspace_roots.as_slice(),
                     command_cwd.as_path(),
                     &env_map,
-                    setup_codex_home.as_path(),
+                    setup_ava_home.as_path(),
                 )?;
             }
         }
@@ -344,7 +344,7 @@ async fn run_windows_sandbox_setup_and_persist(
 
     setup_result?;
 
-    ConfigEditsBuilder::new(codex_home.as_path())
+    ConfigEditsBuilder::new(ava_home.as_path())
         .set_windows_sandbox_mode(windows_sandbox_setup_mode_tag(mode))
         .clear_legacy_windows_sandbox_keys()
         .apply()
@@ -357,12 +357,12 @@ fn emit_windows_sandbox_setup_success_metrics(
     originator_tag: &str,
     duration: std::time::Duration,
 ) {
-    let Some(metrics) = codex_otel::global() else {
+    let Some(metrics) = ava_otel::global() else {
         return;
     };
     let mode_tag = windows_sandbox_setup_mode_tag(mode);
     let _ = metrics.record_duration(
-        "codex.windows_sandbox.setup_duration_ms",
+        "ava.windows_sandbox.setup_duration_ms",
         duration,
         &[
             ("result", "success"),
@@ -371,7 +371,7 @@ fn emit_windows_sandbox_setup_success_metrics(
         ],
     );
     let _ = metrics.counter(
-        "codex.windows_sandbox.setup_success",
+        "ava.windows_sandbox.setup_success",
         /*inc*/ 1,
         &[("originator", originator_tag), ("mode", mode_tag)],
     );
@@ -383,14 +383,14 @@ pub fn emit_windows_sandbox_setup_failure_metrics(
     duration: std::time::Duration,
     _err: &anyhow::Error,
 ) {
-    let Some(metrics) = codex_otel::global() else {
+    let Some(metrics) = ava_otel::global() else {
         return;
     };
     let originator_tag = sanitize_metric_tag_value(originator().value.as_str());
     let originator_tag = originator_tag.as_str();
     let mode_tag = windows_sandbox_setup_mode_tag(mode);
     let _ = metrics.record_duration(
-        "codex.windows_sandbox.setup_duration_ms",
+        "ava.windows_sandbox.setup_duration_ms",
         duration,
         &[
             ("result", "failure"),
@@ -399,7 +399,7 @@ pub fn emit_windows_sandbox_setup_failure_metrics(
         ],
     );
     let _ = metrics.counter(
-        "codex.windows_sandbox.setup_failure",
+        "ava.windows_sandbox.setup_failure",
         /*inc*/ 1,
         &[("originator", originator_tag), ("mode", mode_tag)],
     );
@@ -410,9 +410,9 @@ pub fn emit_windows_sandbox_setup_failure_metrics(
             let mut failure_tags: Vec<(&str, &str)> = vec![("originator", originator_tag)];
             let mut code_tag: Option<String> = None;
             let mut message_tag: Option<String> = None;
-            if let Some(failure) = codex_windows_sandbox::extract_setup_failure(_err) {
+            if let Some(failure) = ava_windows_sandbox::extract_setup_failure(_err) {
                 code_tag = Some(failure.code.as_str().to_string());
-                message_tag = Some(codex_windows_sandbox::sanitize_setup_metric_tag_value(
+                message_tag = Some(ava_windows_sandbox::sanitize_setup_metric_tag_value(
                     &failure.message,
                 ));
             }
@@ -423,21 +423,21 @@ pub fn emit_windows_sandbox_setup_failure_metrics(
                 failure_tags.push(("message", message));
             }
             let metric_name =
-                if codex_windows_sandbox::extract_setup_failure(_err).is_some_and(|failure| {
+                if ava_windows_sandbox::extract_setup_failure(_err).is_some_and(|failure| {
                     matches!(
                         failure.code,
-                        codex_windows_sandbox::SetupErrorCode::OrchestratorHelperLaunchCanceled
+                        ava_windows_sandbox::SetupErrorCode::OrchestratorHelperLaunchCanceled
                     )
                 }) {
-                    "codex.windows_sandbox.elevated_setup_canceled"
+                    "ava.windows_sandbox.elevated_setup_canceled"
                 } else {
-                    "codex.windows_sandbox.elevated_setup_failure"
+                    "ava.windows_sandbox.elevated_setup_failure"
                 };
             let _ = metrics.counter(metric_name, /*inc*/ 1, &failure_tags);
         }
     } else {
         let _ = metrics.counter(
-            "codex.windows_sandbox.legacy_setup_preflight_failed",
+            "ava.windows_sandbox.legacy_setup_preflight_failed",
             /*inc*/ 1,
             &[("originator", originator_tag)],
         );

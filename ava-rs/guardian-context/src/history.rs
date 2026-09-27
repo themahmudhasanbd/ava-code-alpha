@@ -12,9 +12,9 @@ use std::io;
 use std::io::Write;
 use std::sync::Arc;
 
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::executed_tool_call_metadata_bytes;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::executed_tool_call_metadata_bytes;
 
 use crate::SectionHistory;
 

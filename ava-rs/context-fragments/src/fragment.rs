@@ -1,7 +1,7 @@
 use crate::AnnotatedContent;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::ResponseItem;
 
 /// A rendered contextual fragment and the role that owns its annotated content.
 #[derive(Clone, Debug, PartialEq)]

@@ -7,9 +7,9 @@ use std::path::Path;
 
 use super::TransportEvent;
 use crate::transport::websocket::run_websocket_connection;
-use codex_uds::UnixListener;
-use codex_uds::UnixStream;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_uds::UnixListener;
+use ava_uds::UnixStream;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use futures::SinkExt;
 use futures::StreamExt;
 use tokio::sync::mpsc;
@@ -32,7 +32,7 @@ const CONTROL_SOCKET_MODE: u32 = 0o600;
 // Advertise the effective incoming cap for single-frame messages so clients can
 // reject oversized requests before the socket closes.
 const MAX_UNFRAGMENTED_MESSAGE_BYTES_HEADER: &str =
-    "x-codex-websocket-max-unfragmented-message-bytes";
+    "x-ava-websocket-max-unfragmented-message-bytes";
 
 #[derive(Clone, Copy)]
 pub enum DaemonShutdownAccess {
@@ -72,7 +72,7 @@ pub async fn start_control_socket_acceptor(
                 ));
             }
         }
-        codex_uds::prepare_shared_daemon_socket_directory()?;
+        ava_uds::prepare_shared_daemon_socket_directory()?;
         let physical_path = protected_socket_path(socket_path.as_path())?;
         let lock = acquire_app_server_startup_lock(AbsolutePathBuf::from_absolute_path_checked(
             physical_path.with_extension("lock"),
@@ -88,9 +88,9 @@ pub async fn start_control_socket_acceptor(
     #[cfg(windows)]
     let (socket_path, directory_guard) = {
         if let Some(parent) = socket_path.as_path().parent() {
-            codex_uds::prepare_private_socket_directory(parent).await?;
+            ava_uds::prepare_private_socket_directory(parent).await?;
         }
-        let (path, guard) = codex_uds::validate_private_socket_path(socket_path.as_path())?;
+        let (path, guard) = ava_uds::validate_private_socket_path(socket_path.as_path())?;
         (AbsolutePathBuf::from_absolute_path_checked(path)?, guard)
     };
     prepare_control_socket_path(socket_path.as_path()).await?;
@@ -227,7 +227,7 @@ async fn run_daemon_shutdown(
 // Unix callers hold the physical socket's startup lock through bind and publication.
 async fn prepare_control_socket_path(socket_path: &Path) -> IoResult<()> {
     #[cfg(windows)]
-    let (socket_path, _directory_guard) = codex_uds::validate_private_socket_path(socket_path)?;
+    let (socket_path, _directory_guard) = ava_uds::validate_private_socket_path(socket_path)?;
     #[cfg(windows)]
     let socket_path = AbsolutePathBuf::from_absolute_path_checked(socket_path)?;
     #[cfg(windows)]
@@ -266,7 +266,7 @@ async fn prepare_control_socket_path(socket_path: &Path) -> IoResult<()> {
         return Ok(());
     }
 
-    if !codex_uds::is_stale_socket_path(socket_path).await? {
+    if !ava_uds::is_stale_socket_path(socket_path).await? {
         return Err(std::io::Error::new(
             ErrorKind::AlreadyExists,
             format!(
@@ -292,7 +292,7 @@ fn protected_socket_path(rendezvous_path: &Path) -> IoResult<std::path::PathBuf>
     })?;
     let path = std::fs::canonicalize(parent)?.join(name);
     let hash = Sha256::digest(path.as_os_str().as_bytes());
-    Ok(codex_uds::shared_daemon_socket_directory()?.join(format!("{hash:x}")))
+    Ok(ava_uds::shared_daemon_socket_directory()?.join(format!("{hash:x}")))
 }
 
 pub struct AppServerStartupLock {
@@ -303,7 +303,7 @@ pub async fn acquire_app_server_startup_lock(
     startup_lock_path: AbsolutePathBuf,
 ) -> IoResult<AppServerStartupLock> {
     if let Some(parent) = startup_lock_path.as_path().parent() {
-        codex_uds::prepare_private_socket_directory(parent).await?;
+        ava_uds::prepare_private_socket_directory(parent).await?;
     }
     tokio::task::spawn_blocking(move || {
         let file = OpenOptions::new()

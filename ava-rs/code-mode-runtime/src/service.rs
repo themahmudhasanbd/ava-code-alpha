@@ -1,24 +1,24 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_code_mode_protocol::CellId;
-use codex_code_mode_protocol::CodeModeNestedToolCall;
-use codex_code_mode_protocol::CodeModeSession;
-use codex_code_mode_protocol::CodeModeSessionCellExecutionLimits;
-use codex_code_mode_protocol::CodeModeSessionDelegate;
-use codex_code_mode_protocol::CodeModeSessionResultFuture;
-use codex_code_mode_protocol::CodeModeToolKind;
-use codex_code_mode_protocol::DEFAULT_EXEC_YIELD_TIME_MS;
-use codex_code_mode_protocol::ExecuteRequest;
-use codex_code_mode_protocol::ExecuteToPendingOutcome;
-use codex_code_mode_protocol::FunctionCallOutputContentItem;
-use codex_code_mode_protocol::ImageDetail;
-use codex_code_mode_protocol::RuntimeResponse;
-use codex_code_mode_protocol::StartedCell;
-use codex_code_mode_protocol::WaitOutcome;
-use codex_code_mode_protocol::WaitRequest;
-use codex_code_mode_protocol::WaitToPendingOutcome;
-use codex_code_mode_protocol::WaitToPendingRequest;
+use ava_code_mode_protocol::CellId;
+use ava_code_mode_protocol::CodeModeNestedToolCall;
+use ava_code_mode_protocol::CodeModeSession;
+use ava_code_mode_protocol::CodeModeSessionCellExecutionLimits;
+use ava_code_mode_protocol::CodeModeSessionDelegate;
+use ava_code_mode_protocol::CodeModeSessionResultFuture;
+use ava_code_mode_protocol::CodeModeToolKind;
+use ava_code_mode_protocol::DEFAULT_EXEC_YIELD_TIME_MS;
+use ava_code_mode_protocol::ExecuteRequest;
+use ava_code_mode_protocol::ExecuteToPendingOutcome;
+use ava_code_mode_protocol::FunctionCallOutputContentItem;
+use ava_code_mode_protocol::ImageDetail;
+use ava_code_mode_protocol::RuntimeResponse;
+use ava_code_mode_protocol::StartedCell;
+use ava_code_mode_protocol::WaitOutcome;
+use ava_code_mode_protocol::WaitRequest;
+use ava_code_mode_protocol::WaitToPendingOutcome;
+use ava_code_mode_protocol::WaitToPendingRequest;
 use serde_json::Value as JsonValue;
 use tokio::sync::oneshot;
 use tokio_util::sync::CancellationToken;
@@ -259,7 +259,7 @@ impl runtime::SessionRuntimeDelegate for ProtocolDelegate {
                 CodeModeNestedToolCall {
                     cell_id: protocol_cell_id(&invocation.cell_id),
                     runtime_tool_call_id: invocation.runtime_tool_call_id,
-                    tool_name: codex_protocol::ToolName {
+                    tool_name: ava_protocol::ToolName {
                         name: invocation.tool_name.name,
                         namespace: invocation.tool_name.namespace,
                     },

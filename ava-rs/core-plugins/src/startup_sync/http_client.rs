@@ -2,7 +2,7 @@
 //!
 //! Curated plugin startup sync normally uses git, so its HTTP path is also a recovery path for
 //! machines where git is unavailable or fails. Under `ReqwestDefault`, that recovery path must
-//! preserve the legacy `codex_login::default_client::create_client_without_request_logging()`
+//! preserve the legacy `ava_login::default_client::create_client_without_request_logging()`
 //! behavior: invalid custom-CA configuration is logged and falls back to a normal client instead
 //! of making HTTP sync fail as well.
 //!
@@ -13,21 +13,21 @@
 //!
 //! `StartupSyncHttpClient` keeps those two policies behind one request API without making lenient
 //! custom-CA handling a global HTTP-client behavior. This module selects the transport only;
-//! startup-sync request helpers remain responsible for applying the standard Codex headers.
+//! startup-sync request helpers remain responsible for applying the standard Ava headers.
 
 use std::sync::Arc;
 use std::time::Duration;
 
 use crate::http_client_selector::HttpClientSelector;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClient;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::HttpResponse;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::RequestBuilder;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestBuilder;
-use codex_login::default_client::create_client_without_request_logging;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClient;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::HttpResponse;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::RequestBuilder;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestBuilder;
+use ava_login::default_client::create_client_without_request_logging;
 use http::HeaderMap;
 use http::Method;
 

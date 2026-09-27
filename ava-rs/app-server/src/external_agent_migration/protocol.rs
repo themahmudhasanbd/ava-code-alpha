@@ -1,35 +1,35 @@
 use crate::error_code::internal_error;
-use codex_app_server_protocol::CommandMigration;
-use codex_app_server_protocol::ExternalAgentConfigDetectResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
-use codex_app_server_protocol::ExternalAgentConfigImportHistory;
-use codex_app_server_protocol::ExternalAgentConfigImportItemTypeFailure as ProtocolImportFailure;
-use codex_app_server_protocol::ExternalAgentConfigImportItemTypeSuccess as ProtocolImportSuccess;
-use codex_app_server_protocol::ExternalAgentConfigImportTypeResult as ProtocolImportTypeResult;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItem;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItemType;
-use codex_app_server_protocol::ExternalAgentDetectedConnectorCandidate;
-use codex_app_server_protocol::ExternalAgentDetectedConnectorSource;
-use codex_app_server_protocol::HookMigration;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::McpServerMigration;
-use codex_app_server_protocol::MigrationDetails;
-use codex_app_server_protocol::PluginsMigration;
-use codex_app_server_protocol::SkillMigration;
-use codex_app_server_protocol::SubagentMigration;
-use codex_external_agent_migration::DetectedConnectorCandidate as CoreDetectedConnectorCandidate;
-use codex_external_agent_migration::DetectedConnectorSource as CoreDetectedConnectorSource;
-use codex_external_agent_migration::ExternalAgentConfigImportItemResult as CoreImportItemResult;
-use codex_external_agent_migration::ExternalAgentConfigImportRawError as CoreImportRawError;
-use codex_external_agent_migration::ExternalAgentConfigImportSuccess;
-use codex_external_agent_migration::ExternalAgentConfigMigrationItem as CoreMigrationItem;
-use codex_external_agent_migration::ExternalAgentConfigMigrationItemType as CoreMigrationItemType;
-use codex_external_agent_migration::MigrationDetails as CoreMigrationDetails;
-use codex_external_agent_migration::NamedMigration;
-use codex_external_agent_migration::PluginsMigration as CorePluginsMigration;
-use codex_external_agent_migration::sessions::ExternalAgentSessionMigration;
-use codex_state::ExternalAgentConfigImportFailureRecord;
-use codex_state::ExternalAgentConfigImportSuccessRecord;
+use ava_app_server_protocol::CommandMigration;
+use ava_app_server_protocol::ExternalAgentConfigDetectResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
+use ava_app_server_protocol::ExternalAgentConfigImportHistory;
+use ava_app_server_protocol::ExternalAgentConfigImportItemTypeFailure as ProtocolImportFailure;
+use ava_app_server_protocol::ExternalAgentConfigImportItemTypeSuccess as ProtocolImportSuccess;
+use ava_app_server_protocol::ExternalAgentConfigImportTypeResult as ProtocolImportTypeResult;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItem;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItemType;
+use ava_app_server_protocol::ExternalAgentDetectedConnectorCandidate;
+use ava_app_server_protocol::ExternalAgentDetectedConnectorSource;
+use ava_app_server_protocol::HookMigration;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::McpServerMigration;
+use ava_app_server_protocol::MigrationDetails;
+use ava_app_server_protocol::PluginsMigration;
+use ava_app_server_protocol::SkillMigration;
+use ava_app_server_protocol::SubagentMigration;
+use ava_external_agent_migration::DetectedConnectorCandidate as CoreDetectedConnectorCandidate;
+use ava_external_agent_migration::DetectedConnectorSource as CoreDetectedConnectorSource;
+use ava_external_agent_migration::ExternalAgentConfigImportItemResult as CoreImportItemResult;
+use ava_external_agent_migration::ExternalAgentConfigImportRawError as CoreImportRawError;
+use ava_external_agent_migration::ExternalAgentConfigImportSuccess;
+use ava_external_agent_migration::ExternalAgentConfigMigrationItem as CoreMigrationItem;
+use ava_external_agent_migration::ExternalAgentConfigMigrationItemType as CoreMigrationItemType;
+use ava_external_agent_migration::MigrationDetails as CoreMigrationDetails;
+use ava_external_agent_migration::NamedMigration;
+use ava_external_agent_migration::PluginsMigration as CorePluginsMigration;
+use ava_external_agent_migration::sessions::ExternalAgentSessionMigration;
+use ava_state::ExternalAgentConfigImportFailureRecord;
+use ava_state::ExternalAgentConfigImportSuccessRecord;
 
 pub(super) fn detect_response(
     items: Vec<CoreMigrationItem>,
@@ -82,7 +82,7 @@ fn protocol_migration_details(details: CoreMigrationDetails) -> MigrationDetails
         sessions: details
             .sessions
             .into_iter()
-            .map(|session| codex_app_server_protocol::SessionMigration {
+            .map(|session| ava_app_server_protocol::SessionMigration {
                 path: session.path,
                 cwd: session.cwd,
                 title: session.title,
@@ -217,7 +217,7 @@ fn core_migration_item_type(
 }
 
 pub(super) fn protocol_import_history(
-    record: codex_state::ExternalAgentConfigImportHistoryRecord,
+    record: ava_state::ExternalAgentConfigImportHistoryRecord,
 ) -> Result<ExternalAgentConfigImportHistory, JSONRPCErrorError> {
     let successes = record
         .successes

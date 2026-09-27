@@ -1,8 +1,8 @@
 //! Exercises model policy, legacy config, and live user modes through the app-server API.
 
 use super::*;
-use codex_protocol::openai_models::GuardianModelPolicy;
-use codex_protocol::openai_models::GuardianReviewMode;
+use ava_protocol::openai_models::GuardianModelPolicy;
+use ava_protocol::openai_models::GuardianReviewMode;
 use pretty_assertions::assert_eq;
 use test_case::test_case;
 
@@ -56,7 +56,7 @@ async fn model_guardian_policy_controls_cua(
         matches!(constraint, ReviewConstraint::Sensitive).then_some(/*t*/ true),
     )
     .await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_url)
         .with_model(MODEL)
         .with_provider_config("supports_websockets = false")
@@ -66,9 +66,9 @@ async fn model_guardian_policy_controls_cua(
             "[mcp_servers.node_repl]\nurl = \"{mcp_url}/mcp\"\ndefault_tools_approval_mode = \"auto\"\n\n[features.guardianv2]\nenabled = {legacy_enabled}"
         ))
         .enable_feature(Feature::GuardianApproval)
-        .write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let mut model = codex_core::test_support::construct_model_info_offline(MODEL, &config);
+        .write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let mut model = ava_core::test_support::construct_model_info_offline(MODEL, &config);
     // Exercise both directions of precedence over the legacy CUA bit.
     model.node_repl_auto_review_required =
         mode.is_none() || mode == Some(GuardianReviewMode::Disabled);
@@ -76,9 +76,9 @@ async fn model_guardian_policy_controls_cua(
         computer_use: Some(computer_use),
         ..Default::default()
     });
-    write_models_cache_with_models(codex_home.path(), vec![model]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![model]).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     let started = app_server

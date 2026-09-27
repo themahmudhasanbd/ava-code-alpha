@@ -13,20 +13,20 @@ use crate::app_event::WindowsSandboxEnableMode;
 use crate::app_info::app_info_from_api;
 use crate::app_server_session::AppServerSession;
 use crate::app_server_session::status_account_display_from_auth_mode;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::AuthMode;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::RateLimitReachedType;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadSource;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::AuthMode;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::RateLimitReachedType;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadSource;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SubAgentSource;
 
 impl App {
     pub(super) fn refresh_mcp_startup_expected_servers_from_config(&mut self) {
@@ -153,7 +153,7 @@ impl App {
                 .agents_overview
                 .dispatched_requests
                 .contains_key(parent_thread_id)
-            && let Ok(thread_id) = codex_protocol::ThreadId::from_string(&started.thread.id)
+            && let Ok(thread_id) = ava_protocol::ThreadId::from_string(&started.thread.id)
         {
             self.agents_overview
                 .dispatched_requests
@@ -180,7 +180,7 @@ impl App {
                     task.abort();
                 }
                 let notification_thread_id =
-                    codex_protocol::ThreadId::from_string(&notification.thread_id).ok();
+                    ava_protocol::ThreadId::from_string(&notification.thread_id).ok();
                 self.pending_primary_events.retain(|event| {
                     !matches!(event, ThreadBufferedEvent::Request(request)
                         if request.id() == &notification.request_id
@@ -248,7 +248,7 @@ impl App {
                 // the newly authenticated identity, even when both accounts share one thread.
                 self.last_thread_usage_status_cell = None;
                 self.pending_thread_usage_history_refresh = false;
-                let has_codex_backend_auth = matches!(
+                let has_ava_backend_auth = matches!(
                     notification.auth_mode,
                     Some(
                         AuthMode::Chatgpt
@@ -266,7 +266,7 @@ impl App {
                     notification
                         .auth_mode
                         .is_some_and(AuthMode::has_chatgpt_account),
-                    has_codex_backend_auth,
+                    has_ava_backend_auth,
                 );
                 if self.chat_widget.has_chatgpt_account() {
                     crate::daybreak::prefetch_notice(
@@ -407,10 +407,10 @@ impl App {
             };
             let expected_mode = match mode {
                 WindowsSandboxEnableMode::Elevated => {
-                    codex_app_server_protocol::WindowsSandboxSetupMode::Elevated
+                    ava_app_server_protocol::WindowsSandboxSetupMode::Elevated
                 }
                 WindowsSandboxEnableMode::Legacy => {
-                    codex_app_server_protocol::WindowsSandboxSetupMode::Unelevated
+                    ava_app_server_protocol::WindowsSandboxSetupMode::Unelevated
                 }
             };
             if result.mode != expected_mode {
@@ -468,7 +468,7 @@ impl App {
                 );
             if app_server_client.uses_embedded_app_server()
                 || requires_mcp
-                || codex_protocol::ThreadId::from_string(&params.thread_id)
+                || ava_protocol::ThreadId::from_string(&params.thread_id)
                     .is_ok_and(|thread_id| self.abandoned_side_threads.contains(&thread_id))
             {
                 let response = crate::dynamic_tools::failure_response(if requires_mcp {
@@ -519,7 +519,7 @@ impl App {
                 if inherits_task_tools
                     && response.success
                     && let [
-                        codex_app_server_protocol::DynamicToolCallOutputContentItem::InputText {
+                        ava_app_server_protocol::DynamicToolCallOutputContentItem::InputText {
                             text,
                         },
                     ] = response.content_items.as_slice()

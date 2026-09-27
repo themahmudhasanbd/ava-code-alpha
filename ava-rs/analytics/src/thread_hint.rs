@@ -1,8 +1,8 @@
 //! Per-attempt thread hint status analytics without hint contents.
 
-use crate::events::CodexAppServerClientMetadata;
-use crate::events::CodexRuntimeMetadata;
-use codex_protocol::protocol::ThreadSource;
+use crate::events::AvaAppServerClientMetadata;
+use crate::events::AvaRuntimeMetadata;
+use ava_protocol::protocol::ThreadSource;
 use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -28,8 +28,8 @@ pub(crate) struct ThreadHintStatusEventRequest {
 pub(crate) struct ThreadHintStatusEventParams {
     pub(crate) thread_id: String,
     pub(crate) session_id: String,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) subagent_source: Option<String>,
     pub(crate) parent_thread_id: Option<String>,

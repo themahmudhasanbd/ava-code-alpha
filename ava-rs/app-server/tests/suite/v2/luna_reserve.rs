@@ -5,9 +5,9 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::ChatGptIdTokenClaims;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::RateLimitResetCreditsSummary;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::RateLimitResetCreditsSummary;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -68,7 +68,7 @@ async fn luna_reserve_usage_capability(
         .mount(&backend)
         .await;
     Mock::given(method("GET"))
-        .and(path("/api/codex/usage"))
+        .and(path("/api/ava/usage"))
         .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_json(json!({
             "account_id": "account-a", "user_id": "user-a", "plan_type": "pro",
             "rate_limit": {"allowed": false, "limit_reached": true},
@@ -81,7 +81,7 @@ async fn luna_reserve_usage_capability(
         .as_ref()
         .is_some_and(|params| params["excludeResetCreditDetails"] == true);
     Mock::given(method("GET"))
-        .and(path("/api/codex/rate-limit-reset-credits"))
+        .and(path("/api/ava/rate-limit-reset-credits"))
         .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_json(json!({
             "available_count": 2, "credits": []
         })))
@@ -89,15 +89,15 @@ async fn luna_reserve_usage_capability(
         .mount(&backend)
         .await;
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("OPENAI_API_KEY", None),
             (
-                "CODEX_ACCESS_TOKEN",
+                "AVA_ACCESS_TOKEN",
                 (auth_kind == AuthKind::Pat).then_some("at-test-token"),
             ),
-            ("CODEX_AUTHAPI_BASE_URL", Some(backend_url.as_str())),
+            ("AVA_AUTHAPI_BASE_URL", Some(backend_url.as_str())),
         ])
         .build_initialized()
         .await?;
@@ -116,10 +116,10 @@ async fn luna_reserve_usage_capability(
         .expect("recorded backend requests");
     let usage = requests
         .iter()
-        .find(|request| request.url.path() == "/api/codex/usage")
+        .find(|request| request.url.path() == "/api/ava/usage")
         .expect("usage request");
     assert_eq!(
-        usage.headers.contains_key("x-openai-codex-luna-reserve"),
+        usage.headers.contains_key("x-openai-ava-luna-reserve"),
         expect_header
     );
     backend.verify().await;

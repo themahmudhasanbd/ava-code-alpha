@@ -686,7 +686,7 @@ export const frEntries: ChangelogEntry[] = [
     "version": "0.2.10",
     "date": "2026-07-30",
     "highlights": [
-      "Ajoutez une barre supérieure de conversation de style Codex/WorkBuddy avec des commandes améliorées.",
+      "Ajoutez une barre supérieure de conversation de style Ava/WorkBuddy avec des commandes améliorées.",
       "Actualisez la transcription du chat et le style de prose markdown pour une meilleure lisibilité.",
       "Unifiez l'en-tête du panneau de travail avec le menu contextuel et animez le réduction de la barre latérale.",
       "Combinez les lanceurs d'outils en une seule liste déroulante pour une interface plus propre.",

@@ -15,17 +15,17 @@ use axum::response::IntoResponse;
 use axum::response::sse::Event;
 use axum::response::sse::Sse;
 use axum::routing::post;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::McpServerEventNotification;
-use codex_app_server_protocol::McpServerEventStreamNotification;
-use codex_app_server_protocol::McpServerEventStreamStartResponse;
-use codex_app_server_protocol::McpServerEventStreamStopParams;
-use codex_app_server_protocol::McpServerEventStreamStopResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::McpServerEventNotification;
+use ava_app_server_protocol::McpServerEventStreamNotification;
+use ava_app_server_protocol::McpServerEventStreamStartResponse;
+use ava_app_server_protocol::McpServerEventStreamStopParams;
+use ava_app_server_protocol::McpServerEventStreamStopResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
 use core_test_support::responses;
 use futures::StreamExt as _;
 use futures::stream;
@@ -47,7 +47,7 @@ async fn mcp_event_stream_waits_for_activation_forwards_events_and_cancels() -> 
     let allow_activation = Arc::new(Notify::new());
     let activation_gate = Arc::clone(&allow_activation);
     let router = Router::new().route(
-        "/api/codex/ps/mcp",
+        "/api/ava/ps/mcp",
         post(move |Json(message): Json<Value>| {
             let stream_started_tx = stream_started_tx.clone();
             let allow_activation = Arc::clone(&activation_gate);
@@ -121,13 +121,13 @@ async fn mcp_event_stream_waits_for_activation_forwards_events_and_cancels() -> 
     );
     let mcp_server = tokio::spawn(async move { axum::serve(listener, router).await });
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{apps_url}\""))
         .enable_feature(Feature::Apps)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -135,7 +135,7 @@ async fn mcp_event_stream_waits_for_activation_forwards_events_and_cancels() -> 
         AuthCredentialsStoreMode::File,
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = app_server
@@ -143,10 +143,10 @@ async fn mcp_event_stream_waits_for_activation_forwards_events_and_cancels() -> 
         .await?;
     let start_params = json!({
         "threadId": thread.id,
-        "server": "codex_apps",
+        "server": "ava_apps",
         "subscriptionId": "subscription-1",
         "name": "issue.updated",
-        "arguments": { "project": "codex" },
+        "arguments": { "project": "ava" },
         "_meta": { "source": "desktop" },
     });
     let start_request_id = app_server
@@ -160,7 +160,7 @@ async fn mcp_event_stream_waits_for_activation_forwards_events_and_cancels() -> 
         stream_request["params"],
         json!({
             "name": "issue.updated",
-            "arguments": { "project": "codex" },
+            "arguments": { "project": "ava" },
             "_meta": {
                 "progressToken": stream_request["params"]["_meta"]["progressToken"],
                 "source": "desktop",

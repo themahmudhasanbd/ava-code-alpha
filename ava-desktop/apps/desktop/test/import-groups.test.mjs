@@ -12,14 +12,14 @@ const labels = {
   sources: {
     "claude-code": "Claude Code",
     opencode: "OpenCode",
-    codex: "Codex",
+    ava: "Ava",
     pi: "Pi",
   },
 };
 
 function candidate(overrides) {
   return {
-    source: "codex",
+    source: "ava",
     externalId: "session-1",
     title: "Session",
     projectPath: "/work/alpha",
@@ -64,7 +64,7 @@ test("keeps source grouping as the panel default", () => {
 test("groups candidates by source and orders groups by latest activity", () => {
   const groups = groupImportCandidates(
     [
-      candidate({ source: "codex", externalId: "codex" }),
+      candidate({ source: "ava", externalId: "ava" }),
       candidate({ source: "pi", externalId: "pi", updatedAt: "2026-07-25T15:00:00.000Z" }),
     ],
     "source",
@@ -75,7 +75,7 @@ test("groups candidates by source and orders groups by latest activity", () => {
     groups.map(({ id, name }) => ({ id, name })),
     [
       { id: "source:pi", name: "Pi" },
-      { id: "source:codex", name: "Codex" },
+      { id: "source:ava", name: "Ava" },
     ],
   );
 });

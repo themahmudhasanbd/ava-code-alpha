@@ -20,7 +20,7 @@ struct Fixture {
 impl Fixture {
     fn new() -> Self {
         let thread_id = ThreadId::new();
-        let directory = std::env::temp_dir().join(format!("codex-feedback-rollout-{thread_id}"));
+        let directory = std::env::temp_dir().join(format!("ava-feedback-rollout-{thread_id}"));
         fs::create_dir(&directory).expect("create fixture directory");
         let plain = directory.join(format!("rollout-2026-09-09T12-00-00-{thread_id}.jsonl"));
         let compressed = plain.with_extension("jsonl.zst");
@@ -51,7 +51,7 @@ fn unloaded_compressed_rollout_is_included_as_jsonl_attachment() {
     let fixture = Fixture::new();
     // The app-server supplies the DB's logical .jsonl path without loading this thread.
     let paths = [fixture.attachment()];
-    let snapshot = CodexFeedback::new().snapshot(/*session_id*/ None);
+    let snapshot = AvaFeedback::new().snapshot(/*session_id*/ None);
     let attachments = snapshot
         .feedback_attachments(
             /*include_logs*/ false,

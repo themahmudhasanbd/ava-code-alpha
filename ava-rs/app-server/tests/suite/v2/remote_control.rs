@@ -1,4 +1,4 @@
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::PathExt;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::io::ErrorKind;
@@ -13,40 +13,40 @@ use app_test_support::TestAppServer;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server::AppServerRuntimeOptions;
-use codex_app_server::AppServerTransport;
-use codex_app_server::AppServerWebsocketAuthSettings;
-use codex_app_server::PluginStartupTasks;
-use codex_app_server::RemoteControlStartupMode;
-use codex_app_server::run_main_with_transport_options;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RemoteControlClient;
-use codex_app_server_protocol::RemoteControlClientsListOrder;
-use codex_app_server_protocol::RemoteControlClientsListParams;
-use codex_app_server_protocol::RemoteControlClientsListResponse;
-use codex_app_server_protocol::RemoteControlClientsRevokeParams;
-use codex_app_server_protocol::RemoteControlClientsRevokeResponse;
-use codex_app_server_protocol::RemoteControlConnectionStatus;
-use codex_app_server_protocol::RemoteControlDisableResponse;
-use codex_app_server_protocol::RemoteControlEnableResponse;
-use codex_app_server_protocol::RemoteControlPairingStartParams;
-use codex_app_server_protocol::RemoteControlPairingStartResponse;
-use codex_app_server_protocol::RemoteControlPairingStatusParams;
-use codex_app_server_protocol::RemoteControlPairingStatusResponse;
-use codex_app_server_protocol::RemoteControlStatusChangedNotification;
-use codex_app_server_protocol::RemoteControlStatusReadResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::LoaderOverrides;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_protocol::protocol::SessionSource;
-use codex_state::RemoteControlEnrollmentRecord;
-use codex_state::StateRuntime;
-use codex_utils_cli::CliConfigOverrides;
+use ava_app_server::AppServerRuntimeOptions;
+use ava_app_server::AppServerTransport;
+use ava_app_server::AppServerWebsocketAuthSettings;
+use ava_app_server::PluginStartupTasks;
+use ava_app_server::RemoteControlStartupMode;
+use ava_app_server::run_main_with_transport_options;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RemoteControlClient;
+use ava_app_server_protocol::RemoteControlClientsListOrder;
+use ava_app_server_protocol::RemoteControlClientsListParams;
+use ava_app_server_protocol::RemoteControlClientsListResponse;
+use ava_app_server_protocol::RemoteControlClientsRevokeParams;
+use ava_app_server_protocol::RemoteControlClientsRevokeResponse;
+use ava_app_server_protocol::RemoteControlConnectionStatus;
+use ava_app_server_protocol::RemoteControlDisableResponse;
+use ava_app_server_protocol::RemoteControlEnableResponse;
+use ava_app_server_protocol::RemoteControlPairingStartParams;
+use ava_app_server_protocol::RemoteControlPairingStartResponse;
+use ava_app_server_protocol::RemoteControlPairingStatusParams;
+use ava_app_server_protocol::RemoteControlPairingStatusResponse;
+use ava_app_server_protocol::RemoteControlStatusChangedNotification;
+use ava_app_server_protocol::RemoteControlStatusReadResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::LoaderOverrides;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_protocol::protocol::SessionSource;
+use ava_state::RemoteControlEnrollmentRecord;
+use ava_state::StateRuntime;
+use ava_utils_cli::CliConfigOverrides;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -133,13 +133,13 @@ async fn assert_remote_control_disabled_by_requirements(
 
 #[tokio::test]
 async fn managed_requirements_reject_all_remote_control_rpcs() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         "allow_remote_control = false\n",
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -189,13 +189,13 @@ async fn managed_requirements_reject_all_remote_control_rpcs() -> Result<()> {
 #[tokio::test]
 async fn managed_requirements_allow_remote_control_true_does_not_enable_or_block_it() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         "allow_remote_control = true\n",
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -213,26 +213,26 @@ async fn managed_requirements_allow_remote_control_true_does_not_enable_or_block
 #[tokio::test]
 #[serial]
 async fn explicit_remote_control_startup_fails_when_disabled_by_requirements() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         "allow_remote_control = false\n",
     )?;
-    let managed_config_path = codex_home.path().join("managed_config.toml");
-    let socket_path = codex_home
+    let managed_config_path = ava_home.path().join("managed_config.toml");
+    let socket_path = ava_home
         .path()
         .join("app-server-control")
         .join("app-server.sock");
     let transport =
         AppServerTransport::from_listen_url(&format!("unix://{}", socket_path.display()))?;
-    let _codex_home_guard = EnvVarGuard::set("CODEX_HOME", codex_home.path().as_os_str());
+    let _ava_home_guard = EnvVarGuard::set("AVA_HOME", ava_home.path().as_os_str());
 
     let result = timeout(
         STARTUP_TIMEOUT,
         run_main_with_transport_options(
             Arg0DispatchPaths {
-                codex_self_exe: Some(std::env::current_exe()?),
-                codex_linux_sandbox_exe: None,
+                ava_self_exe: Some(std::env::current_exe()?),
+                ava_linux_sandbox_exe: None,
                 main_execve_wrapper_exe: None,
             },
             CliConfigOverrides::default(),
@@ -263,14 +263,14 @@ async fn explicit_remote_control_startup_fails_when_disabled_by_requirements() -
 
 #[tokio::test]
 async fn listen_off_honors_persisted_remote_control_enable() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let listener = configured_remote_control_listener(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let listener = configured_remote_control_listener(ava_home.path()).await?;
     let websocket_url = format!(
         "ws://{}/backend-api/wham/remote/control/server",
         listener.local_addr()?
     );
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "test-provider".to_string(),
     )
     .await?;
@@ -287,7 +287,7 @@ async fn listen_off_honors_persisted_remote_control_enable() -> Result<()> {
         .await?;
 
     let _app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_args(&["--listen", "off"])
         .build()
@@ -306,10 +306,10 @@ async fn listen_off_honors_persisted_remote_control_enable() -> Result<()> {
 
 #[tokio::test]
 async fn listen_off_ignores_persisted_enable_when_disabled_by_requirements() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let listener = configured_remote_control_listener(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let listener = configured_remote_control_listener(ava_home.path()).await?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         "allow_remote_control = false\n",
     )?;
     let websocket_url = format!(
@@ -317,7 +317,7 @@ async fn listen_off_ignores_persisted_enable_when_disabled_by_requirements() -> 
         listener.local_addr()?
     );
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "test-provider".to_string(),
     )
     .await?;
@@ -334,7 +334,7 @@ async fn listen_off_ignores_persisted_enable_when_disabled_by_requirements() -> 
         .await?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_args(&["--listen", "off"])
         .build()
@@ -362,15 +362,15 @@ async fn listen_off_ignores_persisted_enable_when_disabled_by_requirements() -> 
 #[tokio::test]
 async fn listen_off_exits_without_persisted_remote_control_enable() -> Result<()> {
     for persisted_preference in [None, Some(false)] {
-        let codex_home = TempDir::new()?;
-        let listener = configured_remote_control_listener(codex_home.path()).await?;
+        let ava_home = TempDir::new()?;
+        let listener = configured_remote_control_listener(ava_home.path()).await?;
         if let Some(remote_control_enabled) = persisted_preference {
             let websocket_url = format!(
                 "ws://{}/backend-api/wham/remote/control/server",
                 listener.local_addr()?
             );
             let state_db = StateRuntime::init(
-                codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+                ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
                 "test-provider".to_string(),
             )
             .await?;
@@ -388,7 +388,7 @@ async fn listen_off_exits_without_persisted_remote_control_enable() -> Result<()
         }
 
         let mut app_server = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .without_auto_env()
             .with_args(&["--listen", "off"])
             .build()
@@ -401,10 +401,10 @@ async fn listen_off_exits_without_persisted_remote_control_enable() -> Result<()
 
 #[tokio::test]
 async fn remote_control_disable_returns_disabled_status() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let _listener = configured_remote_control_listener(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let _listener = configured_remote_control_listener(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -425,9 +425,9 @@ async fn remote_control_disable_returns_disabled_status() -> Result<()> {
 
 #[tokio::test]
 async fn remote_control_status_read_returns_disabled_status() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -448,10 +448,10 @@ async fn remote_control_status_read_returns_disabled_status() -> Result<()> {
 
 #[tokio::test]
 async fn remote_control_enable_returns_connecting_status() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = BlockingRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = BlockingRemoteControlBackend::start(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -480,10 +480,10 @@ async fn remote_control_enable_returns_connecting_status() -> Result<()> {
 
 #[tokio::test]
 async fn stdio_eof_exits_with_remote_control_connection() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = ConnectedRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = ConnectedRemoteControlBackend::start(ava_home.path()).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -501,9 +501,9 @@ async fn stdio_eof_exits_with_remote_control_connection() -> Result<()> {
 
 #[tokio::test]
 async fn stdio_eof_releases_thread_writer_with_pending_remote_control_enable() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = BlockingRemoteControlBackend::start(codex_home.path()).await?;
-    let config_path = codex_home.path().join("config.toml");
+    let ava_home = TempDir::new()?;
+    let mut backend = BlockingRemoteControlBackend::start(ava_home.path()).await?;
+    let config_path = ava_home.path().join("config.toml");
     let mut config: toml::Value = toml::from_str(&std::fs::read_to_string(&config_path)?)?;
     // Keep thread initialization from using the enrollment-only backend for unrelated requests.
     let features = config["features"]
@@ -519,7 +519,7 @@ async fn stdio_eof_releases_thread_writer_with_pending_remote_control_enable() -
         ),
     )?;
     let thread_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-01T00-00-00",
         "2025-01-01T00:00:00Z",
         "owned thread",
@@ -527,7 +527,7 @@ async fn stdio_eof_releases_thread_writer_with_pending_remote_control_enable() -
         /*git_info*/ None,
     )?;
     let mut owner = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -545,10 +545,10 @@ async fn stdio_eof_releases_thread_writer_with_pending_remote_control_enable() -
     let secondary_sqlite_home = TempDir::new()?;
     let secondary_sqlite_home_path = secondary_sqlite_home.path().to_string_lossy();
     let mut secondary = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[(
-            "CODEX_SQLITE_HOME",
+            "AVA_SQLITE_HOME",
             Some(secondary_sqlite_home_path.as_ref()),
         )])
         .build_initialized()
@@ -583,7 +583,7 @@ async fn stdio_eof_releases_thread_writer_with_pending_remote_control_enable() -
     assert!(status.success());
 
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "test-provider".to_string(),
     )
     .await?;
@@ -614,16 +614,16 @@ async fn stdio_eof_releases_thread_writer_with_pending_remote_control_enable() -
 
 #[tokio::test]
 async fn disable_waits_for_in_flight_durable_enable() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = BlockingRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = BlockingRemoteControlBackend::start(ava_home.path()).await?;
     let websocket_url = backend.websocket_url().to_string();
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "test-provider".to_string(),
     )
     .await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -651,17 +651,17 @@ async fn disable_waits_for_in_flight_durable_enable() -> Result<()> {
 
 #[tokio::test]
 async fn rpc_updates_durable_preference_but_ephemeral_does_not() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = BlockingRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = BlockingRemoteControlBackend::start(ava_home.path()).await?;
     let websocket_url = backend.websocket_url().to_string();
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "test-provider".to_string(),
     )
     .await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -718,10 +718,10 @@ async fn rpc_updates_durable_preference_but_ephemeral_does_not() -> Result<()> {
 
 #[tokio::test]
 async fn remote_control_status_read_returns_connecting_status_after_enable() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = BlockingRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = BlockingRemoteControlBackend::start(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -752,10 +752,10 @@ async fn remote_control_status_read_returns_connecting_status_after_enable() -> 
 
 #[tokio::test]
 async fn remote_control_pairing_start_returns_pairing_artifacts() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = PairingRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = PairingRemoteControlBackend::start(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -849,10 +849,10 @@ async fn remote_control_pairing_start_returns_pairing_artifacts() -> Result<()> 
 
 #[tokio::test]
 async fn pairing_start_works_after_ephemeral_enable() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = PairingRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = PairingRemoteControlBackend::start(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -890,10 +890,10 @@ async fn pairing_start_works_after_ephemeral_enable() -> Result<()> {
 
 #[tokio::test]
 async fn remote_control_client_management_works_while_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut backend = ClientManagementRemoteControlBackend::start(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    let mut backend = ClientManagementRemoteControlBackend::start(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -965,8 +965,8 @@ struct ClientManagementRemoteControlBackend {
 }
 
 impl ConnectedRemoteControlBackend {
-    async fn start(codex_home: &std::path::Path) -> Result<Self> {
-        let listener = configured_remote_control_listener(codex_home).await?;
+    async fn start(ava_home: &std::path::Path) -> Result<Self> {
+        let listener = configured_remote_control_listener(ava_home).await?;
         // Model refreshes can arrive after enrollment, when this listener expects a WebSocket.
         let models_server = wiremock::MockServer::start().await;
         wiremock::Mock::given(wiremock::matchers::method("GET"))
@@ -980,7 +980,7 @@ impl ConnectedRemoteControlBackend {
         let remote_control_url = format!("http://{}/backend-api/", listener.local_addr()?);
         MockResponsesConfig::new(&models_server.uri())
             .with_root_config(&format!("chatgpt_base_url = \"{remote_control_url}\""))
-            .write(codex_home)?;
+            .write(ava_home)?;
         let (initialized_tx, initialized_rx) = oneshot::channel();
         let server_task = tokio::spawn(async move {
             let mut initialized_tx = Some(initialized_tx);
@@ -1095,8 +1095,8 @@ impl ConnectedRemoteControlBackend {
 }
 
 impl ClientManagementRemoteControlBackend {
-    async fn start(codex_home: &std::path::Path) -> Result<Self> {
-        let listener = configured_remote_control_listener(codex_home).await?;
+    async fn start(ava_home: &std::path::Path) -> Result<Self> {
+        let listener = configured_remote_control_listener(ava_home).await?;
         let (requests_tx, requests_rx) = oneshot::channel();
         let server_task = tokio::spawn(async move {
             let result = async {
@@ -1148,8 +1148,8 @@ impl ClientManagementRemoteControlBackend {
 }
 
 impl BlockingRemoteControlBackend {
-    async fn start(codex_home: &std::path::Path) -> Result<Self> {
-        let listener = configured_remote_control_listener(codex_home).await?;
+    async fn start(ava_home: &std::path::Path) -> Result<Self> {
+        let listener = configured_remote_control_listener(ava_home).await?;
         let websocket_url = format!(
             "ws://{}/backend-api/wham/remote/control/server",
             listener.local_addr()?
@@ -1230,8 +1230,8 @@ struct PairingRemoteControlBackend {
 }
 
 impl PairingRemoteControlBackend {
-    async fn start(codex_home: &std::path::Path) -> Result<Self> {
-        let listener = configured_remote_control_listener(codex_home).await?;
+    async fn start(ava_home: &std::path::Path) -> Result<Self> {
+        let listener = configured_remote_control_listener(ava_home).await?;
         let (enroll_request_tx, enroll_request_rx) = oneshot::channel();
         let server_task = tokio::spawn(async move {
             let mut enroll_request_tx = Some(enroll_request_tx);
@@ -1344,13 +1344,13 @@ struct HttpRequest {
     reader: BufReader<TcpStream>,
 }
 
-async fn configured_remote_control_listener(codex_home: &std::path::Path) -> Result<TcpListener> {
+async fn configured_remote_control_listener(ava_home: &std::path::Path) -> Result<TcpListener> {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let remote_control_url = format!("http://{}/backend-api/", listener.local_addr()?);
-    let catalog_path = codex_home.join("models.json");
+    let catalog_path = ava_home.join("models.json");
     std::fs::write(
         &catalog_path,
-        serde_json::to_vec(&codex_models_manager::bundled_models_response()?)?,
+        serde_json::to_vec(&ava_models_manager::bundled_models_response()?)?,
     )?;
     MockResponsesConfig::new(&remote_control_url)
         .with_root_config(&format!("chatgpt_base_url = \"{remote_control_url}\""))
@@ -1358,10 +1358,10 @@ async fn configured_remote_control_listener(codex_home: &std::path::Path) -> Res
             "model_catalog_json = {}",
             serde_json::to_string(&catalog_path)?
         ))
-        .disable_feature(codex_features::Feature::Plugins)
-        .write(codex_home)?;
+        .disable_feature(ava_features::Feature::Plugins)
+        .write(ava_home)?;
     write_chatgpt_auth(
-        codex_home,
+        ava_home,
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account_id")
             .chatgpt_account_id("account_id"),

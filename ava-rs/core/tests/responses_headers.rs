@@ -1,27 +1,27 @@
 use std::process::Command;
 use std::sync::Arc;
 
-use codex_core::ModelClient;
-use codex_core::Prompt;
-use codex_core::ResponseEvent;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_otel::SessionTelemetry;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use core_test_support::TestCodexResponsesRequestKind;
+use ava_core::ModelClient;
+use ava_core::Prompt;
+use ava_core::ResponseEvent;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_otel::SessionTelemetry;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use core_test_support::TestAvaResponsesRequestKind;
 use core_test_support::load_default_config_for_test;
 use core_test_support::responses;
 use core_test_support::responses_metadata as test_responses_metadata;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -40,7 +40,7 @@ fn test_turn_responses_metadata(
     _client: &ModelClient,
     thread_id: ThreadId,
     session_source: &SessionSource,
-) -> codex_core::CodexResponsesMetadata {
+) -> ava_core::AvaResponsesMetadata {
     let thread_id = thread_id.to_string();
     test_responses_metadata(
         TEST_INSTALLATION_ID,
@@ -50,7 +50,7 @@ fn test_turn_responses_metadata(
         format!("{thread_id}:0"),
         session_source,
         /*parent_thread_id*/ None,
-        TestCodexResponsesRequestKind::Turn,
+        TestAvaResponsesRequestKind::Turn,
     )
 }
 
@@ -94,13 +94,13 @@ async fn responses_stream_includes_subagent_header_on_review() {
         supports_standalone_web_search: false,
     };
 
-    let codex_home = TempDir::new().expect("failed to create TempDir");
-    let mut config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new().expect("failed to create TempDir");
+    let mut config = load_default_config_for_test(&ava_home).await;
     config.model_provider_id = provider.name.clone();
     config.model_provider = provider.clone();
     let effort = config.model_reasoning_effort.clone();
     let summary = config.model_reasoning_summary;
-    let model = codex_core::test_support::get_model_offline(config.model.as_deref());
+    let model = ava_core::test_support::get_model_offline(config.model.as_deref());
     config.model = Some(model.clone());
     let config = Arc::new(config);
 
@@ -108,7 +108,7 @@ async fn responses_stream_includes_subagent_header_on_review() {
     let auth_mode = TelemetryAuthMode::Chatgpt;
     let session_source = SessionSource::SubAgent(SubAgentSource::Review);
     let model_info =
-        codex_core::test_support::construct_model_info_offline(model.as_str(), &config);
+        ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
     let expected_window_id = format!("{thread_id}:0");
     let session_telemetry = SessionTelemetry::new(
         thread_id,
@@ -164,7 +164,7 @@ async fn responses_stream_includes_subagent_header_on_review() {
             summary.unwrap_or(model_info.default_reasoning_summary),
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("stream failed");
@@ -180,19 +180,19 @@ async fn responses_stream_includes_subagent_header_on_review() {
         Some("review")
     );
     assert_eq!(
-        request.header("x-codex-window-id").as_deref(),
+        request.header("x-ava-window-id").as_deref(),
         Some(expected_window_id.as_str())
     );
-    assert_eq!(request.header("x-codex-parent-thread-id"), None);
+    assert_eq!(request.header("x-ava-parent-thread-id"), None);
     assert_eq!(
-        request.body_json()["client_metadata"]["x-codex-installation-id"].as_str(),
+        request.body_json()["client_metadata"]["x-ava-installation-id"].as_str(),
         Some(TEST_INSTALLATION_ID)
     );
     assert_eq!(
-        request.body_json()["client_metadata"]["x-codex-window-id"].as_str(),
+        request.body_json()["client_metadata"]["x-ava-window-id"].as_str(),
         Some(expected_window_id.as_str())
     );
-    assert_eq!(request.header("x-codex-sandbox"), None);
+    assert_eq!(request.header("x-ava-sandbox"), None);
 }
 
 #[tokio::test]
@@ -235,13 +235,13 @@ async fn responses_stream_includes_subagent_header_on_other() {
         supports_standalone_web_search: false,
     };
 
-    let codex_home = TempDir::new().expect("failed to create TempDir");
-    let mut config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new().expect("failed to create TempDir");
+    let mut config = load_default_config_for_test(&ava_home).await;
     config.model_provider_id = provider.name.clone();
     config.model_provider = provider.clone();
     let effort = config.model_reasoning_effort.clone();
     let summary = config.model_reasoning_summary;
-    let model = codex_core::test_support::get_model_offline(config.model.as_deref());
+    let model = ava_core::test_support::get_model_offline(config.model.as_deref());
     config.model = Some(model.clone());
     let config = Arc::new(config);
 
@@ -249,7 +249,7 @@ async fn responses_stream_includes_subagent_header_on_other() {
     let auth_mode = TelemetryAuthMode::Chatgpt;
     let session_source = SessionSource::SubAgent(SubAgentSource::Other("my-task".to_string()));
     let model_info =
-        codex_core::test_support::construct_model_info_offline(model.as_str(), &config);
+        ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
 
     let session_telemetry = SessionTelemetry::new(
         thread_id,
@@ -305,7 +305,7 @@ async fn responses_stream_includes_subagent_header_on_other() {
             summary.unwrap_or(model_info.default_reasoning_summary),
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("stream failed");
@@ -357,8 +357,8 @@ async fn responses_respects_model_info_overrides_from_config() {
         supports_standalone_web_search: false,
     };
 
-    let codex_home = TempDir::new().expect("failed to create TempDir");
-    let mut config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new().expect("failed to create TempDir");
+    let mut config = load_default_config_for_test(&ava_home).await;
     config.model = Some("gpt-3.5-turbo".to_string());
     config.model_provider_id = provider.name.clone();
     config.model_provider = provider.clone();
@@ -370,13 +370,13 @@ async fn responses_respects_model_info_overrides_from_config() {
 
     let thread_id = ThreadId::new();
     let auth_mode =
-        codex_core::test_support::auth_manager_from_auth(CodexAuth::from_api_key("Test API Key"))
+        ava_core::test_support::auth_manager_from_auth(AvaAuth::from_api_key("Test API Key"))
             .auth_mode()
             .map(TelemetryAuthMode::from);
     let session_source =
         SessionSource::SubAgent(SubAgentSource::Other("override-check".to_string()));
     let model_info =
-        codex_core::test_support::construct_model_info_offline(model.as_str(), &config);
+        ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
     let session_telemetry = SessionTelemetry::new(
         thread_id,
         model.as_str(),
@@ -431,7 +431,7 @@ async fn responses_respects_model_info_overrides_from_config() {
             summary.unwrap_or(model_info.default_reasoning_summary),
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("stream failed");
@@ -472,11 +472,11 @@ async fn responses_stream_includes_turn_metadata_header_for_git_workspace_e2e() 
         responses::ev_completed("resp-1"),
     ]);
 
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| config.analytics_enabled = Some(true))
         .build(&server)
         .await
-        .expect("build test codex");
+        .expect("build test ava");
     let cwd = test.cwd_path();
 
     let first_request = responses::mount_sse_once(&server, response_body.clone()).await;
@@ -485,10 +485,10 @@ async fn responses_stream_includes_turn_metadata_header_for_git_workspace_e2e() 
         .expect("submit first turn prompt");
     let initial_request = first_request.single_request();
     let initial_header = initial_request
-        .header("x-codex-turn-metadata")
-        .expect("x-codex-turn-metadata header should be present");
+        .header("x-ava-turn-metadata")
+        .expect("x-ava-turn-metadata header should be present");
     let initial_parsed: serde_json::Value =
-        serde_json::from_str(&initial_header).expect("x-codex-turn-metadata should be valid JSON");
+        serde_json::from_str(&initial_header).expect("x-ava-turn-metadata should be valid JSON");
     let initial_turn_id = initial_parsed
         .get("turn_id")
         .and_then(serde_json::Value::as_str)
@@ -496,7 +496,7 @@ async fn responses_stream_includes_turn_metadata_header_for_git_workspace_e2e() 
         .to_string();
     assert!(
         !initial_turn_id.is_empty(),
-        "turn_id should not be empty in x-codex-turn-metadata"
+        "turn_id should not be empty in x-ava-turn-metadata"
     );
     let initial_turn_started_at_unix_ms = initial_parsed
         .get("turn_started_at_unix_ms")
@@ -519,11 +519,11 @@ async fn responses_stream_includes_turn_metadata_header_for_git_workspace_e2e() 
         Some("danger-full-access")
     );
     let body_metadata: serde_json::Value = serde_json::from_str(
-        initial_request.body_json()["client_metadata"]["x-codex-turn-metadata"]
+        initial_request.body_json()["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
-            .expect("request body should include x-codex-turn-metadata"),
+            .expect("request body should include x-ava-turn-metadata"),
     )
-    .expect("body x-codex-turn-metadata should be valid JSON");
+    .expect("body x-ava-turn-metadata should be valid JSON");
     assert_eq!(
         (
             initial_parsed["analytics_enabled"].as_bool(),
@@ -615,13 +615,13 @@ async fn responses_stream_includes_turn_metadata_header_for_git_workspace_e2e() 
 
     let first_parsed: serde_json::Value = serde_json::from_str(
         &requests[0]
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("first request should include turn metadata"),
     )
     .expect("first metadata should be valid json");
     let second_parsed: serde_json::Value = serde_json::from_str(
         &requests[1]
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("second request should include turn metadata"),
     )
     .expect("second metadata should be valid json");
@@ -716,11 +716,11 @@ async fn responses_stream_redacts_git_remote_credentials_from_turn_metadata() {
     core_test_support::skip_if_no_network!();
 
     let server = responses::start_mock_server().await;
-    let test = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let test = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .build(&server)
         .await
-        .expect("build test codex");
+        .expect("build test ava");
     let cwd = test.cwd_path();
     let remote_token = "test-git-secret-token";
     let credential_bearing_origin =
@@ -772,10 +772,10 @@ async fn responses_stream_redacts_git_remote_credentials_from_turn_metadata() {
     let requests = request_log.requests();
     assert_eq!(requests.len(), 2, "expected a follow-up model request");
     let header_metadata = requests[1]
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .expect("request header should include turn metadata");
     let request_body = requests[1].body_json();
-    let body_metadata = request_body["client_metadata"]["x-codex-turn-metadata"]
+    let body_metadata = request_body["client_metadata"]["x-ava-turn-metadata"]
         .as_str()
         .expect("request body should include turn metadata");
 

@@ -8,17 +8,17 @@ use super::WindowsSandboxImplementation;
 use super::shared::default_enabled;
 use crate::JsonSchema;
 use crate::TS;
-use codex_experimental_api_macros::ExperimentalApi;
-use codex_protocol::config_types::AutoCompactTokenLimitScope;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ToolExposureSurface;
-use codex_protocol::config_types::Verbosity;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::config_types::WebSearchToolConfig;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_experimental_api_macros::ExperimentalApi;
+use ava_protocol::config_types::AutoCompactTokenLimitScope;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ToolExposureSurface;
+use ava_protocol::config_types::Verbosity;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::config_types::WebSearchToolConfig;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -31,7 +31,7 @@ use std::path::PathBuf;
 #[ts(tag = "type")]
 #[ts(export_to = "v2/")]
 pub enum ConfigLayerSource {
-    /// Default configuration supplied with the installed Codex package.
+    /// Default configuration supplied with the installed Ava package.
     #[serde(rename_all = "camelCase")]
     #[ts(rename_all = "camelCase")]
     PackagedDefaults {
@@ -69,7 +69,7 @@ pub enum ConfigLayerSource {
         name: String,
     },
 
-    /// User config layer from $CODEX_HOME/config.toml. This layer is special
+    /// User config layer from $AVA_HOME/config.toml. This layer is special
     /// in that it is expected to be:
     /// - writable by the user
     /// - generally outside the workspace directory
@@ -85,12 +85,12 @@ pub enum ConfigLayerSource {
         profile: Option<String>,
     },
 
-    /// Path to a .codex/ folder within a project. There could be multiple of
+    /// Path to a .ava-code/ folder within a project. There could be multiple of
     /// these between `cwd` and the project/repo root.
     #[serde(rename_all = "camelCase")]
     #[ts(rename_all = "camelCase")]
     Project {
-        dot_codex_folder: AbsolutePathBuf,
+        dot_ava_folder: AbsolutePathBuf,
     },
 
     /// Session-layer overrides supplied via `-c`/`--config`.
@@ -310,7 +310,7 @@ pub struct Config {
     pub apps: Option<AppsConfig>,
     pub browser_use: Option<BrowserUseConfig>,
     pub computer_use: Option<ComputerUseConfig>,
-    pub user_profile: Option<codex_protocol::user_profile::UserProfileConfig>,
+    pub user_profile: Option<ava_protocol::user_profile::UserProfileConfig>,
     pub desktop: Option<HashMap<String, JsonValue>>,
     #[serde(default, flatten)]
     pub additional: HashMap<String, JsonValue>,

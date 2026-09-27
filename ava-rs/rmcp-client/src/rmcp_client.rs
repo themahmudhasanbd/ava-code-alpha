@@ -15,11 +15,11 @@ use std::time::Instant;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_api::SharedAuthProvider;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::McpServerEnvVar;
-use codex_exec_server::HttpClient;
-use codex_keyring_store::DefaultKeyringStore;
+use ava_api::SharedAuthProvider;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::McpServerEnvVar;
+use ava_exec_server::HttpClient;
+use ava_keyring_store::DefaultKeyringStore;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use http::HeaderMap;
@@ -98,7 +98,7 @@ use crate::stdio_server_launcher::StdioServerLauncher;
 use crate::stdio_server_launcher::StdioServerProcessHandle;
 use crate::stdio_server_launcher::StdioServerTransport;
 use crate::utils::build_default_headers;
-use codex_config::types::OAuthCredentialsStoreMode;
+use ava_config::types::OAuthCredentialsStoreMode;
 
 #[path = "streamable_http_retry.rs"]
 mod streamable_http_retry;
@@ -480,7 +480,7 @@ impl RmcpClient {
             McpProtocolMode::Legacy => None,
             McpProtocolMode::V20260728 => env
                 .as_mut()
-                .and_then(|env| env.remove(OsStr::new("CODEX_MCP_PROTOCOL_VERSION"))),
+                .and_then(|env| env.remove(OsStr::new("AVA_MCP_PROTOCOL_VERSION"))),
         };
         let protocol_mode = protocol_mode.stdio_mode(requested_stdio_version.as_deref())?;
         let transport_recipe = TransportRecipe::Stdio {
@@ -1348,7 +1348,7 @@ impl RmcpClient {
             }
         };
 
-        // Preserve Codex's existing snapshot and request-freshness behavior. rmcp 3
+        // Preserve Ava's existing snapshot and request-freshness behavior. rmcp 3
         // enables response caching and stale-on-error fallback by default.
         service
             .peer()

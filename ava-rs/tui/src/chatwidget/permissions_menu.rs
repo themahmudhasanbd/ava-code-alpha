@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::permission_discovery::PermissionDiscovery;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
 
 pub(crate) fn auto_review_available(config: &Config) -> bool {
     cyber_model_approval_reviewer(config) == Some(ApprovalsReviewer::AutoReview)

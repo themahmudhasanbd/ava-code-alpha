@@ -3,7 +3,7 @@
 ## Design Principles
 
 1. **Minimal** — No decorative elements that don't serve a purpose
-2. **Professional** — Premium feel matching Claude/Codex quality level
+2. **Professional** — Premium feel matching Claude/Ava quality level
 3. **Fast** — Instant touch response, smooth animations at 60fps
 4. **Mobile-first** — Designed for thumb reach, one-handed use
 5. **Excellent typography** — Clear hierarchy, readable at all sizes

@@ -5,10 +5,10 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_realtime_webrtc::Message;
-use codex_realtime_webrtc::decode_frame;
-use codex_realtime_webrtc::encode_frame;
-use codex_utils_cargo_bin::cargo_bin;
+use ava_realtime_webrtc::Message;
+use ava_realtime_webrtc::decode_frame;
+use ava_realtime_webrtc::encode_frame;
+use ava_utils_cargo_bin::cargo_bin;
 use pretty_assertions::assert_eq;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
@@ -19,7 +19,7 @@ use tokio::time::timeout;
 const DEADLINE: Duration = Duration::from_secs(/*secs*/ 10);
 
 fn spawn() -> Result<Child> {
-    Ok(Command::new(cargo_bin("codex-voice-host")?)
+    Ok(Command::new(cargo_bin("ava-voice-host")?)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -30,7 +30,7 @@ fn spawn() -> Result<Child> {
 async fn build_commit() -> Result<String> {
     let output = timeout(
         DEADLINE,
-        Command::new(cargo_bin("codex-voice-host")?)
+        Command::new(cargo_bin("ava-voice-host")?)
             .arg("--build-commit")
             .kill_on_drop(true)
             .output(),

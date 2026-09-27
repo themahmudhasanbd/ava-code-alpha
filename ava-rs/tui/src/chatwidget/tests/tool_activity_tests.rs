@@ -19,7 +19,7 @@ async fn image_result_live_and_replay_render_in_the_owning_call() {
         } else {
             let mut started = item.clone();
             if let AppServerThreadItem::McpToolCall { status, result, .. } = &mut started {
-                *status = codex_app_server_protocol::McpToolCallStatus::InProgress;
+                *status = ava_app_server_protocol::McpToolCallStatus::InProgress;
                 *result = None;
             }
             chat.on_mcp_tool_call_started(started);

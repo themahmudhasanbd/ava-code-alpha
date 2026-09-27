@@ -1,36 +1,36 @@
-use core_test_support::test_codex::local_selections;
+use core_test_support::test_ava::local_selections;
 use std::fs;
 use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::Result;
-use codex_config::types::Personality;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_extension_api::ContextualUserFragment;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::TurnInputContext;
-use codex_extension_api::TurnInputContributor;
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
-use codex_skills_extension::SkillsExtensionConfig;
-use codex_skills_extension::install;
-use codex_utils_path_uri::PathUri;
+use ava_config::types::Personality;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_extension_api::ContextualUserFragment;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::TurnInputContext;
+use ava_extension_api::TurnInputContributor;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
+use ava_skills_extension::SkillsExtensionConfig;
+use ava_skills_extension::install;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::context_snapshot;
 use core_test_support::context_snapshot::ContextSnapshotOptions;
@@ -44,8 +44,8 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -166,7 +166,7 @@ async fn turn_input_contributors_receive_foreign_environment_cwds() -> Result<()
     extensions.turn_input_contributor(Arc::new(RecordingTurnInputContributor(Arc::clone(
         &recorded_environments,
     ))));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| config.project_doc_max_bytes = 0);
     let test = builder.build_with_auto_env(&server).await?;
@@ -215,10 +215,10 @@ async fn model_visible_environment_context_preserves_foreign_workspace_roots() -
         ]),
     )
     .await;
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let foreign_root = PathUri::parse("file:///C:/workspace")?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "inspect the workspace".into(),
@@ -239,7 +239,7 @@ async fn model_visible_environment_context_preserves_foreign_workspace_roots() -
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -284,7 +284,7 @@ async fn snapshot_model_visible_layout_turn_overrides() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(skills_extensions())
         .with_model("gpt-5.4")
         .with_config(|config| {
@@ -298,7 +298,7 @@ async fn snapshot_model_visible_layout_turn_overrides() -> Result<()> {
     let (first_sandbox_policy, first_permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), first_turn_cwd.as_path());
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "first turn".into(),
@@ -321,7 +321,7 @@ async fn snapshot_model_visible_layout_turn_overrides() -> Result<()> {
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -330,7 +330,7 @@ async fn snapshot_model_visible_layout_turn_overrides() -> Result<()> {
         PermissionProfile::read_only(),
         preturn_context_diff_cwd.as_path(),
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "second turn with context updates".into(),
@@ -353,7 +353,7 @@ async fn snapshot_model_visible_layout_turn_overrides() -> Result<()> {
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -396,7 +396,7 @@ async fn snapshot_model_visible_layout_cwd_change_refreshes_agents() -> Result<(
     )
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_config(|config| config.update_plan_enabled = true)
         .with_extensions(skills_extensions())
         .with_model("gpt-5.4");
@@ -418,7 +418,7 @@ async fn snapshot_model_visible_layout_cwd_change_refreshes_agents() -> Result<(
     let (first_sandbox_policy, first_permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), cwd_one.as_path());
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "first turn in agents_one".into(),
@@ -441,14 +441,14 @@ async fn snapshot_model_visible_layout_cwd_change_refreshes_agents() -> Result<(
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     let (second_sandbox_policy, second_permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), cwd_two.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "second turn in agents_two".into(),
@@ -471,7 +471,7 @@ async fn snapshot_model_visible_layout_cwd_change_refreshes_agents() -> Result<(
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -507,14 +507,14 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut initial_builder = test_codex()
+    let mut initial_builder = test_ava()
         .with_extensions(skills_extensions())
         .with_config(|config| {
             config.update_plan_enabled = true;
             config.model = Some("gpt-5.5".to_string());
         });
     let initial = initial_builder.build(&server).await?;
-    let codex = Arc::clone(&initial.codex);
+    let ava = Arc::clone(&initial.ava-code);
 
     let initial_mock = mount_sse_once(
         &server,
@@ -525,13 +525,13 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
         ]),
     )
     .await;
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "seed resume history".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let initial_request = initial_mock.single_request();
 
     let resumed_mock = mount_sse_once(
@@ -544,7 +544,7 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
     )
     .await;
 
-    let mut resume_builder = test_codex()
+    let mut resume_builder = test_ava()
         .with_extensions(skills_extensions())
         .with_config(|config| {
             config.update_plan_enabled = true;
@@ -560,7 +560,7 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
         resume_override_cwd.as_path(),
     );
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "resume and change personality".into(),
@@ -584,7 +584,7 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
             }),
         )
         .await?;
-    wait_for_event(&resumed.codex, |event| {
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -615,14 +615,14 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut initial_builder = test_codex()
+    let mut initial_builder = test_ava()
         .with_extensions(skills_extensions())
         .with_config(|config| {
             config.update_plan_enabled = true;
             config.model = Some("gpt-5.2".to_string());
         });
     let initial = initial_builder.build(&server).await?;
-    let codex = Arc::clone(&initial.codex);
+    let ava = Arc::clone(&initial.ava-code);
 
     let initial_mock = mount_sse_once(
         &server,
@@ -633,13 +633,13 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
         ]),
     )
     .await;
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "seed resume history".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let initial_request = initial_mock.single_request();
 
     let resumed_mock = mount_sse_once(
@@ -652,7 +652,7 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
     )
     .await;
 
-    let mut resume_builder = test_codex()
+    let mut resume_builder = test_ava()
         .with_extensions(skills_extensions())
         .with_config(|config| {
             config.update_plan_enabled = true;
@@ -663,7 +663,7 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
     fs::create_dir_all(&resume_override_cwd)?;
     let resume_override_cwd = resume_override_cwd.abs();
     core_test_support::submit_thread_settings(
-        &resumed.codex,
+        &resumed.ava-code,
         ThreadSettingsOverrides {
             environments: Some(local_selections(resume_override_cwd)),
             model: Some("gpt-5.2".to_string()),
@@ -672,13 +672,13 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
     )
     .await?;
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "first resumed turn after model override".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&resumed.codex, |event| {
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

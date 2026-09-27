@@ -1,26 +1,26 @@
 use anyhow::Result;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::CodexThread;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_core::config::Constrained;
-use codex_features::Feature;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ApprovalMessages;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::PermissionMessages;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_protocol::user_input::UserInput;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::AvaThread;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_core::config::Constrained;
+use ava_features::Feature;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ApprovalMessages;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::PermissionMessages;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
@@ -41,13 +41,13 @@ enum SettingsOperation {
 impl SettingsOperation {
     async fn submit(
         self,
-        codex: &CodexThread,
+        ava: &AvaThread,
         thread_settings: ThreadSettingsOverrides,
     ) -> Result<ThreadSettingsSnapshot> {
         let id = match self {
-            Self::Standalone => codex.submit(Op::ThreadSettings { thread_settings }).await?,
+            Self::Standalone => ava.submit(Op::ThreadSettings { thread_settings }).await?,
             Self::TurnStart => {
-                let result = codex
+                let result = ava
                     .start_or_steer_turn(
                         TurnInputRequest::user_input(vec![UserInput::Text {
                             text: "use the protected model".to_string(),
@@ -64,14 +64,14 @@ impl SettingsOperation {
         };
         timeout(Duration::from_secs(10), async {
             loop {
-                let event = codex.next_event().await?;
+                let event = ava.next_event().await?;
                 if event.id != id {
                     continue;
                 }
                 match event.msg {
                     EventMsg::ThreadSettingsApplied(applied) => return Ok(applied.thread_settings),
                     EventMsg::Error(error) => {
-                        assert_eq!(error.codex_error_info, Some(CodexErrorInfo::BadRequest));
+                        assert_eq!(error.ava_error_info, Some(AvaErrorInfo::BadRequest));
                         anyhow::bail!(error.message);
                     }
                     _ => {}
@@ -112,7 +112,7 @@ async fn protected_model_settings_use_the_proposed_permissions(
         workspace_write: None,
         read_only: Some(PERMISSION_INSTRUCTIONS.to_string()),
     });
-    let test = test_codex()
+    let test = test_ava()
         .with_model(INITIAL_MODEL)
         .with_cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
@@ -136,7 +136,7 @@ async fn protected_model_settings_use_the_proposed_permissions(
         })
         .build_with_auto_env(&server)
         .await?;
-    let initial = test.codex.thread_settings_snapshot().await;
+    let initial = test.ava-code.thread_settings_snapshot().await;
     assert_eq!(initial.permission_profile, PermissionProfile::Disabled);
     let model_update = ThreadSettingsOverrides {
         model: Some(PROTECTED_MODEL.to_string()),
@@ -144,14 +144,14 @@ async fn protected_model_settings_use_the_proposed_permissions(
     };
 
     let error = operation
-        .submit(&test.codex, model_update.clone())
+        .submit(&test.ava-code, model_update.clone())
         .await
         .expect_err("the protected model requires restricted permissions");
     assert!(
         error.to_string().contains("you need to use auto review"),
         "{error}"
     );
-    assert_eq!(test.codex.thread_settings_snapshot().await, initial);
+    assert_eq!(test.ava-code.thread_settings_snapshot().await, initial);
     assert!(response.requests().is_empty());
 
     let expected = ThreadSettingsSnapshot {
@@ -168,7 +168,7 @@ async fn protected_model_settings_use_the_proposed_permissions(
     };
     let applied = operation
         .submit(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 permission_profile: Some(PermissionProfile::read_only()),
                 ..model_update
@@ -176,9 +176,9 @@ async fn protected_model_settings_use_the_proposed_permissions(
         )
         .await?;
     assert_eq!(applied, expected);
-    assert_eq!(test.codex.thread_settings_snapshot().await, expected);
+    assert_eq!(test.ava-code.thread_settings_snapshot().await, expected);
     if let SettingsOperation::TurnStart = operation {
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -188,7 +188,7 @@ async fn protected_model_settings_use_the_proposed_permissions(
     // protected model against the proposed permissions.
     let error = operation
         .submit(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 permission_profile: Some(PermissionProfile::Disabled),
                 ..Default::default()
@@ -200,7 +200,7 @@ async fn protected_model_settings_use_the_proposed_permissions(
         error.to_string().contains("you need to use auto review"),
         "{error}"
     );
-    assert_eq!(test.codex.thread_settings_snapshot().await, expected);
+    assert_eq!(test.ava-code.thread_settings_snapshot().await, expected);
 
     if let SettingsOperation::Standalone = operation {
         test.submit_text_turn("use the committed settings").await?;

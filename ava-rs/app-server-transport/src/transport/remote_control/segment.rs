@@ -8,7 +8,7 @@ use crate::outgoing_message::OutgoingMessage;
 use crate::transport::response_serialization_error;
 use base64::DecodeSliceError;
 use base64::Engine;
-use codex_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCMessage;
 use std::collections::HashMap;
 use std::io;
 use std::io::ErrorKind;

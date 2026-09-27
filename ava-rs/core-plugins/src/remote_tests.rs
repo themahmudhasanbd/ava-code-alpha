@@ -27,7 +27,7 @@ async fn remote_plugin_list_routes_the_complete_query_url() {
         .await;
     let (config, selected_urls) =
         recording_remote_plugin_service_config(format!("{}/backend-api", server.uri()));
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
     get_remote_plugin_list_page(
         &config,
@@ -49,10 +49,10 @@ async fn remote_plugin_list_routes_the_complete_query_url() {
 }
 
 #[tokio::test]
-async fn recommended_plugins_requests_codex_suggestions_endpoint() {
+async fn recommended_plugins_requests_ava_suggestions_endpoint() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
-        .and(path("/backend-api/ps/plugins/suggested/codex"))
+        .and(path("/backend-api/ps/plugins/suggested/ava"))
         .and(query_param("scope", "GLOBAL"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "enabled": true,
@@ -63,7 +63,7 @@ async fn recommended_plugins_requests_codex_suggestions_endpoint() {
         .await;
     let (config, selected_urls) =
         recording_remote_plugin_service_config(format!("{}/backend-api", server.uri()));
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
     let mode = fetch_recommended_plugins(&config, Some(&auth))
         .await
@@ -78,7 +78,7 @@ async fn recommended_plugins_requests_codex_suggestions_endpoint() {
     assert_eq!(
         recorded_http_client_urls(&selected_urls),
         vec![format!(
-            "{}/backend-api/ps/plugins/suggested/codex?scope=GLOBAL",
+            "{}/backend-api/ps/plugins/suggested/ava?scope=GLOBAL",
             server.uri()
         )]
     );
@@ -133,7 +133,7 @@ async fn remote_installed_plugins_paginate_across_all_scopes_without_download_ur
         .await;
     let (config, selected_urls) =
         recording_remote_plugin_service_config(format!("{}/backend-api", server.uri()));
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
     let installed_plugins = fetch_remote_installed_plugins(&config, Some(&auth))
         .await
@@ -177,10 +177,10 @@ async fn remote_catalog_cache_modes_control_refresh_and_persist_fetched_results(
         .expect(3)
         .mount(&server)
         .await;
-    let codex_home = tempfile::tempdir().expect("create codex home");
+    let ava_home = tempfile::tempdir().expect("create ava home");
     let (config, selected_urls) =
         recording_remote_plugin_service_config(format!("{}/backend-api", server.uri()));
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
     for (mode, expire_cache, expected_refresh_needed, expected_cache_used) in [
         (
@@ -211,7 +211,7 @@ async fn remote_catalog_cache_modes_control_refresh_and_persist_fetched_results(
     ] {
         if expire_cache {
             let cache_path =
-                std::fs::read_dir(codex_home.path().join("cache/remote_plugin_catalog"))
+                std::fs::read_dir(ava_home.path().join("cache/remote_plugin_catalog"))
                     .expect("read catalog cache directory")
                     .next()
                     .expect("catalog cache exists")
@@ -229,7 +229,7 @@ async fn remote_catalog_cache_modes_control_refresh_and_persist_fetched_results(
         }
 
         let outcome = fetch_directory_plugins_for_scope_with_cache(
-            Some(codex_home.path()),
+            Some(ava_home.path()),
             &config,
             &auth,
             RemotePluginScope::Global,
@@ -263,7 +263,7 @@ async fn remote_catalog_cache_modes_control_refresh_and_persist_fetched_results(
         ],
     );
     assert!(has_fresh_cached_remote_plugin_catalog(
-        codex_home.path(),
+        ava_home.path(),
         &config,
         Some(&auth),
         RemotePluginScope::Global,
@@ -272,15 +272,15 @@ async fn remote_catalog_cache_modes_control_refresh_and_persist_fetched_results(
 
 #[test]
 fn catalog_cache_invalidation_clears_global_collections_and_preserves_other_scopes() {
-    let codex_home = tempfile::tempdir().expect("create codex home");
+    let ava_home = tempfile::tempdir().expect("create ava home");
     let config = RemotePluginServiceConfig::new(
         "https://chatgpt.com/backend-api".to_string(),
         crate::test_support::test_http_client_factory(),
     );
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     for scope in [RemotePluginScope::Global, RemotePluginScope::Workspace] {
         catalog_cache::write_cached_directory_plugins(
-            codex_home.path(),
+            ava_home.path(),
             &config,
             &auth,
             scope,
@@ -290,11 +290,11 @@ fn catalog_cache_invalidation_clears_global_collections_and_preserves_other_scop
     }
 
     assert_eq!(
-        cached_remote_plugin_catalog_scopes(codex_home.path(), &config, Some(&auth)),
+        cached_remote_plugin_catalog_scopes(ava_home.path(), &config, Some(&auth)),
         BTreeSet::from([RemotePluginScope::Global, RemotePluginScope::Workspace])
     );
     catalog_cache::write_cached_directory_plugins(
-        codex_home.path(),
+        ava_home.path(),
         &config,
         &auth,
         RemotePluginScope::Global,
@@ -303,19 +303,19 @@ fn catalog_cache_invalidation_clears_global_collections_and_preserves_other_scop
     );
 
     invalidate_cached_remote_plugin_catalog_scopes(
-        codex_home.path(),
+        ava_home.path(),
         &config,
         Some(&auth),
         &[RemotePluginScope::Global],
     );
 
     assert_eq!(
-        cached_remote_plugin_catalog_scopes(codex_home.path(), &config, Some(&auth)),
+        cached_remote_plugin_catalog_scopes(ava_home.path(), &config, Some(&auth)),
         BTreeSet::from([RemotePluginScope::Workspace]),
     );
     assert!(
         catalog_cache::load_cached_directory_plugins(
-            codex_home.path(),
+            ava_home.path(),
             &config,
             &auth,
             RemotePluginScope::Global,
@@ -780,7 +780,7 @@ fn recommended_plugins_bound_model_visible_fields() {
 }
 
 #[test]
-fn recommended_plugins_accept_codex_suggestion_items() {
+fn recommended_plugins_accept_ava_suggestion_items() {
     let response: RecommendedPluginsResponse = serde_json::from_value(serde_json::json!({
         "enabled": true,
         "plugins": [{"id": "plugin_box", "name": "box", "display_name": "Box"}]

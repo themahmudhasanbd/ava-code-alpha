@@ -1,8 +1,8 @@
 use clap::Parser;
 use clap::builder::NonEmptyStringValueParser;
-use codex_arg0::Arg0DispatchPaths;
-use codex_tui::Cli as TuiCli;
-use codex_utils_cli::CliConfigOverrides;
+use ava_arg0::Arg0DispatchPaths;
+use ava_tui::Cli as TuiCli;
+use ava_utils_cli::CliConfigOverrides;
 
 use crate::InteractiveRemoteOptions;
 use crate::SessionArchiveConfigOverrides;
@@ -43,16 +43,16 @@ pub(crate) async fn run_queue_command(
     let cli =
         finalize_session_archive_interactive(interactive, root_config_overrides, config_overrides);
     if !cli.images.is_empty() {
-        anyhow::bail!("`codex queue` does not support image attachments");
+        anyhow::bail!("`ava queue` does not support image attachments");
     }
     let explicit_remote_endpoint = resolve_remote_endpoint(
         remote.remote.or(root_remote),
         remote.remote_auth_token_env.or(root_remote_auth_token_env),
     )?;
-    codex_tui::run_session_queue_command(
+    ava_tui::run_session_queue_command(
         thread,
         message,
-        codex_tui::SessionArchiveCommandOptions {
+        ava_tui::SessionArchiveCommandOptions {
             cli,
             arg0_paths,
             explicit_remote_endpoint,

@@ -1,11 +1,11 @@
 use super::*;
-use codex_app_server_protocol::AuthRecoveryNotification;
-use codex_otel::set_parent_from_w3c_trace_context;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_absolute_path::test_support::test_path_buf;
+use ava_app_server_protocol::AuthRecoveryNotification;
+use ava_otel::set_parent_from_w3c_trace_context;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_absolute_path::test_support::test_path_buf;
 use opentelemetry::trace::TraceContextExt;
 use opentelemetry::trace::TraceId;
 use opentelemetry::trace::TracerProvider as _;
@@ -20,7 +20,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 fn test_tracing_subscriber() -> impl tracing::Subscriber + Send + Sync {
     let provider = SdkTracerProvider::builder().build();
-    let tracer = provider.tracer("codex-exec-tests");
+    let tracer = provider.tracer("ava-exec-tests");
     tracing_subscriber::registry().with(tracing_opentelemetry::layer().with_tracer(tracer))
 }
 
@@ -70,7 +70,7 @@ fn exec_default_stderr_filter_suppresses_otel_self_diagnostics() {
     tracing::subscriber::with_default(subscriber, || {
         tracing::error!(target: "opentelemetry_sdk", "telemetry export failed");
         tracing::error!(target: "opentelemetry_otlp", "telemetry request failed");
-        tracing::error!(target: "codex_exec_test", "real exec error");
+        tracing::error!(target: "ava_exec_test", "real exec error");
     });
 
     let logs = String::from_utf8(buffer.lock().expect("log buffer lock").clone()).expect("utf8");
@@ -84,7 +84,7 @@ fn exec_root_span_can_be_parented_from_trace_context() {
     let subscriber = test_tracing_subscriber();
     let _guard = tracing::subscriber::set_default(subscriber);
 
-    let parent = codex_protocol::protocol::W3cTraceContext {
+    let parent = ava_protocol::protocol::W3cTraceContext {
         traceparent: Some("00-00000000000000000000000000000077-0000000000000088-01".into()),
         tracestate: Some("vendor=value".into()),
     };
@@ -268,15 +268,15 @@ fn runtime_warnings_are_filtered_to_the_primary_thread() {
     let primary_thread_id = "thread-1";
     let turn_id = "turn-1";
     let outcomes = [
-        codex_app_server_protocol::WarningNotification {
+        ava_app_server_protocol::WarningNotification {
             thread_id: None,
             message: "global warning".to_string(),
         },
-        codex_app_server_protocol::WarningNotification {
+        ava_app_server_protocol::WarningNotification {
             thread_id: Some(primary_thread_id.to_string()),
             message: "primary warning".to_string(),
         },
-        codex_app_server_protocol::WarningNotification {
+        ava_app_server_protocol::WarningNotification {
             thread_id: Some("thread-2".to_string()),
             message: "other warning".to_string(),
         },
@@ -316,10 +316,10 @@ fn runtime_warnings_are_filtered_to_the_primary_thread() {
 
 #[tokio::test]
 async fn resume_lookup_model_providers_filters_only_last_lookup() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(cwd.path().to_path_buf()))
         .build()
         .await
@@ -370,12 +370,12 @@ fn turn_items_for_thread_returns_matching_turn_items() {
         created_at: 0,
         updated_at: 0,
         recency_at: Some(0),
-        status: codex_app_server_protocol::ThreadStatus::Idle,
+        status: ava_app_server_protocol::ThreadStatus::Idle,
         path: None,
         cwd: test_path_buf("/tmp/project").abs(),
         cli_version: "0.0.0-test".to_string(),
         originator: None,
-        source: codex_app_server_protocol::SessionSource::Exec,
+        source: ava_app_server_protocol::SessionSource::Exec,
         can_accept_direct_input: None,
         thread_source: None,
         agent_nickname: None,
@@ -383,9 +383,9 @@ fn turn_items_for_thread_returns_matching_turn_items() {
         git_info: None,
         name: None,
         turns: vec![
-            codex_app_server_protocol::Turn {
+            ava_app_server_protocol::Turn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: vec![AppServerThreadItem::AgentMessage {
                     id: "msg-1".to_string(),
                     text: "hello".to_string(),
@@ -394,20 +394,20 @@ fn turn_items_for_thread_returns_matching_turn_items() {
                     delivery: None,
                     questions: None,
                 }],
-                status: codex_app_server_protocol::TurnStatus::Completed,
+                status: ava_app_server_protocol::TurnStatus::Completed,
                 error: None,
                 started_at: None,
                 completed_at: None,
                 duration_ms: None,
             },
-            codex_app_server_protocol::Turn {
+            ava_app_server_protocol::Turn {
                 id: "turn-2".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: vec![AppServerThreadItem::Plan {
                     id: "plan-1".to_string(),
                     text: "ship it".to_string(),
                 }],
-                status: codex_app_server_protocol::TurnStatus::Completed,
+                status: ava_app_server_protocol::TurnStatus::Completed,
                 error: None,
                 started_at: None,
                 completed_at: None,
@@ -433,13 +433,13 @@ fn turn_items_for_thread_returns_matching_turn_items() {
 #[test]
 fn should_backfill_turn_completed_items_backfills_persisted_summaries_only() {
     let notification =
-        ServerNotification::TurnCompleted(codex_app_server_protocol::TurnCompletedNotification {
+        ServerNotification::TurnCompleted(ava_app_server_protocol::TurnCompletedNotification {
             thread_id: "thread-1".to_string(),
-            turn: codex_app_server_protocol::Turn {
+            turn: ava_app_server_protocol::Turn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Summary,
+                items_view: ava_app_server_protocol::TurnItemsView::Summary,
                 items: Vec::new(),
-                status: codex_app_server_protocol::TurnStatus::Completed,
+                status: ava_app_server_protocol::TurnStatus::Completed,
                 error: None,
                 started_at: None,
                 completed_at: None,
@@ -476,11 +476,11 @@ fn canceled_mcp_server_elicitation_response_uses_cancel_action() {
 
 #[tokio::test]
 async fn thread_start_params_include_review_policy_when_review_policy_is_manual_only() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             approvals_reviewer: Some(ApprovalsReviewer::User),
             ..Default::default()
@@ -494,7 +494,7 @@ async fn thread_start_params_include_review_policy_when_review_policy_is_manual_
 
     assert_eq!(
         params.approvals_reviewer,
-        Some(codex_app_server_protocol::ApprovalsReviewer::User)
+        Some(ava_app_server_protocol::ApprovalsReviewer::User)
     );
     assert_eq!(params.sandbox, None);
     assert_eq!(
@@ -505,10 +505,10 @@ async fn thread_start_params_include_review_policy_when_review_policy_is_manual_
 
 #[tokio::test]
 async fn thread_start_params_include_review_policy_when_auto_review_is_enabled() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             approvals_reviewer: Some(ApprovalsReviewer::AutoReview),
             ..Default::default()
@@ -522,16 +522,16 @@ async fn thread_start_params_include_review_policy_when_auto_review_is_enabled()
 
     assert_eq!(
         params.approvals_reviewer,
-        Some(codex_app_server_protocol::ApprovalsReviewer::AutoReview)
+        Some(ava_app_server_protocol::ApprovalsReviewer::AutoReview)
     );
 }
 
 #[tokio::test]
 async fn thread_resume_params_only_include_explicit_review_policy_override() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             approvals_reviewer: Some(ApprovalsReviewer::AutoReview),
             ..Default::default()
@@ -549,29 +549,29 @@ async fn thread_resume_params_only_include_explicit_review_policy_override() {
     let params_with_override = thread_resume_params_from_config(
         &config,
         "thread-id".to_string(),
-        Some(codex_app_server_protocol::ApprovalsReviewer::AutoReview),
+        Some(ava_app_server_protocol::ApprovalsReviewer::AutoReview),
     );
 
     assert_eq!(params_without_override.approvals_reviewer, None);
     assert_eq!(
         params_with_override.approvals_reviewer,
-        Some(codex_app_server_protocol::ApprovalsReviewer::AutoReview)
+        Some(ava_app_server_protocol::ApprovalsReviewer::AutoReview)
     );
 }
 
 #[tokio::test]
 async fn build_exec_config_retries_without_invalid_headless_policy_for_auto_review() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 approval_policy = "on-request"
 approvals_reviewer = "auto_review"
 "#,
     )
     .expect("write config");
-    let requirements_path = codex_home.path().join("requirements.toml");
+    let requirements_path = ava_home.path().join("requirements.toml");
     std::fs::write(
         &requirements_path,
         r#"
@@ -590,7 +590,7 @@ allowed_sandbox_modes = ["read-only", "workspace-write"]
     };
     let build_config = |overrides| {
         ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .loader_overrides(loader_overrides.clone())
             .harness_overrides(overrides)
             .build()
@@ -647,10 +647,10 @@ async fn build_exec_config_preserves_headless_error_when_retry_fails() {
 
 #[tokio::test]
 async fn thread_start_params_match_history_to_persistence() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(cwd.path().to_path_buf()))
         .build()
         .await
@@ -660,7 +660,7 @@ async fn thread_start_params_match_history_to_persistence() {
 
     assert_eq!(
         params.thread_source,
-        Some(codex_app_server_protocol::ThreadSource::User)
+        Some(ava_app_server_protocol::ThreadSource::User)
     );
     assert_eq!(params.history_mode, Some(ThreadHistoryMode::Paginated));
 
@@ -677,10 +677,10 @@ async fn thread_start_params_match_history_to_persistence() {
 
 #[tokio::test]
 async fn thread_lifecycle_params_preserve_hook_trust_bypass() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             bypass_hook_trust: Some(true),
             ..Default::default()
@@ -716,11 +716,11 @@ fn active_profile_selection_uses_profile_id_only() {
 
 #[tokio::test]
 async fn thread_lifecycle_params_include_legacy_sandbox_when_no_active_profile() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             sandbox_mode: Some(SandboxMode::DangerFullAccess),
             ..Default::default()
@@ -740,22 +740,22 @@ async fn thread_lifecycle_params_include_legacy_sandbox_when_no_active_profile()
     assert_eq!(config.permissions.active_permission_profile(), None);
     assert_eq!(
         start_params.sandbox,
-        Some(codex_app_server_protocol::SandboxMode::DangerFullAccess)
+        Some(ava_app_server_protocol::SandboxMode::DangerFullAccess)
     );
     assert_eq!(start_params.permissions, None);
     assert_eq!(
         resume_params.sandbox,
-        Some(codex_app_server_protocol::SandboxMode::DangerFullAccess)
+        Some(ava_app_server_protocol::SandboxMode::DangerFullAccess)
     );
     assert_eq!(resume_params.permissions, None);
 }
 
 #[tokio::test]
 async fn session_configured_from_thread_response_uses_review_policy_from_response() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(cwd.path().to_path_buf()))
         .build()
         .await
@@ -778,10 +778,10 @@ async fn session_configured_from_thread_response_uses_review_policy_from_respons
 
 #[tokio::test]
 async fn session_configured_from_thread_response_uses_permission_profile_from_config() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(cwd.path().to_path_buf()))
         .build()
         .await
@@ -799,10 +799,10 @@ async fn session_configured_from_thread_response_uses_permission_profile_from_co
 
 #[tokio::test]
 async fn session_configured_from_thread_response_preserves_thread_source() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(cwd.path().to_path_buf()))
         .build()
         .await
@@ -814,16 +814,16 @@ async fn session_configured_from_thread_response_preserves_thread_source() {
 
     assert_eq!(
         event.thread_source,
-        Some(codex_protocol::protocol::ThreadSource::User)
+        Some(ava_protocol::protocol::ThreadSource::User)
     );
 }
 
 #[tokio::test]
 async fn session_configured_from_thread_response_preserves_parent_thread_id() {
-    let codex_home = tempdir().expect("create temp codex home");
+    let ava_home = tempdir().expect("create temp ava home");
     let cwd = tempdir().expect("create temp cwd");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(cwd.path().to_path_buf()))
         .build()
         .await
@@ -844,7 +844,7 @@ async fn session_configured_from_thread_response_preserves_parent_thread_id() {
 fn sample_thread_start_response() -> ThreadStartResponse {
     ThreadStartResponse {
         disabled_plugin_ids: Vec::new(),
-        thread: codex_app_server_protocol::Thread {
+        thread: ava_app_server_protocol::Thread {
             originator: None,
             environments: None,
             id: "67e55044-10b1-426f-9247-bb680e5fe0c8".to_string(),
@@ -865,13 +865,13 @@ fn sample_thread_start_response() -> ThreadStartResponse {
             created_at: 0,
             updated_at: 0,
             recency_at: Some(0),
-            status: codex_app_server_protocol::ThreadStatus::Idle,
+            status: ava_app_server_protocol::ThreadStatus::Idle,
             path: Some(PathBuf::from("/tmp/rollout.jsonl")),
             cwd: test_path_buf("/tmp").abs(),
             cli_version: "0.0.0".to_string(),
-            source: codex_app_server_protocol::SessionSource::Cli,
+            source: ava_app_server_protocol::SessionSource::Cli,
             can_accept_direct_input: None,
-            thread_source: Some(codex_app_server_protocol::ThreadSource::User),
+            thread_source: Some(ava_app_server_protocol::ThreadSource::User),
             agent_nickname: None,
             agent_role: None,
             git_info: None,
@@ -884,9 +884,9 @@ fn sample_thread_start_response() -> ThreadStartResponse {
         cwd: test_path_buf("/tmp").abs(),
         runtime_workspace_roots: Vec::new(),
         instruction_sources: Vec::new(),
-        approval_policy: codex_app_server_protocol::AskForApproval::OnRequest,
-        approvals_reviewer: codex_app_server_protocol::ApprovalsReviewer::AutoReview,
-        sandbox: codex_app_server_protocol::SandboxPolicy::WorkspaceWrite {
+        approval_policy: ava_app_server_protocol::AskForApproval::OnRequest,
+        approvals_reviewer: ava_app_server_protocol::ApprovalsReviewer::AutoReview,
+        sandbox: ava_app_server_protocol::SandboxPolicy::WorkspaceWrite {
             writable_roots: vec![],
             network_access: false,
             exclude_tmpdir_env_var: false,

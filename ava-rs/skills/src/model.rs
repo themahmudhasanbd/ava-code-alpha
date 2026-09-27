@@ -1,7 +1,7 @@
-use codex_protocol::protocol::Product;
-use codex_protocol::protocol::SkillScope;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::protocol::Product;
+use ava_protocol::protocol::SkillScope;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 
 /// Metadata for one skill materialized on the host filesystem.
 #[derive(Debug, Clone, PartialEq)]
@@ -62,7 +62,7 @@ impl EnvironmentSkillMetadata {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SkillPolicy {
     pub allow_implicit_invocation: Option<bool>,
-    // TODO: Enforce product gating in Codex skill selection/injection instead of only parsing and
+    // TODO: Enforce product gating in Ava skill selection/injection instead of only parsing and
     // storing this metadata.
     pub products: Vec<Product>,
 }

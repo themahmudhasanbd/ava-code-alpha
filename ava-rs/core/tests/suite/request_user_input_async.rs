@@ -1,22 +1,22 @@
 use anyhow::Result;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageDelivery;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::AsyncUserInputQuestion;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::ToolMessage;
-use codex_protocol::openai_models::ToolMessages;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::user_input::UserInput;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageDelivery;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::AsyncUserInputQuestion;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::ToolMessage;
+use ava_protocol::openai_models::ToolMessages;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call_with_namespace;
@@ -26,7 +26,7 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -50,7 +50,7 @@ async fn persistent_async_message_guidance_follows_tool_availability(
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", move |model| {
             model.tool_mode = Some(ToolMode::CodeModeOnly);
             model
@@ -148,7 +148,7 @@ async fn freeform_async_message_requires_root_and_catalog_or_feature_opt_in(
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", move |model| {
             model.tool_mode = Some(ToolMode::CodeModeOnly);
             model.experimental_supported_tools =
@@ -235,7 +235,7 @@ async fn freeform_async_message_emits_an_item_without_ending_the_turn(
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", move |model| {
             model.tool_mode = Some(ToolMode::CodeModeOnly);
             model.experimental_supported_tools = vec!["request_user_input_async".to_string()];
@@ -264,19 +264,19 @@ async fn freeform_async_message_emits_an_item_without_ending_the_turn(
         })
         .build_with_auto_env(&server)
         .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Keep me updated.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let started = wait_for_event_match(test.codex.as_ref(), |event| match event {
+    let started = wait_for_event_match(test.ava-code.as_ref(), |event| match event {
         EventMsg::ItemStarted(event) if event.item.id() == CALL_ID => Some(event.item.clone()),
         _ => None,
     })
     .await;
-    let completed = wait_for_event_match(test.codex.as_ref(), |event| match event {
+    let completed = wait_for_event_match(test.ava-code.as_ref(), |event| match event {
         EventMsg::ItemCompleted(event) if event.item.id() == CALL_ID => Some(event.item.clone()),
         _ => None,
     })
@@ -293,7 +293,7 @@ async fn freeform_async_message_emits_an_item_without_ending_the_turn(
     }))?;
     assert_eq!(serde_json::to_value(started)?, expected);
     assert_eq!(serde_json::to_value(completed)?, expected);
-    wait_for_event(test.codex.as_ref(), |event| {
+    wait_for_event(test.ava-code.as_ref(), |event| {
         let item = match event {
             EventMsg::ItemStarted(event) => Some(&event.item),
             EventMsg::ItemCompleted(event) => Some(&event.item),
@@ -404,7 +404,7 @@ async fn request_user_input_async_emits_item_and_does_not_end_the_turn(
             "Ask the user one or more questions during ongoing work. Use this tool only to request missing information, preferences, constraints, clarification, or approval. The tool returns immediately without ending the turn or waiting for a reply; any reply arrives asynchronously as a new user message. Keep questions concise, self-contained, and easy to understand, using a level of detail appropriate to the user and task. The UI always allows a free-text answer, including when suggested options are provided. A preselected option is not submitted automatically.",
         )
         .to_string();
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", move |model| {
             model.tool_mode = Some(ToolMode::CodeModeOnly);
             model.experimental_supported_tools.retain(|tool| {
@@ -422,14 +422,14 @@ async fn request_user_input_async_emits_item_and_does_not_end_the_turn(
         .build_with_auto_env(&server)
         .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Keep me updated.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let started = wait_for_event_match(test.codex.as_ref(), |event| {
+    let started = wait_for_event_match(test.ava-code.as_ref(), |event| {
         let EventMsg::ItemStarted(event) = event else {
             return None;
         };
@@ -456,7 +456,7 @@ async fn request_user_input_async_emits_item_and_does_not_end_the_turn(
         })?
     );
 
-    let completed = wait_for_event_match(test.codex.as_ref(), |event| {
+    let completed = wait_for_event_match(test.ava-code.as_ref(), |event| {
         let EventMsg::ItemCompleted(event) = event else {
             return None;
         };
@@ -474,7 +474,7 @@ async fn request_user_input_async_emits_item_and_does_not_end_the_turn(
         serde_json::to_value(started)?
     );
 
-    wait_for_event(test.codex.as_ref(), |event| {
+    wait_for_event(test.ava-code.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -550,7 +550,7 @@ async fn invalid_async_questions_do_not_emit_an_item(
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", |model| {
             model.tool_mode = Some(ToolMode::CodeModeOnly);
             model
@@ -559,13 +559,13 @@ async fn invalid_async_questions_do_not_emit_an_item(
         })
         .build_with_auto_env(&server)
         .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Get clarification.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(test.codex.as_ref(), |event| {
+    wait_for_event(test.ava-code.as_ref(), |event| {
         let item = match event {
             EventMsg::ItemStarted(event) => Some(&event.item),
             EventMsg::ItemCompleted(event) => Some(&event.item),

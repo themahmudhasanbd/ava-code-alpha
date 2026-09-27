@@ -2,9 +2,9 @@
 //! The extension chooses effects; this adapter supplies evidence, validation and publication.
 
 use super::*;
-use crate::codex_thread::GuardianAuthorizationVersion;
-use codex_guardian_reviewer::ReviewHost;
-use codex_protocol::approvals::GuardianReviewReason;
+use crate::ava_thread::GuardianAuthorizationVersion;
+use ava_guardian_reviewer::ReviewHost;
+use ava_protocol::approvals::GuardianReviewReason;
 
 pub(in crate::guardian) struct PreparedApproval {
     request: GuardianApprovalRequest,
@@ -23,7 +23,7 @@ impl ReviewHost for super::super::runtime::ReviewRuntime {
 
     async fn servicing_turn(
         &self,
-    ) -> Option<(String, Arc<codex_protocol::openai_models::ModelInfo>)> {
+    ) -> Option<(String, Arc<ava_protocol::openai_models::ModelInfo>)> {
         let active = self.session.active_turn.lock().await;
         let turn = &active.as_ref()?.task.as_ref()?.turn_context;
         Some((turn.sub_id.clone(), Arc::clone(turn.model_info())))
@@ -35,7 +35,7 @@ impl ReviewHost for super::super::runtime::ReviewRuntime {
         review_reason: GuardianReviewReason,
         deadline: Instant,
         cancellation: &CancellationToken,
-    ) -> Result<(PreparedApproval, codex_guardian_reviewer::ReviewReport), ReviewDecision> {
+    ) -> Result<(PreparedApproval, ava_guardian_reviewer::ReviewReport), ReviewDecision> {
         let super::super::runtime::ReviewRuntime {
             session,
             history_reset: _,
@@ -92,7 +92,7 @@ impl ReviewHost for super::super::runtime::ReviewRuntime {
             .map(PluginCommandAttribution::serialized_fields)
             .unzip();
         let report =
-            codex_guardian_reviewer::ReviewReport::new(codex_guardian_reviewer::ReviewMetadata {
+            ava_guardian_reviewer::ReviewReport::new(ava_guardian_reviewer::ReviewMetadata {
                 thread_id: session.thread_id.to_string(),
                 turn_id: assessment_turn_id,
                 review_id: review_id.to_owned(),
@@ -202,7 +202,7 @@ impl ReviewHost for super::super::runtime::ReviewRuntime {
     async fn record_evidence(
         &self,
         prepared: &PreparedApproval,
-        event: &codex_protocol::protocol::GuardianAssessmentEvent,
+        event: &ava_protocol::protocol::GuardianAssessmentEvent,
     ) {
         if let Some((evidence, action, authorization_version, root_authorization_version)) =
             &prepared.review_evidence

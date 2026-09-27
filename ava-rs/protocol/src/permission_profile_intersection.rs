@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::canonicalize_preserving_symlinks;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::canonicalize_preserving_symlinks;
 use thiserror::Error;
 
 use crate::models::PermissionProfile;
@@ -177,7 +177,7 @@ pub fn intersect_effective_permission_profiles(
                     || !writable_roots.iter().any(|root| {
                         root.read_only_subpaths.contains(&path)
                             || default_read_only_subpaths_for_writable_root(
-                                &root.root, /*protect_missing_dot_codex*/ false,
+                                &root.root, /*protect_missing_dot_ava*/ false,
                             )
                             .contains(&path)
                             || path.parent().as_ref() == Some(&root.root)

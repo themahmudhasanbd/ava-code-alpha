@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_async_utils::CancelErr;
-use codex_async_utils::OrCancelExt;
-use codex_network_proxy::PROXY_ACTIVE_ENV_KEY;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_async_utils::CancelErr;
+use ava_async_utils::OrCancelExt;
+use ava_network_proxy::PROXY_ACTIVE_ENV_KEY;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use tokio_util::sync::CancellationToken;
 use tracing::error;
 use uuid::Uuid;
@@ -28,22 +28,22 @@ use crate::tools::runtimes::apply_package_path_prepend;
 use crate::tools::runtimes::maybe_wrap_shell_lc_with_snapshot;
 use crate::tools::runtimes::strip_managed_proxy_env;
 use crate::user_shell_command::user_shell_command_record_item;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::exec_output::StreamOutput;
-use codex_protocol::items::CommandExecutionItem;
-use codex_protocol::items::CommandExecutionStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_sandboxing::SandboxType;
-use codex_shell_command::parse_command::parse_command;
-use codex_thread_store::PersistContext;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::exec_output::StreamOutput;
+use ava_protocol::items::CommandExecutionItem;
+use ava_protocol::items::CommandExecutionStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_sandboxing::SandboxType;
+use ava_shell_command::parse_command::parse_command;
+use ava_thread_store::PersistContext;
 
 use super::SessionTask;
 use super::SessionTaskResult;
 use crate::session::session::Session;
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfile;
 
 const USER_SHELL_TIMEOUT_MS: u64 = 60 * 60 * 1000; // 1 hour
 
@@ -112,7 +112,7 @@ pub(crate) async fn execute_user_shell_command(
     session
         .services
         .session_telemetry
-        .counter("codex.task.user_shell", /*inc*/ 1, &[]);
+        .counter("ava.task.user_shell", /*inc*/ 1, &[]);
 
     if mode == UserShellCommandMode::StandaloneTurn {
         // Auxiliary mode runs within an existing active turn. That turn already
@@ -145,12 +145,12 @@ pub(crate) async fn execute_user_shell_command(
     let use_login_shell = true;
     let display_command = environment_shell.derive_exec_args(&command, use_login_shell);
     // TODO(anp): Migrate user-shell events and execution plumbing to PathUri so this local-only
-    // feature does not need to project the selected environment cwd onto the Codex host.
+    // feature does not need to project the selected environment cwd onto the Ava host.
     let Ok(cwd) = turn_environment.cwd().to_abs_path() else {
         send_user_shell_error(
             &session,
             turn_context.as_ref(),
-            "shell working directory is not native to the Codex host",
+            "shell working directory is not native to the Ava host",
         )
         .await;
         return;
@@ -382,7 +382,7 @@ async fn send_user_shell_error(session: &Session, turn_context: &TurnContext, me
             EventMsg::Error(ErrorEvent {
                 misalignment: None,
                 message: message.to_string(),
-                codex_error_info: None,
+                ava_error_info: None,
             }),
         )
         .await;

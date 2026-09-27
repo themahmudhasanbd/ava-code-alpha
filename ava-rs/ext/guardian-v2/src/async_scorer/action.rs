@@ -1,9 +1,9 @@
 //! Renders complete planned-action JSON or rejects it for synchronous review.
 //! Action arguments cannot be shortened to fit the asynchronous classifier budget.
 
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolPayload;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolPayload;
+use ava_protocol::protocol::TruncationPolicy;
 use serde_json::json;
 
 pub(super) struct GuardianAction {

@@ -1,23 +1,23 @@
 use std::io::IsTerminal;
 use std::path::PathBuf;
 
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::McpToolCallStatus;
-use codex_app_server_protocol::PatchApplyStatus;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadTokenUsage;
-use codex_app_server_protocol::TurnStatus;
-use codex_core::config::Config;
-use codex_model_provider_info::WireApi;
-use codex_protocol::num_format::format_with_separators;
-use codex_protocol::protocol::SessionConfiguredEvent;
-use codex_utils_path_uri::PathUri;
-use codex_utils_sandbox_summary::summarize_permission_profile;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::PatchApplyStatus;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadTokenUsage;
+use ava_app_server_protocol::TurnStatus;
+use ava_core::config::Config;
+use ava_model_provider_info::WireApi;
+use ava_protocol::num_format::format_with_separators;
+use ava_protocol::protocol::SessionConfiguredEvent;
+use ava_utils_path_uri::PathUri;
+use ava_utils_sandbox_summary::summarize_permission_profile;
 use owo_colors::OwoColorize;
 use owo_colors::Style;
 
-use crate::event_processor::CodexStatus;
+use crate::event_processor::AvaStatus;
 use crate::event_processor::EventProcessor;
 use crate::event_processor::handle_last_message;
 
@@ -100,7 +100,7 @@ impl EventProcessorWithHumanOutput {
             ThreadItem::AgentMessage { text, .. } => {
                 eprintln!(
                     "{}\n{}",
-                    "codex".style(self.italic).style(self.magenta),
+                    "ava".style(self.italic).style(self.magenta),
                     text
                 );
                 self.final_message = Some(text);
@@ -216,7 +216,7 @@ impl EventProcessor for EventProcessorWithHumanOutput {
         session_configured_event: &SessionConfiguredEvent,
     ) {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
-        eprintln!("OpenAI Codex v{VERSION}\n--------");
+        eprintln!("OpenAI Ava v{VERSION}\n--------");
         for (key, value) in config_summary_entries(config, session_configured_event) {
             eprintln!("{} {}", format!("{key}:").style(self.bold), value);
         }
@@ -224,7 +224,7 @@ impl EventProcessor for EventProcessorWithHumanOutput {
         eprintln!("{}\n{}", "user".style(self.cyan), prompt);
     }
 
-    fn process_server_notification(&mut self, notification: ServerNotification) -> CodexStatus {
+    fn process_server_notification(&mut self, notification: ServerNotification) -> AvaStatus {
         match notification {
             ServerNotification::ConfigWarning(notification) => {
                 let details = notification
@@ -237,16 +237,16 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                     notification.summary,
                     details
                 );
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::Warning(notification) => self.process_warning(notification.message),
             ServerNotification::AuthRecoveryStarted(notification) => {
                 eprintln!("{}", notification.message);
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::AuthRecoveryCompleted(notification) => {
                 eprintln!("{}", notification.message.style(self.green));
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::Error(notification) => {
                 eprintln!(
@@ -254,7 +254,7 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                     "ERROR:".style(self.red).style(self.bold),
                     notification.error
                 );
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::DeprecationNotice(notification) => {
                 eprintln!(
@@ -265,7 +265,7 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                 if let Some(details) = notification.details {
                     eprintln!("{}", details.style(self.dimmed));
                 }
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::HookStarted(notification) => {
                 eprintln!(
@@ -273,7 +273,7 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                     "hook:".style(self.bold),
                     format!("{:?}", notification.run.event_name).style(self.dimmed)
                 );
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::HookCompleted(notification) => {
                 eprintln!(
@@ -282,15 +282,15 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                     format!("{:?}", notification.run.event_name).style(self.dimmed),
                     notification.run.status
                 );
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::ItemStarted(notification) => {
                 self.render_item_started(&notification.item);
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::ItemCompleted(notification) => {
                 self.render_item_completed(notification.item);
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::ModelRerouted(notification) => {
                 eprintln!(
@@ -299,12 +299,12 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                     notification.from_model,
                     notification.to_model
                 );
-                CodexStatus::Running
+                AvaStatus::Running
             }
-            ServerNotification::ModelVerification(_) => CodexStatus::Running,
+            ServerNotification::ModelVerification(_) => AvaStatus::Running,
             ServerNotification::ThreadTokenUsageUpdated(notification) => {
                 self.last_total_token_usage = Some(notification.token_usage);
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::TurnCompleted(notification) => match notification.turn.status {
                 TurnStatus::Completed => {
@@ -320,7 +320,7 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                         self.final_message = Some(final_message);
                     }
                     self.emit_final_message_on_shutdown = true;
-                    CodexStatus::InitiateShutdown
+                    AvaStatus::InitiateShutdown
                 }
                 TurnStatus::Failed => {
                     self.final_message = None;
@@ -329,22 +329,22 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                     if let Some(error) = notification.turn.error {
                         eprintln!("{} {}", "ERROR:".style(self.red).style(self.bold), error);
                     }
-                    CodexStatus::InitiateShutdown
+                    AvaStatus::InitiateShutdown
                 }
                 TurnStatus::Interrupted => {
                     self.final_message = None;
                     self.final_message_rendered = false;
                     self.emit_final_message_on_shutdown = false;
                     eprintln!("{}", "turn interrupted".style(self.dimmed));
-                    CodexStatus::InitiateShutdown
+                    AvaStatus::InitiateShutdown
                 }
-                TurnStatus::InProgress => CodexStatus::Running,
+                TurnStatus::InProgress => AvaStatus::Running,
             },
             ServerNotification::TurnDiffUpdated(notification) => {
                 if !notification.diff.trim().is_empty() {
                     eprintln!("{}", notification.diff);
                 }
-                CodexStatus::Running
+                AvaStatus::Running
             }
             ServerNotification::TurnPlanUpdated(notification) => {
                 if let Some(explanation) = notification.explanation {
@@ -352,20 +352,20 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                 }
                 for step in notification.plan {
                     match step.status {
-                        codex_app_server_protocol::TurnPlanStepStatus::Completed => {
+                        ava_app_server_protocol::TurnPlanStepStatus::Completed => {
                             eprintln!("  {} {}", "✓".style(self.green), step.step);
                         }
-                        codex_app_server_protocol::TurnPlanStepStatus::InProgress => {
+                        ava_app_server_protocol::TurnPlanStepStatus::InProgress => {
                             eprintln!("  {} {}", "→".style(self.cyan), step.step);
                         }
-                        codex_app_server_protocol::TurnPlanStepStatus::Pending => {
+                        ava_app_server_protocol::TurnPlanStepStatus::Pending => {
                             eprintln!(
                                 "  {} {}",
                                 "•".style(self.dimmed),
                                 step.step.style(self.dimmed)
                             );
                         }
-                        codex_app_server_protocol::TurnPlanStepStatus::Cancelled => {
+                        ava_app_server_protocol::TurnPlanStepStatus::Cancelled => {
                             eprintln!(
                                 "  {} {}",
                                 "✗".style(self.dimmed),
@@ -374,19 +374,19 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                         }
                     }
                 }
-                CodexStatus::Running
+                AvaStatus::Running
             }
-            ServerNotification::TurnStarted(_) => CodexStatus::Running,
-            _ => CodexStatus::Running,
+            ServerNotification::TurnStarted(_) => AvaStatus::Running,
+            _ => AvaStatus::Running,
         }
     }
 
-    fn process_warning(&mut self, message: String) -> CodexStatus {
+    fn process_warning(&mut self, message: String) -> AvaStatus {
         eprintln!(
             "{} {message}",
             "warning:".style(self.yellow).style(self.bold)
         );
-        CodexStatus::Running
+        AvaStatus::Running
     }
 
     fn print_final_output(&mut self) {
@@ -425,7 +425,7 @@ impl EventProcessor for EventProcessorWithHumanOutput {
         {
             eprintln!(
                 "{}\n{}",
-                "codex".style(self.italic).style(self.magenta),
+                "ava".style(self.italic).style(self.magenta),
                 message
             );
         }

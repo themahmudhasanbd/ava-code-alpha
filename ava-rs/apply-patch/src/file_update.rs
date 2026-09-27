@@ -1,7 +1,7 @@
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::ReadFileOptions;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::ReadFileOptions;
+use ava_utils_path_uri::PathUri;
 use similar::TextDiff;
 
 use crate::ApplyPatchError;

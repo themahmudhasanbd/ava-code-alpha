@@ -4,17 +4,17 @@ use std::sync::Mutex;
 use std::sync::Weak;
 
 use crate::tools::context::ToolCallOrigin;
-use codex_code_mode::CellId;
-use codex_code_mode::CodeModeNestedToolCall;
-use codex_code_mode::CodeModeSessionDelegate;
-use codex_code_mode::NotificationFuture;
-use codex_code_mode::ToolInvocationFuture;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::ThreadId;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseItem;
-use codex_utils_output_truncation::with_serialization_allowance;
+use ava_code_mode::CellId;
+use ava_code_mode::CodeModeNestedToolCall;
+use ava_code_mode::CodeModeSessionDelegate;
+use ava_code_mode::NotificationFuture;
+use ava_code_mode::ToolInvocationFuture;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::ThreadId;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseItem;
+use ava_utils_output_truncation::with_serialization_allowance;
 use serde_json::Value as JsonValue;
 use tokio::sync::oneshot;
 use tokio::sync::watch;
@@ -480,7 +480,7 @@ impl CoreTurnHost {
                     output: FunctionCallOutputPayload::from_text(text),
                     internal_chat_message_metadata_passthrough: None,
                 },
-                metadata: Some(CodexHarnessMetadata {
+                metadata: Some(AvaHarnessMetadata {
                     history_truncation_token_limit: Some(output_token_limit),
                     ..Default::default()
                 }),

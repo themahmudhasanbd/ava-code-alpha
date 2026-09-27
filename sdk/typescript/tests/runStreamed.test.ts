@@ -189,7 +189,7 @@ describe("Ava", () => {
       const text = payload!.json.text;
       expect(text).toBeDefined();
       expect(text?.format).toEqual({
-        name: "codex_output_schema",
+        name: "ava_output_schema",
         type: "json_schema",
         strict: true,
         schema,

@@ -2,21 +2,21 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::time::Duration;
 
-use codex_config::AppToolApproval;
-use codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
-use codex_config::McpServerAuth;
-use codex_config::McpServerConfig;
-use codex_config::McpServerDisabledReason;
-use codex_config::McpServerIdpOAuthConfig;
-use codex_config::McpServerToolConfig;
-use codex_config::McpServerTransportConfig;
-use codex_config::types::PluginMcpServerEmaAuthConfig;
-use codex_protocol::mcp_policy::EnvironmentMcpPolicy;
-use codex_protocol::mcp_policy::PluginMcpRequirements;
-use codex_utils_path_uri::PathUri;
+use ava_config::AppToolApproval;
+use ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
+use ava_config::McpServerAuth;
+use ava_config::McpServerConfig;
+use ava_config::McpServerDisabledReason;
+use ava_config::McpServerIdpOAuthConfig;
+use ava_config::McpServerToolConfig;
+use ava_config::McpServerTransportConfig;
+use ava_config::types::PluginMcpServerEmaAuthConfig;
+use ava_protocol::mcp_policy::EnvironmentMcpPolicy;
+use ava_protocol::mcp_policy::PluginMcpRequirements;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 
-use crate::CODEX_APPS_MCP_SERVER_NAME;
+use crate::AVA_APPS_MCP_SERVER_NAME;
 use crate::McpProtocolMode;
 
 use super::McpEnvironmentAuthority;
@@ -215,14 +215,14 @@ fn rejected_plugin_ema_registration_does_not_veto_hosted_apps() {
             let mut builder = ResolvedMcpCatalog::builder();
             builder.enable_ema(idp.clone());
             builder.register(McpServerRegistration::from_plugin(
-                CODEX_APPS_MCP_SERVER_NAME.to_string(),
+                AVA_APPS_MCP_SERVER_NAME.to_string(),
                 plugin("plugin@test"),
                 /*plugin_order*/ 0,
                 rejected.clone(),
             ));
             let catalog = builder.build();
             assert_eq!(
-                catalog.server(CODEX_APPS_MCP_SERVER_NAME).unwrap().config(),
+                catalog.server(AVA_APPS_MCP_SERVER_NAME).unwrap().config(),
                 &rejected,
             );
 
@@ -237,7 +237,7 @@ fn rejected_plugin_ema_registration_does_not_veto_hosted_apps() {
                 ));
                 expected.enabled = initially_enabled;
                 assert_eq!(
-                    builder.build().server(CODEX_APPS_MCP_SERVER_NAME),
+                    builder.build().server(AVA_APPS_MCP_SERVER_NAME),
                     Some(&ResolvedMcpServer {
                         source: McpServerSource::Extension {
                             id: "apps".to_string(),
@@ -654,7 +654,7 @@ fn environment_policy_exempts_only_explicitly_host_owned_apps() {
     for (registration, expected) in [
         (
             McpServerRegistration::from_extension(
-                CODEX_APPS_MCP_SERVER_NAME.to_string(),
+                AVA_APPS_MCP_SERVER_NAME.to_string(),
                 "apps",
                 /*contribution_order*/ 0,
                 server("https://apps.example/mcp"),
@@ -676,7 +676,7 @@ fn environment_policy_exempts_only_explicitly_host_owned_apps() {
             .build_with_environment_authority(|_| McpEnvironmentAuthority::Restricted(&policy));
         assert_eq!(
             catalog
-                .server(CODEX_APPS_MCP_SERVER_NAME)
+                .server(AVA_APPS_MCP_SERVER_NAME)
                 .expect("Apps registration")
                 .config()
                 .enabled,

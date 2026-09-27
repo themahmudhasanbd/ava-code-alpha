@@ -2,16 +2,16 @@
 //! Dropping a popup stops discovery, but submitted writes finish independently.
 //! Readback describes configured enablement; reserved IDs bound unanswered requests.
 
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::ExperimentalFeature;
-use codex_app_server_protocol::ExperimentalFeatureListParams;
-use codex_app_server_protocol::ExperimentalFeatureListResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::WriteStatus;
-use codex_protocol::ThreadId;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::ExperimentalFeature;
+use ava_app_server_protocol::ExperimentalFeatureListParams;
+use ava_app_server_protocol::ExperimentalFeatureListResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::WriteStatus;
+use ava_protocol::ThreadId;
 use std::collections::HashSet;
 use std::time::Duration;
 use tokio::sync::oneshot;

@@ -2,9 +2,9 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_config::ConfigLayerSource;
-use codex_core::config::Config;
-use codex_git_utils::get_git_repo_root;
+use ava_config::ConfigLayerSource;
+use ava_core::config::Config;
+use ava_git_utils::get_git_repo_root;
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::CheckStatus;
@@ -136,7 +136,7 @@ fn terminal_title_item_id(item: &str) -> Option<&'static str> {
         "weekly-limit" => Some("weekly-limit"),
         "thread-credits" => Some("thread-credits"),
         "estimated-thread-cost" => Some("estimated-thread-cost"),
-        "codex-version" => Some("codex-version"),
+        "ava-version" => Some("ava-version"),
         "used-tokens" => Some("used-tokens"),
         "total-input-tokens" => Some("total-input-tokens"),
         "total-output-tokens" => Some("total-output-tokens"),
@@ -174,7 +174,7 @@ fn terminal_title_project_root(config: &Config, cwd: &Path) -> Option<ProjectTit
         .config_layer_stack
         .all_layers_low_to_high()
         .find_map(|layer| match &layer.name {
-            ConfigLayerSource::Project { dot_codex_folder } => dot_codex_folder
+            ConfigLayerSource::Project { dot_ava_folder } => dot_ava_folder
                 .as_path()
                 .parent()
                 .map(|root| ProjectTitleRoot {

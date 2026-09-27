@@ -3,7 +3,7 @@ use super::RemotePluginScope;
 use super::RemotePluginServiceConfig;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_login::CodexAuth;
+use ava_login::AvaAuth;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::Path;
@@ -33,7 +33,7 @@ struct RemotePluginCatalogCacheKey {
 impl RemotePluginCatalogCacheKey {
     fn new(
         config: &RemotePluginServiceConfig,
-        auth: &CodexAuth,
+        auth: &AvaAuth,
         scope: RemotePluginScope,
         collection: Option<&str>,
     ) -> Option<Self> {
@@ -79,14 +79,14 @@ pub(super) struct CachedDirectoryPlugins {
 }
 
 pub(crate) fn load_cached_directory_plugins(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
     collection: Option<&str>,
 ) -> Option<CachedDirectoryPlugins> {
     let cache_key = RemotePluginCatalogCacheKey::new(config, auth, scope, collection)?;
-    let cache_path = cache_path(codex_home, &cache_key);
+    let cache_path = cache_path(ava_home, &cache_key);
     let bytes = match std::fs::read(&cache_path) {
         Ok(bytes) => bytes,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return None,
@@ -126,9 +126,9 @@ pub(crate) fn load_cached_directory_plugins(
 }
 
 pub(crate) fn write_cached_directory_plugins(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
     collection: Option<&str>,
     plugins: &[RemotePluginDirectoryItem],
@@ -136,7 +136,7 @@ pub(crate) fn write_cached_directory_plugins(
     let Some(cache_key) = RemotePluginCatalogCacheKey::new(config, auth, scope, collection) else {
         return;
     };
-    let cache_path = cache_path(codex_home, &cache_key);
+    let cache_path = cache_path(ava_home, &cache_key);
     let Ok(contents) = serde_json::to_string_pretty(&RemotePluginCatalogDiskCache {
         schema_version: REMOTE_PLUGIN_CATALOG_DISK_CACHE_SCHEMA_VERSION,
         fetched_at: Some(Utc::now()),
@@ -144,20 +144,20 @@ pub(crate) fn write_cached_directory_plugins(
     }) else {
         return;
     };
-    let _ = codex_utils_path::write_atomically(&cache_path, &contents);
+    let _ = ava_utils_path::write_atomically(&cache_path, &contents);
 }
 
 pub(crate) fn remove_cached_directory_plugins(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
     collection: Option<&str>,
 ) {
     let Some(cache_key) = RemotePluginCatalogCacheKey::new(config, auth, scope, collection) else {
         return;
     };
-    let cache_path = cache_path(codex_home, &cache_key);
+    let cache_path = cache_path(ava_home, &cache_key);
     match std::fs::remove_file(&cache_path) {
         Ok(()) => {}
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
@@ -170,14 +170,14 @@ pub(crate) fn remove_cached_directory_plugins(
     }
 }
 
-fn cache_path(codex_home: &Path, cache_key: &RemotePluginCatalogCacheKey) -> PathBuf {
+fn cache_path(ava_home: &Path, cache_key: &RemotePluginCatalogCacheKey) -> PathBuf {
     let cache_key_json = serde_json::to_vec(cache_key).unwrap_or_default();
     let mut cache_key_hash = 0xcbf29ce484222325_u64;
     for byte in cache_key_json {
         cache_key_hash ^= u64::from(byte);
         cache_key_hash = cache_key_hash.wrapping_mul(0x100000001b3);
     }
-    codex_home
+    ava_home
         .join(REMOTE_PLUGIN_CATALOG_DISK_CACHE_DIR)
         .join(format!("{cache_key_hash:016x}.json"))
 }

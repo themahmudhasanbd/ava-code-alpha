@@ -2,17 +2,17 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::config_toml::RealtimeWsVersion;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::ConversationStartParams;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::RealtimeConversationRealtimeEvent;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::RealtimeOutputModality;
+use ava_config::config_toml::RealtimeWsVersion;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::ConversationStartParams;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::RealtimeConversationRealtimeEvent;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::RealtimeOutputModality;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event_match;
 use futures::SinkExt;
 use pretty_assertions::assert_eq;
@@ -83,21 +83,21 @@ async fn misalignment_retires_late_voice_handoff_before_it_starts_a_turn() -> Re
         Ok::<_, anyhow::Error>(())
     });
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_base_url = Some(realtime_url);
         config.realtime.version = RealtimeWsVersion::V1;
     });
     let test = builder.build_with_auto_env(&api_server).await?;
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -112,9 +112,9 @@ async fn misalignment_retires_late_voice_handoff_before_it_starts_a_turn() -> Re
         }))
         .await?;
 
-    wait_for_event_match(&test.codex, |event| match event {
+    wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::Error(error)
-            if error.codex_error_info == Some(CodexErrorInfo::MisalignmentPolicyViolation) =>
+            if error.ava_error_info == Some(AvaErrorInfo::MisalignmentPolicyViolation) =>
         {
             Some(())
         }
@@ -123,7 +123,7 @@ async fn misalignment_retires_late_voice_handoff_before_it_starts_a_turn() -> Re
     .await;
     assert_eq!(first_response.requests().len(), 1);
     late_handoff_tx.send(()).expect("sideband still open");
-    wait_for_event_match(&test.codex, |event| match event {
+    wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.handoff_id == "late_handoff" => Some(()),

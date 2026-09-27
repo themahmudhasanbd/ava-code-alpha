@@ -5,11 +5,11 @@ use super::TransportEvent;
 use super::acquire_app_server_startup_lock;
 use super::app_server_control_socket_path;
 use super::start_control_socket_acceptor;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_core::config::find_codex_home;
-use codex_uds::UnixStream;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_core::config::find_ava_home;
+use ava_uds::UnixStream;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -37,9 +37,9 @@ fn listen_unix_socket_parses_as_unix_socket_transport() {
 #[test]
 fn listen_unix_socket_accepts_absolute_custom_path() {
     assert_eq!(
-        AppServerTransport::from_listen_url("unix:///tmp/codex.sock"),
+        AppServerTransport::from_listen_url("unix:///tmp/ava.sock"),
         Ok(AppServerTransport::UnixSocket {
-            socket_path: absolute_path("/tmp/codex.sock")
+            socket_path: absolute_path("/tmp/ava.sock")
         })
     );
 }
@@ -47,9 +47,9 @@ fn listen_unix_socket_accepts_absolute_custom_path() {
 #[test]
 fn listen_unix_socket_accepts_relative_custom_path() {
     assert_eq!(
-        AppServerTransport::from_listen_url("unix://codex.sock"),
+        AppServerTransport::from_listen_url("unix://ava.sock"),
         Ok(AppServerTransport::UnixSocket {
-            socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")
+            socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")
                 .expect("relative path should resolve")
         })
     );
@@ -80,7 +80,7 @@ async fn control_socket_acceptor_upgrades_and_forwards_websocket_text_messages_a
     assert_eq!(response.status().as_u16(), 101);
     let advertised_max = response
         .headers()
-        .get("x-codex-websocket-max-unfragmented-message-bytes")
+        .get("x-ava-websocket-max-unfragmented-message-bytes")
         .expect("byte cap header should be advertised")
         .to_str()
         .expect("byte cap header should be ASCII")
@@ -330,7 +330,7 @@ async fn control_socket_file_is_private_after_bind() {
     assert_eq!(
         physical_path.parent(),
         Some(
-            codex_uds::shared_daemon_socket_directory()
+            ava_uds::shared_daemon_socket_directory()
                 .unwrap()
                 .as_path()
         )
@@ -406,8 +406,8 @@ fn absolute_path(path: &str) -> AbsolutePathBuf {
 }
 
 fn default_control_socket_path() -> AbsolutePathBuf {
-    let codex_home = find_codex_home().expect("codex home");
-    app_server_control_socket_path(&codex_home).expect("default control socket path")
+    let ava_home = find_ava_home().expect("ava home");
+    app_server_control_socket_path(&ava_home).expect("default control socket path")
 }
 
 fn test_socket_path(temp_dir: &Path) -> AbsolutePathBuf {

@@ -3,42 +3,42 @@ use clap::CommandFactory;
 use clap::Parser;
 use clap_complete::Shell;
 use clap_complete::generate;
-use codex_app_server_daemon::BootstrapOptions as AppServerBootstrapOptions;
-use codex_app_server_daemon::LifecycleCommand as AppServerLifecycleCommand;
-use codex_app_server_daemon::RemoteControlMode as AppServerRemoteControlMode;
-use codex_arg0::Arg0DispatchPaths;
-use codex_arg0::arg0_dispatch_or_else;
-use codex_chatgpt::apply_command::ApplyCommand;
-use codex_chatgpt::apply_command::run_apply_command;
-use codex_cli::read_access_token_from_stdin;
-use codex_cli::read_api_key_from_stdin;
-use codex_cli::run_login_status;
-use codex_cli::run_login_with_access_token;
-use codex_cli::run_login_with_api_key;
-use codex_cli::run_login_with_chatgpt;
-use codex_cli::run_login_with_device_code;
-use codex_cli::run_logout;
-use codex_cloud_config::cloud_config_bundle_loader_for_storage;
-use codex_cloud_tasks::Cli as CloudTasksCli;
-use codex_exec::Cli as ExecCli;
-use codex_exec::Command as ExecCommand;
-use codex_exec::ReviewArgs;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_execpolicy::ExecPolicyCheckCommand;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_responses_api_proxy::Args as ResponsesApiProxyArgs;
-use codex_rollout_trace::REDUCED_STATE_FILE_NAME;
-use codex_rollout_trace::replay_bundle;
-use codex_state::StateRuntime;
-use codex_tui::AppExitInfo;
-use codex_tui::Cli as TuiCli;
-use codex_tui::ExitReason;
-use codex_tui::UpdateAction;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_cli::CliConfigOverrides;
-use codex_utils_cli::ProfileV2Name;
-use codex_utils_cli::SharedCliOptions;
+use ava_app_server_daemon::BootstrapOptions as AppServerBootstrapOptions;
+use ava_app_server_daemon::LifecycleCommand as AppServerLifecycleCommand;
+use ava_app_server_daemon::RemoteControlMode as AppServerRemoteControlMode;
+use ava_arg0::Arg0DispatchPaths;
+use ava_arg0::arg0_dispatch_or_else;
+use ava_chatgpt::apply_command::ApplyCommand;
+use ava_chatgpt::apply_command::run_apply_command;
+use ava_cli::read_access_token_from_stdin;
+use ava_cli::read_api_key_from_stdin;
+use ava_cli::run_login_status;
+use ava_cli::run_login_with_access_token;
+use ava_cli::run_login_with_api_key;
+use ava_cli::run_login_with_chatgpt;
+use ava_cli::run_login_with_device_code;
+use ava_cli::run_logout;
+use ava_cloud_config::cloud_config_bundle_loader_for_storage;
+use ava_cloud_tasks::Cli as CloudTasksCli;
+use ava_exec::Cli as ExecCli;
+use ava_exec::Command as ExecCommand;
+use ava_exec::ReviewArgs;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_execpolicy::ExecPolicyCheckCommand;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_responses_api_proxy::Args as ResponsesApiProxyArgs;
+use ava_rollout_trace::REDUCED_STATE_FILE_NAME;
+use ava_rollout_trace::replay_bundle;
+use ava_state::StateRuntime;
+use ava_tui::AppExitInfo;
+use ava_tui::Cli as TuiCli;
+use ava_tui::ExitReason;
+use ava_tui::UpdateAction;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_cli::CliConfigOverrides;
+use ava_utils_cli::ProfileV2Name;
+use ava_utils_cli::SharedCliOptions;
 use std::collections::HashSet;
 use std::io::IsTerminal;
 use std::io::Write;
@@ -88,33 +88,33 @@ use crate::remote_control_cmd::RemoteControlCommand;
 use doctor::DoctorCommand;
 use state_db_recovery as local_state_db;
 
-use codex_config::LoaderOverrides;
-use codex_core::build_models_manager;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::ConfigLoadOptions;
-use codex_core::config::ConfigOverrides;
-use codex_core::config::bootstrap_auth_config;
-use codex_core::config::edit::ConfigEditsBuilder;
-use codex_core::config::find_codex_home;
-use codex_core::config::load_config_toml_with_layer_stack;
-use codex_core::config::resolve_profile_v2_config_path;
-use codex_features::FEATURES;
-use codex_features::Stage;
-use codex_features::is_known_feature_key;
-use codex_home::CodexHomeUserInstructionsProvider;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::is_workload_identity_selected;
-use codex_login::read_codex_access_token_from_env;
-use codex_memories_write::clear_memory_roots_contents;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::user_input::UserInput;
-use codex_terminal_detection::TerminalName;
+use ava_config::LoaderOverrides;
+use ava_core::build_models_manager;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::ConfigLoadOptions;
+use ava_core::config::ConfigOverrides;
+use ava_core::config::bootstrap_auth_config;
+use ava_core::config::edit::ConfigEditsBuilder;
+use ava_core::config::find_ava_home;
+use ava_core::config::load_config_toml_with_layer_stack;
+use ava_core::config::resolve_profile_v2_config_path;
+use ava_features::FEATURES;
+use ava_features::Stage;
+use ava_features::is_known_feature_key;
+use ava_home::AvaHomeUserInstructionsProvider;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::is_workload_identity_selected;
+use ava_login::read_ava_access_token_from_env;
+use ava_memories_write::clear_memory_roots_contents;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::user_input::UserInput;
+use ava_terminal_detection::TerminalName;
 
-/// Codex CLI
+/// Ava CLI
 ///
 /// If no subcommand is specified, options will be forwarded to the interactive CLI.
 #[derive(Debug, Parser)]
@@ -124,10 +124,10 @@ use codex_terminal_detection::TerminalName;
     // If a sub‑command is given, ignore requirements of the default args.
     subcommand_negates_reqs = true,
     // The executable is sometimes invoked via a platform‑specific name like
-    // `codex-x86_64-unknown-linux-musl`, but the help output should always use
-    // the generic `codex` command name that users run.
-    bin_name = "codex",
-    override_usage = "codex [OPTIONS] [PROMPT]\n       codex [OPTIONS] <COMMAND> [ARGS]"
+    // `ava-x86_64-unknown-linux-musl`, but the help output should always use
+    // the generic `ava` command name that users run.
+    bin_name = "ava",
+    override_usage = "ava [OPTIONS] [PROMPT]\n       ava [OPTIONS] <COMMAND> [ARGS]"
 )]
 struct MultitoolCli {
     #[clap(flatten)]
@@ -153,8 +153,8 @@ enum Subcommand {
 
     /// Internal: forward a local TCP socket through an HTTP/3 CONNECT proxy.
     #[clap(hide = true)]
-    TcpTunnel(codex_tcp_tunnel::Args),
-    /// Run Codex non-interactively.
+    TcpTunnel(ava_tcp_tunnel::Args),
+    /// Run Ava non-interactively.
     #[clap(visible_alias = "e")]
     Exec(ExecCli),
 
@@ -167,10 +167,10 @@ enum Subcommand {
     /// Remove stored authentication credentials.
     Logout(LogoutCommand),
 
-    /// Manage external MCP servers for Codex.
+    /// Manage external MCP servers for Ava.
     Mcp(McpCli),
 
-    /// Manage Codex plugins.
+    /// Manage Ava plugins.
     Plugin(PluginCli),
 
     /// [experimental] Run the app server or related tooling.
@@ -186,13 +186,13 @@ enum Subcommand {
     /// Generate shell completion scripts.
     Completion(CompletionCommand),
 
-    /// Update Codex to the latest version.
+    /// Update Ava to the latest version.
     Update,
 
-    /// Diagnose local Codex installation, config, auth, and runtime health.
+    /// Diagnose local Ava installation, config, auth, and runtime health.
     Doctor(DoctorCommand),
 
-    /// Run commands within a Codex-provided sandbox.
+    /// Run commands within a Ava-provided sandbox.
     Sandbox(HostSandboxArgs),
 
     /// Debugging tools.
@@ -202,7 +202,7 @@ enum Subcommand {
     #[clap(hide = true)]
     Execpolicy(ExecpolicyCommand),
 
-    /// Apply the latest diff produced by Codex agent as a `git apply` to your local working tree.
+    /// Apply the latest diff produced by Ava agent as a `git apply` to your local working tree.
     #[clap(visible_alias = "a")]
     Apply(ApplyCommand),
 
@@ -227,7 +227,7 @@ enum Subcommand {
     /// Fork a previous interactive session (picker by default; use --last to fork the most recent).
     Fork(ForkCommand),
 
-    /// [EXPERIMENTAL] Browse tasks from Codex Cloud and apply changes locally.
+    /// [EXPERIMENTAL] Browse tasks from Ava Cloud and apply changes locally.
     #[clap(name = "cloud", alias = "cloud-tasks")]
     Cloud(CloudTasksCli),
 
@@ -317,7 +317,7 @@ struct DebugModelsCommand {
 
 #[derive(Debug, Parser)]
 struct ReviewCommand {
-    /// Error out when config.toml contains fields that are not recognized by this version of Codex.
+    /// Error out when config.toml contains fields that are not recognized by this version of Ava.
     #[arg(long = "strict-config", default_value_t = false)]
     strict_config: bool,
 
@@ -397,7 +397,7 @@ struct SessionArchiveConfigOverrides {
     #[clap(flatten)]
     shared: SharedCliOptions,
 
-    /// Error out when config.toml contains fields that are not recognized by this version of Codex.
+    /// Error out when config.toml contains fields that are not recognized by this version of Ava.
     #[arg(long = "strict-config", default_value_t = false)]
     strict_config: bool,
 
@@ -464,11 +464,11 @@ impl clap::FromArgMatches for SessionTuiCli {
 }
 
 #[cfg(target_os = "macos")]
-type HostSandboxArgs = codex_cli::SeatbeltCommand;
+type HostSandboxArgs = ava_cli::SeatbeltCommand;
 #[cfg(target_os = "linux")]
-type HostSandboxArgs = codex_cli::LandlockCommand;
+type HostSandboxArgs = ava_cli::LandlockCommand;
 #[cfg(target_os = "windows")]
-type HostSandboxArgs = codex_cli::WindowsCommand;
+type HostSandboxArgs = ava_cli::WindowsCommand;
 
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 type HostSandboxArgs = UnsupportedSandboxArgs;
@@ -476,7 +476,7 @@ type HostSandboxArgs = UnsupportedSandboxArgs;
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 #[derive(Debug, Parser)]
 struct UnsupportedSandboxArgs {
-    /// Layer $CODEX_HOME/<name>.config.toml on top of the base user config.
+    /// Layer $AVA_HOME/<name>.config.toml on top of the base user config.
     #[arg(long = "profile", short = 'p')]
     pub config_profile: Option<ProfileV2Name>,
 
@@ -508,13 +508,13 @@ struct LoginCommand {
 
     #[arg(
         long = "with-api-key",
-        help = "Read the API key from stdin (e.g. `printenv OPENAI_API_KEY | codex login --with-api-key`)"
+        help = "Read the API key from stdin (e.g. `printenv OPENAI_API_KEY | ava login --with-api-key`)"
     )]
     with_api_key: bool,
 
     #[arg(
         long = "with-access-token",
-        help = "Read the access token from stdin (e.g. `printenv CODEX_ACCESS_TOKEN | codex login --with-access-token`)"
+        help = "Read the access token from stdin (e.g. `printenv AVA_ACCESS_TOKEN | ava login --with-access-token`)"
     )]
     with_access_token: bool,
 
@@ -563,9 +563,9 @@ struct AppServerCommand {
     subcommand: Option<AppServerSubcommand>,
 
     #[command(flatten)]
-    code_mode_host: codex_app_server::AppServerCodeModeHostArgs,
+    code_mode_host: ava_app_server::AppServerCodeModeHostArgs,
 
-    /// Error out when config.toml contains fields that are not recognized by this version of Codex.
+    /// Error out when config.toml contains fields that are not recognized by this version of Ava.
     #[arg(long = "strict-config", default_value_t = false)]
     strict_config: bool,
 
@@ -574,9 +574,9 @@ struct AppServerCommand {
     #[arg(
         long = "listen",
         value_name = "URL",
-        default_value = codex_app_server::AppServerTransport::DEFAULT_LISTEN_URL
+        default_value = ava_app_server::AppServerTransport::DEFAULT_LISTEN_URL
     )]
-    listen: codex_app_server::AppServerTransport,
+    listen: ava_app_server::AppServerTransport,
 
     /// Use stdio as the transport (equivalent to `--listen stdio://`).
     #[arg(long = "stdio", conflicts_with = "listen")]
@@ -609,7 +609,7 @@ struct AppServerCommand {
     analytics_default_enabled: bool,
 
     #[command(flatten)]
-    auth: codex_app_server::AppServerWebsocketAuthArgs,
+    auth: ava_app_server::AppServerWebsocketAuthArgs,
 }
 
 #[derive(Debug, Parser)]
@@ -617,7 +617,7 @@ struct ExecServerCommand {
     #[command(subcommand)]
     command: Option<ExecServerSubcommand>,
 
-    /// Error out when config.toml contains fields that are not recognized by this version of Codex.
+    /// Error out when config.toml contains fields that are not recognized by this version of Ava.
     #[arg(
         id = "exec_server_strict_config",
         long = "strict-config",
@@ -632,7 +632,7 @@ struct ExecServerCommand {
         value_name = "COUNT",
         default_value = "1"
     )]
-    request_dispatch_mode: codex_exec_server::RequestDispatchMode,
+    request_dispatch_mode: ava_exec_server::RequestDispatchMode,
 
     /// Transport endpoint URL. Supported values: `ws://IP:PORT` (default), `stdio`, `stdio://`.
     #[arg(
@@ -671,7 +671,7 @@ struct ExecServerCommand {
     #[arg(long = "name", value_name = "NAME", global = true)]
     name: Option<String>,
 
-    /// Use Agent Identity auth from CODEX_ACCESS_TOKEN for remote registration.
+    /// Use Agent Identity auth from AVA_ACCESS_TOKEN for remote registration.
     #[arg(
         long = "use-agent-identity-auth",
         requires = "exec_server_remote",
@@ -715,7 +715,7 @@ struct ExecServerCommand {
     /// Exit when the parent-owned standard-input pipe closes.
     #[arg(
         long = "exit-on-stdin-close",
-        env = codex_exec_server::CODEX_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR,
+        env = ava_exec_server::AVA_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR,
         requires_if("true", "exec_server_remote"),
         global = true
     )]
@@ -778,7 +778,7 @@ enum AppServerSubcommand {
     /// [experimental] Generate JSON Schema for the app server protocol.
     GenerateJsonSchema(GenerateJsonSchemaCommand),
 
-    /// [internal] Generate internal JSON Schema artifacts for Codex tooling.
+    /// [internal] Generate internal JSON Schema artifacts for Ava tooling.
     #[clap(hide = true)]
     GenerateInternalJsonSchema(GenerateInternalJsonSchemaCommand),
 }
@@ -933,22 +933,22 @@ fn run_update_action(
 ) -> anyhow::Result<()> {
     if let UpdateAction::Daemon(source) = action {
         let executable = cli_executable
-            .ok_or_else(|| anyhow::anyhow!("Cannot locate the launching Codex CLI"))?;
+            .ok_or_else(|| anyhow::anyhow!("Cannot locate the launching Ava CLI"))?;
         println!("Updating the local background server...");
         let status = std::process::Command::new(executable)
             .args(source.command_args())
-            .env(codex_app_server_daemon::telemetry::HANDOFF_ENV, "1")
+            .env(ava_app_server_daemon::telemetry::HANDOFF_ENV, "1")
             .status()?;
         anyhow::ensure!(
             status.success(),
             "Daemon update failed with status {status}"
         );
-        println!("Relaunch Codex to reconnect.");
+        println!("Relaunch Ava to reconnect.");
         return Ok(());
     }
     println!();
     let cmd_str = action.command_str();
-    println!("Updating Codex via `{cmd_str}`...");
+    println!("Updating Ava via `{cmd_str}`...");
     let status = {
         #[cfg(windows)]
         {
@@ -990,7 +990,7 @@ fn run_update_action(
     if !status.success() {
         anyhow::bail!("`{cmd_str}` failed with status {status}");
     }
-    println!("\n🎉 Update ran successfully! Please restart Codex.");
+    println!("\n🎉 Update ran successfully! Please restart Ava.");
     Ok(())
 }
 
@@ -1015,15 +1015,15 @@ fn run_update_command() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
     {
         anyhow::bail!(
-            "`codex update` is not available in debug builds. Install a release build of Codex to use this command."
+            "`ava update` is not available in debug builds. Install a release build of Ava to use this command."
         );
     }
 
     #[cfg(not(debug_assertions))]
     {
-        let Some(action) = codex_tui::get_update_action() else {
+        let Some(action) = ava_tui::get_update_action() else {
             anyhow::bail!(
-                "Could not detect the Codex installation method. Please update manually: https://developers.openai.com/codex/cli/"
+                "Could not detect the Ava installation method. Please update manually: https://developers.openai.com/codex/cli/"
             );
         };
         run_update_action(action, /*cli_executable*/ None)
@@ -1035,7 +1035,7 @@ fn run_execpolicycheck(cmd: ExecPolicyCheckCommand) -> anyhow::Result<()> {
 }
 
 async fn run_session_archive_cli_command(
-    action: codex_tui::SessionArchiveAction,
+    action: ava_tui::SessionArchiveAction,
     cmd: SessionArchiveCommand,
     mut interactive: TuiCli,
     root_config_overrides: CliConfigOverrides,
@@ -1054,10 +1054,10 @@ async fn run_session_archive_cli_command(
         remote.remote.or(root_remote),
         remote.remote_auth_token_env.or(root_remote_auth_token_env),
     )?;
-    codex_tui::run_session_archive_command(
+    ava_tui::run_session_archive_command(
         action,
         target,
-        codex_tui::SessionArchiveCommandOptions {
+        ava_tui::SessionArchiveCommandOptions {
             cli: interactive,
             arg0_paths,
             explicit_remote_endpoint,
@@ -1067,22 +1067,22 @@ async fn run_session_archive_cli_command(
     .map_err(|err| anyhow::anyhow!("{err}"))
 }
 
-fn delete_action(target: &str, force: bool) -> anyhow::Result<codex_tui::SessionArchiveAction> {
-    if force && codex_protocol::ThreadId::from_string(target).is_err() {
+fn delete_action(target: &str, force: bool) -> anyhow::Result<ava_tui::SessionArchiveAction> {
+    if force && ava_protocol::ThreadId::from_string(target).is_err() {
         anyhow::bail!("--force requires a session UUID; names must be confirmed interactively");
     }
     let confirmation = match force {
-        true => codex_tui::DeleteConfirmation::Skip,
-        false => codex_tui::DeleteConfirmation::Prompt,
+        true => ava_tui::DeleteConfirmation::Skip,
+        false => ava_tui::DeleteConfirmation::Prompt,
     };
-    Ok(codex_tui::SessionArchiveAction::Delete(confirmation))
+    Ok(ava_tui::SessionArchiveAction::Delete(confirmation))
 }
 
 async fn run_debug_app_server_command(cmd: DebugAppServerCommand) -> anyhow::Result<()> {
     match cmd.subcommand {
         DebugAppServerSubcommand::SendMessageV2(cmd) => {
-            let codex_bin = std::env::current_exe()?;
-            codex_app_server_test_client::send_message_v2(&codex_bin, &[], cmd.user_message, &None)
+            let ava_bin = std::env::current_exe()?;
+            ava_app_server_test_client::send_message_v2(&ava_bin, &[], cmd.user_message, &None)
                 .await
         }
     }
@@ -1169,8 +1169,8 @@ fn stage_str(stage: Stage) -> &'static str {
 }
 
 fn main() -> anyhow::Result<()> {
-    codex_build_info::initialize!();
-    let remote_control_disabled = codex_app_server::take_remote_control_disabled_env();
+    ava_build_info::initialize!();
+    let remote_control_disabled = ava_app_server::take_remote_control_disabled_env();
     arg0_dispatch_or_else(move |arg0_paths: Arg0DispatchPaths| async move {
         // Keep the CLI dispatcher off the runtime's stack while the TUI rebuilds a thread.
         Box::pin(cli_main(arg0_paths, remote_control_disabled)).await?;
@@ -1191,7 +1191,7 @@ async fn cli_main(
     } = MultitoolCli::parse();
     // Retain the launch target through TUI exit, even if a launcher changes selection.
     let daemon_cli_executable = arg0_paths
-        .codex_self_exe
+        .ava_self_exe
         .as_ref()
         .and_then(|path| path.canonicalize().ok());
     interactive.daemon_cli_executable = daemon_cli_executable
@@ -1210,7 +1210,7 @@ async fn cli_main(
         && let Some(agents_endpoint) = &options.remote.remote
         && root_endpoint != agents_endpoint
     {
-        anyhow::bail!("`codex agents` received conflicting remote server endpoints");
+        anyhow::bail!("`ava agents` received conflicting remote server endpoints");
     }
     let root_remote = agents_options
         .and_then(|options| options.remote.remote.clone())
@@ -1241,7 +1241,7 @@ async fn cli_main(
             );
             if open_agents_overview {
                 if interactive.prompt.is_some() || !interactive.images.is_empty() {
-                    anyhow::bail!("`codex agents` does not accept an initial prompt or images");
+                    anyhow::bail!("`ava agents` does not accept an initial prompt or images");
                 }
                 if root_remote.is_some()
                     && (interactive.oss
@@ -1259,12 +1259,12 @@ async fn cli_main(
                             }))
                 {
                     anyhow::bail!(
-                        "`codex agents` cannot apply local provider or additional-directory overrides to a remote server"
+                        "`ava agents` cannot apply local provider or additional-directory overrides to a remote server"
                     );
                 }
                 if is_workload_identity_selected() {
                     anyhow::bail!(
-                        "`codex agents` is unavailable while workload identity is active"
+                        "`ava agents` is unavailable while workload identity is active"
                     );
                 }
                 if root_remote.is_none() {
@@ -1273,7 +1273,7 @@ async fn cli_main(
                         root_remote_auth_token_env.clone(),
                     )?;
                     #[cfg(not(any(unix, windows)))]
-                    anyhow::bail!("`codex agents` requires `--remote` on this platform");
+                    anyhow::bail!("`ava agents` requires `--remote` on this platform");
                 }
                 interactive.agents_overview = true;
             }
@@ -1287,7 +1287,7 @@ async fn cli_main(
             handle_app_exit(exit_info, daemon_cli_executable.as_deref())?;
         }
         Some(Subcommand::TcpTunnel(args)) => {
-            return codex_tcp_tunnel::run(args).await;
+            return ava_tcp_tunnel::run(args).await;
         }
         Some(Subcommand::Exec(mut exec_cli)) => {
             reject_remote_mode_for_subcommand(
@@ -1303,7 +1303,7 @@ async fn cli_main(
                 &mut exec_cli.config_overrides,
                 root_config_overrides.clone(),
             );
-            codex_exec::run_main(exec_cli, arg0_paths.clone()).await?;
+            ava_exec::run_main(exec_cli, arg0_paths.clone()).await?;
         }
         Some(Subcommand::Review(ReviewCommand {
             strict_config,
@@ -1314,7 +1314,7 @@ async fn cli_main(
                 root_remote_auth_token_env.as_deref(),
                 "review",
             )?;
-            let mut exec_cli = ExecCli::try_parse_from(["codex", "exec"])?;
+            let mut exec_cli = ExecCli::try_parse_from(["ava", "exec"])?;
             exec_cli
                 .shared
                 .inherit_exec_root_options(&interactive.shared);
@@ -1324,7 +1324,7 @@ async fn cli_main(
                 &mut exec_cli.config_overrides,
                 root_config_overrides.clone(),
             );
-            codex_exec::run_main(exec_cli, arg0_paths.clone()).await?;
+            ava_exec::run_main(exec_cli, arg0_paths.clone()).await?;
         }
         Some(Subcommand::Mcp(mut mcp_cli)) => {
             reject_remote_mode_for_subcommand(
@@ -1396,41 +1396,41 @@ async fn cli_main(
             match subcommand {
                 None => {
                     let transport = if stdio {
-                        codex_app_server::AppServerTransport::Stdio
+                        ava_app_server::AppServerTransport::Stdio
                     } else {
                         listen
                     };
                     let auth = auth.try_into_settings()?;
-                    let runtime_options = codex_app_server::AppServerRuntimeOptions {
+                    let runtime_options = ava_app_server::AppServerRuntimeOptions {
                         code_mode_host_transport: code_mode_host.into(),
                         managed_daemon,
                         remote_control_startup_mode: match (remote_control, remote_control_disabled)
                         {
                             (true, _) => {
-                                codex_app_server::RemoteControlStartupMode::EnabledEphemeral
+                                ava_app_server::RemoteControlStartupMode::EnabledEphemeral
                             }
                             (false, true) => {
-                                codex_app_server::RemoteControlStartupMode::DisabledEphemeral
+                                ava_app_server::RemoteControlStartupMode::DisabledEphemeral
                             }
                             (false, false) => {
-                                codex_app_server::RemoteControlStartupMode::ResolvePersisted
+                                ava_app_server::RemoteControlStartupMode::ResolvePersisted
                             }
                         },
                         ..Default::default()
                     };
-                    let exit = codex_app_server::run_main_with_transport_options(
+                    let exit = ava_app_server::run_main_with_transport_options(
                         arg0_paths.clone(),
                         root_config_overrides,
                         LoaderOverrides::default(),
                         strict_config,
                         analytics_default_enabled,
                         transport,
-                        codex_protocol::protocol::SessionSource::VSCode,
+                        ava_protocol::protocol::SessionSource::VSCode,
                         auth,
                         runtime_options,
                     )
                     .await?;
-                    if exit == codex_app_server::AppServerExit::Forced {
+                    if exit == ava_app_server::AppServerExit::Forced {
                         // Runtime teardown can wait forever for blocked rollout I/O.
                         std::process::exit(0);
                     }
@@ -1441,7 +1441,7 @@ async fn cli_main(
                     }
                     AppServerDaemonSubcommand::Bootstrap(bootstrap_cli) => {
                         let output =
-                            codex_app_server_daemon::bootstrap(AppServerBootstrapOptions {
+                            ava_app_server_daemon::bootstrap(AppServerBootstrapOptions {
                                 remote_control_enabled: bootstrap_cli.remote_control,
                             })
                             .await?;
@@ -1454,7 +1454,7 @@ async fn cli_main(
                         from_cli: true,
                         yes,
                     } => {
-                        let result = codex_app_server_daemon::update_from_cli(|request| {
+                        let result = ava_app_server_daemon::update_from_cli(|request| {
                             daemon_install::confirm_install(request, yes)
                         })
                         .await;
@@ -1509,7 +1509,7 @@ async fn cli_main(
                             daemon_cli.subcommand,
                             AppServerDaemonSubcommand::Update { .. }
                         ) {
-                            let result = codex_app_server_daemon::update(http_client_factory)
+                            let result = ava_app_server_daemon::update(http_client_factory)
                                 .await
                                 .map(Some);
                             daemon_telemetry::record_command(
@@ -1529,7 +1529,7 @@ async fn cli_main(
                             else {
                                 unreachable!()
                             };
-                            codex_app_server_daemon::run_pid_update_loop(
+                            ava_app_server_daemon::run_pid_update_loop(
                                 http_client_factory,
                                 restore_release,
                             )
@@ -1541,31 +1541,31 @@ async fn cli_main(
                     let socket_path = match proxy_cli.socket_path {
                         Some(socket_path) => socket_path,
                         None => {
-                            let codex_home = find_codex_home()?;
-                            codex_app_server::app_server_control_socket_path(&codex_home)?
+                            let ava_home = find_ava_home()?;
+                            ava_app_server::app_server_control_socket_path(&ava_home)?
                         }
                     };
-                    codex_stdio_to_uds::run(socket_path.as_path()).await?;
+                    ava_stdio_to_uds::run(socket_path.as_path()).await?;
                 }
                 Some(AppServerSubcommand::GenerateTs(gen_cli)) => {
-                    let options = codex_app_server_protocol::GenerateTsOptions {
+                    let options = ava_app_server_protocol::GenerateTsOptions {
                         experimental_api: gen_cli.experimental,
                         ..Default::default()
                     };
-                    codex_app_server_protocol::generate_ts_with_options(
+                    ava_app_server_protocol::generate_ts_with_options(
                         &gen_cli.out_dir,
                         gen_cli.prettier.as_deref(),
                         options,
                     )?;
                 }
                 Some(AppServerSubcommand::GenerateJsonSchema(gen_cli)) => {
-                    codex_app_server_protocol::generate_json_with_experimental(
+                    ava_app_server_protocol::generate_json_with_experimental(
                         &gen_cli.out_dir,
                         gen_cli.experimental,
                     )?;
                 }
                 Some(AppServerSubcommand::GenerateInternalJsonSchema(gen_cli)) => {
-                    codex_app_server_protocol::generate_internal_json_schema(&gen_cli.out_dir)?;
+                    ava_app_server_protocol::generate_internal_json_schema(&gen_cli.out_dir)?;
                 }
             }
         }
@@ -1623,7 +1623,7 @@ async fn cli_main(
         }
         Some(Subcommand::Archive(cmd)) => {
             let output = run_session_archive_cli_command(
-                codex_tui::SessionArchiveAction::Archive,
+                ava_tui::SessionArchiveAction::Archive,
                 cmd,
                 interactive,
                 root_config_overrides.clone(),
@@ -1670,7 +1670,7 @@ async fn cli_main(
         }
         Some(Subcommand::Unarchive(cmd)) => {
             let output = run_session_archive_cli_command(
-                codex_tui::SessionArchiveAction::Unarchive,
+                ava_tui::SessionArchiveAction::Unarchive,
                 cmd,
                 interactive,
                 root_config_overrides.clone(),
@@ -1737,7 +1737,7 @@ async fn cli_main(
                         .await;
                     } else if login_cli.api_key.is_some() {
                         eprintln!(
-                            "The --api-key flag is no longer supported. Pipe the key instead, e.g. `printenv OPENAI_API_KEY | codex login --with-api-key`."
+                            "The --api-key flag is no longer supported. Pipe the key instead, e.g. `printenv OPENAI_API_KEY | ava login --with-api-key`."
                         );
                         std::process::exit(1);
                     } else if login_cli.with_api_key {
@@ -1804,7 +1804,7 @@ async fn cli_main(
                 &mut cloud_cli.config_overrides,
                 root_config_overrides.clone(),
             );
-            codex_cloud_tasks::run_main(cloud_cli, arg0_paths.codex_linux_sandbox_exe.clone())
+            ava_cloud_tasks::run_main(cloud_cli, arg0_paths.ava_linux_sandbox_exe.clone())
                 .await?;
         }
         Some(Subcommand::Sandbox(mut sandbox_cli)) => {
@@ -1837,30 +1837,30 @@ async fn cli_main(
             )?;
             let loader_overrides = loader_overrides_for_profile(config_profile)?;
             #[cfg(target_os = "macos")]
-            codex_cli::run_command_under_seatbelt(
+            ava_cli::run_command_under_seatbelt(
                 sandbox_cli,
-                arg0_paths.codex_linux_sandbox_exe.clone(),
+                arg0_paths.ava_linux_sandbox_exe.clone(),
                 loader_overrides,
             )
             .await?;
             #[cfg(target_os = "linux")]
-            codex_cli::run_command_under_landlock(
+            ava_cli::run_command_under_landlock(
                 sandbox_cli,
-                arg0_paths.codex_linux_sandbox_exe.clone(),
+                arg0_paths.ava_linux_sandbox_exe.clone(),
                 loader_overrides,
             )
             .await?;
             #[cfg(target_os = "windows")]
-            codex_cli::run_command_under_windows_sandbox(
+            ava_cli::run_command_under_windows_sandbox(
                 sandbox_cli,
-                arg0_paths.codex_linux_sandbox_exe.clone(),
+                arg0_paths.ava_linux_sandbox_exe.clone(),
                 loader_overrides,
             )
             .await?;
             #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
             {
                 let _ = loader_overrides;
-                anyhow::bail!("`codex sandbox` is not supported on this operating system");
+                anyhow::bail!("`ava sandbox` is not supported on this operating system");
             }
         }
         Some(Subcommand::Debug(DebugCommand { subcommand })) => match subcommand {
@@ -1939,7 +1939,7 @@ async fn cli_main(
                 root_remote_auth_token_env.as_deref(),
                 "responses-api-proxy",
             )?;
-            tokio::task::spawn_blocking(move || codex_responses_api_proxy::run_main(args))
+            tokio::task::spawn_blocking(move || ava_responses_api_proxy::run_main(args))
                 .await??;
         }
         Some(Subcommand::StdioToUds(cmd)) => {
@@ -1949,7 +1949,7 @@ async fn cli_main(
                 "stdio-to-uds",
             )?;
             let socket_path = cmd.socket_path;
-            codex_stdio_to_uds::run(socket_path.as_path()).await?;
+            ava_stdio_to_uds::run(socket_path.as_path()).await?;
         }
         Some(Subcommand::ExecServer(cmd)) => {
             reject_remote_mode_for_subcommand(
@@ -2041,7 +2041,7 @@ fn profile_v2_for_subcommand<'a>(
             subcommand: DebugSubcommand::PromptInput(_),
         }) => Ok(Some(profile_v2)),
         _ => anyhow::bail!(
-            "--profile only applies to runtime commands and `codex mcp`: `codex`, `codex exec`, `codex review`, `codex resume`, `codex queue`, `codex archive`, `codex delete`, `codex unarchive`, `codex fork`, `codex mcp`, `codex sandbox`, and `codex debug prompt-input`."
+            "--profile only applies to runtime commands and `ava mcp`: `ava`, `ava exec`, `ava review`, `ava resume`, `ava queue`, `ava archive`, `ava delete`, `ava unarchive`, `ava fork`, `ava mcp`, `ava sandbox`, and `ava debug prompt-input`."
         ),
     }
 }
@@ -2053,12 +2053,12 @@ async fn run_exec_server_command(
     strict_config: bool,
 ) -> anyhow::Result<()> {
     cmd.validate_remote_transport()?;
-    let codex_self_exe = arg0_paths
-        .codex_self_exe
+    let ava_self_exe = arg0_paths
+        .ava_self_exe
         .clone()
-        .ok_or_else(|| anyhow::anyhow!("Codex executable path is not configured"))?;
+        .ok_or_else(|| anyhow::anyhow!("Ava executable path is not configured"))?;
     let runtime_paths =
-        ExecServerRuntimePaths::new(codex_self_exe, arg0_paths.codex_linux_sandbox_exe.clone())?;
+        ExecServerRuntimePaths::new(ava_self_exe, arg0_paths.ava_linux_sandbox_exe.clone())?;
     if let Some(base_url) = cmd.remote.take() {
         let environment_id = cmd
             .environment_id
@@ -2073,7 +2073,7 @@ async fn run_exec_server_command(
         let direct_transport = cmd.remote_transport == ExecServerRemoteTransport::Direct;
         let (_otel, telemetry) = exec_server_telemetry::init(Some(&config));
         let auth_provider = if cmd.aws_sigv4 {
-            exec_server_auth::aws_sigv4_auth_provider(codex_aws_auth::AwsAuthConfig {
+            exec_server_auth::aws_sigv4_auth_provider(ava_aws_auth::AwsAuthConfig {
                 profile: cmd.aws_profile,
                 region: cmd.aws_region,
                 service: cmd.aws_service,
@@ -2083,13 +2083,13 @@ async fn run_exec_server_command(
             load_exec_server_remote_auth_provider(&config, &base_url, cmd.use_agent_identity_auth)
                 .await?
         };
-        let mut remote_config = codex_exec_server::RemoteEnvironmentConfig::new_with_transport(
+        let mut remote_config = ava_exec_server::RemoteEnvironmentConfig::new_with_transport(
             base_url,
             environment_id,
             if direct_transport {
-                codex_exec_server::RemoteEnvironmentTransport::Direct
+                ava_exec_server::RemoteEnvironmentTransport::Direct
             } else {
-                codex_exec_server::RemoteEnvironmentTransport::Noise
+                ava_exec_server::RemoteEnvironmentTransport::Noise
             },
             auth_provider,
             config.http_client_factory(),
@@ -2106,10 +2106,10 @@ async fn run_exec_server_command(
         };
         let (shutdown_sender, shutdown_receiver) = tokio::sync::oneshot::channel();
         #[cfg(target_os = "macos")]
-        let runtime_paths = runtime_paths.with_allowed_symlinked_codex_home(
-            codex_config::allowed_symlinked_codex_home(
+        let runtime_paths = runtime_paths.with_allowed_symlinked_ava_home(
+            ava_config::allowed_symlinked_ava_home(
                 &config.config_layer_stack,
-                &config.codex_home,
+                &config.ava_home,
             ),
         );
         exec_server_telemetry::run_until_shutdown(
@@ -2119,7 +2119,7 @@ async fn run_exec_server_command(
                 };
                 match cmd.command {
                     Some(ExecServerSubcommand::Forward { connect }) => {
-                        codex_exec_server::run_remote_environment_forward_until_shutdown(
+                        ava_exec_server::run_remote_environment_forward_until_shutdown(
                             remote_config,
                             connect,
                             shutdown,
@@ -2127,7 +2127,7 @@ async fn run_exec_server_command(
                         .await
                     }
                     None => {
-                        codex_exec_server::run_remote_environment_until_shutdown(
+                        ava_exec_server::run_remote_environment_until_shutdown(
                             remote_config,
                             runtime_paths,
                             shutdown,
@@ -2156,10 +2156,10 @@ async fn run_exec_server_command(
         let (_otel, telemetry) = exec_server_telemetry::init(config.as_ref());
         #[cfg(target_os = "macos")]
         let runtime_paths =
-            runtime_paths.with_allowed_symlinked_codex_home(config.as_ref().and_then(|config| {
-                codex_config::allowed_symlinked_codex_home(
+            runtime_paths.with_allowed_symlinked_ava_home(config.as_ref().and_then(|config| {
+                ava_config::allowed_symlinked_ava_home(
                     &config.config_layer_stack,
-                    &config.codex_home,
+                    &config.ava_home,
                 )
             }));
         let http_client_factory = config
@@ -2168,9 +2168,9 @@ async fn run_exec_server_command(
             .unwrap_or_else(|| HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault));
         let listen_url = cmd
             .listen
-            .unwrap_or_else(|| codex_exec_server::DEFAULT_LISTEN_URL.to_string());
+            .unwrap_or_else(|| ava_exec_server::DEFAULT_LISTEN_URL.to_string());
         let run = exec_server_telemetry::run_until_shutdown(
-            codex_exec_server::run_main_with_telemetry(
+            ava_exec_server::run_main_with_telemetry(
                 &listen_url,
                 runtime_paths,
                 telemetry,
@@ -2185,30 +2185,30 @@ async fn run_exec_server_command(
 }
 
 async fn load_exec_server_remote_auth_provider(
-    config: &codex_core::config::Config,
+    config: &ava_core::config::Config,
     base_url: &str,
     use_agent_identity_auth: bool,
-) -> anyhow::Result<codex_api::SharedAuthProvider> {
+) -> anyhow::Result<ava_api::SharedAuthProvider> {
     if use_agent_identity_auth {
-        read_codex_access_token_from_env().ok_or_else(|| {
-            anyhow::anyhow!("CODEX_ACCESS_TOKEN is required when --use-agent-identity-auth is set")
+        read_ava_access_token_from_env().ok_or_else(|| {
+            anyhow::anyhow!("AVA_ACCESS_TOKEN is required when --use-agent-identity-auth is set")
         })?;
-        let auth = AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false)
+        let auth = AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false)
             .await?
             .auth()
             .await
             .ok_or_else(|| anyhow::anyhow!("Agent Identity authentication is unavailable"))?;
-        if !matches!(auth, CodexAuth::AgentIdentity(_)) {
+        if !matches!(auth, AvaAuth::AgentIdentity(_)) {
             anyhow::bail!(
-                "CODEX_ACCESS_TOKEN did not provide permitted Agent Identity authentication"
+                "AVA_ACCESS_TOKEN did not provide permitted Agent Identity authentication"
             );
         }
-        return Ok(codex_model_provider::auth_provider_from_auth(&auth));
+        return Ok(ava_model_provider::auth_provider_from_auth(&auth));
     }
 
     let (auth_manager, auth) = load_exec_server_remote_auth(
         config,
-        "remote exec-server registration requires ChatGPT authentication or API key authentication; run `codex login` or set CODEX_API_KEY",
+        "remote exec-server registration requires ChatGPT authentication or API key authentication; run `ava login` or set AVA_API_KEY",
     )
     .await?;
 
@@ -2223,16 +2223,16 @@ async fn load_exec_server_remote_auth_provider(
     }
 
     if auth_manager.is_workload_identity_selected() {
-        Ok(codex_model_provider::auth_provider_from_auth_manager(
+        Ok(ava_model_provider::auth_provider_from_auth_manager(
             auth_manager,
             &auth,
         ))
     } else {
-        Ok(codex_model_provider::auth_provider_from_auth(&auth))
+        Ok(ava_model_provider::auth_provider_from_auth(&auth))
     }
 }
 
-fn is_supported_exec_server_remote_auth(auth: &CodexAuth) -> bool {
+fn is_supported_exec_server_remote_auth(auth: &AvaAuth) -> bool {
     auth.is_chatgpt_auth() || auth.is_api_key_auth()
 }
 
@@ -2274,7 +2274,7 @@ async fn load_exec_server_config(
     root_config_overrides: &CliConfigOverrides,
     strict_config: bool,
     enable_workload_identity: bool,
-) -> anyhow::Result<codex_core::config::Config> {
+) -> anyhow::Result<ava_core::config::Config> {
     let cli_kv_overrides = root_config_overrides
         .parse_overrides()
         .map_err(anyhow::Error::msg)?;
@@ -2283,10 +2283,10 @@ async fn load_exec_server_config(
         .cli_overrides(cli_kv_overrides)
         .strict_config(strict_config);
     if enable_workload_identity && is_workload_identity_selected() {
-        let codex_home = find_codex_home()?;
+        let ava_home = find_ava_home()?;
         let bootstrap_cwd = AbsolutePathBuf::current_dir()?;
         let bootstrap_config = load_config_toml_with_layer_stack(
-            &codex_home,
+            &ava_home,
             Some(&bootstrap_cwd),
             bootstrap_cli_overrides,
             ConfigLoadOptions {
@@ -2296,10 +2296,10 @@ async fn load_exec_server_config(
             },
         )
         .await?;
-        let bootstrap_auth_config = bootstrap_auth_config(&codex_home, &bootstrap_config)?;
+        let bootstrap_auth_config = bootstrap_auth_config(&ava_home, &bootstrap_config)?;
         let cloud_config_bundle = cloud_config_bundle_loader_for_storage(
             bootstrap_auth_config,
-            /*enable_codex_api_key_env*/ false,
+            /*enable_ava_api_key_env*/ false,
         )
         .await?;
         builder = builder.cloud_config_bundle(cloud_config_bundle);
@@ -2308,11 +2308,11 @@ async fn load_exec_server_config(
 }
 
 async fn load_exec_server_remote_auth(
-    config: &codex_core::config::Config,
+    config: &ava_core::config::Config,
     missing_auth_error: &'static str,
-) -> anyhow::Result<(Arc<AuthManager>, codex_login::CodexAuth)> {
+) -> anyhow::Result<(Arc<AuthManager>, ava_login::AvaAuth)> {
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ true).await?;
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ true).await?;
 
     let auth = match auth_manager.auth().await {
         Some(auth) => auth,
@@ -2330,20 +2330,20 @@ async fn load_exec_server_remote_auth(
 
 async fn enable_feature_in_config(feature: &str) -> anyhow::Result<()> {
     FeatureToggles::validate_feature(feature)?;
-    let codex_home = find_codex_home()?;
-    ConfigEditsBuilder::new(&codex_home)
+    let ava_home = find_ava_home()?;
+    ConfigEditsBuilder::new(&ava_home)
         .set_feature_enabled(feature, /*enabled*/ true)
         .apply()
         .await?;
     println!("Enabled feature `{feature}` in config.toml.");
-    maybe_print_under_development_feature_warning(&codex_home, feature);
+    maybe_print_under_development_feature_warning(&ava_home, feature);
     Ok(())
 }
 
 async fn disable_feature_in_config(feature: &str) -> anyhow::Result<()> {
     FeatureToggles::validate_feature(feature)?;
-    let codex_home = find_codex_home()?;
-    ConfigEditsBuilder::new(&codex_home)
+    let ava_home = find_ava_home()?;
+    ConfigEditsBuilder::new(&ava_home)
         .set_feature_enabled(feature, /*enabled*/ false)
         .apply()
         .await?;
@@ -2356,23 +2356,23 @@ fn loader_overrides_for_profile(
 ) -> anyhow::Result<LoaderOverrides> {
     match profile_v2 {
         Some(profile_v2) => {
-            let codex_home = find_codex_home()?;
-            Ok(loader_overrides_for_profile_at_codex_home(
+            let ava_home = find_ava_home()?;
+            Ok(loader_overrides_for_profile_at_ava_home(
                 Some(profile_v2),
-                &codex_home,
+                &ava_home,
             ))
         }
         None => Ok(LoaderOverrides::default()),
     }
 }
 
-fn loader_overrides_for_profile_at_codex_home(
+fn loader_overrides_for_profile_at_ava_home(
     profile_v2: Option<&ProfileV2Name>,
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
 ) -> LoaderOverrides {
     match profile_v2 {
         Some(profile_v2) => LoaderOverrides {
-            user_config_path: Some(resolve_profile_v2_config_path(codex_home, profile_v2)),
+            user_config_path: Some(resolve_profile_v2_config_path(ava_home, profile_v2)),
             user_config_profile: Some(profile_v2.clone()),
             ..Default::default()
         },
@@ -2380,7 +2380,7 @@ fn loader_overrides_for_profile_at_codex_home(
     }
 }
 
-fn maybe_print_under_development_feature_warning(codex_home: &std::path::Path, feature: &str) {
+fn maybe_print_under_development_feature_warning(ava_home: &std::path::Path, feature: &str) {
     let Some(spec) = FEATURES.iter().find(|spec| spec.key == feature) else {
         return;
     };
@@ -2388,7 +2388,7 @@ fn maybe_print_under_development_feature_warning(codex_home: &std::path::Path, f
         return;
     }
 
-    let config_path = codex_home.join(codex_config::CONFIG_TOML_FILE);
+    let config_path = ava_home.join(ava_config::CONFIG_TOML_FILE);
     eprintln!(
         "Under-development features enabled: {feature}. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in {}.",
         config_path.display()
@@ -2432,7 +2432,7 @@ async fn run_debug_prompt_input_command(
         interactive.approval_policy.map(Into::into)
     };
     let sandbox_mode = if shared.dangerously_bypass_approvals_and_sandbox {
-        Some(codex_protocol::config_types::SandboxMode::DangerFullAccess)
+        Some(ava_protocol::config_types::SandboxMode::DangerFullAccess)
     } else {
         shared.sandbox_mode.map(Into::into)
     };
@@ -2441,8 +2441,8 @@ async fn run_debug_prompt_input_command(
         approval_policy,
         sandbox_mode,
         cwd: shared.cwd,
-        codex_self_exe: arg0_paths.codex_self_exe,
-        codex_linux_sandbox_exe: arg0_paths.codex_linux_sandbox_exe,
+        ava_self_exe: arg0_paths.ava_self_exe,
+        ava_linux_sandbox_exe: arg0_paths.ava_linux_sandbox_exe,
         main_execve_wrapper_exe: arg0_paths.main_execve_wrapper_exe,
         show_raw_agent_reasoning: shared.oss.then_some(true),
         ephemeral: Some(true),
@@ -2470,30 +2470,30 @@ async fn run_debug_prompt_input_command(
         });
     }
 
-    let user_instructions_provider = Arc::new(CodexHomeUserInstructionsProvider::new(
-        config.codex_home.clone(),
+    let user_instructions_provider = Arc::new(AvaHomeUserInstructionsProvider::new(
+        config.ava_home.clone(),
     ));
     let auth_manager =
-        AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false).await?;
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::new();
-    codex_git_attribution::install(
+        AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false).await?;
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::new();
+    ava_git_attribution::install(
         &mut extensions,
         auth_manager,
         config.chatgpt_base_url.clone(),
         config.http_client_factory(),
     );
-    codex_skills_extension::install(&mut extensions, |config: &Config| {
-        codex_skills_extension::SkillsExtensionConfig {
+    ava_skills_extension::install(&mut extensions, |config: &Config| {
+        ava_skills_extension::SkillsExtensionConfig {
             include_instructions: config.include_skill_instructions,
             max_context_tokens: config.skill_max_context_tokens,
             bundled_skills_enabled: config.bundled_skills_enabled(),
             orchestrator_skills_enabled: config.orchestrator_skills_enabled,
             shadow_selection_enabled: config
                 .features
-                .enabled(codex_features::Feature::SkillSearch),
+                .enabled(ava_features::Feature::SkillSearch),
         }
     });
-    let prompt_input = codex_core::build_prompt_input(
+    let prompt_input = ava_core::build_prompt_input(
         config,
         input,
         /*state_db*/ None,
@@ -2521,7 +2521,7 @@ async fn run_debug_models_command(
             .build()
             .await?;
         let auth_manager =
-            AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ true).await?;
+            AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ true).await?;
         let models_manager = build_models_manager(&config, auth_manager);
         models_manager
             .raw_model_catalog(
@@ -2551,7 +2551,7 @@ async fn run_debug_clear_memories_command(
     let cleared_memories_db =
         StateRuntime::clear_memory_data_in_sqlite_home(config.sqlite_config()).await?;
 
-    clear_memory_roots_contents(&config.codex_home).await?;
+    clear_memory_roots_contents(&config.ava_home).await?;
 
     let mut message = if cleared_memories_db {
         format!("Cleared memory state from {}.", memories_path.display())
@@ -2560,7 +2560,7 @@ async fn run_debug_clear_memories_command(
     };
     message.push_str(&format!(
         " Cleared memory directories under {}.",
-        config.codex_home.display()
+        config.ava_home.display()
     ));
 
     println!("{message}");
@@ -2584,12 +2584,12 @@ fn reject_remote_mode_for_subcommand(
 ) -> anyhow::Result<()> {
     if let Some(remote) = remote {
         anyhow::bail!(
-            "`--remote {remote}` is only supported for interactive TUI commands, not `codex {subcommand}`"
+            "`--remote {remote}` is only supported for interactive TUI commands, not `ava {subcommand}`"
         );
     }
     if remote_auth_token_env.is_some() {
         anyhow::bail!(
-            "`--remote-auth-token-env` is only supported for interactive TUI commands, not `codex {subcommand}`"
+            "`--remote-auth-token-env` is only supported for interactive TUI commands, not `ava {subcommand}`"
         );
     }
     Ok(())
@@ -2619,12 +2619,12 @@ fn reject_unsupported_worktree_for_subcommand(
         None => Ok(()),
         Some(Subcommand::Fork(command)) if command.session_id.is_some() && !command.last => Ok(()),
         Some(Subcommand::Fork(_)) => {
-            anyhow::bail!("`codex fork --worktree` requires an explicit session ID")
+            anyhow::bail!("`ava fork --worktree` requires an explicit session ID")
         }
         Some(Subcommand::Exec(command)) => match &command.command {
             None | Some(ExecCommand::Fork(_)) => Ok(()),
             Some(ExecCommand::Resume(_)) => anyhow::bail!(
-                "`--worktree` cannot resume an existing session; use `codex exec fork --worktree`"
+                "`--worktree` cannot resume an existing session; use `ava exec fork --worktree`"
             ),
             Some(ExecCommand::Review(_)) => {
                 anyhow::bail!("`--worktree` is not supported for code review")
@@ -2632,7 +2632,7 @@ fn reject_unsupported_worktree_for_subcommand(
         },
         _ => {
             anyhow::bail!(
-                "`--worktree` supports new interactive sessions, `codex fork`, `codex exec`, and `codex exec fork`"
+                "`--worktree` supports new interactive sessions, `ava fork`, `ava exec`, and `ava exec fork`"
             )
         }
     }
@@ -2658,7 +2658,7 @@ fn reject_root_strict_config_for_subcommand(
 /// flag should be rejected after parsing.
 ///
 /// `--strict-config` is parsed on the root interactive CLI so commands like
-/// `codex --strict-config` continue to work for the TUI and for wrappers that
+/// `ava --strict-config` continue to work for the TUI and for wrappers that
 /// forward root options into another command shape. Clap will still accept that
 /// root flag before the dispatcher knows which subcommand the user selected, so
 /// unsupported subcommands need an explicit post-parse reject path.
@@ -2726,7 +2726,7 @@ fn reject_strict_config_for_unsupported_subcommand(
     subcommand: &str,
 ) -> anyhow::Result<()> {
     if strict_config {
-        anyhow::bail!("`--strict-config` is not supported for `codex {subcommand}`");
+        anyhow::bail!("`--strict-config` is not supported for `ava {subcommand}`");
     }
     Ok(())
 }
@@ -2768,20 +2768,20 @@ fn app_server_subcommand_name(subcommand: Option<&AppServerSubcommand>) -> &'sta
 }
 
 async fn print_app_server_daemon_output(command: AppServerLifecycleCommand) -> anyhow::Result<()> {
-    let output = codex_app_server_daemon::run(command).await?;
+    let output = ava_app_server_daemon::run(command).await?;
     println!("{}", serde_json::to_string(&output)?);
     Ok(())
 }
 
 fn updater_http_client_factory(
-    config: anyhow::Result<codex_core::config::Config>,
-) -> codex_http_client::HttpClientFactory {
+    config: anyhow::Result<ava_core::config::Config>,
+) -> ava_http_client::HttpClientFactory {
     match config {
         Ok(config) => config.http_client_factory(),
         Err(error) => {
             eprintln!("warning: failed to load updater network configuration: {error}");
-            codex_http_client::HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::HttpClientFactory::new(
+                ava_http_client::OutboundProxyPolicy::ReqwestDefault,
             )
         }
     }
@@ -2790,7 +2790,7 @@ fn updater_http_client_factory(
 async fn print_app_server_remote_control_output(
     mode: AppServerRemoteControlMode,
 ) -> anyhow::Result<()> {
-    let output = codex_app_server_daemon::set_remote_control(mode).await?;
+    let output = ava_app_server_daemon::set_remote_control(mode).await?;
     println!("{}", serde_json::to_string(&output)?);
     Ok(())
 }
@@ -2824,7 +2824,7 @@ async fn run_interactive_tui(
     if interactive.no_daemon {
         if interactive.agents_overview {
             return Ok(AppExitInfo::fatal(
-                "--no-daemon cannot be used with codex agents. The agents overview requires a shared server. Use codex --no-daemon to work without it.",
+                "--no-daemon cannot be used with ava agents. The agents overview requires a shared server. Use ava --no-daemon to work without it.",
             ));
         }
         if remote.is_some() {
@@ -2838,7 +2838,7 @@ async fn run_interactive_tui(
         interactive.prompt = Some(prompt.replace("\r\n", "\n").replace('\r', "\n"));
     }
 
-    let terminal_info = codex_terminal_detection::terminal_info();
+    let terminal_info = ava_terminal_detection::terminal_info();
     if terminal_info.name == TerminalName::Dumb {
         if !(std::io::stdin().is_terminal() && std::io::stderr().is_terminal()) {
             return Ok(AppExitInfo::fatal(
@@ -2847,7 +2847,7 @@ async fn run_interactive_tui(
         }
 
         eprintln!(
-            "WARNING: TERM is set to \"dumb\". Codex's interactive TUI may not work in this terminal."
+            "WARNING: TERM is set to \"dumb\". Ava's interactive TUI may not work in this terminal."
         );
         if !confirm("Continue anyway? [y/N]: ")? {
             return Ok(AppExitInfo::fatal(
@@ -2867,10 +2867,10 @@ async fn run_interactive_tui(
         cloud_config::load_config(&interactive.config_overrides, LoaderOverrides::default())
             .await
             .map_err(std::io::Error::other)?;
-        codex_app_server_daemon::run(AppServerLifecycleCommand::Start)
+        ava_app_server_daemon::run(AppServerLifecycleCommand::Start)
             .await
             .map_err(|err| std::io::Error::other(format!(
-                "{err:#}\nThe agents overview requires a shared server. Use codex --no-daemon to work without it."
+                "{err:#}\nThe agents overview requires a shared server. Use ava --no-daemon to work without it."
             )))?;
     }
 
@@ -2882,10 +2882,10 @@ async fn run_interactive_tui(
         Err(err) => return Err(err),
     };
     let start_tui = || {
-        codex_tui::run_main(
+        ava_tui::run_main(
             interactive.clone(),
             arg0_paths.clone(),
-            codex_config::LoaderOverrides::default(),
+            ava_config::LoaderOverrides::default(),
             remote_endpoint.clone(),
         )
     };
@@ -2938,7 +2938,7 @@ where
             Err(backup_err) => {
                 local_state_db::print_diagnostic_guidance(startup_error);
                 return Ok(AppExitInfo::fatal(format!(
-                    "failed to move damaged Codex local database files into a backup folder automatically: {backup_err}"
+                    "failed to move damaged Ava local database files into a backup folder automatically: {backup_err}"
                 )));
             }
         }
@@ -2948,10 +2948,10 @@ where
 fn resolve_remote_endpoint(
     remote: Option<String>,
     remote_auth_token_env: Option<String>,
-) -> std::io::Result<Option<codex_tui::RemoteAppServerEndpoint>> {
+) -> std::io::Result<Option<ava_tui::RemoteAppServerEndpoint>> {
     let mut remote_endpoint = remote
         .as_deref()
-        .map(codex_tui::resolve_remote_addr)
+        .map(ava_tui::resolve_remote_addr)
         .transpose()
         .map_err(std::io::Error::other)?;
     if let Some(remote_auth_token_env) = remote_auth_token_env {
@@ -2960,14 +2960,14 @@ fn resolve_remote_endpoint(
                 "`--remote-auth-token-env` requires `--remote`.",
             ));
         };
-        if !codex_tui::remote_addr_supports_auth_token(endpoint) {
+        if !ava_tui::remote_addr_supports_auth_token(endpoint) {
             return Err(std::io::Error::other(
                 "`--remote-auth-token-env` requires a `wss://` or loopback `ws://` remote.",
             ));
         }
         let auth_token = read_remote_auth_token_from_env_var(&remote_auth_token_env)
             .map_err(std::io::Error::other)?;
-        let codex_tui::RemoteAppServerEndpoint::WebSocket {
+        let ava_tui::RemoteAppServerEndpoint::WebSocket {
             auth_token: slot, ..
         } = endpoint
         else {
@@ -2994,7 +2994,7 @@ fn confirm(prompt: &str) -> std::io::Result<bool> {
     Ok(answer.eq_ignore_ascii_case("y") || answer.eq_ignore_ascii_case("yes"))
 }
 
-/// Build the final `TuiCli` for a `codex resume` invocation.
+/// Build the final `TuiCli` for a `ava resume` invocation.
 fn finalize_resume_interactive(
     mut interactive: TuiCli,
     root_config_overrides: CliConfigOverrides,
@@ -3005,7 +3005,7 @@ fn finalize_resume_interactive(
     mut resume_cli: TuiCli,
 ) -> TuiCli {
     // Start with the parsed interactive CLI so resume shares the same
-    // configuration surface area as `codex` without additional flags.
+    // configuration surface area as `ava` without additional flags.
     // Clap assigns the first positional to `session_id`. With `--last`, reinterpret it as the
     // prompt when no second positional prompt was provided.
     let resume_session_id = if last && resume_cli.prompt.is_none() {
@@ -3029,7 +3029,7 @@ fn finalize_resume_interactive(
     interactive
 }
 
-/// Build the final `TuiCli` for a `codex fork` invocation.
+/// Build the final `TuiCli` for a `ava fork` invocation.
 fn finalize_fork_interactive(
     mut interactive: TuiCli,
     root_config_overrides: CliConfigOverrides,
@@ -3039,7 +3039,7 @@ fn finalize_fork_interactive(
     mut fork_cli: TuiCli,
 ) -> TuiCli {
     // Start with the parsed interactive CLI so fork shares the same
-    // configuration surface area as `codex` without additional flags.
+    // configuration surface area as `ava` without additional flags.
     // Clap assigns the first positional to `session_id`. With `--last`, reinterpret it as the
     // prompt when no second positional prompt was provided.
     let fork_session_id = if last && fork_cli.prompt.is_none() {
@@ -3132,7 +3132,7 @@ fn merge_interactive_cli_flags(interactive: &mut TuiCli, subcommand_cli: TuiCli)
 
 fn print_completion(cmd: CompletionCommand) {
     let mut app = MultitoolCli::command();
-    let name = "codex";
+    let name = "ava";
     generate(cmd.shell, &mut app, name, &mut std::io::stdout());
 }
 
@@ -3140,14 +3140,14 @@ fn print_completion(cmd: CompletionCommand) {
 mod tests {
     use super::*;
     use assert_matches::assert_matches;
-    use codex_protocol::ThreadId;
-    use codex_tui::TokenUsage;
+    use ava_protocol::ThreadId;
+    use ava_tui::TokenUsage;
     use pretty_assertions::assert_eq;
 
     #[test]
     fn interactive_tui_future_stays_bounded() {
         let future = run_interactive_tui(
-            TuiCli::parse_from(["codex"]),
+            TuiCli::parse_from(["ava"]),
             /*remote*/ None,
             /*remote_auth_token_env*/ None,
             Arg0DispatchPaths::default(),
@@ -3205,9 +3205,9 @@ mod tests {
 
     #[tokio::test]
     async fn updater_http_client_factory_honors_respect_system_proxy() {
-        let codex_home = tempfile::tempdir().expect("temporary Codex home");
+        let ava_home = tempfile::tempdir().expect("temporary Ava home");
         let config = ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .cli_overrides(vec![(
                 "features.respect_system_proxy".to_string(),
                 toml::Value::Boolean(true),
@@ -3218,7 +3218,7 @@ mod tests {
 
         assert_eq!(
             updater_http_client_factory(Ok(config)).outbound_proxy_policy(),
-            codex_http_client::OutboundProxyPolicy::RespectSystemProxy
+            ava_http_client::OutboundProxyPolicy::RespectSystemProxy
         );
     }
 
@@ -3227,13 +3227,13 @@ mod tests {
         assert_eq!(
             updater_http_client_factory(Err(anyhow::anyhow!("invalid config")))
                 .outbound_proxy_policy(),
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault
         );
     }
 
     #[test]
     fn exec_server_remote_auth_accepts_api_key_auth() {
-        let auth = CodexAuth::from_api_key("sk-test");
+        let auth = AvaAuth::from_api_key("sk-test");
 
         assert!(is_supported_exec_server_remote_auth(&auth));
     }
@@ -3408,16 +3408,16 @@ mod tests {
     }
 
     #[test]
-    fn profile_loader_overrides_use_explicit_codex_home() -> anyhow::Result<()> {
-        let codex_home = tempfile::tempdir()?;
+    fn profile_loader_overrides_use_explicit_ava_home() -> anyhow::Result<()> {
+        let ava_home = tempfile::tempdir()?;
         let profile: ProfileV2Name = "work".parse()?;
 
         let overrides =
-            loader_overrides_for_profile_at_codex_home(Some(&profile), codex_home.path());
+            loader_overrides_for_profile_at_ava_home(Some(&profile), ava_home.path());
 
         assert_eq!(
             overrides.user_config_path,
-            Some(resolve_profile_v2_config_path(codex_home.path(), &profile))
+            Some(resolve_profile_v2_config_path(ava_home.path(), &profile))
         );
         assert_eq!(overrides.user_config_profile, Some(profile));
         Ok(())
@@ -3425,31 +3425,31 @@ mod tests {
 
     #[test]
     fn profile_v2_is_rejected_for_config_management_subcommands() {
-        assert!(profile_v2_for_args(&["codex", "--profile", "work", "features", "list"]).is_err());
+        assert!(profile_v2_for_args(&["ava", "--profile", "work", "features", "list"]).is_err());
     }
 
     #[test]
     fn profile_v2_is_allowed_for_runtime_subcommands() {
         assert_eq!(
-            profile_v2_for_args(&["codex", "--profile", "work", "resume"])
+            profile_v2_for_args(&["ava", "--profile", "work", "resume"])
                 .expect("resume supports profile-v2")
                 .as_deref(),
             Some("work")
         );
         assert_eq!(
-            profile_v2_for_args(&["codex", "--profile", "work", "debug", "prompt-input"])
+            profile_v2_for_args(&["ava", "--profile", "work", "debug", "prompt-input"])
                 .expect("debug prompt-input supports profile-v2")
                 .as_deref(),
             Some("work")
         );
         assert_eq!(
-            profile_v2_for_args(&["codex", "--profile", "work", "mcp", "list"])
+            profile_v2_for_args(&["ava", "--profile", "work", "mcp", "list"])
                 .expect("mcp supports profile-v2")
                 .as_deref(),
             Some("work")
         );
         assert_eq!(
-            profile_v2_for_args(&["codex", "--profile", "work", "sandbox"])
+            profile_v2_for_args(&["ava", "--profile", "work", "sandbox"])
                 .expect("sandbox supports config profile")
                 .as_deref(),
             Some("work")
@@ -3458,7 +3458,7 @@ mod tests {
 
     #[test]
     fn import_remains_an_interactive_prompt() {
-        let cli = MultitoolCli::try_parse_from(["codex", "import"]).expect("parse");
+        let cli = MultitoolCli::try_parse_from(["ava", "import"]).expect("parse");
 
         assert!(cli.subcommand.is_none());
         assert_eq!(cli.interactive.prompt.as_deref(), Some("import"));
@@ -3467,25 +3467,25 @@ mod tests {
     #[test]
     fn profile_v2_rejects_non_plain_names_at_parse_time() {
         assert!(
-            MultitoolCli::try_parse_from(["codex", "--profile", "nested/work", "resume"]).is_err()
+            MultitoolCli::try_parse_from(["ava", "--profile", "nested/work", "resume"]).is_err()
         );
     }
 
     #[test]
     fn worktree_flag_supports_interactive_exec_and_explicit_fork_positions() {
         let arguments = [
-            vec!["codex", "--worktree"],
-            vec!["codex", "--worktree", "hello"],
-            vec!["codex", "--worktree", "exec", "hello"],
-            vec!["codex", "exec", "--worktree", "hello"],
+            vec!["ava", "--worktree"],
+            vec!["ava", "--worktree", "hello"],
+            vec!["ava", "--worktree", "exec", "hello"],
+            vec!["ava", "exec", "--worktree", "hello"],
             vec![
-                "codex",
+                "ava",
                 "fork",
                 "--worktree",
                 "019f1234-5678-7000-8000-000000000001",
             ],
             vec![
-                "codex",
+                "ava",
                 "exec",
                 "fork",
                 "--worktree",
@@ -3509,15 +3509,15 @@ mod tests {
     #[test]
     fn worktree_flag_rejects_unsupported_session_and_management_commands() {
         let arguments = [
-            vec!["codex", "--worktree", "login"],
-            vec!["codex", "fork", "--worktree"],
-            vec!["codex", "fork", "--worktree", "--last"],
-            vec!["codex", "exec", "resume", "--worktree", "session"],
-            vec!["codex", "exec", "review", "--worktree"],
-            vec!["codex", "resume", "--worktree", "session"],
-            vec!["codex", "archive", "session", "--worktree"],
+            vec!["ava", "--worktree", "login"],
+            vec!["ava", "fork", "--worktree"],
+            vec!["ava", "fork", "--worktree", "--last"],
+            vec!["ava", "exec", "resume", "--worktree", "session"],
+            vec!["ava", "exec", "review", "--worktree"],
+            vec!["ava", "resume", "--worktree", "session"],
+            vec!["ava", "archive", "session", "--worktree"],
             vec![
-                "codex",
+                "ava",
                 "queue",
                 "--thread",
                 "session",
@@ -3543,13 +3543,13 @@ mod tests {
     #[test]
     fn exec_resume_last_accepts_prompt_positional() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "exec", "--json", "resume", "--last", "2+2"])
+            MultitoolCli::try_parse_from(["ava", "exec", "--json", "resume", "--last", "2+2"])
                 .expect("parse should succeed");
 
         let Some(Subcommand::Exec(exec)) = cli.subcommand else {
             panic!("expected exec subcommand");
         };
-        let Some(codex_exec::Command::Resume(args)) = exec.command else {
+        let Some(ava_exec::Command::Resume(args)) = exec.command else {
             panic!("expected exec resume");
         };
 
@@ -3561,7 +3561,7 @@ mod tests {
     #[test]
     fn exec_resume_accepts_output_flags_after_subcommand() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "exec",
             "resume",
             "session-123",
@@ -3576,7 +3576,7 @@ mod tests {
         let Some(Subcommand::Exec(exec)) = cli.subcommand else {
             panic!("expected exec subcommand");
         };
-        let Some(codex_exec::Command::Resume(args)) = exec.command else {
+        let Some(ava_exec::Command::Resume(args)) = exec.command else {
             panic!("expected exec resume");
         };
 
@@ -3595,7 +3595,7 @@ mod tests {
     #[test]
     fn dangerous_bypass_conflicts_with_approval_policy() {
         let err = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "--dangerously-bypass-approvals-and-sandbox",
             "--ask-for-approval",
             "on-request",
@@ -3608,7 +3608,7 @@ mod tests {
     #[test]
     fn approve_for_me_configures_interactive_mode() {
         for flag in ["--approve-for-me", "--not-so-yolo"] {
-            let mut cli = MultitoolCli::try_parse_from(["codex", flag]).expect("parse flag");
+            let mut cli = MultitoolCli::try_parse_from(["ava", flag]).expect("parse flag");
 
             assert!(cli.interactive.auto_review);
             cli.interactive
@@ -3628,7 +3628,7 @@ mod tests {
 
     #[test]
     fn not_so_yolo_alias_is_hidden_from_help() {
-        for args in [&["codex", "--help"][..], &["codex", "exec", "--help"][..]] {
+        for args in [&["ava", "--help"][..], &["ava", "exec", "--help"][..]] {
             let help = help_from_args(args);
 
             assert!(!help.contains("--not-so-yolo"), "{help}");
@@ -3637,7 +3637,7 @@ mod tests {
 
     #[test]
     fn approve_for_me_defaults_propagate_from_root_to_exec() {
-        let exec = finalize_exec_from_args(&["codex", "--approve-for-me", "exec", "summarize"]);
+        let exec = finalize_exec_from_args(&["ava", "--approve-for-me", "exec", "summarize"]);
 
         assert_eq!(
             exec.config_overrides.raw_overrides,
@@ -3653,7 +3653,7 @@ mod tests {
     #[test]
     fn later_exec_sandbox_partially_overrides_approve_for_me() {
         let exec = finalize_exec_from_args(&[
-            "codex",
+            "ava",
             "--approve-for-me",
             "exec",
             "--sandbox",
@@ -3662,7 +3662,7 @@ mod tests {
 
         assert_matches!(
             exec.sandbox_mode,
-            Some(codex_utils_cli::SandboxModeCliArg::ReadOnly)
+            Some(ava_utils_cli::SandboxModeCliArg::ReadOnly)
         );
         assert_eq!(
             exec.config_overrides.raw_overrides,
@@ -3677,7 +3677,7 @@ mod tests {
     #[test]
     fn later_approve_for_me_overrides_root_exec_sandbox() {
         let exec = finalize_exec_from_args(&[
-            "codex",
+            "ava",
             "--sandbox",
             "read-only",
             "exec",
@@ -3698,7 +3698,7 @@ mod tests {
     #[test]
     fn later_resume_approval_policy_partially_overrides_approve_for_me() {
         let interactive = finalize_resume_from_args(&[
-            "codex",
+            "ava",
             "--approve-for-me",
             "resume",
             "--ask-for-approval",
@@ -3707,7 +3707,7 @@ mod tests {
 
         assert_matches!(
             interactive.approval_policy,
-            Some(codex_utils_cli::ApprovalModeCliArg::Never)
+            Some(ava_utils_cli::ApprovalModeCliArg::Never)
         );
         assert_eq!(
             interactive.config_overrides.raw_overrides,
@@ -3722,7 +3722,7 @@ mod tests {
     #[test]
     fn later_approve_for_me_overrides_root_tui_approval_policy() {
         let interactive = finalize_resume_from_args(&[
-            "codex",
+            "ava",
             "--ask-for-approval",
             "never",
             "resume",
@@ -3747,7 +3747,7 @@ mod tests {
             vec!["--ask-for-approval", "on-request"],
             vec!["--dangerously-bypass-approvals-and-sandbox"],
         ] {
-            let mut args = vec!["codex", "--approve-for-me"];
+            let mut args = vec!["ava", "--approve-for-me"];
             args.extend(conflicting_args);
 
             let error =
@@ -3765,15 +3765,15 @@ mod tests {
     }
 
     fn default_app_server_socket_path() -> AbsolutePathBuf {
-        let codex_home = find_codex_home().expect("codex home");
-        codex_app_server::app_server_control_socket_path(&codex_home)
+        let ava_home = find_ava_home().expect("ava home");
+        ava_app_server::app_server_control_socket_path(&ava_home)
             .expect("default app-server socket path")
     }
 
     #[test]
     fn debug_prompt_input_parses_prompt_and_images() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "debug",
             "prompt-input",
             "hello",
@@ -3799,7 +3799,7 @@ mod tests {
     #[test]
     fn debug_models_parses_bundled_flag() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "debug", "models", "--bundled"]).expect("parse");
+            MultitoolCli::try_parse_from(["ava", "debug", "models", "--bundled"]).expect("parse");
 
         let Some(Subcommand::Debug(DebugCommand {
             subcommand: DebugSubcommand::Models(cmd),
@@ -3829,9 +3829,9 @@ mod tests {
 
     #[test]
     fn tcp_tunnel_is_hidden_and_accepts_its_control_input_contract() {
-        let root_help = help_from_args(&["codex", "--help"]);
+        let root_help = help_from_args(&["ava", "--help"]);
         assert!(!root_help.contains("tcp-tunnel"), "{root_help}");
-        let help = help_from_args(&["codex", "tcp-tunnel", "--help"]);
+        let help = help_from_args(&["ava", "tcp-tunnel", "--help"]);
         for option in [
             "--target",
             "--auth-token-stdin",
@@ -3841,7 +3841,7 @@ mod tests {
             assert!(help.contains(option), "{help}");
         }
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "tcp-tunnel",
             "--proxy-url",
             "https://proxy.example.org",
@@ -3859,19 +3859,19 @@ mod tests {
 
     #[test]
     fn plugin_marketplace_help_uses_plugin_namespace() {
-        let help = help_from_args(&["codex", "plugin", "marketplace", "--help"]);
+        let help = help_from_args(&["ava", "plugin", "marketplace", "--help"]);
         assert!(
-            help.contains("Usage: codex plugin marketplace [OPTIONS] <COMMAND>"),
+            help.contains("Usage: ava plugin marketplace [OPTIONS] <COMMAND>"),
             "{help}"
         );
 
         for (subcommand, usage) in [
-            ("add", "Usage: codex plugin marketplace add"),
-            ("list", "Usage: codex plugin marketplace list"),
-            ("upgrade", "Usage: codex plugin marketplace upgrade"),
-            ("remove", "Usage: codex plugin marketplace remove"),
+            ("add", "Usage: ava plugin marketplace add"),
+            ("list", "Usage: ava plugin marketplace list"),
+            ("upgrade", "Usage: ava plugin marketplace upgrade"),
+            ("remove", "Usage: ava plugin marketplace remove"),
         ] {
-            let help = help_from_args(&["codex", "plugin", "marketplace", subcommand, "--help"]);
+            let help = help_from_args(&["ava", "plugin", "marketplace", subcommand, "--help"]);
             assert!(help.contains(usage), "{help}");
         }
     }
@@ -3879,7 +3879,7 @@ mod tests {
     #[test]
     fn plugin_marketplace_add_parses_under_plugin() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "plugin", "marketplace", "add", "owner/repo"])
+            MultitoolCli::try_parse_from(["ava", "plugin", "marketplace", "add", "owner/repo"])
                 .expect("parse");
 
         assert!(matches!(cli.subcommand, Some(Subcommand::Plugin(_))));
@@ -3888,7 +3888,7 @@ mod tests {
     #[test]
     fn plugin_marketplace_upgrade_parses_under_plugin() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "plugin", "marketplace", "upgrade", "debug"])
+            MultitoolCli::try_parse_from(["ava", "plugin", "marketplace", "upgrade", "debug"])
                 .expect("parse");
 
         assert!(matches!(cli.subcommand, Some(Subcommand::Plugin(_))));
@@ -3897,7 +3897,7 @@ mod tests {
     #[test]
     fn plugin_add_parses_under_plugin() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "plugin",
             "add",
             "sample",
@@ -3912,7 +3912,7 @@ mod tests {
     #[test]
     fn plugin_list_parses_under_plugin() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "plugin", "list", "--marketplace", "debug"])
+            MultitoolCli::try_parse_from(["ava", "plugin", "list", "--marketplace", "debug"])
                 .expect("parse");
 
         assert!(matches!(cli.subcommand, Some(Subcommand::Plugin(_))));
@@ -3921,7 +3921,7 @@ mod tests {
     #[test]
     fn plugin_remove_parses_under_plugin() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "plugin",
             "remove",
             "sample",
@@ -3935,7 +3935,7 @@ mod tests {
 
     #[test]
     fn update_parses_as_update_subcommand() {
-        let cli = MultitoolCli::try_parse_from(["codex", "update"]).expect("parse");
+        let cli = MultitoolCli::try_parse_from(["ava", "update"]).expect("parse");
         assert!(matches!(cli.subcommand, Some(Subcommand::Update)));
     }
 
@@ -3943,7 +3943,7 @@ mod tests {
     fn archive_merges_scoped_tui_flags() {
         let (target, interactive, remote) = finalize_archive_from_args(
             [
-                "codex",
+                "ava",
                 "-C",
                 "/root",
                 "archive",
@@ -3990,7 +3990,7 @@ mod tests {
     #[test]
     fn sandbox_parses_permission_profile() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "sandbox",
             "--permission-profile",
             ":workspace",
@@ -4011,7 +4011,7 @@ mod tests {
     #[test]
     fn sandbox_parses_legacy_permissions_profile_alias() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "sandbox",
             "--permissions-profile",
             ":workspace",
@@ -4031,7 +4031,7 @@ mod tests {
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
     #[test]
     fn sandbox_help_only_shows_singular_permission_profile() {
-        let help = help_from_args(&["codex", "sandbox", "--help"]);
+        let help = help_from_args(&["ava", "sandbox", "--help"]);
         assert!(help.contains("--permission-profile"), "{help}");
         assert!(!help.contains("--permissions-profile"), "{help}");
     }
@@ -4040,7 +4040,7 @@ mod tests {
     #[test]
     fn sandbox_parses_permissions_profile_short_alias() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "sandbox", "-P", ":workspace", "--", "echo"])
+            MultitoolCli::try_parse_from(["ava", "sandbox", "-P", ":workspace", "--", "echo"])
                 .expect("parse");
 
         let Some(Subcommand::Sandbox(command)) = cli.subcommand else {
@@ -4055,7 +4055,7 @@ mod tests {
     #[test]
     fn sandbox_parses_config_profile() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "sandbox", "--profile", "work", "--", "echo"])
+            MultitoolCli::try_parse_from(["ava", "sandbox", "--profile", "work", "--", "echo"])
                 .expect("parse");
 
         let Some(Subcommand::Sandbox(command)) = cli.subcommand else {
@@ -4069,7 +4069,7 @@ mod tests {
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
     #[test]
     fn sandbox_rejects_explicit_profile_controls_without_profile() {
-        let err = MultitoolCli::try_parse_from(["codex", "sandbox", "-C", "/tmp"])
+        let err = MultitoolCli::try_parse_from(["ava", "sandbox", "-C", "/tmp"])
             .expect_err("parse should fail");
 
         assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
@@ -4078,7 +4078,7 @@ mod tests {
     #[test]
     fn plugin_marketplace_remove_parses_under_plugin() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "plugin", "marketplace", "remove", "debug"])
+            MultitoolCli::try_parse_from(["ava", "plugin", "marketplace", "remove", "debug"])
                 .expect("parse");
 
         assert!(matches!(cli.subcommand, Some(Subcommand::Plugin(_))));
@@ -4087,15 +4087,15 @@ mod tests {
     #[test]
     fn marketplace_no_longer_parses_at_top_level() {
         let add_result =
-            MultitoolCli::try_parse_from(["codex", "marketplace", "add", "owner/repo"]);
+            MultitoolCli::try_parse_from(["ava", "marketplace", "add", "owner/repo"]);
         assert!(add_result.is_err());
 
         let upgrade_result =
-            MultitoolCli::try_parse_from(["codex", "marketplace", "upgrade", "debug"]);
+            MultitoolCli::try_parse_from(["ava", "marketplace", "upgrade", "debug"]);
         assert!(upgrade_result.is_err());
 
         let remove_result =
-            MultitoolCli::try_parse_from(["codex", "marketplace", "remove", "debug"]);
+            MultitoolCli::try_parse_from(["ava", "marketplace", "remove", "debug"]);
         assert!(remove_result.is_err());
     }
 
@@ -4111,7 +4111,7 @@ mod tests {
         AppExitInfo {
             token_usage,
             thread_id,
-            resume_hint: thread_id.map(|thread_id| codex_tui::ResumableThread {
+            resume_hint: thread_id.map(|thread_id| ava_tui::ResumableThread {
                 thread_id,
                 thread_name: thread_name.map(str::to_string),
             }),
@@ -4143,9 +4143,9 @@ mod tests {
                     Some("123e4567-e89b-12d3-a456-426614174000"),
                     /*thread_name*/ None,
                 );
-                exit_info.disconnect_info = Some(codex_tui::DisconnectInfo {
+                exit_info.disconnect_info = Some(ava_tui::DisconnectInfo {
                     command: vec![
-                        "codex".to_string(),
+                        "ava".to_string(),
                         "--remote".to_string(),
                         "wss://example.com:443/".to_string(),
                     ],
@@ -4153,7 +4153,7 @@ mod tests {
                 });
                 Ok(exit_info)
             },
-            Some("CODEX_REMOTE_TOKEN"),
+            Some("AVA_REMOTE_TOKEN"),
         )
         .await
         .unwrap();
@@ -4161,8 +4161,8 @@ mod tests {
             exit_info.format_exit_messages(/*color_enabled*/ false),
             vec![
                 "Disconnected from this task. Any running work continues.",
-                "Reconnect: codex --remote wss://example.com:443/ --remote-auth-token-env CODEX_REMOTE_TOKEN resume 123e4567-e89b-12d3-a456-426614174000",
-                "Stop the current turn: run codex --remote wss://example.com:443/ --remote-auth-token-env CODEX_REMOTE_TOKEN agents, select this task, and press ctrl + x.",
+                "Reconnect: ava --remote wss://example.com:443/ --remote-auth-token-env AVA_REMOTE_TOKEN resume 123e4567-e89b-12d3-a456-426614174000",
+                "Stop the current turn: run ava --remote wss://example.com:443/ --remote-auth-token-env AVA_REMOTE_TOKEN agents, select this task, and press ctrl + x.",
                 "Token usage so far: total=2 input=0 output=2",
             ]
         );
@@ -4224,7 +4224,7 @@ mod tests {
             vec![
                 "Token usage: total=2 input=0 output=2".to_string(),
                 "To continue this session, run:".to_string(),
-                "  codex resume 123e4567-e89b-12d3-a456-426614174000".to_string(),
+                "  ava resume 123e4567-e89b-12d3-a456-426614174000".to_string(),
             ]
         );
     }
@@ -4239,7 +4239,7 @@ mod tests {
                 insta::assert_snapshot!(lines.join("\n"), @"
                 Token usage: total=2 input=0 output=2
                 To continue this session, run:
-                  codex resume 123e4567-e89b-12d3-a456-426614174000
+                  ava resume 123e4567-e89b-12d3-a456-426614174000
                 ");
             }
         }
@@ -4257,7 +4257,7 @@ mod tests {
             vec![
                 "Token usage: total=2 input=0 output=2",
                 "To continue this session, run:",
-                "  \u{1b}[36mcodex resume 123e4567-e89b-12d3-a456-426614174000\u{1b}[39m",
+                "  \u{1b}[36mava resume 123e4567-e89b-12d3-a456-426614174000\u{1b}[39m",
             ]
         );
     }
@@ -4272,8 +4272,8 @@ mod tests {
         insta::assert_snapshot!(lines.join("\n"), @"
         Token usage: total=2 input=0 output=2
         To continue this session, run:
-          codex resume 123e4567-e89b-12d3-a456-426614174000
-        Or run codex resume and select my-thread.
+          ava resume 123e4567-e89b-12d3-a456-426614174000
+        Or run ava resume and select my-thread.
         ");
     }
 
@@ -4289,8 +4289,8 @@ mod tests {
             vec![
                 "Token usage: total=2 input=0 output=2",
                 "To continue this session, run:",
-                "  \u{1b}[36mcodex resume 123e4567-e89b-12d3-a456-426614174000\u{1b}[39m",
-                "Or run \u{1b}[36mcodex resume\u{1b}[39m and select \u{1b}[36mmy-thread\u{1b}[39m.",
+                "  \u{1b}[36mava resume 123e4567-e89b-12d3-a456-426614174000\u{1b}[39m",
+                "Or run \u{1b}[36mava resume\u{1b}[39m and select \u{1b}[36mmy-thread\u{1b}[39m.",
             ]
         );
     }
@@ -4298,7 +4298,7 @@ mod tests {
     #[test]
     fn resume_model_flag_applies_when_no_root_flags() {
         let interactive =
-            finalize_resume_from_args(["codex", "resume", "-m", "gpt-5.1-test"].as_ref());
+            finalize_resume_from_args(["ava", "resume", "-m", "gpt-5.1-test"].as_ref());
 
         assert_eq!(interactive.model.as_deref(), Some("gpt-5.1-test"));
         assert!(interactive.resume_picker);
@@ -4313,8 +4313,8 @@ mod tests {
             ("fork", finalize_fork_from_args as fn(&[&str]) -> TuiCli),
         ] {
             for args in [
-                ["codex", "--no-daemon", command, "--last"],
-                ["codex", command, "--last", "--no-daemon"],
+                ["ava", "--no-daemon", command, "--last"],
+                ["ava", command, "--last", "--no-daemon"],
             ] {
                 assert!(finalize(&args).no_daemon);
             }
@@ -4327,15 +4327,15 @@ mod tests {
             ("resume", finalize_resume_from_args as fn(&[&str]) -> TuiCli),
             ("fork", finalize_fork_from_args as fn(&[&str]) -> TuiCli),
         ] {
-            assert!(finalize(&["codex", command, "--no-alt-screen"]).no_alt_screen);
-            assert!(finalize(&["codex", "--no-alt-screen", command]).no_alt_screen);
-            assert!(!finalize(&["codex", command]).no_alt_screen);
+            assert!(finalize(&["ava", command, "--no-alt-screen"]).no_alt_screen);
+            assert!(finalize(&["ava", "--no-alt-screen", command]).no_alt_screen);
+            assert!(!finalize(&["ava", command]).no_alt_screen);
         }
     }
 
     #[test]
     fn resume_picker_logic_none_and_not_last() {
-        let interactive = finalize_resume_from_args(["codex", "resume"].as_ref());
+        let interactive = finalize_resume_from_args(["ava", "resume"].as_ref());
         assert!(interactive.resume_picker);
         assert!(!interactive.resume_last);
         assert_eq!(interactive.resume_session_id, None);
@@ -4344,7 +4344,7 @@ mod tests {
 
     #[test]
     fn resume_picker_logic_last() {
-        let interactive = finalize_resume_from_args(["codex", "resume", "--last"].as_ref());
+        let interactive = finalize_resume_from_args(["ava", "resume", "--last"].as_ref());
         assert!(!interactive.resume_picker);
         assert!(interactive.resume_last);
         assert_eq!(interactive.resume_session_id, None);
@@ -4354,7 +4354,7 @@ mod tests {
     #[test]
     fn resume_last_accepts_prompt_positional() {
         let interactive = finalize_resume_from_args(
-            ["codex", "resume", "--last", "/compact focus on auth"].as_ref(),
+            ["ava", "resume", "--last", "/compact focus on auth"].as_ref(),
         );
 
         assert!(!interactive.resume_picker);
@@ -4369,7 +4369,7 @@ mod tests {
     #[test]
     fn resume_last_rejects_explicit_session_and_prompt() {
         let err =
-            MultitoolCli::try_parse_from(["codex", "resume", "--last", "1234", "continue here"])
+            MultitoolCli::try_parse_from(["ava", "resume", "--last", "1234", "continue here"])
                 .expect_err("--last with an explicit session and prompt should be rejected");
 
         assert_eq!(err.kind(), clap::error::ErrorKind::ArgumentConflict);
@@ -4377,7 +4377,7 @@ mod tests {
 
     #[test]
     fn resume_picker_logic_with_session_id() {
-        let interactive = finalize_resume_from_args(["codex", "resume", "1234"].as_ref());
+        let interactive = finalize_resume_from_args(["ava", "resume", "1234"].as_ref());
         assert!(!interactive.resume_picker);
         assert!(!interactive.resume_last);
         assert_eq!(interactive.resume_session_id.as_deref(), Some("1234"));
@@ -4387,7 +4387,7 @@ mod tests {
     #[test]
     fn resume_with_session_id_accepts_prompt_positional() {
         let interactive =
-            finalize_resume_from_args(["codex", "resume", "1234", "continue here"].as_ref());
+            finalize_resume_from_args(["ava", "resume", "1234", "continue here"].as_ref());
 
         assert!(!interactive.resume_picker);
         assert!(!interactive.resume_last);
@@ -4397,7 +4397,7 @@ mod tests {
 
     #[test]
     fn resume_all_flag_sets_show_all() {
-        let interactive = finalize_resume_from_args(["codex", "resume", "--all"].as_ref());
+        let interactive = finalize_resume_from_args(["ava", "resume", "--all"].as_ref());
         assert!(interactive.resume_picker);
         assert!(interactive.resume_show_all);
     }
@@ -4405,7 +4405,7 @@ mod tests {
     #[test]
     fn resume_include_non_interactive_flag_sets_source_filter_override() {
         let interactive =
-            finalize_resume_from_args(["codex", "resume", "--include-non-interactive"].as_ref());
+            finalize_resume_from_args(["ava", "resume", "--include-non-interactive"].as_ref());
 
         assert!(interactive.resume_picker);
         assert!(interactive.resume_include_non_interactive);
@@ -4415,7 +4415,7 @@ mod tests {
     fn resume_merges_option_flags() {
         let interactive = finalize_resume_from_args(
             [
-                "codex",
+                "ava",
                 "resume",
                 "sid",
                 "--oss",
@@ -4442,11 +4442,11 @@ mod tests {
         assert_eq!(interactive.config_profile_v2.as_deref(), Some("my-config"));
         assert_matches!(
             interactive.sandbox_mode,
-            Some(codex_utils_cli::SandboxModeCliArg::WorkspaceWrite)
+            Some(ava_utils_cli::SandboxModeCliArg::WorkspaceWrite)
         );
         assert_matches!(
             interactive.approval_policy,
-            Some(codex_utils_cli::ApprovalModeCliArg::OnRequest)
+            Some(ava_utils_cli::ApprovalModeCliArg::OnRequest)
         );
         assert_eq!(
             interactive.cwd.as_deref(),
@@ -4472,7 +4472,7 @@ mod tests {
     fn resume_merges_dangerously_bypass_flag() {
         let interactive = finalize_resume_from_args(
             [
-                "codex",
+                "ava",
                 "resume",
                 "--dangerously-bypass-approvals-and-sandbox",
             ]
@@ -4487,7 +4487,7 @@ mod tests {
     #[test]
     fn resume_merges_bypass_hook_trust_flag() {
         let interactive = finalize_resume_from_args(
-            ["codex", "resume", "--dangerously-bypass-hook-trust"].as_ref(),
+            ["ava", "resume", "--dangerously-bypass-hook-trust"].as_ref(),
         );
 
         assert!(interactive.bypass_hook_trust);
@@ -4498,7 +4498,7 @@ mod tests {
 
     #[test]
     fn fork_picker_logic_none_and_not_last() {
-        let interactive = finalize_fork_from_args(["codex", "fork"].as_ref());
+        let interactive = finalize_fork_from_args(["ava", "fork"].as_ref());
         assert!(interactive.fork_picker);
         assert!(!interactive.fork_last);
         assert_eq!(interactive.fork_session_id, None);
@@ -4507,7 +4507,7 @@ mod tests {
 
     #[test]
     fn fork_picker_logic_last() {
-        let interactive = finalize_fork_from_args(["codex", "fork", "--last"].as_ref());
+        let interactive = finalize_fork_from_args(["ava", "fork", "--last"].as_ref());
         assert!(!interactive.fork_picker);
         assert!(interactive.fork_last);
         assert_eq!(interactive.fork_session_id, None);
@@ -4517,7 +4517,7 @@ mod tests {
     #[test]
     fn fork_last_accepts_prompt_positional() {
         let interactive =
-            finalize_fork_from_args(["codex", "fork", "--last", "/compact focus on auth"].as_ref());
+            finalize_fork_from_args(["ava", "fork", "--last", "/compact focus on auth"].as_ref());
 
         assert!(!interactive.fork_picker);
         assert!(interactive.fork_last);
@@ -4531,7 +4531,7 @@ mod tests {
     #[test]
     fn fork_last_rejects_explicit_session_and_prompt() {
         let err =
-            MultitoolCli::try_parse_from(["codex", "fork", "--last", "1234", "continue here"])
+            MultitoolCli::try_parse_from(["ava", "fork", "--last", "1234", "continue here"])
                 .expect_err("--last with an explicit session and prompt should be rejected");
 
         assert_eq!(err.kind(), clap::error::ErrorKind::ArgumentConflict);
@@ -4539,7 +4539,7 @@ mod tests {
 
     #[test]
     fn fork_picker_logic_with_session_id() {
-        let interactive = finalize_fork_from_args(["codex", "fork", "1234"].as_ref());
+        let interactive = finalize_fork_from_args(["ava", "fork", "1234"].as_ref());
         assert!(!interactive.fork_picker);
         assert!(!interactive.fork_last);
         assert_eq!(interactive.fork_session_id.as_deref(), Some("1234"));
@@ -4549,7 +4549,7 @@ mod tests {
     #[test]
     fn fork_with_session_id_accepts_prompt_positional() {
         let interactive =
-            finalize_fork_from_args(["codex", "fork", "1234", "continue here"].as_ref());
+            finalize_fork_from_args(["ava", "fork", "1234", "continue here"].as_ref());
 
         assert!(!interactive.fork_picker);
         assert!(!interactive.fork_last);
@@ -4559,42 +4559,42 @@ mod tests {
 
     #[test]
     fn fork_all_flag_sets_show_all() {
-        let interactive = finalize_fork_from_args(["codex", "fork", "--all"].as_ref());
+        let interactive = finalize_fork_from_args(["ava", "fork", "--all"].as_ref());
         assert!(interactive.fork_picker);
         assert!(interactive.fork_show_all);
     }
 
     #[test]
     fn app_server_analytics_default_disabled_without_flag() {
-        let app_server = app_server_from_args(["codex", "app-server"].as_ref());
+        let app_server = app_server_from_args(["ava", "app-server"].as_ref());
         assert!(!app_server.analytics_default_enabled);
         assert!(!app_server.remote_control);
         assert_eq!(
             app_server.listen,
-            codex_app_server::AppServerTransport::Stdio
+            ava_app_server::AppServerTransport::Stdio
         );
     }
 
     #[test]
     fn app_server_remote_control_startup_flag_enables_remote_control() {
-        let enabled = app_server_from_args(["codex", "app-server", "--remote-control"].as_ref());
+        let enabled = app_server_from_args(["ava", "app-server", "--remote-control"].as_ref());
         assert!(enabled.remote_control);
     }
 
     #[test]
     fn app_server_analytics_default_enabled_with_flag() {
         let app_server =
-            app_server_from_args(["codex", "app-server", "--analytics-default-enabled"].as_ref());
+            app_server_from_args(["ava", "app-server", "--analytics-default-enabled"].as_ref());
         assert!(app_server.analytics_default_enabled);
     }
 
     #[test]
     fn strict_config_parses_for_supported_commands() {
-        let cli = MultitoolCli::try_parse_from(["codex", "--strict-config"]).expect("parse");
+        let cli = MultitoolCli::try_parse_from(["ava", "--strict-config"]).expect("parse");
         assert!(cli.interactive.strict_config);
 
         let cli =
-            MultitoolCli::try_parse_from(["codex", "review", "--strict-config", "--uncommitted"])
+            MultitoolCli::try_parse_from(["ava", "review", "--strict-config", "--uncommitted"])
                 .expect("parse");
         assert_matches!(
             cli.subcommand,
@@ -4604,7 +4604,7 @@ mod tests {
             }))
         );
 
-        let cli = MultitoolCli::try_parse_from(["codex", "exec-server", "--strict-config"])
+        let cli = MultitoolCli::try_parse_from(["ava", "exec-server", "--strict-config"])
             .expect("parse");
         assert_matches!(
             cli.subcommand,
@@ -4618,7 +4618,7 @@ mod tests {
     #[test]
     fn exec_server_forward_parses_shared_remote_options() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "exec-server",
             "forward",
             "--connect",
@@ -4666,7 +4666,7 @@ mod tests {
             ],
         ] {
             assert!(
-                MultitoolCli::try_parse_from(["codex", "exec-server"].into_iter().chain(args))
+                MultitoolCli::try_parse_from(["ava", "exec-server"].into_iter().chain(args))
                     .is_err()
             );
         }
@@ -4674,7 +4674,7 @@ mod tests {
 
     #[test]
     fn root_strict_config_is_supported_for_exec_server() {
-        let cli = MultitoolCli::try_parse_from(["codex", "--strict-config", "exec-server"])
+        let cli = MultitoolCli::try_parse_from(["ava", "--strict-config", "exec-server"])
             .expect("parse");
 
         reject_root_strict_config_for_subcommand(cli.interactive.strict_config, &cli.subcommand)
@@ -4683,7 +4683,7 @@ mod tests {
 
     #[test]
     fn root_strict_config_is_rejected_for_unsupported_subcommands() {
-        let cli = MultitoolCli::try_parse_from(["codex", "--strict-config", "mcp", "list"])
+        let cli = MultitoolCli::try_parse_from(["ava", "--strict-config", "mcp", "list"])
             .expect("parse");
         let err = reject_root_strict_config_for_subcommand(
             cli.interactive.strict_config,
@@ -4693,10 +4693,10 @@ mod tests {
 
         assert_eq!(
             err.to_string(),
-            "`--strict-config` is not supported for `codex mcp`"
+            "`--strict-config` is not supported for `ava mcp`"
         );
 
-        let cli = MultitoolCli::try_parse_from(["codex", "--strict-config", "remote-control"])
+        let cli = MultitoolCli::try_parse_from(["ava", "--strict-config", "remote-control"])
             .expect("parse");
         let err = reject_root_strict_config_for_subcommand(
             cli.interactive.strict_config,
@@ -4706,14 +4706,14 @@ mod tests {
 
         assert_eq!(
             err.to_string(),
-            "`--strict-config` is not supported for `codex remote-control`"
+            "`--strict-config` is not supported for `ava remote-control`"
         );
     }
 
     #[test]
     fn app_server_subcommands_reject_strict_config() {
         let app_server =
-            app_server_from_args(["codex", "app-server", "--strict-config", "proxy"].as_ref());
+            app_server_from_args(["ava", "app-server", "--strict-config", "proxy"].as_ref());
         let err = reject_strict_config_for_app_server_subcommand(
             app_server.strict_config,
             app_server.subcommand.as_ref(),
@@ -4722,13 +4722,13 @@ mod tests {
 
         assert_eq!(
             err.to_string(),
-            "`--strict-config` is not supported for `codex app-server proxy`"
+            "`--strict-config` is not supported for `ava app-server proxy`"
         );
     }
 
     #[test]
     fn reject_remote_flag_for_remote_control() {
-        let cli = MultitoolCli::try_parse_from(["codex", "--remote", "unix://", "remote-control"])
+        let cli = MultitoolCli::try_parse_from(["ava", "--remote", "unix://", "remote-control"])
             .expect("parse");
         let Some(Subcommand::RemoteControl(remote_control)) = &cli.subcommand else {
             panic!("expected remote-control subcommand");
@@ -4747,7 +4747,7 @@ mod tests {
 
     #[test]
     fn remote_control_pair_parses() {
-        let cli = MultitoolCli::try_parse_from(["codex", "remote-control", "pair"]).expect("parse");
+        let cli = MultitoolCli::try_parse_from(["ava", "remote-control", "pair"]).expect("parse");
         let Some(Subcommand::RemoteControl(remote_control)) = &cli.subcommand else {
             panic!("expected remote-control subcommand");
         };
@@ -4756,49 +4756,49 @@ mod tests {
 
     #[test]
     fn remote_flag_parses_for_interactive_root() {
-        let cli = MultitoolCli::try_parse_from(["codex", "--remote", "unix://codex.sock"])
+        let cli = MultitoolCli::try_parse_from(["ava", "--remote", "unix://ava.sock"])
             .expect("parse");
-        assert_eq!(cli.remote.remote.as_deref(), Some("unix://codex.sock"));
+        assert_eq!(cli.remote.remote.as_deref(), Some("unix://ava.sock"));
     }
 
     #[test]
     fn remote_auth_token_env_flag_parses_for_interactive_root() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "--remote-auth-token-env",
-            "CODEX_REMOTE_AUTH_TOKEN",
+            "AVA_REMOTE_AUTH_TOKEN",
             "--remote",
             "ws://127.0.0.1:4500",
         ])
         .expect("parse");
         assert_eq!(
             cli.remote.remote_auth_token_env.as_deref(),
-            Some("CODEX_REMOTE_AUTH_TOKEN")
+            Some("AVA_REMOTE_AUTH_TOKEN")
         );
     }
 
     #[test]
     fn remote_flag_parses_for_resume_subcommand() {
         let cli =
-            MultitoolCli::try_parse_from(["codex", "resume", "--remote", "unix://codex.sock"])
+            MultitoolCli::try_parse_from(["ava", "resume", "--remote", "unix://ava.sock"])
                 .expect("parse");
         let Subcommand::Resume(ResumeCommand { remote, .. }) =
             cli.subcommand.expect("resume present")
         else {
             panic!("expected resume subcommand");
         };
-        assert_eq!(remote.remote.as_deref(), Some("unix://codex.sock"));
+        assert_eq!(remote.remote.as_deref(), Some("unix://ava.sock"));
     }
 
     #[test]
     fn agents_subcommand_accepts_remote_session_options() {
         let cli = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "agents",
             "--remote",
             "ws://127.0.0.1:4500",
             "--remote-auth-token-env",
-            "CODEX_REMOTE_AUTH_TOKEN",
+            "AVA_REMOTE_AUTH_TOKEN",
             "--cd",
             "/workspace",
             "--no-alt-screen",
@@ -4814,7 +4814,7 @@ mod tests {
         );
         assert_eq!(
             options.remote.remote_auth_token_env.as_deref(),
-            Some("CODEX_REMOTE_AUTH_TOKEN")
+            Some("AVA_REMOTE_AUTH_TOKEN")
         );
         assert_eq!(
             options.cwd.as_deref(),
@@ -4841,7 +4841,7 @@ mod tests {
     fn reject_remote_auth_token_env_for_non_interactive_subcommands() {
         let err = reject_remote_mode_for_subcommand(
             /*remote*/ None,
-            Some("CODEX_REMOTE_AUTH_TOKEN"),
+            Some("AVA_REMOTE_AUTH_TOKEN"),
             "exec",
         )
         .expect_err("non-interactive subcommands should reject --remote-auth-token-env");
@@ -4859,7 +4859,7 @@ mod tests {
             });
         let err = reject_remote_mode_for_app_server_subcommand(
             /*remote*/ None,
-            Some("CODEX_REMOTE_AUTH_TOKEN"),
+            Some("AVA_REMOTE_AUTH_TOKEN"),
             Some(&subcommand),
         )
         .expect_err("non-interactive app-server subcommands should reject --remote-auth-token-env");
@@ -4868,7 +4868,7 @@ mod tests {
 
     #[test]
     fn read_remote_auth_token_from_env_var_reports_missing_values() {
-        let err = read_remote_auth_token_from_env_var_with("CODEX_REMOTE_AUTH_TOKEN", |_| {
+        let err = read_remote_auth_token_from_env_var_with("AVA_REMOTE_AUTH_TOKEN", |_| {
             Err(std::env::VarError::NotPresent)
         })
         .expect_err("missing env vars should be rejected");
@@ -4878,7 +4878,7 @@ mod tests {
     #[test]
     fn read_remote_auth_token_from_env_var_trims_values() {
         let auth_token =
-            read_remote_auth_token_from_env_var_with("CODEX_REMOTE_AUTH_TOKEN", |_| {
+            read_remote_auth_token_from_env_var_with("AVA_REMOTE_AUTH_TOKEN", |_| {
                 Ok("  bearer-token  ".to_string())
             })
             .expect("env var should parse");
@@ -4887,7 +4887,7 @@ mod tests {
 
     #[test]
     fn read_remote_auth_token_from_env_var_rejects_empty_values() {
-        let err = read_remote_auth_token_from_env_var_with("CODEX_REMOTE_AUTH_TOKEN", |_| {
+        let err = read_remote_auth_token_from_env_var_with("AVA_REMOTE_AUTH_TOKEN", |_| {
             Ok(" \n\t ".to_string())
         })
         .expect_err("empty env vars should be rejected");
@@ -4898,7 +4898,7 @@ mod tests {
     fn app_server_grpc_code_mode_host_url_parses_independently_of_listen_transport() {
         let app_server = app_server_from_args(
             [
-                "codex",
+                "ava",
                 "app-server",
                 "--code-mode-host",
                 "https://example.test",
@@ -4932,7 +4932,7 @@ mod tests {
             "http://example.test/?token=secret",
         ] {
             let error =
-                MultitoolCli::try_parse_from(["codex", "app-server", "--code-mode-host", endpoint])
+                MultitoolCli::try_parse_from(["ava", "app-server", "--code-mode-host", endpoint])
                     .expect_err("invalid code-mode host endpoint should fail argument parsing");
 
             assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
@@ -4945,11 +4945,11 @@ mod tests {
     #[test]
     fn app_server_listen_websocket_url_parses() {
         let app_server = app_server_from_args(
-            ["codex", "app-server", "--listen", "ws://127.0.0.1:4500"].as_ref(),
+            ["ava", "app-server", "--listen", "ws://127.0.0.1:4500"].as_ref(),
         );
         assert_eq!(
             app_server.listen,
-            codex_app_server::AppServerTransport::WebSocket {
+            ava_app_server::AppServerTransport::WebSocket {
                 bind_address: "127.0.0.1:4500".parse().expect("valid socket address"),
             }
         );
@@ -4958,23 +4958,23 @@ mod tests {
     #[test]
     fn app_server_listen_stdio_url_parses() {
         let app_server =
-            app_server_from_args(["codex", "app-server", "--listen", "stdio://"].as_ref());
+            app_server_from_args(["ava", "app-server", "--listen", "stdio://"].as_ref());
         assert_eq!(
             app_server.listen,
-            codex_app_server::AppServerTransport::Stdio
+            ava_app_server::AppServerTransport::Stdio
         );
     }
 
     #[test]
     fn app_server_stdio_flag_parses() {
-        let app_server = app_server_from_args(["codex", "app-server", "--stdio"].as_ref());
+        let app_server = app_server_from_args(["ava", "app-server", "--stdio"].as_ref());
         assert!(app_server.stdio);
     }
 
     #[test]
     fn app_server_stdio_flag_conflicts_with_listen() {
         let err = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "app-server",
             "--stdio",
             "--listen",
@@ -4987,10 +4987,10 @@ mod tests {
     #[test]
     fn app_server_listen_unix_socket_url_parses() {
         let app_server =
-            app_server_from_args(["codex", "app-server", "--listen", "unix://"].as_ref());
+            app_server_from_args(["ava", "app-server", "--listen", "unix://"].as_ref());
         assert_eq!(
             app_server.listen,
-            codex_app_server::AppServerTransport::UnixSocket {
+            ava_app_server::AppServerTransport::UnixSocket {
                 socket_path: default_app_server_socket_path()
             }
         );
@@ -4999,12 +4999,12 @@ mod tests {
     #[test]
     fn app_server_listen_unix_socket_path_parses() {
         let app_server = app_server_from_args(
-            ["codex", "app-server", "--listen", "unix:///tmp/codex.sock"].as_ref(),
+            ["ava", "app-server", "--listen", "unix:///tmp/ava.sock"].as_ref(),
         );
         assert_eq!(
             app_server.listen,
-            codex_app_server::AppServerTransport::UnixSocket {
-                socket_path: AbsolutePathBuf::from_absolute_path("/tmp/codex.sock")
+            ava_app_server::AppServerTransport::UnixSocket {
+                socket_path: AbsolutePathBuf::from_absolute_path("/tmp/ava.sock")
                     .expect("absolute path should parse")
             }
         );
@@ -5012,20 +5012,20 @@ mod tests {
 
     #[test]
     fn app_server_listen_off_parses() {
-        let app_server = app_server_from_args(["codex", "app-server", "--listen", "off"].as_ref());
-        assert_eq!(app_server.listen, codex_app_server::AppServerTransport::Off);
+        let app_server = app_server_from_args(["ava", "app-server", "--listen", "off"].as_ref());
+        assert_eq!(app_server.listen, ava_app_server::AppServerTransport::Off);
     }
 
     #[test]
     fn app_server_listen_invalid_url_fails_to_parse() {
         let parse_result =
-            MultitoolCli::try_parse_from(["codex", "app-server", "--listen", "http://foo"]);
+            MultitoolCli::try_parse_from(["ava", "app-server", "--listen", "http://foo"]);
         assert!(parse_result.is_err());
     }
 
     #[test]
     fn app_server_proxy_subcommand_parses() {
-        let app_server = app_server_from_args(["codex", "app-server", "proxy"].as_ref());
+        let app_server = app_server_from_args(["ava", "app-server", "proxy"].as_ref());
         assert!(matches!(
             app_server.subcommand,
             Some(AppServerSubcommand::Proxy(AppServerProxyCommand {
@@ -5039,7 +5039,7 @@ mod tests {
         assert!(matches!(
             app_server_from_args(
                 [
-                    "codex",
+                    "ava",
                     "app-server",
                     "daemon",
                     "bootstrap",
@@ -5055,20 +5055,20 @@ mod tests {
             }))
         ));
         assert!(matches!(
-            app_server_from_args(["codex", "app-server", "daemon", "start"].as_ref()).subcommand,
+            app_server_from_args(["ava", "app-server", "daemon", "start"].as_ref()).subcommand,
             Some(AppServerSubcommand::Daemon(AppServerDaemonCommand {
                 subcommand: AppServerDaemonSubcommand::Start
             }))
         ));
         assert!(matches!(
-            app_server_from_args(["codex", "app-server", "daemon", "restart"].as_ref()).subcommand,
+            app_server_from_args(["ava", "app-server", "daemon", "restart"].as_ref()).subcommand,
             Some(AppServerSubcommand::Daemon(AppServerDaemonCommand {
                 subcommand: AppServerDaemonSubcommand::Restart
             }))
         ));
         assert!(matches!(
             app_server_from_args(
-                ["codex", "app-server", "daemon", "enable-remote-control"].as_ref()
+                ["ava", "app-server", "daemon", "enable-remote-control"].as_ref()
             )
             .subcommand,
             Some(AppServerSubcommand::Daemon(AppServerDaemonCommand {
@@ -5077,7 +5077,7 @@ mod tests {
         ));
         assert!(matches!(
             app_server_from_args(
-                ["codex", "app-server", "daemon", "disable-remote-control"].as_ref()
+                ["ava", "app-server", "daemon", "disable-remote-control"].as_ref()
             )
             .subcommand,
             Some(AppServerSubcommand::Daemon(AppServerDaemonCommand {
@@ -5085,13 +5085,13 @@ mod tests {
             }))
         ));
         assert!(matches!(
-            app_server_from_args(["codex", "app-server", "daemon", "stop"].as_ref()).subcommand,
+            app_server_from_args(["ava", "app-server", "daemon", "stop"].as_ref()).subcommand,
             Some(AppServerSubcommand::Daemon(AppServerDaemonCommand {
                 subcommand: AppServerDaemonSubcommand::Stop
             }))
         ));
         assert!(matches!(
-            app_server_from_args(["codex", "app-server", "daemon", "version"].as_ref()).subcommand,
+            app_server_from_args(["ava", "app-server", "daemon", "version"].as_ref()).subcommand,
             Some(AppServerSubcommand::Daemon(AppServerDaemonCommand {
                 subcommand: AppServerDaemonSubcommand::Version
             }))
@@ -5101,14 +5101,14 @@ mod tests {
     #[test]
     fn app_server_proxy_sock_path_parses() {
         let app_server =
-            app_server_from_args(["codex", "app-server", "proxy", "--sock", "codex.sock"].as_ref());
+            app_server_from_args(["ava", "app-server", "proxy", "--sock", "ava.sock"].as_ref());
         let Some(AppServerSubcommand::Proxy(proxy)) = app_server.subcommand else {
             panic!("expected proxy subcommand");
         };
         assert_eq!(
             proxy.socket_path,
             Some(
-                AbsolutePathBuf::relative_to_current_dir("codex.sock")
+                AbsolutePathBuf::relative_to_current_dir("ava.sock")
                     .expect("relative path should resolve")
             )
         );
@@ -5119,7 +5119,7 @@ mod tests {
         let subcommand = AppServerSubcommand::Proxy(AppServerProxyCommand { socket_path: None });
         let err = reject_remote_mode_for_app_server_subcommand(
             /*remote*/ None,
-            Some("CODEX_REMOTE_AUTH_TOKEN"),
+            Some("AVA_REMOTE_AUTH_TOKEN"),
             Some(&subcommand),
         )
         .expect_err("app-server proxy should reject --remote-auth-token-env");
@@ -5133,7 +5133,7 @@ mod tests {
         });
         let err = reject_remote_mode_for_app_server_subcommand(
             /*remote*/ None,
-            Some("CODEX_REMOTE_AUTH_TOKEN"),
+            Some("AVA_REMOTE_AUTH_TOKEN"),
             Some(&subcommand),
         )
         .expect_err("app-server daemon version should reject --remote-auth-token-env");
@@ -5144,22 +5144,22 @@ mod tests {
     fn app_server_capability_token_flags_parse() {
         let app_server = app_server_from_args(
             [
-                "codex",
+                "ava",
                 "app-server",
                 "--ws-auth",
                 "capability-token",
                 "--ws-token-file",
-                "/tmp/codex-token",
+                "/tmp/ava-token",
             ]
             .as_ref(),
         );
         assert_eq!(
             app_server.auth.ws_auth,
-            Some(codex_app_server::WebsocketAuthCliMode::CapabilityToken)
+            Some(ava_app_server::WebsocketAuthCliMode::CapabilityToken)
         );
         assert_eq!(
             app_server.auth.ws_token_file,
-            Some(PathBuf::from("/tmp/codex-token"))
+            Some(PathBuf::from("/tmp/ava-token"))
         );
     }
 
@@ -5167,12 +5167,12 @@ mod tests {
     fn app_server_signed_bearer_flags_parse() {
         let app_server = app_server_from_args(
             [
-                "codex",
+                "ava",
                 "app-server",
                 "--ws-auth",
                 "signed-bearer-token",
                 "--ws-shared-secret-file",
-                "/tmp/codex-secret",
+                "/tmp/ava-secret",
                 "--ws-issuer",
                 "issuer",
                 "--ws-audience",
@@ -5184,11 +5184,11 @@ mod tests {
         );
         assert_eq!(
             app_server.auth.ws_auth,
-            Some(codex_app_server::WebsocketAuthCliMode::SignedBearerToken)
+            Some(ava_app_server::WebsocketAuthCliMode::SignedBearerToken)
         );
         assert_eq!(
             app_server.auth.ws_shared_secret_file,
-            Some(PathBuf::from("/tmp/codex-secret"))
+            Some(PathBuf::from("/tmp/ava-secret"))
         );
         assert_eq!(app_server.auth.ws_issuer.as_deref(), Some("issuer"));
         assert_eq!(app_server.auth.ws_audience.as_deref(), Some("audience"));
@@ -5198,7 +5198,7 @@ mod tests {
     #[test]
     fn app_server_rejects_removed_insecure_non_loopback_flag() {
         let parse_result = MultitoolCli::try_parse_from([
-            "codex",
+            "ava",
             "app-server",
             "--allow-unauthenticated-non-loopback-ws",
         ]);
@@ -5207,7 +5207,7 @@ mod tests {
 
     #[test]
     fn features_enable_parses_feature_name() {
-        let cli = MultitoolCli::try_parse_from(["codex", "features", "enable", "unified_exec"])
+        let cli = MultitoolCli::try_parse_from(["ava", "features", "enable", "unified_exec"])
             .expect("parse should succeed");
         let Some(Subcommand::Features(FeaturesCli { sub })) = cli.subcommand else {
             panic!("expected features subcommand");
@@ -5220,7 +5220,7 @@ mod tests {
 
     #[test]
     fn features_disable_parses_feature_name() {
-        let cli = MultitoolCli::try_parse_from(["codex", "features", "disable", "shell_tool"])
+        let cli = MultitoolCli::try_parse_from(["ava", "features", "disable", "shell_tool"])
             .expect("parse should succeed");
         let Some(Subcommand::Features(FeaturesCli { sub })) = cli.subcommand else {
             panic!("expected features subcommand");
@@ -5329,7 +5329,7 @@ mod tests {
     }
 
     fn strict_config_feature_toggle_error(args: &[&str]) -> anyhow::Error {
-        let cli_args = std::iter::once("codex")
+        let cli_args = std::iter::once("ava")
             .chain(std::iter::once("--strict-config"))
             .chain(args.iter().copied());
         let cli = MultitoolCli::try_parse_from(cli_args).expect("parse should succeed");

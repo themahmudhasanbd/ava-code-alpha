@@ -1,9 +1,9 @@
 //! Helpers for deciding which buffered events to replay when switching threads.
 
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadItem;
 use std::collections::HashSet;
 
 use super::ThreadBufferedEvent;
@@ -36,7 +36,7 @@ pub(super) fn omit_resolved_misalignment_errors(
         ThreadBufferedEvent::Notification(notification)
             if matches!(notification.as_ref(), ServerNotification::Error(n)
                 if n.turn_id != latest_turn
-                    && n.error.codex_error_info == Some(CodexErrorInfo::MisalignmentPolicyViolation))
+                    && n.error.ava_error_info == Some(AvaErrorInfo::MisalignmentPolicyViolation))
     ));
     let completed_turns = snapshot.events.iter_mut().filter_map(|event| match event {
         ThreadBufferedEvent::Notification(notification) => match notification.as_mut() {
@@ -48,7 +48,7 @@ pub(super) fn omit_resolved_misalignment_errors(
     for turn in snapshot.turns.iter_mut().chain(completed_turns) {
         if turn.id != latest_turn
             && turn.error.as_ref().is_some_and(|error| {
-                error.codex_error_info == Some(CodexErrorInfo::MisalignmentPolicyViolation)
+                error.ava_error_info == Some(AvaErrorInfo::MisalignmentPolicyViolation)
             })
         {
             turn.error = None;

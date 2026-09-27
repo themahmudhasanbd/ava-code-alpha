@@ -24,19 +24,19 @@ use crate::package_lifecycle::PackageLifecycle;
 pub(super) fn foreground_owner(
     mut record: crate::installation_record::InstallationRecord,
     _token: crate::ipc::OwnedHandle,
-    runtime: codex_windows_sandbox::SetupRuntime,
+    runtime: ava_windows_sandbox::SetupRuntime,
 ) -> Result<crate::installation_record::InstallationRecord> {
-    let _lock = codex_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
+    let _lock = ava_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
     if let Some(previous) = crate::installation_record::load()? {
         let same_owner =
-            previous.user_sid == record.user_sid && previous.codex_home == record.codex_home;
+            previous.user_sid == record.user_sid && previous.ava_home == record.ava_home;
         if previous.runtime.is_some() {
             let family = windows::ApplicationModel::Package::Current()?
                 .Id()?
                 .FamilyName()?;
             previous.admit_owner(&record, &family.to_string())?;
             record.runtime = previous.runtime;
-        } else if runtime == codex_windows_sandbox::SetupRuntime::Registered {
+        } else if runtime == ava_windows_sandbox::SetupRuntime::Registered {
             anyhow::ensure!(
                 same_owner,
                 "shared sandbox resources belong to a different owner"
@@ -76,7 +76,7 @@ pub(super) fn run(state: &ServiceState, package_lifecycle: &PackageLifecycle) ->
             state.report_status(SERVICE_RUNNING, NO_ERROR)?;
             log_information(
                 EVENT_SERVICE_STARTED,
-                "The Codex sandbox service is running.",
+                "The Ava sandbox service is running.",
             );
             Ok(())
         },

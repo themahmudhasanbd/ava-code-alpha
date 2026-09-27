@@ -1,7 +1,7 @@
 //! Coordinates maintenance jobs that replace local rollout files.
 //!
 //! Rollout compression and legacy rollout migration both publish by renaming a replacement over an
-//! existing rollout path. They must not do that at the same time for one Codex home, so they share
+//! existing rollout path. They must not do that at the same time for one Ava home, so they share
 //! this process-scoped, nonblocking file lock.
 //!
 //! This is separate from per-thread writer locks, which protect live rollout appenders. It is also
@@ -20,11 +20,11 @@ pub struct RolloutMaintenanceGuard {
     _file: File,
 }
 
-/// Try to exclude rollout compression and migration for one Codex home.
+/// Try to exclude rollout compression and migration for one Ava home.
 pub fn try_acquire_rollout_maintenance_lock(
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> io::Result<Option<RolloutMaintenanceGuard>> {
-    let directory = codex_home.join(".tmp");
+    let directory = ava_home.join(".tmp");
     fs::create_dir_all(&directory)?;
     let file = OpenOptions::new()
         .read(true)

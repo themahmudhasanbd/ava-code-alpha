@@ -227,7 +227,7 @@ export type ExternalMcpSourceKind =
   | "claude-code"
   | "cursor-global"
   | "cursor-project"
-  | "codex"
+  | "ava"
   | "opencode"
   | "chatgpt-desktop";
 

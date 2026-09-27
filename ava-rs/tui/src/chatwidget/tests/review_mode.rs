@@ -1,6 +1,6 @@
 use super::helpers::drain_insert_history_transcript;
 use super::*;
-use codex_app_server_protocol::ImageReference;
+use ava_app_server_protocol::ImageReference;
 use pretty_assertions::assert_eq;
 use std::collections::VecDeque;
 
@@ -236,14 +236,14 @@ async fn steer_rejection_queues_review_follow_up_before_existing_queued_messages
     handle_error(
         &mut chat,
         "cannot steer a review turn",
-        Some(CodexErrorInfo::ActiveTurnNotSteerable {
+        Some(AvaErrorInfo::ActiveTurnNotSteerable {
             turn_kind: NonSteerableTurnKind::Review,
         }),
     );
     handle_error(
         &mut chat,
         "cannot steer a review turn",
-        Some(CodexErrorInfo::ActiveTurnNotSteerable {
+        Some(AvaErrorInfo::ActiveTurnNotSteerable {
             turn_kind: NonSteerableTurnKind::Review,
         }),
     );
@@ -1165,10 +1165,10 @@ async fn custom_prompt_submit_sends_review_op() {
     chat.handle_paste("  please audit dependencies  ".to_string());
     chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
 
-    // Expect AppEvent::CodexOp(Op::Review { .. }) with trimmed prompt
+    // Expect AppEvent::AvaOp(Op::Review { .. }) with trimmed prompt
     let evt = rx.try_recv().expect("expected one app event");
     match evt {
-        AppEvent::CodexOp(Op::Review { target }) => {
+        AppEvent::AvaOp(Op::Review { target }) => {
             assert_eq!(
                 target,
                 ReviewTarget::Custom {
@@ -1189,7 +1189,7 @@ async fn custom_prompt_enter_empty_does_not_send() {
     // Enter without any text
     chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
 
-    // No AppEvent::CodexOp should be sent
+    // No AppEvent::AvaOp should be sent
     assert!(rx.try_recv().is_err(), "no app event should be sent");
 }
 
@@ -1244,14 +1244,14 @@ async fn interrupted_turn_after_goal_budget_limited_uses_budget_message_snapshot
     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
 
     chat.handle_server_notification(
-        codex_app_server_protocol::ServerNotification::TurnStarted(
-            codex_app_server_protocol::TurnStartedNotification {
+        ava_app_server_protocol::ServerNotification::TurnStarted(
+            ava_app_server_protocol::TurnStartedNotification {
                 thread_id: "thread-1".to_string(),
-                turn: codex_app_server_protocol::Turn {
+                turn: ava_app_server_protocol::Turn {
                     id: "turn-1".to_string(),
-                    items_view: codex_app_server_protocol::TurnItemsView::Full,
+                    items_view: ava_app_server_protocol::TurnItemsView::Full,
                     items: Vec::new(),
-                    status: codex_app_server_protocol::TurnStatus::InProgress,
+                    status: ava_app_server_protocol::TurnStatus::InProgress,
                     error: None,
                     started_at: None,
                     completed_at: None,
@@ -1262,14 +1262,14 @@ async fn interrupted_turn_after_goal_budget_limited_uses_budget_message_snapshot
         /*replay_kind*/ None,
     );
     chat.handle_server_notification(
-        codex_app_server_protocol::ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+        ava_app_server_protocol::ServerNotification::ThreadGoalUpdated(
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: Some("turn-1".to_string()),
-                goal: codex_app_server_protocol::ThreadGoal {
+                goal: ava_app_server_protocol::ThreadGoal {
                     thread_id: "thread-1".to_string(),
                     objective: "Run until the token budget is limited".to_string(),
-                    status: codex_app_server_protocol::ThreadGoalStatus::BudgetLimited,
+                    status: ava_app_server_protocol::ThreadGoalStatus::BudgetLimited,
                     token_budget: Some(10_000),
                     tokens_used: 10_500,
                     time_used_seconds: 0,
@@ -1281,14 +1281,14 @@ async fn interrupted_turn_after_goal_budget_limited_uses_budget_message_snapshot
         /*replay_kind*/ None,
     );
     chat.handle_server_notification(
-        codex_app_server_protocol::ServerNotification::TurnCompleted(
-            codex_app_server_protocol::TurnCompletedNotification {
+        ava_app_server_protocol::ServerNotification::TurnCompleted(
+            ava_app_server_protocol::TurnCompletedNotification {
                 thread_id: "thread-1".to_string(),
-                turn: codex_app_server_protocol::Turn {
+                turn: ava_app_server_protocol::Turn {
                     id: "turn-1".to_string(),
-                    items_view: codex_app_server_protocol::TurnItemsView::Full,
+                    items_view: ava_app_server_protocol::TurnItemsView::Full,
                     items: Vec::new(),
-                    status: codex_app_server_protocol::TurnStatus::Interrupted,
+                    status: ava_app_server_protocol::TurnStatus::Interrupted,
                     error: None,
                     started_at: None,
                     completed_at: None,
@@ -1486,7 +1486,7 @@ async fn review_queues_user_messages_snapshot() {
     handle_error(
         &mut chat,
         "cannot steer a review turn",
-        Some(CodexErrorInfo::ActiveTurnNotSteerable {
+        Some(AvaErrorInfo::ActiveTurnNotSteerable {
             turn_kind: NonSteerableTurnKind::Review,
         }),
     );

@@ -23,7 +23,7 @@ def require_runtime_version(version: str | None) -> None:
     except InvalidVersion:
         pass
     raise ValueError(
-        f"Codex CLI {MINIMUM_RUNTIME_VERSION} or newer is required; "
+        f"Ava CLI {MINIMUM_RUNTIME_VERSION} or newer is required; "
         f"reported version is {version or 'unknown'!r}"
     )
 
@@ -39,7 +39,7 @@ class CheckoutCapabilities:
     @cached_property
     def fields(self) -> dict[str, frozenset[str]]:
         try:
-            with TemporaryDirectory(prefix="codex-sdk-schema-") as directory:
+            with TemporaryDirectory(prefix="ava-sdk-schema-") as directory:
                 subprocess.run(
                     [*self.command, "generate-json-schema", "--experimental", "--out", directory],
                     cwd=self.cwd,

@@ -9,15 +9,15 @@
 use std::fmt;
 use std::io::Write;
 
-use codex_terminal_detection::TerminalName;
-use codex_terminal_detection::terminal_info;
+use ava_terminal_detection::TerminalName;
+use ava_terminal_detection::terminal_info;
 use crossterm::Command;
 use crossterm::event::KeyboardEnhancementFlags;
 use crossterm::event::PopKeyboardEnhancementFlags;
 use crossterm::event::PushKeyboardEnhancementFlags;
 use ratatui::crossterm::execute;
 
-const DISABLE_KEYBOARD_ENHANCEMENT_ENV_VAR: &str = "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT";
+const DISABLE_KEYBOARD_ENHANCEMENT_ENV_VAR: &str = "AVA_TUI_DISABLE_KEYBOARD_ENHANCEMENT";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum VscodeDetection {
@@ -130,7 +130,7 @@ fn read_windows_vscode_detection() -> VscodeDetection {
     }
     read_windows_vscode_detection_with_timeout(
         || {
-            let executable = codex_utils_path::system_executable("cmd.exe")?;
+            let executable = ava_utils_path::system_executable("cmd.exe")?;
             std::process::Command::new(executable)
                 .args(["/d", "/s", "/c", "set TERM_PROGRAM"])
                 .stdin(std::process::Stdio::null())
@@ -279,8 +279,8 @@ fn tmux_should_enable_modify_other_keys_for(
 }
 
 fn read_tmux_extended_keys_format() -> Option<String> {
-    let executable = codex_utils_path::system_executable("tmux")?;
-    let path = codex_utils_path::system_path().ok()?;
+    let executable = ava_utils_path::system_executable("tmux")?;
+    let path = ava_utils_path::system_path().ok()?;
     for args in [
         ["display-message", "-p", "#{extended-keys-format}"],
         ["show-options", "-gqv", "extended-keys-format"],
@@ -400,7 +400,7 @@ mod tests {
     use super::tmux_session_detected;
     use super::tmux_should_enable_modify_other_keys_for;
     use super::vscode_terminal_detected;
-    use codex_terminal_detection::TerminalName;
+    use ava_terminal_detection::TerminalName;
     use crossterm::Command;
     use crossterm::event::PushKeyboardEnhancementFlags;
     use pretty_assertions::assert_eq;

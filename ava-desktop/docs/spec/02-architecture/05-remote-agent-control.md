@@ -78,7 +78,7 @@ demand signal or product decision schedules them.
 The design takes patterns from, but does not adopt wholesale, the following
 public projects:
 
-- [OpenAI Codex App Server](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md)
+- [OpenAI Ava App Server](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md)
   uses JSON-RPC-shaped messages over stdio and WebSocket, separates threads,
   turns, and items, streams lifecycle notifications, and sends approval
   requests from the server to the client.

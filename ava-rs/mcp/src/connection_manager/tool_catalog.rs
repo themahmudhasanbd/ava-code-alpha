@@ -7,7 +7,7 @@ use std::time::Instant;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_connectors::ConnectorRuntimeFetchSource;
+use ava_connectors::ConnectorRuntimeFetchSource;
 use futures::future::join_all;
 use tracing::Instrument;
 use tracing::instrument;
@@ -20,14 +20,14 @@ use crate::binding::McpBinding;
 use crate::binding::PreparedMcpCall;
 use crate::binding_clients::McpBindingClients;
 use crate::client_tool_catalog::ClientToolCatalogRevision;
-use crate::client_tool_catalog::CodexAppsToolSnapshot;
+use crate::client_tool_catalog::AvaAppsToolSnapshot;
 use crate::client_tool_catalog::ToolCatalogSnapshot;
-use crate::mcp::CODEX_APPS_MCP_SERVER_NAME;
-use crate::rmcp_client::CODEX_APPS_REFRESH_DURATION_METRIC;
+use crate::mcp::AVA_APPS_MCP_SERVER_NAME;
+use crate::rmcp_client::AVA_APPS_REFRESH_DURATION_METRIC;
 use crate::rmcp_client::MCP_TOOLS_LIST_DURATION_METRIC;
 use crate::rmcp_client::ManagedClient;
 use crate::rmcp_client::list_tools_for_client_uncached;
-use crate::rmcp_client::prepare_codex_apps_tools_for_model;
+use crate::rmcp_client::prepare_ava_apps_tools_for_model;
 use crate::runtime::emit_duration;
 use crate::tools::ToolInfo;
 use crate::tools::filter_tools;
@@ -107,7 +107,7 @@ impl McpConnectionSet {
                 continue;
             }
             let Some(client) = view.connection.client.ready_client() else {
-                if !view.connection.client.is_codex_apps_mcp_server
+                if !view.connection.client.is_ava_apps_mcp_server
                     && self.required_servers.binary_search(server_name).is_err()
                     && matches!(view.connection.client.client.peek(), Some(Err(_)))
                 {
@@ -223,7 +223,7 @@ impl McpConnectionSet {
                 let required = self.required_servers.binary_search(server_name).is_ok();
                 // Keep the catalog that lets us skip startup even if it expires during the wait.
                 let cached_tools = view.connection.client.cached_tools().filter(|tools| {
-                    view.connection.client.is_codex_apps_mcp_server || !tools.is_empty()
+                    view.connection.client.is_ava_apps_mcp_server || !tools.is_empty()
                 });
                 let has_cached_tools = cached_tools.is_some();
                 let must_wait_for_startup = (required
@@ -235,7 +235,7 @@ impl McpConnectionSet {
                         && self
                             .plugin_id_for_mcp_server_name(server_name)
                             .is_some_and(|plugin_id| required_plugins.contains(plugin_id)))
-                    || (server_name == CODEX_APPS_MCP_SERVER_NAME && !has_cached_tools);
+                    || (server_name == AVA_APPS_MCP_SERVER_NAME && !has_cached_tools);
                 if !must_wait_for_startup && has_cached_tools {
                     return (server_name, view, cached_tools);
                 }
@@ -302,8 +302,8 @@ impl McpConnectionSet {
                 (Some((Arc::new(client), snapshot)), server_tools)
             };
             let server_tools = filter_tools(server_tools, &view.tool_filter);
-            let server_tools = if server_name == CODEX_APPS_MCP_SERVER_NAME {
-                prepare_codex_apps_tools_for_model(server_tools, &self.tool_plugin_context)
+            let server_tools = if server_name == AVA_APPS_MCP_SERVER_NAME {
+                prepare_ava_apps_tools_for_model(server_tools, &self.tool_plugin_context)
             } else {
                 crate::rmcp_client::prepare_regular_mcp_tools_for_model(
                     server_tools,
@@ -408,18 +408,18 @@ impl McpConnectionSet {
     }
 
     /// Refreshes one exact Apps catalog, preserving the raw inventory for app policy.
-    pub(crate) async fn refresh_codex_apps_client_catalog(
+    pub(crate) async fn refresh_ava_apps_client_catalog(
         &self,
         config: &crate::McpConfig,
-    ) -> Result<CodexAppsToolSnapshot> {
+    ) -> Result<AvaAppsToolSnapshot> {
         let refresh_start = Instant::now();
         let view = self
             .servers
-            .get(CODEX_APPS_MCP_SERVER_NAME)
-            .ok_or_else(|| anyhow!("unknown MCP server '{CODEX_APPS_MCP_SERVER_NAME}'"))?;
-        let (tools, _) = self.refresh_codex_apps_tool_catalog().await?;
+            .get(AVA_APPS_MCP_SERVER_NAME)
+            .ok_or_else(|| anyhow!("unknown MCP server '{AVA_APPS_MCP_SERVER_NAME}'"))?;
+        let (tools, _) = self.refresh_ava_apps_tool_catalog().await?;
         let server_has_permission = config
-            .permission_profile_for_server(CODEX_APPS_MCP_SERVER_NAME)
+            .permission_profile_for_server(AVA_APPS_MCP_SERVER_NAME)
             .is_some();
         let model_visible_tool_names = tools
             .iter()
@@ -434,25 +434,25 @@ impl McpConnectionSet {
             .map(|tool| tool.tool.name.to_string())
             .collect();
         emit_duration(
-            CODEX_APPS_REFRESH_DURATION_METRIC,
+            AVA_APPS_REFRESH_DURATION_METRIC,
             refresh_start.elapsed(),
             &[("path", "legacy"), ("trigger", "explicit")],
         );
-        Ok(CodexAppsToolSnapshot {
+        Ok(AvaAppsToolSnapshot {
             tools,
             model_visible_tool_names,
         })
     }
 
     /// Refreshes Apps tools and returns the prepared shared-cache winner for discovery.
-    pub async fn refresh_codex_apps_tools_for_discovery(&self) -> Result<Vec<ToolInfo>> {
+    pub async fn refresh_ava_apps_tools_for_discovery(&self) -> Result<Vec<ToolInfo>> {
         let refresh_start = Instant::now();
         let view = self
             .servers
-            .get(CODEX_APPS_MCP_SERVER_NAME)
-            .ok_or_else(|| anyhow!("unknown MCP server '{CODEX_APPS_MCP_SERVER_NAME}'"))?;
-        let (_, tools) = self.refresh_codex_apps_tool_catalog().await?;
-        let tools = prepare_codex_apps_tools_for_model(
+            .get(AVA_APPS_MCP_SERVER_NAME)
+            .ok_or_else(|| anyhow!("unknown MCP server '{AVA_APPS_MCP_SERVER_NAME}'"))?;
+        let (_, tools) = self.refresh_ava_apps_tool_catalog().await?;
+        let tools = prepare_ava_apps_tools_for_model(
             filter_tools(tools, &view.tool_filter),
             &self.tool_plugin_context,
         )
@@ -464,7 +464,7 @@ impl McpConnectionSet {
             &self.non_prefixed_mcp_tool_servers,
         );
         emit_duration(
-            CODEX_APPS_REFRESH_DURATION_METRIC,
+            AVA_APPS_REFRESH_DURATION_METRIC,
             refresh_start.elapsed(),
             &[("path", "legacy"), ("trigger", "explicit")],
         );
@@ -472,11 +472,11 @@ impl McpConnectionSet {
     }
 
     /// Publishes the exact client catalog and returns both raw inventories.
-    async fn refresh_codex_apps_tool_catalog(&self) -> Result<(Vec<ToolInfo>, Vec<ToolInfo>)> {
+    async fn refresh_ava_apps_tool_catalog(&self) -> Result<(Vec<ToolInfo>, Vec<ToolInfo>)> {
         let view = self
             .servers
-            .get(CODEX_APPS_MCP_SERVER_NAME)
-            .ok_or_else(|| anyhow!("unknown MCP server '{CODEX_APPS_MCP_SERVER_NAME}'"))?;
+            .get(AVA_APPS_MCP_SERVER_NAME)
+            .ok_or_else(|| anyhow!("unknown MCP server '{AVA_APPS_MCP_SERVER_NAME}'"))?;
         let managed_client = view
             .connection
             .client()
@@ -487,15 +487,15 @@ impl McpConnectionSet {
             .refresh(
                 || async {
                     let list_start = Instant::now();
-                    let fetch_ticket = managed_client.codex_apps_tools_cache_context.as_ref().map(
+                    let fetch_ticket = managed_client.ava_apps_tools_cache_context.as_ref().map(
                         |cache_context| {
                             cache_context.begin_fetch(ConnectorRuntimeFetchSource::HardRefresh)
                         },
                     );
                     let client_tools = list_tools_for_client_uncached(
-                        CODEX_APPS_MCP_SERVER_NAME,
-                        /*is_codex_apps_mcp_server*/ true,
-                        /*codex_apps_refresh_trigger*/ "explicit",
+                        AVA_APPS_MCP_SERVER_NAME,
+                        /*is_ava_apps_mcp_server*/ true,
+                        /*ava_apps_refresh_trigger*/ "explicit",
                         &managed_client.client,
                         view.tool_timeout,
                         view.catalog_item_limit,
@@ -504,7 +504,7 @@ impl McpConnectionSet {
                     .await
                     .with_context(|| {
                         format!(
-                            "failed to refresh tools for MCP server '{CODEX_APPS_MCP_SERVER_NAME}'"
+                            "failed to refresh tools for MCP server '{AVA_APPS_MCP_SERVER_NAME}'"
                         )
                     })?;
                     Ok((client_tools, (fetch_ticket, list_start)))
@@ -513,7 +513,7 @@ impl McpConnectionSet {
                     // Discovery can accept another scope's winner; executable catalogs
                     // receive only the latest successful fetch from their own scope.
                     let tools = match (
-                        managed_client.codex_apps_tools_cache_context.as_ref(),
+                        managed_client.ava_apps_tools_cache_context.as_ref(),
                         fetch_ticket,
                     ) {
                         (Some(cache_context), Some(fetch_ticket)) => cache_context
@@ -523,7 +523,7 @@ impl McpConnectionSet {
                                 client_tools.to_vec(),
                             ),
                         (None, None) => client_tools.to_vec(),
-                        _ => unreachable!("Codex Apps fetch ticket requires cache context"),
+                        _ => unreachable!("Ava Apps fetch ticket requires cache context"),
                     };
                     (tools, list_start)
                 },

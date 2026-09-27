@@ -2,8 +2,8 @@
 
 #[cfg(debug_assertions)]
 use crate::client::AnalyticsEventsClient;
-use crate::events::CodexAcceptedLineFingerprintsEventParams;
-use crate::events::CodexAcceptedLineFingerprintsEventRequest;
+use crate::events::AvaAcceptedLineFingerprintsEventParams;
+use crate::events::AvaAcceptedLineFingerprintsEventRequest;
 use crate::events::TrackEventRequest;
 use crate::facts::AnalyticsFact;
 #[cfg(debug_assertions)]
@@ -28,10 +28,10 @@ use crate::tests::support::sample_turn_start_response;
 #[cfg(debug_assertions)]
 use crate::tests::support::sample_turn_started_notification;
 #[cfg(debug_assertions)]
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::TurnDiffUpdatedNotification;
-use codex_app_server_protocol::TurnStatus as AppServerTurnStatus;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::TurnDiffUpdatedNotification;
+use ava_app_server_protocol::TurnStatus as AppServerTurnStatus;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 #[cfg(debug_assertions)]
@@ -40,14 +40,14 @@ use std::time::SystemTime;
 #[test]
 fn accepted_line_fingerprints_event_serializes_expected_shape() {
     let event = TrackEventRequest::AcceptedLineFingerprints(Box::new(
-        CodexAcceptedLineFingerprintsEventRequest {
-            event_type: "codex_accepted_line_fingerprints",
-            event_params: CodexAcceptedLineFingerprintsEventParams {
-                event_type: "codex.accepted_line_fingerprints",
+        AvaAcceptedLineFingerprintsEventRequest {
+            event_type: "ava_accepted_line_fingerprints",
+            event_params: AvaAcceptedLineFingerprintsEventParams {
+                event_type: "ava.accepted_line_fingerprints",
                 turn_id: "turn-1".to_string(),
                 thread_id: "thread-1".to_string(),
-                product_surface: Some("codex".to_string()),
-                model_slug: Some("gpt-5.1-codex".to_string()),
+                product_surface: Some("ava".to_string()),
+                model_slug: Some("gpt-5.1-ava".to_string()),
                 completed_at: 1710000000,
                 repo_hash: Some("repo-hash-1".to_string()),
                 accepted_added_lines: 42,
@@ -62,13 +62,13 @@ fn accepted_line_fingerprints_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_accepted_line_fingerprints",
+            "event_type": "ava_accepted_line_fingerprints",
             "event_params": {
-                "event_type": "codex.accepted_line_fingerprints",
+                "event_type": "ava.accepted_line_fingerprints",
                 "turn_id": "turn-1",
                 "thread_id": "thread-1",
-                "product_surface": "codex",
-                "model_slug": "gpt-5.1-codex",
+                "product_surface": "ava",
+                "model_slug": "gpt-5.1-ava",
                 "completed_at": 1710000000,
                 "repo_hash": "repo-hash-1",
                 "accepted_added_lines": 42,
@@ -127,7 +127,7 @@ index 1111111..2222222
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut events,
         )
@@ -198,7 +198,7 @@ index 1111111..2222222
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut events,
         )
@@ -225,11 +225,11 @@ async fn analytics_flush_delivers_completed_turn_with_file_diff() {
         .expect("system clock should be after Unix epoch")
         .as_nanos();
     let capture_path = std::env::temp_dir().join(format!(
-        "codex-analytics-turn-flush-{}-{nonce}.jsonl",
+        "ava-analytics-turn-flush-{}-{nonce}.jsonl",
         std::process::id()
     ));
-    let auth_manager = codex_login::AuthManager::from_auth_for_testing(
-        codex_login::CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+    let auth_manager = ava_login::AuthManager::from_auth_for_testing(
+        ava_login::AvaAuth::create_dummy_chatgpt_auth_for_testing(),
     );
     let client = AnalyticsEventsClient::new_for_capture_file(auth_manager, capture_path.clone());
 
@@ -285,7 +285,7 @@ index 1111111..2222222
             "thread-2",
             "turn-2",
             AppServerTurnStatus::Completed,
-            /*codex_error_info*/ None,
+            /*ava_error_info*/ None,
         ))),
     ] {
         client.record_fact(fact);
@@ -311,11 +311,11 @@ index 1111111..2222222
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    assert!(event_types.iter().any(|event| event == "codex_turn_event"));
+    assert!(event_types.iter().any(|event| event == "ava_turn_event"));
     assert!(
         event_types
             .iter()
-            .any(|event| event == "codex_accepted_line_fingerprints")
+            .any(|event| event == "ava_accepted_line_fingerprints")
     );
 
     std::fs::remove_file(capture_path).expect("remove analytics capture file");

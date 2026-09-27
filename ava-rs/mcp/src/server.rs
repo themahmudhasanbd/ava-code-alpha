@@ -4,21 +4,21 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::runtime::McpRuntimeContext;
-use codex_api::SharedAuthProvider;
-use codex_config::AppToolApproval;
-use codex_config::McpServerAuth;
-use codex_config::McpServerConfig;
-use codex_config::McpServerTransportConfig;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_connectors::ConnectorRuntimeContextKey;
-use codex_exec_server::Environment;
-use codex_login::CodexAuth;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_rmcp_client::McpOAuthRefreshMode;
-use codex_rmcp_client::StoredOAuthCredentialSnapshot;
-use codex_rmcp_client::StoredOAuthTokens;
-use codex_utils_path_uri::PathUri;
+use ava_api::SharedAuthProvider;
+use ava_config::AppToolApproval;
+use ava_config::McpServerAuth;
+use ava_config::McpServerConfig;
+use ava_config::McpServerTransportConfig;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_connectors::ConnectorRuntimeContextKey;
+use ava_exec_server::Environment;
+use ava_login::AvaAuth;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_rmcp_client::McpOAuthRefreshMode;
+use ava_rmcp_client::StoredOAuthCredentialSnapshot;
+use ava_rmcp_client::StoredOAuthTokens;
+use ava_utils_path_uri::PathUri;
 use rmcp::model::ElicitationCapability;
 use tracing::warn;
 
@@ -117,9 +117,9 @@ pub(crate) struct McpServerConnectionIdentity {
     resolved_environment: Result<Option<Arc<Environment>>, String>,
     local_stdio_fallback_cwd: Option<PathBuf>,
     referenced_environment_variables: Vec<(String, Option<OsString>)>,
-    runtime_auth: Option<CodexAuth>,
+    runtime_auth: Option<AvaAuth>,
     runtime_auth_token: Option<String>,
-    codex_apps_cache_identity: Option<(PathBuf, ConnectorRuntimeContextKey)>,
+    ava_apps_cache_identity: Option<(PathBuf, ConnectorRuntimeContextKey)>,
     client_elicitation_capability: ElicitationCapability,
     client_mcp_extensions: ClientMcpExtensions,
     agent_plugin: bool,
@@ -138,8 +138,8 @@ impl McpServerConnectionIdentity {
         resolved_environment: &Result<Option<Arc<Environment>>, String>,
         runtime_context: &McpRuntimeContext,
         runtime_auth_provider: Option<&SharedAuthProvider>,
-        auth: Option<&CodexAuth>,
-        codex_apps_cache_identity: Option<(PathBuf, ConnectorRuntimeContextKey)>,
+        auth: Option<&AvaAuth>,
+        ava_apps_cache_identity: Option<(PathBuf, ConnectorRuntimeContextKey)>,
         client_elicitation_capability: ElicitationCapability,
         client_mcp_extensions: ClientMcpExtensions,
         previous_identity: Option<&Self>,
@@ -241,7 +241,7 @@ impl McpServerConnectionIdentity {
             referenced_environment_variables,
             runtime_auth,
             runtime_auth_token,
-            codex_apps_cache_identity,
+            ava_apps_cache_identity,
             client_elicitation_capability,
             client_mcp_extensions,
             agent_plugin: server.is_agent_plugin(),
@@ -251,7 +251,7 @@ impl McpServerConnectionIdentity {
 
     pub(crate) fn has_same_connection_config(&self, other: &Self) -> bool {
         let same_runtime_auth = match (&self.runtime_auth, &other.runtime_auth) {
-            (Some(CodexAuth::AgentIdentity(left)), Some(CodexAuth::AgentIdentity(right))) => {
+            (Some(AvaAuth::AgentIdentity(left)), Some(AvaAuth::AgentIdentity(right))) => {
                 left.record() == right.record()
             }
             (Some(left), Some(right)) => {
@@ -274,7 +274,7 @@ impl McpServerConnectionIdentity {
             && self.referenced_environment_variables == other.referenced_environment_variables
             && same_runtime_auth
             && self.runtime_auth_token == other.runtime_auth_token
-            && self.codex_apps_cache_identity == other.codex_apps_cache_identity
+            && self.ava_apps_cache_identity == other.ava_apps_cache_identity
             && self.client_elicitation_capability == other.client_elicitation_capability
             && self.client_mcp_extensions == other.client_mcp_extensions
             && self.agent_plugin == other.agent_plugin

@@ -24,10 +24,10 @@ use crate::bottom_pane::SelectionViewParams;
 use crate::bottom_pane::popup_consts::picker_hint_line_for_keymap;
 use crate::chatwidget::ThreadInputStateRestoreMode;
 use crate::startup_draft::StartupDraftPump;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_protocol::protocol::SubAgentSource;
 
 pub(crate) const AGENTS_OVERVIEW_VIEW_ID: &str = "agents-overview";
 
@@ -72,7 +72,7 @@ impl Drop for AgentsOverviewState {
 impl App {
     pub(super) fn open_agents_overview(&mut self, app_server: &AppServerSession) {
         if matches!(self.app_server_target, AppServerTarget::Embedded) {
-            let workload_identity_selected = codex_login::is_workload_identity_selected();
+            let workload_identity_selected = ava_login::is_workload_identity_selected();
             self.chat_widget.show_selection_view(SelectionViewParams {
                 title: Some("Shared agents unavailable".to_string()),
                 subtitle: Some(
@@ -97,7 +97,7 @@ impl App {
                     (!workload_identity_selected).then(|| SelectionItem {
                         name: "Start background server".to_string(),
                         description: Some(
-                            "Open `codex agents` in another terminal afterward.".to_string(),
+                            "Open `ava agents` in another terminal afterward.".to_string(),
                         ),
                         actions: vec![Box::new(|tx| tx.send(AppEvent::StartAgentsDaemon))],
                         dismiss_on_select: true,
@@ -417,7 +417,7 @@ impl App {
             };
             let unloaded = matches!(
                 target_thread.status,
-                codex_app_server_protocol::ThreadStatus::NotLoaded
+                ava_app_server_protocol::ThreadStatus::NotLoaded
             );
             let preserve_explicit_permissions = unloaded || started.is_some();
             let (mut resume_config, mut local_settings) = if let Some((config, _)) = &started {
@@ -478,7 +478,7 @@ impl App {
             let baseline_permissions =
                 RuntimePermissionProfileOverride::from_config(&resume_config);
             let resume_model_settings = match target_thread.status {
-                codex_app_server_protocol::ThreadStatus::NotLoaded => {
+                ava_app_server_protocol::ThreadStatus::NotLoaded => {
                     self.apply_runtime_policy_overrides(
                         &mut resume_config,
                         RuntimePolicyOverrideScope::ExplicitOnly,
@@ -503,9 +503,9 @@ impl App {
                     }
                     self.resume_model_settings()
                 }
-                codex_app_server_protocol::ThreadStatus::Idle
-                | codex_app_server_protocol::ThreadStatus::Active { .. }
-                | codex_app_server_protocol::ThreadStatus::SystemError => {
+                ava_app_server_protocol::ThreadStatus::Idle
+                | ava_app_server_protocol::ThreadStatus::Active { .. }
+                | ava_app_server_protocol::ThreadStatus::SystemError => {
                     crate::app_server_session::ResumeModelSettings::PreserveExistingThread
                 }
             };
@@ -629,7 +629,7 @@ impl App {
                             == RuntimePermissionProfileTurnOverride::LegacySandbox
                 });
             self.local_settings = local_settings;
-            self.refresh_server_version_overview_notice(CODEX_CLI_VERSION);
+            self.refresh_server_version_overview_notice(AVA_CLI_VERSION);
             self.config = resume_config;
             tui.set_notification_settings(
                 self.local_settings.tui.notification_settings.method,
@@ -767,7 +767,7 @@ impl App {
         for request in requests {
             self.handle_app_server_event(
                 app_server,
-                codex_app_server_client::AppServerEvent::ServerRequest(Box::new(request)),
+                ava_app_server_client::AppServerEvent::ServerRequest(Box::new(request)),
             )
             .await;
         }
@@ -1004,15 +1004,15 @@ impl App {
                     .and_then(std::ffi::OsStr::to_str)
                     .is_some_and(|name| {
                         if cfg!(windows) {
-                            name.eq_ignore_ascii_case("codex-tui")
+                            name.eq_ignore_ascii_case("ava-tui")
                         } else {
-                            name == "codex-tui"
+                            name == "ava-tui"
                         }
                     }) {
                     current_executable.with_file_name(if cfg!(windows) {
-                        "codex.exe"
+                        "ava.exe"
                     } else {
-                        "codex"
+                        "ava"
                     })
                 } else {
                     current_executable

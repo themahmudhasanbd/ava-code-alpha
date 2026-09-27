@@ -8,20 +8,20 @@ use crate::phase1_output::output_schema;
 use crate::rollout_input::sanitize_response_item_for_memories;
 use crate::runtime::MemoryStartupContext;
 use crate::runtime::StageOneRequestContext;
-use codex_config::types::MemoriesConfig;
-use codex_core::Prompt;
-use codex_core::RolloutRecorder;
-use codex_core::config::Config;
-use codex_protocol::MemoryVersion;
-use codex_protocol::ResponseItemId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::TokenUsage;
-use codex_rollout::INTERACTIVE_SESSION_SOURCES;
-use codex_rollout::RolloutItem;
-use codex_secrets::redact_secrets;
+use ava_config::types::MemoriesConfig;
+use ava_core::Prompt;
+use ava_core::RolloutRecorder;
+use ava_core::config::Config;
+use ava_protocol::MemoryVersion;
+use ava_protocol::ResponseItemId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::TokenUsage;
+use ava_rollout::INTERACTIVE_SESSION_SOURCES;
+use ava_rollout::RolloutItem;
+use ava_secrets::redact_secrets;
 use futures::StreamExt;
 use std::path::Path;
 use std::sync::Arc;
@@ -120,7 +120,7 @@ pub async fn prune(context: &MemoryStartupContext, config: &Config) {
 async fn claim_startup_jobs(
     context: &MemoryStartupContext,
     memories_config: &MemoriesConfig,
-) -> Option<Vec<codex_state::Stage1JobClaim>> {
+) -> Option<Vec<ava_state::Stage1JobClaim>> {
     let Some(state_db) = context.memory_store().await else {
         // This should not happen.
         warn!("state db unavailable while claiming phase-1 startup jobs; skipping");
@@ -135,7 +135,7 @@ async fn claim_startup_jobs(
     match state_db
         .claim_stage1_jobs_for_startup(
             context.thread_id(),
-            codex_state::Stage1StartupClaimParams {
+            ava_state::Stage1StartupClaimParams {
                 scan_limit: crate::stage_one::THREAD_SCAN_LIMIT,
                 max_claimed: memories_config.max_rollouts_per_startup,
                 max_age_days: memories_config.max_rollout_age_days,
@@ -174,7 +174,7 @@ async fn build_request_context(
 async fn run_jobs(
     context: Arc<MemoryStartupContext>,
     config: Arc<Config>,
-    claimed_candidates: Vec<codex_state::Stage1JobClaim>,
+    claimed_candidates: Vec<ava_state::Stage1JobClaim>,
     stage_one_context: StageOneRequestContext,
 ) -> Vec<JobResult> {
     futures::stream::iter(claimed_candidates)
@@ -197,7 +197,7 @@ mod job {
     pub(crate) async fn run(
         context: &MemoryStartupContext,
         config: &Config,
-        claim: codex_state::Stage1JobClaim,
+        claim: ava_state::Stage1JobClaim,
         stage_one_context: &StageOneRequestContext,
     ) -> JobResult {
         let claimed_thread = claim.thread;
@@ -324,7 +324,7 @@ mod job {
 
         pub(crate) async fn failed(
             context: &MemoryStartupContext,
-            thread_id: codex_protocol::ThreadId,
+            thread_id: ava_protocol::ThreadId,
             ownership_token: &str,
             reason: &str,
         ) {
@@ -343,7 +343,7 @@ mod job {
 
         pub(crate) async fn no_output(
             context: &MemoryStartupContext,
-            thread_id: codex_protocol::ThreadId,
+            thread_id: ava_protocol::ThreadId,
             ownership_token: &str,
         ) -> JobOutcome {
             let Some(state_db) = context.memory_store().await else {
@@ -363,7 +363,7 @@ mod job {
 
         pub(crate) async fn success(
             context: &MemoryStartupContext,
-            thread_id: codex_protocol::ThreadId,
+            thread_id: ava_protocol::ThreadId,
             ownership_token: &str,
             source_updated_at: i64,
             raw_memory: &str,
@@ -396,7 +396,7 @@ mod job {
     /// Serializes filtered stage-1 memory items for prompt inclusion.
     pub(super) fn serialize_filtered_rollout_response_items(
         items: &[RolloutItem],
-    ) -> codex_protocol::error::Result<String> {
+    ) -> ava_protocol::error::Result<String> {
         let filtered = items
             .iter()
             .filter_map(|item| match item {
@@ -417,7 +417,7 @@ mod job {
             })
             .collect::<Vec<_>>();
         let serialized = serde_json::to_string(&filtered).map_err(|err| {
-            CodexErr::InvalidRequest(format!("failed to serialize rollout memory: {err}"))
+            AvaErr::InvalidRequest(format!("failed to serialize rollout memory: {err}"))
         })?;
         Ok(redact_secrets(serialized))
     }
@@ -572,9 +572,9 @@ fn emit_metrics(context: &StageOneRequestContext, counts: &Stats) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_protocol::AgentPath;
-    use codex_protocol::protocol::InterAgentCommunication;
-    use codex_protocol::security_risk::SecurityRiskScore;
+    use ava_protocol::AgentPath;
+    use ava_protocol::protocol::InterAgentCommunication;
+    use ava_protocol::security_risk::SecurityRiskScore;
     use pretty_assertions::assert_eq;
     use std::collections::BTreeMap;
 
@@ -664,8 +664,8 @@ mod tests {
                     call_id: Some("call_123".to_string()),
                     name: None,
                     namespace: None,
-                    output: codex_protocol::models::FunctionCallOutputPayload {
-                        body: codex_protocol::models::FunctionCallOutputBody::Text(
+                    output: ava_protocol::models::FunctionCallOutputPayload {
+                        body: ava_protocol::models::FunctionCallOutputBody::Text(
                             r#"{"token":"sk-abcdefghijklmnopqrstuvwxyz123456"}"#.to_string(),
                         ),
                         success: Some(true),
@@ -744,7 +744,7 @@ mod tests {
                     output_tokens: 3,
                     reasoning_output_tokens: 1,
                     total_tokens: 13,
-                    codex_rollout_budget_units: None,
+                    ava_rollout_budget_units: None,
                 }),
             },
             JobResult {
@@ -756,7 +756,7 @@ mod tests {
                     output_tokens: 2,
                     reasoning_output_tokens: 0,
                     total_tokens: 9,
-                    codex_rollout_budget_units: None,
+                    ava_rollout_budget_units: None,
                 }),
             },
             JobResult {
@@ -778,7 +778,7 @@ mod tests {
                 output_tokens: 5,
                 reasoning_output_tokens: 1,
                 total_tokens: 22,
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             })
         );
     }

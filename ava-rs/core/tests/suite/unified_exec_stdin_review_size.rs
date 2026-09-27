@@ -1,16 +1,16 @@
 //! Stdin approval must cover the complete input before any bytes reach a terminal.
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_protocol::approvals::ExecApprovalKind;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_protocol::approvals::ExecApprovalKind;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
 use core_test_support::responses::mount_sse_sequence;
@@ -19,7 +19,7 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_target_windows;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -41,7 +41,7 @@ async fn unreviewable_stdin_is_rejected_before_approval_or_execution(
     skip_if_no_network!(Ok(()));
     skip_if_sandbox!(Ok(()));
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::WriteStdinApproval)
@@ -73,7 +73,7 @@ async fn unreviewable_stdin_is_rejected_before_approval_or_execution(
     }
     sequence.push(sse(vec![ev_completed("done")]));
     let responses = mount_sse_sequence(&server, sequence).await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "send terminal input".to_string(),
@@ -90,11 +90,11 @@ async fn unreviewable_stdin_is_rejected_before_approval_or_execution(
         .await?;
     let mut approvals = Vec::new();
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::ExecApprovalRequest(request) => {
                 let id = request.effective_approval_id();
                 approvals.push((request.kind, id.clone()));
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id,
                         turn_id: Some(request.turn_id),
@@ -119,8 +119,8 @@ async fn unreviewable_stdin_is_rejected_before_approval_or_execution(
     assert!(rejected.to_string().contains(expected_error), "{rejected}");
     let allowed = last.function_call_output("allowed");
     assert!(allowed.to_string().contains("STDIN_REVIEW_OK"), "{allowed}");
-    test.codex.submit(Op::Shutdown).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Shutdown).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;

@@ -18,7 +18,7 @@ from ._initialize_metadata import _split_user_agent
 from ._message_router import MessageRouter, _TurnSubscription
 from ._runtime_requirements import CheckoutCapabilities, require_runtime_version
 from ._version import __version__ as SDK_VERSION
-from .errors import CodexError, InvalidRequestError, TransportClosedError
+from .errors import AvaError, InvalidRequestError, TransportClosedError
 from .generated.notification_registry import NOTIFICATION_MODELS
 from .generated.v2_all import (
     AccountLoginCompletedNotification,
@@ -110,20 +110,20 @@ def _params_dict(
     raise TypeError(f"Expected generated params model or dict, got {type(params).__name__}")
 
 
-def _installed_codex_path() -> Path:
+def _installed_ava_path() -> Path:
     try:
         from ava_cli_bin import bundled_ava_path
     except ImportError as exc:
         raise FileNotFoundError(
             "Unable to locate the pinned AvA runtime. Install the published SDK build "
-            f"with its {RUNTIME_PKG_NAME} dependency, or set CodexConfig.codex_bin "
+            f"with its {RUNTIME_PKG_NAME} dependency, or set AvaConfig.ava_bin "
             "explicitly."
         ) from exc
 
     return bundled_ava_path()
 
 
-def _installed_codex_path_dirs() -> tuple[Path, ...]:
+def _installed_ava_path_dirs() -> tuple[Path, ...]:
     try:
         from ava_cli_bin import bundled_path_dir
     except (ImportError, AttributeError):
@@ -163,63 +163,63 @@ def _path_env_key(env: dict[str, str]) -> str:
 
 
 @dataclass(frozen=True)
-class CodexBinResolverOps:
-    installed_codex_path: Callable[[], Path]
+class AvaBinResolverOps:
+    installed_ava_path: Callable[[], Path]
     path_exists: Callable[[Path], bool]
 
 
-def _default_codex_bin_resolver_ops() -> CodexBinResolverOps:
-    return CodexBinResolverOps(
-        installed_codex_path=_installed_codex_path,
+def _default_ava_bin_resolver_ops() -> AvaBinResolverOps:
+    return AvaBinResolverOps(
+        installed_ava_path=_installed_ava_path,
         path_exists=lambda path: path.exists(),
     )
 
 
-def resolve_codex_bin(config: "CodexConfig", ops: CodexBinResolverOps) -> Path:
-    if config.codex_bin is not None:
-        codex_bin = Path(config.codex_bin)
-        if not ops.path_exists(codex_bin):
+def resolve_ava_bin(config: "AvaConfig", ops: AvaBinResolverOps) -> Path:
+    if config.ava_bin is not None:
+        ava_bin = Path(config.ava_bin)
+        if not ops.path_exists(ava_bin):
             raise FileNotFoundError(
-                f"Codex binary not found at {codex_bin}. Set CodexConfig.codex_bin "
+                f"Ava binary not found at {ava_bin}. Set AvaConfig.ava_bin "
                 "to a valid binary path."
             )
-        return codex_bin
+        return ava_bin
 
-    return ops.installed_codex_path()
+    return ops.installed_ava_path()
 
 
-def _resolve_codex_bin(config: "CodexConfig") -> Path:
-    return resolve_codex_bin(config, _default_codex_bin_resolver_ops())
+def _resolve_ava_bin(config: "AvaConfig") -> Path:
+    return resolve_ava_bin(config, _default_ava_bin_resolver_ops())
 
 
 @dataclass(slots=True)
-class CodexConfig:
-    """Configuration for launching and identifying the local Codex runtime.
+class AvaConfig:
+    """Configuration for launching and identifying the local Ava runtime.
 
-    Most callers can use ``Codex()`` without configuration. Set ``codex_bin``
-    only when intentionally using a specific local Codex executable.
+    Most callers can use ``Ava()`` without configuration. Set ``ava_bin``
+    only when intentionally using a specific local Ava executable.
     """
 
-    codex_bin: str | None = None
+    ava_bin: str | None = None
     launch_args_override: tuple[str, ...] | None = None
     config_overrides: tuple[str, ...] = ()
     cwd: str | None = None
     env: dict[str, str] | None = None
-    client_name: str = "codex_python_sdk"
-    client_title: str = "Codex Python SDK"
+    client_name: str = "ava_python_sdk"
+    client_title: str = "Ava Python SDK"
     client_version: str = SDK_VERSION
     experimental_api: bool = True
 
 
-class CodexClient:
-    """Synchronous typed JSON-RPC client for `codex app-server` over stdio."""
+class AvaClient:
+    """Synchronous typed JSON-RPC client for `ava app-server` over stdio."""
 
     def __init__(
         self,
-        config: CodexConfig | None = None,
+        config: AvaConfig | None = None,
         approval_handler: ApprovalHandler | None = None,
     ) -> None:
-        self.config = config or CodexConfig()
+        self.config = config or AvaConfig()
         self._approval_handler = approval_handler or self._default_approval_handler
         self._proc: subprocess.Popen[str] | None = None
         self._lock = threading.Lock()
@@ -232,7 +232,7 @@ class CodexClient:
         self._runtime_version: str | None = None
         self._checkout_capabilities: CheckoutCapabilities | None = None
 
-    def __enter__(self) -> "CodexClient":
+    def __enter__(self) -> "AvaClient":
         self.start()
         return self
 
@@ -247,10 +247,10 @@ class CodexClient:
         if self.config.launch_args_override is not None:
             args = list(self.config.launch_args_override)
         else:
-            codex_bin = _resolve_codex_bin(self.config)
-            if self.config.codex_bin is None:
-                path_dirs = _installed_codex_path_dirs()
-            args = [str(codex_bin)]
+            ava_bin = _resolve_ava_bin(self.config)
+            if self.config.ava_bin is None:
+                path_dirs = _installed_ava_path_dirs()
+            args = [str(ava_bin)]
             for kv in self.config.config_overrides:
                 args.extend(["--config", kv])
             args.extend(["app-server", "--listen", "stdio://"])
@@ -356,13 +356,13 @@ class CodexClient:
                 else:
                     require_runtime_version(self._runtime_version)
             except ValueError as exc:
-                raise CodexError(
+                raise AvaError(
                     f"{method} with {', '.join(supplied_fields)}: {exc}. "
-                    "Configure CodexConfig.codex_bin with a supported CLI."
+                    "Configure AvaConfig.ava_bin with a supported CLI."
                 ) from exc
         result = self._request_raw(method, params)
         if not isinstance(result, dict):
-            raise CodexError(f"{method} response must be a JSON object")
+            raise AvaError(f"{method} response must be a JSON object")
         return response_model.model_validate(result)
 
     def _request_raw(self, method: str, params: JsonObject | None = None) -> JsonValue:
@@ -635,7 +635,7 @@ class CodexClient:
             activated = True
             turn_id = state.wait_for_start(_GOAL_START_TIMEOUT_S)
             if turn_id is None:
-                raise CodexError(
+                raise AvaError(
                     "timed out waiting for goal turn to start after "
                     f"{int(_GOAL_START_TIMEOUT_S)} seconds"
                 )
@@ -895,30 +895,30 @@ class CodexClient:
 
     def _write_message(self, payload: JsonObject) -> None:
         if self._proc is None or self._proc.stdin is None:
-            raise TransportClosedError("Codex process is not running")
+            raise TransportClosedError("Ava process is not running")
         with self._lock:
             self._proc.stdin.write(json.dumps(payload) + "\n")
             self._proc.stdin.flush()
 
     def _read_message(self) -> dict[str, JsonValue]:
         if self._proc is None or self._proc.stdout is None:
-            raise TransportClosedError("Codex process is not running")
+            raise TransportClosedError("Ava process is not running")
 
         line = self._proc.stdout.readline()
         if not line:
             raise TransportClosedError(
-                f"Codex process closed stdout. stderr_tail={self._stderr_tail()[:2000]}"
+                f"Ava process closed stdout. stderr_tail={self._stderr_tail()[:2000]}"
             )
 
         try:
             message = json.loads(line)
         except json.JSONDecodeError as exc:
-            raise CodexError(f"Invalid JSON-RPC line: {line!r}") from exc
+            raise AvaError(f"Invalid JSON-RPC line: {line!r}") from exc
 
         if not isinstance(message, dict):
-            raise CodexError(f"Invalid JSON-RPC payload: {message!r}")
+            raise AvaError(f"Invalid JSON-RPC payload: {message!r}")
         return message
 
 
-def default_codex_home() -> str:
-    return str(Path.home() / ".codex")
+def default_ava_home() -> str:
+    return str(Path.home() / ".ava-code")

@@ -73,7 +73,7 @@ impl Client {
         let url = self.rate_limit_status_url();
         let mut req = self.request(Method::GET, &url).headers(self.headers());
         if supports_luna_reserve {
-            req = req.header("x-openai-codex-luna-reserve", HeaderValue::from_static("1"));
+            req = req.header("x-openai-ava-luna-reserve", HeaderValue::from_static("1"));
         }
         let (body, ct) = self.exec_request(req, "GET", &url).await?;
         self.decode_json(&url, &ct, &body)
@@ -123,15 +123,15 @@ impl Client {
 
     fn rate_limit_status_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/usage", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/usage", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/usage", self.base_url),
         }
     }
 
     fn rate_limit_reset_credits_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => {
-                format!("{}/api/codex/rate-limit-reset-credits", self.base_url)
+            PathStyle::AvaApi => {
+                format!("{}/api/ava/rate-limit-reset-credits", self.base_url)
             }
             PathStyle::ChatGptApi => {
                 format!("{}/wham/rate-limit-reset-credits", self.base_url)
@@ -141,9 +141,9 @@ impl Client {
 
     fn consume_rate_limit_reset_credit_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => {
+            PathStyle::AvaApi => {
                 format!(
-                    "{}/api/codex/rate-limit-reset-credits/consume",
+                    "{}/api/ava/rate-limit-reset-credits/consume",
                     self.base_url
                 )
             }

@@ -5,12 +5,12 @@ use std::future::Future;
 use std::time::Duration;
 
 use anyhow::anyhow;
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnInputSubmission;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnInputSubmission;
 use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
@@ -123,7 +123,7 @@ pub async fn wait_for_guardian_review(
                                 return ReviewTurnResult {
                                     outcome: GuardianReviewSessionOutcome::SessionFailed {
                                         error: anyhow!(error.message),
-                                        error_info: error.codex_error_info,
+                                        error_info: error.ava_error_info,
                                         retry_at: runtime.retry_at(expected_turn_id),
                                     },
                                     disposition: SessionDisposition::Reusable,

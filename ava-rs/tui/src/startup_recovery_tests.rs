@@ -1,8 +1,8 @@
 //! Verify unsent startup text survives edits, buffered pastes, and handoff.
 
 use super::*;
-use codex_protocol::user_input::ByteRange;
-use codex_protocol::user_input::TextElement;
+use ava_protocol::user_input::ByteRange;
+use ava_protocol::user_input::TextElement;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use pretty_assertions::assert_eq;

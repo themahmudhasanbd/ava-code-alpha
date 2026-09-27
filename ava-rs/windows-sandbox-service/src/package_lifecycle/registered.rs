@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_windows_sandbox::prepare_packaged_windows_sandbox_cleanup_with_retained_tokens;
+use ava_windows_sandbox::prepare_packaged_windows_sandbox_cleanup_with_retained_tokens;
 use windows::ApplicationModel::Package;
 use windows::ApplicationModel::PackageUninstallingEventArgs;
 use windows::Management::Deployment::PackageManager;
@@ -71,7 +71,7 @@ pub(super) fn clean_up(lifecycle: &PackageLifecycle, record: InstallationRecord)
             .as_ref()
             .is_some_and(|installation| {
                 installation.record.user_sid == record.user_sid
-                    && installation.codex_home.as_ref() == Some(&record.codex_home)
+                    && installation.ava_home.as_ref() == Some(&record.ava_home)
             }),
         "waiting for the authenticated runtime owner and home before sandbox file cleanup"
     );

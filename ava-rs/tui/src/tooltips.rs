@@ -1,7 +1,7 @@
-use codex_features::FEATURES;
-use codex_features::Feature;
-use codex_features::FeatureSpec;
-use codex_protocol::account::PlanType;
+use ava_features::FEATURES;
+use ava_features::Feature;
+use ava_features::FeatureSpec;
+use ava_protocol::account::PlanType;
 use lazy_static::lazy_static;
 use rand::Rng;
 
@@ -11,16 +11,16 @@ const ANNOUNCEMENT_TIP_URL: &str =
 const IS_MACOS: bool = cfg!(target_os = "macos");
 const IS_WINDOWS: bool = cfg!(target_os = "windows");
 
-const APP_TOOLTIP: &str = "Try the **Desktop app**. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true";
+const APP_TOOLTIP: &str = "Try the **Desktop app**. Run 'ava app' or visit https://chatgpt.com/codex?app-landing-page=true";
 const MACOS_APP_TOOLTIP: &str =
-    "Run `codex app` to open the Desktop app (it installs on macOS if needed).";
+    "Run `ava app` to open the Desktop app (it installs on macOS if needed).";
 const LINUX_APP_TOOLTIP: &str = "Try the **Desktop app** on Linux: install it from https://learn.chatgpt.com/docs/linux/linux-app and run 'chatgpt'.";
 const FAST_TOOLTIP: &str =
     "*New* Use **/fast** to enable our fastest inference with increased plan usage.";
-const OTHER_TOOLTIP: &str = "*New* Build faster with the **Desktop app**. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true";
-const OTHER_TOOLTIP_NON_MAC: &str = "*New* Build faster with Codex.";
+const OTHER_TOOLTIP: &str = "*New* Build faster with the **Desktop app**. Run 'ava app' or visit https://chatgpt.com/codex?app-landing-page=true";
+const OTHER_TOOLTIP_NON_MAC: &str = "*New* Build faster with Ava.";
 const FREE_GO_TOOLTIP: &str =
-    "*New* For a limited time, Codex is included in your plan for free – let’s build together.";
+    "*New* For a limited time, Ava is included in your plan for free – let’s build together.";
 
 const RAW_TOOLTIPS: &str = include_str!("../assets/tooltips.txt");
 
@@ -40,7 +40,7 @@ lazy_static! {
         tips.extend(TOOLTIPS.iter().copied());
         tips.extend(experimental_tooltips(
             FEATURES,
-            codex_realtime_webrtc::RealtimeWebrtcSession::is_supported,
+            ava_realtime_webrtc::RealtimeWebrtcSession::is_supported,
         ));
         tips
     };
@@ -57,7 +57,7 @@ fn experimental_tooltips(
         .collect()
 }
 
-/// Pick a random tooltip to show to the user when starting Codex.
+/// Pick a random tooltip to show to the user when starting Ava.
 pub(crate) fn get_tooltip(plan: Option<PlanType>, fast_mode_enabled: bool) -> Option<String> {
     let mut rng = rand::rng();
 
@@ -161,13 +161,13 @@ fn pick_tooltip<R: Rng + ?Sized>(rng: &mut R) -> Option<&'static str> {
 
 pub(crate) mod announcement {
     use crate::tooltips::ANNOUNCEMENT_TIP_URL;
-    use crate::version::CODEX_CLI_VERSION;
+    use crate::version::AVA_CLI_VERSION;
     use chrono::NaiveDate;
     use chrono::Utc;
-    use codex_http_client::ClientRouteClass;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::RouteAwareClientPool;
-    use codex_protocol::account::PlanType;
+    use ava_http_client::ClientRouteClass;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::RouteAwareClientPool;
+    use ava_protocol::account::PlanType;
     use regex_lite::Regex;
     use serde::Deserialize;
     use std::sync::OnceLock;
@@ -240,7 +240,7 @@ pub(crate) mod announcement {
             } else if cfg!(target_os = "windows") {
                 Self::Windows
             } else {
-                // Codex currently publishes CLI builds for macOS, Windows, and Linux.
+                // Ava currently publishes CLI builds for macOS, Windows, and Linux.
                 Self::Linux
             }
         }
@@ -280,7 +280,7 @@ pub(crate) mod announcement {
                 .target_oses
                 .as_ref()
                 .is_none_or(|target_oses| target_oses.contains(&CURRENT_OS));
-            if tip.version_matches(CODEX_CLI_VERSION)
+            if tip.version_matches(AVA_CLI_VERSION)
                 && tip.date_matches(today)
                 && tip.target_app == "cli"
                 && plan_matches
@@ -374,10 +374,10 @@ mod tests {
             .iter_mut()
             .find(|spec| spec.id == Feature::RealtimeConversation)
             .unwrap()
-            .stage = codex_features::Stage::Experimental {
+            .stage = ava_features::Stage::Experimental {
             name: "Voice conversations",
-            menu_description: "Talk with Codex using /voice.",
-            announcement: "NEW: Voice conversations can now be enabled from /experimental. Restart Codex after enabling, then use /voice.",
+            menu_description: "Talk with Ava using /voice.",
+            announcement: "NEW: Voice conversations can now be enabled from /experimental. Restart Ava after enabling, then use /voice.",
         };
         let unavailable = experimental_tooltips(&features, || false);
         let available = experimental_tooltips(&features, || true);
@@ -433,7 +433,7 @@ mod tests {
             assert_eq!(paid_app_tooltip(), Some(tooltip));
         } else if IS_MACOS {
             let tooltip = tooltip.expect("macOS should advertise the desktop app");
-            insta::assert_snapshot!(tooltip, @"Run `codex app` to open the Desktop app (it installs on macOS if needed).");
+            insta::assert_snapshot!(tooltip, @"Run `ava app` to open the Desktop app (it installs on macOS if needed).");
             assert_eq!(paid_app_tooltip(), Some(APP_TOOLTIP));
         } else if IS_WINDOWS {
             assert_eq!(tooltip, None);
@@ -573,7 +573,7 @@ from_date = "2000-01-01"
     #[test]
     fn announcement_tip_toml_parse_comments() {
         let toml = r#"
-# Example announcement tips for Codex TUI.
+# Example announcement tips for Ava TUI.
 # Each [[announcements]] entry is evaluated in order; the last matching one is shown.
 # Dates are UTC, formatted as YYYY-MM-DD. The from_date is inclusive and the to_date is exclusive.
 # version_regex matches against the CLI version (env!("CARGO_PKG_VERSION")); omit to apply to all versions.
@@ -582,7 +582,7 @@ from_date = "2000-01-01"
 # target_oses optionally restricts the announcement to operating systems like ["macos", "windows"].
 
 [[announcements]]
-content = "Welcome to Codex! Check out the new onboarding flow."
+content = "Welcome to Ava! Check out the new onboarding flow."
 from_date = "2024-10-01"
 to_date = "2024-10-15"
 target_app = "cli"

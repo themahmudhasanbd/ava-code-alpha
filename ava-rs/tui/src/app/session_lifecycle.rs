@@ -296,11 +296,11 @@ impl App {
                 let agent_path = source_agent_path(&thread.source);
                 let is_running = matches!(
                     thread.status,
-                    codex_app_server_protocol::ThreadStatus::Active { .. }
+                    ava_app_server_protocol::ThreadStatus::Active { .. }
                 );
                 let is_closed = matches!(
                     thread.status,
-                    codex_app_server_protocol::ThreadStatus::NotLoaded
+                    ava_app_server_protocol::ThreadStatus::NotLoaded
                 );
                 self.upsert_agent_picker_thread(
                     thread_id,
@@ -983,7 +983,7 @@ impl App {
                     }
                 }
                 self.local_settings = self.local_settings.reloaded(&config);
-                self.refresh_server_version_overview_notice(CODEX_CLI_VERSION);
+                self.refresh_server_version_overview_notice(AVA_CLI_VERSION);
                 self.config = config;
 
                 let name_error = if let Some(name) = new_thread_name {
@@ -1313,7 +1313,7 @@ impl App {
             self.shutdown_current_thread(app_server).await;
         }
         self.local_settings = local_settings;
-        self.refresh_server_version_overview_notice(CODEX_CLI_VERSION);
+        self.refresh_server_version_overview_notice(AVA_CLI_VERSION);
         self.config = resume_config;
         tui.set_notification_settings(
             self.local_settings.tui.notification_settings.method,

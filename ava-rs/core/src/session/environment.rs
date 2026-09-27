@@ -1,15 +1,15 @@
 use std::collections::HashSet;
 
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_exec_server::MAX_SELECTED_CAPABILITY_ROOTS;
-use codex_exec_server::SelectedCapabilityRootsStatus;
-use codex_execpolicy::Policy;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::protocol::EnvironmentConfig;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::TurnEnvironmentSelection;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_exec_server::MAX_SELECTED_CAPABILITY_ROOTS;
+use ava_exec_server::SelectedCapabilityRootsStatus;
+use ava_execpolicy::Policy;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::TurnEnvironmentSelection;
 
 use crate::config::ConstraintError;
 use crate::config::ConstraintResult;
@@ -33,7 +33,7 @@ pub(super) fn validate_environment_selections(
                         field_name: "environments",
                         candidate: "environment configuration".to_string(),
                         allowed: format!("valid environment configuration ({error})"),
-                        requirement_source: codex_config::RequirementSource::Unknown,
+                        requirement_source: ava_config::RequirementSource::Unknown,
                     }
                 })?;
             }
@@ -45,10 +45,10 @@ pub(super) fn validate_environment_selections(
 fn validate_environment_config(
     selection: &TurnEnvironmentSelection,
     config: &EnvironmentConfig,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     if let Some(policy) = config.network_policy.as_ref() {
         if selection.environment_id == LOCAL_ENVIRONMENT_ID {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "attachment-owned network policy requires a remote executor".to_string(),
             ));
         }
@@ -57,7 +57,7 @@ fn validate_environment_config(
             .as_ref()
             .is_some_and(|policy| !policy.as_ref().network_rules().is_empty())
         {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "environment network restrictions must use network_policy".to_string(),
             ));
         }
@@ -67,14 +67,14 @@ fn validate_environment_config(
             policy,
             config.permission_profile.permission_profile(),
             &Policy::empty(),
-            codex_network_proxy::LocalBindingPolicy::DefaultFalse,
+            ava_network_proxy::LocalBindingPolicy::DefaultFalse,
         )
         .map_err(|error| {
-            CodexErr::InvalidRequest(format!("invalid environment network policy: {error}"))
+            AvaErr::InvalidRequest(format!("invalid environment network policy: {error}"))
         })?;
     }
     if config.selected_capability_roots.len() > MAX_SELECTED_CAPABILITY_ROOTS {
-        return Err(CodexErr::InvalidRequest(format!(
+        return Err(AvaErr::InvalidRequest(format!(
             "environment readiness contains more than {MAX_SELECTED_CAPABILITY_ROOTS} selected capability roots"
         )));
     }
@@ -83,7 +83,7 @@ fn validate_environment_config(
         .as_ref()
         .is_some_and(|policy| !policy.as_ref().get_allowed_prefixes().is_empty())
     {
-        return Err(CodexErr::InvalidRequest(
+        return Err(AvaErr::InvalidRequest(
             "environment command policy cannot contain allow rules".to_string(),
         ));
     }
@@ -95,7 +95,7 @@ fn validate_environment_config(
             || environment_id != &selection.environment_id
             || !root_ids.insert(root.id.as_str())
         {
-            return Err(CodexErr::InvalidRequest(format!(
+            return Err(AvaErr::InvalidRequest(format!(
                 "selected capability roots must have unique non-empty IDs and belong to environment `{}`",
                 selection.environment_id
             )));
@@ -124,7 +124,7 @@ impl Session {
                 field_name: "environments",
                 candidate: environment.environment_id.clone(),
                 allowed: "owner-provided environment configuration".to_string(),
-                requirement_source: codex_config::RequirementSource::Unknown,
+                requirement_source: ava_config::RequirementSource::Unknown,
             });
         }
 
@@ -173,7 +173,7 @@ impl Session {
         &self,
         selection: &TurnEnvironmentSelection,
         config: EnvironmentConfig,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         validate_environment_config(selection, &config)?;
         self.update_environment_configuration(selection, EnvironmentConfigState::Ready(config))
             .await
@@ -183,7 +183,7 @@ impl Session {
         &self,
         selection: &TurnEnvironmentSelection,
         error: String,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         self.update_environment_configuration(selection, EnvironmentConfigState::Failed(error))
             .await
     }
@@ -196,7 +196,7 @@ impl Session {
         &self,
         selection: &TurnEnvironmentSelection,
         config: EnvironmentConfigState,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         // Serialize owner callbacks with ordinary thread settings updates.
         let mut state = self.state.lock().await;
         let mut current = self.services.turn_environments.selections();
@@ -211,7 +211,7 @@ impl Session {
             future.iter_mut().find(|environment| matches(environment)),
         ) {
             (None, None) => {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "environment `{}` is not selected on this thread with the requested workspace",
                     selection.environment_id
                 )));
@@ -242,7 +242,7 @@ impl Session {
                 state
                     .session_configuration
                     .validate(environments)
-                    .map_err(|error| CodexErr::InvalidRequest(error.to_string()))
+                    .map_err(|error| AvaErr::InvalidRequest(error.to_string()))
             };
             if update_current {
                 validate(&current)?;

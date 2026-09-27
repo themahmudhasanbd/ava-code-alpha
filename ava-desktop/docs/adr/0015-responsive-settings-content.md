@@ -5,7 +5,7 @@
 
 ## Context
 
-D070 established a 720px settings content band from a 1200px-wide Codex gold
+D070 established a 720px settings content band from a 1200px-wide Ava gold
 capture, and D090 retained those visual metrics while simplifying the settings
 directory. That fixed cap leaves increasingly large unused space on wider
 windows even though the full-page settings shell and right pane already resize

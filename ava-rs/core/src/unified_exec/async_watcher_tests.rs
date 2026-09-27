@@ -11,13 +11,13 @@ use crate::unified_exec::UnifiedExecContext;
 use crate::unified_exec::head_tail_buffer::HeadTailBuffer;
 use crate::unified_exec::process::NoopSpawnLifecycle;
 use crate::unified_exec::process::UnifiedExecProcess;
-use codex_protocol::items::CommandExecutionStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandOutputDeltaEvent;
-use codex_protocol::protocol::ExecOutputStream;
-use codex_sandboxing::SandboxType;
+use ava_protocol::items::CommandExecutionStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandOutputDeltaEvent;
+use ava_protocol::protocol::ExecOutputStream;
+use ava_sandboxing::SandboxType;
 
 use pretty_assertions::assert_eq;
 use tokio::time::Duration;
@@ -36,7 +36,7 @@ async fn streaming_output_harness() -> anyhow::Result<StreamingOutputHarness> {
     let (writer_tx, _writer_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(1);
     let (stdout_tx, stdout_rx) = tokio::sync::broadcast::channel::<Vec<u8>>(8);
     let (exit_tx, exit_rx) = tokio::sync::oneshot::channel::<i32>();
-    let spawned = codex_utils_pty::spawn_from_driver(codex_utils_pty::ProcessDriver {
+    let spawned = ava_utils_pty::spawn_from_driver(ava_utils_pty::ProcessDriver {
         writer_tx,
         stdout_rx,
         stderr_rx: None,
@@ -228,8 +228,8 @@ async fn exit_watcher_waits_for_late_network_denial_before_classifying_end() -> 
     let cwd = context.step_context.turn.cwd.clone().into();
     let step = Arc::get_mut(&mut context.step_context).expect("unshared test step");
     let model_info = Arc::make_mut(&mut Arc::make_mut(&mut step.settings).model_info);
-    model_info.truncation_policy = codex_protocol::openai_models::TruncationPolicyConfig {
-        mode: codex_protocol::openai_models::TruncationMode::Bytes,
+    model_info.truncation_policy = ava_protocol::openai_models::TruncationPolicyConfig {
+        mode: ava_protocol::openai_models::TruncationMode::Bytes,
         limit: 4,
     };
     spawn_exit_watcher(
@@ -272,9 +272,9 @@ async fn exit_watcher_waits_for_late_network_denial_before_classifying_end() -> 
     );
     assert_eq!(
         item.formatted_output,
-        Some(codex_utils_output_truncation::formatted_truncate_text(
+        Some(ava_utils_output_truncation::formatted_truncate_text(
             "LATE_DENIAL",
-            codex_utils_output_truncation::TruncationPolicy::Bytes(4),
+            ava_utils_output_truncation::TruncationPolicy::Bytes(4),
         ))
     );
     assert!(

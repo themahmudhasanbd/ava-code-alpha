@@ -241,14 +241,14 @@ async fn adjacent_exploration_groups_across_reasoning_live_and_replayed() {
             let mut item = AppServerThreadItem::CommandExecution {
                 model_context: None,
                 id: id.to_string(),
-                command: codex_shell_command::parse_command::shlex_join(&command),
+                command: ava_shell_command::parse_command::shlex_join(&command),
                 cwd: chat.config.cwd.clone().into(),
                 process_id: None,
                 plugin_id: None,
                 script_path: None,
                 source: ExecCommandSource::UnifiedExecStartup,
                 status: AppServerCommandExecutionStatus::InProgress,
-                command_actions: codex_shell_command::parse_command::parse_command(&command)
+                command_actions: ava_shell_command::parse_command::parse_command(&command)
                     .into_iter()
                     .map(|parsed| {
                         AppServerCommandAction::from_core_with_cwd(parsed, &chat.config.cwd)
@@ -541,7 +541,7 @@ async fn exec_approval_uses_approval_id_when_present() {
             assert_eq!(id, "approval-subcommand");
             assert_matches!(
                 decision,
-                codex_app_server_protocol::CommandExecutionApprovalDecision::Accept
+                ava_app_server_protocol::CommandExecutionApprovalDecision::Accept
             );
             found = true;
             break;
@@ -774,7 +774,7 @@ async fn exec_end_without_begin_uses_event_command() {
         "-lc".to_string(),
         "echo orphaned".to_string(),
     ];
-    let command_actions = codex_shell_command::parse_command::parse_command(&command)
+    let command_actions = ava_shell_command::parse_command::parse_command(&command)
         .into_iter()
         .map(|parsed| AppServerCommandAction::from_core_with_cwd(parsed, &chat.config.cwd))
         .collect();
@@ -784,7 +784,7 @@ async fn exec_end_without_begin_uses_event_command() {
         AppServerThreadItem::CommandExecution {
             model_context: None,
             id: "call-orphan".to_string(),
-            command: codex_shell_command::parse_command::shlex_join(&command),
+            command: ava_shell_command::parse_command::shlex_join(&command),
             cwd: cwd.into(),
             process_id: None,
             plugin_id: None,
@@ -1051,7 +1051,7 @@ async fn unified_exec_wait_after_final_agent_message_snapshot() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     handle_turn_started(&mut chat, "turn-1");
 
-    begin_unified_exec_startup(&mut chat, "call-wait", "proc-1", "cargo test -p codex-core");
+    begin_unified_exec_startup(&mut chat, "call-wait", "proc-1", "cargo test -p ava-core");
     terminal_interaction(&mut chat, "call-wait-stdin", "proc-1", "");
 
     complete_assistant_message(&mut chat, "msg-1", "Final response.", /*phase*/ None);
@@ -1074,7 +1074,7 @@ async fn unified_exec_wait_before_streamed_agent_message_snapshot() {
         &mut chat,
         "call-wait-stream",
         "proc-1",
-        "cargo test -p codex-core",
+        "cargo test -p ava-core",
     );
     terminal_interaction(&mut chat, "call-wait-stream-stdin", "proc-1", "");
 
@@ -1234,7 +1234,7 @@ async fn unified_exec_wait_status_renders_command_in_single_details_row_snapshot
         &mut chat,
         "call-wait-ui",
         "proc-ui",
-        "cargo test -p codex-core -- --exact some::very::long::test::name",
+        "cargo test -p ava-core -- --exact some::very::long::test::name",
     );
 
     terminal_interaction(&mut chat, "call-wait-ui-stdin", "proc-ui", "");
@@ -2063,7 +2063,7 @@ async fn apply_patch_approval_sends_op_with_call_id() {
             assert_eq!(id, "call-999");
             assert_matches!(
                 decision,
-                codex_app_server_protocol::FileChangeApprovalDecision::Accept
+                ava_app_server_protocol::FileChangeApprovalDecision::Accept
             );
             found = true;
             break;
@@ -2105,17 +2105,17 @@ async fn apply_patch_full_flow_integration_like() {
     }
     let op = maybe_op.expect("expected thread-scoped op after key press");
 
-    // 3) App forwards to widget.submit_op, which pushes onto codex_op_tx
+    // 3) App forwards to widget.submit_op, which pushes onto ava_op_tx
     chat.submit_op(op);
     let forwarded = op_rx
         .try_recv()
-        .expect("expected op forwarded to codex channel");
+        .expect("expected op forwarded to ava channel");
     match forwarded {
         Op::PatchApproval { id, decision } => {
             assert_eq!(id, "call-1");
             assert_matches!(
                 decision,
-                codex_app_server_protocol::FileChangeApprovalDecision::Accept
+                ava_app_server_protocol::FileChangeApprovalDecision::Accept
             );
         }
         other => panic!("unexpected op forwarded: {other:?}"),

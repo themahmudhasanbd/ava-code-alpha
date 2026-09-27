@@ -1,10 +1,10 @@
-use codex_config::AbsolutePathBuf;
-use codex_config::CloudConfigBundle;
-use codex_config::CloudConfigBundleLayers;
-use codex_config::CloudConfigBundleLoadError;
-use codex_config::CloudConfigBundleLoadErrorCode;
-use codex_config::compose_requirements;
-use codex_config::config_toml::validate_model_providers;
+use ava_config::AbsolutePathBuf;
+use ava_config::CloudConfigBundle;
+use ava_config::CloudConfigBundleLayers;
+use ava_config::CloudConfigBundleLoadError;
+use ava_config::CloudConfigBundleLoadErrorCode;
+use ava_config::compose_requirements;
+use ava_config::config_toml::validate_model_providers;
 
 pub(crate) fn validate_bundle(
     bundle: &CloudConfigBundle,

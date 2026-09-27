@@ -1,8 +1,8 @@
 use crate::JsonSchema;
 use crate::TS;
-use codex_protocol::config_types::CollaborationModeMask as CoreCollaborationModeMask;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_protocol::config_types::CollaborationModeMask as CoreCollaborationModeMask;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::openai_models::ReasoningEffort;
 use serde::Deserialize;
 use serde::Serialize;
 

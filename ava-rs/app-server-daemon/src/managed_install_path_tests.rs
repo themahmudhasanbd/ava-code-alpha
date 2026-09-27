@@ -4,12 +4,12 @@ use pretty_assertions::assert_eq;
 fn discovers_package_and_legacy_installs() {
     let home = tempfile::TempDir::new().expect("home");
     let current = home.path().join("packages/standalone/current");
-    let legacy = current.join(super::managed_codex_file_name());
+    let legacy = current.join(super::managed_ava_file_name());
     assert_eq!(
-        super::managed_codex_bin(home.path()),
+        super::managed_ava_bin(home.path()),
         home.path()
             .join("packages/app-server-daemon/current/bin")
-            .join(super::managed_codex_file_name())
+            .join(super::managed_ava_file_name())
     );
     std::fs::create_dir_all(&current).expect("current directory");
     std::fs::write(&legacy, b"legacy").expect("legacy executable");
@@ -24,11 +24,11 @@ fn discovers_package_and_legacy_installs() {
         home.path().join("packages/app-server-daemon")
     );
     std::fs::write(state.join("app-server.stderr.log"), b"").unwrap();
-    assert_eq!(super::managed_codex_bin(home.path()), legacy);
-    let packaged = current.join("bin").join(super::managed_codex_file_name());
+    assert_eq!(super::managed_ava_bin(home.path()), legacy);
+    let packaged = current.join("bin").join(super::managed_ava_file_name());
     std::fs::create_dir(current.join("bin")).expect("bin directory");
     std::fs::write(&packaged, b"packaged").expect("packaged executable");
-    assert_eq!(super::managed_codex_bin(home.path()), packaged);
+    assert_eq!(super::managed_ava_bin(home.path()), packaged);
 
     std::fs::remove_dir_all(home.path().join("packages/standalone")).unwrap();
     assert_eq!(
@@ -72,7 +72,7 @@ fn updater_only_runs_for_stable_installer_owned_releases() {
     let standalone = home.path().join("packages/standalone");
     let current = standalone.join("current");
     let release = standalone.join("releases/0.150.0-aarch64-apple-darwin");
-    let managed = release.join("bin/codex");
+    let managed = release.join("bin/ava");
     std::fs::create_dir_all(managed.parent().expect("bin parent")).expect("release");
     std::fs::write(&managed, b"stable").expect("managed bin");
     std::os::unix::fs::symlink(&release, &current).expect("current release");
@@ -87,7 +87,7 @@ fn updater_only_runs_for_stable_installer_owned_releases() {
     assert!(!super::is_stable_standalone_release(home.path(), &managed));
 
     let alpha = standalone.join("releases/0.151.0-alpha.1-aarch64-apple-darwin");
-    let alpha_managed = alpha.join("bin/codex");
+    let alpha_managed = alpha.join("bin/ava");
     std::fs::create_dir_all(alpha_managed.parent().expect("alpha bin parent"))
         .expect("alpha release");
     std::fs::write(&alpha_managed, b"alpha").expect("alpha bin");
@@ -99,7 +99,7 @@ fn updater_only_runs_for_stable_installer_owned_releases() {
     ));
 
     let local = standalone.join("local-main");
-    let local_managed = local.join("bin/codex");
+    let local_managed = local.join("bin/ava");
     std::fs::create_dir_all(local_managed.parent().expect("local bin parent"))
         .expect("local build");
     std::fs::write(&local_managed, b"local").expect("local bin");
@@ -117,7 +117,7 @@ async fn older_managed_binary_does_not_claim_updater_support() {
     use std::os::unix::fs::PermissionsExt;
 
     let temp = tempfile::TempDir::new().expect("home");
-    let binary = temp.path().join("codex");
+    let binary = temp.path().join("ava");
     std::fs::write(&binary, b"#!/bin/sh\nexit 2\n").expect("older binary");
     std::fs::set_permissions(&binary, std::fs::Permissions::from_mode(0o755))
         .expect("executable binary");

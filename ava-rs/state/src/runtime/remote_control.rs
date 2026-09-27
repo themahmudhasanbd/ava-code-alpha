@@ -157,16 +157,16 @@ mod tests {
     use super::StateRuntime;
     use super::test_support::unique_temp_dir;
     use crate::migrations::STATE_MIGRATOR;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use sqlx::migrate::Migrator;
     use std::borrow::Cow;
 
     #[tokio::test]
     async fn remote_control_enrollment_round_trips_by_target_and_account() {
-        let codex_home = unique_temp_dir();
+        let ava_home = unique_temp_dir();
         let runtime = StateRuntime::init(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -242,14 +242,14 @@ mod tests {
             None
         );
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn delete_remote_control_enrollment_removes_only_matching_entry() {
-        let codex_home = unique_temp_dir();
+        let ava_home = unique_temp_dir();
         let runtime = StateRuntime::init(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -325,15 +325,15 @@ mod tests {
             })
         );
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn migration_preserves_legacy_remote_control_preference_as_null() {
-        let codex_home = unique_temp_dir();
-        tokio::fs::create_dir_all(&codex_home)
+        let ava_home = unique_temp_dir();
+        tokio::fs::create_dir_all(&ava_home)
             .await
-            .expect("create codex home");
+            .expect("create ava home");
         let old_state_migrator = Migrator {
             migrations: Cow::Owned(
                 STATE_MIGRATOR
@@ -349,7 +349,7 @@ mod tests {
             table_name: STATE_MIGRATOR.table_name.clone(),
             create_schemas: STATE_MIGRATOR.create_schemas.clone(),
         };
-        let sqlite = crate::SqliteConfig::new_for_testing(codex_home.as_path().abs());
+        let sqlite = crate::SqliteConfig::new_for_testing(ava_home.as_path().abs());
         let pool = sqlite
             .open_read_write_pool(&sqlite.state_db_path())
             .await
@@ -372,7 +372,7 @@ mod tests {
         pool.close().await;
 
         let runtime = StateRuntime::init(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -388,6 +388,6 @@ mod tests {
             .expect("legacy enrollment should remain");
         assert_eq!(actual.remote_control_enabled, None);
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 }

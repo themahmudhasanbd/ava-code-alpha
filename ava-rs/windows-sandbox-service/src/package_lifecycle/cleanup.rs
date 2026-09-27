@@ -8,9 +8,9 @@ use std::sync::atomic::AtomicBool;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_windows_sandbox::PreparedWindowsSandboxCleanup;
-use codex_windows_sandbox::resolve_sid;
-use codex_windows_sandbox::revoke_ace;
+use ava_windows_sandbox::PreparedWindowsSandboxCleanup;
+use ava_windows_sandbox::resolve_sid;
+use ava_windows_sandbox::revoke_ace;
 
 use super::UserInstallation;
 use super::with_owner_impersonation;
@@ -29,16 +29,16 @@ pub(super) fn clean_up(
         crate::service::EVENT_CLEANUP_STARTED,
         "sandbox uninstall cleanup started",
     );
-    let codex_home = installation.codex_home.clone();
+    let ava_home = installation.ava_home.clone();
     // Remove exact grants from the locked cleanup record before native account deletion.
     if let Some(record) = runtime {
         log_cleanup("removing registered runtime metadata");
         crate::registered_runtime::remove_metadata(installation.user_token.0, record)?;
     }
     log_cleanup("removing native sandbox resources");
-    let mut prune_codex_home = false;
+    let mut prune_ava_home = false;
     // Once owner-scoped deletion releases the home, retries must not traverse it as SYSTEM.
-    let sandbox_home = codex_home
+    let sandbox_home = ava_home
         .as_deref()
         .filter(|_| installation.directory_guard.is_some());
     let result = prepared.finish(sandbox_home, log_cleanup, || {
@@ -68,23 +68,23 @@ pub(super) fn clean_up(
                     errors.push(message);
                 }
             };
-            if let Some(home) = &codex_home {
-                if desktop.created_codex_home {
+            if let Some(home) = &ava_home {
+                if desktop.created_ava_home {
                     // Release the home itself so it can be deleted; keep its ancestors pinned.
                     if installation.directory_guard.take().is_some() {
                         installation.directory_handles.pop();
                     }
                     record_result(
-                        "remove desktop-created codex home",
+                        "remove desktop-created ava home",
                         std::fs::remove_dir_all(home),
                     );
                 } else {
-                    prune_codex_home = true;
-                    log_cleanup("skipping recursive codex home removal: existing CLI home");
+                    prune_ava_home = true;
+                    log_cleanup("skipping recursive ava home removal: existing CLI home");
                     // Preserve CLI data without leaving inherited permissions for the deleted group.
                     record_result(
-                        "remove codex home sandbox permissions",
-                        resolve_sid("CodexSandboxUsers")
+                        "remove ava home sandbox permissions",
+                        resolve_sid("AvaSandboxUsers")
                             .and_then(|mut sid| unsafe {
                                 revoke_ace(home, sid.as_mut_ptr().cast())
                             })
@@ -92,7 +92,7 @@ pub(super) fn clean_up(
                     );
                 }
             } else {
-                log_cleanup("skipping codex home: no pinned home");
+                log_cleanup("skipping ava home: no pinned home");
             }
             // The cache may have been created after provisioning. Pin it only for cleanup.
             let mut cache_directory_handles = Vec::new();
@@ -103,8 +103,8 @@ pub(super) fn clean_up(
                 ) {
                     Ok(()) => {
                         record_result(
-                            "remove codex runtime cache",
-                            std::fs::remove_dir_all(desktop.cache_home.join("codex-runtimes")),
+                            "remove ava runtime cache",
+                            std::fs::remove_dir_all(desktop.cache_home.join("ava-runtimes")),
                         );
                         // Release only the cache root; its ancestors must remain pinned.
                         cache_directory_handles.pop();
@@ -130,19 +130,19 @@ pub(super) fn clean_up(
         })
     });
     result.context("remove packaged Windows sandbox resources")?;
-    if prune_codex_home && let Some(home) = &codex_home {
+    if prune_ava_home && let Some(home) = &ava_home {
         // Keep the home pinned through native retries. Empty-root pruning is best effort
         // so a failure cannot restart native cleanup through an unpinned home.
         if let Err(error) = with_owner_impersonation(installation.user_token.0, || {
             if installation.directory_guard.take().is_some() {
                 installation.directory_handles.pop();
             }
-            remove_empty_directory(home, "codex home");
+            remove_empty_directory(home, "ava home");
             Ok(())
         }) {
             log_error(
                 EVENT_CLEANUP_DETAIL,
-                &format!("remove empty codex home: failed, {error:#}"),
+                &format!("remove empty ava home: failed, {error:#}"),
             );
         }
     }

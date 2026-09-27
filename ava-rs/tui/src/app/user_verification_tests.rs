@@ -1,9 +1,9 @@
 //! Covers the controller's RPC boundary, cancellation generations, and proof redaction.
 
 use super::*;
-use codex_app_server_protocol::McpServerElicitationRequest;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::McpServerElicitationRequest;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::ServerRequest;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -56,7 +56,7 @@ async fn user_verification_remote_workspace_dismisses_the_waiting_prompt() -> co
 }
 
 async fn run_verification_rpc_scenario(scenario: RpcScenario) -> color_eyre::Result<()> {
-    use codex_app_server_protocol::JSONRPCMessage;
+    use ava_app_server_protocol::JSONRPCMessage;
     use tokio_tungstenite::tungstenite::Message;
 
     let (mut app, mut event_rx, _op_rx) = crate::app::tests::make_test_app_with_channels().await;
@@ -91,7 +91,7 @@ async fn run_verification_rpc_scenario(scenario: RpcScenario) -> color_eyre::Res
                 JSONRPCMessage::Request(request) => {
                     let response = match request.method.as_str() {
                         "initialize" => {
-                            serde_json::json!({ "id": request.id, "result": { "userAgent": "codex-tui-test", "codexHome": std::env::temp_dir(), "platformFamily": std::env::consts::FAMILY, "platformOs": std::env::consts::OS } })
+                            serde_json::json!({ "id": request.id, "result": { "userAgent": "ava-tui-test", "avaHome": std::env::temp_dir(), "platformFamily": std::env::consts::FAMILY, "platformOs": std::env::consts::OS } })
                         }
                         "userVerification/verify" => {
                             assert_eq!(request.params, Some(expected_params.clone()));
@@ -232,10 +232,10 @@ async fn run_verification_rpc_scenario(scenario: RpcScenario) -> color_eyre::Res
         // second elicitation response before acknowledging this harmless read.
         session
             .request_handle()
-            .request_typed::<codex_app_server_protocol::UserVerificationStatusResponse>(
+            .request_typed::<ava_app_server_protocol::UserVerificationStatusResponse>(
                 ClientRequest::UserVerificationStatus {
                     request_id: RequestId::String("after-cancel".to_string()),
-                    params: codex_app_server_protocol::UserVerificationStatusParams {},
+                    params: ava_app_server_protocol::UserVerificationStatusParams {},
                 },
             )
             .await?;
@@ -263,7 +263,7 @@ async fn run_verification_rpc_scenario(scenario: RpcScenario) -> color_eyre::Res
         let message = if scenario == RpcScenario::RemoteWorkspace {
             "User verification is unavailable for remote workspaces."
         } else {
-            "The local Codex binary could not complete user verification."
+            "The local Ava binary could not complete user verification."
         };
         let ServerNotification::Warning(warning) = notification.as_ref() else {
             panic!("expected warning notification");

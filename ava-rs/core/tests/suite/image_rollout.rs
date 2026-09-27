@@ -1,37 +1,37 @@
 use anyhow::Context;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_attachment_store::AttachmentStore;
-use codex_attachment_store::AttachmentStoreError;
-use codex_attachment_store::AttachmentStoreErrorKind;
-use codex_attachment_store::ResolveFuture;
-use codex_attachment_store::ResolveRequest;
-use codex_attachment_store::UploadFuture;
-use codex_attachment_store::UploadRequest;
-use codex_attachment_store::UploadResult;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::ByteRange;
-use codex_protocol::user_input::TextElement;
-use codex_protocol::user_input::UserInput;
-use codex_utils_image::data_url_from_bytes;
+use ava_attachment_store::AttachmentStore;
+use ava_attachment_store::AttachmentStoreError;
+use ava_attachment_store::AttachmentStoreErrorKind;
+use ava_attachment_store::ResolveFuture;
+use ava_attachment_store::ResolveRequest;
+use ava_attachment_store::UploadFuture;
+use ava_attachment_store::UploadRequest;
+use ava_attachment_store::UploadResult;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::ByteRange;
+use ava_protocol::user_input::TextElement;
+use ava_protocol::user_input::UserInput;
+use ava_utils_image::data_url_from_bytes;
 use core_test_support::TempDirExt;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
@@ -42,10 +42,10 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::responses::strip_metadata;
 use core_test_support::responses::strip_response_item_id;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use image::GenericImageView;
@@ -93,7 +93,7 @@ fn find_user_message_with_image(text: &str) -> Option<ResponseItem> {
         if trimmed.is_empty() {
             continue;
         }
-        let rollout = match codex_rollout::parse_rollout_line(trimmed) {
+        let rollout = match ava_rollout::parse_rollout_line(trimmed) {
             Ok(rollout) => rollout,
             Err(_) => continue,
         };
@@ -152,13 +152,13 @@ async fn copy_paste_local_image_persists_rollout_request_shape() -> anyhow::Resu
 
     let server = start_mock_server().await;
 
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         home: _home,
         ..
-    } = test_codex().build(&server).await?;
+    } = test_ava().build(&server).await?;
 
     let rel_path = "images/paste.png";
     let abs_path = cwd.path().join(rel_path);
@@ -175,7 +175,7 @@ async fn copy_paste_local_image_persists_rollout_request_shape() -> anyhow::Resu
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![
                 UserInput::LocalImage {
@@ -205,11 +205,11 @@ async fn copy_paste_local_image_persists_rollout_request_shape() -> anyhow::Resu
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
-    codex.submit(Op::Shutdown).await?;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::ShutdownComplete)).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    ava.submit(Op::Shutdown).await?;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::ShutdownComplete)).await;
 
-    let rollout_path = codex.rollout_path().expect("rollout path");
+    let rollout_path = ava.rollout_path().expect("rollout path");
     let rollout_text = read_rollout_text(&rollout_path).await?;
     let actual = find_user_message_with_image(&rollout_text)
         .expect("expected user message with input image in rollout");
@@ -220,7 +220,7 @@ async fn copy_paste_local_image_persists_rollout_request_shape() -> anyhow::Resu
         role: "user".to_string(),
         content: vec![
             ContentItem::InputText {
-                text: codex_protocol::models::local_image_open_tag_text_with_path(
+                text: ava_protocol::models::local_image_open_tag_text_with_path(
                     /*label_number*/ 1, &abs_path,
                 ),
             },
@@ -229,7 +229,7 @@ async fn copy_paste_local_image_persists_rollout_request_shape() -> anyhow::Resu
                 detail: Some(DEFAULT_IMAGE_DETAIL),
             },
             ContentItem::InputText {
-                text: codex_protocol::models::image_close_tag_text(),
+                text: ava_protocol::models::image_close_tag_text(),
             },
             ContentItem::InputText {
                 text: "pasted image".to_string(),
@@ -250,13 +250,13 @@ async fn drag_drop_image_persists_rollout_request_shape() -> anyhow::Result<()> 
 
     let server = start_mock_server().await;
 
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         home: _home,
         ..
-    } = test_codex().build(&server).await?;
+    } = test_ava().build(&server).await?;
 
     let image_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==".to_string();
 
@@ -271,7 +271,7 @@ async fn drag_drop_image_persists_rollout_request_shape() -> anyhow::Result<()> 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![
                 UserInput::Image {
@@ -303,11 +303,11 @@ async fn drag_drop_image_persists_rollout_request_shape() -> anyhow::Result<()> 
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
-    codex.submit(Op::Shutdown).await?;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::ShutdownComplete)).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    ava.submit(Op::Shutdown).await?;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::ShutdownComplete)).await;
 
-    let rollout_path = codex.rollout_path().expect("rollout path");
+    let rollout_path = ava.rollout_path().expect("rollout path");
     let rollout_text = read_rollout_text(&rollout_path).await?;
     let actual = find_user_message_with_image(&rollout_text)
         .expect("expected user message with input image in rollout");
@@ -340,7 +340,7 @@ async fn file_image_passes_through_request_and_rollout() -> anyhow::Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let response_mock = responses::mount_sse_once(
         &server,
         sse(vec![
@@ -351,7 +351,7 @@ async fn file_image_passes_through_request_and_rollout() -> anyhow::Result<()> {
     )
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Image {
                 image: ImageReference::File {
@@ -365,7 +365,7 @@ async fn file_image_passes_through_request_and_rollout() -> anyhow::Result<()> {
             },
         ]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -382,8 +382,8 @@ async fn file_image_passes_through_request_and_rollout() -> anyhow::Result<()> {
             })
     }));
 
-    test.codex.shutdown_and_wait().await?;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    test.ava-code.shutdown_and_wait().await?;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let rollout_text = read_rollout_text(&rollout_path).await?;
     let actual = find_user_message_with_image(&rollout_text)
         .expect("expected user message with file image in rollout");
@@ -418,7 +418,7 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_image_store(Arc::new(RecordingFileAttachmentStore::default()))
         .with_history_mode(ThreadHistoryMode::Paginated)
         .build_with_auto_env(&server)
@@ -490,11 +490,11 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
         ]),
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(input))
         .await?;
 
-    let started = wait_for_event_match(&test.codex, |event| match event {
+    let started = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::ItemStarted(event) => match &event.item {
             TurnItem::UserMessage(item) => Some(item.clone()),
             _ => None,
@@ -502,7 +502,7 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
         _ => None,
     })
     .await;
-    let completed = wait_for_event_match(&test.codex, |event| match event {
+    let completed = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::ItemCompleted(event) => match &event.item {
             TurnItem::UserMessage(item) => Some(item.clone()),
             _ => None,
@@ -514,7 +514,7 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
     assert_eq!(completed.id, started.id);
     assert_eq!(completed.client_id, started.client_id);
     assert_eq!(completed.content, started.content);
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -549,13 +549,13 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
         ]
     );
 
-    test.codex.shutdown_and_wait().await?;
-    let rollout_path = test.codex.rollout_path().context("rollout path")?;
+    test.ava-code.shutdown_and_wait().await?;
+    let rollout_path = test.ava-code.rollout_path().context("rollout path")?;
     let rollout_text = read_rollout_text(&rollout_path).await?;
     let mut persisted_user_items = Vec::new();
     for line in rollout_text.lines() {
         if let RolloutItem::EventMsg(EventMsg::ItemCompleted(event)) =
-            codex_rollout::parse_rollout_line(line)?.item
+            ava_rollout::parse_rollout_line(line)?.item
             && let TurnItem::UserMessage(item) = event.item
         {
             persisted_user_items.push(item);
@@ -576,7 +576,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let initial = test_codex().build_with_auto_env(&server).await?;
+    let initial = test_ava().build_with_auto_env(&server).await?;
     responses::mount_sse_once(
         &server,
         sse(vec![
@@ -593,7 +593,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         .rollout_path
         .clone()
         .context("initial rollout path")?;
-    initial.codex.shutdown_and_wait().await?;
+    initial.ava-code.shutdown_and_wait().await?;
 
     let image_path = initial.cwd.path().join("large-image.png");
     ImageBuffer::from_pixel(
@@ -606,7 +606,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
 
     let mut rollout_lines = fs::read_to_string(&rollout_path)?
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<serde_json::Result<Vec<_>>>()?;
     let historical_content = rollout_lines
         .iter_mut()
@@ -641,7 +641,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
     fs::write(&rollout_path, format!("{rollout}\n"))?;
 
     let resume_image_store = Arc::new(RecordingFileAttachmentStore::default());
-    let mut resume_builder = test_codex()
+    let mut resume_builder = test_ava()
         .with_image_store(resume_image_store.clone())
         .with_config(|config| {
             let _ = config.features.enable(Feature::ImageResizeNotice);
@@ -662,7 +662,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
     )
     .await;
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Image {
             image: ImageReference::Inline {
                 image_url: original_image_url.clone(),
@@ -670,7 +670,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
             detail: Some(ImageDetail::High),
         }]))
         .await?;
-    wait_for_event(&resumed.codex, |event| {
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -754,7 +754,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         Some(expected_notice)
     );
 
-    resumed.codex.shutdown_and_wait().await?;
+    resumed.ava-code.shutdown_and_wait().await?;
     let replayed = resume_builder
         .resume(&server, resumed.home.clone(), rollout_path.clone())
         .await?;
@@ -785,7 +785,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         .collect::<Vec<_>>();
     assert_eq!(replayed_notices, vec![expected_notice.to_string()]);
 
-    let replayed = test_codex()
+    let replayed = test_ava()
         .with_config(|config| {
             let _ = config.features.enable(Feature::ImageResizeNotice);
             let _ = config
@@ -796,7 +796,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         .await?;
     let existing_rollout_lines = fs::read_to_string(&rollout_path)?.lines().count();
     replayed
-        .codex
+        .ava-code
         .inject_response_items(vec![
             ResponseInputItem::Message {
                 role: "user".to_string(),
@@ -823,7 +823,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         .lines()
         .skip(existing_rollout_lines)
         .filter_map(|line| {
-            let RolloutItem::ResponseItem(envelope) = codex_rollout::parse_rollout_line(line)
+            let RolloutItem::ResponseItem(envelope) = ava_rollout::parse_rollout_line(line)
                 .expect("new rollout line should deserialize")
                 .item
             else {

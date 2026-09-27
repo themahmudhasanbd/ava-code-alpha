@@ -5,21 +5,21 @@ use std::sync::Arc;
 use std::time::Instant;
 use std::time::SystemTime;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_core::context::GuardianContextMode;
-use codex_core::context::GuardianReviewEvidence;
-use codex_core::context::NodeReplReviewEvidence;
-use codex_extension_api::ExtensionWarning;
-use codex_extension_api::GuardianV2Enabled;
-use codex_extension_api::ToolCallSource;
-use codex_extension_api::ToolPayload;
-use codex_extension_api::ToolStartInput;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::mcp::is_node_repl_backed_server;
-use codex_protocol::openai_models::GuardianReviewMode;
-use codex_protocol::openai_models::GuardianScope;
-use codex_protocol::openai_models::ModelInfo;
+use ava_analytics::AnalyticsEventsClient;
+use ava_core::context::GuardianContextMode;
+use ava_core::context::GuardianReviewEvidence;
+use ava_core::context::NodeReplReviewEvidence;
+use ava_extension_api::ExtensionWarning;
+use ava_extension_api::GuardianV2Enabled;
+use ava_extension_api::ToolCallSource;
+use ava_extension_api::ToolPayload;
+use ava_extension_api::ToolStartInput;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::mcp::is_node_repl_backed_server;
+use ava_protocol::openai_models::GuardianReviewMode;
+use ava_protocol::openai_models::GuardianScope;
+use ava_protocol::openai_models::ModelInfo;
 
 use super::action::ActionRenderError;
 use super::action::GuardianAction;
@@ -33,7 +33,7 @@ use super::parent_compaction::ParentCompactionError;
 use super::parent_compaction::select_parent_compaction;
 use super::sampler::LunaSampler;
 use super::score::GuardianV2ScoreProgress;
-use codex_protocol::openai_models::GuardianUnscoredAction as UnscoredAction;
+use ava_protocol::openai_models::GuardianUnscoredAction as UnscoredAction;
 
 impl GuardianV2Extension {
     pub(super) async fn score_tool(&self, input: ToolStartInput<'_>) {
@@ -114,7 +114,7 @@ impl GuardianV2Extension {
         let root_turn_id = input.root_turn_id.map(str::to_owned);
         let parent_response_id = input
             .turn_store
-            .get::<codex_api::ResponseId>()
+            .get::<ava_api::ResponseId>()
             .map(|id| id.0.clone());
         let thread_context: Result<_, String> = async {
             let parsed_thread_id =
@@ -274,7 +274,7 @@ impl GuardianV2Extension {
             .and_then(|model| model.auto_review_model_override.clone());
         // Snapshot before spawning so a delayed sample cannot see later reviews.
         let sync_reviews = guardian_evidence.snapshot();
-        let codex_core::context::GuardianUserInputSnapshot {
+        let ava_core::context::GuardianUserInputSnapshot {
             fragments: trusted_user_inputs,
             authorization_version,
         } = guardian_evidence.user_input_snapshot(input.conversation_history.as_ref());

@@ -1,23 +1,23 @@
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_guardian_context::Budgeted;
-use codex_guardian_context::CollectedContext;
-use codex_guardian_context::ComposedContext;
-use codex_guardian_context::ContextPresentation;
-use codex_guardian_context::ContextProfile;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_guardian_context::Budgeted;
+use ava_guardian_context::CollectedContext;
+use ava_guardian_context::ComposedContext;
+use ava_guardian_context::ContextPresentation;
+use ava_guardian_context::ContextProfile;
 #[cfg(test)]
-use codex_guardian_context::ConversationTranscriptEntry;
-use codex_guardian_context::GuardianRootMessage;
-use codex_guardian_context::PermissionContext;
-use codex_guardian_context::PlannedAction;
-use codex_guardian_context::PlannedActionKind;
-use codex_guardian_context::SectionError;
-use codex_guardian_context::SectionHistory;
-use codex_guardian_context::SectionInput;
-pub(crate) use codex_guardian_context::TranscriptCursor as GuardianTranscriptCursor;
-pub(crate) use codex_guardian_context::TranscriptMode as GuardianPromptMode;
-use codex_guardian_context::TranscriptSelection;
-use codex_guardian_context::default_registry;
-use codex_protocol::models::ResponseItem;
+use ava_guardian_context::ConversationTranscriptEntry;
+use ava_guardian_context::GuardianRootMessage;
+use ava_guardian_context::PermissionContext;
+use ava_guardian_context::PlannedAction;
+use ava_guardian_context::PlannedActionKind;
+use ava_guardian_context::SectionError;
+use ava_guardian_context::SectionHistory;
+use ava_guardian_context::SectionInput;
+pub(crate) use ava_guardian_context::TranscriptCursor as GuardianTranscriptCursor;
+pub(crate) use ava_guardian_context::TranscriptMode as GuardianPromptMode;
+use ava_guardian_context::TranscriptSelection;
+use ava_guardian_context::default_registry;
+use ava_protocol::models::ResponseItem;
 
 use crate::context::ContextualUserFragment;
 use crate::context::GuardianReviewEvidence;
@@ -28,9 +28,9 @@ use crate::context::node_repl_review_evidence_mode;
 use crate::event_mapping::is_contextual_user_message_content;
 use crate::session::session::Session;
 use crate::session::turn_context::TurnEnvironment;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::approx_bytes_for_tokens;
-use codex_utils_output_truncation::truncate_text;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::approx_bytes_for_tokens;
+use ava_utils_output_truncation::truncate_text;
 
 use super::ApprovalRequestReasons;
 use super::GUARDIAN_MAX_NODE_REPL_TOOL_RESULT_TOKENS;
@@ -307,7 +307,7 @@ pub(super) fn collect_guardian_context(
     trusted_user_answers: &[String],
     planned_action: Option<&PlannedAction>,
     permissions: Option<&PermissionContext>,
-    node_repl: Option<&codex_guardian_context::NodeReplContext<'_>>,
+    node_repl: Option<&ava_guardian_context::NodeReplContext<'_>>,
 ) -> Result<CollectedContext, SectionError> {
     let mut profile = ContextProfile::synchronous();
     profile.transcript.entry_limits.node_repl_output_tokens = node_repl_result_token_limit;
@@ -330,7 +330,7 @@ pub(super) fn collect_guardian_context(
 struct GuardianReviewHistory<'a>(&'a dyn ConversationHistorySnapshot);
 
 impl SectionHistory for GuardianReviewHistory<'_> {
-    fn retained_context(&self) -> Option<&codex_history::RetainedContext> {
+    fn retained_context(&self) -> Option<&ava_history::RetainedContext> {
         self.0.retained_context()
     }
 
@@ -342,7 +342,7 @@ impl SectionHistory for GuardianReviewHistory<'_> {
 struct FilteredGuardianHistory<'a>(&'a dyn SectionHistory);
 
 impl SectionHistory for FilteredGuardianHistory<'_> {
-    fn retained_context(&self) -> Option<&codex_history::RetainedContext> {
+    fn retained_context(&self) -> Option<&ava_history::RetainedContext> {
         self.0.retained_context()
     }
 
@@ -359,7 +359,7 @@ impl SectionHistory for FilteredGuardianHistory<'_> {
 
 pub(crate) fn guardian_truncate_text(content: &str, token_cap: usize) -> (String, bool) {
     (
-        codex_guardian_context::truncate_text(content, token_cap),
+        ava_guardian_context::truncate_text(content, token_cap),
         content.len() > approx_bytes_for_tokens(token_cap),
     )
 }

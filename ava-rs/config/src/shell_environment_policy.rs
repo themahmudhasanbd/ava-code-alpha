@@ -1,7 +1,7 @@
-use codex_protocol::config_types::EnvironmentVariablePattern;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::config_types::ShellEnvironmentPolicyFilter;
-use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
+use ava_protocol::config_types::EnvironmentVariablePattern;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::config_types::ShellEnvironmentPolicyFilter;
+use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;

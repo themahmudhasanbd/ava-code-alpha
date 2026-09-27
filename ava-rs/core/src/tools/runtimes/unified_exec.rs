@@ -42,19 +42,19 @@ use crate::unified_exec::TerminalSandboxSource;
 use crate::unified_exec::UnifiedExecError;
 use crate::unified_exec::UnifiedExecProcess;
 use crate::unified_exec::UnifiedExecProcessManager;
-use codex_core_plugins::PluginMetricsSidecar;
-use codex_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY;
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_network_proxy::NetworkProxy;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxablePreference;
-use codex_sandboxing::policy_transforms::merge_permission_profiles;
-use codex_shell_command::powershell::prefix_powershell_script_with_utf8;
-use codex_tools::UnifiedExecShellMode;
-use codex_utils_path_uri::PathUri;
+use ava_core_plugins::PluginMetricsSidecar;
+use ava_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::NetworkProxy;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxablePreference;
+use ava_sandboxing::policy_transforms::merge_permission_profiles;
+use ava_shell_command::powershell::prefix_powershell_script_with_utf8;
+use ava_tools::UnifiedExecShellMode;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::io;
 use std::path::PathBuf;
@@ -77,7 +77,7 @@ pub struct UnifiedExecRequest {
     pub turn_environment: TurnEnvironment,
     pub env: HashMap<String, String>,
     pub exec_server_env_config: Option<ExecServerEnvConfig>,
-    pub shell_snapshot: Option<codex_exec_server::ShellSnapshotRequest>,
+    pub shell_snapshot: Option<ava_exec_server::ShellSnapshotRequest>,
     pub explicit_env_overrides: HashMap<String, String>,
     pub network: Option<NetworkProxy>,
     pub tty: bool,
@@ -361,7 +361,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
                     ))
                     .await
                     .map_err(|err| {
-                        ToolError::Codex(CodexErr::Io(io::Error::other(err.to_string())))
+                        ToolError::Ava(AvaErr::Io(io::Error::other(err.to_string())))
                     })?;
                 if routes_approval_policy_to_guardian(
                     ctx.step_context.settings.approval_policy(),
@@ -393,7 +393,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
                             .info()
                             .await
                             .map_err(|err| {
-                                ToolError::Codex(CodexErr::Io(io::Error::other(format!(
+                                ToolError::Ava(AvaErr::Io(io::Error::other(format!(
                                     "failed to query exec-server capabilities: {err}"
                                 ))))
                             })?;
@@ -415,7 +415,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
                         Some(&req.turn_environment.selection.environment_id),
                     )
                     .map_err(|err| {
-                        ToolError::Codex(CodexErr::Io(io::Error::other(format!(
+                        ToolError::Ava(AvaErr::Io(io::Error::other(format!(
                             "failed to prepare network proxy for environment `{}`: {err}",
                             req.turn_environment.selection.environment_id
                         ))))
@@ -476,7 +476,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
                 .into_iter()
                 .chain(broker.context_keys)
             {
-                if !codex_network_proxy::is_credential_broker_provider_env_key(&key)
+                if !ava_network_proxy::is_credential_broker_provider_env_key(&key)
                     && let Some(value) = env.get(&key)
                 {
                     explicit_env_overrides.insert(key, value.clone());
@@ -528,7 +528,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
         let brokered_shell_snapshot_missing = !environment_is_remote
             && managed_network.is_some()
             && env
-                .get(codex_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY)
+                .get(ava_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY)
                 .is_some_and(|active| active == "1")
             && command
                 .get(1)
@@ -585,7 +585,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
         let snapshot_permissions = shell_snapshot_location
             .as_ref()
             .filter(|_| {
-                env.get(codex_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY)
+                env.get(ava_network_proxy::CREDENTIAL_BROKER_ACTIVE_ENV_KEY)
                     .is_some_and(|active| active == "1")
             })
             .and_then(|path| {
@@ -631,7 +631,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
                 ToolError::Rejected(_) => {
                     ToolError::Rejected("missing command line for PTY".to_string())
                 }
-                error @ ToolError::Codex(_) => error,
+                error @ ToolError::Ava(_) => error,
             })?;
             let options = unified_exec_options(attempt.network_denial_cancellation_token.clone());
             let mut exec_env = attempt
@@ -641,7 +641,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
                     managed_network,
                     Some(&req.turn_environment.selection.environment_id),
                 )
-                .map_err(ToolError::Codex)?;
+                .map_err(ToolError::Ava)?;
             exec_env.exec_server_env_config = req.exec_server_env_config.clone();
             match zsh_fork::maybe_prepare_unified_exec(req, attempt, ctx, exec_env, zsh_fork_config)
                 .await?
@@ -668,7 +668,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
                         .await
                         .map_err(|err| match err {
                             UnifiedExecError::SandboxDenied { output, .. } => {
-                                ToolError::Codex(CodexErr::Sandbox(SandboxErr::Denied {
+                                ToolError::Ava(AvaErr::Sandbox(SandboxErr::Denied {
                                     output: Box::new(output),
                                     network_policy_decision: None,
                                 }))
@@ -700,7 +700,7 @@ impl<'a> ToolRuntime<UnifiedExecRequest, UnifiedExecAttempt> for UnifiedExecRunt
             ToolError::Rejected(_) => {
                 ToolError::Rejected("missing command line for PTY".to_string())
             }
-            error @ ToolError::Codex(_) => error,
+            error @ ToolError::Ava(_) => error,
         })?;
         let options = unified_exec_options(attempt.network_denial_cancellation_token.clone());
         let mut process = self
@@ -738,16 +738,16 @@ mod tests {
     use crate::environment_selection::EnvironmentConfigOrigin;
     use crate::exec::DEFAULT_EXEC_COMMAND_TIMEOUT_MS;
     use crate::tools::sandboxing::ToolRuntime;
-    use codex_exec_server::Environment;
-    use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-    use codex_protocol::config_types::WindowsSandboxLevel;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::protocol::EnvironmentConfig;
-    use codex_protocol::protocol::EnvironmentConfigState;
-    use codex_protocol::protocol::TurnEnvironmentSelection;
-    use codex_tools::ZshForkConfig;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::PathUri;
+    use ava_exec_server::Environment;
+    use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+    use ava_protocol::config_types::WindowsSandboxLevel;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::protocol::EnvironmentConfig;
+    use ava_protocol::protocol::EnvironmentConfigState;
+    use ava_protocol::protocol::TurnEnvironmentSelection;
+    use ava_tools::ZshForkConfig;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
     use std::sync::Arc;
     use std::time::Duration;
@@ -763,7 +763,7 @@ mod tests {
                     allow_login_shell: true,
                     workspace_roots: Vec::new(),
                     windows_sandbox_level: WindowsSandboxLevel::Disabled,
-                    windows_sandbox_type: codex_sandboxing::SandboxType::None,
+                    windows_sandbox_type: ava_sandboxing::SandboxType::None,
                     use_legacy_landlock: false,
                     permission_profile: PermissionProfileSnapshot::legacy(
                         PermissionProfile::read_only(),

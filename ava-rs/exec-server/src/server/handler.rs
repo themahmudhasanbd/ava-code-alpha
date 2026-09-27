@@ -3,9 +3,9 @@ use std::sync::Mutex as StdMutex;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_exec_server_protocol::RequestId;
-use codex_http_client::HttpClientFactory;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_exec_server_protocol::RequestId;
+use ava_http_client::HttpClientFactory;
 use opentelemetry::trace::SpanContext;
 use serde_json::to_value;
 use std::collections::HashSet;

@@ -7,16 +7,16 @@
 //! Environment policy conversion drops listener addresses, and final validation
 //! uses the same policy resolver as command execution.
 
-use codex_config::NetworkConstraints;
-use codex_config::Sourced;
-use codex_config::permissions_toml::NetworkToml;
-use codex_execpolicy::Policy;
-use codex_features::FeatureToml;
-use codex_features::FeaturesToml;
-use codex_network_proxy::EnvironmentNetworkPolicy;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_path_uri::Platform;
+use ava_config::NetworkConstraints;
+use ava_config::Sourced;
+use ava_config::permissions_toml::NetworkToml;
+use ava_execpolicy::Policy;
+use ava_features::FeatureToml;
+use ava_features::FeaturesToml;
+use ava_network_proxy::EnvironmentNetworkPolicy;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_path_uri::Platform;
 
 use super::NetworkProxySpec;
 use super::permissions::apply_network_proxy_feature_config;
@@ -67,7 +67,7 @@ pub fn validate_environment_network_policy(
         policy,
         permission_profile,
         &Policy::empty(),
-        codex_network_proxy::LocalBindingPolicy::DefaultFalse,
+        ava_network_proxy::LocalBindingPolicy::DefaultFalse,
     )
     .and_then(|spec| spec.build_config_state_for_spec(executor_os).map(|_| ()))
     .map_err(|_| EnvironmentNetworkConfigError)

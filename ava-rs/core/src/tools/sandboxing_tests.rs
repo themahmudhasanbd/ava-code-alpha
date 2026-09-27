@@ -1,18 +1,18 @@
 use super::*;
 use crate::sandboxing::SandboxPermissions;
 use crate::tools::hook_names::HookToolName;
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::GranularApprovalConfig;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxType;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::GranularApprovalConfig;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxType;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::HashMap;
@@ -79,34 +79,34 @@ fn windows_sandbox_selection_distinguishes_configured_and_executor_defaults() {
     assert_eq!(
         executor_windows_sandbox_level(
             SandboxType::WindowsMxc,
-            codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+            ava_protocol::config_types::WindowsSandboxLevel::Disabled,
             &cwd,
         ),
-        codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+        ava_protocol::config_types::WindowsSandboxLevel::Disabled,
     );
     assert_eq!(
         executor_windows_sandbox_selection(
             SandboxType::WindowsMxc,
-            codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+            ava_protocol::config_types::WindowsSandboxLevel::Disabled,
             &cwd,
         ),
-        codex_file_system::WindowsSandboxSelection::Mxc,
+        ava_file_system::WindowsSandboxSelection::Mxc,
     );
     assert_eq!(
         configured_windows_sandbox_selection(
             SandboxType::None,
-            codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+            ava_protocol::config_types::WindowsSandboxLevel::Disabled,
             &cwd,
         ),
-        codex_file_system::WindowsSandboxSelection::Disabled,
+        ava_file_system::WindowsSandboxSelection::Disabled,
     );
     assert_eq!(
         executor_windows_sandbox_selection(
             SandboxType::None,
-            codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+            ava_protocol::config_types::WindowsSandboxLevel::Disabled,
             &cwd,
         ),
-        codex_file_system::WindowsSandboxSelection::RestrictedToken,
+        ava_file_system::WindowsSandboxSelection::RestrictedToken,
     );
 }
 
@@ -277,7 +277,7 @@ fn windows_sandbox_env_preserves_denied_reads_or_rejects_unsupported_backend() {
             missing_path_behavior: None,
         },
     ]);
-    let permissions = codex_protocol::models::PermissionProfile::from_runtime_permissions(
+    let permissions = ava_protocol::models::PermissionProfile::from_runtime_permissions(
         &file_system_policy,
         NetworkSandboxPolicy::Restricted,
     );
@@ -295,7 +295,7 @@ fn windows_sandbox_env_preserves_denied_reads_or_rejects_unsupported_backend() {
         sandbox_exe: None,
         use_legacy_landlock: false,
         windows_sandbox_type: SandboxType::WindowsRestrictedToken,
-        windows_sandbox_level: codex_protocol::config_types::WindowsSandboxLevel::Elevated,
+        windows_sandbox_level: ava_protocol::config_types::WindowsSandboxLevel::Elevated,
         network_denial_cancellation_token: None,
         network_proxy: None,
     };
@@ -327,7 +327,7 @@ fn windows_sandbox_env_preserves_denied_reads_or_rejects_unsupported_backend() {
     assert_eq!(request.windows_sandbox_workspace_roots, vec![cwd]);
 
     attempt.windows_sandbox_level =
-        codex_protocol::config_types::WindowsSandboxLevel::RestrictedToken;
+        ava_protocol::config_types::WindowsSandboxLevel::RestrictedToken;
     let error = attempt
         .env_for(
             command(),
@@ -349,7 +349,7 @@ fn exec_server_env_keeps_command_native_and_carries_sandbox_context() {
         .try_into()
         .expect("absolute cwd");
     let cwd_uri = PathUri::from_abs_path(&cwd);
-    let exec_server_permissions = codex_protocol::models::PermissionProfile::workspace_write();
+    let exec_server_permissions = ava_protocol::models::PermissionProfile::workspace_write();
     let permissions = exec_server_permissions
         .clone()
         .materialize_project_roots_with_workspace_roots(std::slice::from_ref(&cwd));
@@ -366,7 +366,7 @@ fn exec_server_env_keeps_command_native_and_carries_sandbox_context() {
         sandbox_exe: None,
         use_legacy_landlock: false,
         windows_sandbox_type: SandboxType::None,
-        windows_sandbox_level: codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+        windows_sandbox_level: ava_protocol::config_types::WindowsSandboxLevel::Disabled,
         network_denial_cancellation_token: None,
         network_proxy: None,
     };
@@ -404,16 +404,16 @@ fn exec_server_env_keeps_command_native_and_carries_sandbox_context() {
     assert_eq!(request.sandbox, SandboxType::None);
     assert_eq!(
         request.exec_server_sandbox,
-        Some(codex_exec_server::FileSystemSandboxContext {
+        Some(ava_exec_server::FileSystemSandboxContext {
             permissions: exec_server_permissions.clone(),
             cwd: cwd_uri.clone(),
             workspace_roots: vec![cwd_uri.clone()],
             user_home_dir: None,
             temporary_directories: None,
             windows_sandbox_selection: if cfg!(windows) {
-                codex_file_system::WindowsSandboxSelection::RestrictedToken
+                ava_file_system::WindowsSandboxSelection::RestrictedToken
             } else {
-                codex_file_system::WindowsSandboxSelection::Disabled
+                ava_file_system::WindowsSandboxSelection::Disabled
             },
             windows_sandbox_proxy_settings_mode: None,
             use_legacy_landlock: false,
@@ -435,7 +435,7 @@ fn exec_server_env_keeps_command_native_and_carries_sandbox_context() {
     assert!(!request.exec_server_enforce_managed_network);
     assert_eq!(request.exec_server_managed_network, Some(managed_network));
 
-    let full_access = codex_protocol::models::PermissionProfile::Disabled;
+    let full_access = ava_protocol::models::PermissionProfile::Disabled;
     attempt.permissions = &full_access;
     attempt.exec_server_permissions = &full_access;
     attempt.enforce_managed_network = false;

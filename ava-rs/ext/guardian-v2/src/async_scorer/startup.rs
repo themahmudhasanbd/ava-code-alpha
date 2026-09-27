@@ -3,14 +3,14 @@
 
 use std::sync::Arc;
 
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_extension_api::ThreadOriginator;
-use codex_extension_api::ThreadStartInput;
-use codex_features::Feature;
-use codex_login::AgentIdentityAuthPolicy;
-use codex_login::AuthManager;
-use codex_model_provider::create_model_provider;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_extension_api::ThreadOriginator;
+use ava_extension_api::ThreadStartInput;
+use ava_features::Feature;
+use ava_login::AgentIdentityAuthPolicy;
+use ava_login::AuthManager;
+use ava_model_provider::create_model_provider;
 
 use super::sampler::LunaSamplerConfig;
 use super::sampler::MODEL;
@@ -35,8 +35,8 @@ pub(super) async fn sampler_config(
     let max_input_tokens =
         luna_model
             .as_ref()
-            .map_or(codex_guardian_context::DEFAULT_MAX_INPUT_TOKENS, |model| {
-                codex_guardian_context::effective_input_token_limit(
+            .map_or(ava_guardian_context::DEFAULT_MAX_INPUT_TOKENS, |model| {
+                ava_guardian_context::effective_input_token_limit(
                     model, /*configured_window*/ None,
                 )
             });

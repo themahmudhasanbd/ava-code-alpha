@@ -504,7 +504,7 @@
   padding-right: 0;
 }
 
-/* Conversation top bar (Codex/WorkBuddy-style): replaces the empty chat
+/* Conversation top bar (Ava/WorkBuddy-style): replaces the empty chat
  * titlebar band with a real toolbar — session title and action buttons. It
  * mirrors the frameless drag semantics of the
  * old .main-titlebar: an absolute 46px band that is draggable, with the

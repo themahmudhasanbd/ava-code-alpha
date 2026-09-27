@@ -10,25 +10,25 @@ use crate::app_event::ConnectorsSnapshot;
 use crate::app_info::app_info_from_api;
 use crate::chatwidget::ThreadUsageOutcome;
 use crate::config_update::format_config_error;
-use codex_app_server_protocol::AppsListParams;
-use codex_app_server_protocol::AppsListResponse;
-use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditParams;
-use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse;
-use codex_app_server_protocol::GetAccountRateLimitsParams;
-use codex_app_server_protocol::GetAccountTokenUsageParams;
-use codex_app_server_protocol::GetAccountTokenUsageResponse;
-use codex_app_server_protocol::MarketplaceAddParams;
-use codex_app_server_protocol::MarketplaceAddResponse;
-use codex_app_server_protocol::MarketplaceRemoveParams;
-use codex_app_server_protocol::MarketplaceRemoveResponse;
-use codex_app_server_protocol::MarketplaceUpgradeParams;
-use codex_app_server_protocol::MarketplaceUpgradeResponse;
-use codex_app_server_protocol::RequestId;
+use ava_app_server_protocol::AppsListParams;
+use ava_app_server_protocol::AppsListResponse;
+use ava_app_server_protocol::ConsumeAccountRateLimitResetCreditParams;
+use ava_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse;
+use ava_app_server_protocol::GetAccountRateLimitsParams;
+use ava_app_server_protocol::GetAccountTokenUsageParams;
+use ava_app_server_protocol::GetAccountTokenUsageResponse;
+use ava_app_server_protocol::MarketplaceAddParams;
+use ava_app_server_protocol::MarketplaceAddResponse;
+use ava_app_server_protocol::MarketplaceRemoveParams;
+use ava_app_server_protocol::MarketplaceRemoveResponse;
+use ava_app_server_protocol::MarketplaceUpgradeParams;
+use ava_app_server_protocol::MarketplaceUpgradeResponse;
+use ava_app_server_protocol::RequestId;
 
 use crate::hooks_rpc::fetch_hooks_list;
 use crate::hooks_rpc::write_hook_trust;
 use crate::hooks_rpc::write_hook_trusts;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 pub(super) const THREAD_USAGE_FETCH_TIMEOUT: std::time::Duration =
     std::time::Duration::from_secs(/*secs*/ 65);
@@ -797,7 +797,7 @@ pub(super) async fn fetch_account_rate_limits(
     // without opting them into exposure or pretending that they support the new capability.
     if matches!(
         &result,
-        Err(codex_app_server_client::TypedRequestError::Server { source, .. })
+        Err(ava_app_server_client::TypedRequestError::Server { source, .. })
             if matches!(source.code, -32600 | -32602)
     ) {
         return request_handle
@@ -851,7 +851,7 @@ pub(super) async fn consume_rate_limit_reset_credit_request(
 
 pub(super) async fn fetch_workspace_messages(
     request_handle: AppServerRequestHandle,
-) -> Result<codex_app_server_protocol::GetWorkspaceMessagesResponse> {
+) -> Result<ava_app_server_protocol::GetWorkspaceMessagesResponse> {
     let request_id = RequestId::String(format!("workspace-messages-{}", Uuid::new_v4()));
     request_handle
         .request_typed(ClientRequest::GetWorkspaceMessages {
@@ -865,9 +865,9 @@ pub(super) async fn fetch_workspace_messages(
 pub(super) async fn send_add_credits_nudge_email(
     request_handle: AppServerRequestHandle,
     credit_type: AddCreditsNudgeCreditType,
-) -> Result<codex_app_server_protocol::AddCreditsNudgeEmailStatus> {
+) -> Result<ava_app_server_protocol::AddCreditsNudgeEmailStatus> {
     let request_id = RequestId::String(format!("add-credits-nudge-{}", Uuid::new_v4()));
-    let response: codex_app_server_protocol::SendAddCreditsNudgeEmailResponse = request_handle
+    let response: ava_app_server_protocol::SendAddCreditsNudgeEmailResponse = request_handle
         .request_typed(ClientRequest::SendAddCreditsNudgeEmail {
             request_id,
             params: SendAddCreditsNudgeEmailParams { credit_type },
@@ -1002,18 +1002,18 @@ fn plugin_remote_section_error_next_step(label: &str, err: &str) -> &'static str
         || err.contains("not logged in")
     {
         "Sign in to ChatGPT, then try loading this section again."
-    } else if err.contains("codex plugins are disabled")
+    } else if err.contains("ava plugins are disabled")
         || err.contains("plugin sharing is disabled")
         || err.contains("plugin sharing is not enabled")
         || err.contains("feature disabled")
     {
-        "Ask a workspace admin to enable Codex plugins or plugin sharing."
+        "Ask a workspace admin to enable Ava plugins or plugin sharing."
     } else if err.contains("workspace") && (err.contains("access") || err.contains("mismatch")) {
         "Switch to the matching workspace or ask the sharer for access."
     } else if err.contains("not found") || err.contains("status 404") {
         "Check that you are signed in to the correct workspace and still have access."
-    } else if err.contains("old build") || err.contains("update codex") || err.contains("stale") {
-        "Update Codex, then try opening the shared plugin again."
+    } else if err.contains("old build") || err.contains("update ava") || err.contains("stale") {
+        "Update Ava, then try opening the shared plugin again."
     } else if err.contains("service unavailable")
         || err.contains("temporarily unavailable")
         || err.contains("status 503")
@@ -1035,7 +1035,7 @@ fn plugin_sharing_disabled_remote_section_error() -> PluginRemoteSectionError {
     PluginRemoteSectionError {
         section_id: "shared-with-me".to_string(),
         label: "Shared with me".to_string(),
-        message: "Plugin sharing is disabled for this Codex session. Enable plugin sharing to load shared plugins.".to_string(),
+        message: "Plugin sharing is disabled for this Ava session. Enable plugin sharing to load shared plugins.".to_string(),
     }
 }
 
@@ -1235,7 +1235,7 @@ pub(super) async fn write_hook_enabled(
         .request_typed(ClientRequest::ConfigBatchWrite {
             request_id,
             params: ConfigBatchWriteParams {
-                edits: vec![codex_app_server_protocol::ConfigEdit {
+                edits: vec![ava_app_server_protocol::ConfigEdit {
                     key_path: "hooks.state".to_string(),
                     value: serde_json::json!({
                         key: {
@@ -1294,9 +1294,9 @@ pub(super) async fn fetch_feedback_upload(
 /// renders directly from `McpServerStatus` rather than these maps.
 #[cfg(test)]
 pub(super) type McpInventoryMaps = (
-    HashMap<String, codex_protocol::mcp::Tool>,
-    HashMap<String, Vec<codex_protocol::mcp::Resource>>,
-    HashMap<String, Vec<codex_protocol::mcp::ResourceTemplate>>,
+    HashMap<String, ava_protocol::mcp::Tool>,
+    HashMap<String, Vec<ava_protocol::mcp::Resource>>,
+    HashMap<String, Vec<ava_protocol::mcp::ResourceTemplate>>,
     HashMap<String, McpAuthStatus>,
 );
 
@@ -1312,11 +1312,11 @@ pub(super) fn mcp_inventory_maps_from_statuses(statuses: Vec<McpServerStatus>) -
         auth_statuses.insert(
             server_name.clone(),
             match status.auth_status {
-                codex_app_server_protocol::McpAuthStatus::Unknown => McpAuthStatus::Unknown,
-                codex_app_server_protocol::McpAuthStatus::Unsupported => McpAuthStatus::Unsupported,
-                codex_app_server_protocol::McpAuthStatus::NotLoggedIn => McpAuthStatus::NotLoggedIn,
-                codex_app_server_protocol::McpAuthStatus::BearerToken => McpAuthStatus::BearerToken,
-                codex_app_server_protocol::McpAuthStatus::OAuth => McpAuthStatus::OAuth,
+                ava_app_server_protocol::McpAuthStatus::Unknown => McpAuthStatus::Unknown,
+                ava_app_server_protocol::McpAuthStatus::Unsupported => McpAuthStatus::Unsupported,
+                ava_app_server_protocol::McpAuthStatus::NotLoggedIn => McpAuthStatus::NotLoggedIn,
+                ava_app_server_protocol::McpAuthStatus::BearerToken => McpAuthStatus::BearerToken,
+                ava_app_server_protocol::McpAuthStatus::OAuth => McpAuthStatus::OAuth,
             },
         );
         resources.insert(server_name.clone(), status.resources);
@@ -1335,11 +1335,11 @@ mod tests {
     use crate::app::test_support::make_test_app;
     use app_test_support::ChatGptAuthFixture;
     use app_test_support::write_chatgpt_auth;
-    use codex_app_server_protocol::PluginMarketplaceEntry;
-    use codex_app_server_protocol::ThreadUsage;
-    use codex_config::types::AuthCredentialsStoreMode;
-    use codex_protocol::mcp::Tool;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_app_server_protocol::PluginMarketplaceEntry;
+    use ava_app_server_protocol::ThreadUsage;
+    use ava_config::types::AuthCredentialsStoreMode;
+    use ava_protocol::mcp::Tool;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
@@ -1350,7 +1350,7 @@ mod tests {
         app.config.chatgpt_base_url = server.uri();
         app.config.cli_auth_credentials_store_mode = AuthCredentialsStoreMode::File;
         write_chatgpt_auth(
-            app.config.codex_home.as_path(),
+            app.config.ava_home.as_path(),
             ChatGptAuthFixture::new("chatgpt-token").account_id("account-123"),
             AuthCredentialsStoreMode::File,
         )
@@ -1359,7 +1359,7 @@ mod tests {
             .await
             .expect("start authenticated embedded app server");
         write_chatgpt_auth(
-            app.config.codex_home.as_path(),
+            app.config.ava_home.as_path(),
             ChatGptAuthFixture::new("different-token").account_id("different-account"),
             AuthCredentialsStoreMode::File,
         )
@@ -1367,7 +1367,7 @@ mod tests {
 
         wiremock::Mock::given(wiremock::matchers::method("POST"))
             .and(wiremock::matchers::path(
-                "/api/codex/usage/thread_usage/query",
+                "/api/ava/usage/thread_usage/query",
             ))
             .and(wiremock::matchers::header(
                 "authorization",
@@ -1515,7 +1515,7 @@ mod tests {
             (
                 "Shared with me",
                 "old build fallback",
-                "Update Codex, then try opening the shared plugin again.",
+                "Update Ava, then try opening the shared plugin again.",
             ),
             (
                 "Shared with me",
@@ -1530,7 +1530,7 @@ mod tests {
             (
                 "Shared with me",
                 "plugin sharing is not enabled",
-                "Ask a workspace admin to enable Codex plugins or plugin sharing.",
+                "Ask a workspace admin to enable Ava plugins or plugin sharing.",
             ),
         ];
 
@@ -1549,7 +1549,7 @@ mod tests {
             PluginRemoteSectionError {
                 section_id: "shared-with-me".to_string(),
                 label: "Shared with me".to_string(),
-                message: "Plugin sharing is disabled for this Codex session. Enable plugin sharing to load shared plugins.".to_string(),
+                message: "Plugin sharing is disabled for this Ava session. Enable plugin sharing to load shared plugins.".to_string(),
             }
         );
     }
@@ -1579,7 +1579,7 @@ mod tests {
                 )]),
                 resources: Vec::new(),
                 resource_templates: Vec::new(),
-                auth_status: codex_app_server_protocol::McpAuthStatus::Unsupported,
+                auth_status: ava_app_server_protocol::McpAuthStatus::Unsupported,
             },
             McpServerStatus {
                 server_capabilities: None,
@@ -1591,7 +1591,7 @@ mod tests {
                 tools: HashMap::new(),
                 resources: Vec::new(),
                 resource_templates: Vec::new(),
-                auth_status: codex_app_server_protocol::McpAuthStatus::Unsupported,
+                auth_status: ava_app_server_protocol::McpAuthStatus::Unsupported,
             },
         ];
 

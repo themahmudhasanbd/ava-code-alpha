@@ -30,7 +30,7 @@ Settings:
 02:message/user:
     Look up my calendar.
 -- request 2 (turn) --
-03:custom_tool_call/exec:text((await tools.mcp__codex_apps__calendar__lookup({})).content[0].text);
+03:custom_tool_call/exec:text((await tools.mcp__ava_apps__calendar__lookup({})).content[0].text);
 04:custom_tool_call_output:Script completed
     Wall time <DURATION> seconds
     Output:

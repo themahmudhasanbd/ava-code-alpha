@@ -43,9 +43,9 @@ async fn incomplete_chat_batches_retain_available_estimates_without_inventing_ze
 
 #[tokio::test]
 async fn slow_repairing_chat_listing_keeps_estimate_budget_and_ranks_across_pages() {
-    use codex_app_server_client::RemoteAppServerClient;
-    use codex_app_server_client::RemoteAppServerConnectArgs;
-    use codex_app_server_client::RemoteAppServerEndpoint;
+    use ava_app_server_client::RemoteAppServerClient;
+    use ava_app_server_client::RemoteAppServerConnectArgs;
+    use ava_app_server_client::RemoteAppServerEndpoint;
     use futures::SinkExt;
     use futures::StreamExt;
     use tokio_tungstenite::tungstenite::Message;
@@ -62,7 +62,7 @@ async fn slow_repairing_chat_listing_keeps_estimate_budget_and_ranks_across_page
             let request: serde_json::Value = serde_json::from_str(&text).unwrap();
             let result = match request["method"].as_str() {
                 Some("initialize") => {
-                    json!({"userAgent": "analytics-test", "codexHome": "/unused"})
+                    json!({"userAgent": "analytics-test", "avaHome": "/unused"})
                 }
                 Some("thread/list") => {
                     let params = &request["params"];

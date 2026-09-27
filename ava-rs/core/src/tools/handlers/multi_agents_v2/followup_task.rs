@@ -4,7 +4,7 @@ use super::message_tool::handle_message_string_tool;
 use super::*;
 use crate::agent::types::MessageDeliveryMode;
 use crate::tools::handlers::multi_agents_spec::create_followup_task_tool;
-use codex_tools::ToolSpec;
+use ava_tools::ToolSpec;
 
 pub(crate) struct Handler;
 
@@ -17,7 +17,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
         create_followup_task_tool()
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

@@ -7,13 +7,13 @@ use super::ApiKeyTurnCostStatus;
 use super::BackendClient;
 use super::RequestError;
 use super::WorkerRuntime;
-use codex_login::CodexAuth;
+use ava_login::AvaAuth;
 use std::collections::BTreeMap;
 
 impl WorkerRuntime {
     pub(super) async fn query_chatgpt_turn_costs(
         &self,
-        auth: &CodexAuth,
+        auth: &AvaAuth,
         turn_ids: &[String],
     ) -> Result<Vec<ApiKeyTurnCost>, RequestError> {
         let mut threads: BTreeMap<String, Vec<String>> = BTreeMap::new();

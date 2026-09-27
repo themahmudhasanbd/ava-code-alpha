@@ -7,7 +7,7 @@ use super::plugin_directory;
 #[test]
 fn discovers_available_layout_without_selecting_a_file() -> std::io::Result<()> {
     let root = std::env::temp_dir().join(format!(
-        "codex-alsa-{}-{}",
+        "ava-alsa-{}-{}",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

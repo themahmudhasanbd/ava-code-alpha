@@ -9,13 +9,13 @@ use crate::config::Config;
 use crate::session::session::Session;
 use crate::session::step_context::StepContext;
 use crate::session::turn_context::TurnContext;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::protocol::MultiAgentVersion;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::protocol::MultiAgentVersion;
 
 pub(crate) const MAX_SPAWN_AGENT_MODEL_OVERRIDES: usize = 5;
 

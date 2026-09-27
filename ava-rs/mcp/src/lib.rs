@@ -1,8 +1,8 @@
 pub use binding::McpBinding;
 pub use binding::PreparedMcpCall;
 pub use client_capabilities::client_mcp_extensions;
-pub use client_tool_catalog::CodexAppsToolSnapshot;
-pub use codex_rmcp_client::McpProtocolMode;
+pub use client_tool_catalog::AvaAppsToolSnapshot;
+pub use ava_rmcp_client::McpProtocolMode;
 pub use connection_manager::tool_is_model_visible;
 pub use elicitation::ElicitationLifecycle;
 pub use elicitation::ElicitationReviewRequest;
@@ -10,7 +10,7 @@ pub use elicitation::ElicitationReviewer;
 pub use elicitation::ElicitationReviewerHandle;
 pub use elicitation::MCP_ELICITATION_HANDOFF_MESSAGE;
 pub use event_stream::McpEventStreamOpener;
-pub use resource_client::CodexAppsResourceListParams;
+pub use resource_client::AvaAppsResourceListParams;
 pub use resource_client::McpEventCatalogSnapshot;
 pub use resource_client::McpEventDefinition;
 pub use resource_client::McpEventNotification;
@@ -33,10 +33,10 @@ pub use tool_catalog_cache::McpToolCatalogCache;
 pub use tools::ToolInfo;
 pub use trusted_access::TrustedAccessContext;
 
-/// Backward-compatible name for the shared Codex Apps tools runtime.
-pub type CodexAppsToolsCache = codex_connectors::ConnectorRuntimeManager<ToolInfo>;
-/// Backward-compatible name for the Codex Apps runtime context key.
-pub type CodexAppsToolsCacheKey = codex_connectors::ConnectorRuntimeContextKey;
+/// Backward-compatible name for the shared Ava Apps tools runtime.
+pub type AvaAppsToolsCache = ava_connectors::ConnectorRuntimeManager<ToolInfo>;
+/// Backward-compatible name for the Ava Apps runtime context key.
+pub type AvaAppsToolsCacheKey = ava_connectors::ConnectorRuntimeContextKey;
 
 pub use catalog::McpCatalogBuilder;
 pub use catalog::McpEnvironmentAuthority;
@@ -48,29 +48,29 @@ pub use catalog::McpServerSource;
 pub use catalog::ResolvedMcpCatalog;
 pub use catalog::ResolvedMcpServer;
 
-pub use mcp::CODEX_APPS_MCP_SERVER_NAME;
+pub use mcp::AVA_APPS_MCP_SERVER_NAME;
 pub use mcp::DEFAULT_OPTIONAL_MCP_STARTUP_GRACE;
 pub use mcp::McpConfig;
 pub use mcp::ToolPluginContext;
 pub use server::EffectiveMcpServer;
 
-pub use auth_elicitation::CodexAppsAuthElicitation;
-pub use auth_elicitation::CodexAppsAuthElicitationPlan;
-pub use auth_elicitation::CodexAppsConnectorAuthFailure;
-pub use auth_elicitation::MCP_TOOL_CODEX_APPS_META_KEY;
+pub use auth_elicitation::AvaAppsAuthElicitation;
+pub use auth_elicitation::AvaAppsAuthElicitationPlan;
+pub use auth_elicitation::AvaAppsConnectorAuthFailure;
+pub use auth_elicitation::MCP_TOOL_AVA_APPS_META_KEY;
 pub use auth_elicitation::auth_elicitation_completed_result;
 pub use auth_elicitation::auth_elicitation_id;
 pub use auth_elicitation::build_auth_elicitation;
 pub use auth_elicitation::build_auth_elicitation_plan;
 pub use auth_elicitation::connector_auth_failure_from_tool_result;
 pub use auth_elicitation::is_connector_auth_failure_from_tool_result;
-/// Backward-compatible name for the Codex Apps runtime context key builder.
-pub use codex_connectors::connector_runtime_context_key as codex_apps_tools_cache_key;
-pub use mcp::codex_apps_mcp_server_config;
+/// Backward-compatible name for the Ava Apps runtime context key builder.
+pub use ava_connectors::connector_runtime_context_key as ava_apps_tools_cache_key;
+pub use mcp::ava_apps_mcp_server_config;
 pub use mcp::configured_mcp_servers;
 pub use mcp::effective_mcp_servers;
 pub use mcp::effective_mcp_servers_from_configured;
-pub use mcp::host_owned_codex_apps_enabled;
+pub use mcp::host_owned_ava_apps_enabled;
 pub use mcp::hosted_plugin_runtime_mcp_server_config;
 pub use mcp::tool_plugin_context;
 pub use plugin_config::PluginMcpConfigParseOutcome;

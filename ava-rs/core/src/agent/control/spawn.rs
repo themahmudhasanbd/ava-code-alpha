@@ -7,7 +7,7 @@ use crate::agent::types::LiveAgent;
 use crate::agent::types::SpawnAgentForkMode;
 use crate::agent::types::SpawnAgentOptions;
 use crate::agents_md_manager::SessionInstructions;
-use crate::codex_thread::CodexThread;
+use crate::ava_thread::AvaThread;
 use crate::config::PermissionProfileSnapshot;
 use crate::context::ContextualUserFragment;
 use crate::context::CurrentTimeReminder;
@@ -19,14 +19,14 @@ use crate::context::MultiAgentModeInstructions;
 use crate::context::MultiAgentRoleInstructions;
 use crate::context::world_state::PersistentModeState;
 use crate::session::multi_agents::resolve_usage_hints;
-use codex_context_fragments::set_annotated_content;
-use codex_context_fragments::to_annotated_content;
-use codex_extension_api::ExtensionDataInit;
-use codex_history::ResponseItemEnvelope;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::intersect_effective_permission_profiles;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_utils_path_uri::PathUri;
+use ava_context_fragments::set_annotated_content;
+use ava_context_fragments::to_annotated_content;
+use ava_extension_api::ExtensionDataInit;
+use ava_history::ResponseItemEnvelope;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::intersect_effective_permission_profiles;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_utils_path_uri::PathUri;
 
 const AGENT_NAMES: &str = include_str!("../../../assets/agent/agent_names.txt");
 
@@ -154,7 +154,7 @@ async fn load_agent_model_context(
     state: &ThreadManagerState,
     thread_id: ThreadId,
     history_mode: ThreadHistoryMode,
-) -> CodexResult<Option<Vec<RolloutItem>>> {
+) -> AvaResult<Option<Vec<RolloutItem>>> {
     match history_mode {
         ThreadHistoryMode::Legacy => Ok(state
             .read_stored_thread(ReadThreadParams {
@@ -195,7 +195,7 @@ impl LocalAgentControl {
         let descendant_ids = match agent_graph_store
             .list_thread_spawn_descendants(
                 root_thread_id,
-                Some(codex_agent_graph_store::ThreadSpawnEdgeStatus::Open),
+                Some(ava_agent_graph_store::ThreadSpawnEdgeStatus::Open),
             )
             .await
         {
@@ -224,7 +224,7 @@ impl LocalAgentControl {
                     .map(AgentPath::try_from)
                     .transpose()
                     .map_err(|err| {
-                        CodexErr::InvalidRequest(format!("invalid stored agent path: {err}"))
+                        AvaErr::InvalidRequest(format!("invalid stored agent path: {err}"))
                     })?;
                 let mut reservation = self.state.reserve_spawn_slot(/*max_threads*/ None)?;
                 let mut metadata = self.prepare_agent_metadata(
@@ -240,7 +240,7 @@ impl LocalAgentControl {
                 )?;
                 metadata.agent_id = Some(thread_id);
                 reservation.commit(metadata);
-                Ok::<(), CodexErr>(())
+                Ok::<(), AvaErr>(())
             }
             .await;
             if let Err(err) = restore_result {
@@ -256,7 +256,7 @@ impl LocalAgentControl {
         config: Config,
         initial_input: Vec<UserInput>,
         session_source: Option<SessionSource>,
-    ) -> CodexResult<ThreadId> {
+    ) -> AvaResult<ThreadId> {
         let spawned_agent = Box::pin(self.spawn_agent_internal(
             config,
             SpawnInitialInput::UserInput(initial_input),
@@ -274,7 +274,7 @@ impl LocalAgentControl {
         initial_input: Vec<UserInput>,
         session_source: Option<SessionSource>,
         options: SpawnAgentOptions, // TODO(jif) drop with new fork.
-    ) -> CodexResult<LiveAgent> {
+    ) -> AvaResult<LiveAgent> {
         Box::pin(self.spawn_agent_internal(
             config,
             SpawnInitialInput::UserInput(initial_input),
@@ -291,7 +291,7 @@ impl LocalAgentControl {
         context: AgentCommunicationContext,
         session_source: Option<SessionSource>,
         options: SpawnAgentOptions,
-    ) -> CodexResult<LiveAgent> {
+    ) -> AvaResult<LiveAgent> {
         Box::pin(self.spawn_agent_internal(
             config,
             SpawnInitialInput::InterAgentCommunication(communication, context),
@@ -303,9 +303,9 @@ impl LocalAgentControl {
 
     fn validate_loaded_v2_child(
         &self,
-        thread: &CodexThread,
+        thread: &AvaThread,
         parent_thread_id: ThreadId,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         if thread.is_running()
             && thread.multi_agent_version() == Some(MultiAgentVersion::V2)
             && thread.session_source.parent_thread_id() == Some(parent_thread_id)
@@ -313,7 +313,7 @@ impl LocalAgentControl {
         {
             return Ok(());
         }
-        Err(CodexErr::InvalidRequest(format!(
+        Err(AvaErr::InvalidRequest(format!(
             "multi-agent v2 child {} is not owned by its loaded parent",
             thread.session.thread_id
         )))
@@ -324,8 +324,8 @@ impl LocalAgentControl {
         &self,
         mut config: Config,
         thread_id: ThreadId,
-        parent: Option<Arc<CodexThread>>,
-    ) -> CodexResult<()> {
+        parent: Option<Arc<AvaThread>>,
+    ) -> AvaResult<()> {
         let state = self.upgrade()?;
         let owner_thread_id = parent.as_ref().map(|parent| parent.session.thread_id);
         if let Some(parent) = &parent {
@@ -338,7 +338,7 @@ impl LocalAgentControl {
                 || parent.multi_agent_version() != Some(MultiAgentVersion::V2)
                 || !Arc::ptr_eq(&self.state, &parent.session.services.agent_control.state)
             {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "cannot resume multi-agent v2 child {thread_id}: parent ownership is unavailable; resume the parent first"
                 )));
             }
@@ -348,7 +348,7 @@ impl LocalAgentControl {
             return Ok(());
         }
         if self.state.agent_metadata_for_thread(thread_id).is_none() {
-            return Err(CodexErr::ThreadNotFound(thread_id));
+            return Err(AvaErr::ThreadNotFound(thread_id));
         }
         let mut environment_selections = self.state.evicted_environments(thread_id);
 
@@ -366,14 +366,14 @@ impl LocalAgentControl {
         let stored_parent_thread_id = stored_thread.parent_thread_id;
         let history = load_agent_model_context(&state, thread_id, stored_thread.history_mode)
             .await?
-            .ok_or(CodexErr::ThreadNotFound(thread_id))?;
+            .ok_or(AvaErr::ThreadNotFound(thread_id))?;
         let initial_history = InitialHistory::Resumed(ResumedHistory {
             conversation_id: thread_id,
             history: Arc::new(history),
             rollout_path: stored_thread.rollout_path,
         });
         if initial_history.get_multi_agent_version() != Some(MultiAgentVersion::V2) {
-            return Err(CodexErr::ThreadNotFound(thread_id));
+            return Err(AvaErr::ThreadNotFound(thread_id));
         }
         let (session_source, _) = initial_history
             .get_resumed_session_sources()
@@ -386,7 +386,7 @@ impl LocalAgentControl {
                 || stored_parent_thread_id
                     .is_some_and(|recorded_parent| recorded_parent != parent_thread_id)
             {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "cannot resume multi-agent v2 child {thread_id}: recorded parent ownership is inconsistent"
                 )));
             }
@@ -402,7 +402,7 @@ impl LocalAgentControl {
                 .new_turn_with_default_settings(Uuid::now_v7().to_string(), Default::default())
                 .await;
             config = build_agent_resume_config(&turn).map_err(|_| {
-                CodexErr::InvalidRequest(format!(
+                AvaErr::InvalidRequest(format!(
                     "cannot resume multi-agent v2 child {thread_id} with the current parent settings"
                 ))
             })?;
@@ -430,13 +430,13 @@ impl LocalAgentControl {
 
             apply_role_to_config(&mut config, Some(&role_name))
                 .await
-                .map_err(CodexErr::InvalidRequest)?;
+                .map_err(AvaErr::InvalidRequest)?;
             config
                 .permissions
                 .approval_policy
                 .set(runtime_approval_policy)
                 .map_err(|err| {
-                    CodexErr::InvalidRequest(format!("approval_policy is invalid: {err}"))
+                    AvaErr::InvalidRequest(format!("approval_policy is invalid: {err}"))
                 })?;
             config.approvals_reviewer = runtime_approvals_reviewer;
             config.cwd = runtime_cwd;
@@ -444,7 +444,7 @@ impl LocalAgentControl {
                 .permissions
                 .set_permission_profile_from_session_snapshot(runtime_permission_profile)
                 .map_err(|err| {
-                    CodexErr::InvalidRequest(format!("permission_profile is invalid: {err}"))
+                    AvaErr::InvalidRequest(format!("permission_profile is invalid: {err}"))
                 })?;
         }
         config.service_tier = self.root_service_tier();
@@ -457,7 +457,7 @@ impl LocalAgentControl {
                 .get(&stored_model_provider)
                 .cloned()
                 .ok_or_else(|| {
-                    CodexErr::InvalidRequest(format!(
+                    AvaErr::InvalidRequest(format!(
                         "Model provider `{stored_model_provider}` not found"
                     ))
                 })?;
@@ -473,7 +473,7 @@ impl LocalAgentControl {
         {
             let parent_config = parent.session.get_config().await;
             if !crate::exec_policy::child_uses_parent_exec_policy(&parent_config, &config) {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "cannot resume multi-agent v2 child {thread_id}: parent execution policy has changed; retry through the parent"
                 )));
             }
@@ -481,7 +481,7 @@ impl LocalAgentControl {
                 for selection in selections {
                     let environment_id = &selection.environment_id;
                     let invalid_environment = |reason: &str| {
-                        CodexErr::InvalidRequest(format!(
+                        AvaErr::InvalidRequest(format!(
                             "cannot resume multi-agent v2 child {thread_id}: cached environment {environment_id} {reason}"
                         ))
                     };
@@ -635,7 +635,7 @@ impl LocalAgentControl {
         initial_input: SpawnInitialInput,
         session_source: Option<SessionSource>,
         options: SpawnAgentOptions,
-    ) -> CodexResult<LiveAgent> {
+    ) -> AvaResult<LiveAgent> {
         let state = self.upgrade()?;
         let multi_agent_version = state
             .effective_multi_agent_version_for_spawn(
@@ -844,18 +844,18 @@ impl LocalAgentControl {
         options: &SpawnAgentOptions,
         inheritance: SpawnAgentThreadInheritance,
         multi_agent_version: MultiAgentVersion,
-    ) -> CodexResult<crate::thread_manager::NewThread> {
+    ) -> AvaResult<crate::thread_manager::NewThread> {
         let SpawnAgentThreadInheritance {
             environments: inherited_environments,
             exec_policy: inherited_exec_policy,
         } = inheritance;
         if options.fork_parent_spawn_call_id.is_none() {
-            return Err(CodexErr::Fatal(
+            return Err(AvaErr::Fatal(
                 "spawn_agent fork requires a parent spawn call id".to_string(),
             ));
         }
         let Some(fork_mode) = options.fork_mode.as_ref() else {
-            return Err(CodexErr::Fatal(
+            return Err(AvaErr::Fatal(
                 "spawn_agent fork requires a fork mode".to_string(),
             ));
         };
@@ -863,7 +863,7 @@ impl LocalAgentControl {
             parent_thread_id, ..
         }) = &session_source
         else {
-            return Err(CodexErr::Fatal(
+            return Err(AvaErr::Fatal(
                 "spawn_agent fork requires a thread-spawn session source".to_string(),
             ));
         };
@@ -910,7 +910,7 @@ impl LocalAgentControl {
             load_agent_model_context(state, parent_thread_id, parent_history_mode)
                 .await?
                 .ok_or_else(|| {
-                    CodexErr::Fatal(format!(
+                    AvaErr::Fatal(format!(
                         "parent thread history unavailable for fork: {parent_thread_id}"
                     ))
                 })?;
@@ -1069,7 +1069,7 @@ impl LocalAgentControl {
                     // V1 must remain incomplete when inherited authorization has been stripped.
                     compacted.retained_context = (context_mode == GuardianContextMode::ThreadOwned
                         && multi_agent_version == MultiAgentVersion::V2)
-                        .then(codex_history::RetainedContext::default);
+                        .then(ava_history::RetainedContext::default);
                     if let Some(replacement_history) = compacted.replacement_history.as_mut() {
                         // Matches before this checkpoint cannot survive its replacement history.
                         replaced_parent_developer_instructions = false;
@@ -1164,7 +1164,7 @@ impl LocalAgentControl {
         config: Config,
         thread_id: ThreadId,
         session_source: SessionSource,
-    ) -> CodexResult<ThreadId> {
+    ) -> AvaResult<ThreadId> {
         let root_depth = thread_spawn_depth(&session_source).unwrap_or(0);
         let (resumed_thread_id, resumed_multi_agent_version) = Box::pin(
             self.resume_single_agent_from_rollout(config.clone(), thread_id, session_source),
@@ -1185,7 +1185,7 @@ impl LocalAgentControl {
             let child_ids = match agent_graph_store
                 .list_thread_spawn_children(
                     parent_thread_id,
-                    Some(codex_agent_graph_store::ThreadSpawnEdgeStatus::Open),
+                    Some(ava_agent_graph_store::ThreadSpawnEdgeStatus::Open),
                 )
                 .await
             {
@@ -1239,7 +1239,7 @@ impl LocalAgentControl {
         config: Config,
         thread_id: ThreadId,
         session_source: SessionSource,
-    ) -> CodexResult<(ThreadId, MultiAgentVersion)> {
+    ) -> AvaResult<(ThreadId, MultiAgentVersion)> {
         let state = self.upgrade()?;
         let stored_thread = state
             .read_stored_thread(ReadThreadParams {
@@ -1253,12 +1253,12 @@ impl LocalAgentControl {
             .as_deref()
             .map(AgentPath::try_from)
             .transpose()
-            .map_err(|err| CodexErr::InvalidRequest(format!("invalid stored agent path: {err}")))?;
+            .map_err(|err| AvaErr::InvalidRequest(format!("invalid stored agent path: {err}")))?;
         let resumed_agent_nickname = stored_thread.agent_nickname.clone();
         let resumed_agent_role = stored_thread.agent_role.clone();
         let history = load_agent_model_context(&state, thread_id, stored_thread.history_mode)
             .await?
-            .ok_or(CodexErr::ThreadNotFound(thread_id))?;
+            .ok_or(AvaErr::ThreadNotFound(thread_id))?;
         let initial_history = InitialHistory::Resumed(ResumedHistory {
             conversation_id: thread_id,
             history: Arc::new(history),

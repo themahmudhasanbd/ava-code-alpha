@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use codex_app_server_protocol::ToolRequestUserInputAnswer;
-use codex_app_server_protocol::ToolRequestUserInputOption;
-use codex_app_server_protocol::ToolRequestUserInputParams;
-use codex_app_server_protocol::ToolRequestUserInputQuestion;
-use codex_app_server_protocol::ToolRequestUserInputResponse;
+use ava_app_server_protocol::ToolRequestUserInputAnswer;
+use ava_app_server_protocol::ToolRequestUserInputOption;
+use ava_app_server_protocol::ToolRequestUserInputParams;
+use ava_app_server_protocol::ToolRequestUserInputQuestion;
+use ava_app_server_protocol::ToolRequestUserInputResponse;
 use pretty_assertions::assert_eq;
 
 use super::prompt_for_answers_with;

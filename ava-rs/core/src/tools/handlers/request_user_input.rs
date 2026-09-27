@@ -14,14 +14,14 @@ use crate::tools::handlers::request_user_input_spec::request_user_input_tool_des
 use crate::tools::handlers::request_user_input_spec::request_user_input_unavailable_message;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_features::Feature;
-use codex_history::RetainedContextEvent;
-use codex_history::VerifiedAnswer;
-use codex_history::VerifiedQuestionAnswer;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::request_user_input::RequestUserInputArgs;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_features::Feature;
+use ava_history::RetainedContextEvent;
+use ava_history::VerifiedAnswer;
+use ava_history::VerifiedQuestionAnswer;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::request_user_input::RequestUserInputArgs;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 
 pub struct RequestUserInputHandler {
     pub available_modes: Vec<ModeKind>,
@@ -36,7 +36,7 @@ impl ToolExecutor<ToolInvocation> for RequestUserInputHandler {
         create_request_user_input_tool(request_user_input_tool_description(&self.available_modes))
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

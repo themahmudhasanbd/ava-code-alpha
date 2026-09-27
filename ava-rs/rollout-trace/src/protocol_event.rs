@@ -1,77 +1,77 @@
-//! Mapping from Codex protocol events into raw rollout-trace events.
+//! Mapping from Ava protocol events into raw rollout-trace events.
 //!
 //! The session layer already emits protocol events for turn lifecycle, terminal
 //! sessions, patch application, MCP calls, and collaboration tools. Rollout
 //! tracing reuses those observations instead of adding another set of hooks in
-//! `codex-core`: this module translates the protocol surface into the smaller
-//! trace vocabulary and keeps the mapping isolated inside `codex-rollout-trace`.
+//! `ava-core`: this module translates the protocol surface into the smaller
+//! trace vocabulary and keeps the mapping isolated inside `ava-rollout-trace`.
 //!
 //! The long explicit `EventMsg` matches are intentional. Most protocol events
 //! are not trace runtime boundaries, but spelling them out makes new protocol
 //! variants a compile-time prompt to decide whether the trace should capture
 //! them.
 
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandBeginEvent;
-use codex_protocol::protocol::ExecCommandEndEvent;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_protocol::protocol::ExecCommandStatus;
-use codex_protocol::protocol::McpToolCallBeginEvent;
-use codex_protocol::protocol::McpToolCallEndEvent;
-use codex_protocol::protocol::PatchApplyBeginEvent;
-use codex_protocol::protocol::PatchApplyEndEvent;
-use codex_protocol::protocol::PatchApplyStatus;
-use codex_protocol::protocol::SubAgentActivityEvent;
-use codex_protocol::protocol::SubAgentActivityKind;
-use codex_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandBeginEvent;
+use ava_protocol::protocol::ExecCommandEndEvent;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_protocol::protocol::ExecCommandStatus;
+use ava_protocol::protocol::McpToolCallBeginEvent;
+use ava_protocol::protocol::McpToolCallEndEvent;
+use ava_protocol::protocol::PatchApplyBeginEvent;
+use ava_protocol::protocol::PatchApplyEndEvent;
+use ava_protocol::protocol::PatchApplyStatus;
+use ava_protocol::protocol::SubAgentActivityEvent;
+use ava_protocol::protocol::SubAgentActivityKind;
+use ava_protocol::protocol::TurnAbortReason;
 use serde::Serialize;
 use std::time::Duration;
 
 use crate::AgentThreadId;
-use crate::CodexTurnId;
+use crate::AvaTurnId;
 use crate::ExecutionStatus;
 use crate::RawTraceEventPayload;
 
-pub(crate) struct CodexTurnTraceEvent {
-    pub context_turn_id: CodexTurnId,
+pub(crate) struct AvaTurnTraceEvent {
+    pub context_turn_id: AvaTurnId,
     pub payload: RawTraceEventPayload,
 }
 
-pub(crate) fn codex_turn_trace_event(
+pub(crate) fn ava_turn_trace_event(
     thread_id: AgentThreadId,
     default_turn_id: &str,
     event: &EventMsg,
-) -> Option<CodexTurnTraceEvent> {
+) -> Option<AvaTurnTraceEvent> {
     match event {
         EventMsg::TurnStarted(event) => {
-            let codex_turn_id = event.turn_id.clone();
-            Some(CodexTurnTraceEvent {
-                context_turn_id: codex_turn_id.clone(),
-                payload: RawTraceEventPayload::CodexTurnStarted {
-                    codex_turn_id,
+            let ava_turn_id = event.turn_id.clone();
+            Some(AvaTurnTraceEvent {
+                context_turn_id: ava_turn_id.clone(),
+                payload: RawTraceEventPayload::AvaTurnStarted {
+                    ava_turn_id,
                     thread_id,
                 },
             })
         }
         EventMsg::TurnComplete(event) => {
-            let codex_turn_id = event.turn_id.clone();
-            Some(CodexTurnTraceEvent {
-                context_turn_id: codex_turn_id.clone(),
-                payload: RawTraceEventPayload::CodexTurnEnded {
-                    codex_turn_id,
+            let ava_turn_id = event.turn_id.clone();
+            Some(AvaTurnTraceEvent {
+                context_turn_id: ava_turn_id.clone(),
+                payload: RawTraceEventPayload::AvaTurnEnded {
+                    ava_turn_id,
                     status: ExecutionStatus::Completed,
                 },
             })
         }
         EventMsg::TurnAborted(event) => {
-            let codex_turn_id = event
+            let ava_turn_id = event
                 .turn_id
                 .clone()
                 .unwrap_or_else(|| default_turn_id.to_string());
-            Some(CodexTurnTraceEvent {
-                context_turn_id: codex_turn_id.clone(),
-                payload: RawTraceEventPayload::CodexTurnEnded {
-                    codex_turn_id,
+            Some(AvaTurnTraceEvent {
+                context_turn_id: ava_turn_id.clone(),
+                payload: RawTraceEventPayload::AvaTurnEnded {
+                    ava_turn_id,
                     status: execution_status_for_abort_reason(&event.reason),
                 },
             })
@@ -105,14 +105,14 @@ pub(crate) enum ToolRuntimePayload<'a> {
     PatchApplyEnd(&'a PatchApplyEndEvent),
     McpToolCallBegin(&'a McpToolCallBeginEvent),
     McpToolCallEnd(&'a McpToolCallEndEvent),
-    CollabAgentSpawnBegin(&'a codex_protocol::protocol::CollabAgentSpawnBeginEvent),
-    CollabAgentSpawnEnd(&'a codex_protocol::protocol::CollabAgentSpawnEndEvent),
-    CollabAgentInteractionBegin(&'a codex_protocol::protocol::CollabAgentInteractionBeginEvent),
-    CollabAgentInteractionEnd(&'a codex_protocol::protocol::CollabAgentInteractionEndEvent),
-    CollabWaitingBegin(&'a codex_protocol::protocol::CollabWaitingBeginEvent),
-    CollabWaitingEnd(&'a codex_protocol::protocol::CollabWaitingEndEvent),
-    CollabCloseBegin(&'a codex_protocol::protocol::CollabCloseBeginEvent),
-    CollabCloseEnd(&'a codex_protocol::protocol::CollabCloseEndEvent),
+    CollabAgentSpawnBegin(&'a ava_protocol::protocol::CollabAgentSpawnBeginEvent),
+    CollabAgentSpawnEnd(&'a ava_protocol::protocol::CollabAgentSpawnEndEvent),
+    CollabAgentInteractionBegin(&'a ava_protocol::protocol::CollabAgentInteractionBeginEvent),
+    CollabAgentInteractionEnd(&'a ava_protocol::protocol::CollabAgentInteractionEndEvent),
+    CollabWaitingBegin(&'a ava_protocol::protocol::CollabWaitingBeginEvent),
+    CollabWaitingEnd(&'a ava_protocol::protocol::CollabWaitingEndEvent),
+    CollabCloseBegin(&'a ava_protocol::protocol::CollabCloseBeginEvent),
+    CollabCloseEnd(&'a ava_protocol::protocol::CollabCloseEndEvent),
     SubAgentActivity(&'a SubAgentActivityEvent),
 }
 
@@ -162,7 +162,7 @@ struct ExecCommandBeginTracePayload<'a> {
     started_at_ms: i64,
     command: &'a [String],
     cwd: String,
-    parsed_cmd: &'a [codex_protocol::parse_command::ParsedCommand],
+    parsed_cmd: &'a [ava_protocol::parse_command::ParsedCommand],
     source: ExecCommandSource,
     #[serde(skip_serializing_if = "Option::is_none")]
     interaction_input: Option<&'a str>,
@@ -216,7 +216,7 @@ struct ExecCommandEndTracePayload<'a> {
     completed_at_ms: i64,
     command: &'a [String],
     cwd: String,
-    parsed_cmd: &'a [codex_protocol::parse_command::ParsedCommand],
+    parsed_cmd: &'a [ava_protocol::parse_command::ParsedCommand],
     source: ExecCommandSource,
     #[serde(skip_serializing_if = "Option::is_none")]
     interaction_input: Option<&'a str>,

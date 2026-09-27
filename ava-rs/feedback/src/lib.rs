@@ -15,12 +15,12 @@ use std::time::Instant;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::RouteAwareClientPool;
-use codex_login::AuthEnvTelemetry;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::RouteAwareClientPool;
+use ava_login::AuthEnvTelemetry;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
 use tracing::Event;
 use tracing::Level;
 use tracing::field::Visit;
@@ -44,12 +44,12 @@ pub use report_upload::FeedbackDelivery;
 pub use report_upload::FeedbackTransport;
 pub use report_upload::prepare_report_attachment;
 
-/// Filename used for the redacted `codex doctor --json` feedback attachment.
-pub const DOCTOR_REPORT_ATTACHMENT_FILENAME: &str = "codex-doctor-report.json";
-/// Filename used for the raw Codex Apps MCP tools cache feedback attachment.
-pub const CODEX_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME: &str = "codex-apps-tools-cache.json";
+/// Filename used for the redacted `ava doctor --json` feedback attachment.
+pub const DOCTOR_REPORT_ATTACHMENT_FILENAME: &str = "ava-doctor-report.json";
+/// Filename used for the raw Ava Apps MCP tools cache feedback attachment.
+pub const AVA_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME: &str = "ava-apps-tools-cache.json";
 /// Filename used for the raw connector directory cache feedback attachment.
-pub const CODEX_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME: &str = "codex-app-directory-cache.json";
+pub const AVA_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME: &str = "ava-app-directory-cache.json";
 /// Filename used for the Windows sandbox log feedback attachment.
 pub const WINDOWS_SANDBOX_LOG_ATTACHMENT_FILENAME: &str = "windows-sandbox.log";
 const DEFAULT_MAX_BYTES: usize = 4 * 1024 * 1024; // 4 MiB
@@ -176,8 +176,8 @@ pub fn emit_feedback_request_tags_with_auth_env(
         auth_recovery_followup_success = tracing::field::debug(&snapshot.auth_recovery_followup_success),
         auth_recovery_followup_status = tracing::field::debug(&snapshot.auth_recovery_followup_status),
         auth_env_openai_api_key_present = tracing::field::debug(auth_env.openai_api_key_env_present),
-        auth_env_codex_api_key_present = tracing::field::debug(auth_env.codex_api_key_env_present),
-        auth_env_codex_api_key_enabled = tracing::field::debug(auth_env.codex_api_key_env_enabled),
+        auth_env_ava_api_key_present = tracing::field::debug(auth_env.ava_api_key_env_present),
+        auth_env_ava_api_key_enabled = tracing::field::debug(auth_env.ava_api_key_env_enabled),
         // Custom provider `env_key` is arbitrary config text, so emit only a safe bucket.
         auth_env_provider_key_name = tracing::field::debug(
             auth_env.provider_env_key_name.as_deref().unwrap_or("")
@@ -192,17 +192,17 @@ pub fn emit_feedback_request_tags_with_auth_env(
 }
 
 #[derive(Clone)]
-pub struct CodexFeedback {
+pub struct AvaFeedback {
     inner: Arc<FeedbackInner>,
 }
 
-impl Default for CodexFeedback {
+impl Default for AvaFeedback {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl CodexFeedback {
+impl AvaFeedback {
     pub fn new() -> Self {
         Self::with_capacity(DEFAULT_MAX_BYTES)
     }
@@ -238,14 +238,14 @@ impl CodexFeedback {
             .with_filter(
                 Targets::new()
                     .with_default(Level::TRACE)
-                    .with_target("codex_http_client::transport", LevelFilter::DEBUG)
-                    .with_target("codex_api::sse", LevelFilter::DEBUG)
+                    .with_target("ava_http_client::transport", LevelFilter::DEBUG)
+                    .with_target("ava_api::sse", LevelFilter::DEBUG)
                     // `tracing-log` checks legacy log records against their original
                     // target before re-emitting them as `log`; tungstenite TRACE
                     // includes full websocket frames and authenticated handshakes.
                     .with_target("tungstenite", LevelFilter::DEBUG)
-                    .with_target("codex_api::responses_websocket_timing", LevelFilter::OFF)
-                    .with_target("codex_core::post_sampling_token_estimate", LevelFilter::OFF),
+                    .with_target("ava_api::responses_websocket_timing", LevelFilter::OFF)
+                    .with_target("ava_core::post_sampling_token_estimate", LevelFilter::OFF),
             )
     }
 
@@ -397,11 +397,11 @@ mod rollout_attachment_tests;
 impl FeedbackAttachmentPath {
     /// Read a whole regular file within the caller's size limit.
     pub fn read_attachment(&self, max_bytes: usize) -> io::Result<Option<FeedbackAttachment>> {
-        let rollout_path = codex_rollout::rollout_id_from_path(&self.path)
-            .map(|_| codex_rollout::plain_rollout_path(&self.path));
+        let rollout_path = ava_rollout::rollout_id_from_path(&self.path)
+            .map(|_| ava_rollout::plain_rollout_path(&self.path));
         let buffer = if rollout_path.is_some() {
             let Some(buffer) =
-                codex_rollout::read_rollout_prefix(&self.path, max_bytes.saturating_add(1))?
+                ava_rollout::read_rollout_prefix(&self.path, max_bytes.saturating_add(1))?
             else {
                 return Ok(None);
             };
@@ -477,7 +477,7 @@ pub struct FeedbackUploadOptions<'a> {
     pub include_logs: bool,
     /// Generated attachments that are already buffered and safe to upload.
     ///
-    /// These are included after `codex-logs.log` and before path-backed rollout
+    /// These are included after `ava-logs.log` and before path-backed rollout
     /// attachments. They are only passed by the caller after any user consent
     /// gate has decided logs and diagnostics should be uploaded.
     pub extra_attachments: &'a [FeedbackAttachment],
@@ -510,7 +510,7 @@ impl FeedbackSnapshot {
         let title = custom_title.map_or_else(
             || {
                 format!(
-                    "[{}]: Codex session {}",
+                    "[{}]: Ava session {}",
                     display_classification(classification),
                     self.thread_id
                 )
@@ -539,7 +539,7 @@ impl FeedbackSnapshot {
 
     pub fn log_attachment(&self, logs_override: Option<Vec<u8>>) -> FeedbackAttachment {
         FeedbackAttachment {
-            filename: "codex-logs.log".to_string(),
+            filename: "ava-logs.log".to_string(),
             content_type: Some("text/plain".to_string()),
             buffer: logs_override.unwrap_or_else(|| self.bytes.clone()),
         }
@@ -895,7 +895,7 @@ mod tests {
 
     use super::*;
     use crate::FeedbackDiagnostic;
-    use codex_http_client::OutboundProxyPolicy;
+    use ava_http_client::OutboundProxyPolicy;
     use flate2::Compression;
     use flate2::read::GzDecoder;
     use flate2::write::GzEncoder;
@@ -913,7 +913,7 @@ mod tests {
 
     #[test]
     fn ring_buffer_drops_front_when_full() {
-        let fb = CodexFeedback::with_capacity(/*max_bytes*/ 8);
+        let fb = AvaFeedback::with_capacity(/*max_bytes*/ 8);
         {
             let mut w = fb.make_writer().make_writer();
             w.write_all(b"abcdefgh").unwrap();
@@ -926,7 +926,7 @@ mod tests {
 
     #[test]
     fn logger_layer_filters_noisy_trace_payloads() {
-        let fb = CodexFeedback::new();
+        let fb = AvaFeedback::new();
         let _guard = tracing_subscriber::registry()
             // Keep another TRACE subscriber interested so bridged records are
             // emitted; feedback must still reject them with its own filter.
@@ -934,14 +934,14 @@ mod tests {
             .with(fb.logger_layer())
             .set_default();
 
-        tracing::trace!(target: "codex_api::responses_websocket_timing", payload = "secret");
-        tracing::trace!(target: "codex_http_client::transport", "transport-trace");
-        tracing::trace!(target: "codex_api::sse", "sse-trace");
-        tracing::trace!(target: "codex_api::sse::responses", "nested-sse-trace");
-        tracing::debug!(target: "codex_http_client::transport", "transport-debug");
-        tracing::debug!(target: "codex_api::sse::responses", "sse-debug");
-        tracing::trace!(target: "codex_feedback_test", "unrelated-trace");
-        log::trace!(target: "codex_feedback_test", "unrelated-log-trace");
+        tracing::trace!(target: "ava_api::responses_websocket_timing", payload = "secret");
+        tracing::trace!(target: "ava_http_client::transport", "transport-trace");
+        tracing::trace!(target: "ava_api::sse", "sse-trace");
+        tracing::trace!(target: "ava_api::sse::responses", "nested-sse-trace");
+        tracing::debug!(target: "ava_http_client::transport", "transport-debug");
+        tracing::debug!(target: "ava_api::sse::responses", "sse-debug");
+        tracing::trace!(target: "ava_feedback_test", "unrelated-trace");
+        log::trace!(target: "ava_feedback_test", "unrelated-log-trace");
         log::trace!(
             target: "tungstenite::handshake::client",
             "websocket-handshake-payload"
@@ -973,7 +973,7 @@ mod tests {
 
     #[test]
     fn metadata_layer_records_tags_from_feedback_target() {
-        let fb = CodexFeedback::new();
+        let fb = AvaFeedback::new();
         let _guard = tracing_subscriber::registry()
             .with(fb.metadata_layer())
             .set_default();
@@ -986,7 +986,7 @@ mod tests {
     }
 
     async fn upload_test_feedback(
-        feedback: &CodexFeedback,
+        feedback: &AvaFeedback,
         dsn: &str,
         extra_attachments: &[FeedbackAttachment],
     ) -> Result<()> {
@@ -1030,7 +1030,7 @@ mod tests {
             content_type: None,
             buffer: b"later diagnostic".to_vec(),
         };
-        upload_test_feedback(&CodexFeedback::new(), &dsn, &[attachment])
+        upload_test_feedback(&AvaFeedback::new(), &dsn, &[attachment])
             .await
             .expect("all three envelopes should finish across twelve seconds of network waits");
     }
@@ -1061,7 +1061,7 @@ mod tests {
             content_type: None,
             buffer: filename.as_bytes().to_vec(),
         });
-        let snapshot = CodexFeedback::new()
+        let snapshot = AvaFeedback::new()
             .snapshot(/*session_id*/ None)
             .with_feedback_diagnostics(FeedbackDiagnostics::default());
         let error = tokio::time::timeout(
@@ -1131,7 +1131,7 @@ mod tests {
             buffer: filename.as_bytes().to_vec(),
         });
         let started = Instant::now();
-        upload_test_feedback(&CodexFeedback::new(), &dsn, &attachments)
+        upload_test_feedback(&AvaFeedback::new(), &dsn, &attachments)
             .await
             .expect_err("legacy uploads report incomplete diagnostics");
         assert!(started.elapsed() >= Duration::from_secs(2));
@@ -1204,7 +1204,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        CodexFeedback::new()
+        AvaFeedback::new()
             .snapshot(/*session_id*/ None)
             .upload_feedback_with_dsn(
                 FeedbackUploadOptions {
@@ -1304,7 +1304,7 @@ mod tests {
             oversized_path.clone(),
             oversized_path.with_extension("missing"),
         ] {
-            let result = CodexFeedback::new()
+            let result = AvaFeedback::new()
                 .snapshot(/*session_id*/ None)
                 .upload_feedback_with_dsn(
                     FeedbackUploadOptions {
@@ -1393,7 +1393,7 @@ mod tests {
                 content_type: None,
                 buffer: b"later diagnostic".to_vec(),
             };
-            upload_test_feedback(&CodexFeedback::new(), &dsn, &[later])
+            upload_test_feedback(&AvaFeedback::new(), &dsn, &[later])
                 .await
                 .expect_err("legacy uploads report rate-limited diagnostics");
         }
@@ -1409,7 +1409,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let feedback = CodexFeedback::new();
+        let feedback = AvaFeedback::new();
         let dsn = format!("http://public@{}/42", server.address());
 
         let error = upload_test_feedback(&feedback, &dsn, &[])
@@ -1435,7 +1435,7 @@ mod tests {
             .mount(&sentry_server)
             .await;
         let dsn = format!("http://public@{}/42", sentry_server.address());
-        let error = upload_test_feedback(&CodexFeedback::new(), &dsn, &[])
+        let error = upload_test_feedback(&AvaFeedback::new(), &dsn, &[])
             .await
             .expect_err("redirected feedback uploads must be rejected");
 
@@ -1459,20 +1459,20 @@ mod tests {
         drop(listener);
 
         let dsn = format!("http://public@{address}/42");
-        let error = upload_test_feedback(&CodexFeedback::new(), &dsn, &[])
+        let error = upload_test_feedback(&AvaFeedback::new(), &dsn, &[])
             .await
             .expect_err("transport failures must fail feedback uploads");
 
         assert!(
             error
-                .downcast_ref::<codex_http_client::RouteAwareRequestError>()
-                .is_some_and(codex_http_client::RouteAwareRequestError::is_connect)
+                .downcast_ref::<ava_http_client::RouteAwareRequestError>()
+                .is_some_and(ava_http_client::RouteAwareRequestError::is_connect)
         );
     }
 
     #[test]
     fn feedback_attachments_gate_connectivity_diagnostics() {
-        let extra_filename = format!("codex-feedback-extra-{}.jsonl", ThreadId::new());
+        let extra_filename = format!("ava-feedback-extra-{}.jsonl", ThreadId::new());
         let extra_path = std::env::temp_dir().join(&extra_filename);
         let extra_attachment_path = FeedbackAttachmentPath {
             path: extra_path.clone(),
@@ -1480,7 +1480,7 @@ mod tests {
         };
         fs::write(&extra_path, "rollout").expect("extra attachment should be written");
 
-        let snapshot_with_diagnostics = CodexFeedback::new()
+        let snapshot_with_diagnostics = AvaFeedback::new()
             .snapshot(/*session_id*/ None)
             .with_feedback_diagnostics(FeedbackDiagnostics::new(vec![FeedbackDiagnostic {
                 headline: "Proxy environment variables are set and may affect connectivity."
@@ -1508,7 +1508,7 @@ mod tests {
                 .map(|attachment| attachment.filename.as_str())
                 .collect::<Vec<_>>(),
             vec![
-                "codex-logs.log",
+                "ava-logs.log",
                 DOCTOR_REPORT_ATTACHMENT_FILENAME,
                 FEEDBACK_DIAGNOSTICS_ATTACHMENT_FILENAME,
                 extra_filename.as_str()
@@ -1532,7 +1532,7 @@ mod tests {
             OsStr::new(attachments_with_diagnostics[3].filename.as_str()),
             OsStr::new(extra_filename.as_str())
         );
-        let attachments_without_diagnostics = CodexFeedback::new()
+        let attachments_without_diagnostics = AvaFeedback::new()
             .snapshot(/*session_id*/ None)
             .with_feedback_diagnostics(FeedbackDiagnostics::default())
             .feedback_attachments(/*include_logs*/ true, &[], &[], Some(vec![1]))
@@ -1544,7 +1544,7 @@ mod tests {
                 .iter()
                 .map(|attachment| attachment.filename.as_str())
                 .collect::<Vec<_>>(),
-            vec!["codex-logs.log"]
+            vec!["ava-logs.log"]
         );
         assert_eq!(attachments_without_diagnostics[0].buffer, vec![1]);
         fs::remove_file(extra_path).expect("extra attachment should be removed");
@@ -1553,8 +1553,8 @@ mod tests {
     #[test]
     fn path_backed_attachments_use_binary_content_types() {
         let suffix = ThreadId::new();
-        let gzip_filename = format!("codex-desktop-app-logs-{suffix}.tar.gz");
-        let unknown_filename = format!("codex-feedback-extra-{suffix}.binunknown");
+        let gzip_filename = format!("ava-desktop-app-logs-{suffix}.tar.gz");
+        let unknown_filename = format!("ava-feedback-extra-{suffix}.binunknown");
         let gzip_path = std::env::temp_dir().join(&gzip_filename);
         let unknown_path = std::env::temp_dir().join(&unknown_filename);
         let gzip_bytes = b"\x1f\x8b\x08\x00\xff";
@@ -1562,7 +1562,7 @@ mod tests {
         fs::write(&gzip_path, gzip_bytes).expect("gzip attachment should be written");
         fs::write(&unknown_path, unknown_bytes).expect("unknown attachment should be written");
 
-        let attachments = CodexFeedback::new()
+        let attachments = AvaFeedback::new()
             .snapshot(/*session_id*/ None)
             .feedback_attachments(
                 /*include_logs*/ false,

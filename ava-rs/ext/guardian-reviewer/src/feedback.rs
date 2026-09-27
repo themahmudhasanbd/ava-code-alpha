@@ -3,10 +3,10 @@
 
 use crate::GuardianReviewSessionOutcome;
 use crate::parse_guardian_assessment;
-use codex_feedback::record_guardian_review_failure;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::GuardianAssessmentOutcome;
+use ava_feedback::record_guardian_review_failure;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::GuardianAssessmentOutcome;
 use serde::Serialize;
 use std::io;
 use std::io::Write;

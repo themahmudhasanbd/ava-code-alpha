@@ -32,7 +32,7 @@ D375 固定了拓扑的交付顺序：首个远程部署是桌面本身作为远
 
 ## 2. 参考实现
 
-设计参考 OpenAI Codex App Server、VS Code Agent Host、MCP Transport 和
+设计参考 OpenAI Ava App Server、VS Code Agent Host、MCP Transport 和
 Google A2A 的分层方式；SSH 隧道拓扑沿用 VS Code Remote-SSH 与 JetBrains
 Gateway 的模式，服务端经用户自己的 SSH 会话引导，客户端通过转发的 loopback
 端口连接。不恢复已撤回的子代理 A2A/Peer 协调通道。

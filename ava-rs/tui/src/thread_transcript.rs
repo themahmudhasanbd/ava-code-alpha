@@ -16,12 +16,12 @@ use crate::history_cell::UserHistoryCell;
 use crate::history_cell::split_reasoning_summary_parts;
 use crate::inline_visualization::InlineVisualizationContext;
 use crate::legacy_core::config::Config;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::UserInput;
-use codex_protocol::ThreadId;
-use codex_protocol::items::UserMessageItem;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::UserInput;
+use ava_protocol::ThreadId;
+use ava_protocol::items::UserMessageItem;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use ratatui::style::Stylize as _;
 
 mod activity_pages;
@@ -248,7 +248,7 @@ fn item_to_cells(
                 client_id,
                 content: content
                     .into_iter()
-                    .map(codex_app_server_protocol::UserInput::into_core)
+                    .map(ava_app_server_protocol::UserInput::into_core)
                     .collect(),
             };
             let message = item.message();
@@ -290,7 +290,7 @@ fn item_to_cells(
                 )
             {
                 cells.push(Arc::new(PrefixedWrappedHistoryCell::new(
-                    format!("Sent by Codex from task {source_thread_id}\n{prompt}"),
+                    format!("Sent by Ava from task {source_thread_id}\n{prompt}"),
                     "• ".dim(),
                     "  ",
                 )));

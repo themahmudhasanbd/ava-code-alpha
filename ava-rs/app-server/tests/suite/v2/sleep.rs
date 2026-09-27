@@ -1,21 +1,21 @@
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CurrentTimeReadResponse;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::SleepItem;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput as V2UserInput;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CurrentTimeReadResponse;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::SleepItem;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput as V2UserInput;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -68,15 +68,15 @@ async fn clock_tools_emit_control_tool_analytics() -> Result<()> {
             .collect(),
     )
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
         .with_provider_config("supports_websockets = false")
         .with_extra_config("[features.current_time_reminder]\nenabled = true\nsleep_tool = true")
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .without_managed_config()
         .build_initialized()
@@ -107,7 +107,7 @@ async fn clock_tools_emit_control_tool_analytics() -> Result<()> {
         )
         .await?;
     let turn_event = wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_turn_event" && event["event_params"]["turn_id"] == turn.id
+        event["event_type"] == "ava_turn_event" && event["event_params"]["turn_id"] == turn.id
     })
     .await?;
     timeout(DEFAULT_READ_TIMEOUT, app_server.shutdown_gracefully()).await??;
@@ -115,7 +115,7 @@ async fn clock_tools_emit_control_tool_analytics() -> Result<()> {
     let events = captured_analytics_events(&server).await;
     let mut control_events = events
         .iter()
-        .filter(|event| event["event_type"] == "codex_control_tool_call_event")
+        .filter(|event| event["event_type"] == "ava_control_tool_call_event")
         .collect::<Vec<_>>();
     control_events.sort_by_key(|event| event["event_params"]["item_id"].as_str());
     assert_eq!(
@@ -196,7 +196,7 @@ async fn external_sleep_polls_current_time_and_emits_items(
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config("include_environment_context = false")
         .with_extra_config(&format!(
@@ -208,10 +208,10 @@ sleep_tool = true
 clock_source = "external"
 "#,
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 

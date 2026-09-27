@@ -1,10 +1,10 @@
 use crate::RolloutItem;
 use crate::protocol::EventMsg;
-use codex_extension_items::ExtensionItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::SubAgentActivityKind;
-use codex_protocol::protocol::ThreadHistoryMode;
+use ava_extension_items::ExtensionItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::SubAgentActivityKind;
+use ava_protocol::protocol::ThreadHistoryMode;
 
 /// Whether a rollout `item` should be persisted in rollout files.
 pub fn is_persisted_rollout_item(item: &RolloutItem, history_mode: ThreadHistoryMode) -> bool {
@@ -14,7 +14,7 @@ pub fn is_persisted_rollout_item(item: &RolloutItem, history_mode: ThreadHistory
         | RolloutItem::InterAgentCommunicationMetadata { .. } => true,
         RolloutItem::EventMsg(ev) => should_persist_event_msg(ev, history_mode),
         RolloutItem::RealtimeItem(_) => matches!(history_mode, ThreadHistoryMode::Paginated),
-        // Persist Codex executive markers so we can analyze flows (e.g., compaction, API turns).
+        // Persist Ava executive markers so we can analyze flows (e.g., compaction, API turns).
         RolloutItem::Compacted(_)
         | RolloutItem::TurnContext(_)
         | RolloutItem::TokenUsageRecord(_)

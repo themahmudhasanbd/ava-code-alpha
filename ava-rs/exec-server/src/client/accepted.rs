@@ -18,7 +18,7 @@ use crate::ExecServerError;
 use crate::client_transport::ExecServerReconnectStrategy;
 use crate::client_transport::ReconnectAttempt;
 use crate::connection::JsonRpcConnection;
-use codex_http_client::HttpClientFactory;
+use ava_http_client::HttpClientFactory;
 
 struct AcceptedReplacement {
     connection: JsonRpcConnection,

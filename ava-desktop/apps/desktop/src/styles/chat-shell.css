@@ -733,7 +733,7 @@
 .empty-hero h1 {
   margin: 0;
   max-width: min(100%, 42rem);
-  font-size: var(--text-2xl); /* Codex --text-xl / heading-xl */
+  font-size: var(--text-2xl); /* Ava --text-xl / heading-xl */
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--tracking-tight);
   line-height: var(--leading-tighter);

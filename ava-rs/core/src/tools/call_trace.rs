@@ -2,9 +2,9 @@
 //! These events contain call identifiers and names, never arguments or output.
 //! Code-mode calls reach the broker before the dispatching turn is known.
 
-use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
-use codex_protocol::ThreadId;
-use codex_tools::ToolName;
+use ava_protocol::DEFAULT_FUNCTION_NAMESPACE;
+use ava_protocol::ThreadId;
+use ava_tools::ToolName;
 
 #[derive(Clone, Copy)]
 pub(crate) enum Source {
@@ -43,10 +43,10 @@ pub(crate) fn received(
         } => (None, Source::CodeMode, cell_id, runtime_tool_call_id),
     };
     tracing::event!(
-        name: "codex.tool_call_received",
-        target: "codex_otel.trace_safe",
+        name: "ava.tool_call_received",
+        target: "ava_otel.trace_safe",
         tracing::Level::INFO,
-        event.name = "codex.tool_call_received",
+        event.name = "ava.tool_call_received",
         conversation.id = %thread_id,
         turn_id,
         call_id,
@@ -66,10 +66,10 @@ pub(crate) fn result_ready(
     source: Source,
 ) {
     tracing::event!(
-        name: "codex.tool_result_ready",
-        target: "codex_otel.trace_safe",
+        name: "ava.tool_result_ready",
+        target: "ava_otel.trace_safe",
         tracing::Level::INFO,
-        event.name = "codex.tool_result_ready",
+        event.name = "ava.tool_result_ready",
         conversation.id = %thread_id,
         turn_id,
         call_id,

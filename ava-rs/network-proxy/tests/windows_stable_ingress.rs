@@ -1,23 +1,23 @@
 #![cfg(target_os = "windows")]
 
-use codex_network_proxy::ConfigReloader;
-use codex_network_proxy::ConfigReloaderFuture;
-use codex_network_proxy::ConfigState;
-use codex_network_proxy::NetworkDecision;
-use codex_network_proxy::NetworkMode;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkPolicyRequest;
-use codex_network_proxy::NetworkProtocol;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_network_proxy::NetworkProxyState;
-use codex_network_proxy::build_config_state;
-use codex_windows_sandbox::ConsoleMode;
-use codex_windows_sandbox::LaunchDesktop;
-use codex_windows_sandbox::LocalSid;
-use codex_windows_sandbox::create_process_as_user;
-use codex_windows_sandbox::create_readonly_token_with_caps_and_user_from;
-use codex_windows_sandbox::get_current_token_for_restriction;
+use ava_network_proxy::ConfigReloader;
+use ava_network_proxy::ConfigReloaderFuture;
+use ava_network_proxy::ConfigState;
+use ava_network_proxy::NetworkDecision;
+use ava_network_proxy::NetworkMode;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkPolicyRequest;
+use ava_network_proxy::NetworkProtocol;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::NetworkProxyState;
+use ava_network_proxy::build_config_state;
+use ava_windows_sandbox::ConsoleMode;
+use ava_windows_sandbox::LaunchDesktop;
+use ava_windows_sandbox::LocalSid;
+use ava_windows_sandbox::create_process_as_user;
+use ava_windows_sandbox::create_readonly_token_with_caps_and_user_from;
+use ava_windows_sandbox::get_current_token_for_restriction;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::io::BufRead;
@@ -40,12 +40,12 @@ use windows_sys::Win32::System::Threading::GetExitCodeProcess;
 use windows_sys::Win32::System::Threading::TerminateProcess;
 use windows_sys::Win32::System::Threading::WaitForSingleObject;
 
-const CHILD_MODE_ENV: &str = "CODEX_WINDOWS_PROXY_TEST_CHILD";
-const HTTP_ADDR_ENV: &str = "CODEX_WINDOWS_PROXY_TEST_HTTP_ADDR";
-const SOCKS_ADDR_ENV: &str = "CODEX_WINDOWS_PROXY_TEST_SOCKS_ADDR";
-const ORIGIN_PORT_ENV: &str = "CODEX_WINDOWS_PROXY_TEST_ORIGIN_PORT";
-const ALLOWED_HOST_ENV: &str = "CODEX_WINDOWS_PROXY_TEST_ALLOWED_HOST";
-const DENIED_HOST_ENV: &str = "CODEX_WINDOWS_PROXY_TEST_DENIED_HOST";
+const CHILD_MODE_ENV: &str = "AVA_WINDOWS_PROXY_TEST_CHILD";
+const HTTP_ADDR_ENV: &str = "AVA_WINDOWS_PROXY_TEST_HTTP_ADDR";
+const SOCKS_ADDR_ENV: &str = "AVA_WINDOWS_PROXY_TEST_SOCKS_ADDR";
+const ORIGIN_PORT_ENV: &str = "AVA_WINDOWS_PROXY_TEST_ORIGIN_PORT";
+const ALLOWED_HOST_ENV: &str = "AVA_WINDOWS_PROXY_TEST_ALLOWED_HOST";
+const DENIED_HOST_ENV: &str = "AVA_WINDOWS_PROXY_TEST_DENIED_HOST";
 const FIRST_ENVIRONMENT_ID: &str = "first-environment";
 const SECOND_ENVIRONMENT_ID: &str = "second-environment";
 const DECIDER_DENIED_HOST: &str = "not-allowed.invalid";
@@ -305,7 +305,7 @@ async fn build_proxy(
     let config_state = build_config_state(
         config,
         Default::default(),
-        codex_network_proxy::Platform::native(),
+        ava_network_proxy::Platform::native(),
     )?;
     let reloader = Arc::new(StaticReloader(config_state.clone()));
     let state = Arc::new(NetworkProxyState::with_reloader(config_state, reloader));

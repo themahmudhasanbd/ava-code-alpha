@@ -7,14 +7,14 @@ use pretty_assertions::assert_eq;
 
 #[test]
 fn model_theme_files_preview_select_and_restore() {
-    if std::env::var_os("CODEX_MODEL_THEME_TEST_CHILD").is_none() {
+    if std::env::var_os("AVA_MODEL_THEME_TEST_CHILD").is_none() {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
                 "theme_picker::model_tests::model_theme_files_preview_select_and_restore",
                 "--nocapture",
             ])
-            .env("CODEX_MODEL_THEME_TEST_CHILD", "1")
+            .env("AVA_MODEL_THEME_TEST_CHILD", "1")
             .env("FORCE_COLOR", "3")
             .output()
             .unwrap();
@@ -37,7 +37,7 @@ fn model_theme_files_preview_select_and_restore() {
             bg: if light { (255, 255, 255) } else { (24, 24, 24) },
         };
         with_test_default_colors(colors, || {
-            let params = build_theme_picker_params(Some(name), /*codex_home*/ None, Some(120));
+            let params = build_theme_picker_params(Some(name), /*ava_home*/ None, Some(120));
             let idx = params.initial_selected_idx.unwrap();
             assert_eq!(params.items[idx].search_value.as_deref(), Some(name));
             params.on_selection_changed.as_ref().unwrap()(idx, &tx);

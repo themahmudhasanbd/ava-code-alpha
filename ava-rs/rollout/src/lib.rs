@@ -1,8 +1,8 @@
-//! Rollout persistence and discovery for Codex session files.
+//! Rollout persistence and discovery for Ava session files.
 
 use std::sync::LazyLock;
 
-use codex_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SessionSource;
 use serde::de::Error as _;
 use serde_json::Value;
 
@@ -26,16 +26,16 @@ mod sqlite_metrics;
 pub mod state_db;
 mod writer_lock;
 
-pub use codex_history::CompactedItem;
-pub use codex_history::InitialHistory;
-pub use codex_history::ResponseItemEnvelope;
-pub use codex_history::ResumedHistory;
-pub use codex_history::RetainedContextEntry;
-pub use codex_history::RetainedContextEvent;
-pub use codex_history::RetainedInputSource;
-pub use codex_history::RolloutItem;
-pub use codex_history::RolloutLine;
-pub(crate) use codex_protocol::protocol;
+pub use ava_history::CompactedItem;
+pub use ava_history::InitialHistory;
+pub use ava_history::ResponseItemEnvelope;
+pub use ava_history::ResumedHistory;
+pub use ava_history::RetainedContextEntry;
+pub use ava_history::RetainedContextEvent;
+pub use ava_history::RetainedInputSource;
+pub use ava_history::RolloutItem;
+pub use ava_history::RolloutLine;
+pub(crate) use ava_protocol::protocol;
 
 /// Decodes a persisted rollout record without Serde's flattened-envelope buffering.
 ///
@@ -92,7 +92,7 @@ pub static INTERACTIVE_SESSION_SOURCES: LazyLock<Vec<SessionSource>> = LazyLock:
     ]
 });
 
-pub use codex_protocol::protocol::SessionMeta;
+pub use ava_protocol::protocol::SessionMeta;
 pub use compression::RolloutCompressionTrigger;
 pub use compression::RolloutLineReader;
 pub use compression::existing_rollout_path;

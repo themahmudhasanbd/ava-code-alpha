@@ -27,51 +27,51 @@ use crate::tools::handlers::multi_agents_v2::SendMessageHandler as SendMessageHa
 use crate::tools::handlers::multi_agents_v2::SpawnAgentHandler as SpawnAgentHandlerV2;
 use crate::tools::handlers::multi_agents_v2::WaitAgentHandler as WaitAgentHandlerV2;
 use crate::turn_diff_tracker::TurnDiffTracker;
-use codex_extension_api::empty_extension_registry;
-use codex_features::Feature;
-use codex_history::InitialHistory;
-use codex_history::RolloutItem;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::built_in_model_providers;
-use codex_models_manager::manager::StaticModelsManager;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::items::TurnItem;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::SandboxEnforcement;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::FileSystemAccessMode;
-use codex_protocol::protocol::FileSystemPath;
-use codex_protocol::protocol::FileSystemSandboxEntry;
-use codex_protocol::protocol::FileSystemSandboxPolicy;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::NetworkSandboxPolicy;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::user_input::UserInput;
-use codex_state::DirectionalThreadSpawnEdgeStatus;
+use ava_extension_api::empty_extension_registry;
+use ava_features::Feature;
+use ava_history::InitialHistory;
+use ava_history::RolloutItem;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::built_in_model_providers;
+use ava_models_manager::manager::StaticModelsManager;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::items::TurnItem;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::SandboxEnforcement;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::FileSystemAccessMode;
+use ava_protocol::protocol::FileSystemPath;
+use ava_protocol::protocol::FileSystemSandboxEntry;
+use ava_protocol::protocol::FileSystemSandboxPolicy;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::NetworkSandboxPolicy;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::user_input::UserInput;
+use ava_state::DirectionalThreadSpawnEdgeStatus;
 use core_test_support::TempDirExt;
 use pretty_assertions::assert_eq;
 use serde::Deserialize;
@@ -98,7 +98,7 @@ fn invocation(
         cancellation_token: CancellationToken::new(),
         tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
         call_id: "call-1".to_string(),
-        tool_name: codex_tools::ToolName::plain(tool_name),
+        tool_name: ava_tools::ToolName::plain(tool_name),
         source: crate::tools::context::ToolCallSource::Direct,
         payload,
     }
@@ -114,7 +114,7 @@ fn parse_agent_id(id: &str) -> ThreadId {
     ThreadId::from_string(id).expect("agent id should be valid")
 }
 
-async fn wait_for_recorded_user_input(thread: &crate::CodexThread, expected: &[UserInput]) {
+async fn wait_for_recorded_user_input(thread: &crate::AvaThread, expected: &[UserInput]) {
     timeout(Duration::from_secs(5), async {
         loop {
             let event = thread
@@ -137,19 +137,19 @@ async fn wait_for_recorded_user_input(thread: &crate::CodexThread, expected: &[U
 
 fn thread_manager() -> ThreadManager {
     ThreadManager::with_models_provider_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone(),
     )
 }
 
 async fn install_role_with_model_override(turn: &mut TurnContext) -> String {
     let role_name = "fork-context-role".to_string();
-    tokio::fs::create_dir_all(&turn.config.codex_home)
+    tokio::fs::create_dir_all(&turn.config.ava_home)
         .await
-        .expect("codex home should be created");
+        .expect("ava home should be created");
     let role_config_path = turn
         .config
-        .codex_home
+        .ava_home
         .as_path()
         .join("fork-context-role.toml");
     tokio::fs::write(
@@ -197,7 +197,7 @@ where
             let content = match output.body {
                 FunctionCallOutputBody::Text(text) => text,
                 FunctionCallOutputBody::ContentItems(items) => {
-                    codex_protocol::models::function_call_output_content_items_to_text(&items)
+                    ava_protocol::models::function_call_output_content_items_to_text(&items)
                         .unwrap_or_default()
                 }
             };
@@ -395,7 +395,7 @@ async fn multi_agent_v2_spawn_fork_turns_all_applies_agent_type_override() {
         .expect("test config should allow feature update");
     let mut turn = turn;
     turn.config = Arc::new(config);
-    turn.multi_agent_version = codex_protocol::protocol::MultiAgentVersion::V2;
+    turn.multi_agent_version = ava_protocol::protocol::MultiAgentVersion::V2;
 
     SpawnAgentHandlerV2::default()
         .handle(invocation(
@@ -413,8 +413,8 @@ async fn multi_agent_v2_spawn_fork_turns_all_applies_agent_type_override() {
         .expect("fork_turns=all should apply agent_type overrides");
 }
 
-fn service_tier_test_catalog() -> codex_protocol::openai_models::ModelsResponse {
-    let mut catalog = codex_models_manager::bundled_models_response().expect("bundled models");
+fn service_tier_test_catalog() -> ava_protocol::openai_models::ModelsResponse {
+    let mut catalog = ava_models_manager::bundled_models_response().expect("bundled models");
     let mut model = catalog
         .models
         .iter()
@@ -555,12 +555,12 @@ async fn spawn_agent_service_tier_inheritance_uses_root_preference_and_child_mod
 
     {
         let (mut session, mut turn) = make_session_and_context().await;
-        tokio::fs::create_dir_all(&turn.config.codex_home)
+        tokio::fs::create_dir_all(&turn.config.ava_home)
             .await
-            .expect("codex home should be created");
+            .expect("ava home should be created");
         let role_config_path = turn
             .config
-            .codex_home
+            .ava_home
             .as_path()
             .join("service-tier-role.toml");
         tokio::fs::write(
@@ -628,10 +628,10 @@ async fn spawn_agent_role_service_tier_cannot_override_root_preference() {
     let mut turn = turn
         .with_model("gpt-5.5".to_string(), &session.services.models_manager)
         .await;
-    tokio::fs::create_dir_all(&turn.config.codex_home)
+    tokio::fs::create_dir_all(&turn.config.ava_home)
         .await
-        .expect("codex home should be created");
-    let role_config_path = turn.config.codex_home.as_path().join("tiered-role.toml");
+        .expect("ava home should be created");
+    let role_config_path = turn.config.ava_home.as_path().join("tiered-role.toml");
     tokio::fs::write(
         &role_config_path,
         r#"model = "gpt-5.5"
@@ -823,7 +823,7 @@ async fn multi_agent_v2_spawn_partial_fork_turns_allows_agent_type_override() {
         .expect("test config should allow feature update");
     let mut turn = turn;
     turn.config = Arc::new(config);
-    turn.multi_agent_version = codex_protocol::protocol::MultiAgentVersion::V2;
+    turn.multi_agent_version = ava_protocol::protocol::MultiAgentVersion::V2;
     let parent_provider_id = turn.config.model_provider_id.clone();
 
     let output = SpawnAgentHandlerV2::default()
@@ -2161,15 +2161,15 @@ async fn spawn_agent_reapplies_runtime_sandbox_after_role_config() {
 
     let (mut session, mut turn) = make_session_and_context().await;
     let server = core_test_support::responses::start_mock_server().await;
-    let sandbox_runtime = core_test_support::test_codex::test_codex()
+    let sandbox_runtime = core_test_support::test_ava::test_ava()
         .build_with_auto_env(&server)
         .await
         .expect("sandbox-capable test environment should start");
     let environment_manager = sandbox_runtime.thread_manager.environment_manager();
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         built_in_model_providers(/*openai_base_url*/ None)["openai"].clone(),
-        turn.config.codex_home.to_path_buf(),
+        turn.config.ava_home.to_path_buf(),
         Arc::clone(&environment_manager),
     );
     session.services.agent_control = manager.agent_control();
@@ -2705,7 +2705,7 @@ async fn resume_agent_restores_closed_agent_and_accepts_send_input() {
                 }
                 .into(),
             )]),
-            AuthManager::from_auth_for_testing(CodexAuth::from_api_key("dummy")),
+            AuthManager::from_auth_for_testing(AvaAuth::from_api_key("dummy")),
             /*parent_trace*/ None,
             ClientMcpExtensions::default(),
         )
@@ -3846,10 +3846,10 @@ async fn multi_agent_v2_interrupt_agent_accepts_unloaded_task_name_target() {
         .await
         .expect("sqlite state db should initialize");
     let manager = ThreadManager::with_models_provider_home_and_state_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         Some(state_db.clone()),
     );
     let root = manager
@@ -4176,14 +4176,14 @@ async fn tool_handlers_cascade_close_and_resume_and_keep_explicitly_closed_subtr
         .enable(Feature::Sqlite)
         .expect("test config should allow sqlite");
     let state_db = init_state_db(&config).await;
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("dummy"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("dummy"));
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         crate::thread_manager::build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -4456,7 +4456,7 @@ async fn build_agent_spawn_config_uses_captured_step_settings_and_turn_context_v
         use_profile: true,
         ..ShellEnvironmentPolicy::default()
     };
-    config.codex_linux_sandbox_exe = Some(PathBuf::from("/bin/echo"));
+    config.ava_linux_sandbox_exe = Some(PathBuf::from("/bin/echo"));
     turn.config = Arc::new(config);
     let temp_dir = tempfile::tempdir().expect("temp dir");
     #[allow(deprecated)]

@@ -37,7 +37,7 @@ use crate::render::renderable::Renderable;
 #[derive(EnumIter, EnumString, Display, Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[strum(serialize_all = "kebab-case")]
 pub(crate) enum TerminalTitleItem {
-    /// Codex app name.
+    /// Ava app name.
     AppName,
     /// Project root name, or a compact cwd fallback.
     #[strum(to_string = "project-name", serialize = "project")]
@@ -66,8 +66,8 @@ pub(crate) enum TerminalTitleItem {
     FiveHourLimit,
     /// Remaining usage on the secondary rate limit.
     WeeklyLimit,
-    /// Codex application version.
-    CodexVersion,
+    /// Ava application version.
+    AvaVersion,
     /// Total tokens used in the current session.
     UsedTokens,
     /// Total input tokens consumed.
@@ -97,7 +97,7 @@ pub(crate) enum TerminalTitleItem {
 impl TerminalTitleItem {
     pub(crate) fn description(self) -> &'static str {
         match self {
-            TerminalTitleItem::AppName => "Codex app name",
+            TerminalTitleItem::AppName => "Ava app name",
             TerminalTitleItem::Project => "Project name (falls back to current directory name)",
             TerminalTitleItem::CurrentDir => "Current working directory",
             TerminalTitleItem::Spinner => {
@@ -121,7 +121,7 @@ impl TerminalTitleItem {
             TerminalTitleItem::WeeklyLimit => {
                 "Remaining usage on the secondary usage limit (omitted when unavailable)"
             }
-            TerminalTitleItem::CodexVersion => "Codex application version",
+            TerminalTitleItem::AvaVersion => "Ava application version",
             TerminalTitleItem::UsedTokens => "Total tokens used in session (omitted when zero)",
             TerminalTitleItem::TotalInputTokens => "Total input tokens used in session",
             TerminalTitleItem::TotalOutputTokens => "Total output tokens used in session",
@@ -158,7 +158,7 @@ impl TerminalTitleItem {
             TerminalTitleItem::ContextUsed => Some(StatusSurfacePreviewItem::ContextUsed),
             TerminalTitleItem::FiveHourLimit => Some(StatusSurfacePreviewItem::FiveHourLimit),
             TerminalTitleItem::WeeklyLimit => Some(StatusSurfacePreviewItem::WeeklyLimit),
-            TerminalTitleItem::CodexVersion => Some(StatusSurfacePreviewItem::CodexVersion),
+            TerminalTitleItem::AvaVersion => Some(StatusSurfacePreviewItem::AvaVersion),
             TerminalTitleItem::UsedTokens => Some(StatusSurfacePreviewItem::UsedTokens),
             TerminalTitleItem::TotalInputTokens => Some(StatusSurfacePreviewItem::TotalInputTokens),
             TerminalTitleItem::TotalOutputTokens => {
@@ -578,7 +578,7 @@ mod tests {
                 "model-with-reasoning",
                 "reasoning",
                 "weekly-limit",
-                "codex-version",
+                "ava-version",
                 "used-tokens",
                 "total-input-tokens",
                 "total-output-tokens",
@@ -604,7 +604,7 @@ mod tests {
                 TerminalTitleItem::ModelWithReasoning,
                 TerminalTitleItem::Reasoning,
                 TerminalTitleItem::WeeklyLimit,
-                TerminalTitleItem::CodexVersion,
+                TerminalTitleItem::AvaVersion,
                 TerminalTitleItem::UsedTokens,
                 TerminalTitleItem::TotalInputTokens,
                 TerminalTitleItem::TotalOutputTokens,

@@ -1,7 +1,7 @@
 //! Connects account-owned routing discovery to ChatGPT request builders.
 //! The resolver is weakly held so it cannot keep its app-server owner alive.
 
-use codex_config::ConfigLayerStack;
+use ava_config::ConfigLayerStack;
 use std::future::Future;
 use std::io;
 use std::path::PathBuf;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::sync::Weak;
 
 use crate::AuthManager;
-use crate::CodexAuth;
+use crate::AvaAuth;
 
 /// A successful discovery for one selected workspace.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -63,7 +63,7 @@ impl AuthManager {
     /// CLI callers without a discovery owner retain their existing routing behavior.
     pub async fn workspace_routing(
         &self,
-        auth: &CodexAuth,
+        auth: &AvaAuth,
         request: WorkspaceRoutingRequest,
     ) -> io::Result<Option<WorkspaceRouting>> {
         let Some(resolver) = self.workspace_routing_resolver.get() else {

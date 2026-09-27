@@ -4,8 +4,8 @@ use super::tools::McpHistory;
 use crate::history_cell::ComputerActivityCell;
 use crate::history_cell::HistoryCell;
 use crate::history_cell::McpToolCallCell;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::Turn;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::Turn;
 use std::sync::Arc;
 
 pub(super) fn append(group: &mut ComputerActivityCell, call: McpHistory) {

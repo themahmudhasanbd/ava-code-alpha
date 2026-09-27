@@ -4,7 +4,7 @@ const RATE_LIMIT_RESET_REQUEST_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 
 const RATE_LIMIT_RESET_DETAILS_REQUEST_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 5);
 #[cfg(debug_assertions)]
 const RATE_LIMIT_RESET_REQUEST_TIMEOUT_ENV_VAR: &str =
-    "CODEX_TEST_RATE_LIMIT_RESET_REQUEST_TIMEOUT_MS";
+    "AVA_TEST_RATE_LIMIT_RESET_REQUEST_TIMEOUT_MS";
 
 impl AccountRequestProcessor {
     pub(super) async fn detailed_rate_limit_reset_credits(
@@ -100,10 +100,10 @@ impl AccountRequestProcessor {
     async fn rate_limit_reset_backend_client(&self) -> Result<BackendClient, JSONRPCErrorError> {
         let Some(auth) = self.auth_manager.auth().await else {
             return Err(invalid_request(
-                "codex account authentication required for rate limit reset credits",
+                "ava account authentication required for rate limit reset credits",
             ));
         };
-        if !auth.uses_codex_backend() {
+        if !auth.uses_ava_backend() {
             return Err(invalid_request(
                 "chatgpt authentication required for rate limit reset credits",
             ));
@@ -135,7 +135,7 @@ fn rate_limit_reset_credit_from_backend(
     credit: BackendRateLimitResetCreditDetails,
 ) -> Result<RateLimitResetCredit, String> {
     let reset_type = match credit.reset_type.as_str() {
-        "codex_rate_limits" => RateLimitResetType::CodexRateLimits,
+        "ava_rate_limits" => RateLimitResetType::AvaRateLimits,
         _ => RateLimitResetType::Unknown,
     };
     let status = match credit.status.as_str() {

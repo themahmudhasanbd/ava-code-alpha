@@ -7,7 +7,7 @@
 
 ## Context
 
-Codex-shaped compaction kept several recent user prompts while dropping the
+Ava-shaped compaction kept several recent user prompts while dropping the
 assistant and tool messages that established whether those prompts were
 completed. After a completed task, the next prompt could therefore look like
 another bare user message and the model could resume an old task (issue #22).
@@ -43,4 +43,4 @@ another bare user message and the model could resume an old task (issue #22).
 - Retaining multiple recent user messages preserves more literal prompt text,
   but loses the task boundary when completion messages are compacted away.
 - Retaining assistant and tool messages would preserve more context but can
-  strand incomplete tool calls and violates the Codex-shaped checkpoint form.
+  strand incomplete tool calls and violates the Ava-shaped checkpoint form.

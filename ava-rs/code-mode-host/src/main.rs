@@ -5,11 +5,11 @@ use std::time::Duration;
 
 use anyhow::Context;
 use clap::Parser;
-use codex_otel::OtelExporter;
-use codex_otel::OtelHttpProtocol;
-use codex_otel::OtelProvider;
-use codex_otel::OtelSettings;
-use codex_otel_trace_websocket::TraceWebSocket;
+use ava_otel::OtelExporter;
+use ava_otel::OtelHttpProtocol;
+use ava_otel::OtelProvider;
+use ava_otel::OtelSettings;
+use ava_otel_trace_websocket::TraceWebSocket;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -22,7 +22,7 @@ struct Cli {
     #[arg(
         long,
         value_name = "URL",
-        default_value = codex_code_mode_host::DEFAULT_LISTEN_URL
+        default_value = ava_code_mode_host::DEFAULT_LISTEN_URL
     )]
     listen: String,
 
@@ -63,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
     if let Some(trace_transport) = trace_transport.as_ref() {
         let listen_addr = trace_transport.listen_addr();
-        tracing::info!("codex-code-mode-host OTEL trace websocket listening on ws://{listen_addr}");
+        tracing::info!("ava-code-mode-host OTEL trace websocket listening on ws://{listen_addr}");
     }
     tracing::info_span!(
         "code_mode_host.startup",
@@ -71,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
     )
     .in_scope(|| {});
 
-    let main_transport = codex_code_mode_host::run_main(&cli.listen);
+    let main_transport = ava_code_mode_host::run_main(&cli.listen);
     let result = match trace_transport.as_mut() {
         Some(trace_transport) => tokio::select! {
             result = main_transport => result,
@@ -91,9 +91,9 @@ async fn main() -> anyhow::Result<()> {
 fn build_trace_provider(endpoint: &str) -> anyhow::Result<OtelProvider> {
     OtelProvider::try_new(&OtelSettings {
         environment: "code-mode-host".to_string(),
-        service_name: "codex-code-mode-host".to_string(),
+        service_name: "ava-code-mode-host".to_string(),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
-        codex_home: PathBuf::from("/tmp"),
+        ava_home: PathBuf::from("/tmp"),
         exporter: OtelExporter::None,
         trace_exporter: OtelExporter::OtlpHttp {
             endpoint: endpoint.to_string(),

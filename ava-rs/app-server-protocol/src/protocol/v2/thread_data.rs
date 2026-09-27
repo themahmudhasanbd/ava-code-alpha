@@ -1,19 +1,19 @@
-use super::CodexErrorInfo;
+use super::AvaErrorInfo;
 use super::ThreadEnvironment;
 use super::ThreadItem;
 use super::ThreadStatus;
 use super::TurnStatus;
 use crate::JsonSchema;
 use crate::TS;
-use codex_experimental_api_macros::ExperimentalApi;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::MisalignmentErrorDetails as CoreMisalignmentErrorDetails;
-use codex_protocol::protocol::MisalignmentSteer as CoreMisalignmentSteer;
-use codex_protocol::protocol::SessionSource as CoreSessionSource;
-use codex_protocol::protocol::SubAgentSource as CoreSubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode as CoreThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource as CoreThreadSource;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_experimental_api_macros::ExperimentalApi;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::MisalignmentErrorDetails as CoreMisalignmentErrorDetails;
+use ava_protocol::protocol::MisalignmentSteer as CoreMisalignmentSteer;
+use ava_protocol::protocol::SessionSource as CoreSessionSource;
+use ava_protocol::protocol::SubAgentSource as CoreSubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode as CoreThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource as CoreThreadSource;
+use ava_utils_absolute_path::AbsolutePathBuf;
 #[cfg(test)]
 use schemars::r#gen::SchemaGenerator;
 #[cfg(test)]
@@ -202,7 +202,7 @@ pub struct ThreadSectionAppearance {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]
 pub struct Thread {
-    /// Identifier for this thread. Codex-generated thread IDs are UUIDv7.
+    /// Identifier for this thread. Ava-generated thread IDs are UUIDv7.
     pub id: String,
     /// Current environments for a loaded thread, in priority order, primary first.
     /// `null` means the thread is not loaded or the server does not expose its selection.
@@ -267,7 +267,7 @@ pub struct Thread {
     /// Originator recorded when the thread was created, independent of its current client or executor.
     /// Null when the recorded originator is unavailable.
     pub originator: Option<String>,
-    /// Origin of the thread (CLI, VSCode, codex exec, codex app-server, etc.).
+    /// Origin of the thread (CLI, VSCode, ava exec, ava app-server, etc.).
     pub source: SessionSource,
     /// Whether the app server accepts direct turn input for this loaded thread.
     /// `None` means the capability is unavailable, such as for an unloaded stored thread.
@@ -384,7 +384,7 @@ impl<'de> Deserialize<'de> for Thread {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]
 pub struct Turn {
-    /// Identifier for this turn. Codex-generated turn IDs are UUIDv7.
+    /// Identifier for this turn. Ava-generated turn IDs are UUIDv7.
     pub id: String,
     /// Thread items currently included in this turn payload.
     pub items: Vec<ThreadItem>,
@@ -424,7 +424,7 @@ pub enum TurnItemsView {
 #[error("{message}")]
 pub struct TurnError {
     pub message: String,
-    pub codex_error_info: Option<CodexErrorInfo>,
+    pub ava_error_info: Option<AvaErrorInfo>,
     #[serde(default)]
     pub additional_details: Option<String>,
     /// Optional public explanation and continuation instruction for a misalignment block.

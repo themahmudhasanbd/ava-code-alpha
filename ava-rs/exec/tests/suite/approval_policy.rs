@@ -2,10 +2,10 @@
 #![allow(clippy::unwrap_used)]
 
 use core_test_support::responses;
-use core_test_support::test_codex_exec::test_codex_exec;
+use core_test_support::test_ava_exec::test_ava_exec;
 
 async fn run_exec_with_config(config_toml: &str, extra_args: &[&str]) -> anyhow::Result<String> {
-    let test = test_codex_exec();
+    let test = test_ava_exec();
     std::fs::write(test.home_path().join("config.toml"), config_toml)?;
 
     let server = responses::start_mock_server().await;

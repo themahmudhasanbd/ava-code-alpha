@@ -1,23 +1,23 @@
 //! Exercises cache-prefix stability through the public collection and composition API.
 
-use codex_context_fragments::ContextualUserFragment;
-use codex_guardian_context::ActionPresentation;
-use codex_guardian_context::ContextPresentation;
-use codex_guardian_context::ContextProfile;
-use codex_guardian_context::ContextTarget;
-use codex_guardian_context::PlannedAction;
-use codex_guardian_context::PlannedActionKind;
-use codex_guardian_context::PreviousReviews;
-use codex_guardian_context::SectionHistory;
-use codex_guardian_context::SectionInput;
-use codex_guardian_context::TrustedSkills;
-use codex_guardian_context::TrustedTool;
-use codex_guardian_context::default_registry;
-use codex_history::RetainedContext;
-use codex_history::RetainedInputSource;
-use codex_history::RetainedUserMessage;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
+use ava_context_fragments::ContextualUserFragment;
+use ava_guardian_context::ActionPresentation;
+use ava_guardian_context::ContextPresentation;
+use ava_guardian_context::ContextProfile;
+use ava_guardian_context::ContextTarget;
+use ava_guardian_context::PlannedAction;
+use ava_guardian_context::PlannedActionKind;
+use ava_guardian_context::PreviousReviews;
+use ava_guardian_context::SectionHistory;
+use ava_guardian_context::SectionInput;
+use ava_guardian_context::TrustedSkills;
+use ava_guardian_context::TrustedTool;
+use ava_guardian_context::default_registry;
+use ava_history::RetainedContext;
+use ava_history::RetainedInputSource;
+use ava_history::RetainedUserMessage;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 
 struct History {

@@ -1,4 +1,4 @@
-//! Bridges Apps SDK-style `openai/fileParams` metadata into Codex's MCP flow.
+//! Bridges Apps SDK-style `openai/fileParams` metadata into Ava's MCP flow.
 //!
 //! Strategy:
 //! - Inspect `_meta["openai/fileParams"]` to discover which tool arguments are
@@ -8,19 +8,19 @@
 //!   and rewrite only the declared arguments into the provided-file payload
 //!   shape expected by the downstream Apps tool.
 //!
-//! The model-facing local-path schema is owned by `codex-mcp` alongside MCP tool inventory, so this
+//! The model-facing local-path schema is owned by `ava-mcp` alongside MCP tool inventory, so this
 //! module only handles uploading the files and rewriting the execution-time arguments.
 
 use crate::session::session::Session;
 use crate::session::step_context::StepContext;
-use codex_api::HostedFileUploadContext;
-use codex_api::OPENAI_FILE_UPLOAD_LIMIT_BYTES;
-use codex_api::upload_openai_file;
-use codex_exec_server::GetMetadataOptions;
-use codex_login::CodexAuth;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_sandboxing::policy_transforms::effective_file_system_sandbox_policy;
-use codex_sandboxing::policy_transforms::merge_permission_profiles;
+use ava_api::HostedFileUploadContext;
+use ava_api::OPENAI_FILE_UPLOAD_LIMIT_BYTES;
+use ava_api::upload_openai_file;
+use ava_exec_server::GetMetadataOptions;
+use ava_login::AvaAuth;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_sandboxing::policy_transforms::effective_file_system_sandbox_policy;
+use ava_sandboxing::policy_transforms::merge_permission_profiles;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 
@@ -79,7 +79,7 @@ pub(crate) async fn rewrite_mcp_tool_arguments_for_openai_files(
 async fn rewrite_argument_value_for_openai_files(
     sess: &Session,
     step_context: &StepContext,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     field_name: &str,
     optional_fields: &[String],
     value: &JsonValue,
@@ -132,7 +132,7 @@ async fn rewrite_argument_value_for_openai_files(
 async fn build_uploaded_argument_value(
     sess: &Session,
     step_context: &StepContext,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     argument: FileArgumentLocation<'_>,
     optional_fields: &[String],
     file_path: &str,
@@ -146,10 +146,10 @@ async fn build_uploaded_argument_value(
         None => format!("failed to upload `{file_path}` for `{field_name}`: {error}"),
     };
     let Some(auth) = auth else {
-        return Err("ChatGPT auth is required to upload files for Codex Apps tools".to_string());
+        return Err("ChatGPT auth is required to upload files for Ava Apps tools".to_string());
     };
-    if !auth.uses_codex_backend() {
-        return Err("ChatGPT auth is required to upload files for Codex Apps tools".to_string());
+    if !auth.uses_ava_backend() {
+        return Err("ChatGPT auth is required to upload files for Ava Apps tools".to_string());
     }
     let turn_context = &step_context.turn;
     let Some(turn_environment) = step_context.environments.primary() else {
@@ -228,7 +228,7 @@ async fn build_uploaded_argument_value(
             })
         })
         .unwrap_or_else(|| "file".to_string());
-    let upload_auth = codex_model_provider::auth_provider_from_auth(auth);
+    let upload_auth = ava_model_provider::auth_provider_from_auth(auth);
     let uploaded = upload_openai_file(
         turn_context.config.chatgpt_base_url.trim_end_matches('/'),
         upload_auth.as_ref(),
@@ -271,8 +271,8 @@ mod tests {
     use crate::environment_selection::TurnEnvironmentState;
     use crate::session::tests::make_session_and_context;
     use crate::session::turn_context::TurnContext;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::PathUri;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
     use std::path::Path;
     use std::sync::Arc;
@@ -295,7 +295,7 @@ mod tests {
         let (session, turn_context) = make_session_and_context().await;
         let step_context = StepContext::for_test(Arc::new(turn_context));
         let arguments = Some(serde_json::json!({
-            "file": "/tmp/codex-smoke-file.txt"
+            "file": "/tmp/ava-smoke-file.txt"
         }));
 
         let rewritten = rewrite_mcp_tool_arguments_for_openai_files(
@@ -328,7 +328,7 @@ mod tests {
             .and(body_json(serde_json::json!({
                 "file_name": "file_report.csv",
                 "file_size": 5,
-                "use_case": "codex",
+                "use_case": "ava",
             })))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "file_id": "file_123",
@@ -357,7 +357,7 @@ mod tests {
             .await;
 
         let (session, mut turn_context) = make_session_and_context().await;
-        let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+        let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
         let dir = tempdir().expect("temp dir");
         let local_path = dir.path().join("file_report.csv");
         tokio::fs::write(&local_path, b"hello")
@@ -427,7 +427,7 @@ mod tests {
     #[tokio::test]
     async fn build_uploaded_argument_value_rejects_oversized_file_before_reading() {
         let (session, mut turn_context) = make_session_and_context().await;
-        let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+        let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
         let dir = tempdir().expect("temp dir");
         let file_path = dir.path().join("oversized.bin");
         let file = std::fs::File::create(&file_path).expect("create sparse file");
@@ -472,7 +472,7 @@ mod tests {
             .and(body_json(serde_json::json!({
                 "file_name": "file_report.csv",
                 "file_size": 5,
-                "use_case": "codex",
+                "use_case": "ava",
             })))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "file_id": "file_123",
@@ -501,7 +501,7 @@ mod tests {
             .await;
 
         let (session, mut turn_context) = make_session_and_context().await;
-        let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+        let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
         let dir = tempdir().expect("temp dir");
         let local_path = dir.path().join("file_report.csv");
         tokio::fs::write(&local_path, b"hello")
@@ -551,7 +551,7 @@ mod tests {
             .and(body_json(serde_json::json!({
                 "file_name": "one.csv",
                 "file_size": 3,
-                "use_case": "codex",
+                "use_case": "ava",
             })))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "file_id": "file_1",
@@ -566,7 +566,7 @@ mod tests {
             .and(body_json(serde_json::json!({
                 "file_name": "two.csv",
                 "file_size": 3,
-                "use_case": "codex",
+                "use_case": "ava",
             })))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "file_id": "file_2",
@@ -613,7 +613,7 @@ mod tests {
             .await;
 
         let (session, mut turn_context) = make_session_and_context().await;
-        let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+        let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
         let dir = tempdir().expect("temp dir");
         tokio::fs::write(dir.path().join("one.csv"), b"one")
             .await
@@ -658,7 +658,7 @@ mod tests {
     async fn rewrite_mcp_tool_arguments_for_openai_files_surfaces_upload_failures() {
         let (mut session, turn_context) = make_session_and_context().await;
         session.services.auth_manager = crate::test_support::auth_manager_from_auth(
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         );
         let step_context = StepContext::for_test(Arc::new(turn_context));
         let error = rewrite_mcp_tool_arguments_for_openai_files(

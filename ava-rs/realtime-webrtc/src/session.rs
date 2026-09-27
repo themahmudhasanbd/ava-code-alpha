@@ -86,7 +86,7 @@ impl RealtimeWebrtcSession {
             target_os = "macos",
             target_os = "linux",
             all(windows, target_env = "msvc")
-        )) && codex_install_context::InstallContext::current()
+        )) && ava_install_context::InstallContext::current()
             .package_layout
             .as_ref()
             .is_some_and(|package| package_has_runtime(package.package_dir.as_path()))
@@ -94,11 +94,11 @@ impl RealtimeWebrtcSession {
 
     /// Called off the UI thread. Cancellation also owns startup before a handle is returned.
     pub fn start(abort: AbortRegistration) -> Result<StartedRealtimeWebrtcSession> {
-        let package = codex_install_context::InstallContext::current()
+        let package = ava_install_context::InstallContext::current()
             .package_layout
             .clone()
             .ok_or_else(|| anyhow::anyhow!("voice package unavailable"))?;
-        let build_commit = codex_build_info::BuildInfo::get().build_commit().to_owned();
+        let build_commit = ava_build_info::BuildInfo::get().build_commit().to_owned();
         let (sender, receiver) = mpsc::channel(/*buffer*/ 8);
         let (offer, result) = blocking::sync_channel(/*bound*/ 1);
         let (stop, stopped) = AbortHandle::new_pair();
@@ -172,13 +172,13 @@ impl RealtimeWebrtcSession {
 
 // Availability is not proof of runtime integrity, device access, or session connectivity.
 fn package_has_runtime(package: &std::path::Path) -> bool {
-    let voice = package.join("codex-resources/voice");
+    let voice = package.join("ava-resources/voice");
     let (helper, runtime) = if cfg!(target_os = "macos") {
-        ("bin/codex-voice-host", "lib/libgstreamer-1.0.0.dylib")
+        ("bin/ava-voice-host", "lib/libgstreamer-1.0.0.dylib")
     } else if cfg!(windows) {
-        ("bin/codex-voice-host.exe", "bin/gstreamer-1.0-0.dll")
+        ("bin/ava-voice-host.exe", "bin/gstreamer-1.0-0.dll")
     } else {
-        ("bin/codex-voice-host", "lib/libgstreamer-1.0.so.0")
+        ("bin/ava-voice-host", "lib/libgstreamer-1.0.so.0")
     };
     voice.join(helper).is_file() && voice.join(runtime).is_file()
 }

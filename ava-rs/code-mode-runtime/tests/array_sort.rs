@@ -1,10 +1,10 @@
 //! Checks array element kinds when a sort comparator mutates its receiver.
 
-use codex_code_mode_runtime::ExecuteRequest;
-use codex_code_mode_runtime::FunctionCallOutputContentItem;
-use codex_code_mode_runtime::InProcessCodeModeSession;
-use codex_code_mode_runtime::NoopCodeModeSessionDelegate;
-use codex_code_mode_runtime::RuntimeResponse;
+use ava_code_mode_runtime::ExecuteRequest;
+use ava_code_mode_runtime::FunctionCallOutputContentItem;
+use ava_code_mode_runtime::InProcessCodeModeSession;
+use ava_code_mode_runtime::NoopCodeModeSessionDelegate;
+use ava_code_mode_runtime::RuntimeResponse;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 

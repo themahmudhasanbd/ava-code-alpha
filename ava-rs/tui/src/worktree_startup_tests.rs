@@ -20,7 +20,7 @@ fn recovery_message_names_checkout_and_safe_manual_action() {
 
 #[tokio::test]
 async fn explicit_remote_worktree_rejection_is_snapshotted() -> anyhow::Result<()> {
-    let cli = Cli::parse_from(["codex", "--worktree"]);
+    let cli = Cli::parse_from(["ava", "--worktree"]);
     let endpoint = RemoteAppServerEndpoint::UnixSocket {
         socket_path: AbsolutePathBuf::relative_to_current_dir("remote.sock")?,
     };
@@ -69,18 +69,18 @@ async fn latest_directory_uses_turn_context_and_preserves_fallback() -> anyhow::
 async fn refreshed_bundle_rechecks_source_during_config_reload() -> anyhow::Result<()> {
     let dir = tempfile::tempdir()?;
     let source = dir.path().join("source");
-    let nested = source.join(".codex");
+    let nested = source.join(".ava-code");
     let destination = dir.path().join("checkout");
     for path in [&nested, &destination] {
         std::fs::create_dir_all(path)?;
     }
     let mut loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     loader_overrides.ignore_user_config = true;
-    let manager = codex_worktree::WorktreeManager::new(codex_worktree::WorktreeSettings::for_cli(
+    let manager = ava_worktree::WorktreeManager::new(ava_worktree::WorktreeSettings::for_cli(
         dir.path(),
         /*desktop*/ None,
     )?);
-    let checkout = codex_worktree::ManagedWorktree {
+    let checkout = ava_worktree::ManagedWorktree {
         root: destination.clone(),
         cwd: destination.clone(),
         source_root: source,
@@ -112,10 +112,10 @@ async fn refreshed_bundle_rechecks_source_during_config_reload() -> anyhow::Resu
     )
     .await?;
     let refreshed =
-        codex_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_config(
+        ava_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_config(
             format!(
                 "[projects.{}]\ntrust_level = \"untrusted\"\n",
-                serde_json::to_string(&codex_config::loader::project_trust_key(&nested))?
+                serde_json::to_string(&ava_config::loader::project_trust_key(&nested))?
             ),
         );
     let err = crate::load_config_with_worktree_source_policy(

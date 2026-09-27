@@ -36,7 +36,7 @@ Sub-agent gate (all harnesses):
 - If and only if sub-agents are unavailable, fall back sequentially: finish and record Assessment A, then run Assessment B, then synthesize, and emit the degraded banner.
 - Whichever path you take, declare it in the report header (see Report header provenance). Skipping sub-agents without the banner is the most common failure of this command.
 
-Codex sub-agent gate (overrides the default above; Codex's permission model requires asking before spawning):
+Ava sub-agent gate (overrides the default above; Ava's permission model requires asking before spawning):
 - Asking is the normal path, not a degradation. Approving and spawning is the dual-agent path; do not emit the degraded banner just for asking.
 - If `spawn_agent` is exposed and the user explicitly allowed sub-agents, delegation, or parallel agent work, spawn A and B immediately.
 - If `spawn_agent` is exposed but the user did not explicitly allow sub-agents, ask exactly once: "Impeccable critique is designed to run two independent sub-agents for an unanchored assessment. May I use sub-agents for this critique?" Then stop until the user answers.
@@ -83,13 +83,13 @@ Browser visualization is required for a viewable target when browser automation 
 4. If mutation is available, start `node .agents/skills/impeccable/scripts/live-server.mjs --background`, present the browser if supported, label `[Human]`, scroll top, inject `http://localhost:PORT/detect.js`, wait 2-3 seconds, read `impeccable` console messages, then stop the live server.
 5. For multi-view targets, inject on 3-5 representative pages.
 
-Codex Browser note: Use the Browser skill. Do not spend a Browser attempt on `file://`. Only call `visibility.set(true)` after mutable script injection is confirmed for the `[Human]` overlay path; verify with `get()`. Use `tab.dev.logs({ filter: "impeccable" })` for console results. Its Playwright `evaluate(...)` surface is read-only; do not rely on it for mutation.
+Ava Browser note: Use the Browser skill. Do not spend a Browser attempt on `file://`. Only call `visibility.set(true)` after mutable script injection is confirmed for the `[Human]` overlay path; verify with `get()`. Use `tab.dev.logs({ filter: "impeccable" })` for console results. Its Playwright `evaluate(...)` surface is read-only; do not rely on it for mutation.
 
 Return: CLI findings JSON/counts, browser console findings if applicable, false positives, and skipped/failed browser steps with concrete reasons.
 
 After Assessment B returns usable CLI findings, reuse them. Do not rerun `detect.mjs` in the parent unless Assessment B failed, was truncated, or omitted count, rule names, or file locations.
 
-Codex failure accounting: final Run Notes must include target slug, ignore list, assessment independence, CLI detector, browser visibility, overlay injection, live-server cleanup, temp-file cleanup, and any fallback signal used. Do not run repo status checks, late API spelunking, or unrelated verification after the report is assembled.
+Ava failure accounting: final Run Notes must include target slug, ignore list, assessment independence, CLI detector, browser visibility, overlay injection, live-server cleanup, temp-file cleanup, and any fallback signal used. Do not run repo status checks, late API spelunking, or unrelated verification after the report is assembled.
 
 ### Generate Combined Critique Report
 
@@ -97,7 +97,7 @@ Synthesize both assessments into a single report. Do NOT simply concatenate. Wea
 
 The chat response is the primary user-facing deliverable. Present the full structured critique below in chat; do not replace it with a summary and a link. The persisted snapshot is only an archive/backlog for later commands.
 
-Codex final-answer note: `$impeccable critique` produces a report artifact, so the final chat response should intentionally exceed the usual concise close-out style. Do not title the final response "Critique Summary" unless the user explicitly asked for a summary.
+Ava final-answer note: `$impeccable critique` produces a report artifact, so the final chat response should intentionally exceed the usual concise close-out style. Do not title the final response "Critique Summary" unless the user explicitly asked for a summary.
 
 Structure your feedback as a design director would:
 
@@ -178,7 +178,7 @@ Provocative questions that might unlock better solutions:
 #### Run Notes
 Keep this compact. Include status for target slug, ignore list, assessment independence, CLI detector, browser visibility, overlay injection, live server cleanup, and temp-file cleanup. For failed or skipped steps, give the concrete observed reason and the fallback signal used. In the final chat response, also include snapshot write and trend read status after persistence has run.
 
-Codex Run Notes are final-chat only. Do not include this section in the persisted snapshot body, because persistence, trend read, and temp cleanup happen after the snapshot write and would otherwise archive stale status such as "pending after persistence."
+Ava Run Notes are final-chat only. Do not include this section in the persisted snapshot body, because persistence, trend read, and temp cleanup happen after the snapshot write and would otherwise archive stale status such as "pending after persistence."
 
 **Remember**:
 - Be direct. Vague feedback wastes everyone's time.
@@ -196,7 +196,7 @@ Skip this step if the Setup slug was null (vague or root-level target).
 
 1. **Write the body to a temp file** so you can pipe it to the helper. Use the full critique report (heuristic table, anti-patterns verdict, priority issues, persona red flags, minor observations, and questions), but stop before the "Ask the User" / "Recommended Actions" sections that come later.
 
-   Codex: exclude Run Notes from the temp body file; Run Notes are final-chat only because persistence, trend read, and temp cleanup happen after the snapshot write.
+   Ava: exclude Run Notes from the temp body file; Run Notes are final-chat only because persistence, trend read, and temp cleanup happen after the snapshot write.
 
 2. **Pass the structured metadata** through `IMPECCABLE_CRITIQUE_META` (JSON), then run the write command:
    ```bash
@@ -224,7 +224,7 @@ This is fire-and-forget. Do not show the user the helper's JSON output; only the
 
 ### Ask the User
 
-**After presenting findings**, use targeted questions based on what was actually found. STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. These answers will shape the action plan.
+**After presenting findings**, use targeted questions based on what was actually found. STOP and use Ava's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. These answers will shape the action plan.
 
 Ask questions along these lines (adapt to the specific findings; do NOT ask generic questions):
 
@@ -242,7 +242,7 @@ Ask questions along these lines (adapt to the specific findings; do NOT ask gene
 - Offer concrete options, not open-ended prompts.
 - If findings are straightforward (e.g., only 1-2 clear issues), skip questions and go directly to Recommended Actions.
 
-Codex final-question gate: The user-visible response must either include the targeted questions or explicitly say `Questions skipped: <reason>` because the findings were straightforward. Each question must include 2-3 concrete answer options tied to the actual critique findings. Do not end with only open-ended questions.
+Ava final-question gate: The user-visible response must either include the targeted questions or explicitly say `Questions skipped: <reason>` because the findings were straightforward. Each question must include 2-3 concrete answer options tied to the actual critique findings. Do not end with only open-ended questions.
 
 ### Recommended Actions
 

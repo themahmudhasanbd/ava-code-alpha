@@ -1,5 +1,5 @@
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_redacted_string::RedactedString;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_redacted_string::RedactedString;
 use schemars::JsonSchema;
 use schemars::r#gen::SchemaGenerator;
 use schemars::schema::InstanceType;
@@ -22,7 +22,7 @@ use wildmatch::WildMatchPattern;
 
 use crate::openai_models::ReasoningEffort;
 
-/// Limit for the text included in `codex.tool_result` log records.
+/// Limit for the text included in `ava.tool_result` log records.
 /// This does not affect model-visible output. Raising it can expose more tool data to logs.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, JsonSchema)]
 #[serde(default)]
@@ -113,7 +113,7 @@ pub enum SandboxMode {
     DangerFullAccess,
 }
 
-/// Validated plain profile-v2 name used to select `$CODEX_HOME/<name>.config.toml`.
+/// Validated plain profile-v2 name used to select `$AVA_HOME/<name>.config.toml`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProfileV2Name(String);
 
@@ -702,7 +702,7 @@ impl ModeKind {
     }
 }
 
-/// Collaboration mode for a Codex session.
+/// Collaboration mode for a Ava session.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize, Deserialize, JsonSchema, TS)]
 #[serde(rename_all = "lowercase")]
 pub struct CollaborationMode {
@@ -830,7 +830,7 @@ mod tests {
         let mode = CollaborationMode {
             mode: ModeKind::Default,
             settings: Settings {
-                model: "gpt-5.2-codex".to_string(),
+                model: "gpt-5.2-ava".to_string(),
                 reasoning_effort: Some(ReasoningEffort::High),
                 developer_instructions: Some("stay focused".to_string()),
             },
@@ -846,7 +846,7 @@ mod tests {
         let expected = CollaborationMode {
             mode: ModeKind::Default,
             settings: Settings {
-                model: "gpt-5.2-codex".to_string(),
+                model: "gpt-5.2-ava".to_string(),
                 reasoning_effort: None,
                 developer_instructions: None,
             },

@@ -8,9 +8,9 @@ use std::process::Command;
 use std::time::Duration;
 
 use anyhow::Context as _;
-use codex_utils_pty::SpawnedProcess;
-use codex_utils_pty::TerminalSize;
-use codex_utils_pty::spawn_pty_process;
+use ava_utils_pty::SpawnedProcess;
+use ava_utils_pty::TerminalSize;
+use ava_utils_pty::spawn_pty_process;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -54,11 +54,11 @@ async fn sandbox_blocks_terminal_input_injection() -> anyhow::Result<()> {
     }
     assert!(availability.status.success(), "{availability:?}");
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut env: HashMap<String, String> = std::env::vars().collect();
     env.insert(
-        "CODEX_HOME".to_string(),
-        codex_home.path().to_string_lossy().into_owned(),
+        "AVA_HOME".to_string(),
+        ava_home.path().to_string_lossy().into_owned(),
     );
 
     // The control proves this is a readable, foreground controlling terminal on
@@ -66,14 +66,14 @@ async fn sandbox_blocks_terminal_input_injection() -> anyhow::Result<()> {
     run_probe(
         "/usr/bin/python3",
         vec!["-c".to_string(), PROBE.to_string(), "allow".to_string()],
-        codex_home.path(),
+        ava_home.path(),
         &env,
     )
     .await?;
 
-    let codex = codex_utils_cargo_bin::cargo_bin("codex")?;
+    let ava = ava_utils_cargo_bin::cargo_bin("ava")?;
     run_probe(
-        &codex.to_string_lossy(),
+        &ava.to_string_lossy(),
         vec![
             "sandbox".to_string(),
             "-P".to_string(),
@@ -84,7 +84,7 @@ async fn sandbox_blocks_terminal_input_injection() -> anyhow::Result<()> {
             PROBE.to_string(),
             "deny".to_string(),
         ],
-        codex_home.path(),
+        ava_home.path(),
         &env,
     )
     .await

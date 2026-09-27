@@ -6,20 +6,20 @@ use app_test_support::TestAppServer;
 use app_test_support::create_fake_parented_rollout_with_source;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::write_models_cache;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 use core_test_support::responses;
 use serde_json::json;
 use tempfile::TempDir;
@@ -42,18 +42,18 @@ async fn fresh_context_subagent_inherits_disabled_view_image_and_mcp_tools() -> 
 
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, mcp_server_handle) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_server.uri())
         .with_model("gpt-5.4")
         .with_provider_config("supports_websockets = false")
         .with_extra_config(&format!(
             "[mcp_servers.{TEST_SERVER_NAME}]\nurl = \"{mcp_server_url}/mcp\"\n\n[features.multi_agent_v2]\nenabled = true"
         ))
-        .write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
@@ -202,13 +202,13 @@ async fn guardian_reviewer_inherits_disabled_view_image() -> Result<()> {
         create_final_assistant_message_sse_response("review complete")?,
     )
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_server.uri())
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let guardian_thread_id = create_fake_parented_rollout_with_source(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "review a requested action",
@@ -220,7 +220,7 @@ async fn guardian_reviewer_inherits_disabled_view_image() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let resume_id = mcp

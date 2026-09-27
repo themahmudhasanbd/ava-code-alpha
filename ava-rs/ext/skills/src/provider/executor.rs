@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::FileSystemEnvironmentAccessor;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_extension_api::SelectedPluginSnapshot;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::protocol::Product;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::EnvironmentSkillMetadata;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::FileSystemEnvironmentAccessor;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_extension_api::SelectedPluginSnapshot;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::protocol::Product;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::EnvironmentSkillMetadata;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use futures::StreamExt;
 
 use crate::catalog::SkillAuthority;
@@ -211,7 +211,7 @@ impl SkillProvider for ExecutorSkillProvider {
 impl ExecutorSkillProvider {
     fn list_from_discovery(
         &self,
-        snapshot: &codex_exec_server::ExecutorCapabilityDiscoverySnapshot,
+        snapshot: &ava_exec_server::ExecutorCapabilityDiscoverySnapshot,
     ) -> SkillCatalog {
         let mut catalog = SkillCatalog::default();
         for root in snapshot.roots() {
@@ -326,7 +326,7 @@ fn normalized_environment_path(path: &PathUri) -> String {
 }
 
 async fn read_bounded_text(
-    file_system: &dyn codex_exec_server::ExecutorFileSystem,
+    file_system: &dyn ava_exec_server::ExecutorFileSystem,
     path: &PathUri,
     resource: &str,
     sandbox: Option<&FileSystemSandboxContext>,

@@ -84,13 +84,13 @@ fn context_append_channel_only_encodes_for_frameless_handoff_output() {
 fn standalone_handoff_uses_session_context_for_frameless() {
     let legacy = standalone_handoff_message(
         RealtimeWireAdapter::V1,
-        "codex".to_string(),
+        "ava".to_string(),
         "Speak this".to_string(),
         Some(RealtimeContextAppendChannel::Speakable),
     );
     let frameless = standalone_handoff_message(
         RealtimeWireAdapter::FramelessBidi,
-        "codex".to_string(),
+        "ava".to_string(),
         "Speak this".to_string(),
         Some(RealtimeContextAppendChannel::Speakable),
     );
@@ -99,7 +99,7 @@ fn standalone_handoff_uses_session_context_for_frameless() {
         to_value(legacy).expect("legacy standalone handoff should serialize"),
         json!({
             "type": "conversation.handoff.append",
-            "handoff_id": "codex",
+            "handoff_id": "ava",
             "output_text": "Speak this",
         })
     );

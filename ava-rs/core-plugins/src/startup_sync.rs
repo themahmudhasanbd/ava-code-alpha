@@ -8,10 +8,10 @@ use std::time::Duration;
 
 use self::http_client::StartupSyncHttpClient;
 use self::http_client::StartupSyncRequestBuilder;
-use codex_http_client::HttpClientFactory;
-use codex_login::default_client::default_headers;
-use codex_otel::CURATED_PLUGINS_STARTUP_SYNC_FINAL_METRIC;
-use codex_otel::CURATED_PLUGINS_STARTUP_SYNC_METRIC;
+use ava_http_client::HttpClientFactory;
+use ava_login::default_client::default_headers;
+use ava_otel::CURATED_PLUGINS_STARTUP_SYNC_FINAL_METRIC;
+use ava_otel::CURATED_PLUGINS_STARTUP_SYNC_METRIC;
 use http::Method;
 use serde::Deserialize;
 use tempfile::TempDir;
@@ -28,7 +28,7 @@ const CURATED_PLUGINS_BACKUP_ARCHIVE_API_URL: &str =
 const OPENAI_PLUGINS_OWNER: &str = "openai";
 const OPENAI_PLUGINS_REPO: &str = "plugins";
 pub(crate) const OPENAI_PLUGINS_GIT_URL: &str = "https://github.com/openai/plugins.git";
-const CURATED_PLUGINS_FETCH_REF: &str = "refs/codex/curated-sync";
+const CURATED_PLUGINS_FETCH_REF: &str = "refs/ava/curated-sync";
 const CURATED_PLUGINS_RELATIVE_DIR: &str = ".tmp/plugins";
 const CURATED_PLUGINS_SHA_FILE: &str = ".tmp/plugins.sha";
 const CURATED_PLUGINS_SYNC_LOCK_FILE: &str = ".tmp/plugins.sync.lock";
@@ -36,7 +36,7 @@ const CURATED_PLUGINS_BACKUP_ARCHIVE_FALLBACK_VERSION: &str = "export-backup";
 const CURATED_PLUGINS_GIT_TIMEOUT: Duration = Duration::from_secs(30);
 const CURATED_PLUGINS_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 const CURATED_PLUGINS_BACKUP_ARCHIVE_TIMEOUT: Duration = Duration::from_secs(30);
-// Keep this comfortably above a normal sync attempt so we do not race another Codex process.
+// Keep this comfortably above a normal sync attempt so we do not race another Ava process.
 const CURATED_PLUGINS_STALE_TEMP_DIR_MAX_AGE: Duration = Duration::from_secs(10 * 60);
 #[derive(Debug, Deserialize)]
 struct GitHubRepositorySummary {
@@ -58,34 +58,34 @@ struct CuratedPluginsBackupArchiveResponse {
     download_url: String,
 }
 
-pub fn curated_plugins_repo_path(codex_home: &Path) -> PathBuf {
-    codex_home.join(CURATED_PLUGINS_RELATIVE_DIR)
+pub fn curated_plugins_repo_path(ava_home: &Path) -> PathBuf {
+    ava_home.join(CURATED_PLUGINS_RELATIVE_DIR)
 }
 
-pub fn curated_plugins_api_marketplace_path(codex_home: &Path) -> PathBuf {
-    curated_plugins_repo_path(codex_home).join(".agents/plugins/api_marketplace.json")
+pub fn curated_plugins_api_marketplace_path(ava_home: &Path) -> PathBuf {
+    curated_plugins_repo_path(ava_home).join(".agents/plugins/api_marketplace.json")
 }
 
-pub fn read_curated_plugins_sha(codex_home: &Path) -> Option<String> {
-    read_sha_file(curated_plugins_sha_path(codex_home).as_path())
+pub fn read_curated_plugins_sha(ava_home: &Path) -> Option<String> {
+    read_sha_file(curated_plugins_sha_path(ava_home).as_path())
 }
 
-fn curated_plugins_sha_path(codex_home: &Path) -> PathBuf {
-    codex_home.join(CURATED_PLUGINS_SHA_FILE)
+fn curated_plugins_sha_path(ava_home: &Path) -> PathBuf {
+    ava_home.join(CURATED_PLUGINS_SHA_FILE)
 }
 
 pub fn sync_openai_plugins_repo(
-    codex_home: &Path,
+    ava_home: &Path,
     http_client_factory: HttpClientFactory,
 ) -> Result<String, String> {
     // Keep Git-only egress working without trusting workspace PATH entries.
-    let git_binary = codex_utils_path::system_executable("git");
+    let git_binary = ava_utils_path::system_executable("git");
     // Apple's /usr/bin/git is an installer shim when developer tools are absent.
     // The resolver prefers the real CLT/Xcode executable when installed.
     #[cfg(target_os = "macos")]
     let git_binary = git_binary.filter(|path| path != Path::new("/usr/bin/git"));
     sync_openai_plugins_repo_with_transport_overrides(
-        codex_home,
+        ava_home,
         git_binary.as_deref(),
         GITHUB_API_BASE_URL,
         CURATED_PLUGINS_BACKUP_ARCHIVE_API_URL,
@@ -94,16 +94,16 @@ pub fn sync_openai_plugins_repo(
 }
 
 fn sync_openai_plugins_repo_with_transport_overrides(
-    codex_home: &Path,
+    ava_home: &Path,
     git_binary: Option<&Path>,
     api_base_url: &str,
     backup_archive_api_url: &str,
     http_client_factory: &HttpClientFactory,
 ) -> Result<String, String> {
-    let _file_guard = lock_curated_plugins_startup_sync(codex_home)?;
+    let _file_guard = lock_curated_plugins_startup_sync(ava_home)?;
 
     let git_sync_result = match git_binary {
-        Some(git_binary) => sync_openai_plugins_repo_via_git(codex_home, git_binary),
+        Some(git_binary) => sync_openai_plugins_repo_via_git(ava_home, git_binary),
         None => Err("no Git executable found in trusted installation directories".to_string()),
     };
 
@@ -121,7 +121,7 @@ fn sync_openai_plugins_repo_with_transport_overrides(
                     "git sync failed for curated plugin sync; falling back to GitHub HTTP"
                 );
             }
-            match sync_openai_plugins_repo_via_http(codex_home, api_base_url, http_client_factory) {
+            match sync_openai_plugins_repo_via_http(ava_home, api_base_url, http_client_factory) {
                 Ok(remote_sha) => {
                     emit_curated_plugins_startup_sync_metric("http", "success");
                     emit_curated_plugins_startup_sync_final_metric("http", "success");
@@ -129,7 +129,7 @@ fn sync_openai_plugins_repo_with_transport_overrides(
                 }
                 Err(http_err) => {
                     emit_curated_plugins_startup_sync_metric("http", "failure");
-                    if has_local_curated_plugins_snapshot(codex_home) {
+                    if has_local_curated_plugins_snapshot(ava_home) {
                         emit_curated_plugins_startup_sync_final_metric("http", "failure");
                         warn!(
                             error = %http_err,
@@ -147,7 +147,7 @@ fn sync_openai_plugins_repo_with_transport_overrides(
                             "GitHub HTTP sync failed for curated plugin sync; falling back to export archive"
                         );
                         let result = sync_openai_plugins_repo_via_backup_archive(
-                            codex_home,
+                            ava_home,
                             backup_archive_api_url,
                             http_client_factory,
                         );
@@ -166,9 +166,9 @@ fn sync_openai_plugins_repo_with_transport_overrides(
     }
 }
 
-fn lock_curated_plugins_startup_sync(codex_home: &Path) -> Result<File, String> {
-    let lock_path = codex_home.join(CURATED_PLUGINS_SYNC_LOCK_FILE);
-    std::fs::create_dir_all(codex_home.join(".tmp"))
+fn lock_curated_plugins_startup_sync(ava_home: &Path) -> Result<File, String> {
+    let lock_path = ava_home.join(CURATED_PLUGINS_SYNC_LOCK_FILE);
+    std::fs::create_dir_all(ava_home.join(".tmp"))
         .map_err(|err| format!("failed to create curated plugins sync directory: {err}"))?;
     let lock_file = File::options()
         .write(true)
@@ -183,12 +183,12 @@ fn lock_curated_plugins_startup_sync(codex_home: &Path) -> Result<File, String> 
 }
 
 fn sync_openai_plugins_repo_via_git(
-    codex_home: &Path,
+    ava_home: &Path,
     git_binary: &Path,
 ) -> Result<String, String> {
-    let repo_path = curated_plugins_repo_path(codex_home);
-    let sha_path = codex_home.join(CURATED_PLUGINS_SHA_FILE);
-    let remote_sha = git_ls_remote_head_sha(codex_home, git_binary)?;
+    let repo_path = curated_plugins_repo_path(ava_home);
+    let sha_path = ava_home.join(CURATED_PLUGINS_SHA_FILE);
+    let remote_sha = git_ls_remote_head_sha(ava_home, git_binary)?;
     let local_sha = read_local_git_or_sha_file(&repo_path, &sha_path, git_binary);
 
     if local_sha.as_deref() == Some(remote_sha.as_str()) && repo_path.join(".git").is_dir() {
@@ -305,12 +305,12 @@ fn run_git_in_repo(
 }
 
 fn sync_openai_plugins_repo_via_http(
-    codex_home: &Path,
+    ava_home: &Path,
     api_base_url: &str,
     http_client_factory: &HttpClientFactory,
 ) -> Result<String, String> {
-    let repo_path = curated_plugins_repo_path(codex_home);
-    let sha_path = codex_home.join(CURATED_PLUGINS_SHA_FILE);
+    let repo_path = curated_plugins_repo_path(ava_home);
+    let sha_path = ava_home.join(CURATED_PLUGINS_SHA_FILE);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -338,12 +338,12 @@ fn sync_openai_plugins_repo_via_http(
 }
 
 fn sync_openai_plugins_repo_via_backup_archive(
-    codex_home: &Path,
+    ava_home: &Path,
     backup_archive_api_url: &str,
     http_client_factory: &HttpClientFactory,
 ) -> Result<String, String> {
-    let repo_path = curated_plugins_repo_path(codex_home);
-    let sha_path = curated_plugins_sha_path(codex_home);
+    let repo_path = curated_plugins_repo_path(ava_home);
+    let sha_path = curated_plugins_sha_path(ava_home);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -363,11 +363,11 @@ fn sync_openai_plugins_repo_via_backup_archive(
     Ok(export_version)
 }
 
-pub fn has_local_curated_plugins_snapshot(codex_home: &Path) -> bool {
-    curated_plugins_repo_path(codex_home)
+pub fn has_local_curated_plugins_snapshot(ava_home: &Path) -> bool {
+    curated_plugins_repo_path(ava_home)
         .join(".agents/plugins/marketplace.json")
         .is_file()
-        && codex_home.join(CURATED_PLUGINS_SHA_FILE).is_file()
+        && ava_home.join(CURATED_PLUGINS_SHA_FILE).is_file()
 }
 
 fn prepare_curated_repo_parent_and_temp_dir(repo_path: &Path) -> Result<TempDir, String> {
@@ -503,7 +503,7 @@ fn emit_curated_plugins_startup_sync_counter(
     transport: &'static str,
     status: &'static str,
 ) {
-    let Some(metrics) = codex_otel::global() else {
+    let Some(metrics) = ava_otel::global() else {
         return;
     };
     let tags = [("transport", transport), ("status", status)];
@@ -607,11 +607,11 @@ fn read_local_git_or_sha_file(
     read_sha_file(sha_path)
 }
 
-fn git_ls_remote_head_sha(codex_home: &Path, git_binary: &Path) -> Result<String, String> {
+fn git_ls_remote_head_sha(ava_home: &Path, git_binary: &Path) -> Result<String, String> {
     let mut command = git_command(git_binary)?;
-    let _trusted_repository = crate::configure_trusted_git_repository(&mut command, codex_home)?;
+    let _trusted_repository = crate::configure_trusted_git_repository(&mut command, ava_home)?;
     command
-        .current_dir(codex_home)
+        .current_dir(ava_home)
         .arg("ls-remote")
         .arg(OPENAI_PLUGINS_GIT_URL)
         .arg("HEAD");
@@ -669,7 +669,7 @@ fn git_command(git_binary: &Path) -> Result<Command, String> {
     command
         .env(
             "PATH",
-            codex_utils_path::system_path()
+            ava_utils_path::system_path()
                 .map_err(|err| format!("failed to construct trusted Git PATH: {err}"))?,
         )
         .env_remove("GIT_EXEC_PATH")

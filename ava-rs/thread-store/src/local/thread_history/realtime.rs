@@ -1,7 +1,7 @@
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadTimelineEntry;
-use codex_protocol::ThreadId;
-use codex_protocol::realtime::RealtimeItem;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadTimelineEntry;
+use ava_protocol::ThreadId;
+use ava_protocol::realtime::RealtimeItem;
 use serde::Deserialize;
 use serde::Serialize;
 

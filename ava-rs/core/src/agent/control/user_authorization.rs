@@ -6,8 +6,8 @@
 use std::borrow::Cow;
 
 use super::LocalAgentControl;
-use crate::codex_thread::GuardianRootMessage;
-use crate::codex_thread::GuardianRootSnapshot;
+use crate::ava_thread::GuardianRootMessage;
+use crate::ava_thread::GuardianRootSnapshot;
 use crate::compact::is_summary_message;
 use crate::context::GuardianContextMode;
 use crate::context::GuardianReviewEvidence;
@@ -15,17 +15,17 @@ use crate::context::is_contextual_user_fragment;
 use crate::event_mapping::parse_turn_item;
 use crate::guardian::GUARDIAN_MAX_ROOT_MESSAGE_TOKENS;
 use crate::guardian::guardian_truncate_text;
-use codex_history::ReconciledRetainedContext;
-use codex_history::RetainedContextEntry;
-use codex_history::RetainedUserMessage;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::MultiAgentVersion;
+use ava_history::ReconciledRetainedContext;
+use ava_history::RetainedContextEntry;
+use ava_history::RetainedUserMessage;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::MultiAgentVersion;
 
 const MAX_ROOT_MESSAGES: usize = 8;
 
@@ -127,7 +127,7 @@ impl LocalAgentControl {
                         })
                     }
                     RetainedContextEntry::VerifiedAnswer(answer) => {
-                        codex_guardian_context::render_verified_answer(answer)
+                        ava_guardian_context::render_verified_answer(answer)
                             .map(GuardianRootMessage::UserInput)
                     }
                 })

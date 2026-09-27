@@ -1,21 +1,21 @@
 //! Retained startup metadata, separate from the replay sent in startup responses.
 
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionConfiguredEvent;
-use codex_protocol::protocol::SessionNetworkProxyRuntime;
-use codex_protocol::protocol::ThreadSource;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionConfiguredEvent;
+use ava_protocol::protocol::SessionNetworkProxyRuntime;
+use ava_protocol::protocol::ThreadSource;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::path::PathBuf;
 
 /// The configuration reported when a thread started, without its replay history.
-/// Current settings are available through [`crate::CodexThread::config_snapshot`].
+/// Current settings are available through [`crate::AvaThread::config_snapshot`].
 #[derive(Debug)]
 pub struct ThreadStartupMetadata {
     pub session_id: SessionId,

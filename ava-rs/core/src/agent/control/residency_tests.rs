@@ -1,21 +1,21 @@
 use crate::StartThreadOptions;
 use crate::ThreadManager;
 use crate::agent::LocalAgentControl;
-use crate::codex_thread::CodexThread;
+use crate::ava_thread::AvaThread;
 use crate::config::Config;
 use crate::config::test_config;
 use crate::thread_manager::ThreadManagerState;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 
@@ -25,13 +25,13 @@ async fn residency_slot_reservation_unloads_oldest_idle_v2_agent() {
     let _ = config.features.enable(Feature::MultiAgentV2);
     config.multi_agent_v2.max_concurrent_threads_per_session = 2;
     let temp_home = tempfile::tempdir().expect("create temp home");
-    config.codex_home = temp_home.path().to_path_buf().try_into().unwrap();
+    config.ava_home = temp_home.path().to_path_buf().try_into().unwrap();
     config.cwd = temp_home.path().to_path_buf().try_into().unwrap();
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let root = manager
         .start_thread(StartThreadOptions::new(config.clone()))
@@ -55,7 +55,7 @@ async fn residency_slot_reservation_unloads_oldest_idle_v2_agent() {
         .expect("second resident slot should evict the first idle agent");
     match manager.get_thread(first.thread_id).await {
         Err(err) => match err.details() {
-            CodexErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
+            AvaErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
             _ => panic!("expected evicted thread to be missing, got {err:?}"),
         },
         Ok(_) => panic!("expected evicted thread to be missing"),
@@ -73,13 +73,13 @@ async fn interrupted_v2_agent_is_lost_after_residency_eviction() {
     let _ = config.features.enable(Feature::MultiAgentV2);
     config.multi_agent_v2.max_concurrent_threads_per_session = 2;
     let temp_home = tempfile::tempdir().expect("create temp home");
-    config.codex_home = temp_home.path().to_path_buf().try_into().unwrap();
+    config.ava_home = temp_home.path().to_path_buf().try_into().unwrap();
     config.cwd = temp_home.path().to_path_buf().try_into().unwrap();
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let root = manager
         .start_thread(StartThreadOptions::new(config.clone()))
@@ -103,7 +103,7 @@ async fn interrupted_v2_agent_is_lost_after_residency_eviction() {
         .expect("second resident slot should evict the first interrupted idle agent");
     match manager.get_thread(first.thread_id).await {
         Err(err) => match err.details() {
-            CodexErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
+            AvaErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
             _ => panic!("expected evicted thread to be missing, got {err:?}"),
         },
         Ok(_) => panic!("expected evicted thread to be missing"),
@@ -118,7 +118,7 @@ async fn interrupted_v2_agent_is_lost_after_residency_eviction() {
         .await
         .expect_err("evicted interrupted agent should stay lost");
     match err.details() {
-        CodexErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
+        AvaErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
         _ => panic!("expected ThreadNotFound, got {err:?}"),
     }
 
@@ -126,7 +126,7 @@ async fn interrupted_v2_agent_is_lost_after_residency_eviction() {
     assert!(manager.get_thread(second.thread_id).await.is_ok());
     match manager.get_thread(first.thread_id).await {
         Err(err) => match err.details() {
-            CodexErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
+            AvaErrorDetails::ThreadNotFound(thread_id) => assert_eq!(*thread_id, first.thread_id),
             _ => panic!("expected evicted thread to be missing, got {err:?}"),
         },
         Ok(_) => panic!("expected evicted thread to be missing"),
@@ -158,7 +158,7 @@ async fn spawn_v2_subagent(
         .expect("spawn v2 subagent")
 }
 
-async fn mark_thread_completed(thread: &CodexThread) {
+async fn mark_thread_completed(thread: &AvaThread) {
     let turn = thread.session.new_default_turn().await;
     thread
         .session
@@ -178,7 +178,7 @@ async fn mark_thread_completed(thread: &CodexThread) {
     clear_active_turn(thread).await;
 }
 
-async fn mark_thread_interrupted(thread: &CodexThread) {
+async fn mark_thread_interrupted(thread: &AvaThread) {
     let turn = thread.session.new_default_turn().await;
     thread
         .session
@@ -196,7 +196,7 @@ async fn mark_thread_interrupted(thread: &CodexThread) {
     clear_active_turn(thread).await;
 }
 
-async fn clear_active_turn(thread: &CodexThread) {
+async fn clear_active_turn(thread: &AvaThread) {
     // The fixture has no task runner to clear the turn after the terminal event.
     *thread.session.active_turn.lock().await = None;
 }

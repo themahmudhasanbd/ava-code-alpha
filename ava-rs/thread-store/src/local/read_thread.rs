@@ -1,15 +1,15 @@
 use chrono::DateTime;
 use chrono::Utc;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::find_thread_name_by_id;
-use codex_rollout::read_session_meta_line;
-use codex_rollout::read_thread_item_from_rollout;
-use codex_state::ThreadMetadata;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::find_thread_name_by_id;
+use ava_rollout::read_session_meta_line;
+use ava_rollout::read_thread_item_from_rollout;
+use ava_state::ThreadMetadata;
 
 use super::LocalThreadStore;
 use super::helpers::distinct_thread_metadata_title;
@@ -43,7 +43,7 @@ pub(super) async fn read_thread(
         && (params.include_archived
             || (metadata.archived_at.is_none()
                 && !rollout_path_is_archived(
-                    store.config.codex_home.as_path(),
+                    store.config.ava_home.as_path(),
                     metadata.rollout_path.as_path(),
                 )))
         && (!params.include_history
@@ -118,9 +118,9 @@ pub(super) async fn read_thread(
 
 async fn sqlite_rollout_path_can_load_history_for_thread(
     path: &std::path::Path,
-    thread_id: codex_protocol::ThreadId,
+    thread_id: ava_protocol::ThreadId,
 ) -> bool {
-    if codex_rollout::existing_rollout_path(path).await.is_none() {
+    if ava_rollout::existing_rollout_path(path).await.is_none() {
         return false;
     }
     // SQLite metadata can outlive a moved/recreated rollout path. When history is
@@ -203,7 +203,7 @@ async fn resolve_requested_rollout_path(
     rollout_path: std::path::PathBuf,
 ) -> ThreadStoreResult<std::path::PathBuf> {
     let path = if rollout_path.is_relative() {
-        store.config.codex_home.join(rollout_path)
+        store.config.ava_home.join(rollout_path)
     } else {
         rollout_path
     };
@@ -226,7 +226,7 @@ async fn resolve_requested_rollout_path(
         }
         _ => {}
     }
-    let Some(path) = codex_rollout::existing_rollout_path(path.as_path()).await else {
+    let Some(path) = ava_rollout::existing_rollout_path(path.as_path()).await else {
         return Err(ThreadStoreError::InvalidRequest {
             message: format!(
                 "failed to resolve rollout path `{}`: file does not exist",
@@ -264,7 +264,7 @@ async fn read_thread_from_rollout_path(
     let Some(item) = read_thread_item_from_rollout(path.clone()).await else {
         return stored_thread_from_session_meta(store, path).await;
     };
-    let archived = rollout_path_is_archived(store.config.codex_home.as_path(), path.as_path());
+    let archived = rollout_path_is_archived(store.config.ava_home.as_path(), path.as_path());
     let mut thread = stored_thread_from_rollout_item(
         item,
         archived,
@@ -273,7 +273,7 @@ async fn read_thread_from_rollout_path(
     .ok_or_else(|| ThreadStoreError::Internal {
         message: format!("failed to read thread id from {}", path.display()),
     })?;
-    thread.rollout_path = Some(codex_rollout::plain_rollout_path(path.as_path()));
+    thread.rollout_path = Some(ava_rollout::plain_rollout_path(path.as_path()));
     let meta_line = read_required_session_meta_line(path.as_path()).await?;
     thread.forked_from_id = meta_line.meta.forked_from_id;
     thread.parent_thread_id = meta_line.meta.parent_thread_id;
@@ -287,7 +287,7 @@ async fn read_thread_from_rollout_path(
     }
     if thread.history_mode == ThreadHistoryMode::Legacy
         && let Ok(Some(name)) =
-            find_thread_name_by_id(store.config.codex_home.as_path(), &thread.thread_id).await
+            find_thread_name_by_id(store.config.ava_home.as_path(), &thread.thread_id).await
         && !name.trim().is_empty()
     {
         set_thread_name(&mut thread, name);
@@ -297,7 +297,7 @@ async fn read_thread_from_rollout_path(
 
 pub(super) async fn load_history_items(
     path: &std::path::Path,
-) -> ThreadStoreResult<Vec<codex_rollout::RolloutItem>> {
+) -> ThreadStoreResult<Vec<ava_rollout::RolloutItem>> {
     let (items, _, _) = RolloutRecorder::load_rollout_items(path)
         .await
         .map_err(|err| ThreadStoreError::Internal {
@@ -308,7 +308,7 @@ pub(super) async fn load_history_items(
 
 async fn read_sqlite_metadata(
     store: &LocalThreadStore,
-    thread_id: codex_protocol::ThreadId,
+    thread_id: ava_protocol::ThreadId,
 ) -> Option<ThreadMetadata> {
     let runtime = store.state_db().await?;
     runtime.get_thread(thread_id).await.ok().flatten()
@@ -332,7 +332,7 @@ pub(super) async fn stored_thread_from_sqlite_metadata(
         }
         Ok(meta_line) => Some(meta_line.meta),
         Err(_)
-            if codex_rollout::existing_rollout_path(metadata.rollout_path.as_path())
+            if ava_rollout::existing_rollout_path(metadata.rollout_path.as_path())
                 .await
                 .is_none() =>
         {
@@ -369,13 +369,13 @@ pub(super) async fn stored_thread_from_sqlite_metadata(
 pub(super) fn stored_thread_from_state_metadata(
     store: &LocalThreadStore,
     metadata: ThreadMetadata,
-    parent_thread_id: Option<codex_protocol::ThreadId>,
+    parent_thread_id: Option<ava_protocol::ThreadId>,
 ) -> StoredThread {
     let name = match metadata.history_mode {
         ThreadHistoryMode::Paginated => sqlite_thread_name(&metadata),
         ThreadHistoryMode::Legacy => distinct_thread_metadata_title(&metadata),
     };
-    let rollout_path = codex_rollout::plain_rollout_path(metadata.rollout_path.as_path());
+    let rollout_path = ava_rollout::plain_rollout_path(metadata.rollout_path.as_path());
     let preview = metadata
         .preview
         .clone()
@@ -440,7 +440,7 @@ async fn thread_name_from_metadata(
             if let Some(title) = distinct_thread_metadata_title(metadata) {
                 Some(title)
             } else {
-                find_thread_name_by_id(store.config.codex_home.as_path(), &metadata.id)
+                find_thread_name_by_id(store.config.ava_home.as_path(), &metadata.id)
                     .await
                     .ok()
                     .flatten()
@@ -455,7 +455,7 @@ async fn stored_thread_from_session_meta(
     path: std::path::PathBuf,
 ) -> ThreadStoreResult<StoredThread> {
     let meta_line = read_required_session_meta_line(path.as_path()).await?;
-    let archived = rollout_path_is_archived(store.config.codex_home.as_path(), path.as_path());
+    let archived = rollout_path_is_archived(store.config.ava_home.as_path(), path.as_path());
     Ok(stored_thread_from_meta_line(
         store, meta_line, path, archived,
     ))
@@ -483,7 +483,7 @@ fn stored_thread_from_meta_line(
         .and_then(|meta| meta.modified().ok())
         .map(DateTime::<Utc>::from)
         .unwrap_or(created_at);
-    let rollout_path = codex_rollout::plain_rollout_path(path.as_path());
+    let rollout_path = ava_rollout::plain_rollout_path(path.as_path());
     StoredThread {
         thread_id: meta_line.meta.id,
         extra_config: None,
@@ -553,18 +553,18 @@ mod tests {
     use std::path::PathBuf;
 
     use chrono::Utc;
-    use codex_protocol::ThreadId;
-    use codex_protocol::items::TurnItem;
-    use codex_protocol::items::UserMessageItem;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::protocol::EventMsg;
-    use codex_protocol::protocol::ItemCompletedEvent;
-    use codex_protocol::protocol::SandboxPolicy;
-    use codex_protocol::protocol::SessionSource;
-    use codex_protocol::protocol::ThreadHistoryMode;
-    use codex_protocol::user_input::UserInput;
-    use codex_rollout::RolloutItem;
-    use codex_state::ThreadMetadataBuilder;
+    use ava_protocol::ThreadId;
+    use ava_protocol::items::TurnItem;
+    use ava_protocol::items::UserMessageItem;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::protocol::EventMsg;
+    use ava_protocol::protocol::ItemCompletedEvent;
+    use ava_protocol::protocol::SandboxPolicy;
+    use ava_protocol::protocol::SessionSource;
+    use ava_protocol::protocol::ThreadHistoryMode;
+    use ava_protocol::user_input::UserInput;
+    use ava_rollout::RolloutItem;
+    use ava_state::ThreadMetadataBuilder;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
     use uuid::Uuid;
@@ -616,7 +616,7 @@ mod tests {
             write_session_file(home.path(), "2025-01-03T12-00-00", uuid).expect("session file");
         let relative_path = active_path
             .strip_prefix(home.path())
-            .expect("path should be under codex home")
+            .expect("path should be under ava home")
             .to_path_buf();
 
         let thread = store
@@ -644,7 +644,7 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let active_path =
             write_session_file(home.path(), "2025-01-03T12-00-00", uuid).expect("session file");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -665,9 +665,9 @@ mod tests {
         builder.recency_at = Some(recency_at);
         let mut metadata = builder.build(config.default_model_provider_id.as_str());
         metadata.title = "Stale SQLite name".to_string();
-        metadata.section = Some(codex_state::ThreadSection {
-            id: codex_state::PINNED_THREAD_SECTION_ID.to_string(),
-            name: codex_state::PINNED_THREAD_SECTION_NAME.to_string(),
+        metadata.section = Some(ava_state::ThreadSection {
+            id: ava_state::PINNED_THREAD_SECTION_ID.to_string(),
+            name: ava_state::PINNED_THREAD_SECTION_NAME.to_string(),
             appearance: None,
         });
         metadata.section_position = Some(2_000_000);
@@ -676,7 +676,7 @@ mod tests {
             .upsert_thread(&metadata)
             .await
             .expect("state db upsert should succeed");
-        codex_rollout::append_thread_name(home.path(), thread_id, "Latest index name")
+        ava_rollout::append_thread_name(home.path(), thread_id, "Latest index name")
             .await
             .expect("append thread name");
 
@@ -694,7 +694,7 @@ mod tests {
         assert_eq!(thread.recency_at, recency_at);
         assert_eq!(
             thread.section.as_ref().map(|section| section.id.as_str()),
-            Some(codex_state::PINNED_THREAD_SECTION_ID)
+            Some(ava_state::PINNED_THREAD_SECTION_ID)
         );
         assert_eq!(thread.section_position, Some(2_000_000));
         assert_eq!(thread.section_entered_at, Some(recency_at));
@@ -816,7 +816,7 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let rollout_path =
             write_session_file(home.path(), "2025-01-03T12-00-00", uuid).expect("session file");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -861,7 +861,7 @@ mod tests {
             ThreadHistoryMode::Paginated,
         )
         .expect("session file");
-        codex_rollout::append_rollout_item_to_path(
+        ava_rollout::append_rollout_item_to_path(
             &rollout_path,
             &RolloutItem::EventMsg(EventMsg::ItemCompleted(ItemCompletedEvent {
                 thread_id,
@@ -876,7 +876,7 @@ mod tests {
         )
         .await
         .expect("append rollout user message");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -902,7 +902,7 @@ mod tests {
             .upsert_thread(&metadata)
             .await
             .expect("state db upsert should succeed");
-        codex_rollout::append_thread_name(home.path(), thread_id, "Stale index name")
+        ava_rollout::append_thread_name(home.path(), thread_id, "Stale index name")
             .await
             .expect("append legacy thread name");
 
@@ -953,7 +953,7 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let rollout_path =
             write_session_file(home.path(), "2025-01-03T12-00-00", uuid).expect("session file");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -994,7 +994,7 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let rollout_path =
             write_session_file(home.path(), "2025-01-03T12-00-00", uuid).expect("session file");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1028,7 +1028,7 @@ mod tests {
     async fn read_thread_preserves_sqlite_cwd_when_rollout_metadata_is_stale() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1184,7 +1184,7 @@ mod tests {
         let uuid = Uuid::from_u128(213);
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         write_session_file(home.path(), "2025-01-03T12-00-00", uuid).expect("session file");
-        codex_rollout::append_thread_name(home.path(), thread_id, "Legacy title")
+        ava_rollout::append_thread_name(home.path(), thread_id, "Legacy title")
             .await
             .expect("append legacy thread name");
 
@@ -1226,7 +1226,7 @@ mod tests {
         });
         writeln!(file, "{meta}").expect("write session meta");
 
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1299,7 +1299,7 @@ mod tests {
         let rollout_path =
             write_session_file(home.path(), "2025-01-03T12-00-00", uuid).expect("session file");
         let stale_path = external.path().join("missing-rollout.jsonl");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1356,7 +1356,7 @@ mod tests {
         let other_uuid = Uuid::from_u128(222);
         let stale_path = write_session_file(external.path(), "2025-01-04T12-00-00", other_uuid)
             .expect("other session file");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1455,7 +1455,7 @@ mod tests {
         let rollout_path = external
             .path()
             .join(format!("rollout-2025-01-03T12-00-00-{uuid}.jsonl"));
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1517,7 +1517,7 @@ mod tests {
         let rollout_path = external
             .path()
             .join(format!("rollout-2025-01-03T12-00-00-{uuid}.jsonl"));
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1572,7 +1572,7 @@ mod tests {
         let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
         let archived_path = write_archived_session_file(home.path(), "2025-01-03T12-00-00", uuid)
             .expect("archived session file");
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )

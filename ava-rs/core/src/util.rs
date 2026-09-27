@@ -1,10 +1,10 @@
-pub use codex_async_utils::backoff;
+pub use ava_async_utils::backoff;
 use tracing::error;
 
 /// Emit structured feedback metadata as key/value pairs.
 ///
 /// This logs a tracing event with `target: "feedback_tags"`. If
-/// `codex_feedback::CodexFeedback::metadata_layer()` is installed, these fields are captured and
+/// `ava_feedback::AvaFeedback::metadata_layer()` is installed, these fields are captured and
 /// later attached as tags when feedback is uploaded.
 ///
 /// Values are wrapped with [`tracing::field::DebugValue`], so the expression only needs to
@@ -16,8 +16,8 @@ use tracing::error;
 /// let provider_id = "openai";
 /// let request_id = "req-123";
 ///
-/// codex_core::feedback_tags!(model = "gpt-5", cached = true);
-/// codex_core::feedback_tags!(provider = provider_id, request_id = request_id);
+/// ava_core::feedback_tags!(model = "gpt-5", cached = true);
+/// ava_core::feedback_tags!(provider = provider_id, request_id = request_id);
 /// ```
 #[macro_export]
 macro_rules! feedback_tags {

@@ -8,20 +8,20 @@ use super::metrics::record_fast_decision;
 use super::parent_compaction::select_parent_compaction;
 use super::sampler::LunaSampler;
 use super::score::GuardianV2ScoreProgress;
-use codex_core::CodexThread;
-use codex_core::ThreadManager;
-use codex_core::context::GuardianContextMode;
-use codex_extension_api::ApprovalDecision;
-use codex_extension_api::ApprovalDecisionInput;
-use codex_extension_api::ApprovalReviewContributor;
-use codex_extension_api::ExtensionFuture;
-use codex_protocol::approvals::GuardianReviewReason;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::openai_models::GuardianModelPolicy;
-use codex_protocol::openai_models::GuardianReviewMode;
-use codex_protocol::openai_models::GuardianScope;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_core::AvaThread;
+use ava_core::ThreadManager;
+use ava_core::context::GuardianContextMode;
+use ava_extension_api::ApprovalDecision;
+use ava_extension_api::ApprovalDecisionInput;
+use ava_extension_api::ApprovalReviewContributor;
+use ava_extension_api::ExtensionFuture;
+use ava_protocol::approvals::GuardianReviewReason;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::openai_models::GuardianModelPolicy;
+use ava_protocol::openai_models::GuardianReviewMode;
+use ava_protocol::openai_models::GuardianScope;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::TruncationPolicy;
 use std::sync::Weak;
 
 pub(super) struct GuardianApprovalReviewer {
@@ -49,7 +49,7 @@ impl GuardianApprovalReviewer {
     #[tracing::instrument(skip_all, fields(approval_id = input.approval_id))]
     async fn decide_request(
         &self,
-        thread: &CodexThread,
+        thread: &AvaThread,
         input: &ApprovalDecisionInput<'_>,
     ) -> ApprovalDecision {
         if input.full_access {
@@ -67,7 +67,7 @@ impl GuardianApprovalReviewer {
         let config = thread.config().await;
         let model = input
             .thread_store
-            .get::<codex_protocol::openai_models::ModelInfo>();
+            .get::<ava_protocol::openai_models::ModelInfo>();
         let guardian_config = input
             .thread_store
             .get::<GuardianV2Config>()
@@ -76,9 +76,9 @@ impl GuardianApprovalReviewer {
             .ok();
         let mut policy = guardian_config.as_ref().map_or_else(
             || {
-                codex_config::GuardianPolicyLoader::new(
-                    Some(&codex_features::FeatureToml::Enabled(true)),
-                    &codex_config::ConfigRequirements::default(),
+                ava_config::GuardianPolicyLoader::new(
+                    Some(&ava_features::FeatureToml::Enabled(true)),
+                    &ava_config::ConfigRequirements::default(),
                 )
                 .resolve(model.as_deref())
             },
@@ -126,7 +126,7 @@ impl GuardianApprovalReviewer {
 }
 
 async fn cached_evidence(
-    thread: &CodexThread,
+    thread: &AvaThread,
     input: &ApprovalDecisionInput<'_>,
     config: &GuardianV2Config,
     policy: &GuardianModelPolicy,
@@ -138,7 +138,7 @@ async fn cached_evidence(
         return Err(GuardianReviewReason::MissingScore);
     };
     // Elicitations and intercepted execs can expand beyond the original scored action.
-    let action = codex_guardian_context::action_for_review(input.action.clone());
+    let action = ava_guardian_context::action_for_review(input.action.clone());
     let max_action_bytes = TruncationPolicy::Tokens(config.max_action_tokens).byte_budget();
     let action_fits = serde_json::to_string_pretty(&action)
         .is_ok_and(|action| action.len().saturating_add(1) <= max_action_bytes);

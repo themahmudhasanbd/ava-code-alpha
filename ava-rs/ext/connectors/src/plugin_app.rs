@@ -1,9 +1,9 @@
-use codex_connectors::parse_plugin_app_config;
-use codex_core_plugins::ResolvedExecutorPlugin;
-use codex_file_system::ReadFileOptions;
-use codex_plugin::AppDeclaration;
-use codex_plugin::PluginResourceLocator;
-use codex_utils_path_uri::PathUri;
+use ava_connectors::parse_plugin_app_config;
+use ava_core_plugins::ResolvedExecutorPlugin;
+use ava_file_system::ReadFileOptions;
+use ava_plugin::AppDeclaration;
+use ava_plugin::PluginResourceLocator;
+use ava_utils_path_uri::PathUri;
 use std::io;
 use thiserror::Error;
 

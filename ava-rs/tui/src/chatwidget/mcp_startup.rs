@@ -8,9 +8,9 @@
 
 use std::collections::BTreeSet;
 
-use codex_app_server_protocol::McpServerStartupFailureReason;
-use codex_app_server_protocol::McpServerStartupState;
-use codex_app_server_protocol::McpServerStatusUpdatedNotification;
+use ava_app_server_protocol::McpServerStartupFailureReason;
+use ava_app_server_protocol::McpServerStartupState;
+use ava_app_server_protocol::McpServerStatusUpdatedNotification;
 
 use super::ChatWidget;
 
@@ -305,7 +305,7 @@ impl ChatWidget {
         &mut self,
         notification: McpServerStatusUpdatedNotification,
     ) {
-        let refresh_connector_mentions = notification.name == "codex_apps"
+        let refresh_connector_mentions = notification.name == "ava_apps"
             && notification.status == McpServerStartupState::Ready;
         let status = match notification.status {
             McpServerStartupState::Starting => McpStartupStatus::Starting,

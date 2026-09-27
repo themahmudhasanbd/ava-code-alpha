@@ -22,7 +22,7 @@ use crate::state::build_config_state;
 use crate::state::validate_policy_against_constraints;
 use anyhow::Context;
 use anyhow::Result;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use globset::GlobSet;
 use opentelemetry::trace::SpanContext;
 use serde::Deserialize;
@@ -48,7 +48,7 @@ use tracing::warn;
 
 const MAX_BLOCKED_EVENTS: usize = 200;
 const DNS_LOOKUP_TIMEOUT: Duration = Duration::from_secs(2);
-const NETWORK_POLICY_VIOLATION_PREFIX: &str = "CODEX_NETWORK_POLICY_VIOLATION";
+const NETWORK_POLICY_VIOLATION_PREFIX: &str = "AVA_NETWORK_POLICY_VIOLATION";
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -622,7 +622,7 @@ impl NetworkProxyState {
         &self,
     ) -> Result<(NetworkProxyConfig, bool, crate::Platform)> {
         // Callers treat `NetworkProxyState` as a live view of policy. We reload-on-demand so edits to
-        // `config.toml` (including Codex-managed writes) take effect without a restart.
+        // `config.toml` (including Ava-managed writes) take effect without a restart.
         self.reload_if_needed().await?;
         let guard = self.state.read().await;
         Ok((
@@ -1676,7 +1676,7 @@ mod tests {
 
         assert_eq!(
             blocked_request_violation_log_line(&entry),
-            r#"CODEX_NETWORK_POLICY_VIOLATION {"host":"google.com","reason":"not_allowed","client":"127.0.0.1","method":"GET","mode":"full","protocol":"http","decision":"ask","source":"decider","port":80,"timestamp":1735689600}"#
+            r#"AVA_NETWORK_POLICY_VIOLATION {"host":"google.com","reason":"not_allowed","client":"127.0.0.1","method":"GET","mode":"full","protocol":"http","decision":"ask","source":"decider","port":80,"timestamp":1735689600}"#
         );
     }
 

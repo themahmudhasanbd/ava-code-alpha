@@ -238,14 +238,14 @@ impl ChatWidget {
     }
 
     pub(super) fn is_auto_model(model: &str) -> bool {
-        model.starts_with("codex-auto-")
+        model.starts_with("ava-auto-")
     }
 
     fn auto_model_order(model: &str) -> usize {
         match model {
-            "codex-auto-fast" => 0,
-            "codex-auto-balanced" => 1,
-            "codex-auto-thorough" => 2,
+            "ava-auto-fast" => 0,
+            "ava-auto-balanced" => 1,
+            "ava-auto-thorough" => 2,
             _ => 3,
         }
     }
@@ -539,8 +539,8 @@ impl ChatWidget {
             let effort_label = Self::reasoning_effort_label(effort);
             format!("⚠ {effort_label} reasoning effort can quickly consume Plus plan rate limits.")
         });
-        let warn_for_model = preset.model.starts_with("gpt-5.1-codex")
-            || preset.model.starts_with("gpt-5.1-codex-max")
+        let warn_for_model = preset.model.starts_with("gpt-5.1-ava")
+            || preset.model.starts_with("gpt-5.1-ava-max")
             || preset.model.starts_with("gpt-5.2");
 
         let mut all_choices: Vec<ReasoningEffortConfig> = supported

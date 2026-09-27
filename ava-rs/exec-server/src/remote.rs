@@ -2,12 +2,12 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_api::AuthProvider;
-use codex_api::SharedAuthProvider;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::HttpResponse;
-use codex_http_client::RouteAwareClientPool;
+use ava_api::AuthProvider;
+use ava_api::SharedAuthProvider;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::HttpResponse;
+use ava_http_client::RouteAwareClientPool;
 use futures::FutureExt;
 use http::HeaderMap;
 use http::HeaderName;
@@ -21,10 +21,10 @@ use tracing::debug;
 use tracing::info;
 use tracing::warn;
 
-use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
-use codex_websocket_client::WebSocketConnection;
-use codex_websocket_client::WebSocketConnector;
-use codex_websocket_client::WebSocketTlsMode;
+use ava_utils_rustls_provider::ensure_rustls_crypto_provider;
+use ava_websocket_client::WebSocketConnection;
+use ava_websocket_client::WebSocketConnector;
+use ava_websocket_client::WebSocketTlsMode;
 
 use crate::EnvironmentRegistryConnectRequest;
 use crate::EnvironmentRegistryConnectResponse;
@@ -94,7 +94,7 @@ impl EnvironmentRegistryClient {
             base_url,
             auth_provider,
             ExecServerTelemetry::default(),
-            HttpClientFactory::new(codex_http_client::OutboundProxyPolicy::ReqwestDefault),
+            HttpClientFactory::new(ava_http_client::OutboundProxyPolicy::ReqwestDefault),
         )
     }
 
@@ -120,11 +120,11 @@ impl EnvironmentRegistryClient {
     /// Register the executor public key and obtain the rendezvous allocation.
     /// The returned registration ID is included in each stream's Noise prologue.
     #[tracing::instrument(
-        name = "codex.exec_server.remote.register",
+        name = "ava.exec_server.remote.register",
         skip_all,
         fields(
             otel.kind = "client",
-            otel.name = "codex.exec_server.remote.register",
+            otel.name = "ava.exec_server.remote.register",
             result = tracing::field::Empty,
         )
     )]
@@ -171,7 +171,7 @@ impl EnvironmentRegistryClient {
         .await
         .unwrap_or_else(|_| {
             Err(ExecServerError::EnvironmentRegistryRequest(
-                codex_http_client::RouteAwareRequestError::Timeout,
+                ava_http_client::RouteAwareRequestError::Timeout,
             ))
         })?;
         let status = response.status();
@@ -188,7 +188,7 @@ impl EnvironmentRegistryClient {
                             environment_registry_http_error(status, "response body timed out")
                         }
                         _ => ExecServerError::EnvironmentRegistryRequest(
-                            codex_http_client::RouteAwareRequestError::Timeout,
+                            ava_http_client::RouteAwareRequestError::Timeout,
                         ),
                     })
                 })?;
@@ -219,11 +219,11 @@ impl EnvironmentRegistryClient {
 
     /// Authorize one Noise harness key and obtain the full rendezvous bundle.
     #[tracing::instrument(
-        name = "codex.exec_server.remote.environment_registry.connect",
+        name = "ava.exec_server.remote.environment_registry.connect",
         skip_all,
         fields(
             otel.kind = "client",
-            otel.name = "codex.exec_server.remote.environment_registry.connect",
+            otel.name = "ava.exec_server.remote.environment_registry.connect",
             environment_id = %environment_id,
         )
     )]
@@ -321,11 +321,11 @@ impl HarnessKeyValidator for RegistryHarnessKeyValidator {
     /// Noise proves key possession; the registry decides whether that key may use
     /// this executor. The authorization token and public key are checked together.
     #[tracing::instrument(
-        name = "codex.exec_server.remote.environment_registry.validate_harness_key",
+        name = "ava.exec_server.remote.environment_registry.validate_harness_key",
         skip_all,
         fields(
             otel.kind = "client",
-            otel.name = "codex.exec_server.remote.environment_registry.validate_harness_key",
+            otel.name = "ava.exec_server.remote.environment_registry.validate_harness_key",
             environment_id = %self.environment_id,
             executor_registration_id = %self.executor_registration_id,
         )
@@ -382,7 +382,7 @@ impl HarnessKeyValidator for RegistryHarnessKeyValidator {
     }
 }
 
-/// Noise connection configuration for a Codex harness.
+/// Noise connection configuration for a Ava harness.
 ///
 /// Configuration stays inert until the effective outbound HTTP policy is known.
 /// Its connection provider then holds the authenticated registry client so every
@@ -577,7 +577,7 @@ impl RemoteEnvironmentConfig {
         Ok(Self {
             base_url,
             environment_id,
-            name: "codex-exec-server".to_string(),
+            name: "ava-exec-server".to_string(),
             request_dispatch_mode: RequestDispatchMode::Inline,
             transport,
             auth_provider,
@@ -783,11 +783,11 @@ async fn run_remote_environment_connections<H: NoiseStreamHandler>(
 }
 
 #[tracing::instrument(
-    name = "codex.exec_server.remote.rendezvous.connect",
+    name = "ava.exec_server.remote.rendezvous.connect",
     skip_all,
     fields(
         otel.kind = "client",
-        otel.name = "codex.exec_server.remote.rendezvous.connect",
+        otel.name = "ava.exec_server.remote.rendezvous.connect",
         result = tracing::field::Empty,
     )
 )]
@@ -906,8 +906,8 @@ fn preview_error_body(body: &str) -> Option<String> {
 mod tests {
     use std::sync::Arc;
 
-    use codex_api::AuthProvider;
-    use codex_http_client::OutboundProxyPolicy;
+    use ava_api::AuthProvider;
+    use ava_http_client::OutboundProxyPolicy;
     use http::HeaderMap;
     use http::HeaderValue;
     use opentelemetry::trace::TracerProvider as _;
@@ -935,7 +935,7 @@ mod tests {
     impl AuthProvider for StaticRegistryAuthProvider {
         fn add_auth_headers(&self, _headers: &mut HeaderMap) {}
 
-        fn resolve_auth_headers(&self) -> codex_api::AuthHeadersFuture<'_> {
+        fn resolve_auth_headers(&self) -> ava_api::AuthHeadersFuture<'_> {
             Box::pin(async {
                 let mut headers = HeaderMap::new();
                 let _ = headers.insert(
@@ -1043,7 +1043,7 @@ mod tests {
 
         let bundle = config
             .into_connect_provider(HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+                ava_http_client::OutboundProxyPolicy::ReqwestDefault,
             ))
             .expect("Noise connect provider")
             .connect_bundle(harness_public_key)

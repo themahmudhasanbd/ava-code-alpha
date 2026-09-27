@@ -2,10 +2,10 @@
 //! Never include prompts, paths, credentials, provider endpoints, or raw configuration.
 
 use crate::config::Config;
-use codex_features::FEATURES;
-use codex_features::Feature;
-use codex_features::Features;
-use codex_protocol::openai_models::ModelInfo;
+use ava_features::FEATURES;
+use ava_features::Feature;
+use ava_features::Features;
+use ava_protocol::openai_models::ModelInfo;
 use serde_json::Value;
 use serde_json::json;
 use std::collections::BTreeMap;

@@ -1,7 +1,7 @@
 use anyhow::Result;
-use codex_config::ConfigRequirementsToml;
-use codex_windows_sandbox::WindowsSandboxProvisioningSettings;
-use codex_windows_sandbox::WindowsSandboxProxyListeners;
+use ava_config::ConfigRequirementsToml;
+use ava_windows_sandbox::WindowsSandboxProvisioningSettings;
+use ava_windows_sandbox::WindowsSandboxProxyListeners;
 
 fn validate_requirements(
     settings: &WindowsSandboxProvisioningSettings,

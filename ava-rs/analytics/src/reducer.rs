@@ -3,48 +3,48 @@ use crate::accepted_lines::accepted_line_counts_from_unified_diff;
 use crate::accepted_lines::accepted_line_fingerprint_event_requests;
 use crate::accepted_lines::accepted_line_repo_hash_for_cwd;
 use crate::events::AppServerRpcTransport;
-use crate::events::CodexAppMentionedEventRequest;
-use crate::events::CodexAppServerClientMetadata;
-use crate::events::CodexAppUsedEventRequest;
-use crate::events::CodexAppUsedMetadata;
-use crate::events::CodexCollabAgentToolCallEventParams;
-use crate::events::CodexCollabAgentToolCallEventRequest;
-use crate::events::CodexCommandExecutionEventParams;
-use crate::events::CodexCommandExecutionEventRequest;
-use crate::events::CodexCompactionEventRequest;
-use crate::events::CodexControlToolCallEventParams;
-use crate::events::CodexControlToolCallEventRequest;
-use crate::events::CodexDynamicToolCallEventParams;
-use crate::events::CodexDynamicToolCallEventRequest;
-use crate::events::CodexFileChangeEventParams;
-use crate::events::CodexFileChangeEventRequest;
-use crate::events::CodexGoalEventRequest;
-use crate::events::CodexHookRunEventRequest;
-use crate::events::CodexImageGenerationEventParams;
-use crate::events::CodexImageGenerationEventRequest;
-use crate::events::CodexMcpToolCallEventParams;
-use crate::events::CodexMcpToolCallEventRequest;
-use crate::events::CodexOnboardingExternalAgentImportCompleteEventRequest;
-use crate::events::CodexOnboardingExternalAgentImportCompleteMetadata;
-use crate::events::CodexOnboardingExternalAgentImportFailureEventRequest;
-use crate::events::CodexOnboardingExternalAgentImportFailureMetadata;
-use crate::events::CodexPluginEventRequest;
-use crate::events::CodexPluginInstallFailedEventRequest;
-use crate::events::CodexPluginInstallFailedMetadata;
-use crate::events::CodexPluginInstallRequestedEventRequest;
-use crate::events::CodexPluginMeasurementEventParams;
-use crate::events::CodexPluginMeasurementEventRequest;
-use crate::events::CodexPluginUsedEventRequest;
-use crate::events::CodexReviewEventParams;
-use crate::events::CodexReviewEventRequest;
-use crate::events::CodexRuntimeMetadata;
-use crate::events::CodexToolItemEventBase;
-use crate::events::CodexTurnEventParams;
-use crate::events::CodexTurnEventRequest;
-use crate::events::CodexTurnSteerEventParams;
-use crate::events::CodexTurnSteerEventRequest;
-use crate::events::CodexWebSearchEventParams;
-use crate::events::CodexWebSearchEventRequest;
+use crate::events::AvaAppMentionedEventRequest;
+use crate::events::AvaAppServerClientMetadata;
+use crate::events::AvaAppUsedEventRequest;
+use crate::events::AvaAppUsedMetadata;
+use crate::events::AvaCollabAgentToolCallEventParams;
+use crate::events::AvaCollabAgentToolCallEventRequest;
+use crate::events::AvaCommandExecutionEventParams;
+use crate::events::AvaCommandExecutionEventRequest;
+use crate::events::AvaCompactionEventRequest;
+use crate::events::AvaControlToolCallEventParams;
+use crate::events::AvaControlToolCallEventRequest;
+use crate::events::AvaDynamicToolCallEventParams;
+use crate::events::AvaDynamicToolCallEventRequest;
+use crate::events::AvaFileChangeEventParams;
+use crate::events::AvaFileChangeEventRequest;
+use crate::events::AvaGoalEventRequest;
+use crate::events::AvaHookRunEventRequest;
+use crate::events::AvaImageGenerationEventParams;
+use crate::events::AvaImageGenerationEventRequest;
+use crate::events::AvaMcpToolCallEventParams;
+use crate::events::AvaMcpToolCallEventRequest;
+use crate::events::AvaOnboardingExternalAgentImportCompleteEventRequest;
+use crate::events::AvaOnboardingExternalAgentImportCompleteMetadata;
+use crate::events::AvaOnboardingExternalAgentImportFailureEventRequest;
+use crate::events::AvaOnboardingExternalAgentImportFailureMetadata;
+use crate::events::AvaPluginEventRequest;
+use crate::events::AvaPluginInstallFailedEventRequest;
+use crate::events::AvaPluginInstallFailedMetadata;
+use crate::events::AvaPluginInstallRequestedEventRequest;
+use crate::events::AvaPluginMeasurementEventParams;
+use crate::events::AvaPluginMeasurementEventRequest;
+use crate::events::AvaPluginUsedEventRequest;
+use crate::events::AvaReviewEventParams;
+use crate::events::AvaReviewEventRequest;
+use crate::events::AvaRuntimeMetadata;
+use crate::events::AvaToolItemEventBase;
+use crate::events::AvaTurnEventParams;
+use crate::events::AvaTurnEventRequest;
+use crate::events::AvaTurnSteerEventParams;
+use crate::events::AvaTurnSteerEventRequest;
+use crate::events::AvaWebSearchEventParams;
+use crate::events::AvaWebSearchEventRequest;
 use crate::events::FinalApprovalOutcome;
 use crate::events::GuardianReviewEventParams;
 use crate::events::GuardianReviewEventPayload;
@@ -66,14 +66,14 @@ use crate::events::ToolItemFailureKind;
 use crate::events::ToolItemTerminalStatus;
 use crate::events::TrackEventRequest;
 use crate::events::WebSearchActionKind;
-use crate::events::codex_app_metadata;
-use crate::events::codex_artifact_operation_event_request;
-use crate::events::codex_compaction_event_params;
-use crate::events::codex_goal_event_params;
-use crate::events::codex_hook_run_metadata;
-use crate::events::codex_plugin_install_requested_metadata;
-use crate::events::codex_plugin_metadata;
-use crate::events::codex_plugin_used_metadata;
+use crate::events::ava_app_metadata;
+use crate::events::ava_artifact_operation_event_request;
+use crate::events::ava_compaction_event_params;
+use crate::events::ava_goal_event_params;
+use crate::events::ava_hook_run_metadata;
+use crate::events::ava_plugin_install_requested_metadata;
+use crate::events::ava_plugin_metadata;
+use crate::events::ava_plugin_used_metadata;
 use crate::events::plugin_state_event_type;
 use crate::events::subagent_source_name;
 use crate::events::subagent_thread_started_event_request;
@@ -84,8 +84,8 @@ use crate::facts::AppUsedInput;
 use crate::facts::ArtifactOperationInput;
 use crate::facts::CodeModeToolCallFact;
 use crate::facts::CodeModeToolCallStatus;
-use crate::facts::CodexCompactionEvent;
-use crate::facts::CodexGoalEvent;
+use crate::facts::AvaCompactionEvent;
+use crate::facts::AvaGoalEvent;
 use crate::facts::ControlToolCallFact;
 use crate::facts::ControlToolCallStatus;
 use crate::facts::CustomAnalyticsFact;
@@ -108,8 +108,8 @@ use crate::facts::SkillInvocationLocation;
 use crate::facts::SkillInvokedInput;
 use crate::facts::SubAgentThreadStartedInput;
 use crate::facts::ThreadInitializationMode;
-use crate::facts::TurnCodexError;
-use crate::facts::TurnCodexErrorFact;
+use crate::facts::TurnAvaError;
+use crate::facts::TurnAvaErrorFact;
 use crate::facts::TurnProfile;
 use crate::facts::TurnProfileFact;
 use crate::facts::TurnResolvedConfigFact;
@@ -125,53 +125,53 @@ use crate::now_unix_seconds;
 use crate::option_i64_to_u64;
 use crate::serialize_enum_as_string;
 use crate::usize_to_u64;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponse;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::CollabAgentStatus;
-use codex_app_server_protocol::CollabAgentTool;
-use codex_app_server_protocol::CollabAgentToolCallStatus;
-use codex_app_server_protocol::CommandAction;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionApprovalKind;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::DynamicToolCallOutputContentItem;
-use codex_app_server_protocol::DynamicToolCallStatus;
-use codex_app_server_protocol::FileChangeApprovalDecision;
-use codex_app_server_protocol::GuardianApprovalReviewAction;
-use codex_app_server_protocol::GuardianApprovalReviewStatus;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::McpToolCallStatus;
-use codex_app_server_protocol::NetworkPolicyRuleAction;
-use codex_app_server_protocol::PatchApplyStatus;
-use codex_app_server_protocol::PatchChangeKind;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::RequestPermissionProfile;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerResponse;
-use codex_app_server_protocol::SubAgentActivityKind;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::TurnSteerResponse;
-use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::WebSearchAction;
-use codex_git_utils::SanitizedGitUrl;
-use codex_git_utils::collect_git_info;
-use codex_git_utils::get_git_repo_root;
-use codex_login::default_client::originator;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::items::ModelInvocationContext;
-use codex_protocol::items::is_safe_plugin_relative_path;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SkillScope;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::request_permissions::PermissionGrantScope as CorePermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionsResponse as CoreRequestPermissionsResponse;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponse;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::CollabAgentStatus;
+use ava_app_server_protocol::CollabAgentTool;
+use ava_app_server_protocol::CollabAgentToolCallStatus;
+use ava_app_server_protocol::CommandAction;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionApprovalKind;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::DynamicToolCallOutputContentItem;
+use ava_app_server_protocol::DynamicToolCallStatus;
+use ava_app_server_protocol::FileChangeApprovalDecision;
+use ava_app_server_protocol::GuardianApprovalReviewAction;
+use ava_app_server_protocol::GuardianApprovalReviewStatus;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::NetworkPolicyRuleAction;
+use ava_app_server_protocol::PatchApplyStatus;
+use ava_app_server_protocol::PatchChangeKind;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::RequestPermissionProfile;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerResponse;
+use ava_app_server_protocol::SubAgentActivityKind;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::UserInput;
+use ava_app_server_protocol::WebSearchAction;
+use ava_git_utils::SanitizedGitUrl;
+use ava_git_utils::collect_git_info;
+use ava_git_utils::get_git_repo_root;
+use ava_login::default_client::originator;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::items::ModelInvocationContext;
+use ava_protocol::items::is_safe_plugin_relative_path;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SkillScope;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::request_permissions::PermissionGrantScope as CorePermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionsResponse as CoreRequestPermissionsResponse;
 use sha1::Digest;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -218,8 +218,8 @@ pub(crate) struct AnalyticsReducer {
 }
 
 struct ConnectionState {
-    app_server_client: CodexAppServerClientMetadata,
-    runtime: CodexRuntimeMetadata,
+    app_server_client: AvaAppServerClientMetadata,
+    runtime: AvaRuntimeMetadata,
 }
 
 #[derive(Default)]
@@ -236,7 +236,7 @@ impl ThreadAnalyticsState {
     fn app_server_client(
         &self,
         connection_state: &ConnectionState,
-    ) -> CodexAppServerClientMetadata {
+    ) -> AvaAppServerClientMetadata {
         let mut app_server_client = connection_state.app_server_client.clone();
         if let Some(originator) = self.originator.as_ref() {
             app_server_client.product_client_id.clone_from(originator);
@@ -275,7 +275,7 @@ impl<'a> AnalyticsDropSite<'a> {
         }
     }
 
-    fn compaction(input: &'a CodexCompactionEvent) -> Self {
+    fn compaction(input: &'a AvaCompactionEvent) -> Self {
         Self {
             event_name: "compaction",
             thread_id: &input.thread_id,
@@ -285,7 +285,7 @@ impl<'a> AnalyticsDropSite<'a> {
         }
     }
 
-    fn goal(input: &'a CodexGoalEvent) -> Self {
+    fn goal(input: &'a AvaGoalEvent) -> Self {
         Self {
             event_name: "goal",
             thread_id: &input.thread_id,
@@ -296,7 +296,7 @@ impl<'a> AnalyticsDropSite<'a> {
     }
 
     fn tool_item(
-        notification: &'a codex_app_server_protocol::ItemCompletedNotification,
+        notification: &'a ava_app_server_protocol::ItemCompletedNotification,
         item_id: &'a str,
     ) -> Self {
         Self {
@@ -422,7 +422,7 @@ struct PendingTurnInterruptState {
 #[derive(Clone)]
 struct CompletedTurnState {
     status: Option<TurnStatus>,
-    turn_error: Option<CodexErrorInfo>,
+    turn_error: Option<AvaErrorInfo>,
     completed_at: u64,
     duration_ms: Option<u64>,
 }
@@ -440,7 +440,7 @@ struct TurnState {
     profile: Option<TurnProfile>,
     completed: Option<CompletedTurnState>,
     explicit_client_interrupt_requested_at_ms: Option<u64>,
-    codex_error: Option<TurnCodexError>,
+    ava_error: Option<TurnAvaError>,
     latest_diff: Option<String>,
     steer_count: usize,
     tool_counts: TurnToolCounts,
@@ -645,7 +645,7 @@ impl AnalyticsReducer {
                 CustomAnalyticsFact::ThreadHintStatus(input) => {
                     if let Some((connection, thread, metadata)) =
                         self.thread_context_or_warn(AnalyticsDropSite {
-                            event_name: "codex_thread_hint_status",
+                            event_name: "ava_thread_hint_status",
                             thread_id: &input.thread_id,
                             turn_id: None,
                             review_id: None,
@@ -654,7 +654,7 @@ impl AnalyticsReducer {
                     {
                         out.push(TrackEventRequest::ThreadHintStatus(Box::new(
                             crate::thread_hint::ThreadHintStatusEventRequest {
-                                event_type: "codex_thread_hint_status",
+                                event_type: "ava_thread_hint_status",
                                 event_params: crate::thread_hint::ThreadHintStatusEventParams {
                                     thread_id: input.thread_id,
                                     session_id: metadata.session_id.clone(),
@@ -673,10 +673,10 @@ impl AnalyticsReducer {
                 CustomAnalyticsFact::GuardianV2(input) => {
                     let event_type = match &input.kind {
                         GuardianV2EventKind::Classification { .. } => {
-                            "codex_guardian_v2_classification"
+                            "ava_guardian_v2_classification"
                         }
                         GuardianV2EventKind::FastDecision { .. } => {
-                            "codex_guardian_v2_fast_decision"
+                            "ava_guardian_v2_fast_decision"
                         }
                     };
                     if let Some((connection, thread, metadata)) =
@@ -716,8 +716,8 @@ impl AnalyticsReducer {
                 CustomAnalyticsFact::TurnProfile(input) => {
                     self.ingest_turn_profile(*input, out).await;
                 }
-                CustomAnalyticsFact::TurnCodexError(input) => {
-                    self.ingest_turn_codex_error(*input);
+                CustomAnalyticsFact::TurnAvaError(input) => {
+                    self.ingest_turn_ava_error(*input);
                 }
                 CustomAnalyticsFact::ImagePreparation(input) => {
                     self.ingest_image_preparation(*input);
@@ -793,7 +793,7 @@ impl AnalyticsReducer {
         out: &mut Vec<TrackEventRequest>,
     ) {
         out.push(TrackEventRequest::ArtifactOperation(
-            codex_artifact_operation_event_request(input.tracking, input.operation),
+            ava_artifact_operation_event_request(input.tracking, input.operation),
         ));
     }
 
@@ -942,9 +942,9 @@ impl AnalyticsReducer {
                     },
                 );
                 base.cell_id = cell_id;
-                let event = TrackEventRequest::DynamicToolCall(CodexDynamicToolCallEventRequest {
-                    event_type: "codex_dynamic_tool_call_event",
-                    event_params: CodexDynamicToolCallEventParams {
+                let event = TrackEventRequest::DynamicToolCall(AvaDynamicToolCallEventRequest {
+                    event_type: "ava_dynamic_tool_call_event",
+                    event_params: AvaDynamicToolCallEventParams {
                         base,
                         dynamic_tool_name: tool_name,
                         success: Some(success),
@@ -1026,9 +1026,9 @@ impl AnalyticsReducer {
             },
         );
         base.cell_id = cell_id;
-        let event = TrackEventRequest::ControlToolCall(CodexControlToolCallEventRequest {
-            event_type: "codex_control_tool_call_event",
-            event_params: CodexControlToolCallEventParams {
+        let event = TrackEventRequest::ControlToolCall(AvaControlToolCallEventRequest {
+            event_type: "ava_control_tool_call_event",
+            event_params: AvaControlToolCallEventParams {
                 base,
                 success: status == ControlToolCallStatus::Completed,
             },
@@ -1160,13 +1160,13 @@ impl AnalyticsReducer {
         connection_id: u64,
         params: InitializeParams,
         product_client_id: String,
-        runtime: CodexRuntimeMetadata,
+        runtime: AvaRuntimeMetadata,
         rpc_transport: AppServerRpcTransport,
     ) {
         self.connections.insert(
             connection_id,
             ConnectionState {
-                app_server_client: CodexAppServerClientMetadata {
+                app_server_client: AvaAppServerClientMetadata {
                     product_client_id,
                     client_name: Some(params.client_info.name),
                     client_version: Some(params.client_info.version),
@@ -1226,7 +1226,7 @@ impl AnalyticsReducer {
         };
         out.push(TrackEventRequest::GuardianReview(Box::new(
             GuardianReviewEventRequest {
-                event_type: "codex_guardian_review",
+                event_type: "ava_guardian_review",
                 event_params: GuardianReviewEventPayload {
                     session_id: thread_metadata.session_id.clone(),
                     app_server_client: thread_state.app_server_client(connection_state),
@@ -1312,15 +1312,15 @@ impl AnalyticsReducer {
         self.maybe_emit_turn_event(&turn_id, out).await;
     }
 
-    fn ingest_turn_codex_error(&mut self, input: TurnCodexErrorFact) {
-        let TurnCodexErrorFact {
+    fn ingest_turn_ava_error(&mut self, input: TurnAvaErrorFact) {
+        let TurnAvaErrorFact {
             turn_id,
             thread_id,
             error,
         } = input;
         let turn_state = self.turns.entry(turn_id).or_default();
         turn_state.thread_id.get_or_insert(thread_id);
-        turn_state.codex_error = Some(error);
+        turn_state.ava_error = Some(error);
     }
 
     fn ingest_image_preparation(&mut self, input: ImagePreparationFact) {
@@ -1413,9 +1413,9 @@ impl AnalyticsReducer {
     fn ingest_app_mentioned(&mut self, input: AppMentionedInput, out: &mut Vec<TrackEventRequest>) {
         let AppMentionedInput { tracking, mentions } = input;
         out.extend(mentions.into_iter().map(|mention| {
-            let event_params = codex_app_metadata(&tracking, mention);
-            TrackEventRequest::AppMentioned(CodexAppMentionedEventRequest {
-                event_type: "codex_app_mentioned",
+            let event_params = ava_app_metadata(&tracking, mention);
+            TrackEventRequest::AppMentioned(AvaAppMentionedEventRequest {
+                event_type: "ava_app_mentioned",
                 event_params,
             })
         }));
@@ -1427,33 +1427,33 @@ impl AnalyticsReducer {
             app,
             elicitation_type,
         } = input;
-        let event_params = CodexAppUsedMetadata {
-            app: codex_app_metadata(&tracking, app),
+        let event_params = AvaAppUsedMetadata {
+            app: ava_app_metadata(&tracking, app),
             voice_session_id: self
                 .turns
                 .get(&tracking.turn_id)
                 .and_then(|turn| turn.voice_session_id.clone()),
             elicitation_type,
         };
-        out.push(TrackEventRequest::AppUsed(CodexAppUsedEventRequest {
-            event_type: "codex_app_used",
+        out.push(TrackEventRequest::AppUsed(AvaAppUsedEventRequest {
+            event_type: "ava_app_used",
             event_params,
         }));
     }
 
     fn ingest_hook_run(&mut self, input: HookRunInput, out: &mut Vec<TrackEventRequest>) {
         let HookRunInput { tracking, hook } = input;
-        out.push(TrackEventRequest::HookRun(CodexHookRunEventRequest {
-            event_type: "codex_hook_run",
-            event_params: codex_hook_run_metadata(&tracking, hook),
+        out.push(TrackEventRequest::HookRun(AvaHookRunEventRequest {
+            event_type: "ava_hook_run",
+            event_params: ava_hook_run_metadata(&tracking, hook),
         }));
     }
 
     fn ingest_plugin_used(&mut self, input: PluginUsedInput, out: &mut Vec<TrackEventRequest>) {
         let PluginUsedInput { tracking, plugin } = input;
-        out.push(TrackEventRequest::PluginUsed(CodexPluginUsedEventRequest {
-            event_type: "codex_plugin_used",
-            event_params: codex_plugin_used_metadata(&tracking, plugin),
+        out.push(TrackEventRequest::PluginUsed(AvaPluginUsedEventRequest {
+            event_type: "ava_plugin_used",
+            event_params: ava_plugin_used_metadata(&tracking, plugin),
         }));
     }
 
@@ -1464,9 +1464,9 @@ impl AnalyticsReducer {
     ) {
         let PluginInstallRequestedInput { tracking, request } = input;
         out.push(TrackEventRequest::PluginInstallRequested(
-            CodexPluginInstallRequestedEventRequest {
-                event_type: "codex_plugin_install_requested",
-                event_params: codex_plugin_install_requested_metadata(&tracking, request),
+            AvaPluginInstallRequestedEventRequest {
+                event_type: "ava_plugin_install_requested",
+                event_params: ava_plugin_install_requested_metadata(&tracking, request),
             },
         ));
     }
@@ -1477,9 +1477,9 @@ impl AnalyticsReducer {
         out: &mut Vec<TrackEventRequest>,
     ) {
         let PluginStateChangedInput { plugin, state } = input;
-        let event = CodexPluginEventRequest {
+        let event = AvaPluginEventRequest {
             event_type: plugin_state_event_type(state),
-            event_params: codex_plugin_metadata(plugin),
+            event_params: ava_plugin_metadata(plugin),
         };
         out.push(match state {
             PluginState::Installed => TrackEventRequest::PluginInstalled(event),
@@ -1501,10 +1501,10 @@ impl AnalyticsReducer {
             sub_error_type,
         } = input;
         out.push(TrackEventRequest::PluginInstallFailed(
-            CodexPluginInstallFailedEventRequest {
-                event_type: "codex_plugin_install_failed",
-                event_params: CodexPluginInstallFailedMetadata {
-                    plugin: codex_plugin_metadata(plugin),
+            AvaPluginInstallFailedEventRequest {
+                event_type: "ava_plugin_install_failed",
+                event_params: AvaPluginInstallFailedMetadata {
+                    plugin: ava_plugin_metadata(plugin),
                     source,
                     error_type,
                     sub_error_type,
@@ -1519,9 +1519,9 @@ impl AnalyticsReducer {
         out: &mut Vec<TrackEventRequest>,
     ) {
         out.push(TrackEventRequest::ExternalAgentConfigImportCompleted(
-            CodexOnboardingExternalAgentImportCompleteEventRequest {
-                event_type: "codex_onboarding_external_agent_import_complete",
-                event_params: CodexOnboardingExternalAgentImportCompleteMetadata {
+            AvaOnboardingExternalAgentImportCompleteEventRequest {
+                event_type: "ava_onboarding_external_agent_import_complete",
+                event_params: AvaOnboardingExternalAgentImportCompleteMetadata {
                     import_id: input.import_id,
                     source: input.source,
                     provider_id: input.provider_id,
@@ -1540,9 +1540,9 @@ impl AnalyticsReducer {
         out: &mut Vec<TrackEventRequest>,
     ) {
         out.push(TrackEventRequest::ExternalAgentConfigImportFailure(
-            CodexOnboardingExternalAgentImportFailureEventRequest {
-                event_type: "codex_onboarding_external_agent_import_failure",
-                event_params: CodexOnboardingExternalAgentImportFailureMetadata {
+            AvaOnboardingExternalAgentImportFailureEventRequest {
+                event_type: "ava_onboarding_external_agent_import_failure",
+                event_params: AvaOnboardingExternalAgentImportFailureMetadata {
                     import_id: input.import_id,
                     source: input.source,
                     provider_id: input.provider_id,
@@ -1937,7 +1937,7 @@ impl AnalyticsReducer {
         match notification {
             ServerNotification::ThreadArchived(notification) => {
                 out.push(TrackEventRequest::ThreadArchive(ThreadArchiveEvent {
-                    event_type: "codex_thread_archive_event",
+                    event_type: "ava_thread_archive_event",
                     event_params: self.thread_archive_event_params(
                         notification.thread_id,
                         ThreadArchiveAction::Archived,
@@ -1946,7 +1946,7 @@ impl AnalyticsReducer {
             }
             ServerNotification::ThreadUnarchived(notification) => {
                 out.push(TrackEventRequest::ThreadArchive(ThreadArchiveEvent {
-                    event_type: "codex_thread_archive_event",
+                    event_type: "ava_thread_archive_event",
                     event_params: self.thread_archive_event_params(
                         notification.thread_id,
                         ThreadArchiveAction::Unarchived,
@@ -2162,7 +2162,7 @@ impl AnalyticsReducer {
                     turn_error: notification
                         .turn
                         .error
-                        .and_then(|error| error.codex_error_info),
+                        .and_then(|error| error.ava_error_info),
                     completed_at: notification
                         .turn
                         .completed_at
@@ -2207,9 +2207,9 @@ impl AnalyticsReducer {
             rows.into_iter()
                 .filter(valid_plugin_measurement_row)
                 .map(|row| {
-                    TrackEventRequest::PluginMeasurement(CodexPluginMeasurementEventRequest {
-                        event_type: "codex_plugin_measurement_event",
-                        event_params: CodexPluginMeasurementEventParams {
+                    TrackEventRequest::PluginMeasurement(AvaPluginMeasurementEventRequest {
+                        event_type: "ava_plugin_measurement_event",
+                        event_params: AvaPluginMeasurementEventParams {
                             thread_id: thread_id.clone(),
                             turn_id: turn_id.clone(),
                             item_id: item_id.clone(),
@@ -2231,7 +2231,7 @@ impl AnalyticsReducer {
     fn emit_thread_initialized(
         &mut self,
         connection_id: u64,
-        thread: codex_app_server_protocol::Thread,
+        thread: ava_app_server_protocol::Thread,
         model: String,
         initialization_mode: ThreadInitializationMode,
         thread_originator: Option<String>,
@@ -2239,8 +2239,8 @@ impl AnalyticsReducer {
     ) {
         let session_source: SessionSource = thread.source.into();
         let is_worktree =
-            codex_git_utils::repository_identity(thread.cwd.as_path()).and_then(|_| {
-                codex_git_utils::get_git_repo_root(thread.cwd.canonicalize().ok()?.as_path())
+            ava_git_utils::repository_identity(thread.cwd.as_path()).and_then(|_| {
+                ava_git_utils::get_git_repo_root(thread.cwd.canonicalize().ok()?.as_path())
                     .map(|root| root.join(".git").is_file())
             });
         let session_id = thread.session_id;
@@ -2266,7 +2266,7 @@ impl AnalyticsReducer {
         let app_server_client = thread_state.app_server_client(connection_state);
         out.push(TrackEventRequest::ThreadInitialized(
             ThreadInitializedEvent {
-                event_type: "codex_thread_initialized",
+                event_type: "ava_thread_initialized",
                 event_params: ThreadInitializedEventParams {
                     thread_id,
                     session_id,
@@ -2286,16 +2286,16 @@ impl AnalyticsReducer {
         ));
     }
 
-    fn ingest_compaction(&mut self, input: CodexCompactionEvent, out: &mut Vec<TrackEventRequest>) {
+    fn ingest_compaction(&mut self, input: AvaCompactionEvent, out: &mut Vec<TrackEventRequest>) {
         let Some((connection_state, thread_state, thread_metadata)) =
             self.thread_context_or_warn(AnalyticsDropSite::compaction(&input))
         else {
             return;
         };
         out.push(TrackEventRequest::Compaction(Box::new(
-            CodexCompactionEventRequest {
-                event_type: "codex_compaction_event",
-                event_params: codex_compaction_event_params(
+            AvaCompactionEventRequest {
+                event_type: "ava_compaction_event",
+                event_params: ava_compaction_event_params(
                     input,
                     thread_metadata.session_id.clone(),
                     thread_state.app_server_client(connection_state),
@@ -2308,15 +2308,15 @@ impl AnalyticsReducer {
         )));
     }
 
-    fn ingest_goal(&mut self, input: CodexGoalEvent, out: &mut Vec<TrackEventRequest>) {
+    fn ingest_goal(&mut self, input: AvaGoalEvent, out: &mut Vec<TrackEventRequest>) {
         let Some((connection_state, thread_state, thread_metadata)) =
             self.thread_context_or_warn(AnalyticsDropSite::goal(&input))
         else {
             return;
         };
-        out.push(TrackEventRequest::Goal(Box::new(CodexGoalEventRequest {
-            event_type: "codex_goal_event",
-            event_params: codex_goal_event_params(
+        out.push(TrackEventRequest::Goal(Box::new(AvaGoalEventRequest {
+            event_type: "ava_goal_event",
+            event_params: ava_goal_event_params(
                 input,
                 thread_metadata.session_id.clone(),
                 thread_state.app_server_client(connection_state),
@@ -2330,7 +2330,7 @@ impl AnalyticsReducer {
 
     fn ingest_guardian_review_completed(
         &mut self,
-        notification: codex_app_server_protocol::ItemGuardianApprovalReviewCompletedNotification,
+        notification: ava_app_server_protocol::ItemGuardianApprovalReviewCompletedNotification,
         out: &mut Vec<TrackEventRequest>,
     ) {
         let Some((status, resolution)) = guardian_review_result(notification.review.status) else {
@@ -2416,9 +2416,9 @@ impl AnalyticsReducer {
             warn_missing_analytics_context(&drop_site, MissingAnalyticsContext::ThreadMetadata);
             return;
         };
-        out.push(TrackEventRequest::TurnSteer(CodexTurnSteerEventRequest {
-            event_type: "codex_turn_steer_event",
-            event_params: CodexTurnSteerEventParams {
+        out.push(TrackEventRequest::TurnSteer(AvaTurnSteerEventRequest {
+            event_type: "ava_turn_steer_event",
+            event_params: AvaTurnSteerEventParams {
                 thread_id: pending_request.thread_id,
                 session_id: thread_metadata.session_id.clone(),
                 expected_turn_id: Some(pending_request.expected_turn_id),
@@ -2459,9 +2459,9 @@ impl AnalyticsReducer {
         else {
             return;
         };
-        out.push(TrackEventRequest::ReviewEvent(CodexReviewEventRequest {
-            event_type: "codex_review_event",
-            event_params: CodexReviewEventParams {
+        out.push(TrackEventRequest::ReviewEvent(AvaReviewEventRequest {
+            event_type: "ava_review_event",
+            event_params: AvaReviewEventParams {
                 thread_id: pending_review.thread_id,
                 turn_id: pending_review.turn_id,
                 item_id: pending_review.item_id,
@@ -2544,9 +2544,9 @@ impl AnalyticsReducer {
             warn_missing_analytics_context(&drop_site, MissingAnalyticsContext::ThreadMetadata);
             return;
         };
-        let turn_event = TrackEventRequest::TurnEvent(Box::new(CodexTurnEventRequest {
-            event_type: "codex_turn_event",
-            event_params: codex_turn_event_params(
+        let turn_event = TrackEventRequest::TurnEvent(Box::new(AvaTurnEventRequest {
+            event_type: "ava_turn_event",
+            event_params: ava_turn_event_params(
                 thread_state.app_server_client(connection_state),
                 connection_state.runtime.clone(),
                 turn_id.to_string(),
@@ -2672,7 +2672,7 @@ pub(crate) fn tracked_tool_item_id(item: &ThreadItem) -> Option<&str> {
     }
 }
 
-fn tool_event_base_mut(event: &mut TrackEventRequest) -> Option<&mut CodexToolItemEventBase> {
+fn tool_event_base_mut(event: &mut TrackEventRequest) -> Option<&mut AvaToolItemEventBase> {
     match event {
         TrackEventRequest::CommandExecution(event) => Some(&mut event.event_params.base),
         TrackEventRequest::FileChange(event) => Some(&mut event.event_params.base),
@@ -2803,9 +2803,9 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                 },
             );
             Some(TrackEventRequest::CommandExecution(
-                CodexCommandExecutionEventRequest {
-                    event_type: "codex_command_execution_event",
-                    event_params: CodexCommandExecutionEventParams {
+                AvaCommandExecutionEventRequest {
+                    event_type: "ava_command_execution_event",
+                    event_params: AvaCommandExecutionEventParams {
                         model_slug: model_context.map(|context| context.model_slug.clone()),
                         reasoning_effort: model_context
                             .and_then(|context| context.reasoning_effort.clone()),
@@ -2852,9 +2852,9 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                     review_summary,
                 },
             );
-            Some(TrackEventRequest::FileChange(CodexFileChangeEventRequest {
-                event_type: "codex_file_change_event",
-                event_params: CodexFileChangeEventParams {
+            Some(TrackEventRequest::FileChange(AvaFileChangeEventRequest {
+                event_type: "ava_file_change_event",
+                event_params: AvaFileChangeEventParams {
                     base,
                     file_change_count: usize_to_u64(changes.len()),
                     file_add_count: counts.add,
@@ -2896,9 +2896,9 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                 },
             );
             Some(TrackEventRequest::McpToolCall(
-                CodexMcpToolCallEventRequest {
-                    event_type: "codex_mcp_tool_call_event",
-                    event_params: CodexMcpToolCallEventParams {
+                AvaMcpToolCallEventRequest {
+                    event_type: "ava_mcp_tool_call_event",
+                    event_params: AvaMcpToolCallEventParams {
                         base,
                         mcp_server_name: server.clone(),
                         mcp_tool_name: tool.clone(),
@@ -2946,9 +2946,9 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                 },
             );
             Some(TrackEventRequest::DynamicToolCall(
-                CodexDynamicToolCallEventRequest {
-                    event_type: "codex_dynamic_tool_call_event",
-                    event_params: CodexDynamicToolCallEventParams {
+                AvaDynamicToolCallEventRequest {
+                    event_type: "ava_dynamic_tool_call_event",
+                    event_params: AvaDynamicToolCallEventParams {
                         base,
                         dynamic_tool_name: tool.clone(),
                         success: *success,
@@ -2992,9 +2992,9 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                 },
             );
             Some(TrackEventRequest::CollabAgentToolCall(
-                CodexCollabAgentToolCallEventRequest {
-                    event_type: "codex_collab_agent_tool_call_event",
-                    event_params: CodexCollabAgentToolCallEventParams {
+                AvaCollabAgentToolCallEventRequest {
+                    event_type: "ava_collab_agent_tool_call_event",
+                    event_params: AvaCollabAgentToolCallEventParams {
                         base,
                         sender_thread_id: sender_thread_id.clone(),
                         receiver_thread_count: usize_to_u64(receiver_thread_ids.len()),
@@ -3047,9 +3047,9 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                     review_summary,
                 },
             );
-            Some(TrackEventRequest::WebSearch(CodexWebSearchEventRequest {
-                event_type: "codex_web_search_event",
-                event_params: CodexWebSearchEventParams {
+            Some(TrackEventRequest::WebSearch(AvaWebSearchEventRequest {
+                event_type: "ava_web_search_event",
+                event_params: AvaWebSearchEventParams {
                     base,
                     web_search_action: item.action.as_ref().map(web_search_action_kind),
                     query_present: !item.query.trim().is_empty(),
@@ -3079,9 +3079,9 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                 },
             );
             Some(TrackEventRequest::ImageGeneration(
-                CodexImageGenerationEventRequest {
-                    event_type: "codex_image_generation_event",
-                    event_params: CodexImageGenerationEventParams {
+                AvaImageGenerationEventRequest {
+                    event_type: "ava_image_generation_event",
+                    event_params: AvaImageGenerationEventParams {
                         base,
                         revised_prompt_present: item.revised_prompt.is_some(),
                         saved_path_present: item.saved_path.is_some(),
@@ -3152,10 +3152,10 @@ fn tool_item_base(
     tool_name: String,
     outcome: ToolItemOutcome,
     context: ToolItemContext<'_>,
-) -> CodexToolItemEventBase {
+) -> AvaToolItemEventBase {
     let thread_metadata = context.thread_metadata;
     let review_summary = context.review_summary.cloned().unwrap_or_default();
-    CodexToolItemEventBase {
+    AvaToolItemEventBase {
         thread_id: thread_id.to_string(),
         session_id: thread_metadata.session_id.clone(),
         turn_id: turn_id.to_string(),
@@ -3509,7 +3509,7 @@ struct FileChangeCounts {
     move_: u64,
 }
 
-fn file_change_counts(changes: &[codex_app_server_protocol::FileUpdateChange]) -> FileChangeCounts {
+fn file_change_counts(changes: &[ava_app_server_protocol::FileUpdateChange]) -> FileChangeCounts {
     let mut counts = FileChangeCounts::default();
     for change in changes {
         match &change.kind {
@@ -3586,10 +3586,10 @@ fn accepted_line_event_input(
 
     Some((
         AcceptedLineFingerprintEventInput {
-            event_type: "codex.accepted_line_fingerprints",
+            event_type: "ava.accepted_line_fingerprints",
             turn_id: turn_id.to_string(),
             thread_id,
-            product_surface: Some("codex".to_string()),
+            product_surface: Some("ava".to_string()),
             model_slug: Some(resolved_config.model.clone()),
             completed_at: now_unix_seconds(),
             repo_hash: None,
@@ -3600,13 +3600,13 @@ fn accepted_line_event_input(
     ))
 }
 
-fn codex_turn_event_params(
-    app_server_client: CodexAppServerClientMetadata,
-    runtime: CodexRuntimeMetadata,
+fn ava_turn_event_params(
+    app_server_client: AvaAppServerClientMetadata,
+    runtime: AvaRuntimeMetadata,
     turn_id: String,
     turn_state: &TurnState,
     thread_metadata: &ThreadMetadataState,
-) -> CodexTurnEventParams {
+) -> AvaTurnEventParams {
     let (
         Some(thread_id),
         Some(num_input_images),
@@ -3660,8 +3660,8 @@ fn codex_turn_event_params(
         sampling_retry_count,
     } = profile;
     let token_usage = turn_state.token_usage.clone();
-    let codex_error = turn_state.codex_error.as_ref();
-    CodexTurnEventParams {
+    let ava_error = turn_state.ava_error.as_ref();
+    AvaTurnEventParams {
         thread_id,
         session_id: thread_metadata.session_id.clone(),
         turn_id,
@@ -3669,7 +3669,7 @@ fn codex_turn_event_params(
         voice_session_id: turn_state.voice_session_id.clone(),
         root_turn_id: turn_metadata.root_turn_id(),
         turn_trigger: turn_metadata.turn_trigger(),
-        codex_turn_source: turn_metadata.codex_turn_source(),
+        ava_turn_source: turn_metadata.ava_turn_source(),
         app_server_client,
         runtime,
         submission_type,
@@ -3703,8 +3703,8 @@ fn codex_turn_event_params(
         explicit_client_interrupt_requested_at_ms: turn_state
             .explicit_client_interrupt_requested_at_ms,
         turn_error: completed.turn_error,
-        codex_error_kind: codex_error.map(|error| error.kind),
-        codex_error_http_status_code: codex_error.and_then(|error| error.http_status_code),
+        ava_error_kind: ava_error.map(|error| error.kind),
+        ava_error_http_status_code: ava_error.and_then(|error| error.http_status_code),
         steer_count: Some(turn_state.steer_count),
         total_tool_call_count: Some(turn_state.tool_counts.total),
         shell_command_count: Some(turn_state.tool_counts.shell_command),
@@ -3791,12 +3791,12 @@ fn personality_mode(personality: Option<Personality>) -> Option<String> {
     }
 }
 
-fn analytics_turn_status(status: codex_app_server_protocol::TurnStatus) -> Option<TurnStatus> {
+fn analytics_turn_status(status: ava_app_server_protocol::TurnStatus) -> Option<TurnStatus> {
     match status {
-        codex_app_server_protocol::TurnStatus::Completed => Some(TurnStatus::Completed),
-        codex_app_server_protocol::TurnStatus::Failed => Some(TurnStatus::Failed),
-        codex_app_server_protocol::TurnStatus::Interrupted => Some(TurnStatus::Interrupted),
-        codex_app_server_protocol::TurnStatus::InProgress => None,
+        ava_app_server_protocol::TurnStatus::Completed => Some(TurnStatus::Completed),
+        ava_app_server_protocol::TurnStatus::Failed => Some(TurnStatus::Failed),
+        ava_app_server_protocol::TurnStatus::Interrupted => Some(TurnStatus::Interrupted),
+        ava_app_server_protocol::TurnStatus::InProgress => None,
     }
 }
 
@@ -3861,12 +3861,12 @@ pub(crate) fn normalize_path_for_skill_id(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_app_server_protocol::ItemCompletedNotification;
-    use codex_app_server_protocol::JSONRPCErrorError;
-    use codex_app_server_protocol::ThreadClosedNotification;
-    use codex_protocol::models::SandboxEnforcement;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
+    use ava_app_server_protocol::ItemCompletedNotification;
+    use ava_app_server_protocol::JSONRPCErrorError;
+    use ava_app_server_protocol::ThreadClosedNotification;
+    use ava_protocol::models::SandboxEnforcement;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
@@ -4067,7 +4067,7 @@ mod tests {
         assert_eq!(
             safe_plugin_relative_script_path(
                 Some("sample@openai-curated"),
-                Some("/home/user/.codex/plugins/cache/openai-curated/sample/scripts/run.py"),
+                Some("/home/user/.ava-code/plugins/cache/openai-curated/sample/scripts/run.py"),
             ),
             None
         );

@@ -9,21 +9,21 @@ use crate::tools::handlers::parse_arguments;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
 use crate::tools::registry::ToolExposure;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-use codex_protocol::dynamic_tools::DynamicToolResponse;
-use codex_protocol::items::DynamicToolCallItem;
-use codex_protocol::items::DynamicToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ToolName;
-use codex_tools::ToolSearchInfo;
-use codex_tools::ToolSearchSourceInfo;
-use codex_tools::ToolSpec;
-use codex_tools::default_namespace_description;
-use codex_tools::dynamic_tool_to_responses_api_tool;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+use ava_protocol::dynamic_tools::DynamicToolResponse;
+use ava_protocol::items::DynamicToolCallItem;
+use ava_protocol::items::DynamicToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ToolName;
+use ava_tools::ToolSearchInfo;
+use ava_tools::ToolSearchSourceInfo;
+use ava_tools::ToolSpec;
+use ava_tools::default_namespace_description;
+use ava_tools::dynamic_tool_to_responses_api_tool;
 use serde_json::Value;
 use std::time::Instant;
 use tokio::sync::oneshot;
@@ -100,12 +100,12 @@ impl ToolExecutor<ToolInvocation> for DynamicToolHandler {
             self.spec(),
             Some(ToolSearchSourceInfo {
                 name: "Dynamic tools".to_string(),
-                description: Some("Tools provided by the current Codex thread.".to_string()),
+                description: Some("Tools provided by the current Ava thread.".to_string()),
             }),
         )
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

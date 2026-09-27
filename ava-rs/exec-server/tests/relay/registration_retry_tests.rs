@@ -2,9 +2,9 @@
 
 use std::time::Duration;
 
-use codex_exec_server::ExecServerClient;
-use codex_exec_server::NoiseChannelIdentity;
-use codex_exec_server::NoiseRendezvousConnectArgs;
+use ava_exec_server::ExecServerClient;
+use ava_exec_server::NoiseChannelIdentity;
+use ava_exec_server::NoiseRendezvousConnectArgs;
 use pretty_assertions::assert_eq;
 use tokio::sync::oneshot;
 use tokio_tungstenite::accept_hdr_async;
@@ -75,11 +75,11 @@ impl RegistryFixture {
             static_registry_auth_provider(),
             HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
         )?;
-        let (codex_exe, sandbox_exe) = common::current_test_binary_helper_paths()?;
-        let runtime_paths = ExecServerRuntimePaths::new(codex_exe, sandbox_exe)?;
+        let (ava_exe, sandbox_exe) = common::current_test_binary_helper_paths()?;
+        let runtime_paths = ExecServerRuntimePaths::new(ava_exe, sandbox_exe)?;
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
         let task = AbortOnDropHandle::new(tokio::spawn(
-            codex_exec_server::run_remote_environment_until_shutdown(
+            ava_exec_server::run_remote_environment_until_shutdown(
                 config,
                 runtime_paths,
                 async move {

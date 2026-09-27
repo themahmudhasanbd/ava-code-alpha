@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-context-fragments"
+name = "ava-context-fragments"
 version.workspace = true
 
 [lib]
-name = "codex_context_fragments"
+name = "ava_context_fragments"
 path = "src/lib.rs"
 doctest = false
 
@@ -13,8 +13,8 @@ doctest = false
 workspace = true
 
 [dependencies]
-codex-protocol = { workspace = true }
-codex-utils-string = { workspace = true }
+ava-protocol = { workspace = true }
+ava-utils-string = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]

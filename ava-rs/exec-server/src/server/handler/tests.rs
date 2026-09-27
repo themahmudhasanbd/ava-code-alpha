@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tokio::sync::mpsc;
 use uuid::Uuid;
@@ -80,7 +80,7 @@ fn windows_command_processor() -> String {
 fn test_runtime_paths() -> ExecServerRuntimePaths {
     ExecServerRuntimePaths::new(
         std::env::current_exe().expect("current exe"),
-        /*codex_linux_sandbox_exe*/ None,
+        /*ava_linux_sandbox_exe*/ None,
     )
     .expect("runtime paths")
 }

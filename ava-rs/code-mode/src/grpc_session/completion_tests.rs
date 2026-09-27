@@ -1,4 +1,4 @@
-use codex_code_mode_protocol::grpc;
+use ava_code_mode_protocol::grpc;
 use pretty_assertions::assert_eq;
 use prost::Message;
 

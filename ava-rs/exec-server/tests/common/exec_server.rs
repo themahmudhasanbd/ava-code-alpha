@@ -5,10 +5,10 @@ use std::process::Stdio;
 use std::time::Duration;
 
 use anyhow::anyhow;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCNotification;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::RequestId;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCNotification;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::RequestId;
 use futures::SinkExt;
 use futures::StreamExt;
 use tempfile::TempDir;
@@ -32,7 +32,7 @@ const CONNECT_RETRY_INTERVAL: Duration = Duration::from_millis(25);
 const EVENT_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub(crate) struct ExecServerHarness {
-    codex_home: TempDir,
+    ava_home: TempDir,
     child: Child,
     websocket_url: String,
     websocket: tokio_tungstenite::WebSocketStream<
@@ -47,9 +47,9 @@ impl Drop for ExecServerHarness {
     }
 }
 
-pub(crate) struct TestCodexHelperPaths {
-    pub(crate) codex_exe: PathBuf,
-    pub(crate) codex_linux_sandbox_exe: Option<PathBuf>,
+pub(crate) struct TestAvaHelperPaths {
+    pub(crate) ava_exe: PathBuf,
+    pub(crate) ava_linux_sandbox_exe: Option<PathBuf>,
 }
 
 pub(crate) struct DisconnectableWebSocketProxy {
@@ -66,11 +66,11 @@ impl Drop for DisconnectableWebSocketProxy {
     }
 }
 
-pub(crate) fn test_codex_helper_paths() -> anyhow::Result<TestCodexHelperPaths> {
-    let (helper_binary, codex_linux_sandbox_exe) = super::current_test_binary_helper_paths()?;
-    Ok(TestCodexHelperPaths {
-        codex_exe: helper_binary,
-        codex_linux_sandbox_exe,
+pub(crate) fn test_ava_helper_paths() -> anyhow::Result<TestAvaHelperPaths> {
+    let (helper_binary, ava_linux_sandbox_exe) = super::current_test_binary_helper_paths()?;
+    Ok(TestAvaHelperPaths {
+        ava_exe: helper_binary,
+        ava_linux_sandbox_exe,
     })
 }
 
@@ -87,8 +87,8 @@ where
     K: AsRef<std::ffi::OsStr>,
     V: AsRef<std::ffi::OsStr>,
 {
-    let helper_paths = test_codex_helper_paths()?;
-    let mut child = Command::new(&helper_paths.codex_exe);
+    let helper_paths = test_ava_helper_paths()?;
+    let mut child = Command::new(&helper_paths.ava_exe);
     child.args(["exec-server", "--listen", "ws://127.0.0.1:0"]);
     child.args(args);
     child.envs(env);
@@ -97,7 +97,7 @@ where
 
 impl ExecServerHarness {
     pub(crate) async fn start(mut command: Command) -> anyhow::Result<Self> {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         command.stdin(Stdio::null());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::inherit());
@@ -105,16 +105,16 @@ impl ExecServerHarness {
         if !command
             .as_std()
             .get_envs()
-            .any(|(key, value)| key == "CODEX_HOME" && value.is_some())
+            .any(|(key, value)| key == "AVA_HOME" && value.is_some())
         {
-            command.env("CODEX_HOME", codex_home.path());
+            command.env("AVA_HOME", ava_home.path());
         }
         let mut child = command.spawn()?;
 
         let websocket_url = read_listen_url_from_stdout(&mut child).await?;
         let (websocket, _) = connect_websocket_when_ready(&websocket_url).await?;
         Ok(Self {
-            codex_home,
+            ava_home,
             child,
             websocket_url,
             websocket,
@@ -122,8 +122,8 @@ impl ExecServerHarness {
         })
     }
 
-    pub(crate) fn codex_home(&self) -> &std::path::Path {
-        self.codex_home.path()
+    pub(crate) fn ava_home(&self) -> &std::path::Path {
+        self.ava_home.path()
     }
 
     pub(crate) fn websocket_url(&self) -> &str {

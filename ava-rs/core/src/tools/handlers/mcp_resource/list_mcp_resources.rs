@@ -4,9 +4,9 @@ use crate::tools::context::ToolPayload;
 use crate::tools::handlers::mcp_resource_spec::create_list_mcp_resources_tool;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_protocol::protocol::McpInvocation;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_protocol::protocol::McpInvocation;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 
 use super::ListResourceArgs;
 use super::ListResourcesPayload;
@@ -30,7 +30,7 @@ impl ToolExecutor<ToolInvocation> for ListMcpResourcesHandler {
         true
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -67,7 +67,7 @@ impl ListMcpResourcesHandler {
         let args = args.normalized();
 
         let invocation = McpInvocation {
-            server: args.server.clone().unwrap_or_else(|| "codex".to_string()),
+            server: args.server.clone().unwrap_or_else(|| "ava".to_string()),
             tool: "list_mcp_resources".to_string(),
             arguments: arguments.clone(),
         };

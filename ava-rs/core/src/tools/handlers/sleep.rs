@@ -7,17 +7,17 @@ use crate::tools::context::boxed_tool_output;
 use crate::tools::handlers::parse_arguments;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_extension_items::ExtensionItem;
-use codex_extension_items::sleep::SleepItem;
-use codex_features::Feature;
-use codex_protocol::items::TurnItem;
-use codex_tools::JsonSchema;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolExposure;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_extension_items::ExtensionItem;
+use ava_extension_items::sleep::SleepItem;
+use ava_features::Feature;
+use ava_protocol::items::TurnItem;
+use ava_tools::JsonSchema;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolExposure;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -75,7 +75,7 @@ impl ToolExecutor<ToolInvocation> for SleepHandler {
         ToolExposure::DirectModelOnly
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

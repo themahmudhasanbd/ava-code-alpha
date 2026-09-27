@@ -4,28 +4,28 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_config::McpServerConfig;
-use codex_core::StartThreadOptions;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpProtocolMode;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_features::Feature;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_protocol::approvals::ElicitationRequest;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
-use codex_protocol::protocol::ElicitationAction;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
+use ava_config::McpServerConfig;
+use ava_core::StartThreadOptions;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpProtocolMode;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_features::Feature;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_protocol::approvals::ElicitationRequest;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_protocol::protocol::ElicitationAction;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::apps_enabled_builder;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -61,7 +61,7 @@ async fn mcp_methods(server: &MockServer) -> Vec<String> {
         .await
         .expect("mock server should capture MCP startup requests")
         .into_iter()
-        .filter(|request| request.url.path() == "/api/codex/ps/mcp")
+        .filter(|request| request.url.path() == "/api/ava/ps/mcp")
         .filter_map(|request| {
             let body: Value = serde_json::from_slice(&request.body).ok()?;
             body.get("method")?.as_str().map(str::to_string)
@@ -80,14 +80,14 @@ async fn extension_protocol_mode_does_not_change_other_http_servers() -> anyhow:
         let responses_server = responses::start_mock_server().await;
         let extension_server = responses::start_mock_server().await;
         let extension_url = format!(
-            "{}/api/codex/ps/mcp",
+            "{}/api/ava/ps/mcp",
             AppsTestServer::mount(&extension_server)
                 .await?
                 .chatgpt_base_url
         );
         let third_party_server = responses::start_mock_server().await;
         let third_party_url = format!(
-            "{}/api/codex/ps/mcp",
+            "{}/api/ava/ps/mcp",
             AppsTestServer::mount(&third_party_server)
                 .await?
                 .chatgpt_base_url
@@ -101,7 +101,7 @@ async fn extension_protocol_mode_does_not_change_other_http_servers() -> anyhow:
             },
         )));
 
-        let fixture = test_codex()
+        let fixture = test_ava()
             .with_extensions(Arc::new(extensions.build()))
             .with_config(move |config| {
                 config
@@ -130,7 +130,7 @@ async fn extension_protocol_mode_does_not_change_other_http_servers() -> anyhow:
             .build_with_auto_env(&responses_server)
             .await?;
 
-        wait_for_mcp_server(&fixture.codex, "extension_apps").await?;
+        wait_for_mcp_server(&fixture.ava-code, "extension_apps").await?;
         let legacy = vec!["initialize", "notifications/initialized", "tools/list"];
         let modern = vec![
             "server/discover",
@@ -166,7 +166,7 @@ async fn hosted_apps_protocol_override_preserves_native_verification() -> anyhow
     let responses_server = responses::start_mock_server().await;
     let apps_server = responses::start_mock_server().await;
     Mock::given(method("POST"))
-        .and(path("/api/codex/ps/mcp"))
+        .and(path("/api/ava/ps/mcp"))
         .respond_with(|request: &Request| {
             let body: Value = request.body_json().unwrap();
             let result = match body["method"].as_str() {
@@ -225,7 +225,7 @@ async fn hosted_apps_protocol_override_preserves_native_verification() -> anyhow
     extensions.mcp_server_contributor(Arc::new(AppsExtensionEndpoint(
         McpServerContribution::HostedApps {
             config: Box::new(serde_json::from_value(json!({
-                "url": format!("{}/api/codex/ps/mcp", apps_server.uri())
+                "url": format!("{}/api/ava/ps/mcp", apps_server.uri())
             }))?),
             protocol_mode: Some(McpProtocolMode::V20260728),
         },
@@ -253,7 +253,7 @@ async fn hosted_apps_protocol_override_preserves_native_verification() -> anyhow
     let call = AbortOnDropHandle::new(tokio::spawn(async move {
         caller
             .call_mcp_tool(
-                CODEX_APPS_MCP_SERVER_NAME,
+                AVA_APPS_MCP_SERVER_NAME,
                 "verify_action",
                 /*arguments*/ None,
                 /*meta*/ None,
@@ -267,7 +267,7 @@ async fn hosted_apps_protocol_override_preserves_native_verification() -> anyhow
     else {
         unreachable!()
     };
-    assert_eq!(request.server_name, CODEX_APPS_MCP_SERVER_NAME);
+    assert_eq!(request.server_name, AVA_APPS_MCP_SERVER_NAME);
     assert_eq!(
         request.request,
         ElicitationRequest::UserVerification {
@@ -288,7 +288,7 @@ async fn hosted_apps_protocol_override_preserves_native_verification() -> anyhow
         .await?;
     assert_eq!(
         timeout(Duration::from_secs(/*secs*/ 10), call).await???,
-        codex_protocol::mcp::CallToolResult {
+        ava_protocol::mcp::CallToolResult {
             content: vec![json!({"type": "text", "text": "verified"})],
             structured_content: None,
             is_error: Some(false),
@@ -296,6 +296,6 @@ async fn hosted_apps_protocol_override_preserves_native_verification() -> anyhow
         },
     );
     thread.shutdown_and_wait().await?;
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

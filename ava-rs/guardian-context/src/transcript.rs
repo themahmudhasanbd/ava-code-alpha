@@ -8,14 +8,14 @@
 
 use std::collections::HashMap;
 
-use codex_protocol::mcp::is_node_repl_backed_tool;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ReasoningItemContent;
-use codex_protocol::models::ReasoningItemReasoningSummary;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::plaintext_agent_message_content;
-use codex_protocol::protocol::InterAgentCommunication;
+use ava_protocol::mcp::is_node_repl_backed_tool;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ReasoningItemContent;
+use ava_protocol::models::ReasoningItemReasoningSummary;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::plaintext_agent_message_content;
+use ava_protocol::protocol::InterAgentCommunication;
 
 use crate::ContextSection;
 use crate::ConversationTranscriptEntry;

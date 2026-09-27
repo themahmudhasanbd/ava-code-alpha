@@ -6,7 +6,7 @@ import stat
 from dataclasses import dataclass
 from pathlib import Path
 
-_repo_root = os.environ.get("AVA_REPO_ROOT") or os.environ.get("CODEX_REPO_ROOT")
+_repo_root = os.environ.get("AVA_REPO_ROOT") or os.environ.get("AVA_REPO_ROOT")
 if _repo_root is None:
     # Auto-discover repository root from this script file
     _candidate = Path(__file__).resolve().parents[2]
@@ -14,8 +14,8 @@ if _repo_root is None:
         _repo_root = str(_candidate)
     else:
         raise RuntimeError(
-            "AVA_REPO_ROOT or CODEX_REPO_ROOT must point to the repository root; "
-            "run `just assemble-codex-package` to set it automatically"
+            "AVA_REPO_ROOT or AVA_REPO_ROOT must point to the repository root; "
+            "run `just assemble-ava-package` to set it automatically"
         )
 REPO_ROOT = Path(_repo_root)
 
@@ -53,20 +53,20 @@ class PackageInputs:
     rg_bin: Path
     zsh_bin: Path | None
     bwrap_bin: Path | None
-    codex_command_runner_bin: Path | None
-    codex_windows_sandbox_setup_bin: Path | None
+    ava_command_runner_bin: Path | None
+    ava_windows_sandbox_setup_bin: Path | None
 
 
 PACKAGE_VARIANTS: dict[str, PackageVariant] = {
-    "codex": PackageVariant(
-        name="codex",
-        cargo_bin="codex",
-        executable_stem="codex",
+    "ava": PackageVariant(
+        name="ava",
+        cargo_bin="ava",
+        executable_stem="ava",
     ),
-    "codex-app-server": PackageVariant(
-        name="codex-app-server",
-        cargo_bin="codex-app-server",
-        executable_stem="codex-app-server",
+    "ava-app-server": PackageVariant(
+        name="ava-app-server",
+        cargo_bin="ava-app-server",
+        executable_stem="ava-app-server",
     ),
 }
 

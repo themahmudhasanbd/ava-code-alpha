@@ -2,13 +2,13 @@ use std::fs;
 use std::os::unix::fs::symlink;
 use std::sync::Arc;
 
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::LOCAL_FS;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::SkillMetadata;
-use codex_skills::SkillPolicy;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::LOCAL_FS;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::SkillMetadata;
+use ava_skills::SkillPolicy;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 use tokio::sync::Semaphore;
@@ -23,7 +23,7 @@ use crate::loader::load_and_merge_host_skill_roots;
 async fn host_loading_reuses_walk_inventory_for_symlinked_skill_pack() {
     let root = tempdir().expect("tempdir");
     let shared_plugin_root = tempdir().expect("tempdir");
-    let manifest_path = shared_plugin_root.path().join(".codex-plugin/plugin.json");
+    let manifest_path = shared_plugin_root.path().join(".ava-plugin/plugin.json");
     fs::create_dir_all(manifest_path.parent().expect("manifest parent")).expect("manifest dir");
     fs::write(&manifest_path, r#"{"name":"linked"}"#).expect("manifest");
 

@@ -43,7 +43,7 @@
                          │
 ┌────────────────────────▼───────────────────────────────────┐
 │              AvA Rust Core Server (ava-rs/)                 │
-│  codex-app-server → codex-core → codex-api → OpenAI        │
+│  ava-app-server → ava-core → ava-api → OpenAI        │
 └────────────────────────────────────────────────────────────┘
 ```
 

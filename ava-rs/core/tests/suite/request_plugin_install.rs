@@ -2,37 +2,37 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::types::ToolSuggestDisabledTool;
-use codex_config::types::ToolSuggestDiscoverable;
-use codex_config::types::ToolSuggestDiscoverableType;
-use codex_core::NewThread;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core_plugins::startup_sync::curated_plugins_repo_path;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::approvals::ElicitationAction;
-use codex_protocol::approvals::ElicitationRequest;
-use codex_protocol::approvals::ElicitationRequestEvent;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_config::types::ToolSuggestDisabledTool;
+use ava_config::types::ToolSuggestDiscoverable;
+use ava_config::types::ToolSuggestDiscoverableType;
+use ava_core::NewThread;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core_plugins::startup_sync::curated_plugins_repo_path;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::approvals::ElicitationAction;
+use ava_protocol::approvals::ElicitationRequest;
+use ava_protocol::approvals::ElicitationRequestEvent;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -44,9 +44,9 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -78,7 +78,7 @@ const DISCOVERABLE_GMAIL_ID: &str = "connector_68df038e0ba48191908c8434991bbac2"
 const REMOTE_CALENDAR_PLUGIN_CONFIG_ID: &str = "calendar@openai-curated-remote";
 const REMOTE_CALENDAR_PLUGIN_ID: &str = "plugin_calendar";
 const CALENDAR_CONNECTOR_ID: &str = "calendar";
-const CALENDAR_NAMESPACE: &str = "mcp__codex_apps__calendar";
+const CALENDAR_NAMESPACE: &str = "mcp__ava_apps__calendar";
 const CALENDAR_CREATE_EVENT_TOOL: &str = "_create_event";
 const STEP_PREPARATION_MCP_SERVER: &str = "step_preparation";
 
@@ -155,7 +155,7 @@ fn configure_apps_without_search_tool(config: &mut Config, apps_base_url: &str) 
 
 async fn mount_recommendations(server: &wiremock::MockServer, response: ResponseTemplate) {
     Mock::given(method("GET"))
-        .and(path("/ps/plugins/suggested/codex"))
+        .and(path("/ps/plugins/suggested/ava"))
         .and(query_param("scope", "GLOBAL"))
         .respond_with(response)
         .mount(server)
@@ -170,7 +170,7 @@ async fn wait_for_startup_recommendations(server: &MockServer) -> Result<()> {
                 .await
                 .unwrap_or_default()
                 .iter()
-                .any(|request| request.url.path() == "/ps/plugins/suggested/codex")
+                .any(|request| request.url.path() == "/ps/plugins/suggested/ava")
             {
                 return;
             }
@@ -201,9 +201,9 @@ fn assert_legacy_tools(body: &Value) {
 async fn build_test(
     server: &wiremock::MockServer,
     apps_server: &AppsTestServer,
-) -> Result<TestCodex> {
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+) -> Result<TestAva> {
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config({
             let apps_base_url = apps_server.chatgpt_base_url.clone();
             move |config| {
@@ -220,12 +220,12 @@ async fn build_test(
 async fn build_gated_step_preparation_test(
     server: &MockServer,
     apps_server: &AppsTestServer,
-) -> Result<TestCodex> {
+) -> Result<TestAva> {
     let command = remote_aware_stdio_server_bin()?;
     let environment_id = remote_aware_environment_id();
     let apps_base_url = apps_server.chatgpt_base_url.clone();
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config
                 .permissions
@@ -259,7 +259,7 @@ async fn build_gated_step_preparation_test(
     builder.build_with_auto_env(server).await
 }
 
-async fn start_gated_step_preparation(test: &TestCodex, server: &MockServer) -> Result<PathUri> {
+async fn start_gated_step_preparation(test: &TestAva, server: &MockServer) -> Result<PathUri> {
     // Settle startup work before clearing its cache so these tests still exercise
     // a fresh recommendation fetch alongside first-turn MCP discovery.
     wait_for_startup_recommendations(server).await?;
@@ -274,11 +274,11 @@ async fn start_gated_step_preparation(test: &TestCodex, server: &MockServer) -> 
         .await
         .unwrap_or_default()
         .into_iter()
-        .filter(|request| request.url.path() == "/ps/plugins/suggested/codex")
+        .filter(|request| request.url.path() == "/ps/plugins/suggested/ava")
         .count();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "prepare MCP and plugin recommendations".to_string(),
@@ -306,7 +306,7 @@ async fn start_gated_step_preparation(test: &TestCodex, server: &MockServer) -> 
                 .await
                 .unwrap_or_default()
                 .into_iter()
-                .filter(|request| request.url.path() == "/ps/plugins/suggested/codex")
+                .filter(|request| request.url.path() == "/ps/plugins/suggested/ava")
                 .count();
             if mcp_started && recommendation_count > prior_recommendation_count {
                 break;
@@ -321,10 +321,10 @@ async fn start_gated_step_preparation(test: &TestCodex, server: &MockServer) -> 
         .map_err(Into::into)
 }
 
-async fn start_install_turn(test: &TestCodex, prompt: &str) -> Result<ElicitationRequestEvent> {
+async fn start_install_turn(test: &TestAva, prompt: &str) -> Result<ElicitationRequestEvent> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.to_string(),
@@ -347,7 +347,7 @@ async fn start_install_turn(test: &TestCodex, prompt: &str) -> Result<Elicitatio
         )
         .await?;
 
-    Ok(wait_for_event_match(&test.codex, |event| match event {
+    Ok(wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::ElicitationRequest(request) => Some(request.clone()),
         _ => None,
     })
@@ -355,11 +355,11 @@ async fn start_install_turn(test: &TestCodex, prompt: &str) -> Result<Elicitatio
 }
 
 async fn resolve_install_elicitation(
-    test: &TestCodex,
+    test: &TestAva,
     elicitation: ElicitationRequestEvent,
     decision: ElicitationAction,
 ) -> Result<()> {
-    test.codex
+    test.ava-code
         .submit(Op::ResolveElicitation {
             server_name: elicitation.server_name,
             request_id: elicitation.id,
@@ -368,7 +368,7 @@ async fn resolve_install_elicitation(
             meta: None,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -377,7 +377,7 @@ async fn resolve_install_elicitation(
 
 async fn mount_remote_calendar_recommendation(server: &wiremock::MockServer) {
     Mock::given(method("GET"))
-        .and(path("/ps/plugins/suggested/codex"))
+        .and(path("/ps/plugins/suggested/ava"))
         .and(query_param("scope", "GLOBAL"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "enabled": true,
@@ -477,7 +477,7 @@ async fn startup_recommendations(
         }]
     }));
     Mock::given(method("GET"))
-        .and(path("/ps/plugins/suggested/codex"))
+        .and(path("/ps/plugins/suggested/ava"))
         .respond_with(move |_: &wiremock::Request| {
             started.notify_one();
             response.clone()
@@ -501,9 +501,9 @@ async fn startup_recommendations(
     });
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.mcp_server_contributor(barrier.clone());
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             configure_apps_without_search_tool(config, &apps_server.chatgpt_base_url);
             config.model_provider.supports_websockets = false;
@@ -563,7 +563,7 @@ async fn startup_recommendations(
             .any(|name| name == REQUEST_PLUGIN_INSTALL_TOOL_NAME),
         expect_recommendations && feature == Feature::ToolSuggest,
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     server.verify().await;
     Ok(())
 }
@@ -614,7 +614,7 @@ async fn mcp_discovery_overlaps_endpoint_plugin_recommendations() -> Result<()> 
             /*sandbox*/ None,
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -634,7 +634,7 @@ async fn mcp_discovery_overlaps_endpoint_plugin_recommendations() -> Result<()> 
         "the completed request should expose the live gated MCP tool"
     );
 
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -666,8 +666,8 @@ async fn interrupting_concurrent_step_preparation_prevents_sampling() -> Result<
 
     let barrier = start_gated_step_preparation(&test, &server).await?;
     assert!(response.requests().is_empty());
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -684,7 +684,7 @@ async fn interrupting_concurrent_step_preparation_prevents_sampling() -> Result<
             /*sandbox*/ None,
         )
         .await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     assert!(
         response.requests().is_empty(),
         "releasing the cancelled MCP startup must not revive the aborted turn"
@@ -857,7 +857,7 @@ async fn subagent_install_request_returns_root_only_error(
         Some("request_plugin_install can only be used by the root thread")
     );
     subagent.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -871,11 +871,11 @@ async fn local_plugin_skill_availability_reaches_tool_suggestion_candidates(
 
     let server = start_mock_server().await;
     let apps_server = AppsTestServer::mount(&server).await?;
-    let codex_home = Arc::new(TempDir::new()?);
-    let curated_root = curated_plugins_repo_path(codex_home.path());
+    let ava_home = Arc::new(TempDir::new()?);
+    let curated_root = curated_plugins_repo_path(ava_home.path());
     let plugin_root = curated_root.join("plugins/sample");
     std::fs::create_dir_all(curated_root.join(".agents/plugins"))?;
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::create_dir_all(plugin_root.join("skills/search"))?;
     std::fs::write(
         curated_root.join(".agents/plugins/marketplace.json"),
@@ -888,7 +888,7 @@ async fn local_plugin_skill_availability_reaches_tool_suggestion_candidates(
 }"#,
     )?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","description":"Search sample data"}"#,
     )?;
     std::fs::write(
@@ -896,7 +896,7 @@ async fn local_plugin_skill_availability_reaches_tool_suggestion_candidates(
         "---\nname: search\ndescription: Search sample data\n---\n",
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "[features]\nplugins = true\n\n[[skills.config]]\nname = \"sample:search\"\nenabled = {skill_enabled}\n"
         ),
@@ -919,9 +919,9 @@ async fn local_plugin_skill_availability_reaches_tool_suggestion_candidates(
         ],
     )
     .await;
-    let mut builder = test_codex()
-        .with_home(codex_home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_home(ava_home)
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config({
             let apps_base_url = apps_server.chatgpt_base_url.clone();
             move |config| {
@@ -1135,13 +1135,13 @@ async fn run_remote_plugin_install_metadata_case() -> Result<()> {
         let requests = server.received_requests().await.unwrap_or_default();
         if let Some(event) = requests
             .into_iter()
-            .filter(|request| request.url.path() == "/codex/analytics-events/events")
+            .filter(|request| request.url.path() == "/ava/analytics-events/events")
             .find_map(|request| {
                 let payload: Value = serde_json::from_slice(&request.body).ok()?;
                 payload["events"].as_array().and_then(|events| {
                     events
                         .iter()
-                        .find(|event| event["event_type"] == "codex_plugin_install_requested")
+                        .find(|event| event["event_type"] == "ava_plugin_install_requested")
                         .cloned()
                 })
             })
@@ -1162,7 +1162,7 @@ async fn run_remote_plugin_install_metadata_case() -> Result<()> {
     assert_eq!(
         analytics_event,
         json!({
-            "event_type": "codex_plugin_install_requested",
+            "event_type": "ava_plugin_install_requested",
             "event_params": {
                 "suggestion_id": "request_plugin_install_install-github",
                 "plugins": [{
@@ -1175,7 +1175,7 @@ async fn run_remote_plugin_install_metadata_case() -> Result<()> {
                 "thread_id": thread_id,
                 "turn_id": turn_id,
                 "model_slug": "gpt-5.5",
-                "product_client_id": codex_login::default_client::originator().value,
+                "product_client_id": ava_login::default_client::originator().value,
             }
         })
     );
@@ -1375,7 +1375,7 @@ async fn run_remote_plugin_install_refresh_case(refreshed_tools: RefreshedAppsTo
         "the refreshed installed-plugin cache should filter the cached recommendation"
     );
     drop(requests);
-    test.codex.refresh_runtime_config(test.config.clone()).await;
+    test.ava-code.refresh_runtime_config(test.config.clone()).await;
     test.submit_turn("check whether Calendar is still installed")
         .await?;
     let requests = mock.requests();
@@ -1417,8 +1417,8 @@ async fn endpoint_mode_with_no_eligible_candidates_exposes_no_suggestion_tools()
         ]),
     )
     .await;
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config({
             let apps_base_url = apps_server.chatgpt_base_url.clone();
             move |config| {

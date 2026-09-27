@@ -10,11 +10,11 @@ use crate::history_cell::HistoryCell;
 use crate::history_cell::PlainHistoryCell;
 use crate::history_cell::UserHistoryCell;
 use crate::history_cell::new_proposed_plan;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
 
 #[test]
 fn markdown_transcript_preserves_messages_and_formats_activity() {
@@ -32,7 +32,7 @@ fn markdown_transcript_preserves_messages_and_formats_activity() {
         user(
             concat!(
                 "# Context from my IDE setup:\n\n## Active file: src/lib.rs\n\n",
-                "## My request for Codex:\nExplain \u{1b}[31m**the change**\u{1b}[0m"
+                "## My request for Ava:\nExplain \u{1b}[31m**the change**\u{1b}[0m"
             ),
             Vec::new(),
         ),
@@ -222,7 +222,7 @@ fn persisted_web_and_image_activity_preserves_full_details() {
     ].into_iter().map(|item| serde_json::from_value::<ThreadItem>(item).expect("valid thread item"));
     let cells = crate::thread_transcript::thread_items_to_transcript_cells(
         /*thread_id*/ None,
-        &codex_utils_absolute_path::AbsolutePathBuf::current_dir().expect("cwd"),
+        &ava_utils_absolute_path::AbsolutePathBuf::current_dir().expect("cwd"),
         items,
         crate::thread_transcript::RawReasoningVisibility::Hidden,
         /*config*/ None,

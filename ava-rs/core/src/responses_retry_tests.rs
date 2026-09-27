@@ -1,7 +1,7 @@
 use super::ResponsesStreamRequest;
 use super::log_retry;
 use crate::session::tests::make_session_and_context;
-use codex_protocol::error::CodexErr;
+use ava_protocol::error::AvaErr;
 use std::time::Duration;
 use tracing_test::internal::MockWriter;
 
@@ -20,7 +20,7 @@ async fn sampling_retry_logs_stream_error_context() {
     log_retry(
         ResponsesStreamRequest::Sampling,
         &turn_context,
-        &CodexErr::Stream("websocket closed by server before response.completed".to_string()),
+        &AvaErr::Stream("websocket closed by server before response.completed".to_string()),
         /*retries*/ 2,
         /*max_retries*/ 5,
         Duration::from_secs(1),

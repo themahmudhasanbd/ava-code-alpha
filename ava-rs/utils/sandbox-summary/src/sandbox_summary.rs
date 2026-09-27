@@ -1,11 +1,11 @@
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::protocol::NetworkAccess;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::protocol::NetworkAccess;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 
 pub fn summarize_sandbox_policy(sandbox_policy: &SandboxPolicy) -> String {
     match sandbox_policy {
@@ -150,12 +150,12 @@ pub fn summarize_permission_profile(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::LegacyAppPathString;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::LegacyAppPathString;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -212,9 +212,9 @@ mod tests {
         })
         .unwrap();
         let hidden_root = AbsolutePathBuf::try_from(if cfg!(windows) {
-            "C:\\Users\\test\\.codex\\memories"
+            "C:\\Users\\test\\.ava-code\\memories"
         } else {
-            "/Users/test/.codex/memories"
+            "/Users/test/.ava-code/memories"
         })
         .unwrap();
         let profile = PermissionProfile::workspace_write_with(

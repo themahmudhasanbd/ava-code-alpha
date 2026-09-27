@@ -1,22 +1,22 @@
 use super::shared::v2_enum_from_core;
 use crate::JsonSchema;
 use crate::TS;
-use codex_experimental_api_macros::ExperimentalApi;
-use codex_protocol::approvals::ElicitationRequest as CoreElicitationRequest;
-use codex_protocol::items::McpToolCallError as CoreMcpToolCallError;
-use codex_protocol::mcp::CallToolResult as CoreMcpCallToolResult;
-use codex_protocol::mcp::McpServerInfo;
-use codex_protocol::mcp::Resource as McpResource;
-pub use codex_protocol::mcp::ResourceContent as McpResourceContent;
-use codex_protocol::mcp::ResourceTemplate as McpResourceTemplate;
-use codex_protocol::mcp::Tool as McpTool;
+use ava_experimental_api_macros::ExperimentalApi;
+use ava_protocol::approvals::ElicitationRequest as CoreElicitationRequest;
+use ava_protocol::items::McpToolCallError as CoreMcpToolCallError;
+use ava_protocol::mcp::CallToolResult as CoreMcpCallToolResult;
+use ava_protocol::mcp::McpServerInfo;
+use ava_protocol::mcp::Resource as McpResource;
+pub use ava_protocol::mcp::ResourceContent as McpResourceContent;
+use ava_protocol::mcp::ResourceTemplate as McpResourceTemplate;
+use ava_protocol::mcp::Tool as McpTool;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 use std::collections::BTreeMap;
 
 v2_enum_from_core!(
-    pub enum McpAuthStatus from codex_protocol::protocol::McpAuthStatus {
+    pub enum McpAuthStatus from ava_protocol::protocol::McpAuthStatus {
         Unknown,
         Unsupported,
         NotLoggedIn,
@@ -26,14 +26,14 @@ v2_enum_from_core!(
 );
 
 v2_enum_from_core!(
-    pub enum McpServerStartupFailureReason from codex_protocol::protocol::McpStartupFailureReason {
+    pub enum McpServerStartupFailureReason from ava_protocol::protocol::McpStartupFailureReason {
         ReauthenticationRequired
     }
 );
 
 v2_enum_from_core!(
     #[ts(rename_all = "camelCase")]
-    pub enum McpServerConnectionStatus from codex_protocol::mcp::McpServerConnectionStatus {
+    pub enum McpServerConnectionStatus from ava_protocol::mcp::McpServerConnectionStatus {
         NotStarted,
         Starting,
         Connected,
@@ -352,11 +352,11 @@ pub enum McpServerElicitationAction {
 }
 
 impl McpServerElicitationAction {
-    pub fn to_core(self) -> codex_protocol::approvals::ElicitationAction {
+    pub fn to_core(self) -> ava_protocol::approvals::ElicitationAction {
         match self {
-            Self::Accept => codex_protocol::approvals::ElicitationAction::Accept,
-            Self::Decline => codex_protocol::approvals::ElicitationAction::Decline,
-            Self::Cancel => codex_protocol::approvals::ElicitationAction::Cancel,
+            Self::Accept => ava_protocol::approvals::ElicitationAction::Accept,
+            Self::Decline => ava_protocol::approvals::ElicitationAction::Decline,
+            Self::Cancel => ava_protocol::approvals::ElicitationAction::Cancel,
         }
     }
 }
@@ -387,7 +387,7 @@ impl From<rmcp::model::ElicitationAction> for McpServerElicitationAction {
 #[ts(export_to = "v2/")]
 pub struct McpServerElicitationRequestParams {
     pub thread_id: String,
-    /// Active Codex turn when this elicitation was observed, if app-server could correlate one.
+    /// Active Ava turn when this elicitation was observed, if app-server could correlate one.
     ///
     /// This is nullable because MCP models elicitation as a standalone server-to-client request
     /// identified by the MCP server request id. It may be triggered during a turn, but turn

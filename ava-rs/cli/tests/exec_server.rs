@@ -19,16 +19,16 @@ use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::EnvironmentInfo;
-use codex_exec_server::ExecParams;
-use codex_exec_server::ExecServerClient;
-use codex_exec_server::NoiseChannelIdentity;
-use codex_exec_server::NoiseChannelPublicKey;
-use codex_exec_server::NoiseRendezvousConnectArgs;
-use codex_exec_server::NoiseRendezvousConnectBundle;
-use codex_exec_server::ProcessId;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_exec_server::EnvironmentInfo;
+use ava_exec_server::ExecParams;
+use ava_exec_server::ExecServerClient;
+use ava_exec_server::NoiseChannelIdentity;
+use ava_exec_server::NoiseChannelPublicKey;
+use ava_exec_server::NoiseRendezvousConnectArgs;
+use ava_exec_server::NoiseRendezvousConnectBundle;
+use ava_exec_server::ProcessId;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use futures::SinkExt;
 use futures::StreamExt;
 use predicates::prelude::PredicateBooleanExt;
@@ -48,23 +48,23 @@ use wiremock::ResponseTemplate;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-fn codex_command(codex_home: &Path) -> Result<assert_cmd::Command> {
-    let mut cmd = assert_cmd::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
-    cmd.env("CODEX_HOME", codex_home);
+fn ava_command(ava_home: &Path) -> Result<assert_cmd::Command> {
+    let mut cmd = assert_cmd::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
+    cmd.env("AVA_HOME", ava_home);
     Ok(cmd)
 }
 
 #[test]
 fn strict_config_rejects_unknown_config_fields_for_exec_server() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"
 foo = "bar"
 "#,
     )?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args([
         "exec-server",
         "--strict-config",
@@ -80,10 +80,10 @@ foo = "bar"
 
 #[test]
 fn local_exec_server_ignores_invalid_config_without_strict_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    std::fs::write(codex_home.path().join("config.toml"), "not valid toml = [")?;
+    let ava_home = TempDir::new()?;
+    std::fs::write(ava_home.path().join("config.toml"), "not valid toml = [")?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["exec-server", "--listen", "stdio"])
         .assert()
         .success()
@@ -95,8 +95,8 @@ fn local_exec_server_ignores_invalid_config_without_strict_config() -> Result<()
 /// The standalone exec-server accepts an explicit per-connection concurrency limit.
 #[test]
 fn local_exec_server_accepts_concurrent_requests_flag() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut cmd = codex_command(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args([
         "exec-server",
         "--listen",
@@ -112,10 +112,10 @@ fn local_exec_server_accepts_concurrent_requests_flag() -> Result<()> {
 
 #[test]
 fn local_exec_server_allows_disabled_parent_lifetime_environment_variable() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut cmd = codex_command(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.env(
-        codex_exec_server::CODEX_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR,
+        ava_exec_server::AVA_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR,
         "false",
     )
     .args(["exec-server", "--listen", "stdio"])
@@ -162,10 +162,10 @@ async fn remote_exec_server_gracefully_stops_when_parent_stdin_closes() -> Resul
         .mount(&registry)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let collector_url = collector.uri();
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 [analytics]
@@ -180,17 +180,17 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{collector_url}/v1/metrics", pr
     let package = TempDir::new()?;
     let bin_dir = package.path().join("bin");
     std::fs::create_dir(&bin_dir)?;
-    let executable = bin_dir.join(format!("codex{}", std::env::consts::EXE_SUFFIX));
-    std::fs::copy(codex_utils_cargo_bin::cargo_bin("codex")?, &executable)?;
-    let manifest = package.path().join("codex-package.json");
+    let executable = bin_dir.join(format!("ava{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(ava_utils_cargo_bin::cargo_bin("ava")?, &executable)?;
+    let manifest = package.path().join("ava-package.json");
     std::fs::write(&manifest, r#"{"version":"1.2.3-alpha.4"}"#)?;
 
     let mut command = tokio::process::Command::new(executable);
     command
-        .env("CODEX_HOME", codex_home.path())
-        .env("CODEX_API_KEY", "test-api-key")
+        .env("AVA_HOME", ava_home.path())
+        .env("AVA_API_KEY", "test-api-key")
         .env(
-            codex_exec_server::CODEX_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR,
+            ava_exec_server::AVA_EXEC_SERVER_EXIT_ON_STDIN_CLOSE_ENV_VAR,
             "true",
         )
         .env("NO_PROXY", "127.0.0.1,localhost")
@@ -259,13 +259,13 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{collector_url}/v1/metrics", pr
     let argv = vec![
         "cmd.exe",
         "/C",
-        "if defined CODEX_EXEC_SERVER_EXIT_ON_STDIN_CLOSE (exit /b 1) else ping -n 61 127.0.0.1",
+        "if defined AVA_EXEC_SERVER_EXIT_ON_STDIN_CLOSE (exit /b 1) else ping -n 61 127.0.0.1",
     ];
     #[cfg(not(windows))]
     let argv = vec![
         "/bin/sh",
         "-c",
-        "[ -z \"${CODEX_EXEC_SERVER_EXIT_ON_STDIN_CLOSE+present}\" ] && exec /bin/sleep 60",
+        "[ -z \"${AVA_EXEC_SERVER_EXIT_ON_STDIN_CLOSE+present}\" ] && exec /bin/sleep 60",
     ];
     let cwd = url::Url::from_directory_path(std::env::current_dir()?)
         .map_err(|()| anyhow::anyhow!("could not convert cwd to file URL"))?;
@@ -276,8 +276,8 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{collector_url}/v1/metrics", pr
             argv: argv.into_iter().map(str::to_string).collect(),
             cwd: cwd.as_str().parse()?,
             shell_snapshot: None,
-            env_policy: Some(codex_exec_server::ExecEnvPolicy {
-                inherit: codex_protocol::config_types::ShellEnvironmentPolicyInherit::All,
+            env_policy: Some(ava_exec_server::ExecEnvPolicy {
+                inherit: ava_protocol::config_types::ShellEnvironmentPolicyInherit::All,
                 ignore_default_excludes: false,
                 exclude: Vec::new(),
                 r#set: HashMap::new(),
@@ -398,10 +398,10 @@ async fn local_exec_server_flushes_telemetry_on_stdio_disconnect() -> Result<()>
         .respond_with(ResponseTemplate::new(202))
         .mount(&collector)
         .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let base_url = collector.uri();
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 [analytics]
@@ -420,12 +420,12 @@ metrics_exporter = {{ otlp-http = {{ endpoint = "{base_url}/v1/metrics", protoco
     let argv = vec!["ping.exe", "-n", "61", "127.0.0.1"];
     #[cfg(not(windows))]
     let argv = vec!["/bin/sleep", "60"];
-    let codex_bin = codex_utils_cargo_bin::cargo_bin("codex")?;
-    let codex_home = codex_home.path().to_path_buf();
+    let ava_bin = ava_utils_cargo_bin::cargo_bin("ava")?;
+    let ava_home = ava_home.path().to_path_buf();
     let subprocess = async move {
-        let mut command = tokio::process::Command::new(codex_bin);
+        let mut command = tokio::process::Command::new(ava_bin);
         command
-            .env("CODEX_HOME", codex_home)
+            .env("AVA_HOME", ava_home)
             .env("NO_PROXY", "127.0.0.1,localhost")
             .env("no_proxy", "127.0.0.1,localhost")
             .args(["exec-server", "--listen", "stdio"])
@@ -553,9 +553,9 @@ async fn send_json_line(
 #[cfg(unix)]
 #[test]
 fn local_exec_server_exits_successfully_on_sigterm() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let mut child = std::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
-        .env("CODEX_HOME", codex_home.path())
+    let ava_home = TempDir::new()?;
+    let mut child = std::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
+        .env("AVA_HOME", ava_home.path())
         .args(["exec-server", "--listen", "ws://127.0.0.1:0"])
         .stdout(Stdio::piped())
         .spawn()?;

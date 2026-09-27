@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::Result;
-use codex_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCMessage;
 use futures::FutureExt;
 use futures::SinkExt;
 use futures::StreamExt;
@@ -98,8 +98,8 @@ impl SequenceNoiseConnectProvider {
         ExecServerClient::open_initial_noise_rendezvous_connection(
             &provider,
             identity,
-            codex_http_client::HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::HttpClientFactory::new(
+                ava_http_client::OutboundProxyPolicy::ReqwestDefault,
             ),
         )
         .await
@@ -183,8 +183,8 @@ async fn noise_handshake_uses_initialize_timeout() -> Result<()> {
         connect_timeout: DEFAULT_REMOTE_EXEC_SERVER_CONNECT_TIMEOUT,
         initialize_timeout,
         resume_session_id: None,
-        http_client_factory: codex_http_client::HttpClientFactory::new(
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+        http_client_factory: ava_http_client::HttpClientFactory::new(
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
     })
     .await?;
@@ -240,7 +240,7 @@ async fn deferred_initialize_timeout_reports_configured_budget() {
         /*reconnect_strategy*/ None,
         NoiseInitializeContext {
             executor_registration_id: "registration".to_string(),
-            span: tracing::info_span!("codex.exec_server.request"),
+            span: tracing::info_span!("ava.exec_server.request"),
             timeout_for_error: configured_timeout,
         },
     )
@@ -398,7 +398,7 @@ async fn initial_noise_connection_retries_transient_registry_statuses() -> Resul
 async fn initial_noise_connection_retries_registry_request_timeouts() -> Result<()> {
     let sequence = Arc::new(SequenceNoiseConnectProvider::default());
     sequence.push_error(ExecServerError::EnvironmentRegistryRequest(
-        codex_http_client::RouteAwareRequestError::Timeout,
+        ava_http_client::RouteAwareRequestError::Timeout,
     ));
     sequence.push_error(registry_error(http::StatusCode::FORBIDDEN, "forbidden"));
     let identity = NoiseChannelIdentity::generate()?;
@@ -468,8 +468,8 @@ async fn noise_session_resume_rejects_a_changed_noise_key_before_connecting() ->
         client_name: "test".to_string(),
         connect_timeout: DEFAULT_REMOTE_EXEC_SERVER_CONNECT_TIMEOUT,
         initialize_timeout: DEFAULT_REMOTE_EXEC_SERVER_INITIALIZE_TIMEOUT,
-        http_client_factory: codex_http_client::HttpClientFactory::new(
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+        http_client_factory: ava_http_client::HttpClientFactory::new(
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
     };
     assert!(
@@ -493,8 +493,8 @@ async fn noise_session_resume_leaves_offline_retries_to_recovery() -> Result<()>
         client_name: "test".to_string(),
         connect_timeout: DEFAULT_REMOTE_EXEC_SERVER_CONNECT_TIMEOUT,
         initialize_timeout: DEFAULT_REMOTE_EXEC_SERVER_INITIALIZE_TIMEOUT,
-        http_client_factory: codex_http_client::HttpClientFactory::new(
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+        http_client_factory: ava_http_client::HttpClientFactory::new(
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
     };
     let started = tokio::time::Instant::now();

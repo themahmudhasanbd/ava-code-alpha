@@ -13,11 +13,11 @@ use crate::marketplace::validate_marketplace_root;
 use crate::marketplace_add::MarketplaceSource;
 use crate::marketplace_policy::MarketplacePolicy;
 use crate::marketplace_policy::validate_marketplace_name_for_add;
-use codex_config::ConfigLayerStack;
-use codex_config::types::MarketplaceConfig;
-use codex_config::types::MarketplaceSourceType;
-use codex_plugin::validate_plugin_segment;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::ConfigLayerStack;
+use ava_config::types::MarketplaceConfig;
+use ava_config::types::MarketplaceSourceType;
+use ava_plugin::validate_plugin_segment;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -71,13 +71,13 @@ pub fn configured_git_marketplace_names(config_layer_stack: &ConfigLayerStack) -
 }
 
 pub fn upgrade_configured_git_marketplaces(
-    codex_home: &Path,
+    ava_home: &Path,
     config_layer_stack: &ConfigLayerStack,
     marketplace_name: Option<&str>,
     reload_config: &ConfigLayerReload,
 ) -> ConfiguredMarketplaceUpgradeOutcome {
     upgrade_configured_git_marketplaces_with_mode(
-        codex_home,
+        ava_home,
         config_layer_stack,
         marketplace_name,
         PluginGitMode::Manual,
@@ -87,7 +87,7 @@ pub fn upgrade_configured_git_marketplaces(
 
 /// Applies the initiating operation's Git trust policy to every selected marketplace.
 pub(crate) fn upgrade_configured_git_marketplaces_with_mode(
-    codex_home: &Path,
+    ava_home: &Path,
     config_layer_stack: &ConfigLayerStack,
     marketplace_name: Option<&str>,
     mode: PluginGitMode,
@@ -108,7 +108,7 @@ pub(crate) fn upgrade_configured_git_marketplaces_with_mode(
         return ConfiguredMarketplaceUpgradeOutcome::default();
     }
 
-    let install_root = marketplace_install_root(codex_home);
+    let install_root = marketplace_install_root(ava_home);
     let mut selected_marketplaces = marketplaces
         .iter()
         .map(|marketplace| marketplace.name.clone())
@@ -134,7 +134,7 @@ pub(crate) fn upgrade_configured_git_marketplaces_with_mode(
                 }
             };
         match upgrade_configured_git_marketplace(
-            codex_home,
+            ava_home,
             &install_root,
             &marketplace,
             reload_config,
@@ -223,7 +223,7 @@ fn parse_configured_git_marketplace(
 }
 
 fn upgrade_configured_git_marketplace(
-    codex_home: &Path,
+    ava_home: &Path,
     install_root: &Path,
     marketplace: &ConfiguredGitMarketplace,
     reload_config: &ConfigLayerReload,
@@ -239,7 +239,7 @@ fn upgrade_configured_git_marketplace(
         None => (marketplace.source.as_str(), marketplace.ref_name.as_deref()),
     };
     let remote_revision = git_remote_revision(
-        codex_home,
+        ava_home,
         source,
         ref_name,
         MARKETPLACE_UPGRADE_GIT_TIMEOUT,
@@ -272,7 +272,7 @@ fn upgrade_configured_git_marketplace(
         })?;
 
     let activated_revision = clone_git_source(
-        codex_home,
+        ava_home,
         source,
         ref_name,
         &marketplace.sparse_paths,

@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_protocol::mcp::Resource;
-use codex_protocol::mcp::ResourceContent;
-use codex_protocol::protocol::SkillScope;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_protocol::mcp::Resource;
+use ava_protocol::mcp::ResourceContent;
+use ava_protocol::protocol::SkillScope;
 use url::Url;
 
 use crate::catalog::SkillAuthority;
@@ -26,9 +26,9 @@ use crate::provider::SkillSearchRequest;
 const ORCHESTRATOR_SKILL_MIME_TYPE: &str = "mcp/skill";
 const ORCHESTRATOR_SKILL_DISCOVERY_TIMEOUT: Duration = Duration::from_secs(10);
 const ORCHESTRATOR_SKILL_DISCOVERY_DURATION_METRIC: &str =
-    "codex.skills.orchestrator.discovery.duration_ms";
+    "ava.skills.orchestrator.discovery.duration_ms";
 const ORCHESTRATOR_SKILL_DISCOVERY_RESOURCES_METRIC: &str =
-    "codex.skills.orchestrator.discovery.resources_total";
+    "ava.skills.orchestrator.discovery.resources_total";
 const ORCHESTRATOR_SKILL_READ_TIMEOUT: Duration = Duration::from_secs(10);
 const MAX_RESOURCE_PAGES: usize = 10;
 const MAX_ORCHESTRATOR_SKILLS: usize = 100;
@@ -56,12 +56,12 @@ impl SkillProvider for OrchestratorSkillProvider {
             let Some(client) = query.mcp_resources else {
                 return Ok(SkillCatalog::default());
             };
-            if !client.has_server(CODEX_APPS_MCP_SERVER_NAME).await {
+            if !client.has_server(AVA_APPS_MCP_SERVER_NAME).await {
                 return Ok(SkillCatalog::default());
             }
 
             let _discovery_timer =
-                codex_otel::start_global_timer(ORCHESTRATOR_SKILL_DISCOVERY_DURATION_METRIC, &[])
+                ava_otel::start_global_timer(ORCHESTRATOR_SKILL_DISCOVERY_DURATION_METRIC, &[])
                     .ok();
             let discovery_deadline =
                 tokio::time::Instant::now() + ORCHESTRATOR_SKILL_DISCOVERY_TIMEOUT;
@@ -78,7 +78,7 @@ impl SkillProvider for OrchestratorSkillProvider {
             for _ in 0..MAX_RESOURCE_PAGES {
                 let page = match tokio::time::timeout_at(
                     discovery_deadline,
-                    client.list_resources(CODEX_APPS_MCP_SERVER_NAME, cursor.clone()),
+                    client.list_resources(AVA_APPS_MCP_SERVER_NAME, cursor.clone()),
                 )
                 .await
                 {
@@ -162,7 +162,7 @@ impl SkillProvider for OrchestratorSkillProvider {
                 ));
             }
 
-            if let Some(metrics) = codex_otel::global() {
+            if let Some(metrics) = ava_otel::global() {
                 let _ = metrics.histogram(
                     ORCHESTRATOR_SKILL_DISCOVERY_RESOURCES_METRIC,
                     i64::try_from(total_resources).unwrap_or(i64::MAX),
@@ -180,7 +180,7 @@ impl SkillProvider for OrchestratorSkillProvider {
     ) -> SkillProviderFuture<'a, SkillReadResult> {
         Box::pin(async move {
             if request.authority
-                != SkillAuthority::new(SkillSourceKind::Orchestrator, CODEX_APPS_MCP_SERVER_NAME)
+                != SkillAuthority::new(SkillSourceKind::Orchestrator, AVA_APPS_MCP_SERVER_NAME)
             {
                 return Err(SkillProviderError::new(format!(
                     "orchestrator skill provider cannot read authority {}",
@@ -200,7 +200,7 @@ impl SkillProvider for OrchestratorSkillProvider {
             };
             let result = tokio::time::timeout(
                 ORCHESTRATOR_SKILL_READ_TIMEOUT,
-                client.read_resource(CODEX_APPS_MCP_SERVER_NAME, request.resource.as_str()),
+                client.read_resource(AVA_APPS_MCP_SERVER_NAME, request.resource.as_str()),
             )
             .await
             .map_err(|_| {
@@ -272,7 +272,7 @@ fn catalog_entry_from_resource(resource: &Resource) -> Option<SkillCatalogEntry>
 
     let mut entry = SkillCatalogEntry::new(
         SkillPackageId(uri.to_string()),
-        SkillAuthority::new(SkillSourceKind::Orchestrator, CODEX_APPS_MCP_SERVER_NAME),
+        SkillAuthority::new(SkillSourceKind::Orchestrator, AVA_APPS_MCP_SERVER_NAME),
         name,
         description,
         SkillResourceId::new(main_prompt),

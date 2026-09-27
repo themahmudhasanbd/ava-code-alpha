@@ -6,20 +6,20 @@ use crate::PluginsConfigInput;
 use crate::PluginsManager;
 use crate::test_support::test_skill_root_loader;
 use anyhow::Result;
-use codex_config::LoaderOverrides;
-use codex_config::NoopThreadConfigLoader;
-use codex_config::loader::load_config_layers_state;
-use codex_exec_server::LOCAL_FS;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::CodexAuth;
-use codex_login::test_support::auth_manager_from_optional_auth;
-use codex_protocol::protocol::Product;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::LoadedSkills;
-use codex_skills::SkillMetadata;
-use codex_skills::SkillRootLoadRequest;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::LoaderOverrides;
+use ava_config::NoopThreadConfigLoader;
+use ava_config::loader::load_config_layers_state;
+use ava_exec_server::LOCAL_FS;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AvaAuth;
+use ava_login::test_support::auth_manager_from_optional_auth;
+use ava_protocol::protocol::Product;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::LoadedSkills;
+use ava_skills::SkillMetadata;
+use ava_skills::SkillRootLoadRequest;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -37,9 +37,9 @@ async fn curated_git_requirements_control_plugin_skills() -> Result<()> {
         let root = home
             .path()
             .join(format!("plugins/cache/{name}/sample/local"));
-        fs::create_dir_all(root.join(".codex-plugin"))?;
+        fs::create_dir_all(root.join(".ava-plugin"))?;
         fs::write(
-            root.join(".codex-plugin/plugin.json"),
+            root.join(".ava-plugin/plugin.json"),
             r#"{"name":"sample","description":"inspect sample data"}"#,
         )?;
         let skill_dir = root.join("skills/sample-search");
@@ -89,9 +89,9 @@ async fn curated_git_requirements_control_plugin_skills() -> Result<()> {
             HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
         );
         let auth = if name == "openai-curated" {
-            CodexAuth::create_dummy_chatgpt_auth_for_testing()
+            AvaAuth::create_dummy_chatgpt_auth_for_testing()
         } else {
-            CodexAuth::from_api_key("test-api-key")
+            AvaAuth::from_api_key("test-api-key")
         };
         let skills = test_skill_root_loader();
         let manager = PluginsManager::new(
@@ -103,7 +103,7 @@ async fn curated_git_requirements_control_plugin_skills() -> Result<()> {
         let loaded = skills
             .load_roots(SkillRootLoadRequest {
                 roots: plugins.effective_plugin_skill_roots(),
-                restriction_product: Some(Product::Codex),
+                restriction_product: Some(Product::Ava),
                 snapshots: manager.plugin_skill_snapshots_for_config(&config),
             })
             .await;

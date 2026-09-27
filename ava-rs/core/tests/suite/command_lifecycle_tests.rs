@@ -5,28 +5,28 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_config::Constrained;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_extension_api::CommandStartInput;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::ToolLifecycleFuture;
-use codex_features::Feature;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_config::Constrained;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_extension_api::CommandStartInput;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::ToolLifecycleFuture;
+use ava_features::Feature;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::TestTargetOs;
 use core_test_support::hooks::trust_discovered_hooks;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::TestCodexHarness;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::TestAvaHarness;
+use core_test_support::test_ava::test_ava;
 use core_test_support::test_target_os;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_with_timeout;
@@ -108,7 +108,7 @@ impl CommandCallMode {
 }
 
 fn configure_command_test_permissions(config: &mut Config) {
-    // Match TestCodex::submit_turn: these fixtures exercise execution callbacks
+    // Match TestAva::submit_turn: these fixtures exercise execution callbacks
     // without waiting for interactive approval on hosts lacking a sandbox backend.
     config.permissions.approval_policy = Constrained::allow_any(AskForApproval::Never);
     config
@@ -117,8 +117,8 @@ fn configure_command_test_permissions(config: &mut Config) {
         .expect("set command test permissions");
 }
 
-async fn start_command_turn(test: &TestCodex) -> Result<()> {
-    test.codex
+async fn start_command_turn(test: &TestAva) -> Result<()> {
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the command.".into(),
             text_elements: Vec::new(),
@@ -150,7 +150,7 @@ async fn command_start_receives_rewritten_command_and_executor_workdir(
     let recorder = Arc::new(CommandRecorder::default());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(recorder.clone());
-    let builder = test_codex()
+    let builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(configure_command_test_permissions)
         .with_pre_build_hook(move |home| {
@@ -163,7 +163,7 @@ async fn command_start_receives_rewritten_command_and_executor_workdir(
                 let _ = config.features.enable(Feature::CodeMode);
             }
         });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let (test, server) = (harness.test(), harness.server());
 
     let cwd = test.workspace_path_uri("command-workdir")?;
@@ -193,7 +193,7 @@ async fn command_start_receives_rewritten_command_and_executor_workdir(
 
     let mut begin = None;
     wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| {
             assert!(
                 !matches!(event, EventMsg::ExecApprovalRequest(_)),
@@ -279,7 +279,7 @@ async fn interrupting_command_preparation_does_not_start_the_command(
     });
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(contributor.clone());
-    let builder = test_codex()
+    let builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(configure_command_test_permissions)
         .with_config(move |config| {
@@ -288,7 +288,7 @@ async fn interrupting_command_preparation_does_not_start_the_command(
                 let _ = config.features.enable(Feature::CodeModeInterrupt);
             }
         });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let (test, server) = (harness.test(), harness.server());
     let command = match test_target_os() {
         TestTargetOs::Linux | TestTargetOs::MacOs => "printf executed > must-not-run.txt",
@@ -304,8 +304,8 @@ async fn interrupting_command_preparation_does_not_start_the_command(
     .await;
     start_command_turn(test).await?;
     timeout(Duration::from_secs(30), entered_rx).await??;
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         assert!(
             !matches!(event, EventMsg::ExecApprovalRequest(_)),
             "command fixture unexpectedly requested approval: {event:?}"
@@ -341,7 +341,7 @@ async fn interrupting_command_preparation_does_not_start_the_command(
     let mut process_id = None;
     let mut exit_code = None;
     wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| {
             assert!(
                 !matches!(event, EventMsg::ExecApprovalRequest(_)),

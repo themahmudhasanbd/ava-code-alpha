@@ -41,8 +41,8 @@ from ._run import (
     _collect_turn_result,
 )
 from ._sandbox import Sandbox as Sandbox, _sandbox_mode, _sandbox_policy
-from .async_client import AsyncCodexClient
-from .client import CodexClient, CodexConfig
+from .async_client import AsyncAvaClient
+from .client import AvaClient, AvaConfig
 from .generated.v2_all import (
     ApiKeyLoginAccountParams,
     GetAccountParams,
@@ -75,15 +75,15 @@ from .generated.v2_all import (
 from .models import InitializeResponse, JsonObject, Notification
 
 
-class Codex:
-    """Synchronous client for creating threads and running Codex turns.
+class Ava:
+    """Synchronous client for creating threads and running Ava turns.
 
     The client starts its runtime connection during construction. Use it as a
     context manager so resources are closed promptly.
     """
 
-    def __init__(self, config: CodexConfig | None = None) -> None:
-        self._client = CodexClient(config=config)
+    def __init__(self, config: AvaConfig | None = None) -> None:
+        self._client = AvaClient(config=config)
         try:
             self._client.start()
             self._init = validate_initialize_metadata(self._client.initialize())
@@ -91,7 +91,7 @@ class Codex:
             self._client.close()
             raise
 
-    def __enter__(self) -> "Codex":
+    def __enter__(self) -> "Ava":
         return self
 
     def __exit__(self, _exc_type, _exc, _tb) -> None:
@@ -105,7 +105,7 @@ class Codex:
         self._client.close()
 
     def login_api_key(self, api_key: str) -> None:
-        """Authenticate Codex with an API key."""
+        """Authenticate Ava with an API key."""
         self._client.account_login_start(
             LoginAccountParams(
                 root=ApiKeyLoginAccountParams(
@@ -124,14 +124,14 @@ class Codex:
         return start_device_code_login(self._client)
 
     def account(self, *, refresh_token: bool = False) -> GetAccountResponse:
-        """Read the current Codex account state."""
+        """Read the current Ava account state."""
         return self._client.account_read(GetAccountParams(refresh_token=refresh_token))
 
     def logout(self) -> None:
-        """Clear the current Codex account session."""
+        """Clear the current Ava account session."""
         self._client.account_logout()
 
-    # BEGIN GENERATED: Codex.flat_methods
+    # BEGIN GENERATED: Ava.flat_methods
     def thread_start(
         self,
         *,
@@ -150,7 +150,7 @@ class Codex:
         session_start_source: ThreadStartSource | None = None,
         thread_source: ThreadSource | None = None,
     ) -> Thread:
-        """Create a new Codex conversation thread."""
+        """Create a new Ava conversation thread."""
         approval_policy, approvals_reviewer = _approval_mode_settings(approval_mode)
         params = ThreadStartParams(
             approval_policy=approval_policy,
@@ -294,10 +294,10 @@ class Codex:
         unarchived = self._client.thread_unarchive(thread_id)
         return Thread(self._client, unarchived.thread.id)
 
-    # END GENERATED: Codex.flat_methods
+    # END GENERATED: Ava.flat_methods
 
     def models(self, *, include_hidden: bool = False) -> ModelListResponse:
-        """List available models reported by Codex.
+        """List available models reported by Ava.
 
         The deprecated ``Model.supports_personality`` field is always ``False``
         on the current app-server.
@@ -305,21 +305,21 @@ class Codex:
         return self._client.model_list(include_hidden=include_hidden)
 
 
-class AsyncCodex:
-    """Async mirror of :class:`Codex`.
+class AsyncAva:
+    """Async mirror of :class:`Ava`.
 
-    Prefer ``async with AsyncCodex()`` so initialization and shutdown are
+    Prefer ``async with AsyncAva()`` so initialization and shutdown are
     explicit and paired. The async client initializes lazily on context entry
     or first awaited API use.
     """
 
-    def __init__(self, config: CodexConfig | None = None) -> None:
-        self._client = AsyncCodexClient(config=config)
+    def __init__(self, config: AvaConfig | None = None) -> None:
+        self._client = AsyncAvaClient(config=config)
         self._init: InitializeResponse | None = None
         self._initialized = False
         self._init_lock = asyncio.Lock()
 
-    async def __aenter__(self) -> "AsyncCodex":
+    async def __aenter__(self) -> "AsyncAva":
         await self._ensure_initialized()
         return self
 
@@ -347,7 +347,7 @@ class AsyncCodex:
     def metadata(self) -> InitializeResponse:
         if self._init is None:
             raise RuntimeError(
-                "AsyncCodex is not initialized yet. Prefer `async with AsyncCodex()`; "
+                "AsyncAva is not initialized yet. Prefer `async with AsyncAva()`; "
                 "initialization also happens on first awaited API use."
             )
         return self._init
@@ -358,7 +358,7 @@ class AsyncCodex:
         self._initialized = False
 
     async def login_api_key(self, api_key: str) -> None:
-        """Authenticate Codex with an API key."""
+        """Authenticate Ava with an API key."""
         await self._ensure_initialized()
         await self._client.account_login_start(
             LoginAccountParams(
@@ -380,16 +380,16 @@ class AsyncCodex:
         return await async_start_device_code_login(self)
 
     async def account(self, *, refresh_token: bool = False) -> GetAccountResponse:
-        """Read the current Codex account state."""
+        """Read the current Ava account state."""
         await self._ensure_initialized()
         return await self._client.account_read(GetAccountParams(refresh_token=refresh_token))
 
     async def logout(self) -> None:
-        """Clear the current Codex account session."""
+        """Clear the current Ava account session."""
         await self._ensure_initialized()
         await self._client.account_logout()
 
-    # BEGIN GENERATED: AsyncCodex.flat_methods
+    # BEGIN GENERATED: AsyncAva.flat_methods
     async def thread_start(
         self,
         *,
@@ -408,7 +408,7 @@ class AsyncCodex:
         session_start_source: ThreadStartSource | None = None,
         thread_source: ThreadSource | None = None,
     ) -> AsyncThread:
-        """Create a new Codex conversation thread."""
+        """Create a new Ava conversation thread."""
         await self._ensure_initialized()
         approval_policy, approvals_reviewer = _approval_mode_settings(approval_mode)
         params = ThreadStartParams(
@@ -558,10 +558,10 @@ class AsyncCodex:
         unarchived = await self._client.thread_unarchive(thread_id)
         return AsyncThread(self, unarchived.thread.id)
 
-    # END GENERATED: AsyncCodex.flat_methods
+    # END GENERATED: AsyncAva.flat_methods
 
     async def models(self, *, include_hidden: bool = False) -> ModelListResponse:
-        """List available models reported by Codex.
+        """List available models reported by Ava.
 
         The deprecated ``Model.supports_personality`` field is always ``False``
         on the current app-server.
@@ -574,7 +574,7 @@ class AsyncCodex:
 class Thread:
     """Synchronous conversation thread used to run one or more turns."""
 
-    _client: CodexClient
+    _client: AvaClient
     id: str
 
     # BEGIN GENERATED: Thread.flat_methods
@@ -680,7 +680,7 @@ class Thread:
 class AsyncThread:
     """Asynchronous conversation thread used to run one or more turns."""
 
-    _codex: AsyncCodex
+    _ava: AsyncAva
     id: str
 
     # BEGIN GENERATED: AsyncThread.flat_methods
@@ -746,7 +746,7 @@ class AsyncThread:
         no authority. Both turn_service_tier and source are ignored when joining.
         """
         wire_input, tool_output = _to_wire_turn_input(input)
-        await self._codex._ensure_initialized()
+        await self._ava._ensure_initialized()
         approval_policy, approvals_reviewer = _approval_mode_override_settings(approval_mode)
         params = TurnStartParams(
             thread_id=self.id,
@@ -765,38 +765,38 @@ class AsyncThread:
             summary=summary,
             service_tier_for_turn=turn_service_tier,
         )
-        turn, subscription = await self._codex._client._start_turn(
+        turn, subscription = await self._ava._client._start_turn(
             self.id, wire_input, params=params, for_handle=True
         )
-        return AsyncTurnHandle(self._codex, self.id, turn.turn.id, _subscription=subscription)
+        return AsyncTurnHandle(self._ava, self.id, turn.turn.id, _subscription=subscription)
 
     # END GENERATED: AsyncThread.flat_methods
 
     async def read(self, *, include_turns: bool = False) -> ThreadReadResponse:
         """Read this thread, optionally including its turn history."""
-        await self._codex._ensure_initialized()
-        return await self._codex._client.thread_read(self.id, include_turns=include_turns)
+        await self._ava._ensure_initialized()
+        return await self._ava._client.thread_read(self.id, include_turns=include_turns)
 
     async def set_name(self, name: str) -> ThreadSetNameResponse:
-        await self._codex._ensure_initialized()
-        return await self._codex._client.thread_set_name(self.id, name)
+        await self._ava._ensure_initialized()
+        return await self._ava._client.thread_set_name(self.id, name)
 
     async def compact(self) -> ThreadCompactStartResponse:
-        await self._codex._ensure_initialized()
-        return await self._codex._client.thread_compact(self.id)
+        await self._ava._ensure_initialized()
+        return await self._ava._client.thread_compact(self.id)
 
 
 @dataclass(slots=True)
 class TurnHandle:
     """Control and consume a synchronous turn after it has started."""
 
-    _client: CodexClient
+    _client: AvaClient
     thread_id: str
     id: str
     _subscription: _TurnSubscription = field(init=False, repr=False, compare=False)
 
     def __init__(
-        self, _client: CodexClient, thread_id: str, id: str, *, _subscription=None
+        self, _client: AvaClient, thread_id: str, id: str, *, _subscription=None
     ) -> None:
         self._client, self.thread_id, self.id = _client, thread_id, id
         if _subscription is None:
@@ -847,25 +847,25 @@ class TurnHandle:
 class AsyncTurnHandle:
     """Control and consume an asynchronous turn after it has started."""
 
-    _codex: AsyncCodex
+    _ava: AsyncAva
     thread_id: str
     id: str
     _subscription: _TurnSubscription = field(init=False, repr=False, compare=False)
 
-    def __init__(self, _codex: AsyncCodex, thread_id: str, id: str, *, _subscription=None) -> None:
-        self._codex, self.thread_id, self.id = _codex, thread_id, id
+    def __init__(self, _ava: AsyncAva, thread_id: str, id: str, *, _subscription=None) -> None:
+        self._ava, self.thread_id, self.id = _ava, thread_id, id
         if _subscription is None:
             self.__post_init__()
         else:
             self._subscription = _subscription
 
     def __post_init__(self) -> None:
-        self._subscription = self._codex._client._subscribe_turn_notifications(self.id)
+        self._subscription = self._ava._client._subscribe_turn_notifications(self.id)
 
     async def steer(self, input: Input | str) -> TurnSteerResponse:
         """Send additional user input to this active turn."""
-        await self._codex._ensure_initialized()
-        return await self._codex._client.turn_steer(
+        await self._ava._ensure_initialized()
+        return await self._ava._client.turn_steer(
             self.thread_id,
             self.id,
             _to_wire_input(_normalize_run_input(input)),
@@ -873,12 +873,12 @@ class AsyncTurnHandle:
 
     async def interrupt(self) -> TurnInterruptResponse:
         """Request interruption of this active turn."""
-        await self._codex._ensure_initialized()
-        return await self._codex._client.turn_interrupt(self.thread_id, self.id)
+        await self._ava._ensure_initialized()
+        return await self._ava._client.turn_interrupt(self.thread_id, self.id)
 
     async def stream(self) -> AsyncIterator[Notification]:
         """Yield only notifications routed to this async turn handle."""
-        await self._codex._ensure_initialized()
+        await self._ava._ensure_initialized()
         try:
             while True:
                 event = await asyncio.to_thread(self._subscription.next)

@@ -238,7 +238,7 @@
 //! machine and treats the key stream as normal typing. When toggling from enabled → disabled, the
 //! composer flushes/clears any in-flight burst state so it cannot leak into subsequent input.
 //!
-//! For the detailed burst state machine, see `codex-rs/tui/src/bottom_pane/paste_burst.rs`.
+//! For the detailed burst state machine, see `ava-rs/tui/src/bottom_pane/paste_burst.rs`.
 //!
 //! # PasteBurst Integration Points
 //!
@@ -268,7 +268,7 @@ use crate::key_hint::ShortcutHint;
 use crate::key_hint::has_ctrl_or_alt;
 use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
 use crate::ui_consts::FOOTER_INDENT_COLS;
-use codex_message_history::HistoryBatchCursor;
+use ava_message_history::HistoryBatchCursor;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -289,7 +289,7 @@ use ratatui::widgets::StatefulWidgetRef;
 use ratatui::widgets::Widget;
 use ratatui::widgets::WidgetRef;
 
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffort;
 
 use super::chat_composer_history::ChatComposerHistory;
 use super::chat_composer_history::HistoryEntry;
@@ -352,10 +352,10 @@ use crate::render::RectExt;
 use crate::render::renderable::Renderable;
 use crate::slash_command::SlashCommand;
 use crate::style::user_message_style;
-use codex_protocol::ThreadId;
-use codex_protocol::user_input::ByteRange;
-use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
-use codex_protocol::user_input::TextElement;
+use ava_protocol::ThreadId;
+use ava_protocol::user_input::ByteRange;
+use ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
+use ava_protocol::user_input::TextElement;
 
 mod agents_navigation;
 mod attachment_state;
@@ -406,13 +406,13 @@ use crate::skills_helpers::skill_display_name;
 use crate::tui::FrameRequester;
 use crate::ui_consts::LIVE_PREFIX_COLS;
 #[cfg(test)]
-use codex_app_server_protocol::SkillInterface;
-use codex_app_server_protocol::SkillMetadata;
-use codex_connectors::AppInfo;
-use codex_file_search::FileMatch;
+use ava_app_server_protocol::SkillInterface;
+use ava_app_server_protocol::SkillMetadata;
+use ava_connectors::AppInfo;
+use ava_file_search::FileMatch;
 #[cfg(test)]
-use codex_plugin::AppConnectorId;
-use codex_plugin::PluginCapabilitySummary;
+use ava_plugin::AppConnectorId;
+use ava_plugin::PluginCapabilitySummary;
 use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -4306,9 +4306,9 @@ impl ChatComposer {
                 if !connector.is_accessible || !connector.is_enabled {
                     continue;
                 }
-                let display_name = codex_connectors::metadata::connector_display_label(connector);
+                let display_name = ava_connectors::metadata::connector_display_label(connector);
                 let description = Some(Self::connector_brief_description(connector));
-                let slug = codex_connectors::metadata::connector_mention_slug(connector);
+                let slug = ava_connectors::metadata::connector_mention_slug(connector);
                 let search_terms = vec![display_name.clone(), connector.id.clone(), slug.clone()];
                 let connector_id = connector.id.as_str();
                 mentions.push(MentionItem {
@@ -5078,7 +5078,7 @@ mod tests {
     use crate::bottom_pane::InputResult;
     use crate::bottom_pane::chat_composer::LARGE_PASTE_CHAR_THRESHOLD;
     use crate::bottom_pane::textarea::TextArea;
-    use codex_protocol::models::local_image_label_text;
+    use ava_protocol::models::local_image_label_text;
     use tokio::sync::mpsc::UnboundedReceiver;
     use tokio::sync::mpsc::unbounded_channel;
 
@@ -5090,7 +5090,7 @@ mod tests {
                 /*has_input_focus*/ true,
                 sender,
                 /*enhanced_keys_supported*/ false,
-                "Ask Codex to do anything".to_string(),
+                "Ask Ava to do anything".to_string(),
                 /*disable_paste_burst*/ false,
             ),
             rx,
@@ -5099,9 +5099,9 @@ mod tests {
 
     #[test]
     fn shortcut_footer_displays_configured_chords() {
-        use codex_config::types::KeybindingSpec;
-        use codex_config::types::KeybindingsSpec;
-        use codex_config::types::TuiKeymap;
+        use ava_config::types::KeybindingSpec;
+        use ava_config::types::KeybindingsSpec;
+        use ava_config::types::TuiKeymap;
 
         let mut config = TuiKeymap::default();
         config.global.open_external_editor = Some(KeybindingsSpec::One(KeybindingSpec(
@@ -5181,7 +5181,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -5235,7 +5235,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_footer_hint_override(Some(vec![("K".to_string(), "label".to_string())]));
@@ -5273,7 +5273,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_footer_hint_override(Some(vec![("K".to_string(), "label".to_string())]));
@@ -5322,7 +5322,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             enhanced_keys_supported,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         setup(&mut composer);
@@ -5481,7 +5481,7 @@ mod tests {
             |composer| {
                 composer.set_status_line_enabled(/*enabled*/ true);
                 composer.set_status_line(Some(Line::from(
-                    "gpt-5.4 high fast · ~/code/codex-1 · Context 0% used",
+                    "gpt-5.4 high fast · ~/code/ava-1 · Context 0% used",
                 )));
                 composer.set_text_content("!git status".to_string(), Vec::new(), Vec::new());
             },
@@ -5493,7 +5493,7 @@ mod tests {
             |composer| {
                 composer.set_status_line_enabled(/*enabled*/ true);
                 composer.set_status_line(Some(Line::from(
-                    "gpt-5.4 high fast · ~/code/codex-1 · Context 0% used",
+                    "gpt-5.4 high fast · ~/code/ava-1 · Context 0% used",
                 )));
                 composer.set_text_content("!".to_string(), Vec::new(), Vec::new());
                 let _ = composer.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
@@ -5509,7 +5509,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let area = Rect::new(0, 0, 40, 5);
@@ -5531,12 +5531,12 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_status_line_enabled(/*enabled*/ true);
         composer.set_status_line(Some(Line::from(
-            "gpt-5.4 high fast · ~/code/codex-1 · Context 0% used",
+            "gpt-5.4 high fast · ~/code/ava-1 · Context 0% used",
         )));
         composer.set_text_content("!git status".to_string(), Vec::new(), Vec::new());
 
@@ -5590,7 +5590,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content_with_mention_bindings(
@@ -5618,7 +5618,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content_with_mention_bindings(
@@ -5669,7 +5669,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content_with_mention_bindings(
@@ -5705,7 +5705,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let url = "https://github.com/openai/codex/pull/20252";
@@ -5742,7 +5742,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -5771,7 +5771,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6040,7 +6040,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6069,7 +6069,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_vim_enabled(/*enabled*/ true);
@@ -6132,7 +6132,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ true,
         );
         composer.set_vim_enabled(/*enabled*/ true);
@@ -6164,7 +6164,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ true,
         );
         composer.set_vim_enabled(/*enabled*/ true);
@@ -6199,7 +6199,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ true,
         );
         composer.set_collaboration_modes_enabled(/*enabled*/ true);
@@ -6245,7 +6245,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ true,
         );
         composer.set_vim_enabled(/*enabled*/ true);
@@ -6276,7 +6276,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ true,
         );
         composer.set_vim_enabled(/*enabled*/ true);
@@ -6301,7 +6301,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6325,7 +6325,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6351,7 +6351,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6419,7 +6419,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6452,7 +6452,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(/*enabled*/ true);
@@ -6493,7 +6493,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(/*enabled*/ true);
@@ -6527,7 +6527,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(/*enabled*/ true);
@@ -6558,7 +6558,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_vim_enabled(/*enabled*/ true);
@@ -6598,7 +6598,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ true,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let area = Rect::new(0, 0, 80, 10);
@@ -6634,7 +6634,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6680,7 +6680,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let remote_image_url = "https://example.com/one.png".to_string();
@@ -6722,7 +6722,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6765,7 +6765,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6805,7 +6805,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(true);
@@ -6831,7 +6831,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -6861,7 +6861,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_connectors_enabled(/*enabled*/ true);
@@ -6905,7 +6905,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_connectors_enabled(/*enabled*/ true);
@@ -6945,7 +6945,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content("$".to_string(), Vec::new(), Vec::new());
@@ -7617,7 +7617,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content("$".to_string(), Vec::new(), Vec::new());
@@ -7625,8 +7625,8 @@ mod tests {
 
         let skill_path = test_path_buf("/tmp/skill/SKILL.md").abs();
         composer.set_skill_mentions(Some(vec![SkillMetadata {
-            name: "codex".to_string(),
-            description: "Primary personal Codex repo skill.".to_string(),
+            name: "ava".to_string(),
+            description: "Primary personal Ava repo skill.".to_string(),
             short_description: None,
             interface: None,
             dependencies: None,
@@ -7642,7 +7642,7 @@ mod tests {
         let mention = popup
             .selected_mention()
             .expect("expected skill mention to be selected");
-        assert_eq!(mention.insert_text, "$codex".to_string());
+        assert_eq!(mention.insert_text, "$ava".to_string());
         assert_eq!(mention.path, Some(skill_path.display().to_string()));
     }
 
@@ -7655,7 +7655,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_connectors_enabled(/*enabled*/ true);
@@ -7774,9 +7774,9 @@ mod tests {
             "default_unified_mention_popup",
             /*enhanced_keys_supported*/ false,
             |composer| {
-                let features = codex_features::Features::with_defaults();
+                let features = ava_features::Features::with_defaults();
                 composer
-                    .set_mentions_v2_enabled(features.enabled(codex_features::Feature::MentionsV2));
+                    .set_mentions_v2_enabled(features.enabled(ava_features::Feature::MentionsV2));
                 composer.set_skill_mentions(Some(vec![
                     SkillMetadata {
                         name: "sample-tools:search".to_string(),
@@ -8058,7 +8058,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_connectors_enabled(/*enabled*/ true);
@@ -8098,7 +8098,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8344,7 +8344,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8371,7 +8371,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8404,7 +8404,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8447,7 +8447,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8488,7 +8488,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8532,7 +8532,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8581,7 +8581,7 @@ mod tests {
                 /*has_input_focus*/ true,
                 sender,
                 /*enhanced_keys_supported*/ false,
-                "Ask Codex to do anything".to_string(),
+                "Ask Ava to do anything".to_string(),
                 /*disable_paste_burst*/ false,
             );
             composer.set_plugin_mentions(Some(vec![PluginCapabilitySummary {
@@ -8634,7 +8634,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8666,7 +8666,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_mentions_v2_enabled(/*enabled*/ true);
@@ -8702,7 +8702,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8733,7 +8733,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8757,7 +8757,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8791,7 +8791,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8840,7 +8840,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8928,7 +8928,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -8973,7 +8973,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9003,7 +9003,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9039,7 +9039,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9072,7 +9072,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9103,7 +9103,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9132,7 +9132,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9166,7 +9166,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(true);
@@ -9194,7 +9194,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(true);
@@ -9236,7 +9236,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(false);
@@ -9281,7 +9281,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9322,7 +9322,7 @@ mod tests {
                 /*has_input_focus*/ true,
                 sender.clone(),
                 /*enhanced_keys_supported*/ false,
-                "Ask Codex to do anything".to_string(),
+                "Ask Ava to do anything".to_string(),
                 /*disable_paste_burst*/ false,
             );
 
@@ -9438,7 +9438,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9472,7 +9472,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         type_chars_humanlike(&mut composer, &['/', 'm', 'o']);
@@ -9503,7 +9503,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9531,7 +9531,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9554,7 +9554,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         type_chars_humanlike(&mut composer, &['/', 'r', 'e', 's']);
@@ -9585,7 +9585,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9608,7 +9608,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         type_chars_humanlike(&mut composer, &['/', 'p', 'e', 't']);
@@ -9639,7 +9639,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9662,7 +9662,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         type_chars_humanlike(&mut composer, &['/', 'b', 't']);
@@ -9693,7 +9693,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9716,7 +9716,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         type_chars_humanlike(&mut composer, &['/', 's', 'i']);
@@ -9743,7 +9743,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_service_tier_commands_enabled(/*enabled*/ true);
@@ -9804,7 +9804,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -9856,7 +9856,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_steer_enabled(true);
@@ -9890,7 +9890,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.draft.textarea.insert_str("restore me");
@@ -9928,7 +9928,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_task_running(/*running*/ true);
@@ -9972,7 +9972,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_queue_submissions(/*queue_submissions*/ true);
@@ -10008,7 +10008,7 @@ mod tests {
                 /*has_input_focus*/ true,
                 sender,
                 /*enhanced_keys_supported*/ false,
-                "Ask Codex to do anything".to_string(),
+                "Ask Ava to do anything".to_string(),
                 /*disable_paste_burst*/ false,
             );
             composer.set_task_running(/*running*/ true);
@@ -10057,7 +10057,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer
@@ -10093,7 +10093,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_task_running(/*running*/ true);
@@ -10126,7 +10126,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let mut keymap = RuntimeKeymap::defaults();
@@ -10152,7 +10152,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_task_running(/*running*/ true);
@@ -10186,7 +10186,7 @@ mod tests {
                 /*has_input_focus*/ true,
                 sender,
                 /*enhanced_keys_supported*/ false,
-                "Ask Codex to do anything".to_string(),
+                "Ask Ava to do anything".to_string(),
                 /*disable_paste_burst*/ false,
             );
             composer.set_task_running(/*running*/ true);
@@ -10232,7 +10232,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10260,7 +10260,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_task_running(/*running*/ true);
@@ -10290,7 +10290,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10315,7 +10315,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10359,7 +10359,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_collaboration_modes_enabled(/*enabled*/ true);
@@ -10381,7 +10381,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_collaboration_modes_enabled(/*enabled*/ true);
@@ -10402,7 +10402,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10434,7 +10434,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10462,7 +10462,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_task_running(/*running*/ false);
@@ -10491,7 +10491,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10518,7 +10518,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10568,7 +10568,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_collaboration_modes_enabled(/*enabled*/ true);
@@ -10606,7 +10606,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10620,7 +10620,7 @@ mod tests {
             vec![FileMatch {
                 score: 1,
                 path: PathBuf::from("src/main.rs"),
-                match_type: codex_file_search::MatchType::File,
+                match_type: ava_file_search::MatchType::File,
                 root: PathBuf::from("/tmp"),
                 indices: None,
             }],
@@ -10670,7 +10670,7 @@ mod tests {
             vec![FileMatch {
                 score: 1,
                 path: selected_path,
-                match_type: codex_file_search::MatchType::File,
+                match_type: ava_file_search::MatchType::File,
                 root,
                 indices: None,
             }],
@@ -10873,7 +10873,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -10952,7 +10952,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11029,7 +11029,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11071,7 +11071,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11116,7 +11116,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11153,7 +11153,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11202,7 +11202,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let path = PathBuf::from("/tmp/image1.png");
@@ -11240,7 +11240,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11274,7 +11274,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let remote_image_url = "https://example.com/remote.png".to_string();
@@ -11308,7 +11308,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let remote_image_urls = vec![
@@ -11340,7 +11340,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11395,7 +11395,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content("hello".to_string(), Vec::new(), Vec::new());
@@ -11427,7 +11427,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11461,7 +11461,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11493,7 +11493,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11528,7 +11528,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11553,7 +11553,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11596,7 +11596,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11639,7 +11639,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11682,7 +11682,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11735,7 +11735,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let path = PathBuf::from("/tmp/image2.png");
@@ -11774,7 +11774,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let path = PathBuf::from("/tmp/image_dup.png");
@@ -11803,7 +11803,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         let path = PathBuf::from("/tmp/image3.png");
@@ -11846,7 +11846,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11872,7 +11872,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11932,7 +11932,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -11995,7 +11995,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12025,7 +12025,7 @@ mod tests {
     #[test]
     fn pasting_filepath_attaches_image() {
         let tmp = tempdir().expect("create TempDir");
-        let tmp_path: PathBuf = tmp.path().join("codex_tui_test_paste_image.png");
+        let tmp_path: PathBuf = tmp.path().join("ava_tui_test_paste_image.png");
         let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
             ImageBuffer::from_fn(3, 2, |_x, _y| Rgba([1, 2, 3, 255]));
         img.save(&tmp_path).expect("failed to write temp png");
@@ -12036,7 +12036,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12060,7 +12060,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12097,7 +12097,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12278,7 +12278,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12307,7 +12307,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12354,7 +12354,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12393,7 +12393,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12426,7 +12426,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12456,7 +12456,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12499,7 +12499,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12524,7 +12524,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12549,7 +12549,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_collaboration_modes_enabled(/*enabled*/ true);
@@ -12583,7 +12583,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12624,7 +12624,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content("!git status".to_string(), Vec::new(), Vec::new());
@@ -12644,7 +12644,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content("!git status".to_string(), Vec::new(), Vec::new());
@@ -12664,7 +12664,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
         composer.set_text_content("git status".to_string(), Vec::new(), Vec::new());
@@ -12684,7 +12684,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12709,7 +12709,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12743,7 +12743,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12769,7 +12769,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12796,7 +12796,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12824,7 +12824,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12845,7 +12845,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12870,7 +12870,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12907,7 +12907,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12927,7 +12927,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -12972,7 +12972,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 
@@ -13009,7 +13009,7 @@ mod tests {
             /*has_input_focus*/ true,
             sender,
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         );
 

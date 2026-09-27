@@ -3,13 +3,13 @@ use super::TemporaryStructuredThreadOptions;
 use super::collect_structured_response;
 use super::start_temporary_thread;
 use crate::test_support::PathBufExt;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadSource;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadSource;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStatus;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 use tokio::sync::mpsc::unbounded_channel;
@@ -52,24 +52,24 @@ async fn preserves_custom_permissions_and_disables_required_mcp_servers() -> col
     let (chat_widget, _, _, _) =
         crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
     let mut config = chat_widget.config_ref().clone();
-    let codex_home = tempdir()?;
-    let denied_path = codex_home.path().join("denied");
+    let ava_home = tempdir()?;
+    let denied_path = ava_home.path().join("denied");
     let denied_key = toml::Value::String(denied_path.display().to_string());
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "default_permissions = \"title-restricted\"\n\n\
              [permissions.title-restricted.filesystem]\n\
              \":root\" = \"read\"\n\
              {denied_key} = \"deny\"\n\n\
              [mcp_servers.forbidden]\n\
-             command = \"codex-auto-title-missing-mcp\"\n\
+             command = \"ava-auto-title-missing-mcp\"\n\
              required = true\n"
         ),
     )?;
-    config.codex_home = codex_home.path().to_path_buf().abs();
+    config.ava_home = ava_home.path().to_path_buf().abs();
     config.sqlite =
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().to_path_buf().abs());
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().to_path_buf().abs());
 
     let app_server = crate::start_embedded_app_server_for_picker(&config).await?;
     let response = start_temporary_thread(

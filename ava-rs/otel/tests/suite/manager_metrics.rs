@@ -3,13 +3,13 @@ use crate::harness::build_metrics_with_defaults;
 use crate::harness::find_metric;
 use crate::harness::histogram_data;
 use crate::harness::latest_metrics;
-use codex_otel::PLUGIN_INSTALL_ELICITATION_SENT_METRIC;
-use codex_otel::PLUGIN_INSTALL_SUGGESTION_METRIC;
-use codex_otel::Result;
-use codex_otel::SessionTelemetry;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
+use ava_otel::PLUGIN_INSTALL_ELICITATION_SENT_METRIC;
+use ava_otel::PLUGIN_INSTALL_SUGGESTION_METRIC;
+use ava_otel::Result;
+use ava_otel::SessionTelemetry;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
 use opentelemetry_sdk::metrics::data::AggregatedMetrics;
 use opentelemetry_sdk::metrics::data::MetricData;
 use pretty_assertions::assert_eq;
@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 // Ensures SessionTelemetry attaches metadata tags when forwarding metrics.
 #[test]
 fn manager_attaches_metadata_tags_to_metrics() -> Result<()> {
-    let (metrics, exporter) = build_metrics_with_defaults(&[("service", "codex-cli")])?;
+    let (metrics, exporter) = build_metrics_with_defaults(&[("service", "ava-cli")])?;
     let manager = SessionTelemetry::new(
         ThreadId::new(),
         "gpt-5.1",
@@ -34,13 +34,13 @@ fn manager_attaches_metadata_tags_to_metrics() -> Result<()> {
     .with_metrics(metrics);
 
     manager.counter(
-        "codex.session_started",
+        "ava.session_started",
         /*inc*/ 1,
         &[("source", "tui")],
     );
     for tokens in [32_000, 256_000] {
         manager.histogram_with_boundaries(
-            "codex.request_tokens",
+            "ava.request_tokens",
             tokens,
             &[16_000.0, 128_000.0, 512_000.0],
             &[("source", "tui")],
@@ -50,7 +50,7 @@ fn manager_attaches_metadata_tags_to_metrics() -> Result<()> {
 
     let resource_metrics = latest_metrics(&exporter);
     assert_eq!(
-        histogram_data(&resource_metrics, "codex.request_tokens"),
+        histogram_data(&resource_metrics, "ava.request_tokens"),
         (
             vec![16_000.0, 128_000.0, 512_000.0],
             vec![0, 1, 1, 0],
@@ -59,7 +59,7 @@ fn manager_attaches_metadata_tags_to_metrics() -> Result<()> {
         )
     );
     let metric =
-        find_metric(&resource_metrics, "codex.session_started").expect("counter metric missing");
+        find_metric(&resource_metrics, "ava.session_started").expect("counter metric missing");
     let attrs = match metric.data() {
         AggregatedMetrics::U64(data) => match data {
             MetricData::Sum(sum) => {
@@ -83,7 +83,7 @@ fn manager_attaches_metadata_tags_to_metrics() -> Result<()> {
         ),
         ("model".to_string(), "gpt-5.1".to_string()),
         ("originator".to_string(), "test_originator".to_string()),
-        ("service".to_string(), "codex-cli".to_string()),
+        ("service".to_string(), "ava-cli".to_string()),
         ("session_source".to_string(), "cli".to_string()),
         ("source".to_string(), "tui".to_string()),
     ]);
@@ -111,7 +111,7 @@ fn manager_allows_disabling_metadata_tags() -> Result<()> {
     .with_metrics_without_metadata_tags(metrics);
 
     manager.counter(
-        "codex.session_started",
+        "ava.session_started",
         /*inc*/ 1,
         &[("source", "tui")],
     );
@@ -119,7 +119,7 @@ fn manager_allows_disabling_metadata_tags() -> Result<()> {
 
     let resource_metrics = latest_metrics(&exporter);
     let metric =
-        find_metric(&resource_metrics, "codex.session_started").expect("counter metric missing");
+        find_metric(&resource_metrics, "ava.session_started").expect("counter metric missing");
     let attrs = match metric.data() {
         AggregatedMetrics::U64(data) => match data {
             MetricData::Sum(sum) => {
@@ -156,12 +156,12 @@ fn manager_attaches_optional_service_name_tag() -> Result<()> {
     .with_metrics_service_name("my_app_server_client")
     .with_metrics(metrics);
 
-    manager.counter("codex.session_started", /*inc*/ 1, &[]);
+    manager.counter("ava.session_started", /*inc*/ 1, &[]);
     manager.shutdown_metrics()?;
 
     let resource_metrics = latest_metrics(&exporter);
     let metric =
-        find_metric(&resource_metrics, "codex.session_started").expect("counter metric missing");
+        find_metric(&resource_metrics, "ava.session_started").expect("counter metric missing");
     let attrs = match metric.data() {
         AggregatedMetrics::U64(data) => match data {
             MetricData::Sum(sum) => {

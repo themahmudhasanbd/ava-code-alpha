@@ -1,15 +1,15 @@
 use super::*;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
-use codex_config::FeatureRequirementsToml;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
-use codex_config::config_toml::ConfigToml;
-use codex_config::config_toml::ForcedChatgptWorkspaceIds;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::FeaturesToml;
-use codex_protocol::config_types::ForcedLoginMethod;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
+use ava_config::FeatureRequirementsToml;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
+use ava_config::config_toml::ConfigToml;
+use ava_config::config_toml::ForcedChatgptWorkspaceIds;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::FeaturesToml;
+use ava_protocol::config_types::ForcedLoginMethod;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 
@@ -94,7 +94,7 @@ fn managed_auth_restrictions_intersect_workspaces_and_fail_closed() {
         )
         .expect("requirements should stack"),
     };
-    let auth_config = bootstrap_auth_config(Path::new("codex-home"), &bootstrap_config)
+    let auth_config = bootstrap_auth_config(Path::new("ava-home"), &bootstrap_config)
         .expect("policy should resolve");
     assert_eq!(auth_config.forced_login_method, None);
     assert!(auth_config.is_login_method_allowed(ForcedLoginMethod::Chatgpt));
@@ -120,7 +120,7 @@ fn managed_auth_restrictions_intersect_workspaces_and_fail_closed() {
         .expect("requirements should stack"),
     };
     assert_eq!(
-        bootstrap_auth_config(Path::new("codex-home"), &bootstrap_config)
+        bootstrap_auth_config(Path::new("ava-home"), &bootstrap_config)
             .expect_err("ChatGPT-only policy without an allowed workspace must fail")
             .kind(),
         std::io::ErrorKind::PermissionDenied
@@ -156,7 +156,7 @@ fn bootstrap_auth_config_applies_managed_store_and_chatgpt_base_url() {
         .expect("requirements should stack"),
     };
 
-    let auth_config = bootstrap_auth_config(Path::new("codex-home"), &bootstrap_config)
+    let auth_config = bootstrap_auth_config(Path::new("ava-home"), &bootstrap_config)
         .expect("managed authentication settings should resolve");
 
     assert_eq!(auth_config.auth_credentials_store_mode, managed_store);

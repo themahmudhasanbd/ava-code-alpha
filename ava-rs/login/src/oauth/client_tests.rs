@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 
 use base64::Engine;
-use codex_http_client::HttpClient;
-use codex_http_client::HttpClientBuilder;
+use ava_http_client::HttpClient;
+use ava_http_client::HttpClientBuilder;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::StatusCode;

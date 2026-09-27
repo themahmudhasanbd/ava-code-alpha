@@ -12,7 +12,7 @@ use super::GuardianApprovalRequest;
 use crate::quality_gate::{
     QualityGate, QualityGateInput, QualityGateResult, QualityGateStatus, RiskLevel,
 };
-use codex_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::ReviewDecision;
 
 /// Evaluates a Guardian approval request through the Quality Gate.
 pub(crate) fn evaluate_guardian_quality_gate(

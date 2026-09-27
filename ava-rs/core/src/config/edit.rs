@@ -1,16 +1,16 @@
 use crate::path_utils::resolve_symlink_write_paths;
 use crate::path_utils::write_atomically;
 use anyhow::Context;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::is_structured_feature_path;
-use codex_config::types::McpServerConfig;
-use codex_config::types::ResumeCwdMode;
-use codex_config::types::SessionPickerViewMode;
-use codex_config::types::ToolSuggestDisabledTool;
-use codex_features::FEATURES;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::is_structured_feature_path;
+use ava_config::types::McpServerConfig;
+use ava_config::types::ResumeCwdMode;
+use ava_config::types::SessionPickerViewMode;
+use ava_config::types::ToolSuggestDisabledTool;
+use ava_features::FEATURES;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::openai_models::ReasoningEffort;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -729,8 +729,8 @@ fn write_skill_config_selector(table: &mut TomlTable, selector: &SkillConfigSele
 }
 
 /// Persist edits using a blocking strategy.
-pub fn apply_blocking(codex_home: &Path, edits: &[ConfigEdit]) -> anyhow::Result<()> {
-    let config_path = codex_home.join(CONFIG_TOML_FILE);
+pub fn apply_blocking(ava_home: &Path, edits: &[ConfigEdit]) -> anyhow::Result<()> {
+    let config_path = ava_home.join(CONFIG_TOML_FILE);
     apply_blocking_to_resolved_file(&config_path, edits)
 }
 
@@ -787,16 +787,16 @@ pub struct ConfigEditsBuilder {
 }
 
 impl ConfigEditsBuilder {
-    pub fn new(codex_home: &Path) -> Self {
-        Self::for_config_path(&codex_home.join(CONFIG_TOML_FILE))
+    pub fn new(ava_home: &Path) -> Self {
+        Self::for_config_path(&ava_home.join(CONFIG_TOML_FILE))
     }
 
     pub fn for_config(config: &crate::config::Config) -> Self {
         let config_path = config
             .config_layer_stack
             .get_user_config_file()
-            .map(codex_utils_absolute_path::AbsolutePathBuf::to_path_buf)
-            .unwrap_or_else(|| config.codex_home.join(CONFIG_TOML_FILE).to_path_buf());
+            .map(ava_utils_absolute_path::AbsolutePathBuf::to_path_buf)
+            .unwrap_or_else(|| config.ava_home.join(CONFIG_TOML_FILE).to_path_buf());
         Self::for_config_path(&config_path)
     }
 

@@ -15,34 +15,34 @@ use axum::http::StatusCode;
 use axum::http::Uri;
 use axum::http::header::AUTHORIZATION;
 use axum::routing::get;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::McpElicitationSchema;
-use codex_app_server_protocol::McpServerElicitationAction;
-use codex_app_server_protocol::McpServerElicitationRequest;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::McpServerElicitationRequestResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerRequestResolvedNotification;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_mcp::MCP_TOOL_CODEX_APPS_META_KEY;
-use codex_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
-use codex_protocol::mcp_approval_meta as approval_meta;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::McpElicitationSchema;
+use ava_app_server_protocol::McpServerElicitationAction;
+use ava_app_server_protocol::McpServerElicitationRequest;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::McpServerElicitationRequestResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerRequestResolvedNotification;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_mcp::MCP_TOOL_AVA_APPS_META_KEY;
+use ava_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
+use ava_protocol::mcp_approval_meta as approval_meta;
 use core_test_support::assert_regex_match;
 use core_test_support::responses;
 use core_test_support::responses::ResponseMock;
@@ -95,7 +95,7 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 const CONNECTOR_ID: &str = "calendar";
 const CONNECTOR_NAME: &str = "Calendar";
 const CONNECTED_ACCOUNT_EMAIL: &str = "calendar-owner@example.com";
-const TOOL_NAMESPACE: &str = "mcp__codex_apps__calendar";
+const TOOL_NAMESPACE: &str = "mcp__ava_apps__calendar";
 const CALLABLE_TOOL_NAME: &str = "_confirm_action";
 const TOOL_NAME: &str = "calendar_confirm_action";
 const TOOL_CALL_ID: &str = "call-calendar-confirm";
@@ -173,7 +173,7 @@ async fn mcp_server_form_elicitation_round_trip_in_full_access() -> Result<()> {
             model: Some("mock-model".to_string()),
             approval_policy: Some(AskForApproval::Never),
             sandbox: Some(SandboxMode::DangerFullAccess),
-            thread_source: Some(codex_app_server_protocol::ThreadSource::User),
+            thread_source: Some(ava_app_server_protocol::ThreadSource::User),
             ..Default::default()
         },
     )
@@ -199,7 +199,7 @@ async fn assert_standard_form_elicitation_round_trip(
         McpServerElicitationRequestParams {
             thread_id: fixture.thread_id.clone(),
             turn_id: Some(fixture.turn_id.clone()),
-            server_name: "codex_apps".to_string(),
+            server_name: "ava_apps".to_string(),
             request: McpServerElicitationRequest::Form {
                 meta: None,
                 message: ELICITATION_MESSAGE.to_string(),
@@ -245,7 +245,7 @@ async fn mcp_server_openai_form_elicitation_round_trip() -> Result<()> {
         McpServerElicitationRequestParams {
             thread_id: fixture.thread_id.clone(),
             turn_id: Some(fixture.turn_id.clone()),
-            server_name: "codex_apps".to_string(),
+            server_name: "ava_apps".to_string(),
             request: McpServerElicitationRequest::OpenAiForm {
                 meta: None,
                 message: OPENAI_FORM_MESSAGE.to_string(),
@@ -284,7 +284,7 @@ async fn mcp_server_openai_elicitation_form_round_trip() -> Result<()> {
         McpServerElicitationRequestParams {
             thread_id: fixture.thread_id.clone(),
             turn_id: Some(fixture.turn_id.clone()),
-            server_name: "codex_apps".to_string(),
+            server_name: "ava_apps".to_string(),
             request: McpServerElicitationRequest::OpenAiElicitationForm {
                 meta: Some(json!({ "example/request": "template-picker" })),
                 message: OPENAI_FORM_MESSAGE.to_string(),
@@ -345,10 +345,10 @@ async fn mcp_server_strict_auto_review(scenario: Review) -> Result<()> {
 async fn openai_form_capability_follows_the_turn_starting_connection() -> Result<()> {
     let (responses_server, response_mock, apps_server_url, apps_server_handle) =
         start_elicitation_services(ElicitationScenario::OpenAiForm).await?;
-    let codex_home = TempDir::new()?;
-    write_config_toml(codex_home.path(), &responses_server.uri(), &apps_server_url)?;
+    let ava_home = TempDir::new()?;
+    write_config_toml(ava_home.path(), &responses_server.uri(), &apps_server_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -356,7 +356,7 @@ async fn openai_form_capability_follows_the_turn_starting_connection() -> Result
         AuthCredentialsStoreMode::File,
     )?;
 
-    let (mut process, bind_addr) = spawn_websocket_server(codex_home.path()).await?;
+    let (mut process, bind_addr) = spawn_websocket_server(ava_home.path()).await?;
     let mut supported_client = connect_websocket(bind_addr).await?;
     initialize_websocket_client(
         &mut supported_client,
@@ -608,7 +608,7 @@ async fn start_elicitation_services(
 
 struct ElicitationRoundTripFixture {
     mcp: TestAppServer,
-    _codex_home: TempDir,
+    _ava_home: TempDir,
     response_mock: ResponseMock,
     _responses_server: wiremock::MockServer,
     scenario: ElicitationScenario,
@@ -674,8 +674,8 @@ impl ElicitationRoundTripFixture {
     ) -> Result<Self> {
         let (responses_server, response_mock, apps_server_url, apps_server_handle) =
             start_elicitation_services(scenario).await?;
-        let codex_home = TempDir::new()?;
-        write_config_toml(codex_home.path(), &responses_server.uri(), &apps_server_url)?;
+        let ava_home = TempDir::new()?;
+        write_config_toml(ava_home.path(), &responses_server.uri(), &apps_server_url)?;
         let strict = if let ElicitationScenario::Strict(strict) = scenario {
             Some(strict)
         } else {
@@ -687,10 +687,10 @@ impl ElicitationRoundTripFixture {
             _ => "",
         };
         if !requirements.is_empty() {
-            std::fs::write(codex_home.path().join("requirements.toml"), requirements)?;
+            std::fs::write(ava_home.path().join("requirements.toml"), requirements)?;
         }
         write_chatgpt_auth(
-            codex_home.path(),
+            ava_home.path(),
             ChatGptAuthFixture::new("chatgpt-token")
                 .account_id("account-123")
                 .chatgpt_user_id("user-123")
@@ -699,7 +699,7 @@ impl ElicitationRoundTripFixture {
         )?;
 
         let mut mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build()
             .await?;
         let mut extensions = HashMap::from([(
@@ -713,7 +713,7 @@ impl ElicitationRoundTripFixture {
             DEFAULT_READ_TIMEOUT,
             mcp.initialize_with_capabilities(
                 ClientInfo {
-                    name: "codex-app-server-tests".to_string(),
+                    name: "ava-app-server-tests".to_string(),
                     title: None,
                     version: "0.1.0".to_string(),
                 },
@@ -793,7 +793,7 @@ impl ElicitationRoundTripFixture {
 
         Ok(Self {
             mcp,
-            _codex_home: codex_home,
+            _ava_home: ava_home,
             response_mock,
             _responses_server: responses_server,
             scenario,
@@ -912,7 +912,7 @@ impl ElicitationRoundTripFixture {
                 action,
                 json!({
                     "tool": "mcp_tool_call",
-                    "server": "codex_apps",
+                    "server": "ava_apps",
                     "tool_name": TOOL_NAME,
                     "arguments": {},
                     "connector_id": CONNECTOR_ID,
@@ -1083,7 +1083,7 @@ impl ServerHandler for ElicitationAppsMcpServer {
         meta.0
             .insert("connector_name".to_string(), json!(CONNECTOR_NAME));
         meta.0.insert(
-            MCP_TOOL_CODEX_APPS_META_KEY.to_string(),
+            MCP_TOOL_AVA_APPS_META_KEY.to_string(),
             json!({ "connected_account_email": CONNECTED_ACCOUNT_EMAIL }),
         );
         tool.meta = Some(meta);
@@ -1121,14 +1121,14 @@ impl ServerHandler for ElicitationAppsMcpServer {
                         } else {
                             TOOL_NAME
                         };
-                        let apps_meta = context.meta.0.0.get(MCP_TOOL_CODEX_APPS_META_KEY);
+                        let apps_meta = context.meta.0.0.get(MCP_TOOL_AVA_APPS_META_KEY);
                         let mut meta = MetaObject(
                             json!({
                                 (approval_meta::REQUEST_TYPE_KEY): approval_meta::REQUEST_TYPE_APPROVAL_REQUEST,
                                 (approval_meta::APPROVAL_KIND_KEY): approval_meta::APPROVAL_KIND_MCP_TOOL_CALL,
                                 (approval_meta::STRICT_AUTO_REVIEW_KEY): true,
                                 (approval_meta::CONNECTOR_ID_KEY): connector_id,
-                                (MCP_TOOL_CODEX_APPS_META_KEY): apps_meta
+                                (MCP_TOOL_AVA_APPS_META_KEY): apps_meta
                                     .filter(|_| strict != Review::AppReviewerMissingCallId),
                                 (approval_meta::TOOL_NAME_KEY): tool_name,
                                 (approval_meta::TOOL_PARAMS_KEY): {
@@ -1424,7 +1424,7 @@ async fn start_apps_server(scenario: ElicitationScenario) -> Result<(String, Joi
             get(list_directory_connectors),
         )
         .with_state(state)
-        .nest_service("/api/codex/ps/mcp", mcp_service);
+        .nest_service("/api/ava/ps/mcp", mcp_service);
 
     let handle = tokio::spawn(async move {
         let _ = axum::serve(listener, router).await;
@@ -1476,12 +1476,12 @@ async fn list_directory_connectors(
 }
 
 fn write_config_toml(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     responses_server_uri: &str,
     apps_server_url: &str,
 ) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"
 model = "mock-model"

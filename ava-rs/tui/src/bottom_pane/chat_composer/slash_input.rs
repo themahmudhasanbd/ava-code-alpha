@@ -16,8 +16,8 @@ use crate::bottom_pane::slash_commands::SlashCommandItem;
 use crate::bottom_pane::slash_commands::find_slash_command;
 use crate::bottom_pane::slash_commands::has_slash_command_prefix;
 use crate::slash_command::SlashCommand;
-use codex_protocol::user_input::ByteRange;
-use codex_protocol::user_input::TextElement;
+use ava_protocol::user_input::ByteRange;
+use ava_protocol::user_input::TextElement;
 
 use super::super::footer::reset_mode_after_activity;
 use super::ActivePopup;
@@ -610,7 +610,7 @@ mod tests {
             /*has_input_focus*/ true,
             AppEventSender::new(tx),
             /*enhanced_keys_supported*/ false,
-            "Ask Codex to do anything".to_string(),
+            "Ask Ava to do anything".to_string(),
             /*disable_paste_burst*/ false,
         )
     }

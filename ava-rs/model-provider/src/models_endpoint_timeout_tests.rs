@@ -1,6 +1,6 @@
 use super::*;
-use codex_http_client::OutboundProxyPolicy;
-use codex_protocol::error::CodexErrorDetails;
+use ava_http_client::OutboundProxyPolicy;
+use ava_protocol::error::AvaErrorDetails;
 use wiremock::Mock;
 use wiremock::MockServer;
 use wiremock::ResponseTemplate;
@@ -61,7 +61,7 @@ async fn catalog_deadline_returns_request_timeout() {
     tokio::time::resume();
 
     assert!(
-        matches!(error.details(), CodexErrorDetails::RequestTimeout),
+        matches!(error.details(), AvaErrorDetails::RequestTimeout),
         "{error}"
     );
 }

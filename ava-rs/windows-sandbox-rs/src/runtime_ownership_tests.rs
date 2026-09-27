@@ -8,14 +8,14 @@ use std::path::PathBuf;
 fn record() -> InstallationRecord {
     InstallationRecord {
         user_sid: "S-1-5-21-1-2-3-1000".into(),
-        codex_home: PathBuf::from(r"C:\Users\owner\.codex"),
+        ava_home: PathBuf::from(r"C:\Users\owner\.ava-code"),
         session_id: 1,
         desktop_installation: Some(DesktopInstallation {
-            created_codex_home: true,
+            created_ava_home: true,
             cache_home: PathBuf::from(r"C:\Users\owner\.cache"),
         }),
         runtime: Some(RuntimeRegistration {
-            package_family: "OpenAI.Codex_publisher".into(),
+            package_family: "OpenAI.Ava_publisher".into(),
             metadata_roots: Vec::new(),
             ready_package: None,
             accounts: vec![RuntimeAccountRegistration {
@@ -35,7 +35,7 @@ fn pending() -> InstallationRecord {
     record
 }
 
-const READY_PACKAGE: &str = "OpenAI.Codex_1.0.0.0_arm64__publisher";
+const READY_PACKAGE: &str = "OpenAI.Ava_1.0.0.0_arm64__publisher";
 
 fn ready_runtime() -> RuntimeRegistration {
     let mut runtime = record().runtime.unwrap();
@@ -55,7 +55,7 @@ fn readiness_requires_a_receipt_for_the_current_package_version() {
     let mut runtime = ready_runtime();
     assert!(runtime.ready_for_package(READY_PACKAGE));
     assert!(runtime.can_resume_registration());
-    assert!(!runtime.ready_for_package("OpenAI.Codex_2.0.0.0_arm64__publisher"));
+    assert!(!runtime.ready_for_package("OpenAI.Ava_2.0.0.0_arm64__publisher"));
 
     runtime.ready_package = None;
     assert!(!runtime.ready_for_package(READY_PACKAGE));
@@ -96,11 +96,11 @@ fn readiness_is_revoked_by_the_retirement_fence() {
 
 #[test]
 fn admission_accepts_package_family_casing() {
-    for stored in ["OpenAI.Codex_publisher", "openai.codex_PUBLISHER"] {
+    for stored in ["OpenAI.Ava_publisher", "openai.ava_PUBLISHER"] {
         let mut record = record();
         record.runtime_mut().unwrap().package_family = stored.into();
         let expected = record.clone();
-        for requested in ["OpenAI.Codex_publisher", "OPENAI.CODEX_PUBLISHER"] {
+        for requested in ["OpenAI.Ava_publisher", "OPENAI.AVA_PUBLISHER"] {
             record.admit_owner(&record.clone(), requested).unwrap();
             assert_eq!(record, expected);
         }
@@ -113,7 +113,7 @@ fn admission_rejects_other_owner_home_and_family() {
     let expected = record.clone();
     for (home, sid, family) in [
         (
-            record.codex_home.as_path(),
+            record.ava_home.as_path(),
             "S-1-5-21-1-2-3-2000",
             record.runtime().unwrap().package_family.as_str(),
         ),
@@ -123,18 +123,18 @@ fn admission_rejects_other_owner_home_and_family() {
             record.runtime().unwrap().package_family.as_str(),
         ),
         (
-            record.codex_home.as_path(),
+            record.ava_home.as_path(),
             record.user_sid.as_str(),
-            "OpenAI.CodexBeta_publisher",
+            "OpenAI.AvaBeta_publisher",
         ),
         (
-            record.codex_home.as_path(),
+            record.ava_home.as_path(),
             record.user_sid.as_str(),
-            "OpenAI.Codex_otherpublisher",
+            "OpenAI.Ava_otherpublisher",
         ),
     ] {
         let mut requested = record.clone();
-        requested.codex_home = home.to_path_buf();
+        requested.ava_home = home.to_path_buf();
         requested.user_sid = sid.to_owned();
         assert!(record.admit_owner(&requested, family).is_err());
         assert_eq!(record, expected);
@@ -174,7 +174,7 @@ fn production_record_without_optional_core_or_desktop_fields_still_loads() {
     let mut expected = record();
     expected.runtime = None;
     expected.desktop_installation = None;
-    let json = r#"{"user_sid":"S-1-5-21-1-2-3-1000","codex_home":"C:\\Users\\owner\\.codex","session_id":1}"#;
+    let json = r#"{"user_sid":"S-1-5-21-1-2-3-1000","ava_home":"C:\\Users\\owner\\.ava-code","session_id":1}"#;
     assert_eq!(
         serde_json::from_str::<InstallationRecord>(json).unwrap(),
         expected
@@ -261,7 +261,7 @@ fn interrupted_cleanup_logon_blocks_admission_after_record_reload() {
     assert!(!restored.runtime().unwrap().ready_for_package(READY_PACKAGE));
     assert!(
         restored
-            .admit_owner(&original, "OpenAI.Codex_publisher")
+            .admit_owner(&original, "OpenAI.Ava_publisher")
             .is_err()
     );
 
@@ -269,7 +269,7 @@ fn interrupted_cleanup_logon_blocks_admission_after_record_reload() {
     assert!(restored.runtime().unwrap().ready_for_package(READY_PACKAGE));
     assert!(
         restored
-            .admit_owner(&original, "OpenAI.Codex_publisher")
+            .admit_owner(&original, "OpenAI.Ava_publisher")
             .is_ok()
     );
 }

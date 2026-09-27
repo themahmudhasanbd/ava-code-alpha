@@ -17,10 +17,10 @@ use crate::config_update::format_config_error;
 use crate::external_agent_config_migration::flow::ExternalAgentConfigMigrationFlowOutcome;
 use crate::pager_overlay::TranscriptHistoryState;
 use crate::session_resume::cwds_differ;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::ThreadGoalStatus;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::ThreadGoalStatus;
 #[cfg(target_os = "windows")]
-use codex_app_server_protocol::WindowsSandboxSetupMode;
+use ava_app_server_protocol::WindowsSandboxSetupMode;
 
 pub(super) const SHUTDOWN_FIRST_EXIT_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 2);
 
@@ -151,7 +151,7 @@ impl App {
                 if let Some(request) = self.chat_widget.request_managed_worktrees() {
                     crate::worktree_browser::fetch(
                         request,
-                        self.config.codex_home.to_path_buf(),
+                        self.config.ava_home.to_path_buf(),
                         app_server.request_handle(),
                         self.app_event_tx.clone(),
                     );
@@ -175,11 +175,11 @@ impl App {
                 if self.chat_widget.worktree_request_is_current(&request)
                     && !request.cwd.starts_with(&root)
                 {
-                    let codex_home = self.config.codex_home.to_path_buf();
+                    let ava_home = self.config.ava_home.to_path_buf();
                     let tx = self.app_event_tx.clone();
                     tokio::spawn(async move {
                         let result = crate::worktree_browser::remove(
-                            codex_home,
+                            ava_home,
                             request.cwd,
                             root.clone(),
                         )
@@ -439,7 +439,7 @@ impl App {
             }
             AppEvent::ForkCurrentSession { name } => {
                 self.session_telemetry.counter(
-                    "codex.thread.fork",
+                    "ava.thread.fork",
                     /*inc*/ 1,
                     &[("source", "slash_command")],
                 );
@@ -650,7 +650,7 @@ impl App {
                     Err(err) => {
                     // Validation and unsupported-method errors leave history unchanged. Other
                     // failures can arrive after the server has already committed the revert.
-                    if matches!(&err, codex_app_server_client::TypedRequestError::Server { source, .. }
+                    if matches!(&err, ava_app_server_client::TypedRequestError::Server { source, .. }
                         if matches!(source.code, -32602..=-32600)) {
                         self.restore_backtrack_prompt_after_revert_error(prompt, err);
                         tui.frame_requester().schedule_frame();
@@ -871,7 +871,7 @@ impl App {
                             .thread_goal_set(
                                 thread_id,
                                 /*objective*/ None,
-                                Some(codex_app_server_protocol::ThreadGoalStatus::Paused),
+                                Some(ava_app_server_protocol::ThreadGoalStatus::Paused),
                                 /*token_budget*/ None,
                             )
                             .await
@@ -915,7 +915,7 @@ impl App {
             AppEvent::ImagesPrepared(id) => {
                 self.chat_widget.on_images_prepared(id);
             }
-            AppEvent::CodexOp(mut op) => {
+            AppEvent::AvaOp(mut op) => {
                 if let AppCommand::OverrideTurnContext {
                     cwd,
                     approval_policy,
@@ -2078,14 +2078,14 @@ impl App {
                 profile_selection,
             } => {
                 self.session_telemetry.counter(
-                    "codex.windows_sandbox.fallback_prompt_shown",
+                    "ava.windows_sandbox.fallback_prompt_shown",
                     /*inc*/ 1,
                     &[],
                 );
                 self.chat_widget.clear_windows_sandbox_setup_status();
                 if let Some(started_at) = self.windows_sandbox.setup_started_at.take() {
                     self.session_telemetry.record_duration(
-                        "codex.windows_sandbox.elevated_setup_duration_ms",
+                        "ava.windows_sandbox.elevated_setup_duration_ms",
                         started_at.elapsed(),
                         &[("result", "failure")],
                     );
@@ -2135,7 +2135,7 @@ impl App {
                         && mode == WindowsSandboxEnableMode::Elevated
                     {
                         self.session_telemetry.record_duration(
-                            "codex.windows_sandbox.elevated_setup_duration_ms",
+                            "ava.windows_sandbox.elevated_setup_duration_ms",
                             started_at.elapsed(),
                             &[("result", "success")],
                         );
@@ -2154,7 +2154,7 @@ impl App {
                             if let Some(selection) = profile_selection {
                                 self.select_permission_profile(app_server, selection).await;
                             } else {
-                                self.app_event_tx.send(AppEvent::CodexOp(
+                                self.app_event_tx.send(AppEvent::AvaOp(
                                     AppCommand::override_turn_context(
                                         /*cwd*/ None,
                                         Some(AskForApproval::from(preset.approval)),
@@ -2181,7 +2181,7 @@ impl App {
                                     Line::from(vec!["• ".dim(), "Sandbox ready".into()]),
                                     Line::from(vec![
                                         "  ".into(),
-                                        "Codex can now safely edit files and execute commands in your computer"
+                                        "Ava can now safely edit files and execute commands in your computer"
                                             .dark_gray(),
                                     ]),
                                 ]);
@@ -2674,7 +2674,7 @@ impl App {
             #[cfg(any(unix, windows))]
             AppEvent::AgentsDaemonStarted { result } => match result {
                 Ok(()) => self.chat_widget.add_info_message(
-                    "Background server started. Run `codex agents` in another terminal; this session remains unchanged."
+                    "Background server started. Run `ava agents` in another terminal; this session remains unchanged."
                         .to_string(),
                     /*hint*/ None,
                 ),
@@ -2997,7 +2997,7 @@ impl App {
                         // navigating, the runtime theme must still be applied.
                         if let Some(theme) = crate::render::highlight::resolve_theme_by_name(
                             &name,
-                            Some(&self.local_settings.codex_home),
+                            Some(&self.local_settings.ava_home),
                         ) {
                             crate::render::highlight::set_syntax_theme(theme);
                         }
@@ -3352,7 +3352,7 @@ impl App {
             }
             Ok(()) => {
                 self.track_agents_overview_notification(&ServerNotification::ThreadArchived(
-                    codex_app_server_protocol::ThreadArchivedNotification {
+                    ava_app_server_protocol::ThreadArchivedNotification {
                         thread_id: thread_id.to_string(),
                     },
                 ));
@@ -3412,7 +3412,7 @@ impl App {
             }
             Ok(()) => {
                 self.track_agents_overview_notification(&ServerNotification::ThreadDeleted(
-                    codex_app_server_protocol::ThreadDeletedNotification {
+                    ava_app_server_protocol::ThreadDeletedNotification {
                         thread_id: thread_id.to_string(),
                     },
                 ));

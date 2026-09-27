@@ -3,19 +3,19 @@
 use crate::config::Constrained;
 use crate::config::ConstraintError;
 use crate::config::ConstraintResult;
-use codex_config::ConfigRequirements;
-use codex_models_manager::ModelsManagerConfig;
-use codex_models_manager::manager::ModelsManager;
-use codex_otel::SessionTelemetry;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
+use ava_config::ConfigRequirements;
+use ava_models_manager::ModelsManagerConfig;
+use ava_models_manager::manager::ModelsManager;
+use ava_otel::SessionTelemetry;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
 use std::sync::Arc;
 
 /// Model and execution settings selected for an individual model step within

@@ -1,11 +1,11 @@
 [package]
-name = "codex-arg0"
+name = "ava-arg0"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "codex_arg0"
+name = "ava_arg0"
 path = "src/lib.rs"
 doctest = false
 
@@ -14,21 +14,21 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-codex-apply-patch = { workspace = true }
-codex-async-utils = { workspace = true }
-codex-exec-server = { workspace = true }
-codex-install-context = { workspace = true }
-codex-linux-sandbox = { workspace = true }
-codex-sandboxing = { workspace = true }
-codex-shell-escalation = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-home-dir = { workspace = true }
+ava-apply-patch = { workspace = true }
+ava-async-utils = { workspace = true }
+ava-exec-server = { workspace = true }
+ava-install-context = { workspace = true }
+ava-linux-sandbox = { workspace = true }
+ava-sandboxing = { workspace = true }
+ava-shell-escalation = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-home-dir = { workspace = true }
 dotenvy = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 
 [target.'cfg(windows)'.dependencies]
-codex-windows-sandbox = { workspace = true }
+ava-windows-sandbox = { workspace = true }
 pathdiff = { workspace = true }
 
 [dev-dependencies]

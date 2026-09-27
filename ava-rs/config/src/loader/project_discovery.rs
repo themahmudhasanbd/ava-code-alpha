@@ -13,7 +13,7 @@ use toml::Value as TomlValue;
 pub(super) fn merge_managed_config_for_discovery(
     discovery_config: &mut TomlValue,
     loaded: &LoadedConfigLayers,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> io::Result<()> {
     if let Some(config) = &loaded.managed_config {
         let base_dir = config.file.as_path().parent().ok_or_else(|| {
@@ -31,7 +31,7 @@ pub(super) fn merge_managed_config_for_discovery(
     }
     if let Some(config) = &loaded.managed_config_from_mdm {
         let resolved =
-            resolve_relative_paths_in_config_toml(config.managed_config.clone(), codex_home)?;
+            resolve_relative_paths_in_config_toml(config.managed_config.clone(), ava_home)?;
         merge_toml_values(discovery_config, &resolved);
     }
     Ok(())

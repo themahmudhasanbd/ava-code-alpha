@@ -209,7 +209,7 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
     super.dispose();
   }
 
-  // ── High-Contrast Dynamic Color Tokens (Sleek Codex Terminal Palette) ──────
+  // ── High-Contrast Dynamic Color Tokens (Sleek Ava Terminal Palette) ──────
   Color get _cPrimary => widget.isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
   Color get _cSecondary => widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
   Color get _cFaint => widget.isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);

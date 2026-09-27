@@ -1,5 +1,5 @@
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct GuardianFollowupReviewReminder;

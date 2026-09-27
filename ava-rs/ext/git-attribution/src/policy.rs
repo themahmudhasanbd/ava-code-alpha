@@ -2,10 +2,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_backend_client::Client as BackendClient;
-use codex_extension_api::ExtensionData;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
+use ava_backend_client::Client as BackendClient;
+use ava_extension_api::ExtensionData;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
 use tokio::time::timeout;
 
 #[derive(Clone, Debug)]
@@ -68,7 +68,7 @@ pub(super) async fn resolve_attribution_policy(
                 continue;
             }
             let enabled = match auth {
-                Some(auth) if auth.uses_codex_backend() => {
+                Some(auth) if auth.uses_ava_backend() => {
                     let client =
                         BackendClient::from_auth(base_url, &auth, http_client_factory.clone());
                     let settings = client.get_user_settings().await;

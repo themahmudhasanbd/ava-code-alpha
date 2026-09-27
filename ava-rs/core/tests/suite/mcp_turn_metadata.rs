@@ -2,42 +2,42 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_config::types::AppToolApproval;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::approvals::ElicitationRequest;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::items::McpAppDisplayMode;
-use codex_protocol::items::McpAppUi;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::NetworkPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ElicitationAction;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ItemStartedEvent;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::protocol::TurnSettingsUpdate;
-use codex_protocol::protocol::TurnSettingsUpdateOutcome;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_config::types::AppToolApproval;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::approvals::ElicitationRequest;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::items::McpAppDisplayMode;
+use ava_protocol::items::McpAppUi;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::NetworkPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ElicitationAction;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ItemStartedEvent;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::protocol::TurnSettingsUpdate;
+use ava_protocol::protocol::TurnSettingsUpdateOutcome;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::PathExt;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::LINK_ID;
@@ -57,8 +57,8 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -92,7 +92,7 @@ async fn mcp_app_ui_survives_tool_events_and_resume(
     metadata["connector_id"] = json!("calendar");
     metadata["connector_name"] = json!("Calendar");
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(body_partial_json(json!({"method": "tools/list"})))
         .respond_with(move |request: &Request| {
             let body: Value = serde_json::from_slice(&request.body).expect("valid tools/list");
@@ -112,7 +112,7 @@ async fn mcp_app_ui_survives_tool_events_and_resume(
         .mount(&server)
         .await;
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(body_partial_json(json!({"method": "tools/call"})))
         .respond_with(|request: &Request| {
             let body: Value = serde_json::from_slice(&request.body).expect("valid tools/call");
@@ -168,7 +168,7 @@ async fn mcp_app_ui_survives_tool_events_and_resume(
     let expected_uri = expected_ui.as_ref().map(|ui| ui.resource_uri.clone());
     let mut observed = Vec::new();
     let mut completed = None;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         match event {
             EventMsg::ItemStarted(ItemStartedEvent {
                 item: TurnItem::McpToolCall(item),
@@ -220,7 +220,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
     let has_link_selector = Arc::new(Mutex::new(true));
     let lists_link_selector = Arc::clone(&has_link_selector);
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(body_partial_json(json!({ "method": "tools/list" })))
         .respond_with(move |request: &Request| {
             let body: Value = serde_json::from_slice(&request.body).expect("valid tools/list");
@@ -239,7 +239,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
                 "_meta": {
                     "connector_id": "calendar",
                     "connector_name": "Calendar",
-                    "_codex_apps": {
+                    "_ava_apps": {
                         "resource_uri": "connector://calendar/tools/calendar_create_event",
                         "contains_mcp_source": true,
                         "connector_id": "calendar"
@@ -249,7 +249,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
             if *lists_link_selector.lock().unwrap() {
                 // The catalog account stays fixed while each call selects its account.
                 tool["_meta"]["link_id"] = json!("link_a");
-                tool["_meta"]["_codex_apps"]["requires_explicit_link_id"] = json!(true);
+                tool["_meta"]["_ava_apps"]["requires_explicit_link_id"] = json!(true);
                 tool["inputSchema"]["properties"]["link_id"] = json!({ "type": "string" });
                 tool["inputSchema"]["required"] = json!(["title", "starts_at", "link_id"]);
             }
@@ -319,7 +319,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
     for (index, (selected_link_id, expects_prompt)) in cases.into_iter().enumerate() {
         *has_link_selector.lock().unwrap() = selected_link_id.is_some();
         // Reconnect to publish the account selector or legacy metadata without a link.
-        test.codex.submit(Op::RefreshMcpServers).await?;
+        test.ava-code.submit(Op::RefreshMcpServers).await?;
         submit_user_turn(
             &test,
             "Use [$calendar](app://calendar) to create a calendar event.",
@@ -328,7 +328,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
             /*collaboration_mode*/ None,
         )
         .await?;
-        let event = wait_for_event(&test.codex, |event| {
+        let event = wait_for_event(&test.ava-code, |event| {
             matches!(
                 event,
                 EventMsg::ElicitationRequest(_) | EventMsg::TurnComplete(_)
@@ -341,7 +341,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
             "unexpected approval for call {index} with link {selected_link_id:?}"
         );
         if let EventMsg::ElicitationRequest(request) = event {
-            test.codex
+            test.ava-code
                 .submit(Op::ResolveElicitation {
                     server_name: request.server_name,
                     request_id: request.id,
@@ -350,7 +350,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
                     meta: Some(json!({ "persist": "session" })),
                 })
                 .await?;
-            wait_for_event(&test.codex, |event| {
+            wait_for_event(&test.ava-code, |event| {
                 matches!(event, EventMsg::TurnComplete(_))
             })
             .await;
@@ -367,7 +367,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
         let (_, result) = output.split_once("\nOutput:\n").expect("MCP output header");
         let result: Value = serde_json::from_str(result)?;
         let mut expected_result = json!({
-            "_codex_apps": {
+            "_ava_apps": {
                 "call_id": call_id,
                 "connector_id": "calendar",
                 "contains_mcp_source": true,
@@ -375,7 +375,7 @@ async fn auto_session_approval_is_scoped_to_tool_link_id() -> Result<()> {
             }
         });
         if cases[index].0.is_some() {
-            expected_result["_codex_apps"]["requires_explicit_link_id"] = json!(true);
+            expected_result["_ava_apps"]["requires_explicit_link_id"] = json!(true);
         }
         assert_eq!(result, expected_result);
     }
@@ -389,7 +389,7 @@ fn set_calendar_approval_mode(config: &mut Config, approval_mode: AppToolApprova
         AppToolApproval::Writes => "writes",
         AppToolApproval::Approve => "approve",
     };
-    let user_config_path = config.codex_home.join("config.toml").abs();
+    let user_config_path = config.ava_home.join("config.toml").abs();
     let user_config = toml::from_str(&format!(
         r#"
 [apps.calendar]
@@ -414,7 +414,7 @@ fn set_default_app_approval_mode_and_reviewer(
         AppToolApproval::Writes => "writes",
         AppToolApproval::Approve => "approve",
     };
-    let user_config_path = config.codex_home.join("config.toml").abs();
+    let user_config_path = config.ava_home.join("config.toml").abs();
     let user_config = toml::from_str(&format!(
         r#"
 [apps._default]
@@ -430,7 +430,7 @@ default_tools_approval_mode = "{approval_mode}"
 }
 
 async fn submit_user_turn(
-    test: &TestCodex,
+    test: &TestAva,
     text: &str,
     approval_policy: AskForApproval,
     permission_profile: PermissionProfile,
@@ -439,7 +439,7 @@ async fn submit_user_turn(
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.cwd.path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: text.to_string(),
@@ -470,7 +470,7 @@ async fn submit_user_turn(
     Ok(())
 }
 
-fn attribution_models(model_slugs: [&str; 2]) -> Vec<codex_protocol::openai_models::ModelInfo> {
+fn attribution_models(model_slugs: [&str; 2]) -> Vec<ava_protocol::openai_models::ModelInfo> {
     let base_model = bundled_models_response()
         .expect("bundled models should parse")
         .models
@@ -488,11 +488,11 @@ fn attribution_models(model_slugs: [&str; 2]) -> Vec<codex_protocol::openai_mode
 }
 
 async fn apply_turn_attribution_update(
-    test: &TestCodex,
+    test: &TestAva,
     request_user_input_call_id: &str,
     model: &str,
 ) -> Result<()> {
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -500,7 +500,7 @@ async fn apply_turn_attribution_update(
     assert_eq!(request.call_id, request_user_input_call_id);
 
     let (reply, outcome) = tokio::sync::oneshot::channel();
-    test.codex
+    test.ava-code
         .submit(Op::TurnSettings {
             turn_id: request.turn_id.clone(),
             update: TurnSettingsUpdate {
@@ -513,7 +513,7 @@ async fn apply_turn_attribution_update(
         .await?;
     assert_eq!(outcome.await?, TurnSettingsUpdateOutcome::Applied);
 
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -530,11 +530,11 @@ async fn apply_turn_attribution_update(
 }
 
 async fn wait_for_mcp_tool_call_item(
-    test: &TestCodex,
+    test: &TestAva,
     call_id: &str,
     status: McpToolCallStatus,
 ) -> Option<bool> {
-    wait_for_event_match(&test.codex, |event| {
+    wait_for_event_match(&test.ava-code, |event| {
         let item = match event {
             EventMsg::ItemStarted(event) => &event.item,
             EventMsg::ItemCompleted(event) => &event.item,
@@ -657,7 +657,7 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
     .await?;
 
     if strict_auto_review {
-        let event = wait_for_event(&test.codex, |event| {
+        let event = wait_for_event(&test.ava-code, |event| {
             matches!(
                 event,
                 EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -668,7 +668,7 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
             panic!("expected permission request before MCP approval, received {event:?}");
         };
         assert_eq!(request.call_id, "calendar-strict-permissions");
-        test.codex
+        test.ava-code
             .submit(Op::RequestPermissionsResponse {
                 id: request.call_id,
                 response: RequestPermissionsResponse {
@@ -680,7 +680,7 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
             .await?;
     }
 
-    let EventMsg::McpToolCallBegin(begin) = wait_for_event(&test.codex, |event| {
+    let EventMsg::McpToolCallBegin(begin) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallBegin(_))
     })
     .await
@@ -690,7 +690,7 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
     assert_eq!(begin.call_id, call_id);
 
     if !strict_auto_review {
-        let EventMsg::ElicitationRequest(request) = wait_for_event(&test.codex, |event| {
+        let EventMsg::ElicitationRequest(request) = wait_for_event(&test.ava-code, |event| {
             matches!(
                 event,
                 EventMsg::ElicitationRequest(_) | EventMsg::TurnComplete(_)
@@ -701,7 +701,7 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
             panic!("expected apps._default user to route the app approval to the user");
         };
 
-        test.codex
+        test.ava-code
             .submit(Op::ResolveElicitation {
                 server_name: request.server_name,
                 request_id: request.id,
@@ -712,7 +712,7 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
             .await?;
     }
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -729,10 +729,10 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
     assert_root_turn(&response_body, Some(turn_id))?;
     let apps_tool_call = recorded_apps_tool_call_by_call_id(&server, call_id).await;
     let mcp_turn_metadata = apps_tool_call
-        .pointer("/params/_meta/x-codex-turn-metadata")
+        .pointer("/params/_meta/x-ava-turn-metadata")
         .expect("MCP tools/call turn metadata");
     assert_eq!(
-        mcp_turn_metadata["codex_version"],
+        mcp_turn_metadata["ava_version"],
         env!("CARGO_PKG_VERSION")
     );
     assert_eq!(
@@ -757,11 +757,11 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
     );
     assert_eq!(
         apps_tool_call.pointer("/params/_meta/windowId"),
-        Some(&response_body["client_metadata"]["x-codex-window-id"])
+        Some(&response_body["client_metadata"]["x-ava-window-id"])
     );
     assert_eq!(
         apps_tool_call
-            .pointer("/params/_meta/x-codex-turn-metadata/user_input_requested_during_turn"),
+            .pointer("/params/_meta/x-ava-turn-metadata/user_input_requested_during_turn"),
         (!strict_auto_review).then_some(&json!(true))
     );
 
@@ -781,7 +781,7 @@ async fn apps_prompt_with_auto_review_routes_actual_mcp_approval_to_guardian(
     let server = start_mock_server().await;
     let apps_server = AppsTestServer::mount(&server).await?;
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(body_partial_json(json!({"method": "tools/list"})))
         .respond_with(|request: &Request| {
             let body: Value = serde_json::from_slice(&request.body).expect("valid tools/list");
@@ -799,7 +799,7 @@ async fn apps_prompt_with_auto_review_routes_actual_mcp_approval_to_guardian(
                         "connector_id": "calendar", "connector_name": "Calendar",
                         "connector_description": "Calendar connector. ".repeat(/*n*/ 1_000),
                         "link_id": LINK_ID,
-                        "_codex_apps": {
+                        "_ava_apps": {
                             "connector_id": "calendar",
                             "resource_uri": "connector://calendar/tools/calendar_create_event",
                             "contains_mcp_source": true
@@ -879,7 +879,7 @@ approvals_reviewer = "auto_review"
                 .expect("apps config should parse");
                 config.config_layer_stack = config
                     .config_layer_stack
-                    .with_user_config(&config.codex_home.join("config.toml").abs(), user_config)
+                    .with_user_config(&config.ava_home.join("config.toml").abs(), user_config)
                     .expect("apps user config should be valid");
             } else {
                 set_default_app_approval_mode_and_reviewer(
@@ -911,7 +911,7 @@ approvals_reviewer = "auto_review"
     )
     .await?;
 
-    let route_event = wait_for_event(&test.codex, |event| {
+    let route_event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ElicitationRequest(_) | EventMsg::TurnComplete(_)
@@ -1045,7 +1045,7 @@ default_tools_approval_mode = "{selected_link_mode}"
                 "connector_id": "calendar",
                 "link_id": LINK_ID,
                 "connector_name": "Calendar",
-                "_codex_apps": {
+                "_ava_apps": {
                     "connector_id": "calendar",
                     "resource_uri": "connector://calendar/tools/calendar_create_event",
                     "contains_mcp_source": true,
@@ -1054,7 +1054,7 @@ default_tools_approval_mode = "{selected_link_mode}"
             }
         });
         Mock::given(method("POST"))
-            .and(path_regex("^/api/codex/ps/mcp/?$"))
+            .and(path_regex("^/api/ava/ps/mcp/?$"))
             .and(body_partial_json(json!({ "method": "tools/list" })))
             .respond_with(move |request: &Request| {
                 let body: Value = serde_json::from_slice(&request.body)
@@ -1101,7 +1101,7 @@ default_tools_approval_mode = "{selected_link_mode}"
                 .expect("test config should allow feature update");
             config.config_layer_stack = config
                 .config_layer_stack
-                .with_user_config(&config.codex_home.join("config.toml").abs(), user_config)
+                .with_user_config(&config.ava_home.join("config.toml").abs(), user_config)
                 .expect("apps user config should be valid");
         });
     let test = builder.build_with_auto_env(&server).await?;
@@ -1129,7 +1129,7 @@ default_tools_approval_mode = "{selected_link_mode}"
             completed_links.push(item.link_id.clone());
         }
     };
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         record_link(event);
         matches!(
             event,
@@ -1155,7 +1155,7 @@ default_tools_approval_mode = "{selected_link_mode}"
             ),
             (expected_link_id, Some(expected_link_is_implicit)),
         );
-        test.codex
+        test.ava-code
             .submit(Op::ResolveElicitation {
                 server_name: request.server_name,
                 request_id: request.id,
@@ -1164,7 +1164,7 @@ default_tools_approval_mode = "{selected_link_mode}"
                 meta: None,
             })
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             record_link(event);
             matches!(event, EventMsg::TurnComplete(_))
         })
@@ -1233,11 +1233,11 @@ async fn apps_missing_link_respects_advertised_selector(
         "_meta": {
             "connector_id": "calendar",
             "connector_name": "Calendar",
-            "_codex_apps": apps_meta
+            "_ava_apps": apps_meta
         }
     });
     Mock::given(method("POST"))
-        .and(path_regex("^/api/codex/ps/mcp/?$"))
+        .and(path_regex("^/api/ava/ps/mcp/?$"))
         .and(body_partial_json(json!({ "method": "tools/list" })))
         .respond_with(move |request: &Request| {
             let body: Value = serde_json::from_slice(&request.body).expect("valid tools/list");
@@ -1297,7 +1297,7 @@ async fn apps_missing_link_respects_advertised_selector(
             completed_calls.push((item.status, item.link_id.clone()));
         }
     };
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         record_call(event);
         matches!(
             event,
@@ -1313,7 +1313,7 @@ async fn apps_missing_link_respects_advertised_selector(
     );
     if let EventMsg::ElicitationRequest(request) = event {
         assert_eq!(recorded_apps_tool_calls(&server).await, Vec::<Value>::new());
-        test.codex
+        test.ava-code
             .submit(Op::ResolveElicitation {
                 server_name: request.server_name,
                 request_id: request.id,
@@ -1322,7 +1322,7 @@ async fn apps_missing_link_respects_advertised_selector(
                 meta: None,
             })
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             record_call(event);
             matches!(event, EventMsg::TurnComplete(_))
         })
@@ -1428,7 +1428,7 @@ async fn apps_default_writes_prompts_for_writes_but_not_reads() -> Result<()> {
         wait_for_mcp_tool_call_item(&test, read_call_id, McpToolCallStatus::InProgress).await,
         Some(true)
     );
-    let EventMsg::McpToolCallBegin(read_begin) = wait_for_event(&test.codex, |event| {
+    let EventMsg::McpToolCallBegin(read_begin) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallBegin(_))
     })
     .await
@@ -1446,7 +1446,7 @@ async fn apps_default_writes_prompts_for_writes_but_not_reads() -> Result<()> {
         wait_for_mcp_tool_call_item(&test, write_call_id, McpToolCallStatus::InProgress).await,
         Some(false)
     );
-    let next_route = wait_for_event(&test.codex, |event| {
+    let next_route = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::McpToolCallBegin(_) | EventMsg::ElicitationRequest(_)
@@ -1459,7 +1459,7 @@ async fn apps_default_writes_prompts_for_writes_but_not_reads() -> Result<()> {
     assert_eq!(write_begin.call_id, write_call_id);
     assert_eq!(write_begin.read_only_hint, Some(false));
 
-    let EventMsg::ElicitationRequest(request) = wait_for_event(&test.codex, |event| {
+    let EventMsg::ElicitationRequest(request) = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ElicitationRequest(_) | EventMsg::TurnComplete(_)
@@ -1470,7 +1470,7 @@ async fn apps_default_writes_prompts_for_writes_but_not_reads() -> Result<()> {
         panic!("write app action should prompt in writes mode");
     };
 
-    test.codex
+    test.ava-code
         .submit(Op::ResolveElicitation {
             server_name: request.server_name,
             request_id: request.id,
@@ -1484,7 +1484,7 @@ async fn apps_default_writes_prompts_for_writes_but_not_reads() -> Result<()> {
         wait_for_mcp_tool_call_item(&test, write_call_id, McpToolCallStatus::Completed).await,
         Some(false)
     );
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1493,13 +1493,13 @@ async fn apps_default_writes_prompts_for_writes_but_not_reads() -> Result<()> {
     recorded_apps_tool_call_by_call_id(&server, read_call_id).await;
     recorded_apps_tool_call_by_call_id(&server, write_call_id).await;
 
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.flush_rollout().await?;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.flush_rollout().await?;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let persisted_hints = tokio::fs::read_to_string(rollout_path)
         .await?
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<serde_json::Result<Vec<_>>>()?
         .into_iter()
         .filter_map(|line| match line.item {
@@ -1614,7 +1614,7 @@ async fn mcp_tool_call_metadata_uses_captured_step_after_request_user_input() ->
 
     apply_turn_attribution_update(&test, request_user_input_call_id, model_b).await?;
 
-    let EventMsg::McpToolCallBegin(begin) = wait_for_event(&test.codex, |event| {
+    let EventMsg::McpToolCallBegin(begin) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallBegin(_))
     })
     .await
@@ -1623,7 +1623,7 @@ async fn mcp_tool_call_metadata_uses_captured_step_after_request_user_input() ->
     };
     assert_eq!(begin.call_id, calendar_call_id);
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1633,15 +1633,15 @@ async fn mcp_tool_call_metadata_uses_captured_step_after_request_user_input() ->
 
     assert_eq!(
         apps_tool_call
-            .pointer("/params/_meta/x-codex-turn-metadata/user_input_requested_during_turn"),
+            .pointer("/params/_meta/x-ava-turn-metadata/user_input_requested_during_turn"),
         Some(&json!(true))
     );
     assert_eq!(
-        apps_tool_call.pointer("/params/_meta/x-codex-turn-metadata/model"),
+        apps_tool_call.pointer("/params/_meta/x-ava-turn-metadata/model"),
         Some(&json!(model_b))
     );
     assert_eq!(
-        apps_tool_call.pointer("/params/_meta/x-codex-turn-metadata/reasoning_effort"),
+        apps_tool_call.pointer("/params/_meta/x-ava-turn-metadata/reasoning_effort"),
         Some(&json!("high"))
     );
 

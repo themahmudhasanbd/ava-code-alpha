@@ -3,10 +3,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codex_protocol::protocol::SessionSource;
-use codex_rollout_trace::ExecutionStatus;
-use codex_rollout_trace::ThreadStartedTraceMetadata;
-use codex_rollout_trace::ToolCallRequester;
+use ava_protocol::protocol::SessionSource;
+use ava_rollout_trace::ExecutionStatus;
+use ava_rollout_trace::ThreadStartedTraceMetadata;
+use ava_rollout_trace::ToolCallRequester;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio_util::sync::CancellationToken;
@@ -29,26 +29,26 @@ use crate::tools::registry::ToolRegistry;
 use crate::turn_diff_tracker::TurnDiffTracker;
 
 struct TestHandler {
-    tool_name: codex_tools::ToolName,
+    tool_name: ava_tools::ToolName,
 }
 
 impl ToolExecutor<ToolInvocation> for TestHandler {
-    fn tool_name(&self) -> codex_tools::ToolName {
+    fn tool_name(&self) -> ava_tools::ToolName {
         self.tool_name.clone()
     }
 
-    fn spec(&self) -> codex_tools::ToolSpec {
-        codex_tools::ToolSpec::Function(codex_tools::ResponsesApiTool {
+    fn spec(&self) -> ava_tools::ToolSpec {
+        ava_tools::ToolSpec::Function(ava_tools::ResponsesApiTool {
             name: self.tool_name.name.clone(),
             description: "Test tool.".to_string(),
             strict: false,
             defer_loading: None,
-            parameters: codex_tools::JsonSchema::default(),
+            parameters: ava_tools::JsonSchema::default(),
             output_schema: None,
         })
     }
 
-    fn handle<'a>(&'a self, _invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, _invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -65,39 +65,39 @@ impl CoreToolRuntime for TestHandler {}
 
 struct MissingCellCodeModeSessionProvider;
 
-impl codex_code_mode::CodeModeSessionProvider for MissingCellCodeModeSessionProvider {
-    fn create_session(&self) -> codex_code_mode::CodeModeSessionProviderFuture<'_> {
+impl ava_code_mode::CodeModeSessionProvider for MissingCellCodeModeSessionProvider {
+    fn create_session(&self) -> ava_code_mode::CodeModeSessionProviderFuture<'_> {
         Box::pin(async {
-            Ok(Arc::new(MissingCellCodeModeSession) as Arc<dyn codex_code_mode::CodeModeSession>)
+            Ok(Arc::new(MissingCellCodeModeSession) as Arc<dyn ava_code_mode::CodeModeSession>)
         })
     }
 }
 
 struct MissingCellCodeModeSession;
 
-impl codex_code_mode::CodeModeSession for MissingCellCodeModeSession {
+impl ava_code_mode::CodeModeSession for MissingCellCodeModeSession {
     fn execute<'a>(
         &'a self,
-        _request: codex_code_mode::ExecuteRequest,
-        _delegate: Arc<dyn codex_code_mode::CodeModeSessionDelegate>,
-    ) -> codex_code_mode::CodeModeSessionResultFuture<'a, codex_code_mode::StartedCell> {
+        _request: ava_code_mode::ExecuteRequest,
+        _delegate: Arc<dyn ava_code_mode::CodeModeSessionDelegate>,
+    ) -> ava_code_mode::CodeModeSessionResultFuture<'a, ava_code_mode::StartedCell> {
         Box::pin(async { Err("test session cannot execute cells".to_string()) })
     }
 
     fn wait<'a>(
         &'a self,
-        request: codex_code_mode::WaitRequest,
-    ) -> codex_code_mode::CodeModeSessionResultFuture<'a, codex_code_mode::WaitOutcome> {
+        request: ava_code_mode::WaitRequest,
+    ) -> ava_code_mode::CodeModeSessionResultFuture<'a, ava_code_mode::WaitOutcome> {
         self.terminate(request.cell_id)
     }
 
     fn terminate<'a>(
         &'a self,
-        cell_id: codex_code_mode::CellId,
-    ) -> codex_code_mode::CodeModeSessionResultFuture<'a, codex_code_mode::WaitOutcome> {
+        cell_id: ava_code_mode::CellId,
+    ) -> ava_code_mode::CodeModeSessionResultFuture<'a, ava_code_mode::WaitOutcome> {
         Box::pin(async move {
-            Ok(codex_code_mode::WaitOutcome::MissingCell(
-                codex_code_mode::RuntimeResponse::Result {
+            Ok(ava_code_mode::WaitOutcome::MissingCell(
+                ava_code_mode::RuntimeResponse::Result {
                     code_mode_host_duration: None,
                     error_text: Some(format!("exec cell {cell_id} not found")),
                     cell_id,
@@ -107,7 +107,7 @@ impl codex_code_mode::CodeModeSession for MissingCellCodeModeSession {
         })
     }
 
-    fn shutdown<'a>(&'a self) -> codex_code_mode::CodeModeSessionResultFuture<'a, ()> {
+    fn shutdown<'a>(&'a self) -> ava_code_mode::CodeModeSessionResultFuture<'a, ()> {
         Box::pin(async { Ok(()) })
     }
 }
@@ -125,7 +125,7 @@ async fn dispatch_lifecycle_trace_records_direct_and_code_mode_requesters() -> a
     );
 
     let registry = ToolRegistry::with_handler_for_test(Arc::new(TestHandler {
-        tool_name: codex_tools::ToolName::plain("test_tool"),
+        tool_name: ava_tools::ToolName::plain("test_tool"),
     }));
     let session = Arc::new(session);
     let turn = Arc::new(turn);
@@ -160,7 +160,7 @@ async fn dispatch_lifecycle_trace_records_direct_and_code_mode_requesters() -> a
         )
         .await?;
 
-    let replayed = codex_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
+    let replayed = ava_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
     assert_eq!(
         replayed.tool_calls["direct-call"].model_visible_call_id,
         Some("direct-call".to_string()),
@@ -230,7 +230,7 @@ async fn dispatch_lifecycle_trace_records_unsupported_tool_failures() -> anyhow:
         .await;
 
     assert!(matches!(result, Err(FunctionCallError::RespondToModel(_))));
-    let replayed = codex_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
+    let replayed = ava_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
     let tool_call = &replayed.tool_calls["unsupported-call"];
     assert_eq!(tool_call.execution.status, ExecutionStatus::Failed);
     assert!(tool_call.raw_result_payload_id.is_some());
@@ -245,7 +245,7 @@ async fn dispatch_lifecycle_trace_records_incompatible_payload_failures() -> any
     attach_test_trace(&mut session, &turn, temp.path())?;
 
     let registry = ToolRegistry::with_handler_for_test(Arc::new(TestHandler {
-        tool_name: codex_tools::ToolName::plain("test_tool"),
+        tool_name: ava_tools::ToolName::plain("test_tool"),
     }));
     let session = Arc::new(session);
     let turn = Arc::new(turn);
@@ -256,7 +256,7 @@ async fn dispatch_lifecycle_trace_records_incompatible_payload_failures() -> any
                 session,
                 turn,
                 "incompatible-call",
-                codex_tools::ToolName::plain("test_tool"),
+                ava_tools::ToolName::plain("test_tool"),
                 ToolCallSource::Direct,
                 ToolPayload::Custom {
                     input: "{}".to_string(),
@@ -267,7 +267,7 @@ async fn dispatch_lifecycle_trace_records_incompatible_payload_failures() -> any
         .await;
 
     assert!(matches!(result, Err(FunctionCallError::Fatal(_))));
-    let replayed = codex_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
+    let replayed = ava_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
     let tool_call = &replayed.tool_calls["incompatible-call"];
     assert_eq!(tool_call.execution.status, ExecutionStatus::Failed);
     assert!(tool_call.raw_result_payload_id.is_some());
@@ -311,7 +311,7 @@ async fn missing_code_mode_wait_traces_only_the_wait_tool_call() -> anyhow::Resu
         .dispatch_any_with_terminal_outcome(invocation, /*terminal_outcome_reached*/ None)
         .await?;
 
-    let replayed = codex_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
+    let replayed = ava_rollout_trace::replay_bundle(single_bundle_dir(temp.path())?)?;
     assert_eq!(replayed.code_cells.len(), 0);
     assert!(
         replayed.tool_calls["wait-call"]
@@ -334,7 +334,7 @@ fn test_invocation(
         session,
         turn,
         call_id,
-        codex_tools::ToolName::plain(tool_name),
+        ava_tools::ToolName::plain(tool_name),
         source,
         ToolPayload::Function {
             arguments: arguments.to_string(),
@@ -346,7 +346,7 @@ fn test_invocation_with_payload(
     session: Arc<Session>,
     turn: Arc<TurnContext>,
     call_id: &str,
-    tool_name: codex_tools::ToolName,
+    tool_name: ava_tools::ToolName,
     source: ToolCallSource,
     payload: ToolPayload,
 ) -> ToolInvocation {
@@ -367,7 +367,7 @@ fn test_invocation_with_payload(
 fn attach_test_trace(session: &mut Session, turn: &TurnContext, root: &Path) -> anyhow::Result<()> {
     let thread_id = session.thread_id;
     let rollout_thread_trace =
-        codex_rollout_trace::ThreadTraceContext::start_root_in_root_for_test(
+        ava_rollout_trace::ThreadTraceContext::start_root_in_root_for_test(
             root,
             ThreadStartedTraceMetadata {
                 thread_id: thread_id.to_string(),
@@ -384,7 +384,7 @@ fn attach_test_trace(session: &mut Session, turn: &TurnContext, root: &Path) -> 
                 sandbox_policy: "danger-full-access".to_string(),
             },
         )?;
-    rollout_thread_trace.record_codex_turn_started(turn.sub_id.as_str());
+    rollout_thread_trace.record_ava_turn_started(turn.sub_id.as_str());
     session.services.rollout_thread_trace = rollout_thread_trace;
     Ok(())
 }

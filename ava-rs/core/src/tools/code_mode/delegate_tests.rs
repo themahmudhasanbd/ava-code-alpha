@@ -4,11 +4,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use codex_code_mode::CellId;
-use codex_code_mode::CodeModeNestedToolCall;
-use codex_code_mode::CodeModeSessionDelegate;
-use codex_code_mode::CodeModeToolKind;
-use codex_tools::ToolName;
+use ava_code_mode::CellId;
+use ava_code_mode::CodeModeNestedToolCall;
+use ava_code_mode::CodeModeSessionDelegate;
+use ava_code_mode::CodeModeToolKind;
+use ava_tools::ToolName;
 use pretty_assertions::assert_eq;
 use tokio_util::sync::CancellationToken;
 use tracing::field::Field;
@@ -53,7 +53,7 @@ struct DispatchCapture(DispatchRecords);
 
 impl Layer<Registry> for DispatchCapture {
     fn on_new_span(&self, attributes: &Attributes<'_>, id: &Id, context: Context<'_, Registry>) {
-        if attributes.metadata().target() != "codex_core::tools::parallel"
+        if attributes.metadata().target() != "ava_core::tools::parallel"
             || attributes.metadata().name() != "dispatch_tool_call_with_code_mode_result"
         {
             return;
@@ -62,7 +62,7 @@ impl Layer<Registry> for DispatchCapture {
         attributes.record(&mut fields);
         let has_turn_ancestor = context.span(id).is_some_and(|span| {
             span.scope().any(|ancestor| {
-                ancestor.metadata().target() == "codex_core::tasks"
+                ancestor.metadata().target() == "ava_core::tasks"
                     && ancestor.metadata().name() == "turn"
             })
         });
@@ -77,18 +77,18 @@ impl ToolExecutor<ToolInvocation> for TestHandler {
         ToolName::plain("audit_probe").with_default_namespace()
     }
 
-    fn spec(&self) -> codex_tools::ToolSpec {
-        codex_tools::ToolSpec::Function(codex_tools::ResponsesApiTool {
+    fn spec(&self) -> ava_tools::ToolSpec {
+        ava_tools::ToolSpec::Function(ava_tools::ResponsesApiTool {
             name: "audit_probe".to_string(),
             description: "Return a marker for the code-mode dispatch test.".to_string(),
             strict: false,
             defer_loading: None,
-            parameters: codex_tools::JsonSchema::default(),
+            parameters: ava_tools::JsonSchema::default(),
             output_schema: None,
         })
     }
 
-    fn handle<'a>(&'a self, _invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, _invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -194,8 +194,8 @@ async fn dropped_tool_callbacks_release_the_origin_before_dispatch() {
         CodeModeNestedToolCall {
             cell_id: cell_id.clone(),
             runtime_tool_call_id: "call-a".to_string(),
-            tool_name: codex_tools::ToolName::plain("test-tool"),
-            tool_kind: codex_code_mode::CodeModeToolKind::Function,
+            tool_name: ava_tools::ToolName::plain("test-tool"),
+            tool_kind: ava_code_mode::CodeModeToolKind::Function,
             input: None,
         },
         cancellation_token.clone(),

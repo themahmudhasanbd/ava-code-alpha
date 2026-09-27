@@ -2,9 +2,9 @@
 use std::path::Path;
 use std::time::Duration;
 
-use codex_utils_pty::ProcessDriver;
-use codex_utils_pty::SpawnedProcess;
-use codex_utils_pty::spawn_from_driver;
+use ava_utils_pty::ProcessDriver;
+use ava_utils_pty::SpawnedProcess;
+use ava_utils_pty::spawn_from_driver;
 use pretty_assertions::assert_eq;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;

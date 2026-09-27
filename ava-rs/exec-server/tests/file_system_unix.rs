@@ -28,29 +28,29 @@ use std::time::UNIX_EPOCH;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::CopyOptions;
-use codex_exec_server::CreateDirectoryOptions;
+use ava_exec_server::CopyOptions;
+use ava_exec_server::CreateDirectoryOptions;
 #[cfg(target_os = "linux")]
-use codex_exec_server::Environment;
-use codex_exec_server::FileMetadata;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadDirectoryEntry;
-use codex_exec_server::ReadFileOptions;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WalkEntry;
-use codex_exec_server::WalkEntryKind;
-use codex_exec_server::WalkOptions;
-use codex_exec_server::WalkOutcome;
-use codex_exec_server::WriteFileOptions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::Environment;
+use ava_exec_server::FileMetadata;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadDirectoryEntry;
+use ava_exec_server::ReadFileOptions;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WalkEntry;
+use ava_exec_server::WalkEntryKind;
+use ava_exec_server::WalkOptions;
+use ava_exec_server::WalkOutcome;
+use ava_exec_server::WriteFileOptions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use test_case::test_case;
@@ -850,7 +850,7 @@ async fn file_system_walk_reports_non_utf8_names(
     use std::ffi::OsString;
     use std::os::unix::ffi::OsStringExt;
 
-    use codex_exec_server::WalkError;
+    use ava_exec_server::WalkError;
 
     let context = create_file_system_context(implementation).await?;
     let tmp = TempDir::new()?;
@@ -998,7 +998,7 @@ async fn file_system_sandboxed_write_allows_explicit_alias_roots(
     let file_system = context.file_system;
 
     let tmp = tempfile::Builder::new()
-        .prefix("codex-fs-sandbox-alias-")
+        .prefix("ava-fs-sandbox-alias-")
         .tempdir_in(&alias_root)?;
     let file_path = tmp.path().join("note.txt");
     let sandbox = workspace_write_sandbox(alias_root.clone());

@@ -1,9 +1,9 @@
-use codex_app_server_protocol::ThreadHistoryChangeSet;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::TurnStatus;
-use codex_protocol::ThreadId;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::realtime::RealtimeItem;
+use ava_app_server_protocol::ThreadHistoryChangeSet;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::TurnStatus;
+use ava_protocol::ThreadId;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::realtime::RealtimeItem;
 
 use super::LocalThreadStore;
 use crate::ThreadStoreError;

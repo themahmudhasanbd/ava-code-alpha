@@ -5,23 +5,23 @@ use std::time::Duration;
 
 use anyhow::Result;
 use axum::Router;
-use codex_config::Constrained;
-use codex_core::StartThreadOptions;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_protocol::approvals::ElicitationRequest;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ElicitationAction;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
+use ava_config::Constrained;
+use ava_core::StartThreadOptions;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_protocol::approvals::ElicitationRequest;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ElicitationAction;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
 use core_test_support::apps_test_server::apps_enabled_builder;
 use core_test_support::responses::start_mock_server;
 use core_test_support::wait_for_event;
@@ -52,7 +52,7 @@ struct VerificationServer {
     response: Arc<Mutex<Option<Value>>>,
 }
 
-struct HostedVerificationServer(codex_config::McpServerConfig);
+struct HostedVerificationServer(ava_config::McpServerConfig);
 
 impl McpServerContributor<Config> for HostedVerificationServer {
     fn id(&self) -> &'static str {
@@ -125,14 +125,14 @@ async fn user_verification_mcp_round_trip_requires_proof_in_full_access() -> Res
     );
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let base_url = format!("http://{}", listener.local_addr()?);
-    let router = Router::new().nest_service("/api/codex/ps/mcp", service);
+    let router = Router::new().nest_service("/api/ava/ps/mcp", service);
     let _server = AbortOnDropHandle::new(tokio::spawn(async move {
         axum::serve(listener, router).await.unwrap();
     }));
     let model_server = start_mock_server().await;
     let mut extensions = ExtensionRegistryBuilder::new();
     let plugin_service_config = serde_json::from_value(json!({
-        "url": format!("{base_url}/api/codex/ps/mcp"),
+        "url": format!("{base_url}/api/ava/ps/mcp"),
     }))?;
     extensions.mcp_server_contributor(Arc::new(HostedVerificationServer(plugin_service_config)));
     let test = apps_enabled_builder(base_url)
@@ -164,7 +164,7 @@ async fn user_verification_mcp_round_trip_requires_proof_in_full_access() -> Res
     let call = AbortOnDropHandle::new(tokio::spawn(async move {
         caller
             .call_mcp_tool(
-                CODEX_APPS_MCP_SERVER_NAME,
+                AVA_APPS_MCP_SERVER_NAME,
                 "verify_action",
                 /*arguments*/ None,
                 /*meta*/ None,
@@ -178,7 +178,7 @@ async fn user_verification_mcp_round_trip_requires_proof_in_full_access() -> Res
     else {
         unreachable!()
     };
-    assert_eq!(request.server_name, CODEX_APPS_MCP_SERVER_NAME);
+    assert_eq!(request.server_name, AVA_APPS_MCP_SERVER_NAME);
     assert_eq!(
         request.request,
         ElicitationRequest::UserVerification {
@@ -201,7 +201,7 @@ async fn user_verification_mcp_round_trip_requires_proof_in_full_access() -> Res
         .await?;
     assert_eq!(
         timeout(Duration::from_secs(/*secs*/ 10), call).await???,
-        codex_protocol::mcp::CallToolResult {
+        ava_protocol::mcp::CallToolResult {
             content: vec![json!({"type": "text", "text": "verified"})],
             structured_content: None,
             is_error: Some(false),
@@ -213,6 +213,6 @@ async fn user_verification_mcp_round_trip_requires_proof_in_full_access() -> Res
         Some(json!({"action": "accept", "content": proof})),
     );
     thread.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

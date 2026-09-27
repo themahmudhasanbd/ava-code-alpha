@@ -1,5 +1,5 @@
-use codex_plugin::AppConnectorId;
-use codex_plugin::AppDeclaration;
+use ava_plugin::AppConnectorId;
+use ava_plugin::AppDeclaration;
 use indexmap::IndexMap;
 use serde::Deserialize;
 use serde_json::Value;

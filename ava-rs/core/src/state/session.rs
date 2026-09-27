@@ -1,10 +1,10 @@
 //! Session-wide mutable state.
 
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_sandboxing::policy_transforms::merge_permission_profiles;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_sandboxing::policy_transforms::merge_permission_profiles;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -19,15 +19,15 @@ use crate::session::PreviousTurnSettings;
 use crate::session::session::SessionConfiguration;
 use crate::session::time_reminder::CurrentTimeReminderState;
 use crate::session_startup_prewarm::SessionStartupPrewarmHandle;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::RateLimitSnapshot;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TokenUsageInfo;
-use codex_protocol::protocol::TokenUsageRecord;
-use codex_protocol::protocol::TurnContextItem;
-use codex_utils_output_truncation::TruncationPolicy;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TokenUsageInfo;
+use ava_protocol::protocol::TokenUsageRecord;
+use ava_protocol::protocol::TurnContextItem;
+use ava_utils_output_truncation::TruncationPolicy;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::AbortOnDropHandle;
 
@@ -80,7 +80,7 @@ pub(crate) struct SessionState {
     pub(crate) server_reasoning_included: bool,
     pub(crate) mcp_dependency_prompted: HashSet<String>,
     pub(crate) additional_context: AdditionalContextStore,
-    pub(crate) active_plan: Option<codex_protocol::plan_tool::UpdatePlanArgs>,
+    pub(crate) active_plan: Option<ava_protocol::plan_tool::UpdatePlanArgs>,
     pub(crate) last_quality_gate: Option<crate::quality_gate::types::QualityGateResult>,
     /// Settings used by the latest regular user turn, used for turn-to-turn
     /// model/realtime handling on subsequent regular turns (including full-context
@@ -99,7 +99,7 @@ pub(crate) struct SessionState {
     pub(crate) shell_snapshot_prewarm: Option<AbortOnDropHandle<()>>,
     pub(crate) current_time_reminder: CurrentTimeReminderState,
     pub(crate) active_connector_selection: HashSet<String>,
-    pub(crate) pending_session_start_sources: VecDeque<codex_hooks::SessionStartSource>,
+    pub(crate) pending_session_start_sources: VecDeque<ava_hooks::SessionStartSource>,
     granted_permissions_by_environment_id: HashMap<String, AdditionalPermissionProfile>,
     next_turn_is_first: bool,
 }
@@ -412,14 +412,14 @@ impl SessionState {
 
     pub(crate) fn queue_pending_session_start_source(
         &mut self,
-        value: codex_hooks::SessionStartSource,
+        value: ava_hooks::SessionStartSource,
     ) {
         self.pending_session_start_sources.push_back(value);
     }
 
     pub(crate) fn take_pending_session_start_source(
         &mut self,
-    ) -> Option<codex_hooks::SessionStartSource> {
+    ) -> Option<ava_hooks::SessionStartSource> {
         self.pending_session_start_sources.pop_front()
     }
 
@@ -451,13 +451,13 @@ impl SessionState {
 
 // Sometimes new snapshots don't include credits or plan information.
 // Preserve those from the previous snapshot when missing. For `limit_id`, treat
-// missing values as the default `"codex"` bucket.
+// missing values as the default `"ava"` bucket.
 fn merge_rate_limit_fields(
     previous: Option<&RateLimitSnapshot>,
     mut snapshot: RateLimitSnapshot,
 ) -> RateLimitSnapshot {
     if snapshot.limit_id.is_none() {
-        snapshot.limit_id = Some("codex".to_string());
+        snapshot.limit_id = Some("ava".to_string());
     }
     if snapshot.credits.is_none() {
         snapshot.credits = previous.and_then(|prior| prior.credits.clone());

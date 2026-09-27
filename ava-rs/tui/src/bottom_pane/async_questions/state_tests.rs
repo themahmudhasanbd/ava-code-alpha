@@ -162,9 +162,9 @@ fn buffer_text(buffer: &ratatui::buffer::Buffer) -> String {
 
 #[test]
 fn question_choice_remaps_paging_and_inline_feedback() {
-    use codex_config::types::KeybindingSpec;
-    use codex_config::types::KeybindingsSpec;
-    use codex_config::types::TuiKeymap;
+    use ava_config::types::KeybindingSpec;
+    use ava_config::types::KeybindingsSpec;
+    use ava_config::types::TuiKeymap;
     let mut editor = editor();
     editor.navigate(/*forward*/ true);
     editor.state.pending[1].question.options = Some(

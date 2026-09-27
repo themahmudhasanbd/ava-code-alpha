@@ -4,21 +4,21 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::Ordering;
 
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::LOCAL_FS;
-use codex_protocol::protocol::Product;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::LoadedSkillRoot;
-use codex_skills::SkillError;
-use codex_skills::SkillRootSnapshotCache;
-use codex_skills::SkillRootSnapshots;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
-use codex_utils_plugins::SkillDiscoveryMode;
-use codex_utils_plugins::migrated_command_skills_root;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::LOCAL_FS;
+use ava_protocol::protocol::Product;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::LoadedSkillRoot;
+use ava_skills::SkillError;
+use ava_skills::SkillRootSnapshotCache;
+use ava_skills::SkillRootSnapshots;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
+use ava_utils_plugins::SkillDiscoveryMode;
+use ava_utils_plugins::migrated_command_skills_root;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio::sync::Semaphore;
@@ -184,7 +184,7 @@ async fn product_filtered_native_skill_does_not_hide_migrated_command() {
     let outcome = load_and_merge_host_skill_roots(
         fixture.roots(),
         &Semaphore::new(2),
-        Some(Product::Codex),
+        Some(Product::Ava),
         /*plugin_skill_snapshots*/ None,
     )
     .await;

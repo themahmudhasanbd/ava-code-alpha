@@ -1,10 +1,10 @@
 //! Exercise local Analytics plan discovery and report recovery while connected to an app-server.
 
 use super::tests::live;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_client::RemoteAppServerClient;
-use codex_app_server_client::RemoteAppServerConnectArgs;
-use codex_app_server_client::RemoteAppServerEndpoint;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_client::RemoteAppServerClient;
+use ava_app_server_client::RemoteAppServerConnectArgs;
+use ava_app_server_client::RemoteAppServerEndpoint;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -35,7 +35,7 @@ async fn remote() -> (RemoteAppServerClient, tokio::task::JoinHandle<()>) {
         socket
             .send(Message::Text(
                 json!({"id": initialize["id"], "result": {
-                    "userAgent": "analytics-test", "codexHome": "/server/.codex",
+                    "userAgent": "analytics-test", "avaHome": "/server/.ava-code",
                 }})
                 .to_string()
                 .into(),
@@ -223,7 +223,7 @@ async fn account_lookup_failure_recovers_on_refresh_with_the_server_plan() {
     );
     assert_eq!(
         view.account.ready(),
-        Some(&codex_protocol::account::PlanType::Enterprise)
+        Some(&ava_protocol::account::PlanType::Enterprise)
     );
     for section in view.visible_sections() {
         if section.report().is_some() {

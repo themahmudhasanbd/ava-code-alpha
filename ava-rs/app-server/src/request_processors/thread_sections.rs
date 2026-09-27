@@ -4,25 +4,25 @@ use super::thread_processor::ThreadRequestProcessor;
 use crate::error_code::internal_error;
 use crate::error_code::invalid_params;
 use crate::error_code::method_not_found;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::ThreadSection;
-use codex_app_server_protocol::ThreadSectionAppearance;
-use codex_app_server_protocol::ThreadSectionCreateParams;
-use codex_app_server_protocol::ThreadSectionCreateResponse;
-use codex_app_server_protocol::ThreadSectionDeleteParams;
-use codex_app_server_protocol::ThreadSectionDeleteResponse;
-use codex_app_server_protocol::ThreadSectionListParams;
-use codex_app_server_protocol::ThreadSectionListResponse;
-use codex_app_server_protocol::ThreadSectionUpdateParams;
-use codex_app_server_protocol::ThreadSectionUpdateResponse;
-use codex_state::PINNED_THREAD_SECTION_ID;
-use codex_thread_store::CreateThreadSectionParams as StoreCreateThreadSectionParams;
-use codex_thread_store::DeleteThreadSectionParams as StoreDeleteThreadSectionParams;
-use codex_thread_store::ListThreadSectionsParams as StoreListThreadSectionsParams;
-use codex_thread_store::RenameThreadSectionParams as StoreRenameThreadSectionParams;
-use codex_thread_store::StoredThreadSection;
-use codex_thread_store::ThreadStoreError;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::ThreadSection;
+use ava_app_server_protocol::ThreadSectionAppearance;
+use ava_app_server_protocol::ThreadSectionCreateParams;
+use ava_app_server_protocol::ThreadSectionCreateResponse;
+use ava_app_server_protocol::ThreadSectionDeleteParams;
+use ava_app_server_protocol::ThreadSectionDeleteResponse;
+use ava_app_server_protocol::ThreadSectionListParams;
+use ava_app_server_protocol::ThreadSectionListResponse;
+use ava_app_server_protocol::ThreadSectionUpdateParams;
+use ava_app_server_protocol::ThreadSectionUpdateResponse;
+use ava_state::PINNED_THREAD_SECTION_ID;
+use ava_thread_store::CreateThreadSectionParams as StoreCreateThreadSectionParams;
+use ava_thread_store::DeleteThreadSectionParams as StoreDeleteThreadSectionParams;
+use ava_thread_store::ListThreadSectionsParams as StoreListThreadSectionsParams;
+use ava_thread_store::RenameThreadSectionParams as StoreRenameThreadSectionParams;
+use ava_thread_store::StoredThreadSection;
+use ava_thread_store::ThreadStoreError;
 
 const MAX_THREAD_SECTION_APPEARANCE_FIELD_BYTES: usize = 64;
 
@@ -204,8 +204,8 @@ fn api_thread_section(section: StoredThreadSection) -> ThreadSection {
 
 fn state_thread_section_appearance(
     appearance: ThreadSectionAppearance,
-) -> codex_state::ThreadSectionAppearance {
-    codex_state::ThreadSectionAppearance {
+) -> ava_state::ThreadSectionAppearance {
+    ava_state::ThreadSectionAppearance {
         icon: appearance.icon,
         color: appearance.color,
     }

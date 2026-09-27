@@ -54,7 +54,7 @@ impl TokenActivityView {
 
 pub(super) fn chart_lines(
     view: TokenActivityView,
-    buckets: &[codex_backend_client::TokenUsageProfileDailyBucket],
+    buckets: &[ava_backend_client::TokenUsageProfileDailyBucket],
     today: NaiveDate,
     width: u16,
 ) -> Vec<Line<'static>> {
@@ -222,7 +222,7 @@ fn month_labels(today: NaiveDate, first_column: usize, shown_columns: usize) -> 
 /// Invalid, out-of-window, and future dates are ignored. Duplicate dates are
 /// accumulated and negative token values do not reduce activity.
 fn daily_values(
-    buckets: &[codex_backend_client::TokenUsageProfileDailyBucket],
+    buckets: &[ava_backend_client::TokenUsageProfileDailyBucket],
     today: NaiveDate,
 ) -> Vec<i64> {
     let start = chart_start(today);

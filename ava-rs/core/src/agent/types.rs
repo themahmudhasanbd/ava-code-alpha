@@ -2,11 +2,11 @@
 //! Backend operations and local admission policy live in the implementations.
 
 use crate::context::MultiAgentRoleInstructions;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::turn_input::CyberAccessProgram;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::turn_input::CyberAccessProgram;
 
 /// Registry identity shared by loaded and unloaded agents.
 /// Registered agents have an `agent_id`; a reserved spawn can still be awaiting its ID.

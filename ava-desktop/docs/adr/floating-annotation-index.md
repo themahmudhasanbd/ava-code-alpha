@@ -10,7 +10,7 @@
 
 The comment editor solved missing comment entry, but a composer-only attachment
 list did not show where selections were made. The user explicitly requested a
-Codex-like collapsible floating panel with annotation numbers and source locations.
+Ava-like collapsible floating panel with annotation numbers and source locations.
 The reference bundle uses out-of-flow numbered source buttons; inserting marker
 text into Markdown previously broke words, selections, and formulas.
 

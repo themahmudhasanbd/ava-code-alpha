@@ -19,7 +19,7 @@ pub(crate) fn current_rendezvous_headers() -> HeaderMap {
 
 pub(crate) fn current_trace_context_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
-    let Some(trace) = codex_otel::current_span_w3c_trace_context() else {
+    let Some(trace) = ava_otel::current_span_w3c_trace_context() else {
         return headers;
     };
     if let Some(traceparent) = trace.traceparent

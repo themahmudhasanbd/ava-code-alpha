@@ -1,24 +1,24 @@
 use super::*;
 use crate::config::Config;
 use crate::config::ConfigOverrides;
-use codex_config::config_toml::ConfigToml;
-use codex_config::permissions_toml::FilesystemPermissionToml;
-use codex_config::permissions_toml::FilesystemPermissionsToml;
-use codex_config::permissions_toml::NetworkDomainPermissionToml;
-use codex_config::permissions_toml::NetworkDomainPermissionsToml;
-use codex_config::permissions_toml::NetworkToml;
-use codex_config::permissions_toml::NetworkUnixSocketPermissionToml;
-use codex_config::permissions_toml::NetworkUnixSocketPermissionsToml;
-use codex_config::permissions_toml::PermissionProfileToml;
-use codex_config::permissions_toml::PermissionsToml;
-use codex_config::permissions_toml::WorkspaceRootsToml;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathConvention;
+use ava_config::config_toml::ConfigToml;
+use ava_config::permissions_toml::FilesystemPermissionToml;
+use ava_config::permissions_toml::FilesystemPermissionsToml;
+use ava_config::permissions_toml::NetworkDomainPermissionToml;
+use ava_config::permissions_toml::NetworkDomainPermissionsToml;
+use ava_config::permissions_toml::NetworkToml;
+use ava_config::permissions_toml::NetworkUnixSocketPermissionToml;
+use ava_config::permissions_toml::NetworkUnixSocketPermissionsToml;
+use ava_config::permissions_toml::PermissionProfileToml;
+use ava_config::permissions_toml::PermissionsToml;
+use ava_config::permissions_toml::WorkspaceRootsToml;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathConvention;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use tempfile::TempDir;
@@ -39,12 +39,12 @@ fn windows_verbatim_path_prefix_does_not_count_as_glob_syntax() {
 async fn restricted_read_implicitly_allows_helper_executables() -> std::io::Result<()> {
     let temp_dir = TempDir::new()?;
     let cwd = temp_dir.path().join("workspace");
-    let codex_home = temp_dir.path().join(".codex");
+    let ava_home = temp_dir.path().join(".ava-code");
     let zsh_path = temp_dir.path().join("runtime").join("zsh");
-    let arg0_root = codex_home.join("tmp").join("arg0");
-    let allowed_arg0_dir = arg0_root.join("codex-arg0-session");
-    let sibling_arg0_dir = arg0_root.join("codex-arg0-other-session");
-    let execve_wrapper = allowed_arg0_dir.join("codex-execve-wrapper");
+    let arg0_root = ava_home.join("tmp").join("arg0");
+    let allowed_arg0_dir = arg0_root.join("ava-arg0-session");
+    let sibling_arg0_dir = arg0_root.join("ava-arg0-other-session");
+    let execve_wrapper = allowed_arg0_dir.join("ava-execve-wrapper");
     std::fs::create_dir_all(&cwd)?;
     std::fs::create_dir_all(zsh_path.parent().expect("zsh path should have parent"))?;
     std::fs::create_dir_all(&allowed_arg0_dir)?;
@@ -78,7 +78,7 @@ async fn restricted_read_implicitly_allows_helper_executables() -> std::io::Resu
             main_execve_wrapper_exe: Some(execve_wrapper),
             ..Default::default()
         },
-        AbsolutePathBuf::from_absolute_path(&codex_home)?,
+        AbsolutePathBuf::from_absolute_path(&ava_home)?,
     )
     .await?;
 
@@ -213,7 +213,7 @@ fn network_toml_overlays_unix_socket_permissions_by_path() {
 
     assert_eq!(
         config.unix_sockets,
-        Some(codex_network_proxy::NetworkUnixSocketPermissions {
+        Some(ava_network_proxy::NetworkUnixSocketPermissions {
             entries: BTreeMap::from([
                 (
                     "/tmp/base.sock".to_string(),
@@ -414,10 +414,10 @@ fn profile_network_proxy_config_keeps_proxy_disabled_for_proxy_policy() {
     assert!(!config.enable_socks5);
     assert_eq!(
         config.domains,
-        Some(codex_network_proxy::NetworkDomainPermissions {
-            entries: vec![codex_network_proxy::NetworkDomainPermissionEntry {
+        Some(ava_network_proxy::NetworkDomainPermissions {
+            entries: vec![ava_network_proxy::NetworkDomainPermissionEntry {
                 pattern: "openai.com".to_string(),
-                permission: codex_network_proxy::NetworkDomainPermission::Allow,
+                permission: ava_network_proxy::NetworkDomainPermission::Allow,
             }],
         })
     );

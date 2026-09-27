@@ -9,15 +9,15 @@ use crate::agent::api::AgentTurnOutcome;
 use crate::agent_communication::AgentCommunicationContext;
 use crate::agent_communication::AgentCommunicationKind;
 use crate::session_prefix::format_inter_agent_completion_message;
-use codex_protocol::AgentPath;
-use codex_protocol::items::SubAgentActivityItem;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentActivityKind;
-use codex_protocol::protocol::SubAgentSource;
-use codex_rollout_trace::AgentResultTracePayload;
-use codex_rollout_trace::ThreadTraceContext;
+use ava_protocol::AgentPath;
+use ava_protocol::items::SubAgentActivityItem;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentActivityKind;
+use ava_protocol::protocol::SubAgentSource;
+use ava_rollout_trace::AgentResultTracePayload;
+use ava_rollout_trace::ThreadTraceContext;
 use tracing::debug;
 
 impl LocalAgentControl {

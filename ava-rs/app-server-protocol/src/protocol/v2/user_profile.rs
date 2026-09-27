@@ -1,7 +1,7 @@
 use crate::JsonSchema;
 use crate::TS;
-pub use codex_protocol::user_profile::PersonalityPreset;
-pub use codex_protocol::user_profile::UserProfileConfig;
+pub use ava_protocol::user_profile::PersonalityPreset;
+pub use ava_protocol::user_profile::UserProfileConfig;
 use serde::Deserialize;
 use serde::Serialize;
 

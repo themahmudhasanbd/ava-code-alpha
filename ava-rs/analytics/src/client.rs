@@ -11,7 +11,7 @@ use crate::facts::AppMentionedInput;
 use crate::facts::AppUsedInput;
 use crate::facts::ArtifactOperation;
 use crate::facts::ArtifactOperationInput;
-use crate::facts::CodexGoalEvent;
+use crate::facts::AvaGoalEvent;
 use crate::facts::CustomAnalyticsFact;
 use crate::facts::ElicitationType;
 use crate::facts::ExternalAgentConfigImportCompletedInput;
@@ -31,7 +31,7 @@ use crate::facts::SkillInvocation;
 use crate::facts::SkillInvokedInput;
 use crate::facts::SubAgentThreadStartedInput;
 use crate::facts::TrackEventsContext;
-use crate::facts::TurnCodexErrorFact;
+use crate::facts::TurnAvaErrorFact;
 use crate::facts::TurnProfileFact;
 use crate::facts::TurnResolvedConfigFact;
 use crate::facts::TurnTokenUsageFact;
@@ -42,35 +42,35 @@ use crate::reducer::MAX_PLUGIN_MEASUREMENTS_PER_BATCH;
 use crate::reducer::tracked_tool_item_id;
 use crate::reducer::valid_plugin_measurement_identifier;
 use crate::reducer::valid_plugin_measurement_row;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerResponse;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnError;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::item_event_to_server_notification;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::default_client::create_client;
-use codex_plugin::PluginId;
-use codex_plugin::PluginTelemetryMetadata;
-use codex_protocol::ThreadId;
-use codex_protocol::items::CollabAgentToolCallItem;
-use codex_protocol::items::CollabAgentToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerResponse;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnError;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::item_event_to_server_notification;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::default_client::create_client;
+use ava_plugin::PluginId;
+use ava_plugin::PluginTelemetryMetadata;
+use ava_protocol::ThreadId;
+use ava_protocol::items::CollabAgentToolCallItem;
+use ava_protocol::items::CollabAgentToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -140,7 +140,7 @@ impl AnalyticsEventsDestination {
 
         let base_url = base_url.trim_end_matches('/');
         Self::Http {
-            url: format!("{base_url}/codex/analytics-events/events"),
+            url: format!("{base_url}/ava/analytics-events/events"),
         }
     }
 }
@@ -504,7 +504,7 @@ impl AnalyticsEventsClient {
         ));
     }
 
-    pub fn track_compaction(&self, event: crate::facts::CodexCompactionEvent) {
+    pub fn track_compaction(&self, event: crate::facts::AvaCompactionEvent) {
         self.record_fact(AnalyticsFact::Custom(CustomAnalyticsFact::Compaction(
             Box::new(event),
         )));
@@ -516,7 +516,7 @@ impl AnalyticsEventsClient {
         )));
     }
 
-    pub fn track_goal_event(&self, event: CodexGoalEvent) {
+    pub fn track_goal_event(&self, event: AvaGoalEvent) {
         self.record_fact(AnalyticsFact::Custom(CustomAnalyticsFact::Goal(Box::new(
             event,
         ))));
@@ -552,8 +552,8 @@ impl AnalyticsEventsClient {
         )));
     }
 
-    pub fn track_turn_codex_error(&self, fact: TurnCodexErrorFact) {
-        self.record_fact(AnalyticsFact::Custom(CustomAnalyticsFact::TurnCodexError(
+    pub fn track_turn_ava_error(&self, fact: TurnAvaErrorFact) {
+        self.record_fact(AnalyticsFact::Custom(CustomAnalyticsFact::TurnAvaError(
             Box::new(fact),
         )));
     }
@@ -797,7 +797,7 @@ fn session_event_to_analytics_notification(
         EventMsg::TurnComplete(completed) => {
             let error = completed.error.as_ref().map(|error| TurnError {
                 message: String::new(),
-                codex_error_info: error.codex_error_info.clone().map(Into::into),
+                ava_error_info: error.ava_error_info.clone().map(Into::into),
                 additional_details: None,
                 misalignment: None,
             });
@@ -872,7 +872,7 @@ async fn send_track_events(
     };
     if auth.is_api_key_auth() {
         events.retain(TrackEventRequest::can_send_with_api_key_auth);
-    } else if !auth.uses_codex_backend() {
+    } else if !auth.uses_ava_backend() {
         return;
     }
     if events.is_empty() {
@@ -908,7 +908,7 @@ fn track_event_request_batches(events: Vec<TrackEventRequest>) -> Vec<Vec<TrackE
 }
 
 async fn send_track_events_request(
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     destination: &AnalyticsEventsDestination,
     events: Vec<TrackEventRequest>,
 ) {
@@ -931,7 +931,7 @@ async fn send_track_events_request(
     let response = create_client()
         .post(url)
         .timeout(ANALYTICS_EVENTS_TIMEOUT)
-        .headers(codex_model_provider::auth_provider_from_auth(auth).to_auth_headers())
+        .headers(ava_model_provider::auth_provider_from_auth(auth).to_auth_headers())
         .header("Content-Type", "application/json")
         .json(&payload)
         .send()

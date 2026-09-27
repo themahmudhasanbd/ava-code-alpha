@@ -4,21 +4,21 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
 use app_test_support::to_response;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::MockExperimentalMethodParams;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadMemoryMode;
-use codex_app_server_protocol::ThreadMemoryModeSetParams;
-use codex_app_server_protocol::ThreadRealtimeStartParams;
-use codex_app_server_protocol::ThreadRealtimeStartTransport;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_protocol::protocol::RealtimeOutputModality;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::MockExperimentalMethodParams;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadMemoryMode;
+use ava_app_server_protocol::ThreadMemoryModeSetParams;
+use ava_app_server_protocol::ThreadRealtimeStartParams;
+use ava_app_server_protocol::ThreadRealtimeStartTransport;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_protocol::protocol::RealtimeOutputModality;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
 use tempfile::TempDir;
@@ -29,9 +29,9 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[tokio::test]
 async fn mock_experimental_method_requires_experimental_api_capability() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -66,9 +66,9 @@ async fn mock_experimental_method_requires_experimental_api_capability() -> Resu
 
 #[tokio::test]
 async fn realtime_conversation_start_requires_experimental_api_capability() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -94,10 +94,10 @@ async fn realtime_conversation_start_requires_experimental_api_capability() -> R
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: "thr_123".to_string(),
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -123,9 +123,9 @@ async fn realtime_conversation_start_requires_experimental_api_capability() -> R
 
 #[tokio::test]
 async fn thread_memory_mode_set_requires_experimental_api_capability() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -165,9 +165,9 @@ async fn thread_memory_mode_set_requires_experimental_api_capability() -> Result
 #[test_case("turn/settings/update"; "turn settings")]
 #[tokio::test]
 async fn settings_update_requires_experimental_api_capability(method: &str) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -204,9 +204,9 @@ async fn settings_update_requires_experimental_api_capability(method: &str) -> R
 
 #[tokio::test]
 async fn realtime_webrtc_start_requires_experimental_api_capability() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -232,10 +232,10 @@ async fn realtime_webrtc_start_requires_experimental_api_capability() -> Result<
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: "thr_123".to_string(),
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -264,11 +264,11 @@ async fn realtime_webrtc_start_requires_experimental_api_capability() -> Result<
 #[tokio::test]
 async fn thread_start_mock_field_requires_experimental_api_capability() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     let init = mcp
@@ -307,11 +307,11 @@ async fn thread_start_mock_field_requires_experimental_api_capability() -> Resul
 async fn thread_start_without_dynamic_tools_allows_without_experimental_api_capability()
 -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     let init = mcp
@@ -349,11 +349,11 @@ async fn thread_start_without_dynamic_tools_allows_without_experimental_api_capa
 async fn thread_start_granular_approval_policy_requires_experimental_api_capability() -> Result<()>
 {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     let init = mcp

@@ -6,47 +6,47 @@ use std::path::PathBuf;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-use codex_app_server_protocol::build_turns_from_rollout_items;
-use codex_extension_items::ExtensionItem;
-use codex_extension_items::image_generation::ImageGenerationFailure;
-use codex_extension_items::image_generation::ImageGenerationItem;
-use codex_protocol::AgentPath;
-use codex_protocol::ResponseItemId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::items::ReasoningItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::mcp::McpResourceOrigin;
-use codex_protocol::mcp::McpResourceOriginCheckpoint;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AgentMessageEvent;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ImageGenerationEndEvent;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadRolledBackEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnContextItem;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::UserMessageImageKind;
-use codex_protocol::user_input::UserInput;
-use codex_rollout::CompactedItem;
-use codex_rollout::RolloutConfig;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_app_server_protocol::build_turns_from_rollout_items;
+use ava_extension_items::ExtensionItem;
+use ava_extension_items::image_generation::ImageGenerationFailure;
+use ava_extension_items::image_generation::ImageGenerationItem;
+use ava_protocol::AgentPath;
+use ava_protocol::ResponseItemId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::items::ReasoningItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::mcp::McpResourceOrigin;
+use ava_protocol::mcp::McpResourceOriginCheckpoint;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AgentMessageEvent;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ImageGenerationEndEvent;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadRolledBackEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnContextItem;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::UserMessageImageKind;
+use ava_protocol::user_input::UserInput;
+use ava_rollout::CompactedItem;
+use ava_rollout::RolloutConfig;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -135,7 +135,7 @@ fn write_rollout_with_fork(
 }
 
 fn move_to_archived(home: &Path, path: PathBuf) -> PathBuf {
-    let directory = home.join(codex_rollout::ARCHIVED_SESSIONS_SUBDIR);
+    let directory = home.join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR);
     fs::create_dir_all(&directory).expect("create archived rollout directory");
     let archived_path = directory.join(path.file_name().expect("rollout filename"));
     fs::rename(path, &archived_path).expect("archive rollout");
@@ -267,7 +267,7 @@ fn read_rollout(path: &Path) -> Vec<RolloutLine> {
     fs::read_to_string(path)
         .expect("read migrated rollout")
         .lines()
-        .map(|line| codex_rollout::parse_rollout_line(line).expect("parse migrated rollout"))
+        .map(|line| ava_rollout::parse_rollout_line(line).expect("parse migrated rollout"))
         .collect()
 }
 
@@ -292,13 +292,13 @@ fn assert_failed_with_reason(
 async fn indexed_store(home: &Path) -> LocalThreadStore {
     let config = test_config(home);
     let rollout_config = RolloutConfig {
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         sqlite: config.sqlite.clone(),
         cwd: home.to_path_buf(),
         model_provider_id: config.default_model_provider_id.clone(),
         generate_memories: false,
     };
-    let state_db = codex_rollout::state_db::try_init(&rollout_config)
+    let state_db = ava_rollout::state_db::try_init(&rollout_config)
         .await
         .expect("backfill legacy thread metadata");
     LocalThreadStore::new(config, Some(state_db))
@@ -320,7 +320,7 @@ async fn list_active_summary_turns(store: &LocalThreadStore, thread_id: ThreadId
 
 #[tokio::test]
 async fn migration_publishes_canonical_projected_history_and_is_idempotent() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let user_event = UserMessageEvent {
         message: "first question".to_string(),
@@ -413,7 +413,7 @@ async fn migration_publishes_canonical_projected_history_and_is_idempotent() {
 
 #[tokio::test]
 async fn migration_projects_explicit_and_implicit_legacy_completed_items() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let exec = exec_completion("explicit", "call-1");
     let reasoning = serde_json::from_value(json!({
@@ -476,7 +476,7 @@ async fn migration_projects_explicit_and_implicit_legacy_completed_items() {
 
 #[tokio::test]
 async fn migration_preserves_image_generation_failure_metadata() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let expected_item = ImageGenerationItem {
         id: "image-call".to_string(),
@@ -534,7 +534,7 @@ async fn migration_preserves_image_generation_failure_metadata() {
 
 #[tokio::test]
 async fn migration_keeps_late_completions_in_their_original_turn() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -604,7 +604,7 @@ async fn migration_keeps_late_completions_in_their_original_turn() {
 
 #[tokio::test]
 async fn migration_hoists_delayed_session_meta_before_paginated_history() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(home.path(), thread_id, SessionSource::Cli, Vec::new());
     let existing = fs::read_to_string(&path).expect("read legacy rollout");
@@ -661,7 +661,7 @@ async fn migration_hoists_delayed_session_meta_before_paginated_history() {
 
 #[tokio::test]
 async fn migration_preserves_valid_final_record_without_newline() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -702,7 +702,7 @@ async fn migration_preserves_valid_final_record_without_newline() {
 
 #[tokio::test]
 async fn migration_applies_historical_rollbacks_before_sqlite_projection() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -754,7 +754,7 @@ async fn migration_applies_historical_rollbacks_before_sqlite_projection() {
 
 #[tokio::test]
 async fn migration_rolls_back_response_and_inter_agent_user_boundaries() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let response_thread_id = ThreadId::new();
     let response_path = write_rollout(
         home.path(),
@@ -844,7 +844,7 @@ async fn migration_rolls_back_response_and_inter_agent_user_boundaries() {
 
 #[tokio::test]
 async fn migration_drops_trailing_context_when_rollback_arrives_before_next_turn() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -884,7 +884,7 @@ async fn migration_drops_trailing_context_when_rollback_arrives_before_next_turn
 
 #[tokio::test]
 async fn migration_coalesces_response_first_user_message_rollback_boundary() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let file_id = "file_123".to_string();
     let response = ResponseItem::Message {
@@ -938,7 +938,7 @@ async fn migration_coalesces_response_first_user_message_rollback_boundary() {
 
 #[tokio::test]
 async fn migration_does_not_coalesce_distinct_adjacent_user_records() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -974,7 +974,7 @@ async fn migration_does_not_coalesce_distinct_adjacent_user_records() {
 
 #[tokio::test]
 async fn migration_keeps_late_completions_for_surviving_turns_across_rollback() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1090,7 +1090,7 @@ async fn migration_keeps_late_completions_for_surviving_turns_across_rollback() 
 
 #[tokio::test]
 async fn migration_rolls_back_inter_agent_metadata_with_its_delivery() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let delivery = InterAgentCommunication::new(
         AgentPath::root(),
@@ -1130,7 +1130,7 @@ async fn migration_rolls_back_inter_agent_metadata_with_its_delivery() {
 
 #[tokio::test]
 async fn migration_rolls_back_pre_compaction_turns_from_sqlite_history() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let RolloutItem::Compacted(mut checkpoint) = compacted(vec![
         input_response_message("user", "old question"),
@@ -1244,7 +1244,7 @@ async fn migration_rolls_back_pre_compaction_turns_from_sqlite_history() {
 
 #[tokio::test]
 async fn migration_preserves_answers_before_a_rolled_back_steer() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let mut items = vec![started("shared-turn")];
     let mut answers = Vec::new();
@@ -1264,7 +1264,7 @@ async fn migration_preserves_answers_before_a_rolled_back_steer() {
         .expect("request_user_input call");
         call.set_turn_id_if_missing("shared-turn");
         items.push(rollout_response_item(call));
-        let answer: codex_rollout::RetainedContextEvent = serde_json::from_value(json!({
+        let answer: ava_rollout::RetainedContextEvent = serde_json::from_value(json!({
             "type": "verified_answer", "turn_id": "shared-turn", "call_id": call_id,
             "questions": [{"question": "Publish?", "answer": "Only privately."}]
         }))
@@ -1310,7 +1310,7 @@ async fn migration_preserves_answers_before_a_rolled_back_steer() {
             .verified_answers()
             .cloned()
             .map(
-                |answer| codex_rollout::RetainedContextEvent::VerifiedAnswer {
+                |answer| ava_rollout::RetainedContextEvent::VerifiedAnswer {
                     answer,
                     acceptance_order: None,
                 }
@@ -1322,7 +1322,7 @@ async fn migration_preserves_answers_before_a_rolled_back_steer() {
 
 #[tokio::test]
 async fn migration_preserves_reverse_replay_anchor_after_pre_compaction_rollback() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1367,7 +1367,7 @@ async fn migration_removes_answers_accepted_after_a_queued_steer() {
 async fn assert_migrated_evidence_order(steer_order: Option<u64>) {
     const INITIAL: &str = "Never publish publicly.";
     const STEER: &str = "Also inspect the README.";
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let [initial, steer] =
         [("initial", INITIAL), ("steer", STEER)].map(|(id, text)| ResponseItem::Message {
@@ -1411,7 +1411,7 @@ async fn assert_migrated_evidence_order(steer_order: Option<u64>) {
         .map(|answer| {
             let acceptance_order =
                 steer_order.map(|_| if answer.call_id == "before" { 2 } else { 3 });
-            codex_rollout::RetainedContextEvent::VerifiedAnswer {
+            ava_rollout::RetainedContextEvent::VerifiedAnswer {
                 answer,
                 acceptance_order,
             }
@@ -1456,7 +1456,7 @@ async fn assert_migrated_evidence_order(steer_order: Option<u64>) {
             user_message(INITIAL),
             RolloutItem::RetainedContext(answers[0].clone()),
             RolloutItem::Compacted(before_steer),
-            RolloutItem::ResponseItem(codex_rollout::ResponseItemEnvelope {
+            RolloutItem::ResponseItem(ava_rollout::ResponseItemEnvelope {
                 item: steer,
                 metadata: steer_order.map(|order| {
                     serde_json::from_value(json!({
@@ -1524,7 +1524,7 @@ async fn assert_migrated_evidence_order(steer_order: Option<u64>) {
 
 #[tokio::test]
 async fn migration_keeps_empty_replay_anchor_from_rolled_back_turn() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1565,7 +1565,7 @@ async fn migration_keeps_empty_replay_anchor_from_rolled_back_turn() {
 
 #[tokio::test]
 async fn migration_uses_turn_context_to_select_reverse_replay_anchor() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1621,7 +1621,7 @@ async fn migration_uses_turn_context_to_select_reverse_replay_anchor() {
             RolloutItem::Compacted(item) => item.replacement_history.map(|items| {
                 items
                     .into_iter()
-                    .map(codex_rollout::ResponseItemEnvelope::into_item)
+                    .map(ava_rollout::ResponseItemEnvelope::into_item)
                     .collect::<Vec<_>>()
             }),
             _ => None,
@@ -1635,7 +1635,7 @@ async fn migration_uses_turn_context_to_select_reverse_replay_anchor() {
 
 #[tokio::test]
 async fn migration_applies_cumulative_and_overflowing_rollbacks() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1687,7 +1687,7 @@ async fn migration_applies_cumulative_and_overflowing_rollbacks() {
 
 #[tokio::test]
 async fn migration_drops_copied_user_fork_metadata_without_creating_a_history_base() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let parent_id = ThreadId::new();
     let copied_metadata = SessionMeta {
@@ -1764,7 +1764,7 @@ async fn migration_drops_copied_user_fork_metadata_without_creating_a_history_ba
 
 #[tokio::test]
 async fn migration_compacts_subagent_prefix_and_does_not_project_it() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1888,7 +1888,7 @@ async fn migration_compacts_subagent_prefix_and_does_not_project_it() {
 
 #[tokio::test]
 async fn migration_keeps_small_uncompacted_subagent_replay_as_prefix() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1925,7 +1925,7 @@ async fn migration_keeps_small_uncompacted_subagent_replay_as_prefix() {
 
 #[tokio::test]
 async fn migration_projects_memory_consolidation_as_ordinary_history() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -1957,7 +1957,7 @@ async fn migration_projects_memory_consolidation_as_ordinary_history() {
 
 #[tokio::test]
 async fn dry_run_reports_migration_order() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let root_id = ThreadId::new();
     let root = write_rollout(
         home.path(),
@@ -2068,7 +2068,7 @@ async fn dry_run_reports_migration_order() {
 
 #[tokio::test]
 async fn migration_preserves_compressed_rollouts_during_publish_and_recovery() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -2091,7 +2091,7 @@ async fn migration_preserves_compressed_rollouts_during_publish_and_recovery() {
     assert!(!path.exists());
     assert!(compressed_path.exists());
     assert_eq!(
-        codex_rollout::read_session_meta_line(&compressed_path)
+        ava_rollout::read_session_meta_line(&compressed_path)
             .await
             .expect("read compressed metadata")
             .meta
@@ -2126,7 +2126,7 @@ async fn migration_preserves_compressed_rollouts_during_publish_and_recovery() {
 
 #[tokio::test]
 async fn migration_migrates_archived_rollouts_without_unarchiving_them() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let active_path = write_rollout(
         home.path(),
@@ -2170,7 +2170,7 @@ async fn migration_migrates_archived_rollouts_without_unarchiving_them() {
 
 #[tokio::test]
 async fn migration_retries_a_rollout_moved_after_path_discovery() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let active_path = write_rollout(
         home.path(),
@@ -2201,7 +2201,7 @@ async fn migration_retries_a_rollout_moved_after_path_discovery() {
 
 #[tokio::test]
 async fn migration_preserves_legacy_displayed_thread_names() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let title_thread_id = ThreadId::new();
     write_rollout(
         home.path(),
@@ -2228,10 +2228,10 @@ async fn migration_preserves_legacy_displayed_thread_names() {
         })
         .await
         .expect("rename legacy thread");
-    codex_rollout::append_thread_name(home.path(), title_thread_id, "stale index title")
+    ava_rollout::append_thread_name(home.path(), title_thread_id, "stale index title")
         .await
         .expect("write stale legacy index name");
-    codex_rollout::append_thread_name(home.path(), index_thread_id, "indexed title")
+    ava_rollout::append_thread_name(home.path(), index_thread_id, "indexed title")
         .await
         .expect("write legacy index name");
 
@@ -2275,7 +2275,7 @@ async fn migration_preserves_legacy_displayed_thread_names() {
 
 #[tokio::test]
 async fn migration_repairs_a_missing_paginated_name_when_rerun() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     write_rollout(
         home.path(),
@@ -2333,7 +2333,7 @@ async fn migration_repairs_a_missing_paginated_name_when_rerun() {
 #[cfg(unix)]
 #[tokio::test]
 async fn decompression_temporaries_are_owner_only() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let compressed_path = compress_rollout(&write_rollout(
         home.path(),
@@ -2359,7 +2359,7 @@ async fn decompression_temporaries_are_owner_only() {
 
 #[tokio::test]
 async fn migration_skips_threads_with_an_active_writer() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -2387,7 +2387,7 @@ async fn migration_skips_threads_with_an_active_writer() {
 
 #[tokio::test]
 async fn migration_apply_conflicts_with_rollout_maintenance() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -2396,7 +2396,7 @@ async fn migration_apply_conflicts_with_rollout_maintenance() {
         vec![user_message("maintenance question")],
     );
     let original = fs::read(&path).expect("read legacy rollout");
-    let _maintenance_guard = codex_rollout::try_acquire_rollout_maintenance_lock(home.path())
+    let _maintenance_guard = ava_rollout::try_acquire_rollout_maintenance_lock(home.path())
         .expect("acquire rollout maintenance lock")
         .expect("claim rollout maintenance lock");
     let store = LocalThreadStore::new(test_config(home.path()), /*state_db*/ None);
@@ -2412,7 +2412,7 @@ async fn migration_apply_conflicts_with_rollout_maintenance() {
 
 #[tokio::test]
 async fn migration_recovers_a_published_rollout_with_missing_projection() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -2466,7 +2466,7 @@ async fn migration_recovers_a_published_rollout_with_missing_projection() {
 
 #[tokio::test]
 async fn migration_recovers_pending_rollouts_before_new_work() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let pending_thread_id = ThreadId::new();
     write_rollout(
         home.path(),
@@ -2527,7 +2527,7 @@ async fn migration_recovers_pending_rollouts_before_new_work() {
 
 #[tokio::test]
 async fn migration_recovers_a_compressed_published_rollout() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -2604,7 +2604,7 @@ async fn migration_recovers_a_compressed_published_rollout() {
 
 #[tokio::test]
 async fn migration_skips_oversized_jsonl_records() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),
@@ -2644,7 +2644,7 @@ async fn migration_skips_oversized_jsonl_records() {
 
 #[tokio::test]
 async fn migration_skips_empty_rollout_files() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let directory = home.path().join("sessions/2025/01/03");
     fs::create_dir_all(&directory).expect("create rollout directory");
@@ -2676,7 +2676,7 @@ async fn migration_skips_empty_rollout_files() {
 
 #[tokio::test]
 async fn migration_reports_missing_sqlite_metadata() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     write_rollout(
         home.path(),
@@ -2706,7 +2706,7 @@ async fn migration_reports_missing_sqlite_metadata() {
 
 #[tokio::test]
 async fn migration_reports_invalid_session_metadata() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let directory = home.path().join("sessions/2025/01/03");
     fs::create_dir_all(&directory).expect("create rollout directory");
@@ -2727,7 +2727,7 @@ async fn migration_reports_invalid_session_metadata() {
 
 #[tokio::test]
 async fn migration_skips_malformed_lines_and_trailing_partial_tail() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(
         home.path(),

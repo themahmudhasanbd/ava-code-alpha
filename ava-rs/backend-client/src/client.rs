@@ -1,7 +1,7 @@
 use crate::types::AccountsCheckResponse;
 use crate::types::CodeTaskDetailsResponse;
-use crate::types::CodexUserSettingsResponse;
-use crate::types::CodexWorkspaceMessagesResponse;
+use crate::types::AvaUserSettingsResponse;
+use crate::types::AvaWorkspaceMessagesResponse;
 use crate::types::ConfigBundleResponse;
 use crate::types::PaginatedListTaskListItem;
 use crate::types::RateLimitReachedKind as BackendRateLimitReachedKind;
@@ -9,21 +9,21 @@ use crate::types::RateLimitStatusPayload;
 use crate::types::TokenUsageProfile;
 use crate::types::TurnAttemptsSiblingTurnsResponse;
 use anyhow::Result;
-use codex_api::SharedAuthProvider;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestBuilder;
-use codex_http_client::RouteAwareRequestError;
-use codex_login::CodexAuth;
-use codex_login::default_client::get_codex_user_agent;
-use codex_protocol::account::PlanType as AccountPlanType;
-use codex_protocol::protocol::CreditsSnapshot;
-use codex_protocol::protocol::RateLimitReachedType;
-use codex_protocol::protocol::RateLimitSnapshot;
-use codex_protocol::protocol::RateLimitWindow;
-use codex_protocol::protocol::SpendControlLimitSnapshot;
+use ava_api::SharedAuthProvider;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestBuilder;
+use ava_http_client::RouteAwareRequestError;
+use ava_login::AvaAuth;
+use ava_login::default_client::get_ava_user_agent;
+use ava_protocol::account::PlanType as AccountPlanType;
+use ava_protocol::protocol::CreditsSnapshot;
+use ava_protocol::protocol::RateLimitReachedType;
+use ava_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::RateLimitWindow;
+use ava_protocol::protocol::SpendControlLimitSnapshot;
 use http::Method;
 use http::StatusCode;
 use http::header::CACHE_CONTROL;
@@ -123,8 +123,8 @@ struct SendAddCreditsNudgeEmailRequest {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PathStyle {
-    /// /api/codex/…
-    CodexApi,
+    /// /api/ava/…
+    AvaApi,
     /// /wham/…
     ChatGptApi,
 }
@@ -134,7 +134,7 @@ impl PathStyle {
         if base_url.contains("/backend-api") {
             PathStyle::ChatGptApi
         } else {
-            PathStyle::CodexApi
+            PathStyle::AvaApi
         }
     }
 }
@@ -204,7 +204,7 @@ impl Client {
         Self {
             base_url,
             http,
-            auth_provider: codex_model_provider::unauthenticated_auth_provider(),
+            auth_provider: ava_model_provider::unauthenticated_auth_provider(),
             user_agent: None,
             chatgpt_account_id: None,
             chatgpt_account_is_fedramp: false,
@@ -214,12 +214,12 @@ impl Client {
 
     pub fn from_auth(
         base_url: impl Into<String>,
-        auth: &CodexAuth,
+        auth: &AvaAuth,
         http_client_factory: HttpClientFactory,
     ) -> Self {
         Self::new(base_url, http_client_factory)
-            .with_user_agent(get_codex_user_agent())
-            .with_auth_provider(codex_model_provider::auth_provider_from_auth(auth))
+            .with_user_agent(get_ava_user_agent())
+            .with_auth_provider(ava_model_provider::auth_provider_from_auth(auth))
     }
 
     pub fn with_auth_provider(mut self, auth: SharedAuthProvider) -> Self {
@@ -254,7 +254,7 @@ impl Client {
         if let Some(ua) = &self.user_agent {
             h.insert(USER_AGENT, ua.clone());
         } else {
-            h.insert(USER_AGENT, HeaderValue::from_static("codex-cli"));
+            h.insert(USER_AGENT, HeaderValue::from_static("ava-cli"));
         }
         self.auth_provider.add_auth_headers(&mut h);
         if let Some(acc) = &self.chatgpt_account_id
@@ -369,7 +369,7 @@ impl Client {
         let snapshots = self.get_rate_limits_many().await?;
         let preferred = snapshots
             .iter()
-            .find(|snapshot| snapshot.limit_id.as_deref() == Some("codex"))
+            .find(|snapshot| snapshot.limit_id.as_deref() == Some("ava"))
             .cloned();
         Ok(preferred.unwrap_or_else(|| snapshots[0].clone()))
     }
@@ -382,7 +382,7 @@ impl Client {
         &self,
     ) -> std::result::Result<AccountsCheckResponse, RequestError> {
         let url = match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/accounts/check", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/accounts/check", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/accounts/check", self.base_url),
         };
         let (body, _) = self.exec_bootstrap_get(&url).await?;
@@ -399,7 +399,7 @@ impl Client {
 
     fn token_usage_profile_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/profiles/me", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/profiles/me", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/profiles/me", self.base_url),
         }
     }
@@ -439,7 +439,7 @@ impl Client {
         cursor: Option<&str>,
     ) -> Result<String> {
         let url = match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/tasks/list", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/tasks/list", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/tasks/list", self.base_url),
         };
         if limit.is_none() && task_filter.is_none() && environment_id.is_none() && cursor.is_none()
@@ -475,7 +475,7 @@ impl Client {
         task_id: &str,
     ) -> Result<(CodeTaskDetailsResponse, String, String)> {
         let url = match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/tasks/{}", self.base_url, task_id),
+            PathStyle::AvaApi => format!("{}/api/ava/tasks/{}", self.base_url, task_id),
             PathStyle::ChatGptApi => format!("{}/wham/tasks/{}", self.base_url, task_id),
         };
         let req = self.request(Method::GET, &url).headers(self.headers());
@@ -490,8 +490,8 @@ impl Client {
         turn_id: &str,
     ) -> Result<TurnAttemptsSiblingTurnsResponse> {
         let url = match self.path_style {
-            PathStyle::CodexApi => format!(
-                "{}/api/codex/tasks/{}/turns/{}/sibling_turns",
+            PathStyle::AvaApi => format!(
+                "{}/api/ava/tasks/{}/turns/{}/sibling_turns",
                 self.base_url, task_id, turn_id
             ),
             PathStyle::ChatGptApi => format!(
@@ -504,15 +504,15 @@ impl Client {
         self.decode_json::<TurnAttemptsSiblingTurnsResponse>(&url, &ct, &body)
     }
 
-    /// Fetch the selected cloud-managed config bundle from codex-backend.
+    /// Fetch the selected cloud-managed config bundle from ava-backend.
     ///
-    /// `GET /api/codex/config/bundle` (Codex API style) or
+    /// `GET /api/ava/config/bundle` (Ava API style) or
     /// `GET /wham/config/bundle` (ChatGPT backend-api style).
     pub async fn get_config_bundle(
         &self,
     ) -> std::result::Result<ConfigBundleResponse, RequestError> {
         let url = match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/config/bundle", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/config/bundle", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/config/bundle", self.base_url),
         };
         let (body, ct) = self.exec_bootstrap_get(&url).await?;
@@ -520,13 +520,13 @@ impl Client {
             .map_err(RequestError::from)
     }
 
-    /// Fetch authenticated Codex user settings from the active backend route.
+    /// Fetch authenticated Ava user settings from the active backend route.
     ///
-    /// Uses `GET /api/codex/settings/user` for Codex API hosts and
+    /// Uses `GET /api/ava/settings/user` for Ava API hosts and
     /// `GET /wham/settings/user` for ChatGPT `backend-api` hosts.
     pub async fn get_user_settings(
         &self,
-    ) -> std::result::Result<CodexUserSettingsResponse, RequestError> {
+    ) -> std::result::Result<AvaUserSettingsResponse, RequestError> {
         let url = self.user_settings_url();
         let req = self
             .request(Method::GET, &url)
@@ -536,20 +536,20 @@ impl Client {
                 HeaderValue::from_static("no-cache, no-store"),
             );
         let (body, ct) = self.exec_request_detailed(req, "GET", &url).await?;
-        self.decode_json::<CodexUserSettingsResponse>(&url, &ct, &body)
+        self.decode_json::<AvaUserSettingsResponse>(&url, &ct, &body)
             .map_err(RequestError::from)
     }
 
     pub async fn list_workspace_messages(
         &self,
-    ) -> std::result::Result<CodexWorkspaceMessagesResponse, RequestError> {
+    ) -> std::result::Result<AvaWorkspaceMessagesResponse, RequestError> {
         let url = self.workspace_messages_url();
         let req = self
             .request(Method::GET, &url)
             .headers(self.headers())
             .header(CACHE_CONTROL, HeaderValue::from_static("no-store"));
         let (body, ct) = self.exec_request_detailed(req, "GET", &url).await?;
-        self.decode_json::<CodexWorkspaceMessagesResponse>(&url, &ct, &body)
+        self.decode_json::<AvaWorkspaceMessagesResponse>(&url, &ct, &body)
             .map_err(RequestError::from)
     }
 
@@ -557,7 +557,7 @@ impl Client {
     /// based on `path_style`. Returns the created task id.
     pub async fn create_task(&self, request_body: serde_json::Value) -> Result<String> {
         let url = match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/tasks", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/tasks", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/tasks", self.base_url),
         };
         let req = self
@@ -597,7 +597,7 @@ impl Client {
             .flatten()
             .and_then(|details| Self::map_rate_limit_reached_type(details.kind));
         let mut snapshots = vec![Self::make_rate_limit_snapshot(
-            Some("codex".to_string()),
+            Some("ava".to_string()),
             /*limit_name*/ None,
             payload.rate_limit.flatten().map(|details| *details),
             payload.credits.flatten().map(|details| *details),
@@ -616,7 +616,7 @@ impl Client {
     }
 
     fn make_additional_rate_limit_snapshot(
-        details: codex_backend_openapi_models::models::AdditionalRateLimitDetails,
+        details: ava_backend_openapi_models::models::AdditionalRateLimitDetails,
         plan_type: Option<AccountPlanType>,
     ) -> RateLimitSnapshot {
         Self::make_rate_limit_snapshot(
@@ -635,7 +635,7 @@ impl Client {
         limit_name: Option<String>,
         rate_limit: Option<crate::types::RateLimitStatusDetails>,
         credits: Option<crate::types::CreditStatusDetails>,
-        spend_control: Option<codex_backend_openapi_models::models::SpendControlStatusDetails>,
+        spend_control: Option<ava_backend_openapi_models::models::SpendControlStatusDetails>,
         plan_type: Option<AccountPlanType>,
         rate_limit_reached_type: Option<RateLimitReachedType>,
     ) -> RateLimitSnapshot {
@@ -689,8 +689,8 @@ impl Client {
 
     fn send_add_credits_nudge_email_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => format!(
-                "{}/api/codex/accounts/send_add_credits_nudge_email",
+            PathStyle::AvaApi => format!(
+                "{}/api/ava/accounts/send_add_credits_nudge_email",
                 self.base_url
             ),
             PathStyle::ChatGptApi => {
@@ -704,14 +704,14 @@ impl Client {
 
     fn workspace_messages_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/workspace-messages", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/workspace-messages", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/workspace-messages", self.base_url),
         }
     }
 
     fn user_settings_url(&self) -> String {
         match self.path_style {
-            PathStyle::CodexApi => format!("{}/api/codex/settings/user", self.base_url),
+            PathStyle::AvaApi => format!("{}/api/ava/settings/user", self.base_url),
             PathStyle::ChatGptApi => format!("{}/wham/settings/user", self.base_url),
         }
     }
@@ -803,9 +803,9 @@ mod request_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_backend_openapi_models::models::AdditionalRateLimitDetails;
-    use codex_backend_openapi_models::models::RateLimitReachedKind;
-    use codex_backend_openapi_models::models::RateLimitReachedType as BackendRateLimitReachedType;
+    use ava_backend_openapi_models::models::AdditionalRateLimitDetails;
+    use ava_backend_openapi_models::models::RateLimitReachedKind;
+    use ava_backend_openapi_models::models::RateLimitReachedType as BackendRateLimitReachedType;
     use pretty_assertions::assert_eq;
     use wiremock::Mock;
     use wiremock::MockServer;
@@ -860,8 +860,8 @@ mod tests {
                 ..Default::default()
             }))),
             additional_rate_limits: Some(Some(vec![AdditionalRateLimitDetails {
-                limit_name: "codex_other".to_string(),
-                metered_feature: "codex_other".to_string(),
+                limit_name: "ava_other".to_string(),
+                metered_feature: "ava_other".to_string(),
                 rate_limit: Some(Some(Box::new(crate::types::RateLimitStatusDetails {
                     primary_window: Some(Some(Box::new(crate::types::RateLimitWindowSnapshot {
                         used_percent: 70,
@@ -880,7 +880,7 @@ mod tests {
                 ..Default::default()
             }))),
             spend_control: Some(Some(Box::new(
-                codex_backend_openapi_models::models::SpendControlStatusDetails {
+                ava_backend_openapi_models::models::SpendControlStatusDetails {
                     reached: false,
                     individual_limit: Some(Some(Box::new(
                         crate::types::SpendControlLimitDetails {
@@ -904,7 +904,7 @@ mod tests {
         let snapshots = Client::rate_limit_snapshots_from_payload(payload);
         assert_eq!(snapshots.len(), 2);
 
-        assert_eq!(snapshots[0].limit_id.as_deref(), Some("codex"));
+        assert_eq!(snapshots[0].limit_id.as_deref(), Some("ava"));
         assert_eq!(snapshots[0].limit_name, None);
         assert_eq!(
             snapshots[0].primary.as_ref().map(|w| w.used_percent),
@@ -938,8 +938,8 @@ mod tests {
             })
         );
 
-        assert_eq!(snapshots[1].limit_id.as_deref(), Some("codex_other"));
-        assert_eq!(snapshots[1].limit_name.as_deref(), Some("codex_other"));
+        assert_eq!(snapshots[1].limit_id.as_deref(), Some("ava_other"));
+        assert_eq!(snapshots[1].limit_name.as_deref(), Some("ava_other"));
         assert_eq!(
             snapshots[1].primary.as_ref().map(|w| w.used_percent),
             Some(70.0)
@@ -957,8 +957,8 @@ mod tests {
             plan_type: crate::types::PlanType::Plus,
             rate_limit: None,
             additional_rate_limits: Some(Some(vec![AdditionalRateLimitDetails {
-                limit_name: "codex_other".to_string(),
-                metered_feature: "codex_other".to_string(),
+                limit_name: "ava_other".to_string(),
+                metered_feature: "ava_other".to_string(),
                 rate_limit: None,
             }])),
             credits: None,
@@ -968,11 +968,11 @@ mod tests {
 
         let snapshots = Client::rate_limit_snapshots_from_payload(payload);
         assert_eq!(snapshots.len(), 2);
-        assert_eq!(snapshots[0].limit_id.as_deref(), Some("codex"));
+        assert_eq!(snapshots[0].limit_id.as_deref(), Some("ava"));
         assert_eq!(snapshots[0].limit_name, None);
         assert_eq!(snapshots[0].primary, None);
-        assert_eq!(snapshots[1].limit_id.as_deref(), Some("codex_other"));
-        assert_eq!(snapshots[1].limit_name.as_deref(), Some("codex_other"));
+        assert_eq!(snapshots[1].limit_id.as_deref(), Some("ava_other"));
+        assert_eq!(snapshots[1].limit_name.as_deref(), Some("ava_other"));
     }
 
     #[test]
@@ -983,7 +983,7 @@ mod tests {
             additional_rate_limits: None,
             credits: None,
             spend_control: Some(Some(Box::new(
-                codex_backend_openapi_models::models::SpendControlStatusDetails {
+                ava_backend_openapi_models::models::SpendControlStatusDetails {
                     reached: true,
                     individual_limit: None,
                 },
@@ -1002,8 +1002,8 @@ mod tests {
     fn preferred_snapshot_selection_matches_get_rate_limits_behavior() {
         let snapshots = [
             RateLimitSnapshot {
-                limit_id: Some("codex_other".to_string()),
-                limit_name: Some("codex_other".to_string()),
+                limit_id: Some("ava_other".to_string()),
+                limit_name: Some("ava_other".to_string()),
                 normal_model_slug: None,
                 primary: Some(RateLimitWindow {
                     used_percent: 90.0,
@@ -1018,8 +1018,8 @@ mod tests {
                 rate_limit_reached_type: None,
             },
             RateLimitSnapshot {
-                limit_id: Some("codex".to_string()),
-                limit_name: Some("codex".to_string()),
+                limit_id: Some("ava".to_string()),
+                limit_name: Some("ava".to_string()),
                 normal_model_slug: None,
                 primary: Some(RateLimitWindow {
                     used_percent: 10.0,
@@ -1037,10 +1037,10 @@ mod tests {
 
         let preferred = snapshots
             .iter()
-            .find(|snapshot| snapshot.limit_id.as_deref() == Some("codex"))
+            .find(|snapshot| snapshot.limit_id.as_deref() == Some("ava"))
             .cloned()
             .unwrap_or_else(|| snapshots[0].clone());
-        assert_eq!(preferred.limit_id.as_deref(), Some("codex"));
+        assert_eq!(preferred.limit_id.as_deref(), Some("ava"));
     }
 
     #[test]
@@ -1101,9 +1101,9 @@ mod tests {
 
     #[test]
     fn add_credits_nudge_email_uses_expected_paths_and_bodies() {
-        let codex_client = test_client("https://example.test", PathStyle::CodexApi);
+        let ava_client = test_client("https://example.test", PathStyle::AvaApi);
         assert_eq!(
-            codex_client.send_add_credits_nudge_email_url(),
+            ava_client.send_add_credits_nudge_email_url(),
             "https://example.test/api/codex/accounts/send_add_credits_nudge_email"
         );
 
@@ -1131,9 +1131,9 @@ mod tests {
 
     #[test]
     fn token_usage_profile_uses_expected_paths() {
-        let codex_client = test_client("https://example.test", PathStyle::CodexApi);
+        let ava_client = test_client("https://example.test", PathStyle::AvaApi);
         assert_eq!(
-            codex_client.token_usage_profile_url(),
+            ava_client.token_usage_profile_url(),
             "https://example.test/api/codex/profiles/me"
         );
 
@@ -1146,9 +1146,9 @@ mod tests {
 
     #[test]
     fn workspace_messages_uses_expected_paths() {
-        let codex_client = test_client("https://example.test", PathStyle::CodexApi);
+        let ava_client = test_client("https://example.test", PathStyle::AvaApi);
         assert_eq!(
-            codex_client.workspace_messages_url(),
+            ava_client.workspace_messages_url(),
             "https://example.test/api/codex/workspace-messages"
         );
 
@@ -1163,7 +1163,7 @@ mod tests {
     async fn user_settings_request_uses_expected_paths_and_revalidates_cached_responses() {
         let server = MockServer::start().await;
         for (request_path, commit_attribution_enabled) in [
-            ("/api/codex/settings/user", true),
+            ("/api/ava/settings/user", true),
             ("/backend-api/wham/settings/user", false),
         ] {
             Mock::given(method("GET"))
@@ -1177,28 +1177,28 @@ mod tests {
                 .await;
         }
 
-        let codex_response = Client::new(
+        let ava_response = Client::new(
             server.uri(),
-            HttpClientFactory::new(codex_http_client::OutboundProxyPolicy::ReqwestDefault),
+            HttpClientFactory::new(ava_http_client::OutboundProxyPolicy::ReqwestDefault),
         )
         .get_user_settings()
         .await
         .unwrap();
         let chatgpt_response = Client::new(
             format!("{}/backend-api", server.uri()),
-            HttpClientFactory::new(codex_http_client::OutboundProxyPolicy::ReqwestDefault),
+            HttpClientFactory::new(ava_http_client::OutboundProxyPolicy::ReqwestDefault),
         )
         .get_user_settings()
         .await
         .unwrap();
 
         assert_eq!(
-            [codex_response, chatgpt_response],
+            [ava_response, chatgpt_response],
             [
-                CodexUserSettingsResponse {
+                AvaUserSettingsResponse {
                     commit_attribution_enabled: true,
                 },
-                CodexUserSettingsResponse {
+                AvaUserSettingsResponse {
                     commit_attribution_enabled: false,
                 },
             ]
@@ -1208,8 +1208,8 @@ mod tests {
     #[test]
     fn user_settings_missing_attribution_policy_defaults_to_disabled() {
         assert_eq!(
-            serde_json::from_value::<CodexUserSettingsResponse>(serde_json::json!({})).unwrap(),
-            CodexUserSettingsResponse {
+            serde_json::from_value::<AvaUserSettingsResponse>(serde_json::json!({})).unwrap(),
+            AvaUserSettingsResponse {
                 commit_attribution_enabled: false,
             }
         );
@@ -1217,7 +1217,7 @@ mod tests {
 
     #[test]
     fn authenticated_user_settings_client_uses_active_workspace_headers() {
-        let auth = CodexAuth::from_external_chatgpt_tokens(
+        let auth = AvaAuth::from_external_chatgpt_tokens(
             "e30.e30.c2ln",
             "workspace-123",
             Some("enterprise"),
@@ -1226,7 +1226,7 @@ mod tests {
         let client = Client::from_auth(
             "https://chatgpt.com/backend-api",
             &auth,
-            HttpClientFactory::new(codex_http_client::OutboundProxyPolicy::ReqwestDefault),
+            HttpClientFactory::new(ava_http_client::OutboundProxyPolicy::ReqwestDefault),
         );
         let headers = client.headers();
 
@@ -1247,10 +1247,10 @@ mod tests {
         Client {
             base_url: base_url.to_string(),
             http: RouteAwareClientPool::new(
-                HttpClientFactory::new(codex_http_client::OutboundProxyPolicy::ReqwestDefault),
+                HttpClientFactory::new(ava_http_client::OutboundProxyPolicy::ReqwestDefault),
                 ClientRouteClass::Api,
             ),
-            auth_provider: codex_model_provider::unauthenticated_auth_provider(),
+            auth_provider: ava_model_provider::unauthenticated_auth_provider(),
             user_agent: None,
             chatgpt_account_id: None,
             chatgpt_account_is_fedramp: false,

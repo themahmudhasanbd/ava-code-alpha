@@ -1,30 +1,30 @@
 //! CLI login commands and their direct-user observability surfaces.
 //!
 //! The TUI path already installs a broader tracing stack with feedback, OpenTelemetry, and other
-//! interactive-session layers. Direct `codex login` intentionally does less: it preserves the
+//! interactive-session layers. Direct `ava login` intentionally does less: it preserves the
 //! existing stderr/browser UX and adds only a small file-backed tracing layer for login-specific
 //! targets. Keeping that setup local avoids pulling the TUI's session-oriented logging machinery
-//! into a one-shot CLI command while still producing a durable `codex-login.log` artifact that
+//! into a one-shot CLI command while still producing a durable `ava-login.log` artifact that
 //! support can request from users.
 
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::config::Config;
-use codex_core::config::edit::ConfigEdit;
-use codex_core::config::edit::ConfigEditsBuilder;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::AuthManager;
-use codex_login::AuthRouteConfig;
-use codex_login::CLIENT_ID;
-use codex_login::ServerOptions;
-use codex_login::is_workload_identity_selected;
-use codex_login::login_with_access_token;
-use codex_login::login_with_api_key;
-use codex_login::logout_with_revoke;
-use codex_login::run_device_code_login;
-use codex_login::run_login_server;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_utils_cli::CliConfigOverrides;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::config::Config;
+use ava_core::config::edit::ConfigEdit;
+use ava_core::config::edit::ConfigEditsBuilder;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AuthManager;
+use ava_login::AuthRouteConfig;
+use ava_login::CLIENT_ID;
+use ava_login::ServerOptions;
+use ava_login::is_workload_identity_selected;
+use ava_login::login_with_access_token;
+use ava_login::login_with_api_key;
+use ava_login::logout_with_revoke;
+use ava_login::run_device_code_login;
+use ava_login::run_login_server;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_utils_cli::CliConfigOverrides;
 use std::fs::OpenOptions;
 use std::io::IsTerminal;
 use std::io::Read;
@@ -45,15 +45,15 @@ const ACCESS_TOKEN_LOGIN_DISABLED_MESSAGE: &str =
     "Access token login is disabled. Use API key login instead.";
 const LOGIN_SUCCESS_MESSAGE: &str = "Successfully logged in";
 
-/// Installs a small file-backed tracing layer for direct `codex login` flows.
+/// Installs a small file-backed tracing layer for direct `ava login` flows.
 ///
 /// This deliberately duplicates a narrow slice of the TUI logging setup instead of reusing it
 /// wholesale. The TUI stack includes session-oriented layers that are valuable for interactive
 /// runs but unnecessary for a one-shot login command. Keeping the direct CLI path local lets this
-/// command produce a durable `codex-login.log` artifact without coupling it to the TUI's broader
+/// command produce a durable `ava-login.log` artifact without coupling it to the TUI's broader
 /// telemetry and feedback initialization.
 fn init_login_file_logging(config: &Config) -> Option<WorkerGuard> {
-    let log_dir = match codex_core::config::log_dir(config) {
+    let log_dir = match ava_core::config::log_dir(config) {
         Ok(log_dir) => log_dir,
         Err(err) => {
             eprintln!("Warning: failed to resolve login log directory: {err}");
@@ -78,7 +78,7 @@ fn init_login_file_logging(config: &Config) -> Option<WorkerGuard> {
         log_file_opts.mode(0o600);
     }
 
-    let log_path = log_dir.join("codex-login.log");
+    let log_path = log_dir.join("ava-login.log");
     let log_file = match log_file_opts.open(&log_path) {
         Ok(log_file) => log_file,
         Err(err) => {
@@ -92,14 +92,14 @@ fn init_login_file_logging(config: &Config) -> Option<WorkerGuard> {
 
     let (non_blocking, guard) = non_blocking(log_file);
     let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("codex_cli=info,codex_core=info,codex_login=info"));
+        .unwrap_or_else(|_| EnvFilter::new("ava_cli=info,ava_core=info,ava_login=info"));
     let file_layer = tracing_subscriber::fmt::layer()
         .with_writer(non_blocking)
         .with_target(true)
         .with_ansi(false)
         .with_filter(env_filter);
 
-    // Direct `codex login` otherwise relies on ephemeral stderr and browser output.
+    // Direct `ava login` otherwise relies on ephemeral stderr and browser output.
     // Persist the same login targets to a file so support can inspect auth failures
     // without reproducing them through TUI or app-server.
     if let Err(err) = tracing_subscriber::registry().with(file_layer).try_init() {
@@ -115,18 +115,18 @@ fn init_login_file_logging(config: &Config) -> Option<WorkerGuard> {
 
 fn print_login_server_start(actual_port: u16, auth_url: &str) {
     eprintln!(
-        "Starting local login server on http://localhost:{actual_port}.\nIf your browser did not open, navigate to this URL to authenticate:\n\n{auth_url}\n\nOn a remote or headless machine? Use `codex login --device-auth` instead."
+        "Starting local login server on http://localhost:{actual_port}.\nIf your browser did not open, navigate to this URL to authenticate:\n\n{auth_url}\n\nOn a remote or headless machine? Use `ava login --device-auth` instead."
     );
 }
 
 async fn clear_existing_auth_before_login(
-    codex_home: &Path,
+    ava_home: &Path,
     auth_credentials_store_mode: AuthCredentialsStoreMode,
     auth_keyring_backend_kind: AuthKeyringBackendKind,
     auth_route_config: &AuthRouteConfig,
 ) {
     if let Err(err) = logout_with_revoke(
-        codex_home,
+        ava_home,
         auth_credentials_store_mode,
         auth_keyring_backend_kind,
         auth_route_config,
@@ -138,14 +138,14 @@ async fn clear_existing_auth_before_login(
 }
 
 pub async fn login_with_chatgpt(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     forced_chatgpt_workspace_id: Option<Vec<String>>,
     cli_auth_credentials_store_mode: AuthCredentialsStoreMode,
     auth_keyring_backend_kind: AuthKeyringBackendKind,
     auth_route_config: AuthRouteConfig,
 ) -> std::io::Result<()> {
     clear_existing_auth_before_login(
-        &codex_home,
+        &ava_home,
         cli_auth_credentials_store_mode,
         auth_keyring_backend_kind,
         &auth_route_config,
@@ -153,7 +153,7 @@ pub async fn login_with_chatgpt(
     .await;
 
     let opts = ServerOptions::new(
-        codex_home,
+        ava_home,
         CLIENT_ID.to_string(),
         forced_chatgpt_workspace_id,
         cli_auth_credentials_store_mode,
@@ -182,7 +182,7 @@ pub async fn run_login_with_chatgpt(cli_config_overrides: CliConfigOverrides) ->
 
     let effective_chatgpt_workspaces = config.auth_config().effective_chatgpt_workspaces();
     match login_with_chatgpt(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         effective_chatgpt_workspaces,
         config.cli_auth_credentials_store_mode,
         config.auth_keyring_backend_kind(),
@@ -218,7 +218,7 @@ pub async fn run_login_with_api_key(
     }
 
     match login_with_api_key(
-        &config.codex_home,
+        &config.ava_home,
         &api_key,
         config.cli_auth_credentials_store_mode,
         config.auth_keyring_backend_kind(),
@@ -253,7 +253,7 @@ pub async fn run_login_with_access_token(
     let auth_route_config = config.auth_route_config();
     let effective_chatgpt_workspaces = config.auth_config().effective_chatgpt_workspaces();
     match login_with_access_token(
-        &config.codex_home,
+        &config.ava_home,
         &access_token,
         config.cli_auth_credentials_store_mode,
         effective_chatgpt_workspaces.as_deref(),
@@ -276,7 +276,7 @@ pub async fn run_login_with_access_token(
 
 pub fn read_api_key_from_stdin() -> String {
     read_stdin_secret(
-        "--with-api-key expects the API key on stdin. Try piping it, e.g. `printenv OPENAI_API_KEY | codex login --with-api-key`.",
+        "--with-api-key expects the API key on stdin. Try piping it, e.g. `printenv OPENAI_API_KEY | ava login --with-api-key`.",
         "Reading API key from stdin...",
         "No API key provided via stdin.",
     )
@@ -284,7 +284,7 @@ pub fn read_api_key_from_stdin() -> String {
 
 pub fn read_access_token_from_stdin() -> String {
     read_stdin_secret(
-        "--with-access-token expects the access token on stdin. Try piping it, e.g. `printenv CODEX_ACCESS_TOKEN | codex login --with-access-token`.",
+        "--with-access-token expects the access token on stdin. Try piping it, e.g. `printenv AVA_ACCESS_TOKEN | ava login --with-access-token`.",
         "Reading access token from stdin...",
         "No access token provided via stdin.",
     )
@@ -333,7 +333,7 @@ pub async fn run_login_with_device_code(
     }
     let auth_route_config = config.auth_route_config();
     clear_existing_auth_before_login(
-        &config.codex_home,
+        &config.ava_home,
         config.cli_auth_credentials_store_mode,
         config.auth_keyring_backend_kind(),
         &auth_route_config,
@@ -341,7 +341,7 @@ pub async fn run_login_with_device_code(
     .await;
     let effective_chatgpt_workspaces = config.auth_config().effective_chatgpt_workspaces();
     let mut opts = ServerOptions::new(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         client_id.unwrap_or(CLIENT_ID.to_string()),
         effective_chatgpt_workspaces,
         config.cli_auth_credentials_store_mode,
@@ -364,7 +364,7 @@ pub async fn run_login_with_device_code(
 }
 
 /// Prefers device-code login (with `open_browser = false`) when headless environment is detected, but keeps
-/// `codex login` working in environments where device-code may be disabled/feature-gated.
+/// `ava login` working in environments where device-code may be disabled/feature-gated.
 /// If `run_device_code_login` returns `ErrorKind::NotFound` ("device-code unsupported"), this
 /// falls back to starting the local browser login server.
 pub async fn run_login_with_device_code_fallback_to_browser(
@@ -384,7 +384,7 @@ pub async fn run_login_with_device_code_fallback_to_browser(
     }
     let auth_route_config = config.auth_route_config();
     clear_existing_auth_before_login(
-        &config.codex_home,
+        &config.ava_home,
         config.cli_auth_credentials_store_mode,
         config.auth_keyring_backend_kind(),
         &auth_route_config,
@@ -393,7 +393,7 @@ pub async fn run_login_with_device_code_fallback_to_browser(
 
     let effective_chatgpt_workspaces = config.auth_config().effective_chatgpt_workspaces();
     let mut opts = ServerOptions::new(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         client_id.unwrap_or(CLIENT_ID.to_string()),
         effective_chatgpt_workspaces,
         config.cli_auth_credentials_store_mode,
@@ -444,7 +444,7 @@ pub async fn run_login_status(cli_config_overrides: CliConfigOverrides) -> ! {
     let config = load_config_or_exit(cli_config_overrides).await;
 
     if is_workload_identity_selected() {
-        match AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false).await {
+        match AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false).await {
             Ok(_) => {
                 eprintln!("Logged in using workload identity");
                 std::process::exit(0);
@@ -458,7 +458,7 @@ pub async fn run_login_status(cli_config_overrides: CliConfigOverrides) -> ! {
 
     let auth_config = config.auth_config();
     match auth_config
-        .load_auth(/*enable_codex_api_key_env*/ false)
+        .load_auth(/*enable_ava_api_key_env*/ false)
         .await
     {
         Ok(Some(auth)) => match auth.auth_mode() {
@@ -512,7 +512,7 @@ pub async fn run_logout(cli_config_overrides: CliConfigOverrides) -> ! {
     let auth_route_config = config.auth_route_config();
 
     let logged_out = match logout_with_revoke(
-        &config.codex_home,
+        &config.ava_home,
         config.cli_auth_credentials_store_mode,
         config.auth_keyring_backend_kind(),
         &auth_route_config,
@@ -587,10 +587,10 @@ fn safe_format_key(key: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use codex_config::types::AuthCredentialsStoreMode;
-    use codex_login::AuthKeyringBackendKind;
-    use codex_login::load_auth_dot_json;
-    use codex_login::login_with_api_key;
+    use ava_config::types::AuthCredentialsStoreMode;
+    use ava_login::AuthKeyringBackendKind;
+    use ava_login::load_auth_dot_json;
+    use ava_login::login_with_api_key;
     use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
@@ -599,9 +599,9 @@ mod tests {
 
     #[tokio::test]
     async fn clears_existing_auth_before_login() {
-        let codex_home = tempdir().expect("create temporary Codex home");
+        let ava_home = tempdir().expect("create temporary Ava home");
         login_with_api_key(
-            codex_home.path(),
+            ava_home.path(),
             "sk-existing",
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
@@ -609,15 +609,15 @@ mod tests {
         .expect("save existing auth");
 
         clear_existing_auth_before_login(
-            codex_home.path(),
+            ava_home.path(),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
-            &codex_login::test_support::transport_default_auth_route_config(),
+            &ava_login::test_support::transport_default_auth_route_config(),
         )
         .await;
 
         let auth = load_auth_dot_json(
-            codex_home.path(),
+            ava_home.path(),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
         )

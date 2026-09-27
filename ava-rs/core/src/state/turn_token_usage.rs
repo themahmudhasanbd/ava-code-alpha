@@ -3,9 +3,9 @@
 
 use std::collections::BTreeMap;
 
-use codex_otel::SessionTelemetry;
-use codex_otel::TURN_TOKEN_USAGE_METRIC;
-use codex_protocol::protocol::TokenUsage;
+use ava_otel::SessionTelemetry;
+use ava_otel::TURN_TOKEN_USAGE_METRIC;
+use ava_protocol::protocol::TokenUsage;
 
 #[derive(Default)]
 pub(crate) struct TurnTokenUsage {

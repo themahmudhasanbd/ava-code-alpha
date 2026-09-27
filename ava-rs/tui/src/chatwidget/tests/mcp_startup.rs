@@ -80,7 +80,7 @@ async fn mcp_apps_readiness_retries_an_in_flight_installed_mention_lookup() {
     chat.refresh_connector_mentions(/*force_refresh*/ false);
     chat.on_mcp_server_status_updated(McpServerStatusUpdatedNotification {
         thread_id: None,
-        name: "codex_apps".to_string(),
+        name: "ava_apps".to_string(),
         status: McpServerStartupState::Ready,
         error: None,
         failure_reason: None,
@@ -391,7 +391,7 @@ async fn pending_mcp_startup_does_not_reject_queued_compaction() {
 
     assert!(
         std::iter::from_fn(|| rx.try_recv().ok())
-            .any(|event| matches!(event, AppEvent::CodexOp(Op::Compact)))
+            .any(|event| matches!(event, AppEvent::AvaOp(Op::Compact)))
     );
 }
 
@@ -418,7 +418,7 @@ async fn pending_mcp_startup_does_not_drain_follow_up_before_review_starts() {
     assert_eq!(chat.input_queue.queued_user_messages.len(), 1);
     assert!(
         std::iter::from_fn(|| rx.try_recv().ok())
-            .any(|event| { matches!(event, AppEvent::CodexOp(Op::Review { .. })) })
+            .any(|event| { matches!(event, AppEvent::AvaOp(Op::Review { .. })) })
     );
     assert_no_submit_op(&mut op_rx);
 }

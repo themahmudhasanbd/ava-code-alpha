@@ -7,7 +7,7 @@ use super::client::Live;
 use super::data::Load;
 use super::sections::Section;
 use crate::keymap::ListAction;
-use codex_backend_client::AccountProfile;
+use ava_backend_client::AccountProfile;
 
 pub(super) const VIEWS: [TokenActivityView; 3] = [
     TokenActivityView::Daily,

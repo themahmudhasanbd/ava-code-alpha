@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-use codex_code_mode_protocol::CodeModeSessionDelegate;
+use ava_code_mode_protocol::CodeModeSessionDelegate;
 
-use codex_code_mode_protocol::CellId;
-use codex_code_mode_protocol::grpc;
-use codex_code_mode_protocol::host::MAX_PENDING_DELEGATE_CALLS;
-use codex_protocol::ToolName;
+use ava_code_mode_protocol::CellId;
+use ava_code_mode_protocol::grpc;
+use ava_code_mode_protocol::host::MAX_PENDING_DELEGATE_CALLS;
+use ava_protocol::ToolName;
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 

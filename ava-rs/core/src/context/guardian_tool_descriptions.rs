@@ -1,8 +1,8 @@
 //! Bounded, untrusted descriptions for the exact MCP action under review.
 
 use super::ContextualUserFragment;
-use codex_guardian_context::truncate_text;
-use codex_protocol::models::ContentItemKind;
+use ava_guardian_context::truncate_text;
+use ava_protocol::models::ContentItemKind;
 
 /// Descriptions may be shortened or omitted without changing the required action.
 pub(crate) struct GuardianToolDescriptions {

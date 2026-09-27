@@ -9,11 +9,11 @@ use crate::hook_runtime::run_pre_compact_hooks;
 use crate::session::session::Session;
 use crate::session::step_context::StepContext;
 use crate::session::turn_context::TurnContext;
-use codex_analytics::CompactionTrigger;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::items::ContextCompactionItem;
-use codex_protocol::items::TurnItem;
+use ava_analytics::CompactionTrigger;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::items::ContextCompactionItem;
+use ava_protocol::items::TurnItem;
 use tokio_util::sync::CancellationToken;
 
 /// Runs token-budget manual compaction as a normal compaction lifecycle.
@@ -24,7 +24,7 @@ use tokio_util::sync::CancellationToken;
 pub(crate) async fn run_manual_compact_task(
     sess: Arc<Session>,
     turn_context: Arc<TurnContext>,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     sess.emit_turn_started(&turn_context).await;
 
     // Manual compaction runs outside run_turn, so it captures its own current step.
@@ -44,7 +44,7 @@ pub(crate) async fn run_inline_auto_compact_task(
     sess: Arc<Session>,
     step_context: Arc<StepContext>,
     initial_context_injection: InitialContextInjection,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let world_state = match initial_context_injection {
         InitialContextInjection::BeforeLastUserMessage { world_state, .. } => world_state,
         InitialContextInjection::DoNotInject => {
@@ -59,12 +59,12 @@ async fn run_compact_task_inner(
     step_context: &Arc<StepContext>,
     world_state: Arc<WorldState>,
     trigger: CompactionTrigger,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let turn_context = &step_context.turn;
     let pre_compact_outcome = run_pre_compact_hooks(sess, turn_context, trigger).await;
     match pre_compact_outcome {
         PreCompactHookOutcome::Continue => {}
-        PreCompactHookOutcome::Stopped => return Err(CodexErr::TurnAborted),
+        PreCompactHookOutcome::Stopped => return Err(AvaErr::TurnAborted),
     }
 
     let compaction_item = TurnItem::ContextCompaction(ContextCompactionItem::new());
@@ -77,7 +77,7 @@ async fn run_compact_task_inner(
 
     let post_compact_outcome = run_post_compact_hooks(sess, turn_context, trigger).await;
     if let PostCompactHookOutcome::Stopped = post_compact_outcome {
-        return Err(CodexErr::TurnAborted);
+        return Err(AvaErr::TurnAborted);
     }
 
     Ok(())

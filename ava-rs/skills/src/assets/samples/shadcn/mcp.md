@@ -19,7 +19,7 @@ Editor config files:
 | Cursor | `.cursor/mcp.json` |
 | VS Code | `.vscode/mcp.json` |
 | OpenCode | `opencode.json` |
-| Codex | `~/.ava-code/config.toml` (manual) |
+| Ava | `~/.ava-code/config.toml` (manual) |
 
 ---
 

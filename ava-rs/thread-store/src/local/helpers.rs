@@ -9,21 +9,21 @@ use std::time::SystemTime;
 
 use chrono::DateTime;
 use chrono::Utc;
-use codex_git_utils::GitSha;
-use codex_protocol::SanitizedGitUrl;
-use codex_protocol::ThreadId;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::GitInfo;
-use codex_protocol::protocol::NetworkAccess;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::ARCHIVED_SESSIONS_SUBDIR;
-use codex_rollout::RolloutReferenceIndex;
-use codex_rollout::ThreadItem;
-use codex_rollout::find_thread_names_by_ids;
-use codex_state::ThreadMetadata;
+use ava_git_utils::GitSha;
+use ava_protocol::SanitizedGitUrl;
+use ava_protocol::ThreadId;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::GitInfo;
+use ava_protocol::protocol::NetworkAccess;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::ARCHIVED_SESSIONS_SUBDIR;
+use ava_rollout::RolloutReferenceIndex;
+use ava_rollout::ThreadItem;
+use ava_rollout::find_thread_names_by_ids;
+use ava_state::ThreadMetadata;
 
 use super::LocalThreadStore;
 use crate::StoredThread;
@@ -61,8 +61,8 @@ pub(super) fn scoped_rollout_path(
     }
 }
 
-pub(super) fn rollout_path_is_archived(codex_home: &Path, path: &Path) -> bool {
-    path.starts_with(codex_home.join(ARCHIVED_SESSIONS_SUBDIR))
+pub(super) fn rollout_path_is_archived(ava_home: &Path, path: &Path) -> bool {
+    path.starts_with(ava_home.join(ARCHIVED_SESSIONS_SUBDIR))
         || path
             .components()
             .any(|component| component.as_os_str() == OsStr::new(ARCHIVED_SESSIONS_SUBDIR))
@@ -73,7 +73,7 @@ pub(super) async fn owned_rollout_paths(
     store: &LocalThreadStore,
     thread_id: ThreadId,
 ) -> ThreadStoreResult<Vec<PathBuf>> {
-    RolloutReferenceIndex::scan(store.config.codex_home.as_path())
+    RolloutReferenceIndex::scan(store.config.ava_home.as_path())
         .await
         .map_err(|err| ThreadStoreError::Internal {
             message: format!("failed to scan thread rollout files: {err}"),
@@ -103,7 +103,7 @@ pub(super) fn validated_rollout_file_name(
             ),
         });
     };
-    if codex_rollout::rollout_id_from_path(rollout_path).is_some() {
+    if ava_rollout::rollout_id_from_path(rollout_path).is_some() {
         Ok(file_name)
     } else {
         Err(ThreadStoreError::InvalidRequest {
@@ -150,7 +150,7 @@ pub(super) fn stored_thread_from_rollout_item(
         .clone()
         .or_else(|| item.first_user_message.clone())
         .unwrap_or_default();
-    let rollout_path = codex_rollout::plain_rollout_path(item.path.as_path());
+    let rollout_path = ava_rollout::plain_rollout_path(item.path.as_path());
 
     Some(StoredThread {
         thread_id,
@@ -224,7 +224,7 @@ pub(super) fn sqlite_thread_name(metadata: &ThreadMetadata) -> Option<String> {
 }
 
 pub(super) async fn resolve_thread_section_metadata(
-    state_db: &codex_state::StateRuntime,
+    state_db: &ava_state::StateRuntime,
     thread_ids: &[ThreadId],
 ) -> HashMap<ThreadId, (Option<i64>, Option<DateTime<Utc>>)> {
     if thread_ids.is_empty() {
@@ -263,7 +263,7 @@ pub(super) async fn resolve_thread_names(
         }
     }
     if let Ok(legacy_names) =
-        find_thread_names_by_ids(store.config.codex_home.as_path(), &legacy_thread_ids).await
+        find_thread_names_by_ids(store.config.ava_home.as_path(), &legacy_thread_ids).await
     {
         // Legacy titles remain authoritative when present; the index only fills
         // names for threads whose SQLite title is still derived from the preview.
@@ -340,7 +340,7 @@ fn thread_id_from_rollout_path(path: &Path) -> Option<ThreadId> {
 
 #[cfg(test)]
 mod tests {
-    use codex_rollout::ThreadItem;
+    use ava_rollout::ThreadItem;
     use pretty_assertions::assert_eq;
     use uuid::Uuid;
 

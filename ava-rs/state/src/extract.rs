@@ -1,13 +1,13 @@
 use crate::model::ThreadMetadata;
-use codex_history::RolloutItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::TurnContextItem;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::strip_user_message_prefix;
-use codex_protocol::protocol::user_message_preview;
+use ava_history::RolloutItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::TurnContextItem;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::strip_user_message_prefix;
+use ava_protocol::protocol::user_message_preview;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -178,36 +178,36 @@ mod tests {
     use crate::model::ThreadMetadata;
     use chrono::DateTime;
     use chrono::Utc;
-    use codex_history::RolloutItem;
-    use codex_protocol::ThreadId;
-    use codex_protocol::config_types::ApprovalsReviewer;
-    use codex_protocol::config_types::CollaborationMode;
-    use codex_protocol::config_types::ModeKind;
-    use codex_protocol::config_types::ReasoningSummary;
-    use codex_protocol::config_types::Settings;
-    use codex_protocol::items::TurnItem;
-    use codex_protocol::items::UserMessageItem;
-    use codex_protocol::models::ContentItem;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::models::ResponseItem;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::protocol::AskForApproval;
-    use codex_protocol::protocol::EventMsg;
-    use codex_protocol::protocol::ItemCompletedEvent;
-    use codex_protocol::protocol::SandboxPolicy;
-    use codex_protocol::protocol::SessionMeta;
-    use codex_protocol::protocol::SessionMetaLine;
-    use codex_protocol::protocol::SessionSource;
-    use codex_protocol::protocol::ThreadGoal;
-    use codex_protocol::protocol::ThreadGoalStatus;
-    use codex_protocol::protocol::ThreadGoalUpdatedEvent;
-    use codex_protocol::protocol::ThreadHistoryMode;
-    use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-    use codex_protocol::protocol::ThreadSettingsSnapshot;
-    use codex_protocol::protocol::TurnContextItem;
-    use codex_protocol::protocol::USER_MESSAGE_BEGIN;
-    use codex_protocol::protocol::UserMessageEvent;
-    use codex_protocol::user_input::UserInput;
+    use ava_history::RolloutItem;
+    use ava_protocol::ThreadId;
+    use ava_protocol::config_types::ApprovalsReviewer;
+    use ava_protocol::config_types::CollaborationMode;
+    use ava_protocol::config_types::ModeKind;
+    use ava_protocol::config_types::ReasoningSummary;
+    use ava_protocol::config_types::Settings;
+    use ava_protocol::items::TurnItem;
+    use ava_protocol::items::UserMessageItem;
+    use ava_protocol::models::ContentItem;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::models::ResponseItem;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::protocol::AskForApproval;
+    use ava_protocol::protocol::EventMsg;
+    use ava_protocol::protocol::ItemCompletedEvent;
+    use ava_protocol::protocol::SandboxPolicy;
+    use ava_protocol::protocol::SessionMeta;
+    use ava_protocol::protocol::SessionMetaLine;
+    use ava_protocol::protocol::SessionSource;
+    use ava_protocol::protocol::ThreadGoal;
+    use ava_protocol::protocol::ThreadGoalStatus;
+    use ava_protocol::protocol::ThreadGoalUpdatedEvent;
+    use ava_protocol::protocol::ThreadHistoryMode;
+    use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+    use ava_protocol::protocol::ThreadSettingsSnapshot;
+    use ava_protocol::protocol::TurnContextItem;
+    use ava_protocol::protocol::USER_MESSAGE_BEGIN;
+    use ava_protocol::protocol::UserMessageEvent;
+    use ava_protocol::user_input::UserInput;
 
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
@@ -405,7 +405,7 @@ mod tests {
                     timestamp: "2026-02-26T00:00:00.000Z".to_string(),
                     cwd: PathBuf::from("/child/worktree"),
                     runtime_workspace_roots: None,
-                    originator: "codex_cli_rs".to_string(),
+                    originator: "ava_cli_rs".to_string(),
                     cli_version: "0.0.0".to_string(),
                     source: SessionSource::Cli,
                     thread_source: None,
@@ -458,7 +458,7 @@ mod tests {
                 realtime_active: None,
                 cyber_access_program: None,
                 effort: None,
-                summary: codex_protocol::config_types::ReasoningSummary::Auto,
+                summary: ava_protocol::config_types::ReasoningSummary::Auto,
             }),
             "test-provider",
         );
@@ -508,7 +508,7 @@ mod tests {
                 realtime_active: None,
                 cyber_access_program: None,
                 effort: None,
-                summary: codex_protocol::config_types::ReasoningSummary::Auto,
+                summary: ava_protocol::config_types::ReasoningSummary::Auto,
             }),
             "test-provider",
         );
@@ -554,7 +554,7 @@ mod tests {
                 realtime_active: None,
                 cyber_access_program: None,
                 effort: Some(ReasoningEffort::High),
-                summary: codex_protocol::config_types::ReasoningSummary::Auto,
+                summary: ava_protocol::config_types::ReasoningSummary::Auto,
             }),
             "test-provider",
         );
@@ -597,7 +597,7 @@ mod tests {
                 realtime_active: None,
                 cyber_access_program: None,
                 effort: Some(ReasoningEffort::High),
-                summary: codex_protocol::config_types::ReasoningSummary::Auto,
+                summary: ava_protocol::config_types::ReasoningSummary::Auto,
             }),
             "test-provider",
         );
@@ -618,7 +618,7 @@ mod tests {
                 thread_id: None,
                 thread_settings: ThreadSettingsSnapshot {
                     disabled_plugin_ids: Vec::new(),
-                    model: "gpt-5.2-codex".to_string(),
+                    model: "gpt-5.2-ava".to_string(),
                     model_provider_id: "updated-provider".to_string(),
                     service_tier: None,
                     approval_policy: AskForApproval::Never,
@@ -633,7 +633,7 @@ mod tests {
                     collaboration_mode: CollaborationMode {
                         mode: ModeKind::Default,
                         settings: Settings {
-                            model: "gpt-5.2-codex".to_string(),
+                            model: "gpt-5.2-ava".to_string(),
                             reasoning_effort: Some(ReasoningEffort::Ultra),
                             developer_instructions: None,
                         },
@@ -645,7 +645,7 @@ mod tests {
         assert!(rollout_item_affects_thread_metadata(&item));
         apply_rollout_item(&mut metadata, &item, "test-provider");
 
-        assert_eq!(metadata.model.as_deref(), Some("gpt-5.2-codex"));
+        assert_eq!(metadata.model.as_deref(), Some("gpt-5.2-ava"));
         assert_eq!(metadata.model_provider, "updated-provider");
         assert_eq!(metadata.reasoning_effort, Some(ReasoningEffort::Ultra));
         assert_eq!(metadata.cwd, cwd);
@@ -675,7 +675,7 @@ mod tests {
                     timestamp: "2026-02-26T00:00:00.000Z".to_string(),
                     cwd: PathBuf::from("/workspace"),
                     runtime_workspace_roots: None,
-                    originator: "codex_cli_rs".to_string(),
+                    originator: "ava_cli_rs".to_string(),
                     cli_version: "0.0.0".to_string(),
                     source: SessionSource::Cli,
                     thread_source: None,

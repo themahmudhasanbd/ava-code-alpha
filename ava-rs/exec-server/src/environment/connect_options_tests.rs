@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use futures::SinkExt;
 use futures::StreamExt;
 use http::HeaderValue;

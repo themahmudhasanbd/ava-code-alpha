@@ -1,23 +1,23 @@
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::TurnItem;
-use codex_protocol::openai_models::AutoReviewMessages;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GuardianAssessmentAction;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::TurnItem;
+use ava_protocol::openai_models::AutoReviewMessages;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GuardianAssessmentAction;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -69,8 +69,8 @@ for line in sys.stdin:
                 "method": "elicitation/create", "params": {
                     "message": "Approve the server-side action?",
                     "requestedSchema": {"type": "object", "properties": {}},
-                    "_meta": {"codex_request_type": "approval_request",
-                              "codex_approval_kind": "mcp_tool_call", "tool_name": "write_record",
+                    "_meta": {"ava_request_type": "approval_request",
+                              "ava_approval_kind": "mcp_tool_call", "tool_name": "write_record",
                               **meta, **invocation_meta}}})
         if len(sys.argv) > 3:
             for elicitation in pending_elicitations:
@@ -113,7 +113,7 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
             "default_tools_approval_mode": "approve",
         }
     }))?;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         config.approvals_reviewer = ApprovalsReviewer::AutoReview;
         config
@@ -122,7 +122,7 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
             .expect("set MCP fixture");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "elicitation").await?;
+    wait_for_mcp_server(&test.ava-code, "elicitation").await?;
     responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -162,7 +162,7 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
     )
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Run the tool that requests server-side approval.".into(),
@@ -187,12 +187,12 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
             .body_contains_text("write_record")
     );
 
-    test.codex.submit(Op::Interrupt).await?;
+    test.ava-code.submit(Op::Interrupt).await?;
     tokio::time::timeout(Duration::from_secs(10), async {
         let mut guardian_aborted = false;
         let mut parent_aborted = false;
         while !guardian_aborted || !parent_aborted {
-            match test.codex.next_event().await?.msg {
+            match test.ava-code.next_event().await?.msg {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status == GuardianAssessmentStatus::Aborted =>
                 {
@@ -206,7 +206,7 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
     })
     .await
     .context("turn interruption did not abort the MCP elicitation review")??;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -229,25 +229,25 @@ async fn server_initiated_mcp_elicitation_can_require_synchronous_auto_review(
 
     struct AutoApprovingReviewContributor;
 
-    impl codex_extension_api::ApprovalReviewContributor for AutoApprovingReviewContributor {
+    impl ava_extension_api::ApprovalReviewContributor for AutoApprovingReviewContributor {
         fn decide<'a>(
             &'a self,
-            _input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Option<codex_extension_api::ApprovalDecision>>
+            _input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>>
         {
-            Box::pin(async { Some(codex_extension_api::ApprovalDecision::Allow) })
+            Box::pin(async { Some(ava_extension_api::ApprovalDecision::Allow) })
         }
     }
 
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::new();
     extensions.approval_review_contributor(Arc::new(AutoApprovingReviewContributor));
     let mut meta = serde_json::Map::new();
     if strict_auto_review {
-        meta.insert("codex_strict_auto_review".to_string(), json!(true));
+        meta.insert("ava_strict_auto_review".to_string(), json!(true));
     }
     if let Some(sensitive_action) = sensitive_action {
         meta.insert(
-            "codex_sensitive_action".to_string(),
+            "ava_sensitive_action".to_string(),
             json!(sensitive_action),
         );
     }
@@ -260,7 +260,7 @@ async fn server_initiated_mcp_elicitation_can_require_synchronous_auto_review(
             "default_tools_approval_mode": "approve",
         }
     }))?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_model_info_override("gpt-5.5", |model| {
             model
@@ -288,7 +288,7 @@ async fn server_initiated_mcp_elicitation_can_require_synchronous_auto_review(
                 .expect("set MCP fixture");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "elicitation").await?;
+    wait_for_mcp_server(&test.ava-code, "elicitation").await?;
     responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -366,7 +366,7 @@ async fn server_initiated_mcp_elicitation_can_require_synchronous_auto_review(
     if requires_sync {
         assert!(guardian_requests[0].body_contains_text("write_record"));
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -412,8 +412,8 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
     ];
     let meta = actions.map(|(tool_name, arguments)| {
         let mut meta = json!({
-            "codex_strict_auto_review": strict_auto_review,
-            "codex_sensitive_action": true,
+            "ava_strict_auto_review": strict_auto_review,
+            "ava_sensitive_action": true,
             "tool_name": tool_name,
             "tool_params": arguments,
             "connector_id": "inner-connector",
@@ -444,7 +444,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
         mcp_servers["cua_repl"] = fixture_config;
     }
     let mcp_servers = serde_json::from_value(mcp_servers)?;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         config.approvals_reviewer = if strict_auto_review {
             ApprovalsReviewer::User
@@ -457,7 +457,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
             .expect("set MCP fixture");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, server_name).await?;
+    wait_for_mcp_server(&test.ava-code, server_name).await?;
     if matches!(
         call_id_source,
         CallIdSource::WrongServer | CallIdSource::PreviousTurn
@@ -530,7 +530,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
         responses::sse(vec![responses::ev_completed("parent-complete")]),
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the JavaScript invocation with two reviewed inner actions.".into(),
             text_elements: Vec::new(),
@@ -539,7 +539,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
     let mut assessments = Vec::new();
     let mut tool_items = Vec::new();
     loop {
-        let event = tokio::time::timeout(Duration::from_secs(30), test.codex.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(30), test.ava-code.next_event())
             .await
             .context("timed out waiting for independent MCP Guardian reviews")??;
         match event.msg {
@@ -657,7 +657,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
             .expect("Guardian rejection reason")
             .contains("Independent inner action decision.")
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -683,11 +683,11 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
             "default_tools_approval_mode": "approve",
         }
     }))?;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.approvals_reviewer = ApprovalsReviewer::User;
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::Granular(
-                codex_protocol::protocol::GranularApprovalConfig {
+                ava_protocol::protocol::GranularApprovalConfig {
                     sandbox_approval: false,
                     rules: false,
                     skill_approval: false,
@@ -702,7 +702,7 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, "elicitation").await?;
+    wait_for_mcp_server(&test.ava-code, "elicitation").await?;
     responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -721,13 +721,13 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
         responses::sse(vec![responses::ev_completed("parent-complete")]),
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the tool and ask me for its approval.".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ElicitationRequest(_)
@@ -740,26 +740,26 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
         panic!("expected a user elicitation, got {event:?}");
     };
     match &request.request {
-        codex_protocol::approvals::ElicitationRequest::Form {
+        ava_protocol::approvals::ElicitationRequest::Form {
             requested_schema, ..
         } => {
             assert_eq!(requested_schema, &form_schema);
         }
-        codex_protocol::approvals::ElicitationRequest::Url { url, .. } => {
+        ava_protocol::approvals::ElicitationRequest::Url { url, .. } => {
             assert_eq!(url, "https://example.com/approve");
         }
         other => panic!("unexpected elicitation: {other:?}"),
     }
-    test.codex
+    test.ava-code
         .submit(Op::ResolveElicitation {
             server_name: request.server_name,
             request_id: request.id,
-            decision: codex_protocol::approvals::ElicitationAction::Decline,
+            decision: ava_protocol::approvals::ElicitationAction::Decline,
             content: None,
             meta: None,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -770,7 +770,7 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
             .to_string()
             .contains("decline")
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -781,8 +781,8 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
 
     let server = responses::start_mock_server().await;
     let meta = json!([{
-        "codex_strict_auto_review": true,
-        "codex_sensitive_action": true,
+        "ava_strict_auto_review": true,
+        "ava_sensitive_action": true,
         "tool_name": "write_record",
         "tool_params": {"value": 42},
         "connector_id": "inner-connector",
@@ -794,22 +794,22 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
             "default_tools_approval_mode": "approve",
         }
     }))?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
-            model.tool_mode = Some(codex_protocol::openai_models::ToolMode::CodeMode);
+            model.tool_mode = Some(ava_protocol::openai_models::ToolMode::CodeMode);
             model.experimental_supported_tools = vec!["test_sync_tool".to_string()];
         })
         .with_config(move |config| {
             config
                 .features
-                .enable(codex_features::Feature::CodeMode)
+                .enable(ava_features::Feature::CodeMode)
                 .unwrap();
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
             config.approvals_reviewer = ApprovalsReviewer::User;
             config.mcp_servers.set(mcp_servers).unwrap();
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "node_repl").await?;
+    wait_for_mcp_server(&test.ava-code, "node_repl").await?;
     let barrier = r#"await tools.test_sync_tool({barrier: {
         id: "elicitation-origin", participants: 2, timeout_ms: 60000
     }});"#;
@@ -882,7 +882,7 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
         responses::sse(vec![responses::ev_completed("b-finished")]),
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run B and wait for A.".into(),
             text_elements: Vec::new(),
@@ -892,7 +892,7 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
     let mut assessment_target = None;
     loop {
         let event =
-            tokio::time::timeout(Duration::from_secs(60), test.codex.next_event()).await??;
+            tokio::time::timeout(Duration::from_secs(60), test.ava-code.next_event()).await??;
         match event.msg {
             EventMsg::ItemCompleted(event) => {
                 if let TurnItem::McpToolCall(item) = event.item {

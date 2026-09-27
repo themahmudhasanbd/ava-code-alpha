@@ -1,15 +1,15 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-utils-output-truncation"
+name = "ava-utils-output-truncation"
 version.workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
-codex-protocol = { workspace = true }
-codex-utils-string = { workspace = true }
+ava-protocol = { workspace = true }
+ava-utils-string = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

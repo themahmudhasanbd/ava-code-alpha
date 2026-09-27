@@ -1,11 +1,11 @@
 use super::agent;
-use codex_model_provider::create_model_provider;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::SandboxPolicy;
+use ava_model_provider::create_model_provider;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::SandboxPolicy;
 use core_test_support::responses::start_mock_server;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -14,7 +14,7 @@ use tempfile::TempDir;
 async fn consolidation_uses_canonical_parent_enforcement() -> anyhow::Result<()> {
     let server = start_mock_server().await;
     let home = Arc::new(TempDir::new()?);
-    let test = test_codex()
+    let test = test_ava()
         .with_home(home)
         .build_with_auto_env(&server)
         .await?;
@@ -23,7 +23,7 @@ async fn consolidation_uses_canonical_parent_enforcement() -> anyhow::Result<()>
         Some(test.thread_manager.auth_manager()),
     );
 
-    let root = crate::memory_root(&test.config.codex_home);
+    let root = crate::memory_root(&test.config.ava_home);
     let managed_worker_policy = SandboxPolicy::WorkspaceWrite {
         writable_roots: vec![root.clone()],
         network_access: false,
@@ -62,6 +62,6 @@ async fn consolidation_uses_canonical_parent_enforcement() -> anyhow::Result<()>
         );
     }
 
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

@@ -1,9 +1,9 @@
 use std::time::Instant;
 
 use anyhow::Result;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::RequestId;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::RequestId;
 use pretty_assertions::assert_eq;
 
 use super::NoiseStreamHandler;

@@ -110,7 +110,7 @@ impl LazyRemoteExecServerClient {
             .await
             .map_err(|_| {
                 ExecServerError::EnvironmentRegistryRequest(
-                    codex_http_client::RouteAwareRequestError::Timeout,
+                    ava_http_client::RouteAwareRequestError::Timeout,
                 )
             })??;
             let executor_public_key = bundle.executor_public_key.clone();
@@ -208,7 +208,7 @@ impl LazyRemoteExecServerClient {
         client.environment_status().await.map(drop)
     }
 
-    #[tracing::instrument(name = "codex.exec_server.remote.connect", skip_all)]
+    #[tracing::instrument(name = "ava.exec_server.remote.connect", skip_all)]
     pub(super) fn connect_once<'a>(
         &'a self,
         attempt: &'a ConnectionAttempt,

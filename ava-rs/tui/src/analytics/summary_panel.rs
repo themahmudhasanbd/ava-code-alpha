@@ -9,7 +9,7 @@ use super::styles::secondary_style;
 use crate::line_truncation::truncate_line_with_ellipsis_if_overflow as truncate;
 use crate::wrapping::RtOptions;
 use crate::wrapping::word_wrap_lines;
-use codex_backend_client::ProfileInvocationKind;
+use ava_backend_client::ProfileInvocationKind;
 use ratatui::style::Styled;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
@@ -57,7 +57,7 @@ impl AnalyticsView {
             }
         }
         let plan = self.account.ready().map(|plan| {
-            use codex_protocol::account::PlanType;
+            use ava_protocol::account::PlanType;
             match plan {
                 PlanType::Free => "Free",
                 PlanType::Go => "Go",

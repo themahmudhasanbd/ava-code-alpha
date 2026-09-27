@@ -1,16 +1,16 @@
 use super::*;
 use crate::legacy_core::config::ConfigBuilder;
-use codex_config::ConfigLayerSource;
-use codex_config::LoaderOverrides;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_utils_absolute_path::test_support::PathBufExt;
+use ava_config::ConfigLayerSource;
+use ava_config::LoaderOverrides;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_utils_absolute_path::test_support::PathBufExt;
 use pretty_assertions::assert_eq;
 
 async fn test_config() -> Config {
-    let codex_home = tempfile::tempdir().expect("tempdir").keep();
+    let ava_home = tempfile::tempdir().expect("tempdir").keep();
     ConfigBuilder::default()
-        .codex_home(codex_home)
+        .ava_home(ava_home)
         .build()
         .await
         .expect("config")
@@ -125,7 +125,7 @@ async fn selected_custom_provider_and_service_tier_preserve_the_profile_model() 
     )
     .expect("profile");
     let mut actual = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(LoaderOverrides {
             user_config_path: Some(home.path().join("custom.config.toml").abs()),
             user_config_profile: Some("custom".parse().expect("profile name")),
@@ -157,9 +157,9 @@ async fn managed_defaults_win_when_a_project_setting_shadows_the_selected_profil
         "model = \"profile-model\"\n",
     )
     .expect("profile");
-    std::fs::create_dir(project.path().join(".codex")).expect("project config directory");
+    std::fs::create_dir(project.path().join(".ava-code")).expect("project config directory");
     std::fs::write(
-        project.path().join(".codex/config.toml"),
+        project.path().join(".ava-code/config.toml"),
         "model = \"project-model\"\n",
     )
     .expect("project config");
@@ -170,7 +170,7 @@ async fn managed_defaults_win_when_a_project_setting_shadows_the_selected_profil
     )
     .expect("trusted project");
     let mut actual = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(LoaderOverrides {
             user_config_path: Some(home.path().join("work.config.toml").abs()),
             user_config_profile: Some("work".parse().expect("profile name")),

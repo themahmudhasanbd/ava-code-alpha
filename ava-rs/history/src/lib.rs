@@ -9,26 +9,26 @@ use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codex_protocol::ThreadId;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::mcp::McpResourceOriginCheckpoint;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenUsageRecord;
-use codex_protocol::protocol::TurnContextItem;
-use codex_protocol::protocol::WorldStateItem;
-use codex_protocol::realtime::RealtimeItem;
-use codex_protocol::security_risk::SecurityRiskScore;
+use ava_protocol::ThreadId;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::mcp::McpResourceOriginCheckpoint;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenUsageRecord;
+use ava_protocol::protocol::TurnContextItem;
+use ava_protocol::protocol::WorldStateItem;
+use ava_protocol::realtime::RealtimeItem;
+use ava_protocol::security_risk::SecurityRiskScore;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -42,13 +42,13 @@ use serde::de::Error as _;
 #[derive(Debug, Clone, PartialEq)]
 pub struct ResponseItemEnvelope {
     pub item: ResponseItem,
-    pub metadata: Option<CodexHarnessMetadata>,
+    pub metadata: Option<AvaHarnessMetadata>,
 }
 
-/// Metadata owned by the Codex harness and persisted with a response item.
+/// Metadata owned by the Ava harness and persisted with a response item.
 ///
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, JsonSchema)]
-pub struct CodexHarnessMetadata {
+pub struct AvaHarnessMetadata {
     /// Whether a developer message was supplied by an app-server client.
     #[serde(default)]
     pub client_authored: bool,
@@ -62,7 +62,7 @@ pub struct CodexHarnessMetadata {
     )]
     pub history_truncation_token_limit: Option<usize>,
 
-    /// Whether a response configuration update was created by the Codex harness itself.
+    /// Whether a response configuration update was created by the Ava harness itself.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub harness_authored_configuration: bool,
 
@@ -267,7 +267,7 @@ impl From<CompactedItem> for ResponseItem {
 /// One persisted rollout JSONL record.
 ///
 /// This intentionally does not implement Deserialize: JSONL readers must use
-/// codex_rollout's canonical parser so nested decimal values survive the flattened envelope.
+/// ava_rollout's canonical parser so nested decimal values survive the flattened envelope.
 #[derive(Serialize, Clone, JsonSchema)]
 pub struct RolloutLine {
     pub timestamp: String,

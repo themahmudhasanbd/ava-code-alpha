@@ -3,7 +3,7 @@ use super::WorldStateHash;
 use super::WorldStateSection;
 use crate::context::ContextualUserFragment;
 use crate::context::user_profile::UserProfileContextFragment;
-use codex_protocol::user_profile::UserProfileConfig;
+use ava_protocol::user_profile::UserProfileConfig;
 use serde::Deserialize;
 use serde::Serialize;
 

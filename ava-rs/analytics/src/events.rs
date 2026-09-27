@@ -3,9 +3,9 @@ use std::time::Instant;
 use crate::facts::AppInvocation;
 use crate::facts::ArtifactOperation;
 use crate::facts::ArtifactOperationLifecycle;
-use crate::facts::CodexCompactionEvent;
-use crate::facts::CodexErrKind;
-use crate::facts::CodexGoalEvent;
+use crate::facts::AvaCompactionEvent;
+use crate::facts::AvaErrKind;
+use crate::facts::AvaGoalEvent;
 use crate::facts::CompactionImplementation;
 use crate::facts::CompactionPhase;
 use crate::facts::CompactionReason;
@@ -28,26 +28,26 @@ use crate::facts::TurnSteerResult;
 use crate::facts::TurnSubmissionType;
 use crate::guardian_v2::GuardianV2EventRequest;
 use crate::now_unix_millis;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_login::default_client::originator;
-use codex_plugin::PluginId;
-use codex_plugin::PluginTelemetryMetadata;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::SandboxPermissions;
-use codex_protocol::protocol::GuardianAssessmentOutcome;
-use codex_protocol::protocol::GuardianCommandSource;
-use codex_protocol::protocol::GuardianRiskLevel;
-use codex_protocol::protocol::GuardianUserAuthorization;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookExecutionMode;
-use codex_protocol::protocol::HookHandlerType;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenUsage;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_login::default_client::originator;
+use ava_plugin::PluginId;
+use ava_plugin::PluginTelemetryMetadata;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::SandboxPermissions;
+use ava_protocol::protocol::GuardianAssessmentOutcome;
+use ava_protocol::protocol::GuardianCommandSource;
+use ava_protocol::protocol::GuardianRiskLevel;
+use ava_protocol::protocol::GuardianUserAuthorization;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookExecutionMode;
+use ava_protocol::protocol::HookHandlerType;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenUsage;
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -72,47 +72,47 @@ pub(crate) enum TrackEventRequest {
     ThreadArchive(ThreadArchiveEvent),
     GuardianReview(Box<GuardianReviewEventRequest>),
     GuardianV2(Box<GuardianV2EventRequest>),
-    AppMentioned(CodexAppMentionedEventRequest),
-    AppUsed(CodexAppUsedEventRequest),
-    HookRun(CodexHookRunEventRequest),
-    Compaction(Box<CodexCompactionEventRequest>),
-    Goal(Box<CodexGoalEventRequest>),
+    AppMentioned(AvaAppMentionedEventRequest),
+    AppUsed(AvaAppUsedEventRequest),
+    HookRun(AvaHookRunEventRequest),
+    Compaction(Box<AvaCompactionEventRequest>),
+    Goal(Box<AvaGoalEventRequest>),
     ThreadHintStatus(Box<crate::thread_hint::ThreadHintStatusEventRequest>),
-    TurnEvent(Box<CodexTurnEventRequest>),
-    TurnSteer(CodexTurnSteerEventRequest),
-    ArtifactOperation(CodexArtifactOperationEventRequest),
-    CommandExecution(CodexCommandExecutionEventRequest),
-    PluginMeasurement(CodexPluginMeasurementEventRequest),
-    FileChange(CodexFileChangeEventRequest),
-    McpToolCall(CodexMcpToolCallEventRequest),
-    DynamicToolCall(CodexDynamicToolCallEventRequest),
-    ControlToolCall(CodexControlToolCallEventRequest),
-    CollabAgentToolCall(CodexCollabAgentToolCallEventRequest),
-    WebSearch(CodexWebSearchEventRequest),
-    ImageGeneration(CodexImageGenerationEventRequest),
-    AcceptedLineFingerprints(Box<CodexAcceptedLineFingerprintsEventRequest>),
+    TurnEvent(Box<AvaTurnEventRequest>),
+    TurnSteer(AvaTurnSteerEventRequest),
+    ArtifactOperation(AvaArtifactOperationEventRequest),
+    CommandExecution(AvaCommandExecutionEventRequest),
+    PluginMeasurement(AvaPluginMeasurementEventRequest),
+    FileChange(AvaFileChangeEventRequest),
+    McpToolCall(AvaMcpToolCallEventRequest),
+    DynamicToolCall(AvaDynamicToolCallEventRequest),
+    ControlToolCall(AvaControlToolCallEventRequest),
+    CollabAgentToolCall(AvaCollabAgentToolCallEventRequest),
+    WebSearch(AvaWebSearchEventRequest),
+    ImageGeneration(AvaImageGenerationEventRequest),
+    AcceptedLineFingerprints(Box<AvaAcceptedLineFingerprintsEventRequest>),
     #[allow(dead_code)]
-    ReviewEvent(CodexReviewEventRequest),
-    PluginUsed(CodexPluginUsedEventRequest),
-    PluginInstallRequested(CodexPluginInstallRequestedEventRequest),
-    PluginInstalled(CodexPluginEventRequest),
-    PluginUninstalled(CodexPluginEventRequest),
-    PluginEnabled(CodexPluginEventRequest),
-    PluginDisabled(CodexPluginEventRequest),
-    PluginInstallFailed(CodexPluginInstallFailedEventRequest),
-    ExternalAgentConfigImportCompleted(CodexOnboardingExternalAgentImportCompleteEventRequest),
-    ExternalAgentConfigImportFailure(CodexOnboardingExternalAgentImportFailureEventRequest),
+    ReviewEvent(AvaReviewEventRequest),
+    PluginUsed(AvaPluginUsedEventRequest),
+    PluginInstallRequested(AvaPluginInstallRequestedEventRequest),
+    PluginInstalled(AvaPluginEventRequest),
+    PluginUninstalled(AvaPluginEventRequest),
+    PluginEnabled(AvaPluginEventRequest),
+    PluginDisabled(AvaPluginEventRequest),
+    PluginInstallFailed(AvaPluginInstallFailedEventRequest),
+    ExternalAgentConfigImportCompleted(AvaOnboardingExternalAgentImportCompleteEventRequest),
+    ExternalAgentConfigImportFailure(AvaOnboardingExternalAgentImportFailureEventRequest),
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexArtifactOperationEventParams {
+pub(crate) struct AvaArtifactOperationEventParams {
     pub(crate) thread_id: String,
     pub(crate) turn_id: String,
     pub(crate) item_id: String,
     pub(crate) lifecycle: ArtifactOperationLifecycle,
     pub(crate) occurred_at_ms: u64,
     pub(crate) product_client_id: String,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) model_slug: String,
     pub(crate) plugin_id: String,
     pub(crate) script_path: String,
@@ -125,18 +125,18 @@ pub(crate) struct CodexArtifactOperationEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexArtifactOperationEventRequest {
+pub(crate) struct AvaArtifactOperationEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexArtifactOperationEventParams,
+    pub(crate) event_params: AvaArtifactOperationEventParams,
 }
 
-pub(crate) fn codex_artifact_operation_event_request(
+pub(crate) fn ava_artifact_operation_event_request(
     tracking: TrackEventsContext,
     operation: ArtifactOperation,
-) -> CodexArtifactOperationEventRequest {
-    CodexArtifactOperationEventRequest {
-        event_type: "codex_artifact_operation",
-        event_params: CodexArtifactOperationEventParams {
+) -> AvaArtifactOperationEventRequest {
+    AvaArtifactOperationEventRequest {
+        event_type: "ava_artifact_operation",
+        event_params: AvaArtifactOperationEventParams {
             thread_id: tracking.thread_id,
             turn_id: tracking.turn_id,
             item_id: operation.item_id,
@@ -175,7 +175,7 @@ impl TrackEventRequest {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexAcceptedLineFingerprintsEventParams {
+pub(crate) struct AvaAcceptedLineFingerprintsEventParams {
     pub(crate) event_type: &'static str,
     pub(crate) turn_id: String,
     pub(crate) thread_id: String,
@@ -191,9 +191,9 @@ pub(crate) struct CodexAcceptedLineFingerprintsEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexAcceptedLineFingerprintsEventRequest {
+pub(crate) struct AvaAcceptedLineFingerprintsEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexAcceptedLineFingerprintsEventParams,
+    pub(crate) event_params: AvaAcceptedLineFingerprintsEventParams,
 }
 
 #[derive(Serialize)]
@@ -218,7 +218,7 @@ pub(crate) struct SkillInvocationEventParams {
 }
 
 #[derive(Clone, Serialize)]
-pub(crate) struct CodexAppServerClientMetadata {
+pub(crate) struct AvaAppServerClientMetadata {
     pub(crate) product_client_id: String,
     pub(crate) client_name: Option<String>,
     pub(crate) client_version: Option<String>,
@@ -227,8 +227,8 @@ pub(crate) struct CodexAppServerClientMetadata {
 }
 
 #[derive(Clone, Serialize)]
-pub(crate) struct CodexRuntimeMetadata {
-    pub(crate) codex_rs_version: String,
+pub(crate) struct AvaRuntimeMetadata {
+    pub(crate) ava_rs_version: String,
     pub(crate) runtime_os: String,
     pub(crate) runtime_os_version: String,
     pub(crate) runtime_arch: String,
@@ -238,8 +238,8 @@ pub(crate) struct CodexRuntimeMetadata {
 pub(crate) struct ThreadInitializedEventParams {
     pub(crate) thread_id: String,
     pub(crate) session_id: String,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) model: String,
     pub(crate) ephemeral: bool,
     /// Whether the thread's checkout is a validated linked Git worktree, if known.
@@ -271,9 +271,9 @@ pub(crate) struct ThreadArchiveEventParams {
     pub(crate) action: ThreadArchiveAction,
     pub(crate) occurred_at_ms: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) app_server_client: Option<CodexAppServerClientMetadata>,
+    pub(crate) app_server_client: Option<AvaAppServerClientMetadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) runtime: Option<CodexRuntimeMetadata>,
+    pub(crate) runtime: Option<AvaRuntimeMetadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) thread_source: Option<ThreadSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -331,7 +331,7 @@ pub enum GuardianReviewSessionKind {
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GuardianApprovalRequestSource {
-    /// Approval requested directly by the main Codex turn.
+    /// Approval requested directly by the main Ava turn.
     MainTurn,
     /// Approval requested by a delegated subagent and routed through the parent
     /// session for guardian review.
@@ -612,8 +612,8 @@ pub struct GuardianReviewSessionAnalyticsParams {
 #[derive(Serialize)]
 pub(crate) struct GuardianReviewEventPayload {
     pub(crate) session_id: String,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     #[serde(flatten)]
     pub(crate) guardian_review: GuardianReviewEventParams,
 }
@@ -667,7 +667,7 @@ pub(crate) enum ToolEventType {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexToolItemEventBase {
+pub(crate) struct AvaToolItemEventBase {
     pub(crate) thread_id: String,
     pub(crate) session_id: String,
     pub(crate) turn_id: String,
@@ -679,8 +679,8 @@ pub(crate) struct CodexToolItemEventBase {
     pub(crate) parent_call_id: Option<String>,
     pub(crate) originating_response_id: Option<String>,
     pub(crate) subsequent_response_id: Option<String>,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) subagent_source: Option<String>,
     pub(crate) parent_thread_id: Option<String>,
@@ -754,13 +754,13 @@ pub(crate) enum ReviewResolution {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexReviewEventParams {
+pub(crate) struct AvaReviewEventParams {
     pub(crate) thread_id: String,
     pub(crate) turn_id: String,
     pub(crate) item_id: Option<String>,
     pub(crate) review_id: String,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) subagent_source: Option<String>,
     pub(crate) parent_thread_id: Option<String>,
@@ -776,9 +776,9 @@ pub(crate) struct CodexReviewEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexReviewEventRequest {
+pub(crate) struct AvaReviewEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexReviewEventParams,
+    pub(crate) event_params: AvaReviewEventParams,
 }
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -791,11 +791,11 @@ pub(crate) enum WebSearchActionKind {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexCommandExecutionEventParams {
+pub(crate) struct AvaCommandExecutionEventParams {
     pub(crate) model_slug: Option<String>,
     pub(crate) reasoning_effort: Option<String>,
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) plugin_id: Option<String>,
     pub(crate) script_path: Option<String>,
     pub(crate) command_execution_source: CommandExecutionSource,
@@ -808,13 +808,13 @@ pub(crate) struct CodexCommandExecutionEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexCommandExecutionEventRequest {
+pub(crate) struct AvaCommandExecutionEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexCommandExecutionEventParams,
+    pub(crate) event_params: AvaCommandExecutionEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginMeasurementEventParams {
+pub(crate) struct AvaPluginMeasurementEventParams {
     pub(crate) thread_id: String,
     pub(crate) turn_id: String,
     pub(crate) item_id: String,
@@ -830,15 +830,15 @@ pub(crate) struct CodexPluginMeasurementEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginMeasurementEventRequest {
+pub(crate) struct AvaPluginMeasurementEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexPluginMeasurementEventParams,
+    pub(crate) event_params: AvaPluginMeasurementEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexFileChangeEventParams {
+pub(crate) struct AvaFileChangeEventParams {
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) file_change_count: u64,
     pub(crate) file_add_count: u64,
     pub(crate) file_update_count: u64,
@@ -847,15 +847,15 @@ pub(crate) struct CodexFileChangeEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexFileChangeEventRequest {
+pub(crate) struct AvaFileChangeEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexFileChangeEventParams,
+    pub(crate) event_params: AvaFileChangeEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexMcpToolCallEventParams {
+pub(crate) struct AvaMcpToolCallEventParams {
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) mcp_server_name: String,
     pub(crate) mcp_tool_name: String,
     pub(crate) mcp_error_present: bool,
@@ -866,15 +866,15 @@ pub(crate) struct CodexMcpToolCallEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexMcpToolCallEventRequest {
+pub(crate) struct AvaMcpToolCallEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexMcpToolCallEventParams,
+    pub(crate) event_params: AvaMcpToolCallEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexDynamicToolCallEventParams {
+pub(crate) struct AvaDynamicToolCallEventParams {
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) dynamic_tool_name: String,
     pub(crate) success: Option<bool>,
     pub(crate) output_content_item_count: Option<u64>,
@@ -884,28 +884,28 @@ pub(crate) struct CodexDynamicToolCallEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexDynamicToolCallEventRequest {
+pub(crate) struct AvaDynamicToolCallEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexDynamicToolCallEventParams,
+    pub(crate) event_params: AvaDynamicToolCallEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexControlToolCallEventParams {
+pub(crate) struct AvaControlToolCallEventParams {
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) success: bool,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexControlToolCallEventRequest {
+pub(crate) struct AvaControlToolCallEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexControlToolCallEventParams,
+    pub(crate) event_params: AvaControlToolCallEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexCollabAgentToolCallEventParams {
+pub(crate) struct AvaCollabAgentToolCallEventParams {
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) sender_thread_id: String,
     pub(crate) receiver_thread_count: u64,
     pub(crate) receiver_thread_ids: Option<Vec<String>>,
@@ -917,30 +917,30 @@ pub(crate) struct CodexCollabAgentToolCallEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexCollabAgentToolCallEventRequest {
+pub(crate) struct AvaCollabAgentToolCallEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexCollabAgentToolCallEventParams,
+    pub(crate) event_params: AvaCollabAgentToolCallEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexWebSearchEventParams {
+pub(crate) struct AvaWebSearchEventParams {
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) web_search_action: Option<WebSearchActionKind>,
     pub(crate) query_present: bool,
     pub(crate) query_count: Option<u64>,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexWebSearchEventRequest {
+pub(crate) struct AvaWebSearchEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexWebSearchEventParams,
+    pub(crate) event_params: AvaWebSearchEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexImageGenerationEventParams {
+pub(crate) struct AvaImageGenerationEventParams {
     #[serde(flatten)]
-    pub(crate) base: CodexToolItemEventBase,
+    pub(crate) base: AvaToolItemEventBase,
     pub(crate) revised_prompt_present: bool,
     pub(crate) saved_path_present: bool,
     pub(crate) transparent_background: Option<bool>,
@@ -949,13 +949,13 @@ pub(crate) struct CodexImageGenerationEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexImageGenerationEventRequest {
+pub(crate) struct AvaImageGenerationEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexImageGenerationEventParams,
+    pub(crate) event_params: AvaImageGenerationEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexAppMetadata {
+pub(crate) struct AvaAppMetadata {
     pub(crate) connector_id: Option<String>,
     pub(crate) thread_id: Option<String>,
     pub(crate) turn_id: Option<String>,
@@ -966,27 +966,27 @@ pub(crate) struct CodexAppMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexAppMentionedEventRequest {
+pub(crate) struct AvaAppMentionedEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexAppMetadata,
+    pub(crate) event_params: AvaAppMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexAppUsedMetadata {
+pub(crate) struct AvaAppUsedMetadata {
     #[serde(flatten)]
-    pub(crate) app: CodexAppMetadata,
+    pub(crate) app: AvaAppMetadata,
     pub(crate) voice_session_id: Option<String>,
     pub(crate) elicitation_type: Option<ElicitationType>,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexAppUsedEventRequest {
+pub(crate) struct AvaAppUsedEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexAppUsedMetadata,
+    pub(crate) event_params: AvaAppUsedMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexHookRunMetadata {
+pub(crate) struct AvaHookRunMetadata {
     pub(crate) thread_id: Option<String>,
     pub(crate) turn_id: Option<String>,
     pub(crate) product_client_id: Option<String>,
@@ -999,18 +999,18 @@ pub(crate) struct CodexHookRunMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexHookRunEventRequest {
+pub(crate) struct AvaHookRunEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexHookRunMetadata,
+    pub(crate) event_params: AvaHookRunMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexCompactionEventParams {
+pub(crate) struct AvaCompactionEventParams {
     pub(crate) thread_id: String,
     pub(crate) session_id: String,
     pub(crate) turn_id: String,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) subagent_source: Option<String>,
     pub(crate) parent_thread_id: Option<String>,
@@ -1020,8 +1020,8 @@ pub(crate) struct CodexCompactionEventParams {
     pub(crate) phase: CompactionPhase,
     pub(crate) strategy: CompactionStrategy,
     pub(crate) status: CompactionStatus,
-    pub(crate) codex_error_kind: Option<CodexErrKind>,
-    pub(crate) codex_error_http_status_code: Option<u16>,
+    pub(crate) ava_error_kind: Option<AvaErrKind>,
+    pub(crate) ava_error_http_status_code: Option<u16>,
     pub(crate) active_context_tokens_before: i64,
     pub(crate) active_context_tokens_after: i64,
     pub(crate) retained_image_count: Option<usize>,
@@ -1034,37 +1034,37 @@ pub(crate) struct CodexCompactionEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexCompactionEventRequest {
+pub(crate) struct AvaCompactionEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexCompactionEventParams,
+    pub(crate) event_params: AvaCompactionEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexGoalEventParams {
+pub(crate) struct AvaGoalEventParams {
     pub(crate) thread_id: String,
     pub(crate) session_id: String,
     pub(crate) turn_id: Option<String>,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) subagent_source: Option<String>,
     pub(crate) parent_thread_id: Option<String>,
     pub(crate) goal_id: String,
     pub(crate) event_kind: GoalEventKind,
-    pub(crate) goal_status: codex_state::ThreadGoalStatus,
+    pub(crate) goal_status: ava_state::ThreadGoalStatus,
     pub(crate) has_token_budget: bool,
     pub(crate) cumulative_tokens_accounted: Option<i64>,
     pub(crate) cumulative_time_accounted_seconds: Option<i64>,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexGoalEventRequest {
+pub(crate) struct AvaGoalEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexGoalEventParams,
+    pub(crate) event_params: AvaGoalEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexTurnEventParams {
+pub(crate) struct AvaTurnEventParams {
     pub(crate) thread_id: String,
     pub(crate) session_id: String,
     pub(crate) turn_id: String,
@@ -1073,12 +1073,12 @@ pub(crate) struct CodexTurnEventParams {
     pub(crate) voice_session_id: Option<String>,
     pub(crate) root_turn_id: Option<String>,
     pub(crate) turn_trigger: Option<String>,
-    pub(crate) codex_turn_source: Option<String>,
+    pub(crate) ava_turn_source: Option<String>,
     // TODO(rhan-oai): Populate once queued/default submission type is plumbed from
     // the turn/start callsites instead of always being reported as None.
     pub(crate) submission_type: Option<TurnSubmissionType>,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) ephemeral: bool,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) initialization_mode: ThreadInitializationMode,
@@ -1104,9 +1104,9 @@ pub(crate) struct CodexTurnEventParams {
     /// Client wall-clock time for the first non-startup turn/interrupt request
     /// that later received a successful response.
     pub(crate) explicit_client_interrupt_requested_at_ms: Option<u64>,
-    pub(crate) turn_error: Option<CodexErrorInfo>,
-    pub(crate) codex_error_kind: Option<CodexErrKind>,
-    pub(crate) codex_error_http_status_code: Option<u16>,
+    pub(crate) turn_error: Option<AvaErrorInfo>,
+    pub(crate) ava_error_kind: Option<AvaErrKind>,
+    pub(crate) ava_error_http_status_code: Option<u16>,
     pub(crate) steer_count: Option<usize>,
     pub(crate) total_tool_call_count: Option<usize>,
     pub(crate) shell_command_count: Option<usize>,
@@ -1136,19 +1136,19 @@ pub(crate) struct CodexTurnEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexTurnEventRequest {
+pub(crate) struct AvaTurnEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexTurnEventParams,
+    pub(crate) event_params: AvaTurnEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexTurnSteerEventParams {
+pub(crate) struct AvaTurnSteerEventParams {
     pub(crate) thread_id: String,
     pub(crate) session_id: String,
     pub(crate) expected_turn_id: Option<String>,
     pub(crate) accepted_turn_id: Option<String>,
-    pub(crate) app_server_client: CodexAppServerClientMetadata,
-    pub(crate) runtime: CodexRuntimeMetadata,
+    pub(crate) app_server_client: AvaAppServerClientMetadata,
+    pub(crate) runtime: AvaRuntimeMetadata,
     pub(crate) thread_source: Option<ThreadSource>,
     pub(crate) subagent_source: Option<String>,
     pub(crate) parent_thread_id: Option<String>,
@@ -1159,13 +1159,13 @@ pub(crate) struct CodexTurnSteerEventParams {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexTurnSteerEventRequest {
+pub(crate) struct AvaTurnSteerEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexTurnSteerEventParams,
+    pub(crate) event_params: AvaTurnSteerEventParams,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginMetadata {
+pub(crate) struct AvaPluginMetadata {
     pub(crate) plugin_id: Option<String>,
     pub(crate) remote_plugin_id: Option<String>,
     pub(crate) plugin_name: Option<String>,
@@ -1177,9 +1177,9 @@ pub(crate) struct CodexPluginMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginUsedMetadata {
+pub(crate) struct AvaPluginUsedMetadata {
     #[serde(flatten)]
-    pub(crate) plugin: CodexPluginMetadata,
+    pub(crate) plugin: AvaPluginMetadata,
     pub(crate) mcp_server_names: Option<Vec<String>>,
     pub(crate) thread_id: Option<String>,
     pub(crate) turn_id: Option<String>,
@@ -1187,7 +1187,7 @@ pub(crate) struct CodexPluginUsedMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginInstallRequestedPluginMetadata {
+pub(crate) struct AvaPluginInstallRequestedPluginMetadata {
     pub(crate) plugin_id: String,
     pub(crate) remote_plugin_id: Option<String>,
     pub(crate) plugin_name: String,
@@ -1195,9 +1195,9 @@ pub(crate) struct CodexPluginInstallRequestedPluginMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginInstallRequestedMetadata {
+pub(crate) struct AvaPluginInstallRequestedMetadata {
     pub(crate) suggestion_id: String,
-    pub(crate) plugins: Vec<CodexPluginInstallRequestedPluginMetadata>,
+    pub(crate) plugins: Vec<AvaPluginInstallRequestedPluginMetadata>,
     pub(crate) source: crate::facts::PluginInstallRequestSource,
     pub(crate) thread_id: String,
     pub(crate) turn_id: String,
@@ -1206,34 +1206,34 @@ pub(crate) struct CodexPluginInstallRequestedMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginInstallRequestedEventRequest {
+pub(crate) struct AvaPluginInstallRequestedEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexPluginInstallRequestedMetadata,
+    pub(crate) event_params: AvaPluginInstallRequestedMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginEventRequest {
+pub(crate) struct AvaPluginEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexPluginMetadata,
+    pub(crate) event_params: AvaPluginMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginInstallFailedMetadata {
+pub(crate) struct AvaPluginInstallFailedMetadata {
     #[serde(flatten)]
-    pub(crate) plugin: CodexPluginMetadata,
+    pub(crate) plugin: AvaPluginMetadata,
     pub(crate) source: crate::facts::PluginInstallSource,
     pub(crate) error_type: String,
     pub(crate) sub_error_type: Option<String>,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginInstallFailedEventRequest {
+pub(crate) struct AvaPluginInstallFailedEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexPluginInstallFailedMetadata,
+    pub(crate) event_params: AvaPluginInstallFailedMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexOnboardingExternalAgentImportCompleteMetadata {
+pub(crate) struct AvaOnboardingExternalAgentImportCompleteMetadata {
     pub(crate) import_id: String,
     pub(crate) source: String,
     pub(crate) provider_id: String,
@@ -1245,13 +1245,13 @@ pub(crate) struct CodexOnboardingExternalAgentImportCompleteMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexOnboardingExternalAgentImportCompleteEventRequest {
+pub(crate) struct AvaOnboardingExternalAgentImportCompleteEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexOnboardingExternalAgentImportCompleteMetadata,
+    pub(crate) event_params: AvaOnboardingExternalAgentImportCompleteMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexOnboardingExternalAgentImportFailureMetadata {
+pub(crate) struct AvaOnboardingExternalAgentImportFailureMetadata {
     pub(crate) import_id: String,
     pub(crate) source: String,
     pub(crate) provider_id: String,
@@ -1264,31 +1264,31 @@ pub(crate) struct CodexOnboardingExternalAgentImportFailureMetadata {
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexOnboardingExternalAgentImportFailureEventRequest {
+pub(crate) struct AvaOnboardingExternalAgentImportFailureEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexOnboardingExternalAgentImportFailureMetadata,
+    pub(crate) event_params: AvaOnboardingExternalAgentImportFailureMetadata,
 }
 
 #[derive(Serialize)]
-pub(crate) struct CodexPluginUsedEventRequest {
+pub(crate) struct AvaPluginUsedEventRequest {
     pub(crate) event_type: &'static str,
-    pub(crate) event_params: CodexPluginUsedMetadata,
+    pub(crate) event_params: AvaPluginUsedMetadata,
 }
 
 pub(crate) fn plugin_state_event_type(state: PluginState) -> &'static str {
     match state {
-        PluginState::Installed => "codex_plugin_installed",
-        PluginState::Uninstalled => "codex_plugin_uninstalled",
-        PluginState::Enabled => "codex_plugin_enabled",
-        PluginState::Disabled => "codex_plugin_disabled",
+        PluginState::Installed => "ava_plugin_installed",
+        PluginState::Uninstalled => "ava_plugin_uninstalled",
+        PluginState::Enabled => "ava_plugin_enabled",
+        PluginState::Disabled => "ava_plugin_disabled",
     }
 }
 
-pub(crate) fn codex_app_metadata(
+pub(crate) fn ava_app_metadata(
     tracking: &TrackEventsContext,
     app: AppInvocation,
-) -> CodexAppMetadata {
-    CodexAppMetadata {
+) -> AvaAppMetadata {
+    AvaAppMetadata {
         connector_id: app.connector_id,
         thread_id: Some(tracking.thread_id.clone()),
         turn_id: Some(tracking.turn_id.clone()),
@@ -1299,20 +1299,20 @@ pub(crate) fn codex_app_metadata(
     }
 }
 
-pub(crate) fn codex_plugin_metadata(plugin: PluginTelemetryMetadata) -> CodexPluginMetadata {
-    codex_plugin_metadata_with_product_client_id(plugin, originator().value)
+pub(crate) fn ava_plugin_metadata(plugin: PluginTelemetryMetadata) -> AvaPluginMetadata {
+    ava_plugin_metadata_with_product_client_id(plugin, originator().value)
 }
 
-fn codex_plugin_metadata_with_product_client_id(
+fn ava_plugin_metadata_with_product_client_id(
     plugin: PluginTelemetryMetadata,
     product_client_id: String,
-) -> CodexPluginMetadata {
+) -> AvaPluginMetadata {
     let PluginTelemetryMetadata {
         plugin_id,
         remote_plugin_id,
         capability_summary,
     } = plugin;
-    CodexPluginMetadata {
+    AvaPluginMetadata {
         plugin_id: plugin_id.as_ref().map(PluginId::as_key),
         remote_plugin_id,
         plugin_name: plugin_id
@@ -1336,16 +1336,16 @@ fn codex_plugin_metadata_with_product_client_id(
     }
 }
 
-pub(crate) fn codex_plugin_install_requested_metadata(
+pub(crate) fn ava_plugin_install_requested_metadata(
     tracking: &TrackEventsContext,
     request: PluginInstallRequested,
-) -> CodexPluginInstallRequestedMetadata {
-    CodexPluginInstallRequestedMetadata {
+) -> AvaPluginInstallRequestedMetadata {
+    AvaPluginInstallRequestedMetadata {
         suggestion_id: request.suggestion_id,
         plugins: request
             .plugins
             .into_iter()
-            .map(|plugin| CodexPluginInstallRequestedPluginMetadata {
+            .map(|plugin| AvaPluginInstallRequestedPluginMetadata {
                 plugin_id: plugin.plugin_id,
                 remote_plugin_id: plugin.remote_plugin_id,
                 plugin_name: plugin.plugin_name,
@@ -1360,16 +1360,16 @@ pub(crate) fn codex_plugin_install_requested_metadata(
     }
 }
 
-pub(crate) fn codex_compaction_event_params(
-    input: CodexCompactionEvent,
+pub(crate) fn ava_compaction_event_params(
+    input: AvaCompactionEvent,
     session_id: String,
-    app_server_client: CodexAppServerClientMetadata,
-    runtime: CodexRuntimeMetadata,
+    app_server_client: AvaAppServerClientMetadata,
+    runtime: AvaRuntimeMetadata,
     thread_source: Option<ThreadSource>,
     subagent_source: Option<String>,
     parent_thread_id: Option<String>,
-) -> CodexCompactionEventParams {
-    CodexCompactionEventParams {
+) -> AvaCompactionEventParams {
+    AvaCompactionEventParams {
         thread_id: input.thread_id,
         session_id,
         turn_id: input.turn_id,
@@ -1384,8 +1384,8 @@ pub(crate) fn codex_compaction_event_params(
         phase: input.phase,
         strategy: input.strategy,
         status: input.status,
-        codex_error_kind: input.codex_error_kind,
-        codex_error_http_status_code: input.codex_error_http_status_code,
+        ava_error_kind: input.ava_error_kind,
+        ava_error_http_status_code: input.ava_error_http_status_code,
         active_context_tokens_before: input.active_context_tokens_before,
         active_context_tokens_after: input.active_context_tokens_after,
         retained_image_count: input.retained_image_count,
@@ -1398,16 +1398,16 @@ pub(crate) fn codex_compaction_event_params(
     }
 }
 
-pub(crate) fn codex_goal_event_params(
-    input: CodexGoalEvent,
+pub(crate) fn ava_goal_event_params(
+    input: AvaGoalEvent,
     session_id: String,
-    app_server_client: CodexAppServerClientMetadata,
-    runtime: CodexRuntimeMetadata,
+    app_server_client: AvaAppServerClientMetadata,
+    runtime: AvaRuntimeMetadata,
     thread_source: Option<ThreadSource>,
     subagent_source: Option<String>,
     parent_thread_id: Option<String>,
-) -> CodexGoalEventParams {
-    CodexGoalEventParams {
+) -> AvaGoalEventParams {
+    AvaGoalEventParams {
         thread_id: input.thread_id,
         session_id,
         turn_id: input.turn_id,
@@ -1425,16 +1425,16 @@ pub(crate) fn codex_goal_event_params(
     }
 }
 
-pub(crate) fn codex_plugin_used_metadata(
+pub(crate) fn ava_plugin_used_metadata(
     tracking: &TrackEventsContext,
     plugin: PluginTelemetryMetadata,
-) -> CodexPluginUsedMetadata {
+) -> AvaPluginUsedMetadata {
     let mcp_server_names = plugin
         .capability_summary
         .as_ref()
         .map(|summary| summary.mcp_server_names.clone());
-    CodexPluginUsedMetadata {
-        plugin: codex_plugin_metadata_with_product_client_id(
+    AvaPluginUsedMetadata {
+        plugin: ava_plugin_metadata_with_product_client_id(
             plugin,
             tracking.product_client_id.clone(),
         ),
@@ -1445,11 +1445,11 @@ pub(crate) fn codex_plugin_used_metadata(
     }
 }
 
-pub(crate) fn codex_hook_run_metadata(
+pub(crate) fn ava_hook_run_metadata(
     tracking: &TrackEventsContext,
     hook: HookRunFact,
-) -> CodexHookRunMetadata {
-    CodexHookRunMetadata {
+) -> AvaHookRunMetadata {
+    AvaHookRunMetadata {
         thread_id: Some(tracking.thread_id.clone()),
         turn_id: Some(tracking.turn_id.clone()),
         product_client_id: Some(tracking.product_client_id.clone()),
@@ -1495,10 +1495,10 @@ fn analytics_hook_source(source: HookSource) -> &'static str {
     }
 }
 
-pub(crate) fn current_runtime_metadata() -> CodexRuntimeMetadata {
+pub(crate) fn current_runtime_metadata() -> AvaRuntimeMetadata {
     let os_info = os_info::get();
-    CodexRuntimeMetadata {
-        codex_rs_version: env!("CARGO_PKG_VERSION").to_string(),
+    AvaRuntimeMetadata {
+        ava_rs_version: env!("CARGO_PKG_VERSION").to_string(),
         runtime_os: std::env::consts::OS.to_string(),
         runtime_os_version: os_info.version().to_string(),
         runtime_arch: std::env::consts::ARCH.to_string(),
@@ -1511,7 +1511,7 @@ pub(crate) fn subagent_thread_started_event_request(
     let event_params = ThreadInitializedEventParams {
         thread_id: input.thread_id,
         session_id: input.session_id,
-        app_server_client: CodexAppServerClientMetadata {
+        app_server_client: AvaAppServerClientMetadata {
             product_client_id: input.product_client_id,
             client_name: input.client_name,
             client_version: input.client_version,
@@ -1530,7 +1530,7 @@ pub(crate) fn subagent_thread_started_event_request(
         created_at: input.created_at,
     };
     ThreadInitializedEvent {
-        event_type: "codex_thread_initialized",
+        event_type: "ava_thread_initialized",
         event_params,
     }
 }

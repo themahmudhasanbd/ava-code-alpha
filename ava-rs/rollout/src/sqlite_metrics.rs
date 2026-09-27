@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_otel::ORIGINATOR_TAG;
-use codex_otel::bounded_originator_tag_value;
-use codex_state::DbTelemetry;
-use codex_state::DbTelemetryHandle;
-use codex_state::LOG_WRITE_BYTES_METRIC;
-use codex_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC;
+use ava_otel::ORIGINATOR_TAG;
+use ava_otel::bounded_originator_tag_value;
+use ava_state::DbTelemetry;
+use ava_state::DbTelemetryHandle;
+use ava_state::LOG_WRITE_BYTES_METRIC;
+use ava_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC;
 
 const LOG_WRITE_BYTES_BOUNDARIES: &[f64] = &[
     128.0,
@@ -30,7 +30,7 @@ const LOG_WRITE_BYTES_BOUNDARIES: &[f64] = &[
 ];
 
 struct OtelDbTelemetry {
-    metrics: codex_otel::MetricsClient,
+    metrics: ava_otel::MetricsClient,
     originator: &'static str,
 }
 
@@ -56,7 +56,7 @@ impl DbTelemetry for OtelDbTelemetry {
     }
 }
 
-pub(crate) fn recorder(metrics: codex_otel::MetricsClient, originator: &str) -> DbTelemetryHandle {
+pub(crate) fn recorder(metrics: ava_otel::MetricsClient, originator: &str) -> DbTelemetryHandle {
     Arc::new(OtelDbTelemetry {
         metrics,
         originator: bounded_originator_tag_value(originator),

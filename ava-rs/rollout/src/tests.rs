@@ -1,7 +1,7 @@
 #![allow(warnings, clippy::all)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::PathExt;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
@@ -33,18 +33,18 @@ use crate::list::get_threads;
 use crate::list::read_head_for_summary;
 use crate::rollout_date_parts;
 use anyhow::Result;
-use codex_history::CodexHarnessMetadata;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadGoal;
-use codex_protocol::protocol::ThreadGoalStatus;
-use codex_protocol::protocol::ThreadGoalUpdatedEvent;
-use codex_protocol::protocol::UserMessageEvent;
+use ava_history::AvaHarnessMetadata;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadGoal;
+use ava_protocol::protocol::ThreadGoalStatus;
+use ava_protocol::protocol::ThreadGoalUpdatedEvent;
+use ava_protocol::protocol::UserMessageEvent;
 
 const NO_SOURCE_FILTER: &[SessionSource] = &[];
 const TEST_PROVIDER: &str = "test-provider";
@@ -84,7 +84,7 @@ fn rollout_line_decoder_preserves_terminal_records_with_unknown_errors() -> Resu
             "last_agent_message": null,
             "error": {
                 "message": "The request was blocked.",
-                "codex_error_info": "other"
+                "ava_error_info": "other"
             },
             "started_at": 10,
             "completed_at": 20,
@@ -96,13 +96,13 @@ fn rollout_line_decoder_preserves_terminal_records_with_unknown_errors() -> Resu
         serde_json::json!({"future_error": {"detail": "new payload"}}),
     ] {
         let mut encoded = expected.clone();
-        encoded["payload"]["error"]["codex_error_info"] = error_info;
+        encoded["payload"]["error"]["ava_error_info"] = error_info;
         let decoded = crate::decode_rollout_line(encoded)?;
         assert_eq!(serde_json::to_value(decoded)?, expected);
     }
 
     let mut malformed = expected;
-    malformed["payload"]["error"]["codex_error_info"] =
+    malformed["payload"]["error"]["ava_error_info"] =
         serde_json::json!({"active_turn_not_steerable": {"turn_kind": "unknown"}});
     assert!(crate::decode_rollout_line(malformed).is_err());
     Ok(())
@@ -125,8 +125,8 @@ async fn insert_state_db_thread(
     rollout_path: &Path,
     archived: bool,
 ) -> crate::state_db::StateDbHandle {
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.abs()),
         TEST_PROVIDER.to_string(),
     )
     .await
@@ -139,7 +139,7 @@ async fn insert_state_db_thread(
         .with_ymd_and_hms(2025, 1, 3, 12, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut builder = codex_state::ThreadMetadataBuilder::new(
+    let mut builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         rollout_path.to_path_buf(),
         created_at,
@@ -339,8 +339,8 @@ async fn find_thread_path_repairs_missing_db_row_after_filesystem_fallback() {
     let fs_rollout_path = home.join(format!("sessions/2025/01/03/rollout-{ts}-{uuid}.jsonl"));
 
     // Create an empty state DB so lookup takes the DB-first path and then falls back to files.
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.abs()),
         TEST_PROVIDER.to_string(),
     )
     .await
@@ -395,8 +395,8 @@ async fn assert_state_db_rollout_path(
     thread_id: ThreadId,
     expected_path: Option<&Path>,
 ) {
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.abs()),
         TEST_PROVIDER.to_string(),
     )
     .await
@@ -1435,7 +1435,7 @@ async fn read_head_for_summary_omits_harness_metadata() {
         ordinal: None,
         item: RolloutItem::ResponseItem(ResponseItemEnvelope {
             item: response_item.clone(),
-            metadata: Some(CodexHarnessMetadata::default()),
+            metadata: Some(AvaHarnessMetadata::default()),
         }),
     };
     fs::write(

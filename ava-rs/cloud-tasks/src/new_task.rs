@@ -1,4 +1,4 @@
-use codex_tui::ComposerInput;
+use ava_tui::ComposerInput;
 
 pub struct NewTaskPage {
     pub composer: ComposerInput,

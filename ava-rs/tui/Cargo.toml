@@ -1,12 +1,12 @@
 [package]
-name = "codex-tui"
+name = "ava-tui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 autobins = false
 
 [[bin]]
-name = "codex-tui"
+name = "ava-tui"
 path = "src/main.rs"
 
 [[bin]]
@@ -14,7 +14,7 @@ name = "md-events"
 path = "src/bin/md-events.rs"
 
 [lib]
-name = "codex_tui"
+name = "ava_tui"
 path = "src/lib.rs"
 doctest = false
 
@@ -22,62 +22,62 @@ doctest = false
 workspace = true
 
 [dependencies]
-codex-build-info = { workspace = true }
+ava-build-info = { workspace = true }
 anyhow = { workspace = true }
 axum = { workspace = true, default-features = false, features = ["http1", "tokio"] }
 base64 = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 clap = { workspace = true, features = ["derive"] }
-codex-ansi-escape = { workspace = true }
-codex-app-server-client = { workspace = true }
-codex-app-server-daemon = { workspace = true }
-codex-app-server-protocol = { workspace = true }
-codex-arg0 = { workspace = true }
-codex-backend-client = { workspace = true }
-codex-install-context = { workspace = true }
-codex-cloud-config = { workspace = true }
-codex-config = { workspace = true }
-codex-context-fragments = { workspace = true }
-codex-connectors = { workspace = true }
-codex-core-plugins = { workspace = true }
-codex-history = { workspace = true }
-codex-exec-server = { workspace = true }
-codex-features = { workspace = true }
-codex-feedback = { workspace = true }
-codex-file-search = { workspace = true }
-codex-git-utils = { workspace = true }
-codex-http-client = { workspace = true }
-codex-login = { workspace = true }
-codex-mermaid = { workspace = true }
-codex-message-history = { workspace = true }
-codex-model-provider = { workspace = true }
-codex-model-provider-info = { workspace = true }
-codex-models-manager = { workspace = true }
-codex-otel = { workspace = true }
-codex-plugin = { workspace = true }
-codex-protocol = { workspace = true }
-codex-realtime-webrtc = { workspace = true }
+ava-ansi-escape = { workspace = true }
+ava-app-server-client = { workspace = true }
+ava-app-server-daemon = { workspace = true }
+ava-app-server-protocol = { workspace = true }
+ava-arg0 = { workspace = true }
+ava-backend-client = { workspace = true }
+ava-install-context = { workspace = true }
+ava-cloud-config = { workspace = true }
+ava-config = { workspace = true }
+ava-context-fragments = { workspace = true }
+ava-connectors = { workspace = true }
+ava-core-plugins = { workspace = true }
+ava-history = { workspace = true }
+ava-exec-server = { workspace = true }
+ava-features = { workspace = true }
+ava-feedback = { workspace = true }
+ava-file-search = { workspace = true }
+ava-git-utils = { workspace = true }
+ava-http-client = { workspace = true }
+ava-login = { workspace = true }
+ava-mermaid = { workspace = true }
+ava-message-history = { workspace = true }
+ava-model-provider = { workspace = true }
+ava-model-provider-info = { workspace = true }
+ava-models-manager = { workspace = true }
+ava-otel = { workspace = true }
+ava-plugin = { workspace = true }
+ava-protocol = { workspace = true }
+ava-realtime-webrtc = { workspace = true }
 futures = { workspace = true }
-codex-rollout = { workspace = true }
-codex-sandboxing = { workspace = true }
-codex-shell-command = { workspace = true }
-codex-state = { workspace = true }
-codex-terminal-detection = { workspace = true }
-codex-worktree = { workspace = true }
-codex-utils-approval-presets = { workspace = true }
-codex-uds = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-cli = { workspace = true }
-codex-utils-elapsed = { workspace = true }
-codex-utils-fuzzy-match = { workspace = true }
-codex-utils-home-dir = { workspace = true }
-codex-utils-oss = { workspace = true }
-codex-utils-path = { workspace = true }
-codex-utils-path-uri = { workspace = true }
-codex-utils-plugins = { workspace = true }
-codex-utils-sandbox-summary = { workspace = true }
-codex-utils-sleep-inhibitor = { workspace = true }
-codex-utils-string = { workspace = true }
+ava-rollout = { workspace = true }
+ava-sandboxing = { workspace = true }
+ava-shell-command = { workspace = true }
+ava-state = { workspace = true }
+ava-terminal-detection = { workspace = true }
+ava-worktree = { workspace = true }
+ava-utils-approval-presets = { workspace = true }
+ava-uds = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-cli = { workspace = true }
+ava-utils-elapsed = { workspace = true }
+ava-utils-fuzzy-match = { workspace = true }
+ava-utils-home-dir = { workspace = true }
+ava-utils-oss = { workspace = true }
+ava-utils-path = { workspace = true }
+ava-utils-path-uri = { workspace = true }
+ava-utils-plugins = { workspace = true }
+ava-utils-sandbox-summary = { workspace = true }
+ava-utils-sleep-inhibitor = { workspace = true }
+ava-utils-string = { workspace = true }
 color-eyre = { workspace = true }
 crossterm = { workspace = true, features = ["bracketed-paste", "event-stream"] }
 derive_more = { workspace = true, features = ["is_variant"] }
@@ -136,7 +136,7 @@ uuid = { workspace = true }
 tiny_http = { workspace = true }
 reqwest = { workspace = true }
 
-codex-windows-sandbox = { workspace = true }
+ava-windows-sandbox = { workspace = true }
 tokio-util = { workspace = true, features = ["time"] }
 
 [target.'cfg(unix)'.dependencies]
@@ -173,9 +173,9 @@ arboard = { workspace = true }
 
 [dev-dependencies]
 app_test_support = { workspace = true }
-codex-mcp = { workspace = true }
+ava-mcp = { workspace = true }
 core_test_support = { workspace = true }
-codex-utils-cargo-bin = { workspace = true }
+ava-utils-cargo-bin = { workspace = true }
 assert_matches = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 futures = { workspace = true }

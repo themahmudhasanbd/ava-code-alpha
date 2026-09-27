@@ -3,8 +3,8 @@ use crate::ConfigRequirementsToml;
 use crate::ManagedHooksRequirementsToml;
 use crate::RequirementSource;
 use crate::RequirementsExecPolicyToml;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::AbsolutePathBufGuard;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBufGuard;
 use toml::Value as TomlValue;
 
 use super::stack::RequirementsCompositionError;

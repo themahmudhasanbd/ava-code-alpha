@@ -11,11 +11,11 @@ use crate::ipc_framed::read_frame;
 use crate::run_windows_sandbox_capture;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_pty::ProcessDriver;
-use codex_utils_pty::ProcessSignal;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_pty::ProcessDriver;
+use ava_utils_pty::ProcessSignal;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::fs;
@@ -82,14 +82,14 @@ fn sandbox_cwd() -> PathBuf {
 
 fn sandbox_home(name: &str) -> TempDir {
     let id = TEST_HOME_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let path = std::env::temp_dir().join(format!("codex-windows-sandbox-{name}-{id}"));
+    let path = std::env::temp_dir().join(format!("ava-windows-sandbox-{name}-{id}"));
     let _ = fs::remove_dir_all(&path);
     fs::create_dir_all(&path).expect("create sandbox home");
     tempfile::TempDir::new_in(&path).expect("create sandbox home tempdir")
 }
 
-fn sandbox_log(codex_home: &Path) -> String {
-    let log_path = crate::current_log_file_path(&codex_home.join(".sandbox"));
+fn sandbox_log(ava_home: &Path) -> String {
+    let log_path = crate::current_log_file_path(&ava_home.join(".sandbox"));
     fs::read_to_string(&log_path)
         .unwrap_or_else(|err| format!("failed to read {}: {err}", log_path.display()))
 }
@@ -191,11 +191,11 @@ fn wait_for_frame_count(frames_path: &Path, expected_frames: usize) -> Vec<Messa
 }
 
 async fn collect_stdout_and_exit(
-    spawned: codex_utils_pty::SpawnedProcess,
-    codex_home: &Path,
+    spawned: ava_utils_pty::SpawnedProcess,
+    ava_home: &Path,
     timeout_duration: Duration,
 ) -> (Vec<u8>, i32) {
-    let codex_utils_pty::SpawnedProcess {
+    let ava_utils_pty::SpawnedProcess {
         session: _session,
         mut stdout_rx,
         stderr_rx: _stderr_rx,
@@ -210,14 +210,14 @@ async fn collect_stdout_and_exit(
     });
     let exit_code = timeout(timeout_duration, exit_rx)
         .await
-        .unwrap_or_else(|_| panic!("timed out waiting for exit\n{}", sandbox_log(codex_home)))
+        .unwrap_or_else(|_| panic!("timed out waiting for exit\n{}", sandbox_log(ava_home)))
         .unwrap_or(-1);
     let stdout = timeout(timeout_duration, stdout_task)
         .await
         .unwrap_or_else(|_| {
             panic!(
                 "timed out waiting for stdout task\n{}",
-                sandbox_log(codex_home)
+                sandbox_log(ava_home)
             )
         })
         .expect("stdout task join");
@@ -228,12 +228,12 @@ async fn collect_stdout_and_exit(
 fn restricted_token_rejects_managed_network_before_spawn() {
     current_thread_runtime().block_on(async {
         let cwd = sandbox_cwd();
-        let codex_home = sandbox_home("restricted-token-managed-network");
+        let ava_home = sandbox_home("restricted-token-managed-network");
         let permission_profile = PermissionProfile::workspace_write();
         let error = spawn_windows_sandbox_session_for_level(WindowsSandboxSessionRequest {
             permission_profile: &permission_profile,
             workspace_roots: &[],
-            codex_home: codex_home.path(),
+            ava_home: ava_home.path(),
             command: Vec::new(),
             cwd: cwd.as_path(),
             env_map: HashMap::new(),
@@ -266,13 +266,13 @@ fn legacy_non_tty_cmd_emits_output() {
     let runtime = current_thread_runtime();
     runtime.block_on(async move {
         let cwd = sandbox_cwd();
-        let codex_home = sandbox_home("legacy-non-tty-cmd");
-        println!("cmd codex_home={}", codex_home.path().display());
+        let ava_home = sandbox_home("legacy-non-tty-cmd");
+        println!("cmd ava_home={}", ava_home.path().display());
         let permission_profile = PermissionProfile::workspace_write();
         let spawned = spawn_windows_sandbox_session_legacy(
             &permission_profile,
             workspace_roots_for(cwd.as_path()).as_slice(),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 "C:\\Windows\\System32\\cmd.exe".to_string(),
                 "/c".to_string(),
@@ -290,7 +290,7 @@ fn legacy_non_tty_cmd_emits_output() {
         .expect("spawn legacy non-tty cmd session");
         println!("cmd spawn returned");
         let (stdout, exit_code) =
-            collect_stdout_and_exit(spawned, codex_home.path(), Duration::from_secs(10)).await;
+            collect_stdout_and_exit(spawned, ava_home.path(), Duration::from_secs(10)).await;
         println!("cmd collect returned exit_code={exit_code}");
         let stdout = String::from_utf8_lossy(&stdout);
         assert_eq!(exit_code, 0, "stdout={stdout:?}");
@@ -304,21 +304,21 @@ fn elevated_non_tty_cmd_forwards_env_output_and_exit() {
     let runtime = current_thread_runtime();
     runtime.block_on(async move {
         let cwd = sandbox_cwd();
-        let codex_home = sandbox_home("elevated-non-tty-cmd");
+        let ava_home = sandbox_home("elevated-non-tty-cmd");
         let permission_profile = PermissionProfile::workspace_write();
         let env_map = HashMap::from([(
-            "CODEX_ELEVATED_TEST".to_string(),
+            "AVA_ELEVATED_TEST".to_string(),
             "ELEVATED-ENV-OK".to_string(),
         )]);
         let spawned = spawn_windows_sandbox_session_elevated_for_permission_profile(
             &permission_profile,
             workspace_roots_for(cwd.as_path()).as_slice(),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 "C:\\Windows\\System32\\cmd.exe".to_string(),
                 "/d".to_string(),
                 "/c".to_string(),
-                "echo %CODEX_ELEVATED_TEST% & exit /b 23".to_string(),
+                "echo %AVA_ELEVATED_TEST% & exit /b 23".to_string(),
             ],
             cwd.as_path(),
             env_map,
@@ -337,11 +337,11 @@ fn elevated_non_tty_cmd_forwards_env_output_and_exit() {
         .unwrap_or_else(|err| {
             panic!(
                 "spawn elevated non-tty cmd session: {err:#}\nsandbox log:\n{}",
-                sandbox_log(codex_home.path())
+                sandbox_log(ava_home.path())
             )
         });
         let (stdout, exit_code) =
-            collect_stdout_and_exit(spawned, codex_home.path(), Duration::from_secs(10)).await;
+            collect_stdout_and_exit(spawned, ava_home.path(), Duration::from_secs(10)).await;
         let stdout = String::from_utf8_lossy(&stdout);
         assert_eq!(exit_code, 23, "stdout={stdout:?}");
         assert!(stdout.contains("ELEVATED-ENV-OK"), "stdout={stdout:?}");
@@ -349,31 +349,31 @@ fn elevated_non_tty_cmd_forwards_env_output_and_exit() {
 }
 
 #[test]
-#[ignore = "requires this test binary in an installed test MSIX, launched with package identity, CODEX_WINDOWS_REGISTERED_CORE=1, and CODEX_HOME provisioned by that package's service in a disposable Windows VM"]
+#[ignore = "requires this test binary in an installed test MSIX, launched with package identity, AVA_WINDOWS_REGISTERED_CORE=1, and AVA_HOME provisioned by that package's service in a disposable Windows VM"]
 fn registered_non_tty_cmd_forwards_env_output_and_exit() {
     assert!(
         crate::registered_core_requested(),
         "registered Core opt-in is required"
     );
-    let codex_home = PathBuf::from(std::env::var_os("CODEX_HOME").expect("fixture CODEX_HOME"));
+    let ava_home = PathBuf::from(std::env::var_os("AVA_HOME").expect("fixture AVA_HOME"));
     assert!(
-        crate::app_package::registered_setup_is_ready(&codex_home)
+        crate::app_package::registered_setup_is_ready(&ava_home)
             .expect("validate the installed package and service receipt"),
         "the test process must have package identity and completed service setup",
     );
     let cwd = tempfile::tempdir().expect("isolated command workspace");
     current_thread_runtime().block_on(async {
         let mut env_map: HashMap<String, String> = std::env::vars().collect();
-        env_map.insert("CODEX_REGISTERED_TEST".into(), "REGISTERED-ENV-OK".into());
+        env_map.insert("AVA_REGISTERED_TEST".into(), "REGISTERED-ENV-OK".into());
         let spawned = spawn_windows_sandbox_session_elevated_for_permission_profile(
             &PermissionProfile::workspace_write(),
             workspace_roots_for(cwd.path()).as_slice(),
-            &codex_home,
+            &ava_home,
             vec![
                 "C:\\Windows\\System32\\cmd.exe".into(),
                 "/d".into(),
                 "/c".into(),
-                "echo %CODEX_REGISTERED_TEST%& exit /b 23".into(),
+                "echo %AVA_REGISTERED_TEST%& exit /b 23".into(),
             ],
             cwd.path(),
             env_map,
@@ -391,7 +391,7 @@ fn registered_non_tty_cmd_forwards_env_output_and_exit() {
         .await
         .expect("launch through the service-recorded alias and authenticated pipes");
         let (stdout, exit_code) =
-            collect_stdout_and_exit(spawned, &codex_home, Duration::from_secs(10)).await;
+            collect_stdout_and_exit(spawned, &ava_home, Duration::from_secs(10)).await;
         assert_eq!(
             (
                 String::from_utf8(stdout).expect("command output"),
@@ -408,7 +408,7 @@ fn legacy_non_tty_cmd_rejects_deny_read_overrides() {
     let runtime = current_thread_runtime();
     runtime.block_on(async move {
         let cwd = sandbox_cwd();
-        let codex_home = sandbox_home("legacy-non-tty-deny-read");
+        let ava_home = sandbox_home("legacy-non-tty-deny-read");
         let secret_path =
             AbsolutePathBuf::from_absolute_path(cwd.join("legacy-non-tty-deny-read-secret.env"))
                 .expect("absolute deny-read fixture path");
@@ -416,7 +416,7 @@ fn legacy_non_tty_cmd_rejects_deny_read_overrides() {
         let err = spawn_windows_sandbox_session_legacy(
             &permission_profile,
             workspace_roots_for(cwd.as_path()).as_slice(),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 "C:\\Windows\\System32\\cmd.exe".to_string(),
                 "/c".to_string(),
@@ -449,13 +449,13 @@ fn legacy_non_tty_powershell_interrupt_terminates_process() {
     let runtime = current_thread_runtime();
     runtime.block_on(async move {
         let cwd = sandbox_cwd();
-        let codex_home = sandbox_home("legacy-non-tty-pwsh");
-        println!("pwsh codex_home={}", codex_home.path().display());
+        let ava_home = sandbox_home("legacy-non-tty-pwsh");
+        println!("pwsh ava_home={}", ava_home.path().display());
         let permission_profile = PermissionProfile::workspace_write();
         let spawned = spawn_windows_sandbox_session_legacy(
             &permission_profile,
             workspace_roots_for(cwd.as_path()).as_slice(),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 pwsh.display().to_string(),
                 "-NoProfile".to_string(),
@@ -473,7 +473,7 @@ fn legacy_non_tty_powershell_interrupt_terminates_process() {
         .await
         .expect("spawn legacy non-tty powershell session");
         println!("pwsh spawn returned");
-        let codex_utils_pty::SpawnedProcess {
+        let ava_utils_pty::SpawnedProcess {
             session,
             mut stdout_rx,
             stderr_rx: _stderr_rx,
@@ -489,14 +489,14 @@ fn legacy_non_tty_powershell_interrupt_terminates_process() {
             }
             panic!(
                 "PowerShell exited before emitting its readiness marker\n{}",
-                sandbox_log(codex_home.path())
+                sandbox_log(ava_home.path())
             );
         })
         .await
         .unwrap_or_else(|_| {
             panic!(
                 "timed out waiting for PowerShell readiness marker\n{}",
-                sandbox_log(codex_home.path())
+                sandbox_log(ava_home.path())
             )
         });
 
@@ -505,7 +505,7 @@ fn legacy_non_tty_powershell_interrupt_terminates_process() {
             .expect("interrupt should terminate the restricted-token process job");
         let exit_code = timeout(Duration::from_secs(5), exit_rx)
             .await
-            .unwrap_or_else(|_| panic!("timed out waiting for exit\n{}", sandbox_log(codex_home.path())))
+            .unwrap_or_else(|_| panic!("timed out waiting for exit\n{}", sandbox_log(ava_home.path())))
             .expect("interrupted process should report an exit code");
         assert_eq!(exit_code, 1);
     });
@@ -641,7 +641,7 @@ fn runner_resizer_sends_resize_frame() {
         let outbound_tx = super::start_runner_pipe_writer(file);
         let mut resizer = super::make_runner_resizer(outbound_tx);
 
-        resizer(codex_utils_pty::TerminalSize {
+        resizer(ava_utils_pty::TerminalSize {
             rows: 45,
             cols: 132,
         })
@@ -665,11 +665,11 @@ fn legacy_capture_emits_output_and_preserves_descendant_after_normal_exit() {
     };
     let _guard = legacy_process_test_guard();
     let cwd = sandbox_cwd();
-    let codex_home = sandbox_home("legacy-capture-pwsh");
-    println!("capture pwsh codex_home={}", codex_home.path().display());
-    let ready_marker = codex_home.path().join("descendant-started");
-    let release_marker = codex_home.path().join("release-descendant");
-    let survival_marker = codex_home.path().join("descendant-survived");
+    let ava_home = sandbox_home("legacy-capture-pwsh");
+    println!("capture pwsh ava_home={}", ava_home.path().display());
+    let ready_marker = ava_home.path().join("descendant-started");
+    let release_marker = ava_home.path().join("release-descendant");
+    let survival_marker = ava_home.path().join("descendant-survived");
     let descendant_command = format!(
         "$deadline=(Get-Date).AddSeconds(30); Set-Content -LiteralPath '{}' -Value $PID; while (-not (Test-Path -LiteralPath '{}')) {{ if ((Get-Date) -ge $deadline) {{ exit 3 }}; Start-Sleep -Milliseconds 25 }}; Set-Content -LiteralPath '{}' -Value survived",
         powershell_literal(&ready_marker),
@@ -682,13 +682,13 @@ fn legacy_capture_emits_output_and_preserves_descendant_after_normal_exit() {
     );
     let parent_command = format!(
         "Write-Output LEGACY-CAPTURE-DIRECT; {}",
-        start_powershell_child(&pwsh, codex_home.path(), &descendant_command, &parent_tail,),
+        start_powershell_child(&pwsh, ava_home.path(), &descendant_command, &parent_tail,),
     );
     let permission_profile = PermissionProfile::workspace_write();
     let result = run_windows_sandbox_capture(
         &permission_profile,
         workspace_roots_for(cwd.as_path()).as_slice(),
-        codex_home.path(),
+        ava_home.path(),
         vec![
             pwsh.display().to_string(),
             "-NoProfile".to_string(),
@@ -735,7 +735,7 @@ fn legacy_workspace_write_delete_is_limited_to_writable_roots() {
     runtime.block_on(async move {
         // Keep writable roots out of USERPROFILE exclusions such as AppData.
         let test_root = TempDir::new_in(sandbox_cwd()).expect("create legacy delete test root");
-        let codex_home = sandbox_home("legacy-delete-writable-roots");
+        let ava_home = sandbox_home("legacy-delete-writable-roots");
         let workspace = test_root.path().join("workspace");
         let temp_root = test_root.path().join("temp");
         let tmp_root = test_root.path().join("tmp");
@@ -799,7 +799,7 @@ fn legacy_workspace_write_delete_is_limited_to_writable_roots() {
         let spawned = spawn_windows_sandbox_session_legacy(
             &permission_profile,
             workspace_roots_for(workspace.as_path()).as_slice(),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 "C:\\Windows\\System32\\cmd.exe".to_string(),
                 "/d".to_string(),
@@ -817,7 +817,7 @@ fn legacy_workspace_write_delete_is_limited_to_writable_roots() {
         .await
         .expect("spawn legacy delete session");
         let (stdout, exit_code) =
-            collect_stdout_and_exit(spawned, codex_home.path(), Duration::from_secs(/*secs*/ 10))
+            collect_stdout_and_exit(spawned, ava_home.path(), Duration::from_secs(/*secs*/ 10))
                 .await;
         let stdout = String::from_utf8_lossy(&stdout);
 
@@ -832,7 +832,7 @@ fn legacy_workspace_write_delete_is_limited_to_writable_roots() {
             ),
             (0, false, false, false, Some("outside".to_string()), true),
             "stdout={stdout:?}\n{}",
-            sandbox_log(codex_home.path())
+            sandbox_log(ava_home.path())
         );
     });
 }
@@ -845,9 +845,9 @@ fn legacy_capture_cancellation_terminates_descendants_without_timeout() {
     };
     let _guard = legacy_process_test_guard();
     let cwd = sandbox_cwd();
-    let codex_home = sandbox_home("legacy-capture-cancel");
-    let descendant_marker = codex_home.path().join("descendant-survived");
-    let ready_marker = codex_home.path().join("descendant-started");
+    let ava_home = sandbox_home("legacy-capture-cancel");
+    let descendant_marker = ava_home.path().join("descendant-survived");
+    let ready_marker = ava_home.path().join("descendant-started");
     let descendant_command = format!(
         "Set-Content -LiteralPath '{}' -Value $PID; Start-Sleep -Seconds 1; Set-Content -LiteralPath '{}' -Value survived",
         powershell_literal(&ready_marker),
@@ -855,7 +855,7 @@ fn legacy_capture_cancellation_terminates_descendants_without_timeout() {
     );
     let parent_command = start_powershell_child(
         &pwsh,
-        codex_home.path(),
+        ava_home.path(),
         &descendant_command,
         "Start-Sleep -Seconds 30",
     );
@@ -883,7 +883,7 @@ fn legacy_capture_cancellation_terminates_descendants_without_timeout() {
     let result = run_windows_sandbox_capture(
         &permission_profile,
         workspace_roots_for(cwd.as_path()).as_slice(),
-        codex_home.path(),
+        ava_home.path(),
         vec![
             pwsh.display().to_string(),
             "-NoProfile".to_string(),
@@ -930,13 +930,13 @@ async fn assert_legacy_tty_descendant_lifecycle(
     lifecycle: LegacyTtyDescendantLifecycle,
 ) {
     let cwd = sandbox_cwd();
-    let codex_home = sandbox_home(match lifecycle {
+    let ava_home = sandbox_home(match lifecycle {
         LegacyTtyDescendantLifecycle::Terminate => "legacy-tty-descendant-terminate",
         LegacyTtyDescendantLifecycle::Preserve => "legacy-tty-descendant-preserve",
     });
-    let ready_marker = codex_home.path().join("descendant-started");
-    let release_marker = codex_home.path().join("release-descendant");
-    let survival_marker = codex_home.path().join("descendant-survived");
+    let ready_marker = ava_home.path().join("descendant-started");
+    let release_marker = ava_home.path().join("release-descendant");
+    let survival_marker = ava_home.path().join("descendant-survived");
     let child_tail = match lifecycle {
         LegacyTtyDescendantLifecycle::Terminate => "Start-Sleep -Seconds 30".to_string(),
         LegacyTtyDescendantLifecycle::Preserve => format!(
@@ -957,12 +957,12 @@ async fn assert_legacy_tty_descendant_lifecycle(
         ),
     };
     let parent_command =
-        start_powershell_child(pwsh, codex_home.path(), &child_command, &parent_tail);
+        start_powershell_child(pwsh, ava_home.path(), &child_command, &parent_tail);
     let permission_profile = PermissionProfile::workspace_write();
     let spawned = spawn_windows_sandbox_session_legacy(
         &permission_profile,
         workspace_roots_for(cwd.as_path()).as_slice(),
-        codex_home.path(),
+        ava_home.path(),
         vec![
             pwsh.display().to_string(),
             "-NoProfile".to_string(),
@@ -994,7 +994,7 @@ async fn assert_legacy_tty_descendant_lifecycle(
         spawned.session.request_terminate();
     }
     let (_, exit_code) =
-        collect_stdout_and_exit(spawned, codex_home.path(), Duration::from_secs(15)).await;
+        collect_stdout_and_exit(spawned, ava_home.path(), Duration::from_secs(15)).await;
     if matches!(lifecycle, LegacyTtyDescendantLifecycle::Preserve) {
         fs::write(&release_marker, "release").expect("release preserved descendant");
     }
@@ -1037,13 +1037,13 @@ fn legacy_tty_powershell_emits_output_and_accepts_input() {
     let runtime = current_thread_runtime();
     runtime.block_on(async move {
         let cwd = sandbox_cwd();
-        let codex_home = sandbox_home("legacy-tty-pwsh");
-        println!("tty pwsh codex_home={}", codex_home.path().display());
+        let ava_home = sandbox_home("legacy-tty-pwsh");
+        println!("tty pwsh ava_home={}", ava_home.path().display());
         let permission_profile = PermissionProfile::workspace_write();
         let spawned = spawn_windows_sandbox_session_legacy(
             &permission_profile,
             workspace_roots_for(cwd.as_path()).as_slice(),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 pwsh.display().to_string(),
                 "-NoLogo".to_string(),
@@ -1076,7 +1076,7 @@ fn legacy_tty_powershell_emits_output_and_accepts_input() {
         spawned.session.close_stdin();
 
         let (stdout, exit_code) =
-            collect_stdout_and_exit(spawned, codex_home.path(), Duration::from_secs(15)).await;
+            collect_stdout_and_exit(spawned, ava_home.path(), Duration::from_secs(15)).await;
         let stdout = String::from_utf8_lossy(&stdout);
         assert_eq!(exit_code, 0, "stdout={stdout:?}");
         assert!(stdout.contains("ready"), "stdout={stdout:?}");
@@ -1089,13 +1089,13 @@ fn legacy_tty_cmd_emits_output_and_accepts_input() {
     let runtime = current_thread_runtime();
     runtime.block_on(async move {
         let cwd = sandbox_cwd();
-        let codex_home = sandbox_home("legacy-tty-cmd");
-        println!("tty cmd codex_home={}", codex_home.path().display());
+        let ava_home = sandbox_home("legacy-tty-cmd");
+        println!("tty cmd ava_home={}", ava_home.path().display());
         let permission_profile = PermissionProfile::workspace_write();
         let spawned = spawn_windows_sandbox_session_legacy(
             &permission_profile,
             workspace_roots_for(cwd.as_path()).as_slice(),
-            codex_home.path(),
+            ava_home.path(),
             vec![
                 "C:\\Windows\\System32\\cmd.exe".to_string(),
                 "/K".to_string(),
@@ -1125,7 +1125,7 @@ fn legacy_tty_cmd_emits_output_and_accepts_input() {
         spawned.session.close_stdin();
 
         let (stdout, exit_code) =
-            collect_stdout_and_exit(spawned, codex_home.path(), Duration::from_secs(15)).await;
+            collect_stdout_and_exit(spawned, ava_home.path(), Duration::from_secs(15)).await;
         let stdout = String::from_utf8_lossy(&stdout);
         assert_eq!(exit_code, 0, "stdout={stdout:?}");
         assert!(stdout.contains("ready"), "stdout={stdout:?}");

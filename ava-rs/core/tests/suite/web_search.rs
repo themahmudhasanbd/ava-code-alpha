@@ -1,20 +1,20 @@
 #![allow(clippy::unwrap_used)]
 
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_login::auth::BedrockApiKeyAuth;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_4_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::WebSearchToolType;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_login::auth::BedrockApiKeyAuth;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_4_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::WebSearchToolType;
 use core_test_support::responses;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -40,7 +40,7 @@ async fn web_search_mode_cached_sets_external_web_access_false() {
     ]);
     let resp_mock = responses::mount_sse_once(&server, sse).await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config
             .web_search_mode
             .set(WebSearchMode::Cached)
@@ -49,7 +49,7 @@ async fn web_search_mode_cached_sets_external_web_access_false() {
     let test = builder
         .build(&server)
         .await
-        .expect("create test Codex conversation");
+        .expect("create test Ava conversation");
 
     test.submit_turn_with_permission_profile(
         "hello cached web search",
@@ -100,11 +100,11 @@ async fn amazon_bedrock_web_search_uses_text_only_hosted_tools() {
         )
         .await;
 
-        let auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        let auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
             api_key: "dummy".to_string(),
             region: "us-east-1".to_string(),
         });
-        let mut builder = test_codex().with_auth(auth);
+        let mut builder = test_ava().with_auth(auth);
         builder = match model_catalog {
             ModelCatalog::BuiltIn => builder.with_model(AMAZON_BEDROCK_GPT_5_4_MODEL_ID),
             ModelCatalog::Configured => builder.with_model_info_override("gpt-5.4", |model_info| {
@@ -162,11 +162,11 @@ async fn amazon_bedrock_runtime_preserves_cross_region_models_without_web_search
             ]),
         )
         .await;
-        let auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        let auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
             api_key: "dummy".to_string(),
             region: "us-east-1".to_string(),
         });
-        let mut builder = test_codex()
+        let mut builder = test_ava()
             .with_auth(auth)
             .with_model(model)
             .with_config(|config| {
@@ -226,11 +226,11 @@ async fn amazon_bedrock_web_search_is_disabled_when_managed_requirements_prohibi
         )
         .await;
 
-        let auth = CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        let auth = AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
             api_key: "dummy".to_string(),
             region: "us-east-1".to_string(),
         });
-        let mut builder = test_codex()
+        let mut builder = test_ava()
             .with_auth(auth)
             .with_model(AMAZON_BEDROCK_GPT_5_4_MODEL_ID)
             .with_cloud_config_bundle(
@@ -285,7 +285,7 @@ async fn web_search_mode_takes_precedence_over_legacy_flags() {
     ]);
     let resp_mock = responses::mount_sse_once(&server, sse).await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config
             .features
             .enable(Feature::WebSearchRequest)
@@ -298,7 +298,7 @@ async fn web_search_mode_takes_precedence_over_legacy_flags() {
     let test = builder
         .build(&server)
         .await
-        .expect("create test Codex conversation");
+        .expect("create test Ava conversation");
 
     test.submit_turn_with_permission_profile(
         "hello cached+live flags",
@@ -327,7 +327,7 @@ async fn web_search_mode_defaults_to_cached_when_features_disabled() {
     ]);
     let resp_mock = responses::mount_sse_once(&server, sse).await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config
             .web_search_mode
             .set(WebSearchMode::Cached)
@@ -344,7 +344,7 @@ async fn web_search_mode_defaults_to_cached_when_features_disabled() {
     let test = builder
         .build(&server)
         .await
-        .expect("create test Codex conversation");
+        .expect("create test Ava conversation");
 
     test.submit_turn_with_permission_profile(
         "hello default cached web search",
@@ -382,7 +382,7 @@ async fn web_search_mode_updates_between_turns_with_permission_profile() {
     )
     .await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config
             .web_search_mode
             .set(WebSearchMode::Cached)
@@ -399,7 +399,7 @@ async fn web_search_mode_updates_between_turns_with_permission_profile() {
     let test = builder
         .build(&server)
         .await
-        .expect("create test Codex conversation");
+        .expect("create test Ava conversation");
 
     test.submit_turn_with_permission_profile("hello cached", PermissionProfile::read_only())
         .await
@@ -443,7 +443,7 @@ async fn web_search_tool_config_from_config_toml_is_forwarded_to_request() {
     ]);
     let resp_mock = responses::mount_sse_once(&server, sse).await;
 
-    let home = Arc::new(tempfile::TempDir::new().expect("create codex home"));
+    let home = Arc::new(tempfile::TempDir::new().expect("create ava home"));
     std::fs::write(
         home.path().join("config.toml"),
         r#"web_search = "live"
@@ -456,11 +456,11 @@ location = { country = "US", city = "New York", timezone = "America/New_York" }
     )
     .expect("write config.toml");
 
-    let mut builder = test_codex().with_model("gpt-5.2").with_home(home);
+    let mut builder = test_ava().with_model("gpt-5.2").with_home(home);
     let test = builder
         .build(&server)
         .await
-        .expect("create test Codex conversation");
+        .expect("create test Ava conversation");
 
     test.submit_turn_with_permission_profile(
         "hello configured web search",
@@ -501,15 +501,15 @@ async fn indexed_web_search_mode_sets_indexed_access() {
     ]);
     let resp_mock = responses::mount_sse_once(&server, sse).await;
 
-    let home = Arc::new(tempfile::TempDir::new().expect("create codex home"));
+    let home = Arc::new(tempfile::TempDir::new().expect("create ava home"));
     std::fs::write(home.path().join("config.toml"), r#"web_search = "indexed""#)
         .expect("write config.toml");
 
-    let mut builder = test_codex().with_model("gpt-5.2").with_home(home);
+    let mut builder = test_ava().with_model("gpt-5.2").with_home(home);
     let test = builder
         .build(&server)
         .await
-        .expect("create test Codex conversation");
+        .expect("create test Ava conversation");
 
     test.submit_turn_with_permission_profile(
         "hello indexed web search",

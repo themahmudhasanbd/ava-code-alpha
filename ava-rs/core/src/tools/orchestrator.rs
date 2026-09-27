@@ -25,15 +25,15 @@ use crate::tools::sandboxing::ToolRuntime;
 use crate::tools::sandboxing::default_exec_approval_requirement;
 use crate::tools::sandboxing::sandbox_override_for_first_attempt;
 use crate::tools::sandboxing::unsandboxed_execution_allowed;
-use codex_otel::ToolDecisionSource;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ReviewDecision;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::policy_transforms::effective_network_sandbox_policy;
+use ava_otel::ToolDecisionSource;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ReviewDecision;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::policy_transforms::effective_network_sandbox_policy;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -144,11 +144,11 @@ impl ToolOrchestrator {
         let environment = tool.turn_environment(req);
         let sandbox_manager = SandboxManager::new();
         #[cfg(target_os = "macos")]
-        let sandbox_manager = sandbox_manager.with_allowed_symlinked_codex_home(
+        let sandbox_manager = sandbox_manager.with_allowed_symlinked_ava_home(
             environment
                 .environment
                 .local_runtime_paths()
-                .and_then(|paths| paths.allowed_symlinked_codex_home.clone()),
+                .and_then(|paths| paths.allowed_symlinked_ava_home.clone()),
         );
         let sandbox_config = environment.config();
         let owner_network_policy = sandbox_config.network_policy.is_some();
@@ -270,7 +270,7 @@ impl ToolOrchestrator {
                 managed_network_active,
             ),
         };
-        let windows_sandbox_type = codex_protocol::sandbox::effective_windows_sandbox_type(
+        let windows_sandbox_type = ava_protocol::sandbox::effective_windows_sandbox_type(
             sandbox_config.windows_sandbox_type,
             sandbox_config.windows_sandbox_level,
         );
@@ -289,10 +289,10 @@ impl ToolOrchestrator {
             .sandbox_cwd(req)
             .cloned()
             .unwrap_or_else(|| environment.cwd().clone());
-        let codex_sandbox_exe = if cfg!(windows) {
-            turn_ctx.config.codex_self_exe.as_ref()
+        let ava_sandbox_exe = if cfg!(windows) {
+            turn_ctx.config.ava_self_exe.as_ref()
         } else {
-            turn_ctx.config.codex_linux_sandbox_exe.as_ref()
+            turn_ctx.config.ava_linux_sandbox_exe.as_ref()
         };
         let initial_attempt = SandboxAttempt {
             sandbox: initial_sandbox,
@@ -303,7 +303,7 @@ impl ToolOrchestrator {
             manager: &sandbox_manager,
             sandbox_cwd: &sandbox_policy_cwd,
             workspace_roots,
-            sandbox_exe: codex_sandbox_exe,
+            sandbox_exe: ava_sandbox_exe,
             use_legacy_landlock: sandbox_config.use_legacy_landlock,
             windows_sandbox_type,
             windows_sandbox_level: sandbox_config.windows_sandbox_level,
@@ -323,13 +323,13 @@ impl ToolOrchestrator {
                     deferred_network_approval: first_deferred_network_approval,
                 })
             }
-            Err(ToolError::Codex(err)) => {
-                let CodexErrorDetails::Sandbox(SandboxErr::Denied {
+            Err(ToolError::Ava(err)) => {
+                let AvaErrorDetails::Sandbox(SandboxErr::Denied {
                     output,
                     network_policy_decision,
                 }) = err.details()
                 else {
-                    let err = ToolError::Codex(err);
+                    let err = ToolError::Ava(err);
                     if let Some(outcome) = sandbox_outcome_from_tool_error(&err) {
                         otel.sandbox_outcome(
                             &otel_tn,
@@ -356,7 +356,7 @@ impl ToolOrchestrator {
                         initial_duration,
                         /*escalated_duration*/ None,
                     );
-                    return Err(ToolError::Codex(err));
+                    return Err(ToolError::Ava(err));
                 }
                 if !tool.escalate_on_failure() {
                     otel.sandbox_outcome(
@@ -366,7 +366,7 @@ impl ToolOrchestrator {
                         initial_duration,
                         /*escalated_duration*/ None,
                     );
-                    return Err(ToolError::Codex(err));
+                    return Err(ToolError::Ava(err));
                 }
                 // Under `Never` or `OnRequest`, do not retry without sandbox;
                 // surface a concise sandbox denial that preserves the
@@ -390,7 +390,7 @@ impl ToolOrchestrator {
                             initial_duration,
                             /*escalated_duration*/ None,
                         );
-                        return Err(ToolError::Codex(err));
+                        return Err(ToolError::Ava(err));
                     }
                 }
                 if !unsandboxed_allowed && network_approval_context.is_none() {
@@ -401,7 +401,7 @@ impl ToolOrchestrator {
                         initial_duration,
                         /*escalated_duration*/ None,
                     );
-                    return Err(ToolError::Codex(err));
+                    return Err(ToolError::Ava(err));
                 }
                 let retry_reason =
                     if let Some(network_approval_context) = network_approval_context.as_ref() {
@@ -466,7 +466,7 @@ impl ToolOrchestrator {
                 let retry_sandbox_exe = if unsandboxed_allowed {
                     None
                 } else {
-                    codex_sandbox_exe
+                    ava_sandbox_exe
                 };
                 let retry_attempt = SandboxAttempt {
                     sandbox: retry_sandbox,
@@ -538,10 +538,10 @@ impl ToolOrchestrator {
 
 fn sandbox_outcome_from_tool_error(err: &ToolError) -> Option<&'static str> {
     match err {
-        ToolError::Codex(err) => match err.details() {
-            CodexErrorDetails::Sandbox(SandboxErr::Denied { .. }) => Some("denied"),
-            CodexErrorDetails::Sandbox(SandboxErr::Timeout { .. }) => Some("timed_out"),
-            CodexErrorDetails::Sandbox(SandboxErr::Signal(_)) => Some("signal"),
+        ToolError::Ava(err) => match err.details() {
+            AvaErrorDetails::Sandbox(SandboxErr::Denied { .. }) => Some("denied"),
+            AvaErrorDetails::Sandbox(SandboxErr::Timeout { .. }) => Some("timed_out"),
+            AvaErrorDetails::Sandbox(SandboxErr::Signal(_)) => Some("signal"),
             _ => None,
         },
         ToolError::Rejected(_) => None,

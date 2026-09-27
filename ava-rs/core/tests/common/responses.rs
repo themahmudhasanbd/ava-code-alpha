@@ -7,9 +7,9 @@ use std::time::Duration;
 
 use anyhow::Result;
 use base64::Engine;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelsResponse;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelsResponse;
 use futures::SinkExt;
 use futures::StreamExt;
 use serde_json::Value;
@@ -90,7 +90,7 @@ pub fn assert_root_turn(body: &Value, expected: Option<&str>) -> Result<()> {
 
 fn assert_turn_id(body: &Value, key: &str, expected: Option<&str>) -> Result<()> {
     let metadata = &body["client_metadata"];
-    let payload = metadata["x-codex-turn-metadata"]
+    let payload = metadata["x-ava-turn-metadata"]
         .as_str()
         .expect("canonical turn metadata");
     let canonical: Value = serde_json::from_str(payload)?;

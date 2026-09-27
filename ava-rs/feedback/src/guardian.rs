@@ -2,7 +2,7 @@
 //! Captures are exported only by a feedback request that includes logs.
 
 use crate::FeedbackAttachment;
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::sync::Mutex;

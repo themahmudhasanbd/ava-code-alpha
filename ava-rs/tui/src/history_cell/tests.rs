@@ -10,16 +10,16 @@ use crate::line_truncation::line_width;
 use crate::render::highlight::MAX_HIGHLIGHT_LINE_BYTES;
 use crate::session_state::ThreadSessionState;
 use crate::wrapping::word_wrap_lines;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::McpAuthStatus;
-use codex_config::types::McpServerConfig;
-use codex_otel::RuntimeMetricTotals;
-use codex_otel::RuntimeMetricsSummary;
-use codex_protocol::ThreadId;
-use codex_protocol::account::PlanType;
-use codex_protocol::error::UnexpectedResponseError;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::McpAuthStatus;
+use ava_config::types::McpServerConfig;
+use ava_otel::RuntimeMetricTotals;
+use ava_otel::RuntimeMetricsSummary;
+use ava_protocol::ThreadId;
+use ava_protocol::account::PlanType;
+use ava_protocol::error::UnexpectedResponseError;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use dirs::home_dir;
 use http::StatusCode;
 use pretty_assertions::assert_eq;
@@ -29,9 +29,9 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use codex_app_server_protocol::CommandExecutionSource as ExecCommandSource;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::mcp::Tool;
+use ava_app_server_protocol::CommandExecutionSource as ExecCommandSource;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::Tool;
 use rmcp::model::ContentBlock;
 
 const SMALL_PNG_BASE64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==";
@@ -41,12 +41,12 @@ fn connected_server_version_notice_snapshot() {
     let target = crate::AppServerTarget::Remote {
         endpoint: crate::RemoteAppServerEndpoint::UnixSocket {
             socket_path: AbsolutePathBuf::from_absolute_path(
-                std::env::temp_dir().join("codex.sock"),
+                std::env::temp_dir().join("ava.sock"),
             )
             .expect("absolute socket path"),
         },
     };
-    let settings = codex_config::types::Tui {
+    let settings = ava_config::types::Tui {
         show_server_version_notice: true,
         ..Default::default()
     };
@@ -69,12 +69,12 @@ fn local_daemon_version_notice_snapshot() {
         allow_embedded_fallback: true,
         endpoint: crate::RemoteAppServerEndpoint::UnixSocket {
             socket_path: AbsolutePathBuf::from_absolute_path(
-                std::env::temp_dir().join("codex.sock"),
+                std::env::temp_dir().join("ava.sock"),
             )
             .expect("absolute socket path"),
         },
     };
-    let settings = codex_config::types::Tui {
+    let settings = ava_config::types::Tui {
         show_server_version_notice: true,
         ..Default::default()
     };
@@ -101,9 +101,9 @@ fn local_daemon_version_notice_snapshot() {
 }
 
 async fn test_config() -> Config {
-    let codex_home = std::env::temp_dir();
+    let ava_home = std::env::temp_dir();
     ConfigBuilder::default()
-        .codex_home(codex_home.clone())
+        .ava_home(ava_home.clone())
         .build()
         .await
         .expect("config")
@@ -357,7 +357,7 @@ fn source_backed_cells_render_raw_source_without_prefix_or_style() {
 #[test]
 fn proposed_plan_cell_renders_markdown_table() {
     let plan = new_proposed_plan(
-        "## Plan\n\n| Step | Owner |\n| --- | --- |\n| Verify | Codex |\n".to_string(),
+        "## Plan\n\n| Step | Owner |\n| --- | --- |\n| Verify | Ava |\n".to_string(),
         &test_cwd(),
     );
 
@@ -476,7 +476,7 @@ fn empty_mcp_output_preserves_docs_hyperlink() {
 #[test]
 fn proposed_plan_cell_unwraps_markdown_fenced_table() {
     let plan = new_proposed_plan(
-        "## Plan\n\n```markdown\n| Step | Owner |\n| --- | --- |\n| Verify | Codex |\n```\n"
+        "## Plan\n\n```markdown\n| Step | Owner |\n| --- | --- |\n| Verify | Ava |\n```\n"
             .to_string(),
         &test_cwd(),
     );
@@ -612,7 +612,7 @@ fn session_configured_event(model: &str) -> ThreadSessionState {
         model_provider_id: "test-provider".to_string(),
         service_tier: None,
         approval_policy: AskForApproval::Never,
-        approvals_reviewer: codex_protocol::config_types::ApprovalsReviewer::User,
+        approvals_reviewer: ava_protocol::config_types::ApprovalsReviewer::User,
         permission_profile: PermissionProfile::read_only(),
         active_permission_profile: None,
         cwd: test_path_buf("/tmp/project").abs(),
@@ -937,7 +937,7 @@ fn error_event_bedrock_expired_signature_snapshot() {
         user_message: Some(
             "Amazon Bedrock rejected the request because its AWS signature has expired. \
 Refresh your AWS credentials and retry. If `AWS_BEARER_TOKEN_BEDROCK` is set, update or \
-unset it, then restart Codex"
+unset it, then restart Ava"
                 .to_string(),
         ),
         url: Some("https://bedrock-mantle.us-east-2.api.aws/openai/v1/responses".to_string()),
@@ -1082,7 +1082,7 @@ fn mcp_tools_output_from_statuses_renders_status_only_servers() {
         )]),
         resources: Vec::new(),
         resource_templates: Vec::new(),
-        auth_status: codex_app_server_protocol::McpAuthStatus::Unknown,
+        auth_status: ava_app_server_protocol::McpAuthStatus::Unknown,
     }];
 
     let cell =
@@ -1133,7 +1133,7 @@ fn mcp_tools_output_from_statuses_renders_verbose_inventory() {
             description: None,
             mime_type: None,
         }],
-        auth_status: codex_app_server_protocol::McpAuthStatus::Unsupported,
+        auth_status: ava_app_server_protocol::McpAuthStatus::Unsupported,
     }];
 
     let cell = new_mcp_tools_output_from_statuses(&statuses, McpServerStatusDetail::Full);
@@ -1153,7 +1153,7 @@ fn prefixed_wrapped_history_cell_indents_wrapped_lines() {
     let summary = Line::from(vec![
         "You ".into(),
         "approved".bold(),
-        " codex to run ".into(),
+        " ava to run ".into(),
         "echo something really long to ensure wrapping happens".dim(),
         " this time".bold(),
     ]);
@@ -1162,7 +1162,7 @@ fn prefixed_wrapped_history_cell_indents_wrapped_lines() {
     assert_eq!(
         rendered,
         vec![
-            "✔ You approved codex to".to_string(),
+            "✔ You approved ava to".to_string(),
             "  run echo something".to_string(),
             "  really long to ensure".to_string(),
             "  wrapping happens this".to_string(),
@@ -2075,7 +2075,7 @@ fn coalesced_reads_dedupe_names() {
 #[test]
 fn multiline_command_wraps_with_extra_indent_on_subsequent_lines() {
     // Create a completed exec cell with a multiline command
-    let cmd = "set -o pipefail\ncargo test -p codex-tui --quiet".to_string();
+    let cmd = "set -o pipefail\ncargo test -p ava-tui --quiet".to_string();
     let call_id = "c1".to_string();
     let mut cell = ExecCell::new(
         ExecCall {
@@ -2984,7 +2984,7 @@ fn agent_markdown_cell_renders_source_at_different_widths() {
 
 #[test]
 fn agent_markdown_cell_does_not_split_words_after_inline_markdown() {
-    let source = "This paragraph is intentionally long so you can inspect soft wrapping behavior while also checking inline formatting like **bold text**, *italic text*, ***bold italic text***, `inline code`, ~~strikethrough~~, a [link to example.com](https://example.com), and a literal path like [README.md](/Users/felipe.coury/code/codex.fcoury-worktrees/README.md) without introducing manual line breaks.\n";
+    let source = "This paragraph is intentionally long so you can inspect soft wrapping behavior while also checking inline formatting like **bold text**, *italic text*, ***bold italic text***, `inline code`, ~~strikethrough~~, a [link to example.com](https://example.com), and a literal path like [README.md](/Users/felipe.coury/code/ava.fcoury-worktrees/README.md) without introducing manual line breaks.\n";
     let cell = AgentMarkdownCell::new(source.to_string(), &test_cwd());
 
     let lines = render_lines(&cell.display_lines(/*width*/ 190));

@@ -1,46 +1,46 @@
 use anyhow::Context;
 use anyhow::Result;
 use chrono::Utc;
-use codex_app_server_protocol::ThreadRealtimeItemContent;
-use codex_app_server_protocol::ThreadRealtimeSessionOutcome;
-use codex_app_server_protocol::ThreadRealtimeTranscriptRole;
-use codex_app_server_protocol::ThreadTimelineEntry;
-use codex_config::config_toml::RealtimeWsMode;
-use codex_config::config_toml::RealtimeWsVersion;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::test_support::auth_manager_from_auth;
-use codex_history::InitialHistory;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_login::OPENAI_API_KEY_ENV_VAR;
-use codex_protocol::ThreadId;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::ConversationAudioParams;
-use codex_protocol::protocol::ConversationStartParams;
-use codex_protocol::protocol::ConversationStartTransport;
-use codex_protocol::protocol::ConversationTextParams;
-use codex_protocol::protocol::ConversationTextRole;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::RealtimeAudioFrame;
-use codex_protocol::protocol::RealtimeConversationRealtimeEvent;
-use codex_protocol::protocol::RealtimeConversationVersion;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::RealtimeHandoffRequested;
-use codex_protocol::protocol::RealtimeNoopRequested;
-use codex_protocol::protocol::RealtimeOutputModality;
-use codex_protocol::protocol::RealtimeTranscriptEntry;
-use codex_protocol::protocol::RealtimeVoice;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::ListTimelineParams;
+use ava_app_server_protocol::ThreadRealtimeItemContent;
+use ava_app_server_protocol::ThreadRealtimeSessionOutcome;
+use ava_app_server_protocol::ThreadRealtimeTranscriptRole;
+use ava_app_server_protocol::ThreadTimelineEntry;
+use ava_config::config_toml::RealtimeWsMode;
+use ava_config::config_toml::RealtimeWsVersion;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::test_support::auth_manager_from_auth;
+use ava_history::InitialHistory;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_login::OPENAI_API_KEY_ENV_VAR;
+use ava_protocol::ThreadId;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::ConversationAudioParams;
+use ava_protocol::protocol::ConversationStartParams;
+use ava_protocol::protocol::ConversationStartTransport;
+use ava_protocol::protocol::ConversationTextParams;
+use ava_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::RealtimeAudioFrame;
+use ava_protocol::protocol::RealtimeConversationRealtimeEvent;
+use ava_protocol::protocol::RealtimeConversationVersion;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::RealtimeHandoffRequested;
+use ava_protocol::protocol::RealtimeNoopRequested;
+use ava_protocol::protocol::RealtimeOutputModality;
+use ava_protocol::protocol::RealtimeTranscriptEntry;
+use ava_protocol::protocol::RealtimeVoice;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::ListTimelineParams;
 use core_test_support::responses;
 use core_test_support::responses::WebSocketConnectionConfig;
 use core_test_support::responses::start_mock_server;
@@ -49,8 +49,8 @@ use core_test_support::responses::start_websocket_server_with_headers;
 use core_test_support::skip_if_no_network;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use futures::SinkExt;
@@ -83,15 +83,15 @@ use wiremock::matchers::method;
 use wiremock::matchers::path;
 use wiremock::matchers::path_regex;
 
-const STARTUP_CONTEXT_HEADER: &str = "Startup context from Codex.";
+const STARTUP_CONTEXT_HEADER: &str = "Startup context from Ava.";
 const STARTUP_CONTEXT_OPEN_TAG: &str = "<startup_context>";
 const STARTUP_CONTEXT_CLOSE_TAG: &str = "</startup_context>";
-const REALTIME_BACKEND_PROMPT: &str = codex_prompts::BACKEND_PROMPT;
+const REALTIME_BACKEND_PROMPT: &str = ava_prompts::BACKEND_PROMPT;
 const USER_FIRST_NAME_PLACEHOLDER: &str = "{{ user_first_name }}";
 const MEMORY_PROMPT_PHRASE: &str =
     "You have access to a memory folder with guidance from prior runs.";
 const REALTIME_CONVERSATION_TEST_SUBPROCESS_ENV_VAR: &str =
-    "CODEX_REALTIME_CONVERSATION_TEST_SUBPROCESS";
+    "AVA_REALTIME_CONVERSATION_TEST_SUBPROCESS";
 
 #[derive(Debug, Clone)]
 struct RealtimeCallRequestCapture {
@@ -214,7 +214,7 @@ fn run_realtime_conversation_test_in_subprocess(
         .env(REALTIME_CONVERSATION_TEST_SUBPROCESS_ENV_VAR, "1");
     // The child talks to a loopback websocket server; parent proxy settings can
     // route that connection away from the test server in Bazel environments.
-    for &key in codex_network_proxy::PROXY_ENV_KEYS {
+    for &key in ava_network_proxy::PROXY_ENV_KEYS {
         command.env_remove(key);
     }
     match openai_api_key {
@@ -235,22 +235,22 @@ fn run_realtime_conversation_test_in_subprocess(
     Ok(())
 }
 async fn seed_recent_thread(
-    test: &TestCodex,
+    test: &TestAva,
     title: &str,
     first_user_message: &str,
     slug: &str,
 ) -> Result<()> {
-    let db = test.codex.state_db().context("state db enabled")?;
+    let db = test.ava-code.state_db().context("state db enabled")?;
     let thread_id = ThreadId::new();
     let updated_at = Utc::now();
     let rollout_path = test
-        .codex_home_path()
+        .ava_home_path()
         .join(format!("rollout-{thread_id}.jsonl"));
     // This helper seeds SQLite metadata directly. Local listing drops stale metadata rows whose
     // rollout path no longer exists, so create the placeholder path that the test metadata points
     // at without exercising rollout writing in this realtime-context test.
     std::fs::write(&rollout_path, "")?;
-    let mut metadata_builder = codex_state::ThreadMetadataBuilder::new(
+    let mut metadata_builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         rollout_path,
         updated_at,
@@ -299,7 +299,7 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
     ])
     .await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_websocket_server(&server).await?;
     assert!(
         server
@@ -307,16 +307,16 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -331,7 +331,7 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
         }))
         .await?;
 
-    let started = wait_for_event_match(&test.codex, |msg| match msg {
+    let started = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -341,7 +341,7 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
     assert!(started.realtime_session_id.is_some());
     assert_eq!(started.version, RealtimeConversationVersion::V1);
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -354,7 +354,7 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
     .await;
     assert_eq!(session_updated, "sess_1");
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationAudio(ConversationAudioParams {
             frame: RealtimeAudioFrame {
                 data: "AQID".to_string(),
@@ -365,14 +365,14 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
             },
         }))
         .await?;
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationText(ConversationTextParams {
             text: "hello".to_string(),
             role: ConversationTextRole::User,
         }))
         .await?;
 
-    let audio_out = wait_for_event_match(&test.codex, |msg| match msg {
+    let audio_out = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::AudioOut(frame),
         }) => Some(frame.clone()),
@@ -432,8 +432,8 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
         ]
     );
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
-    let closed = wait_for_event_match(&test.codex, |msg| match msg {
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
+    let closed = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
@@ -443,8 +443,8 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
         Some("requested" | "transport_closed")
     ));
 
-    test.codex.ensure_rollout_materialized().await;
-    let history = test.codex.load_history(/*include_archived*/ false).await?;
+    test.ava-code.ensure_rollout_materialized().await;
+    let history = test.ava-code.load_history(/*include_archived*/ false).await?;
     assert!(
         !history
             .items
@@ -475,7 +475,7 @@ async fn conversation_records_history_without_an_event_observer(
         events.push(json!({ "type": "error", "error": { "message": "fixture failure" } }));
     }
     let realtime_server = start_websocket_server(vec![vec![events.clone()], vec![events]]).await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_history_mode(ThreadHistoryMode::Paginated)
         .with_config({
             let url = realtime_server.uri().to_string();
@@ -485,19 +485,19 @@ async fn conversation_records_history_without_an_event_observer(
             }
         });
     let test = builder.build_with_auto_env(&api_server).await?;
-    test.codex.ensure_rollout_materialized().await;
+    test.ava-code.ensure_rollout_materialized().await;
     let mut expected = Vec::new();
     for session_count in 1..=2 {
-        test.codex
+        test.ava-code
             .submit(Op::RealtimeConversationStart(ConversationStartParams {
                 client_managed_handoffs: false,
                 delegation_ack_filler: None,
                 flush_transcript_tail_on_session_end: false,
-                codex_responses_as_items: false,
-                codex_response_item_prefix: None,
-                codex_response_handoff_mode:
-                    codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-                codex_response_handoff_channel_prefixes: None,
+                ava_responses_as_items: false,
+                ava_response_item_prefix: None,
+                ava_response_handoff_mode:
+                    ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+                ava_response_handoff_channel_prefixes: None,
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
                 include_startup_context: false,
@@ -580,7 +580,7 @@ async fn conversation_records_history_without_an_event_observer(
                 .all(|item| item.realtime_session_id == "voice-1")
         );
     }
-    test.codex.submit(Op::Shutdown).await?;
+    test.ava-code.submit(Op::Shutdown).await?;
     realtime_server.shutdown().await;
     Ok(())
 }
@@ -592,22 +592,22 @@ async fn conversation_start_defaults_to_v2_and_gpt_realtime_1_5() -> Result<()> 
     let api_server = start_mock_server().await;
     let realtime_server = start_websocket_server(vec![vec![vec![]]]).await;
     let realtime_base_url = realtime_server.uri().to_string();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_base_url = Some(realtime_base_url);
         config.experimental_realtime_ws_startup_context = Some(String::new());
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -622,7 +622,7 @@ async fn conversation_start_defaults_to_v2_and_gpt_realtime_1_5() -> Result<()> 
         }))
         .await?;
 
-    let started = wait_for_event_match(&test.codex, |msg| match msg {
+    let started = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -664,7 +664,7 @@ async fn conversation_start_defaults_to_v2_and_gpt_realtime_1_5() -> Result<()> 
     [None, Some(ThreadSource::User)]
 )]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn conversation_websocket_transports_send_codex_headers_without_creating_a_call(
+async fn conversation_websocket_transports_send_ava_headers_without_creating_a_call(
     transport: ConversationStartTransport,
     thread_source: Option<ThreadSource>,
 ) -> Result<()> {
@@ -677,7 +677,7 @@ async fn conversation_websocket_transports_send_codex_headers_without_creating_a
     })]]])
     .await;
     let realtime_ws_base_url = realtime_server.uri().to_string();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_base_url = Some(realtime_ws_base_url);
         config.realtime.session_type = RealtimeWsMode::Transcription;
@@ -687,22 +687,22 @@ async fn conversation_websocket_transports_send_codex_headers_without_creating_a
         .thread_manager
         .start_thread(StartThreadOptions {
             thread_source: thread_source.clone(),
-            environments: Some(test.codex.config_snapshot().await.environments.environments),
+            environments: Some(test.ava-code.config_snapshot().await.environments.environments),
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?;
-    let codex = &conversation.thread;
+    let ava = &conversation.thread;
 
-    codex
+    ava
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: false,
@@ -717,7 +717,7 @@ async fn conversation_websocket_transports_send_codex_headers_without_creating_a
         }))
         .await?;
 
-    let started = wait_for_event_match(codex, |msg| match msg {
+    let started = wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -726,7 +726,7 @@ async fn conversation_websocket_transports_send_codex_headers_without_creating_a
     .expect("realtime websocket connection failed");
     let (expected_uri, expected_realtime_session_id) = match transport {
         ConversationStartTransport::Websocket => (
-            "/v1/live?model=gpt-live-1-codex",
+            "/v1/live?model=gpt-live-1-ava",
             Some(conversation.thread_id.to_string()),
         ),
         ConversationStartTransport::ExistingCall { .. } => ("/v1/live/rtc_existing", None),
@@ -762,7 +762,7 @@ async fn conversation_websocket_transports_send_codex_headers_without_creating_a
     );
     assert_eq!(
         handshake
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .map(|value| serde_json::from_str::<Value>(&value))
             .transpose()?,
         thread_source.map(|source| json!({ "thread_source": source }))
@@ -777,29 +777,29 @@ async fn conversation_websocket_transports_send_codex_headers_without_creating_a
         "websocket transports must not create another realtime call over HTTP"
     );
 
-    codex.submit(Op::RealtimeConversationClose).await?;
-    let _closed = wait_for_event_match(codex, |msg| match msg {
+    ava.submit(Op::RealtimeConversationClose).await?;
+    let _closed = wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
     .await;
-    codex.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    ava.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     realtime_server.shutdown().await;
     Ok(())
 }
 
-#[test_case(None, "gpt-live-1-codex", None, None; "default model without source")]
+#[test_case(None, "gpt-live-1-ava", None, None; "default model without source")]
 #[test_case(Some("session-override-model"), "session-override-model", None, None; "explicit model without source")]
-#[test_case(None, "gpt-live-1-codex", Some(ThreadSource::User), Some("user".to_string()); "user source")]
-#[test_case(None, "gpt-live-1-codex", Some(ThreadSource::Feature("voice_chat".to_string())), Some("voice_chat".to_string()); "voice chat source")]
-#[test_case(None, "gpt-live-1-codex", Some(ThreadSource::Feature("realtime_voice".to_string())), Some("realtime_voice".to_string()); "realtime voice source")]
-#[test_case(None, "gpt-live-1-codex", Some(ThreadSource::GuardianReview), Some("guardian_review".to_string()); "child shares parent session")]
-#[test_case(None, "gpt-live-1-codex", Some(ThreadSource::Feature("x".repeat(/*n*/ 256))), Some("x".repeat(/*n*/ 256)); "source at byte limit")]
-#[test_case(None, "gpt-live-1-codex", Some(ThreadSource::Feature("x".repeat(/*n*/ 257))), None; "oversized source omitted")]
-#[test_case(None, "gpt-live-1-codex", Some(ThreadSource::Feature("é\r\n\"".to_string())), Some("é\r\n\"".to_string()); "source escaped for headers")]
+#[test_case(None, "gpt-live-1-ava", Some(ThreadSource::User), Some("user".to_string()); "user source")]
+#[test_case(None, "gpt-live-1-ava", Some(ThreadSource::Feature("voice_chat".to_string())), Some("voice_chat".to_string()); "voice chat source")]
+#[test_case(None, "gpt-live-1-ava", Some(ThreadSource::Feature("realtime_voice".to_string())), Some("realtime_voice".to_string()); "realtime voice source")]
+#[test_case(None, "gpt-live-1-ava", Some(ThreadSource::GuardianReview), Some("guardian_review".to_string()); "child shares parent session")]
+#[test_case(None, "gpt-live-1-ava", Some(ThreadSource::Feature("x".repeat(/*n*/ 256))), Some("x".repeat(/*n*/ 256)); "source at byte limit")]
+#[test_case(None, "gpt-live-1-ava", Some(ThreadSource::Feature("x".repeat(/*n*/ 257))), None; "oversized source omitted")]
+#[test_case(None, "gpt-live-1-ava", Some(ThreadSource::Feature("é\r\n\"".to_string())), Some("é\r\n\"".to_string()); "source escaped for headers")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
+async fn conversation_webrtc_frameless_chatgpt_sends_ava_headers_to_backend(
     model: Option<&str>,
     expected_model: &str,
     thread_source: Option<ThreadSource>,
@@ -810,7 +810,7 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
     let server = start_mock_server().await;
     let capture = RealtimeCallRequestCapture::new();
     Mock::given(method("POST"))
-        .and(path_regex(".*/backend-api/codex/realtime/calls$"))
+        .and(path_regex(".*/backend-api/ava/realtime/calls$"))
         .and(capture.clone())
         .respond_with(
             ResponseTemplate::new(200)
@@ -825,10 +825,10 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
     })]]])
     .await;
 
-    let backend_base_url = format!("{}/backend-api/codex", server.uri());
+    let backend_base_url = format!("{}/backend-api/ava", server.uri());
     let realtime_ws_base_url = realtime_server.uri().to_string();
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.model_provider.base_url = Some(backend_base_url);
             config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
@@ -838,7 +838,7 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
 
     let mut options = StartThreadOptions {
         thread_source: thread_source.clone(),
-        environments: Some(test.codex.config_snapshot().await.environments.environments),
+        environments: Some(test.ava-code.config_snapshot().await.environments.environments),
         ..StartThreadOptions::new(test.config.clone())
     };
     let conversation = if thread_source == Some(ThreadSource::GuardianReview) {
@@ -859,20 +859,20 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
     } else {
         test.thread_manager.start_thread(options).await?
     };
-    let codex = &conversation.thread;
-    assert_eq!(codex.config_snapshot().await.thread_source, thread_source);
+    let ava = &conversation.thread;
+    assert_eq!(ava.config_snapshot().await.thread_source, thread_source);
     let requested_realtime_session_id = Uuid::new_v4().to_string();
 
-    codex
+    ava
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: model.map(str::to_string),
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: false,
@@ -892,7 +892,7 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
         }))
         .await?;
 
-    let created = wait_for_event_match(codex, |msg| match msg {
+    let created = wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(Ok(created.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -932,7 +932,7 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
                 .and_then(|value| value.to_str().ok()),
         ),
         (
-            "/backend-api/codex/realtime/calls",
+            "/backend-api/ava/realtime/calls",
             Some("intent=quicksilver&architecture=avas"),
             Some("quicksilver=v2"),
             Some(expected_session_id.as_str()),
@@ -943,7 +943,7 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
     );
     let metadata = request
         .headers
-        .get("x-codex-turn-metadata")
+        .get("x-ava-turn-metadata")
         .map(|value| serde_json::from_slice::<Value>(value.as_bytes()))
         .transpose()?;
     // A continuous Voice call has no single backing turn. Only the saved source belongs here.
@@ -971,14 +971,14 @@ async fn conversation_webrtc_frameless_chatgpt_sends_codex_headers_to_backend(
         })
     );
 
-    codex.submit(Op::RealtimeConversationClose).await?;
-    let _closed = wait_for_event_match(codex, |msg| match msg {
+    ava.submit(Op::RealtimeConversationClose).await?;
+    let _closed = wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
     .await;
-    codex.shutdown_and_wait().await?;
-    test.codex.shutdown_and_wait().await?;
+    ava.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     realtime_server.shutdown().await;
     Ok(())
 }
@@ -1015,7 +1015,7 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
     .await;
 
     let realtime_ws_base_url = realtime_server.uri().to_string();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_model = Some("realtime-test-model".to_string());
         config.experimental_realtime_ws_startup_context = Some("startup context".to_string());
@@ -1024,16 +1024,16 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: Some("session-override-model".to_string()),
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -1052,7 +1052,7 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
 
     // Phase 1: the client gets the SDP answer that configures its peer connection, and then the
     // normal realtime event stream from the joined sideband WebSocket.
-    let created = wait_for_event_match(&test.codex, |msg| match msg {
+    let created = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(Ok(created.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -1065,14 +1065,14 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
         "SDP should be emitted before the delayed sideband websocket joins"
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationText(ConversationTextParams {
             text: "queued before sideband".to_string(),
             role: ConversationTextRole::User,
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -1105,7 +1105,7 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
             .headers
             .get("content-type")
             .and_then(|value| value.to_str().ok()),
-        Some("multipart/form-data; boundary=codex-realtime-call-boundary")
+        Some("multipart/form-data; boundary=ava-realtime-call-boundary")
     );
     let body = String::from_utf8(request.body).context("multipart body should be utf-8")?;
     let session = r#"{"audio":{"input":{"format":{"type":"audio/pcm","rate":24000}},"output":{"voice":"cove"}},"type":"quicksilver","model":"session-override-model","instructions":"backend prompt\n\nstartup context"}"#;
@@ -1113,18 +1113,18 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
     assert_eq!(
         body,
         format!(
-            "--codex-realtime-call-boundary\r\n\
+            "--ava-realtime-call-boundary\r\n\
              Content-Disposition: form-data; name=\"sdp\"\r\n\
              Content-Type: application/sdp\r\n\
              \r\n\
              v=offer\r\n\
              \r\n\
-             --codex-realtime-call-boundary\r\n\
+             --ava-realtime-call-boundary\r\n\
              Content-Disposition: form-data; name=\"session\"\r\n\
              Content-Type: application/json\r\n\
              \r\n\
              {session}\r\n\
-             --codex-realtime-call-boundary--\r\n"
+             --ava-realtime-call-boundary--\r\n"
         )
     );
 
@@ -1165,8 +1165,8 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
         Some("Bearer dummy")
     );
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
-    let closed = wait_for_event_match(&test.codex, |msg| match msg {
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
+    let closed = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
@@ -1379,7 +1379,7 @@ async fn conversation_webrtc_live_reconnects_sideband_after_unclean_disconnect(
         Ok::<(), anyhow::Error>(())
     });
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_model = Some("realtime-test-model".to_string());
         config.experimental_realtime_ws_startup_context = Some(String::new());
@@ -1388,16 +1388,16 @@ async fn conversation_webrtc_live_reconnects_sideband_after_unclean_disconnect(
     });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: !attaches_existing_call,
@@ -1419,7 +1419,7 @@ async fn conversation_webrtc_live_reconnects_sideband_after_unclean_disconnect(
         .await
         .context("timed out waiting for sustained inbound traffic")?
         .context("sideband server stopped before sustained inbound traffic")?;
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationText(ConversationTextParams {
             text: "outbound during inbound flood".to_string(),
             role: ConversationTextRole::User,
@@ -1429,7 +1429,7 @@ async fn conversation_webrtc_live_reconnects_sideband_after_unclean_disconnect(
     let handoff = timeout(Duration::from_secs(10), async {
         let mut saw_post_reconnect_transcript = false;
         loop {
-            match test.codex.next_event().await?.msg {
+            match test.ava-code.next_event().await?.msg {
                 EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                     payload: RealtimeEvent::OutputTranscriptDelta(delta),
                 }) if delta.delta == "after reconnect" => {
@@ -1479,7 +1479,7 @@ async fn conversation_webrtc_live_reconnects_sideband_after_unclean_disconnect(
 
     let closed = timeout(Duration::from_secs(10), async {
         loop {
-            match test.codex.next_event().await?.msg {
+            match test.ava-code.next_event().await?.msg {
                 EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                     payload: RealtimeEvent::Error(message),
                 }) => anyhow::bail!("terminal reconnect emitted a realtime error: {message}"),
@@ -1500,7 +1500,7 @@ async fn conversation_webrtc_live_reconnects_sideband_after_unclean_disconnect(
         .await
         .context("timed out waiting for sideband server")???;
     assert!(unused_endpoint.handshakes().is_empty());
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     unused_endpoint.shutdown().await;
     Ok(())
 }
@@ -1536,23 +1536,23 @@ async fn conversation_webrtc_start_uses_avas_query() -> Result<()> {
     .await;
 
     let realtime_ws_base_url = realtime_server.uri().to_string();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_base_url = Some(realtime_ws_base_url);
         config.realtime.version = RealtimeWsVersion::V1;
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -1569,7 +1569,7 @@ async fn conversation_webrtc_start_uses_avas_query() -> Result<()> {
         }))
         .await?;
 
-    let created = wait_for_event_match(&test.codex, |msg| match msg {
+    let created = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(Ok(created.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -1585,7 +1585,7 @@ async fn conversation_webrtc_start_uses_avas_query() -> Result<()> {
         Some("intent=quicksilver&architecture=avas")
     );
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -1607,7 +1607,7 @@ async fn conversation_webrtc_start_uses_avas_query() -> Result<()> {
         Some("Bearer dummy")
     );
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
     realtime_server.shutdown().await;
     Ok(())
 }
@@ -1640,7 +1640,7 @@ async fn conversation_webrtc_default_v1_ignores_configured_v2_voice() -> Result<
     .await;
 
     let realtime_ws_base_url = realtime_server.uri().to_string();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_base_url = Some(realtime_ws_base_url);
         config.realtime.version = RealtimeWsVersion::V2;
@@ -1648,16 +1648,16 @@ async fn conversation_webrtc_default_v1_ignores_configured_v2_voice() -> Result<
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -1674,7 +1674,7 @@ async fn conversation_webrtc_default_v1_ignores_configured_v2_voice() -> Result<
         }))
         .await?;
 
-    let created = wait_for_event_match(&test.codex, |msg| match msg {
+    let created = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(Ok(created.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -1700,7 +1700,7 @@ async fn conversation_webrtc_default_v1_ignores_configured_v2_voice() -> Result<
         "cove"
     );
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
     realtime_server.shutdown().await;
     Ok(())
 }
@@ -1710,21 +1710,21 @@ async fn conversation_webrtc_default_v1_rejects_explicit_v2_voice() -> Result<()
     skip_if_no_network!(Ok(()));
 
     let api_server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.realtime.version = RealtimeWsVersion::V2;
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -1741,7 +1741,7 @@ async fn conversation_webrtc_default_v1_rejects_explicit_v2_voice() -> Result<()
         }))
         .await?;
 
-    let error = wait_for_event_match(&test.codex, |msg| match msg {
+    let error = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::Error(message),
         }) => Some(message.clone()),
@@ -1784,7 +1784,7 @@ async fn conversation_webrtc_start_uses_configured_call_base_url_for_avas() -> R
 
     let realtime_ws_base_url = realtime_server.uri().to_string();
     let realtime_call_base_url = format!("{}/v1", server.uri());
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_base_url = Some(realtime_ws_base_url);
         config.experimental_realtime_webrtc_call_base_url = Some(realtime_call_base_url);
@@ -1792,16 +1792,16 @@ async fn conversation_webrtc_start_uses_configured_call_base_url_for_avas() -> R
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -1818,7 +1818,7 @@ async fn conversation_webrtc_start_uses_configured_call_base_url_for_avas() -> R
         }))
         .await?;
 
-    let created = wait_for_event_match(&test.codex, |msg| match msg {
+    let created = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(Ok(created.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -1834,7 +1834,7 @@ async fn conversation_webrtc_start_uses_configured_call_base_url_for_avas() -> R
         Some("intent=quicksilver&architecture=avas")
     );
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -1856,7 +1856,7 @@ async fn conversation_webrtc_start_uses_configured_call_base_url_for_avas() -> R
         Some("Bearer dummy")
     );
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
     realtime_server.shutdown().await;
     Ok(())
 }
@@ -1897,7 +1897,7 @@ async fn conversation_webrtc_close_while_sideband_connecting_drops_pending_join(
         Ok::<Vec<u8>, anyhow::Error>(request)
     });
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_model = Some("realtime-test-model".to_string());
         config.experimental_realtime_ws_startup_context = Some(String::new());
@@ -1906,16 +1906,16 @@ async fn conversation_webrtc_close_while_sideband_connecting_drops_pending_join(
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -1932,7 +1932,7 @@ async fn conversation_webrtc_close_while_sideband_connecting_drops_pending_join(
         }))
         .await?;
 
-    let sdp = wait_for_event_match(&test.codex, |msg| match msg {
+    let sdp = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(created.sdp.clone()),
         _ => None,
     })
@@ -1942,8 +1942,8 @@ async fn conversation_webrtc_close_while_sideband_connecting_drops_pending_join(
         .await
         .context("timed out waiting for the sideband handshake")??;
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
-    let closed = wait_for_event_match(&test.codex, |msg| match msg {
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
+    let closed = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
@@ -1962,9 +1962,9 @@ async fn conversation_webrtc_close_while_sideband_connecting_drops_pending_join(
     );
 
     timeout(Duration::from_secs(10), async {
-        test.codex.submit(Op::Shutdown).await?;
+        test.ava-code.submit(Op::Shutdown).await?;
         loop {
-            match test.codex.next_event().await?.msg {
+            match test.ava-code.next_event().await?.msg {
                 EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                     payload: RealtimeEvent::Error(message),
                 }) => {
@@ -1979,7 +1979,7 @@ async fn conversation_webrtc_close_while_sideband_connecting_drops_pending_join(
                 _ => {}
             }
         }
-        test.codex.wait_until_terminated().await;
+        test.ava-code.wait_until_terminated().await;
         Ok::<(), anyhow::Error>(())
     })
     .await
@@ -2001,7 +2001,7 @@ async fn conversation_webrtc_sideband_connect_failure_closes_with_error() -> Res
         )
         .mount(&server)
         .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.experimental_realtime_ws_backend_prompt = Some("backend prompt".to_string());
         config.experimental_realtime_ws_model = Some("realtime-test-model".to_string());
         config.experimental_realtime_ws_startup_context = Some(String::new());
@@ -2013,16 +2013,16 @@ async fn conversation_webrtc_sideband_connect_failure_closes_with_error() -> Res
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2039,21 +2039,21 @@ async fn conversation_webrtc_sideband_connect_failure_closes_with_error() -> Res
         }))
         .await?;
 
-    let started = wait_for_event_match(&test.codex, |msg| match msg {
+    let started = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(started.clone()),
         _ => None,
     })
     .await;
     assert!(started.realtime_session_id.is_some());
 
-    let sdp = wait_for_event_match(&test.codex, |msg| match msg {
+    let sdp = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(created.sdp.clone()),
         _ => None,
     })
     .await;
     assert_eq!(sdp, "v=answer\r\n");
 
-    let err = wait_for_event_match(&test.codex, |msg| match msg {
+    let err = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::Error(message),
         }) => Some(message.clone()),
@@ -2062,20 +2062,20 @@ async fn conversation_webrtc_sideband_connect_failure_closes_with_error() -> Res
     .await;
     assert!(!err.is_empty());
 
-    let closed = wait_for_event_match(&test.codex, |msg| match msg {
+    let closed = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
     .await;
     assert_eq!(closed.reason.as_deref(), Some("error"));
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationText(ConversationTextParams {
             text: "after sideband failure".to_string(),
             role: ConversationTextRole::User,
         }))
         .await?;
-    let err = wait_for_event_match(&test.codex, |msg| match msg {
+    let err = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::Error(err) => Some(err.clone()),
         _ => None,
     })
@@ -2105,7 +2105,7 @@ async fn conversation_start_uses_openai_env_key_fallback_with_chatgpt_auth() -> 
     ])
     .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let test = builder.build_with_websocket_server(&server).await?;
     assert!(
         server
@@ -2113,16 +2113,16 @@ async fn conversation_start_uses_openai_env_key_fallback_with_chatgpt_auth() -> 
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2137,7 +2137,7 @@ async fn conversation_start_uses_openai_env_key_fallback_with_chatgpt_auth() -> 
         }))
         .await?;
 
-    let started = wait_for_event_match(&test.codex, |msg| match msg {
+    let started = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -2146,7 +2146,7 @@ async fn conversation_start_uses_openai_env_key_fallback_with_chatgpt_auth() -> 
     .expect("conversation start failed");
     assert!(started.realtime_session_id.is_some());
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -2164,8 +2164,8 @@ async fn conversation_start_uses_openai_env_key_fallback_with_chatgpt_auth() -> 
         Some("Bearer env-realtime-key")
     );
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
-    let _closed = wait_for_event_match(&test.codex, |msg| match msg {
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
+    let _closed = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
@@ -2202,7 +2202,7 @@ async fn assert_transport_close_tail_flush(
     ]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -2211,16 +2211,16 @@ async fn assert_transport_close_tail_flush(
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2235,7 +2235,7 @@ async fn assert_transport_close_tail_flush(
         }))
         .await?;
 
-    let started = wait_for_event_match(&test.codex, |msg| match msg {
+    let started = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
         EventMsg::Error(err) => Some(Err(err.clone())),
         _ => None,
@@ -2244,7 +2244,7 @@ async fn assert_transport_close_tail_flush(
     .expect("conversation start failed");
     assert!(started.realtime_session_id.is_some());
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -2257,7 +2257,7 @@ async fn assert_transport_close_tail_flush(
     .await;
     assert_eq!(session_updated, "sess_1");
 
-    let closed = wait_for_event_match(&test.codex, |msg| match msg {
+    let closed = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
@@ -2292,10 +2292,10 @@ async fn conversation_audio_before_start_emits_error() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_websocket_server(vec![]).await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_websocket_server(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationAudio(ConversationAudioParams {
             frame: RealtimeAudioFrame {
                 data: "AQID".to_string(),
@@ -2307,12 +2307,12 @@ async fn conversation_audio_before_start_emits_error() -> Result<()> {
         }))
         .await?;
 
-    let err = wait_for_event_match(&test.codex, |msg| match msg {
+    let err = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::Error(err) => Some(err.clone()),
         _ => None,
     })
     .await;
-    assert_eq!(err.codex_error_info, Some(CodexErrorInfo::BadRequest));
+    assert_eq!(err.ava_error_info, Some(AvaErrorInfo::BadRequest));
     assert_eq!(err.message, "conversation is not running");
 
     server.shutdown().await;
@@ -2331,19 +2331,19 @@ async fn conversation_start_preflight_failure_emits_realtime_error_only() -> Res
     skip_if_no_network!(Ok(()));
 
     let server = start_websocket_server(vec![]).await;
-    let mut builder = test_codex().with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+    let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let test = builder.build_with_websocket_server(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2358,7 +2358,7 @@ async fn conversation_start_preflight_failure_emits_realtime_error_only() -> Res
         }))
         .await?;
 
-    let err = wait_for_event_match(&test.codex, |msg| match msg {
+    let err = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::Error(message),
         }) => Some(message.clone()),
@@ -2368,7 +2368,7 @@ async fn conversation_start_preflight_failure_emits_realtime_error_only() -> Res
     assert_eq!(err, "realtime conversation requires API key auth");
 
     let closed = timeout(Duration::from_millis(200), async {
-        wait_for_event_match(&test.codex, |msg| match msg {
+        wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
             _ => None,
         })
@@ -2386,22 +2386,22 @@ async fn conversation_start_connect_failure_emits_realtime_error_only() -> Resul
     skip_if_no_network!(Ok(()));
 
     let server = start_websocket_server(vec![]).await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.experimental_realtime_ws_base_url = Some("http://127.0.0.1:1".to_string());
         config.realtime.version = RealtimeWsVersion::V1;
     });
     let test = builder.build_with_websocket_server(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2416,7 +2416,7 @@ async fn conversation_start_connect_failure_emits_realtime_error_only() -> Resul
         }))
         .await?;
 
-    let err = wait_for_event_match(&test.codex, |msg| match msg {
+    let err = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::Error(message),
         }) => Some(message.clone()),
@@ -2426,7 +2426,7 @@ async fn conversation_start_connect_failure_emits_realtime_error_only() -> Resul
     assert!(!err.is_empty());
 
     let closed = timeout(Duration::from_millis(200), async {
-        wait_for_event_match(&test.codex, |msg| match msg {
+        wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
             _ => None,
         })
@@ -2444,22 +2444,22 @@ async fn conversation_text_before_start_emits_error() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = start_websocket_server(vec![]).await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_websocket_server(&server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationText(ConversationTextParams {
             text: "hello".to_string(),
             role: ConversationTextRole::User,
         }))
         .await?;
 
-    let err = wait_for_event_match(&test.codex, |msg| match msg {
+    let err = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::Error(err) => Some(err.clone()),
         _ => None,
     })
     .await;
-    assert_eq!(err.codex_error_info, Some(CodexErrorInfo::BadRequest));
+    assert_eq!(err.ava_error_info, Some(AvaErrorInfo::BadRequest));
     assert_eq!(err.message, "conversation is not running");
 
     server.shutdown().await;
@@ -2490,7 +2490,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
         ],
     ])
     .await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_websocket_server(&server).await?;
     assert!(
         server
@@ -2498,16 +2498,16 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2521,7 +2521,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
             voice: None,
         }))
         .await?;
-    wait_for_event_match(&test.codex, |msg| match msg {
+    wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -2535,16 +2535,16 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
     .await
     .expect("first conversation start failed");
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2558,7 +2558,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
             voice: None,
         }))
         .await?;
-    wait_for_event_match(&test.codex, |msg| match msg {
+    wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -2572,7 +2572,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
     .await
     .expect("second conversation start failed");
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationAudio(ConversationAudioParams {
             frame: RealtimeAudioFrame {
                 data: "AQID".to_string(),
@@ -2583,7 +2583,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
             },
         }))
         .await?;
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::AudioOut(frame),
         }) if frame.data == "AQID" => Some(()),
@@ -2629,7 +2629,7 @@ async fn conversation_uses_experimental_realtime_ws_base_url_override() -> Resul
     })]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -2643,16 +2643,16 @@ async fn conversation_uses_experimental_realtime_ws_base_url_override() -> Resul
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2667,7 +2667,7 @@ async fn conversation_uses_experimental_realtime_ws_base_url_override() -> Resul
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -2708,7 +2708,7 @@ async fn conversation_uses_default_realtime_backend_prompt() -> Result<()> {
     ])
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.experimental_realtime_ws_startup_context =
             Some("controlled startup context".to_string());
     });
@@ -2719,16 +2719,16 @@ async fn conversation_uses_default_realtime_backend_prompt() -> Result<()> {
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2743,7 +2743,7 @@ async fn conversation_uses_default_realtime_backend_prompt() -> Result<()> {
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -2789,7 +2789,7 @@ async fn conversation_uses_empty_instructions_for_null_or_empty_prompt() -> Resu
     ])
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.experimental_realtime_ws_startup_context = Some(String::new());
     });
     let test = builder.build_with_websocket_server(&server).await?;
@@ -2803,16 +2803,16 @@ async fn conversation_uses_empty_instructions_for_null_or_empty_prompt() -> Resu
         (Some(None), "sess_null"),
         (Some(Some(String::new())), "sess_empty"),
     ] {
-        test.codex
+        test.ava-code
             .submit(Op::RealtimeConversationStart(ConversationStartParams {
                 client_managed_handoffs: false,
                 delegation_ack_filler: None,
                 flush_transcript_tail_on_session_end: false,
-                codex_responses_as_items: false,
-                codex_response_item_prefix: None,
-                codex_response_handoff_mode:
-                    codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-                codex_response_handoff_channel_prefixes: None,
+                ava_responses_as_items: false,
+                ava_response_item_prefix: None,
+                ava_response_handoff_mode:
+                    ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+                ava_response_handoff_channel_prefixes: None,
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
                 include_startup_context: true,
@@ -2827,7 +2827,7 @@ async fn conversation_uses_empty_instructions_for_null_or_empty_prompt() -> Resu
             }))
             .await?;
 
-        let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+        let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                 payload:
                     RealtimeEvent::SessionUpdated {
@@ -2840,8 +2840,8 @@ async fn conversation_uses_empty_instructions_for_null_or_empty_prompt() -> Resu
         .await;
         assert_eq!(session_updated, expected_session_id);
 
-        test.codex.submit(Op::RealtimeConversationClose).await?;
-        let _closed = wait_for_event_match(&test.codex, |msg| match msg {
+        test.ava-code.submit(Op::RealtimeConversationClose).await?;
+        let _closed = wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
             _ => None,
         })
@@ -2873,23 +2873,23 @@ async fn conversation_uses_explicit_start_voice() -> Result<()> {
         })]],
     ])
     .await;
-    let test = test_codex().build_with_websocket_server(&server).await?;
+    let test = test_ava().build_with_websocket_server(&server).await?;
     assert!(
         server
             .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2904,7 +2904,7 @@ async fn conversation_uses_explicit_start_voice() -> Result<()> {
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -2939,7 +2939,7 @@ async fn conversation_uses_configured_realtime_voice() -> Result<()> {
         })]],
     ])
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.realtime.voice = Some(RealtimeVoice::Cove);
     });
     let test = builder.build_with_websocket_server(&server).await?;
@@ -2949,16 +2949,16 @@ async fn conversation_uses_configured_realtime_voice() -> Result<()> {
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -2973,7 +2973,7 @@ async fn conversation_uses_configured_realtime_voice() -> Result<()> {
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -3001,21 +3001,21 @@ async fn conversation_rejects_voice_for_wrong_realtime_version() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let api_server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.realtime.version = RealtimeWsVersion::V2;
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3030,7 +3030,7 @@ async fn conversation_rejects_voice_for_wrong_realtime_version() -> Result<()> {
         }))
         .await?;
 
-    let error = wait_for_event_match(&test.codex, |msg| match msg {
+    let error = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::Error(message),
         }) => Some(message.clone()),
@@ -3054,7 +3054,7 @@ async fn conversation_uses_experimental_realtime_ws_backend_prompt_override() ->
     ])
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.experimental_realtime_ws_backend_prompt = Some("prompt from config".to_string());
     });
     let test = builder.build_with_websocket_server(&server).await?;
@@ -3064,16 +3064,16 @@ async fn conversation_uses_experimental_realtime_ws_backend_prompt_override() ->
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3088,7 +3088,7 @@ async fn conversation_uses_experimental_realtime_ws_backend_prompt_override() ->
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -3122,7 +3122,7 @@ async fn conversation_uses_experimental_realtime_ws_startup_context_override() -
     })]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3148,16 +3148,16 @@ async fn conversation_uses_experimental_realtime_ws_startup_context_override() -
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3201,7 +3201,7 @@ async fn conversation_disables_realtime_startup_context_with_empty_override() ->
     })]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3226,16 +3226,16 @@ async fn conversation_disables_realtime_startup_context_with_empty_override() ->
             .await
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3279,7 +3279,7 @@ async fn conversation_start_injects_startup_context_from_thread_history() -> Res
     })]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3297,16 +3297,16 @@ async fn conversation_start_injects_startup_context_from_thread_history() -> Res
     fs::create_dir_all(test.workspace_path("docs"))?;
     fs::write(test.workspace_path("README.md"), "workspace marker")?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3373,7 +3373,7 @@ async fn conversation_startup_context_current_thread_selects_many_turns_by_budge
         })
         .chain([latest_long_user_turn.clone()]);
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3411,29 +3411,29 @@ async fn conversation_startup_context_current_thread_selects_many_turns_by_budge
             .map(|item| RolloutItem::ResponseItem(item.into()))
         })
         .collect::<Vec<_>>();
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     let resumed_thread = test
         .thread_manager
         .resume_thread_with_history(
             test.config.clone(),
             InitialHistory::Forked(history),
-            auth_manager_from_auth(CodexAuth::from_api_key("dummy")),
+            auth_manager_from_auth(AvaAuth::from_api_key("dummy")),
             /*parent_trace*/ None,
             ClientMcpExtensions::default(),
         )
         .await?;
-    let codex = resumed_thread.thread;
+    let ava = resumed_thread.thread;
 
-    codex
+    ava
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3516,7 +3516,7 @@ async fn conversation_startup_context_current_thread_selects_many_turns_by_budge
         (true, Vec::<(String, usize)>::new()),
     );
 
-    codex.shutdown_and_wait().await?;
+    ava.shutdown_and_wait().await?;
     realtime_server.shutdown().await;
     Ok(())
 }
@@ -3532,7 +3532,7 @@ async fn conversation_startup_context_falls_back_to_workspace_map() -> Result<()
     })]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3540,19 +3540,19 @@ async fn conversation_startup_context_falls_back_to_workspace_map() -> Result<()
         }
     });
     let test = builder.build_with_websocket_server(&startup_server).await?;
-    fs::create_dir_all(test.workspace_path("codex-rs/core"))?;
+    fs::create_dir_all(test.workspace_path("ava-rs/core"))?;
     fs::write(test.workspace_path("notes.txt"), "workspace marker")?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3581,7 +3581,7 @@ async fn conversation_startup_context_falls_back_to_workspace_map() -> Result<()
     assert!(startup_context.contains(STARTUP_CONTEXT_HEADER));
     assert!(startup_context.contains("## Machine / Workspace Map"));
     assert!(startup_context.contains("notes.txt"));
-    assert!(startup_context.contains("codex-rs/"));
+    assert!(startup_context.contains("ava-rs/"));
 
     startup_server.shutdown().await;
     realtime_server.shutdown().await;
@@ -3603,7 +3603,7 @@ async fn conversation_startup_context_is_truncated_and_sent_once_per_start() -> 
     .await;
 
     let oversized_summary = "recent work ".repeat(3_500);
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3614,16 +3614,16 @@ async fn conversation_startup_context_is_truncated_and_sent_once_per_start() -> 
     seed_recent_thread(&test, &oversized_summary, "summary", "oversized").await?;
     fs::write(test.workspace_path("marker.txt"), "marker")?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3651,7 +3651,7 @@ async fn conversation_startup_context_is_truncated_and_sent_once_per_start() -> 
     assert!(startup_context.contains(STARTUP_CONTEXT_HEADER));
     assert!(startup_context.len() <= 20_500);
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationText(ConversationTextParams {
             text: "hello".to_string(),
             role: ConversationTextRole::User,
@@ -3705,7 +3705,7 @@ async fn conversation_user_text_turn_is_not_sent_to_realtime(ephemeral: bool) ->
     ]])
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_history_mode(ThreadHistoryMode::Paginated)
         .with_config({
             let realtime_base_url = realtime_server.uri().to_string();
@@ -3718,16 +3718,16 @@ async fn conversation_user_text_turn_is_not_sent_to_realtime(ephemeral: bool) ->
         });
     let test = builder.build_with_auto_env(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3742,7 +3742,7 @@ async fn conversation_user_text_turn_is_not_sent_to_realtime(ephemeral: bool) ->
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -3755,7 +3755,7 @@ async fn conversation_user_text_turn_is_not_sent_to_realtime(ephemeral: bool) ->
     .await;
     assert_eq!(session_updated, "sess_user_text");
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         if let EventMsg::RealtimeConversationRealtime(event) = event {
             match event.payload {
                 RealtimeEvent::HistoryItemStarted(_)
@@ -3770,14 +3770,14 @@ async fn conversation_user_text_turn_is_not_sent_to_realtime(ephemeral: bool) ->
     .await;
 
     let user_text = "typed follow-up for realtime";
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: user_text.to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let turn_complete = wait_for_event_match(&test.codex, |event| match event {
+    let turn_complete = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::TurnComplete(turn_complete) => Some(turn_complete.clone()),
         _ => None,
     })
@@ -3804,7 +3804,7 @@ async fn conversation_user_text_turn_is_not_sent_to_realtime(ephemeral: bool) ->
                 ThreadTimelineEntry::Realtime { item, .. }
                     if matches!(&item.content, ThreadRealtimeItemContent::TranscriptSegment { text, .. } if text == "spoken before typed input") => Some("speech"),
                 ThreadTimelineEntry::Item { item, .. }
-                    if matches!(item.as_ref(), codex_app_server_protocol::ThreadItem::UserMessage { .. }) => Some("typed input"),
+                    if matches!(item.as_ref(), ava_app_server_protocol::ThreadItem::UserMessage { .. }) => Some("typed input"),
                 _ => None,
             }).collect::<Vec<_>>(),
             vec!["speech", "typed input"]
@@ -3849,7 +3849,7 @@ async fn realtime_v2_noop_tool_call_returns_empty_function_output_without_respon
     ]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3858,16 +3858,16 @@ async fn realtime_v2_noop_tool_call_returns_empty_function_output_without_respon
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3882,7 +3882,7 @@ async fn realtime_v2_noop_tool_call_returns_empty_function_output_without_respon
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::NoopRequested(RealtimeNoopRequested { call_id, .. }),
         }) if call_id == "call_silent" => Some(()),
@@ -3959,7 +3959,7 @@ async fn conversation_mirrors_assistant_message_text_to_realtime_handoff() -> Re
     ]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -3968,16 +3968,16 @@ async fn conversation_mirrors_assistant_message_text_to_realtime_handoff() -> Re
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -3992,7 +3992,7 @@ async fn conversation_mirrors_assistant_message_text_to_realtime_handoff() -> Re
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -4005,7 +4005,7 @@ async fn conversation_mirrors_assistant_message_text_to_realtime_handoff() -> Re
     .await;
     assert_eq!(session_updated, "sess_1");
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.handoff_id == "handoff_1" => Some(()),
@@ -4013,7 +4013,7 @@ async fn conversation_mirrors_assistant_message_text_to_realtime_handoff() -> Re
     })
     .await;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -4130,7 +4130,7 @@ async fn conversation_flushes_assistant_deltas_every_200ms_for_v3_handoff() -> R
     ]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -4139,16 +4139,16 @@ async fn conversation_flushes_assistant_deltas_every_200ms_for_v3_handoff() -> R
     });
     let test = builder.build_with_streaming_server(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::BemTags,
-            codex_response_handoff_channel_prefixes: Some(BTreeMap::from([
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::BemTags,
+            ava_response_handoff_channel_prefixes: Some(BTreeMap::from([
                 (
                     "commentary".to_string(),
                     vec!["[PROGRESS]".to_string(), "[UPDATE]".to_string()],
@@ -4169,7 +4169,7 @@ async fn conversation_flushes_assistant_deltas_every_200ms_for_v3_handoff() -> R
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -4180,7 +4180,7 @@ async fn conversation_flushes_assistant_deltas_every_200ms_for_v3_handoff() -> R
         _ => None,
     })
     .await;
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.handoff_id == "delegation_stream" => Some(()),
@@ -4188,7 +4188,7 @@ async fn conversation_flushes_assistant_deltas_every_200ms_for_v3_handoff() -> R
     })
     .await;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::AgentMessageContentDelta(event)
             if event.item_id == "msg_commentary" && event.delta == first_commentary_delta =>
         {
@@ -4239,7 +4239,7 @@ async fn conversation_flushes_assistant_deltas_every_200ms_for_v3_handoff() -> R
         .expect("missing delegated turn completion")
         .await
         .expect("delegated turn request did not complete");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -4309,7 +4309,7 @@ async fn conversation_handoff_persists_across_item_done_until_turn_complete() ->
     ]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -4318,16 +4318,16 @@ async fn conversation_handoff_persists_across_item_done_until_turn_complete() ->
     });
     let test = builder.build_with_streaming_server(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::BemTags,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::BemTags,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -4342,7 +4342,7 @@ async fn conversation_handoff_persists_across_item_done_until_turn_complete() ->
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -4354,7 +4354,7 @@ async fn conversation_handoff_persists_across_item_done_until_turn_complete() ->
     })
     .await;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.handoff_id == "handoff_item_done" => Some(()),
@@ -4378,7 +4378,7 @@ async fn conversation_handoff_persists_across_item_done_until_turn_complete() ->
         Some("assistant message 1")
     );
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::ConversationItemDone { item_id },
         }) if item_id == "item_item_done" => Some(()),
@@ -4411,7 +4411,7 @@ async fn conversation_handoff_persists_across_item_done_until_turn_complete() ->
     completion
         .await
         .expect("delegated turn request did not complete");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -4448,7 +4448,7 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
         &api_server,
         responses::sse(vec![
             responses::ev_response_created("resp-1"),
-            responses::ev_assistant_message("msg-1", "::codex-realtime-inline{}\nShared artifact"),
+            responses::ev_assistant_message("msg-1", "::ava-realtime-inline{}\nShared artifact"),
             responses::ev_completed("resp-1"),
         ]),
     )
@@ -4472,7 +4472,7 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
     ]]])
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_history_mode(ThreadHistoryMode::Paginated)
         .with_config({
             let realtime_base_url = realtime_server.uri().to_string();
@@ -4483,16 +4483,16 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
         });
     let test = builder.build_with_auto_env(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -4507,7 +4507,7 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
         }))
         .await?;
 
-    let session_updated = wait_for_event_match(&test.codex, |msg| match msg {
+    let session_updated = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -4520,7 +4520,7 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
     .await;
     assert_eq!(session_updated, "sess_inbound");
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.handoff_id == "handoff_inbound"
@@ -4533,14 +4533,14 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
     .await;
 
     let turn_id = loop {
-        let event = test.codex.next_event().await?;
+        let event = test.ava-code.next_event().await?;
         if let EventMsg::TurnStarted(turn_started) = event.msg {
             break turn_started.turn_id;
         }
     };
     Uuid::parse_str(&turn_id).context("realtime-routed turn ID should be a UUID")?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -4577,14 +4577,14 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
             turn_id,
             item_id: "msg-1".to_string(),
             presentation:
-                codex_app_server_protocol::ThreadRealtimeBemItemPresentation::InlineMarkdown,
+                ava_app_server_protocol::ThreadRealtimeBemItemPresentation::InlineMarkdown,
         }]
     );
 
     let request = response_mock.single_request();
     let turn_metadata: Value = serde_json::from_str(
         request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .as_deref()
             .context("realtime-routed turn should include turn metadata")?,
     )?;
@@ -4638,7 +4638,7 @@ async fn inbound_handoff_request_uses_active_transcript() -> Result<()> {
     ]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -4647,16 +4647,16 @@ async fn inbound_handoff_request_uses_active_transcript() -> Result<()> {
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -4671,7 +4671,7 @@ async fn inbound_handoff_request_uses_active_transcript() -> Result<()> {
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -4683,7 +4683,7 @@ async fn inbound_handoff_request_uses_active_transcript() -> Result<()> {
     })
     .await;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -4752,7 +4752,7 @@ async fn inbound_handoff_request_sends_transcript_delta_after_each_handoff() -> 
     ]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -4761,16 +4761,16 @@ async fn inbound_handoff_request_sends_transcript_delta_after_each_handoff() -> 
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -4785,7 +4785,7 @@ async fn inbound_handoff_request_sends_transcript_delta_after_each_handoff() -> 
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -4797,12 +4797,12 @@ async fn inbound_handoff_request_sends_transcript_delta_after_each_handoff() -> 
     })
     .await;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationAudio(ConversationAudioParams {
             frame: RealtimeAudioFrame {
                 data: "AQID".to_string(),
@@ -4814,7 +4814,7 @@ async fn inbound_handoff_request_sends_transcript_delta_after_each_handoff() -> 
         }))
         .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -4885,7 +4885,7 @@ async fn conversation_close_routes_only_remaining_transcript_tail_once() -> Resu
         vec![],
     ]])
     .await;
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -4894,16 +4894,16 @@ async fn conversation_close_routes_only_remaining_transcript_tail_once() -> Resu
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: true,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -4918,13 +4918,13 @@ async fn conversation_close_routes_only_remaining_transcript_tail_once() -> Resu
         }))
         .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.codex.submit(Op::RealtimeConversationClose).await?;
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
 
-    let closed = wait_for_event_match(&test.codex, |msg| match msg {
+    let closed = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationClosed(closed) => Some(closed.clone()),
         _ => None,
     })
@@ -4937,7 +4937,7 @@ async fn conversation_close_routes_only_remaining_transcript_tail_once() -> Resu
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
 
-    test.codex.submit(Op::RealtimeConversationClose).await?;
+    test.ava-code.submit(Op::RealtimeConversationClose).await?;
     tokio::time::sleep(Duration::from_millis(200)).await;
 
     let requests = response_mock.requests();
@@ -4979,7 +4979,7 @@ async fn inbound_conversation_item_does_not_start_turn_and_still_forwards_audio(
     ]]])
     .await;
 
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -4988,16 +4988,16 @@ async fn inbound_conversation_item_does_not_start_turn_and_still_forwards_audio(
     });
     let test = builder.build(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -5012,7 +5012,7 @@ async fn inbound_conversation_item_does_not_start_turn_and_still_forwards_audio(
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -5026,7 +5026,7 @@ async fn inbound_conversation_item_does_not_start_turn_and_still_forwards_audio(
 
     let audio_out = tokio::time::timeout(
         Duration::from_millis(500),
-        wait_for_event_match(&test.codex, |msg| match msg {
+        wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                 payload: RealtimeEvent::AudioOut(frame),
             }) => Some(frame.clone()),
@@ -5039,7 +5039,7 @@ async fn inbound_conversation_item_does_not_start_turn_and_still_forwards_audio(
 
     let unexpected_turn_started = tokio::time::timeout(
         Duration::from_millis(200),
-        wait_for_event_match(&test.codex, |msg| match msg {
+        wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::TurnStarted(_) => Some(()),
             _ => None,
         }),
@@ -5113,7 +5113,7 @@ async fn delegated_turn_user_role_echo_does_not_redelegate_and_still_forwards_au
     ]])
     .await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config({
+    let mut builder = test_ava().with_model("gpt-5.4").with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -5122,16 +5122,16 @@ async fn delegated_turn_user_role_echo_does_not_redelegate_and_still_forwards_au
     });
     let test = builder.build_with_streaming_server(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -5146,7 +5146,7 @@ async fn delegated_turn_user_role_echo_does_not_redelegate_and_still_forwards_au
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -5158,7 +5158,7 @@ async fn delegated_turn_user_role_echo_does_not_redelegate_and_still_forwards_au
     })
     .await;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.input_transcript == "delegate now" => Some(()),
@@ -5195,7 +5195,7 @@ async fn delegated_turn_user_role_echo_does_not_redelegate_and_still_forwards_au
         Some("\"Agent Final Message\":\n\nassistant says hi")
     );
 
-    let audio_out = wait_for_event_match(&test.codex, |msg| match msg {
+    let audio_out = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::AudioOut(frame),
         }) => Some(frame.clone()),
@@ -5223,7 +5223,7 @@ async fn delegated_turn_user_role_echo_does_not_redelegate_and_still_forwards_au
         "[realtime test +{}ms] delegated completion resolved",
         start.elapsed().as_millis()
     );
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5277,7 +5277,7 @@ async fn inbound_handoff_request_does_not_block_realtime_event_forwarding() -> R
     ]]])
     .await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config({
+    let mut builder = test_ava().with_model("gpt-5.4").with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -5286,16 +5286,16 @@ async fn inbound_handoff_request_does_not_block_realtime_event_forwarding() -> R
     });
     let test = builder.build_with_streaming_server(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -5310,7 +5310,7 @@ async fn inbound_handoff_request_does_not_block_realtime_event_forwarding() -> R
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -5322,7 +5322,7 @@ async fn inbound_handoff_request_does_not_block_realtime_event_forwarding() -> R
     })
     .await;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.input_transcript == "delegate now" => Some(()),
@@ -5332,7 +5332,7 @@ async fn inbound_handoff_request_does_not_block_realtime_event_forwarding() -> R
 
     let audio_out = tokio::time::timeout(
         Duration::from_millis(500),
-        wait_for_event_match(&test.codex, |msg| match msg {
+        wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                 payload: RealtimeEvent::AudioOut(frame),
             }) => Some(frame.clone()),
@@ -5351,7 +5351,7 @@ async fn inbound_handoff_request_does_not_block_realtime_event_forwarding() -> R
     completion
         .await
         .expect("delegated turn request did not complete");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5430,7 +5430,7 @@ async fn inbound_handoff_request_steers_active_turn() -> Result<()> {
     }])
     .await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config({
+    let mut builder = test_ava().with_model("gpt-5.4").with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -5439,16 +5439,16 @@ async fn inbound_handoff_request_steers_active_turn() -> Result<()> {
     });
     let test = builder.build_with_streaming_server(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -5462,7 +5462,7 @@ async fn inbound_handoff_request_steers_active_turn() -> Result<()> {
             voice: None,
         }))
         .await?;
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -5474,19 +5474,19 @@ async fn inbound_handoff_request_steers_active_turn() -> Result<()> {
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "first prompt".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::AgentMessageContentDelta(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationAudio(ConversationAudioParams {
             frame: RealtimeAudioFrame {
                 data: "AQID".to_string(),
@@ -5498,7 +5498,7 @@ async fn inbound_handoff_request_steers_active_turn() -> Result<()> {
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.input_transcript == "steer via realtime" => Some(()),
@@ -5517,7 +5517,7 @@ async fn inbound_handoff_request_steers_active_turn() -> Result<()> {
     second_completion
         .await
         .expect("second request did not complete");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5588,7 +5588,7 @@ async fn inbound_handoff_request_starts_turn_and_does_not_block_realtime_audio()
     ]]])
     .await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config({
+    let mut builder = test_ava().with_model("gpt-5.4").with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -5597,16 +5597,16 @@ async fn inbound_handoff_request_starts_turn_and_does_not_block_realtime_audio()
     });
     let test = builder.build_with_streaming_server(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: true,
@@ -5621,7 +5621,7 @@ async fn inbound_handoff_request_starts_turn_and_does_not_block_realtime_audio()
         }))
         .await?;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload:
                 RealtimeEvent::SessionUpdated {
@@ -5633,7 +5633,7 @@ async fn inbound_handoff_request_starts_turn_and_does_not_block_realtime_audio()
     })
     .await;
 
-    let _ = wait_for_event_match(&test.codex, |msg| match msg {
+    let _ = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) => (handoff.handoff_id == "handoff_audio" && handoff.input_transcript == delegated_text)
@@ -5644,7 +5644,7 @@ async fn inbound_handoff_request_starts_turn_and_does_not_block_realtime_audio()
 
     let audio_out = tokio::time::timeout(
         Duration::from_millis(500),
-        wait_for_event_match(&test.codex, |msg| match msg {
+        wait_for_event_match(&test.ava-code, |msg| match msg {
             EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                 payload: RealtimeEvent::AudioOut(frame),
             }) => Some(frame.clone()),
@@ -5663,7 +5663,7 @@ async fn inbound_handoff_request_starts_turn_and_does_not_block_realtime_audio()
     completion
         .await
         .expect("delegated turn request did not complete");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

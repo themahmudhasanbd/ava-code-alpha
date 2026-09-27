@@ -6,7 +6,7 @@
 use super::*;
 use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
 
-use codex_protocol::mcp::is_node_repl_backed_server;
+use ava_protocol::mcp::is_node_repl_backed_server;
 
 #[path = "mcp_result.rs"]
 mod result;
@@ -28,7 +28,7 @@ use crate::terminal_hyperlinks::prefix_hyperlink_lines;
 use crate::terminal_hyperlinks::remap_source_wrapped_line;
 use crate::text_formatting::format_json_compact;
 use crate::tool_output::ToolOutputPreview;
-use codex_app_server_protocol::McpServerConnectionStatus;
+use ava_app_server_protocol::McpServerConnectionStatus;
 use result::McpContentBlock;
 use result::McpResultKind;
 use result::McpToolResult;
@@ -107,7 +107,7 @@ impl McpToolCallCell {
     pub(crate) fn complete(
         &mut self,
         duration: Duration,
-        result: Result<codex_protocol::mcp::CallToolResult, String>,
+        result: Result<ava_protocol::mcp::CallToolResult, String>,
     ) {
         let result = result.map(|result| McpToolResult::new(result, self.result_kind()));
         self.duration = Some(duration);
@@ -462,7 +462,7 @@ pub(crate) fn empty_mcp_output() -> WebHyperlinkHistoryCell {
 /// Render MCP tools grouped by connection using the fully-qualified tool names.
 pub(crate) fn new_mcp_tools_output(
     config: &Config,
-    tools: HashMap<String, codex_protocol::mcp::Tool>,
+    tools: HashMap<String, ava_protocol::mcp::Tool>,
     resources: HashMap<String, Vec<Resource>>,
     resource_templates: HashMap<String, Vec<ResourceTemplate>>,
     auth_statuses: &HashMap<String, McpAuthStatus>,
@@ -678,7 +678,7 @@ pub(crate) fn new_mcp_tools_output_from_statuses(
             Some(McpServerConnectionStatus::Cancelled) => ("cancelled", Style::default().dim()),
             None if matches!(
                 status.auth_status,
-                codex_app_server_protocol::McpAuthStatus::NotLoggedIn
+                ava_app_server_protocol::McpAuthStatus::NotLoggedIn
             ) =>
             {
                 (
@@ -704,11 +704,11 @@ pub(crate) fn new_mcp_tools_output_from_statuses(
             continue;
         }
         let auth_status = match status.auth_status {
-            codex_app_server_protocol::McpAuthStatus::Unknown => McpAuthStatus::Unknown,
-            codex_app_server_protocol::McpAuthStatus::Unsupported => McpAuthStatus::Unsupported,
-            codex_app_server_protocol::McpAuthStatus::NotLoggedIn => McpAuthStatus::NotLoggedIn,
-            codex_app_server_protocol::McpAuthStatus::BearerToken => McpAuthStatus::BearerToken,
-            codex_app_server_protocol::McpAuthStatus::OAuth => McpAuthStatus::OAuth,
+            ava_app_server_protocol::McpAuthStatus::Unknown => McpAuthStatus::Unknown,
+            ava_app_server_protocol::McpAuthStatus::Unsupported => McpAuthStatus::Unsupported,
+            ava_app_server_protocol::McpAuthStatus::NotLoggedIn => McpAuthStatus::NotLoggedIn,
+            ava_app_server_protocol::McpAuthStatus::BearerToken => McpAuthStatus::BearerToken,
+            ava_app_server_protocol::McpAuthStatus::OAuth => McpAuthStatus::OAuth,
         };
         lines.push(
             vec![

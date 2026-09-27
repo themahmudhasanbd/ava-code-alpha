@@ -1,11 +1,11 @@
 //! Exercises daemon compatibility fallback through real TUI startup.
 
-use super::focus_palette::PtyCodex;
+use super::focus_palette::PtyAva;
 use super::focus_palette::write_test_config;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCMessage;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -16,7 +16,7 @@ use tokio_tungstenite::tungstenite::Message;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn incompatible_daemon_falls_back_for_default_and_explicit_features() -> Result<()> {
     for scenario in ["default", "explicit", "host policy"] {
-        let cwd = codex_utils_cargo_bin::repo_root()?;
+        let cwd = ava_utils_cargo_bin::repo_root()?;
         let home = tempfile::tempdir_in("/tmp")?;
         write_test_config(home.path(), &cwd)?;
         if scenario == "host policy" {
@@ -29,7 +29,7 @@ async fn incompatible_daemon_falls_back_for_default_and_explicit_features() -> R
                 ),
             )?;
         }
-        let socket = codex_app_server_client::app_server_control_socket_path(home.path())?;
+        let socket = ava_app_server_client::app_server_control_socket_path(home.path())?;
         std::fs::create_dir_all(socket.parent().unwrap())?;
         let listener = UnixListener::bind(socket.as_path())?;
         let server = tokio::spawn(async move {
@@ -64,7 +64,7 @@ async fn incompatible_daemon_falls_back_for_default_and_explicit_features() -> R
         } else {
             vec![]
         };
-        let mut terminal = PtyCodex::start(&cwd, home, &args)?;
+        let mut terminal = PtyAva::start(&cwd, home, &args)?;
         terminal.wait_for_startup()?;
         terminal.wait_for_screen("warning")?;
         terminal.write_input(b"\x14")?;

@@ -27,19 +27,19 @@ use crate::events::user_prompt_submit::UserPromptSubmitOutcome;
 use crate::events::user_prompt_submit::UserPromptSubmitRequest;
 use crate::mcp::HookMcpExecutor;
 use crate::output_spill::AdditionalContextLimit;
-use codex_config::ConfigLayerStack;
-use codex_config::HookHandlerConfig;
-use codex_plugin::ExecutorPluginHookSource;
-use codex_plugin::PluginHookSource;
-use codex_plugin::PluginId;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookExecutionMode;
-use codex_protocol::protocol::HookHandlerType;
-use codex_protocol::protocol::HookRunSummary;
-use codex_protocol::protocol::HookSource;
-use codex_protocol::protocol::HookTrustStatus;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigLayerStack;
+use ava_config::HookHandlerConfig;
+use ava_plugin::ExecutorPluginHookSource;
+use ava_plugin::PluginHookSource;
+use ava_plugin::PluginId;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookExecutionMode;
+use ava_protocol::protocol::HookHandlerType;
+use ava_protocol::protocol::HookRunSummary;
+use ava_protocol::protocol::HookSource;
+use ava_protocol::protocol::HookTrustStatus;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use serde_json::Map;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -59,7 +59,7 @@ pub(crate) struct CommandShell {
 pub(crate) struct ConfiguredHandler {
     /// Internally admitted cleanup hook, enabled independently of per-hook state.
     pub builtin: bool,
-    pub event_name: codex_protocol::protocol::HookEventName,
+    pub event_name: ava_protocol::protocol::HookEventName,
     pub matcher: Option<String>,
     pub timeout_sec: u64,
     pub status_message: Option<String>,
@@ -166,18 +166,18 @@ impl ConfiguredHandler {
 
     fn event_name_label(&self) -> &'static str {
         match self.event_name {
-            codex_protocol::protocol::HookEventName::PreToolUse => "pre-tool-use",
-            codex_protocol::protocol::HookEventName::PermissionRequest => "permission-request",
-            codex_protocol::protocol::HookEventName::PostToolUse => "post-tool-use",
-            codex_protocol::protocol::HookEventName::PreCompact => "pre-compact",
-            codex_protocol::protocol::HookEventName::PostCompact => "post-compact",
-            codex_protocol::protocol::HookEventName::SessionStart => "session-start",
-            codex_protocol::protocol::HookEventName::SessionEnd => "session-end",
-            codex_protocol::protocol::HookEventName::UserPromptSubmit => "user-prompt-submit",
-            codex_protocol::protocol::HookEventName::SubagentStart => "subagent-start",
-            codex_protocol::protocol::HookEventName::SubagentStop => "subagent-stop",
-            codex_protocol::protocol::HookEventName::Stop => "stop",
-            codex_protocol::protocol::HookEventName::Interrupt => "interrupt",
+            ava_protocol::protocol::HookEventName::PreToolUse => "pre-tool-use",
+            ava_protocol::protocol::HookEventName::PermissionRequest => "permission-request",
+            ava_protocol::protocol::HookEventName::PostToolUse => "post-tool-use",
+            ava_protocol::protocol::HookEventName::PreCompact => "pre-compact",
+            ava_protocol::protocol::HookEventName::PostCompact => "post-compact",
+            ava_protocol::protocol::HookEventName::SessionStart => "session-start",
+            ava_protocol::protocol::HookEventName::SessionEnd => "session-end",
+            ava_protocol::protocol::HookEventName::UserPromptSubmit => "user-prompt-submit",
+            ava_protocol::protocol::HookEventName::SubagentStart => "subagent-start",
+            ava_protocol::protocol::HookEventName::SubagentStop => "subagent-stop",
+            ava_protocol::protocol::HookEventName::Stop => "stop",
+            ava_protocol::protocol::HookEventName::Interrupt => "interrupt",
         }
     }
 

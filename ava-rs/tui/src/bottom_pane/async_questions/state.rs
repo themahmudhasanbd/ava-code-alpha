@@ -2,8 +2,8 @@
 //! Message IDs survive removal so replay cannot reopen an answered or skipped question.
 
 use super::*;
-use codex_context_fragments::AnsweredQuestion;
-use codex_context_fragments::ContextualUserFragment;
+use ava_context_fragments::AnsweredQuestion;
+use ava_context_fragments::ContextualUserFragment;
 
 impl AsyncQuestions {
     pub(crate) fn append(&mut self, message_id: &str, questions: &[AsyncUserInputQuestion]) {
@@ -134,7 +134,7 @@ impl AsyncQuestions {
         }
         let reply =
             AnsweredQuestion::new(&answer.question_id, &answer.question.title, text).render();
-        if reply.chars().count() > codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS {
+        if reply.chars().count() > ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS {
             self.composer.show_footer_flash(
                 "Answer too long; shorten it before sending".into(),
                 Duration::from_secs(5),

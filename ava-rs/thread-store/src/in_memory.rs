@@ -10,17 +10,17 @@ use std::sync::atomic::Ordering;
 
 use chrono::DateTime;
 use chrono::Utc;
-use codex_protocol::ThreadId;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::SessionContextWindow;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_rollout::RolloutItem;
-use codex_rollout::persisted_rollout_items;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::ThreadId;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::SessionContextWindow;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_rollout::RolloutItem;
+use ava_rollout::persisted_rollout_items;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 use crate::AppendThreadItemsParams;
 use crate::ArchiveThreadParams;
@@ -64,18 +64,18 @@ mod tests {
     use crate::StoredTurnItemsView;
     use crate::ThreadPersistenceMetadata;
     use crate::ThreadSortKey;
-    use codex_protocol::models::BaseInstructions;
-    use codex_protocol::protocol::SessionSource;
+    use ava_protocol::models::BaseInstructions;
+    use ava_protocol::protocol::SessionSource;
 
     #[tokio::test]
     async fn deletion_cleans_associated_sqlite_and_shared_memory()
     -> Result<(), Box<dyn std::error::Error>> {
-        use codex_utils_absolute_path::test_support::PathExt;
+        use ava_utils_absolute_path::test_support::PathExt;
         use pretty_assertions::assert_eq;
 
         let home = tempfile::TempDir::new()?;
-        let state_db = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        let state_db = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(home.path().abs()),
             "test".to_string(),
         )
         .await?;
@@ -85,7 +85,7 @@ mod tests {
         shared
             .create_thread(create_thread_params(thread_id, ThreadHistoryMode::Legacy))
             .await?;
-        let metadata = codex_state::ThreadMetadataBuilder::new(
+        let metadata = ava_state::ThreadMetadataBuilder::new(
             thread_id,
             home.path().join("thread.jsonl"),
             Utc::now(),
@@ -195,7 +195,7 @@ mod tests {
         store
             .move_thread_to_section(MoveThreadToSectionParams {
                 thread_id: grandchild_thread_id,
-                section: Some(codex_state::PINNED_THREAD_SECTION_ID.to_string()),
+                section: Some(ava_state::PINNED_THREAD_SECTION_ID.to_string()),
                 before_thread_id: None,
             })
             .await
@@ -269,7 +269,7 @@ mod tests {
                 allowed_sources: Vec::new(),
                 model_providers: None,
                 cwd_filters: None,
-                section: Some(Some(codex_state::PINNED_THREAD_SECTION_ID.to_string())),
+                section: Some(Some(ava_state::PINNED_THREAD_SECTION_ID.to_string())),
                 project_id: None,
                 archived: false,
                 search_term: None,
@@ -536,7 +536,7 @@ pub struct InMemoryThreadStoreCalls {
 pub struct InMemoryThreadStore {
     state: Arc<tokio::sync::Mutex<InMemoryThreadStoreState>>,
     omit_metadata_update_result: Arc<AtomicBool>,
-    state_db: Option<codex_rollout::StateDbHandle>,
+    state_db: Option<ava_rollout::StateDbHandle>,
 }
 
 #[derive(Default)]
@@ -564,7 +564,7 @@ impl InMemoryThreadStore {
     }
 
     /// Shares this debug store's thread data while owning cleanup of the caller's SQLite state.
-    pub fn with_state_db(&self, state_db: Option<codex_rollout::StateDbHandle>) -> Self {
+    pub fn with_state_db(&self, state_db: Option<ava_rollout::StateDbHandle>) -> Self {
         Self {
             state: Arc::clone(&self.state),
             omit_metadata_update_result: Arc::clone(&self.omit_metadata_update_result),
@@ -1129,9 +1129,9 @@ fn stored_thread_from_state(
             .sections
             .get(&thread_id)
             .cloned()
-            .map(|id| codex_state::ThreadSection {
-                name: if id == codex_state::PINNED_THREAD_SECTION_ID {
-                    codex_state::PINNED_THREAD_SECTION_NAME.to_string()
+            .map(|id| ava_state::ThreadSection {
+                name: if id == ava_state::PINNED_THREAD_SECTION_ID {
+                    ava_state::PINNED_THREAD_SECTION_NAME.to_string()
                 } else {
                     id.clone()
                 },
@@ -1182,7 +1182,7 @@ fn history_mode_from_state(
         .unwrap_or_default()
 }
 
-fn git_info_from_patch(patch: &ThreadMetadataPatch) -> Option<codex_protocol::protocol::GitInfo> {
+fn git_info_from_patch(patch: &ThreadMetadataPatch) -> Option<ava_protocol::protocol::GitInfo> {
     let git_info = patch.git_info.as_ref()?;
     let sha = git_info.sha.clone().flatten();
     let branch = git_info.branch.clone().flatten();
@@ -1190,8 +1190,8 @@ fn git_info_from_patch(patch: &ThreadMetadataPatch) -> Option<codex_protocol::pr
     if sha.is_none() && branch.is_none() && origin_url.is_none() {
         return None;
     }
-    Some(codex_protocol::protocol::GitInfo {
-        commit_hash: sha.as_deref().map(codex_git_utils::GitSha::new),
+    Some(ava_protocol::protocol::GitInfo {
+        commit_hash: sha.as_deref().map(ava_git_utils::GitSha::new),
         branch,
         repository_url: origin_url,
     })

@@ -1,61 +1,61 @@
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::types::ApprovalsReviewer;
-use codex_core::EnvironmentConfig;
-use codex_core::EnvironmentNetworkPolicy;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_core::config::NetworkProxySpec;
-use codex_core::shell::ShellType;
-use codex_core::shell::get_shell;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-use codex_exec_server::RemoveOptions;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_network_proxy::PROXY_ACTIVE_ENV_KEY;
-use codex_protocol::approvals::ExecApprovalKind;
-use codex_protocol::approvals::NetworkApprovalContext;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::approvals::NetworkPolicyAmendment;
-use codex_protocol::approvals::NetworkPolicyRuleAction;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::NetworkPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::openai_models::AutoReviewMessages;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecApprovalRequestEvent;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_utils_path_uri::PathUri;
+use ava_config::types::ApprovalsReviewer;
+use ava_core::EnvironmentConfig;
+use ava_core::EnvironmentNetworkPolicy;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_core::config::NetworkProxySpec;
+use ava_core::shell::ShellType;
+use ava_core::shell::get_shell;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+use ava_exec_server::RemoveOptions;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::PROXY_ACTIVE_ENV_KEY;
+use ava_protocol::approvals::ExecApprovalKind;
+use ava_protocol::approvals::NetworkApprovalContext;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::approvals::NetworkPolicyAmendment;
+use ava_protocol::approvals::NetworkPolicyRuleAction;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::NetworkPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::openai_models::AutoReviewMessages;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecApprovalRequestEvent;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use core_test_support::managed_network_requirements_loader;
@@ -76,11 +76,11 @@ use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_no_remote_env;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_target_windows;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_with_timeout;
 use pretty_assertions::assert_eq;
@@ -97,7 +97,7 @@ use test_case::test_case;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 
-const NETWORK_TEST_HOST: &str = "codex-network-test.invalid";
+const NETWORK_TEST_HOST: &str = "ava-network-test.invalid";
 const NETWORK_TEST_TARGET: &str = "http://codex-network-test.invalid:80";
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -354,7 +354,7 @@ async fn strict_auto_review_routes_network_approval_to_guardian_when_user_review
         AskForApproval::OnRequest,
     )
     .await?;
-    let EventMsg::RequestPermissions(request) = wait_for_event(&test.codex, |event| {
+    let EventMsg::RequestPermissions(request) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::RequestPermissions(_))
     })
     .await
@@ -362,7 +362,7 @@ async fn strict_auto_review_routes_network_approval_to_guardian_when_user_review
         unreachable!("matched request permissions event")
     };
     assert_eq!(request.call_id, permission_call_id);
-    test.codex
+    test.ava-code
         .submit(Op::RequestPermissionsResponse {
             id: permission_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -438,11 +438,11 @@ async fn cancelled_guardian_network_review_fails_closed_without_rewriting_turn_s
     )
     .await?;
     wait_for_guardian_request(&pending_guardian).await;
-    test.codex.submit(Op::Interrupt).await?;
+    test.ava-code.submit(Op::Interrupt).await?;
     let mut saw_turn_aborted = false;
     let mut saw_guardian_aborted = false;
     while !saw_turn_aborted || !saw_guardian_aborted {
-        let event = tokio::time::timeout(Duration::from_secs(5), test.codex.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(5), test.ava-code.next_event())
             .await
             .context("timed out waiting for parent and Guardian cancellation")?
             .context("event stream ended while waiting for cancellation")?;
@@ -482,7 +482,7 @@ async fn cancelled_guardian_network_review_fails_closed_without_rewriting_turn_s
 }
 
 #[test_case("GET", "http://codex-network-test.invalid/"; "plain_http")]
-#[test_case("CONNECT", "codex-network-test.invalid:443"; "connect")]
+#[test_case("CONNECT", "ava-network-test.invalid:443"; "connect")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[cfg_attr(
     not(target_os = "linux"),
@@ -507,7 +507,7 @@ async fn disconnected_network_request_explains_failure_to_model(
 import os, socket, time, urllib.parse
 proxy = urllib.parse.urlparse(os.environ['HTTP_PROXY'])
 sock = socket.create_connection((proxy.hostname, proxy.port), timeout=10)
-sock.sendall(b'{method} {target} HTTP/1.1\r\nHost: codex-network-test.invalid\r\n\r\n')
+sock.sendall(b'{method} {target} HTTP/1.1\r\nHost: ava-network-test.invalid\r\n\r\n')
 while not os.path.exists('disconnect-now'):
     time.sleep(0.01)
 sock.close()
@@ -829,7 +829,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         AskForApproval::OnRequest,
     )
     .await?;
-    let EventMsg::TurnStarted(first_turn) = wait_for_event(&test.codex, |event| {
+    let EventMsg::TurnStarted(first_turn) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnStarted(_))
     })
     .await
@@ -842,8 +842,8 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         first_turn.turn_id.clone()
     } else {
         wait_for_turn_complete(&test).await;
-        assert_eq!(test.codex.list_background_terminals().await.len(), 1);
-        test.codex
+        assert_eq!(test.ava-code.list_background_terminals().await.len(), 1);
+        test.ava-code
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "review the existing terminal under B".to_string(),
@@ -859,7 +859,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
                         settings: Settings {
                             model: "guardian-parent-b".to_string(),
                             reasoning_effort: Some(
-                                codex_protocol::openai_models::ReasoningEffort::Medium,
+                                ava_protocol::openai_models::ReasoningEffort::Medium,
                             ),
                             developer_instructions: None,
                         },
@@ -868,7 +868,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
                 }),
             )
             .await?;
-        let EventMsg::TurnStarted(active_turn) = wait_for_event(&test.codex, |event| {
+        let EventMsg::TurnStarted(active_turn) = wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnStarted(_))
         })
         .await
@@ -878,7 +878,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         assert_ne!(active_turn.turn_id, first_turn.turn_id);
         active_turn.turn_id
     };
-    let EventMsg::RequestPermissions(request) = wait_for_event(&test.codex, |event| {
+    let EventMsg::RequestPermissions(request) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::RequestPermissions(_))
     })
     .await
@@ -888,12 +888,12 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
     assert_eq!(request.call_id, permission_call_id);
     if same_turn {
         let (reply, outcome) = tokio::sync::oneshot::channel();
-        test.codex
+        test.ava-code
             .submit(Op::TurnSettings {
                 turn_id: active_turn_id.clone(),
-                update: codex_protocol::protocol::TurnSettingsUpdate {
+                update: ava_protocol::protocol::TurnSettingsUpdate {
                     model: Some("guardian-parent-b".to_string()),
-                    effort: Some(Some(codex_protocol::openai_models::ReasoningEffort::Medium)),
+                    effort: Some(Some(ava_protocol::openai_models::ReasoningEffort::Medium)),
                     ..Default::default()
                 },
                 reply,
@@ -901,10 +901,10 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
             .await?;
         assert_eq!(
             tokio::time::timeout(Duration::from_secs(10), outcome).await??,
-            codex_protocol::protocol::TurnSettingsUpdateOutcome::Applied,
+            ava_protocol::protocol::TurnSettingsUpdateOutcome::Applied,
         );
     }
-    test.codex
+    test.ava-code
         .submit(Op::RequestPermissionsResponse {
             id: permission_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -914,7 +914,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
             },
         })
         .await?;
-    let assessment = wait_for_event(&test.codex, |event| {
+    let assessment = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::GuardianAssessment(assessment)
@@ -968,7 +968,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         .context("parent completion request")?;
     assert_eq!(final_parent.body_json()["model"], "guardian-parent-b");
     let metadata: Value = serde_json::from_str(
-        final_parent.body_json()["client_metadata"]["x-codex-turn-metadata"]
+        final_parent.body_json()["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .context("Responses turn metadata")?,
     )?;
@@ -998,11 +998,11 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
     );
     assert!(stdin_output.contains("CROSS-TURN-NETWORK-COMPLETE"));
     assert_eq!(
-        test.codex.list_background_terminals().await.len(),
+        test.ava-code.list_background_terminals().await.len(),
         1,
         "approved network access must not terminate the background process"
     );
-    test.codex.submit(Op::CleanBackgroundTerminals).await?;
+    test.ava-code.submit(Op::CleanBackgroundTerminals).await?;
 
     Ok(())
 }
@@ -1041,7 +1041,7 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
     assert!(
         approval
             .call_id
-            .starts_with("network#local#http#codex-network-test.invalid#80#")
+            .starts_with("network#local#http#ava-network-test.invalid#80#")
     );
     assert_eq!(approval.approval_id.as_deref(), None);
     let first_approval_call_id = approval.call_id.clone();
@@ -1049,9 +1049,9 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
     assert_eq!(approval.cwd, test.config.cwd.clone().into());
     assert_eq!(
         approval.reason.as_deref(),
-        Some("codex-network-test.invalid is not in the allowed_domains")
+        Some("ava-network-test.invalid is not in the allowed_domains")
     );
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1078,7 +1078,7 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
     assert_eq!(approval.approval_id.as_deref(), None);
     assert_ne!(approval.call_id, first_approval_call_id);
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1130,7 +1130,7 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
         NetworkApprovalProtocol::Http,
     )
     .await?;
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1178,14 +1178,14 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
         NetworkApprovalProtocol::Socks5Tcp,
     )
     .await?;
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
             decision: ReviewDecision::Abort,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -1283,7 +1283,7 @@ PY"#
     let mut approvals = Vec::new();
     for _ in 0..2 {
         let event = wait_for_event_with_timeout(
-            &test.codex,
+            &test.ava-code,
             |event| {
                 matches!(
                     event,
@@ -1298,7 +1298,7 @@ PY"#
         };
         approvals.push(approval);
     }
-    assert_eq!(test.codex.list_background_terminals().await.len(), 1);
+    assert_eq!(test.ava-code.list_background_terminals().await.len(), 1);
     // The child holds this lock until exit, including across the sandbox's PID namespace.
     let process_lock = fs::File::open(local_cwd.join("network-process-lock"))?;
     assert!(matches!(
@@ -1324,7 +1324,7 @@ PY"#
         OtherNetworkReview::ApprovedForSession => Some(ReviewDecision::ApprovedForSession),
     };
     if let Some(decision) = first_decision {
-        test.codex
+        test.ava-code
             .submit(Op::ExecApproval {
                 id: first_approval.effective_approval_id(),
                 turn_id: Some(first_approval.turn_id.clone()),
@@ -1340,7 +1340,7 @@ PY"#
         assert!(result.starts_with("HTTP/1.1 200") || result.starts_with("HTTP/1.1 502"));
     }
     let final_approval = &approvals[1];
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: final_approval.effective_approval_id(),
             turn_id: Some(final_approval.turn_id.clone()),
@@ -1361,7 +1361,7 @@ PY"#
     })
     .await
     .context("background process remained alive after network rejection")??;
-    assert!(test.codex.list_background_terminals().await.is_empty());
+    assert!(test.ava-code.list_background_terminals().await.is_empty());
 
     let output = responses
         .requests()
@@ -1449,7 +1449,7 @@ async fn allowing_network_policy_amendment_persists_context_and_bypasses_prompt(
             },
         ]
     );
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1462,11 +1462,11 @@ async fn allowing_network_policy_amendment_persists_context_and_bypasses_prompt(
 
     let policy = fs::read_to_string(test.home.path().join("rules/default.rules"))?;
     assert!(policy.contains(
-        r#"network_rule(host="codex-network-test.invalid", protocol="http", decision="allow""#
+        r#"network_rule(host="ava-network-test.invalid", protocol="http", decision="allow""#
     ));
     assert!(first_responses.requests().iter().any(|request| {
         request.body_contains_text(
-            "Allowed network rule saved in execpolicy (allowlist): codex-network-test.invalid",
+            "Allowed network rule saved in execpolicy (allowlist): ava-network-test.invalid",
         )
     }));
     mount_exec_network_turn(
@@ -1518,7 +1518,7 @@ async fn denying_network_policy_amendment_persists_and_blocks_request() -> Resul
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1534,7 +1534,7 @@ async fn denying_network_policy_amendment_persists_and_blocks_request() -> Resul
 
     let policy = fs::read_to_string(test.home.path().join("rules/default.rules"))?;
     assert!(policy.contains(
-        r#"network_rule(host="codex-network-test.invalid", protocol="http", decision="deny""#
+        r#"network_rule(host="ava-network-test.invalid", protocol="http", decision="deny""#
     ));
     let output = responses
         .requests()
@@ -1575,7 +1575,7 @@ async fn failed_network_policy_amendment_denies_request_and_does_not_approve_hos
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1611,7 +1611,7 @@ async fn failed_network_policy_amendment_denies_request_and_does_not_approve_hos
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1681,7 +1681,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
                 path: selection.cwd.clone(),
             },
         };
-        test.codex
+        test.ava-code
             .environment_ready(
                 &selection,
                 EnvironmentConfig {
@@ -1707,7 +1707,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
             .await?;
         tokio::time::timeout(Duration::from_secs(/*secs*/ 5), async {
             while !test
-                .codex
+                .ava-code
                 .inspect_selected_capability_roots()
                 .ready_roots
                 .contains(&root)
@@ -1752,7 +1752,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
         let thread_id = request["client_metadata"]["thread_id"]
             .as_str()
             .context("Guardian thread id")?;
-        let thread_id = codex_protocol::ThreadId::from_string(thread_id)?;
+        let thread_id = ava_protocol::ThreadId::from_string(thread_id)?;
         // Internal reviewers are hidden from get_thread. Their persisted terminal event
         // confirms the reviewer's own retries finished before testing Guardian's retry wait.
         tokio::time::timeout(Duration::from_secs(5), async {
@@ -1775,7 +1775,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
         })
         .await
         .context("Guardian reviewer did not finish its rate-limited turn")??;
-        tokio::time::timeout(Duration::from_secs(5), test.codex.shutdown_and_wait())
+        tokio::time::timeout(Duration::from_secs(5), test.ava-code.shutdown_and_wait())
             .await
             .context("parent shutdown waited for Guardian's 60-second retry")??;
         let response = tokio::time::timeout(Duration::from_secs(5), proxy_request).await???;
@@ -1787,7 +1787,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
     assert_eq!(approval.command, ["network-access", NETWORK_TEST_TARGET]);
     assert_eq!(approval.cwd, selection.cwd.into());
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1799,8 +1799,8 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
         .context("unattributed proxy request did not finish")???;
     assert!(response.starts_with("HTTP/1.1 200") || response.starts_with("HTTP/1.1 502"));
 
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -1875,7 +1875,7 @@ async fn ambiguous_unattributed_network_request_is_not_assigned_to_active_calls(
     assert!(
         tokio::time::timeout(
             Duration::from_secs(1),
-            wait_for_event(&test.codex, |event| matches!(
+            wait_for_event(&test.ava-code, |event| matches!(
                 event,
                 EventMsg::ExecApprovalRequest(_)
             ))
@@ -1885,15 +1885,15 @@ async fn ambiguous_unattributed_network_request_is_not_assigned_to_active_calls(
         "ambiguous request was incorrectly assigned to an active call"
     );
 
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
-    test.codex.submit(Op::CleanBackgroundTerminals).await?;
+    test.ava-code.submit(Op::CleanBackgroundTerminals).await?;
     tokio::time::timeout(Duration::from_secs(10), async {
         loop {
-            if test.codex.list_background_terminals().await.is_empty() {
+            if test.ava-code.list_background_terminals().await.is_empty() {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -1916,7 +1916,7 @@ async fn thread_turnover_closes_managed_proxy_tunnels() -> Result<()> {
     let mut config = test.config.clone();
     let mut network = NetworkProxyConfig {
         enabled: true,
-        mode: codex_network_proxy::NetworkMode::Full,
+        mode: ava_network_proxy::NetworkMode::Full,
         allow_local_binding: Some(true),
         allow_upstream_proxy: false,
         ..NetworkProxyConfig::default()
@@ -1999,7 +1999,7 @@ async fn thread_turnover_closes_managed_proxy_tunnels() -> Result<()> {
         }
         drop(upstream);
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -2336,7 +2336,7 @@ async fn remote_guardian_network_decisions_are_scoped_to_each_request_and_enviro
             )
             .await?;
             let approval = expect_network_approval(&test, REMOTE_ENVIRONMENT_ID).await?;
-            test.codex
+            test.ava-code
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: Some(approval.turn_id),
@@ -2451,7 +2451,7 @@ async fn owner_network_policy_follows_the_selected_remote_command() -> Result<()
     let server = start_mock_server().await;
     let mut scenarios = vec![("ROOTED", managed_network_unified_exec_test(&server).await?)];
     for (scenario, configured_controller) in [("ROOTLESS", false), ("USER_ROOTED", true)] {
-        let mut builder = test_codex().with_config(move |config| {
+        let mut builder = test_ava().with_config(move |config| {
             for feature in [Feature::UnifiedExec, Feature::ExecPermissionApprovals] {
                 config
                     .features
@@ -2665,7 +2665,7 @@ PYTHON"#;
             )
             .await?;
             if escalated || suffix == "GRANTED_DENIED" {
-                let event = wait_for_event(&test.codex, |event| {
+                let event = wait_for_event(&test.ava-code, |event| {
                     matches!(
                         event,
                         EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -2675,7 +2675,7 @@ PYTHON"#;
                 let EventMsg::ExecApprovalRequest(approval) = event else {
                     anyhow::bail!("expected command approval before completion")
                 };
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: Some(approval.turn_id),
@@ -2743,7 +2743,7 @@ async fn escalated_owner_network_terminal_requires_stdin_approval(
     let server = start_mock_server().await;
     let profile =
         PermissionProfile::from_runtime_permissions(&filesystem, NetworkSandboxPolicy::Enabled);
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             for feature in [Feature::UnifiedExec, Feature::WriteStdinApproval] {
                 config
@@ -2824,9 +2824,9 @@ async fn escalated_owner_network_terminal_requires_stdin_approval(
     .await?;
     let mut approvals = Vec::new();
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::ExecApprovalRequest(approval) => {
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: Some(approval.turn_id),
@@ -2869,7 +2869,7 @@ async fn approved_network_host_for_one_environment_still_prompts_in_another() ->
     let test = managed_network_unified_exec_test(&server).await?;
     let local_cwd = TempDir::new()?;
     let remote_cwd = PathBuf::from(format!(
-        "/tmp/codex-network-approval-{}",
+        "/tmp/ava-network-approval-{}",
         SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
     ))
     .abs();
@@ -2910,7 +2910,7 @@ async fn approved_network_host_for_one_environment_still_prompts_in_another() ->
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -2936,7 +2936,7 @@ async fn approved_network_host_for_one_environment_still_prompts_in_another() ->
     .await?;
     let approval = expect_network_approval(&test, REMOTE_ENVIRONMENT_ID).await?;
     let rejection = "approval request failed because the client disconnected";
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -2965,7 +2965,7 @@ async fn approved_network_host_for_one_environment_still_prompts_in_another() ->
 }
 
 pub(super) fn guardian_parent_catalog() -> ModelsResponse {
-    let template = codex_models_manager::bundled_models_response()
+    let template = ava_models_manager::bundled_models_response()
         .expect("bundled model catalog")
         .models
         .into_iter()
@@ -2981,7 +2981,7 @@ pub(super) fn guardian_parent_catalog() -> ModelsResponse {
                 model.visibility = ModelVisibility::List;
                 model.auto_review_model_override = None;
                 model.supported_reasoning_levels.retain(|level| {
-                    level.effort != codex_protocol::openai_models::ReasoningEffort::Low
+                    level.effort != ava_protocol::openai_models::ReasoningEffort::Low
                 });
                 model
                     .model_messages
@@ -3002,14 +3002,14 @@ pub(super) fn guardian_parent_catalog() -> ModelsResponse {
     }
 }
 
-async fn managed_network_unified_exec_test(server: &wiremock::MockServer) -> Result<TestCodex> {
+async fn managed_network_unified_exec_test(server: &wiremock::MockServer) -> Result<TestAva> {
     managed_network_unified_exec_test_with_features(server, &[]).await
 }
 
 async fn managed_network_unified_exec_test_with_features(
     server: &wiremock::MockServer,
     features: &[Feature],
-) -> Result<TestCodex> {
+) -> Result<TestAva> {
     let test = managed_network_unified_exec_builder(features)?
         .build_with_remote_and_local_env(server)
         .await?;
@@ -3019,7 +3019,7 @@ async fn managed_network_unified_exec_test_with_features(
     Ok(test)
 }
 
-fn managed_network_unified_exec_builder(features: &[Feature]) -> Result<TestCodexBuilder> {
+fn managed_network_unified_exec_builder(features: &[Feature]) -> Result<TestAvaBuilder> {
     let home = Arc::new(TempDir::new()?);
     fs::write(
         home.path().join("config.toml"),
@@ -3043,7 +3043,7 @@ allow_local_binding = true
     );
     let permission_profile_for_config = permission_profile;
     let features = features.to_vec();
-    Ok(test_codex()
+    Ok(test_ava()
         .with_home(home)
         .with_cloud_config_bundle(managed_network_requirements_loader())
         .with_config(move |config| {
@@ -3108,7 +3108,7 @@ fn remote_network_proxy_request_command(marker: &str) -> String {
 }
 
 async fn submit_managed_network_turn(
-    test: &TestCodex,
+    test: &TestAva,
     prompt: &str,
     environments: Vec<TurnEnvironmentSelection>,
     approvals_reviewer: ApprovalsReviewer,
@@ -3125,7 +3125,7 @@ async fn submit_managed_network_turn(
     let turn_environment_selections =
         TurnEnvironmentSelections::new(test.config.cwd.clone(), environments);
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -3268,7 +3268,7 @@ fn guardian_network_actions(responses: &ResponseMock) -> Result<Vec<Value>> {
 }
 
 async fn expect_network_approval(
-    test: &TestCodex,
+    test: &TestAva,
     expected_environment_id: &str,
 ) -> Result<ExecApprovalRequestEvent> {
     expect_network_approval_target(
@@ -3281,7 +3281,7 @@ async fn expect_network_approval(
 }
 
 async fn expect_network_approval_target(
-    test: &TestCodex,
+    test: &TestAva,
     expected_environment_id: &str,
     expected_target: &str,
     expected_protocol: NetworkApprovalProtocol,
@@ -3291,7 +3291,7 @@ async fn expect_network_approval_target(
         .checked_duration_since(std::time::Instant::now())
         .context("timed out waiting for network approval request")?;
     let event = wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| {
             matches!(
                 event,
@@ -3327,8 +3327,8 @@ async fn expect_network_approval_target(
     }
 }
 
-async fn wait_for_completion_without_network_prompt(test: &TestCodex) {
-    let event = wait_for_event(&test.codex, |event| {
+async fn wait_for_completion_without_network_prompt(test: &TestAva) {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -3402,8 +3402,8 @@ async fn wait_for_paths(paths: &[&std::path::Path]) -> Result<()> {
     Ok(())
 }
 
-async fn wait_for_turn_complete(test: &TestCodex) {
-    wait_for_event(&test.codex, |event| {
+async fn wait_for_turn_complete(test: &TestAva) {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

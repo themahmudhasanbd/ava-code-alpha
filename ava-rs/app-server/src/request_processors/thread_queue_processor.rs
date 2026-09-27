@@ -5,38 +5,38 @@ use crate::error_code::internal_error;
 use crate::error_code::invalid_request;
 use crate::outgoing_message::ConnectionRequestId;
 use crate::outgoing_message::OutgoingMessageSender;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::QueuedSubmission;
-use codex_app_server_protocol::ThreadQueueAddParams;
-use codex_app_server_protocol::ThreadQueueAddResponse;
-use codex_app_server_protocol::ThreadQueueDeleteParams;
-use codex_app_server_protocol::ThreadQueueDeleteResponse;
-use codex_app_server_protocol::ThreadQueueListParams;
-use codex_app_server_protocol::ThreadQueueListResponse;
-use codex_app_server_protocol::ThreadQueueReorderParams;
-use codex_app_server_protocol::ThreadQueueReorderResponse;
-use codex_app_server_protocol::ThreadQueueStartParams;
-use codex_app_server_protocol::ThreadQueueStartResponse;
-use codex_app_server_protocol::ThreadQueueUpdateParams;
-use codex_app_server_protocol::ThreadQueueUpdateResponse;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_core::CodexThread;
-use codex_core::NotSubmittedReason;
-use codex_core::StartIfIdleSubmission;
-use codex_core::ThreadManager;
-use codex_core::TurnInput;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_queue_extension::QueueServiceError;
-use codex_queue_extension::QueuedItem;
-use codex_queue_extension::QueuedItemService;
-use codex_thread_store::ReadThreadParams;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::ThreadStoreError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::QueuedSubmission;
+use ava_app_server_protocol::ThreadQueueAddParams;
+use ava_app_server_protocol::ThreadQueueAddResponse;
+use ava_app_server_protocol::ThreadQueueDeleteParams;
+use ava_app_server_protocol::ThreadQueueDeleteResponse;
+use ava_app_server_protocol::ThreadQueueListParams;
+use ava_app_server_protocol::ThreadQueueListResponse;
+use ava_app_server_protocol::ThreadQueueReorderParams;
+use ava_app_server_protocol::ThreadQueueReorderResponse;
+use ava_app_server_protocol::ThreadQueueStartParams;
+use ava_app_server_protocol::ThreadQueueStartResponse;
+use ava_app_server_protocol::ThreadQueueUpdateParams;
+use ava_app_server_protocol::ThreadQueueUpdateResponse;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_core::AvaThread;
+use ava_core::NotSubmittedReason;
+use ava_core::StartIfIdleSubmission;
+use ava_core::ThreadManager;
+use ava_core::TurnInput;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_queue_extension::QueueServiceError;
+use ava_queue_extension::QueuedItem;
+use ava_queue_extension::QueuedItemService;
+use ava_thread_store::ReadThreadParams;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::ThreadStoreError;
 
 use super::TurnRequestProcessor;
 use super::config_load_error;
@@ -249,7 +249,7 @@ impl ThreadQueueRequestProcessor {
     async fn require_thread(
         &self,
         raw_thread_id: &str,
-    ) -> Result<(ThreadId, Option<Arc<CodexThread>>, SessionSource), JSONRPCErrorError> {
+    ) -> Result<(ThreadId, Option<Arc<AvaThread>>, SessionSource), JSONRPCErrorError> {
         let thread_id = ThreadId::from_string(raw_thread_id)
             .map_err(|error| invalid_request(format!("invalid thread id: {error}")))?;
         let (loaded_thread, source) = if let Ok(thread) =
@@ -279,7 +279,7 @@ impl ThreadQueueRequestProcessor {
                 })?;
             if stored.archived_at.is_some() {
                 return Err(invalid_request(format!(
-                    "session {thread_id} is archived. Run `codex unarchive {thread_id}` to unarchive it first."
+                    "session {thread_id} is archived. Run `ava unarchive {thread_id}` to unarchive it first."
                 )));
             }
             (None, stored.source)
@@ -290,7 +290,7 @@ impl ThreadQueueRequestProcessor {
 }
 
 fn ensure_direct_input_allowed(
-    loaded_thread: Option<&CodexThread>,
+    loaded_thread: Option<&AvaThread>,
     source: &SessionSource,
 ) -> Result<(), JSONRPCErrorError> {
     match loaded_thread {

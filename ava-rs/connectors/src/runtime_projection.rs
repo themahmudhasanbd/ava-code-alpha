@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use codex_config::ConfigLayerStack;
+use ava_config::ConfigLayerStack;
 
 use crate::AppToolPolicyEvaluator;
 use crate::AppToolPolicyInput;

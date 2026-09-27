@@ -1,26 +1,26 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::CurrentTimeReminderConfig;
-use codex_core::config::RolloutBudgetConfig;
-use codex_core::config::TokenBudgetConfig;
-use codex_features::Feature;
-use codex_protocol::models::ImageReference;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::protocol::AdditionalContextEntry;
-use codex_protocol::protocol::AdditionalContextKind;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GuardianAssessmentAction;
-use codex_protocol::protocol::GuardianAssessmentEvent;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::CurrentTimeReminderConfig;
+use ava_core::config::RolloutBudgetConfig;
+use ava_core::config::TokenBudgetConfig;
+use ava_features::Feature;
+use ava_protocol::models::ImageReference;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::protocol::AdditionalContextEntry;
+use ava_protocol::protocol::AdditionalContextKind;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GuardianAssessmentAction;
+use ava_protocol::protocol::GuardianAssessmentEvent;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_sse_once;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
@@ -35,7 +35,7 @@ async fn first_request_item_types_roles_and_content_annotations() -> Result<()> 
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.5", |model_info| {
             model_info.input_modalities.push(InputModality::Audio);
         })
@@ -73,7 +73,7 @@ async fn first_request_item_types_roles_and_content_annotations() -> Result<()> 
         .build_with_auto_env(&server)
         .await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::ApproveGuardianDeniedAction {
             event: GuardianAssessmentEvent {
                 review_reason: None,
@@ -100,12 +100,12 @@ async fn first_request_item_types_roles_and_content_annotations() -> Result<()> 
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::RawResponseItem(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![
                 UserInput::Text {
@@ -140,7 +140,7 @@ async fn first_request_item_types_roles_and_content_annotations() -> Result<()> 
             ])),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -232,7 +232,7 @@ async fn content_item_kinds_are_omitted_when_feature_disabled() -> Result<()> {
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.developer_instructions = Some("Keep other metadata intact.".into());
             config

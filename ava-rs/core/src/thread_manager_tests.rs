@@ -14,36 +14,36 @@ use crate::session::tests::make_session_and_context;
 use crate::tasks::InterruptedTurnHistoryMarker;
 use crate::tasks::interrupted_turn_history_marker;
 use crate::windows_sandbox::WindowsSandboxLevelExt;
-use codex_extension_api::empty_extension_registry;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::ResponseItemId;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::MCP_APP_UI_EXTENSION_ID;
-use codex_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::ReasoningItemReasoningSummary;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::protocol::AgentMessageEvent;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_extension_api::empty_extension_registry;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::ResponseItemId;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::MCP_APP_UI_EXTENSION_ID;
+use ava_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::ReasoningItemReasoningSummary;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::protocol::AgentMessageEvent;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use core_test_support::responses::mount_models_once;
@@ -55,12 +55,12 @@ use wiremock::MockServer;
 
 const TEST_INSTALLATION_ID: &str = "11111111-1111-4111-8111-111111111111";
 
-struct ParentInstructionsProvider(codex_extension_api::Instructions);
+struct ParentInstructionsProvider(ava_extension_api::Instructions);
 
-impl codex_extension_api::UserInstructionsProvider for ParentInstructionsProvider {
-    fn load_user_instructions(&self) -> codex_extension_api::LoadInstructionsFuture<'_> {
+impl ava_extension_api::UserInstructionsProvider for ParentInstructionsProvider {
+    fn load_user_instructions(&self) -> ava_extension_api::LoadInstructionsFuture<'_> {
         Box::pin(async move {
-            codex_extension_api::LoadedUserInstructions {
+            ava_extension_api::LoadedUserInstructions {
                 instructions: Some(self.0.clone()),
                 warnings: Vec::new(),
             }
@@ -68,9 +68,9 @@ impl codex_extension_api::UserInstructionsProvider for ParentInstructionsProvide
     }
 }
 
-impl codex_extension_api::ThreadInstructionsProvider for ParentInstructionsProvider {
-    fn load_thread_instructions(&self) -> codex_extension_api::LoadInstructionsFuture<'_> {
-        codex_extension_api::UserInstructionsProvider::load_user_instructions(self)
+impl ava_extension_api::ThreadInstructionsProvider for ParentInstructionsProvider {
+    fn load_thread_instructions(&self) -> ava_extension_api::LoadInstructionsFuture<'_> {
+        ava_extension_api::UserInstructionsProvider::load_user_instructions(self)
     }
 }
 
@@ -78,22 +78,22 @@ impl codex_extension_api::ThreadInstructionsProvider for ParentInstructionsProvi
 async fn live_fork_keeps_instructions_when_source_is_unloaded_during_setup() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
-    let global = codex_extension_api::Instructions {
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
+    let global = ava_extension_api::Instructions {
         text: "global instructions".to_string(),
         source: None,
     };
-    let thread = codex_extension_api::Instructions {
+    let thread = ava_extension_api::Instructions {
         text: "source thread instructions".to_string(),
         source: None,
     };
     let mut manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     Arc::get_mut(&mut manager.state)
         .expect("unshared manager")
@@ -157,7 +157,7 @@ async fn live_fork_keeps_instructions_when_source_is_unloaded_during_setup() {
 async fn thread_analytics_opt_out_overrides_shared_client() {
     let server = MockServer::start().await;
     wiremock::Mock::given(wiremock::matchers::method("POST"))
-        .and(wiremock::matchers::path("/codex/analytics-events/events"))
+        .and(wiremock::matchers::path("/ava/analytics-events/events"))
         .respond_with(wiremock::ResponseTemplate::new(200))
         .mount(&server)
         .await;
@@ -165,7 +165,7 @@ async fn thread_analytics_opt_out_overrides_shared_client() {
     let mut config = test_config().await;
     config.chatgpt_base_url = server.uri();
     config.model_provider.base_url = Some(server.uri());
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let shared_client = AnalyticsEventsClient::new(
         AuthManager::from_auth_for_testing(auth.clone()),
         server.uri(),
@@ -187,14 +187,14 @@ async fn thread_analytics_opt_out_overrides_shared_client() {
         ),
         ("no_override", None, [false, true, true]),
     ] {
-        config.codex_home = temp_dir.path().join(name).abs();
-        config.cwd = config.codex_home.abs();
-        std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+        config.ava_home = temp_dir.path().join(name).abs();
+        config.cwd = config.ava_home.abs();
+        std::fs::create_dir_all(&config.ava_home).expect("create ava home");
         let mut manager = ThreadManager::with_models_provider_and_home_for_tests(
             auth.clone(),
             config.model_provider.clone(),
-            config.codex_home.to_path_buf(),
-            Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+            config.ava_home.to_path_buf(),
+            Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         );
         Arc::get_mut(&mut manager.state)
             .expect("unshared thread manager state")
@@ -226,13 +226,13 @@ async fn thread_analytics_opt_out_overrides_shared_client() {
                 opted_out_thread_ids.push(thread_id.clone());
             }
             services.analytics_events_client.track_app_used(
-                codex_analytics::TrackEventsContext {
+                ava_analytics::TrackEventsContext {
                     model_slug: "test-model".to_string(),
                     turn_id: format!("test-turn-{thread_id}"),
                     thread_id,
-                    product_client_id: "codex_work_cca".to_string(),
+                    product_client_id: "ava_work_cca".to_string(),
                 },
-                codex_analytics::AppInvocation {
+                ava_analytics::AppInvocation {
                     connector_id: Some("test-connector".to_string()),
                     app_name: None,
                     invocation_type: None,
@@ -252,7 +252,7 @@ async fn thread_analytics_opt_out_overrides_shared_client() {
         .await
         .expect("analytics requests")
         .into_iter()
-        .filter(|request| request.url.path() == "/codex/analytics-events/events")
+        .filter(|request| request.url.path() == "/ava/analytics-events/events")
         .flat_map(|request| {
             request.body_json::<serde_json::Value>().expect("JSON body")["events"]
                 .as_array()
@@ -267,7 +267,7 @@ async fn thread_analytics_opt_out_overrides_shared_client() {
     }));
     let mut actual_thread_ids: Vec<String> = events
         .iter()
-        .filter(|event| event["event_type"] == "codex_app_used")
+        .filter(|event| event["event_type"] == "ava_app_used")
         .map(|event| {
             event["event_params"]["thread_id"]
                 .as_str()
@@ -295,9 +295,9 @@ fn thread_id_generator_defaults_to_standard_ids() {
 async fn reserved_thread_id_is_used_without_changing_normal_id_generation() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let generated_ids = [
         ThreadId::from_u128(/*value*/ 0x018f_0000_0000_7000_8000_0000_0000_0001),
@@ -306,10 +306,10 @@ async fn reserved_thread_id_is_used_without_changing_normal_id_generation() {
     ];
     let next_id = std::sync::atomic::AtomicUsize::new(0);
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     )
     .with_thread_id_generator(move || generated_ids[next_id.fetch_add(1, Ordering::Relaxed)]);
 
@@ -341,7 +341,7 @@ async fn reserved_thread_id_is_used_without_changing_normal_id_generation() {
     assert_eq!(reserved.thread_id, generated_ids[0]);
     assert!(matches!(
         resume_error.details(),
-        codex_protocol::error::CodexErrorDetails::InvalidRequest(message)
+        ava_protocol::error::AvaErrorDetails::InvalidRequest(message)
             if message == "reserved thread ID cannot be used when resuming a thread"
     ));
     assert_eq!(generated.thread_id, generated_ids[2]);
@@ -352,9 +352,9 @@ async fn reserved_thread_id_is_used_without_changing_normal_id_generation() {
 async fn thread_id_generator_applies_to_roots_children_and_forks() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let generated_ids = [
         ThreadId::from_u128(/*value*/ 0x018f_0000_0000_7000_8000_0000_0000_0001),
@@ -363,10 +363,10 @@ async fn thread_id_generator_applies_to_roots_children_and_forks() {
     ];
     let next_id = std::sync::atomic::AtomicUsize::new(0);
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     )
     .with_thread_id_generator(move || generated_ids[next_id.fetch_add(1, Ordering::Relaxed)]);
     let root = manager
@@ -419,17 +419,17 @@ async fn thread_id_generator_applies_to_roots_children_and_forks() {
 async fn thread_id_generator_does_not_replace_resumed_thread_id() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let original_thread_id =
         ThreadId::from_u128(/*value*/ 0x018f_0000_0000_7000_8000_0000_0000_0001);
     let original_manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     )
     .with_thread_id_generator(move || original_thread_id);
     let original = original_manager
@@ -455,10 +455,10 @@ async fn thread_id_generator_does_not_replace_resumed_thread_id() {
     let _ = original_manager.remove_thread(&original_thread_id).await;
 
     let resumed_manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     )
     .with_thread_id_generator(|| panic!("resuming must not allocate a new thread ID"));
     let resumed = resumed_manager
@@ -484,14 +484,14 @@ async fn thread_id_generator_does_not_replace_resumed_thread_id() {
 async fn child_session_inherits_client_mcp_extensions() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let parent = manager
         .start_thread(StartThreadOptions {
@@ -531,37 +531,37 @@ struct FakeAgentGraphStore {
     descendant_thread_ids: Vec<ThreadId>,
 }
 
-impl codex_agent_graph_store::AgentGraphStore for FakeAgentGraphStore {
+impl ava_agent_graph_store::AgentGraphStore for FakeAgentGraphStore {
     fn upsert_thread_spawn_edge(
         &self,
         _parent_thread_id: ThreadId,
         _child_thread_id: ThreadId,
-        _status: codex_agent_graph_store::ThreadSpawnEdgeStatus,
-    ) -> codex_agent_graph_store::AgentGraphStoreFuture<'_, ()> {
+        _status: ava_agent_graph_store::ThreadSpawnEdgeStatus,
+    ) -> ava_agent_graph_store::AgentGraphStoreFuture<'_, ()> {
         Box::pin(async { panic!("unexpected graph upsert") })
     }
 
     fn set_thread_spawn_edge_status(
         &self,
         _child_thread_id: ThreadId,
-        _status: codex_agent_graph_store::ThreadSpawnEdgeStatus,
-    ) -> codex_agent_graph_store::AgentGraphStoreFuture<'_, ()> {
+        _status: ava_agent_graph_store::ThreadSpawnEdgeStatus,
+    ) -> ava_agent_graph_store::AgentGraphStoreFuture<'_, ()> {
         Box::pin(async { panic!("unexpected graph status update") })
     }
 
     fn list_thread_spawn_children(
         &self,
         _parent_thread_id: ThreadId,
-        _status_filter: Option<codex_agent_graph_store::ThreadSpawnEdgeStatus>,
-    ) -> codex_agent_graph_store::AgentGraphStoreFuture<'_, Vec<ThreadId>> {
+        _status_filter: Option<ava_agent_graph_store::ThreadSpawnEdgeStatus>,
+    ) -> ava_agent_graph_store::AgentGraphStoreFuture<'_, Vec<ThreadId>> {
         Box::pin(async { panic!("unexpected direct-child listing") })
     }
 
     fn list_thread_spawn_descendants(
         &self,
         root_thread_id: ThreadId,
-        status_filter: Option<codex_agent_graph_store::ThreadSpawnEdgeStatus>,
-    ) -> codex_agent_graph_store::AgentGraphStoreFuture<'_, Vec<ThreadId>> {
+        status_filter: Option<ava_agent_graph_store::ThreadSpawnEdgeStatus>,
+    ) -> ava_agent_graph_store::AgentGraphStoreFuture<'_, Vec<ThreadId>> {
         assert_eq!(root_thread_id, self.root_thread_id);
         assert_eq!(status_filter, None);
         let descendant_thread_ids = self.descendant_thread_ids.clone();
@@ -606,28 +606,28 @@ fn developer_interrupted_marker() -> ResponseItem {
 fn effective_originator_prefers_thread_scoped_sources_before_env_originator() {
     for (metrics_service_name, persisted_originator, inherited_originator, expected_originator) in [
         (
-            Some("codex_work_desktop"),
+            Some("ava_work_desktop"),
             Some("persisted_originator"),
             Some("inherited_originator"),
-            "codex_work_desktop",
+            "ava_work_desktop",
         ),
         (
-            Some("codex_work_web"),
+            Some("ava_work_web"),
             Some("persisted_originator"),
             Some("inherited_originator"),
-            "codex_work_web",
+            "ava_work_web",
         ),
         (
-            Some("codex_work_mobile"),
+            Some("ava_work_mobile"),
             Some("persisted_originator"),
             Some("inherited_originator"),
-            "codex_work_mobile",
+            "ava_work_mobile",
         ),
         (
-            Some("codex_work_cca"),
+            Some("ava_work_cca"),
             Some("persisted_originator"),
             Some("inherited_originator"),
-            "codex_work_cca",
+            "ava_work_cca",
         ),
         (
             Some("chatgpt_cca"),
@@ -657,10 +657,10 @@ fn effective_originator_prefers_thread_scoped_sources_before_env_originator() {
         assert_eq!(
             effective_originator_value(
                 metrics_service_name,
-                Some("Codex Desktop".to_string()),
+                Some("Ava Desktop".to_string()),
                 persisted_originator.map(str::to_string),
                 inherited_originator.map(str::to_string),
-                "codex_cli_rs".to_string(),
+                "ava_cli_rs".to_string(),
             ),
             expected_originator
         );
@@ -871,15 +871,15 @@ async fn ignores_session_prefix_messages_when_truncating() {
 async fn shutdown_all_threads_bounded_submits_shutdown_to_every_thread() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let thread_1 = manager
         .start_thread(StartThreadOptions::new(config.clone()))
@@ -908,16 +908,16 @@ async fn shutdown_all_threads_bounded_submits_shutdown_to_every_thread() {
 async fn code_mode_session_provider_is_shared_across_threads() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let provider: Arc<dyn CodeModeSessionProvider> = Arc::new(DisabledCodeModeSessionProvider);
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     )
     .with_code_mode_session_provider(Arc::clone(&provider));
     let first = manager
@@ -972,11 +972,11 @@ async fn mcp_invalidation_refreshes_threads_that_are_still_starting() {
         projections: std::sync::atomic::AtomicUsize,
     }
 
-    impl codex_extension_api::ThreadLifecycleContributor<Config> for BlockingThreadStartup {
+    impl ava_extension_api::ThreadLifecycleContributor<Config> for BlockingThreadStartup {
         fn on_thread_start<'a>(
             &'a self,
-            _input: codex_extension_api::ThreadStartInput<'a, Config>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            _input: ava_extension_api::ThreadStartInput<'a, Config>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 self.entered.notify_one();
                 self.release.notified().await;
@@ -984,15 +984,15 @@ async fn mcp_invalidation_refreshes_threads_that_are_still_starting() {
         }
     }
 
-    impl codex_extension_api::McpServerContributor<Config> for BlockingThreadStartup {
+    impl ava_extension_api::McpServerContributor<Config> for BlockingThreadStartup {
         fn id(&self) -> &'static str {
             "starting_mcp_runtime_refresh_test"
         }
 
         fn contribute<'a>(
             &'a self,
-            _context: codex_extension_api::McpServerContributionContext<'a, Config>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Vec<codex_extension_api::McpServerContribution>>
+            _context: ava_extension_api::McpServerContributionContext<'a, Config>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Vec<ava_extension_api::McpServerContribution>>
         {
             Box::pin(async move {
                 if self.projections.fetch_add(1, Ordering::AcqRel) != 0 {
@@ -1005,9 +1005,9 @@ async fn mcp_invalidation_refreshes_threads_that_are_still_starting() {
 
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let observer = Arc::new(BlockingThreadStartup {
         entered: tokio::sync::Notify::new(),
@@ -1015,17 +1015,17 @@ async fn mcp_invalidation_refreshes_threads_that_are_still_starting() {
         refreshed: tokio::sync::Notify::new(),
         projections: std::sync::atomic::AtomicUsize::new(0),
     });
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::new();
     extensions.thread_lifecycle_contributor(observer.clone());
     extensions.mcp_server_contributor(observer.clone());
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("dummy"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("dummy"));
     let manager = Arc::new(ThreadManager::new(
         &config,
         Arc::clone(&auth_manager),
         build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         Arc::new(extensions.build()),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -1064,15 +1064,15 @@ async fn mcp_invalidation_refreshes_threads_that_are_still_starting() {
 async fn start_thread_keeps_internal_threads_hidden_from_normal_lookups() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let thread = manager
         .start_thread(StartThreadOptions {
@@ -1088,7 +1088,7 @@ async fn start_thread_keeps_internal_threads_hidden_from_normal_lookups() {
     assert_eq!(manager.list_thread_ids().await, Vec::new());
     assert!(manager.get_thread(thread.thread_id).await.is_err());
     assert!(
-        codex_diagnostics::snapshot()
+        ava_diagnostics::snapshot()
             .gauges
             .iter()
             .any(|gauge| gauge.name == "core.threads.live" && gauge.value > 0)
@@ -1107,15 +1107,15 @@ async fn start_thread_keeps_internal_threads_hidden_from_normal_lookups() {
 async fn spawn_internal_guardian_session_preserves_windows_sandbox_proxy_settings() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let parent = manager
         .start_thread(StartThreadOptions::new(config.clone()))
@@ -1138,8 +1138,8 @@ async fn spawn_internal_guardian_session_preserves_windows_sandbox_proxy_setting
             reviewer.thread.session.windows_sandbox_proxy_settings_mode,
         ),
         (
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Preserve,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Reconcile,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Preserve,
         )
     );
 
@@ -1152,14 +1152,14 @@ async fn spawn_internal_guardian_session_preserves_windows_sandbox_proxy_setting
 async fn fork_internal_session_uses_only_the_selected_history() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let parent = manager
         .start_thread(StartThreadOptions::new(config.clone()))
@@ -1225,17 +1225,17 @@ async fn spawn_internal_session_preserves_parent_lineage_without_forking_history
         observed_mcp_sources: Arc<std::sync::Mutex<Vec<SessionSource>>>,
     }
 
-    impl codex_extension_api::ThreadLifecycleContributor<Config> for ParentLifecycleContributor {}
+    impl ava_extension_api::ThreadLifecycleContributor<Config> for ParentLifecycleContributor {}
 
-    impl codex_extension_api::McpServerContributor<Config> for ParentLifecycleContributor {
+    impl ava_extension_api::McpServerContributor<Config> for ParentLifecycleContributor {
         fn id(&self) -> &'static str {
             "parent_mcp_contributor"
         }
 
         fn contribute<'a>(
             &'a self,
-            context: codex_extension_api::McpServerContributionContext<'a, Config>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Vec<codex_extension_api::McpServerContribution>>
+            context: ava_extension_api::McpServerContributionContext<'a, Config>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Vec<ava_extension_api::McpServerContribution>>
         {
             Box::pin(async move {
                 if let Some(session_source) = context.session_source() {
@@ -1257,27 +1257,27 @@ async fn spawn_internal_session_preserves_parent_lineage_without_forking_history
         sampling_token_weight: 1.0,
         prefill_token_weight: 1.0,
     });
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
-    let mut managed_exec_policy = codex_execpolicy::Policy::empty();
+    let mut managed_exec_policy = ava_execpolicy::Policy::empty();
     managed_exec_policy
-        .add_prefix_rule(&["rm".to_string()], codex_execpolicy::Decision::Forbidden)
+        .add_prefix_rule(&["rm".to_string()], ava_execpolicy::Decision::Forbidden)
         .expect("add managed execution restriction");
     let mut requirements = config.config_layer_stack.requirements().clone();
-    requirements.exec_policy = Some(codex_config::Sourced::new(
-        codex_execpolicy::RequirementsExecPolicy::new(managed_exec_policy),
-        codex_config::RequirementSource::Unknown,
+    requirements.exec_policy = Some(ava_config::Sourced::new(
+        ava_execpolicy::RequirementsExecPolicy::new(managed_exec_policy),
+        ava_config::RequirementSource::Unknown,
     ));
-    requirements.additional_developer_instructions = Some(codex_config::Sourced::new(
+    requirements.additional_developer_instructions = Some(ava_config::Sourced::new(
         "managed instructions must not shape the reviewer".to_string(),
-        codex_config::RequirementSource::Unknown,
+        ava_config::RequirementSource::Unknown,
     ));
     let mut requirements_toml = config.config_layer_stack.requirements_toml().clone();
     requirements_toml.additional_developer_instructions =
         Some("managed instructions must not shape the reviewer".to_string());
-    config.config_layer_stack = codex_config::ConfigLayerStack::new(
+    config.config_layer_stack = ava_config::ConfigLayerStack::new(
         config
             .config_layer_stack
             .all_layers_low_to_high()
@@ -1288,21 +1288,21 @@ async fn spawn_internal_session_preserves_parent_lineage_without_forking_history
     )
     .expect("managed requirements stack");
 
-    let parent_instructions = codex_extension_api::Instructions {
+    let parent_instructions = ava_extension_api::Instructions {
         text: "parent user instructions must not be inherited".to_string(),
-        source: Some(config.codex_home.join("AGENTS.md")),
+        source: Some(config.ava_home.join("AGENTS.md")),
     };
     let mut manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let observed_mcp_sources = Arc::new(std::sync::Mutex::new(Vec::new()));
     let parent_contributor = Arc::new(ParentLifecycleContributor {
         observed_mcp_sources: Arc::clone(&observed_mcp_sources),
     });
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::new();
     extensions.thread_lifecycle_contributor(parent_contributor.clone());
     extensions.mcp_server_contributor(parent_contributor);
     let manager_state = Arc::get_mut(&mut manager.state).expect("unshared thread manager state");
@@ -1310,13 +1310,13 @@ async fn spawn_internal_session_preserves_parent_lineage_without_forking_history
     manager_state.mcp_manager = Arc::new(McpManager::new_with_extensions(
         Arc::clone(&manager_state.plugins_manager),
         Arc::clone(&manager_state.extensions),
-        manager_state.mcp_manager.codex_apps_tools_cache(),
+        manager_state.mcp_manager.ava_apps_tools_cache(),
     ));
     let parent_provider = Arc::new(ParentInstructionsProvider(parent_instructions.clone()));
     manager_state.user_instructions_provider = parent_provider.clone();
     let parent = manager
         .start_thread(StartThreadOptions {
-            metrics_service_name: Some("codex_work_desktop".to_string()),
+            metrics_service_name: Some("ava_work_desktop".to_string()),
             thread_instructions_provider: Some(parent_provider),
             ..StartThreadOptions::new(config.clone())
         })
@@ -1351,7 +1351,7 @@ async fn spawn_internal_session_preserves_parent_lineage_without_forking_history
         .first_mut()
         .expect("parent should have an environment");
     reviewer_environment.config =
-        EnvironmentConfigState::Ready(codex_protocol::protocol::EnvironmentConfig {
+        EnvironmentConfigState::Ready(ava_protocol::protocol::EnvironmentConfig {
             allow_login_shell: true,
             workspace_roots: reviewer_environment.workspace_roots.clone(),
             permission_profile: config.permissions.permission_profile_state().snapshot(),
@@ -1359,8 +1359,8 @@ async fn spawn_internal_session_preserves_parent_lineage_without_forking_history
             windows_sandbox_level: WindowsSandboxLevel::from_config(&config),
             windows_sandbox_type: config.permissions.windows_sandbox_type,
             use_legacy_landlock: config.features.use_legacy_landlock(),
-            exec_policy: Some(codex_execpolicy::RequirementsExecPolicy::new(
-                codex_execpolicy::Policy::empty(),
+            exec_policy: Some(ava_execpolicy::RequirementsExecPolicy::new(
+                ava_execpolicy::Policy::empty(),
             )),
             mcp_policy: None,
             network_policy: None,
@@ -1406,7 +1406,7 @@ async fn spawn_internal_session_preserves_parent_lineage_without_forking_history
     assert_eq!(reminder.remaining_tokens, 75);
     assert_eq!(reviewer_config.parent_thread_id, Some(parent.thread_id));
     assert_eq!(reviewer_config.forked_from_thread_id, None);
-    assert_eq!(reviewer_config.originator, "codex_work_desktop");
+    assert_eq!(reviewer_config.originator, "ava_work_desktop");
     assert_eq!(
         reviewer.thread.multi_agent_version(),
         Some(MultiAgentVersion::Disabled)
@@ -1542,11 +1542,11 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
         mcp_observed: Arc<std::sync::Mutex<Vec<(String, SessionSource)>>>,
     }
 
-    impl codex_extension_api::ThreadLifecycleContributor<Config> for InitialDataRecorder {
+    impl ava_extension_api::ThreadLifecycleContributor<Config> for InitialDataRecorder {
         fn on_thread_start<'a>(
             &'a self,
-            input: codex_extension_api::ThreadStartInput<'a, Config>,
-        ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+            input: ava_extension_api::ThreadStartInput<'a, Config>,
+        ) -> ava_extension_api::ExtensionFuture<'a, ()> {
             Box::pin(async move {
                 let selected_root = input
                     .thread_store
@@ -1564,15 +1564,15 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
         }
     }
 
-    impl codex_extension_api::McpServerContributor<Config> for InitialDataRecorder {
+    impl ava_extension_api::McpServerContributor<Config> for InitialDataRecorder {
         fn id(&self) -> &'static str {
             "selected_root_test"
         }
 
         fn contribute<'a>(
             &'a self,
-            context: codex_extension_api::McpServerContributionContext<'a, Config>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Vec<codex_extension_api::McpServerContribution>>
+            context: ava_extension_api::McpServerContributionContext<'a, Config>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Vec<ava_extension_api::McpServerContribution>>
         {
             Box::pin(async move {
                 let thread_init = context
@@ -1592,7 +1592,7 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
                             .expect("thread-scoped MCP resolution should identify its source")
                             .clone(),
                     ));
-                let mut server = codex_mcp::codex_apps_mcp_server_config(
+                let mut server = ava_mcp::ava_apps_mcp_server_config(
                     "https://selected.invalid",
                     /*apps_mcp_product_sku*/ None,
                     /*originator*/ None,
@@ -1603,13 +1603,13 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
                 server.enabled = false;
                 let plugin_id = selected_root.id;
                 vec![
-                    codex_extension_api::McpServerContribution::SelectedPluginPackage {
+                    ava_extension_api::McpServerContribution::SelectedPluginPackage {
                         selected_root_id: plugin_id.clone(),
                         plugin_id: plugin_id.clone(),
                         plugin_display_name: plugin_id.clone(),
                         connector_ids: vec![],
                     },
-                    codex_extension_api::McpServerContribution::SelectedPlugin {
+                    ava_extension_api::McpServerContribution::SelectedPlugin {
                         name: plugin_id.clone(),
                         plugin_display_name: plugin_id.clone(),
                         plugin_id,
@@ -1623,8 +1623,8 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
 
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
     config
         .features
         .enable(Feature::Apps)
@@ -1633,7 +1633,7 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
         .features
         .enable(Feature::Plugins)
         .expect("enable plugins");
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let lifecycle_observed = Arc::new(std::sync::Mutex::new(Vec::new()));
     let mcp_observed = Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -1641,18 +1641,18 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
         lifecycle_observed: Arc::clone(&lifecycle_observed),
         mcp_observed: Arc::clone(&mcp_observed),
     });
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::new();
     extensions.thread_lifecycle_contributor(recorder.clone());
     extensions.mcp_server_contributor(recorder);
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         Arc::new(extensions.build()),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -1664,7 +1664,7 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
         /*external_time_provider*/ None,
     );
     let selected_root_init = |id: &str, environment_id: &str| {
-        let mut init = codex_extension_api::ExtensionDataInit::new();
+        let mut init = ava_extension_api::ExtensionDataInit::new();
         init.insert(vec![SelectedCapabilityRoot {
             id: id.to_string(),
             location: CapabilityRootLocation::Environment {
@@ -1677,7 +1677,7 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
 
     let first_thread = manager
         .start_thread(StartThreadOptions {
-            metrics_service_name: Some("codex_work_desktop".to_string()),
+            metrics_service_name: Some("ava_work_desktop".to_string()),
             environments: Some(Vec::new()),
             thread_extension_init: selected_root_init("selected-a", "env-a"),
             ..StartThreadOptions::new(config.clone())
@@ -1762,8 +1762,8 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
             ("selected-b".to_string(), second_session_source),
         ]
     );
-    let selected_servers = |config: &codex_mcp::McpConfig| {
-        codex_mcp::configured_mcp_servers(config)
+    let selected_servers = |config: &ava_mcp::McpConfig| {
+        ava_mcp::configured_mcp_servers(config)
             .into_iter()
             .filter(|(name, _)| name.starts_with("selected-"))
             .map(|(name, server)| (name, server.environment_id))
@@ -1777,20 +1777,20 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
         selected_servers(&second_resolved.config),
         std::collections::BTreeMap::from([("selected-b".to_string(), "env-b".to_string())])
     );
-    let codex_apps_server = codex_mcp::configured_mcp_servers(&first_resolved.config)
-        .remove(codex_mcp::CODEX_APPS_MCP_SERVER_NAME)
-        .expect("Codex Apps server should be configured");
-    let codex_apps_headers = match codex_apps_server.transport {
-        codex_config::McpServerTransportConfig::StreamableHttp { http_headers, .. } => http_headers,
-        codex_config::McpServerTransportConfig::Stdio { .. } => {
-            panic!("Codex Apps server should use streamable HTTP")
+    let ava_apps_server = ava_mcp::configured_mcp_servers(&first_resolved.config)
+        .remove(ava_mcp::AVA_APPS_MCP_SERVER_NAME)
+        .expect("Ava Apps server should be configured");
+    let ava_apps_headers = match ava_apps_server.transport {
+        ava_config::McpServerTransportConfig::StreamableHttp { http_headers, .. } => http_headers,
+        ava_config::McpServerTransportConfig::Stdio { .. } => {
+            panic!("Ava Apps server should use streamable HTTP")
         }
     };
     assert_eq!(
-        codex_apps_headers
-            .expect("Codex Apps headers should be configured")
+        ava_apps_headers
+            .expect("Ava Apps headers should be configured")
             .get("originator"),
-        Some(&"codex_work_desktop".to_string())
+        Some(&"ava_work_desktop".to_string())
     );
     for disabled_plugin_ids in [vec!["selected-a".to_string()], vec![]] {
         let projection = first_session
@@ -1832,15 +1832,15 @@ async fn start_thread_seeds_extension_data_for_mcp_and_lifecycle_contributors() 
 async fn selected_capability_roots_round_trip_through_fork() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let selected_roots = vec![SelectedCapabilityRoot {
         id: "demo@1".to_string(),
@@ -1890,19 +1890,19 @@ async fn selected_capability_roots_round_trip_through_fork() {
 async fn resume_and_fork_do_not_restore_thread_environments_from_rollout() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2036,15 +2036,15 @@ async fn resume_and_fork_do_not_restore_thread_environments_from_rollout() {
 }
 
 #[tokio::test]
-async fn explicit_installation_id_skips_codex_home_file() {
+async fn explicit_installation_id_skips_ava_home_file() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let installation_id = uuid::Uuid::new_v4().to_string();
     let state_db = init_state_db(&config).await;
     let thread_store = thread_store_from_config(&config, state_db.clone());
@@ -2052,9 +2052,9 @@ async fn explicit_installation_id_skips_codex_home_file() {
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2071,7 +2071,7 @@ async fn explicit_installation_id_skips_codex_home_file() {
         .await
         .expect("start thread with explicit installation id");
 
-    assert!(!config.codex_home.join(INSTALLATION_ID_FILENAME).exists());
+    assert!(!config.ava_home.join(INSTALLATION_ID_FILENAME).exists());
     assert_eq!(thread.thread.session.installation_id, installation_id);
 
     thread
@@ -2086,19 +2086,19 @@ async fn explicit_installation_id_skips_codex_home_file() {
 async fn resume_active_thread_from_rollout_returns_running_thread() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2149,19 +2149,19 @@ async fn resume_active_thread_from_rollout_returns_running_thread() {
 async fn resume_stopped_thread_from_rollout_spawns_new_thread() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2217,21 +2217,21 @@ async fn resume_stopped_thread_from_rollout_spawns_new_thread() {
 async fn resume_stopped_thread_from_rollout_preserves_thread_source() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let state_db = init_state_db(&config).await;
     let thread_store = thread_store_from_config(&config, state_db.clone());
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2300,8 +2300,8 @@ async fn resume_stopped_thread_from_rollout_preserves_thread_source() {
 async fn subtree_listing_uses_injected_graph_store_without_state_db() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let root_thread_id = ThreadId::new();
     let descendant_thread_ids = vec![ThreadId::new(), ThreadId::new()];
@@ -2310,14 +2310,14 @@ async fn subtree_listing_uses_injected_graph_store_without_state_db() {
         descendant_thread_ids: descendant_thread_ids.clone(),
     });
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2344,15 +2344,15 @@ async fn subtree_listing_uses_injected_graph_store_without_state_db() {
 async fn rollout_path_resume_and_fork_read_history_through_thread_store() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
     config.experimental_thread_store = ThreadStoreConfig::InMemory {
         id: format!("thread-manager-{}", uuid::Uuid::new_v4()),
     };
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let state_db = init_state_db(&config).await;
     let thread_store = thread_store_from_config(&config, state_db.clone());
     let in_memory_store = thread_store
@@ -2363,9 +2363,9 @@ async fn rollout_path_resume_and_fork_read_history_through_thread_store() {
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2389,7 +2389,7 @@ async fn rollout_path_resume_and_fork_read_history_through_thread_store() {
     let _ = manager.remove_thread(&source.thread_id).await;
 
     let rollout_path = config
-        .codex_home
+        .ava_home
         .join("rollouts/source.jsonl")
         .to_path_buf();
     let resumed = manager
@@ -2454,15 +2454,15 @@ async fn rollout_path_resume_and_fork_read_history_through_thread_store() {
 async fn metadata_update_without_result_reads_only_when_the_caller_needs_the_thread() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
     config.experimental_thread_store = ThreadStoreConfig::InMemory {
         id: format!("metadata-update-none-{}", uuid::Uuid::new_v4()),
     };
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let thread_store = thread_store_from_config(&config, /*state_db*/ None);
     let in_memory_store = thread_store
         .as_any()
@@ -2472,9 +2472,9 @@ async fn metadata_update_without_result_reads_only_when_the_caller_needs_the_thr
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2587,21 +2587,21 @@ async fn new_uses_active_provider_for_model_refresh() {
 
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
     config.model_catalog = None;
     config.model_provider.base_url = Some(server.uri());
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2630,14 +2630,14 @@ async fn injected_models_manager_controls_refresh_policy() {
 
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
     config.model_catalog = None;
     config.model_provider.base_url = Some(server.uri());
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let provider = create_model_provider(
         config.model_provider.clone(),
         Some(Arc::clone(&auth_manager)),
@@ -2647,9 +2647,9 @@ async fn injected_models_manager_controls_refresh_policy() {
         &config,
         auth_manager,
         models_manager,
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Custom("test-embedder".to_string()),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -2676,7 +2676,7 @@ async fn injected_models_manager_controls_refresh_policy() {
         server.received_requests().await.unwrap_or_default().len(),
         2
     );
-    assert!(!config.codex_home.join("models_cache.json").exists());
+    assert!(!config.ava_home.join("models_cache.json").exists());
 }
 
 #[test]
@@ -2897,20 +2897,20 @@ fn mixed_response_and_legacy_user_event_history_is_mid_turn() {
 async fn interrupted_fork_snapshot_does_not_synthesize_turn_id_for_legacy_history() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let state_db = init_state_db(&config).await;
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -3009,20 +3009,20 @@ async fn interrupted_fork_snapshot_does_not_synthesize_turn_id_for_legacy_histor
 async fn interrupted_fork_snapshot_preserves_explicit_turn_id() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let state_db = init_state_db(&config).await;
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -3112,20 +3112,20 @@ async fn interrupted_fork_snapshot_preserves_explicit_turn_id() {
 async fn interrupted_fork_snapshot_uses_persisted_mid_turn_history_without_live_source() {
     let temp_dir = tempdir().expect("tempdir");
     let mut config = test_config().await;
-    config.codex_home = temp_dir.path().join("codex-home").abs();
-    config.cwd = config.codex_home.abs();
-    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+    config.ava_home = temp_dir.path().join("ava-home").abs();
+    config.cwd = config.ava_home.abs();
+    std::fs::create_dir_all(&config.ava_home).expect("create ava home");
 
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let state_db = init_state_db(&config).await;
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         build_models_manager(&config, auth_manager.clone()),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,

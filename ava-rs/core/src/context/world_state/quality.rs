@@ -3,8 +3,8 @@ use super::WorldStateContextFragment;
 use super::WorldStateSection;
 use crate::context::ContextualUserFragment;
 use crate::quality_gate::types::{QualityGateResult, QualityGateStatus};
-use codex_extension_api::RenderedWorldStateFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_extension_api::RenderedWorldStateFragment;
+use ava_protocol::models::ContentItemKind;
 
 const QUALITY_OPEN_TAG: &str = "<quality_gate_status>";
 const QUALITY_CLOSE_TAG: &str = "</quality_gate_status>";

@@ -4,12 +4,12 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::RouteAwareHttpClient;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_keyring_store::DefaultKeyringStore;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::RouteAwareHttpClient;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_keyring_store::DefaultKeyringStore;
 use http::HeaderMap;
 use keyring::Error as KeyringError;
 use oauth2::AccessToken;
@@ -38,7 +38,7 @@ use wiremock::matchers::method;
 use wiremock::matchers::path;
 
 use super::MockKeyringStore;
-use super::TempCodexHome;
+use super::TempAvaHome;
 use super::assert_tokens_match_without_expiry;
 use super::sample_tokens;
 use crate::http_client_adapter::StreamableHttpClientAdapter;
@@ -62,7 +62,7 @@ use crate::oauth_http_client::PROACTIVE_REFRESH_TIMEOUT;
 use crate::startup_error::is_authentication_required_error;
 
 const REFRESH_LOCK_CONTENTION_EVENT_TARGET: &str =
-    "codex_rmcp_client::oauth::refresh_lock::contention";
+    "ava_rmcp_client::oauth::refresh_lock::contention";
 
 #[tokio::test(flavor = "current_thread")]
 async fn login_and_logout_follow_the_completed_refresh() -> Result<()> {
@@ -890,8 +890,8 @@ async fn persistor_for(tokens: &StoredOAuthTokens) -> Result<OAuthPersistor> {
     ))
 }
 
-async fn test_context() -> Result<(TempCodexHome, MockServer, StoredOAuthTokens)> {
-    let env = TempCodexHome::new();
+async fn test_context() -> Result<(TempAvaHome, MockServer, StoredOAuthTokens)> {
+    let env = TempAvaHome::new();
     let server = MockServer::start().await;
     mount_oauth_metadata(&server).await;
     let tokens = expired_tokens(&format!("{}/mcp", server.uri()));

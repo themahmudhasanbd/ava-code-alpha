@@ -15,7 +15,7 @@ async fn foreground_update_respects_consent_and_reports_unconfirmed() -> anyhow:
         ("analytics.enabled = true\n", false, 1),
         ("analytics.enabled = false\n", true, 0),
     ] {
-        let codex = codex_utils_cargo_bin::cargo_bin("codex")?;
+        let ava = ava_utils_cargo_bin::cargo_bin("ava")?;
         let server = MockServer::start().await;
         Mock::given(wiremock::matchers::path("/metrics"))
             .respond_with(ResponseTemplate::new(200))
@@ -30,11 +30,11 @@ async fn foreground_update_respects_consent_and_reports_unconfirmed() -> anyhow:
             ),
         )?;
         // No managed installation exists, so the command cannot confirm an applied update.
-        let mut command = tokio::process::Command::new(&codex);
+        let mut command = tokio::process::Command::new(&ava);
         command
             .current_dir(home.path())
-            .env("CODEX_HOME", home.path())
-            .env_remove(codex_app_server_daemon::telemetry::HANDOFF_ENV)
+            .env("AVA_HOME", home.path())
+            .env_remove(ava_app_server_daemon::telemetry::HANDOFF_ENV)
             .arg("app-server");
         if analytics_default_enabled {
             command.arg("--analytics-default-enabled");
@@ -54,7 +54,7 @@ async fn foreground_update_respects_consent_and_reports_unconfirmed() -> anyhow:
         }
         let body: Value = serde_json::from_slice(&requests[0].body)?;
         let metric = &body["resourceMetrics"][0]["scopeMetrics"][0]["metrics"][0];
-        assert_eq!(metric["name"], "codex.daemon.update");
+        assert_eq!(metric["name"], "ava.daemon.update");
         assert!(
             metric["sum"]["dataPoints"][0]["attributes"]
                 .as_array()

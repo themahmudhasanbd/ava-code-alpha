@@ -1,7 +1,7 @@
 use super::ContextualUserFragment;
-use codex_protocol::approvals::NetworkPolicyAmendment;
-use codex_protocol::approvals::NetworkPolicyRuleAction;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::approvals::NetworkPolicyAmendment;
+use ava_protocol::approvals::NetworkPolicyRuleAction;
+use ava_protocol::models::ContentItemKind;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct NetworkRuleSaved {

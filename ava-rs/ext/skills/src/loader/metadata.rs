@@ -1,18 +1,18 @@
 use std::io;
 
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_protocol::protocol::Product;
-use codex_skills::SkillDependencies;
-use codex_skills::SkillInterface;
-use codex_skills::SkillInterfaceAssetPolicy;
-use codex_skills::SkillInterfaceFile;
-use codex_skills::SkillParseError;
-use codex_skills::SkillPolicy;
-use codex_skills::SkillToolDependency;
-use codex_skills::resolve_skill_interface;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_protocol::protocol::Product;
+use ava_skills::SkillDependencies;
+use ava_skills::SkillInterface;
+use ava_skills::SkillInterfaceAssetPolicy;
+use ava_skills::SkillInterfaceFile;
+use ava_skills::SkillParseError;
+use ava_skills::SkillPolicy;
+use ava_skills::SkillToolDependency;
+use ava_skills::resolve_skill_interface;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 
 use super::MAX_DEPENDENCY_COMMAND_LEN;

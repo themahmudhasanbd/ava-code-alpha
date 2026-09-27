@@ -1,17 +1,17 @@
 use super::*;
 use app_test_support::create_fake_rollout;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
 async fn fork_current_session_preserves_conversation_ultra() -> Result<()> {
     let mut app = make_test_app().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let source_thread_id = ThreadId::from_string(
         &create_fake_rollout(
-            codex_home.path(),
+            ava_home.path(),
             "2025-01-05T12-00-00",
             "2025-01-05T12:00:00Z",
             "Saved user message",

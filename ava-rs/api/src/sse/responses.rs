@@ -6,14 +6,14 @@ use crate::error::ApiError;
 use crate::rate_limits::parse_all_rate_limits;
 use crate::safety_buffering::treatment_from_headers;
 use crate::telemetry::SseTelemetry;
-use codex_client::ByteStream;
-use codex_client::StreamResponse;
-use codex_protocol::ResponseUsageMetadata;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::MisalignmentErrorDetails;
-use codex_protocol::protocol::ModelVerification;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TurnModerationMetadataEvent;
+use ava_client::ByteStream;
+use ava_client::StreamResponse;
+use ava_protocol::ResponseUsageMetadata;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::MisalignmentErrorDetails;
+use ava_protocol::protocol::ModelVerification;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TurnModerationMetadataEvent;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
 use serde::Deserialize;
@@ -28,7 +28,7 @@ use tracing::debug;
 use tracing::trace;
 
 const X_REASONING_INCLUDED_HEADER: &str = "x-reasoning-included";
-const X_CODEX_TURN_STATE_HEADER: &str = "x-codex-turn-state";
+const X_AVA_TURN_STATE_HEADER: &str = "x-ava-turn-state";
 const OPENAI_MODEL_HEADER: &str = "openai-model";
 const REQUEST_ID_HEADER: &str = "x-request-id";
 const TRUSTED_ACCESS_FOR_CYBER_VERIFICATION: &str = "trusted_access_for_cyber";
@@ -64,7 +64,7 @@ pub fn spawn_response_stream(
     if let Some(turn_state) = turn_state.as_ref()
         && let Some(header_value) = stream_response
             .headers
-            .get(X_CODEX_TURN_STATE_HEADER)
+            .get(X_AVA_TURN_STATE_HEADER)
             .and_then(|value| value.to_str().ok())
     {
         let _ = turn_state.set(header_value.to_string());
@@ -132,7 +132,7 @@ struct ResponseCompletedUsage {
     output_tokens_details: Option<ResponseCompletedOutputTokensDetails>,
     total_tokens: i64,
     #[serde(default)]
-    codex_rollout_budget_units: Option<serde_json::Number>,
+    ava_rollout_budget_units: Option<serde_json::Number>,
 }
 
 impl From<ResponseCompletedUsage> for TokenUsage {
@@ -148,7 +148,7 @@ impl From<ResponseCompletedUsage> for TokenUsage {
                 .map(|d| d.reasoning_tokens)
                 .unwrap_or(0),
             total_tokens: val.total_tokens,
-            codex_rollout_budget_units: val.codex_rollout_budget_units,
+            ava_rollout_budget_units: val.ava_rollout_budget_units,
         }
     }
 }
@@ -289,7 +289,7 @@ fn header_openai_model_value_from_json(value: &Value) -> Option<String> {
 fn header_turn_state_value_from_json(value: &Value) -> Option<String> {
     let headers = value.as_object()?;
     headers.iter().find_map(|(name, value)| {
-        if name.eq_ignore_ascii_case(X_CODEX_TURN_STATE_HEADER) {
+        if name.eq_ignore_ascii_case(X_AVA_TURN_STATE_HEADER) {
             json_value_as_string(value)
         } else {
             None
@@ -528,7 +528,7 @@ pub fn process_responses_event(
                 }));
             }
         }
-        "codex.response.metadata"
+        "ava.response.metadata"
         | "response.content_part.added"
         | "response.content_part.done"
         | "response.custom_tool_call_input.done"
@@ -769,10 +769,10 @@ mod tests {
     use super::*;
     use assert_matches::assert_matches;
     use bytes::Bytes;
-    use codex_client::StreamResponse;
-    use codex_client::TransportError;
-    use codex_protocol::models::MessagePhase;
-    use codex_protocol::models::ResponseItem;
+    use ava_client::StreamResponse;
+    use ava_client::TransportError;
+    use ava_protocol::models::MessagePhase;
+    use ava_protocol::models::ResponseItem;
     use futures::TryStreamExt;
     use futures::stream;
     use http::HeaderMap;
@@ -922,7 +922,7 @@ mod tests {
             "output_tokens": 10,
             "output_tokens_details": { "reasoning_tokens": 5 },
             "total_tokens": 110,
-            "codex_rollout_budget_units": 2.5
+            "ava_rollout_budget_units": 2.5
         }))
         .expect("valid response usage");
 
@@ -935,7 +935,7 @@ mod tests {
                 output_tokens: 10,
                 reasoning_output_tokens: 5,
                 total_tokens: 110,
-                codex_rollout_budget_units: serde_json::Number::from_f64(2.5),
+                ava_rollout_budget_units: serde_json::Number::from_f64(2.5),
             }
         );
     }
@@ -1335,7 +1335,7 @@ mod tests {
                         detailed_explanation: Some(
                             "The agent attempted an external transfer.".to_string()
                         ),
-                        steer: Some(codex_protocol::protocol::MisalignmentSteer {
+                        steer: Some(ava_protocol::protocol::MisalignmentSteer {
                             message: "Do not transfer the user's files.".to_string(),
                         }),
                     })
@@ -1926,7 +1926,7 @@ mod tests {
     #[test]
     fn safety_buffering_ignores_metadata_field_for_other_event_kinds() {
         let event: ResponsesStreamEvent = serde_json::from_value(json!({
-            "type": "codex.response.metadata",
+            "type": "ava.response.metadata",
             "metadata": {
                 "type": "safety_buffering",
                 "use_cases": ["cyber"],
@@ -2102,5 +2102,5 @@ mod tests {
         assert_eq!(delay, Some(Duration::from_secs(35)));
     }
 
-    const CYBER_RESTRICTED_MODEL_FOR_TESTS: &str = "gpt-5.3-codex";
+    const CYBER_RESTRICTED_MODEL_FOR_TESTS: &str = "gpt-5.3-ava";
 }

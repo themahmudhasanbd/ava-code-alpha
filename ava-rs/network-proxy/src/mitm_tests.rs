@@ -5,7 +5,7 @@ use crate::reasons::REASON_METHOD_NOT_ALLOWED;
 use crate::reasons::REASON_MITM_HOOK_DENIED;
 use crate::reasons::REASON_NOT_ALLOWED_LOCAL;
 use crate::runtime::network_proxy_state_for_policy;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use rama_http::Body;
 use rama_http::HeaderMap;
@@ -28,7 +28,7 @@ fn github_write_hook() -> crate::mitm_hook::MitmHookConfig {
             strip_request_headers: vec!["authorization".to_string()],
             inject_request_headers: vec![crate::mitm_hook::InjectedHeaderConfig {
                 name: "authorization".to_string(),
-                secret_env_var: Some("CODEX_GITHUB_TOKEN".to_string()),
+                secret_env_var: Some("AVA_GITHUB_TOKEN".to_string()),
                 secret_file: None,
                 prefix: Some("Bearer ".to_string()),
             }],
@@ -178,7 +178,7 @@ async fn mitm_policy_allows_matching_hooked_write_in_full_mode() {
     );
     let req = Request::builder()
         .method(Method::POST)
-        .uri("/repos/openai/codex/issues")
+        .uri("/repos/openai/ava/issues")
         .header(HOST, "api.github.com")
         .body(Body::empty())
         .unwrap();
@@ -215,8 +215,8 @@ async fn mitm_policy_blocks_encoded_path_traversal_for_repository_allowlist() {
     );
     let paths = [
         "/openai/openai/issues",
-        "/openai/codex",
-        "/openai/openai/%2e%2e/codex",
+        "/openai/ava",
+        "/openai/openai/%2e%2e/ava",
         "/openai/openai/%2e%2e/%2e%2e/microsoft/vscode",
     ];
     let mut actual = Vec::with_capacity(paths.len());
@@ -283,7 +283,7 @@ async fn mitm_policy_blocks_matching_hooked_write_in_limited_mode() {
     );
     let req = Request::builder()
         .method(Method::POST)
-        .uri("/repos/openai/codex/issues")
+        .uri("/repos/openai/ava/issues")
         .header(HOST, "api.github.com")
         .body(Body::empty())
         .unwrap();
@@ -331,7 +331,7 @@ async fn mitm_policy_blocks_hook_miss_for_hooked_host_and_records_telemetry_in_f
     );
     let req = Request::builder()
         .method(Method::GET)
-        .uri("/repos/openai/codex/issues?token=secret")
+        .uri("/repos/openai/ava/issues?token=secret")
         .header(HOST, "api.github.com")
         .header("authorization", "Bearer user-supplied")
         .body(Body::empty())

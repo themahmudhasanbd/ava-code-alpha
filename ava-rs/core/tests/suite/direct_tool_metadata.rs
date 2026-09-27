@@ -1,12 +1,12 @@
 //! Direct-call metadata coverage, including malformed calls and request-budget pruning.
 
 use anyhow::Result;
-use codex_features::Feature;
-use codex_model_provider::RemoteCompactionSupport;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
+use ava_features::Feature;
+use ava_model_provider::RemoteCompactionSupport;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
 use core_test_support::apps_test_server::configure_search_capable_model;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -17,7 +17,7 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -42,7 +42,7 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
 ) -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config
             .features
             .enable(Feature::ExecutedToolCallMetadata)
@@ -86,7 +86,7 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
     test.submit_turn("Update the plan before compaction")
         .await?;
     // Read the live history: deserializing a rollout intentionally drops host-owned metadata.
-    let history = test.codex.conversation_history_snapshot().await;
+    let history = test.ava-code.conversation_history_snapshot().await;
     let history = serde_json::to_value(history.items().collect::<Vec<_>>())?;
     let history = history.as_array().expect("source history");
     let seed_output = history
@@ -111,14 +111,14 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
     if !metadata_enabled {
         let mut config = test.config.clone();
         config.features.disable(Feature::ExecutedToolCallMetadata)?;
-        test.codex.refresh_runtime_config(config).await;
+        test.ava-code.refresh_runtime_config(config).await;
     }
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    let compacted = test.codex.conversation_history_snapshot().await;
+    let compacted = test.ava-code.conversation_history_snapshot().await;
     let compacted = serde_json::to_value(compacted.items().collect::<Vec<_>>())?;
     let compacted = compacted.as_array().expect("compacted history");
     // Both paths retain the user message and summary, not the old call or output.
@@ -132,7 +132,7 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
         RemoteCompactionSupport::Unsupported => assert!(compacted.iter().any(|item| {
             item["role"] == "user"
                 && item["content"][0]["text"]
-                    == format!("{}\n{summary}", codex_core::compact::SUMMARY_PREFIX)
+                    == format!("{}\n{summary}", ava_core::compact::SUMMARY_PREFIX)
         })),
         RemoteCompactionSupport::V2 => {
             assert!(compacted.iter().any(|item| {
@@ -180,7 +180,7 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
     );
     let output = requests[4].function_call_output("shared");
     assert_eq!(output["output"], "Plan updated");
-    let captured = test.codex.conversation_history_snapshot().await;
+    let captured = test.ava-code.conversation_history_snapshot().await;
     let captured = serde_json::to_value(captured.items().collect::<Vec<_>>())?;
     let captured_output = captured
         .as_array()
@@ -213,7 +213,7 @@ async fn direct_function_and_tool_search_mark_complete_attempts(
 
     let request_budget = 32 * 1024;
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         configure_search_capable_model(config);
         config.update_plan_enabled = true;
         if metadata_enabled {
@@ -317,7 +317,7 @@ async fn direct_function_and_tool_search_mark_complete_attempts(
         metadata_bytes += serde_json::to_vec(&metadata)?.len();
         assert!(
             metadata["executed_tool_calls"][0]["arguments"]
-                .get("_codex_executed_tool_call_truncated")
+                .get("_ava_executed_tool_call_truncated")
                 .is_some()
         );
         assert!(metadata.get("tool_calls_complete").is_none());
@@ -333,7 +333,7 @@ async fn direct_function_and_tool_search_mark_complete_attempts(
             .expect("recorded calls");
         assert_eq!(calls.len(), 1);
         if calls[0]["arguments"]
-            .get("_codex_executed_tool_call_truncated")
+            .get("_ava_executed_tool_call_truncated")
             .is_some()
         {
             truncated += 1;

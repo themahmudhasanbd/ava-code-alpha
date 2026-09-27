@@ -25,45 +25,45 @@ use crate::session::turn_context::TurnContext;
 use crate::utils::json::serialized_json_bytes;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_context_fragments::set_annotated_content;
-use codex_context_fragments::to_annotated_content;
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_guardian_context::SectionHistory;
-use codex_guardian_context::TranscriptHistory;
-use codex_history::CodexHarnessMetadata;
-use codex_history::GuardianHistoryCheckpoint;
-use codex_history::ResponseItemEnvelope;
-use codex_history::RetainedContext;
-use codex_history::RetainedContextEntry;
-use codex_history::RetainedContextEvent;
-use codex_history::RetainedInputSource;
-use codex_prompts::render_model_instructions;
-use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::AgentMessageInputContent;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TokenUsageInfo;
-use codex_protocol::protocol::TurnContextItem;
-use codex_protocol::protocol::WorldStateItem;
-use codex_utils_audio::estimate_audio_token_count;
-use codex_utils_cache::BlockingLruCache;
-use codex_utils_cache::sha1_digest;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::approx_bytes_for_tokens;
-use codex_utils_output_truncation::approx_token_count;
-use codex_utils_output_truncation::approx_tokens_from_byte_count_i64;
-use codex_utils_output_truncation::truncate_function_output_payload;
-use codex_utils_output_truncation::with_serialization_allowance;
+use ava_context_fragments::set_annotated_content;
+use ava_context_fragments::to_annotated_content;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_guardian_context::SectionHistory;
+use ava_guardian_context::TranscriptHistory;
+use ava_history::AvaHarnessMetadata;
+use ava_history::GuardianHistoryCheckpoint;
+use ava_history::ResponseItemEnvelope;
+use ava_history::RetainedContext;
+use ava_history::RetainedContextEntry;
+use ava_history::RetainedContextEvent;
+use ava_history::RetainedInputSource;
+use ava_prompts::render_model_instructions;
+use ava_protocol::DEFAULT_FUNCTION_NAMESPACE;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::AgentMessageInputContent;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TokenUsageInfo;
+use ava_protocol::protocol::TurnContextItem;
+use ava_protocol::protocol::WorldStateItem;
+use ava_utils_audio::estimate_audio_token_count;
+use ava_utils_cache::BlockingLruCache;
+use ava_utils_cache::sha1_digest;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::approx_bytes_for_tokens;
+use ava_utils_output_truncation::approx_token_count;
+use ava_utils_output_truncation::approx_tokens_from_byte_count_i64;
+use ava_utils_output_truncation::truncate_function_output_payload;
+use ava_utils_output_truncation::with_serialization_allowance;
 use std::num::NonZeroUsize;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -126,8 +126,8 @@ pub(crate) enum HistoryReplacement {
 }
 
 impl ConversationHistorySnapshot for SharedConversationHistory {
-    fn latest_compaction(&self) -> Option<codex_history::CompactionCheckpoint<'_>> {
-        codex_history::CompactionCheckpoint::latest(&self.items)
+    fn latest_compaction(&self) -> Option<ava_history::CompactionCheckpoint<'_>> {
+        ava_history::CompactionCheckpoint::latest(&self.items)
     }
 
     fn retained_context(&self) -> Option<&RetainedContext> {
@@ -264,7 +264,7 @@ impl ContextManager {
                         RetainedContextEntry::VerifiedAnswer(_) => true,
                         RetainedContextEntry::UserMessage(message) => {
                             !self.raw_items().any(|item| {
-                                if item.id().map(codex_protocol::ResponseItemId::as_str)
+                                if item.id().map(ava_protocol::ResponseItemId::as_str)
                                     != message.message_id.as_deref()
                                     || item.turn_id().unwrap_or_default() != message.turn_id
                                 {
@@ -421,7 +421,7 @@ impl ContextManager {
 
     fn record_items_with_metadata<'a, I, T>(&mut self, items: I, policy: TruncationPolicy)
     where
-        I: IntoIterator<Item = (T, Option<&'a CodexHarnessMetadata>)>,
+        I: IntoIterator<Item = (T, Option<&'a AvaHarnessMetadata>)>,
         T: Deref<Target = ResponseItem>,
     {
         for (item, metadata) in items {
@@ -649,7 +649,7 @@ impl ContextManager {
 
         let first_removed_message_id = snapshot[cut_idx]
             .id()
-            .map(codex_protocol::ResponseItemId::as_str);
+            .map(ava_protocol::ResponseItemId::as_str);
         let source = RetainedInputSource::from(snapshot[cut_idx].metadata.as_ref());
         let mut review_history = self.review_history.take();
         if let Some(history) = &mut review_history {
@@ -862,7 +862,7 @@ impl ContextManager {
 }
 
 /// Configuration updates require harness provenance; raw system messages are never retained.
-fn is_api_message(message: &ResponseItem, metadata: Option<&CodexHarnessMetadata>) -> bool {
+fn is_api_message(message: &ResponseItem, metadata: Option<&AvaHarnessMetadata>) -> bool {
     match message {
         ResponseItem::Message { role, .. } => role.as_str() != "system",
         ResponseItem::ConfigurationUpdate { .. } => {

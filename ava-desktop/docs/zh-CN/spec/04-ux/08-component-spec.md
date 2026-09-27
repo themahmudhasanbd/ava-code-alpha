@@ -8,7 +8,7 @@
 > 交互行为：[09-interaction-patterns.md](/zh-CN/spec/04-ux/09-interaction-patterns)
 
 
-> Shell 布局与 Codex 对齐：左线程侧边栏（固定 275px）、主记录、带有运行时 mode/permission/model 控件的浮动底部编辑器，以及仅包含操作按钮的紧凑顶栏。与蓝板岩镀铬相比，更喜欢中性木炭表面。
+> Shell 布局与 Ava 对齐：左线程侧边栏（固定 275px）、主记录、带有运行时 mode/permission/model 控件的浮动底部编辑器，以及仅包含操作按钮的紧凑顶栏。与蓝板岩镀铬相比，更喜欢中性木炭表面。
 >
 > **优先规则**：下面的指标或复制字符串与
 > [决策日志 §D](/zh-CN/spec/08-meta/decisions-log) 中的法典平价决策
@@ -217,7 +217,7 @@ Composer 拥有 Agent/Plan/Goal 控件以及组合的模型 × 推理选择（§
 
 ### 2.3 布局
 
-- 高度：46px（Codex 工具栏节奏，D034；取代旧的 44px）
+- 高度：46px（Ava 工具栏节奏，D034；取代旧的 44px）
 - 背景：bg-primary
 - 边框：边框-微妙底部
 - 位置：绝对46px无框带； `-webkit-app-region: drag` 与
@@ -339,7 +339,7 @@ Collapsed (48px):
 | 页脚状态/版本 | `--text-sm` (12px) | 右对齐 build/version 芯片 |
 
 不要渲染 `--text-md` 下面的主侧边栏列表内容。保持行高
-(≈28–32px)，因此密度保持 WorkBuddy/Codex-like，同时主要操作保持不变
+(≈28–32px)，因此密度保持 WorkBuddy/Ava-like，同时主要操作保持不变
 视觉上与列表内容不同。
 
 ### 3.4 状态
@@ -484,7 +484,7 @@ Collapsed (48px):
 
 ### 3.7 品牌和图标合同
 
-- 可见shell名称为`PI-Desktop`； Codex 不用作渲染器
+- 可见shell名称为`PI-Desktop`； Ava 不用作渲染器
   身份。
 - 没有文字标签的控件声明 `.icon-btn-square`，它把两个轴都固定到
   `--ds-control-size`（28px）。单独的 `.icon-btn` 宽度来自图形加左右各 8px 内边距 ——
@@ -1257,7 +1257,7 @@ row 而不是在转录本中添加树镶边。
   按顺序复制所有内容片段；分叉并重新生成目标最后一个
   内容丰富的片段，因此现有的持久转录语义保持不变
   （D157）。
-- 助理元：答案下方只保留可选模型徽章。紧凑的 Codex 风格上下文检查器
+- 助理元：答案下方只保留可选模型徽章。紧凑的 Ava 风格上下文检查器
   放在输入框右侧工具栏、模型 × 推理芯片左侧，始终对应当前最新一条已
   报告用量的助手回合（D347）。占用、剩余容量、已用/窗口计数、本轮合计
   以及模型 input/output/cache/reasoning/命中率取该回合最新一条已报告用量

@@ -7,16 +7,16 @@ use std::time::Instant;
 
 use anyhow::Context;
 use clap::Parser;
-use codex_core::config::ConfigBuilder;
-use codex_protocol::ThreadId;
-use codex_thread_store::LocalThreadStore;
-use codex_thread_store::LocalThreadStoreConfig;
-use codex_thread_store::RolloutMigrationMode;
-use codex_thread_store::RolloutMigrationOptions;
-use codex_thread_store::RolloutMigrationProgress;
-use codex_thread_store::RolloutMigrationReport;
-use codex_thread_store::RolloutMigrationStatus;
-use codex_utils_cli::CliConfigOverrides;
+use ava_core::config::ConfigBuilder;
+use ava_protocol::ThreadId;
+use ava_thread_store::LocalThreadStore;
+use ava_thread_store::LocalThreadStoreConfig;
+use ava_thread_store::RolloutMigrationMode;
+use ava_thread_store::RolloutMigrationOptions;
+use ava_thread_store::RolloutMigrationProgress;
+use ava_thread_store::RolloutMigrationReport;
+use ava_thread_store::RolloutMigrationStatus;
+use ava_utils_cli::CliConfigOverrides;
 
 #[derive(Debug, Parser)]
 pub(crate) struct MigrateRolloutsCommand {
@@ -56,7 +56,7 @@ pub(crate) async fn run(
         .cli_overrides(overrides)
         .build()
         .await?;
-    let otel = codex_core::otel_init::build_provider(
+    let otel = ava_core::otel_init::build_provider(
         &config,
         env!("CARGO_PKG_VERSION"),
         /*service_name_override*/ None,
@@ -66,7 +66,7 @@ pub(crate) async fn run(
         eprintln!("Could not create otel exporter: {error}");
         None
     });
-    codex_core::otel_init::record_process_start(otel.as_ref(), "codex_migrate_rollouts");
+    ava_core::otel_init::record_process_start(otel.as_ref(), "ava_migrate_rollouts");
     let mode = if command.apply {
         RolloutMigrationMode::Apply
     } else {
@@ -77,7 +77,7 @@ pub(crate) async fn run(
     let thread_history_db_path = config.sqlite.thread_history_db_path();
     let thread_storage_before = if mode == RolloutMigrationMode::Apply && !json {
         thread_storage_bytes(
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
             thread_history_db_path.as_path(),
         )
         .await
@@ -87,7 +87,7 @@ pub(crate) async fn run(
     };
     let state_db = if mode == RolloutMigrationMode::Apply {
         Some(
-            codex_rollout::state_db::try_init(&config)
+            ava_rollout::state_db::try_init(&config)
                 .await
                 .context("failed to initialize local thread metadata")?,
         )
@@ -111,7 +111,7 @@ pub(crate) async fn run(
     let report = result?;
     let thread_storage = match thread_storage_before {
         Some(before) => thread_storage_bytes(
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
             thread_history_db_path.as_path(),
         )
         .await
@@ -335,7 +335,7 @@ fn print_human_report(
         );
     }
     if mode == RolloutMigrationMode::DryRun && counts.eligible > 0 {
-        println!("Run `codex migrate-rollouts --apply` to migrate eligible sessions.");
+        println!("Run `ava migrate-rollouts --apply` to migrate eligible sessions.");
     }
 
     if verbose {
@@ -367,7 +367,7 @@ fn print_human_report(
     }
 }
 
-fn print_outcome(outcome: &codex_thread_store::RolloutMigrationOutcome) {
+fn print_outcome(outcome: &ava_thread_store::RolloutMigrationOutcome) {
     let status = match outcome.status {
         RolloutMigrationStatus::Eligible => "eligible",
         RolloutMigrationStatus::Migrated => "migrated",
@@ -398,11 +398,11 @@ fn format_elapsed(elapsed: Duration) -> String {
     format!("{hours}h{:02}m{:02}s", minutes % 60, seconds % 60)
 }
 
-async fn thread_storage_bytes(codex_home: &Path, thread_history_db_path: &Path) -> io::Result<u64> {
+async fn thread_storage_bytes(ava_home: &Path, thread_history_db_path: &Path) -> io::Result<u64> {
     let mut bytes = 0_u64;
     let mut directories = vec![
-        codex_home.join(codex_rollout::SESSIONS_SUBDIR),
-        codex_home.join(codex_rollout::ARCHIVED_SESSIONS_SUBDIR),
+        ava_home.join(ava_rollout::SESSIONS_SUBDIR),
+        ava_home.join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR),
     ];
     while let Some(directory) = directories.pop() {
         let mut entries = match tokio::fs::read_dir(&directory).await {

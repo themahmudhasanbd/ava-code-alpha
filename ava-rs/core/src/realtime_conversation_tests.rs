@@ -14,14 +14,14 @@ use super::realtime_text_from_handoff_request;
 use super::wrap_realtime_delegation_input;
 use crate::context::RealtimeDelegationSource;
 use async_channel::bounded;
-use codex_api::ApiError;
-use codex_api::RealtimeEventParser;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::protocol::CodexResponseHandoffMode;
-use codex_protocol::protocol::ConversationTextParams;
-use codex_protocol::protocol::ConversationTextRole;
-use codex_protocol::protocol::RealtimeHandoffRequested;
-use codex_protocol::protocol::RealtimeTranscriptEntry;
+use ava_api::ApiError;
+use ava_api::RealtimeEventParser;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::protocol::AvaResponseHandoffMode;
+use ava_protocol::protocol::ConversationTextParams;
+use ava_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::RealtimeHandoffRequested;
+use ava_protocol::protocol::RealtimeTranscriptEntry;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -212,10 +212,10 @@ async fn clears_active_handoff_explicitly() {
         last_output: Arc::new(Mutex::new(None)),
         stream: Arc::new(Mutex::new(Default::default())),
         client_managed_handoffs: false,
-        codex_responses_as_items: false,
-        codex_response_item_prefix: None,
-        codex_response_handoff_mode: CodexResponseHandoffMode::Thinking,
-        codex_response_handoff_channel_prefixes: Arc::new(BTreeMap::new()),
+        ava_responses_as_items: false,
+        ava_response_item_prefix: None,
+        ava_response_handoff_mode: AvaResponseHandoffMode::Thinking,
+        ava_response_handoff_channel_prefixes: Arc::new(BTreeMap::new()),
         session_kind: RealtimeSessionKind::V1,
         event_parser: RealtimeEventParser::V1,
     };
@@ -285,7 +285,7 @@ fn uses_quicksilver_alpha_header_for_realtime_v1() {
         Some("session_1"),
         Some("sk-test"),
         RealtimeEventParser::V1,
-        "codex_work_desktop",
+        "ava_work_desktop",
     )
     .expect("headers")
     .expect("headers");
@@ -304,7 +304,7 @@ fn omits_quicksilver_alpha_header_for_realtime_v2() {
         Some("session_1"),
         Some("sk-test"),
         RealtimeEventParser::RealtimeV2,
-        "codex_work_desktop",
+        "ava_work_desktop",
     )
     .expect("headers")
     .expect("headers");
@@ -318,7 +318,7 @@ fn uses_frameless_alpha_header_for_realtime_v3() {
         Some("session_1"),
         Some("sk-test"),
         RealtimeEventParser::FramelessBidi,
-        "codex_work_desktop",
+        "ava_work_desktop",
     )
     .expect("headers")
     .expect("headers");
@@ -333,9 +333,9 @@ fn uses_frameless_alpha_header_for_realtime_v3() {
 
 #[test]
 fn realtime_headers_include_only_non_default_originator() {
-    let default_originator = codex_login::default_client::originator();
+    let default_originator = ava_login::default_client::originator();
     for (originator, expected_header) in [
-        ("codex_work_desktop", Some("codex_work_desktop")),
+        ("ava_work_desktop", Some("ava_work_desktop")),
         (default_originator.value.as_str(), None),
     ] {
         let headers = realtime_request_headers(

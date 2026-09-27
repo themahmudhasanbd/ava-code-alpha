@@ -39,8 +39,8 @@ const e2eSmokeSource = await readFile(
   new URL("../../../scripts/e2e-smoke.mjs", import.meta.url),
   "utf8",
 );
-const codexImporterSource = await readFile(
-  new URL("../electron/main/importers/codex.ts", import.meta.url),
+const avaImporterSource = await readFile(
+  new URL("../electron/main/importers/ava.ts", import.meta.url),
   "utf8",
 );
 const apiSource = await readFile(
@@ -55,7 +55,7 @@ test("stdio RPC readers split frames on LF only", () => {
     ["runtime sidecar", agentSidecarEntrySource],
     ["e2e host harness", e2eHostSource],
     ["e2e smoke host", e2eSmokeSource],
-    ["codex importer", codexImporterSource],
+    ["ava importer", avaImporterSource],
   ]) {
     assert.match(source, /readNdjsonLines/, `${name} must use LF NDJSON framing`);
     assert.doesNotMatch(

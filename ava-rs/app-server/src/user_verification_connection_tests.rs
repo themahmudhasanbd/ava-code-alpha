@@ -9,8 +9,8 @@ use crate::outgoing_message::OutgoingMessage;
 use crate::transport::AppServerTransport;
 use crate::transport::ConnectionOrigin;
 use anyhow::Result;
-use codex_app_server_protocol as rpc;
-use codex_protocol::ThreadId;
+use ava_app_server_protocol as rpc;
+use ava_protocol::ThreadId;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Arc;
@@ -22,7 +22,7 @@ fn request() -> rpc::ServerRequestPayload {
     rpc::ServerRequestPayload::McpServerElicitationRequest(rpc::McpServerElicitationRequestParams {
         thread_id: ThreadId::new().to_string(),
         turn_id: None,
-        server_name: "codex_apps".into(),
+        server_name: "ava_apps".into(),
         request: rpc::McpServerElicitationRequest::UserVerification {
             title: "Approve".into(),
             description: String::new(),
@@ -39,7 +39,7 @@ async fn initialize_second(h: &mut Harness) -> Result<Arc<ConnectionSessionState
             rpc::JSONRPCRequest {
                 id: rpc::RequestId::Integer(0),
                 method: "initialize".into(),
-                params: Some(json!({"clientInfo":{"name":"codex-tui","version":"1"},"capabilities":{"experimentalApi":true}})),
+                params: Some(json!({"clientInfo":{"name":"ava-tui","version":"1"},"capabilities":{"experimentalApi":true}})),
                 trace: None,
             },
             &AppServerTransport::Stdio,
@@ -61,7 +61,7 @@ async fn initialize_second(h: &mut Harness) -> Result<Arc<ConnectionSessionState
 #[tokio::test]
 async fn user_verification_disconnect_releases_ownership_before_rpc_drain() -> Result<()> {
     let mut h = Harness::new(ConnectionOrigin::InProcess, || true).await?;
-    h.initialize("codex-tui", /*opt_in*/ true).await;
+    h.initialize("ava-tui", /*opt_in*/ true).await;
     let second = initialize_second(&mut h).await?;
     let connections = [ConnectionId(1), ConnectionId(2)];
     let (id, pending) = h
@@ -161,7 +161,7 @@ async fn user_verification_disconnect_releases_ownership_before_rpc_drain() -> R
 #[tokio::test]
 async fn user_verification_dispatcher_auth_watcher_cancels_pending_ownership() -> Result<()> {
     let mut h = Harness::new(ConnectionOrigin::InProcess, || true).await?;
-    h.initialize("codex-tui", /*opt_in*/ true).await;
+    h.initialize("ava-tui", /*opt_in*/ true).await;
     let (_, pending) = h
         .outgoing
         .send_request_to_connections(Some(&[ConnectionId(1)]), request(), /*thread_id*/ None)

@@ -1,29 +1,29 @@
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::McpServerConfig;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::EnvironmentConfig;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_features::Feature;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_config::McpServerConfig;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::EnvironmentConfig;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_features::Feature;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::apps_enabled_builder;
 use core_test_support::apps_test_server::recorded_apps_tool_calls;
@@ -38,9 +38,9 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_remote;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -79,7 +79,7 @@ async fn thread_plugin_selection_disables_executor_hooks_without_disabling_their
     ] {
         let enabled = disabled_plugin_ids.is_empty();
         submit_thread_settings(
-            &fixture.test.codex,
+            &fixture.test.ava-code,
             ThreadSettingsOverrides {
                 disabled_plugin_ids: Some(disabled_plugin_ids),
                 ..Default::default()
@@ -94,7 +94,7 @@ async fn thread_plugin_selection_disables_executor_hooks_without_disabling_their
     }
     fixture
         .test
-        .codex
+        .ava-code
         .call_mcp_tool(
             "node_repl",
             "js",
@@ -134,7 +134,7 @@ async fn executor_stop_hook_runs_after_attachment() -> Result<()> {
     let calls = fixture.calls().await?;
     assert_eq!(calls.len(), 1);
     let call = &calls[0];
-    let turn_metadata = &call["params"]["_meta"]["x-codex-turn-metadata"];
+    let turn_metadata = &call["params"]["_meta"]["x-ava-turn-metadata"];
     let response_body = fixture.responses.requests()[1].body_json();
     assert_eq!(call["params"]["name"], "turn_ended");
     assert_eq!(call["params"]["arguments"]["hook_event_name"], "Stop");
@@ -181,7 +181,7 @@ async fn executor_interrupt_hook_runs_after_attachment() -> Result<()> {
     fixture.attach().await?;
     fixture
         .test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "interrupt this turn".to_string(),
             text_elements: Vec::new(),
@@ -196,8 +196,8 @@ async fn executor_interrupt_hook_runs_after_attachment() -> Result<()> {
     })
     .await
     .context("interrupted turn should reach the model request")?;
-    fixture.test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&fixture.test.codex, |event| {
+    fixture.test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&fixture.test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -217,7 +217,7 @@ async fn executor_interrupt_hook_runs_after_attachment() -> Result<()> {
             "turn_id": turn_id,
         })
     );
-    assert_eq!(call["_meta"]["x-codex-turn-metadata"]["turn_id"], *turn_id);
+    assert_eq!(call["_meta"]["x-ava-turn-metadata"]["turn_id"], *turn_id);
     Ok(())
 }
 
@@ -240,7 +240,7 @@ async fn executor_interrupt_hook_skips_turn_without_step_context() -> Result<()>
     // Standalone shell turns have no model step, despite the previous turn's discovery.
     fixture
         .test
-        .codex
+        .ava-code
         .submit(Op::RunUserShellCommand {
             command: "sleep 60".to_string(),
             timeout_ms: None,
@@ -271,7 +271,7 @@ async fn executor_stop_hook_stops_after_disconnection() -> Result<()> {
 
     fixture
         .test
-        .codex
+        .ava-code
         .environment_failed(&selection, "executor disconnected".to_string())
         .await?;
     fixture
@@ -311,12 +311,12 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
             drop(listener);
             let runtime_paths = ExecServerRuntimePaths::new(
                 std::env::current_exe()?,
-                /*codex_linux_sandbox_exe*/ None,
+                /*ava_linux_sandbox_exe*/ None,
             )?;
             let http_client_factory = fixture.test.config.http_client_factory();
             let executor_url_for_server = executor_url.clone();
             let executor = tokio::spawn(async move {
-                codex_exec_server::run_main(
+                ava_exec_server::run_main(
                     &executor_url_for_server,
                     runtime_paths,
                     http_client_factory,
@@ -353,14 +353,14 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
         .await?;
     let attached_selection = fixture
         .test
-        .codex
+        .ava-code
         .environment_selections()
         .await
         .into_iter()
         .next()
         .context("attached executor environment should remain selected")?;
     submit_thread_settings(
-        &fixture.test.codex,
+        &fixture.test.ava-code,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 fixture.test.config.cwd.clone(),
@@ -398,12 +398,12 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
     )?;
     fixture
         .test
-        .codex
+        .ava-code
         .refresh_mcp_config(mismatched_config)
         .await;
     fixture
         .test
-        .codex
+        .ava-code
         .call_mcp_tool(
             "node_repl",
             "js",
@@ -414,7 +414,7 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
     assert_eq!(
         fixture
             .test
-            .codex
+            .ava-code
             .inspect_selected_capability_roots()
             .ready_roots
             .len(),
@@ -475,7 +475,7 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
     });
     let listed_routing = routing.clone();
     Mock::given(method("POST"))
-        .and(path("/api/codex/ps/mcp"))
+        .and(path("/api/ava/ps/mcp"))
         .and(body_partial_json(json!({ "method": "tools/list" })))
         .respond_with(move |request: &Request| {
             let request: Value = serde_json::from_slice(&request.body).expect("valid Apps request");
@@ -489,7 +489,7 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
                         "connector_id": "connector_openai_browser",
                         "connector_name": "Browser",
                         "ui": { "visibility": ["app"] },
-                        "_codex_apps": listed_routing,
+                        "_ava_apps": listed_routing,
                     },
                 }] },
             }))
@@ -506,19 +506,19 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
                 "hooks": { "hooks": {
                     "Stop": [{ "hooks": [{
                         "type": "mcp_tool",
-                        "server": "codex_apps",
+                        "server": "ava_apps",
                         "tool": "browser.turn_ended",
                         "input": {},
                     }] }],
                     "Interrupt": [{ "hooks": [{
                         "type": "mcp_tool",
-                        "server": "codex_apps",
+                        "server": "ava_apps",
                         "tool": "browser.turn_ended",
                         "input": {},
                     }] }],
                     "SubagentStop": [{ "hooks": [{
                         "type": "mcp_tool",
-                        "server": "codex_apps",
+                        "server": "ava_apps",
                         "tool": "browser.turn_ended",
                         "input": {},
                     }] }],
@@ -557,11 +557,11 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
                     agent_role: None,
                 })),
                 thread_source: Some(ThreadSource::Subagent),
-                environments: Some(fixture.test.codex.environment_selections().await),
+                environments: Some(fixture.test.ava-code.environment_selections().await),
                 ..StartThreadOptions::new(fixture.test.config.clone())
             })
             .await?;
-        fixture.test.codex = child.thread;
+        fixture.test.ava-code = child.thread;
         fixture.test.session_configured = child.session_configured;
     }
     fixture.attach().await?;
@@ -569,7 +569,7 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
         // Cached subagent MCP servers start on first use; cleanup must not start them.
         fixture
             .test
-            .codex
+            .ava-code
             .call_mcp_tool(
                 "node_repl",
                 "js",
@@ -581,7 +581,7 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
     if hook_event == "Interrupt" {
         fixture
             .test
-            .codex
+            .ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "interrupt browsing".to_string(),
                 text_elements: Vec::new(),
@@ -594,8 +594,8 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
         })
         .await
         .context("interrupted turn should reach the model request")?;
-        fixture.test.codex.submit(Op::Interrupt).await?;
-        wait_for_event(&fixture.test.codex, |event| {
+        fixture.test.ava-code.submit(Op::Interrupt).await?;
+        wait_for_event(&fixture.test.ava-code, |event| {
             matches!(event, EventMsg::TurnAborted(_))
         })
         .await;
@@ -618,7 +618,7 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
     );
     let node_params = &node_calls.last().context("Node cleanup call")?["params"];
     assert_eq!(node_params["arguments"]["hook_event_name"], hook_event);
-    assert!(node_params["_meta"].get("_codex_apps").is_none());
+    assert!(node_params["_meta"].get("_ava_apps").is_none());
 
     // Executor cleanup runs in the background, so observe a no-call window after Node runs.
     let browser_timeout = if expected_browser_calls == 0 {
@@ -646,10 +646,10 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
     let thread_id = fixture.test.session_configured.thread_id.to_string();
     assert_eq!(browser_params["name"], "browser.turn_ended");
     assert_eq!(browser_params["arguments"], json!({}));
-    assert_eq!(browser_params["_meta"]["_codex_apps"], routing);
-    let turn_metadata = &browser_params["_meta"]["x-codex-turn-metadata"];
+    assert_eq!(browser_params["_meta"]["_ava_apps"], routing);
+    let turn_metadata = &browser_params["_meta"]["x-ava-turn-metadata"];
     assert_eq!(
-        node_params["_meta"]["x-codex-turn-metadata"],
+        node_params["_meta"]["x-ava-turn-metadata"],
         *turn_metadata
     );
     assert_eq!(turn_metadata["thread_id"], thread_id);
@@ -682,7 +682,7 @@ async fn executor_stop_hook_fixture() -> Result<ExecutorHookFixture> {
 
 async fn executor_hook_fixture(responses: Vec<ResponseTemplate>) -> Result<ExecutorHookFixture> {
     executor_plugin_hook_fixture(
-        test_codex(),
+        test_ava(),
         &[("computer-use@openai-bundled", computer_use_hook_manifest())],
         responses,
     )
@@ -729,7 +729,7 @@ fn computer_use_hook_manifest() -> Value {
 }
 
 async fn executor_plugin_hook_fixture(
-    builder: TestCodexBuilder,
+    builder: TestAvaBuilder,
     plugins: &[(&'static str, Value)],
     responses: Vec<ResponseTemplate>,
 ) -> Result<ExecutorHookFixture> {
@@ -777,7 +777,7 @@ async fn executor_plugin_hook_fixture(
             .expect("enable executor capability discovery");
         config
             .features
-            .disable(Feature::CodexHooks)
+            .disable(Feature::AvaHooks)
             .expect("disable ordinary hooks");
         let node_repl: McpServerConfig = serde_json::from_value(json!({
             "url": node_repl_url,
@@ -794,14 +794,14 @@ async fn executor_plugin_hook_fixture(
             .expect("configure Node REPL MCP server");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "node_repl").await?;
+    wait_for_mcp_server(&test.ava-code, "node_repl").await?;
 
     let mut plugin_roots = Vec::new();
     let filesystem = test.fs();
     for (plugin_id, manifest) in plugins {
         let plugin_root =
             test.workspace_path_uri(manifest["name"].as_str().context("plugin name")?)?;
-        let plugin_directory = plugin_root.join(".codex-plugin")?;
+        let plugin_directory = plugin_root.join(".ava-plugin")?;
         let manifest_path = plugin_directory.join("plugin.json")?;
         filesystem
             .create_directory(
@@ -837,7 +837,7 @@ async fn executor_plugin_hook_fixture(
 
 struct ExecutorHookFixture {
     server: MockServer,
-    test: TestCodex,
+    test: TestAva,
     responses: ResponseMock,
     hook_called: Arc<Notify>,
     plugin_roots: Vec<(&'static str, PathUri)>,
@@ -847,14 +847,14 @@ impl ExecutorHookFixture {
     async fn attach(&self) -> Result<TurnEnvironmentSelection> {
         let selection = self
             .test
-            .codex
+            .ava-code
             .environment_selections()
             .await
             .into_iter()
             .next()
             .context("thread should select its executor environment")?;
         self.test
-            .codex
+            .ava-code
             .environment_ready(
                 &selection,
                 EnvironmentConfig {
@@ -889,12 +889,12 @@ impl ExecutorHookFixture {
     }
 
     async fn interrupt_running_command(&self) -> Result<()> {
-        wait_for_event(&self.test.codex, |event| {
+        wait_for_event(&self.test.ava-code, |event| {
             matches!(event, EventMsg::ExecCommandBegin(_))
         })
         .await;
-        self.test.codex.submit(Op::Interrupt).await?;
-        wait_for_event(&self.test.codex, |event| {
+        self.test.ava-code.submit(Op::Interrupt).await?;
+        wait_for_event(&self.test.ava-code, |event| {
             matches!(event, EventMsg::TurnAborted(_))
         })
         .await;

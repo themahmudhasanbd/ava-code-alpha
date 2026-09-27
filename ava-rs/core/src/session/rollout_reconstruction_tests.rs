@@ -6,23 +6,23 @@ use super::tests::make_session_and_context;
 use super::tests::raw_history_items;
 use crate::context::CompactionSummary;
 use crate::context::ContextualUserFragment;
-use codex_history::CompactedItem;
-use codex_history::InitialHistory;
-use codex_history::ResponseItemEnvelope;
-use codex_history::ResumedHistory;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::SessionContextWindow;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::ThreadRolledBackEvent;
-use codex_protocol::protocol::WorldStateItem;
-use codex_protocol::security_risk::SecurityRiskScore;
-use codex_rollout::ModelContextScan;
-use codex_rollout::ModelContextScanProgress;
+use ava_history::CompactedItem;
+use ava_history::InitialHistory;
+use ava_history::ResponseItemEnvelope;
+use ava_history::ResumedHistory;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::SessionContextWindow;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::ThreadRolledBackEvent;
+use ava_protocol::protocol::WorldStateItem;
+use ava_protocol::security_risk::SecurityRiskScore;
+use ava_rollout::ModelContextScan;
+use ava_rollout::ModelContextScanProgress;
 use core_test_support::responses::strip_metadata_from_items;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -45,7 +45,7 @@ async fn sender_context_follows_its_delivery_through_checkpoint_and_rollback() {
         // A and then B are accepted before either is consumed.
         let acceptance_order = Some(live.reserve_input_order());
         let steer_order = Some(live.reserve_input_order());
-        let snapshot = codex_history::SenderUserMessages {
+        let snapshot = ava_history::SenderUserMessages {
             receiver_turn_id: format!("turn-{index}"),
             receiver_message_id: format!("delivery-{index}"),
             text: format!("Sender context {index}"),
@@ -54,10 +54,10 @@ async fn sender_context_follows_its_delivery_through_checkpoint_and_rollback() {
             ResponseItemEnvelope {
                 item: serde_json::from_value::<ResponseItem>(json!({
                     "type": "function_call_output", "id": snapshot.receiver_message_id,
-                    "name": "send_message_to_thread", "namespace": "codex_app", "output": "Inspect."
+                    "name": "send_message_to_thread", "namespace": "ava_app", "output": "Inspect."
                 }))
                 .unwrap(),
-                metadata: Some(codex_history::CodexHarnessMetadata {
+                metadata: Some(ava_history::AvaHarnessMetadata {
                     user_input_order: acceptance_order,
                     sender_user_messages: Some(Box::new(snapshot.clone())),
                     ..Default::default()
@@ -65,7 +65,7 @@ async fn sender_context_follows_its_delivery_through_checkpoint_and_rollback() {
             },
             ResponseItemEnvelope {
                 item: user_message("Later user steer B."),
-                metadata: Some(codex_history::CodexHarnessMetadata {
+                metadata: Some(ava_history::AvaHarnessMetadata {
                     user_input_order: steer_order,
                     ..Default::default()
                 }),
@@ -166,7 +166,7 @@ fn completed_user_turn_rollout(
         .expect("turn context should have turn_id");
     let mut rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -176,7 +176,7 @@ fn completed_user_turn_rollout(
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -189,7 +189,7 @@ fn completed_user_turn_rollout(
     ];
     rollout_items.extend(items);
     rollout_items.push(RolloutItem::EventMsg(EventMsg::TurnComplete(
-        codex_protocol::protocol::TurnCompleteEvent {
+        ava_protocol::protocol::TurnCompleteEvent {
             turn_id,
             last_agent_message: None,
             error: None,
@@ -363,7 +363,7 @@ async fn record_initial_history_resumed_bare_turn_context_does_not_hydrate_previ
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
     let rollout_items = vec![RolloutItem::TurnContext(previous_context_item)];
 
@@ -414,7 +414,7 @@ async fn record_initial_history_resumed_hydrates_previous_turn_settings_from_lif
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
     let turn_id = previous_context_item
         .turn_id
@@ -424,7 +424,7 @@ async fn record_initial_history_resumed_hydrates_previous_turn_settings_from_lif
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -434,7 +434,7 @@ async fn record_initial_history_resumed_hydrates_previous_turn_settings_from_lif
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -445,7 +445,7 @@ async fn record_initial_history_resumed_hydrates_previous_turn_settings_from_lif
         )),
         RolloutItem::TurnContext(previous_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id,
                 last_agent_message: None,
                 error: None,
@@ -497,7 +497,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_com
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: first_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -507,7 +507,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_com
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "turn 1 user".to_string(),
                 images: None,
@@ -523,7 +523,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_com
         RolloutItem::ResponseItem(turn_one_user.clone().into()),
         RolloutItem::ResponseItem(turn_one_assistant.clone().into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: first_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -534,7 +534,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_com
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: rolled_back_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -544,7 +544,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_com
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "turn 2 user".to_string(),
                 images: None,
@@ -560,7 +560,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_com
         RolloutItem::ResponseItem(turn_two_user.into()),
         RolloutItem::ResponseItem(turn_two_assistant.into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: rolled_back_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -571,7 +571,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_com
             },
         )),
         RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
-            codex_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
+            ava_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
         )),
     ];
 
@@ -619,7 +619,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_inc
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: first_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -629,7 +629,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_inc
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "turn 1 user".to_string(),
                 images: None,
@@ -642,7 +642,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_inc
         RolloutItem::ResponseItem(turn_one_user.clone().into()),
         RolloutItem::ResponseItem(turn_one_assistant.clone().into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: first_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -653,7 +653,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_inc
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: incomplete_turn_id,
                 root_turn_id: None,
                 trace_id: None,
@@ -663,7 +663,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_inc
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "turn 2 user".to_string(),
                 images: None,
@@ -674,7 +674,7 @@ async fn reconstruct_history_rollback_keeps_history_and_metadata_in_sync_for_inc
         )),
         RolloutItem::ResponseItem(turn_two_user.into()),
         RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
-            codex_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
+            ava_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
         )),
     ];
 
@@ -720,7 +720,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: first_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -730,7 +730,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "turn 1 user".to_string(),
                 images: None,
@@ -743,7 +743,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
         RolloutItem::ResponseItem(turn_one_user.clone().into()),
         RolloutItem::ResponseItem(turn_one_assistant.clone().into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: first_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -754,7 +754,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: second_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -764,7 +764,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "turn 2 user".to_string(),
                 images: None,
@@ -776,7 +776,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
         RolloutItem::ResponseItem(turn_two_user.into()),
         RolloutItem::ResponseItem(turn_two_assistant.into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: second_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -787,7 +787,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: standalone_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -803,7 +803,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
             ..first_context_item.clone()
         }),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: standalone_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -814,7 +814,7 @@ async fn reconstruct_history_rollback_skips_non_user_turns_for_history_and_metad
             },
         )),
         RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
-            codex_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
+            ava_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
         )),
     ];
 
@@ -860,7 +860,7 @@ async fn reconstruct_history_rollback_counts_inter_agent_assistant_turns() {
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: first_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -870,7 +870,7 @@ async fn reconstruct_history_rollback_counts_inter_agent_assistant_turns() {
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "turn 1 user".to_string(),
                 images: None,
@@ -883,7 +883,7 @@ async fn reconstruct_history_rollback_counts_inter_agent_assistant_turns() {
         RolloutItem::ResponseItem(user_message("turn 1 user").into()),
         RolloutItem::ResponseItem(assistant_message("turn 1 assistant").into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: first_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -894,7 +894,7 @@ async fn reconstruct_history_rollback_counts_inter_agent_assistant_turns() {
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: assistant_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -907,7 +907,7 @@ async fn reconstruct_history_rollback_counts_inter_agent_assistant_turns() {
         RolloutItem::ResponseItem(assistant_instruction.into()),
         RolloutItem::ResponseItem(assistant_reply.into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: assistant_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -918,7 +918,7 @@ async fn reconstruct_history_rollback_counts_inter_agent_assistant_turns() {
             },
         )),
         RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
-            codex_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
+            ava_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
         )),
     ];
 
@@ -959,7 +959,7 @@ async fn reconstruct_history_rollback_clears_history_and_metadata_when_exceeding
         .expect("turn context should have turn_id");
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: only_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -969,7 +969,7 @@ async fn reconstruct_history_rollback_clears_history_and_metadata_when_exceeding
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "only user".to_string(),
                 images: None,
@@ -982,7 +982,7 @@ async fn reconstruct_history_rollback_clears_history_and_metadata_when_exceeding
         RolloutItem::ResponseItem(user_message("only user").into()),
         RolloutItem::ResponseItem(assistant_message("only assistant").into()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: only_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -993,7 +993,7 @@ async fn reconstruct_history_rollback_clears_history_and_metadata_when_exceeding
             },
         )),
         RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
-            codex_protocol::protocol::ThreadRolledBackEvent { num_turns: 99 },
+            ava_protocol::protocol::ThreadRolledBackEvent { num_turns: 99 },
         )),
     ];
 
@@ -1017,7 +1017,7 @@ async fn record_initial_history_resumed_rollback_skips_only_user_turns() {
     let standalone_turn_id = "standalone-task-turn".to_string();
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: user_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -1027,7 +1027,7 @@ async fn record_initial_history_resumed_rollback_skips_only_user_turns() {
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -1038,7 +1038,7 @@ async fn record_initial_history_resumed_rollback_skips_only_user_turns() {
         )),
         RolloutItem::TurnContext(previous_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: user_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -1050,7 +1050,7 @@ async fn record_initial_history_resumed_rollback_skips_only_user_turns() {
         )),
         // Standalone task turn (no UserMessage) should not consume rollback skips.
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: standalone_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -1060,7 +1060,7 @@ async fn record_initial_history_resumed_rollback_skips_only_user_turns() {
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: standalone_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -1071,7 +1071,7 @@ async fn record_initial_history_resumed_rollback_skips_only_user_turns() {
             },
         )),
         RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
-            codex_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
+            ava_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
         )),
     ];
 
@@ -1099,7 +1099,7 @@ async fn record_initial_history_resumed_rollback_drops_incomplete_user_turn_comp
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: previous_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -1109,7 +1109,7 @@ async fn record_initial_history_resumed_rollback_drops_incomplete_user_turn_comp
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -1120,7 +1120,7 @@ async fn record_initial_history_resumed_rollback_drops_incomplete_user_turn_comp
         )),
         RolloutItem::TurnContext(previous_context_item.clone()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: previous_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -1131,7 +1131,7 @@ async fn record_initial_history_resumed_rollback_drops_incomplete_user_turn_comp
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: incomplete_turn_id,
                 root_turn_id: None,
                 trace_id: None,
@@ -1141,7 +1141,7 @@ async fn record_initial_history_resumed_rollback_drops_incomplete_user_turn_comp
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "rolled back".to_string(),
                 images: None,
@@ -1164,7 +1164,7 @@ async fn record_initial_history_resumed_rollback_drops_incomplete_user_turn_comp
             latest_token_usage_record: None,
         }),
         RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
-            codex_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
+            ava_protocol::protocol::ThreadRolledBackEvent { num_turns: 1 },
         )),
     ];
 
@@ -1434,7 +1434,7 @@ async fn bounded_replay_matches_full_replay_after_empty_turn_compactions() {
                         "summary-{window_number}"
                     ))])),
                     retained_context: None,
-                    guardian_history: Some(codex_history::GuardianHistoryCheckpoint(vec![
+                    guardian_history: Some(ava_history::GuardianHistoryCheckpoint(vec![
                         user_message("original task"),
                     ])),
                     mcp_resource_origins: None,
@@ -1463,7 +1463,7 @@ async fn bounded_replay_matches_full_replay_after_empty_turn_compactions() {
             )
         });
         wake_items.push(RolloutItem::EventMsg(EventMsg::TurnAborted(
-            codex_protocol::protocol::TurnAbortedEvent {
+            ava_protocol::protocol::TurnAbortedEvent {
                 turn_id: Some(format!("wake-{window_number}")),
                 reason: TurnAbortReason::Interrupted,
                 started_at: None,
@@ -1493,7 +1493,7 @@ async fn bounded_replay_matches_full_replay_after_empty_turn_compactions() {
         .await;
     assert_eq!(
         bounded.guardian_history.as_ref(),
-        Some(&codex_history::GuardianHistoryCheckpoint(vec![
+        Some(&ava_history::GuardianHistoryCheckpoint(vec![
             user_message("original task"),
             assistant_message("continued working"),
         ])),
@@ -1570,18 +1570,18 @@ async fn reconstruct_history_preserves_legacy_compaction_count_with_session_meta
 async fn reconstruct_history_legacy_compaction_without_replacement_history_does_not_inject_current_initial_context()
  {
     let (session, turn_context) = make_session_and_context().await;
-    let answer = codex_history::RetainedContextEvent::VerifiedAnswer {
-        answer: codex_history::VerifiedAnswer {
+    let answer = ava_history::RetainedContextEvent::VerifiedAnswer {
+        answer: ava_history::VerifiedAnswer {
             turn_id: "legacy-turn".to_owned(),
             call_id: "ask-1".to_owned(),
-            questions: vec![codex_history::VerifiedQuestionAnswer {
+            questions: vec![ava_history::VerifiedQuestionAnswer {
                 question: "Upload?".to_owned(),
                 answer: "Only privately.".to_owned(),
             }],
         },
         acceptance_order: None,
     };
-    let mut retained = codex_history::RetainedContext::default();
+    let mut retained = ava_history::RetainedContext::default();
     retained.mark_user_messages_incomplete();
     retained.record(&answer);
     let rollout_items = vec![
@@ -1643,7 +1643,7 @@ async fn reconstruct_history_legacy_compaction_without_replacement_history_clear
             latest_token_usage_record: None,
         }),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: current_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -1653,7 +1653,7 @@ async fn reconstruct_history_legacy_compaction_without_replacement_history_clear
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "after legacy compact".to_string(),
                 images: None,
@@ -1664,7 +1664,7 @@ async fn reconstruct_history_legacy_compaction_without_replacement_history_clear
         )),
         RolloutItem::TurnContext(current_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: current_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -1713,7 +1713,7 @@ async fn record_initial_history_resumed_turn_context_after_compaction_reestablis
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
     let previous_turn_id = previous_context_item
         .turn_id
@@ -1721,7 +1721,7 @@ async fn record_initial_history_resumed_turn_context_after_compaction_reestablis
         .expect("turn context should have turn_id");
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: previous_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -1731,7 +1731,7 @@ async fn record_initial_history_resumed_turn_context_after_compaction_reestablis
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -1756,7 +1756,7 @@ async fn record_initial_history_resumed_turn_context_after_compaction_reestablis
         }),
         RolloutItem::TurnContext(previous_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: previous_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -1812,7 +1812,7 @@ async fn record_initial_history_resumed_turn_context_after_compaction_reestablis
             realtime_active: Some(turn_context.realtime_active),
             cyber_access_program: None,
             effort: turn_context.reasoning_effort().cloned(),
-            summary: codex_protocol::config_types::ReasoningSummary::Auto,
+            summary: ava_protocol::config_types::ReasoningSummary::Auto,
         }))
         .expect("serialize expected reference context item")
     );
@@ -1848,7 +1848,7 @@ async fn record_initial_history_resumed_aborted_turn_without_id_clears_active_tu
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
     let previous_turn_id = previous_context_item
         .turn_id
@@ -1858,7 +1858,7 @@ async fn record_initial_history_resumed_aborted_turn_without_id_clears_active_tu
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: previous_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -1868,7 +1868,7 @@ async fn record_initial_history_resumed_aborted_turn_without_id_clears_active_tu
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -1879,7 +1879,7 @@ async fn record_initial_history_resumed_aborted_turn_without_id_clears_active_tu
         )),
         RolloutItem::TurnContext(previous_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: previous_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -1890,7 +1890,7 @@ async fn record_initial_history_resumed_aborted_turn_without_id_clears_active_tu
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: aborted_turn_id,
                 root_turn_id: None,
                 trace_id: None,
@@ -1900,7 +1900,7 @@ async fn record_initial_history_resumed_aborted_turn_without_id_clears_active_tu
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "aborted".to_string(),
                 images: None,
@@ -1910,7 +1910,7 @@ async fn record_initial_history_resumed_aborted_turn_without_id_clears_active_tu
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnAborted(
-            codex_protocol::protocol::TurnAbortedEvent {
+            ava_protocol::protocol::TurnAbortedEvent {
                 turn_id: None,
                 started_at: None,
                 reason: TurnAbortReason::Interrupted,
@@ -1989,12 +1989,12 @@ async fn record_initial_history_resumed_unmatched_abort_preserves_active_turn_fo
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: previous_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -2004,7 +2004,7 @@ async fn record_initial_history_resumed_unmatched_abort_preserves_active_turn_fo
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -2015,7 +2015,7 @@ async fn record_initial_history_resumed_unmatched_abort_preserves_active_turn_fo
         )),
         RolloutItem::TurnContext(previous_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: previous_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -2026,7 +2026,7 @@ async fn record_initial_history_resumed_unmatched_abort_preserves_active_turn_fo
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: current_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -2036,7 +2036,7 @@ async fn record_initial_history_resumed_unmatched_abort_preserves_active_turn_fo
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "current".to_string(),
                 images: None,
@@ -2046,7 +2046,7 @@ async fn record_initial_history_resumed_unmatched_abort_preserves_active_turn_fo
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnAborted(
-            codex_protocol::protocol::TurnAbortedEvent {
+            ava_protocol::protocol::TurnAbortedEvent {
                 turn_id: Some(unmatched_abort_turn_id),
                 started_at: None,
                 reason: TurnAbortReason::Interrupted,
@@ -2056,7 +2056,7 @@ async fn record_initial_history_resumed_unmatched_abort_preserves_active_turn_fo
         )),
         RolloutItem::TurnContext(current_context_item.clone()),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: current_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -2122,7 +2122,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_compaction_clea
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
     let previous_turn_id = previous_context_item
         .turn_id
@@ -2132,7 +2132,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_compaction_clea
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: previous_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -2142,7 +2142,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_compaction_clea
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -2153,7 +2153,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_compaction_clea
         )),
         RolloutItem::TurnContext(previous_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: previous_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -2164,7 +2164,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_compaction_clea
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: incomplete_turn_id,
                 root_turn_id: None,
                 trace_id: None,
@@ -2174,7 +2174,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_compaction_clea
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "incomplete".to_string(),
                 images: None,
@@ -2228,7 +2228,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_preserves_turn_
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: current_turn_id,
                 root_turn_id: None,
                 trace_id: None,
@@ -2238,7 +2238,7 @@ async fn record_initial_history_resumed_trailing_incomplete_turn_preserves_turn_
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "incomplete".to_string(),
                 images: None,
@@ -2304,7 +2304,7 @@ async fn record_initial_history_resumed_replaced_incomplete_compacted_turn_clear
         realtime_active: Some(turn_context.realtime_active),
         cyber_access_program: None,
         effort: turn_context.reasoning_effort().cloned(),
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     };
     let previous_turn_id = previous_context_item
         .turn_id
@@ -2315,7 +2315,7 @@ async fn record_initial_history_resumed_replaced_incomplete_compacted_turn_clear
 
     let rollout_items = vec![
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: previous_turn_id.clone(),
                 root_turn_id: None,
                 trace_id: None,
@@ -2325,7 +2325,7 @@ async fn record_initial_history_resumed_replaced_incomplete_compacted_turn_clear
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "seed".to_string(),
                 images: None,
@@ -2336,7 +2336,7 @@ async fn record_initial_history_resumed_replaced_incomplete_compacted_turn_clear
         )),
         RolloutItem::TurnContext(previous_context_item),
         RolloutItem::EventMsg(EventMsg::TurnComplete(
-            codex_protocol::protocol::TurnCompleteEvent {
+            ava_protocol::protocol::TurnCompleteEvent {
                 turn_id: previous_turn_id,
                 started_at: None,
                 last_agent_message: None,
@@ -2347,7 +2347,7 @@ async fn record_initial_history_resumed_replaced_incomplete_compacted_turn_clear
             },
         )),
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: compacted_incomplete_turn_id,
                 root_turn_id: None,
                 trace_id: None,
@@ -2357,7 +2357,7 @@ async fn record_initial_history_resumed_replaced_incomplete_compacted_turn_clear
             },
         )),
         RolloutItem::EventMsg(EventMsg::UserMessage(
-            codex_protocol::protocol::UserMessageEvent {
+            ava_protocol::protocol::UserMessageEvent {
                 client_id: None,
                 message: "compacted".to_string(),
                 images: None,
@@ -2382,7 +2382,7 @@ async fn record_initial_history_resumed_replaced_incomplete_compacted_turn_clear
         // A newer TurnStarted replaces the incomplete compacted turn without a matching
         // completion/abort for the old one.
         RolloutItem::EventMsg(EventMsg::TurnStarted(
-            codex_protocol::protocol::TurnStartedEvent {
+            ava_protocol::protocol::TurnStartedEvent {
                 turn_id: replacing_turn_id,
                 root_turn_id: None,
                 trace_id: None,

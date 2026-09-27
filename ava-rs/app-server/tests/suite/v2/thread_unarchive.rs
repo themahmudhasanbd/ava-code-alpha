@@ -3,50 +3,50 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::to_response;
-use codex_app_server::in_process;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadSection;
-use codex_app_server_protocol::ThreadSectionMoveParams;
-use codex_app_server_protocol::ThreadSectionMoveResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadUnarchiveParams;
-use codex_app_server_protocol::ThreadUnarchiveResponse;
-use codex_app_server_protocol::ThreadUnarchivedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_core::config::ConfigBuilder;
-use codex_core::find_archived_thread_path_by_id_str;
-use codex_core::find_thread_path_by_id_str;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_protocol::ThreadId;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_state::PINNED_THREAD_SECTION_ID;
-use codex_state::PINNED_THREAD_SECTION_NAME;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::ThreadMetadataPatch;
-use codex_thread_store::ThreadPersistenceMetadata;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::UpdateThreadMetadataParams;
+use ava_app_server::in_process;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadSection;
+use ava_app_server_protocol::ThreadSectionMoveParams;
+use ava_app_server_protocol::ThreadSectionMoveResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadUnarchiveParams;
+use ava_app_server_protocol::ThreadUnarchiveResponse;
+use ava_app_server_protocol::ThreadUnarchivedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_core::config::ConfigBuilder;
+use ava_core::find_archived_thread_path_by_id_str;
+use ava_core::find_thread_path_by_id_str;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_protocol::ThreadId;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_state::PINNED_THREAD_SECTION_ID;
+use ava_state::PINNED_THREAD_SECTION_NAME;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::ThreadMetadataPatch;
+use ava_thread_store::ThreadPersistenceMetadata;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::UpdateThreadMetadataParams;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use std::fs::FileTimes;
@@ -64,11 +64,11 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 #[tokio::test]
 async fn thread_unarchive_moves_rollout_back_into_sessions_directory() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -131,7 +131,7 @@ async fn thread_unarchive_moves_rollout_back_into_sessions_directory() -> Result
         .expect("pinned thread should have a section entry timestamp");
 
     let found_rollout_path =
-        find_thread_path_by_id_str(codex_home.path(), &thread.id, /*state_db_ctx*/ None)
+        find_thread_path_by_id_str(ava_home.path(), &thread.id, /*state_db_ctx*/ None)
             .await?
             .expect("expected rollout path for thread id to exist");
     assert_paths_match_on_disk(&found_rollout_path, &rollout_path)?;
@@ -145,7 +145,7 @@ async fn thread_unarchive_moves_rollout_back_into_sessions_directory() -> Result
         timeout(DEFAULT_READ_TIMEOUT, mcp.read_response(archive_id)).await??;
 
     let archived_path = find_archived_thread_path_by_id_str(
-        codex_home.path(),
+        ava_home.path(),
         &thread.id,
         /*state_db_ctx*/ None,
     )
@@ -233,13 +233,13 @@ async fn thread_unarchive_moves_rollout_back_into_sessions_directory() -> Result
 
 #[tokio::test]
 async fn thread_unarchive_preserves_pathless_store_metadata() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let store_id = Uuid::new_v4().to_string();
     MockResponsesConfig::new("http://127.0.0.1:1")
         .with_root_config(&format!(
             r#"experimental_thread_store = {{ type = "in_memory", id = "{store_id}" }}"#
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let store = InMemoryThreadStore::for_id(store_id.clone());
     let _in_memory_store = InMemoryThreadStoreId { store_id };
     let thread_id = ThreadId::from_string("00000000-0000-4000-8000-000000000126")?;
@@ -283,8 +283,8 @@ async fn thread_unarchive_preserves_pathless_store_metadata() -> Result<()> {
 
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(loader_overrides.clone())
         .build()
         .await?;
@@ -295,17 +295,17 @@ async fn thread_unarchive_preserves_pathless_store_metadata() -> Result<()> {
         loader_overrides,
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
-        thread_config_loader: Arc::new(codex_config::NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        thread_config_loader: Arc::new(ava_config::NoopThreadConfigLoader),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli,
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },

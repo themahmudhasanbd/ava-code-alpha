@@ -10,14 +10,14 @@ use super::turn_context::TurnContext;
 use crate::config::Config;
 use crate::config::ConstraintResult;
 use crate::exec_policy::AllowPrefixRules;
-use codex_features::Feature;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::openai_models::GuardianV2ModelConfig;
-use codex_protocol::openai_models::GuardianV2TranscriptModelConfig;
-use codex_protocol::openai_models::MODEL_SPECIALTY_CYBER;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::TurnSettingsUpdate;
-use codex_protocol::protocol::TurnSettingsUpdateOutcome;
+use ava_features::Feature;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::openai_models::GuardianV2ModelConfig;
+use ava_protocol::openai_models::GuardianV2TranscriptModelConfig;
+use ava_protocol::openai_models::MODEL_SPECIALTY_CYBER;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::TurnSettingsUpdate;
+use ava_protocol::protocol::TurnSettingsUpdateOutcome;
 use std::sync::Arc;
 
 /// Temporary restrictions while approvals and Guardian still read the admitted

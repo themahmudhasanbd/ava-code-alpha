@@ -17,7 +17,7 @@ Decision tree:
 - **PRODUCT.md exists, DESIGN.md missing**: skip to Step 5 and offer to run `$impeccable document` for DESIGN.md.
 - **PRODUCT.md exists but has no `## Register` section (legacy)**: add it. Infer a hypothesis from the codebase (see Step 2), confirm with the user, write the field.
 - **PRODUCT.md exists but has no `## Platform` section (legacy)**: add it the same way, but only when the project is native (`ios` / `android` / `adaptive`) or the user wants it explicit; a missing field already means `web`.
-- **Both exist**: STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask which file to refresh. Skip the one the user doesn't want changed.
+- **Both exist**: STOP and use Ava's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask which file to refresh. Skip the one the user doesn't want changed.
 - **Just DESIGN.md exists (unusual)**: do Steps 2-4 to produce PRODUCT.md.
 
 Never silently overwrite an existing file. Always confirm first.
@@ -53,7 +53,7 @@ Note what you've learned and what remains unclear. Also note any rough edges wor
 
 ## Step 3: Ask strategic questions (for PRODUCT.md)
 
-STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask about anything the codebase doesn't answer with strong, explicit evidence.
+STOP and use Ava's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask about anything the codebase doesn't answer with strong, explicit evidence.
 
 ### Interview mode, not confirmation mode
 
@@ -77,7 +77,7 @@ Every design task is either **brand** (marketing, landing, campaign, long-form c
 
 If Step 2 produced a clear hypothesis, lead with it: *"From the codebase, this looks like a [brand / product] surface. Does that match your intent, or should we treat it differently?"*
 
-If the signal is genuinely split (e.g. a product with a big marketing landing), STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask which register describes the **primary** surface. The register can be overridden per task later, but PRODUCT.md carries one default. Settle the default before drafting any register-dependent questions; never batch brand-only questions (Conversion & proof) into the same round as the question that decides the register.
+If the signal is genuinely split (e.g. a product with a big marketing landing), STOP and use Ava's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask which register describes the **primary** surface. The register can be overridden per task later, but PRODUCT.md carries one default. Settle the default before drafting any register-dependent questions; never batch brand-only questions (Conversion & proof) into the same round as the question that decides the register.
 
 ### Platform (ask right after register)
 
@@ -218,4 +218,4 @@ The full command menu is one bare `$impeccable` away; keep this list short and p
 
 If init was invoked as a blocker by another impeccable command (e.g. the user ran `$impeccable polish` with no PRODUCT.md), resume that original task now. Your own writes are the freshest source; no reload needed.
 
-Optionally STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask whether they'd like a brief summary of PRODUCT.md appended to AGENTS.md for easier agent reference. If yes, append a short **Design Context** pointer section there.
+Optionally STOP and use Ava's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask whether they'd like a brief summary of PRODUCT.md appended to AGENTS.md for easier agent reference. If yes, append a short **Design Context** pointer section there.

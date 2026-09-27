@@ -1,5 +1,5 @@
 import { AvaOptions } from "./avaOptions";
-import { CodexExec } from "./exec";
+import { AvaExec } from "./exec";
 import { Thread } from "./thread";
 import { ThreadOptions } from "./threadOptions";
 
@@ -9,12 +9,12 @@ import { ThreadOptions } from "./threadOptions";
  * Use the `startThread()` method to start a new thread or `resumeThread()` to resume a previously started thread.
  */
 export class Ava {
-  private exec: CodexExec;
+  private exec: AvaExec;
   private options: AvaOptions;
 
   constructor(options: AvaOptions = {}) {
     const { avaPathOverride, env, config, configOverrides } = options;
-    this.exec = new CodexExec(avaPathOverride, env, config, configOverrides);
+    this.exec = new AvaExec(avaPathOverride, env, config, configOverrides);
     this.options = options;
   }
 

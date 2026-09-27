@@ -7,15 +7,15 @@ use crate::tools::handlers::plan_spec::create_todowrite_tool;
 use crate::tools::handlers::plan_spec::create_update_plan_tool;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::plan_tool::PlanItemArg;
-use codex_protocol::plan_tool::StepStatus;
-use codex_protocol::plan_tool::UpdatePlanArgs;
-use codex_protocol::protocol::EventMsg;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::plan_tool::PlanItemArg;
+use ava_protocol::plan_tool::StepStatus;
+use ava_protocol::plan_tool::UpdatePlanArgs;
+use ava_protocol::protocol::EventMsg;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -64,7 +64,7 @@ impl ToolExecutor<ToolInvocation> for PlanHandler {
         create_update_plan_tool()
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -87,7 +87,7 @@ impl ToolExecutor<ToolInvocation> for TodoWriteHandler {
         create_todowrite_tool()
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

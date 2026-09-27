@@ -6,64 +6,64 @@ use crate::error_code::internal_error;
 use crate::error_code::invalid_request;
 use crate::outgoing_message::ConnectionRequestId;
 use crate::outgoing_message::OutgoingMessageSender;
-use codex_analytics::AnalyticsEventsClient;
-use codex_app_server_protocol::AllowDenyRequirement;
-use codex_app_server_protocol::AutoReviewRequirements;
-use codex_app_server_protocol::BrowserUseAccessApprovalLifetime;
-use codex_app_server_protocol::BrowserUseOriginPolicy;
-use codex_app_server_protocol::BrowserUseRequirements;
-use codex_app_server_protocol::CliAuthCredentialsStoreMode;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::ComputerUseMacosRequirements;
-use codex_app_server_protocol::ComputerUseRequirements;
-use codex_app_server_protocol::ComputerUseWindowsExeRequirement;
-use codex_app_server_protocol::ComputerUseWindowsRequirements;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ConfigRequirements;
-use codex_app_server_protocol::ConfigRequirementsReadResponse;
-use codex_app_server_protocol::ConfigValueWriteParams;
-use codex_app_server_protocol::ConfigWriteErrorCode;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::ConfiguredHookHandler;
-use codex_app_server_protocol::ConfiguredHookMatcherGroup;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetParams;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
-use codex_app_server_protocol::FeedbackRequirements;
-use codex_app_server_protocol::InAppBrowserRequirements;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::ManagedHooksRequirements;
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::ModelProviderCapabilitiesReadResponse;
-use codex_app_server_protocol::ModelsRequirements;
-use codex_app_server_protocol::NetworkDomainPermission;
-use codex_app_server_protocol::NetworkRequirements;
-use codex_app_server_protocol::NetworkUnixSocketPermission;
-use codex_app_server_protocol::NewThreadModelDefaults;
-use codex_app_server_protocol::PersonalityPresetOption;
-use codex_app_server_protocol::PersonalityPresetsListResponse;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::UserProfileReadParams;
-use codex_app_server_protocol::UserProfileReadResponse;
-use codex_app_server_protocol::UserProfileWriteParams;
-use codex_app_server_protocol::UserProfileWriteResponse;
-use codex_app_server_protocol::WindowsSandboxImplementation;
-use codex_config::ConfigRequirementsToml;
-use codex_config::HookEventsToml;
-use codex_config::HookHandlerConfig as CoreHookHandlerConfig;
-use codex_config::ManagedHooksRequirementsToml;
-use codex_config::MatcherGroup as CoreMatcherGroup;
-use codex_config::ResidencyRequirement as CoreResidencyRequirement;
-use codex_config::SandboxModeRequirement as CoreSandboxModeRequirement;
-use codex_core::ThreadManager;
-use codex_features::Feature;
-use codex_features::canonical_feature_for_key;
-use codex_features::feature_for_key;
-use codex_model_provider::create_model_provider;
-use codex_plugin::PluginId;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::config_types::WebSearchMode;
+use ava_analytics::AnalyticsEventsClient;
+use ava_app_server_protocol::AllowDenyRequirement;
+use ava_app_server_protocol::AutoReviewRequirements;
+use ava_app_server_protocol::BrowserUseAccessApprovalLifetime;
+use ava_app_server_protocol::BrowserUseOriginPolicy;
+use ava_app_server_protocol::BrowserUseRequirements;
+use ava_app_server_protocol::CliAuthCredentialsStoreMode;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::ComputerUseMacosRequirements;
+use ava_app_server_protocol::ComputerUseRequirements;
+use ava_app_server_protocol::ComputerUseWindowsExeRequirement;
+use ava_app_server_protocol::ComputerUseWindowsRequirements;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigRequirements;
+use ava_app_server_protocol::ConfigRequirementsReadResponse;
+use ava_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConfigWriteErrorCode;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::ConfiguredHookHandler;
+use ava_app_server_protocol::ConfiguredHookMatcherGroup;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetParams;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
+use ava_app_server_protocol::FeedbackRequirements;
+use ava_app_server_protocol::InAppBrowserRequirements;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::ManagedHooksRequirements;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::ModelProviderCapabilitiesReadResponse;
+use ava_app_server_protocol::ModelsRequirements;
+use ava_app_server_protocol::NetworkDomainPermission;
+use ava_app_server_protocol::NetworkRequirements;
+use ava_app_server_protocol::NetworkUnixSocketPermission;
+use ava_app_server_protocol::NewThreadModelDefaults;
+use ava_app_server_protocol::PersonalityPresetOption;
+use ava_app_server_protocol::PersonalityPresetsListResponse;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::UserProfileReadParams;
+use ava_app_server_protocol::UserProfileReadResponse;
+use ava_app_server_protocol::UserProfileWriteParams;
+use ava_app_server_protocol::UserProfileWriteResponse;
+use ava_app_server_protocol::WindowsSandboxImplementation;
+use ava_config::ConfigRequirementsToml;
+use ava_config::HookEventsToml;
+use ava_config::HookHandlerConfig as CoreHookHandlerConfig;
+use ava_config::ManagedHooksRequirementsToml;
+use ava_config::MatcherGroup as CoreMatcherGroup;
+use ava_config::ResidencyRequirement as CoreResidencyRequirement;
+use ava_config::SandboxModeRequirement as CoreSandboxModeRequirement;
+use ava_core::ThreadManager;
+use ava_features::Feature;
+use ava_features::canonical_feature_for_key;
+use ava_features::feature_for_key;
+use ava_model_provider::create_model_provider;
+use ava_plugin::PluginId;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::config_types::WebSearchMode;
 use serde_json::json;
 use std::path::PathBuf;
 
@@ -74,7 +74,7 @@ const SUPPORTED_EXPERIMENTAL_FEATURE_ENABLEMENT: &[&str] = &[
     "api_key_model_discovery",
     "auth_elicitation",
     BACKGROUND_PAGINATED_ROLLOUT_MIGRATION_FEATURE,
-    "codex_apps_mcp_2026_07_28",
+    "ava_apps_mcp_2026_07_28",
     "mcp_2026_07_28",
     "memories",
     "mentions_v2",
@@ -152,7 +152,7 @@ impl ConfigRequestProcessor {
         &self,
         params: UserProfileWriteParams,
     ) -> Result<UserProfileWriteResponse, JSONRPCErrorError> {
-        let toml_obj = codex_config::UserProfileToml::from(params.profile.clone());
+        let toml_obj = ava_config::UserProfileToml::from(params.profile.clone());
         let json_value = serde_json::to_value(&toml_obj)
             .map_err(|err| internal_error(format!("failed to serialize user profile: {err}")))?;
         let write_params = ConfigValueWriteParams {
@@ -282,7 +282,7 @@ impl ConfigRequestProcessor {
     async fn load_latest_config(
         &self,
         fallback_cwd: Option<PathBuf>,
-    ) -> Result<codex_core::config::Config, JSONRPCErrorError> {
+    ) -> Result<ava_core::config::Config, JSONRPCErrorError> {
         self.config_manager
             .load_latest_config(fallback_cwd)
             .await
@@ -297,7 +297,7 @@ impl ConfigRequestProcessor {
         &self,
         params: ConfigValueWriteParams,
     ) -> Result<ConfigWriteResponse, JSONRPCErrorError> {
-        let pending_changes = codex_core_plugins::toggles::collect_plugin_enabled_candidates(
+        let pending_changes = ava_core_plugins::toggles::collect_plugin_enabled_candidates(
             [(&params.key_path, &params.value)].into_iter(),
         );
         let response = self
@@ -313,7 +313,7 @@ impl ConfigRequestProcessor {
         &self,
         params: ConfigBatchWriteParams,
     ) -> Result<ConfigWriteResponse, JSONRPCErrorError> {
-        let pending_changes = codex_core_plugins::toggles::collect_plugin_enabled_candidates(
+        let pending_changes = ava_core_plugins::toggles::collect_plugin_enabled_candidates(
             params
                 .edits
                 .iter()
@@ -462,9 +462,9 @@ fn map_requirements_to_api(
         }),
         allowed_login_methods: Some(allowed_login_methods),
         application: requirements.application.map(|application| {
-            codex_app_server_protocol::ApplicationRequirements {
+            ava_app_server_protocol::ApplicationRequirements {
                 network: application.network.map(|network| {
-                    codex_app_server_protocol::ApplicationNetworkRequirements {
+                    ava_app_server_protocol::ApplicationNetworkRequirements {
                         enabled: network.enabled,
                         domains: network
                             .domains
@@ -479,16 +479,16 @@ fn map_requirements_to_api(
         }),
         cli_auth_credentials_store: requirements.cli_auth_credentials_store.map(
             |mode| match mode {
-                codex_config::types::AuthCredentialsStoreMode::File => {
+                ava_config::types::AuthCredentialsStoreMode::File => {
                     CliAuthCredentialsStoreMode::File
                 }
-                codex_config::types::AuthCredentialsStoreMode::Keyring => {
+                ava_config::types::AuthCredentialsStoreMode::Keyring => {
                     CliAuthCredentialsStoreMode::Keyring
                 }
-                codex_config::types::AuthCredentialsStoreMode::Auto => {
+                ava_config::types::AuthCredentialsStoreMode::Auto => {
                     CliAuthCredentialsStoreMode::Auto
                 }
-                codex_config::types::AuthCredentialsStoreMode::Ephemeral => {
+                ava_config::types::AuthCredentialsStoreMode::Ephemeral => {
                     CliAuthCredentialsStoreMode::Ephemeral
                 }
             },
@@ -498,13 +498,13 @@ fn map_requirements_to_api(
         allowed_approval_policies: requirements.allowed_approval_policies.map(|policies| {
             policies
                 .into_iter()
-                .map(codex_app_server_protocol::AskForApproval::from)
+                .map(ava_app_server_protocol::AskForApproval::from)
                 .collect()
         }),
         allowed_approvals_reviewers: requirements.allowed_approvals_reviewers.map(|reviewers| {
             reviewers
                 .into_iter()
-                .map(codex_app_server_protocol::ApprovalsReviewer::from)
+                .map(ava_app_server_protocol::ApprovalsReviewer::from)
                 .collect()
         }),
         allowed_sandbox_modes: requirements.allowed_sandbox_modes.map(|modes| {
@@ -520,10 +520,10 @@ fn map_requirements_to_api(
                     implementations
                         .into_iter()
                         .map(|implementation| match implementation {
-                            codex_config::WindowsSandboxImplementationToml::Elevated => {
+                            ava_config::WindowsSandboxImplementationToml::Elevated => {
                                 WindowsSandboxImplementation::Elevated
                             }
-                            codex_config::WindowsSandboxImplementationToml::Unelevated => {
+                            ava_config::WindowsSandboxImplementationToml::Unelevated => {
                                 WindowsSandboxImplementation::Unelevated
                             }
                         })
@@ -591,7 +591,7 @@ fn map_requirements_to_api(
 }
 
 fn map_computer_use_requirements_to_api(
-    computer_use: codex_config::ComputerUseRequirementsToml,
+    computer_use: ava_config::ComputerUseRequirementsToml,
 ) -> ComputerUseRequirements {
     ComputerUseRequirements {
         allow_locked_computer_use: computer_use.allow_locked_computer_use,
@@ -637,7 +637,7 @@ fn map_computer_use_requirements_to_api(
 }
 
 fn map_browser_use_requirements_to_api(
-    browser_use: codex_config::BrowserUseRequirementsToml,
+    browser_use: ava_config::BrowserUseRequirementsToml,
 ) -> BrowserUseRequirements {
     BrowserUseRequirements {
         allow_webmcp: browser_use.allow_webmcp,
@@ -657,7 +657,7 @@ fn map_browser_use_requirements_to_api(
 }
 
 fn map_browser_use_origin_policy_to_api(
-    policy: codex_config::BrowserUseOriginPolicyToml,
+    policy: ava_config::BrowserUseOriginPolicyToml,
 ) -> BrowserUseOriginPolicy {
     BrowserUseOriginPolicy {
         access: policy.access.map(map_allow_deny_requirement_to_api),
@@ -675,22 +675,22 @@ fn map_browser_use_origin_policy_to_api(
 }
 
 fn map_allow_deny_requirement_to_api(
-    requirement: codex_config::AllowDenyRequirementToml,
+    requirement: ava_config::AllowDenyRequirementToml,
 ) -> AllowDenyRequirement {
     match requirement {
-        codex_config::AllowDenyRequirementToml::Allow => AllowDenyRequirement::Allow,
-        codex_config::AllowDenyRequirementToml::Deny => AllowDenyRequirement::Deny,
+        ava_config::AllowDenyRequirementToml::Allow => AllowDenyRequirement::Allow,
+        ava_config::AllowDenyRequirementToml::Deny => AllowDenyRequirement::Deny,
     }
 }
 
 fn map_browser_use_access_approval_lifetime_to_api(
-    lifetime: codex_config::BrowserUseAccessApprovalLifetimeToml,
+    lifetime: ava_config::BrowserUseAccessApprovalLifetimeToml,
 ) -> BrowserUseAccessApprovalLifetime {
     match lifetime {
-        codex_config::BrowserUseAccessApprovalLifetimeToml::Turn => {
+        ava_config::BrowserUseAccessApprovalLifetimeToml::Turn => {
             BrowserUseAccessApprovalLifetime::Turn
         }
-        codex_config::BrowserUseAccessApprovalLifetimeToml::Thread => {
+        ava_config::BrowserUseAccessApprovalLifetimeToml::Thread => {
             BrowserUseAccessApprovalLifetime::Thread
         }
     }
@@ -801,27 +801,27 @@ fn map_sandbox_mode_requirement_to_api(mode: CoreSandboxModeRequirement) -> Opti
 
 fn map_residency_requirement_to_api(
     residency: CoreResidencyRequirement,
-) -> codex_app_server_protocol::ResidencyRequirement {
+) -> ava_app_server_protocol::ResidencyRequirement {
     match residency {
-        CoreResidencyRequirement::Us => codex_app_server_protocol::ResidencyRequirement::Us,
+        CoreResidencyRequirement::Us => ava_app_server_protocol::ResidencyRequirement::Us,
     }
 }
 
 fn map_network_requirements_to_api(
-    network: codex_config::NetworkRequirementsToml,
+    network: ava_config::NetworkRequirementsToml,
 ) -> NetworkRequirements {
     let allowed_domains = network
         .domains
         .as_ref()
-        .and_then(codex_config::NetworkDomainPermissionsToml::allowed_domains);
+        .and_then(ava_config::NetworkDomainPermissionsToml::allowed_domains);
     let denied_domains = network
         .domains
         .as_ref()
-        .and_then(codex_config::NetworkDomainPermissionsToml::denied_domains);
+        .and_then(ava_config::NetworkDomainPermissionsToml::denied_domains);
     let allow_unix_sockets = network
         .unix_sockets
         .as_ref()
-        .map(codex_config::NetworkUnixSocketPermissionsToml::allow_unix_sockets)
+        .map(ava_config::NetworkUnixSocketPermissionsToml::allow_unix_sockets)
         .filter(|entries| !entries.is_empty());
 
     NetworkRequirements {
@@ -858,20 +858,20 @@ fn map_network_requirements_to_api(
 }
 
 fn map_network_domain_permission_to_api(
-    permission: codex_config::NetworkDomainPermissionToml,
+    permission: ava_config::NetworkDomainPermissionToml,
 ) -> NetworkDomainPermission {
     match permission {
-        codex_config::NetworkDomainPermissionToml::Allow => NetworkDomainPermission::Allow,
-        codex_config::NetworkDomainPermissionToml::Deny => NetworkDomainPermission::Deny,
+        ava_config::NetworkDomainPermissionToml::Allow => NetworkDomainPermission::Allow,
+        ava_config::NetworkDomainPermissionToml::Deny => NetworkDomainPermission::Deny,
     }
 }
 
 fn map_network_unix_socket_permission_to_api(
-    permission: codex_config::NetworkUnixSocketPermissionToml,
+    permission: ava_config::NetworkUnixSocketPermissionToml,
 ) -> NetworkUnixSocketPermission {
     match permission {
-        codex_config::NetworkUnixSocketPermissionToml::Allow => NetworkUnixSocketPermission::Allow,
-        codex_config::NetworkUnixSocketPermissionToml::Deny => NetworkUnixSocketPermission::Deny,
+        ava_config::NetworkUnixSocketPermissionToml::Allow => NetworkUnixSocketPermission::Allow,
+        ava_config::NetworkUnixSocketPermissionToml::Deny => NetworkUnixSocketPermission::Deny,
     }
 }
 
@@ -894,41 +894,41 @@ fn config_write_error(code: ConfigWriteErrorCode, message: impl Into<String>) ->
 #[cfg(test)]
 mod tests {
     use super::map_requirements_to_api;
-    use codex_app_server_protocol::AllowDenyRequirement;
-    use codex_app_server_protocol::AutoReviewRequirements;
-    use codex_app_server_protocol::BrowserUseAccessApprovalLifetime;
-    use codex_app_server_protocol::BrowserUseOriginPolicy;
-    use codex_app_server_protocol::BrowserUseRequirements;
-    use codex_app_server_protocol::ComputerUseMacosRequirements;
-    use codex_app_server_protocol::ComputerUseRequirements;
-    use codex_app_server_protocol::ComputerUseWindowsExeRequirement;
-    use codex_app_server_protocol::ComputerUseWindowsRequirements;
-    use codex_app_server_protocol::FeedbackRequirements;
-    use codex_app_server_protocol::WindowsSandboxImplementation;
-    use codex_config::AllowDenyRequirementToml;
-    use codex_config::AutoReviewRequirementsToml;
-    use codex_config::BrowserUseAccessApprovalLifetimeToml;
-    use codex_config::BrowserUseOriginPolicyToml;
-    use codex_config::BrowserUseRequirementsToml;
-    use codex_config::ComputerUseMacosRequirementsToml;
-    use codex_config::ComputerUseRequirementsToml;
-    use codex_config::ComputerUseWindowsExeRequirementToml;
-    use codex_config::ComputerUseWindowsRequirementsToml;
-    use codex_config::ConfigRequirementsToml;
-    use codex_config::ModelsRequirementsToml;
-    use codex_config::NewThreadModelDefaultsToml;
-    use codex_config::WindowsRequirementsToml;
-    use codex_config::types::FeedbackConfigToml;
-    use codex_protocol::config_types::ForcedLoginMethod;
-    use codex_protocol::openai_models::ReasoningEffort;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::PathUri;
+    use ava_app_server_protocol::AllowDenyRequirement;
+    use ava_app_server_protocol::AutoReviewRequirements;
+    use ava_app_server_protocol::BrowserUseAccessApprovalLifetime;
+    use ava_app_server_protocol::BrowserUseOriginPolicy;
+    use ava_app_server_protocol::BrowserUseRequirements;
+    use ava_app_server_protocol::ComputerUseMacosRequirements;
+    use ava_app_server_protocol::ComputerUseRequirements;
+    use ava_app_server_protocol::ComputerUseWindowsExeRequirement;
+    use ava_app_server_protocol::ComputerUseWindowsRequirements;
+    use ava_app_server_protocol::FeedbackRequirements;
+    use ava_app_server_protocol::WindowsSandboxImplementation;
+    use ava_config::AllowDenyRequirementToml;
+    use ava_config::AutoReviewRequirementsToml;
+    use ava_config::BrowserUseAccessApprovalLifetimeToml;
+    use ava_config::BrowserUseOriginPolicyToml;
+    use ava_config::BrowserUseRequirementsToml;
+    use ava_config::ComputerUseMacosRequirementsToml;
+    use ava_config::ComputerUseRequirementsToml;
+    use ava_config::ComputerUseWindowsExeRequirementToml;
+    use ava_config::ComputerUseWindowsRequirementsToml;
+    use ava_config::ConfigRequirementsToml;
+    use ava_config::ModelsRequirementsToml;
+    use ava_config::NewThreadModelDefaultsToml;
+    use ava_config::WindowsRequirementsToml;
+    use ava_config::types::FeedbackConfigToml;
+    use ava_protocol::config_types::ForcedLoginMethod;
+    use ava_protocol::openai_models::ReasoningEffort;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
     use std::collections::BTreeMap;
 
     fn map_test_requirements(
         requirements: ConfigRequirementsToml,
-    ) -> codex_app_server_protocol::ConfigRequirements {
+    ) -> ava_app_server_protocol::ConfigRequirements {
         map_requirements_to_api(
             Some(requirements),
             vec![ForcedLoginMethod::Api, ForcedLoginMethod::Chatgpt],
@@ -1149,8 +1149,8 @@ mod tests {
         let mapped = map_test_requirements(ConfigRequirementsToml {
             windows: Some(WindowsRequirementsToml {
                 allowed_sandbox_implementations: Some(vec![
-                    codex_config::WindowsSandboxImplementationToml::Elevated,
-                    codex_config::WindowsSandboxImplementationToml::Unelevated,
+                    ava_config::WindowsSandboxImplementationToml::Elevated,
+                    ava_config::WindowsSandboxImplementationToml::Unelevated,
                 ]),
             }),
             ..ConfigRequirementsToml::default()

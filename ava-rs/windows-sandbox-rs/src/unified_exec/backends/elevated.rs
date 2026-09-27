@@ -17,10 +17,10 @@ use crate::runner_client::retry_runner_spawn_once;
 use crate::runner_client::spawn_runner_transport;
 use crate::spawn_prep::prepare_elevated_spawn_context_for_permissions;
 use anyhow::Result;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_pty::ProcessDriver;
-use codex_utils_pty::SpawnedProcess;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_pty::ProcessDriver;
+use ava_utils_pty::SpawnedProcess;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
@@ -30,7 +30,7 @@ use tokio::sync::oneshot;
 
 struct RunnerTransportRequest {
     permissions: ResolvedWindowsSandboxPermissions,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     cwd: PathBuf,
     env_map: HashMap<String, String>,
     logs_base_dir: Option<PathBuf>,
@@ -67,7 +67,7 @@ fn spawn_runner_transport_with_retry<T>(
         &request.spawn_request.command,
         |sandbox_creds| {
             spawn(
-                &request.codex_home,
+                &request.ava_home,
                 &request.cwd,
                 &sandbox_creds,
                 request.logs_base_dir.as_deref(),
@@ -79,7 +79,7 @@ fn spawn_runner_transport_with_retry<T>(
                 &request.permissions,
                 &request.cwd,
                 &request.env_map,
-                &request.codex_home,
+                &request.ava_home,
                 request.read_roots_override.as_deref(),
                 request.read_roots_include_platform_defaults,
                 request.write_roots_override.as_deref(),
@@ -107,7 +107,7 @@ async fn spawn_runner_transport_task(
                         permissions: &request.permissions,
                         command_cwd: &request.cwd,
                         env_map: &request.env_map,
-                        codex_home: &request.codex_home,
+                        ava_home: &request.ava_home,
                         proxy_enforced: request.proxy_enforced,
                     },
                     crate::setup::SetupRootOverrides {
@@ -129,9 +129,9 @@ async fn spawn_runner_transport_task(
         spawn_runner_transport_with_retry(
             sandbox_creds,
             &request,
-            |codex_home, cwd, sandbox_creds, log_dir, spawn_request| {
+            |ava_home, cwd, sandbox_creds, log_dir, spawn_request| {
                 spawn_runner_transport(
-                    codex_home,
+                    ava_home,
                     cwd,
                     sandbox_creds,
                     log_dir,
@@ -150,7 +150,7 @@ async fn spawn_runner_transport_task(
 pub(crate) async fn spawn_windows_sandbox_session_elevated_for_permission_profile(
     permission_profile: &PermissionProfile,
     workspace_roots: &[AbsolutePathBuf],
-    codex_home: &Path,
+    ava_home: &Path,
     command: Vec<String>,
     cwd: &Path,
     mut env_map: HashMap<String, String>,
@@ -182,7 +182,7 @@ pub(crate) async fn spawn_windows_sandbox_session_elevated_for_permission_profil
         )?;
     let elevated = prepare_elevated_spawn_context_for_permissions(
         permissions.clone(),
-        codex_home,
+        ava_home,
         cwd,
         &mut env_map,
         &command,
@@ -198,7 +198,7 @@ pub(crate) async fn spawn_windows_sandbox_session_elevated_for_permission_profil
     let sandbox_creds = elevated.sandbox_creds;
     let request = RunnerTransportRequest {
         permissions,
-        codex_home: codex_home.to_path_buf(),
+        ava_home: ava_home.to_path_buf(),
         cwd: cwd.to_path_buf(),
         env_map: env_map.clone(),
         logs_base_dir: elevated.logs_base_dir,
@@ -208,8 +208,8 @@ pub(crate) async fn spawn_windows_sandbox_session_elevated_for_permission_profil
             env: env_map,
             permission_profile: permission_profile.clone(),
             workspace_roots: workspace_roots.to_vec(),
-            codex_home: elevated.sandbox_base,
-            real_codex_home: codex_home.to_path_buf(),
+            ava_home: elevated.sandbox_base,
+            real_ava_home: ava_home.to_path_buf(),
             cap_sids: elevated.cap_sids,
             network_proxy_restricting_sid,
             timeout_ms,

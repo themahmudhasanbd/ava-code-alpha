@@ -1,43 +1,43 @@
 use anyhow::Result;
-use codex_config::types::Personality;
-use codex_core::CodexThread;
-use codex_core::ForkSnapshot;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_prompts::render_model_instructions;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::Settings;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelServiceTier;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::openai_models::default_input_modalities;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
+use ava_config::types::Personality;
+use ava_core::AvaThread;
+use ava_core::ForkSnapshot;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_prompts::render_model_instructions;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::Settings;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelServiceTier;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::openai_models::default_input_modalities;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_completed_with_tokens;
@@ -51,10 +51,10 @@ use core_test_support::responses::sse;
 use core_test_support::responses::sse_completed;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -64,7 +64,7 @@ use std::sync::Arc;
 use test_case::test_case;
 use wiremock::MockServer;
 
-fn read_only_user_turn(test: &TestCodex, items: Vec<UserInput>, model: String) -> TurnInputRequest {
+fn read_only_user_turn(test: &TestAva, items: Vec<UserInput>, model: String) -> TurnInputRequest {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), test.cwd_path());
     TurnInputRequest::user_input(items).with_thread_settings(ThreadSettingsOverrides {
@@ -85,7 +85,7 @@ fn read_only_user_turn(test: &TestCodex, items: Vec<UserInput>, model: String) -
 }
 
 async fn submit_model_turn(
-    thread: &CodexThread,
+    thread: &AvaThread,
     model: &str,
     mut thread_settings: ThreadSettingsOverrides,
 ) -> Result<()> {
@@ -184,12 +184,12 @@ async fn first_turn_model_change_appends_model_instructions_developer_message(
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
 
     let mut builder =
-        test_codex().with_model_info_override("gpt-5.6-terra", configure_model_switching_fixture);
+        test_ava().with_model_info_override("gpt-5.6-terra", configure_model_switching_fixture);
     let test = builder.build_with_auto_env(&server).await?;
     let next_model = "gpt-5.5";
 
     submit_model_turn(
-        &test.codex,
+        &test.ava-code,
         next_model,
         ThreadSettingsOverrides {
             personality,
@@ -237,17 +237,17 @@ async fn first_turn_after_empty_prefix_fork_preserves_inherited_base_instruction
     let resp_mock = mount_sse_once(&server, sse_completed("resp-fork")).await;
 
     let initial_model = "gpt-5.6-terra";
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override(initial_model, configure_model_switching_fixture)
         .with_config(move |config| {
             config.base_instructions = custom_base_instructions.map(str::to_string);
         });
     let test = builder.build_with_auto_env(&server).await?;
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.flush_rollout().await?;
-    let source_rollout_path = test.codex.rollout_path().expect("rollout path");
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.flush_rollout().await?;
+    let source_rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let source_history =
-        codex_rollout::RolloutRecorder::get_rollout_history(&source_rollout_path).await?;
+        ava_rollout::RolloutRecorder::get_rollout_history(&source_rollout_path).await?;
     let expected_provenance = match custom_base_instructions {
         Some(_) => BaseInstructionsProvenance::Custom,
         None => BaseInstructionsProvenance::Model {
@@ -268,7 +268,7 @@ async fn first_turn_after_empty_prefix_fork_preserves_inherited_base_instruction
         .thread_manager
         .fork_thread(
             ForkSnapshot::TruncateBeforeNthUserMessage(0),
-            codex_core::StartThreadOptions::new(fork_config),
+            ava_core::StartThreadOptions::new(fork_config),
             source_rollout_path,
         )
         .await?;
@@ -305,11 +305,11 @@ async fn model_change_appends_model_instructions_developer_message() -> Result<(
     .await;
 
     let mut builder =
-        test_codex().with_model_info_override("gpt-5.6-terra", configure_model_switching_fixture);
+        test_ava().with_model_info_override("gpt-5.6-terra", configure_model_switching_fixture);
     let test = builder.build(&server).await?;
     let next_model = "gpt-5.5";
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -319,10 +319,10 @@ async fn model_change_appends_model_instructions_developer_message() -> Result<(
             test.session_configured.model.clone(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(next_model.to_string()),
             ..Default::default()
@@ -330,7 +330,7 @@ async fn model_change_appends_model_instructions_developer_message() -> Result<(
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -340,7 +340,7 @@ async fn model_change_appends_model_instructions_developer_message() -> Result<(
             next_model.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = resp_mock.requests();
     assert_eq!(requests.len(), 2, "expected two model requests");
@@ -357,12 +357,12 @@ async fn model_change_appends_model_instructions_developer_message() -> Result<(
         "expected model switch preamble, got: {model_switch_text:?}"
     );
 
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.flush_rollout().await?;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.flush_rollout().await?;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let model_states = std::fs::read_to_string(rollout_path)?
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<serde_json::Result<Vec<_>>>()?
         .into_iter()
         .filter_map(|line| match line.item {
@@ -397,11 +397,11 @@ async fn model_change_with_legacy_personality_override_only_appends_model_instru
     )
     .await;
 
-    let mut builder = test_codex().with_model("gpt-5.5");
+    let mut builder = test_ava().with_model("gpt-5.5");
     let test = builder.build(&server).await?;
-    let next_model = "exp-codex-personality";
+    let next_model = "exp-ava-personality";
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -411,10 +411,10 @@ async fn model_change_with_legacy_personality_override_only_appends_model_instru
             test.session_configured.model.clone(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(next_model.to_string()),
             personality: Some(Personality::Pragmatic),
@@ -423,7 +423,7 @@ async fn model_change_with_legacy_personality_override_only_appends_model_instru
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -433,7 +433,7 @@ async fn model_change_with_legacy_personality_override_only_appends_model_instru
             next_model.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = resp_mock.requests();
     assert_eq!(requests.len(), 2, "expected two model requests");
@@ -500,7 +500,7 @@ async fn settings_update_during_active_turn_applies_to_next_turn_only() -> Resul
         ],
     )
     .await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.6-terra", configure_model_switching_fixture)
         .with_config(|config| {
             config
@@ -514,20 +514,20 @@ async fn settings_update_during_active_turn_applies_to_next_turn_only() -> Resul
         });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "pause before continuing".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some("gpt-5.5".to_string()),
             effort: Some(Some(ReasoningEffort::High)),
@@ -540,7 +540,7 @@ async fn settings_update_during_active_turn_applies_to_next_turn_only() -> Resul
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -553,7 +553,7 @@ async fn settings_update_during_active_turn_applies_to_next_turn_only() -> Resul
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -613,7 +613,7 @@ async fn service_tier_change_is_applied_on_next_http_turn() -> Result<()> {
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
 
     test.submit_turn_with_service_tier("fast turn", Some(ServiceTier::Fast.request_value()))
         .await?;
@@ -651,7 +651,7 @@ async fn flex_service_tier_is_applied_to_http_turn() -> Result<()> {
     }];
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model_slug)
         .with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
@@ -684,7 +684,7 @@ async fn unsupported_service_tier_is_omitted_from_http_turn() -> Result<()> {
     );
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model_slug)
         .with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
@@ -715,7 +715,7 @@ async fn unsupported_configured_service_tier_warns_at_session_start() -> Result<
         "no service tiers",
         default_input_modalities(),
     );
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model_slug)
         .with_config(move |config| {
             config.service_tier = Some(ServiceTier::Fast.request_value().to_string());
@@ -725,7 +725,7 @@ async fn unsupported_configured_service_tier_warns_at_session_start() -> Result<
         });
     let test = builder.build(&server).await?;
 
-    let warning = wait_for_event(&test.codex, |event| {
+    let warning = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::Warning(warning)
@@ -763,7 +763,7 @@ async fn default_service_tier_override_is_omitted_from_http_turn() -> Result<()>
     model.default_service_tier = Some(ServiceTier::Fast.request_value().to_string());
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model_slug)
         .with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
@@ -802,7 +802,7 @@ async fn null_service_tier_override_is_omitted_from_http_turn_with_catalog_defau
     model.default_service_tier = Some(ServiceTier::Fast.request_value().to_string());
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model_slug)
         .with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
@@ -871,8 +871,8 @@ async fn model_change_projects_media_without_changing_live_or_replayed_history(
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.model = Some(text_model_slug.to_string());
             config
@@ -885,15 +885,15 @@ async fn model_change_projects_media_without_changing_live_or_replayed_history(
     let _ = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     let mut png = std::io::Cursor::new(Vec::new());
     image::DynamicImage::new_rgba8(/*w*/ 2048, /*h*/ 2048)
         .write_to(&mut png, image::ImageFormat::Png)?;
-    let image_url = codex_utils_image::data_url_from_bytes("image/png", &png.into_inner());
+    let image_url = ava_utils_image::data_url_from_bytes("image/png", &png.into_inner());
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![
@@ -914,9 +914,9 @@ async fn model_change_projects_media_without_changing_live_or_replayed_history(
             multimodal_model_slug.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -926,7 +926,7 @@ async fn model_change_projects_media_without_changing_live_or_replayed_history(
             text_model_slug.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = responses.requests();
     assert_eq!(requests.len(), 2, "expected two model requests");
@@ -980,11 +980,11 @@ async fn model_change_projects_media_without_changing_live_or_replayed_history(
         })
         .expect("original media message");
     if !matches!(source, MediaHistorySource::Live) {
-        test.codex.shutdown_and_wait().await?;
+        test.ava-code.shutdown_and_wait().await?;
     }
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let thread = match source {
-        MediaHistorySource::Live => Arc::clone(&test.codex),
+        MediaHistorySource::Live => Arc::clone(&test.ava-code),
         MediaHistorySource::Resume => {
             test.thread_manager
                 .resume_thread_from_rollout(
@@ -1001,7 +1001,7 @@ async fn model_change_projects_media_without_changing_live_or_replayed_history(
             test.thread_manager
                 .fork_thread(
                     ForkSnapshot::Interrupted,
-                    codex_core::StartThreadOptions::new(test.config.clone()),
+                    ava_core::StartThreadOptions::new(test.config.clone()),
                     rollout_path,
                 )
                 .await?
@@ -1059,8 +1059,8 @@ async fn generated_image_is_replayed_for_image_capable_models() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.model = Some(image_model_slug.to_string());
         });
@@ -1069,11 +1069,11 @@ async fn generated_image_is_replayed_for_image_capable_models() -> Result<()> {
     let _ = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1083,9 +1083,9 @@ async fn generated_image_is_replayed_for_image_capable_models() -> Result<()> {
             image_model_slug.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1095,7 +1095,7 @@ async fn generated_image_is_replayed_for_image_capable_models() -> Result<()> {
             image_model_slug.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = responses.requests();
     assert_eq!(requests.len(), 2, "expected two model requests");
@@ -1156,8 +1156,8 @@ async fn model_change_from_generated_image_to_text_preserves_prior_generated_ima
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.model = Some(image_model_slug.to_string());
         });
@@ -1166,11 +1166,11 @@ async fn model_change_from_generated_image_to_text_preserves_prior_generated_ima
     let _ = models_manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1180,9 +1180,9 @@ async fn model_change_from_generated_image_to_text_preserves_prior_generated_ima
             image_model_slug.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1192,7 +1192,7 @@ async fn model_change_from_generated_image_to_text_preserves_prior_generated_ima
             text_model_slug.to_string(),
         ))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = responses.requests();
     assert_eq!(requests.len(), 2, "expected two model requests");
@@ -1318,8 +1318,8 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some(large_model_slug.to_string());
         });
@@ -1329,7 +1329,7 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
     let available_models = models_manager
         .list_models(
             RefreshStrategy::Online,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert!(
@@ -1350,7 +1350,7 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
         Some(smaller_context_window)
     );
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1361,7 +1361,7 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
         ))
         .await?;
 
-    let large_window_event = wait_for_event(&test.codex, |event| {
+    let large_window_event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::TokenCount(token_count)
@@ -1382,10 +1382,10 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
             .and_then(|info| info.model_context_window),
         Some(large_effective_window)
     );
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(smaller_model_slug.to_string()),
             ..Default::default()
@@ -1393,7 +1393,7 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_user_turn(
             &test,
             vec![UserInput::Text {
@@ -1404,7 +1404,7 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
         ))
         .await?;
 
-    let smaller_turn_started_event = wait_for_event(&test.codex, |event| {
+    let smaller_turn_started_event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::TurnStarted(started)
@@ -1420,7 +1420,7 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
         Some(smaller_effective_window)
     );
 
-    let smaller_window_event = wait_for_event(&test.codex, |event| {
+    let smaller_window_event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::TokenCount(token_count)
@@ -1440,7 +1440,7 @@ async fn model_switch_to_smaller_model_updates_token_context_window() -> Result<
         .and_then(|info| info.model_context_window);
     assert_eq!(smaller_window, Some(smaller_effective_window));
     assert_ne!(smaller_window, Some(large_effective_window));
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     Ok(())
 }

@@ -6,13 +6,13 @@ use crate::SectionContributor;
 use crate::SectionError;
 use crate::SectionInput;
 use crate::SectionScope;
-use codex_context_fragments::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_context_fragments::ContextualUserFragment;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::protocol::TruncationPolicy;
 use serde_json::json;
 
 const MAX_TRUSTED_SKILL_TOKENS: usize = 768;
-const TRUSTED_SKILLS_PREFIX: &str = "Codex-verified invoked user-owned skill paths:\n";
+const TRUSTED_SKILLS_PREFIX: &str = "Ava-verified invoked user-owned skill paths:\n";
 
 /// Host-verified user-owned skill paths for the current Guardian classification.
 #[derive(Clone, PartialEq, Eq)]

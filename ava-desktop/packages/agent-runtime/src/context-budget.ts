@@ -39,7 +39,7 @@ export const COMPACTION_MIN_KEEP_RECENT_TOKENS = 8_000;
 export const COMPACTION_MAX_KEEP_RECENT_TOKENS = 64_000;
 /**
  * Cap on the user messages carried across a compaction boundary, matching
- * Codex's `COMPACT_USER_MESSAGE_MAX_TOKENS`. Clamped against the safe budget so
+ * Ava's `COMPACT_USER_MESSAGE_MAX_TOKENS`. Clamped against the safe budget so
  * a small model window is not filled by retention alone.
  */
 export const COMPACTION_RETAINED_USER_MESSAGE_MAX_TOKENS = 20_000;
@@ -49,7 +49,7 @@ export const COMPACTION_RETAINED_USER_MESSAGE_MAX_TOKENS = 20_000;
  *
  * `hardLimit` is the safety boundary: the next provider request must not be
  * issued while the context is at or above it. Compaction happens inline at that
- * boundary, the way Codex does it — there is no off-critical-path variant.
+ * boundary, the way Ava does it — there is no off-critical-path variant.
  */
 export type ContextBudget = {
   /** Estimated tokens in the reconstructed model context. */
@@ -157,7 +157,7 @@ export function contextBudgetFor(
 }
 
 /**
- * Cap on the active user message a checkpoint carries forward. Codex uses a
+ * Cap on the active user message a checkpoint carries forward. Ava uses a
  * flat 20k; the clamp keeps a small model window from being filled by
  * retention alone, which would leave the summary no room.
  */

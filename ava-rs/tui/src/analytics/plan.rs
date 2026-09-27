@@ -3,8 +3,8 @@
 use super::data::Load;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_backend_client::PlanLimitBreakdown;
-use codex_backend_client::PlanLimitHistory;
+use ava_backend_client::PlanLimitBreakdown;
+use ava_backend_client::PlanLimitHistory;
 
 pub(super) struct Period {
     pub id: String,

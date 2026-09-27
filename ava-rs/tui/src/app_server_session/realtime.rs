@@ -1,18 +1,18 @@
 //! App-server signaling for TUI-owned realtime WebRTC sessions.
 
 use super::AppServerSession;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ThreadRealtimeAppendSpeechParams;
-use codex_app_server_protocol::ThreadRealtimeAppendSpeechResponse;
-use codex_app_server_protocol::ThreadRealtimeStartParams;
-use codex_app_server_protocol::ThreadRealtimeStartResponse;
-use codex_app_server_protocol::ThreadRealtimeStartTransport;
-use codex_app_server_protocol::ThreadRealtimeStopParams;
-use codex_app_server_protocol::ThreadRealtimeStopResponse;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::RealtimeConversationVersion;
-use codex_protocol::protocol::RealtimeOutputModality;
-use codex_protocol::protocol::RealtimeVoice;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ThreadRealtimeAppendSpeechParams;
+use ava_app_server_protocol::ThreadRealtimeAppendSpeechResponse;
+use ava_app_server_protocol::ThreadRealtimeStartParams;
+use ava_app_server_protocol::ThreadRealtimeStartResponse;
+use ava_app_server_protocol::ThreadRealtimeStartTransport;
+use ava_app_server_protocol::ThreadRealtimeStopParams;
+use ava_app_server_protocol::ThreadRealtimeStopResponse;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::RealtimeConversationVersion;
+use ava_protocol::protocol::RealtimeOutputModality;
+use ava_protocol::protocol::RealtimeVoice;
 use color_eyre::eyre::Result;
 use color_eyre::eyre::WrapErr;
 
@@ -34,10 +34,10 @@ impl AppServerSession {
                     client_managed_handoffs: Some(true),
                     delegation_ack_filler: None,
                     flush_transcript_tail_on_session_end: None,
-                    codex_responses_as_items: None,
-                    codex_response_item_prefix: None,
-                    codex_response_handoff_mode: None,
-                    codex_response_handoff_channel_prefixes: None,
+                    ava_responses_as_items: None,
+                    ava_response_item_prefix: None,
+                    ava_response_handoff_mode: None,
+                    ava_response_handoff_channel_prefixes: None,
                     model,
                     output_modality: RealtimeOutputModality::Audio,
                     include_startup_context: Some(false),

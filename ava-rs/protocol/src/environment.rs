@@ -8,9 +8,9 @@ use crate::models::PermissionProfile;
 use crate::models::PermissionProfileSnapshot;
 use crate::protocol::AskForApproval;
 use crate::sandbox::SandboxType;
-use codex_execpolicy::RequirementsExecPolicy;
-use codex_network_proxy::EnvironmentNetworkPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_execpolicy::RequirementsExecPolicy;
+use ava_network_proxy::EnvironmentNetworkPolicy;
+use ava_utils_path_uri::PathUri;
 
 /// Configuration supplied for a thread's selected environment.
 #[allow(clippy::large_enum_variant)]

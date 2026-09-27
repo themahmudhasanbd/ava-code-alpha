@@ -1,4 +1,4 @@
-//! Persist Codex session rollouts (.jsonl) so sessions can be replayed or inspected later.
+//! Persist Ava session rollouts (.jsonl) so sessions can be replayed or inspected later.
 
 use std::collections::HashSet;
 use std::fs;
@@ -14,12 +14,12 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use chrono::SecondsFormat;
-use codex_protocol::RolloutId;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::BaseInstructions;
+use ava_protocol::RolloutId;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::BaseInstructions;
 use serde_json::Value;
 use time::OffsetDateTime;
 use time::format_description::FormatItem;
@@ -60,27 +60,27 @@ use crate::RolloutItem;
 use crate::config::RolloutConfigView;
 use crate::state_db;
 use crate::state_db::StateDbHandle;
-use codex_git_utils::collect_git_info;
-use codex_git_utils::get_git_repo_root;
-use codex_protocol::protocol::GitInfo as ProtocolGitInfo;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionContextWindow;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_state::StateRuntime;
-use codex_utils_path as path_utils;
+use ava_git_utils::collect_git_info;
+use ava_git_utils::get_git_repo_root;
+use ava_protocol::protocol::GitInfo as ProtocolGitInfo;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionContextWindow;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_state::StateRuntime;
+use ava_utils_path as path_utils;
 
 /// Writes canonical session rollout items to JSONL.
 ///
 /// Rollouts are recorded as JSONL and can be inspected with tools such as:
 ///
 /// ```ignore
-/// $ jq -C . ~/.codex/sessions/rollout-2025-05-07T17-24-21-5973b6c0-94b8-487b-a530-2aeb6098ae0e.jsonl
-/// $ fx ~/.codex/sessions/rollout-2025-05-07T17-24-21-5973b6c0-94b8-487b-a530-2aeb6098ae0e.jsonl
+/// $ jq -C . ~/.ava-code/sessions/rollout-2025-05-07T17-24-21-5973b6c0-94b8-487b-a530-2aeb6098ae0e.jsonl
+/// $ fx ~/.ava-code/sessions/rollout-2025-05-07T17-24-21-5973b6c0-94b8-487b-a530-2aeb6098ae0e.jsonl
 /// ```
 #[derive(Clone)]
 pub struct RolloutRecorder {
@@ -362,7 +362,7 @@ enum ThreadListRepairMode {
 }
 
 impl RolloutRecorder {
-    /// List threads (rollout files) under the provided Codex home directory.
+    /// List threads (rollout files) under the provided Ava home directory.
     #[allow(clippy::too_many_arguments)]
     pub async fn list_threads(
         state_db_ctx: Option<StateDbHandle>,
@@ -508,7 +508,7 @@ impl RolloutRecorder {
         repair_mode: ThreadListRepairMode,
         search_term: Option<&str>,
     ) -> std::io::Result<ThreadsPage> {
-        let codex_home = config.codex_home();
+        let ava_home = config.ava_home();
         let sqlite = config.sqlite_config();
         let archived = match archive_filter {
             ThreadListArchiveFilter::Active => false,
@@ -550,7 +550,7 @@ impl RolloutRecorder {
         let fs_page = match sort_direction {
             SortDirection::Asc => {
                 list_threads_from_files_asc(
-                    codex_home,
+                    ava_home,
                     page_size,
                     cursor,
                     sort_key,
@@ -565,7 +565,7 @@ impl RolloutRecorder {
             }
             SortDirection::Desc => {
                 list_threads_from_files_desc(
-                    codex_home,
+                    ava_home,
                     page_size.saturating_mul(2),
                     cursor,
                     sort_key,
@@ -583,7 +583,7 @@ impl RolloutRecorder {
         if state_db_ctx.is_none() {
             // Keep legacy behavior when SQLite is unavailable: return filesystem results
             // at the requested page size.
-            codex_state::record_fallback(
+            ava_state::record_fallback(
                 "list_threads",
                 "db_unavailable",
                 /*telemetry_override*/ None,
@@ -725,7 +725,7 @@ impl RolloutRecorder {
                     }
                     return Ok(db_page.into());
                 }
-                codex_state::record_fallback(
+                ava_state::record_fallback(
                     "list_threads",
                     "metadata_filter",
                     /*telemetry_override*/ None,
@@ -741,7 +741,7 @@ impl RolloutRecorder {
         }
         if listing_has_metadata_filters {
             let page = page_from_filesystem_scan(fs_page, sort_direction, page_size, sort_key);
-            codex_state::record_fallback(
+            ava_state::record_fallback(
                 "list_threads",
                 "db_error",
                 /*telemetry_override*/ None,
@@ -755,7 +755,7 @@ impl RolloutRecorder {
         // If SQLite listing still fails, return the filesystem page rather than failing the list.
         tracing::error!("Falling back on rollout system");
         tracing::warn!("state db discrepancy during list_threads_with_db_fallback: falling_back");
-        codex_state::record_fallback("list_threads", "db_error", /*telemetry_override*/ None);
+        ava_state::record_fallback("list_threads", "db_error", /*telemetry_override*/ None);
         Ok(page_from_filesystem_scan(
             fs_page,
             sort_direction,
@@ -777,7 +777,7 @@ impl RolloutRecorder {
         default_provider: &str,
         filter_cwd: Option<&Path>,
     ) -> std::io::Result<Option<PathBuf>> {
-        let codex_home = config.codex_home();
+        let ava_home = config.ava_home();
         let sqlite = config.sqlite_config();
         let cwd_filter = filter_cwd.map(Path::to_path_buf);
         let mut fallback_reason = state_db_ctx.is_none().then_some("db_unavailable");
@@ -818,7 +818,7 @@ impl RolloutRecorder {
             }
         }
         if let Some(reason) = fallback_reason {
-            codex_state::record_fallback(
+            ava_state::record_fallback(
                 "find_latest_thread_path",
                 reason,
                 /*telemetry_override*/ None,
@@ -828,7 +828,7 @@ impl RolloutRecorder {
         let mut cursor = cursor.cloned();
         loop {
             let page = get_threads(
-                codex_home,
+                ava_home,
                 page_size,
                 cursor.as_ref(),
                 sort_key,
@@ -862,7 +862,7 @@ impl RolloutRecorder {
     }
 
     /// Opens a recorder under existing thread-store ownership, retaining it through background IO.
-    /// The caller must supply the guard for this rollout's stable thread ID and Codex home.
+    /// The caller must supply the guard for this rollout's stable thread ID and Ava home.
     pub async fn new_with_writer_lock(
         config: &impl RolloutConfigView,
         params: RolloutRecorderParams,
@@ -1431,7 +1431,7 @@ fn fill_missing_thread_item_metadata(item: &mut ThreadItem, state_item: ThreadIt
 
 #[allow(clippy::too_many_arguments)]
 async fn list_threads_from_files_desc(
-    codex_home: &Path,
+    ava_home: &Path,
     page_size: usize,
     cursor: Option<&Cursor>,
     sort_key: ThreadSortKey,
@@ -1451,7 +1451,7 @@ async fn list_threads_from_files_desc(
 
         loop {
             let mut page = list_threads_from_files_desc_unfiltered(
-                codex_home,
+                ava_home,
                 scan_page_size,
                 page_cursor.as_ref(),
                 sort_key,
@@ -1464,7 +1464,7 @@ async fn list_threads_from_files_desc(
             .await?;
             scanned_files = scanned_files.saturating_add(page.num_scanned_files);
             reached_scan_cap |= page.reached_scan_cap;
-            filter_thread_items_by_search_term(codex_home, &mut page.items, Some(search_term))
+            filter_thread_items_by_search_term(ava_home, &mut page.items, Some(search_term))
                 .await?;
             matching_items.extend(page.items);
             page_cursor = page.next_cursor;
@@ -1493,7 +1493,7 @@ async fn list_threads_from_files_desc(
     }
 
     list_threads_from_files_desc_unfiltered(
-        codex_home,
+        ava_home,
         page_size,
         cursor,
         sort_key,
@@ -1508,7 +1508,7 @@ async fn list_threads_from_files_desc(
 
 #[allow(clippy::too_many_arguments)]
 async fn list_threads_from_files_desc_unfiltered(
-    codex_home: &Path,
+    ava_home: &Path,
     page_size: usize,
     cursor: Option<&Cursor>,
     sort_key: ThreadSortKey,
@@ -1519,7 +1519,7 @@ async fn list_threads_from_files_desc_unfiltered(
     archived: bool,
 ) -> std::io::Result<ThreadsPage> {
     if archived {
-        let root = codex_home.join(ARCHIVED_SESSIONS_SUBDIR);
+        let root = ava_home.join(ARCHIVED_SESSIONS_SUBDIR);
         get_threads_in_root(
             root,
             page_size,
@@ -1536,7 +1536,7 @@ async fn list_threads_from_files_desc_unfiltered(
         .await
     } else {
         get_threads(
-            codex_home,
+            ava_home,
             page_size,
             cursor,
             sort_key,
@@ -1551,7 +1551,7 @@ async fn list_threads_from_files_desc_unfiltered(
 
 #[allow(clippy::too_many_arguments)]
 async fn list_threads_from_files_asc(
-    codex_home: &Path,
+    ava_home: &Path,
     page_size: usize,
     cursor: Option<&Cursor>,
     sort_key: ThreadSortKey,
@@ -1569,7 +1569,7 @@ async fn list_threads_from_files_asc(
     let scan_page_size = page_size.saturating_mul(8).clamp(256, 2048);
     loop {
         let page = list_threads_from_files_desc(
-            codex_home,
+            ava_home,
             scan_page_size,
             page_cursor.as_ref(),
             sort_key,
@@ -1590,7 +1590,7 @@ async fn list_threads_from_files_asc(
         }
     }
 
-    filter_thread_items_by_search_term(codex_home, &mut all_items, search_term).await?;
+    filter_thread_items_by_search_term(ava_home, &mut all_items, search_term).await?;
 
     let mut keyed_items = all_items
         .into_iter()
@@ -1638,7 +1638,7 @@ async fn list_threads_from_files_asc(
 }
 
 async fn filter_thread_items_by_search_term(
-    codex_home: &Path,
+    ava_home: &Path,
     items: &mut Vec<ThreadItem>,
     search_term: Option<&str>,
 ) -> std::io::Result<()> {
@@ -1653,7 +1653,7 @@ async fn filter_thread_items_by_search_term(
         .iter()
         .filter_map(|item| item.thread_id)
         .collect::<HashSet<_>>();
-    let thread_names = find_thread_names_by_ids(codex_home, &thread_ids).await?;
+    let thread_names = find_thread_names_by_ids(ava_home, &thread_ids).await?;
     items.retain(|item| {
         item.thread_id
             .and_then(|thread_id| thread_names.get(&thread_id))
@@ -1702,10 +1702,10 @@ fn precompute_new_rollout_path(
     thread_id: ThreadId,
     rollout_id_override: Option<RolloutId>,
 ) -> std::io::Result<(PathBuf, OffsetDateTime)> {
-    // Resolve ~/.codex/sessions/YYYY/MM/DD path.
+    // Resolve ~/.ava-code/sessions/YYYY/MM/DD path.
     let timestamp = OffsetDateTime::now_local()
         .map_err(|e| IoError::other(format!("failed to get local time: {e}")))?;
-    let mut dir = config.codex_home().to_path_buf();
+    let mut dir = config.ava_home().to_path_buf();
     dir.push(SESSIONS_SUBDIR);
     dir.push(timestamp.year().to_string());
     dir.push(format!("{:02}", u8::from(timestamp.month())));
@@ -2074,9 +2074,9 @@ impl JsonlWriter {
     }
 }
 
-impl From<codex_state::ThreadsPage> for ThreadsPage {
-    fn from(db_page: codex_state::ThreadsPage) -> Self {
-        let codex_state::ThreadsPage {
+impl From<ava_state::ThreadsPage> for ThreadsPage {
+    fn from(db_page: ava_state::ThreadsPage) -> Self {
+        let ava_state::ThreadsPage {
             items,
             parent_thread_ids,
             next_anchor,
@@ -2099,7 +2099,7 @@ impl From<codex_state::ThreadsPage> for ThreadsPage {
 }
 
 fn thread_item_from_state_metadata(
-    item: codex_state::ThreadMetadata,
+    item: ava_state::ThreadMetadata,
     parent_thread_id: Option<ThreadId>,
 ) -> ThreadItem {
     ThreadItem {
@@ -2194,7 +2194,7 @@ async fn resume_candidate_matches_cwd(
 }
 
 async fn select_resume_path_from_db_page(
-    page: &codex_state::ThreadsPage,
+    page: &ava_state::ThreadsPage,
     filter_cwd: Option<&Path>,
     default_provider: &str,
 ) -> Option<PathBuf> {

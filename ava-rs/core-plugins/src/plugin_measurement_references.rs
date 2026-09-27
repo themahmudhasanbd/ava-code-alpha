@@ -7,9 +7,9 @@ use crate::remote::fetch_measurement_reference_bundle;
 use crate::remote_bundle::download_remote_plugin_bundle;
 use crate::remote_bundle::install_remote_plugin_bundle;
 use crate::script_attribution::PluginMeasurementTarget;
-use codex_login::CodexAuth;
-use codex_plugin::PluginId;
-use codex_utils_path_uri::PathConvention;
+use ava_login::AvaAuth;
+use ava_plugin::PluginId;
+use ava_utils_path_uri::PathConvention;
 use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::sync::Mutex;
@@ -82,10 +82,10 @@ impl RemotePluginMeasurementCache {
     pub async fn prepare(
         &self,
         config: &PluginsConfigInput,
-        auth: &CodexAuth,
+        auth: &AvaAuth,
         target: &PluginMeasurementTarget,
     ) -> anyhow::Result<Option<Arc<PluginMeasurementReference>>> {
-        if !config.plugins_enabled || !config.remote_plugin_enabled || !auth.uses_codex_backend() {
+        if !config.plugins_enabled || !config.remote_plugin_enabled || !auth.uses_ava_backend() {
             return Ok(None);
         }
         // Like normal remote loading, the authenticated installed catalog is

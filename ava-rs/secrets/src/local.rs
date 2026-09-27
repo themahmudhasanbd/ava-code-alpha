@@ -21,7 +21,7 @@ use anyhow::Context;
 use anyhow::Result;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_keyring_store::KeyringStore;
+use ava_keyring_store::KeyringStore;
 use rand::TryRngCore;
 use rand::rngs::OsRng;
 use serde::Deserialize;
@@ -39,7 +39,7 @@ use super::keyring_service;
 
 const SECRETS_VERSION: u8 = 1;
 const LOCAL_SECRETS_FILENAME: &str = "local.age";
-const CODEX_AUTH_SECRETS_FILENAME: &str = "codex_auth.age";
+const AVA_AUTH_SECRETS_FILENAME: &str = "ava_auth.age";
 const MCP_OAUTH_SECRETS_FILENAME: &str = "mcp_oauth.age";
 const GATEWAY_OAUTH_SECRETS_FILENAME: &str = "gateway_oauth.age";
 static MCP_OAUTH_CACHE: Mutex<Option<CachedMcpSecrets>> = Mutex::new(None);
@@ -50,8 +50,8 @@ pub enum LocalSecretsNamespace {
     /// General managed secrets stored in `local.age`.
     #[default]
     ManagedSecrets,
-    /// Codex authentication credentials used by the CLI, TUI, app server, and other clients.
-    CodexAuth,
+    /// Ava authentication credentials used by the CLI, TUI, app server, and other clients.
+    AvaAuth,
     /// OAuth credentials for external MCP servers.
     McpOAuth,
     /// Gateway OAuth credentials, isolated from primary auth in file and encryption key.
@@ -82,27 +82,27 @@ impl SecretsFile {
 
 #[derive(Debug, Clone)]
 pub struct LocalSecretsBackend {
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     keyring_store: Arc<dyn KeyringStore>,
     namespace: LocalSecretsNamespace,
 }
 
 impl LocalSecretsBackend {
-    pub fn new(codex_home: PathBuf, keyring_store: Arc<dyn KeyringStore>) -> Self {
+    pub fn new(ava_home: PathBuf, keyring_store: Arc<dyn KeyringStore>) -> Self {
         Self::new_with_namespace(
-            codex_home,
+            ava_home,
             keyring_store,
             LocalSecretsNamespace::ManagedSecrets,
         )
     }
 
     pub fn new_with_namespace(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         keyring_store: Arc<dyn KeyringStore>,
         namespace: LocalSecretsNamespace,
     ) -> Self {
         Self {
-            codex_home,
+            ava_home,
             keyring_store,
             namespace,
         }
@@ -151,13 +151,13 @@ impl LocalSecretsBackend {
     }
 
     fn secrets_dir(&self) -> PathBuf {
-        self.codex_home.join("secrets")
+        self.ava_home.join("secrets")
     }
 
     fn secrets_path(&self) -> PathBuf {
         let filename = match self.namespace {
             LocalSecretsNamespace::ManagedSecrets => LOCAL_SECRETS_FILENAME,
-            LocalSecretsNamespace::CodexAuth => CODEX_AUTH_SECRETS_FILENAME,
+            LocalSecretsNamespace::AvaAuth => AVA_AUTH_SECRETS_FILENAME,
             LocalSecretsNamespace::McpOAuth => MCP_OAUTH_SECRETS_FILENAME,
             LocalSecretsNamespace::GatewayOAuth => GATEWAY_OAUTH_SECRETS_FILENAME,
         };
@@ -239,7 +239,7 @@ impl LocalSecretsBackend {
     }
 
     fn load_or_create_passphrase(&self) -> Result<SecretString> {
-        let account = compute_keyring_account(&self.codex_home, self.namespace);
+        let account = compute_keyring_account(&self.ava_home, self.namespace);
         let loaded = self
             .keyring_store
             .load(keyring_service(), &account)
@@ -421,7 +421,7 @@ fn parse_canonical_key(canonical_key: &str) -> Option<SecretListEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_keyring_store::tests::MockKeyringStore;
+    use ava_keyring_store::tests::MockKeyringStore;
     use keyring::Error as KeyringError;
     use pretty_assertions::assert_eq;
 
@@ -429,9 +429,9 @@ mod tests {
 
     #[test]
     fn load_file_rejects_newer_schema_versions() -> Result<()> {
-        let codex_home = tempfile::tempdir().expect("tempdir");
+        let ava_home = tempfile::tempdir().expect("tempdir");
         let keyring = Arc::new(MockKeyringStore::default());
-        let backend = LocalSecretsBackend::new(codex_home.path().to_path_buf(), keyring);
+        let backend = LocalSecretsBackend::new(ava_home.path().to_path_buf(), keyring);
 
         let file = SecretsFile {
             version: SECRETS_VERSION + 1,
@@ -451,16 +451,16 @@ mod tests {
 
     #[test]
     fn set_fails_when_keyring_is_unavailable() -> Result<()> {
-        let codex_home = tempfile::tempdir().expect("tempdir");
+        let ava_home = tempfile::tempdir().expect("tempdir");
         let keyring = Arc::new(MockKeyringStore::default());
         let account =
-            compute_keyring_account(codex_home.path(), LocalSecretsNamespace::ManagedSecrets);
+            compute_keyring_account(ava_home.path(), LocalSecretsNamespace::ManagedSecrets);
         keyring.set_error(
             &account,
             KeyringError::Invalid("error".into(), "load".into()),
         );
 
-        let backend = LocalSecretsBackend::new(codex_home.path().to_path_buf(), keyring);
+        let backend = LocalSecretsBackend::new(ava_home.path().to_path_buf(), keyring);
         let scope = SecretScope::Global;
         let name = SecretName::new("TEST_SECRET")?;
         let error = backend
@@ -477,9 +477,9 @@ mod tests {
 
     #[test]
     fn save_file_does_not_leave_temp_files() -> Result<()> {
-        let codex_home = tempfile::tempdir().expect("tempdir");
+        let ava_home = tempfile::tempdir().expect("tempdir");
         let keyring = Arc::new(MockKeyringStore::default());
-        let backend = LocalSecretsBackend::new(codex_home.path().to_path_buf(), keyring);
+        let backend = LocalSecretsBackend::new(ava_home.path().to_path_buf(), keyring);
 
         let scope = SecretScope::Global;
         let name = SecretName::new("TEST_SECRET")?;
@@ -513,62 +513,62 @@ mod tests {
         let _cache_lock = MCP_OAUTH_CACHE_TEST_LOCK
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let codex_home = tempfile::tempdir().expect("tempdir");
+        let ava_home = tempfile::tempdir().expect("tempdir");
         let keyring = Arc::new(MockKeyringStore::default());
-        let codex_auth_backend = LocalSecretsBackend::new_with_namespace(
-            codex_home.path().to_path_buf(),
+        let ava_auth_backend = LocalSecretsBackend::new_with_namespace(
+            ava_home.path().to_path_buf(),
             keyring.clone(),
-            LocalSecretsNamespace::CodexAuth,
+            LocalSecretsNamespace::AvaAuth,
         );
         let mcp_backend = LocalSecretsBackend::new_with_namespace(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             keyring.clone(),
             LocalSecretsNamespace::McpOAuth,
         );
         let gateway_backend = LocalSecretsBackend::new_with_namespace(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             keyring.clone(),
             LocalSecretsNamespace::GatewayOAuth,
         );
         let scope = SecretScope::Global;
         let name = SecretName::new("TEST_SECRET")?;
 
-        codex_auth_backend.set(&scope, &name, "codex-auth-value")?;
+        ava_auth_backend.set(&scope, &name, "ava-auth-value")?;
         mcp_backend.set(&scope, &name, "mcp-value")?;
         gateway_backend.set(&scope, &name, "gateway-value")?;
 
         assert_eq!(
-            codex_auth_backend.get(&scope, &name)?,
-            Some("codex-auth-value".to_string())
+            ava_auth_backend.get(&scope, &name)?,
+            Some("ava-auth-value".to_string())
         );
         assert!(
             MCP_OAUTH_CACHE
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner)
                 .as_ref()
-                .is_none_or(|cached| cached.path != codex_auth_backend.secrets_path())
+                .is_none_or(|cached| cached.path != ava_auth_backend.secrets_path())
         );
         assert_eq!(
             mcp_backend.get(&scope, &name)?,
             Some("mcp-value".to_string())
         );
         assert!(
-            codex_home
+            ava_home
                 .path()
                 .join("secrets")
-                .join("codex_auth.age")
+                .join("ava_auth.age")
                 .exists()
         );
         assert!(
-            codex_home
+            ava_home
                 .path()
                 .join("secrets")
                 .join("mcp_oauth.age")
                 .exists()
         );
-        assert!(!codex_home.path().join("secrets").join("local.age").exists());
+        assert!(!ava_home.path().join("secrets").join("local.age").exists());
         assert!(
-            codex_home
+            ava_home
                 .path()
                 .join("secrets/gateway_oauth.age")
                 .is_file()
@@ -577,7 +577,7 @@ mod tests {
         keyring
             .delete(
                 keyring_service(),
-                &compute_keyring_account(codex_home.path(), LocalSecretsNamespace::CodexAuth),
+                &compute_keyring_account(ava_home.path(), LocalSecretsNamespace::AvaAuth),
             )
             .expect("remove primary secrets key");
         assert_eq!(
@@ -592,15 +592,15 @@ mod tests {
         let _cache_lock = MCP_OAUTH_CACHE_TEST_LOCK
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let codex_home = tempfile::tempdir().expect("tempdir");
+        let ava_home = tempfile::tempdir().expect("tempdir");
         let keyring = Arc::new(MockKeyringStore::default());
         let first = LocalSecretsBackend::new_with_namespace(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             keyring.clone(),
             LocalSecretsNamespace::McpOAuth,
         );
         let second = LocalSecretsBackend::new_with_namespace(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             keyring,
             LocalSecretsNamespace::McpOAuth,
         );

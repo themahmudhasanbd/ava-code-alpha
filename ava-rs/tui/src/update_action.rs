@@ -1,9 +1,9 @@
 #[cfg(any(not(debug_assertions), test))]
-use codex_install_context::InstallContext;
+use ava_install_context::InstallContext;
 #[cfg(any(not(debug_assertions), test))]
-use codex_install_context::InstallMethod;
+use ava_install_context::InstallMethod;
 #[cfg(any(not(debug_assertions), test))]
-use codex_install_context::StandalonePlatform;
+use ava_install_context::StandalonePlatform;
 
 /// Update action the CLI should perform after the TUI exits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,11 +18,11 @@ pub enum UpdateAction {
     VitePlusGlobalLatest,
     /// Update via `pnpm add -g @openai/codex@latest`.
     PnpmGlobalLatest,
-    /// Update via `brew upgrade codex`.
+    /// Update via `brew upgrade ava`.
     BrewUpgrade,
-    /// Update via `curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh`.
+    /// Update via `curl -fsSL https://chatgpt.com/codex/install.sh | AVA_NON_INTERACTIVE=1 sh`.
     StandaloneUnix,
-    /// Update via `$env:CODEX_NON_INTERACTIVE=1; irm https://chatgpt.com/codex/install.ps1 | iex`.
+    /// Update via `$env:AVA_NON_INTERACTIVE=1; irm https://chatgpt.com/codex/install.ps1 | iex`.
     StandaloneWindows,
 }
 
@@ -46,17 +46,17 @@ impl UpdateAction {
     /// Returns the list of command-line arguments for invoking the update.
     pub fn command_args(self) -> (&'static str, &'static [&'static str]) {
         match self {
-            UpdateAction::Daemon(source) => ("codex", source.command_args()),
+            UpdateAction::Daemon(source) => ("ava", source.command_args()),
             UpdateAction::NpmGlobalLatest => ("npm", &["install", "-g", "@openai/codex"]),
             UpdateAction::BunGlobalLatest => ("bun", &["install", "-g", "@openai/codex"]),
             UpdateAction::VitePlusGlobalLatest => ("vp", &["install", "-g", "@openai/codex"]),
             UpdateAction::PnpmGlobalLatest => ("pnpm", &["add", "-g", "@openai/codex"]),
-            UpdateAction::BrewUpgrade => ("brew", &["upgrade", "--cask", "codex"]),
+            UpdateAction::BrewUpgrade => ("brew", &["upgrade", "--cask", "ava"]),
             UpdateAction::StandaloneUnix => (
                 "sh",
                 &[
                     "-c",
-                    "curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh",
+                    "curl -fsSL https://chatgpt.com/codex/install.sh | AVA_NON_INTERACTIVE=1 sh",
                 ],
             ),
             UpdateAction::StandaloneWindows => (
@@ -65,7 +65,7 @@ impl UpdateAction {
                     "-ExecutionPolicy",
                     "Bypass",
                     "-c",
-                    "$env:CODEX_NON_INTERACTIVE=1; irm https://chatgpt.com/codex/install.ps1 | iex",
+                    "$env:AVA_NON_INTERACTIVE=1; irm https://chatgpt.com/codex/install.ps1 | iex",
                 ],
             ),
         }
@@ -87,7 +87,7 @@ pub fn get_update_action() -> Option<UpdateAction> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
                 method: InstallMethod::Standalone {
                     platform: StandalonePlatform::Unix,
                     release_dir: native_release_dir.clone(),
-                    resources_dir: Some(native_release_dir.join("codex-resources")),
+                    resources_dir: Some(native_release_dir.join("ava-resources")),
                 },
                 package_layout: None,
             }),
@@ -147,7 +147,7 @@ mod tests {
                 method: InstallMethod::Standalone {
                     platform: StandalonePlatform::Windows,
                     release_dir: native_release_dir.clone(),
-                    resources_dir: Some(native_release_dir.join("codex-resources")),
+                    resources_dir: Some(native_release_dir.join("ava-resources")),
                 },
                 package_layout: None,
             }),
@@ -163,7 +163,7 @@ mod tests {
                 "sh",
                 &[
                     "-c",
-                    "curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh"
+                    "curl -fsSL https://chatgpt.com/codex/install.sh | AVA_NON_INTERACTIVE=1 sh"
                 ][..],
             )
         );
@@ -175,7 +175,7 @@ mod tests {
                     "-ExecutionPolicy",
                     "Bypass",
                     "-c",
-                    "$env:CODEX_NON_INTERACTIVE=1; irm https://chatgpt.com/codex/install.ps1 | iex"
+                    "$env:AVA_NON_INTERACTIVE=1; irm https://chatgpt.com/codex/install.ps1 | iex"
                 ][..],
             )
         );

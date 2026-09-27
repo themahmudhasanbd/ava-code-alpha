@@ -3,14 +3,14 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_cloud_config::cloud_config_bundle_loader_for_storage_without_cache;
-use codex_config::ConfigLoadOptions;
-use codex_config::ConfigRequirementsToml;
-use codex_config::WindowsSandboxImplementationToml;
-use codex_core::config::bootstrap_auth_config;
-use codex_core::config::load_config_toml_with_layer_stack;
-use codex_windows_sandbox::WindowsSandboxProvisioningSettings;
-use codex_windows_sandbox::WindowsSandboxProxyListeners;
+use ava_cloud_config::cloud_config_bundle_loader_for_storage_without_cache;
+use ava_config::ConfigLoadOptions;
+use ava_config::ConfigRequirementsToml;
+use ava_config::WindowsSandboxImplementationToml;
+use ava_core::config::bootstrap_auth_config;
+use ava_core::config::load_config_toml_with_layer_stack;
+use ava_windows_sandbox::WindowsSandboxProvisioningSettings;
+use ava_windows_sandbox::WindowsSandboxProxyListeners;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Notify;
@@ -18,7 +18,7 @@ use windows_sys::Win32::Foundation::HANDLE;
 use windows_sys::Win32::Security::ImpersonateLoggedOnUser;
 
 pub(crate) fn validate_provisioning_settings(
-    codex_home: &Path,
+    ava_home: &Path,
     settings: &WindowsSandboxProvisioningSettings,
     listeners: &WindowsSandboxProxyListeners,
     impersonation_token: HANDLE,
@@ -46,7 +46,7 @@ pub(crate) fn validate_provisioning_settings(
             },
             result = async {
                 let mut bootstrap_config = load_config_toml_with_layer_stack(
-                    codex_home,
+                    ava_home,
                     /*cwd*/ None,
                     Vec::new(),
                     ConfigLoadOptions::default(),
@@ -56,14 +56,14 @@ pub(crate) fn validate_provisioning_settings(
                 // Use the default cloud-policy endpoint unless managed requirements override it.
                 bootstrap_config.config_toml.chatgpt_base_url = None;
                 let cloud_config_bundle = cloud_config_bundle_loader_for_storage_without_cache(
-                    bootstrap_auth_config(codex_home, &bootstrap_config)
+                    bootstrap_auth_config(ava_home, &bootstrap_config)
                         .context("resolve cloud configuration authentication")?,
-                    /*enable_codex_api_key_env*/ false,
+                    /*enable_ava_api_key_env*/ false,
                 )
                 .await
                 .context("initialize cloud configuration authentication")?;
                 let config = load_config_toml_with_layer_stack(
-                    codex_home,
+                    ava_home,
                     /*cwd*/ None,
                     Vec::new(),
                     ConfigLoadOptions {

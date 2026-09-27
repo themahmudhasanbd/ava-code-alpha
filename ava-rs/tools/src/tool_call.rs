@@ -1,14 +1,14 @@
 use crate::FunctionCallError;
 use crate::ToolName;
 use crate::ToolPayload;
-use codex_extension_items::ExtensionItem;
-use codex_file_system::ExecutorFileSystem;
-use codex_file_system::FileSystemSandboxContext;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::with_serialization_allowance;
+use ava_extension_items::ExtensionItem;
+use ava_file_system::ExecutorFileSystem;
+use ava_file_system::FileSystemSandboxContext;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::with_serialization_allowance;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
@@ -110,7 +110,7 @@ pub struct ToolCall<'call> {
     pub call_id: String,
     pub tool_name: ToolName,
     pub model: String,
-    pub codex_turn_metadata: Option<String>,
+    pub ava_turn_metadata: Option<String>,
     pub truncation_policy: TruncationPolicy,
     pub source: ToolCallSource,
     pub conversation_history: ConversationHistory,
@@ -127,8 +127,8 @@ impl std::fmt::Debug for ToolCall<'_> {
             .field("tool_name", &self.tool_name)
             .field("model", &self.model)
             .field(
-                "has_codex_turn_metadata",
-                &self.codex_turn_metadata.is_some(),
+                "has_ava_turn_metadata",
+                &self.ava_turn_metadata.is_some(),
             )
             .field("truncation_policy", &self.truncation_policy)
             .field("source", &self.source)

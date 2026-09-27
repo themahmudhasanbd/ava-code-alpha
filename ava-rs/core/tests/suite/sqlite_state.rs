@@ -1,35 +1,35 @@
 use anyhow::Result;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_history::RolloutLine;
-use codex_login::CodexAuth;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::ThreadMetadataPatch;
-use codex_web_search_extension::install as install_web_search_extension;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_history::RolloutLine;
+use ava_login::AvaAuth;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::ThreadMetadataPatch;
+use ava_web_search_extension::install as install_web_search_extension;
 use core_test_support::responses;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -40,9 +40,9 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::stdio_server_bin;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_mcp_server;
@@ -62,7 +62,7 @@ use wiremock::matchers::path;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn new_thread_is_recorded_in_state_db() -> Result<()> {
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -71,7 +71,7 @@ async fn new_thread_is_recorded_in_state_db() -> Result<()> {
     let test = builder.build(&server).await?;
 
     let thread_id = test.session_configured.thread_id;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let db_path = test.config.sqlite.state_db_path();
 
     for _ in 0..100 {
@@ -81,7 +81,7 @@ async fn new_thread_is_recorded_in_state_db() -> Result<()> {
         tokio::time::sleep(Duration::from_millis(25)).await;
     }
 
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
     assert!(
         !rollout_path.exists(),
         "fresh thread rollout should not be materialized before first user message"
@@ -123,7 +123,7 @@ async fn staged_metadata_is_persisted_on_first_turn() -> Result<()> {
         responses::sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -157,7 +157,7 @@ async fn staged_metadata_is_persisted_on_first_turn() -> Result<()> {
     })
     .await;
 
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
     let metadata = db
         .get_thread(started.thread_id)
         .await?
@@ -208,7 +208,7 @@ async fn resume_restores_dynamic_tools_from_rollout_with_sqlite_enabled() -> Res
             },
         )],
     });
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -241,7 +241,7 @@ async fn resume_restores_dynamic_tools_from_rollout_with_sqlite_enabled() -> Res
     .await;
 
     started.thread.shutdown_and_wait().await?;
-    let mut resume_builder = test_codex().with_config(|config| {
+    let mut resume_builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -303,7 +303,7 @@ async fn resume_restores_legacy_dynamic_tools_from_rollout_with_sqlite_enabled()
         "required": ["query"],
         "additionalProperties": false,
     });
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -355,7 +355,7 @@ async fn resume_restores_legacy_dynamic_tools_from_rollout_with_sqlite_enabled()
         .join("\n");
     fs::write(&rollout_path, format!("{rollout}\n"))?;
 
-    let mut resume_builder = test_codex().with_config(|config| {
+    let mut resume_builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -405,9 +405,9 @@ async fn backfill_scans_existing_rollouts() -> Result<()> {
     let rollout_rel_path = format!("sessions/2026/01/27/rollout-2026-01-27T12-00-00-{uuid}.jsonl");
     let rollout_rel_path_for_hook = rollout_rel_path.clone();
 
-    let mut builder = test_codex()
-        .with_pre_build_hook(move |codex_home| {
-            let rollout_path = codex_home.join(&rollout_rel_path_for_hook);
+    let mut builder = test_ava()
+        .with_pre_build_hook(move |ava_home| {
+            let rollout_path = ava_home.join(&rollout_rel_path_for_hook);
             let parent = rollout_path
                 .parent()
                 .expect("rollout path should have parent");
@@ -420,7 +420,7 @@ async fn backfill_scans_existing_rollouts() -> Result<()> {
                     forked_from_ordinal_exclusive: None,
                     parent_thread_id: None,
                     timestamp: "2026-01-27T12:00:00Z".to_string(),
-                    cwd: codex_home.to_path_buf(),
+                    cwd: ava_home.to_path_buf(),
                     runtime_workspace_roots: None,
                     originator: "test".to_string(),
                     cli_version: "test".to_string(),
@@ -480,7 +480,7 @@ async fn backfill_scans_existing_rollouts() -> Result<()> {
     let test = builder.build(&server).await?;
 
     let db_path = test.config.sqlite.state_db_path();
-    let rollout_path = test.config.codex_home.join(&rollout_rel_path);
+    let rollout_path = test.config.ava_home.join(&rollout_rel_path);
     let default_provider = test.config.model_provider_id.clone();
 
     for _ in 0..20 {
@@ -490,7 +490,7 @@ async fn backfill_scans_existing_rollouts() -> Result<()> {
         tokio::time::sleep(Duration::from_millis(25)).await;
     }
 
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
 
     let mut metadata = None;
     for _ in 0..40 {
@@ -522,7 +522,7 @@ async fn user_messages_persist_in_state_db() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -541,7 +541,7 @@ async fn user_messages_persist_in_state_db() -> Result<()> {
     test.submit_turn("hello from sqlite").await?;
     test.submit_turn("another message").await?;
 
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
     let thread_id = test.session_configured.thread_id;
 
     let mut metadata = None;
@@ -576,7 +576,7 @@ async fn web_search_marks_thread_memory_mode_polluted_when_configured() -> Resul
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -584,7 +584,7 @@ async fn web_search_marks_thread_memory_mode_polluted_when_configured() -> Resul
         config.memories.disable_on_external_context = true;
     });
     let test = builder.build(&server).await?;
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
     let thread_id = test.session_configured.thread_id;
 
     test.submit_turn("search the web").await?;
@@ -639,11 +639,11 @@ async fn standalone_web_search_marks_thread_memory_mode_polluted_when_configured
     )
     .await;
 
-    let auth = CodexAuth::from_api_key("dummy");
-    let auth_manager = codex_core::test_support::auth_manager_from_auth(auth.clone());
+    let auth = AvaAuth::from_api_key("dummy");
+    let auth_manager = ava_core::test_support::auth_manager_from_auth(auth.clone());
     let mut extension_builder = ExtensionRegistryBuilder::<Config>::new();
     install_web_search_extension(&mut extension_builder, auth_manager);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(Arc::new(extension_builder.build()))
         .with_config(|config| {
@@ -662,7 +662,7 @@ async fn standalone_web_search_marks_thread_memory_mode_polluted_when_configured
                 .expect("web search mode should be accepted");
         });
     let test = builder.build(&server).await?;
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
     let thread_id = test.session_configured.thread_id;
 
     test.submit_turn("search the web").await?;
@@ -712,7 +712,7 @@ async fn mcp_call_marks_thread_memory_mode_polluted_when_configured() -> Result<
     .await;
 
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config
             .features
             .enable(Feature::Sqlite)
@@ -757,14 +757,14 @@ async fn mcp_call_marks_thread_memory_mode_polluted_when_configured() -> Result<
             .expect("test mcp servers should accept any configuration");
     });
     let test = builder.build(&server).await?;
-    wait_for_mcp_server(&test.codex, server_name).await?;
-    let db = test.codex.state_db().expect("state db enabled");
+    wait_for_mcp_server(&test.ava-code, server_name).await?;
+    let db = test.ava-code.state_db().expect("state db enabled");
     let thread_id = test.session_configured.thread_id;
     let cwd = test.config.cwd.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), cwd.as_path());
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "call the rmcp echo tool".to_string(),
@@ -787,11 +787,11 @@ async fn mcp_call_marks_thread_memory_mode_polluted_when_configured() -> Result<
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    wait_for_event_match(&test.codex, |event| match event {
+    wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::Error(err) => Some(Err(anyhow::anyhow!(err.message.clone()))),
         EventMsg::TurnComplete(_) => Some(Ok(())),
         _ => None,
@@ -834,19 +834,19 @@ async fn tool_call_logs_include_thread_id() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::Sqlite)
             .expect("test config should allow feature update");
     });
     let test = builder.build(&server).await?;
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
     let expected_thread_id = test.session_configured.thread_id.to_string();
 
     test.submit_turn("run a shell command").await?;
 
-    let log_db_layer = codex_state::log_db::start(db.clone());
+    let log_db_layer = ava_state::log_db::start(db.clone());
     let subscriber = tracing_subscriber::registry().with(log_db_layer.clone());
     let dispatch = tracing::Dispatch::new(subscriber);
     tracing::dispatcher::with_default(&dispatch, || {
@@ -858,7 +858,7 @@ async fn tool_call_logs_include_thread_id() -> Result<()> {
 
     let mut found = None;
     for _ in 0..80 {
-        let query = codex_state::LogQuery {
+        let query = ava_state::LogQuery {
             descending: true,
             limit: Some(20),
             ..Default::default()

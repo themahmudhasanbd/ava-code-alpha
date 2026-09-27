@@ -12,25 +12,25 @@ use crate::session::turn_context::TurnEnvironment;
 use crate::state::SessionServices;
 use crate::tools::hook_names::HookToolName;
 use crate::tools::network_approval::NetworkApprovalSpec;
-use codex_file_system::FileSystemSandboxContext;
-use codex_file_system::WindowsSandboxSelection;
-use codex_network_proxy::NetworkProxy;
-use codex_protocol::approvals::ExecPolicyAmendment;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::error::CodexErr;
-use codex_protocol::permissions::FileSystemSandboxKind;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ReviewDecision;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxTransformRequest;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::SandboxablePreference;
-use codex_sandboxing::policy_transforms::effective_permission_profile;
-use codex_tools::ToolName;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_file_system::FileSystemSandboxContext;
+use ava_file_system::WindowsSandboxSelection;
+use ava_network_proxy::NetworkProxy;
+use ava_protocol::approvals::ExecPolicyAmendment;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::error::AvaErr;
+use ava_protocol::permissions::FileSystemSandboxKind;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ReviewDecision;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxTransformRequest;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::SandboxablePreference;
+use ava_sandboxing::policy_transforms::effective_permission_profile;
+use ava_tools::ToolName;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use futures::Future;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -98,7 +98,7 @@ where
     let decision = fetch().await;
 
     services.session_telemetry.counter(
-        "codex.approval.requested",
+        "ava.approval.requested",
         /*inc*/ 1,
         &[
             ("tool", tool_name),
@@ -157,7 +157,7 @@ pub(crate) enum ExecApprovalRequirement {
         /// greenlit by policy).
         bypass_sandbox: bool,
         /// Proposed execpolicy amendment to skip future approvals for similar commands
-        /// Only applies if the command fails to run in sandbox and codex prompts the user to run outside the sandbox.
+        /// Only applies if the command fails to run in sandbox and ava prompts the user to run outside the sandbox.
         proposed_execpolicy_amendment: Option<ExecPolicyAmendment>,
     },
     /// Approval required for this tool call.
@@ -358,7 +358,7 @@ pub(crate) struct ToolCtx {
 #[derive(Debug)]
 pub(crate) enum ToolError {
     Rejected(String),
-    Codex(CodexErr),
+    Ava(AvaErr),
 }
 
 pub(crate) trait ToolRuntime<Req, Out>: Approvable<Req> + Sandboxable {
@@ -388,9 +388,9 @@ pub(crate) struct SandboxAttempt<'a> {
     pub sandbox: SandboxType,
     /// Whether policy requested sandboxing, independent of this host's concrete wrapper.
     pub sandbox_requested: bool,
-    pub permissions: &'a codex_protocol::models::PermissionProfile,
+    pub permissions: &'a ava_protocol::models::PermissionProfile,
     /// Canonical permissions before this host materializes workspace roots.
-    pub exec_server_permissions: &'a codex_protocol::models::PermissionProfile,
+    pub exec_server_permissions: &'a ava_protocol::models::PermissionProfile,
     pub enforce_managed_network: bool,
     pub(crate) manager: &'a SandboxManager,
     pub(crate) sandbox_cwd: &'a PathUri,
@@ -400,7 +400,7 @@ pub(crate) struct SandboxAttempt<'a> {
     // so process execution and patch writes honor the selected environment's backend.
     pub use_legacy_landlock: bool,
     pub windows_sandbox_type: SandboxType,
-    pub windows_sandbox_level: codex_protocol::config_types::WindowsSandboxLevel,
+    pub windows_sandbox_level: ava_protocol::config_types::WindowsSandboxLevel,
     pub network_denial_cancellation_token: Option<CancellationToken>,
     pub(crate) network_proxy: Option<&'a NetworkProxy>,
 }
@@ -478,7 +478,7 @@ impl<'a> SandboxAttempt<'a> {
         options: ExecOptions,
         network: Option<&NetworkProxy>,
         environment_id: Option<&str>,
-    ) -> Result<crate::sandboxing::ExecRequest, CodexErr> {
+    ) -> Result<crate::sandboxing::ExecRequest, AvaErr> {
         let network = self.network_proxy(network);
         let request = self
             .manager
@@ -494,7 +494,7 @@ impl<'a> SandboxAttempt<'a> {
                 use_legacy_landlock: self.use_legacy_landlock,
                 windows_sandbox_level: self.windows_sandbox_level,
             })
-            .map_err(CodexErr::from)?;
+            .map_err(AvaErr::from)?;
         let workspace_roots = self
             .workspace_roots
             .iter()
@@ -507,7 +507,7 @@ impl<'a> SandboxAttempt<'a> {
         &self,
         command: SandboxCommand,
         options: ExecOptions,
-    ) -> Result<crate::sandboxing::ExecRequest, CodexErr> {
+    ) -> Result<crate::sandboxing::ExecRequest, AvaErr> {
         let managed_network = command.managed_network.clone();
         let exec_server_permissions = effective_permission_profile(
             self.exec_server_permissions,
@@ -528,7 +528,7 @@ impl<'a> SandboxAttempt<'a> {
                 use_legacy_landlock: self.use_legacy_landlock,
                 windows_sandbox_level: self.windows_sandbox_level,
             })
-            .map_err(CodexErr::from)?;
+            .map_err(AvaErr::from)?;
         let mut exec_request = crate::sandboxing::ExecRequest::from_sandbox_exec_request(
             request,
             options,

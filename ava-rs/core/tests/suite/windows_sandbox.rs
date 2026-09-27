@@ -1,22 +1,22 @@
 use anyhow::Context;
-use codex_core::exec::ExecCapturePolicy;
-use codex_core::exec::ExecParams;
-use codex_core::exec::process_exec_tool_call;
-use codex_core::sandboxing::SandboxPermissions;
-use codex_core::windows_sandbox::WindowsSandboxSetupMode;
-use codex_core::windows_sandbox::WindowsSandboxSetupRequest;
-use codex_core::windows_sandbox::run_windows_sandbox_setup;
-use codex_core::windows_sandbox::sandbox_setup_is_complete;
-use codex_features::Feature;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_core::exec::ExecCapturePolicy;
+use ava_core::exec::ExecParams;
+use ava_core::exec::process_exec_tool_call;
+use ava_core::sandboxing::SandboxPermissions;
+use ava_core::windows_sandbox::WindowsSandboxSetupMode;
+use ava_core::windows_sandbox::WindowsSandboxSetupRequest;
+use ava_core::windows_sandbox::run_windows_sandbox_setup;
+use ava_core::windows_sandbox::sandbox_setup_is_complete;
+use ava_features::Feature;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use core_test_support::PathExt;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -24,8 +24,8 @@ use core_test_support::responses::ev_function_call;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
-use core_test_support::test_codex::TestCodexHarness;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAvaHarness;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use serial_test::serial;
@@ -62,12 +62,12 @@ impl Drop for EnvVarGuard {
     }
 }
 
-enum TestCodexHome {
+enum TestAvaHome {
     Persistent(PathBuf),
     Temporary(TempDir),
 }
 
-impl TestCodexHome {
+impl TestAvaHome {
     fn path(&self) -> &Path {
         match self {
             Self::Persistent(path) => path.as_path(),
@@ -76,18 +76,18 @@ impl TestCodexHome {
     }
 }
 
-fn codex_home_for_windows_sandbox_test(name: &str) -> anyhow::Result<TestCodexHome> {
+fn ava_home_for_windows_sandbox_test(name: &str) -> anyhow::Result<TestAvaHome> {
     if let Some(test_tmpdir) = std::env::var_os("TEST_TMPDIR") {
         // The elevated backend provisions machine-local sandbox users. Bazel
-        // retries run in the same Windows VM, so keep CODEX_HOME stable within
+        // retries run in the same Windows VM, so keep AVA_HOME stable within
         // the test temp root and let setup reconcile its persisted ACL state.
-        let codex_home = PathBuf::from(test_tmpdir).join(name);
-        std::fs::create_dir_all(&codex_home)
-            .with_context(|| format!("create stable test CODEX_HOME {}", codex_home.display()))?;
-        return Ok(TestCodexHome::Persistent(codex_home));
+        let ava_home = PathBuf::from(test_tmpdir).join(name);
+        std::fs::create_dir_all(&ava_home)
+            .with_context(|| format!("create stable test AVA_HOME {}", ava_home.display()))?;
+        return Ok(TestAvaHome::Persistent(ava_home));
     }
 
-    Ok(TestCodexHome::Temporary(TempDir::new()?))
+    Ok(TestAvaHome::Temporary(TempDir::new()?))
 }
 
 fn stage_windows_sandbox_helpers() -> anyhow::Result<()> {
@@ -95,7 +95,7 @@ fn stage_windows_sandbox_helpers() -> anyhow::Result<()> {
     let test_exe_dir = test_exe
         .parent()
         .context("Windows test executable should have a parent directory")?;
-    let resources_dir = test_exe_dir.join("codex-resources");
+    let resources_dir = test_exe_dir.join("ava-resources");
     match std::fs::create_dir_all(&resources_dir) {
         Ok(()) => {}
         Err(err)
@@ -105,8 +105,8 @@ fn stage_windows_sandbox_helpers() -> anyhow::Result<()> {
                 .with_context(|| format!("create resources dir {}", resources_dir.display()));
         }
     }
-    for helper_name in ["codex-windows-sandbox-setup", "codex-command-runner"] {
-        let helper = codex_utils_cargo_bin::cargo_bin(helper_name)?;
+    for helper_name in ["ava-windows-sandbox-setup", "ava-command-runner"] {
+        let helper = ava_utils_cargo_bin::cargo_bin(helper_name)?;
         let file_name = Path::new(helper_name).with_extension("exe");
         let destination = resources_dir.join(file_name);
         if let Err(err) = std::fs::copy(&helper, &destination) {
@@ -134,25 +134,25 @@ fn escape_toml_path(path: &Path) -> String {
 
 fn stage_windows_sandbox_cli(fixture_bin: &Path) -> anyhow::Result<(PathBuf, PathBuf)> {
     std::fs::create_dir_all(fixture_bin)?;
-    let resources_dir = fixture_bin.join("codex-resources");
+    let resources_dir = fixture_bin.join("ava-resources");
     std::fs::create_dir_all(&resources_dir)?;
 
-    let codex_source = codex_utils_cargo_bin::cargo_bin("codex")?;
-    let codex = fixture_bin.join("codex.exe");
-    std::fs::copy(&codex_source, &codex)
-        .with_context(|| format!("copy {} to {}", codex_source.display(), codex.display()))?;
-    for helper_name in ["codex-windows-sandbox-setup", "codex-command-runner"] {
-        let helper = codex_utils_cargo_bin::cargo_bin(helper_name)?;
+    let ava_source = ava_utils_cargo_bin::cargo_bin("ava")?;
+    let ava = fixture_bin.join("ava.exe");
+    std::fs::copy(&ava_source, &ava)
+        .with_context(|| format!("copy {} to {}", ava_source.display(), ava.display()))?;
+    for helper_name in ["ava-windows-sandbox-setup", "ava-command-runner"] {
+        let helper = ava_utils_cargo_bin::cargo_bin(helper_name)?;
         let destination = resources_dir.join(Path::new(helper_name).with_extension("exe"));
         std::fs::copy(&helper, &destination)
             .with_context(|| format!("copy {} to {}", helper.display(), destination.display()))?;
     }
 
-    let probe_source = codex_utils_cargo_bin::cargo_bin("codex-windows-managed-deny-probe")?;
+    let probe_source = ava_utils_cargo_bin::cargo_bin("ava-windows-managed-deny-probe")?;
     let probe = fixture_bin.join("managed-deny-probe.exe");
     std::fs::copy(&probe_source, &probe)
         .with_context(|| format!("copy {} to {}", probe_source.display(), probe.display()))?;
-    Ok((codex, probe))
+    Ok((ava, probe))
 }
 
 fn assert_managed_deny_probe(output: &std::process::Output, launch: usize) -> anyhow::Result<()> {
@@ -179,10 +179,10 @@ fn assert_managed_deny_probe(output: &std::process::Output, launch: usize) -> an
 }
 
 #[test]
-#[serial(codex_home)]
+#[serial(ava_home)]
 fn windows_sandbox_cli_preserves_managed_deny_reads_across_launches() -> anyhow::Result<()> {
-    let codex_home =
-        codex_home_for_windows_sandbox_test("windows-cli-managed-deny-read-codex-home")?;
+    let ava_home =
+        ava_home_for_windows_sandbox_test("windows-cli-managed-deny-read-ava-home")?;
 
     let fixture = TempDir::new()?;
     let fixture_root = dunce::canonicalize(fixture.path())?;
@@ -192,7 +192,7 @@ fn windows_sandbox_cli_preserves_managed_deny_reads_across_launches() -> anyhow:
     let bin = fixture_root.join("bin");
     std::fs::create_dir_all(&work)?;
     std::fs::create_dir_all(&denied)?;
-    let (codex, probe) = stage_windows_sandbox_cli(&bin)?;
+    let (ava, probe) = stage_windows_sandbox_cli(&bin)?;
 
     let allowed_text = runtime.join("allowed.txt");
     let denied_text = denied.join("secret.txt");
@@ -220,7 +220,7 @@ fn windows_sandbox_cli_preserves_managed_deny_reads_across_launches() -> anyhow:
     })?;
 
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "default_permissions = \"managed-deny-test\"\n\
              \n\
@@ -244,13 +244,13 @@ fn windows_sandbox_cli_preserves_managed_deny_reads_across_launches() -> anyhow:
     )?;
 
     for launch in 1..=2 {
-        let output = Command::new(&codex)
+        let output = Command::new(&ava)
             .current_dir(&work)
-            .env("CODEX_HOME", codex_home.path())
-            .env("CODEX_WINDOWS_ALLOWED_TEXT", &allowed_text)
-            .env("CODEX_WINDOWS_DENIED_TEXT", &denied_text)
-            .env("CODEX_WINDOWS_ALLOWED_MODULE", &allowed_module)
-            .env("CODEX_WINDOWS_DENIED_MODULE", &denied_module)
+            .env("AVA_HOME", ava_home.path())
+            .env("AVA_WINDOWS_ALLOWED_TEXT", &allowed_text)
+            .env("AVA_WINDOWS_DENIED_TEXT", &denied_text)
+            .env("AVA_WINDOWS_ALLOWED_MODULE", &allowed_module)
+            .env("AVA_WINDOWS_DENIED_MODULE", &denied_module)
             .args(["sandbox", "--permission-profile"])
             .arg("managed-deny-test")
             .arg("--cd")
@@ -265,9 +265,9 @@ fn windows_sandbox_cli_preserves_managed_deny_reads_across_launches() -> anyhow:
 }
 
 #[tokio::test]
-#[serial(codex_home)]
+#[serial(ava_home)]
 async fn windows_elevated_setup_rejects_default_root_deny() -> anyhow::Result<()> {
-    let codex_home = codex_home_for_windows_sandbox_test("windows-elevated-root-deny-codex-home")?;
+    let ava_home = ava_home_for_windows_sandbox_test("windows-elevated-root-deny-ava-home")?;
     let workspace = TempDir::new()?;
     let cwd = dunce::canonicalize(workspace.path())?.abs();
     let file_system_sandbox_policy =
@@ -289,7 +289,7 @@ async fn windows_elevated_setup_rejects_default_root_deny() -> anyhow::Result<()
         workspace_roots: vec![cwd.clone()],
         command_cwd: cwd.to_path_buf(),
         env_map: HashMap::new(),
-        codex_home: codex_home.path().to_path_buf(),
+        ava_home: ava_home.path().to_path_buf(),
     })
     .await
     .expect_err("elevated setup should reject default root deny");
@@ -302,11 +302,11 @@ async fn windows_elevated_setup_rejects_default_root_deny() -> anyhow::Result<()
 }
 
 #[tokio::test]
-#[serial(codex_home)]
+#[serial(ava_home)]
 async fn windows_restricted_token_rejects_exact_and_glob_deny_read_policy() -> anyhow::Result<()> {
-    let codex_home =
-        codex_home_for_windows_sandbox_test("windows-restricted-token-deny-read-codex-home")?;
-    let _codex_home_guard = EnvVarGuard::set("CODEX_HOME", codex_home.path().as_os_str());
+    let ava_home =
+        ava_home_for_windows_sandbox_test("windows-restricted-token-deny-read-ava-home")?;
+    let _ava_home_guard = EnvVarGuard::set("AVA_HOME", ava_home.path().as_os_str());
     let workspace = TempDir::new()?;
     let cwd = dunce::canonicalize(workspace.path())?.abs();
     let secret = cwd.join("secret.env");
@@ -374,7 +374,7 @@ async fn windows_restricted_token_rejects_exact_and_glob_deny_read_policy() -> a
         &cwd,
         std::slice::from_ref(&cwd),
         &None,
-        /*codex_self_exe*/ &None,
+        /*ava_self_exe*/ &None,
         /*use_legacy_landlock*/ false,
         /*stdout_stream*/ None,
     )
@@ -389,11 +389,11 @@ async fn windows_restricted_token_rejects_exact_and_glob_deny_read_policy() -> a
 }
 
 #[tokio::test]
-#[serial(codex_home)]
+#[serial(ava_home)]
 async fn windows_elevated_does_not_create_missing_workspace_metadata() -> anyhow::Result<()> {
-    let codex_home =
-        codex_home_for_windows_sandbox_test("windows-elevated-missing-metadata-codex-home")?;
-    let _codex_home_guard = EnvVarGuard::set("CODEX_HOME", codex_home.path().as_os_str());
+    let ava_home =
+        ava_home_for_windows_sandbox_test("windows-elevated-missing-metadata-ava-home")?;
+    let _ava_home_guard = EnvVarGuard::set("AVA_HOME", ava_home.path().as_os_str());
     stage_windows_sandbox_helpers()?;
     let workspace = TempDir::new()?;
     let cwd = dunce::canonicalize(workspace.path())?.abs();
@@ -423,14 +423,14 @@ async fn windows_elevated_does_not_create_missing_workspace_metadata() -> anyhow
         &cwd,
         std::slice::from_ref(&cwd),
         &None,
-        /*codex_self_exe*/ &None,
+        /*ava_self_exe*/ &None,
         /*use_legacy_landlock*/ false,
         /*stdout_stream*/ None,
     )
     .await?;
 
     assert_eq!(output.exit_code, 0, "sandboxed command should complete");
-    for name in codex_protocol::permissions::PROTECTED_METADATA_PATH_NAMES {
+    for name in ava_protocol::permissions::PROTECTED_METADATA_PATH_NAMES {
         let path = cwd.join(name);
         assert!(
             !path.exists(),
@@ -446,8 +446,8 @@ async fn windows_elevated_does_not_create_missing_workspace_metadata() -> anyhow
             "-Command",
             r#"
 $ErrorActionPreference = 'Stop'
-$sid = (Get-LocalUser -Name 'CodexSandboxOffline').SID.Value
-$rules = foreach ($name in @('codex_sandbox_offline_block_inbound', 'codex_sandbox_offline_block_outbound')) {
+$sid = (Get-LocalUser -Name 'AvaSandboxOffline').SID.Value
+$rules = foreach ($name in @('ava_sandbox_offline_block_inbound', 'ava_sandbox_offline_block_outbound')) {
     $rule = @(Get-NetFirewallRule -PolicyStore ActiveStore -DisplayName $name)
     if ($rule.Count -ne 1) { throw "Expected exactly one effective rule for $name" }
     $address = $rule | Get-NetFirewallAddressFilter
@@ -484,8 +484,8 @@ $rules = foreach ($name in @('codex_sandbox_offline_block_inbound', 'codex_sandb
         .context("offline sandbox firewall rules should include their user SID")?;
     let local_user = format!("O:LSD:(A;;CC;;;{offline_sid})");
     let expected_rules: Vec<_> = [
-        ("codex_sandbox_offline_block_inbound", "Inbound"),
-        ("codex_sandbox_offline_block_outbound", "Outbound"),
+        ("ava_sandbox_offline_block_inbound", "Inbound"),
+        ("ava_sandbox_offline_block_outbound", "Outbound"),
     ]
     .into_iter()
     .map(|(name, direction)| {
@@ -514,10 +514,10 @@ $rules = foreach ($name in @('codex_sandbox_offline_block_inbound', 'codex_sandb
 }
 
 #[tokio::test]
-#[serial(codex_home)]
+#[serial(ava_home)]
 async fn windows_elevated_enforces_deny_read_and_protects_setup_marker() -> anyhow::Result<()> {
-    let codex_home = codex_home_for_windows_sandbox_test("windows-elevated-deny-read-codex-home")?;
-    let _codex_home_guard = EnvVarGuard::set("CODEX_HOME", codex_home.path().as_os_str());
+    let ava_home = ava_home_for_windows_sandbox_test("windows-elevated-deny-read-ava-home")?;
+    let _ava_home_guard = EnvVarGuard::set("AVA_HOME", ava_home.path().as_os_str());
     stage_windows_sandbox_helpers()?;
     let workspace = TempDir::new()?;
     let cwd = dunce::canonicalize(workspace.path())?.abs();
@@ -527,10 +527,10 @@ async fn windows_elevated_enforces_deny_read_and_protects_setup_marker() -> anyh
     let _user_profile_guard = EnvVarGuard::set("USERPROFILE", user_profile.path().as_os_str());
     let exact_secret = user_profile.path().join("exact-secret.txt");
     std::fs::write(&exact_secret, "exact secret\n")?;
-    let bundled_skill_dir = user_profile.path().join(".codex/plugins/cache");
+    let bundled_skill_dir = user_profile.path().join(".ava-code/plugins/cache");
     std::fs::create_dir_all(&bundled_skill_dir)?;
     let bundled_skill = bundled_skill_dir.join("SKILL.md");
-    let setup_marker = codex_home.path().join(".sandbox").join("setup_marker.json");
+    let setup_marker = ava_home.path().join(".sandbox").join("setup_marker.json");
     std::fs::write(&glob_secret, "glob secret\n")?;
     std::fs::write(&public, "public ok\n")?;
     std::fs::write(&bundled_skill, "bundled skill ok\n")?;
@@ -602,7 +602,7 @@ async fn windows_elevated_enforces_deny_read_and_protects_setup_marker() -> anyh
         &cwd,
         std::slice::from_ref(&cwd),
         &None,
-        /*codex_self_exe*/ &None,
+        /*ava_self_exe*/ &None,
         /*use_legacy_landlock*/ false,
         /*stdout_stream*/ None,
     )
@@ -647,25 +647,25 @@ async fn windows_elevated_enforces_deny_read_and_protects_setup_marker() -> anyh
         "sandboxed command must not modify setup readiness: {stdout:?}"
     );
     assert!(
-        sandbox_setup_is_complete(codex_home.path()),
+        sandbox_setup_is_complete(ava_home.path()),
         "setup should remain ready after the tamper attempt"
     );
     Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[serial(codex_home)]
+#[serial(ava_home)]
 async fn windows_elevated_unified_exec_enforces_managed_deny_reads() -> anyhow::Result<()> {
-    let codex_home =
-        codex_home_for_windows_sandbox_test("windows-elevated-tool-runtime-deny-read-codex-home")?;
-    let _codex_home_guard = EnvVarGuard::set("CODEX_HOME", codex_home.path().as_os_str());
+    let ava_home =
+        ava_home_for_windows_sandbox_test("windows-elevated-tool-runtime-deny-read-ava-home")?;
+    let _ava_home_guard = EnvVarGuard::set("AVA_HOME", ava_home.path().as_os_str());
     stage_windows_sandbox_helpers()?;
 
-    let configured_codex_home = dunce::canonicalize(codex_home.path())?.abs();
-    let builder = test_codex()
+    let configured_ava_home = dunce::canonicalize(ava_home.path())?.abs();
+    let builder = test_ava()
         .with_windows_cmd_shell()
         .with_config(move |config| {
-            config.codex_home = configured_codex_home;
+            config.ava_home = configured_ava_home;
             config.set_windows_elevated_sandbox_enabled(true);
             config
                 .features
@@ -722,7 +722,7 @@ async fn windows_elevated_unified_exec_enforces_managed_deny_reads() -> anyhow::
             std::fs::write(cwd.join("public.txt"), "public ok\n")?;
             Ok(())
         });
-    let harness = TestCodexHarness::with_builder(builder).await?;
+    let harness = TestAvaHarness::with_builder(builder).await?;
 
     let command = concat!(
         "(type secret.env 1>NUL 2>NUL && echo GLOB-READ || echo GLOB-DENIED) & ",

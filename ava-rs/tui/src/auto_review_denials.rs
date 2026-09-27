@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
-use codex_protocol::approvals::GuardianAssessmentAction;
-use codex_protocol::approvals::GuardianAssessmentEvent;
-use codex_protocol::approvals::GuardianAssessmentStatus;
+use ava_protocol::approvals::GuardianAssessmentAction;
+use ava_protocol::approvals::GuardianAssessmentEvent;
+use ava_protocol::approvals::GuardianAssessmentStatus;
 
 const MAX_RECENT_DENIALS: usize = 10;
 
@@ -85,9 +85,9 @@ pub(crate) fn action_summary(action: &GuardianAssessmentAction) -> String {
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::approvals::GuardianCommandSource;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_protocol::approvals::GuardianCommandSource;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
 
     use super::*;

@@ -5,18 +5,18 @@
 #![cfg(target_os = "linux")]
 #![allow(clippy::unwrap_used)]
 
-use codex_core::exec_env::create_env;
-use codex_network_proxy::PROXY_ATTRIBUTION_TOKEN_ENV_KEY;
-use codex_network_proxy::write_attribution_frame;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_core::exec_env::create_env;
+use ava_network_proxy::PROXY_ATTRIBUTION_TOKEN_ENV_KEY;
+use ava_network_proxy::write_attribution_frame;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::io::Read;
@@ -180,7 +180,7 @@ fn linux_sandbox_command(
     args.push("--".to_string());
     args.extend(command.iter().map(|entry| (*entry).to_string()));
 
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_codex-linux-sandbox"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_ava-linux-sandbox"));
     cmd.args(args)
         .current_dir(cwd)
         .env_clear()
@@ -310,7 +310,7 @@ async fn namespace_reaper_collects_orphaned_descendants() {
 
 #[tokio::test]
 async fn unsupported_system_bwrap_falls_back_to_bundled_bwrap() {
-    if option_env!("CODEX_BWRAP_SHA256")
+    if option_env!("AVA_BWRAP_SHA256")
         .is_some_and(|digest| digest.chars().any(|character| character != '0'))
     {
         eprintln!("skipping system bwrap fallback test: bundled binaries require a release digest");
@@ -322,19 +322,19 @@ async fn unsupported_system_bwrap_falls_back_to_bundled_bwrap() {
         return;
     }
 
-    let Some(system_bwrap) = codex_sandboxing::find_system_bwrap_in_path() else {
+    let Some(system_bwrap) = ava_sandboxing::find_system_bwrap_in_path() else {
         eprintln!("skipping system bwrap fallback test: no system bubblewrap is available");
         return;
     };
 
     let tempdir = tempfile::tempdir().expect("create isolated sandbox installation");
-    let sandbox_executable = tempdir.path().join("codex-linux-sandbox");
-    let original_executable = env!("CARGO_BIN_EXE_codex-linux-sandbox");
+    let sandbox_executable = tempdir.path().join("ava-linux-sandbox");
+    let original_executable = env!("CARGO_BIN_EXE_ava-linux-sandbox");
     if std::fs::hard_link(original_executable, &sandbox_executable).is_err() {
         std::fs::copy(original_executable, &sandbox_executable).expect("copy sandbox executable");
     }
 
-    let resources_dir = tempdir.path().join("codex-resources");
+    let resources_dir = tempdir.path().join("ava-resources");
     std::fs::create_dir(&resources_dir).expect("create bundled resource directory");
     std::os::unix::fs::symlink(&system_bwrap, resources_dir.join("bwrap"))
         .expect("install bundled bubblewrap");
@@ -417,7 +417,7 @@ async fn managed_proxy_full_filesystem_uses_minimal_dev_nodes() {
     env.insert("HTTP_PROXY".to_string(), "http://127.0.0.1:9".to_string());
     if let Some(file) = &shared_memory_file {
         env.insert(
-            "CODEX_TEST_SHM_PATH".to_string(),
+            "AVA_TEST_SHM_PATH".to_string(),
             file.path().to_string_lossy().into_owned(),
         );
     }
@@ -435,9 +435,9 @@ async fn managed_proxy_full_filesystem_uses_minimal_dev_nodes() {
                 "if command -v python3 >/dev/null 2>&1; then ",
                 "python3 -c 'import os; assert len(os.urandom(16)) == 16'; ",
                 "fi; ",
-                "if [ -n \"${CODEX_TEST_SHM_PATH:-}\" ]; then ",
-                "test \"$(cat \"$CODEX_TEST_SHM_PATH\")\" = host-before; ",
-                "printf sandbox-after >\"$CODEX_TEST_SHM_PATH\"; ",
+                "if [ -n \"${AVA_TEST_SHM_PATH:-}\" ]; then ",
+                "test \"$(cat \"$AVA_TEST_SHM_PATH\")\" = host-before; ",
+                "printf sandbox-after >\"$AVA_TEST_SHM_PATH\"; ",
                 "fi; ",
                 "stat -c '%d:%i' /dev",
             ),
@@ -595,7 +595,7 @@ async fn managed_proxy_mode_routes_through_bridge_and_blocks_direct_egress() {
         format!("http://127.0.0.1:{proxy_port}"),
     );
 
-    let sandbox_helper_dir = std::path::Path::new(env!("CARGO_BIN_EXE_codex-linux-sandbox"))
+    let sandbox_helper_dir = std::path::Path::new(env!("CARGO_BIN_EXE_ava-linux-sandbox"))
         .parent()
         .expect("sandbox helper should have a parent");
     let file_system_sandbox_policy =
@@ -713,7 +713,7 @@ async fn managed_proxy_mode_denies_af_unix_socket_but_allows_socketpair() {
 #[test]
 #[ignore = "invoked inside the managed proxy sandbox"]
 fn handoff_client() {
-    let Ok(label) = std::env::var("CODEX_TEST_HANDOFF_LABEL") else {
+    let Ok(label) = std::env::var("AVA_TEST_HANDOFF_LABEL") else {
         return;
     };
     assert!(std::env::var_os(PROXY_ATTRIBUTION_TOKEN_ENV_KEY).is_none());
@@ -737,9 +737,9 @@ fn handoff_client() {
         Err(error) => panic!("enumerate inherited descriptors: {error}"),
     }
 
-    let shared = std::env::var("CODEX_TEST_HANDOFF_SHARED").expect("shared directory");
+    let shared = std::env::var("AVA_TEST_HANDOFF_SHARED").expect("shared directory");
     let shared = Path::new(&shared);
-    let peer = std::env::var("CODEX_TEST_HANDOFF_PEER").expect("peer label");
+    let peer = std::env::var("AVA_TEST_HANDOFF_PEER").expect("peer label");
     std::fs::write(shared.join(&label), b"ready").expect("announce sandbox readiness");
     let deadline = Instant::now() + OPERATION_TIMEOUT;
     while !shared.join(&peer).exists() {
@@ -807,10 +807,10 @@ async fn handoff_isolates_concurrent_endpoints_and_closes_privileged_descriptors
             PROXY_ATTRIBUTION_TOKEN_ENV_KEY.to_string(),
             format!("handoff-{label}"),
         );
-        env.insert("CODEX_TEST_HANDOFF_LABEL".to_string(), label.to_string());
-        env.insert("CODEX_TEST_HANDOFF_PEER".to_string(), peer.to_string());
+        env.insert("AVA_TEST_HANDOFF_LABEL".to_string(), label.to_string());
+        env.insert("AVA_TEST_HANDOFF_PEER".to_string(), peer.to_string());
         env.insert(
-            "CODEX_TEST_HANDOFF_SHARED".to_string(),
+            "AVA_TEST_HANDOFF_SHARED".to_string(),
             shared.path().to_string_lossy().into_owned(),
         );
 

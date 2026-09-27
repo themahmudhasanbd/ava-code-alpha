@@ -3,7 +3,7 @@
 //! This module mirrors the semantics used by the macOS Seatbelt sandbox:
 //! - the filesystem is read-only by default,
 //! - explicit writable roots are layered on top, and
-//! - sensitive subpaths such as `.git`, `.agents`, and `.codex` remain
+//! - sensitive subpaths such as `.git`, `.agents`, and `.ava-code` remain
 //!   read-only even when their parent root is writable.
 //!
 //! Restricted execution also hides WSLg's duplicate distro root so it cannot
@@ -29,15 +29,15 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use crate::linux_run_main::synthetic_mount_registry_root;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
-use codex_protocol::permissions::is_protected_metadata_name;
-use codex_protocol::protocol::FileSystemAccessMode;
-use codex_protocol::protocol::FileSystemPath;
-use codex_protocol::protocol::FileSystemSandboxPolicy;
-use codex_protocol::protocol::FileSystemSpecialPath;
-use codex_protocol::protocol::WritableRoot;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
+use ava_protocol::permissions::is_protected_metadata_name;
+use ava_protocol::protocol::FileSystemAccessMode;
+use ava_protocol::protocol::FileSystemPath;
+use ava_protocol::protocol::FileSystemSandboxPolicy;
+use ava_protocol::protocol::FileSystemSpecialPath;
+use ava_protocol::protocol::WritableRoot;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use globset::GlobBuilder;
 use globset::GlobSet;
 use globset::GlobSetBuilder;
@@ -422,7 +422,7 @@ fn create_filesystem_args(
     cwd: &Path,
     options: BwrapOptions,
 ) -> Result<BwrapArgs> {
-    let daemon_directory = codex_uds::prepare_shared_daemon_socket_directory()?;
+    let daemon_directory = ava_uds::prepare_shared_daemon_socket_directory()?;
     crate::daemon_mounts::reject_daemon_mount_aliases(
         &daemon_directory,
         options
@@ -465,7 +465,7 @@ fn create_filesystem_args(
                 };
                 // Automatic repo-metadata read masks are skipped here so the
                 // metadata handling below can apply the root-scoped
-                // protection consistently for `.git`, `.agents`, and `.codex`.
+                // protection consistently for `.git`, `.agents`, and `.ava-code`.
                 // User-authored `read` rules for other subpaths and `none`
                 // rules should keep their normal bwrap behavior, which can mask
                 // the first missing component to prevent creation under writable
@@ -473,7 +473,7 @@ fn create_filesystem_args(
                 let project_subpath = Path::new(subpath);
                 if project_subpath != Path::new(".git")
                     && project_subpath != Path::new(".agents")
-                    && project_subpath != Path::new(".codex")
+                    && project_subpath != Path::new(".ava-code")
                 {
                     return None;
                 }
@@ -784,7 +784,7 @@ fn append_daemon_socket_mask(
 ) -> Result<()> {
     let source = fs::canonicalize(mount_root)?;
     if source.starts_with(daemon_directory) {
-        return Err(CodexErr::Fatal(
+        return Err(AvaErr::Fatal(
             "app-server socket directory cannot be a sandbox mount root".to_string(),
         ));
     }
@@ -817,7 +817,7 @@ fn expand_unreadable_globs_with_ripgrep(
     let mut patterns_by_search_root: BTreeMap<AbsolutePathBuf, Vec<String>> = BTreeMap::new();
     for pattern in patterns {
         let Some((search_root, glob)) = split_pattern_for_ripgrep(pattern, cwd) else {
-            return Err(CodexErr::Fatal(format!(
+            return Err(AvaErr::Fatal(format!(
                 "unreadable glob `{pattern}` cannot be safely expanded; use a pattern with a non-root directory prefix"
             )));
         };
@@ -840,7 +840,7 @@ fn expand_unreadable_globs_with_ripgrep(
             }
             expanded_paths.insert(path);
             if expanded_paths.len() > MAX_UNREADABLE_GLOB_MATCHES {
-                return Err(CodexErr::Fatal(format!(
+                return Err(AvaErr::Fatal(format!(
                     "unreadable glob expansion for {} matched more than {MAX_UNREADABLE_GLOB_MATCHES} paths",
                     search_root.display()
                 )));
@@ -959,7 +959,7 @@ fn ripgrep_files(
         }
 
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(CodexErr::Fatal(format!(
+        return Err(AvaErr::Fatal(format!(
             "ripgrep unreadable glob scan failed for {}: {stderr}",
             search_root.display()
         )));
@@ -994,7 +994,7 @@ fn glob_files(
             .allow_unclosed_class(true)
             .build()
             .map_err(|err| {
-                CodexErr::Fatal(format!(
+                AvaErr::Fatal(format!(
                     "unreadable glob pattern is invalid for {}: {err}",
                     search_root.display()
                 ))
@@ -1002,7 +1002,7 @@ fn glob_files(
         builder.add(glob);
     }
     let glob_set = builder.build().map_err(|err| {
-        CodexErr::Fatal(format!(
+        AvaErr::Fatal(format!(
             "unreadable glob matcher failed for {}: {err}",
             search_root.display()
         ))
@@ -1138,7 +1138,7 @@ fn append_read_only_subpath_args(
          * only protect a startup-time snapshot; the sandboxed process could
          * replace the writable symlink before it reads through the logical path.
          */
-        return Err(CodexErr::Fatal(format!(
+        return Err(AvaErr::Fatal(format!(
             "cannot enforce sandbox read-only path {} because it crosses writable symlink {}",
             subpath.display(),
             symlink.display()
@@ -1178,7 +1178,7 @@ fn append_read_only_subpath_args(
         append_daemon_socket_mask(
             &mut bwrap_args.args,
             subpath,
-            &codex_uds::shared_daemon_socket_directory()?,
+            &ava_uds::shared_daemon_socket_directory()?,
         )?;
     }
     Ok(())
@@ -1264,7 +1264,7 @@ fn append_unreadable_root_args(
          * protect the old target while the logical path could later point
          * somewhere else.
          */
-        return Err(CodexErr::Fatal(format!(
+        return Err(AvaErr::Fatal(format!(
             "cannot enforce sandbox deny-read path {} because it crosses writable symlink {}",
             unreadable_root.display(),
             symlink.display()
@@ -1445,12 +1445,12 @@ mod wslg_tests;
 mod tests {
     use super::*;
 
-    use codex_protocol::protocol::FileSystemAccessMode;
-    use codex_protocol::protocol::FileSystemPath;
-    use codex_protocol::protocol::FileSystemSandboxEntry;
-    use codex_protocol::protocol::FileSystemSandboxPolicy;
-    use codex_protocol::protocol::FileSystemSpecialPath;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_protocol::protocol::FileSystemAccessMode;
+    use ava_protocol::protocol::FileSystemPath;
+    use ava_protocol::protocol::FileSystemSandboxEntry;
+    use ava_protocol::protocol::FileSystemSandboxPolicy;
+    use ava_protocol::protocol::FileSystemSpecialPath;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
@@ -1704,14 +1704,14 @@ mod tests {
     fn writable_roots_under_symlinked_ancestors_bind_real_target() {
         let temp_dir = TempDir::new().expect("temp dir");
         let logical_home = temp_dir.path().join("home");
-        let real_codex = temp_dir.path().join("real-codex");
-        let logical_codex = logical_home.join(".codex");
-        let real_memories = real_codex.join("memories");
-        let logical_memories = logical_codex.join("memories");
+        let real_ava = temp_dir.path().join("real-ava");
+        let logical_ava = logical_home.join(".ava-code");
+        let real_memories = real_ava.join("memories");
+        let logical_memories = logical_ava.join("memories");
         std::fs::create_dir_all(&logical_home).expect("create logical home");
         std::fs::create_dir_all(&real_memories).expect("create memories dir");
-        std::os::unix::fs::symlink(&real_codex, &logical_codex)
-            .expect("create symlinked codex home");
+        std::os::unix::fs::symlink(&real_ava, &logical_ava)
+            .expect("create symlinked ava home");
 
         let logical_memories_root =
             AbsolutePathBuf::from_absolute_path(&logical_memories).expect("absolute memories");
@@ -1883,7 +1883,7 @@ mod tests {
         assert_empty_file_bound_without_perms(&args.args, &blocked);
         assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".git"));
         assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".agents"));
-        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".codex"));
+        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".ava-code"));
         assert_eq!(args.preserved_files.len(), 1);
         assert_eq!(
             synthetic_mount_target_paths(&args),
@@ -1891,7 +1891,7 @@ mod tests {
                 blocked.clone(),
                 workspace.join(".git"),
                 workspace.join(".agents"),
-                workspace.join(".codex"),
+                workspace.join(".ava-code"),
             ]
         );
         assert!(
@@ -1922,13 +1922,13 @@ mod tests {
 
         assert_empty_file_bound_without_perms(&args.args, &dot_git);
         assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".agents"));
-        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".codex"));
+        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".ava-code"));
         assert_eq!(
             synthetic_mount_target_paths(&args),
             vec![
                 dot_git.clone(),
                 workspace.join(".agents"),
-                workspace.join(".codex"),
+                workspace.join(".ava-code"),
             ]
         );
         assert!(
@@ -1967,10 +1967,10 @@ mod tests {
             .expect("filesystem args");
         assert_empty_directory_mounted_read_only(&args.args, &dot_git);
         assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".agents"));
-        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".codex"));
+        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".ava-code"));
         assert_eq!(
             synthetic_mount_target_paths(&args),
-            vec![workspace.join(".codex"), dot_git, workspace.join(".agents")],
+            vec![workspace.join(".ava-code"), dot_git, workspace.join(".agents")],
         );
         assert!(
             protected_create_target_paths(&args).is_empty(),
@@ -2004,10 +2004,10 @@ mod tests {
             .expect("filesystem args");
         assert_empty_directory_mounted_read_only(&args.args, &dot_git);
         assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".agents"));
-        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".codex"));
+        assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".ava-code"));
         assert_eq!(
             synthetic_mount_target_paths(&args),
-            vec![workspace.join(".codex"), dot_git, workspace.join(".agents")],
+            vec![workspace.join(".ava-code"), dot_git, workspace.join(".agents")],
         );
         assert!(
             protected_create_target_paths(&args).is_empty(),
@@ -2082,7 +2082,7 @@ mod tests {
             },
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
-                    value: FileSystemSpecialPath::project_roots(Some(".codex".into())),
+                    value: FileSystemSpecialPath::project_roots(Some(".ava-code".into())),
                 },
                 access: FileSystemAccessMode::Read,
                 missing_path_behavior: None,
@@ -2093,16 +2093,16 @@ mod tests {
             .expect("filesystem args");
         let dot_git = path_to_string(&temp_dir.path().join(".git"));
         let dot_agents = path_to_string(&temp_dir.path().join(".agents"));
-        let dot_codex = path_to_string(&temp_dir.path().join(".codex"));
+        let dot_ava = path_to_string(&temp_dir.path().join(".ava-code"));
 
         assert_empty_directory_mounted_read_only(&args.args, Path::new(&dot_git));
         assert_empty_directory_mounted_read_only(&args.args, Path::new(&dot_agents));
-        assert_empty_directory_mounted_read_only(&args.args, Path::new(&dot_codex));
+        assert_empty_directory_mounted_read_only(&args.args, Path::new(&dot_ava));
         assert!(args.preserved_files.is_empty());
         let synthetic_targets = synthetic_mount_target_paths(&args);
         assert!(synthetic_targets.contains(&PathBuf::from(&dot_git)));
         assert!(synthetic_targets.contains(&PathBuf::from(&dot_agents)));
-        assert!(synthetic_targets.contains(&PathBuf::from(&dot_codex)));
+        assert!(synthetic_targets.contains(&PathBuf::from(&dot_ava)));
         assert_eq!(
             protected_create_target_paths(&args),
             Vec::<PathBuf>::new(),
@@ -2169,14 +2169,14 @@ mod tests {
             vec![
                 PathBuf::from("/.git"),
                 PathBuf::from("/.agents"),
-                PathBuf::from("/.codex"),
+                PathBuf::from("/.ava-code"),
                 PathBuf::from("/dev/.git"),
                 PathBuf::from("/dev/.agents"),
-                PathBuf::from("/dev/.codex"),
+                PathBuf::from("/dev/.ava-code"),
             ]
         );
         let daemon_directory =
-            path_to_string(&codex_uds::shared_daemon_socket_directory().unwrap());
+            path_to_string(&ava_uds::shared_daemon_socket_directory().unwrap());
         assert_eq!(
             args.args,
             vec![
@@ -2221,9 +2221,9 @@ mod tests {
                 "--perms".to_string(),
                 "555".to_string(),
                 "--tmpfs".to_string(),
-                "/.codex".to_string(),
+                "/.ava-code".to_string(),
                 "--remount-ro".to_string(),
-                "/.codex".to_string(),
+                "/.ava-code".to_string(),
                 "--ro-bind".to_string(),
                 path_to_string(&synthetic_mount_registry_root()),
                 path_to_string(&synthetic_mount_registry_root()),
@@ -2249,9 +2249,9 @@ mod tests {
                 "--perms".to_string(),
                 "555".to_string(),
                 "--tmpfs".to_string(),
-                "/dev/.codex".to_string(),
+                "/dev/.ava-code".to_string(),
                 "--remount-ro".to_string(),
-                "/dev/.codex".to_string(),
+                "/dev/.ava-code".to_string(),
             ]
         );
     }
@@ -2280,7 +2280,7 @@ mod tests {
             .position(|window| window == ["--ro-bind", "/tmp", "/tmp"])
             .expect("read-only tmp bind");
         let daemon_directory =
-            path_to_string(&codex_uds::shared_daemon_socket_directory().unwrap());
+            path_to_string(&ava_uds::shared_daemon_socket_directory().unwrap());
         assert_eq!(
             &args.args[tmp_bind + 3..tmp_bind + 9],
             [

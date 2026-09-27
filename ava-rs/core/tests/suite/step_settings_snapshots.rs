@@ -1,21 +1,21 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -52,7 +52,7 @@ async fn ordinary_settings_updates_keep_the_running_turn_snapshot() -> Result<()
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("snapshot-model-a")
         .with_config(|config| {
             // This regression exercises ordinary turn construction without
@@ -85,21 +85,21 @@ async fn ordinary_settings_updates_keep_the_running_turn_snapshot() -> Result<()
         })
         .build_with_auto_env(&server)
         .await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "pause before continuing".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let paused = wait_for_event_match(&test.codex, |event| match event {
+    let paused = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
-    let mut expected = test.codex.thread_settings_snapshot().await;
+    let mut expected = test.ava-code.thread_settings_snapshot().await;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some("snapshot-model-b".to_string()),
             effort: Some(Some(ReasoningEffort::High)),
@@ -118,8 +118,8 @@ async fn ordinary_settings_updates_keep_the_running_turn_snapshot() -> Result<()
         Some(expected.reasoning_effort.clone()),
         /*developer_instructions*/ None,
     );
-    assert_eq!(test.codex.thread_settings_snapshot().await, expected);
-    test.codex
+    assert_eq!(test.ava-code.thread_settings_snapshot().await, expected);
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: paused.turn_id.clone(),
             response: RequestUserInputResponse {
@@ -132,7 +132,7 @@ async fn ordinary_settings_updates_keep_the_running_turn_snapshot() -> Result<()
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

@@ -6,7 +6,7 @@ import {
   parseCcSwitchConfigJson,
   parseCcSwitchProviders,
   parseClaudeCodeModelConfig,
-  parseCodexModelConfig,
+  parseAvaModelConfig,
   parseJsonDocument,
   parseOpenCodeModelConfig,
   parsePiModelConfig,
@@ -129,7 +129,7 @@ describe("parseOpenCodeModelConfig", () => {
   });
 });
 
-describe("parseCodexModelConfig", () => {
+describe("parseAvaModelConfig", () => {
   it("imports [model_providers] tables and resolves env_key", () => {
     const toml = `
 model = "gpt-4.1"
@@ -150,7 +150,7 @@ wire_api = "chat"
 name = "ChatGPT"
 requires_openai_auth = true
 `;
-    const drafts = parseCodexModelConfig(toml, { OPENAI_API_KEY: "sk-openai" });
+    const drafts = parseAvaModelConfig(toml, { OPENAI_API_KEY: "sk-openai" });
     expect(drafts.map((d) => d.externalId).sort()).toEqual(["my-gw", "openai"]);
     const openai = drafts.find((d) => d.externalId === "openai")!;
     expect(openai.apiStyle).toBe("responses");
@@ -163,7 +163,7 @@ requires_openai_auth = true
 
   it("ignores ChatGPT-only configs without custom providers", () => {
     expect(
-      parseCodexModelConfig(`
+      parseAvaModelConfig(`
 model = "gpt-5.6-sol"
 requires_openai_auth = true
 `),
@@ -441,7 +441,7 @@ describe("parseJsonDocument / parseTomlSubset", () => {
   });
 
   it("keeps quoted table keys", () => {
-    const drafts = parseCodexModelConfig(
+    const drafts = parseAvaModelConfig(
       `[model_providers."my.gw"]\nname = "GW"\nbase_url = "https://gw.example.com/v1"\nmodels = "m1"\n`,
     );
     expect(drafts.map((d) => [d.externalId, d.name])).toEqual([["my.gw", "GW"]]);

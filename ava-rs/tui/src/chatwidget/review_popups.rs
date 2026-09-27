@@ -4,7 +4,7 @@
 
 use super::*;
 use crate::bottom_pane::PickerSurface;
-use codex_git_utils::CommitLogEntry;
+use ava_git_utils::CommitLogEntry;
 
 impl ChatWidget {
     pub(crate) fn on_review_started(&mut self) {

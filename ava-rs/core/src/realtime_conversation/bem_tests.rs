@@ -1,6 +1,6 @@
 use super::ChannelParser;
 use super::message_phase;
-use codex_protocol::models::MessagePhase;
+use ava_protocol::models::MessagePhase;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use std::sync::Arc;

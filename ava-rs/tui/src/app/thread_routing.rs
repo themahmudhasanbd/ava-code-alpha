@@ -8,10 +8,10 @@ use super::session_lifecycle::ThreadAttachPresentation;
 use super::*;
 use crate::app_event::ThreadTitleDestination;
 use crate::chatwidget::ThreadInputStateRestoreMode;
-use codex_app_server_protocol::ThreadStartedNotification;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::WarningNotification;
+use ava_app_server_protocol::ThreadStartedNotification;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_app_server_protocol::WarningNotification;
 
 // Leave time for side-thread cleanup and unsubscribe inside the two-second exit budget.
 const REALTIME_STOP_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 1);
@@ -319,7 +319,7 @@ impl App {
                     Some(ThreadInteractiveRequest::McpServerElicitation(request))
                 } else {
                     match &params.request {
-                        codex_app_server_protocol::McpServerElicitationRequest::Form {
+                        ava_app_server_protocol::McpServerElicitationRequest::Form {
                             message,
                             ..
                         } => Some(ThreadInteractiveRequest::Approval(
@@ -331,7 +331,7 @@ impl App {
                                 message: message.clone(),
                             }),
                         )),
-                        codex_app_server_protocol::McpServerElicitationRequest::UserVerification {
+                        ava_app_server_protocol::McpServerElicitationRequest::UserVerification {
                             title, description, ..
                         } => Some(ThreadInteractiveRequest::UserVerification {
                             thread_id,
@@ -343,16 +343,16 @@ impl App {
                                 description: description.clone(),
                             },
                         }),
-                        codex_app_server_protocol::McpServerElicitationRequest::OpenAiForm {
+                        ava_app_server_protocol::McpServerElicitationRequest::OpenAiForm {
                             ..
                         }
-                        | codex_app_server_protocol::McpServerElicitationRequest::OpenAiElicitationForm { .. }
-                        | codex_app_server_protocol::McpServerElicitationRequest::Url { .. } => {
+                        | ava_app_server_protocol::McpServerElicitationRequest::OpenAiElicitationForm { .. }
+                        | ava_app_server_protocol::McpServerElicitationRequest::Url { .. } => {
                             self.app_event_tx.resolve_elicitation(
                                 thread_id,
                                 params.server_name.clone(),
                                 request_id.clone(),
-                                codex_app_server_protocol::McpServerElicitationAction::Decline,
+                                ava_app_server_protocol::McpServerElicitationAction::Decline,
                                 /*content*/ None,
                                 /*meta*/ None,
                             );
@@ -556,13 +556,13 @@ impl App {
 
     /// Persist prompt text in the local cross-session message history.
     pub(super) fn append_message_history_entry(&self, thread_id: ThreadId, text: String) {
-        let history_config = codex_message_history::HistoryConfig::new(
-            self.local_settings.codex_home.clone(),
+        let history_config = ava_message_history::HistoryConfig::new(
+            self.local_settings.ava_home.clone(),
             &self.local_settings.history,
         );
         tokio::spawn(async move {
             if let Err(err) =
-                codex_message_history::append_entry(&text, thread_id, &history_config).await
+                ava_message_history::append_entry(&text, thread_id, &history_config).await
             {
                 tracing::warn!(
                     thread_id = %thread_id,
@@ -580,14 +580,14 @@ impl App {
         offset: usize,
         log_id: u64,
     ) -> Result<()> {
-        let history_config = codex_message_history::HistoryConfig::new(
-            self.local_settings.codex_home.clone(),
+        let history_config = ava_message_history::HistoryConfig::new(
+            self.local_settings.ava_home.clone(),
             &self.local_settings.history,
         );
         let app_event_tx = self.app_event_tx.clone();
         tokio::spawn(async move {
             let entry_opt = tokio::task::spawn_blocking(move || {
-                codex_message_history::lookup(log_id, offset, &history_config)
+                ava_message_history::lookup(log_id, offset, &history_config)
             })
             .await
             .unwrap_or_else(|err| {
@@ -611,17 +611,17 @@ impl App {
     pub(super) async fn lookup_message_history_batch(
         &mut self,
         thread_id: ThreadId,
-        cursor: codex_message_history::HistoryBatchCursor,
+        cursor: ava_message_history::HistoryBatchCursor,
         log_id: u64,
     ) -> Result<()> {
-        let history_config = codex_message_history::HistoryConfig::new(
-            self.local_settings.codex_home.clone(),
+        let history_config = ava_message_history::HistoryConfig::new(
+            self.local_settings.ava_home.clone(),
             &self.local_settings.history,
         );
         let app_event_tx = self.app_event_tx.clone();
         tokio::spawn(async move {
             let event = match tokio::task::spawn_blocking(move || {
-                codex_message_history::lookup_batch(log_id, cursor, &history_config)
+                ava_message_history::lookup_batch(log_id, cursor, &history_config)
             })
             .await
             {
@@ -899,7 +899,7 @@ impl App {
             AppCommand::ListSkills { cwds, force_reload } => {
                 self.handle_skills_list_result(
                     app_server
-                        .skills_list(codex_app_server_protocol::SkillsListParams {
+                        .skills_list(ava_app_server_protocol::SkillsListParams {
                             cwds: cwds.clone(),
                             force_reload: *force_reload,
                         })
@@ -1159,15 +1159,15 @@ impl App {
         let misalignment_policy_violation =
             match &notification {
                 ServerNotification::Error(notification) if !notification.will_retry => {
-                    notification.error.codex_error_info.as_ref()
+                    notification.error.ava_error_info.as_ref()
                 }
                 ServerNotification::TurnCompleted(notification) => notification
                     .turn
                     .error
                     .as_ref()
-                    .and_then(|error| error.codex_error_info.as_ref()),
+                    .and_then(|error| error.ava_error_info.as_ref()),
                 _ => None,
-            } == Some(&AppServerCodexErrorInfo::MisalignmentPolicyViolation);
+            } == Some(&AppServerAvaErrorInfo::MisalignmentPolicyViolation);
         if misalignment_policy_violation && self.active_side_parent_thread_id() == Some(thread_id) {
             if self.chat_widget.is_user_turn_pending_or_running() {
                 self.chat_widget.submit_op(AppCommand::Interrupt);
@@ -1979,13 +1979,13 @@ impl App {
         };
 
         match &params.request {
-            codex_app_server_protocol::McpServerElicitationRequest::UserVerification { .. } => true,
-            codex_app_server_protocol::McpServerElicitationRequest::Form { .. } => true,
-            codex_app_server_protocol::McpServerElicitationRequest::OpenAiForm { .. }
-            | codex_app_server_protocol::McpServerElicitationRequest::OpenAiElicitationForm {
+            ava_app_server_protocol::McpServerElicitationRequest::UserVerification { .. } => true,
+            ava_app_server_protocol::McpServerElicitationRequest::Form { .. } => true,
+            ava_app_server_protocol::McpServerElicitationRequest::OpenAiForm { .. }
+            | ava_app_server_protocol::McpServerElicitationRequest::OpenAiElicitationForm {
                 ..
             } => false,
-            request @ codex_app_server_protocol::McpServerElicitationRequest::Url { .. } => {
+            request @ ava_app_server_protocol::McpServerElicitationRequest::Url { .. } => {
                 let thread_id = ThreadId::from_string(&params.thread_id)
                     .unwrap_or_else(|_| self.chat_widget.thread_id().unwrap_or_default());
                 AppLinkViewParams::from_url_app_server_request(
@@ -2141,7 +2141,7 @@ impl App {
                 content
                     .iter()
                     .filter_map(|item| match item {
-                        codex_app_server_protocol::UserInput::Text { text, .. } => {
+                        ava_app_server_protocol::UserInput::Text { text, .. } => {
                             Some(crate::ide_context::extract_prompt_request_with_offset(text).0)
                         }
                         _ => None,
@@ -2185,13 +2185,13 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_protocol::models::ActivePermissionProfile;
-    use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+    use ava_protocol::models::ActivePermissionProfile;
+    use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
 
     async fn config_with_workspace_profile() -> Config {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .harness_overrides(ConfigOverrides {
                 default_permissions: Some(BUILT_IN_PERMISSION_PROFILE_WORKSPACE.to_string()),
                 ..ConfigOverrides::default()

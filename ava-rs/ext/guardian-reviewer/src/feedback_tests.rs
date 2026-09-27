@@ -28,7 +28,7 @@ fn oversized_context_keeps_the_action_and_decision() -> anyhow::Result<()> {
         instructions: Some(&"x".repeat(MAX_RECORD_BYTES)),
         history: Vec::new(),
     });
-    let contents = codex_feedback::guardian_review_failures(&[thread_id])
+    let contents = ava_feedback::guardian_review_failures(&[thread_id])
         .attachment
         .expect("failed-review record")
         .buffer;

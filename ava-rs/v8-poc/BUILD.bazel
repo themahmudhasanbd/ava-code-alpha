@@ -1,12 +1,12 @@
-load("//:defs.bzl", "codex_rust_crate")
+load("//:defs.bzl", "ava_rust_crate")
 
-codex_rust_crate(
+ava_rust_crate(
     name = "v8-poc",
     crate_features = select({
         "@llvm//constraints/windows/abi:msvc": [],
         "//conditions:default": ["sandbox"],
     }),
-    crate_name = "codex_v8_poc",
+    crate_name = "ava_v8_poc",
     deps_extra = ["@crates//:v8"],
 )
 

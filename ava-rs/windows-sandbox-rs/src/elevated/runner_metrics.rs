@@ -7,10 +7,10 @@ pub(crate) fn record(phase: &'static str, outcome: &'static str) {
     } else {
         "legacy"
     };
-    if let Some(metrics) = codex_otel::global() {
+    if let Some(metrics) = ava_otel::global() {
         // Fixed labels only: never send command text, paths, or arbitrary error messages.
         let _ = metrics.counter(
-            "codex.windows_sandbox.runner_result",
+            "ava.windows_sandbox.runner_result",
             /*inc*/ 1,
             &[("runtime", runtime), ("phase", phase), ("outcome", outcome)],
         );

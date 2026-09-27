@@ -3,8 +3,8 @@
 
 use crate::GuardianReviewError;
 use crate::GuardianReviewOutcome;
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_protocol::protocol::CodexErrorInfo;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_protocol::protocol::AvaErrorInfo;
 use rand::Rng;
 use std::future::Future;
 use std::time::Duration;
@@ -87,27 +87,27 @@ fn should_retry_guardian_review(outcome: &GuardianReviewOutcome) -> bool {
             error_info: Some(error),
             ..
         }) => match error {
-            CodexErrorInfo::RateLimitExceeded
-            | CodexErrorInfo::ServerOverloaded
-            | CodexErrorInfo::InternalServerError => true,
-            CodexErrorInfo::HttpConnectionFailed { http_status_code }
-            | CodexErrorInfo::ResponseStreamConnectionFailed { http_status_code }
-            | CodexErrorInfo::ResponseStreamDisconnected { http_status_code }
-            | CodexErrorInfo::ResponseTooManyFailedAttempts { http_status_code } => {
+            AvaErrorInfo::RateLimitExceeded
+            | AvaErrorInfo::ServerOverloaded
+            | AvaErrorInfo::InternalServerError => true,
+            AvaErrorInfo::HttpConnectionFailed { http_status_code }
+            | AvaErrorInfo::ResponseStreamConnectionFailed { http_status_code }
+            | AvaErrorInfo::ResponseStreamDisconnected { http_status_code }
+            | AvaErrorInfo::ResponseTooManyFailedAttempts { http_status_code } => {
                 matches!(http_status_code, None | Some(408 | 429 | 500..=599))
             }
-            CodexErrorInfo::ContextWindowExceeded
-            | CodexErrorInfo::SessionBudgetExceeded
-            | CodexErrorInfo::UsageLimitExceeded
-            | CodexErrorInfo::CyberPolicy
-            | CodexErrorInfo::BioPolicy
-            | CodexErrorInfo::MisalignmentPolicyViolation
-            | CodexErrorInfo::Unauthorized
-            | CodexErrorInfo::BadRequest
-            | CodexErrorInfo::SandboxError
-            | CodexErrorInfo::ActiveTurnNotSteerable { .. }
-            | CodexErrorInfo::ThreadRollbackFailed
-            | CodexErrorInfo::Other => false,
+            AvaErrorInfo::ContextWindowExceeded
+            | AvaErrorInfo::SessionBudgetExceeded
+            | AvaErrorInfo::UsageLimitExceeded
+            | AvaErrorInfo::CyberPolicy
+            | AvaErrorInfo::BioPolicy
+            | AvaErrorInfo::MisalignmentPolicyViolation
+            | AvaErrorInfo::Unauthorized
+            | AvaErrorInfo::BadRequest
+            | AvaErrorInfo::SandboxError
+            | AvaErrorInfo::ActiveTurnNotSteerable { .. }
+            | AvaErrorInfo::ThreadRollbackFailed
+            | AvaErrorInfo::Other => false,
         },
         GuardianReviewOutcome::Completed(_)
         | GuardianReviewOutcome::Error(

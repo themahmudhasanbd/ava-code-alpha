@@ -1,6 +1,6 @@
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::RealtimeTranscriptDelta;
-use codex_protocol::protocol::RealtimeTranscriptDone;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::RealtimeTranscriptDelta;
+use ava_protocol::protocol::RealtimeTranscriptDone;
 use serde_json::Value;
 use tracing::debug;
 

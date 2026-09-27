@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::legacy_core::config::ConfigBuilder;
-use codex_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerNotification;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -65,7 +65,7 @@ stream_max_retries = 0
             ),
         )?;
         let config = ConfigBuilder::default()
-            .codex_home(home.path().to_path_buf())
+            .ava_home(home.path().to_path_buf())
             .build()
             .await?;
         let mut app_server = crate::start_embedded_app_server_for_picker(&config).await?;
@@ -99,7 +99,7 @@ stream_max_retries = 0
                 {
                     assert_eq!(
                         completed.turn.status,
-                        codex_app_server_protocol::TurnStatus::Completed
+                        ava_app_server_protocol::TurnStatus::Completed
                     );
                     return;
                 }
@@ -114,7 +114,7 @@ stream_max_retries = 0
             "settings: {settings}"
         );
         let metadata: serde_json::Value = serde_json::from_str(
-            body["client_metadata"]["x-codex-turn-metadata"]
+            body["client_metadata"]["x-ava-turn-metadata"]
                 .as_str()
                 .expect("canonical turn metadata"),
         )?;
@@ -166,7 +166,7 @@ async fn new_tui_threads_disable_summaries_unless_explicitly_enabled() {
     ] {
         std::fs::write(temp_dir.path().join("config.toml"), config_text).expect("config");
         let config = ConfigBuilder::default()
-            .codex_home(temp_dir.path().to_path_buf())
+            .ava_home(temp_dir.path().to_path_buf())
             .build()
             .await
             .expect("config should build");
@@ -192,7 +192,7 @@ async fn new_tui_threads_disable_summaries_unless_explicitly_enabled() {
     )
     .expect("config");
     let config = ConfigBuilder::default()
-        .codex_home(temp_dir.path().to_path_buf())
+        .ava_home(temp_dir.path().to_path_buf())
         .cli_overrides(vec![(
             "model_reasoning_summary".to_string(),
             toml::Value::String("none".to_string()),

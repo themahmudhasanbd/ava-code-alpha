@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::MCP_APP_UI_EXTENSION_ID;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
-use codex_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
-use codex_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::MCP_APP_UI_EXTENSION_ID;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
+use ava_protocol::mcp::OPENAI_STANDARD_FORM_INPUT_EXTENSION_ID;
 use serde_json::Map;
 use serde_json::Value;
 
@@ -31,9 +31,9 @@ pub(crate) fn server_mcp_extensions(
     }))
 }
 
-/// Selects the MCP extensions Codex supports from those declared by the app-server host.
+/// Selects the MCP extensions Ava supports from those declared by the app-server host.
 ///
-/// App-server clients may declare unrelated extensions. Codex retains only the
+/// App-server clients may declare unrelated extensions. Ava retains only the
 /// trusted extension namespaces it knows how to project downstream. The
 /// legacy form capability is normalized into the same extension map.
 pub fn client_mcp_extensions(

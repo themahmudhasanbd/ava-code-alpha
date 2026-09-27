@@ -5,39 +5,39 @@ use app_test_support::create_escalated_command_execution_sse_response;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::format_with_current_shell_display;
-use codex_app_server::INVALID_PARAMS_ERROR_CODE;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionOutputDeltaNotification;
-use codex_app_server_protocol::CommandExecutionRequestApprovalResponse;
-use codex_app_server_protocol::CommandExecutionSource;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadShellCommandParams;
-use codex_app_server_protocol::ThreadShellCommandResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadTurnsListParams;
-use codex_app_server_protocol::ThreadTurnsListResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_core::shell::default_user_shell;
-use codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR;
+use ava_app_server::INVALID_PARAMS_ERROR_CODE;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionOutputDeltaNotification;
+use ava_app_server_protocol::CommandExecutionRequestApprovalResponse;
+use ava_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadShellCommandParams;
+use ava_app_server_protocol::ThreadShellCommandResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadTurnsListParams;
+use ava_app_server_protocol::ThreadTurnsListResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_core::shell::default_user_shell;
+use ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -49,16 +49,16 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 async fn thread_shell_command_history_responses_exclude_persisted_command_executions() -> Result<()>
 {
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
     let server = create_mock_responses_server_sequence(vec![]).await;
-    MockResponsesConfig::new(&server.uri()).write(&codex_home)?;
+    MockResponsesConfig::new(&server.uri()).write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.as_path())
+        .with_ava_home(ava_home.as_path())
         // thread/shellCommand intentionally executes on the app-server host.
         .without_auto_env()
         .build_initialized()
@@ -171,16 +171,16 @@ async fn thread_shell_command_history_responses_exclude_persisted_command_execut
 #[tokio::test]
 async fn thread_shell_command_returns_error_when_local_environment_is_disabled() -> Result<()> {
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let server = create_mock_responses_server_sequence(vec![]).await;
-    MockResponsesConfig::new(&server.uri()).write(&codex_home)?;
+    MockResponsesConfig::new(&server.uri()).write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.as_path())
+        .with_ava_home(ava_home.as_path())
         // This test intentionally exercises thread/shellCommand without a local host environment.
         .without_auto_env()
-        .with_env_overrides(&[(CODEX_EXEC_SERVER_URL_ENV_VAR, Some("none"))])
+        .with_env_overrides(&[(AVA_EXEC_SERVER_URL_ENV_VAR, Some("none"))])
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
@@ -216,8 +216,8 @@ async fn thread_shell_command_timeout_preserves_active_turn() -> Result<()> {
 
 async fn check_thread_shell_command_in_active_turn(timeout_ms: Option<i64>) -> Result<()> {
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
@@ -237,10 +237,10 @@ async fn check_thread_shell_command_in_active_turn(timeout_ms: Option<i64>) -> R
     let server = create_mock_responses_server_sequence(responses).await;
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.as_path())
+        .with_ava_home(ava_home.as_path())
         // thread/shellCommand intentionally joins the app-server's host-local active turn.
         .without_auto_env()
         .build_initialized()
@@ -401,11 +401,11 @@ async fn check_thread_shell_command_in_active_turn(timeout_ms: Option<i64>) -> R
 
 #[tokio::test]
 async fn thread_shell_command_honors_optional_timeout() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = create_mock_responses_server_sequence(vec![]).await;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         // thread/shellCommand always executes on the app-server host.
         .without_auto_env()
         .build_initialized()
@@ -478,11 +478,11 @@ async fn thread_shell_command_honors_optional_timeout() -> Result<()> {
 
 #[tokio::test]
 async fn thread_shell_command_rejects_invalid_timeouts_before_execution() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = create_mock_responses_server_sequence(vec![]).await;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;

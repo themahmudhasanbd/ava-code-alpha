@@ -9,22 +9,22 @@ use chrono::DateTime;
 use chrono::NaiveDateTime;
 use chrono::Timelike;
 use chrono::Utc;
-use codex_protocol::RolloutId;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_state::BackfillState;
-use codex_state::BackfillStats;
-use codex_state::BackfillStatus;
-use codex_state::DB_ERROR_METRIC;
-use codex_state::DB_METRIC_BACKFILL;
-use codex_state::DB_METRIC_BACKFILL_DURATION_MS;
-use codex_state::ExtractionOutcome;
-use codex_state::ThreadMetadataBuilder;
-use codex_state::apply_rollout_item;
+use ava_protocol::RolloutId;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_state::BackfillState;
+use ava_state::BackfillStats;
+use ava_state::BackfillStatus;
+use ava_state::DB_ERROR_METRIC;
+use ava_state::DB_METRIC_BACKFILL;
+use ava_state::DB_METRIC_BACKFILL_DURATION_MS;
+use ava_state::ExtractionOutcome;
+use ava_state::ThreadMetadataBuilder;
+use ava_state::apply_rollout_item;
 use std::path::Path;
 use std::path::PathBuf;
 use tracing::info;
@@ -181,13 +181,13 @@ pub async fn extract_metadata_from_rollout(
 }
 
 pub(crate) async fn backfill_sessions(
-    runtime: &codex_state::StateRuntime,
-    codex_home: &Path,
+    runtime: &ava_state::StateRuntime,
+    ava_home: &Path,
     default_provider: &str,
 ) {
     backfill_sessions_with_lease(
         runtime,
-        codex_home,
+        ava_home,
         default_provider,
         BACKFILL_LEASE_SECONDS,
     )
@@ -195,12 +195,12 @@ pub(crate) async fn backfill_sessions(
 }
 
 pub(crate) async fn backfill_sessions_with_lease(
-    runtime: &codex_state::StateRuntime,
-    codex_home: &Path,
+    runtime: &ava_state::StateRuntime,
+    ava_home: &Path,
     default_provider: &str,
     backfill_lease_seconds: i64,
 ) {
-    let metric_client = codex_otel::global();
+    let metric_client = ava_otel::global();
     let timer = metric_client
         .as_ref()
         .and_then(|otel| otel.start_timer(DB_METRIC_BACKFILL_DURATION_MS, &[]).ok());
@@ -209,7 +209,7 @@ pub(crate) async fn backfill_sessions_with_lease(
         Err(err) => {
             warn!(
                 "failed to read backfill state at {}: {err}",
-                codex_home.display()
+                ava_home.display()
             );
             BackfillState::default()
         }
@@ -222,7 +222,7 @@ pub(crate) async fn backfill_sessions_with_lease(
         Err(err) => {
             warn!(
                 "failed to claim backfill worker at {}: {err}",
-                codex_home.display()
+                ava_home.display()
             );
             return;
         }
@@ -230,7 +230,7 @@ pub(crate) async fn backfill_sessions_with_lease(
     if !claimed {
         info!(
             "state db backfill already running at {}; skipping duplicate worker",
-            codex_home.display()
+            ava_home.display()
         );
         return;
     }
@@ -239,7 +239,7 @@ pub(crate) async fn backfill_sessions_with_lease(
         Err(err) => {
             warn!(
                 "failed to read claimed backfill state at {}: {err}",
-                codex_home.display()
+                ava_home.display()
             );
             BackfillState {
                 status: BackfillStatus::Running,
@@ -251,15 +251,15 @@ pub(crate) async fn backfill_sessions_with_lease(
         if let Err(err) = runtime.mark_backfill_running().await {
             warn!(
                 "failed to mark backfill running at {}: {err}",
-                codex_home.display()
+                ava_home.display()
             );
         } else {
             backfill_state.status = BackfillStatus::Running;
         }
     }
 
-    let sessions_root = codex_home.join(SESSIONS_SUBDIR);
-    let archived_root = codex_home.join(ARCHIVED_SESSIONS_SUBDIR);
+    let sessions_root = ava_home.join(SESSIONS_SUBDIR);
+    let archived_root = ava_home.join(ARCHIVED_SESSIONS_SUBDIR);
     let mut rollout_paths: Vec<BackfillRolloutPath> = Vec::new();
     for (root, archived) in [(sessions_root, false), (archived_root, true)] {
         if !tokio::fs::try_exists(&root).await.unwrap_or(false) {
@@ -268,7 +268,7 @@ pub(crate) async fn backfill_sessions_with_lease(
         match collect_rollout_paths(&root).await {
             Ok(paths) => {
                 rollout_paths.extend(paths.into_iter().map(|path| BackfillRolloutPath {
-                    watermark: backfill_watermark_for_path(codex_home, &path),
+                    watermark: backfill_watermark_for_path(ava_home, &path),
                     path,
                     archived,
                 }));
@@ -360,7 +360,7 @@ pub(crate) async fn backfill_sessions_with_lease(
             {
                 warn!(
                     "failed to checkpoint backfill at {}: {err}",
-                    codex_home.display()
+                    ava_home.display()
                 );
             } else {
                 last_watermark = Some(last_entry.watermark.clone());
@@ -373,7 +373,7 @@ pub(crate) async fn backfill_sessions_with_lease(
     {
         warn!(
             "failed to mark backfill complete at {}: {err}",
-            codex_home.display()
+            ava_home.display()
         );
     }
 
@@ -412,8 +412,8 @@ struct BackfillRolloutPath {
     archived: bool,
 }
 
-fn backfill_watermark_for_path(codex_home: &Path, path: &Path) -> String {
-    path.strip_prefix(codex_home)
+fn backfill_watermark_for_path(ava_home: &Path, path: &Path) -> String {
+    path.strip_prefix(ava_home)
         .unwrap_or(path)
         .to_string_lossy()
         .replace('\\', "/")

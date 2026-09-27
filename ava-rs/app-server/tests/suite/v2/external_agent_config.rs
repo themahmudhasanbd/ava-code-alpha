@@ -1,4 +1,4 @@
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::PathExt;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -9,44 +9,44 @@ use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::start_analytics_events_server;
 use app_test_support::write_chatgpt_auth;
 #[cfg(unix)]
-use codex_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadParams;
 #[cfg(unix)]
-use codex_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigReadResponse;
 #[cfg(unix)]
-use codex_app_server_protocol::ConfigRequirementsReadResponse;
+use ava_app_server_protocol::ConfigRequirementsReadResponse;
 #[cfg(unix)]
-use codex_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConfigValueWriteParams;
 #[cfg(unix)]
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::ExternalAgentConfigDetectResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
-use codex_app_server_protocol::ExternalAgentConfigImportHistoriesReadResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportHistoryRecordResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportProgressNotification;
-use codex_app_server_protocol::ExternalAgentConfigImportResponse;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::ExternalAgentConfigDetectResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
+use ava_app_server_protocol::ExternalAgentConfigImportHistoriesReadResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportHistoryRecordResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportProgressNotification;
+use ava_app_server_protocol::ExternalAgentConfigImportResponse;
 #[cfg(unix)]
-use codex_app_server_protocol::ExternalAgentConfigImportTypeResult;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItemType;
-use codex_app_server_protocol::ExternalAgentImportedConnectorCandidate;
-use codex_app_server_protocol::ExternalAgentImportedConnectorSource;
+use ava_app_server_protocol::ExternalAgentConfigImportTypeResult;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItemType;
+use ava_app_server_protocol::ExternalAgentImportedConnectorCandidate;
+use ava_app_server_protocol::ExternalAgentImportedConnectorSource;
 #[cfg(unix)]
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::PluginListParams;
-use codex_app_server_protocol::PluginListResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::PluginListParams;
+use ava_app_server_protocol::PluginListResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
 #[cfg(unix)]
-use codex_app_server_protocol::WriteStatus;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::WriteStatus;
+use ava_config::types::AuthCredentialsStoreMode;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use std::path::Path;
@@ -61,8 +61,8 @@ use super::analytics::wait_for_analytics_event;
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 const SECONDARY_MIGRATION_SOURCE: &str = concat!("cur", "sor");
 
-fn external_agent_home(codex_home: &Path) -> PathBuf {
-    codex_home.join(concat!(".", "cla", "ude"))
+fn external_agent_home(ava_home: &Path) -> PathBuf {
+    ava_home.join(concat!(".", "cla", "ude"))
 }
 
 fn connector_metadata_root(home: &Path) -> PathBuf {
@@ -80,8 +80,8 @@ fn connector_metadata_root(home: &Path) -> PathBuf {
     }
 }
 
-fn secondary_external_agent_home(codex_home: &Path) -> PathBuf {
-    codex_home.join(concat!(".", "cur", "sor"))
+fn secondary_external_agent_home(ava_home: &Path) -> PathBuf {
+    ava_home.join(concat!(".", "cur", "sor"))
 }
 
 fn assert_import_response(response: ExternalAgentConfigImportResponse) -> String {
@@ -92,13 +92,13 @@ fn assert_import_response(response: ExternalAgentConfigImportResponse) -> String
 #[tokio::test]
 async fn external_agent_config_detect_accepts_migration_source_and_defaults_unknown_values()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let source_home = external_agent_home(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let source_home = external_agent_home(ava_home.path());
     std::fs::create_dir_all(&source_home)?;
     std::fs::write(source_home.join("CLAUDE.md"), "project instructions")?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -146,11 +146,11 @@ async fn external_agent_config_detect_accepts_migration_source_and_defaults_unkn
 #[cfg(unix)]
 #[tokio::test]
 async fn external_agent_config_import_skips_repository_redirect_after_detection() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repository = TempDir::new()?;
     let repo_root = repository.path();
-    let repo_config_dir = repo_root.join(".codex");
-    let global_config = codex_home.path().join("config.toml");
+    let repo_config_dir = repo_root.join(".ava-code");
+    let global_config = ava_home.path().join("config.toml");
     std::fs::create_dir(repo_root.join(".git"))?;
     std::fs::create_dir(&repo_config_dir)?;
     std::fs::write(
@@ -159,9 +159,9 @@ async fn external_agent_config_import_skips_repository_redirect_after_detection(
     )?;
     std::fs::write(&global_config, "model = \"gpt-5.4\"\n")?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -186,7 +186,7 @@ async fn external_agent_config_import_skips_repository_redirect_after_detection(
     );
 
     std::fs::remove_dir(&repo_config_dir)?;
-    std::os::unix::fs::symlink(codex_home.path(), &repo_config_dir)?;
+    std::os::unix::fs::symlink(ava_home.path(), &repo_config_dir)?;
 
     let import_request_id = mcp
         .send_raw_request(
@@ -227,9 +227,9 @@ async fn external_agent_config_import_skips_repository_redirect_after_detection(
 #[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn external_agent_config_detect_does_not_block_configuration_reads() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let project_root = codex_home.path().join("repo");
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let ava_home = TempDir::new()?;
+    let project_root = ava_home.path().join("repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
     std::fs::create_dir_all(&project_root)?;
     std::fs::create_dir_all(&session_dir)?;
@@ -238,9 +238,9 @@ async fn external_agent_config_detect_does_not_block_configuration_reads() -> Re
         .status()?;
     assert!(status.success());
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -326,7 +326,7 @@ async fn external_agent_config_detect_does_not_block_configuration_reads() -> Re
         ExternalAgentConfigMigrationItemType::Sessions
     );
     assert!(
-        std::fs::read_to_string(codex_home.path().join("config.toml"))?
+        std::fs::read_to_string(ava_home.path().join("config.toml"))?
             .contains("model = \"gpt-concurrent\"")
     );
 
@@ -335,16 +335,16 @@ async fn external_agent_config_detect_does_not_block_configuration_reads() -> Re
 
 #[tokio::test]
 async fn external_agent_config_migration_source_drives_detect_and_import() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let source_home = secondary_external_agent_home(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let source_home = secondary_external_agent_home(ava_home.path());
     std::fs::create_dir_all(&source_home)?;
     std::fs::write(
         source_home.join("cli-config.json"),
         r#"{"env":{"SOURCE":"secondary"}}"#,
     )?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -389,7 +389,7 @@ async fn external_agent_config_migration_source_drives_detect_and_import() -> Re
     assert_eq!(completed.item_type_results[0].successes.len(), 1);
     assert_eq!(completed.item_type_results[0].failures, Vec::new());
     assert!(
-        std::fs::read_to_string(codex_home.path().join("config.toml"))?
+        std::fs::read_to_string(ava_home.path().join("config.toml"))?
             .contains("SOURCE = \"secondary\"")
     );
 
@@ -398,13 +398,13 @@ async fn external_agent_config_migration_source_drives_detect_and_import() -> Re
 
 #[tokio::test]
 async fn external_agent_config_import_source_remains_attribution_only() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let source_home = external_agent_home(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let source_home = external_agent_home(ava_home.path());
     std::fs::create_dir_all(&source_home)?;
     std::fs::write(source_home.join("CLAUDE.md"), "Claude guidance")?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -446,8 +446,8 @@ async fn external_agent_config_import_source_remains_attribution_only() -> Resul
     assert_eq!(completed.item_type_results[0].successes.len(), 1);
     assert_eq!(completed.item_type_results[0].failures, Vec::new());
     assert_eq!(
-        std::fs::read_to_string(codex_home.path().join("AGENTS.md"))?,
-        "Codex guidance"
+        std::fs::read_to_string(ava_home.path().join("AGENTS.md"))?,
+        "Ava guidance"
     );
 
     Ok(())
@@ -456,9 +456,9 @@ async fn external_agent_config_import_source_remains_attribution_only() -> Resul
 #[tokio::test]
 async fn external_agent_config_secondary_source_imports_session_and_plugin_end_to_end() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
-    let source_home = secondary_external_agent_home(codex_home.path());
-    let project_root = codex_home.path().join("my-project");
+    let ava_home = TempDir::new()?;
+    let source_home = secondary_external_agent_home(ava_home.path());
+    let project_root = ava_home.path().join("my-project");
     std::fs::create_dir_all(&project_root)?;
 
     let encoded_project = project_root
@@ -496,7 +496,7 @@ async fn external_agent_config_secondary_source_imports_session_and_plugin_end_t
 
     let marketplace_root = source_home.join("plugins/marketplaces/debug");
     let plugin_root = marketplace_root.join("plugins/sample");
-    let configured_marketplace_root = codex_home.path().join("configured-marketplace");
+    let configured_marketplace_root = ava_home.path().join("configured-marketplace");
     let configured_marketplace_manifest =
         configured_marketplace_root.join(".agents/plugins/marketplace.json");
     let configured_plugin_root = configured_marketplace_root.join("plugins/sample");
@@ -508,7 +508,7 @@ async fn external_agent_config_secondary_source_imports_session_and_plugin_end_t
             .parent()
             .expect("configured marketplace manifest parent"),
     )?;
-    std::fs::create_dir_all(configured_plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(configured_plugin_root.join(".ava-plugin"))?;
     std::fs::write(
         marketplace_root.join(".cursor-plugin/marketplace.json"),
         r#"{
@@ -531,11 +531,11 @@ async fn external_agent_config_secondary_source_imports_session_and_plugin_end_t
 }"#,
     )?;
     std::fs::write(
-        configured_plugin_root.join(".codex-plugin/plugin.json"),
+        configured_plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","version":"0.1.0"}"#,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"[marketplaces.debug]
 source_type = "local"
@@ -545,9 +545,9 @@ source = {:?}
         ),
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -674,7 +674,7 @@ source = {:?}
         marketplace
             .path
             .as_ref()
-            .map(codex_config::AbsolutePathBuf::as_path),
+            .map(ava_config::AbsolutePathBuf::as_path),
         Some(configured_marketplace_manifest.as_path())
     );
     let plugin = marketplace
@@ -692,16 +692,16 @@ source = {:?}
 #[tokio::test]
 async fn external_agent_config_import_sends_completion_notification_for_sync_only_import()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let sqlite_home = TempDir::new()?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let sqlite_home_dir = sqlite_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("HOME", Some(home_dir.as_str())),
-            ("CODEX_SQLITE_HOME", Some(sqlite_home_dir.as_str())),
+            ("AVA_SQLITE_HOME", Some(sqlite_home_dir.as_str())),
         ])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -740,8 +740,8 @@ async fn external_agent_config_import_sends_completion_notification_for_sync_onl
     )
     .await??;
     assert_eq!(completed.import_id, import_id);
-    let state_db = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(sqlite_home.path().abs()),
+    let state_db = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(sqlite_home.path().abs()),
         "mock_provider".into(),
     )
     .await?;
@@ -797,16 +797,16 @@ async fn external_agent_config_import_sends_completion_notification_for_sync_onl
 
 #[tokio::test]
 async fn external_agent_config_records_externally_completed_import_history() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let sqlite_home = TempDir::new()?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let sqlite_home_dir = sqlite_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("HOME", Some(home_dir.as_str())),
-            ("CODEX_SQLITE_HOME", Some(sqlite_home_dir.as_str())),
+            ("AVA_SQLITE_HOME", Some(sqlite_home_dir.as_str())),
         ])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -865,15 +865,15 @@ async fn external_agent_config_records_externally_completed_import_history() -> 
 
 #[tokio::test]
 async fn external_agent_memory_import_requires_feature_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let source_home = external_agent_home(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let source_home = external_agent_home(ava_home.path());
     let source_memory = source_home.join("projects/project-a/memory");
     std::fs::create_dir_all(&source_memory)?;
     let source_file = source_memory.join("MEMORY.md");
     std::fs::write(&source_file, "project A memory")?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -914,7 +914,7 @@ async fn external_agent_memory_import_requires_feature_config() -> Result<()> {
         "external agent memory import is disabled"
     );
     assert!(
-        !codex_home
+        !ava_home
             .path()
             .join("memories/extensions/external_agent_import")
             .exists()
@@ -925,19 +925,19 @@ async fn external_agent_memory_import_requires_feature_config() -> Result<()> {
 
 #[tokio::test]
 async fn external_agent_config_detects_non_memory_items_when_config_reload_fails() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let source_home = external_agent_home(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let source_home = external_agent_home(ava_home.path());
     std::fs::create_dir_all(&source_home)?;
     std::fs::write(source_home.join("CLAUDE.md"), "project instructions")?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "this is not valid = [toml",
     )?;
 
@@ -963,11 +963,11 @@ async fn external_agent_config_detects_non_memory_items_when_config_reload_fails
 
 #[tokio::test]
 async fn external_agent_config_detects_and_imports_project_memory_files() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let source_home = external_agent_home(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let source_home = external_agent_home(ava_home.path());
     let source_project = source_home.join("projects/project-a");
     let source_memory = source_project.join("memory");
-    let project_cwd = codex_home.path().join("project-a");
+    let project_cwd = ava_home.path().join("project-a");
     std::fs::create_dir_all(&source_memory)?;
     std::fs::create_dir_all(&project_cwd)?;
     let project_cwd = std::fs::canonicalize(project_cwd)?;
@@ -986,12 +986,12 @@ async fn external_agent_config_detects_and_imports_project_memory_files() -> Res
         .to_string(),
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[features]\nexternal_agent_memory_import = true\n",
     )?;
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -1097,7 +1097,7 @@ async fn external_agent_config_detects_and_imports_project_memory_files() -> Res
             .as_deref()
             .expect("memory target"),
     );
-    let expected_resources_root = codex_home
+    let expected_resources_root = ava_home
         .path()
         .join("memories/extensions/external_agent_import/resources");
     assert_eq!(
@@ -1120,8 +1120,8 @@ async fn external_agent_config_detects_and_imports_project_memory_files() -> Res
         imported_resources_root.join("project-a/scope.json"),
     )?)?;
     assert_eq!(imported_scope, serde_json::json!({ "cwd": project_cwd }));
-    let memory_root = codex_home.path().join("memories");
-    let memory_diff = codex_git_utils::diff_since_latest_init(&memory_root).await?;
+    let memory_root = ava_home.path().join("memories");
+    let memory_diff = ava_git_utils::diff_since_latest_init(&memory_root).await?;
     for relative_path in [
         "extensions/external_agent_import/resources/project-a/MEMORY.md",
         "extensions/external_agent_import/resources/project-a/release-process.md",
@@ -1135,7 +1135,7 @@ async fn external_agent_config_detects_and_imports_project_memory_files() -> Res
         );
     }
 
-    codex_memories_write::workspace::reset_memory_workspace_baseline(&memory_root).await?;
+    ava_memories_write::workspace::reset_memory_workspace_baseline(&memory_root).await?;
     std::fs::remove_dir_all(&source_project)?;
     let request_id = mcp
         .send_raw_request(
@@ -1184,7 +1184,7 @@ async fn external_agent_config_detects_and_imports_project_memory_files() -> Res
     );
     assert!(!imported_resources_root.join("project-a").exists());
 
-    let memory_diff = codex_git_utils::diff_since_latest_init(&memory_root).await?;
+    let memory_diff = ava_git_utils::diff_since_latest_init(&memory_root).await?;
     assert_eq!(
         memory_diff
             .changes
@@ -1193,15 +1193,15 @@ async fn external_agent_config_detects_and_imports_project_memory_files() -> Res
             .collect::<Vec<_>>(),
         vec![
             (
-                codex_git_utils::GitBaselineChangeStatus::Deleted,
+                ava_git_utils::GitBaselineChangeStatus::Deleted,
                 "extensions/external_agent_import/resources/project-a/MEMORY.md",
             ),
             (
-                codex_git_utils::GitBaselineChangeStatus::Deleted,
+                ava_git_utils::GitBaselineChangeStatus::Deleted,
                 "extensions/external_agent_import/resources/project-a/release-process.md",
             ),
             (
-                codex_git_utils::GitBaselineChangeStatus::Deleted,
+                ava_git_utils::GitBaselineChangeStatus::Deleted,
                 "extensions/external_agent_import/resources/project-a/scope.json",
             ),
         ]
@@ -1212,32 +1212,32 @@ async fn external_agent_config_detects_and_imports_project_memory_files() -> Res
 
 #[tokio::test]
 async fn external_agent_config_import_reports_failed_sync_import_in_completion() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
             .chatgpt_account_id("account-123"),
         AuthCredentialsStoreMode::File,
     )?;
-    let source_home = external_agent_home(codex_home.path());
+    let source_home = external_agent_home(ava_home.path());
     std::fs::create_dir_all(&source_home)?;
     std::fs::write(
         source_home.join("settings.json"),
         r#"{"env":{"FOO":"bar"}}"#,
     )?;
-    std::fs::write(codex_home.path().join("config.toml"), "invalid = [")?;
-    let home_dir = codex_home.path().display().to_string();
-    let analytics_capture_file = codex_home.path().join("analytics-events.jsonl");
+    std::fs::write(ava_home.path().join("config.toml"), "invalid = [")?;
+    let home_dir = ava_home.path().display().to_string();
+    let analytics_capture_file = ava_home.path().join("analytics-events.jsonl");
     let analytics_capture_file = analytics_capture_file.display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("HOME", Some(home_dir.as_str())),
             (
-                "CODEX_ANALYTICS_EVENTS_CAPTURE_FILE",
+                "AVA_ANALYTICS_EVENTS_CAPTURE_FILE",
                 Some(analytics_capture_file.as_str()),
             ),
         ])
@@ -1322,7 +1322,7 @@ async fn external_agent_config_import_reports_failed_sync_import_in_completion()
                 captured_events.extend(events.iter().cloned());
             }
             if captured_events.iter().any(|event| {
-                event["event_type"] == "codex_onboarding_external_agent_import_complete"
+                event["event_type"] == "ava_onboarding_external_agent_import_complete"
                     && event["event_params"]["type"] == "COMMANDS"
             }) {
                 return Ok::<Vec<serde_json::Value>, anyhow::Error>(captured_events);
@@ -1334,7 +1334,7 @@ async fn external_agent_config_import_reports_failed_sync_import_in_completion()
     let event = events
         .iter()
         .find(|event| {
-            event["event_type"] == "codex_onboarding_external_agent_import_failure"
+            event["event_type"] == "ava_onboarding_external_agent_import_failure"
                 && event["event_params"]["type"] == "CONFIG"
         })
         .expect("config failure analytics event");
@@ -1348,7 +1348,7 @@ async fn external_agent_config_import_reports_failed_sync_import_in_completion()
     assert!(event_params.get("raw_errors").is_none());
     assert!(event_params.get("message").is_none());
     assert!(!events.iter().any(|event| {
-        event["event_type"] == "codex_onboarding_external_agent_import_failure"
+        event["event_type"] == "ava_onboarding_external_agent_import_failure"
             && event["event_params"]["type"] == "COMMANDS"
     }));
 
@@ -1358,10 +1358,10 @@ async fn external_agent_config_import_reports_failed_sync_import_in_completion()
 #[tokio::test]
 async fn external_agent_config_import_completed_tracks_analytics_event() -> Result<()> {
     let analytics_server = start_analytics_events_server().await?;
-    let codex_home = TempDir::new()?;
-    write_analytics_config(codex_home.path(), &analytics_server.uri())?;
+    let ava_home = TempDir::new()?;
+    write_analytics_config(ava_home.path(), &analytics_server.uri())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -1370,11 +1370,11 @@ async fn external_agent_config_import_completed_tracks_analytics_event() -> Resu
     )?;
 
     let missing_session_path =
-        external_agent_home(codex_home.path()).join("projects/repo/missing.jsonl");
-    let project_root = codex_home.path().join("repo");
-    let home_dir = codex_home.path().display().to_string();
+        external_agent_home(ava_home.path()).join("projects/repo/missing.jsonl");
+    let project_root = ava_home.path().join("repo");
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -1425,7 +1425,7 @@ async fn external_agent_config_import_completed_tracks_analytics_event() -> Resu
     let event = wait_for_analytics_event(
         &analytics_server,
         DEFAULT_TIMEOUT,
-        "codex_onboarding_external_agent_import_complete",
+        "ava_onboarding_external_agent_import_complete",
     )
     .await?;
     let event_params = &event["event_params"];
@@ -1440,7 +1440,7 @@ async fn external_agent_config_import_completed_tracks_analytics_event() -> Resu
     let event = wait_for_analytics_event(
         &analytics_server,
         DEFAULT_TIMEOUT,
-        "codex_onboarding_external_agent_import_failure",
+        "ava_onboarding_external_agent_import_failure",
     )
     .await?;
     let event_params = &event["event_params"];
@@ -1460,10 +1460,10 @@ async fn external_agent_config_import_completed_tracks_analytics_event() -> Resu
 #[tokio::test]
 async fn external_agent_config_import_reports_session_config_error_subtype() -> Result<()> {
     let analytics_server = start_analytics_events_server().await?;
-    let codex_home = TempDir::new()?;
-    write_analytics_config(codex_home.path(), &analytics_server.uri())?;
+    let ava_home = TempDir::new()?;
+    write_analytics_config(ava_home.path(), &analytics_server.uri())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -1471,8 +1471,8 @@ async fn external_agent_config_import_reports_session_config_error_subtype() -> 
         AuthCredentialsStoreMode::File,
     )?;
 
-    let project_root = codex_home.path().join("repo");
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let project_root = ava_home.path().join("repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
     let recent_timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     std::fs::create_dir_all(&project_root)?;
@@ -1488,15 +1488,15 @@ async fn external_agent_config_import_reports_session_config_error_subtype() -> 
         .to_string(),
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "chatgpt_base_url = [",
     )?;
 
@@ -1543,7 +1543,7 @@ async fn external_agent_config_import_reports_session_config_error_subtype() -> 
     let event = wait_for_analytics_event(
         &analytics_server,
         DEFAULT_TIMEOUT,
-        "codex_onboarding_external_agent_import_failure",
+        "ava_onboarding_external_agent_import_failure",
     )
     .await?;
     let event_params = &event["event_params"];
@@ -1564,21 +1564,21 @@ async fn external_agent_config_import_reports_session_config_error_subtype() -> 
 
 #[tokio::test]
 async fn external_agent_config_import_reinstalls_plugins_from_known_marketplaces() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let analytics_server = start_analytics_events_server().await?;
-    write_analytics_config(codex_home.path(), &analytics_server.uri())?;
+    write_analytics_config(ava_home.path(), &analytics_server.uri())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
             .chatgpt_account_id("account-123"),
         AuthCredentialsStoreMode::File,
     )?;
-    let marketplace_root = codex_home.path().join("marketplace");
+    let marketplace_root = ava_home.path().join("marketplace");
     let plugin_root = marketplace_root.join("plugins").join("sample");
     std::fs::create_dir_all(marketplace_root.join(".agents/plugins"))?;
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
         marketplace_root.join(".agents/plugins/marketplace.json"),
         r#"{
@@ -1595,10 +1595,10 @@ async fn external_agent_config_import_reinstalls_plugins_from_known_marketplaces
 }"#,
     )?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","version":"0.1.0"}"#,
     )?;
-    let source_home = external_agent_home(codex_home.path());
+    let source_home = external_agent_home(ava_home.path());
     std::fs::create_dir_all(source_home.join("plugins"))?;
     let settings = serde_json::json!({
         "enabledPlugins": {
@@ -1632,9 +1632,9 @@ async fn external_agent_config_import_reinstalls_plugins_from_known_marketplaces
         }))?,
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -1658,7 +1658,7 @@ async fn external_agent_config_import_reinstalls_plugins_from_known_marketplaces
             .details
             .as_ref()
             .map(|details| details.plugins.clone()),
-        Some(vec![codex_app_server_protocol::PluginsMigration {
+        Some(vec![ava_app_server_protocol::PluginsMigration {
             marketplace_name: "debug".to_string(),
             plugin_names: vec!["missing".to_string(), "sample".to_string()],
         }])
@@ -1709,7 +1709,7 @@ async fn external_agent_config_import_reinstalls_plugins_from_known_marketplaces
     let event = wait_for_analytics_event(
         &analytics_server,
         DEFAULT_TIMEOUT,
-        "codex_plugin_install_failed",
+        "ava_plugin_install_failed",
     )
     .await?;
     let event_params = &event["event_params"];
@@ -1722,7 +1722,7 @@ async fn external_agent_config_import_reinstalls_plugins_from_known_marketplaces
     let event = wait_for_analytics_event(
         &analytics_server,
         DEFAULT_TIMEOUT,
-        "codex_onboarding_external_agent_import_failure",
+        "ava_onboarding_external_agent_import_failure",
     )
     .await?;
     let event_params = &event["event_params"];
@@ -1758,8 +1758,8 @@ async fn external_agent_config_import_reinstalls_plugins_from_known_marketplaces
 #[tokio::test]
 async fn external_agent_config_import_sends_completion_notification_after_pending_plugins_finish()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let source_home = external_agent_home(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let source_home = external_agent_home(ava_home.path());
     std::fs::create_dir_all(&source_home)?;
     // This test only needs a pending non-local plugin import. Use an invalid
     // source so the background completion path cannot make a real network clone.
@@ -1777,9 +1777,9 @@ async fn external_agent_config_import_sends_completion_notification_after_pendin
 }"#,
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -1820,18 +1820,18 @@ async fn external_agent_config_import_sends_completion_notification_after_pendin
 #[tokio::test]
 async fn external_agent_config_import_creates_session_rollouts() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("follow-up answer").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let project_root = codex_home.path().join("repo");
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let project_root = ava_home.path().join("repo");
     let source_created_at_text = "2024-01-02T03:04:05Z";
     let source_updated_at_text = "2024-03-01T04:05:06Z";
     let source_created_at =
         chrono::DateTime::parse_from_rfc3339(source_created_at_text)?.timestamp();
     let source_updated_at =
         chrono::DateTime::parse_from_rfc3339(source_updated_at_text)?.timestamp();
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
-    let manifest_dir = connector_metadata_root(codex_home.path())
+    let manifest_dir = connector_metadata_root(ava_home.path())
         .join("claude-code-sessions/account/organization");
     let control_request = "<ide_selection>src/auth.rs:1-5</ide_selection>";
     let first_request = "Fix auth flow";
@@ -1878,9 +1878,9 @@ async fn external_agent_config_import_creates_session_rollouts() -> Result<()> {
         .join("\n"),
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -2097,9 +2097,9 @@ async fn external_agent_config_import_creates_session_rollouts() -> Result<()> {
 #[tokio::test]
 async fn external_agent_config_import_does_not_initialize_required_mcp() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("unused").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let mut config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let mut config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     config.push_str(
         r#"
 [mcp_servers.required_broken]
@@ -2107,10 +2107,10 @@ command = "this-command-does-not-exist"
 required = true
 "#,
     );
-    std::fs::write(codex_home.path().join("config.toml"), config)?;
-    let project_root = codex_home.path().join("repo");
+    std::fs::write(ava_home.path().join("config.toml"), config)?;
+    let project_root = ava_home.path().join("repo");
     let recent_timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
     std::fs::create_dir_all(&project_root)?;
     std::fs::create_dir_all(&session_dir)?;
@@ -2125,9 +2125,9 @@ required = true
         .to_string(),
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -2190,11 +2190,11 @@ required = true
 async fn external_agent_config_import_accepts_detected_session_payload_after_restart() -> Result<()>
 {
     let server = create_mock_responses_server_repeating_assistant("unused").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let project_root = codex_home.path().join("repo");
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let project_root = ava_home.path().join("repo");
     let recent_timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
     std::fs::create_dir_all(&project_root)?;
     std::fs::create_dir_all(&session_dir)?;
@@ -2209,9 +2209,9 @@ async fn external_agent_config_import_accepts_detected_session_payload_after_res
         .to_string(),
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -2275,11 +2275,11 @@ async fn external_agent_config_import_accepts_detected_session_payload_after_res
 #[tokio::test]
 async fn external_agent_config_import_skips_already_imported_session_versions() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("unused").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let project_root = codex_home.path().join("repo");
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let project_root = ava_home.path().join("repo");
     let recent_timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
     std::fs::create_dir_all(&project_root)?;
     std::fs::create_dir_all(&session_dir)?;
@@ -2294,9 +2294,9 @@ async fn external_agent_config_import_skips_already_imported_session_versions() 
         .to_string(),
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -2360,11 +2360,11 @@ async fn external_agent_config_import_skips_already_imported_session_versions() 
 async fn external_agent_config_import_returns_before_background_session_import_finishes()
 -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("unused").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let project_root = codex_home.path().join("repo");
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let project_root = ava_home.path().join("repo");
     let recent_timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
     std::fs::create_dir_all(&project_root)?;
     std::fs::create_dir_all(&session_dir)?;
@@ -2377,9 +2377,9 @@ async fn external_agent_config_import_returns_before_background_session_import_f
     .to_string();
     std::fs::write(&session_path, &session_contents)?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -2502,17 +2502,17 @@ async fn external_agent_config_import_compacts_huge_session_before_first_follow_
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config(
             "compact_prompt = \"Summarize the conversation.\"\nmodel_auto_compact_token_limit = 200",
         )
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
-    let project_root = codex_home.path().join("repo");
+    let project_root = ava_home.path().join("repo");
     let recent_timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    let session_dir = external_agent_home(codex_home.path()).join("projects/repo");
+    let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
     std::fs::create_dir_all(&project_root)?;
     std::fs::create_dir_all(&session_dir)?;
@@ -2539,9 +2539,9 @@ async fn external_agent_config_import_compacts_huge_session_before_first_follow_
         .join("\n"),
     )?;
 
-    let home_dir = codex_home.path().display().to_string();
+    let home_dir = ava_home.path().display().to_string();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
@@ -2639,9 +2639,9 @@ async fn external_agent_config_import_compacts_huge_session_before_first_follow_
     Ok(())
 }
 
-fn write_analytics_config(codex_home: &std::path::Path, base_url: &str) -> std::io::Result<()> {
+fn write_analytics_config(ava_home: &std::path::Path, base_url: &str) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!("chatgpt_base_url = \"{base_url}\"\n"),
     )
 }

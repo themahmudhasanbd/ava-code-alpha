@@ -1,9 +1,9 @@
-use codex_protocol::protocol::HookCompletedEvent;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookOutputEntry;
-use codex_protocol::protocol::HookOutputEntryKind;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookRunSummary;
+use ava_protocol::protocol::HookCompletedEvent;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookOutputEntry;
+use ava_protocol::protocol::HookOutputEntryKind;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookRunSummary;
 
 use crate::engine::ConfiguredHandler;
 use crate::engine::HandlerSourcePath;
@@ -174,7 +174,7 @@ fn is_exact_matcher(matcher: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::protocol::HookEventName;
+    use ava_protocol::protocol::HookEventName;
     use pretty_assertions::assert_eq;
 
     use super::matcher_pattern_for_event;

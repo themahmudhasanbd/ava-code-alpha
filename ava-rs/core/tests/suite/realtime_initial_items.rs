@@ -1,19 +1,19 @@
 use anyhow::Result;
-use codex_config::config_toml::RealtimeWsVersion;
-use codex_protocol::protocol::CodexResponseHandoffMode;
-use codex_protocol::protocol::ConversationStartParams;
-use codex_protocol::protocol::ConversationTextParams;
-use codex_protocol::protocol::ConversationTextRole;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::RealtimeConversationRealtimeEvent;
-use codex_protocol::protocol::RealtimeConversationVersion;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::protocol::RealtimeOutputModality;
+use ava_config::config_toml::RealtimeWsVersion;
+use ava_protocol::protocol::AvaResponseHandoffMode;
+use ava_protocol::protocol::ConversationStartParams;
+use ava_protocol::protocol::ConversationTextParams;
+use ava_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::RealtimeConversationRealtimeEvent;
+use ava_protocol::protocol::RealtimeConversationVersion;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::protocol::RealtimeOutputModality;
 use core_test_support::responses::start_mock_server;
 use core_test_support::responses::start_websocket_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -31,7 +31,7 @@ async fn frameless_v3_sends_initial_items_in_session_bootstrap() -> Result<()> {
         "session": { "id": "sess_initial_items", "instructions": "backend prompt" }
     })]]])
     .await;
-    let mut builder = test_codex().with_config({
+    let mut builder = test_ava().with_config({
         let realtime_base_url = realtime_server.uri().to_string();
         move |config| {
             config.experimental_realtime_ws_base_url = Some(realtime_base_url);
@@ -41,13 +41,13 @@ async fn frameless_v3_sends_initial_items_in_session_bootstrap() -> Result<()> {
     });
     let test = builder.build_with_auto_env(&api_server).await?;
 
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(start_params(
             RealtimeConversationVersion::V3,
         )))
         .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::RealtimeConversationStarted(_))
     })
     .await;
@@ -178,11 +178,11 @@ async fn realtime_end_instructions_enforce_token_limit() -> Result<()> {
 
 async fn assert_start_error(params: ConversationStartParams, expected_error: &str) -> Result<()> {
     let api_server = start_mock_server().await;
-    let test = test_codex().build_with_auto_env(&api_server).await?;
-    test.codex
+    let test = test_ava().build_with_auto_env(&api_server).await?;
+    test.ava-code
         .submit(Op::RealtimeConversationStart(params))
         .await?;
-    let error = wait_for_event_match(&test.codex, |msg| match msg {
+    let error = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::Error(message),
         }) => Some(message.clone()),
@@ -201,10 +201,10 @@ fn start_params(version: RealtimeConversationVersion) -> ConversationStartParams
         client_managed_handoffs: false,
         delegation_ack_filler: None,
         flush_transcript_tail_on_session_end: false,
-        codex_responses_as_items: false,
-        codex_response_item_prefix: None,
-        codex_response_handoff_mode: CodexResponseHandoffMode::Thinking,
-        codex_response_handoff_channel_prefixes: None,
+        ava_responses_as_items: false,
+        ava_response_item_prefix: None,
+        ava_response_handoff_mode: AvaResponseHandoffMode::Thinking,
+        ava_response_handoff_channel_prefixes: None,
         model: None,
         output_modality: RealtimeOutputModality::Audio,
         include_startup_context: true,

@@ -1,17 +1,17 @@
 use super::*;
 use anyhow::Result;
 use axum::http::HeaderValue;
-use codex_app_server_protocol::AppConfig;
-use codex_app_server_protocol::AppToolApproval;
-use codex_app_server_protocol::AppsConfig;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ConfigLayerSource as ApiConfigLayerSource;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::AppConfig;
+use ava_app_server_protocol::AppToolApproval;
+use ava_app_server_protocol::AppsConfig;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ConfigLayerSource as ApiConfigLayerSource;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 
@@ -666,7 +666,7 @@ X-Doc = "42"
 #[tokio::test]
 async fn write_value_preserves_comments_and_order() -> Result<()> {
     let tmp = tempdir().expect("tempdir");
-    let original = r#"# Codex user configuration
+    let original = r#"# Ava user configuration
 model = "gpt-5.2"
 approval_policy = "on-request"
 
@@ -692,7 +692,7 @@ unified_exec = true
         .expect("write succeeds");
 
     let updated = std::fs::read_to_string(tmp.path().join(CONFIG_TOML_FILE)).expect("read config");
-    let expected = r#"# Codex user configuration
+    let expected = r#"# Ava user configuration
 model = "gpt-5.2"
 approval_policy = "on-request"
 
@@ -732,7 +732,7 @@ async fn psp_feature_configures_first_party_routing() -> Result<()> {
         )
         .await?;
 
-    assert!(config.features.enabled(codex_features::Feature::Psp));
+    assert!(config.features.enabled(ava_features::Feature::Psp));
     assert_eq!(
         config.http_client_factory(),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault)
@@ -871,12 +871,12 @@ async fn batch_write_rejects_legacy_profile_selector() -> Result<()> {
     let error = service
         .batch_write(ConfigBatchWriteParams {
             edits: vec![
-                codex_app_server_protocol::ConfigEdit {
+                ava_app_server_protocol::ConfigEdit {
                     key_path: "model".to_string(),
                     value: serde_json::json!("gpt-work"),
                     merge_strategy: MergeStrategy::Replace,
                 },
-                codex_app_server_protocol::ConfigEdit {
+                ava_app_server_protocol::ConfigEdit {
                     key_path: "profile".to_string(),
                     value: serde_json::json!("work"),
                     merge_strategy: MergeStrategy::Replace,
@@ -953,7 +953,7 @@ async fn write_value_supports_nested_app_paths() -> Result<()> {
                 AppConfig {
                     enabled: false,
                     omit_tools_from: Some(vec![
-                        codex_protocol::config_types::ToolExposureSurface::Deferred
+                        ava_protocol::config_types::ToolExposureSurface::Deferred
                     ]),
                     approvals_reviewer: None,
                     destructive_enabled: None,
@@ -1316,8 +1316,8 @@ async fn load_default_config_preserves_managed_requirements_and_selected_user_co
             .config_layer_stack
             .requirements()
             .managed_auth_policy(),
-        codex_config::ManagedAuthPolicy {
-            allowed_login_methods: Some(vec![codex_protocol::config_types::ForcedLoginMethod::Api]),
+        ava_config::ManagedAuthPolicy {
+            allowed_login_methods: Some(vec![ava_protocol::config_types::ForcedLoginMethod::Api]),
             allowed_chatgpt_workspaces: Some(vec!["managed-workspace".to_string()]),
         }
     );
@@ -1339,8 +1339,8 @@ async fn managed_auth_policy_survives_unusable_requirements_file_changes() -> Re
         CloudConfigBundleLoader::default(),
     );
     let startup = service.load_latest_config(/*fallback_cwd*/ None).await?;
-    let auth_manager = codex_login::AuthManager::shared_from_config(
-        &startup, /*enable_codex_api_key_env*/ false,
+    let auth_manager = ava_login::AuthManager::shared_from_config(
+        &startup, /*enable_ava_api_key_env*/ false,
     )
     .await?;
     std::fs::write(
@@ -1357,11 +1357,11 @@ async fn managed_auth_policy_survives_unusable_requirements_file_changes() -> Re
         assert_eq!(refreshed.forced_chatgpt_workspace_id, None);
     }
     assert!(
-        auth_manager.is_login_method_allowed(codex_protocol::config_types::ForcedLoginMethod::Api)
+        auth_manager.is_login_method_allowed(ava_protocol::config_types::ForcedLoginMethod::Api)
     );
     assert!(
         !auth_manager
-            .is_login_method_allowed(codex_protocol::config_types::ForcedLoginMethod::Chatgpt)
+            .is_login_method_allowed(ava_protocol::config_types::ForcedLoginMethod::Chatgpt)
     );
     assert_eq!(
         auth_manager.effective_chatgpt_workspaces(),
@@ -1975,12 +1975,12 @@ async fn structured_feature_toggle_ignores_unrelated_managed_settings() -> Resul
     service
         .batch_write(ConfigBatchWriteParams {
             edits: vec![
-                codex_app_server_protocol::ConfigEdit {
+                ava_app_server_protocol::ConfigEdit {
                     key_path: "features.network_proxy.credential_broker".to_string(),
                     value: serde_json::Value::Null,
                     merge_strategy: MergeStrategy::Replace,
                 },
-                codex_app_server_protocol::ConfigEdit {
+                ava_app_server_protocol::ConfigEdit {
                     key_path: "features.network_proxy".to_string(),
                     value: serde_json::Value::Null,
                     merge_strategy: MergeStrategy::Replace,
@@ -2639,7 +2639,7 @@ exclude = ["AWS_*"]
 
 #[tokio::test]
 async fn allowed_login_methods_follow_current_forced_workspaces() -> Result<()> {
-    use codex_protocol::config_types::ForcedLoginMethod;
+    use ava_protocol::config_types::ForcedLoginMethod;
 
     let tmp = tempdir()?;
     std::fs::write(tmp.path().join(CONFIG_TOML_FILE), "")?;
@@ -2654,8 +2654,8 @@ async fn allowed_login_methods_follow_current_forced_workspaces() -> Result<()> 
         CloudConfigBundleLoader::default(),
     );
     let config = service.load_latest_config(/*fallback_cwd*/ None).await?;
-    let auth = codex_login::AuthManager::shared_from_config(
-        &config, /*enable_codex_api_key_env*/ false,
+    let auth = ava_login::AuthManager::shared_from_config(
+        &config, /*enable_ava_api_key_env*/ false,
     )
     .await?;
     for (workspaces, expected) in [
@@ -2681,13 +2681,13 @@ async fn allowed_login_methods_follow_current_forced_workspaces() -> Result<()> 
 
 #[tokio::test]
 async fn permission_config_reload_merges_session_layers() -> Result<()> {
-    use codex_config::ConfigLayerEntry;
-    use codex_config::ConfigLayerSource;
-    use codex_config::ConfigLayerStack;
+    use ava_config::ConfigLayerEntry;
+    use ava_config::ConfigLayerSource;
+    use ava_config::ConfigLayerStack;
     let tmp = tempdir()?;
     let wrapper_dir = tmp.path().join("tmp/arg0/session");
     std::fs::create_dir_all(&wrapper_dir)?;
-    let wrapper = wrapper_dir.join("codex-execve-wrapper");
+    let wrapper = wrapper_dir.join("ava-execve-wrapper");
     std::fs::write(&wrapper, "")?;
     let service = ConfigManager::new(
         tmp.path().to_path_buf(),
@@ -2695,17 +2695,17 @@ async fn permission_config_reload_merges_session_layers() -> Result<()> {
         LoaderOverrides::without_managed_config_for_tests(),
         /*strict_config*/ false,
         CloudConfigBundleLoader::default(),
-        codex_arg0::Arg0DispatchPaths {
+        ava_arg0::Arg0DispatchPaths {
             main_execve_wrapper_exe: Some(wrapper),
             ..Default::default()
         },
-        std::sync::Arc::new(codex_config::NoopThreadConfigLoader),
+        std::sync::Arc::new(ava_config::NoopThreadConfigLoader),
     );
 
     let mut config = service
         .load_with_overrides(
             /*request_overrides*/ None,
-            codex_core::config::ConfigOverrides {
+            ava_core::config::ConfigOverrides {
                 cwd: Some(tmp.path().to_path_buf()),
                 ..Default::default()
             },

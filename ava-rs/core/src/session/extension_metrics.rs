@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use codex_extension_api::ExtensionMetrics;
-use codex_otel::SessionTelemetry;
+use ava_extension_api::ExtensionMetrics;
+use ava_otel::SessionTelemetry;
 
 struct SessionTelemetryExtensionMetrics {
     session_telemetry: SessionTelemetry,

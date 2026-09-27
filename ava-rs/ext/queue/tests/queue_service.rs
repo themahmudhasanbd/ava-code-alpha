@@ -8,48 +8,48 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use anyhow::Context;
-use codex_core::NotSubmittedReason;
-use codex_core::StartIfIdleSubmission;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInput;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ExtensionWarning;
-use codex_extension_api::NoopExtensionEventSink;
-use codex_extension_api::ThreadIdleCause;
-use codex_extension_api::ThreadIdleInput;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadResumeInput;
-use codex_extension_api::TurnStartAdmission;
-use codex_protocol::ThreadId;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
-use codex_protocol::user_input::UserInput;
-use codex_queue_extension::QueueServiceError;
-use codex_queue_extension::QueuedItemService;
-use codex_state::SqliteConfig;
-use codex_state::StateRuntime;
-use codex_thread_store::LocalQueueStore;
-use codex_thread_store::QueueStore;
-use codex_thread_store::ThreadStoreError;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_core::NotSubmittedReason;
+use ava_core::StartIfIdleSubmission;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInput;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ExtensionWarning;
+use ava_extension_api::NoopExtensionEventSink;
+use ava_extension_api::ThreadIdleCause;
+use ava_extension_api::ThreadIdleInput;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadResumeInput;
+use ava_extension_api::TurnStartAdmission;
+use ava_protocol::ThreadId;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
+use ava_protocol::user_input::UserInput;
+use ava_queue_extension::QueueServiceError;
+use ava_queue_extension::QueuedItemService;
+use ava_state::SqliteConfig;
+use ava_state::StateRuntime;
+use ava_thread_store::LocalQueueStore;
+use ava_thread_store::QueueStore;
+use ava_thread_store::ThreadStoreError;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::hooks::trust_discovered_hooks;
 use core_test_support::responses;
 use core_test_support::responses::start_mock_server;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_event_with_timeout;
 use pretty_assertions::assert_eq;
@@ -98,11 +98,11 @@ struct InstalledQueue {
     skip_next_idle: Mutex<Option<ThreadId>>,
 }
 
-impl ThreadLifecycleContributor<codex_core::config::Config> for InstalledQueue {
+impl ThreadLifecycleContributor<ava_core::config::Config> for InstalledQueue {
     fn on_thread_resume<'a>(&'a self, input: ThreadResumeInput<'a>) -> ExtensionFuture<'a, ()> {
         match self.service.get() {
             Some(service) => <QueuedItemService as ThreadLifecycleContributor<
-                codex_core::config::Config,
+                ava_core::config::Config,
             >>::on_thread_resume(service.as_ref(), input),
             None => Box::pin(async {}),
         }
@@ -120,7 +120,7 @@ impl ThreadLifecycleContributor<codex_core::config::Config> for InstalledQueue {
         }
         match self.service.get() {
             Some(service) => <QueuedItemService as ThreadLifecycleContributor<
-                codex_core::config::Config,
+                ava_core::config::Config,
             >>::on_thread_idle(service.as_ref(), input),
             None => Box::pin(async {}),
         }
@@ -129,7 +129,7 @@ impl ThreadLifecycleContributor<codex_core::config::Config> for InstalledQueue {
 
 fn registered_queue_extensions() -> (
     Arc<InstalledQueue>,
-    Arc<ExtensionRegistry<codex_core::config::Config>>,
+    Arc<ExtensionRegistry<ava_core::config::Config>>,
 ) {
     let installed = Arc::new(InstalledQueue::default());
     let mut extensions = ExtensionRegistryBuilder::new();
@@ -138,7 +138,7 @@ fn registered_queue_extensions() -> (
 }
 
 fn install_registered_queue(
-    test: &TestCodex,
+    test: &TestAva,
     installed: &InstalledQueue,
 ) -> anyhow::Result<Arc<QueuedItemService>> {
     let service = Arc::new(QueuedItemService::new(
@@ -190,8 +190,8 @@ async fn test_queue() -> anyhow::Result<(Arc<dyn QueueStore>, TempDir)> {
     Ok((queue, home))
 }
 
-fn loaded_thread_queue(test: &TestCodex) -> anyhow::Result<Arc<dyn QueueStore>> {
-    let runtime = test.codex.state_db().context("state runtime unavailable")?;
+fn loaded_thread_queue(test: &TestAva) -> anyhow::Result<Arc<dyn QueueStore>> {
+    let runtime = test.ava-code.state_db().context("state runtime unavailable")?;
     Ok(Arc::new(LocalQueueStore::new(runtime)))
 }
 
@@ -253,7 +253,7 @@ async fn drain_leaves_persisted_queued_message_for_a_later_start() -> anyhow::Re
     let admission = Arc::new(TestAdmission(AtomicBool::new(true)));
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.turn_start_admission(admission.clone());
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
@@ -279,7 +279,7 @@ async fn drain_leaves_persisted_queued_message_for_a_later_start() -> anyhow::Re
 
     admission.0.store(false, Ordering::SeqCst);
     emit_idle(&service, thread_id).await;
-    wait_for_event_match(test.codex.as_ref(), |event| {
+    wait_for_event_match(test.ava-code.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_)).then_some(())
     })
     .await;
@@ -374,7 +374,7 @@ async fn starting_a_selected_item_preserves_the_remaining_queue() -> anyhow::Res
     let server = start_mock_server().await;
     let response =
         responses::mount_sse_once(&server, responses::sse_completed("selected-turn")).await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let thread_id = test.session_configured.thread_id;
     let queue = loaded_thread_queue(&test)?;
     let service = QueuedItemService::new(queue, Weak::new(), Arc::new(NoopExtensionEventSink));
@@ -385,7 +385,7 @@ async fn starting_a_selected_item_preserves_the_remaining_queue() -> anyhow::Res
 
     let submission = service
         .start(
-            test.codex.as_ref(),
+            test.ava-code.as_ref(),
             Some(second.id.clone()),
             /*trace*/ None,
         )
@@ -396,7 +396,7 @@ async fn starting_a_selected_item_preserves_the_remaining_queue() -> anyhow::Res
         StartIfIdleSubmission::Started { turn_id } if !turn_id.is_empty()
     ));
     assert_eq!(vec![first], service.list(thread_id).await?);
-    wait_for_event_match(test.codex.as_ref(), |event| match event {
+    wait_for_event_match(test.ava-code.as_ref(), |event| match event {
         EventMsg::TurnComplete(_) => Some(()),
         _ => None,
     })
@@ -426,7 +426,7 @@ async fn starting_a_selected_item_while_active_leaves_it_queued() -> anyhow::Res
         },
     ]])
     .await;
-    let test = test_codex().build_with_streaming_server(&server).await?;
+    let test = test_ava().build_with_streaming_server(&server).await?;
     let thread_id = test.session_configured.thread_id;
     let service = QueuedItemService::new(
         loaded_thread_queue(&test)?,
@@ -438,7 +438,7 @@ async fn starting_a_selected_item_while_active_leaves_it_queued() -> anyhow::Res
         .await?;
 
     let active_turn = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "active turn".to_string(),
             text_elements: Vec::new(),
@@ -453,7 +453,7 @@ async fn starting_a_selected_item_while_active_leaves_it_queued() -> anyhow::Res
 
     let submission = service
         .start(
-            test.codex.as_ref(),
+            test.ava-code.as_ref(),
             Some(queued.id.clone()),
             /*trace*/ None,
         )
@@ -469,7 +469,7 @@ async fn starting_a_selected_item_while_active_leaves_it_queued() -> anyhow::Res
     release_response
         .send(())
         .expect("active response gate should remain open");
-    wait_for_event_match(test.codex.as_ref(), |event| {
+    wait_for_event_match(test.ava-code.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_)).then_some(())
     })
     .await;
@@ -482,7 +482,7 @@ async fn interrupted_turns_pause_queued_messages_but_failed_turns_drain_them() -
     let server = start_mock_server().await;
     let response =
         responses::mount_sse_once(&server, responses::sse_completed("failed-follow-up")).await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let thread_id = test.session_configured.thread_id;
     let queue = loaded_thread_queue(&test)?;
     let service = QueuedItemService::new(
@@ -498,7 +498,7 @@ async fn interrupted_turns_pause_queued_messages_but_failed_turns_drain_them() -
     assert_eq!(vec![queued], service.list(thread_id).await?);
 
     emit_idle_with_cause(&service, thread_id, ThreadIdleCause::Failed).await;
-    wait_for_event_match(test.codex.as_ref(), |event| {
+    wait_for_event_match(test.ava-code.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_)).then_some(())
     })
     .await;
@@ -526,7 +526,7 @@ async fn registered_queue_lifecycle_starts_messages_in_fifo_order() -> anyhow::R
     )
     .await;
     let (installed, extensions) = registered_queue_extensions();
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(extensions)
         .with_config(|config| config.include_environment_context = false)
         .build_with_auto_env(&server)
@@ -545,7 +545,7 @@ async fn registered_queue_lifecycle_starts_messages_in_fifo_order() -> anyhow::R
     tokio::time::timeout(Duration::from_secs(10), async {
         test.submit_text_turn("A").await?;
         for _ in 0..2 {
-            wait_for_event_match(test.codex.as_ref(), |event| {
+            wait_for_event_match(test.ava-code.as_ref(), |event| {
                 matches!(event, EventMsg::TurnComplete(_)).then_some(())
             })
             .await;
@@ -593,7 +593,7 @@ async fn externally_changed_queues_dispatch_independently_and_retry_failed_wakes
     )
     .await;
     let (installed, extensions) = registered_queue_extensions();
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(extensions)
         .with_config(|config| config.include_environment_context = false)
         .build_with_auto_env(&server)
@@ -605,7 +605,7 @@ async fn externally_changed_queues_dispatch_independently_and_retry_failed_wakes
         .start_thread(StartThreadOptions::new(test.config.clone()))
         .await?;
     let external_runtime = StateRuntime::init(
-        test.codex
+        test.ava-code
             .state_db()
             .context("state runtime unavailable")?
             .sqlite()
@@ -618,8 +618,8 @@ async fn externally_changed_queues_dispatch_independently_and_retry_failed_wakes
         Weak::new(),
         Arc::new(NoopExtensionEventSink),
     );
-    let mut watcher_extensions = ExtensionRegistryBuilder::<codex_core::config::Config>::new();
-    codex_queue_extension::install(&mut watcher_extensions, Arc::clone(&queue));
+    let mut watcher_extensions = ExtensionRegistryBuilder::<ava_core::config::Config>::new();
+    ava_queue_extension::install(&mut watcher_extensions, Arc::clone(&queue));
 
     tokio::time::sleep(Duration::from_secs(/*secs*/ 1)).await;
     assert!(model_responses.requests().is_empty());
@@ -657,7 +657,7 @@ async fn externally_changed_queues_dispatch_independently_and_retry_failed_wakes
 
     advance_queue_poll().await;
     wait_for_event_with_timeout(
-        test.codex.as_ref(),
+        test.ava-code.as_ref(),
         |event| matches!(event, EventMsg::TurnComplete(_)),
         Duration::from_secs(/*secs*/ 25),
     )
@@ -667,8 +667,8 @@ async fn externally_changed_queues_dispatch_independently_and_retry_failed_wakes
     assert!(queue.list(thread_id).await?.is_empty());
     assert!(queue.list(independent_thread.thread_id).await?.is_empty());
 
-    let rollout_path = test.codex.rollout_path().context("rollout path missing")?;
-    test.codex.shutdown_and_wait().await?;
+    let rollout_path = test.ava-code.rollout_path().context("rollout path missing")?;
+    test.ava-code.shutdown_and_wait().await?;
     test.thread_manager.remove_thread(&thread_id).await;
     external_queue
         .enqueue(thread_id, user_input("queued before ordinary resume"))
@@ -722,7 +722,7 @@ async fn rejected_queue_messages_are_consumed_without_retrying_or_blocking_follo
     )
     .await;
     let (installed, extensions) = registered_queue_extensions();
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(extensions)
         .with_pre_build_hook(write_rejecting_prompt_hook)
         .with_config(trust_discovered_hooks)
@@ -743,7 +743,7 @@ async fn rejected_queue_messages_are_consumed_without_retrying_or_blocking_follo
     tokio::time::timeout(Duration::from_secs(10), async {
         test.submit_text_turn("A").await?;
         for _ in 0..2 {
-            wait_for_event_match(test.codex.as_ref(), |event| {
+            wait_for_event_match(test.ava-code.as_ref(), |event| {
                 matches!(event, EventMsg::TurnComplete(_)).then_some(())
             })
             .await;
@@ -763,7 +763,7 @@ async fn rejected_queue_messages_are_consumed_without_retrying_or_blocking_follo
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
     assert_eq!(vec!["A", "C"], prompts);
-    let hook_log = std::fs::read_to_string(test.codex_home_path().join("queue_prompt_hook.log"))?;
+    let hook_log = std::fs::read_to_string(test.ava_home_path().join("queue_prompt_hook.log"))?;
     assert_eq!(
         vec!["A", "blocked", "C"],
         hook_log.lines().collect::<Vec<_>>()
@@ -778,7 +778,7 @@ async fn explicitly_started_rejected_queue_messages_are_consumed() -> anyhow::Re
     let server = start_mock_server().await;
     let responses =
         responses::mount_sse_once(&server, responses::sse_completed("unexpected-turn")).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(write_rejecting_prompt_hook)
         .with_config(trust_discovered_hooks)
         .with_config(|config| config.include_environment_context = false)
@@ -794,17 +794,17 @@ async fn explicitly_started_rejected_queue_messages_are_consumed() -> anyhow::Re
     let rejected = queue.enqueue(thread_id, user_input("blocked")).await?;
     let submission = tokio::time::timeout(
         Duration::from_secs(10),
-        queue.start(test.codex.as_ref(), Some(rejected.id), /*trace*/ None),
+        queue.start(test.ava-code.as_ref(), Some(rejected.id), /*trace*/ None),
     )
     .await?
     .expect("explicitly started input should be submitted");
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
-    wait_for_event_match(test.codex.as_ref(), |event| {
+    wait_for_event_match(test.ava-code.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_)).then_some(())
     })
     .await;
     assert!(queue.list(thread_id).await?.is_empty());
-    let hook_log = std::fs::read_to_string(test.codex_home_path().join("queue_prompt_hook.log"))?;
+    let hook_log = std::fs::read_to_string(test.ava_home_path().join("queue_prompt_hook.log"))?;
     assert_eq!(vec!["blocked"], hook_log.lines().collect::<Vec<_>>());
     assert!(responses.requests().is_empty());
     Ok(())
@@ -1025,7 +1025,7 @@ async fn invalid_head_is_skipped_and_a_live_user_turn_is_accepted() -> anyhow::R
     let server = start_mock_server().await;
     let response =
         responses::mount_sse_once(&server, responses::sse_completed("queued-turn")).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| config.include_environment_context = false)
         .build_with_auto_env(&server)
         .await?;
@@ -1044,7 +1044,7 @@ async fn invalid_head_is_skipped_and_a_live_user_turn_is_accepted() -> anyhow::R
         .enqueue(thread_id, structured_user_input("durable follow-up"))
         .await?;
     emit_idle(&service, thread_id).await;
-    let client_id = wait_for_event_match(test.codex.as_ref(), |event| match event {
+    let client_id = wait_for_event_match(test.ava-code.as_ref(), |event| match event {
         EventMsg::ItemCompleted(event) => match &event.item {
             TurnItem::UserMessage(item) => Some(item.client_id.clone()),
             _ => None,
@@ -1053,7 +1053,7 @@ async fn invalid_head_is_skipped_and_a_live_user_turn_is_accepted() -> anyhow::R
     })
     .await;
     assert_eq!(Some("stable-client-message".to_string()), client_id);
-    wait_for_event_match(test.codex.as_ref(), |event| match event {
+    wait_for_event_match(test.ava-code.as_ref(), |event| match event {
         EventMsg::TurnComplete(_) => Some(()),
         _ => None,
     })
@@ -1071,7 +1071,7 @@ async fn invalid_head_is_skipped_and_a_live_user_turn_is_accepted() -> anyhow::R
 async fn resumed_idle_dispatches_input_without_a_loaded_manager() -> anyhow::Result<()> {
     let server = start_mock_server().await;
     responses::mount_sse_once(&server, responses::sse_completed("resumed-turn")).await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let thread_id = test.session_configured.thread_id;
     let queue = loaded_thread_queue(&test)?;
     QueuedItemService::new(

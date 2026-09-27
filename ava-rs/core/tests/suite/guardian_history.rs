@@ -3,29 +3,29 @@
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_core::ForkSnapshot;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_core::config::ThreadStoreConfig;
-use codex_features::Feature;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::ImageReference;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadRolledBackEvent;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::ForkBoundary;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::LoadThreadHistoryParams;
-use codex_thread_store::PrepareForkParams;
+use ava_core::ForkSnapshot;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_core::config::ThreadStoreConfig;
+use ava_features::Feature;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::ImageReference;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadRolledBackEvent;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::ForkBoundary;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::LoadThreadHistoryParams;
+use ava_thread_store::PrepareForkParams;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -35,7 +35,7 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use image::DynamicImage;
@@ -71,7 +71,7 @@ async fn guardian_history_survives_restart_and_user_fork(
         ThreadStoreConfig::Local => None,
         ThreadStoreConfig::InMemory { id } => Some(InMemoryThreadStore::for_id(id)),
     };
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_history_mode(history_mode)
         .with_config(move |config| {
             config.experimental_thread_store = store_config;
@@ -86,8 +86,8 @@ async fn guardian_history_survives_restart_and_user_fork(
     let authorization = "You may publish the reviewed release.";
     mount_sse_once(&server, sse(vec![ev_completed("authorized")])).await;
     initial.submit_text_turn(authorization).await?;
-    initial.codex.submit(Op::Compact).await?;
-    wait_for_event(&initial.codex, |event| {
+    initial.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -95,7 +95,7 @@ async fn guardian_history_survives_restart_and_user_fork(
     let restriction = "Keep the release private.";
     mount_sse_once(&server, sse(vec![ev_completed("restriction")])).await;
     initial.submit_text_turn(restriction).await?;
-    initial.codex.shutdown_and_wait().await?;
+    initial.ava-code.shutdown_and_wait().await?;
     let thread_id = initial.session_configured.thread_id;
     initial.thread_manager.remove_thread(&thread_id).await;
     let model_context = initial
@@ -125,7 +125,7 @@ async fn guardian_history_survives_restart_and_user_fork(
         initial
             .thread_manager
             .fork_prepared_thread(
-                codex_core::StartThreadOptions::new(initial.config.clone()),
+                ava_core::StartThreadOptions::new(initial.config.clone()),
                 prepared,
             )
             .await?
@@ -134,7 +134,7 @@ async fn guardian_history_survives_restart_and_user_fork(
             .thread_manager
             .fork_thread_from_history(
                 ForkSnapshot::Interrupted,
-                codex_core::StartThreadOptions::new(initial.config.clone()),
+                ava_core::StartThreadOptions::new(initial.config.clone()),
                 history.clone(),
             )
             .await?
@@ -209,7 +209,7 @@ async fn guardian_history_uses_deltas_between_eviction_batches() -> Result<()> {
         "Guardian approval actions require host-native paths"
     );
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.features.enable(Feature::TokenBudget).unwrap();
             config
@@ -234,8 +234,8 @@ async fn guardian_history_uses_deltas_between_eviction_batches() -> Result<()> {
     .await;
     let restriction = "Only inspect the repository; do not publish it.";
     test.submit_text_turn(restriction).await?;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -307,7 +307,7 @@ async fn guardian_history_uses_deltas_between_eviction_batches() -> Result<()> {
         guardian_requests[1].body_json()["client_metadata"]["thread_id"],
         guardian_requests[2].body_json()["client_metadata"]["thread_id"]
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -320,7 +320,7 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
         "Guardian approval actions require host-native paths"
     );
     let server = start_mock_server().await;
-    let mut test = test_codex()
+    let mut test = test_ava()
         .with_config(|config| {
             config.features.enable(Feature::TokenBudget).unwrap();
             config
@@ -368,18 +368,18 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
         ],
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Only publish to a private repository.".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let question = wait_for_event_match(&test.codex, |event| match event {
+    let question = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: question.turn_id,
             response: RequestUserInputResponse {
@@ -392,12 +392,12 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -435,7 +435,7 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
             ],
         )
         .await;
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![
                 UserInput::Text {
                     text: prompt.to_owned(),
@@ -449,7 +449,7 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
                 },
             ]))
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -502,13 +502,13 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
                     .all(|item| item["call_id"] != "inspect-0"
                         && item["call_id"] != "confirm-publish")
             );
-            test.codex.ensure_rollout_materialized().await;
-            test.codex
+            test.ava-code.ensure_rollout_materialized().await;
+            test.ava-code
                 .append_rollout_items(&[RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
                     ThreadRolledBackEvent { num_turns: 2 },
                 ))])
                 .await?;
-            test.codex.shutdown_and_wait().await?;
+            test.ava-code.shutdown_and_wait().await?;
             let thread_id = test.session_configured.thread_id;
             test.thread_manager.remove_thread(&thread_id).await;
             let model_context = test
@@ -518,7 +518,7 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
                     include_archived: false,
                 })
                 .await?;
-            test.codex = test
+            test.ava-code = test
                 .thread_manager
                 .resume_thread_with_history(
                     test.config.clone(),

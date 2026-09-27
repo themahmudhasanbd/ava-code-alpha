@@ -1,4 +1,4 @@
-use codex_http_client::HttpClientFactory;
+use ava_http_client::HttpClientFactory;
 
 use crate::EnvironmentManager;
 use crate::ExecServerError;

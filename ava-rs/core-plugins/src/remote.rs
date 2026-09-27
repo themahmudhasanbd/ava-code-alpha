@@ -10,29 +10,29 @@ use crate::store::PLUGINS_CACHE_DIR;
 use crate::store::PluginStore;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::PluginAuthPolicy;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginDisabledReason;
-use codex_app_server_protocol::PluginInstallPolicy;
-use codex_app_server_protocol::PluginInstallPolicySource;
-use codex_app_server_protocol::PluginInterface;
-use codex_app_server_protocol::ScheduledTaskSummary;
-use codex_app_server_protocol::SkillInterface;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestBuilder;
-use codex_http_client::RouteAwareRequestError;
-use codex_login::CodexAuth;
-use codex_login::default_client::default_headers;
-use codex_plugin::AppConnectorId;
-use codex_plugin::AppDeclaration;
-use codex_plugin::PluginCapabilitySummary;
-use codex_plugin::PluginId;
-use codex_plugin::app_connector_ids_from_declarations;
-use codex_plugin::prompt_safe_plugin_description;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::PluginAuthPolicy;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginDisabledReason;
+use ava_app_server_protocol::PluginInstallPolicy;
+use ava_app_server_protocol::PluginInstallPolicySource;
+use ava_app_server_protocol::PluginInterface;
+use ava_app_server_protocol::ScheduledTaskSummary;
+use ava_app_server_protocol::SkillInterface;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestBuilder;
+use ava_http_client::RouteAwareRequestError;
+use ava_login::AvaAuth;
+use ava_login::default_client::default_headers;
+use ava_plugin::AppConnectorId;
+use ava_plugin::AppDeclaration;
+use ava_plugin::PluginCapabilitySummary;
+use ava_plugin::PluginId;
+use ava_plugin::app_connector_ids_from_declarations;
+use ava_plugin::prompt_safe_plugin_description;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use http::Method;
 use http::StatusCode;
 use serde::Deserialize;
@@ -107,7 +107,7 @@ pub const REMOTE_WORKSPACE_SHARED_WITH_ME_UNLISTED_MARKETPLACE_DISPLAY_NAME: &st
 
 const OPENAI_CURATED_REMOTE_COLLECTION_KEY: &str = "vertical";
 const OAI_PRODUCT_SKU_HEADER: &str = "OAI-Product-Sku";
-const CODEX_PRODUCT_SKU: &str = "codex";
+const AVA_PRODUCT_SKU: &str = "ava";
 const REMOTE_PLUGIN_CATALOG_TIMEOUT: Duration = Duration::from_secs(30);
 const RECOMMENDED_PLUGINS_TIMEOUT: Duration = Duration::from_secs(5);
 const REMOTE_PLUGIN_LIST_PAGE_LIMIT: u32 = 200;
@@ -804,7 +804,7 @@ pub struct RemotePluginInstallResult {
 
 pub async fn fetch_remote_marketplaces(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     sources: &[RemoteMarketplaceSource],
     catalog_cache_root: Option<&Path>,
     catalog_cache_mode: RemotePluginCatalogCacheMode,
@@ -975,31 +975,31 @@ pub async fn fetch_remote_marketplaces(
 }
 
 pub(crate) async fn fetch_and_cache_remote_plugin_catalog(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     scope: RemotePluginScope,
 ) -> Result<(), RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;
     let plugins = fetch_directory_plugins_for_scope(config, auth, scope).await?;
     catalog_cache::write_cached_directory_plugins(
-        codex_home, config, auth, scope, /*collection*/ None, &plugins,
+        ava_home, config, auth, scope, /*collection*/ None, &plugins,
     );
     Ok(())
 }
 
 pub async fn fetch_and_cache_global_remote_plugin_catalog(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> Result<(), RemotePluginCatalogError> {
-    fetch_and_cache_remote_plugin_catalog(codex_home, config, auth, RemotePluginScope::Global).await
+    fetch_and_cache_remote_plugin_catalog(ava_home, config, auth, RemotePluginScope::Global).await
 }
 
 pub fn invalidate_cached_remote_plugin_catalog_scopes(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     scopes: &[RemotePluginScope],
 ) {
     let Ok(auth) = ensure_chatgpt_auth(auth) else {
@@ -1007,11 +1007,11 @@ pub fn invalidate_cached_remote_plugin_catalog_scopes(
     };
     for scope in scopes {
         catalog_cache::remove_cached_directory_plugins(
-            codex_home, config, auth, *scope, /*collection*/ None,
+            ava_home, config, auth, *scope, /*collection*/ None,
         );
         if *scope == RemotePluginScope::Global {
             catalog_cache::remove_cached_directory_plugins(
-                codex_home,
+                ava_home,
                 config,
                 auth,
                 *scope,
@@ -1024,11 +1024,11 @@ pub fn invalidate_cached_remote_plugin_catalog_scopes(
 #[instrument(level = "trace", skip_all)]
 pub async fn fetch_recommended_plugins(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> Result<RecommendedPluginsMode, RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;
     let base_url = config.chatgpt_base_url.trim_end_matches('/');
-    let mut url = Url::parse(&format!("{base_url}/ps/plugins/suggested/codex"))
+    let mut url = Url::parse(&format!("{base_url}/ps/plugins/suggested/ava"))
         .map_err(RemotePluginCatalogError::InvalidBaseUrl)?;
     url.query_pairs_mut().append_pair("scope", "GLOBAL");
     let url = url.to_string();
@@ -1041,7 +1041,7 @@ pub async fn fetch_recommended_plugins(
 #[instrument(level = "trace", skip_all)]
 pub(crate) async fn fetch_recommended_plugin_install_metadata(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     plugin_id: &str,
 ) -> Result<Option<Vec<String>>, RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;
@@ -1128,16 +1128,16 @@ fn recommended_plugins_mode(response: RecommendedPluginsResponse) -> Recommended
 }
 
 pub(crate) fn has_fresh_cached_remote_plugin_catalog(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     scope: RemotePluginScope,
 ) -> bool {
     let Ok(auth) = ensure_chatgpt_auth(auth) else {
         return false;
     };
     catalog_cache::load_cached_directory_plugins(
-        codex_home, config, auth, scope, /*collection*/ None,
+        ava_home, config, auth, scope, /*collection*/ None,
     )
     .is_some_and(|cached| {
         matches!(
@@ -1148,9 +1148,9 @@ pub(crate) fn has_fresh_cached_remote_plugin_catalog(
 }
 
 pub(crate) fn cached_remote_plugin_catalog_scopes(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> BTreeSet<RemotePluginScope> {
     let Ok(auth) = ensure_chatgpt_auth(auth) else {
         return BTreeSet::new();
@@ -1159,7 +1159,7 @@ pub(crate) fn cached_remote_plugin_catalog_scopes(
         .into_iter()
         .filter(|scope| {
             catalog_cache::load_cached_directory_plugins(
-                codex_home, config, auth, *scope, /*collection*/ None,
+                ava_home, config, auth, *scope, /*collection*/ None,
             )
             .is_some()
         })
@@ -1167,12 +1167,12 @@ pub(crate) fn cached_remote_plugin_catalog_scopes(
 }
 
 pub fn cached_global_remote_discoverable_plugins(
-    codex_home: &Path,
+    ava_home: &Path,
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
 ) -> Vec<RemoteDiscoverablePlugin> {
     catalog_cache::load_cached_directory_plugins(
-        codex_home,
+        ava_home,
         config,
         auth,
         RemotePluginScope::Global,
@@ -1195,7 +1195,7 @@ pub fn cached_global_remote_discoverable_plugins(
 
 pub async fn fetch_openai_curated_remote_collection_marketplace(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     catalog_cache_root: Option<&Path>,
     catalog_cache_mode: RemotePluginCatalogCacheMode,
 ) -> Result<RemoteMarketplaceFetchOutcome, RemotePluginCatalogError> {
@@ -1265,7 +1265,7 @@ fn build_remote_marketplace(
 
 pub(crate) async fn fetch_remote_installed_plugins(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> Result<Vec<RemoteInstalledPlugin>, RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;
     let mut installed_plugins = fetch_installed_plugins(
@@ -1342,7 +1342,7 @@ pub fn group_remote_installed_plugins_by_marketplaces(
 
 pub async fn fetch_remote_plugin_detail(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     marketplace_name: &str,
     plugin_id: &str,
 ) -> Result<RemotePluginDetail, RemotePluginCatalogError> {
@@ -1358,7 +1358,7 @@ pub async fn fetch_remote_plugin_detail(
 
 pub async fn fetch_remote_plugin_share_context(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     plugin_id: &str,
 ) -> Result<Option<RemotePluginShareContext>, RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;
@@ -1371,7 +1371,7 @@ pub async fn fetch_remote_plugin_share_context(
 
 pub async fn fetch_remote_plugin_detail_with_download_urls(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     marketplace_name: &str,
     plugin_id: &str,
 ) -> Result<RemotePluginDetail, RemotePluginCatalogError> {
@@ -1387,7 +1387,7 @@ pub async fn fetch_remote_plugin_detail_with_download_urls(
 
 pub async fn fetch_remote_plugin_skill_detail(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     marketplace_name: &str,
     plugin_id: &str,
     skill_name: &str,
@@ -1422,7 +1422,7 @@ pub async fn fetch_remote_plugin_skill_detail(
 
 async fn fetch_remote_plugin_detail_with_download_url_option(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     _marketplace_name: &str,
     plugin_id: &str,
     include_download_urls: bool,
@@ -1440,7 +1440,7 @@ async fn fetch_remote_plugin_detail_with_download_url_option(
 
 async fn build_remote_plugin_detail(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
     marketplace_name: String,
     plugin_id: &str,
@@ -1524,7 +1524,7 @@ fn app_declarations_from_remote_app_ids(app_ids: &[String]) -> Vec<AppDeclaratio
 
 fn effective_remote_plugin_apps_and_mcp_servers(
     release: &RemotePluginReleaseResponse,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
 ) -> (Vec<String>, Vec<String>) {
     let mut app_declarations = release
         .app_manifest
@@ -1559,7 +1559,7 @@ struct RemotePluginInstallRequest<'a> {
 
 pub async fn install_remote_plugin(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     marketplace_name: &str,
     plugin_id: &str,
 ) -> Result<RemotePluginInstallResult, RemotePluginCatalogError> {
@@ -1575,7 +1575,7 @@ pub async fn install_remote_plugin(
 
 pub async fn install_remote_plugin_with_install_attempt_id(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     marketplace_name: &str,
     plugin_id: &str,
     install_attempt_id: &str,
@@ -1592,7 +1592,7 @@ pub async fn install_remote_plugin_with_install_attempt_id(
 
 async fn install_remote_plugin_inner(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     _marketplace_name: &str,
     plugin_id: &str,
     install_attempt_id: Option<&str>,
@@ -1635,7 +1635,7 @@ async fn install_remote_plugin_inner(
 
 pub async fn resolve_remote_plugin_uninstall_target(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     remote_plugin_id: &str,
 ) -> Result<RemotePluginUninstallTarget, RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;
@@ -1685,8 +1685,8 @@ pub async fn resolve_remote_plugin_uninstall_target(
 
 pub async fn uninstall_remote_plugin(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
-    codex_home: PathBuf,
+    auth: Option<&AvaAuth>,
+    ava_home: PathBuf,
     target: RemotePluginUninstallTarget,
 ) -> Result<(), RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;
@@ -1718,7 +1718,7 @@ pub async fn uninstall_remote_plugin(
 
     let legacy_plugin_id = response.id;
     tokio::task::spawn_blocking(move || {
-        remove_remote_plugin_cache(codex_home, marketplace_name, plugin_name, legacy_plugin_id)
+        remove_remote_plugin_cache(ava_home, marketplace_name, plugin_name, legacy_plugin_id)
     })
     .await
     .map_err(|err| {
@@ -1732,12 +1732,12 @@ pub async fn uninstall_remote_plugin(
 }
 
 fn remove_remote_plugin_cache(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     marketplace_name: String,
     plugin_name: String,
     legacy_plugin_id: String,
 ) -> Result<(), String> {
-    let store = PluginStore::try_new(codex_home.clone())
+    let store = PluginStore::try_new(ava_home.clone())
         .map_err(|err| format!("failed to resolve remote plugin cache root: {err}"))?;
     let plugin_id =
         PluginId::new(plugin_name.clone(), marketplace_name.clone()).map_err(|err| {
@@ -1753,7 +1753,7 @@ fn remove_remote_plugin_cache(
         )
     })?;
 
-    let legacy_remote_plugin_cache_root = codex_home
+    let legacy_remote_plugin_cache_root = ava_home
         .join(PLUGINS_CACHE_DIR)
         .join(marketplace_name)
         .join(legacy_plugin_id);
@@ -2035,17 +2035,17 @@ struct DirectoryPluginsFetchOutcome {
 }
 
 async fn fetch_directory_plugins_for_scope_with_cache(
-    codex_home: Option<&Path>,
+    ava_home: Option<&Path>,
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
     collection: Option<&str>,
     cache_mode: RemotePluginCatalogCacheMode,
 ) -> Result<DirectoryPluginsFetchOutcome, RemotePluginCatalogError> {
     if cache_mode != RemotePluginCatalogCacheMode::ForceRefetch
-        && let Some(codex_home) = codex_home
+        && let Some(ava_home) = ava_home
         && let Some(cached) = catalog_cache::load_cached_directory_plugins(
-            codex_home, config, auth, scope, collection,
+            ava_home, config, auth, scope, collection,
         )
         && (cache_mode == RemotePluginCatalogCacheMode::PreferCache
             || cached.freshness == catalog_cache::RemotePluginCatalogCacheFreshness::Fresh)
@@ -2063,9 +2063,9 @@ async fn fetch_directory_plugins_for_scope_with_cache(
     let plugins =
         fetch_directory_plugins_for_scope_with_optional_collection(config, auth, scope, collection)
             .await?;
-    if let Some(codex_home) = codex_home {
+    if let Some(ava_home) = ava_home {
         catalog_cache::write_cached_directory_plugins(
-            codex_home, config, auth, scope, collection, &plugins,
+            ava_home, config, auth, scope, collection, &plugins,
         );
     }
     Ok(DirectoryPluginsFetchOutcome {
@@ -2077,7 +2077,7 @@ async fn fetch_directory_plugins_for_scope_with_cache(
 
 async fn fetch_directory_plugins_for_scope(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
 ) -> Result<Vec<RemotePluginDirectoryItem>, RemotePluginCatalogError> {
     fetch_directory_plugins_for_scope_with_optional_collection(
@@ -2088,7 +2088,7 @@ async fn fetch_directory_plugins_for_scope(
 
 async fn fetch_directory_plugins_for_scope_with_optional_collection(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
     collection: Option<&str>,
 ) -> Result<Vec<RemotePluginDirectoryItem>, RemotePluginCatalogError> {
@@ -2118,7 +2118,7 @@ async fn fetch_directory_plugins_for_scope_with_optional_collection(
 
 async fn fetch_shared_workspace_plugins(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
 ) -> Result<Vec<RemotePluginDirectoryItem>, RemotePluginCatalogError> {
     let mut plugins = Vec::new();
     let mut page_token = None;
@@ -2136,7 +2136,7 @@ async fn fetch_shared_workspace_plugins(
 
 async fn fetch_installed_plugins_for_scope(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
 ) -> Result<Vec<RemotePluginInstalledItem>, RemotePluginCatalogError> {
     fetch_installed_plugins(
@@ -2150,7 +2150,7 @@ async fn fetch_installed_plugins_for_scope(
 
 async fn fetch_installed_plugins(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemoteInstalledPluginScope,
     include_download_urls: bool,
 ) -> Result<Vec<RemotePluginInstalledItem>, RemotePluginCatalogError> {
@@ -2176,7 +2176,7 @@ async fn fetch_installed_plugins(
 
 async fn get_remote_plugin_list_page(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemotePluginScope,
     page_token: Option<&str>,
     collection: Option<&str>,
@@ -2200,7 +2200,7 @@ async fn get_remote_plugin_list_page(
 
 async fn get_remote_shared_workspace_plugins_page(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     page_token: Option<&str>,
 ) -> Result<RemotePluginListResponse, RemotePluginCatalogError> {
     let base_url = config.chatgpt_base_url.trim_end_matches('/');
@@ -2218,7 +2218,7 @@ async fn get_remote_shared_workspace_plugins_page(
 
 async fn get_remote_plugin_installed_page(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     scope: RemoteInstalledPluginScope,
     page_token: Option<&str>,
     include_download_urls: bool,
@@ -2250,7 +2250,7 @@ async fn get_remote_plugin_installed_page(
 
 async fn fetch_plugin_detail(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     plugin_id: &str,
     include_download_urls: bool,
 ) -> Result<RemotePluginDirectoryItem, RemotePluginCatalogError> {
@@ -2266,7 +2266,7 @@ async fn fetch_plugin_detail(
 
 async fn fetch_plugin_detail_with_timeout(
     config: &RemotePluginServiceConfig,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     plugin_id: &str,
     include_download_urls: bool,
     timeout: Duration,
@@ -2305,11 +2305,11 @@ fn remote_plugin_skill_detail_url(
     Ok(url.to_string())
 }
 
-fn ensure_chatgpt_auth(auth: Option<&CodexAuth>) -> Result<&CodexAuth, RemotePluginCatalogError> {
+fn ensure_chatgpt_auth(auth: Option<&AvaAuth>) -> Result<&AvaAuth, RemotePluginCatalogError> {
     let Some(auth) = auth else {
         return Err(RemotePluginCatalogError::AuthRequired);
     };
-    if !auth.uses_codex_backend() {
+    if !auth.uses_ava_backend() {
         return Err(RemotePluginCatalogError::UnsupportedAuthMode);
     }
     Ok(auth)
@@ -2317,12 +2317,12 @@ fn ensure_chatgpt_auth(auth: Option<&CodexAuth>) -> Result<&CodexAuth, RemotePlu
 
 fn authenticated_request(
     request: RouteAwareRequestBuilder,
-    auth: &CodexAuth,
+    auth: &AvaAuth,
 ) -> RouteAwareRequestBuilder {
     request
         .timeout(REMOTE_PLUGIN_CATALOG_TIMEOUT)
-        .headers(codex_model_provider::auth_provider_from_auth(auth).to_auth_headers())
-        .header(OAI_PRODUCT_SKU_HEADER, CODEX_PRODUCT_SKU)
+        .headers(ava_model_provider::auth_provider_from_auth(auth).to_auth_headers())
+        .header(OAI_PRODUCT_SKU_HEADER, AVA_PRODUCT_SKU)
 }
 
 async fn send_and_decode<T: for<'de> Deserialize<'de>>(

@@ -163,7 +163,7 @@ protection at all.
 
 ## References
 
-- `docs/adr/0064-codex-parity-context-compaction.md`
+- `docs/adr/0064-ava-parity-context-compaction.md`
 - `docs/adr/0062-bounded-subagents-behind-a-task-tool.md`
 - `docs/adr/0279-resumable-subagent-delegations.md`
 - `docs/adr/0136-active-task-boundary-across-compaction.md`

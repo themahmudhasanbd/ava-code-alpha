@@ -1,9 +1,9 @@
 //! Typed, bounded v2 memory context.
 
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
+use ava_protocol::models::ContentItemKind;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
 
 /// Memory-owned model context, capped below 10k tokens even for byte-heavy text.
 pub enum MemoryContextFragment {

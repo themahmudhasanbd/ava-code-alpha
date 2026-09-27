@@ -1,4 +1,4 @@
-//! Ambient terminal rendering for the Codex companion.
+//! Ambient terminal rendering for the Ava companion.
 //!
 //! Ambient pets reuse the same extracted image frames as the full-screen viewer
 //! but are rendered through a different ownership split: ratatui still owns the
@@ -139,22 +139,22 @@ impl AmbientPet {
     /// Load the active ambient pet and prepare its frame cache.
     ///
     /// This resolves the selected pet id, extracts per-frame PNGs into the
-    /// CODEX_HOME cache, and records the terminal protocol support snapshot used
+    /// AVA_HOME cache, and records the terminal protocol support snapshot used
     /// for later draw requests. A caller that repeatedly recreates `AmbientPet`
     /// instead of mutating one instance would lose animation timing continuity
     /// and pay the frame-cache preparation cost more often than necessary.
     pub(crate) fn load(
         selected_pet: Option<&str>,
-        codex_home: &std::path::Path,
+        ava_home: &std::path::Path,
         frame_requester: FrameRequester,
         animations_enabled: bool,
     ) -> Result<Self> {
-        let pet = Pet::load_with_codex_home(
+        let pet = Pet::load_with_ava_home(
             selected_pet.unwrap_or(DEFAULT_PET_ID),
-            /*codex_home*/ Some(codex_home),
+            /*ava_home*/ Some(ava_home),
         )
         .with_context(|| "load ambient pet")?;
-        let cache_dir = codex_home
+        let cache_dir = ava_home
             .join("cache")
             .join("tui-pets")
             .join("frame-cache")
@@ -495,7 +495,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn notification_labels_match_codex_app_vocabulary() {
+    fn notification_labels_match_ava_app_vocabulary() {
         assert_eq!(PetNotificationKind::Running.label(), "Running");
         assert_eq!(PetNotificationKind::Waiting.label(), "Needs input");
         assert_eq!(PetNotificationKind::Review.label(), "Ready");

@@ -1,7 +1,7 @@
 set working-directory := "ava-rs"
 set positional-arguments
 export AVA_REPO_ROOT := justfile_directory()
-export CODEX_REPO_ROOT := justfile_directory()
+export AVA_REPO_ROOT := justfile_directory()
 export JUST_SHELL := justfile_directory() / "scripts/just-shell.py"
 set shell := ["python3", "-c", 'import os, runpy; runpy.run_path(os.environ["JUST_SHELL"], run_name="__main__")']
 set windows-shell := ["python", "-c", 'import os, runpy; runpy.run_path(os.environ["JUST_SHELL"], run_name="__main__")']
@@ -13,16 +13,16 @@ python := if os_family() == "windows" { "python" } else { "python3" }
 help:
     just -l
 
-# `codex`
-alias c := codex
-codex *args:
-    cargo run --bin codex -- {args}
+# `ava`
+alias c := ava
+ava *args:
+    cargo run --bin ava -- {args}
 
-# `codex exec`
+# `ava exec`
 exec *args:
-    cargo run --bin codex -- exec {args}
+    cargo run --bin ava -- exec {args}
 
-# Start `codex exec-server` and run codex-tui.
+# Start `ava exec-server` and run ava-tui.
 [no-cd]
 [positional-arguments]
 [unix]
@@ -31,26 +31,26 @@ tui-with-exec-server *args:
 
 # Run the CLI version of the file-search crate.
 file-search *args:
-    cargo run --bin codex-file-search -- {args}
+    cargo run --bin ava-file-search -- {args}
 
 # Run the standalone code-mode host from source.
 code-mode-host *args:
-    cargo run --bin codex-code-mode-host -- {args}
+    cargo run --bin ava-code-mode-host -- {args}
 
 # Assemble a local AvA package.
 [no-cd]
 assemble-ava-package *args:
     {{ python }} {{ justfile_directory() }}/scripts/build_ava_package.py {args}
 
-# Assemble a local Codex package (backwards compatibility).
+# Assemble a local Ava package (backwards compatibility).
 [no-cd]
-assemble-codex-package *args:
+assemble-ava-package *args:
     {{ python }} {{ justfile_directory() }}/scripts/build_ava_package.py {args}
 
 # Build the CLI and run the app-server test client
 app-server-test-client *args:
-    cargo build -p codex-cli
-    cargo run -p codex-app-server-test-client -- --codex-bin ./target/debug/codex {args}
+    cargo build -p ava-cli
+    cargo run -p ava-app-server-test-client -- --ava-bin ./target/debug/ava {args}
 
 # Format the justfile, Rust, Bazel/Starlark, Python SDK code, and Python scripts.
 fmt:
@@ -124,27 +124,27 @@ bench-e2e-smoke:
     # Compile exec-platform Rust tools through those release-only cfg paths too.
     bazel test --compilation_mode=fastbuild --@rules_rust//rust/settings:extra_rustc_flag=-Cdebug-assertions=no --@rules_rust//rust/settings:extra_exec_rustc_flag=-Cdebug-assertions=no --cache_test_results=no --test_output=streamed --test_arg=--test //ava-rs:e2e-benchmarks
 
-# Build and run Codex from source using Bazel.
+# Build and run Ava from source using Bazel.
 # On Unix, use `[no-cd]` and `--run_under="cd $PWD &&"` to ensure Bazel runs
 # the command in the current working directory.
 [no-cd]
 [unix]
-bazel-codex *args:
-    bazel run //ava-rs/cli:codex --run_under="cd $PWD &&" -- "$@"
+bazel-ava *args:
+    bazel run //ava-rs/cli:ava --run_under="cd $PWD &&" -- "$@"
 
 [windows]
-bazel-codex *args:
-    bazel run //ava-rs/cli:codex --run_under='cd /d "{{ invocation_directory_native() }}" &&' -- @($args | Select-Object -Skip 1)
+bazel-ava *args:
+    bazel run //ava-rs/cli:ava --run_under='cd /d "{{ invocation_directory_native() }}" &&' -- @($args | Select-Object -Skip 1)
 
 # Build and run the standalone code-mode host from source using Bazel.
 [no-cd]
 [unix]
 bazel-code-mode-host *args:
-    bazel run //ava-rs/code-mode-host:codex-code-mode-host --run_under="cd $PWD &&" -- "$@"
+    bazel run //ava-rs/code-mode-host:ava-code-mode-host --run_under="cd $PWD &&" -- "$@"
 
 [windows]
 bazel-code-mode-host *args:
-    bazel run //ava-rs/code-mode-host:codex-code-mode-host --run_under='cd /d "{{ invocation_directory_native() }}" &&' -- @($args | Select-Object -Skip 1)
+    bazel run //ava-rs/code-mode-host:ava-code-mode-host --run_under='cd /d "{{ invocation_directory_native() }}" &&' -- @($args | Select-Object -Skip 1)
 
 [no-cd]
 bazel-lock-update:
@@ -177,7 +177,7 @@ build-for-release:
 
 # Regenerate the json schema for config.toml from the current config types.
 write-config-schema:
-    cargo run -p codex-config-schema --bin codex-write-config-schema
+    cargo run -p ava-config-schema --bin ava-write-config-schema
 
 # Regenerate app-server protocol schemas and the Python SDK derived from them.
 write-app-server-schema *args:
@@ -185,7 +185,7 @@ write-app-server-schema *args:
 
 [no-cd]
 write-hooks-schema:
-    cargo run --manifest-path {{ justfile_directory() }}/ava-rs/Cargo.toml -p codex-hooks --bin write_hooks_schema_fixtures
+    cargo run --manifest-path {{ justfile_directory() }}/ava-rs/Cargo.toml -p ava-hooks --bin write_hooks_schema_fixtures
 
 # Run the argument-comment Dylint checks across ava-rs.
 [no-cd]
@@ -204,8 +204,8 @@ argument-comment-lint-from-source *args:
 # Tail logs from the state SQLite database
 [unix]
 log *args:
-    if [ "${1:-}" = "--" ]; then shift; fi; cargo run -p codex-cli --bin logs_client -- "$@"
+    if [ "${1:-}" = "--" ]; then shift; fi; cargo run -p ava-cli --bin logs_client -- "$@"
 
 [windows]
 log *args:
-    $forwarded_args = @($args | Select-Object -Skip 1); if ($forwarded_args.Count -gt 0 -and $forwarded_args[0] -eq "--") { $forwarded_args = @($forwarded_args | Select-Object -Skip 1) }; cargo run -p codex-cli --bin logs_client -- @forwarded_args
+    $forwarded_args = @($args | Select-Object -Skip 1); if ($forwarded_args.Count -gt 0 -and $forwarded_args[0] -eq "--") { $forwarded_args = @($forwarded_args | Select-Object -Skip 1) }; cargo run -p ava-cli --bin logs_client -- @forwarded_args

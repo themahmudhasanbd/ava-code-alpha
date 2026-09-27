@@ -4,7 +4,7 @@ use crate::agent::next_thread_spawn_depth;
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
 use crate::tools::handlers::multi_agents_spec::create_resume_agent_tool;
-use codex_tools::ToolSpec;
+use ava_tools::ToolSpec;
 use std::sync::Arc;
 
 pub(crate) struct Handler;
@@ -25,7 +25,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
         )
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -150,7 +150,7 @@ async fn handle_resume_agent(
         return Err(err);
     }
     turn.session_telemetry
-        .counter("codex.multi_agent.resume", /*inc*/ 1, &[]);
+        .counter("ava.multi_agent.resume", /*inc*/ 1, &[]);
 
     Ok(ResumeAgentResult { status })
 }

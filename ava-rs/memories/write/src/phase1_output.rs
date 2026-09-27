@@ -1,9 +1,9 @@
 //! Version-specific extraction contracts; v2 never decodes raw memory.
 
-use codex_protocol::MemoryVersion;
-use codex_secrets::redact_secrets;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
+use ava_protocol::MemoryVersion;
+use ava_secrets::redact_secrets;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
 use serde::Deserialize;
 use serde_json::Value;
 use serde_json::json;

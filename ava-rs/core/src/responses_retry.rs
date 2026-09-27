@@ -5,12 +5,12 @@ use std::time::Duration;
 use crate::client::ModelClientSession;
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
-use codex_client::RetryOperation;
-use codex_features::Feature;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::WarningEvent;
+use ava_client::RetryOperation;
+use ava_features::Feature;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::WarningEvent;
 use tracing::warn;
 
 const INITIAL_CONNECTION_RETRY_DELAY: Duration = Duration::from_secs(5);
@@ -50,12 +50,12 @@ pub(crate) struct ExhaustedResponseRetry {
 pub(crate) async fn handle_response_stream_error(
     retry_state: &mut ResponsesStreamRetryState,
     max_retries: u64,
-    err: CodexErr,
+    err: AvaErr,
     client_session: &mut ModelClientSession,
     sess: &Session,
     turn_context: &TurnContext,
     request: ResponsesStreamRequest,
-) -> Result<(), CodexErr> {
+) -> Result<(), AvaErr> {
     let operation = match request {
         ResponsesStreamRequest::Sampling => RetryOperation::Sampling,
         ResponsesStreamRequest::RemoteCompactionV2 => RetryOperation::RemoteCompactionV2,
@@ -70,7 +70,7 @@ pub(crate) async fn handle_response_stream_error(
         .features
         .enabled(Feature::UnboundedConnectionRetries)
         && matches!(request, ResponsesStreamRequest::Sampling)
-        && matches!(err.details(), CodexErrorDetails::ConnectionFailed(_))
+        && matches!(err.details(), AvaErrorDetails::ConnectionFailed(_))
         && !turn_context.session_source.is_internal()
         && !turn_context.provider.info().is_amazon_bedrock()
     {
@@ -84,7 +84,7 @@ pub(crate) async fn handle_response_stream_error(
         sess.notify_stream_error(turn_context, "Reconnecting... waiting for network", err)
             .await;
         retry_state.connection_retries = retry_state.connection_retries.saturating_add(1);
-        codex_client::record_retry!(retry_state.connection_retries, retry_delay, operation);
+        ava_client::record_retry!(retry_state.connection_retries, retry_delay, operation);
         tokio::time::sleep(retry_delay).await;
         retry_state.connection_retry_delay = retry_delay
             .saturating_mul(2)
@@ -129,7 +129,7 @@ pub(crate) async fn handle_response_stream_error(
             )
             .await;
         }
-        codex_client::record_retry!(retry_count, delay, operation);
+        ava_client::record_retry!(retry_count, delay, operation);
         tokio::time::sleep(delay).await;
         return Ok(());
     }
@@ -148,7 +148,7 @@ pub(crate) async fn handle_response_stream_error(
 fn log_retry(
     request: ResponsesStreamRequest,
     turn_context: &TurnContext,
-    err: &CodexErr,
+    err: &AvaErr,
     retries: u64,
     max_retries: u64,
     delay: Duration,

@@ -3,16 +3,16 @@ use std::ffi::OsString;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::Environment;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::ExecutorStdioServerLauncher;
-use codex_rmcp_client::LocalStdioServerLauncher;
-use codex_rmcp_client::McpProtocolMode;
-use codex_rmcp_client::RmcpClient;
-use codex_rmcp_client::StdioServerLauncher;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::Environment;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::ExecutorStdioServerLauncher;
+use ava_rmcp_client::LocalStdioServerLauncher;
+use ava_rmcp_client::McpProtocolMode;
+use ava_rmcp_client::RmcpClient;
+use ava_rmcp_client::StdioServerLauncher;
 use futures::FutureExt;
 use rmcp::model::ClientCapabilities;
 use rmcp::model::Implementation;
@@ -40,7 +40,7 @@ enum OversizedHttpResponse {
 fn initialize_params() -> InitializeRequestParams {
     InitializeRequestParams::new(
         ClientCapabilities::default(),
-        Implementation::new("codex-message-limit-test", "0.0.0-test"),
+        Implementation::new("ava-message-limit-test", "0.0.0-test"),
     )
     .with_protocol_version(ProtocolVersion::V_2025_06_18)
 }
@@ -232,7 +232,7 @@ async fn legacy_http_keeps_existing_large_json_response_behavior() -> anyhow::Re
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn modern_local_and_executor_stdio_reject_oversized_lines() -> anyhow::Result<()> {
-    let server = codex_utils_cargo_bin::cargo_bin("test_mcp_2026_stdio_server")?;
+    let server = ava_utils_cargo_bin::cargo_bin("test_mcp_2026_stdio_server")?;
 
     for (modern, executor) in [(false, false), (false, true), (true, false), (true, true)] {
         let mode = if modern {
@@ -242,7 +242,7 @@ async fn modern_local_and_executor_stdio_reject_oversized_lines() -> anyhow::Res
         };
         let env = modern.then(|| {
             HashMap::from([(
-                OsString::from("CODEX_MCP_PROTOCOL_VERSION"),
+                OsString::from("AVA_MCP_PROTOCOL_VERSION"),
                 OsString::from("2026-07-28"),
             )])
         });

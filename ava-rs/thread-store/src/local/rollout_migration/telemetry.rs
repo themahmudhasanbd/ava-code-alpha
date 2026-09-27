@@ -12,10 +12,10 @@ use super::RolloutMigrationReport;
 use super::RolloutMigrationStatus;
 use crate::ThreadStoreResult;
 
-const RUN_METRIC: &str = "codex.rollout_migration.run";
-const RUN_DURATION_METRIC: &str = "codex.rollout_migration.run.duration_ms";
-const RUN_IO_BYTES_METRIC: &str = "codex.rollout_migration.run.io_bytes";
-const THREAD_METRIC: &str = "codex.rollout_migration.thread";
+const RUN_METRIC: &str = "ava.rollout_migration.run";
+const RUN_DURATION_METRIC: &str = "ava.rollout_migration.run.duration_ms";
+const RUN_IO_BYTES_METRIC: &str = "ava.rollout_migration.run.io_bytes";
+const THREAD_METRIC: &str = "ava.rollout_migration.thread";
 
 #[derive(Clone, Copy)]
 pub(super) enum RolloutMigrationTrigger {
@@ -51,7 +51,7 @@ impl RolloutMigrationTelemetry {
     }
 
     pub(super) fn finish(&self, result: &ThreadStoreResult<RolloutMigrationReport>) {
-        let Some(metrics) = codex_otel::global() else {
+        let Some(metrics) = ava_otel::global() else {
             return;
         };
         let mut io_bytes = 0_u64;

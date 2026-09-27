@@ -8,23 +8,23 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::Environment;
-use codex_rmcp_client::McpAuthState;
-use codex_rmcp_client::McpLoginRequirement;
-use codex_rmcp_client::McpOAuthRefreshMode;
-use codex_rmcp_client::McpProtocolMode;
-use codex_rmcp_client::OAuthDiscoveryTimeout;
-use codex_rmcp_client::RmcpClient;
-use codex_rmcp_client::StoredOAuthTokens;
-use codex_rmcp_client::StreamableHttpRedirectMode;
-use codex_rmcp_client::WrappedOAuthTokenResponse;
-use codex_rmcp_client::determine_streamable_http_auth_status;
-use codex_rmcp_client::is_authentication_required_error;
-use codex_rmcp_client::save_oauth_tokens;
-use codex_rmcp_client::with_http_headers_helper;
-use codex_utils_cargo_bin::cargo_bin;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::Environment;
+use ava_rmcp_client::McpAuthState;
+use ava_rmcp_client::McpLoginRequirement;
+use ava_rmcp_client::McpOAuthRefreshMode;
+use ava_rmcp_client::McpProtocolMode;
+use ava_rmcp_client::OAuthDiscoveryTimeout;
+use ava_rmcp_client::RmcpClient;
+use ava_rmcp_client::StoredOAuthTokens;
+use ava_rmcp_client::StreamableHttpRedirectMode;
+use ava_rmcp_client::WrappedOAuthTokenResponse;
+use ava_rmcp_client::determine_streamable_http_auth_status;
+use ava_rmcp_client::is_authentication_required_error;
+use ava_rmcp_client::save_oauth_tokens;
+use ava_rmcp_client::with_http_headers_helper;
+use ava_utils_cargo_bin::cargo_bin;
 use oauth2::AccessToken;
 use oauth2::RefreshToken;
 use oauth2::basic::BasicTokenType;
@@ -53,7 +53,7 @@ const REFRESH_TOKEN: &str = "valid-refresh-token";
 const REFRESHED_ACCESS_TOKEN: &str = "refreshed-access-token";
 const RESOURCE_API_KEY: &str = "resource-api-key-secret";
 const RESOURCE_USER_AGENT: &str = "resource-only-user-agent";
-const MCP_USER_AGENT: &str = concat!("codex-mcp-client/", env!("CARGO_PKG_VERSION"));
+const MCP_USER_AGENT: &str = concat!("ava-mcp-client/", env!("CARGO_PKG_VERSION"));
 const CHILD_SERVER_URL_ENV: &str = "MCP_TEST_OAUTH_STARTUP_SERVER_URL";
 const CHILD_REFRESH_MODE_ENV: &str = "MCP_TEST_OAUTH_REFRESH_MODE";
 const CHILD_HELPER_COMMAND_ENV: &str = "MCP_TEST_OAUTH_STARTUP_HELPER_COMMAND";
@@ -147,7 +147,7 @@ async fn tool_call_preserves_challenge_only_after_silent_refresh_fails() -> anyh
             .await;
 
         // The child owns its credential store; the parallel test runner's environment is unchanged.
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let status = Command::new(std::env::current_exe()?)
             .args([
                 "oauth_tool_call_child",
@@ -155,7 +155,7 @@ async fn tool_call_preserves_challenge_only_after_silent_refresh_fails() -> anyh
                 "--ignored",
                 "--nocapture",
             ])
-            .env("CODEX_HOME", codex_home.path())
+            .env("AVA_HOME", ava_home.path())
             .env(CHILD_SERVER_URL_ENV, server_url)
             .env(CHILD_REFRESH_SUCCEEDS_ENV, refresh_succeeds.to_string())
             .status()
@@ -473,20 +473,20 @@ async fn assert_expired_token_refresh(
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let with_headers_helper = matches!(
         scenario,
         OAuthStartupScenario::GatewayHeadersHelper
             | OAuthStartupScenario::SameOriginGatewayHeadersHelper
     );
 
-    // Credential storage resolves CODEX_HOME from the process environment.
+    // Credential storage resolves AVA_HOME from the process environment.
     // Run the client half of the test in an ignored helper test so it can use
     // an isolated home without mutating the parent test runner's environment.
     let mut command = Command::new(std::env::current_exe()?);
     command
         .args(["oauth_startup_child", "--exact", "--ignored", "--nocapture"])
-        .env("CODEX_HOME", codex_home.path())
+        .env("AVA_HOME", ava_home.path())
         .env(CHILD_SERVER_URL_ENV, server_url)
         .env(CHILD_STORED_ISSUER_ENV, authorization_server_issuer)
         .env(CHILD_RESOURCE_API_KEY_ENV, RESOURCE_API_KEY)
@@ -649,7 +649,7 @@ async fn run_issuer_startup_child(
     stored_issuer: &str,
     access_token_expiry: &str,
 ) -> anyhow::Result<std::process::ExitStatus> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     Ok(Command::new(std::env::current_exe()?)
         .args([
             "issuer_startup_child",
@@ -657,7 +657,7 @@ async fn run_issuer_startup_child(
             "--ignored",
             "--nocapture",
         ])
-        .env("CODEX_HOME", codex_home.path())
+        .env("AVA_HOME", ava_home.path())
         .env(CHILD_SERVER_URL_ENV, server_url)
         .env(CHILD_STORED_ISSUER_ENV, stored_issuer)
         .env(CHILD_ACCESS_TOKEN_EXPIRY_ENV, access_token_expiry)
@@ -773,7 +773,7 @@ async fn does_not_refresh_against_metadata_from_second_discovery() -> anyhow::Re
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn reports_auth_status_for_persisted_credentials() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let status = Command::new(std::env::current_exe()?)
         .args([
@@ -782,7 +782,7 @@ async fn reports_auth_status_for_persisted_credentials() -> anyhow::Result<()> {
             "--ignored",
             "--nocapture",
         ])
-        .env("CODEX_HOME", codex_home.path())
+        .env("AVA_HOME", ava_home.path())
         .status()
         .await?;
 
@@ -806,7 +806,7 @@ async fn identifies_expired_unrefreshable_token_startup_error() -> anyhow::Resul
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let status = Command::new(std::env::current_exe()?)
         .args([
             "expired_unrefreshable_startup_child",
@@ -814,7 +814,7 @@ async fn identifies_expired_unrefreshable_token_startup_error() -> anyhow::Resul
             "--ignored",
             "--nocapture",
         ])
-        .env("CODEX_HOME", codex_home.path())
+        .env("AVA_HOME", ava_home.path())
         .env(CHILD_SERVER_URL_ENV, format!("{}/mcp", server.uri()))
         .status()
         .await?;

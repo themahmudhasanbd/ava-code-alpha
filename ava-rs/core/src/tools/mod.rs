@@ -25,14 +25,14 @@ use std::borrow::Cow;
 
 use crate::session::turn_context::TurnContext;
 pub(crate) use approvals::ApprovalContext;
-use codex_features::Feature;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ToolMode;
-use codex_tools::ToolName;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::formatted_truncate_text;
-use codex_utils_output_truncation::truncate_text;
+use ava_features::Feature;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ToolMode;
+use ava_tools::ToolName;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::formatted_truncate_text;
+use ava_utils_output_truncation::truncate_text;
 pub(crate) use executed_tool_calls::ExecutedToolCalls;
 pub use router::ToolRouter;
 
@@ -57,13 +57,13 @@ pub(crate) fn flat_tool_name(tool_name: &ToolName) -> Cow<'_, str> {
 
 pub(crate) fn tool_user_shell_type(
     user_shell: &crate::shell::Shell,
-) -> codex_tools::ToolUserShellType {
+) -> ava_tools::ToolUserShellType {
     match user_shell.shell_type {
-        crate::shell::ShellType::Zsh => codex_tools::ToolUserShellType::Zsh,
-        crate::shell::ShellType::Bash => codex_tools::ToolUserShellType::Bash,
-        crate::shell::ShellType::PowerShell => codex_tools::ToolUserShellType::PowerShell,
-        crate::shell::ShellType::Sh => codex_tools::ToolUserShellType::Sh,
-        crate::shell::ShellType::Cmd => codex_tools::ToolUserShellType::Cmd,
+        crate::shell::ShellType::Zsh => ava_tools::ToolUserShellType::Zsh,
+        crate::shell::ShellType::Bash => ava_tools::ToolUserShellType::Bash,
+        crate::shell::ShellType::PowerShell => ava_tools::ToolUserShellType::PowerShell,
+        crate::shell::ShellType::Sh => ava_tools::ToolUserShellType::Sh,
+        crate::shell::ShellType::Cmd => ava_tools::ToolUserShellType::Cmd,
     }
 }
 

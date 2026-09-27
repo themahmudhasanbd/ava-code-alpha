@@ -4,13 +4,13 @@ mod world_state;
 use std::sync::Arc;
 use std::time::Instant;
 
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::WorldStateContributionInput;
-use codex_extension_api::WorldStateSectionContribution;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::WorldStateContributionInput;
+use ava_extension_api::WorldStateSectionContribution;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
 
 use crate::policy::GitAttributionPolicy;
 use crate::policy::GitAttributionRetry;

@@ -30,20 +30,20 @@ use std::time::Duration;
 
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_config::types::McpServerEnvVar;
-use codex_exec_server::ExecBackend;
-use codex_exec_server::ExecEnvPolicy;
-use codex_exec_server::ExecParams;
-use codex_exec_server::ExecProcess;
-use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
-use codex_utils_pty::Command;
-use codex_utils_pty::ProcessMode;
+use ava_config::types::McpServerEnvVar;
+use ava_exec_server::ExecBackend;
+use ava_exec_server::ExecEnvPolicy;
+use ava_exec_server::ExecParams;
+use ava_exec_server::ExecProcess;
+use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
+use ava_utils_pty::Command;
+use ava_utils_pty::ProcessMode;
 #[cfg(unix)]
-use codex_utils_pty::process_group::kill_process_group;
+use ava_utils_pty::process_group::kill_process_group;
 #[cfg(unix)]
-use codex_utils_pty::process_group::terminate_process_group;
+use ava_utils_pty::process_group::terminate_process_group;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use rmcp::service::RoleClient;
@@ -225,7 +225,7 @@ struct LocalProcessTerminator {
 
 #[cfg(windows)]
 enum LocalProcessTerminator {
-    Job(codex_utils_pty::JobObject),
+    Job(ava_utils_pty::JobObject),
     Process(OwnedHandle),
 }
 
@@ -286,7 +286,7 @@ impl LocalStdioServerLauncher {
         #[cfg(not(windows))]
         let command = build_command();
         #[cfg(windows)]
-        let job = match codex_utils_pty::JobObject::create_without_breakaway() {
+        let job = match ava_utils_pty::JobObject::create_without_breakaway() {
             Ok(job) => {
                 command.prepare_suspended_spawn(&job);
                 Some(job)
@@ -337,7 +337,7 @@ impl LocalStdioServerLauncher {
         let terminator = match job {
             Some(job) => Some(LocalProcessTerminator::Job(job)),
             None => process_id.and_then(|process_id| {
-                match codex_utils_pty::JobObject::open_process_handle(process_id) {
+                match ava_utils_pty::JobObject::open_process_handle(process_id) {
                     Ok(handle) => Some(LocalProcessTerminator::Process(handle)),
                     Err(error) => {
                         warn!("Windows MCP process handle unavailable: {error}");
@@ -433,7 +433,7 @@ impl LocalProcessTerminator {
         let result = match self {
             Self::Job(job) => job.terminate(),
             Self::Process(process_handle) => {
-                codex_utils_pty::JobObject::terminate_process_handle(process_handle)
+                ava_utils_pty::JobObject::terminate_process_handle(process_handle)
             }
         };
         if let Err(error) = result {
@@ -675,7 +675,7 @@ impl ExecutorStdioServerLauncher {
             Vec::new()
         } else {
             // `source = "remote"` means the value is read from the executor's
-            // environment, not copied from Codex. Start from `All` only so the
+            // environment, not copied from Ava. Start from `All` only so the
             // named remote variable is available to the filter below; the
             // effective child env is still limited by `include_only`.
             crate::utils::DEFAULT_ENV_VARS
@@ -701,9 +701,9 @@ impl ExecutorStdioServerLauncher {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_protocol::config_types::EnvironmentVariablePattern;
-    use codex_protocol::config_types::ShellEnvironmentPolicy;
-    use codex_protocol::shell_environment;
+    use ava_protocol::config_types::EnvironmentVariablePattern;
+    use ava_protocol::config_types::ShellEnvironmentPolicy;
+    use ava_protocol::shell_environment;
 
     #[test]
     fn remote_env_policy_uses_core_env_without_remote_source_vars() {

@@ -34,19 +34,19 @@ use crate::tests::support::sample_turn_start_response;
 use crate::tests::support::sample_turn_started_notification;
 use crate::tests::support::test_tracking_context;
 use crate::tests::support::test_turn_metadata;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadRealtimeClosedNotification;
-use codex_app_server_protocol::ThreadRealtimeStartedNotification;
-use codex_app_server_protocol::TurnStatus as AppServerTurnStatus;
-use codex_protocol::protocol::RealtimeConversationVersion;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadRealtimeClosedNotification;
+use ava_app_server_protocol::ThreadRealtimeStartedNotification;
+use ava_app_server_protocol::TurnStatus as AppServerTurnStatus;
+use ava_protocol::protocol::RealtimeConversationVersion;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -108,9 +108,9 @@ async fn stateless_app_and_plugin_facts_preserve_arrival_order() {
             ),
         ],
         [
-            ("codex_app_mentioned", Some(TEST_PRODUCT_CLIENT_ID)),
-            ("codex_app_used", Some(TEST_PRODUCT_CLIENT_ID)),
-            ("codex_plugin_used", Some(TEST_PRODUCT_CLIENT_ID)),
+            ("ava_app_mentioned", Some(TEST_PRODUCT_CLIENT_ID)),
+            ("ava_app_used", Some(TEST_PRODUCT_CLIENT_ID)),
+            ("ava_plugin_used", Some(TEST_PRODUCT_CLIENT_ID)),
         ]
     );
     assert_eq!(
@@ -248,7 +248,7 @@ async fn turn_and_tool_events_read_current_trusted_root() {
             "thread-1",
             "turn-1",
             AppServerTurnStatus::Completed,
-            /*codex_error_info*/ None,
+            /*ava_error_info*/ None,
         ))),
     ] {
         reducer.ingest(fact, &mut events).await;
@@ -268,11 +268,11 @@ async fn turn_and_tool_events_read_current_trusted_root() {
             }))
             .collect::<Vec<_>>(),
         vec![
-            json!({"event_type": "codex_command_execution_event", "turn_id": "turn-1", "item_id": "before-conflict", "root_turn_id": "root-ancestor"}),
-            json!({"event_type": "codex_command_execution_event", "turn_id": "turn-1", "item_id": "after-conflict", "root_turn_id": null}),
-            json!({"event_type": "codex_control_tool_call_event", "turn_id": "turn-1", "item_id": "queued-control", "root_turn_id": null}),
-            json!({"event_type": "codex_dynamic_tool_call_event", "turn_id": "turn-1", "item_id": "queued-code-mode", "root_turn_id": null}),
-            json!({"event_type": "codex_turn_event", "turn_id": "turn-1", "item_id": null, "root_turn_id": null}),
+            json!({"event_type": "ava_command_execution_event", "turn_id": "turn-1", "item_id": "before-conflict", "root_turn_id": "root-ancestor"}),
+            json!({"event_type": "ava_command_execution_event", "turn_id": "turn-1", "item_id": "after-conflict", "root_turn_id": null}),
+            json!({"event_type": "ava_control_tool_call_event", "turn_id": "turn-1", "item_id": "queued-control", "root_turn_id": null}),
+            json!({"event_type": "ava_dynamic_tool_call_event", "turn_id": "turn-1", "item_id": "queued-code-mode", "root_turn_id": null}),
+            json!({"event_type": "ava_turn_event", "turn_id": "turn-1", "item_id": null, "root_turn_id": null}),
         ]
     );
 }
@@ -327,7 +327,7 @@ async fn completed_background_tool_item_emits_after_turn_event() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -413,10 +413,10 @@ async fn completed_background_tool_item_emits_after_turn_event() {
             })
             .collect::<Vec<_>>(),
         vec![
-            json!({"event_type": "codex_turn_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
-            json!({"event_type": "codex_command_execution_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
-            json!({"event_type": "codex_control_tool_call_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
-            json!({"event_type": "codex_dynamic_tool_call_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
+            json!({"event_type": "ava_turn_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
+            json!({"event_type": "ava_command_execution_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
+            json!({"event_type": "ava_control_tool_call_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
+            json!({"event_type": "ava_dynamic_tool_call_event", "turn_id": "turn-2", "root_turn_id": "root-background"}),
         ]
     );
 }
@@ -450,7 +450,7 @@ async fn item_completed_without_turn_state_does_not_create_turn_state() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -550,13 +550,13 @@ async fn voice_handoff_attributes_plugin_events_after_realtime_closes() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut events,
         )
         .await;
 
-    for event_type in ["codex_app_used", "skill_invocation", "codex_turn_event"] {
+    for event_type in ["ava_app_used", "skill_invocation", "ava_turn_event"] {
         let event = events
             .iter()
             .map(|event| serde_json::to_value(event).expect("serialize analytics event"))
@@ -661,7 +661,7 @@ async fn voice_handoff_steering_active_turn_does_not_tag_next_text_turn() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut events,
         )

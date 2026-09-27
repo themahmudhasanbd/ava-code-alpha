@@ -2,18 +2,18 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCNotification;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::JSONRPCResponse;
-use codex_exec_server_protocol::RequestId;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_network_proxy::NetworkDecision;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkPolicyRequest;
-use codex_network_proxy::NetworkProxyAuditMetadata;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCNotification;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::JSONRPCResponse;
+use ava_exec_server_protocol::RequestId;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_network_proxy::NetworkDecision;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkPolicyRequest;
+use ava_network_proxy::NetworkProxyAuditMetadata;
+use ava_utils_path_uri::PathUri;
 use http::HeaderMap;
 use opentelemetry::trace::TracerProvider as _;
 use opentelemetry_sdk::trace::InMemorySpanExporter;
@@ -182,7 +182,7 @@ async fn policy_decisions_reject_forged_process_and_use_trusted_controller_metad
         .expect("audit log should be UTF-8");
         assert!(!output.contains("forged.example"));
         for expected in [
-            "codex_otel.log_only",
+            "ava_otel.log_only",
             "trusted-conversation",
             "trusted-account",
             "trusted-execution",
@@ -322,7 +322,7 @@ async fn policy_requests_use_process_decider_and_cancel_on_unregister() {
     let subscriber = tracing_subscriber::registry().with(
         tracing_opentelemetry::layer()
             .with_tracer(tracer_provider.tracer("exec-server-test"))
-            .with_filter(filter_fn(codex_otel::OtelProvider::trace_export_filter)),
+            .with_filter(filter_fn(ava_otel::OtelProvider::trace_export_filter)),
     );
     let _subscriber = tracing::subscriber::set_default(subscriber);
     tracing::callsite::rebuild_interest_cache();
@@ -452,7 +452,7 @@ async fn policy_requests_use_process_decider_and_cancel_on_unregister() {
                 tracing::Span::current()
                     .metadata()
                     .map(tracing::Metadata::name),
-                Some("codex.exec_server.request"),
+                Some("ava.exec_server.request"),
                 "network policy decisions must run inside the inbound request span"
             );
             match request.host.as_str() {

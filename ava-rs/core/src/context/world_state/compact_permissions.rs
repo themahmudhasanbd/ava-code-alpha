@@ -3,8 +3,8 @@ use super::WorldStateSection;
 use crate::context::APPROVED_COMMAND_PREFIX_SAVED_MESSAGE_PREFIX;
 use crate::context::ApprovedCommandPrefixSaved;
 use crate::context::ContextualUserFragment;
-use codex_execpolicy::Policy;
-use codex_protocol::models::format_allow_prefixes;
+use ava_execpolicy::Policy;
+use ava_protocol::models::format_allow_prefixes;
 use std::collections::BTreeSet;
 
 /// Newly approved command prefixes visible without the full permissions instructions.

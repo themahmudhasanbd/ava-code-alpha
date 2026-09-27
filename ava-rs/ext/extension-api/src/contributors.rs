@@ -2,11 +2,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use codex_context_fragments::ContextualUserFragment;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::TokenUsageInfo;
-use codex_tools::ToolCall;
-use codex_tools::ToolExecutor;
+use ava_context_fragments::ContextualUserFragment;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::TokenUsageInfo;
+use ava_tools::ToolCall;
+use ava_tools::ToolExecutor;
 
 use crate::ExtensionData;
 use crate::ExtensionMetrics;

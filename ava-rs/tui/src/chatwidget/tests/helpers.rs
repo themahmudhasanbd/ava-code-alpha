@@ -1,25 +1,25 @@
 use super::*;
-use codex_app_server_protocol::ImageGenerationItem;
-use codex_app_server_protocol::PluginAvailability;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ImageGenerationItem;
+use ava_app_server_protocol::PluginAvailability;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 
 pub(super) async fn test_config() -> Config {
     // Start from the built-in defaults so tests do not inherit host/system config.
-    let codex_home = tempfile::Builder::new()
+    let ava_home = tempfile::Builder::new()
         .prefix("chatwidget-tests-")
         .tempdir()
         .expect("tempdir")
         .keep();
     let mut config =
-        Config::load_default_with_cli_overrides_for_codex_home(codex_home.clone(), Vec::new())
+        Config::load_default_with_cli_overrides_for_ava_home(ava_home.clone(), Vec::new())
             .await
             .expect("config");
     // Keep generic UI snapshots stable when the bundled catalog default changes.
     config.model = Some("gpt-5.6-sol".to_string());
-    config.codex_home = codex_home.abs();
-    config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.as_path().abs());
-    config.log_dir = codex_home.join("log");
+    config.ava_home = ava_home.abs();
+    config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.as_path().abs());
+    config.log_dir = ava_home.join("log");
     config.cwd = PathBuf::from(test_path_display("/tmp/project")).abs();
     config.config_layer_stack = ConfigLayerStack::default();
     config.startup_warnings.clear();
@@ -145,7 +145,7 @@ pub(super) fn test_model_catalog(_config: &Config) -> Arc<ModelCatalog> {
     Arc::new(
         ModelCatalog::new(crate::test_support::TEST_MODEL_PRESETS.clone())
             .with_collaboration_modes(
-            codex_models_manager::collaboration_mode_presets::builtin_collaboration_mode_presets(),
+            ava_models_manager::collaboration_mode_presets::builtin_collaboration_mode_presets(),
         ),
     )
 }
@@ -161,7 +161,7 @@ pub(super) async fn make_chatwidget_manual(
     make_chatwidget_manual_with_auth(
         model_override,
         /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ false,
+        /*has_ava_backend_auth*/ false,
         FrameRequester::test_dummy(),
     )
     .await
@@ -170,7 +170,7 @@ pub(super) async fn make_chatwidget_manual(
 pub(super) async fn make_chatwidget_manual_with_auth(
     model_override: Option<&str>,
     has_chatgpt_account: bool,
-    has_codex_backend_auth: bool,
+    has_ava_backend_auth: bool,
     frame_requester: FrameRequester,
 ) -> (
     ChatWidget,
@@ -199,9 +199,9 @@ pub(super) async fn make_chatwidget_manual_with_auth(
         initial_user_message: None,
         enhanced_keys_supported: false,
         has_chatgpt_account,
-        has_codex_backend_auth,
+        has_ava_backend_auth,
         model_catalog,
-        feedback: codex_feedback::CodexFeedback::new(),
+        feedback: ava_feedback::AvaFeedback::new(),
         is_first_run: true,
         status_account_display: None,
         initial_plan_type: None,
@@ -211,7 +211,7 @@ pub(super) async fn make_chatwidget_manual_with_auth(
         terminal_title_invalid_items_warned: Arc::new(AtomicBool::new(false)),
         session_telemetry,
     };
-    let mut widget = ChatWidget::new_with_op_target(common, super::CodexOpTarget::Direct(op_tx));
+    let mut widget = ChatWidget::new_with_op_target(common, super::AvaOpTarget::Direct(op_tx));
     widget.windows_sandbox_host = crate::app::WindowsSandboxHost::Local;
     widget.windows_sandbox_config.requirements = Some(None);
     widget.transcript.active_cell = None;
@@ -259,7 +259,7 @@ pub(super) fn assert_no_submit_op(op_rx: &mut tokio::sync::mpsc::UnboundedReceiv
 
 pub(crate) fn set_chatgpt_auth(chat: &mut ChatWidget) {
     chat.has_chatgpt_account = true;
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.model_catalog = test_model_catalog(&chat.config);
 }
 
@@ -445,8 +445,8 @@ fn thread_id(chat: &ChatWidget) -> String {
     chat.thread_id.map(|id| id.to_string()).unwrap_or_default()
 }
 
-fn token_usage_breakdown(usage: TokenUsage) -> codex_app_server_protocol::TokenUsageBreakdown {
-    codex_app_server_protocol::TokenUsageBreakdown {
+fn token_usage_breakdown(usage: TokenUsage) -> ava_app_server_protocol::TokenUsageBreakdown {
+    ava_app_server_protocol::TokenUsageBreakdown {
         total_tokens: usage.total_tokens,
         input_tokens: usage.input_tokens,
         cached_input_tokens: usage.cached_input_tokens,
@@ -461,14 +461,14 @@ pub(super) fn handle_token_count(chat: &mut ChatWidget, info: Option<TokenUsageI
         Some(info) => {
             chat.handle_server_notification(
                 ServerNotification::ThreadTokenUsageUpdated(
-                    codex_app_server_protocol::ThreadTokenUsageUpdatedNotification {
+                    ava_app_server_protocol::ThreadTokenUsageUpdatedNotification {
                         thread_id: thread_id(chat),
                         turn_id: chat
                             .turn_lifecycle
                             .last_turn_id
                             .clone()
                             .unwrap_or_else(|| "turn-1".to_string()),
-                        token_usage: codex_app_server_protocol::ThreadTokenUsage {
+                        token_usage: ava_app_server_protocol::ThreadTokenUsage {
                             total: token_usage_breakdown(info.total_token_usage),
                             last: token_usage_breakdown(info.last_token_usage),
                             model_context_window: info.model_context_window,
@@ -485,14 +485,14 @@ pub(super) fn handle_token_count(chat: &mut ChatWidget, info: Option<TokenUsageI
 pub(super) fn handle_error(
     chat: &mut ChatWidget,
     message: impl Into<String>,
-    codex_error_info: Option<CodexErrorInfo>,
+    ava_error_info: Option<AvaErrorInfo>,
 ) {
     chat.handle_server_notification(
         ServerNotification::Error(ErrorNotification {
             error: AppServerTurnError {
                 misalignment: None,
                 message: message.into(),
-                codex_error_info,
+                ava_error_info,
                 additional_details: None,
             },
             will_retry: false,
@@ -526,7 +526,7 @@ pub(super) fn handle_stream_error_with_replay(
             error: AppServerTurnError {
                 misalignment: None,
                 message: message.into(),
-                codex_error_info: None,
+                ava_error_info: None,
                 additional_details,
             },
             will_retry: true,
@@ -572,7 +572,7 @@ pub(super) fn handle_model_verification(
 pub(super) fn handle_agent_message_delta(chat: &mut ChatWidget, delta: impl Into<String>) {
     chat.handle_server_notification(
         ServerNotification::AgentMessageDelta(
-            codex_app_server_protocol::AgentMessageDeltaNotification {
+            ava_app_server_protocol::AgentMessageDeltaNotification {
                 thread_id: thread_id(chat),
                 turn_id: chat
                     .turn_lifecycle
@@ -902,7 +902,7 @@ pub(super) fn replay_agent_message_delta(
 ) {
     chat.handle_server_notification(
         ServerNotification::AgentMessageDelta(
-            codex_app_server_protocol::AgentMessageDeltaNotification {
+            ava_app_server_protocol::AgentMessageDeltaNotification {
                 thread_id: thread_id(chat),
                 turn_id: "turn-1".to_string(),
                 item_id: "msg-1".to_string(),
@@ -923,14 +923,14 @@ pub(super) fn begin_exec_with_source(
     // Build the full command vec and parse it using core's parser,
     // then convert to protocol variants for the event payload.
     let command = vec!["bash".to_string(), "-lc".to_string(), raw_cmd.to_string()];
-    let command_actions = codex_shell_command::parse_command::parse_command(&command)
+    let command_actions = ava_shell_command::parse_command::parse_command(&command)
         .into_iter()
         .map(|parsed| AppServerCommandAction::from_core_with_cwd(parsed, &chat.config.cwd))
         .collect();
     let item = AppServerThreadItem::CommandExecution {
         model_context: None,
         id: call_id.to_string(),
-        command: codex_shell_command::parse_command::shlex_join(&command),
+        command: ava_shell_command::parse_command::shlex_join(&command),
         cwd: chat.config.cwd.clone().into(),
         process_id: None,
         plugin_id: None,
@@ -956,7 +956,7 @@ pub(super) fn begin_unified_exec_startup(
     let item = AppServerThreadItem::CommandExecution {
         model_context: None,
         id: call_id.to_string(),
-        command: codex_shell_command::parse_command::shlex_join(&command),
+        command: ava_shell_command::parse_command::shlex_join(&command),
         cwd: chat.config.cwd.clone().into(),
         process_id: Some(process_id.to_string()),
         plugin_id: None,
@@ -996,7 +996,7 @@ pub(super) fn terminal_interaction(
 ) {
     chat.handle_server_notification(
         ServerNotification::TerminalInteraction(
-            codex_app_server_protocol::TerminalInteractionNotification {
+            ava_app_server_protocol::TerminalInteractionNotification {
                 thread_id: thread_id(chat),
                 turn_id: chat
                     .turn_lifecycle
@@ -1088,7 +1088,7 @@ pub(super) fn app_server_turn(
 ) -> AppServerTurn {
     AppServerTurn {
         id: turn_id.to_string(),
-        items_view: codex_app_server_protocol::TurnItemsView::Full,
+        items_view: ava_app_server_protocol::TurnItemsView::Full,
         items: Vec::new(),
         status,
         error,
@@ -1395,7 +1395,7 @@ pub(super) fn strip_osc8_for_snapshot(text: &str) -> String {
 
 pub(super) fn plugins_test_absolute_path(path: &str) -> AbsolutePathBuf {
     std::env::temp_dir()
-        .join("codex-plugin-menu-tests")
+        .join("ava-plugin-menu-tests")
         .join(path)
         .abs()
 }
@@ -1582,7 +1582,7 @@ pub(super) fn plugins_test_detail(
     summary: PluginSummary,
     description: Option<&str>,
     skills: &[&str],
-    hooks: &[(codex_app_server_protocol::HookEventName, usize)],
+    hooks: &[(ava_app_server_protocol::HookEventName, usize)],
     apps: &[&str],
     mcp_servers: &[&str],
 ) -> PluginDetail {
@@ -1611,7 +1611,7 @@ pub(super) fn plugins_test_detail(
             .enumerate()
             .flat_map(|(event_index, (event_name, handler_count))| {
                 (0..*handler_count).map(move |handler_index| {
-                    codex_app_server_protocol::PluginHookSummary {
+                    ava_app_server_protocol::PluginHookSummary {
                         key: format!("plugin:{event_index}:{handler_index}"),
                         event_name: *event_name,
                     }
@@ -1708,37 +1708,37 @@ pub(super) fn handle_hook_completed(chat: &mut ChatWidget, run: AppServerHookRun
 
 pub(super) fn hook_run(
     run_id: &str,
-    event_name: codex_app_server_protocol::HookEventName,
-    status: codex_app_server_protocol::HookRunStatus,
+    event_name: ava_app_server_protocol::HookEventName,
+    status: ava_app_server_protocol::HookRunStatus,
     status_message: &str,
-    entries: Vec<codex_app_server_protocol::HookOutputEntry>,
-) -> codex_app_server_protocol::HookRunSummary {
-    codex_app_server_protocol::HookRunSummary {
+    entries: Vec<ava_app_server_protocol::HookOutputEntry>,
+) -> ava_app_server_protocol::HookRunSummary {
+    ava_app_server_protocol::HookRunSummary {
         id: run_id.to_string(),
         event_name,
-        handler_type: codex_app_server_protocol::HookHandlerType::Command,
-        execution_mode: codex_app_server_protocol::HookExecutionMode::Sync,
-        scope: codex_app_server_protocol::HookScope::Turn,
+        handler_type: ava_app_server_protocol::HookHandlerType::Command,
+        execution_mode: ava_app_server_protocol::HookExecutionMode::Sync,
+        scope: ava_app_server_protocol::HookScope::Turn,
         source_path: PathBuf::from(test_path_display("/tmp/hooks.json")).abs(),
-        source: codex_app_server_protocol::HookSource::User,
+        source: ava_app_server_protocol::HookSource::User,
         display_order: 0,
         status,
         status_message: Some(status_message.to_string()),
         started_at: 1,
         completed_at: matches!(
             status,
-            codex_app_server_protocol::HookRunStatus::Completed
-                | codex_app_server_protocol::HookRunStatus::Failed
-                | codex_app_server_protocol::HookRunStatus::Blocked
-                | codex_app_server_protocol::HookRunStatus::Stopped
+            ava_app_server_protocol::HookRunStatus::Completed
+                | ava_app_server_protocol::HookRunStatus::Failed
+                | ava_app_server_protocol::HookRunStatus::Blocked
+                | ava_app_server_protocol::HookRunStatus::Stopped
         )
         .then_some(11),
         duration_ms: matches!(
             status,
-            codex_app_server_protocol::HookRunStatus::Completed
-                | codex_app_server_protocol::HookRunStatus::Failed
-                | codex_app_server_protocol::HookRunStatus::Blocked
-                | codex_app_server_protocol::HookRunStatus::Stopped
+            ava_app_server_protocol::HookRunStatus::Completed
+                | ava_app_server_protocol::HookRunStatus::Failed
+                | ava_app_server_protocol::HookRunStatus::Blocked
+                | ava_app_server_protocol::HookRunStatus::Stopped
         )
         .then_some(10),
         entries,
@@ -1746,7 +1746,7 @@ pub(super) fn hook_run(
 }
 
 pub(super) async fn assert_hook_events_snapshot(
-    event_name: codex_app_server_protocol::HookEventName,
+    event_name: ava_app_server_protocol::HookEventName,
     run_id: &str,
     status_message: &str,
     snapshot_name: &str,
@@ -1759,7 +1759,7 @@ pub(super) async fn assert_hook_events_snapshot(
         hook_run(
             run_id,
             event_name,
-            codex_app_server_protocol::HookRunStatus::Running,
+            ava_app_server_protocol::HookRunStatus::Running,
             status_message,
             Vec::new(),
         ),
@@ -1784,13 +1784,13 @@ pub(super) async fn assert_hook_events_snapshot(
         "hook start should render its status in the activity row: {running}"
     );
 
-    let mut entries = vec![codex_app_server_protocol::HookOutputEntry {
-        kind: codex_app_server_protocol::HookOutputEntryKind::Warning,
+    let mut entries = vec![ava_app_server_protocol::HookOutputEntry {
+        kind: ava_app_server_protocol::HookOutputEntryKind::Warning,
         text: "Heads up from the hook".to_string(),
     }];
-    if event_name != codex_app_server_protocol::HookEventName::Interrupt {
-        entries.push(codex_app_server_protocol::HookOutputEntry {
-            kind: codex_app_server_protocol::HookOutputEntryKind::Context,
+    if event_name != ava_app_server_protocol::HookEventName::Interrupt {
+        entries.push(ava_app_server_protocol::HookOutputEntry {
+            kind: ava_app_server_protocol::HookOutputEntryKind::Context,
             text: "Remember the startup checklist.".to_string(),
         });
     }
@@ -1799,7 +1799,7 @@ pub(super) async fn assert_hook_events_snapshot(
         hook_run(
             run_id,
             event_name,
-            codex_app_server_protocol::HookRunStatus::Completed,
+            ava_app_server_protocol::HookRunStatus::Completed,
             status_message,
             entries,
         ),

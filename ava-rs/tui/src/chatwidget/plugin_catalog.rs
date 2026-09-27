@@ -28,24 +28,24 @@ use crate::onboarding::mark_url_hyperlink;
 use crate::render::renderable::ColumnRenderable;
 use crate::render::renderable::Renderable;
 use crate::tui::FrameRequester;
-use codex_app_server_protocol::PluginAuthPolicy;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginDetail;
-use codex_app_server_protocol::PluginInstallPolicy;
-use codex_app_server_protocol::PluginListResponse;
-use codex_app_server_protocol::PluginMarketplaceEntry;
-use codex_app_server_protocol::PluginShareContext;
-use codex_app_server_protocol::PluginShareDiscoverability;
-use codex_app_server_protocol::PluginSharePrincipal;
-use codex_app_server_protocol::PluginSource;
-use codex_app_server_protocol::PluginSummary;
-use codex_core_plugins::is_openai_curated_marketplace_name;
-use codex_core_plugins::remote::REMOTE_GLOBAL_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_PRIVATE_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_UNLISTED_MARKETPLACE_NAME;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::PluginAuthPolicy;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginDetail;
+use ava_app_server_protocol::PluginInstallPolicy;
+use ava_app_server_protocol::PluginListResponse;
+use ava_app_server_protocol::PluginMarketplaceEntry;
+use ava_app_server_protocol::PluginShareContext;
+use ava_app_server_protocol::PluginShareDiscoverability;
+use ava_app_server_protocol::PluginSharePrincipal;
+use ava_app_server_protocol::PluginSource;
+use ava_app_server_protocol::PluginSummary;
+use ava_core_plugins::is_openai_curated_marketplace_name;
+use ava_core_plugins::remote::REMOTE_GLOBAL_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_PRIVATE_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_UNLISTED_MARKETPLACE_NAME;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use crossterm::event::KeyCode;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -387,7 +387,7 @@ impl ChatWidget {
         let header = Paragraph::new(vec![
             Line::from("Plugins".bold()),
             Line::from(format!("Remove {marketplace_display_name} marketplace?").dim()),
-            Line::from("This removes the configured marketplace from Codex.".dim()),
+            Line::from("This removes the configured marketplace from Ava.".dim()),
         ])
         .wrap(Wrap { trim: false });
 
@@ -1233,7 +1233,7 @@ impl ChatWidget {
                             location.clone().into_request_params();
                         tx.send(AppEvent::FetchPluginDetail {
                             cwd: cwd.clone(),
-                            params: codex_app_server_protocol::PluginReadParams {
+                            params: ava_app_server_protocol::PluginReadParams {
                                 marketplace_path,
                                 remote_marketplace_name,
                                 plugin_name: plugin_name.clone(),
@@ -2020,7 +2020,7 @@ fn plugin_hook_summary(plugin: &PluginDetail) -> String {
     if plugin.hooks.is_empty() {
         "No plugin hooks.".to_string()
     } else {
-        let mut event_counts = Vec::<(codex_app_server_protocol::HookEventName, usize)>::new();
+        let mut event_counts = Vec::<(ava_app_server_protocol::HookEventName, usize)>::new();
         for hook in &plugin.hooks {
             if let Some((_, handler_count)) = event_counts
                 .iter_mut()

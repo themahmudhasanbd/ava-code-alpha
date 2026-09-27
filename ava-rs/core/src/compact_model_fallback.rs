@@ -1,17 +1,17 @@
-use codex_analytics::CompactionImplementation;
-use codex_analytics::CompactionReason;
-use codex_otel::SessionTelemetry;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
+use ava_analytics::CompactionImplementation;
+use ava_analytics::CompactionReason;
+use ava_otel::SessionTelemetry;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
 use tracing::warn;
 
 /// Returns whether a failed compaction attempt should use the current model.
-pub(crate) fn should_retry_with_current_model(error: &CodexErr) -> bool {
+pub(crate) fn should_retry_with_current_model(error: &AvaErr) -> bool {
     !matches!(
         error.details(),
-        CodexErrorDetails::TurnAborted
-            | CodexErrorDetails::Interrupted
-            | CodexErrorDetails::SessionBudgetExceeded
+        AvaErrorDetails::TurnAborted
+            | AvaErrorDetails::Interrupted
+            | AvaErrorDetails::SessionBudgetExceeded
     )
 }
 
@@ -21,7 +21,7 @@ pub(crate) fn record_model_fallback(
     current_model: &str,
     reason: CompactionReason,
     implementation: CompactionImplementation,
-    fallback_error: Option<&CodexErr>,
+    fallback_error: Option<&AvaErr>,
 ) {
     let reason_tag = match reason {
         CompactionReason::UserRequested => "user_requested",
@@ -39,7 +39,7 @@ pub(crate) fn record_model_fallback(
         "failed"
     };
     session_telemetry.counter(
-        "codex.compaction.model_fallback",
+        "ava.compaction.model_fallback",
         /*inc*/ 1,
         &[
             ("reason", reason_tag),

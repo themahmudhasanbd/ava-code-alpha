@@ -1,4 +1,4 @@
-use codex_code_mode_protocol::NoopCodeModeSessionDelegate;
+use ava_code_mode_protocol::NoopCodeModeSessionDelegate;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -18,10 +18,10 @@ use crate::ExecuteRequest;
 use crate::ExecuteToPendingOutcome;
 use crate::FunctionCallOutputContentItem;
 use crate::ToolDefinition;
-use codex_code_mode_protocol::CodeModeSessionCellExecutionLimits;
-use codex_code_mode_protocol::NotificationFuture;
-use codex_code_mode_protocol::ToolInvocationFuture;
-use codex_protocol::ToolName;
+use ava_code_mode_protocol::CodeModeSessionCellExecutionLimits;
+use ava_code_mode_protocol::NotificationFuture;
+use ava_code_mode_protocol::ToolInvocationFuture;
+use ava_protocol::ToolName;
 use pretty_assertions::assert_eq;
 use serde_json::Value as JsonValue;
 use tokio::sync::Notify;
@@ -955,7 +955,7 @@ async fn global_scope_contains_only_allowed_items() {
         "WeakMap",
         "WeakRef",
         "WeakSet",
-        "__codexContentItems",
+        "__avaContentItems",
         "add_content",
         "audio",
         "decodeURI",
@@ -1303,7 +1303,7 @@ image({
   type: "image",
   data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==",
   mimeType: "image/png",
-  _meta: { "codex/imageDetail": "original" },
+  _meta: { "ava/imageDetail": "original" },
 });
 "#
                 .to_string(),
@@ -1413,7 +1413,7 @@ image(
     type: "image",
     data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==",
     mimeType: "image/png",
-    _meta: { "codex/imageDetail": "original" },
+    _meta: { "ava/imageDetail": "original" },
   },
   "high",
 );
@@ -1587,7 +1587,7 @@ image({
       type: "image",
       data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==",
       mimeType: "image/png",
-      _meta: { "codex/imageDetail": "original" },
+      _meta: { "ava/imageDetail": "original" },
     },
   ],
   isError: false,

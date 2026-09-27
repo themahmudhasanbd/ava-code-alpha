@@ -146,16 +146,16 @@ fn event_target(value: &str) -> Option<&'static str> {
     let value = value.to_ascii_lowercase();
     let parts = value.split(['\\', '/']).map(str::trim).collect::<Vec<_>>();
     let name = *parts.last()?;
-    let package = parts.iter().any(|part| part.starts_with("openai.codex_"));
-    let trusted = package || parts.windows(2).any(|pair| pair == ["openai", "codex"]);
+    let package = parts.iter().any(|part| part.starts_with("openai.ava_"));
+    let trusted = package || parts.windows(2).any(|pair| pair == ["openai", "ava"]);
     match name {
-        "codex-windows-sandbox-setup.exe" => Some("sandbox_setup"),
-        "codex-command-runner.exe" => Some("command_runner"),
-        "codex.exe" => Some("codex"),
-        "codex-desktop.exe" => Some("codex_desktop"),
-        "chatgpt.exe" | "electron.exe" if trusted => Some("codex_desktop"),
+        "ava-windows-sandbox-setup.exe" => Some("sandbox_setup"),
+        "ava-command-runner.exe" => Some("command_runner"),
+        "ava.exe" => Some("ava"),
+        "ava-desktop.exe" => Some("ava_desktop"),
+        "chatgpt.exe" | "electron.exe" if trusted => Some("ava_desktop"),
         "rg.exe" if trusted => Some("ripgrep"),
-        _ if package => Some("codex_desktop_package"),
+        _ if package => Some("ava_desktop_package"),
         _ => None,
     }
 }
@@ -199,15 +199,15 @@ fn classify(channels: &[Option<Vec<Evidence>>]) -> DoctorCheck {
     }
     let summary = match (status, visible) {
         (CheckStatus::Ok, _) if channels.contains(&None) => "security event coverage is incomplete",
-        (CheckStatus::Ok, _) => "no locally visible recent Codex security enforcement was found",
+        (CheckStatus::Ok, _) => "no locally visible recent Ava security enforcement was found",
         (CheckStatus::Warning, false) => "security event channels could not be inspected",
-        (CheckStatus::Warning, true) => "recent Codex security audit or detection requires review",
-        (CheckStatus::Fail, _) => "endpoint security blocked or quarantined a Codex executable",
+        (CheckStatus::Warning, true) => "recent Ava security audit or detection requires review",
+        (CheckStatus::Fail, _) => "endpoint security blocked or quarantined a Ava executable",
     };
     let mut check = desktop_check("desktop.security.enforcement", status, summary).details(details);
     if status != CheckStatus::Ok {
         check = check.remediation(
-            "ask your organization's security administrator to review endpoint security events and the approved Codex application policy",
+            "ask your organization's security administrator to review endpoint security events and the approved Ava application policy",
         );
     }
     check

@@ -3,8 +3,8 @@ use crate::endpoint::realtime_websocket::protocol::FramelessInputTextContent;
 use crate::endpoint::realtime_websocket::protocol::RealtimeContextAppendChannel;
 use crate::endpoint::realtime_websocket::protocol::RealtimeOutboundMessage;
 use crate::endpoint::realtime_websocket::protocol::RealtimeVoice;
-use codex_protocol::protocol::ConversationTextParams;
-use codex_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::ConversationTextParams;
+use ava_protocol::protocol::ConversationTextRole;
 use serde_json::Value;
 use serde_json::json;
 

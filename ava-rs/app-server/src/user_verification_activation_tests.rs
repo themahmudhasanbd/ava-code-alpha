@@ -5,53 +5,53 @@ use crate::outgoing_message::ConnectionId;
 use crate::outgoing_message::OutgoingMessage;
 use crate::transport::ConnectionOrigin;
 use anyhow::Result;
-use codex_app_server_protocol as rpc;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_app_server_protocol as rpc;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
 #[tokio::test]
 async fn user_verification_initialize_owns_advertisement_and_eligibility() -> Result<()> {
     for (origin, name, opt_in, supported, expected) in [
-        (ConnectionOrigin::InProcess, "codex-tui", true, true, true),
-        (ConnectionOrigin::WebSocket, "codex-tui", true, true, false),
+        (ConnectionOrigin::InProcess, "ava-tui", true, true, true),
+        (ConnectionOrigin::WebSocket, "ava-tui", true, true, false),
         (
             ConnectionOrigin::RemoteControl,
-            "codex-tui",
+            "ava-tui",
             true,
             true,
             false,
         ),
-        (ConnectionOrigin::Stdio, "codex-tui", true, true, false),
+        (ConnectionOrigin::Stdio, "ava-tui", true, true, false),
         (ConnectionOrigin::InProcess, "other-ui", true, true, false),
-        (ConnectionOrigin::InProcess, "codex-tui", false, true, false),
-        (ConnectionOrigin::InProcess, "codex-tui", true, false, false),
-        (ConnectionOrigin::Stdio, "Codex Desktop", true, true, true),
+        (ConnectionOrigin::InProcess, "ava-tui", false, true, false),
+        (ConnectionOrigin::InProcess, "ava-tui", true, false, false),
+        (ConnectionOrigin::Stdio, "Ava Desktop", true, true, true),
         (
             ConnectionOrigin::InProcess,
-            "Codex Desktop",
+            "Ava Desktop",
             true,
             true,
             false,
         ),
         (
             ConnectionOrigin::WebSocket,
-            "Codex Desktop",
+            "Ava Desktop",
             true,
             true,
             false,
         ),
         (
             ConnectionOrigin::RemoteControl,
-            "Codex Desktop",
+            "Ava Desktop",
             true,
             true,
             false,
         ),
         (ConnectionOrigin::Stdio, "other-ui", true, true, false),
-        (ConnectionOrigin::Stdio, "codex_desktop", true, true, false),
-        (ConnectionOrigin::Stdio, "Codex Desktop", false, true, false),
-        (ConnectionOrigin::Stdio, "Codex Desktop", true, false, false),
+        (ConnectionOrigin::Stdio, "ava_desktop", true, true, false),
+        (ConnectionOrigin::Stdio, "Ava Desktop", false, true, false),
+        (ConnectionOrigin::Stdio, "Ava Desktop", true, false, false),
     ] {
         let probe: fn() -> bool = if supported { || true } else { || false };
         let mut h = Harness::new(origin, probe).await?;
@@ -67,7 +67,7 @@ async fn user_verification_initialize_owns_advertisement_and_eligibility() -> Re
             projected, expected,
             "{origin:?}/{name}/{opt_in}/{supported}"
         );
-        let thread_id = codex_protocol::ThreadId::new();
+        let thread_id = ava_protocol::ThreadId::new();
         let (id, response) = h
             .outgoing
             .send_request_to_connections(
@@ -76,7 +76,7 @@ async fn user_verification_initialize_owns_advertisement_and_eligibility() -> Re
                     rpc::McpServerElicitationRequestParams {
                         thread_id: thread_id.to_string(),
                         turn_id: None,
-                        server_name: "codex_apps".into(),
+                        server_name: "ava_apps".into(),
                         request: rpc::McpServerElicitationRequest::UserVerification {
                             challenge: "AQ".into(),
                             title: "Approve".into(),

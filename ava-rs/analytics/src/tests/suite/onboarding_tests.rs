@@ -1,14 +1,14 @@
 //! External-agent configuration import event tests.
 
-use crate::events::CodexOnboardingExternalAgentImportFailureEventRequest;
-use crate::events::CodexOnboardingExternalAgentImportFailureMetadata;
+use crate::events::AvaOnboardingExternalAgentImportFailureEventRequest;
+use crate::events::AvaOnboardingExternalAgentImportFailureMetadata;
 use crate::events::TrackEventRequest;
 use crate::facts::AnalyticsFact;
 use crate::facts::CustomAnalyticsFact;
 use crate::facts::ExternalAgentConfigImportCompletedInput;
 use crate::facts::ExternalAgentConfigImportFailureInput;
 use crate::reducer::AnalyticsReducer;
-use codex_login::default_client::originator;
+use ava_login::default_client::originator;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -37,7 +37,7 @@ async fn reducer_ingests_external_agent_config_import_completed_fact() {
     assert_eq!(
         payload,
         json!([{
-            "event_type": "codex_onboarding_external_agent_import_complete",
+            "event_type": "ava_onboarding_external_agent_import_complete",
             "event_params": {
                 "import_id": "import-1",
                 "source": "app_server",
@@ -54,9 +54,9 @@ async fn reducer_ingests_external_agent_config_import_completed_fact() {
 #[test]
 fn external_agent_config_import_failure_event_serializes_expected_shape() {
     let event = TrackEventRequest::ExternalAgentConfigImportFailure(
-        CodexOnboardingExternalAgentImportFailureEventRequest {
-            event_type: "codex_onboarding_external_agent_import_failure",
-            event_params: CodexOnboardingExternalAgentImportFailureMetadata {
+        AvaOnboardingExternalAgentImportFailureEventRequest {
+            event_type: "ava_onboarding_external_agent_import_failure",
+            event_params: AvaOnboardingExternalAgentImportFailureMetadata {
                 import_id: "import-1".to_string(),
                 source: "app_server".to_string(),
                 provider_id: "test-provider-42".to_string(),
@@ -74,7 +74,7 @@ fn external_agent_config_import_failure_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_onboarding_external_agent_import_failure",
+            "event_type": "ava_onboarding_external_agent_import_failure",
             "event_params": {
                 "import_id": "import-1",
                 "source": "app_server",
@@ -115,7 +115,7 @@ async fn reducer_ingests_external_agent_config_import_failure_fact() {
     assert_eq!(
         payload,
         json!([{
-            "event_type": "codex_onboarding_external_agent_import_failure",
+            "event_type": "ava_onboarding_external_agent_import_failure",
             "event_params": {
                 "import_id": "import-1",
                 "source": "app_server",

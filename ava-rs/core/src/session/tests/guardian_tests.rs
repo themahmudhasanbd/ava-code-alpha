@@ -22,35 +22,35 @@ use crate::tools::sandboxing::ToolCtx;
 use crate::tools::sandboxing::ToolError;
 use crate::tools::sandboxing::ToolRuntime;
 use crate::turn_diff_tracker::TurnDiffTracker;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
-use codex_exec_server::EnvironmentManager;
-use codex_execpolicy::Decision;
-use codex_execpolicy::Evaluation;
-use codex_execpolicy::Policy;
-use codex_execpolicy::RuleMatch;
-use codex_features::Feature;
-use codex_model_provider::create_model_provider;
-use codex_network_proxy::NetworkDecision;
-use codex_network_proxy::NetworkPolicyRequest;
-use codex_network_proxy::NetworkProtocol;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::models::AdditionalPermissionProfile as PermissionProfile;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::NetworkPermissions;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsArgs;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
+use ava_exec_server::EnvironmentManager;
+use ava_execpolicy::Decision;
+use ava_execpolicy::Evaluation;
+use ava_execpolicy::Policy;
+use ava_execpolicy::RuleMatch;
+use ava_features::Feature;
+use ava_model_provider::create_model_provider;
+use ava_network_proxy::NetworkDecision;
+use ava_network_proxy::NetworkPolicyRequest;
+use ava_network_proxy::NetworkProtocol;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::models::AdditionalPermissionProfile as PermissionProfile;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::NetworkPermissions;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsArgs;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
 use core_test_support::PathExt;
 use core_test_support::TempDirExt;
-use core_test_support::codex_linux_sandbox_exe_or_skip;
+use core_test_support::ava_linux_sandbox_exe_or_skip;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
@@ -98,7 +98,7 @@ async fn activate_turn_with_new_review_authority(session: &Arc<Session>) -> Arc<
                     approvals_reviewer: Some(ApprovalsReviewer::AutoReview),
                     ..Default::default()
                 },
-                permission_profile: Some(codex_protocol::models::PermissionProfile::Disabled),
+                permission_profile: Some(ava_protocol::models::PermissionProfile::Disabled),
                 ..Default::default()
             },
             NewTurnContextOptions::default(),
@@ -161,7 +161,7 @@ fn captured_step_with_user_reviewer(
 
 async fn next_exec_approval(
     events: &async_channel::Receiver<Event>,
-) -> codex_protocol::protocol::ExecApprovalRequestEvent {
+) -> ava_protocol::protocol::ExecApprovalRequestEvent {
     timeout(Duration::from_secs(5), async {
         loop {
             if let EventMsg::ExecApprovalRequest(approval) =
@@ -219,7 +219,7 @@ async fn request_permissions_routes_to_guardian_when_reviewer_is_enabled() {
     config.model_provider.base_url = Some(format!("{}/v1", server.uri()));
     let config = Arc::new(config);
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
@@ -298,7 +298,7 @@ async fn request_permissions_routes_to_guardian_when_reviewer_is_enabled() {
     assert_eq!(second_response, response);
     assert_eq!(
         session
-            .granted_turn_permissions(codex_exec_server::LOCAL_ENVIRONMENT_ID)
+            .granted_turn_permissions(ava_exec_server::LOCAL_ENVIRONMENT_ID)
             .await,
         Some(requested_permissions.into())
     );
@@ -326,7 +326,7 @@ async fn request_permissions_uses_issuing_step_policy_and_reviewer() {
     )
     .await;
     let (session, turn, _) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::Never);
@@ -430,7 +430,7 @@ async fn request_permissions_guardian_review_stops_when_cancelled(
     config.model_provider.base_url = Some(format!("{}/v1", server.uri()));
     let config = Arc::new(config);
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
@@ -484,7 +484,7 @@ async fn request_permissions_guardian_review_stops_when_cancelled(
             let event = rx_event.recv().await.expect("event channel should be open");
             if matches!(
                 event.msg,
-                codex_protocol::protocol::EventMsg::GuardianAssessment(_)
+                ava_protocol::protocol::EventMsg::GuardianAssessment(_)
             ) {
                 break;
             }
@@ -496,7 +496,7 @@ async fn request_permissions_guardian_review_stops_when_cancelled(
     let reviewer_tasks = session
         .services
         .thread_extension_data
-        .get::<codex_guardian_reviewer::ReviewerTasks>()
+        .get::<ava_guardian_reviewer::ReviewerTasks>()
         .expect("reviewer tasks installed");
     match source {
         ReviewCancellationSource::Action => cancellation_token.cancel(),
@@ -524,7 +524,7 @@ async fn request_permissions_guardian_review_stops_when_cancelled(
     }
     assert_eq!(
         session
-            .granted_turn_permissions(codex_exec_server::LOCAL_ENVIRONMENT_ID)
+            .granted_turn_permissions(ava_exec_server::LOCAL_ENVIRONMENT_ID)
             .await,
         None
     );
@@ -565,7 +565,7 @@ async fn guardian_allows_exec_command_additional_permissions_requests_past_polic
     let mut config = (*turn_context_raw.config).clone();
     config
         .permissions
-        .set_permission_profile(codex_protocol::models::PermissionProfile::Disabled)
+        .set_permission_profile(ava_protocol::models::PermissionProfile::Disabled)
         .expect("test setup should allow disabling the permission profile");
     let TurnEnvironmentState::Ready(environment) =
         &mut turn_context_raw.initial_environments.environments[0]
@@ -574,7 +574,7 @@ async fn guardian_allows_exec_command_additional_permissions_requests_past_polic
     };
     environment.config_mut().permission_profile =
         config.permissions.permission_profile_state().snapshot();
-    config.codex_linux_sandbox_exe = codex_linux_sandbox_exe_or_skip!();
+    config.ava_linux_sandbox_exe = ava_linux_sandbox_exe_or_skip!();
     config
         .features
         .enable(Feature::GuardianApproval)
@@ -582,7 +582,7 @@ async fn guardian_allows_exec_command_additional_permissions_requests_past_polic
     config.model_provider.base_url = Some(format!("{}/v1", server.uri()));
     let config = Arc::new(config);
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
@@ -609,7 +609,7 @@ async fn guardian_allows_exec_command_additional_permissions_requests_past_polic
             cancellation_token: CancellationToken::new(),
             tracker: Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new())),
             call_id: "test-call".to_string(),
-            tool_name: codex_tools::ToolName::plain("exec_command"),
+            tool_name: ava_tools::ToolName::plain("exec_command"),
             source: crate::tools::context::ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: serde_json::json!({
@@ -673,7 +673,7 @@ async fn strict_auto_review_turn_grant_forces_guardian_for_exec_command_policy_s
                 scope: PermissionGrantScope::Turn,
                 strict_auto_review: true,
             },
-            codex_exec_server::LOCAL_ENVIRONMENT_ID,
+            ava_exec_server::LOCAL_ENVIRONMENT_ID,
             Some(&originating_turn_state),
         )
         .await;
@@ -687,7 +687,7 @@ async fn strict_auto_review_turn_grant_forces_guardian_for_exec_command_policy_s
     // Keep Never outside Full Access without requiring an OS sandbox for this routing test.
     config
         .permissions
-        .set_permission_profile(codex_protocol::models::PermissionProfile::External {
+        .set_permission_profile(ava_protocol::models::PermissionProfile::External {
             network: NetworkSandboxPolicy::Restricted,
         })
         .expect("test setup should allow external sandbox permissions");
@@ -702,7 +702,7 @@ async fn strict_auto_review_turn_grant_forces_guardian_for_exec_command_policy_s
     config.model_provider.base_url = Some(format!("{}/v1", server.uri()));
     let config = Arc::new(config);
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         Arc::clone(&session.services.auth_manager),
         config.model_provider.clone(),
     );
@@ -738,7 +738,7 @@ async fn strict_auto_review_turn_grant_forces_guardian_for_exec_command_policy_s
             cancellation_token: CancellationToken::new(),
             tracker: Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new())),
             call_id: "strict-shell-command-call".to_string(),
-            tool_name: codex_tools::ToolName::plain("exec_command"),
+            tool_name: ava_tools::ToolName::plain("exec_command"),
             source: ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: serde_json::json!({
@@ -765,7 +765,7 @@ async fn network_approval_uses_published_task_authority_within_same_turn(
     admitted_policy: AskForApproval,
 ) {
     let (session, turn, events) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         move |config| {
             config.permissions.approval_policy = Constrained::allow_any(admitted_policy);
@@ -773,7 +773,7 @@ async fn network_approval_uses_published_task_authority_within_same_turn(
             config
                     .permissions
                     .set_permission_profile(
-                        codex_protocol::models::PermissionProfile::workspace_write(),
+                        ava_protocol::models::PermissionProfile::workspace_write(),
                     )
                     .expect("set managed permissions");
         },
@@ -896,7 +896,7 @@ async fn delayed_exec_command_uses_its_captured_authority_after_next_turn_starts
         cancellation_token: CancellationToken::new(),
         tracker: Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new())),
         call_id: call_id.to_string(),
-        tool_name: codex_tools::ToolName::plain("exec_command"),
+        tool_name: ava_tools::ToolName::plain("exec_command"),
         source: ToolCallSource::Direct,
         payload: ToolPayload::Function {
             arguments: serde_json::json!({
@@ -948,7 +948,7 @@ async fn sandbox_denied_retry_uses_the_action_policy_and_reviewer() {
         ) -> std::io::Result<ApprovalAction> {
             Ok(ApprovalAction::ExecCommand {
                 id: call_id.to_string(),
-                environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+                environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
                 command: vec!["echo".to_string(), "sandbox-retry".to_string()],
                 hook_command: "echo sandbox-retry".to_string(),
                 cwd: request.cwd().clone(),
@@ -962,8 +962,8 @@ async fn sandbox_denied_retry_uses_the_action_policy_and_reviewer() {
     }
 
     impl Sandboxable for DeniedOnceRuntime {
-        fn sandbox_preference(&self) -> codex_sandboxing::SandboxablePreference {
-            codex_sandboxing::SandboxablePreference::Auto
+        fn sandbox_preference(&self) -> ava_sandboxing::SandboxablePreference {
+            ava_sandboxing::SandboxablePreference::Auto
         }
     }
 
@@ -980,7 +980,7 @@ async fn sandbox_denied_retry_uses_the_action_policy_and_reviewer() {
         ) -> Result<String, ToolError> {
             self.attempts += 1;
             if self.attempts == 1 {
-                return Err(ToolError::Codex(CodexErr::Sandbox(SandboxErr::Denied {
+                return Err(ToolError::Ava(AvaErr::Sandbox(SandboxErr::Denied {
                     output: Box::new(ExecToolCallOutput {
                         exit_code: 1,
                         ..Default::default()
@@ -1008,7 +1008,7 @@ async fn sandbox_denied_retry_uses_the_action_policy_and_reviewer() {
         step_context,
         cancellation_token: CancellationToken::new(),
         call_id: call_id.to_string(),
-        tool_name: codex_tools::ToolName::plain("exec_command"),
+        tool_name: ava_tools::ToolName::plain("exec_command"),
     };
     let environment = context
         .step_context
@@ -1073,7 +1073,7 @@ async fn guardian_allows_unified_exec_additional_permissions_requests_past_polic
             cancellation_token: CancellationToken::new(),
             tracker: Arc::clone(&tracker),
             call_id: "exec-call".to_string(),
-            tool_name: codex_tools::ToolName::plain("exec_command"),
+            tool_name: ava_tools::ToolName::plain("exec_command"),
             source: crate::tools::context::ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: serde_json::json!({
@@ -1184,7 +1184,7 @@ async fn exec_command_allows_sticky_turn_permissions_without_inline_request_perm
         let active_turn = active_turn.as_mut().expect("active turn");
         let mut turn_state = active_turn.turn_state.lock().await;
         turn_state.record_granted_permissions(
-            codex_exec_server::LOCAL_ENVIRONMENT_ID,
+            ava_exec_server::LOCAL_ENVIRONMENT_ID,
             PermissionProfile {
                 network: Some(NetworkPermissions {
                     enabled: Some(true),
@@ -1209,7 +1209,7 @@ async fn exec_command_allows_sticky_turn_permissions_without_inline_request_perm
             cancellation_token: CancellationToken::new(),
             tracker: Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new())),
             call_id: "sticky-turn-grant".to_string(),
-            tool_name: codex_tools::ToolName::plain("exec_command"),
+            tool_name: ava_tools::ToolName::plain("exec_command"),
             source: crate::tools::context::ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: serde_json::json!({
@@ -1240,7 +1240,7 @@ async fn exec_command_allows_sticky_turn_permissions_without_inline_request_perm
 
 #[tokio::test]
 async fn guardian_subagent_does_not_inherit_parent_exec_policy_rules() {
-    let codex_home = tempdir().expect("create codex home");
+    let ava_home = tempdir().expect("create ava home");
     let project_dir = tempdir().expect("create project dir");
     let rules_dir = project_dir.path().join("rules");
     fs::create_dir_all(&rules_dir).expect("create rules dir");
@@ -1250,12 +1250,12 @@ async fn guardian_subagent_does_not_inherit_parent_exec_policy_rules() {
     )
     .expect("write policy file");
 
-    let mut config = build_test_config(codex_home.path()).await;
+    let mut config = build_test_config(ava_home.path()).await;
     config.cwd = project_dir.abs();
     config.config_layer_stack = ConfigLayerStack::new(
         vec![ConfigLayerEntry::new(
             ConfigLayerSource::Project {
-                dot_codex_folder: project_dir.path().abs(),
+                dot_ava_folder: project_dir.path().abs(),
             },
             toml::Value::Table(Default::default()),
         )],
@@ -1283,9 +1283,9 @@ async fn guardian_subagent_does_not_inherit_parent_exec_policy_rules() {
         }
     );
 
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("Test API Key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("Test API Key"));
     let models_manager = models_manager_with_provider(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         auth_manager.clone(),
         config.model_provider.clone(),
     );
@@ -1294,17 +1294,17 @@ async fn guardian_subagent_does_not_inherit_parent_exec_policy_rules() {
         Arc::clone(&auth_manager),
     ));
     let skills_service = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ true,
     ));
     let mcp_manager = Arc::new(McpManager::new(Arc::clone(&plugins_manager)));
-    let thread_store = Arc::new(codex_thread_store::LocalThreadStore::new(
-        codex_thread_store::LocalThreadStoreConfig::from_config(&config),
+    let thread_store = Arc::new(ava_thread_store::LocalThreadStore::new(
+        ava_thread_store::LocalThreadStoreConfig::from_config(&config),
         /*state_db*/ None,
     ));
 
-    let mut thread_extension_init = codex_extension_api::ExtensionDataInit::default();
-    thread_extension_init.insert(codex_extension_api::SessionIsolation::Isolated);
+    let mut thread_extension_init = ava_extension_api::ExtensionDataInit::default();
+    thread_extension_init.insert(ava_extension_api::SessionIsolation::Isolated);
     let (session, io) = Session::spawn(SessionSpawnArgs {
         startup: None,
         config,
@@ -1318,8 +1318,8 @@ async fn guardian_subagent_does_not_inherit_parent_exec_policy_rules() {
         skills_service,
         plugins_manager,
         mcp_manager,
-        code_mode_session_provider: Arc::new(codex_code_mode::DisabledCodeModeSessionProvider),
-        extensions: codex_extension_api::empty_extension_registry(),
+        code_mode_session_provider: Arc::new(ava_code_mode::DisabledCodeModeSessionProvider),
+        extensions: ava_extension_api::empty_extension_registry(),
         conversation_history: InitialHistory::New,
         disabled_plugin_ids: None,
         requested_history_mode: None,
@@ -1336,7 +1336,7 @@ async fn guardian_subagent_does_not_inherit_parent_exec_policy_rules() {
         metrics_service_name: None,
         inherited_environments: None,
         inherited_exec_policy: Some(Arc::new(parent_exec_policy)),
-        parent_rollout_thread_trace: codex_rollout_trace::ThreadTraceContext::disabled(),
+        parent_rollout_thread_trace: ava_rollout_trace::ThreadTraceContext::disabled(),
         user_shell_override: None,
         parent_trace: None,
         environment_selections: Vec::new(),
@@ -1351,7 +1351,7 @@ async fn guardian_subagent_does_not_inherit_parent_exec_policy_rules() {
         inherited_multi_agent_version: None,
         git_enrichment_policy: GitEnrichmentPolicy::Skip,
         windows_sandbox_proxy_settings_mode:
-            codex_sandboxing::WindowsSandboxProxySettingsMode::Preserve,
+            ava_sandboxing::WindowsSandboxProxySettingsMode::Preserve,
     })
     .await
     .expect("spawn guardian subagent");

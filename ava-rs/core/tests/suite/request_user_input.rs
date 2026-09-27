@@ -1,21 +1,21 @@
 #![allow(clippy::unwrap_used)]
 
-use codex_core::TurnInputRequest;
-use core_test_support::test_codex::local_selections;
+use ava_core::TurnInputRequest;
+use core_test_support::test_ava::local_selections;
 use std::collections::HashMap;
 
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::TempDirExt;
 use core_test_support::responses;
 use core_test_support::responses::ResponsesRequest;
@@ -27,9 +27,9 @@ use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -78,9 +78,9 @@ async fn request_user_input_round_trip_for_mode(mode: ModeKind) -> anyhow::Resul
 
     let server = start_mock_server().await;
 
-    let builder = test_codex();
-    let TestCodex {
-        codex,
+    let builder = test_ava();
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
@@ -131,7 +131,7 @@ async fn request_user_input_round_trip_for_mode(mode: ModeKind) -> anyhow::Resul
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "please confirm".into(),
@@ -155,7 +155,7 @@ async fn request_user_input_round_trip_for_mode(mode: ModeKind) -> anyhow::Resul
         )
         .await?;
 
-    let request = wait_for_event_match(&codex, |event| match event {
+    let request = wait_for_event_match(&ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -168,7 +168,7 @@ async fn request_user_input_round_trip_for_mode(mode: ModeKind) -> anyhow::Resul
     assert!(
         timeout(Duration::from_millis(200), async {
             loop {
-                let event = codex
+                let event = ava
                     .next_event()
                     .await
                     .expect("event stream should stay open");
@@ -190,15 +190,15 @@ async fn request_user_input_round_trip_for_mode(mode: ModeKind) -> anyhow::Resul
         },
     );
     let response = RequestUserInputResponse { answers };
-    codex
+    ava
         .submit(Op::UserInputAnswer {
             id: request.turn_id.clone(),
             response,
         })
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TokenCount(_))).await;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TokenCount(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let req = second_mock.single_request();
     let output_text = call_output(&req, call_id);
@@ -217,7 +217,7 @@ async fn request_user_input_round_trip_for_mode(mode: ModeKind) -> anyhow::Resul
 
 fn ev_rate_limits() -> Value {
     json!({
-        "type": "codex.rate_limits",
+        "type": "ava.rate_limits",
         "plan_type": "plus",
         "rate_limits": {
             "allowed": true,
@@ -240,12 +240,12 @@ async fn request_user_input_interrupt_emits_deferred_token_count() -> anyhow::Re
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
-    } = test_codex().build(&server).await?;
+    } = test_ava().build(&server).await?;
 
     let call_id = "user-input-interrupt";
     let request_args = json!({
@@ -273,7 +273,7 @@ async fn request_user_input_interrupt_emits_deferred_token_count() -> anyhow::Re
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "please confirm".into(),
@@ -297,15 +297,15 @@ async fn request_user_input_interrupt_emits_deferred_token_count() -> anyhow::Re
         )
         .await?;
 
-    let request = wait_for_event_match(&codex, |event| match event {
+    let request = wait_for_event_match(&ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
-    codex.submit(Op::Interrupt).await?;
+    ava.submit(Op::Interrupt).await?;
 
-    let token_count = wait_for_event_match(&codex, |event| match event {
+    let token_count = wait_for_event_match(&ava, |event| match event {
         EventMsg::TokenCount(token_count) => Some(token_count.clone()),
         _ => None,
     })
@@ -316,7 +316,7 @@ async fn request_user_input_interrupt_emits_deferred_token_count() -> anyhow::Re
             .map(|info| info.total_token_usage.total_tokens),
         Some(77)
     );
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnAborted(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
 
     assert_eq!(request.call_id, call_id);
     Ok(())
@@ -330,9 +330,9 @@ where
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
-    let TestCodex {
-        codex,
+    let mut builder = test_ava();
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
@@ -374,7 +374,7 @@ where
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "please confirm".into(),
@@ -391,7 +391,7 @@ where
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let req = second_mock.single_request();
     let (output, success) = call_output_content_and_success(&req, &call_id);

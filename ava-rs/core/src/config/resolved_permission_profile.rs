@@ -1,10 +1,10 @@
-use codex_config::Constrained;
-use codex_config::ConstraintResult;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::models::ProfileWorkspaceRoot;
-use codex_utils_path_uri::PathUri;
+use ava_config::Constrained;
+use ava_config::ConstraintResult;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::models::ProfileWorkspaceRoot;
+use ava_utils_path_uri::PathUri;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct PermissionProfileState {

@@ -24,7 +24,7 @@ async fn run_startup_for_test(
         /*initial_prompt*/ None,
         Vec::new(),
         selection,
-        codex_feedback::CodexFeedback::new(),
+        ava_feedback::AvaFeedback::new(),
         /*is_first_run*/ false,
         /*should_prompt_windows_sandbox_nux_at_startup*/ false,
         AppServerTarget::Embedded,
@@ -49,7 +49,7 @@ async fn cli_fork_omits_implicit_model_and_effort() -> Result<()> {
         "model = \"gpt-5.5\"\nmodel_reasoning_effort = \"low\"\nfeatures.fast_mode = true\n",
     )?;
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .build()
         .await?;
@@ -80,7 +80,7 @@ async fn cli_fork_omits_implicit_model_and_effort() -> Result<()> {
         .iter_mut()
         .find(|preset| preset.model == "gpt-5.5")
         .expect("client model in catalog");
-    client_preset.upgrade = Some(codex_protocol::openai_models::ModelUpgrade {
+    client_preset.upgrade = Some(ava_protocol::openai_models::ModelUpgrade {
         id: "server-model".into(),
         migration_config_key: "test-fork-migration".into(),
         model_link: None,
@@ -225,14 +225,14 @@ async fn fresh_startup_uses_server_defaults_with_explicit_and_managed_precedence
             _ => {}
         }
         let mut config = ConfigBuilder::default()
-            .codex_home(client_home.path().to_path_buf())
+            .ava_home(client_home.path().to_path_buf())
             .loader_overrides(loader_overrides)
             .cli_overrides(cli_kv_overrides.clone())
             .harness_overrides(harness_overrides.clone())
             .build()
             .await?;
         let mut server_config = config.clone();
-        server_config.codex_home = server_home.path().to_path_buf().abs();
+        server_config.ava_home = server_home.path().to_path_buf().abs();
         server_config.sqlite = SqliteConfig::new_for_testing(server_home.path().abs());
         let (mut server, requests, proxy) = start_recording_app_server_with_history(
             &server_config,
@@ -309,7 +309,7 @@ async fn fresh_startup_reads_destination_and_cleared_model_uses_catalog() -> Res
             "model_reasoning_effort = \"high\"\n",
         )?;
         let mut config = ConfigBuilder::default()
-            .codex_home(client_home.path().to_path_buf())
+            .ava_home(client_home.path().to_path_buf())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .harness_overrides(ConfigOverrides {
                 cwd: Some(destination.path().to_path_buf()),
@@ -318,7 +318,7 @@ async fn fresh_startup_reads_destination_and_cleared_model_uses_catalog() -> Res
             .build()
             .await?;
         let mut server_config = config.clone();
-        server_config.codex_home = server_home.path().to_path_buf().abs();
+        server_config.ava_home = server_home.path().to_path_buf().abs();
         server_config.sqlite = SqliteConfig::new_for_testing(server_home.path().abs());
         let mode = if remote {
             crate::app_server_session::ThreadParamsMode::Remote
@@ -369,7 +369,7 @@ async fn fresh_startup_reads_destination_and_cleared_model_uses_catalog() -> Res
             let rendered = render_bottom_popup(&app.chat_widget, /*width*/ 80)
                 .replace(&destination.path().display().to_string(), "<PROJECT>");
             insta::assert_snapshot!(rendered, @r"
-            › Ask Codex to do anything
+            › Ask Ava to do anything
 
               GPT-6-Astra high · <PROJECT>
             ");
@@ -403,7 +403,7 @@ async fn fresh_startup_falls_back_only_for_unsupported_config_read() -> Result<(
             "model = \"client-model\"\nmodel_reasoning_effort = \"low\"\n",
         )?;
         let config = ConfigBuilder::default()
-            .codex_home(home.path().to_path_buf())
+            .ava_home(home.path().to_path_buf())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .build()
             .await?;
@@ -448,12 +448,12 @@ async fn startup_reads_server_defaults_before_starting_thread() -> Result<()> {
         "model = \"server-model\"\nmodel_reasoning_effort = \"high\"\n",
     )?;
     let config = ConfigBuilder::default()
-        .codex_home(client_home.path().to_path_buf())
+        .ava_home(client_home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .build()
         .await?;
     let mut server_config = config.clone();
-    server_config.codex_home = server_home.path().to_path_buf().abs();
+    server_config.ava_home = server_home.path().to_path_buf().abs();
     server_config.sqlite = SqliteConfig::new_for_testing(server_home.path().abs());
     let (mut server, requests, proxy) = start_recording_app_server_with_history(
         &server_config,
@@ -502,7 +502,7 @@ async fn startup_read_failure_exits_before_thread_creation() -> Result<()> {
     let (app, _, _) = make_test_app_with_channels().await;
     let home = tempdir()?;
     let mut config = app.config.clone();
-    config.codex_home = home.path().to_path_buf().abs();
+    config.ava_home = home.path().to_path_buf().abs();
     config.sqlite = SqliteConfig::new_for_testing(home.path().abs());
     let (mut server, requests, proxy) = start_recording_app_server_with_history(
         &config,

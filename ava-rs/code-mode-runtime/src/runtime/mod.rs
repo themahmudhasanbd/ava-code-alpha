@@ -11,19 +11,19 @@ use std::panic::catch_unwind;
 use std::sync::mpsc as std_mpsc;
 use std::thread;
 
-use codex_code_mode_protocol::CodeModeToolKind;
-use codex_code_mode_protocol::EnabledToolMetadata;
-use codex_code_mode_protocol::ExecuteRequest;
-use codex_code_mode_protocol::FunctionCallOutputContentItem;
-use codex_code_mode_protocol::enabled_tool_metadata;
-use codex_protocol::ToolName;
+use ava_code_mode_protocol::CodeModeToolKind;
+use ava_code_mode_protocol::EnabledToolMetadata;
+use ava_code_mode_protocol::ExecuteRequest;
+use ava_code_mode_protocol::FunctionCallOutputContentItem;
+use ava_code_mode_protocol::enabled_tool_metadata;
+use ava_protocol::ToolName;
 use serde_json::Value as JsonValue;
 use tokio::sync::mpsc;
 
 use crate::TaskFailureHandler;
 use crate::v8_init::ensure_v8_initialized;
 
-const EXIT_SENTINEL: &str = "__codex_code_mode_exit__";
+const EXIT_SENTINEL: &str = "__ava_code_mode_exit__";
 
 #[derive(Debug)]
 pub(crate) enum RuntimeCommand {

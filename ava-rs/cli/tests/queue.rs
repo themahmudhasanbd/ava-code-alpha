@@ -24,7 +24,7 @@ enum QueueResponse {
 
 async fn respond_to_queue_request<S>(
     stream: S,
-    codex_home: &Path,
+    ava_home: &Path,
     response: QueueResponse,
 ) -> Result<Value>
 where
@@ -44,8 +44,8 @@ where
     let initialized_response = json!({
         "id": initialize["id"],
         "result": {
-            "userAgent": "codex_cli_rs/0.0.0-test",
-            "codexHome": codex_home,
+            "userAgent": "ava_cli_rs/0.0.0-test",
+            "avaHome": ava_home,
         },
     });
     websocket
@@ -125,7 +125,7 @@ async fn queue_does_not_fallback_from_unsupported_explicit_remote() -> Result<()
 
 #[test]
 fn queue_rejects_empty_message() -> Result<()> {
-    let output = std::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+    let output = std::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
         .args(["queue", "--thread", THREAD_ID, "--message", ""])
         .output()?;
     assert!(!output.status.success());
@@ -134,7 +134,7 @@ fn queue_rejects_empty_message() -> Result<()> {
 
 #[test]
 fn queue_rejects_image_attachments() -> Result<()> {
-    let output = std::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+    let output = std::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
         .args([
             "queue",
             "--thread",
@@ -151,11 +151,11 @@ fn queue_rejects_image_attachments() -> Result<()> {
 }
 
 async fn run_remote_queue_command(response: QueueResponse) -> Result<(Output, Value)> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let endpoint = format!("ws://{}", listener.local_addr()?);
     let remote_first = matches!(response, QueueResponse::MethodNotFound);
-    let server_home = codex_home.path().to_path_buf();
+    let server_home = ava_home.path().to_path_buf();
     let server = tokio::spawn(async move {
         let (stream, _) = listener.accept().await?;
         respond_to_queue_request(stream, server_home.as_path(), response).await
@@ -166,7 +166,7 @@ async fn run_remote_queue_command(response: QueueResponse) -> Result<(Output, Va
             "--remote",
             endpoint.as_str(),
             "--remote-auth-token-env",
-            "CODEX_REMOTE_TOKEN",
+            "AVA_REMOTE_TOKEN",
             "queue",
         ]
     } else {
@@ -175,12 +175,12 @@ async fn run_remote_queue_command(response: QueueResponse) -> Result<(Output, Va
             "--remote",
             endpoint.as_str(),
             "--remote-auth-token-env",
-            "CODEX_REMOTE_TOKEN",
+            "AVA_REMOTE_TOKEN",
         ]
     };
-    let output = tokio::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
-        .env("CODEX_HOME", codex_home.path())
-        .env("CODEX_REMOTE_TOKEN", "test-token")
+    let output = tokio::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
+        .env("AVA_HOME", ava_home.path())
+        .env("AVA_REMOTE_TOKEN", "test-token")
         .args(remote_args)
         .args(["--thread", THREAD_ID, "--message", "do the thing"])
         .output()
@@ -191,8 +191,8 @@ async fn run_remote_queue_command(response: QueueResponse) -> Result<(Output, Va
 #[cfg(unix)]
 #[tokio::test]
 async fn queue_rejects_local_daemon_that_does_not_support_queueing() -> Result<()> {
-    let codex_home = tempfile::tempdir_in("/tmp")?;
-    let socket_path = codex_app_server::app_server_control_socket_path(codex_home.path())?;
+    let ava_home = tempfile::tempdir_in("/tmp")?;
+    let socket_path = ava_app_server::app_server_control_socket_path(ava_home.path())?;
     std::fs::create_dir_all(
         socket_path
             .as_path()
@@ -200,7 +200,7 @@ async fn queue_rejects_local_daemon_that_does_not_support_queueing() -> Result<(
             .context("missing socket parent")?,
     )?;
     let listener = tokio::net::UnixListener::bind(socket_path.as_path())?;
-    let server_home = codex_home.path().to_path_buf();
+    let server_home = ava_home.path().to_path_buf();
     let server = tokio::spawn(async move {
         let (probe, _) = listener.accept().await?;
         drop(probe);
@@ -213,8 +213,8 @@ async fn queue_rejects_local_daemon_that_does_not_support_queueing() -> Result<(
         .await
     });
 
-    let output = tokio::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
-        .env("CODEX_HOME", codex_home.path())
+    let output = tokio::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
+        .env("AVA_HOME", ava_home.path())
         .args(["queue", "--thread", THREAD_ID, "--message", "do the thing"])
         .output()
         .await?;
@@ -225,15 +225,15 @@ async fn queue_rejects_local_daemon_that_does_not_support_queueing() -> Result<(
         String::from_utf8(output.stderr)?
             .contains("local app-server daemon does not support thread/queue/add")
     );
-    assert!(!codex_home.path().join("queue_1.sqlite").exists());
+    assert!(!ava_home.path().join("queue_1.sqlite").exists());
     Ok(())
 }
 
 #[cfg(unix)]
 #[tokio::test]
 async fn queue_rejects_overrides_that_bypass_local_daemon() -> Result<()> {
-    let codex_home = tempfile::tempdir_in("/tmp")?;
-    let socket_path = codex_app_server::app_server_control_socket_path(codex_home.path())?;
+    let ava_home = tempfile::tempdir_in("/tmp")?;
+    let socket_path = ava_app_server::app_server_control_socket_path(ava_home.path())?;
     std::fs::create_dir_all(
         socket_path
             .as_path()
@@ -247,8 +247,8 @@ async fn queue_rejects_overrides_that_bypass_local_daemon() -> Result<()> {
         Ok::<_, std::io::Error>(())
     });
 
-    let output = tokio::process::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
-        .env("CODEX_HOME", codex_home.path())
+    let output = tokio::process::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
+        .env("AVA_HOME", ava_home.path())
         .args([
             "queue",
             "-c",

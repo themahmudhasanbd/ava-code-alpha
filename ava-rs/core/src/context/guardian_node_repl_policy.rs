@@ -1,6 +1,6 @@
 use super::ContextualUserFragment;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::models::ContentItemKind;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::models::ContentItemKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct GuardianNodeReplPolicy {

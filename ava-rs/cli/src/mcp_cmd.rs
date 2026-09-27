@@ -6,39 +6,39 @@ use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
 use clap::ArgGroup;
-use codex_config::types::AppToolApproval;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerOAuthConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::McpManager;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::LoaderOverrides;
-use codex_core::config::edit::ConfigEditsBuilder;
-use codex_core::config::find_codex_home;
-use codex_core::config::load_global_mcp_servers;
-use codex_core::plugins_manager_for_config;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::HttpClient;
-use codex_exec_server::RouteAwareHttpClient;
-use codex_login::AuthManager;
-use codex_mcp::McpOAuthLoginSupport;
-use codex_mcp::McpRuntimeContext;
-use codex_mcp::apply_http_headers_helper;
-use codex_mcp::compute_auth_statuses;
-use codex_mcp::discover_supported_scopes;
-use codex_mcp::oauth_login_support;
-use codex_mcp::resolve_oauth_callback;
-use codex_mcp::resolve_oauth_scopes;
-use codex_protocol::protocol::McpAuthStatus;
-use codex_rmcp_client::McpOAuthCallbackMode;
-use codex_rmcp_client::McpOAuthClientRegistration;
-use codex_rmcp_client::OAuthDiscoveryTimeout;
-use codex_rmcp_client::StreamableHttpRedirectMode;
-use codex_rmcp_client::delete_oauth_tokens;
-use codex_rmcp_client::resolve_mcp_oauth_callback_url;
-use codex_utils_cli::CliConfigOverrides;
-use codex_utils_cli::format_env_display;
+use ava_config::types::AppToolApproval;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerOAuthConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::McpManager;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::LoaderOverrides;
+use ava_core::config::edit::ConfigEditsBuilder;
+use ava_core::config::find_ava_home;
+use ava_core::config::load_global_mcp_servers;
+use ava_core::plugins_manager_for_config;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::HttpClient;
+use ava_exec_server::RouteAwareHttpClient;
+use ava_login::AuthManager;
+use ava_mcp::McpOAuthLoginSupport;
+use ava_mcp::McpRuntimeContext;
+use ava_mcp::apply_http_headers_helper;
+use ava_mcp::compute_auth_statuses;
+use ava_mcp::discover_supported_scopes;
+use ava_mcp::oauth_login_support;
+use ava_mcp::resolve_oauth_callback;
+use ava_mcp::resolve_oauth_scopes;
+use ava_protocol::protocol::McpAuthStatus;
+use ava_rmcp_client::McpOAuthCallbackMode;
+use ava_rmcp_client::McpOAuthClientRegistration;
+use ava_rmcp_client::OAuthDiscoveryTimeout;
+use ava_rmcp_client::StreamableHttpRedirectMode;
+use ava_rmcp_client::delete_oauth_tokens;
+use ava_rmcp_client::resolve_mcp_oauth_callback_url;
+use ava_utils_cli::CliConfigOverrides;
+use ava_utils_cli::format_env_display;
 
 use crate::cloud_config;
 use crate::mcp_login::McpLoginMode;
@@ -48,7 +48,7 @@ use crate::plugin_cmd::load_cli_auth_manager;
 /// Subcommands:
 /// - `list`   — list configured servers (with `--json`)
 /// - `get`    — show a single server (with `--json`)
-/// - `add`    — add a server launcher entry to `~/.codex/config.toml`
+/// - `add`    — add a server launcher entry to `~/.ava-code/config.toml`
 /// - `remove` — delete a server entry
 /// - `login`  — authenticate with MCP server using OAuth
 /// - `logout` — remove OAuth credentials for MCP server
@@ -89,7 +89,7 @@ pub struct GetArgs {
 }
 
 #[derive(Debug, clap::Parser)]
-#[command(override_usage = "codex mcp add [OPTIONS] <NAME> (--url <URL> | -- <COMMAND>...)")]
+#[command(override_usage = "ava mcp add [OPTIONS] <NAME> (--url <URL> | -- <COMMAND>...)")]
 pub struct AddArgs {
     /// Name for the MCP server configuration.
     pub name: String,
@@ -291,7 +291,7 @@ async fn run_add(config_overrides: &CliConfigOverrides, add_args: AddArgs) -> Re
 
     validate_server_name(&name)?;
 
-    let codex_home = find_codex_home().context("failed to resolve CODEX_HOME")?;
+    let ava_home = find_ava_home().context("failed to resolve AVA_HOME")?;
 
     let (transport, oauth_client_id, client_registration, oauth_resource) = match transport_args {
         AddMcpTransportArgs {
@@ -388,7 +388,7 @@ async fn run_add(config_overrides: &CliConfigOverrides, add_args: AddArgs) -> Re
     let new_entry = McpServerConfig {
         auth: Default::default(),
         transport: transport.clone(),
-        environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
         enabled: true,
         required: false,
         supports_parallel_tool_calls: false,
@@ -412,17 +412,17 @@ async fn run_add(config_overrides: &CliConfigOverrides, add_args: AddArgs) -> Re
         tools: HashMap::new(),
     };
 
-    let mut servers = load_global_mcp_servers(&codex_home)
+    let mut servers = load_global_mcp_servers(&ava_home)
         .await
-        .with_context(|| format!("failed to load MCP servers from {}", codex_home.display()))?;
+        .with_context(|| format!("failed to load MCP servers from {}", ava_home.display()))?;
     let credential_name = new_entry.oauth_credential_name(&name);
     servers.insert(name.clone(), new_entry);
 
-    ConfigEditsBuilder::new(&codex_home)
+    ConfigEditsBuilder::new(&ava_home)
         .replace_mcp_servers(&servers)
         .apply()
         .await
-        .with_context(|| format!("failed to write MCP servers to {}", codex_home.display()))?;
+        .with_context(|| format!("failed to write MCP servers to {}", ava_home.display()))?;
 
     println!("Added global MCP server '{name}'.");
     if let Some(callback_url) = &callback_url {
@@ -460,7 +460,7 @@ async fn run_add(config_overrides: &CliConfigOverrides, add_args: AddArgs) -> Re
         }
         McpOAuthLoginSupport::Unsupported => {}
         McpOAuthLoginSupport::Unknown(_) => println!(
-            "MCP server may or may not require login. Run `codex mcp login {name}` to login."
+            "MCP server may or may not require login. Run `ava mcp login {name}` to login."
         ),
     }
 
@@ -476,19 +476,19 @@ async fn run_remove(config_overrides: &CliConfigOverrides, remove_args: RemoveAr
 
     validate_server_name(&name)?;
 
-    let codex_home = find_codex_home().context("failed to resolve CODEX_HOME")?;
-    let mut servers = load_global_mcp_servers(&codex_home)
+    let ava_home = find_ava_home().context("failed to resolve AVA_HOME")?;
+    let mut servers = load_global_mcp_servers(&ava_home)
         .await
-        .with_context(|| format!("failed to load MCP servers from {}", codex_home.display()))?;
+        .with_context(|| format!("failed to load MCP servers from {}", ava_home.display()))?;
 
     let removed = servers.remove(&name).is_some();
 
     if removed {
-        ConfigEditsBuilder::new(&codex_home)
+        ConfigEditsBuilder::new(&ava_home)
             .replace_mcp_servers(&servers)
             .apply()
             .await
-            .with_context(|| format!("failed to write MCP servers to {}", codex_home.display()))?;
+            .with_context(|| format!("failed to write MCP servers to {}", ava_home.display()))?;
     }
 
     if removed {
@@ -526,9 +526,9 @@ async fn run_login(config: &Config, login_args: LoginArgs) -> Result<()> {
         bail!("No MCP server named '{name}' found.");
     };
 
-    if matches!(server.auth, codex_config::types::McpServerAuth::EmaAuth) {
+    if matches!(server.auth, ava_config::types::McpServerAuth::EmaAuth) {
         bail!(
-            "Enterprise MCP authorization is managed by Codex account sign-in. Open Codex to sign in."
+            "Enterprise MCP authorization is managed by Ava account sign-in. Open Ava to sign in."
         );
     }
 
@@ -628,7 +628,7 @@ async fn run_logout(config: &Config, logout_args: LogoutArgs) -> Result<()> {
 async fn run_list(config: &Config, list_args: ListArgs) -> Result<()> {
     let mcp_manager = load_mcp_manager(config).await?;
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ true).await?;
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ true).await?;
     let auth = auth_manager.auth().await;
     let mcp_servers = mcp_manager.configured_servers(config).await;
     let effective_mcp_servers = mcp_manager.effective_servers(config, auth.as_ref()).await;
@@ -716,7 +716,7 @@ async fn run_list(config: &Config, list_args: ListArgs) -> Result<()> {
     }
 
     if entries.is_empty() {
-        println!("No MCP servers configured yet. Try `codex mcp add my-tool -- my-command`.");
+        println!("No MCP servers configured yet. Try `ava mcp add my-tool -- my-command`.");
         return Ok(());
     }
 
@@ -1056,7 +1056,7 @@ async fn run_get(config: &Config, get_args: GetArgs) -> Result<()> {
         };
         println!("  default_tools_approval_mode: {approval_mode}");
     }
-    println!("  remove: codex mcp remove {}", get_args.name);
+    println!("  remove: ava mcp remove {}", get_args.name);
 
     Ok(())
 }

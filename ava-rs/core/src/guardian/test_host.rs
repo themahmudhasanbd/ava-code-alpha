@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use codex_extension_api::SessionIsolation;
-use codex_home::CodexHomeUserInstructionsProvider;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadSource;
+use ava_extension_api::SessionIsolation;
+use ava_home::AvaHomeUserInstructionsProvider;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadSource;
 
 use super::GuardianReviewSessionManager;
 use crate::config::Config;
@@ -23,18 +23,18 @@ pub(super) use reviewer_config::build_reviewer_config;
 
 pub(crate) fn install(session: &Session, config: &Config) {
     session.services.thread_extension_data.insert(
-        codex_guardian_reviewer::ReviewerConfig::<Config>(build_reviewer_config),
+        ava_guardian_reviewer::ReviewerConfig::<Config>(build_reviewer_config),
     );
     let manager = Arc::new(crate::ThreadManager::new(
         config,
         Arc::clone(&session.services.auth_manager),
         Arc::clone(&session.services.models_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
         session.services.turn_environments.environment_manager(),
-        codex_extension_api::empty_extension_registry(),
-        Arc::new(CodexHomeUserInstructionsProvider::new(
-            config.codex_home.clone(),
+        ava_extension_api::empty_extension_registry(),
+        Arc::new(AvaHomeUserInstructionsProvider::new(
+            config.ava_home.clone(),
         )),
         /*analytics_events_client*/ None,
         crate::passthrough_image_store(),
@@ -47,7 +47,7 @@ pub(crate) fn install(session: &Session, config: &Config) {
     let runtime = session
         .services
         .thread_extension_data
-        .get_or_init(codex_guardian_reviewer::ReviewerTasks::default);
+        .get_or_init(ava_guardian_reviewer::ReviewerTasks::default);
     session
         .services
         .thread_extension_data
@@ -61,7 +61,7 @@ pub(crate) fn install(session: &Session, config: &Config) {
                     let (mut options, state) = context.thread_options(snapshot).await;
                     if matches!(
                         kind,
-                        codex_analytics::GuardianReviewSessionKind::EphemeralForked
+                        ava_analytics::GuardianReviewSessionKind::EphemeralForked
                     ) {
                         options.config.ephemeral = true;
                     }
@@ -73,7 +73,7 @@ pub(crate) fn install(session: &Session, config: &Config) {
                         .insert(SessionIsolation::Isolated);
                     options
                         .thread_extension_init
-                        .insert(codex_guardian_reviewer::reviewer_allowed_tools());
+                        .insert(ava_guardian_reviewer::reviewer_allowed_tools());
                     let session_cancel = cancel.clone();
                     let until = async move {
                         let _cancel_on_exit = cancel.clone().drop_guard();

@@ -1,8 +1,8 @@
 //! Checks the persistence boundary when an operation loses its caller.
 
 use super::*;
-use codex_core::test_support::auth_manager_from_auth;
-use codex_login::CodexAuth;
+use ava_core::test_support::auth_manager_from_auth;
+use ava_login::AvaAuth;
 use futures::poll;
 use pretty_assertions::assert_eq;
 use tokio::sync::oneshot;
@@ -10,7 +10,7 @@ use tokio::sync::oneshot;
 #[tokio::test]
 async fn cancelled_commit_keeps_its_permit_and_is_drained() -> io::Result<()> {
     let auth = RemoteControlAuth::capture(auth_manager_from_auth(
-        CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        AvaAuth::create_dummy_chatgpt_auth_for_testing(),
     ))
     .0;
     let persistence = RemoteControlPersistence::default();

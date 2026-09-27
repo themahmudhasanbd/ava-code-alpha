@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rewrite a local plugin version to a single Codex cachebuster suffix."""
+"""Rewrite a local plugin version to a single Ava cachebuster suffix."""
 
 from __future__ import annotations
 
@@ -15,14 +15,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from identifier_validation import validate_plugin_identifier
 
 
-CACHEBUSTER_PREFIX = "codex"
+CACHEBUSTER_PREFIX = "ava"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Rewrite a local plugin's version so it preserves everything before '+' and uses "
-            "a single +codex.<cachebuster> suffix."
+            "a single +ava.<cachebuster> suffix."
         )
     )
     parser.add_argument("plugin_path", help="Path to the plugin root directory")
@@ -36,7 +36,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     plugin_root = Path(args.plugin_path).expanduser().resolve()
-    manifest_path = plugin_root / ".codex-plugin" / "plugin.json"
+    manifest_path = plugin_root / ".ava-plugin" / "plugin.json"
     manifest = load_manifest(manifest_path)
 
     plugin_name = manifest.get("name")

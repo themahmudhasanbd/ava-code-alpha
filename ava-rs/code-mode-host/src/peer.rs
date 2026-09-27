@@ -7,18 +7,18 @@ use std::sync::atomic::AtomicI64;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
-use codex_code_mode_protocol::CellId;
-use codex_code_mode_protocol::StartedCell;
-use codex_code_mode_protocol::host::DelegateRequest;
-use codex_code_mode_protocol::host::DelegateRequestId;
-use codex_code_mode_protocol::host::DelegateResponse;
-use codex_code_mode_protocol::host::EncodedFrame;
-use codex_code_mode_protocol::host::HostToClient;
-use codex_code_mode_protocol::host::MAX_PENDING_DELEGATE_CALLS;
-use codex_code_mode_protocol::host::RequestId;
-use codex_code_mode_protocol::host::SessionId;
-use codex_code_mode_protocol::host::WireResult;
-use codex_code_mode_protocol::host::WireRuntimeResponse;
+use ava_code_mode_protocol::CellId;
+use ava_code_mode_protocol::StartedCell;
+use ava_code_mode_protocol::host::DelegateRequest;
+use ava_code_mode_protocol::host::DelegateRequestId;
+use ava_code_mode_protocol::host::DelegateResponse;
+use ava_code_mode_protocol::host::EncodedFrame;
+use ava_code_mode_protocol::host::HostToClient;
+use ava_code_mode_protocol::host::MAX_PENDING_DELEGATE_CALLS;
+use ava_code_mode_protocol::host::RequestId;
+use ava_code_mode_protocol::host::SessionId;
+use ava_code_mode_protocol::host::WireResult;
+use ava_code_mode_protocol::host::WireRuntimeResponse;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 use tokio::sync::OwnedSemaphorePermit;
@@ -88,7 +88,7 @@ impl HostPeer {
     pub(super) fn respond(
         &self,
         id: RequestId,
-        result: Result<codex_code_mode_protocol::host::HostResponse, String>,
+        result: Result<ava_code_mode_protocol::host::HostResponse, String>,
     ) {
         let message = HostToClient::Response {
             id,

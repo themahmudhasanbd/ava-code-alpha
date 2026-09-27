@@ -34,7 +34,7 @@ class SmokePackage:
         app_server_archive: Path,
         compression: str,
     ) -> Self:
-        config_dir = directory / "codex-config"
+        config_dir = directory / "ava-config"
         config_dir.mkdir()
         environment = dict(os.environ)
 
@@ -50,8 +50,8 @@ class SmokePackage:
             )
         )
 
-        # Isolate package configuration and state from the user's Codex setup.
-        environment["CODEX_HOME"] = str(config_dir)
+        # Isolate package configuration and state from the user's Ava setup.
+        environment["AVA_HOME"] = str(config_dir)
         # Shell startup files can replace PATH and hide the packaged ripgrep.
         environment.pop("BASH_ENV", None)
         environment["ZDOTDIR"] = str(directory)
@@ -66,7 +66,7 @@ class SmokePackage:
                 tarfile.open(fileobj=source, mode="r|") as archive,
             ):
                 archive.extractall(extracted, filter="data")
-            manifest = json.loads((extracted / "codex-package.json").read_text())
+            manifest = json.loads((extracted / "ava-package.json").read_text())
             extracted_packages.append(
                 (
                     extracted,
@@ -138,7 +138,7 @@ def package(
 ) -> SmokePackage:
     compression = request.config.getoption("compression")
     target = request.config.getoption("package_target")
-    directory = tmp_path_factory.mktemp(f"codex-package-smoke-{compression}")
+    directory = tmp_path_factory.mktemp(f"ava-package-smoke-{compression}")
     if "windows" in target:
         # pytest's 0700 directories have protected ACLs, so restricted-token
         # sandboxes need read/execute access to reach the packaged binaries.
@@ -160,11 +160,11 @@ def package(
 
 @pytest.fixture
 def responses_server(package: SmokePackage) -> Iterator[MockResponsesServer]:
-    config_path = Path(package.environment["CODEX_HOME"]) / "config.toml"
+    config_path = Path(package.environment["AVA_HOME"]) / "config.toml"
     original_config = config_path.read_text()
     with MockResponsesServer() as server:
         # Direct CLI commands and SDK-launched servers must share a provider;
-        # CodexConfig only controls how the SDK launches its server process.
+        # AvaConfig only controls how the SDK launches its server process.
         config_path.write_text(
             f"""model = "package-smoke"
 model_provider = "package_smoke"
@@ -191,9 +191,9 @@ def code_mode_host_debug_symbols(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Path:
     target = pytestconfig.getoption("package_target")
-    binaries = {"codex", "codex-app-server", "codex-code-mode-host"}
+    binaries = {"ava", "ava-app-server", "ava-code-mode-host"}
     if "windows" in target:
-        binaries.update({"codex-command-runner", "codex-windows-sandbox-setup"})
+        binaries.update({"ava-command-runner", "ava-windows-sandbox-setup"})
 
     if "apple-darwin" in target:
         markers = {
@@ -203,7 +203,7 @@ def code_mode_host_debug_symbols(
         extension = "pdb" if "windows" in target else "debug"
         markers = {binary: f"/{binary}.{extension}" for binary in binaries}
 
-    destination = tmp_path_factory.mktemp("codex-debug-symbols")
+    destination = tmp_path_factory.mktemp("ava-debug-symbols")
     found: set[str] = set()
     symbol_path = None
     with tarfile.open(pytestconfig.getoption("symbols_archive"), "r|gz") as archive:
@@ -221,7 +221,7 @@ def code_mode_host_debug_symbols(
                 if not matches:
                     continue
                 found.add(binary)
-                if binary == "codex-code-mode-host":
+                if binary == "ava-code-mode-host":
                     archive.extract(member, destination, filter="data")
                     symbol_path = destination / member.name
                 break

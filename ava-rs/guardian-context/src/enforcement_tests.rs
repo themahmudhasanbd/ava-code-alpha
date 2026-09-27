@@ -3,8 +3,8 @@
 use super::*;
 use crate::budget::section_tokens;
 use crate::composition::user_message;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 
 fn text(value: &str) -> ContentItem {

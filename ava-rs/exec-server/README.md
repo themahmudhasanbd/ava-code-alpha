@@ -1,22 +1,22 @@
-# codex-exec-server
+# ava-exec-server
 
-`codex-exec-server` is the library backing `codex exec-server`, a small
+`ava-exec-server` is the library backing `ava exec-server`, a small
 JSON-RPC server for spawning and controlling subprocesses through
-`codex-utils-pty`.
+`ava-utils-pty`.
 
 It provides:
 
-- a CLI entrypoint: `codex exec-server`
+- a CLI entrypoint: `ava exec-server`
 - a Rust client: `ExecServerClient`
 - a small protocol module with shared request/response types
 
 This crate owns the transport, protocol, and filesystem/process handlers. The
-top-level `codex` binary owns hidden helper dispatch for sandboxed
-filesystem operations and `codex-linux-sandbox`.
+top-level `ava` binary owns hidden helper dispatch for sandboxed
+filesystem operations and `ava-linux-sandbox`.
 
 ## Transport
 
-The server speaks the exec-specific `codex-exec-server-protocol` message
+The server speaks the exec-specific `ava-exec-server-protocol` message
 envelope on the wire.
 
 The CLI entrypoint supports:
@@ -38,18 +38,18 @@ Disconnecting either side closes its peer and resets the remote stream. The
 existing harness reconnect flow can then resume a retained destination session.
 The forwarder does not replay requests or persist execution state, so recovery
 is limited by the destination's session and process-output retention.
-It uses the standard Codex ChatGPT sign-in state; run `codex login` first when
+It uses the standard Ava ChatGPT sign-in state; run `ava login` first when
 remote registration needs authentication. Containerized callers that receive an
-Agent Identity JWT in `CODEX_ACCESS_TOKEN` can opt into that auth path with
-`--use-agent-identity-auth`; Codex then registers an Agent task and sends the
+Agent Identity JWT in `AVA_ACCESS_TOKEN` can opt into that auth path with
+`--use-agent-identity-auth`; Ava then registers an Agent task and sends the
 derived AgentAssertion headers on the registry request.
 
-Alternatively, API users can instead use `CODEX_API_KEY`;
-Codex sends it as a bearer token on the registration request. For example:
+Alternatively, API users can instead use `AVA_API_KEY`;
+Ava sends it as a bearer token on the registration request. For example:
 
 ```sh
-CODEX_API_KEY="$OPENAI_API_KEY" \
-codex exec-server \
+AVA_API_KEY="$OPENAI_API_KEY" \
+ava exec-server \
   --remote ... \
   --environment-id "$ENVIRONMENT_ID"
 ```
@@ -59,7 +59,7 @@ WebSocket handshake. Select the transport and authentication with executor
 arguments rather than `config.toml` settings:
 
 ```sh
-codex exec-server \
+ava exec-server \
   --remote https://example.com \
   --environment-id "$ENVIRONMENT_ID" \
   --remote-transport direct \
@@ -76,7 +76,7 @@ The AWS SDK default credential and region chains are used when `--aws-profile`
 or `--aws-region` is omitted. The signing service defaults to `execute-api`.
 Direct mode registers `direct_jsonrpc_v1` through the AWS-owned
 `/cloud/environment/{environment_id}/direct/register` endpoint and carries plain
-exec-server JSON-RPC over the authenticated WebSocket. The existing Codex Noise
+exec-server JSON-RPC over the authenticated WebSocket. The existing Ava Noise
 registration endpoint remains unchanged. Production deployments must use TLS
 (`https`/`wss`).
 
@@ -97,8 +97,8 @@ Wire framing:
 ## Remote Relay Message Format
 
 In remote mode, the harness and environment communicate through rendezvous using
-`codex.exec_server.relay.v1.RelayMessageFrame`; the checked-in schema is in
-`src/proto/codex.exec_server.relay.v1.proto`. The relay frame carries stream
+`ava.exec_server.relay.v1.RelayMessageFrame`; the checked-in schema is in
+`src/proto/ava.exec_server.relay.v1.proto`. The relay frame carries stream
 identity plus endpoint-owned reliability metadata:
 
 ```text
@@ -205,7 +205,7 @@ Response:
 `executorVersion` is the executor's package release version, or `0.0.0` when unknown.
 
 The executor caches optional `providerId` at startup using
-`codex_build_info::build_id(commit, target)`, which CI can also call for an
+`ava_build_info::build_id(commit, target)`, which CI can also call for an
 explicit build target. This opaque compatibility key excludes package version
 and requires no manifest. It identifies a standard build configuration, not exact
 executable bytes. Unstamped and legacy executors may omit it.
@@ -250,7 +250,7 @@ Field definitions:
 - `env`: environment variables passed to the child process.
 - `tty`: when `true`, spawn a PTY-backed interactive process.
 - `pipeStdin`: when `true`, keep non-PTY stdin writable via `process/write`.
-- `arg0`: optional argv0 override forwarded to `codex-utils-pty`.
+- `arg0`: optional argv0 override forwarded to `ava-utils-pty`.
 
 Response:
 
@@ -436,7 +436,7 @@ callers must convert them to `file:` URIs before sending requests:
 
 Each filesystem request accepts an optional `sandbox` object. When `sandbox`
 contains a `ReadOnly` or `WorkspaceWrite` policy, the operation runs in a
-hidden helper process launched from the top-level `codex` executable and
+hidden helper process launched from the top-level `ava` executable and
 prepared through the shared sandbox transform path. Helper requests and
 responses are passed over stdin/stdout.
 
@@ -474,12 +474,12 @@ The crate exports:
   registration mode
 
 Callers must pass `ExecServerRuntimePaths` and an explicitly configured
-`HttpClientFactory` to `run_main()`. The top-level `codex exec-server` command
-builds these paths from the `codex` arg0 dispatch state and resolves its HTTP
-client factory from the effective Codex configuration.
+`HttpClientFactory` to `run_main()`. The top-level `ava exec-server` command
+builds these paths from the `ava` arg0 dispatch state and resolves its HTTP
+client factory from the effective Ava configuration.
 `RemoteEnvironmentConfig::new(...)` also takes the auth provider and HTTP client
 factory that remote registration mode should use; the CLI builds the auth
-provider from Codex auth state before starting remote mode.
+provider from Ava auth state before starting remote mode.
 
 ## Example session
 

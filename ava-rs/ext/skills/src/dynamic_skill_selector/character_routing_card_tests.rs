@@ -1,10 +1,10 @@
 use crate::SkillLoadOutcome;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::SkillDependencies;
-use codex_skills::SkillInterface;
-use codex_skills::SkillMetadata;
-use codex_skills::SkillToolDependency;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::SkillDependencies;
+use ava_skills::SkillInterface;
+use ava_skills::SkillMetadata;
+use ava_skills::SkillToolDependency;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 
 use crate::catalog::SkillAuthority;

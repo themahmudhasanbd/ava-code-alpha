@@ -3,8 +3,8 @@
 //! `permissions_instructions` and consume caller-resolved runtime facts.
 
 use super::ResolvedMessage;
-use codex_protocol::openai_models::ApprovalMessages;
-use codex_protocol::openai_models::PermissionMessages;
+use ava_protocol::openai_models::ApprovalMessages;
+use ava_protocol::openai_models::PermissionMessages;
 
 const APPROVAL_POLICY_NEVER: &str =
     include_str!("../../templates/permissions/approval_policy/never.md");

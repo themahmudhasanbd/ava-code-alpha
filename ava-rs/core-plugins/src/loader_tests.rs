@@ -3,12 +3,12 @@ use crate::manifest::load_plugin_manifest;
 use crate::manifest::load_plugin_manifest_with_format;
 use crate::test_support::test_skill_root_loader;
 use crate::test_support::write_file;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
-use codex_plugin::PluginId;
-use codex_utils_plugins::AGENT_PLUGIN_SCHEMA_URI;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
+use ava_plugin::PluginId;
+use ava_utils_plugins::AGENT_PLUGIN_SCHEMA_URI;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -60,7 +60,7 @@ async fn ema_policy_overlays_native_and_agent_plugins_without_changing_endpoints
     for (name, manifest_path, manifest, mcp_path, mcp) in [
         (
             "native",
-            ".codex-plugin/plugin.json",
+            ".ava-plugin/plugin.json",
             r#"{"name":"native"}"#,
             ".mcp.json",
             r#"{"mcpServers":{"example":{"url":"https://resource.example/mcp"}}}"#,
@@ -99,10 +99,10 @@ async fn ema_policy_overlays_native_and_agent_plugins_without_changing_endpoints
             let server = &selected["example"];
             assert_eq!(server.transport, transport);
             assert_eq!(server.enabled, endpoint == "https://resource.example/mcp");
-            assert_eq!(server.auth, codex_config::McpServerAuth::EmaAuth);
+            assert_eq!(server.auth, ava_config::McpServerAuth::EmaAuth);
             assert_eq!(
                 server.oauth,
-                Some(codex_config::McpServerOAuthConfig {
+                Some(ava_config::McpServerOAuthConfig {
                     client_id: Some("resource-client".into()),
                     authorization_server_issuer: Some("https://as.example".into()),
                     ema_registration_error: (endpoint != "https://resource.example/mcp")
@@ -132,7 +132,7 @@ async fn agent_plugin_overlay_apps_are_not_runtime_active() {
         &format!(r#"{{"$schema":"{AGENT_PLUGIN_SCHEMA_URI}","name":"plugin"}}"#),
     );
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"plugin","apps":"./.app.json"}"#,
     );
     write_file(
@@ -144,7 +144,7 @@ async fn agent_plugin_overlay_apps_are_not_runtime_active() {
 }
 
 #[tokio::test]
-async fn agent_plugin_codex_mcp_overlay_only_forwards_matching_stdio_server_env_vars() {
+async fn agent_plugin_ava_mcp_overlay_only_forwards_matching_stdio_server_env_vars() {
     let temp_dir = TempDir::new().expect("tempdir");
     let plugin_root = temp_dir.path().join("plugin");
     write_file(
@@ -188,7 +188,7 @@ async fn agent_plugin_codex_mcp_overlay_only_forwards_matching_stdio_server_env_
     env_vars.extend(["DB_PASSWORD".into(), "API_TOKEN".into()]);
 
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"legacy-plugin"}"#,
     );
     write_file(
@@ -212,7 +212,7 @@ async fn agent_plugin_codex_mcp_overlay_only_forwards_matching_stdio_server_env_
 }
 
 #[tokio::test]
-async fn agent_plugin_codex_mcp_overlay_supports_inline_legacy_servers_without_portable_env() {
+async fn agent_plugin_ava_mcp_overlay_supports_inline_legacy_servers_without_portable_env() {
     let temp_dir = TempDir::new().expect("tempdir");
     let plugin_root = temp_dir.path().join("plugin");
     write_file(
@@ -243,7 +243,7 @@ async fn agent_plugin_codex_mcp_overlay_supports_inline_legacy_servers_without_p
     env_vars.push("TOKEN".into());
 
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         r#"{
   "name": "legacy-plugin",
   "mcpServers": {
@@ -313,9 +313,9 @@ async fn agent_plugin_mcp_rejects_present_nonregular_config() {
 async fn legacy_manifest_can_point_at_root_mcp_json() {
     let temp_dir = TempDir::new().expect("tempdir");
     let plugin_root = temp_dir.path().join("plugin");
-    fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create manifest directory");
+    fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create manifest directory");
     fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"plugin","mcpServers":"./mcp.json"}"#,
     )
     .expect("write legacy manifest");
@@ -377,7 +377,7 @@ async fn installed_agent_plugin_uses_isolated_data_root_for_stdio_mcp() {
         RemoteInstalledPluginsSnapshot::default(),
         &store,
         /*plugin_skill_snapshots*/ None,
-        Some(Product::Codex),
+        Some(Product::Ava),
         /*remote_global_catalog_active*/ false,
         test_skill_root_loader().as_ref(),
     )
@@ -430,7 +430,7 @@ fn configured_plugins_from_stack_merges_enabled_effective_layers() {
             ),
             ConfigLayerEntry::new(
                 ConfigLayerSource::Project {
-                    dot_codex_folder: user_config_path(&temp_dir, "project/.codex"),
+                    dot_ava_folder: user_config_path(&temp_dir, "project/.ava-code"),
                 },
                 toml::from_str(
                     "[plugins.profile]\nenabled = true\n[plugins.profile.mcp_servers.example]\nenabled = false\n",
@@ -439,7 +439,7 @@ fn configured_plugins_from_stack_merges_enabled_effective_layers() {
             ),
             ConfigLayerEntry::new_disabled(
                 ConfigLayerSource::Project {
-                    dot_codex_folder: user_config_path(&temp_dir, "project/untrusted/.codex"),
+                    dot_ava_folder: user_config_path(&temp_dir, "project/untrusted/.ava-code"),
                 },
                 toml::from_str("[plugins.untrusted]\nenabled = true\n")
                     .expect("untrusted project config toml"),
@@ -497,7 +497,7 @@ async fn hooks_only_scope_shares_plugin_resolution_without_loading_other_capabil
     let temp_dir = TempDir::new().expect("tempdir");
     let plugin_root = temp_dir.path().join("plugins/cache/test/valid/local");
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"valid"}"#,
     );
     write_file(
@@ -532,7 +532,7 @@ async fn hooks_only_scope_shares_plugin_resolution_without_loading_other_capabil
 
     let disabled_root = temp_dir.path().join("plugins/cache/test/disabled/local");
     write_file(
-        &disabled_root.join(".codex-plugin/plugin.json"),
+        &disabled_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"disabled"}"#,
     );
     write_file(
@@ -542,13 +542,13 @@ async fn hooks_only_scope_shares_plugin_resolution_without_loading_other_capabil
 
     let malformed_root = temp_dir.path().join("plugins/cache/test/malformed/local");
     write_file(
-        &malformed_root.join(".codex-plugin/plugin.json"),
+        &malformed_root.join(".ava-plugin/plugin.json"),
         "not valid json",
     );
 
     let warning_root = temp_dir.path().join("plugins/cache/test/warning/local");
     write_file(
-        &warning_root.join(".codex-plugin/plugin.json"),
+        &warning_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"warning"}"#,
     );
     write_file(&warning_root.join("hooks/hooks.json"), "not valid json");
@@ -587,7 +587,7 @@ enabled = true
         RemoteInstalledPluginsSnapshot::default(),
         &store,
         /*plugin_skill_snapshots*/ None,
-        Some(Product::Codex),
+        Some(Product::Ava),
         /*remote_global_catalog_active*/ false,
         test_skill_root_loader().as_ref(),
     )
@@ -662,13 +662,13 @@ fn plugin_root() -> (tempfile::TempDir, AbsolutePathBuf) {
     let tmp = tempfile::tempdir().expect("tempdir");
     let plugin_root =
         AbsolutePathBuf::try_from(tmp.path().join("demo-plugin")).expect("plugin root");
-    fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create manifest dir");
+    fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create manifest dir");
     fs::create_dir_all(plugin_root.join("hooks")).expect("create hooks dir");
     (tmp, plugin_root)
 }
 
 fn write_manifest(plugin_root: &AbsolutePathBuf, manifest: &str) {
-    fs::write(plugin_root.join(".codex-plugin/plugin.json"), manifest).expect("write manifest");
+    fs::write(plugin_root.join(".ava-plugin/plugin.json"), manifest).expect("write manifest");
 }
 
 fn write_hook_file(plugin_root: &AbsolutePathBuf, relative_path: &str, event: &str, command: &str) {
@@ -885,7 +885,7 @@ fn materialize_git_subdir_uses_sparse_checkout() {
     let run_git = |args: &[&str], cwd| super::run_git(args, cwd, PluginGitMode::Manual);
     let run_git_output =
         |args: &[&str], cwd| super::run_git_output(args, cwd, PluginGitMode::Manual);
-    let codex_home = tempfile::tempdir().expect("create codex home");
+    let ava_home = tempfile::tempdir().expect("create ava home");
     let repo = tempfile::tempdir().expect("create git repo");
     let plugin_dir = repo.path().join("plugins/toolkit");
     fs::create_dir_all(&plugin_dir).expect("create plugin directory");
@@ -906,7 +906,7 @@ fn materialize_git_subdir_uses_sparse_checkout() {
     let sha = run_git_output(&["rev-parse", "HEAD"], Some(repo.path())).expect("resolve commit");
 
     let materialized = materialize_marketplace_plugin_source(
-        codex_home.path(),
+        ava_home.path(),
         &MarketplacePluginSource::Git {
             url: repo.path().display().to_string(),
             path: Some("plugins/toolkit".to_string()),
@@ -936,7 +936,7 @@ fn materialize_git_source_rejects_sha_that_resolves_to_hostile_default_branch() 
     let run_git = |args: &[&str], cwd| super::run_git(args, cwd, PluginGitMode::Manual);
     let run_git_output =
         |args: &[&str], cwd| super::run_git_output(args, cwd, PluginGitMode::Manual);
-    let codex_home = tempfile::tempdir().expect("create codex home");
+    let ava_home = tempfile::tempdir().expect("create ava home");
     let repo = tempfile::tempdir().expect("create git repo");
     run_git(&["init"], Some(repo.path())).expect("init git repo");
     run_git(
@@ -961,7 +961,7 @@ fn materialize_git_source_rejects_sha_that_resolves_to_hostile_default_branch() 
         .expect("name default branch after commit A");
 
     let err = materialize_marketplace_plugin_source(
-        codex_home.path(),
+        ava_home.path(),
         &MarketplacePluginSource::Git {
             url: repo.path().display().to_string(),
             path: None,

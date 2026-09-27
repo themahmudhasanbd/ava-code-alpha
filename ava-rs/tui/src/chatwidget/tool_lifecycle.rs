@@ -5,7 +5,7 @@
 
 use super::*;
 use crate::thread_transcript::tools::McpHistory;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::LegacyAppPathString;
 
 impl ChatWidget {
     pub(super) fn on_patch_apply_begin(&mut self, changes: HashMap<PathBuf, FileChange>) {
@@ -82,7 +82,7 @@ impl ChatWidget {
         &mut self,
         call_id: String,
         query: String,
-        action: codex_app_server_protocol::WebSearchAction,
+        action: ava_app_server_protocol::WebSearchAction,
     ) {
         self.flush_answer_stream_with_separator();
         let mut handled = false;
@@ -154,7 +154,7 @@ impl ChatWidget {
         };
         // If the patch was successful, just let the "Edited" block stand.
         // Otherwise, add a failure block.
-        if matches!(status, codex_app_server_protocol::PatchApplyStatus::Failed) {
+        if matches!(status, ava_app_server_protocol::PatchApplyStatus::Failed) {
             self.add_to_history(history_cell::new_patch_apply_failure(String::new()));
         }
     }

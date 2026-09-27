@@ -22,23 +22,23 @@ use crate::protocol::v2::ItemGuardianApprovalReviewStartedNotification;
 use crate::protocol::v2::PatchApplyStatus;
 use crate::protocol::v2::PatchChangeKind;
 use crate::protocol::v2::ThreadItem;
-use codex_protocol::ThreadId;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_protocol::protocol::ApplyPatchApprovalRequestEvent;
-use codex_protocol::protocol::ExecCommandBeginEvent;
-use codex_protocol::protocol::ExecCommandEndEvent;
-use codex_protocol::protocol::FileChange;
-use codex_protocol::protocol::GuardianAssessmentAction;
-use codex_protocol::protocol::GuardianAssessmentEvent;
-use codex_protocol::protocol::PatchApplyBeginEvent;
-use codex_protocol::protocol::PatchApplyEndEvent;
-use codex_protocol::protocol::ReviewOutputEvent;
-use codex_protocol::review_format::REVIEW_FALLBACK_MESSAGE;
-use codex_protocol::review_format::render_review_output_text;
-use codex_secrets::redact_secrets;
-use codex_shell_command::parse_command::parse_command;
-use codex_shell_command::parse_command::shlex_join;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::ThreadId;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_protocol::protocol::ApplyPatchApprovalRequestEvent;
+use ava_protocol::protocol::ExecCommandBeginEvent;
+use ava_protocol::protocol::ExecCommandEndEvent;
+use ava_protocol::protocol::FileChange;
+use ava_protocol::protocol::GuardianAssessmentAction;
+use ava_protocol::protocol::GuardianAssessmentEvent;
+use ava_protocol::protocol::PatchApplyBeginEvent;
+use ava_protocol::protocol::PatchApplyEndEvent;
+use ava_protocol::protocol::ReviewOutputEvent;
+use ava_protocol::review_format::REVIEW_FALLBACK_MESSAGE;
+use ava_protocol::review_format::render_review_output_text;
+use ava_secrets::redact_secrets;
+use ava_shell_command::parse_command::parse_command;
+use ava_shell_command::parse_command::shlex_join;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::warn;
@@ -274,19 +274,19 @@ pub fn guardian_auto_approval_review_notification(
     };
     let review = GuardianApprovalReview {
         status: match assessment.status {
-            codex_protocol::protocol::GuardianAssessmentStatus::InProgress => {
+            ava_protocol::protocol::GuardianAssessmentStatus::InProgress => {
                 GuardianApprovalReviewStatus::InProgress
             }
-            codex_protocol::protocol::GuardianAssessmentStatus::Approved => {
+            ava_protocol::protocol::GuardianAssessmentStatus::Approved => {
                 GuardianApprovalReviewStatus::Approved
             }
-            codex_protocol::protocol::GuardianAssessmentStatus::Denied => {
+            ava_protocol::protocol::GuardianAssessmentStatus::Denied => {
                 GuardianApprovalReviewStatus::Denied
             }
-            codex_protocol::protocol::GuardianAssessmentStatus::TimedOut => {
+            ava_protocol::protocol::GuardianAssessmentStatus::TimedOut => {
                 GuardianApprovalReviewStatus::TimedOut
             }
-            codex_protocol::protocol::GuardianAssessmentStatus::Aborted => {
+            ava_protocol::protocol::GuardianAssessmentStatus::Aborted => {
                 GuardianApprovalReviewStatus::Aborted
             }
         },
@@ -296,7 +296,7 @@ pub fn guardian_auto_approval_review_notification(
     };
     let action = assessment.action.clone().into();
     match assessment.status {
-        codex_protocol::protocol::GuardianAssessmentStatus::InProgress => {
+        ava_protocol::protocol::GuardianAssessmentStatus::InProgress => {
             ServerNotification::ItemGuardianApprovalReviewStarted(
                 ItemGuardianApprovalReviewStartedNotification {
                     thread_id: conversation_id.to_string(),
@@ -309,10 +309,10 @@ pub fn guardian_auto_approval_review_notification(
                 },
             )
         }
-        codex_protocol::protocol::GuardianAssessmentStatus::Approved
-        | codex_protocol::protocol::GuardianAssessmentStatus::Denied
-        | codex_protocol::protocol::GuardianAssessmentStatus::TimedOut
-        | codex_protocol::protocol::GuardianAssessmentStatus::Aborted => {
+        ava_protocol::protocol::GuardianAssessmentStatus::Approved
+        | ava_protocol::protocol::GuardianAssessmentStatus::Denied
+        | ava_protocol::protocol::GuardianAssessmentStatus::TimedOut
+        | ava_protocol::protocol::GuardianAssessmentStatus::Aborted => {
             ServerNotification::ItemGuardianApprovalReviewCompleted(
                 ItemGuardianApprovalReviewCompletedNotification {
                     thread_id: conversation_id.to_string(),

@@ -14,25 +14,25 @@ use axum::Router;
 use axum::extract::State;
 use axum::http::header;
 use axum::routing::get;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::GuardianApprovalReview;
-use codex_app_server_protocol::GuardianApprovalReviewStatus;
-use codex_app_server_protocol::ItemGuardianApprovalReviewCompletedNotification;
-use codex_app_server_protocol::ThreadCompactStartParams;
-use codex_app_server_protocol::ThreadCompactStartResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
-use codex_rollout::RolloutItem;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::GuardianApprovalReview;
+use ava_app_server_protocol::GuardianApprovalReviewStatus;
+use ava_app_server_protocol::ItemGuardianApprovalReviewCompletedNotification;
+use ava_app_server_protocol::ThreadCompactStartParams;
+use ava_app_server_protocol::ThreadCompactStartResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
+use ava_rollout::RolloutItem;
 use core_test_support::load_default_config_for_test;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
@@ -269,7 +269,7 @@ async fn guardians_retain_evidence_after_compaction_and_resume(
             .expect("serve mock responses");
     });
     let (mcp_url, mcp_server) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let thread_context_enabled = match context_path {
         ContextPath::Legacy => false,
         ContextPath::ThreadOwned => true,
@@ -288,32 +288,32 @@ async fn guardians_retain_evidence_after_compaction_and_resume(
     if matches!(context_path, ContextPath::ThreadOwned) {
         mock_config = mock_config.disable_feature(Feature::GuardianReuseParentCompaction);
     }
-    mock_config.write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
+    mock_config.write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
     let models = [
         (MODEL, parent_hash),
         ("gpt-5.6-luna", luna_hash),
-        ("codex-auto-review", reviewer_hash),
+        ("ava-auto-review", reviewer_hash),
         ("resumed-parent", Some("matching")),
     ]
     .into_iter()
     .map(|(model, hash)| {
-        let mut info = codex_core::test_support::construct_model_info_offline(model, &config);
+        let mut info = ava_core::test_support::construct_model_info_offline(model, &config);
         info.comp_hash = hash.map(str::to_owned);
         if model == MODEL || model == "resumed-parent" {
-            info.auto_review_model_override = Some("codex-auto-review".to_owned());
+            info.auto_review_model_override = Some("ava-auto-review".to_owned());
         }
         info
     })
     .collect();
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("access-chatgpt").plan_type("pro"),
         AuthCredentialsStoreMode::File,
     )?;
-    write_models_cache_with_models(codex_home.path(), models).await?;
+    write_models_cache_with_models(ava_home.path(), models).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
@@ -339,7 +339,7 @@ async fn guardians_retain_evidence_after_compaction_and_resume(
         if index == 2 || (index == 1 && !requires_sync) {
             app_server.shutdown_gracefully().await?;
             app_server = TestAppServer::builder()
-                .with_codex_home(codex_home.path())
+                .with_ava_home(ava_home.path())
                 .with_env_overrides(&[("OPENAI_API_KEY", None)])
                 .build_initialized_with_timeout(TIMEOUT)
                 .await?;
@@ -448,7 +448,7 @@ async fn guardians_retain_evidence_after_compaction_and_resume(
                 1,
                 "no sync inference with an unusable checkpoint"
             );
-            assert_eq!(reviews[0]["model"], "codex-auto-review");
+            assert_eq!(reviews[0]["model"], "ava-auto-review");
             let requests = parent_requests.lock().expect("request log lock");
             let output = requests.last().expect("parent tool result")["input"]
                 .as_array()
@@ -756,7 +756,7 @@ async fn guardians_retain_evidence_after_compaction_and_resume(
     }
     let items = rollout
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<std::result::Result<Vec<_>, _>>()?;
     assert_eq!(
         items
@@ -771,7 +771,7 @@ async fn guardians_retain_evidence_after_compaction_and_resume(
             for envelope in checkpoint.replacement_history.iter().flatten() {
                 if matches!(
                     envelope.item,
-                    codex_protocol::models::ResponseItem::Compaction { .. }
+                    ava_protocol::models::ResponseItem::Compaction { .. }
                 ) {
                     assert_eq!(
                         envelope

@@ -7,23 +7,23 @@ use std::sync::PoisonError;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::Environment;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::HttpClient;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestParams;
-use codex_exec_server::HttpRequestResponse;
-use codex_exec_server::HttpResponseBodyStream;
-use codex_rmcp_client::McpProtocolMode;
-use codex_rmcp_client::RmcpClient;
-use codex_rmcp_client::StoredOAuthTokens;
-use codex_rmcp_client::StreamableHttpBearerToken;
-use codex_rmcp_client::StreamableHttpRedirectMode;
-use codex_rmcp_client::WrappedOAuthTokenResponse;
-use codex_rmcp_client::save_oauth_tokens;
-use codex_rmcp_client::stored_oauth_credential_snapshot;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::Environment;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::HttpClient;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestParams;
+use ava_exec_server::HttpRequestResponse;
+use ava_exec_server::HttpResponseBodyStream;
+use ava_rmcp_client::McpProtocolMode;
+use ava_rmcp_client::RmcpClient;
+use ava_rmcp_client::StoredOAuthTokens;
+use ava_rmcp_client::StreamableHttpBearerToken;
+use ava_rmcp_client::StreamableHttpRedirectMode;
+use ava_rmcp_client::WrappedOAuthTokenResponse;
+use ava_rmcp_client::save_oauth_tokens;
+use ava_rmcp_client::stored_oauth_credential_snapshot;
 use futures::future::BoxFuture;
 use keyring::credential::Credential;
 use keyring::credential::CredentialApi;
@@ -203,7 +203,7 @@ async fn transport_provided_bearer_token_avoids_placeholder_headers_and_redirect
         /*auth_provider*/ None,
         McpProtocolMode::Legacy,
         StreamableHttpRedirectMode::AgentPluginV1,
-        codex_rmcp_client::McpOAuthRefreshMode::Legacy,
+        ava_rmcp_client::McpOAuthRefreshMode::Legacy,
     )
     .await?;
 
@@ -231,7 +231,7 @@ async fn transport_provided_bearer_token_avoids_placeholder_headers_and_redirect
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn auto_store_remains_pinned_across_session_recovery() -> anyhow::Result<()> {
     let (_server, base_url) = spawn_streamable_http_server().await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let status = Command::new(std::env::current_exe()?)
         .args([
@@ -240,7 +240,7 @@ async fn auto_store_remains_pinned_across_session_recovery() -> anyhow::Result<(
             "--ignored",
             "--nocapture",
         ])
-        .env("CODEX_HOME", codex_home.path())
+        .env("AVA_HOME", ava_home.path())
         .env(CHILD_SERVER_URL_ENV, &base_url)
         .status()
         .await?;

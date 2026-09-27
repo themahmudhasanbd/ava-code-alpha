@@ -1,8 +1,8 @@
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::request_user_input::RequestUserInputQuestion;
-use codex_tools::JsonSchema;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolSpec;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::request_user_input::RequestUserInputQuestion;
+use ava_tools::JsonSchema;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolSpec;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 

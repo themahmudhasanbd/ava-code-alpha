@@ -1,12 +1,12 @@
-use codex_protocol::protocol::SkillScope;
-use codex_skills::SkillDependencies;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::SkillDependencies;
+use ava_utils_path_uri::PathUri;
 use std::sync::Arc;
 
 /// Source authority that owns a skill package and must be used to read it.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SkillSourceKind {
-    /// Codex-hosted skills, including bundled, user, repo, plugin-installed,
+    /// Ava-hosted skills, including bundled, user, repo, plugin-installed,
     /// and downloaded/materialized remote skills.
     Host,
     /// Skills owned by an execution environment.

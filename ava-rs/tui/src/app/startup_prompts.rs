@@ -4,7 +4,7 @@
 //! catalog state into one-time TUI prompts or warning cells without owning the main event loop.
 
 use super::*;
-use codex_config::ConfigLayerSource;
+use ava_config::ConfigLayerSource;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -68,14 +68,14 @@ pub(super) fn project_config_warning(config: &Config) -> Option<String> {
     let mut disabled_folders = Vec::new();
 
     for layer in config.config_layer_stack.all_layers_low_to_high() {
-        let ConfigLayerSource::Project { dot_codex_folder } = &layer.name else {
+        let ConfigLayerSource::Project { dot_ava_folder } = &layer.name else {
             continue;
         };
         let Some(disabled_reason) = &layer.disabled_reason else {
             continue;
         };
         disabled_folders.push((
-            dot_codex_folder.as_path().display().to_string(),
+            dot_ava_folder.as_path().display().to_string(),
             disabled_reason.clone(),
         ));
     }
@@ -100,7 +100,7 @@ pub(super) fn project_config_warning(config: &Config) -> Option<String> {
 
 pub(super) fn emit_system_bwrap_warning(app_event_tx: &AppEventSender, config: &Config) {
     let Some(message) =
-        codex_sandboxing::system_bwrap_warning(config.permissions.permission_profile())
+        ava_sandboxing::system_bwrap_warning(config.permissions.permission_profile())
     else {
         return;
     };
@@ -129,7 +129,7 @@ pub(super) fn model_upgrade_for_migration(
         model_link: None,
         upgrade_copy: None,
         migration_markdown: Some(format!(
-            "{current_name} is no longer available\n\nCodex now uses {target_name} in place of {current_name}. Switch to {target_name} to continue.\n"
+            "{current_name} is no longer available\n\nAva now uses {target_name} in place of {current_name}. Switch to {target_name} to continue.\n"
         )),
         retirement_at: None,
     })
@@ -179,9 +179,9 @@ pub(super) fn migration_prompt_hidden(
     migration_config_key: &str,
 ) -> bool {
     match migration_config_key {
-        HIDE_GPT_5_1_CODEX_MAX_MIGRATION_PROMPT_CONFIG => config
+        HIDE_GPT_5_1_AVA_MAX_MIGRATION_PROMPT_CONFIG => config
             .notices
-            .hide_gpt_5_1_codex_max_migration_prompt
+            .hide_gpt_5_1_ava_max_migration_prompt
             .unwrap_or(false),
         HIDE_GPT5_1_MIGRATION_PROMPT_CONFIG => {
             config.notices.hide_gpt5_1_migration_prompt.unwrap_or(false)
@@ -467,7 +467,7 @@ mod tests {
     #[test]
     fn skill_load_warning_state_suppresses_repeated_active_errors() {
         let mut state = SkillLoadWarningState::default();
-        let error = skill_error("/repo/.codex/skills/abc/SKILL.md", "invalid description");
+        let error = skill_error("/repo/.ava-code/skills/abc/SKILL.md", "invalid description");
 
         assert_eq!(
             state.newly_active_errors(std::slice::from_ref(&error)),
@@ -482,7 +482,7 @@ mod tests {
     #[test]
     fn skill_load_warning_state_reemits_after_error_clears() {
         let mut state = SkillLoadWarningState::default();
-        let error = skill_error("/repo/.codex/skills/abc/SKILL.md", "invalid description");
+        let error = skill_error("/repo/.ava-code/skills/abc/SKILL.md", "invalid description");
 
         assert_eq!(
             state.newly_active_errors(std::slice::from_ref(&error)),
@@ -498,8 +498,8 @@ mod tests {
     #[test]
     fn skill_load_warning_state_displays_new_message_for_active_path() {
         let mut state = SkillLoadWarningState::default();
-        let initial = skill_error("/repo/.codex/skills/abc/SKILL.md", "invalid description");
-        let changed = skill_error("/repo/.codex/skills/abc/SKILL.md", "invalid frontmatter");
+        let initial = skill_error("/repo/.ava-code/skills/abc/SKILL.md", "invalid description");
+        let changed = skill_error("/repo/.ava-code/skills/abc/SKILL.md", "invalid frontmatter");
 
         assert_eq!(
             state.newly_active_errors(std::slice::from_ref(&initial)),
@@ -514,7 +514,7 @@ mod tests {
     #[test]
     fn skill_load_warning_state_clear_allows_active_error_again() {
         let mut state = SkillLoadWarningState::default();
-        let error = skill_error("/repo/.codex/skills/abc/SKILL.md", "invalid description");
+        let error = skill_error("/repo/.ava-code/skills/abc/SKILL.md", "invalid description");
 
         assert_eq!(
             state.newly_active_errors(std::slice::from_ref(&error)),
@@ -536,7 +536,7 @@ mod tests {
     #[test]
     fn repeated_active_skill_load_warning_renders_once() {
         let mut state = SkillLoadWarningState::default();
-        let error = skill_error("/repo/.codex/skills/abc/SKILL.md", "invalid description");
+        let error = skill_error("/repo/.ava-code/skills/abc/SKILL.md", "invalid description");
 
         let first_errors = state.newly_active_errors(std::slice::from_ref(&error));
         let repeated_errors = state.newly_active_errors(std::slice::from_ref(&error));
@@ -551,7 +551,7 @@ mod tests {
 
         insta::assert_snapshot!(rendered, @r"
 ⚠ Skipped loading 1 skill(s) due to invalid SKILL.md files.
-⚠ /repo/.codex/skills/abc/SKILL.md: invalid description
+⚠ /repo/.ava-code/skills/abc/SKILL.md: invalid description
 ");
     }
 }

@@ -4,12 +4,12 @@ use super::HookSource;
 use super::HookTrustStatus;
 use crate::JsonSchema;
 use crate::TS;
-use codex_protocol::protocol::SkillDependencies as CoreSkillDependencies;
-use codex_protocol::protocol::SkillInterface as CoreSkillInterface;
-use codex_protocol::protocol::SkillMetadata as CoreSkillMetadata;
-use codex_protocol::protocol::SkillScope as CoreSkillScope;
-use codex_protocol::protocol::SkillToolDependency as CoreSkillToolDependency;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::protocol::SkillDependencies as CoreSkillDependencies;
+use ava_protocol::protocol::SkillInterface as CoreSkillInterface;
+use ava_protocol::protocol::SkillMetadata as CoreSkillMetadata;
+use ava_protocol::protocol::SkillScope as CoreSkillScope;
+use ava_protocol::protocol::SkillToolDependency as CoreSkillToolDependency;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -670,7 +670,7 @@ pub enum PluginAuthPolicy {
 #[ts(export_to = "v2/")]
 pub enum PluginAvailability {
     /// Plugin-service currently sends `"ENABLED"` for available remote plugins.
-    /// Codex app-server exposes `"AVAILABLE"` in its API; the alias keeps
+    /// Ava app-server exposes `"AVAILABLE"` in its API; the alias keeps
     /// decoding compatible with that upstream response.
     #[serde(rename = "AVAILABLE", alias = "ENABLED")]
     #[ts(rename = "AVAILABLE")]

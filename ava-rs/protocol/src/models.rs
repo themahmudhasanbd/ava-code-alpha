@@ -3,9 +3,9 @@ use std::io;
 use std::num::NonZeroUsize;
 use std::path::Path;
 
-use codex_utils_image::PromptImageMode;
-use codex_utils_image::data_url_from_bytes;
-use codex_utils_image::load_for_prompt_bytes;
+use ava_utils_image::PromptImageMode;
+use ava_utils_image::data_url_from_bytes;
+use ava_utils_image::load_for_prompt_bytes;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
@@ -24,13 +24,13 @@ use crate::permissions::NetworkSandboxPolicy;
 use crate::permissions::RawFileSystemSandboxEntry;
 use crate::protocol::SandboxPolicy;
 use crate::user_input::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_image::ImageProcessingError;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_image::ImageProcessingError;
 use schemars::JsonSchema;
 
 use crate::ResponseItemId;
 use crate::mcp::CallToolResult;
-use codex_utils_path_uri::PathUri;
+use ava_utils_path_uri::PathUri;
 
 mod configuration_update;
 mod executed_tool_calls;
@@ -273,7 +273,7 @@ impl AdditionalPermissionProfile {
 )]
 #[serde(rename_all = "snake_case")]
 pub enum SandboxEnforcement {
-    /// Codex owns sandbox construction for this profile.
+    /// Ava owns sandbox construction for this profile.
     #[default]
     Managed,
     /// No outer filesystem sandbox should be applied.
@@ -292,7 +292,7 @@ impl SandboxEnforcement {
     }
 }
 
-/// Filesystem permissions for profiles where Codex owns sandbox construction.
+/// Filesystem permissions for profiles where Ava owns sandbox construction.
 #[derive(Debug, Clone, Eq, PartialEq, JsonSchema, TS)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[ts(tag = "type")]
@@ -419,7 +419,7 @@ pub const BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS: &str = ":danger-full-a
 #[serde(tag = "type", rename_all = "snake_case")]
 #[ts(tag = "type")]
 pub enum PermissionProfile {
-    /// Codex owns sandbox construction for this profile.
+    /// Ava owns sandbox construction for this profile.
     #[serde(rename_all = "snake_case")]
     #[ts(rename_all = "snake_case")]
     Managed {
@@ -1652,7 +1652,7 @@ fn local_media_error_placeholder(
     let media_name = media_kind.name();
     let path = path.display();
     ContentItem::InputText {
-        text: format!("Codex could not read the local {media_name} at `{path}`: {error}"),
+        text: format!("Ava could not read the local {media_name} at `{path}`: {error}"),
     }
 }
 
@@ -1755,7 +1755,7 @@ fn invalid_image_error_placeholder(
 fn unsupported_image_error_placeholder(path: &std::path::Path, mime: &str) -> ContentItem {
     ContentItem::InputText {
         text: format!(
-            "Codex cannot attach image at `{}`: unsupported image `{}`.",
+            "Ava cannot attach image at `{}`: unsupported image `{}`.",
             path.display(),
             mime
         ),
@@ -1812,7 +1812,7 @@ pub enum LocalImagePreparation {
 fn unsupported_audio_error_placeholder(path: &std::path::Path) -> ContentItem {
     ContentItem::InputText {
         text: format!(
-            "Codex cannot attach audio at `{}`: unsupported audio format; use wav, mp3, m4a, webm, or ogg.",
+            "Ava cannot attach audio at `{}`: unsupported audio format; use wav, mp3, m4a, webm, or ogg.",
             path.display()
         ),
     }
@@ -2343,8 +2343,8 @@ impl CallToolResult {
 fn convert_mcp_content_to_items(
     contents: &[serde_json::Value],
 ) -> Vec<FunctionCallOutputContentItem> {
-    const CODEX_ENCRYPTED_CONTENT_META_KEY: &str = "codex/encryptedContent";
-    const CODEX_IMAGE_DETAIL_META_KEY: &str = "codex/imageDetail";
+    const AVA_ENCRYPTED_CONTENT_META_KEY: &str = "ava/encryptedContent";
+    const AVA_IMAGE_DETAIL_META_KEY: &str = "ava/imageDetail";
 
     #[derive(serde::Deserialize)]
     #[serde(tag = "type")]
@@ -2382,7 +2382,7 @@ fn convert_mcp_content_to_items(
             Ok(McpContent::Text { text, meta }) => {
                 if meta
                     .as_ref()
-                    .and_then(|meta| meta.get(CODEX_ENCRYPTED_CONTENT_META_KEY))
+                    .and_then(|meta| meta.get(AVA_ENCRYPTED_CONTENT_META_KEY))
                     .and_then(serde_json::Value::as_bool)
                     == Some(true)
                 {
@@ -2409,7 +2409,7 @@ fn convert_mcp_content_to_items(
                     detail: meta
                         .as_ref()
                         .and_then(serde_json::Value::as_object)
-                        .and_then(|meta| meta.get(CODEX_IMAGE_DETAIL_META_KEY))
+                        .and_then(|meta| meta.get(AVA_IMAGE_DETAIL_META_KEY))
                         .and_then(serde_json::Value::as_str)
                         .and_then(|detail| match detail {
                             "auto" => Some(ImageDetail::Auto),
@@ -2458,13 +2458,13 @@ impl std::fmt::Display for FunctionCallOutputPayload {
     }
 }
 
-// (Moved event mapping logic into codex-core to avoid coupling protocol to UI-facing events.)
+// (Moved event mapping logic into ava-core to avoid coupling protocol to UI-facing events.)
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use anyhow::Result;
-    use codex_execpolicy::Policy;
+    use ava_execpolicy::Policy;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
     use tempfile::tempdir;
@@ -3195,8 +3195,8 @@ mod tests {
     fn function_call_deserializes_optional_namespace() {
         let item: ResponseItem = serde_json::from_value(serde_json::json!({
             "type": "function_call",
-            "name": "mcp__codex_apps__gmail_get_recent_emails",
-            "namespace": "mcp__codex_apps__gmail",
+            "name": "mcp__ava_apps__gmail_get_recent_emails",
+            "namespace": "mcp__ava_apps__gmail",
             "arguments": "{\"top_k\":5}",
             "call_id": "call-1",
         }))
@@ -3206,8 +3206,8 @@ mod tests {
             item,
             ResponseItem::FunctionCall {
                 id: None,
-                name: "mcp__codex_apps__gmail_get_recent_emails".to_string(),
-                namespace: Some("mcp__codex_apps__gmail".to_string()),
+                name: "mcp__ava_apps__gmail_get_recent_emails".to_string(),
+                namespace: Some("mcp__ava_apps__gmail".to_string()),
                 arguments: "{\"top_k\":5}".to_string(),
                 encrypted_function_args: None,
                 call_id: "call-1".to_string(),
@@ -3324,7 +3324,7 @@ mod tests {
             exec_policy
                 .add_prefix_rule(
                     &[format!("tool-{i:03}"), "x".repeat(500)],
-                    codex_execpolicy::Decision::Allow,
+                    ava_execpolicy::Decision::Allow,
                 )
                 .expect("add rule");
         }
@@ -3619,7 +3619,7 @@ mod tests {
                 "data": "BASE64",
                 "mimeType": "image/png",
                 "_meta": {
-                    "codex/imageDetail": "original",
+                    "ava/imageDetail": "original",
                 },
             })],
             structured_content: None,
@@ -3653,7 +3653,7 @@ mod tests {
                 "data": "BASE64",
                 "mimeType": "image/png",
                 "_meta": {
-                    "codex/imageDetail": "high",
+                    "ava/imageDetail": "high",
                 },
             })],
             structured_content: None,
@@ -4047,7 +4047,7 @@ mod tests {
                 role: "user".to_string(),
                 content: vec![ContentItem::InputText {
                     text: format!(
-                        "Codex cannot attach audio at `{}`: unsupported audio format; use wav, mp3, m4a, webm, or ogg.",
+                        "Ava cannot attach audio at `{}`: unsupported audio format; use wav, mp3, m4a, webm, or ogg.",
                         audio_path.display()
                     ),
                 }],
@@ -4071,7 +4071,7 @@ mod tests {
             panic!("expected local audio error placeholder");
         };
         assert!(
-            text.starts_with("Codex could not read the local audio at `missing.wav`: "),
+            text.starts_with("Ava could not read the local audio at `missing.wav`: "),
             "unexpected placeholder: {text}"
         );
     }
@@ -4156,7 +4156,7 @@ mod tests {
             execution: "client".to_string(),
             tools: vec![serde_json::json!({
                 "type": "function",
-                "name": "mcp__codex_apps__calendar_create_event",
+                "name": "mcp__ava_apps__calendar_create_event",
                 "description": "Create a calendar event.",
                 "defer_loading": true,
                 "parameters": {
@@ -4178,7 +4178,7 @@ mod tests {
                 execution: "client".to_string(),
                 tools: vec![serde_json::json!({
                     "type": "function",
-                    "name": "mcp__codex_apps__calendar_create_event",
+                    "name": "mcp__ava_apps__calendar_create_event",
                     "description": "Create a calendar event.",
                     "defer_loading": true,
                     "parameters": {
@@ -4203,7 +4203,7 @@ mod tests {
                 "execution": "client",
                 "tools": [{
                     "type": "function",
-                    "name": "mcp__codex_apps__calendar_create_event",
+                    "name": "mcp__ava_apps__calendar_create_event",
                     "description": "Create a calendar event.",
                     "defer_loading": true,
                     "parameters": {
@@ -4549,7 +4549,7 @@ mod tests {
             ResponseInputItem::Message { content, .. } => {
                 assert_eq!(content.len(), 1);
                 let expected = format!(
-                    "Codex cannot attach image at `{}`: unsupported image `image/svg+xml`.",
+                    "Ava cannot attach image at `{}`: unsupported image `image/svg+xml`.",
                     svg_path.display()
                 );
                 match &content[0] {

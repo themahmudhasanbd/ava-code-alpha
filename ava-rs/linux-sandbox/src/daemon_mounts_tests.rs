@@ -15,13 +15,13 @@ fn check_mounts(
 }
 
 #[test_case("/tmp", "/host-tmp", false; "ancestor alias")]
-#[test_case("/tmp/codex-daemon-1000", "/alias", false; "directory alias")]
-#[test_case("/tmp/codex-daemon-1000/rpc.sock", "/alias.sock", false; "socket alias")]
+#[test_case("/tmp/ava-daemon-1000", "/alias", false; "directory alias")]
+#[test_case("/tmp/ava-daemon-1000/rpc.sock", "/alias.sock", false; "socket alias")]
 #[test_case("/", "/host", false; "root alias")]
 #[test_case("/workspace", "/project", true; "unrelated project bind")]
 #[test_case("/tmp", "/tmp", true; "same location")]
 #[test_case("/tmp", "/host\\040tmp", false; "escaped alias")]
-#[test_case("/other", "/tmp/codex-daemon-1000/nested", false; "nested mount")]
+#[test_case("/other", "/tmp/ava-daemon-1000/nested", false; "nested mount")]
 fn rejects_only_mounts_that_compromise_the_directory(root: &str, destination: &str, allowed: bool) {
     let mounts =
         format!("1 0 0:1 / / rw - ext4 disk rw\n2 1 0:1 {root} {destination} rw - ext4 disk rw\n");
@@ -29,7 +29,7 @@ fn rejects_only_mounts_that_compromise_the_directory(root: &str, destination: &s
     for mount_id in [Some(visible_mount), None] {
         assert_eq!(
             check_mounts(
-                Path::new("/tmp/codex-daemon-1000"),
+                Path::new("/tmp/ava-daemon-1000"),
                 "0:1",
                 mount_id,
                 mounts.as_bytes()
@@ -43,7 +43,7 @@ fn rejects_only_mounts_that_compromise_the_directory(root: &str, destination: &s
 
 #[test_case("0:2", "mnt:[4026532835]", "/run/snapd/ns/example.mnt", Ok(()); "unrelated mount namespace")]
 #[test_case("0:2", "net:[4026531840]", "/run/netns/example", Ok(()); "unrelated network namespace")]
-#[test_case("0:2", "mnt:[4026532835]", "/tmp/codex-daemon-1000/ns", Err(io::ErrorKind::PermissionDenied); "nested namespace mount")]
+#[test_case("0:2", "mnt:[4026532835]", "/tmp/ava-daemon-1000/ns", Err(io::ErrorKind::PermissionDenied); "nested namespace mount")]
 #[test_case("0:1", "mnt:[4026532835]", "/run/snapd/ns/example.mnt", Err(io::ErrorKind::Other); "non-path root on socket filesystem")]
 #[test_case("0:2", "mnt:[4026532835]", "relative/ns", Err(io::ErrorKind::Other); "relative destination")]
 #[test_case("0:2", "mnt:[4026532835]", "/run/snapd/ns/\\invalid", Err(io::ErrorKind::Other); "invalid destination escape")]
@@ -59,7 +59,7 @@ fn validates_namespace_mounts_by_device_and_destination(
     for mount_id in [Some("1"), None] {
         assert_eq!(
             check_mounts(
-                Path::new("/tmp/codex-daemon-1000"),
+                Path::new("/tmp/ava-daemon-1000"),
                 "0:1",
                 mount_id,
                 mounts.as_bytes()
@@ -75,10 +75,10 @@ fn validates_namespace_mounts_by_device_and_destination(
 fn unrelated_namespace_mount_does_not_hide_a_socket_alias() {
     let mounts = b"1 0 0:1 / / rw - ext4 disk rw\n\
                    2 1 0:2 net:[4026531840] /run/netns/example rw - nsfs nsfs rw\n\
-                   3 1 0:1 /tmp/codex-daemon-1000 /alias rw - ext4 disk rw\n";
+                   3 1 0:1 /tmp/ava-daemon-1000 /alias rw - ext4 disk rw\n";
     for mount_id in [Some("1"), None] {
         assert_eq!(
-            check_mounts(Path::new("/tmp/codex-daemon-1000"), "0:1", mount_id, mounts)
+            check_mounts(Path::new("/tmp/ava-daemon-1000"), "0:1", mount_id, mounts)
                 .map_err(|error| error.kind()),
             Err(io::ErrorKind::PermissionDenied),
             "mount_id: {mount_id:?}"
@@ -91,7 +91,7 @@ fn rejects_alias_when_tmp_is_itself_a_bind_mount() {
     let mounts = b"1 0 0:1 / / rw - ext4 disk rw\n2 1 0:1 /backing/tmp /tmp rw - ext4 disk rw\n";
     assert!(
         check_mounts(
-            Path::new("/tmp/codex-daemon-1000"),
+            Path::new("/tmp/ava-daemon-1000"),
             "0:1",
             Some("2"),
             mounts
@@ -101,12 +101,12 @@ fn rejects_alias_when_tmp_is_itself_a_bind_mount() {
     // A hidden deeper mount must not override the actual /tmp backing location.
     let hidden = [
         mounts.as_slice(),
-        b"3 1 0:1 /tmp/codex-daemon-1000 /tmp/codex-daemon-1000 rw - ext4 disk rw\n",
+        b"3 1 0:1 /tmp/ava-daemon-1000 /tmp/ava-daemon-1000 rw - ext4 disk rw\n",
     ]
     .concat();
     assert!(
         check_mounts(
-            Path::new("/tmp/codex-daemon-1000"),
+            Path::new("/tmp/ava-daemon-1000"),
             "0:1",
             Some("2"),
             &hidden
@@ -118,7 +118,7 @@ fn rejects_alias_when_tmp_is_itself_a_bind_mount() {
 #[test]
 fn accepts_private_tmp_filesystem_and_resolves_stacked_mounts() {
     let mounts = "1 0 0:1 / / rw - ext4 disk rw\n2 1 0:2 / /tmp rw - tmpfs tmpfs rw\n";
-    let directory = Path::new("/tmp/codex-daemon-1000");
+    let directory = Path::new("/tmp/ava-daemon-1000");
     assert!(check_mounts(directory, "0:2", Some("2"), mounts.as_bytes()).is_ok());
     assert!(check_mounts(directory, "0:2", /*mount_id*/ None, mounts.as_bytes()).is_ok());
     // Missing or inconsistent precise IDs must not fall back to the otherwise
@@ -133,14 +133,14 @@ fn accepts_private_tmp_filesystem_and_resolves_stacked_mounts() {
 
 #[test]
 fn rejects_open_mount_that_has_been_covered() {
-    let directory = Path::new("/tmp/codex-daemon-1000");
+    let directory = Path::new("/tmp/ava-daemon-1000");
     let mounts = "1 0 0:1 / / rw - ext4 disk rw\n\
                   2 1 0:1 /tmp/private-old/tmp /tmp rw - ext4 disk rw\n\
                   3 2 0:1 /tmp/private-new/tmp /tmp rw - ext4 disk rw\n";
     assert!(check_mounts(directory, "0:1", Some("2"), mounts.as_bytes()).is_err());
     assert!(check_mounts(directory, "0:1", Some("3"), mounts.as_bytes()).is_ok());
     let exposed = format!(
-        "{mounts}4 1 0:1 /tmp/private-new/tmp/codex-daemon-1000 /outside rw - ext4 disk rw\n"
+        "{mounts}4 1 0:1 /tmp/private-new/tmp/ava-daemon-1000 /outside rw - ext4 disk rw\n"
     );
     for mount_id in [Some("2"), Some("3"), None] {
         assert!(check_mounts(directory, "0:1", mount_id, exposed.as_bytes()).is_err());
@@ -149,7 +149,7 @@ fn rejects_open_mount_that_has_been_covered() {
 
 #[test]
 fn rejects_mount_hidden_by_an_ancestor_overmount() {
-    let directory = Path::new("/tmp/private/codex-daemon-1000");
+    let directory = Path::new("/tmp/private/ava-daemon-1000");
     let mounts = "1 0 0:1 / / rw - ext4 disk rw\n\
                   2 1 0:2 / /tmp rw - tmpfs tmpfs rw\n\
                   3 2 0:3 / /tmp/private rw - tmpfs tmpfs rw\n";
@@ -162,7 +162,7 @@ fn rejects_mount_hidden_by_an_ancestor_overmount() {
 #[test_case("/tmp/systemd-private-service/tmp", "/"; "tmp on root filesystem")]
 #[test_case("/systemd-private-service/tmp", "/tmp"; "tmp on separate filesystem")]
 fn accepts_private_tmp_bind_but_rejects_exposed_aliases(root: &str, parent: &str) {
-    let directory = Path::new("/tmp/codex-daemon-1000");
+    let directory = Path::new("/tmp/ava-daemon-1000");
     let mounts =
         format!("1 0 0:1 / {parent} rw - ext4 disk rw\n2 1 0:1 {root} /tmp rw - ext4 disk rw\n");
     assert!(check_mounts(directory, "0:1", Some("2"), mounts.as_bytes()).is_ok());
@@ -173,7 +173,7 @@ fn accepts_private_tmp_bind_but_rejects_exposed_aliases(root: &str, parent: &str
     for (alias_root, destination) in [
         (root.to_owned(), "/tmp/exposed"),
         (
-            format!("{root}/codex-daemon-1000/rpc.sock"),
+            format!("{root}/ava-daemon-1000/rpc.sock"),
             "/tmp/alias.sock",
         ),
         ("/".to_owned(), "/host"),
@@ -186,7 +186,7 @@ fn accepts_private_tmp_bind_but_rejects_exposed_aliases(root: &str, parent: &str
 #[test]
 fn masked_wslg_alias_does_not_allow_other_exposed_aliases() {
     let mounts = "1 0 0:1 / / rw - ext4 disk rw\n2 1 0:1 / /mnt/wslg/distro rw - ext4 disk rw\n";
-    let directory = Path::new("/tmp/codex-daemon-1000");
+    let directory = Path::new("/tmp/ava-daemon-1000");
     let mask = Some(Path::new(crate::bwrap::WSLG_DISTRO_ROOT));
     let exposed = format!("{mounts}3 1 0:1 /tmp /host-tmp rw - ext4 disk rw\n");
     for mount_id in [Some("1"), None] {

@@ -1,5 +1,5 @@
-use codex_protocol::ThreadId;
-use codex_state::StateRuntime;
+use ava_protocol::ThreadId;
+use ava_state::StateRuntime;
 use std::sync::Arc;
 
 use crate::AgentGraphStore;
@@ -109,10 +109,10 @@ impl AgentGraphStore for LocalAgentGraphStore {
     }
 }
 
-fn to_state_status(status: ThreadSpawnEdgeStatus) -> codex_state::DirectionalThreadSpawnEdgeStatus {
+fn to_state_status(status: ThreadSpawnEdgeStatus) -> ava_state::DirectionalThreadSpawnEdgeStatus {
     match status {
-        ThreadSpawnEdgeStatus::Open => codex_state::DirectionalThreadSpawnEdgeStatus::Open,
-        ThreadSpawnEdgeStatus::Closed => codex_state::DirectionalThreadSpawnEdgeStatus::Closed,
+        ThreadSpawnEdgeStatus::Open => ava_state::DirectionalThreadSpawnEdgeStatus::Open,
+        ThreadSpawnEdgeStatus::Closed => ava_state::DirectionalThreadSpawnEdgeStatus::Closed,
     }
 }
 
@@ -125,14 +125,14 @@ fn internal_error(err: impl std::fmt::Display) -> AgentGraphStoreError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_state::DirectionalThreadSpawnEdgeStatus;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_state::DirectionalThreadSpawnEdgeStatus;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
     struct TestRuntime {
         state_db: Arc<StateRuntime>,
-        _codex_home: TempDir,
+        _ava_home: TempDir,
     }
 
     fn thread_id(suffix: u128) -> ThreadId {
@@ -141,16 +141,16 @@ mod tests {
     }
 
     async fn state_runtime() -> TestRuntime {
-        let codex_home = TempDir::new().expect("tempdir should be created");
+        let ava_home = TempDir::new().expect("tempdir should be created");
         let state_db = StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+            ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
             "test-provider".to_string(),
         )
         .await
         .expect("state db should initialize");
         TestRuntime {
             state_db,
-            _codex_home: codex_home,
+            _ava_home: ava_home,
         }
     }
 

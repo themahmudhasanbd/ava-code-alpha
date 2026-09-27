@@ -1,21 +1,21 @@
 use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::write_mock_responses_config_toml_with_chatgpt_base_url;
-use codex_app_server::INVALID_PARAMS_ERROR_CODE;
-use codex_app_server_protocol::ActivePermissionProfile;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
+use ava_app_server::INVALID_PARAMS_ERROR_CODE;
+use ava_app_server_protocol::ActivePermissionProfile;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::time::Duration;
@@ -28,9 +28,9 @@ const REMOTE_IMAGE_URL_ERROR: &str =
 
 #[tokio::test]
 async fn legacy_permission_profile_requests_fail_closed() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
     let legacy_permission_profile = json!({
@@ -115,9 +115,9 @@ async fn legacy_permission_profile_requests_fail_closed() -> Result<()> {
 
 #[tokio::test]
 async fn thread_start_keeps_unknown_field_compatibility_with_named_permissions() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -149,14 +149,14 @@ async fn thread_start_keeps_unknown_field_compatibility_with_named_permissions()
 
 #[tokio::test]
 async fn request_handlers_reject_remote_image_urls() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        codex_home.path(),
+        ava_home.path(),
         "http://localhost/unused",
         "http://localhost/unused",
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 

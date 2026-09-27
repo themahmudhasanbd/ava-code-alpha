@@ -1,7 +1,7 @@
 #![cfg(target_os = "linux")]
 
-use codex_linux_sandbox::BUNDLED_BWRAP_DIGEST_VERIFICATION_FAILURE_EXIT_CODE;
-use codex_protocol::models::PermissionProfile;
+use ava_linux_sandbox::BUNDLED_BWRAP_DIGEST_VERIFICATION_FAILURE_EXIT_CODE;
+use ava_protocol::models::PermissionProfile;
 use pretty_assertions::assert_eq;
 use std::path::PathBuf;
 use std::process::Command;
@@ -23,11 +23,11 @@ fn bazel_build_rejects_tampered_bundled_bwrap() {
         std::fs::read(&bwrap_binary).expect("built bwrap should be readable");
 
     let package = tempfile::tempdir().expect("package directory should be created");
-    let resources = package.path().join("codex-resources");
+    let resources = package.path().join("ava-resources");
     std::fs::create_dir(&resources).expect("package resource directory should be created");
 
-    let sandbox_binary = package.path().join("codex-linux-sandbox");
-    std::fs::copy(env!("CARGO_BIN_EXE_codex-linux-sandbox"), &sandbox_binary)
+    let sandbox_binary = package.path().join("ava-linux-sandbox");
+    std::fs::copy(env!("CARGO_BIN_EXE_ava-linux-sandbox"), &sandbox_binary)
         .expect("sandbox binary should be copied into the package");
 
     let bundled_bwrap = resources.join("bwrap");

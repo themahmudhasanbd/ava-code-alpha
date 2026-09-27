@@ -2,17 +2,17 @@ use super::*;
 use crate::auth::storage::FileAuthStorage;
 use crate::auth::storage::get_auth_file;
 use crate::token_data::IdTokenInfo;
-use codex_protocol::account::PlanType as AccountPlanType;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::auth::KnownPlan as InternalKnownPlan;
-use codex_protocol::auth::PlanType as InternalPlanType;
-use codex_protocol::protocol::SessionSource;
+use ava_protocol::account::PlanType as AccountPlanType;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::auth::KnownPlan as InternalKnownPlan;
+use ava_protocol::auth::PlanType as InternalPlanType;
+use ava_protocol::protocol::SessionSource;
 
 use base64::Engine;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::config_types::ModelProviderAuthInfo;
-use codex_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::config_types::ModelProviderAuthInfo;
+use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
 use pretty_assertions::assert_eq;
 use serde::Serialize;
 use serde_json::json;
@@ -53,26 +53,26 @@ fn header_auth_exposes_a_valid_chatgpt_account_id() {
             );
         }
 
-        let auth = CodexAuth::Headers(AuthHeaders::new(headers));
+        let auth = AvaAuth::Headers(AuthHeaders::new(headers));
         assert_eq!(auth.get_account_id().as_deref(), expected_account_id);
     }
 }
 
 #[tokio::test]
 async fn refresh_without_id_token() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let fake_jwt = write_auth_file(
         AuthFileParams {
             openai_api_key: None,
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: None,
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let storage = create_auth_storage(
-        codex_home.path().to_path_buf(),
+        ava_home.path().to_path_buf(),
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     );
@@ -126,7 +126,7 @@ fn login_with_api_key_overwrites_existing_auth_json() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn login_with_access_token_writes_agent_identity_jwt() {
     let dir = tempdir().unwrap();
     let auth_path = dir.path().join("auth.json");
@@ -197,14 +197,14 @@ async fn login_with_access_token_rejects_agent_identity_workspace_mismatch() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn agent_identity_jwt_uses_explicit_staging_endpoint_overrides() -> anyhow::Result<()> {
     let jwks_server = MockServer::start().await;
     let authapi_server = MockServer::start().await;
     let record = agent_identity_record(WORKSPACE_ID_ALLOWED);
     let jwt = signed_agent_identity_jwt(&record, json!(record.plan_type))?;
     Mock::given(method("GET"))
-        .and(path("/api/codex/agent-identities/jwks"))
+        .and(path("/api/ava/agent-identities/jwks"))
         .respond_with(ResponseTemplate::new(200).set_body_json(test_jwks_body()))
         .expect(1)
         .mount(&jwks_server)
@@ -218,18 +218,18 @@ async fn agent_identity_jwt_uses_explicit_staging_endpoint_overrides() -> anyhow
     .await;
     let authapi_base_url = format!("{}/api/accounts/", authapi_server.uri());
     let _authapi_guard =
-        EnvVarGuard::set("CODEX_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
-    let jwks_base_url = format!("{}/api/codex/", jwks_server.uri());
-    let _jwks_guard = EnvVarGuard::set("CODEX_AGENT_IDENTITY_JWKS_BASE_URL", &jwks_base_url);
+        EnvVarGuard::set("AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
+    let jwks_base_url = format!("{}/api/ava/", jwks_server.uri());
+    let _jwks_guard = EnvVarGuard::set("AVA_AGENT_IDENTITY_JWKS_BASE_URL", &jwks_base_url);
 
-    let auth = CodexAuth::from_agent_identity_jwt(
+    let auth = AvaAuth::from_agent_identity_jwt(
         &jwt,
         Some(ChatGptEnvironment::Staging.chatgpt_base_url()),
         &crate::test_support::transport_default_auth_route_config(),
     )
     .await?;
 
-    let CodexAuth::AgentIdentity(agent_identity) = auth else {
+    let AvaAuth::AgentIdentity(agent_identity) = auth else {
         panic!("JWT should load as agent identity auth");
     };
     assert_eq!(agent_identity.run_task_id(), "task-id");
@@ -239,14 +239,14 @@ async fn agent_identity_jwt_uses_explicit_staging_endpoint_overrides() -> anyhow
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn agent_identity_jwt_supports_existing_staging_launcher() -> anyhow::Result<()> {
     let jwks_server = MockServer::start().await;
     let authapi_server = MockServer::start().await;
     let record = agent_identity_record(WORKSPACE_ID_ALLOWED);
     let jwt = signed_agent_identity_jwt(&record, json!(record.plan_type))?;
     Mock::given(method("GET"))
-        .and(path("/api/codex/agent-identities/jwks"))
+        .and(path("/api/ava/agent-identities/jwks"))
         .respond_with(ResponseTemplate::new(200).set_body_json(test_jwks_body()))
         .expect(1)
         .mount(&jwks_server)
@@ -260,18 +260,18 @@ async fn agent_identity_jwt_supports_existing_staging_launcher() -> anyhow::Resu
     .await;
     let authapi_base_url = format!("{}/api/accounts", authapi_server.uri());
     let _authapi_guard =
-        EnvVarGuard::set("CODEX_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
-    let jwks_base_url = format!("{}/api/codex", jwks_server.uri());
-    let _jwks_guard = EnvVarGuard::set("CODEX_AGENT_IDENTITY_JWKS_BASE_URL", &jwks_base_url);
+        EnvVarGuard::set("AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
+    let jwks_base_url = format!("{}/api/ava", jwks_server.uri());
+    let _jwks_guard = EnvVarGuard::set("AVA_AGENT_IDENTITY_JWKS_BASE_URL", &jwks_base_url);
 
-    let auth = CodexAuth::from_agent_identity_jwt(
+    let auth = AvaAuth::from_agent_identity_jwt(
         &jwt,
         Some(&jwks_base_url),
         &crate::test_support::transport_default_auth_route_config(),
     )
     .await?;
 
-    let CodexAuth::AgentIdentity(agent_identity) = auth else {
+    let AvaAuth::AgentIdentity(agent_identity) = auth else {
         panic!("JWT should load as agent identity auth");
     };
     assert_eq!(agent_identity.run_task_id(), "task-id");
@@ -281,14 +281,14 @@ async fn agent_identity_jwt_supports_existing_staging_launcher() -> anyhow::Resu
 }
 
 #[test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 fn agent_identity_authapi_override_preserves_chatgpt_environment_validation() {
     let _authapi_guard = EnvVarGuard::set(
-        "CODEX_AGENT_IDENTITY_AUTHAPI_BASE_URL",
+        "AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL",
         "https://authapi.example/api/accounts",
     );
     let _jwks_guard = EnvVarGuard::set(
-        "CODEX_AGENT_IDENTITY_JWKS_BASE_URL",
+        "AVA_AGENT_IDENTITY_JWKS_BASE_URL",
         "https://jwks.example/api/codex",
     );
 
@@ -302,11 +302,11 @@ fn agent_identity_authapi_override_preserves_chatgpt_environment_validation() {
 }
 
 #[test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 fn agent_identity_custom_jwks_base_requires_explicit_authapi_override() {
-    let _authapi_guard = EnvVarGuard::remove("CODEX_AGENT_IDENTITY_AUTHAPI_BASE_URL");
+    let _authapi_guard = EnvVarGuard::remove("AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL");
     let jwks_base_url = "https://jwks.example/api/codex";
-    let _jwks_guard = EnvVarGuard::set("CODEX_AGENT_IDENTITY_JWKS_BASE_URL", jwks_base_url);
+    let _jwks_guard = EnvVarGuard::set("AVA_AGENT_IDENTITY_JWKS_BASE_URL", jwks_base_url);
 
     let error = agent_identity_authapi_base_url(Some(jwks_base_url))
         .expect_err("custom JWKS bases must also explicitly configure AuthAPI");
@@ -318,13 +318,13 @@ fn agent_identity_custom_jwks_base_requires_explicit_authapi_override() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn agent_identity_jwks_override_preserves_chatgpt_environment_validation() {
     let record = agent_identity_record(WORKSPACE_ID_ALLOWED);
     let jwt =
         signed_agent_identity_jwt(&record, json!(record.plan_type)).expect("signed agent identity");
     let _jwks_guard = EnvVarGuard::set(
-        "CODEX_AGENT_IDENTITY_JWKS_BASE_URL",
+        "AVA_AGENT_IDENTITY_JWKS_BASE_URL",
         "https://jwks.example/api/codex",
     );
 
@@ -343,10 +343,10 @@ async fn agent_identity_jwks_override_preserves_chatgpt_environment_validation()
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn stored_agent_identity_jwt_keeps_auth_json_unchanged() -> anyhow::Result<()> {
     let _access_token_guard = remove_access_token_env_var();
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let record = agent_identity_record(WORKSPACE_ID_ALLOWED);
     let agent_identity =
         signed_agent_identity_jwt(&record, json!(record.plan_type)).expect("signed agent identity");
@@ -361,7 +361,7 @@ async fn stored_agent_identity_jwt_keeps_auth_json_unchanged() -> anyhow::Result
     let authapi_base_url = server.uri();
     let chatgpt_base_url = format!("{authapi_base_url}/backend-api");
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &AuthDotJson {
             auth_mode: Some(AuthMode::AgentIdentity),
             openai_api_key: None,
@@ -377,8 +377,8 @@ async fn stored_agent_identity_jwt_keeps_auth_json_unchanged() -> anyhow::Result
     )?;
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -390,13 +390,13 @@ async fn stored_agent_identity_jwt_keeps_auth_json_unchanged() -> anyhow::Result
     .await?
     .expect("auth should load");
 
-    let CodexAuth::AgentIdentity(agent_identity_auth) = auth else {
+    let AvaAuth::AgentIdentity(agent_identity_auth) = auth else {
         panic!("stored JWT should load as agent identity auth");
     };
     assert_eq!(agent_identity_auth.run_task_id(), "task-id");
-    let storage = FileAuthStorage::new(codex_home.path().to_path_buf());
+    let storage = FileAuthStorage::new(ava_home.path().to_path_buf());
     let auth = storage
-        .try_read_auth_json(&get_auth_file(codex_home.path()))
+        .try_read_auth_json(&get_auth_file(ava_home.path()))
         .expect("auth.json should parse");
     assert_eq!(
         auth.agent_identity,
@@ -407,7 +407,7 @@ async fn stored_agent_identity_jwt_keeps_auth_json_unchanged() -> anyhow::Result
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn login_with_access_token_writes_only_personal_access_token() {
     let dir = tempdir().unwrap();
     let auth_path = dir.path().join("auth.json");
@@ -422,7 +422,7 @@ async fn login_with_access_token_writes_only_personal_access_token() {
         .expect(1)
         .mount(&server)
         .await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
     let allowed_workspaces = [WORKSPACE_ID_ALLOWED.to_string()];
     super::login_with_access_token(
         dir.path(),
@@ -461,7 +461,7 @@ async fn login_with_access_token_writes_only_personal_access_token() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn login_with_access_token_rejects_personal_access_token_workspace_mismatch() {
     let dir = tempdir().unwrap();
     let server = MockServer::start().await;
@@ -475,7 +475,7 @@ async fn login_with_access_token_rejects_personal_access_token_workspace_mismatc
         .expect(1)
         .mount(&server)
         .await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
     let allowed_workspaces = [WORKSPACE_ID_ALLOWED.to_string()];
 
     let err = super::login_with_access_token(
@@ -499,7 +499,7 @@ async fn login_with_access_token_rejects_personal_access_token_workspace_mismatc
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn login_with_access_token_rejects_invalid_personal_access_token() {
     let dir = tempdir().unwrap();
     let server = MockServer::start().await;
@@ -509,7 +509,7 @@ async fn login_with_access_token_rejects_invalid_personal_access_token() {
         .expect(1)
         .mount(&server)
         .await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
 
     let err = super::login_with_access_token(
         dir.path(),
@@ -555,20 +555,20 @@ async fn login_with_access_token_rejects_invalid_jwt() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn chatgpt_auth_registers_agent_identity_when_enabled() -> anyhow::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     write_auth_file(
         AuthFileParams {
             openai_api_key: None,
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some("account-123".to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )?;
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -598,7 +598,7 @@ async fn chatgpt_auth_registers_agent_identity_when_enabled() -> anyhow::Result<
         .and(header("authorization", "Bearer test-access-token"))
         .and(body_partial_json(json!({
             "abom": {
-                "agent_harness_id": "codex-cli",
+                "agent_harness_id": "ava-cli",
             },
             "capabilities": ["responsesapi"],
             "ttl": null,
@@ -650,8 +650,8 @@ async fn chatgpt_auth_registers_agent_identity_when_enabled() -> anyhow::Result<
     assert_eq!(persisted.task_id.as_deref(), Some("task-123"));
 
     let reloaded = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -681,20 +681,20 @@ async fn chatgpt_auth_registers_agent_identity_when_enabled() -> anyhow::Result<
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn chatgpt_auth_retries_transient_agent_identity_registration() -> anyhow::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     write_auth_file(
         AuthFileParams {
             openai_api_key: None,
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some("account-123".to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )?;
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -748,20 +748,20 @@ async fn chatgpt_auth_retries_transient_agent_identity_registration() -> anyhow:
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn chatgpt_auth_registration_retry_exhaustion_is_fallback_eligible() -> anyhow::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     write_auth_file(
         AuthFileParams {
             openai_api_key: None,
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some("account-123".to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )?;
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -801,29 +801,29 @@ async fn chatgpt_auth_registration_retry_exhaustion_is_fallback_eligible() -> an
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn chatgpt_auth_task_registration_retry_exhaustion_is_fallback_eligible() -> anyhow::Result<()>
 {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     write_auth_file(
         AuthFileParams {
             openai_api_key: None,
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some("account-123".to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )?;
     let mut record = agent_identity_record("account-123");
     record.chatgpt_user_id = "user-12345".to_string();
     record.email = Some("user@example.com".to_string());
-    let storage = FileAuthStorage::new(codex_home.path().to_path_buf());
-    let auth_path = get_auth_file(codex_home.path());
+    let storage = FileAuthStorage::new(ava_home.path().to_path_buf());
+    let auth_path = get_auth_file(ava_home.path());
     let mut auth_json = storage.try_read_auth_json(&auth_path)?;
     auth_json.agent_identity = Some(AgentIdentityStorage::Record(record.clone()));
     storage.save(&auth_json)?;
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -867,20 +867,20 @@ async fn chatgpt_auth_task_registration_retry_exhaustion_is_fallback_eligible() 
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn chatgpt_auth_non_retryable_registration_error_is_hard_failure() -> anyhow::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     write_auth_file(
         AuthFileParams {
             openai_api_key: None,
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some("account-123".to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )?;
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -920,7 +920,7 @@ async fn chatgpt_auth_non_retryable_registration_error_is_hard_failure() -> anyh
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn agent_identity_jwt_task_registration_retry_exhaustion_is_strict() -> anyhow::Result<()> {
     let record = agent_identity_record(WORKSPACE_ID_ALLOWED);
     let agent_identity =
@@ -944,7 +944,7 @@ async fn agent_identity_jwt_task_registration_retry_exhaustion_is_strict() -> an
     let authapi_base_url = server.uri();
     let chatgpt_base_url = format!("{authapi_base_url}/backend-api");
 
-    let err = CodexAuth::from_agent_identity_jwt_with_authapi_base_url(
+    let err = AvaAuth::from_agent_identity_jwt_with_authapi_base_url(
         &agent_identity,
         Some(&chatgpt_base_url),
         &authapi_base_url,
@@ -958,7 +958,7 @@ async fn agent_identity_jwt_task_registration_retry_exhaustion_is_strict() -> an
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn login_with_access_token_rejects_unsigned_jwt() {
     let dir = tempdir().unwrap();
     let record = agent_identity_record(WORKSPACE_ID_ALLOWED);
@@ -993,11 +993,11 @@ async fn login_with_access_token_rejects_unsigned_jwt() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn missing_auth_json_returns_none() {
     let dir = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
-    let auth = CodexAuth::from_auth_storage(
+    let auth = AvaAuth::from_auth_storage(
         dir.path(),
         AuthCredentialsStoreMode::File,
         /*chatgpt_base_url*/ None,
@@ -1010,9 +1010,9 @@ async fn missing_auth_json_returns_none() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn pro_account_with_no_api_key_uses_chatgpt_auth() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let fake_jwt = write_auth_file(
         AuthFileParams {
@@ -1020,13 +1020,13 @@ async fn pro_account_with_no_api_key_uses_chatgpt_auth() {
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: None,
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -1077,7 +1077,7 @@ async fn pro_account_with_no_api_key_uses_chatgpt_auth() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn loads_api_key_from_auth_json() {
     let dir = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
@@ -1090,7 +1090,7 @@ async fn loads_api_key_from_auth_json() {
 
     let auth = super::load_auth(
         dir.path(),
-        /*enable_codex_api_key_env*/ false,
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -1139,12 +1139,12 @@ fn logout_removes_auth_file() -> Result<(), std::io::Error> {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn unauthorized_recovery_reports_mode_and_step_names() {
     let dir = tempdir().unwrap();
     let manager = AuthManager::shared(
         dir.path().to_path_buf(),
-        /*enable_codex_api_key_env*/ false,
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*forced_chatgpt_workspace_id*/ None,
         /*chatgpt_base_url*/ None,
@@ -1172,9 +1172,9 @@ async fn unauthorized_recovery_reports_mode_and_step_names() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn refresh_failure_is_scoped_to_the_matching_auth_snapshot() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     write_auth_file(
         AuthFileParams {
@@ -1182,13 +1182,13 @@ async fn refresh_failure_is_scoped_to_the_matching_auth_snapshot() {
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some(WORKSPACE_ID_ALLOWED.to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -1209,8 +1209,8 @@ async fn refresh_failure_is_scoped_to_the_matching_auth_snapshot() {
         .expect("tokens should exist");
     updated_tokens.access_token = "new-access-token".to_string();
     updated_tokens.refresh_token = "new-refresh-token".to_string();
-    let updated_auth = CodexAuth::from_auth_dot_json(
-        codex_home.path(),
+    let updated_auth = AvaAuth::from_auth_dot_json(
+        ava_home.path(),
         updated_auth_dot_json,
         AuthCredentialsStoreMode::File,
         /*chatgpt_base_url*/ None,
@@ -1300,7 +1300,7 @@ async fn unauthorized_recovery_retries_provider_command_after_initial_failure() 
     assert_eq!(result.auth_state_changed(), Some(true));
     assert_eq!(
         manager.auth_cached(),
-        Some(CodexAuth::from_api_key("provider-token"))
+        Some(AvaAuth::from_api_key("provider-token"))
     );
     assert!(!recovery.has_next());
     assert_eq!(recovery.unavailable_reason(), "recovery_exhausted");
@@ -1309,7 +1309,7 @@ async fn unauthorized_recovery_retries_provider_command_after_initial_failure() 
 
 #[test]
 fn unauthorized_recovery_without_an_external_provider_still_requires_refreshable_auth() {
-    for auth in [None, Some(CodexAuth::from_api_key("static-token"))] {
+    for auth in [None, Some(AvaAuth::from_api_key("static-token"))] {
         let manager = AuthManager::from_optional_auth_for_testing(auth);
         let recovery = manager.unauthorized_recovery();
 
@@ -1349,34 +1349,34 @@ async fn unauthorized_recovery_uses_external_refresh_for_bearer_manager() {
 }
 
 #[derive(Clone)]
-struct StaticExternalAuth(CodexAuth);
+struct StaticExternalAuth(AvaAuth);
 
 impl ExternalAuth for StaticExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 }
 
 struct RefreshingExternalAuth {
-    initial: CodexAuth,
-    refreshed: CodexAuth,
+    initial: AvaAuth,
+    refreshed: AvaAuth,
 }
 
 impl ExternalAuth for RefreshingExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.initial.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.refreshed.clone()) })
     }
 }
 
-fn external_header_auth(account_id: Option<&'static str>) -> CodexAuth {
+fn external_header_auth(account_id: Option<&'static str>) -> AvaAuth {
     let mut headers = http::HeaderMap::new();
     headers.insert(
         http::header::AUTHORIZATION,
@@ -1388,16 +1388,16 @@ fn external_header_auth(account_id: Option<&'static str>) -> CodexAuth {
             http::HeaderValue::from_static(account_id),
         );
     }
-    CodexAuth::Headers(AuthHeaders::new(headers))
+    AvaAuth::Headers(AuthHeaders::new(headers))
 }
 
 struct FailingExternalAuth {
-    auth: CodexAuth,
+    auth: AvaAuth,
     resolve_count: AtomicUsize,
 }
 
 impl ExternalAuth for FailingExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         let resolve_count = self.resolve_count.fetch_add(1, Ordering::SeqCst);
         Box::pin(async move {
             if resolve_count == 0 {
@@ -1408,7 +1408,7 @@ impl ExternalAuth for FailingExternalAuth {
         })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Err(std::io::Error::other("external auth failed")) })
     }
 
@@ -1422,8 +1422,8 @@ impl ExternalAuth for FailingExternalAuth {
 
 #[tokio::test]
 async fn external_auth_keeps_cached_credentials_after_permanent_reload_failure() {
-    let manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("seed"));
-    let auth = CodexAuth::from_api_key("configured-token");
+    let manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("seed"));
+    let auth = AvaAuth::from_api_key("configured-token");
     let external_auth = Arc::new(FailingExternalAuth {
         auth: auth.clone(),
         resolve_count: AtomicUsize::new(0),
@@ -1451,8 +1451,8 @@ async fn external_auth_keeps_cached_credentials_after_permanent_reload_failure()
 
 #[tokio::test]
 async fn replacing_external_auth_clears_permanent_failure() {
-    let manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("seed"));
-    let auth = CodexAuth::from_api_key("external-token");
+    let manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("seed"));
+    let auth = AvaAuth::from_api_key("external-token");
     manager
         .set_external_auth(Arc::new(FailingExternalAuth {
             auth: auth.clone(),
@@ -1478,10 +1478,10 @@ async fn replacing_external_auth_clears_permanent_failure() {
 
 #[tokio::test]
 async fn runtime_external_auth_uses_provider_error_classification() {
-    let manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("seed"));
+    let manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("seed"));
     manager
         .set_external_auth(Arc::new(FailingExternalAuth {
-            auth: CodexAuth::from_api_key("runtime-token"),
+            auth: AvaAuth::from_api_key("runtime-token"),
             resolve_count: AtomicUsize::new(0),
         }))
         .await
@@ -1501,11 +1501,11 @@ async fn external_auth_provider_can_install_headers() {
         http::HeaderValue::from_static("Bearer external"),
     );
     headers.insert("x-external-auth", http::HeaderValue::from_static("enabled"));
-    let auth = CodexAuth::Headers(AuthHeaders::new(headers));
-    let codex_home = tempdir().expect("tempdir");
+    let auth = AvaAuth::Headers(AuthHeaders::new(headers));
+    let ava_home = tempdir().expect("tempdir");
     let manager = AuthManager::new(
-        codex_home.path().to_path_buf(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path().to_path_buf(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::Ephemeral,
         /*forced_chatgpt_workspace_id*/ None,
         /*chatgpt_base_url*/ None,
@@ -1523,7 +1523,7 @@ async fn external_auth_provider_can_install_headers() {
     assert!(
         manager
             .auth_cached()
-            .is_some_and(|auth| auth.uses_codex_backend())
+            .is_some_and(|auth| auth.uses_ava_backend())
     );
     assert!(
         !manager
@@ -1577,10 +1577,10 @@ async fn external_header_auth_rejects_a_disallowed_workspace_on_refresh() {
 
 #[tokio::test]
 async fn workload_identity_auth_is_immutable_and_process_local() {
-    let codex_home = tempdir().expect("tempdir");
+    let ava_home = tempdir().expect("tempdir");
     let mut manager = AuthManager::from_auth_for_testing_with_home(
-        CodexAuth::from_api_key("seed"),
-        codex_home.path().to_path_buf(),
+        AvaAuth::from_api_key("seed"),
+        ava_home.path().to_path_buf(),
     );
     Arc::get_mut(&mut manager)
         .expect("test manager should not be shared yet")
@@ -1592,7 +1592,7 @@ async fn workload_identity_auth_is_immutable_and_process_local() {
     })
     .expect("fake access token");
     let auth =
-        CodexAuth::from_external_chatgpt_tokens(&access_token, "workspace-one", Some("enterprise"))
+        AvaAuth::from_external_chatgpt_tokens(&access_token, "workspace-one", Some("enterprise"))
             .expect("external ChatGPT auth");
 
     manager
@@ -1618,9 +1618,9 @@ async fn workload_identity_auth_is_immutable_and_process_local() {
     assert!(manager.has_external_auth());
     assert_eq!(manager.auth_cached(), Some(auth));
 
-    assert!(!get_auth_file(codex_home.path()).exists());
+    assert!(!get_auth_file(ava_home.path()).exists());
     let ephemeral_storage = create_auth_storage(
-        codex_home.path().to_path_buf(),
+        ava_home.path().to_path_buf(),
         AuthCredentialsStoreMode::Ephemeral,
         AuthKeyringBackendKind::default(),
     );
@@ -1774,9 +1774,9 @@ struct AuthFileParams {
     chatgpt_account_id: Option<String>,
 }
 
-fn write_auth_file(params: AuthFileParams, codex_home: &Path) -> std::io::Result<String> {
+fn write_auth_file(params: AuthFileParams, ava_home: &Path) -> std::io::Result<String> {
     let fake_jwt = fake_jwt_for_auth_file_params(&params)?;
-    let auth_file = get_auth_file(codex_home);
+    let auth_file = get_auth_file(ava_home);
     let auth_json_data = json!({
         "OPENAI_API_KEY": params.openai_api_key,
         "tokens": {
@@ -1828,12 +1828,12 @@ fn fake_jwt_for_auth_file_params(params: &AuthFileParams) -> std::io::Result<Str
 }
 
 async fn build_config(
-    codex_home: &Path,
+    ava_home: &Path,
     forced_login_method: Option<ForcedLoginMethod>,
     forced_chatgpt_workspace_id: Option<Vec<String>>,
 ) -> AuthConfig {
     AuthConfig {
-        codex_home: codex_home.to_path_buf(),
+        ava_home: ava_home.to_path_buf(),
         auth_credentials_store_mode: AuthCredentialsStoreMode::File,
         keyring_backend_kind: AuthKeyringBackendKind::Direct,
         forced_login_method,
@@ -1884,14 +1884,14 @@ impl Drop for EnvVarGuard {
 }
 
 fn remove_access_token_env_var() -> EnvVarGuard {
-    EnvVarGuard::remove(CODEX_ACCESS_TOKEN_ENV_VAR)
+    EnvVarGuard::remove(AVA_ACCESS_TOKEN_ENV_VAR)
 }
 
 struct TestAuthManagerConfig(AuthConfig);
 
 impl AuthManagerConfig for TestAuthManagerConfig {
-    fn codex_home(&self) -> PathBuf {
-        self.0.codex_home.clone()
+    fn ava_home(&self) -> PathBuf {
+        self.0.ava_home.clone()
     }
 
     fn cli_auth_credentials_store_mode(&self) -> AuthCredentialsStoreMode {
@@ -1926,9 +1926,9 @@ impl AuthManagerConfig for TestAuthManagerConfig {
     }
 }
 
-fn test_auth_manager_config(codex_home: &Path) -> TestAuthManagerConfig {
+fn test_auth_manager_config(ava_home: &Path) -> TestAuthManagerConfig {
     TestAuthManagerConfig(AuthConfig {
-        codex_home: codex_home.to_path_buf(),
+        ava_home: ava_home.to_path_buf(),
         auth_credentials_store_mode: AuthCredentialsStoreMode::File,
         keyring_backend_kind: AuthKeyringBackendKind::Direct,
         forced_login_method: Some(ForcedLoginMethod::Chatgpt),
@@ -1949,22 +1949,22 @@ fn test_auth_manager_config(codex_home: &Path) -> TestAuthManagerConfig {
 
 #[test]
 fn auth_config_from_preserves_all_fields() {
-    let codex_home = tempdir().expect("tempdir");
-    let config = test_auth_manager_config(codex_home.path());
+    let ava_home = tempdir().expect("tempdir");
+    let config = test_auth_manager_config(ava_home.path());
 
     assert_eq!(auth_config_from(&config), config.0);
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn shared_from_config_prefers_workload_identity_to_explicit_access_token() {
-    let codex_home = tempdir().expect("tempdir");
-    let config = test_auth_manager_config(codex_home.path());
-    let _access_token_guard = EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, "at-explicit");
+    let ava_home = tempdir().expect("tempdir");
+    let config = test_auth_manager_config(ava_home.path());
+    let _access_token_guard = EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, "at-explicit");
     let _rule_guard = EnvVarGuard::set(OPENAI_FEDERATION_RULE_ID_ENV_VAR, "rule-one");
     let _assertion_file_guard = EnvVarGuard::remove(OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR);
 
-    let error = AuthManager::shared_from_config(&config, /*enable_codex_api_key_env*/ false)
+    let error = AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false)
         .await
         .expect_err("partial workload identity config should fail closed");
 
@@ -1976,9 +1976,9 @@ async fn shared_from_config_prefers_workload_identity_to_explicit_access_token()
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn load_auth_reads_access_token_from_env() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let mut expected_record = agent_identity_record(WORKSPACE_ID_ALLOWED);
     let agent_identity =
         signed_agent_identity_jwt(&expected_record, json!(expected_record.plan_type))
@@ -1999,13 +1999,13 @@ async fn load_auth_reads_access_token_from_env() {
         .mount(&server)
         .await;
     expected_record.task_id = Some("task-123".to_string());
-    let _access_token_guard = EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, &agent_identity);
+    let _access_token_guard = EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, &agent_identity);
 
     let authapi_base_url = server.uri();
     let chatgpt_base_url = format!("{authapi_base_url}/backend-api");
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -2018,22 +2018,22 @@ async fn load_auth_reads_access_token_from_env() {
     .expect("env auth should load")
     .expect("env auth should be present");
 
-    let CodexAuth::AgentIdentity(agent_identity) = auth else {
+    let AvaAuth::AgentIdentity(agent_identity) = auth else {
         panic!("env auth should load as agent identity");
     };
     assert_eq!(agent_identity.record(), &expected_record);
     assert_eq!(agent_identity.run_task_id(), "task-123");
     assert!(
-        !get_auth_file(codex_home.path()).exists(),
+        !get_auth_file(ava_home.path()).exists(),
         "env auth should not write auth.json"
     );
     server.verify().await;
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn load_auth_reads_personal_access_token_from_env() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/v1/user-auth-credential/whoami"))
@@ -2045,16 +2045,16 @@ async fn load_auth_reads_personal_access_token_from_env() {
         .expect(2)
         .mount(&server)
         .await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
-    let _access_token_guard = EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, "at-env-test");
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
+    let _access_token_guard = EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, "at-env-test");
 
     for auth_credentials_store_mode in [
         AuthCredentialsStoreMode::File,
         AuthCredentialsStoreMode::Ephemeral,
     ] {
         let auth = super::load_auth(
-            codex_home.path(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path(),
+            /*enable_ava_api_key_env*/ false,
             auth_credentials_store_mode,
             /*allowed_login_methods*/ None,
             /*forced_chatgpt_workspace_id*/ None,
@@ -2083,16 +2083,16 @@ async fn load_auth_reads_personal_access_token_from_env() {
         assert!(auth.is_fedramp_account());
     }
     assert!(
-        !get_auth_file(codex_home.path()).exists(),
+        !get_auth_file(ava_home.path()).exists(),
         "env auth should not write auth.json"
     );
     server.verify().await;
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn auth_manager_rejects_env_personal_access_token_workspace_mismatch() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/v1/user-auth-credential/whoami"))
@@ -2104,13 +2104,13 @@ async fn auth_manager_rejects_env_personal_access_token_workspace_mismatch() {
         .expect(1)
         .mount(&server)
         .await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
     let _access_token_guard =
-        EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, "at-env-workspace-mismatch");
+        EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, "at-env-workspace-mismatch");
 
     let manager = AuthManager::new(
-        codex_home.path().to_path_buf(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path().to_path_buf(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         Some(vec![WORKSPACE_ID_ALLOWED.to_string()]),
         /*chatgpt_base_url*/ None,
@@ -2124,7 +2124,7 @@ async fn auth_manager_rejects_env_personal_access_token_workspace_mismatch() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn auth_manager_rejects_stored_personal_access_token_workspace_mismatch() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
@@ -2140,16 +2140,16 @@ async fn auth_manager_rejects_stored_personal_access_token_workspace_mismatch() 
         .expect(4)
         .mount(&server)
         .await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
     let _access_token_guard = remove_access_token_env_var();
 
     for auth_credentials_store_mode in [
         AuthCredentialsStoreMode::File,
         AuthCredentialsStoreMode::Ephemeral,
     ] {
-        let codex_home = tempdir().unwrap();
+        let ava_home = tempdir().unwrap();
         super::login_with_access_token(
-            codex_home.path(),
+            ava_home.path(),
             "at-stored-workspace-mismatch",
             auth_credentials_store_mode,
             /*forced_chatgpt_workspace_id*/ None,
@@ -2161,8 +2161,8 @@ async fn auth_manager_rejects_stored_personal_access_token_workspace_mismatch() 
         .expect("personal access token login should succeed");
 
         let manager = AuthManager::new(
-            codex_home.path().to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path().to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             auth_credentials_store_mode,
             Some(vec![WORKSPACE_ID_ALLOWED.to_string()]),
             /*chatgpt_base_url*/ None,
@@ -2177,9 +2177,9 @@ async fn auth_manager_rejects_stored_personal_access_token_workspace_mismatch() 
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn personal_access_token_does_not_offer_unauthorized_recovery() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/v1/user-auth-credential/whoami"))
@@ -2190,13 +2190,13 @@ async fn personal_access_token_does_not_offer_unauthorized_recovery() {
         .expect(1)
         .mount(&server)
         .await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
     let _access_token_guard =
-        EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, "at-no-unauthorized-recovery");
+        EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, "at-no-unauthorized-recovery");
     let manager = Arc::new(
         AuthManager::new(
-            codex_home.path().to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path().to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
@@ -2218,17 +2218,17 @@ async fn personal_access_token_does_not_offer_unauthorized_recovery() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
-async fn load_auth_keeps_codex_api_key_env_precedence() {
-    let codex_home = tempdir().unwrap();
+#[serial(ava_auth_env)]
+async fn load_auth_keeps_ava_api_key_env_precedence() {
+    let ava_home = tempdir().unwrap();
     let record = agent_identity_record(WORKSPACE_ID_ALLOWED);
     let agent_identity = fake_agent_identity_jwt(&record).expect("fake agent identity");
-    let _access_token_guard = EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, &agent_identity);
-    let _api_key_guard = EnvVarGuard::set(CODEX_API_KEY_ENV_VAR, "sk-env");
+    let _access_token_guard = EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, &agent_identity);
+    let _api_key_guard = EnvVarGuard::set(AVA_API_KEY_ENV_VAR, "sk-env");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ true,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ true,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -2245,12 +2245,12 @@ async fn load_auth_keeps_codex_api_key_env_precedence() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_logs_out_for_method_mismatch() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     login_with_api_key(
-        codex_home.path(),
+        ava_home.path(),
         "sk-test",
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -2258,7 +2258,7 @@ async fn enforce_login_restrictions_logs_out_for_method_mismatch() {
     .expect("seed api key");
 
     let config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         Some(ForcedLoginMethod::Chatgpt),
         /*forced_chatgpt_workspace_id*/ None,
     )
@@ -2269,39 +2269,39 @@ async fn enforce_login_restrictions_logs_out_for_method_mismatch() {
         .expect_err("expected method mismatch to error");
     assert!(err.to_string().contains("ChatGPT login is required"));
     assert!(
-        !codex_home.path().join("auth.json").exists(),
+        !ava_home.path().join("auth.json").exists(),
         "auth.json should be removed on mismatch"
     );
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn auth_manager_rejects_disallowed_stored_and_external_auth() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     login_with_api_key(
-        codex_home.path(),
+        ava_home.path(),
         "sk-test",
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )
     .expect("seed api key");
     let mut config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         /*forced_chatgpt_workspace_id*/ None,
     )
     .await;
     config.managed_auth_policy.allowed_login_methods = Some(vec![ForcedLoginMethod::Chatgpt]);
     let manager =
-        AuthManager::shared_from_auth_config(config, /*enable_codex_api_key_env*/ false)
+        AuthManager::shared_from_auth_config(config, /*enable_ava_api_key_env*/ false)
             .await
             .expect("auth manager");
 
     assert_eq!(manager.auth().await, None);
     assert!(
         manager
-            .set_external_auth(Arc::new(StaticExternalAuth(CodexAuth::from_api_key(
+            .set_external_auth(Arc::new(StaticExternalAuth(AvaAuth::from_api_key(
                 "sk-external",
             ))))
             .await
@@ -2311,21 +2311,21 @@ async fn auth_manager_rejects_disallowed_stored_and_external_auth() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn api_only_policy_rejects_access_tokens_before_hydration() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let server = MockServer::start().await;
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
-    let _access_token_guard = EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, "at-rejected");
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
+    let _access_token_guard = EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, "at-rejected");
     let mut config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         /*forced_chatgpt_workspace_id*/ None,
     )
     .await;
     config.managed_auth_policy.allowed_login_methods = Some(vec![ForcedLoginMethod::Api]);
     let manager =
-        AuthManager::shared_from_auth_config(config, /*enable_codex_api_key_env*/ false)
+        AuthManager::shared_from_auth_config(config, /*enable_ava_api_key_env*/ false)
             .await
             .expect("auth manager");
 
@@ -2341,18 +2341,18 @@ async fn api_only_policy_rejects_access_tokens_before_hydration() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn workspace_policy_rejects_agent_identity_before_hydration() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let server = MockServer::start().await;
     let record = agent_identity_record(WORKSPACE_ID_DISALLOWED);
     let agent_identity =
         signed_agent_identity_jwt(&record, json!(record.plan_type)).expect("signed agent identity");
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
     let _access_token_reset = remove_access_token_env_var();
-    let access_token_guard = EnvVarGuard::set(CODEX_ACCESS_TOKEN_ENV_VAR, &agent_identity);
+    let access_token_guard = EnvVarGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, &agent_identity);
     let mut config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         /*forced_chatgpt_workspace_id*/ None,
     )
@@ -2360,7 +2360,7 @@ async fn workspace_policy_rejects_agent_identity_before_hydration() {
     config.managed_auth_policy.allowed_chatgpt_workspaces =
         Some(vec![WORKSPACE_ID_ALLOWED.to_string()]);
     let manager =
-        AuthManager::shared_from_auth_config(config, /*enable_codex_api_key_env*/ false)
+        AuthManager::shared_from_auth_config(config, /*enable_ava_api_key_env*/ false)
             .await
             .expect("auth manager");
 
@@ -2372,7 +2372,7 @@ async fn workspace_policy_rejects_agent_identity_before_hydration() {
         AgentIdentityStorage::Record(record),
     ] {
         save_auth(
-            codex_home.path(),
+            ava_home.path(),
             &AuthDotJson {
                 auth_mode: Some(AuthMode::AgentIdentity),
                 openai_api_key: None,
@@ -2388,7 +2388,7 @@ async fn workspace_policy_rejects_agent_identity_before_hydration() {
         )
         .expect("store agent identity");
         let mut config = build_config(
-            codex_home.path(),
+            ava_home.path(),
             /*forced_login_method*/ None,
             /*forced_chatgpt_workspace_id*/ None,
         )
@@ -2396,7 +2396,7 @@ async fn workspace_policy_rejects_agent_identity_before_hydration() {
         config.managed_auth_policy.allowed_chatgpt_workspaces =
             Some(vec![WORKSPACE_ID_ALLOWED.to_string()]);
         let manager =
-            AuthManager::shared_from_auth_config(config, /*enable_codex_api_key_env*/ false)
+            AuthManager::shared_from_auth_config(config, /*enable_ava_api_key_env*/ false)
                 .await
                 .expect("auth manager");
         assert_eq!(manager.auth().await, None);
@@ -2409,9 +2409,9 @@ async fn workspace_policy_rejects_agent_identity_before_hydration() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn workspace_policy_checks_the_selected_request_account() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     write_auth_file(
         AuthFileParams {
@@ -2419,22 +2419,22 @@ async fn workspace_policy_checks_the_selected_request_account() {
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some(WORKSPACE_ID_ALLOWED.to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("seed ChatGPT credentials");
-    let auth_path = codex_home.path().join("auth.json");
+    let auth_path = ava_home.path().join("auth.json");
     let mut stored: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&auth_path).unwrap()).unwrap();
     stored["tokens"]["account_id"] = json!(WORKSPACE_ID_DISALLOWED);
     std::fs::write(&auth_path, serde_json::to_vec(&stored).unwrap()).unwrap();
     let config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         Some(vec![WORKSPACE_ID_ALLOWED.to_string()]),
     )
     .await;
     let manager =
-        AuthManager::shared_from_auth_config(config, /*enable_codex_api_key_env*/ false)
+        AuthManager::shared_from_auth_config(config, /*enable_ava_api_key_env*/ false)
             .await
             .expect("auth manager");
 
@@ -2442,9 +2442,9 @@ async fn workspace_policy_checks_the_selected_request_account() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_logs_out_for_workspace_mismatch() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let _jwt = write_auth_file(
         AuthFileParams {
@@ -2452,12 +2452,12 @@ async fn enforce_login_restrictions_logs_out_for_workspace_mismatch() {
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some(WORKSPACE_ID_DISALLOWED.to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         Some(vec![WORKSPACE_ID_ALLOWED.to_string()]),
     )
@@ -2471,15 +2471,15 @@ async fn enforce_login_restrictions_logs_out_for_workspace_mismatch() {
             .contains(&format!("workspace(s) {WORKSPACE_ID_ALLOWED}"))
     );
     assert!(
-        !codex_home.path().join("auth.json").exists(),
+        !ava_home.path().join("auth.json").exists(),
         "auth.json should be removed on mismatch"
     );
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_logs_out_for_personal_access_token_workspace_mismatch() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/v1/user-auth-credential/whoami"))
@@ -2491,9 +2491,9 @@ async fn enforce_login_restrictions_logs_out_for_personal_access_token_workspace
         .mount(&server)
         .await;
     let _access_token_guard = remove_access_token_env_var();
-    let _authapi_guard = EnvVarGuard::set("CODEX_AUTHAPI_BASE_URL", &server.uri());
+    let _authapi_guard = EnvVarGuard::set("AVA_AUTHAPI_BASE_URL", &server.uri());
     super::login_with_access_token(
-        codex_home.path(),
+        ava_home.path(),
         "at-workspace-mismatch",
         AuthCredentialsStoreMode::File,
         /*forced_chatgpt_workspace_id*/ None,
@@ -2505,7 +2505,7 @@ async fn enforce_login_restrictions_logs_out_for_personal_access_token_workspace
     .expect("personal access token login should succeed");
 
     let config = AuthConfig {
-        codex_home: codex_home.path().to_path_buf(),
+        ava_home: ava_home.path().to_path_buf(),
         auth_credentials_store_mode: AuthCredentialsStoreMode::File,
         keyring_backend_kind: AuthKeyringBackendKind::default(),
         forced_login_method: None,
@@ -2522,16 +2522,16 @@ async fn enforce_login_restrictions_logs_out_for_personal_access_token_workspace
         "current credentials belong to {WORKSPACE_ID_DISALLOWED}"
     )));
     assert!(
-        !codex_home.path().join("auth.json").exists(),
+        !ava_home.path().join("auth.json").exists(),
         "auth.json should be removed on mismatch"
     );
     server.verify().await;
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_allows_matching_workspace() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let _jwt = write_auth_file(
         AuthFileParams {
@@ -2539,12 +2539,12 @@ async fn enforce_login_restrictions_allows_matching_workspace() {
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some(WORKSPACE_ID_ALLOWED.to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         Some(vec![WORKSPACE_ID_ALLOWED.to_string()]),
     )
@@ -2554,27 +2554,27 @@ async fn enforce_login_restrictions_allows_matching_workspace() {
         .await
         .expect("matching workspace should succeed");
     assert!(
-        codex_home.path().join("auth.json").exists(),
+        ava_home.path().join("auth.json").exists(),
         "auth.json should remain when restrictions pass"
     );
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_allows_any_matching_workspace_in_list() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _jwt = write_auth_file(
         AuthFileParams {
             openai_api_key: None,
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: Some(WORKSPACE_ID_ALLOWED.to_string()),
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         Some(vec![
             WORKSPACE_ID_SECOND_ALLOWED.to_string(),
@@ -2589,9 +2589,9 @@ async fn enforce_login_restrictions_allows_any_matching_workspace_in_list() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_logs_out_for_agent_identity_workspace_mismatch() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let record = agent_identity_record(WORKSPACE_ID_DISALLOWED);
     let agent_identity =
@@ -2614,7 +2614,7 @@ async fn enforce_login_restrictions_logs_out_for_agent_identity_workspace_mismat
     let authapi_base_url = server.uri();
     let chatgpt_base_url = format!("{authapi_base_url}/backend-api");
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &AuthDotJson {
             auth_mode: Some(AuthMode::AgentIdentity),
             openai_api_key: None,
@@ -2631,7 +2631,7 @@ async fn enforce_login_restrictions_logs_out_for_agent_identity_workspace_mismat
     .expect("seed agent identity auth");
 
     let config = AuthConfig {
-        codex_home: codex_home.path().to_path_buf(),
+        ava_home: ava_home.path().to_path_buf(),
         auth_credentials_store_mode: AuthCredentialsStoreMode::File,
         keyring_backend_kind: AuthKeyringBackendKind::Direct,
         forced_login_method: None,
@@ -2655,20 +2655,20 @@ async fn enforce_login_restrictions_logs_out_for_agent_identity_workspace_mismat
         "{message}"
     );
     assert!(
-        !codex_home.path().join("auth.json").exists(),
+        !ava_home.path().join("auth.json").exists(),
         "auth.json should be removed on mismatch"
     );
     server.verify().await;
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_allows_api_key_if_login_method_not_set_but_forced_chatgpt_workspace_id_is_set()
  {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     login_with_api_key(
-        codex_home.path(),
+        ava_home.path(),
         "sk-test",
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -2676,7 +2676,7 @@ async fn enforce_login_restrictions_allows_api_key_if_login_method_not_set_but_f
     .expect("seed api key");
 
     let config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         /*forced_login_method*/ None,
         Some(vec![WORKSPACE_ID_ALLOWED.to_string()]),
     )
@@ -2686,20 +2686,20 @@ async fn enforce_login_restrictions_allows_api_key_if_login_method_not_set_but_f
         .await
         .expect("matching workspace should succeed");
     assert!(
-        codex_home.path().join("auth.json").exists(),
+        ava_home.path().join("auth.json").exists(),
         "auth.json should remain when restrictions pass"
     );
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn enforce_login_restrictions_blocks_env_api_key_when_chatgpt_required() {
-    let _guard = EnvVarGuard::set(CODEX_API_KEY_ENV_VAR, "sk-env");
+    let _guard = EnvVarGuard::set(AVA_API_KEY_ENV_VAR, "sk-env");
     let _access_token_guard = remove_access_token_env_var();
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
 
     let config = build_config(
-        codex_home.path(),
+        ava_home.path(),
         Some(ForcedLoginMethod::Chatgpt),
         /*forced_chatgpt_workspace_id*/ None,
     )
@@ -2716,7 +2716,7 @@ async fn enforce_login_restrictions_blocks_env_api_key_when_chatgpt_required() {
 
 fn agent_identity_record(account_id: &str) -> AgentIdentityAuthRecord {
     let key_material =
-        codex_agent_identity::generate_agent_key_material().expect("generate agent key material");
+        ava_agent_identity::generate_agent_key_material().expect("generate agent key material");
     AgentIdentityAuthRecord {
         agent_runtime_id: "agent-runtime-id".to_string(),
         agent_private_key: key_material.private_key_pkcs8_base64,
@@ -2759,7 +2759,7 @@ fn fake_agent_identity_jwt_with_plan_type(
     let header_b64 = encode(br#"{"alg":"EdDSA","typ":"JWT"}"#);
     let payload = json!({
         "iss": "https://chatgpt.com/codex-backend/agent-identity",
-        "aud": "codex-app-server",
+        "aud": "ava-app-server",
         "iat": 1_700_000_000usize,
         "exp": 4_000_000_000usize,
         "agent_runtime_id": record.agent_runtime_id,
@@ -2785,7 +2785,7 @@ fn signed_agent_identity_jwt(
         &header,
         &json!({
             "iss": "https://chatgpt.com/codex-backend/agent-identity",
-            "aud": "codex-app-server",
+            "aud": "ava-app-server",
             "iat": 1_700_000_000usize,
             "exp": 4_000_000_000usize,
             "agent_runtime_id": record.agent_runtime_id,
@@ -2853,13 +2853,13 @@ J1bwkqKZTB5dHolX9A58e/xXnfZ5P8f3Z83+Izap3FwqQulk7b1WO1MQcHuVg2NN
 -----END PRIVATE KEY-----"#;
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn agent_identity_plan_type_maps_raw_enterprise_alias() {
     assert_agent_identity_plan_alias(json!("hc"), AccountPlanType::Enterprise).await;
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn agent_identity_plan_type_maps_raw_education_alias() {
     assert_agent_identity_plan_alias(json!("education"), AccountPlanType::Edu).await;
 }
@@ -2887,7 +2887,7 @@ async fn assert_agent_identity_plan_alias(
         .await;
     let authapi_base_url = server.uri();
     let chatgpt_base_url = format!("{authapi_base_url}/backend-api");
-    let auth = CodexAuth::from_agent_identity_jwt_with_authapi_base_url(
+    let auth = AvaAuth::from_agent_identity_jwt_with_authapi_base_url(
         &jwt,
         Some(&chatgpt_base_url),
         &authapi_base_url,
@@ -2901,9 +2901,9 @@ async fn assert_agent_identity_plan_alias(
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn plan_type_maps_known_plan() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let _jwt = write_auth_file(
         AuthFileParams {
@@ -2911,13 +2911,13 @@ async fn plan_type_maps_known_plan() {
             chatgpt_plan_type: Some("pro".to_string()),
             chatgpt_account_id: None,
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -2934,9 +2934,9 @@ async fn plan_type_maps_known_plan() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn plan_type_maps_self_serve_business_usage_based_plan() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let _jwt = write_auth_file(
         AuthFileParams {
@@ -2944,13 +2944,13 @@ async fn plan_type_maps_self_serve_business_usage_based_plan() {
             chatgpt_plan_type: Some("self_serve_business_usage_based".to_string()),
             chatgpt_account_id: None,
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -2970,9 +2970,9 @@ async fn plan_type_maps_self_serve_business_usage_based_plan() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn plan_type_maps_enterprise_cbp_usage_based_plan() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let _jwt = write_auth_file(
         AuthFileParams {
@@ -2980,13 +2980,13 @@ async fn plan_type_maps_enterprise_cbp_usage_based_plan() {
             chatgpt_plan_type: Some("enterprise_cbp_usage_based".to_string()),
             chatgpt_account_id: None,
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -3006,9 +3006,9 @@ async fn plan_type_maps_enterprise_cbp_usage_based_plan() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn plan_type_maps_unknown_to_unknown() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let _jwt = write_auth_file(
         AuthFileParams {
@@ -3016,13 +3016,13 @@ async fn plan_type_maps_unknown_to_unknown() {
             chatgpt_plan_type: Some("mystery-tier".to_string()),
             chatgpt_account_id: None,
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,
@@ -3039,9 +3039,9 @@ async fn plan_type_maps_unknown_to_unknown() {
 }
 
 #[tokio::test]
-#[serial(codex_auth_env)]
+#[serial(ava_auth_env)]
 async fn missing_plan_type_maps_to_unknown() {
-    let codex_home = tempdir().unwrap();
+    let ava_home = tempdir().unwrap();
     let _access_token_guard = remove_access_token_env_var();
     let _jwt = write_auth_file(
         AuthFileParams {
@@ -3049,13 +3049,13 @@ async fn missing_plan_type_maps_to_unknown() {
             chatgpt_plan_type: None,
             chatgpt_account_id: None,
         },
-        codex_home.path(),
+        ava_home.path(),
     )
     .expect("failed to write auth file");
 
     let auth = super::load_auth(
-        codex_home.path(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*allowed_login_methods*/ None,
         /*forced_chatgpt_workspace_id*/ None,

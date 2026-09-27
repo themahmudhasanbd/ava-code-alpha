@@ -1,5 +1,5 @@
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::protocol::AgentStatus;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::protocol::AgentStatus;
 
 use super::ContextualUserFragment;
 

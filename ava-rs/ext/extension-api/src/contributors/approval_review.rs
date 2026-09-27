@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 
 use crate::ExtensionData;
 
@@ -14,7 +14,7 @@ pub struct GuardianV2Enabled;
 pub enum ApprovalDecision {
     /// Existing async evidence allows this action without synchronous review.
     Allow,
-    Reviewed(codex_protocol::protocol::ReviewDecision),
+    Reviewed(ava_protocol::protocol::ReviewDecision),
     AskUser,
 }
 
@@ -24,8 +24,8 @@ pub enum ApprovalDecision {
 pub trait SynchronousApprovalReviewer: Send + Sync {
     fn review(
         &self,
-        reason: codex_protocol::approvals::GuardianReviewReason,
-    ) -> crate::ExtensionFuture<'_, Option<codex_protocol::protocol::ReviewDecision>>;
+        reason: ava_protocol::approvals::GuardianReviewReason,
+    ) -> crate::ExtensionFuture<'_, Option<ava_protocol::protocol::ReviewDecision>>;
 }
 
 /// Inputs to Guardian's policy choice. Conversation and scores stay thread-owned.
@@ -36,9 +36,9 @@ pub struct ApprovalDecisionInput<'a> {
     pub action: &'a serde_json::Value,
     pub thread_id: ThreadId,
     pub thread_store: &'a ExtensionData,
-    pub category: codex_protocol::openai_models::GuardianScope,
-    pub approval_policy: codex_protocol::protocol::AskForApproval,
-    pub approvals_reviewer: codex_protocol::config_types::ApprovalsReviewer,
+    pub category: ava_protocol::openai_models::GuardianScope,
+    pub approval_policy: ava_protocol::protocol::AskForApproval,
+    pub approvals_reviewer: ava_protocol::config_types::ApprovalsReviewer,
     pub require_guardian: bool,
     /// Existing retry and sensitive-action rules require a synchronous review.
     pub require_fresh_review: bool,

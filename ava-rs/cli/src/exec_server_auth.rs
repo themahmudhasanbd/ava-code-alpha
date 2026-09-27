@@ -1,19 +1,19 @@
-//! CLI-only glue between Codex authentication and generic AWS signing.
+//! CLI-only glue between Ava authentication and generic AWS signing.
 //!
-//! Keeping this adapter here leaves `codex-api` and `codex-aws-auth` independent.
+//! Keeping this adapter here leaves `ava-api` and `ava-aws-auth` independent.
 
 use std::sync::Arc;
 
-use codex_api::AuthError;
-use codex_api::AuthProvider;
-use codex_api::SharedAuthProvider;
-use codex_aws_auth::AwsAuthConfig;
-use codex_aws_auth::AwsAuthContext;
-use codex_aws_auth::AwsAuthError;
-use codex_aws_auth::AwsRequestToSign;
-use codex_http_client::Request;
-use codex_http_client::RequestBody;
-use codex_http_client::RequestCompression;
+use ava_api::AuthError;
+use ava_api::AuthProvider;
+use ava_api::SharedAuthProvider;
+use ava_aws_auth::AwsAuthConfig;
+use ava_aws_auth::AwsAuthContext;
+use ava_aws_auth::AwsAuthError;
+use ava_aws_auth::AwsRequestToSign;
+use ava_http_client::Request;
+use ava_http_client::RequestBody;
+use ava_http_client::RequestCompression;
 use http::HeaderMap;
 
 /// Creates a SigV4 provider, preferring an explicit profile over the default credential chain.
@@ -44,7 +44,7 @@ struct AwsSigV4AuthProvider {
 impl AuthProvider for AwsSigV4AuthProvider {
     fn add_auth_headers(&self, _headers: &mut HeaderMap) {}
 
-    fn apply_auth(&self, mut request: Request) -> codex_api::AuthProviderFuture<'_> {
+    fn apply_auth(&self, mut request: Request) -> ava_api::AuthProviderFuture<'_> {
         Box::pin(async move {
             let prepared = request.prepare_body_for_send().map_err(AuthError::Build)?;
             let signed = self

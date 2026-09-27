@@ -186,8 +186,8 @@ impl ChatWidget {
         self.has_chatgpt_account
     }
 
-    pub(crate) fn has_codex_backend_auth(&self) -> bool {
-        self.has_codex_backend_auth
+    pub(crate) fn has_ava_backend_auth(&self) -> bool {
+        self.has_ava_backend_auth
     }
 
     pub(crate) fn update_account_state(
@@ -195,7 +195,7 @@ impl ChatWidget {
         status_account_display: Option<StatusAccountDisplay>,
         plan_type: Option<PlanType>,
         has_chatgpt_account: bool,
-        has_codex_backend_auth: bool,
+        has_ava_backend_auth: bool,
     ) {
         // Account-update notifications are the identity boundary. The visible account fields can
         // be identical across two accounts, so always invalidate account-scoped requests and data.
@@ -208,8 +208,8 @@ impl ChatWidget {
         self.automatic_model_switch_state = backend_banners::AutomaticModelSwitchState::default();
         self.input_queue.rate_limit_recovery_pending = false;
         self.add_credits_nudge_email_in_flight = None;
-        self.codex_rate_limit_reached_type = None;
-        self.codex_spend_control_reached = None;
+        self.ava_rate_limit_reached_type = None;
+        self.ava_spend_control_reached = None;
         self.rate_limit_warnings = RateLimitWarningState::default();
         self.rate_limit_switch_prompt = RateLimitSwitchPromptState::Idle;
         self.bottom_pane
@@ -230,12 +230,12 @@ impl ChatWidget {
         self.status_account_display = status_account_display;
         self.plan_type = plan_type;
         self.has_chatgpt_account = has_chatgpt_account;
-        self.has_codex_backend_auth = has_codex_backend_auth;
+        self.has_ava_backend_auth = has_ava_backend_auth;
         self.bottom_pane
             .set_connectors_enabled(self.connectors_enabled());
         self.refresh_connector_mentions(/*force_refresh*/ false);
         self.bottom_pane
-            .set_token_activity_command_enabled(has_codex_backend_auth);
+            .set_token_activity_command_enabled(has_ava_backend_auth);
         self.refresh_status_surfaces();
     }
 
@@ -671,7 +671,7 @@ impl ChatWidget {
             && (previous_model != next_model || previous_effort != next_effort)
         {
             let mut message = format!("Model changed to {next_model}");
-            if !next_model.starts_with("codex-auto-") {
+            if !next_model.starts_with("ava-auto-") {
                 let reasoning_label = match next_effort.as_ref() {
                     None | Some(ReasoningEffortConfig::None) => "default",
                     Some(effort) => effort.as_str(),

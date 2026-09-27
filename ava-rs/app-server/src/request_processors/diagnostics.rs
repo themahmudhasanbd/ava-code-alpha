@@ -1,9 +1,9 @@
-use codex_app_server_protocol::ServerDiagnosticsGauge;
-use codex_app_server_protocol::ServerDiagnosticsProcess;
-use codex_app_server_protocol::ServerDiagnosticsResponse;
+use ava_app_server_protocol::ServerDiagnosticsGauge;
+use ava_app_server_protocol::ServerDiagnosticsProcess;
+use ava_app_server_protocol::ServerDiagnosticsResponse;
 
 pub(crate) fn read_server_diagnostics() -> ServerDiagnosticsResponse {
-    let diagnostics = codex_diagnostics::snapshot();
+    let diagnostics = ava_diagnostics::snapshot();
 
     ServerDiagnosticsResponse {
         process: ServerDiagnosticsProcess {

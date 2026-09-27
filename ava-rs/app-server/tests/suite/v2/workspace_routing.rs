@@ -6,12 +6,12 @@ use app_test_support::ChatGptIdTokenClaims;
 use app_test_support::TestAppServer;
 use app_test_support::encode_id_token;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::GetAccountParams;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::LogoutAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::GetAccountParams;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::LogoutAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -52,7 +52,7 @@ async fn config(home: &TempDir, backend: &MockServer) -> Result<()> {
 
 async fn start(home: &TempDir) -> Result<TestAppServer> {
     TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(READ_TIMEOUT)
         .await
@@ -128,14 +128,14 @@ async fn saved_workspace_is_discovered_once_and_not_the_default_account(
             .plan_type(plan_type),
         AuthCredentialsStoreMode::File,
     )?;
-    let mut env_overrides = vec![("OPENAI_API_KEY", None), ("CODEX_API_KEY", None)];
+    let mut env_overrides = vec![("OPENAI_API_KEY", None), ("AVA_API_KEY", None)];
     env_overrides.extend(
-        codex_network_proxy::PROXY_ENV_KEYS
+        ava_network_proxy::PROXY_ENV_KEYS
             .iter()
             .map(|key| (*key, None)),
     );
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .with_env_overrides(&env_overrides)
         .build_initialized_with_timeout(READ_TIMEOUT)
         .await?;
@@ -200,7 +200,7 @@ async fn stable_clients_do_not_treat_failed_workspace_discovery_as_unrestricted(
         AuthCredentialsStoreMode::File,
     )?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build()
         .await?;

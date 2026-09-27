@@ -43,16 +43,16 @@ use crate::strict_config::ignored_toml_value_fields;
 use crate::strict_config::unknown_feature_toml_value_field;
 use crate::thread_config::ThreadConfigContext;
 use crate::thread_config::ThreadConfigLoader;
-use codex_file_system::ExecutorFileSystem;
-use codex_git_utils::resolve_root_git_project_for_trust;
-use codex_network_proxy::is_credential_broker_provider_env_key;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::SandboxMode;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::AbsolutePathBufGuard;
-use codex_utils_path_uri::PathUri;
+use ava_file_system::ExecutorFileSystem;
+use ava_git_utils::resolve_root_git_project_for_trust;
+use ava_network_proxy::is_credential_broker_provider_env_key;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::SandboxMode;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBufGuard;
+use ava_utils_path_uri::PathUri;
 use dunce::canonicalize as normalize_path;
 use serde::Deserialize;
 use std::io;
@@ -72,7 +72,7 @@ pub use windows::WindowsSystemConfigNamespaceProbe;
 pub use windows::probe_windows_system_config_namespace;
 
 #[cfg(unix)]
-const SYSTEM_CONFIG_TOML_FILE_UNIX: &str = "/etc/codex/config.toml";
+const SYSTEM_CONFIG_TOML_FILE_UNIX: &str = "/etc/ava/config.toml";
 
 #[cfg(windows)]
 const DEFAULT_PROGRAM_DATA_DIR_WINDOWS: &str = r"C:\ProgramData";
@@ -105,25 +105,25 @@ async fn first_layer_config_error_from_entries(layers: &[ConfigLayerEntry]) -> O
 /// composed with config-style TOML merging plus field-specific handling for
 /// hooks, rules, deny-read permissions, and remote sandbox config:
 ///
-/// - system    `/etc/codex/requirements.toml` (Unix) or
-///   `%ProgramData%\OpenAI\Codex\requirements.toml` (Windows)
+/// - system    `/etc/ava/requirements.toml` (Unix) or
+///   `%ProgramData%\OpenAI\Ava\requirements.toml` (Windows)
 /// - cloud:    enterprise-managed cloud config bundle requirements
-/// - legacy:   `/etc/codex/managed_config.toml` (Unix) reinterpreted as
+/// - legacy:   `/etc/ava/managed_config.toml` (Unix) reinterpreted as
 ///   requirements.toml
 /// - admin:    managed preferences (*)
 ///
 /// For backwards compatibility, Unix continues to load
-/// `/etc/codex/managed_config.toml` and map it to `requirements.toml`.
+/// `/etc/ava/managed_config.toml` and map it to `requirements.toml`.
 ///
 /// Configuration is built up from multiple layers in the following order:
 ///
-/// - package:  optional default configuration supplied with the Codex package
+/// - package:  optional default configuration supplied with the Ava package
 /// - admin:    managed preferences (*)
-/// - system    `/etc/codex/config.toml` (Unix) or
-///   `%ProgramData%\OpenAI\Codex\config.toml` (Windows)
+/// - system    `/etc/ava/config.toml` (Unix) or
+///   `%ProgramData%\OpenAI\Ava\config.toml` (Windows)
 /// - cloud     enterprise-managed cloud config bundle fragments
-/// - user      `${CODEX_HOME}/config.toml`
-/// - profile   `${CODEX_HOME}/<name>.config.toml`, when selected
+/// - user      `${AVA_HOME}/config.toml`
+/// - profile   `${AVA_HOME}/<name>.config.toml`, when selected
 /// - cwd       `${PWD}/config.toml` (loaded but disabled when the directory is untrusted)
 /// - tree      parent directories up to root looking for `./.ava-code/config.toml` (loaded but disabled when untrusted)
 /// - repo      `$(git rev-parse --show-toplevel)/.ava-code/config.toml` (loaded but disabled when untrusted)
@@ -140,7 +140,7 @@ async fn first_layer_config_error_from_entries(layers: &[ConfigLayerEntry]) -> O
 #[allow(clippy::too_many_arguments)]
 pub async fn load_config_layers_state(
     fs: &dyn ExecutorFileSystem,
-    codex_home: &Path,
+    ava_home: &Path,
     cwd: Option<AbsolutePathBuf>,
     cli_overrides: &[(String, TomlValue)],
     options: impl Into<ConfigLoadOptions>,
@@ -184,14 +184,14 @@ pub async fn load_config_layers_state(
         let config = toml::from_str(raw_toml).map_err(|error| {
             io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!("invalid embedded packaged defaults; this is a Codex build error: {error}"),
+                format!("invalid embedded packaged defaults; this is a Ava build error: {error}"),
             )
         })?;
         ConfigLayerEntry::new_with_raw_toml(
             ConfigLayerSource::PackagedDefaults { file },
             config,
             raw_toml.to_owned(),
-            AbsolutePathBuf::from_absolute_path(codex_home)?,
+            AbsolutePathBuf::from_absolute_path(ava_home)?,
         )
     };
     let active_user_profile = overrides.user_config_profile.clone();
@@ -205,7 +205,7 @@ pub async fn load_config_layers_state(
     if !overrides.ignore_managed_requirements
         && let Some(bundle) = cloud_config_bundle.get().await.map_err(io::Error::other)?
     {
-        let cloud_config_base_dir = AbsolutePathBuf::from_absolute_path(codex_home)?;
+        let cloud_config_base_dir = AbsolutePathBuf::from_absolute_path(ava_home)?;
         let bundle_layers = if strict_config {
             CloudConfigBundleLayers::from_bundle_strict_config(bundle, &cloud_config_base_dir)?
         } else {
@@ -222,7 +222,7 @@ pub async fn load_config_layers_state(
     let (config_requirements_toml, loaded_config_layers, requirements_layers) =
         managed_requirements::load_requirements_from_sources(
             fs,
-            codex_home,
+            ava_home,
             &overrides,
             strict_config,
             bundle_requirements_layers,
@@ -249,7 +249,7 @@ pub async fn load_config_layers_state(
         let base_dir = cwd
             .as_ref()
             .map(AbsolutePathBuf::as_path)
-            .unwrap_or(codex_home);
+            .unwrap_or(ava_home);
         if strict_config {
             validate_cli_overrides_strictly(&cli_overrides_layer, base_dir)?;
         }
@@ -282,8 +282,8 @@ pub async fn load_config_layers_state(
     // Add the base user config layer. When profile-v2 is selected, add the
     // profile config as a second user layer on top so the profile only needs to
     // contain overrides.
-    let active_user_file = overrides.user_config_path(codex_home)?;
-    let base_user_file = AbsolutePathBuf::resolve_path_against_base(CONFIG_TOML_FILE, codex_home);
+    let active_user_file = overrides.user_config_path(ava_home)?;
+    let base_user_file = AbsolutePathBuf::resolve_path_against_base(CONFIG_TOML_FILE, ava_home);
     let base_user_layer = load_user_config_layer(
         fs,
         &base_user_file,
@@ -348,7 +348,7 @@ pub async fn load_config_layers_state(
         project_discovery::merge_managed_config_for_discovery(
             &mut merged_so_far,
             &loaded_config_layers,
-            codex_home,
+            ava_home,
         )?;
 
         let project_root_markers = match project_root_markers_from_config(&merged_so_far) {
@@ -370,7 +370,7 @@ pub async fn load_config_layers_state(
             &trusted_broker_config,
             &cwd,
             &project_root_markers,
-            codex_home,
+            ava_home,
             &active_user_file,
         )
         .await
@@ -397,7 +397,7 @@ pub async fn load_config_layers_state(
             &cwd,
             &project_trust_context.project_root,
             &project_trust_context,
-            codex_home,
+            ava_home,
             strict_config,
         )
         .await?;
@@ -454,7 +454,7 @@ pub async fn load_config_layers_state(
         // relies on AbsolutePathBufGuard to resolve `~/`, we must supply a
         // value for base_dir. Preserve that same base on the layer so later
         // raw-TOML diagnostics parse with the same path semantics.
-        let raw_toml_base_dir = AbsolutePathBuf::from_absolute_path(codex_home)?;
+        let raw_toml_base_dir = AbsolutePathBuf::from_absolute_path(ava_home)?;
         let managed_config = resolve_relative_paths_in_config_toml(
             config.managed_config,
             raw_toml_base_dir.as_path(),
@@ -718,7 +718,7 @@ pub async fn load_requirements_toml(
 
 #[cfg(unix)]
 fn system_requirements_toml_file() -> io::Result<AbsolutePathBuf> {
-    AbsolutePathBuf::from_absolute_path(Path::new("/etc/codex/requirements.toml"))
+    AbsolutePathBuf::from_absolute_path(Path::new("/etc/ava/requirements.toml"))
 }
 
 #[cfg(windows)]
@@ -739,23 +739,23 @@ fn system_requirements_toml_file_with_overrides(
 ///
 /// Filesystem or managed-preference errors are returned so callers can conservatively avoid
 /// assuming that administrator-controlled configuration is absent.
-pub fn has_local_managed_configuration(codex_home: &Path) -> io::Result<bool> {
+pub fn has_local_managed_configuration(ava_home: &Path) -> io::Result<bool> {
     let system_requirements_file = system_requirements_toml_file()?;
     has_local_managed_configuration_with_system_requirements_path(
-        codex_home,
+        ava_home,
         system_requirements_file.as_path(),
     )
 }
 
 fn has_local_managed_configuration_with_system_requirements_path(
-    codex_home: &Path,
+    ava_home: &Path,
     system_requirements_path: &Path,
 ) -> io::Result<bool> {
     #[cfg(windows)]
-    let _ = codex_home;
+    let _ = ava_home;
 
     #[cfg(not(windows))]
-    if layer_io::managed_config_default_path(codex_home).try_exists()? {
+    if layer_io::managed_config_default_path(ava_home).try_exists()? {
         return Ok(true);
     }
 
@@ -791,7 +791,7 @@ fn system_config_toml_file_with_overrides(
 }
 
 #[cfg(windows)]
-fn windows_codex_system_dir() -> PathBuf {
+fn windows_ava_system_dir() -> PathBuf {
     let program_data = windows_program_data_dir_from_known_folder().unwrap_or_else(|err| {
         tracing::warn!(
             error = %err,
@@ -799,18 +799,18 @@ fn windows_codex_system_dir() -> PathBuf {
         );
         PathBuf::from(DEFAULT_PROGRAM_DATA_DIR_WINDOWS)
     });
-    program_data.join("OpenAI").join("Codex")
+    program_data.join("OpenAI").join("Ava")
 }
 
 #[cfg(windows)]
 fn windows_system_requirements_toml_file() -> io::Result<AbsolutePathBuf> {
-    let requirements_toml_file = windows_codex_system_dir().join("requirements.toml");
+    let requirements_toml_file = windows_ava_system_dir().join("requirements.toml");
     AbsolutePathBuf::try_from(requirements_toml_file)
 }
 
 #[cfg(windows)]
 fn windows_system_config_toml_file() -> io::Result<AbsolutePathBuf> {
-    let config_toml_file = windows_codex_system_dir().join("config.toml");
+    let config_toml_file = windows_ava_system_dir().join("config.toml");
     AbsolutePathBuf::try_from(config_toml_file)
 }
 
@@ -865,7 +865,7 @@ fn windows_program_data_dir_from_known_folder() -> io::Result<PathBuf> {
 
 fn requirements_layers_from_legacy_scheme(
     loaded_config_layers: LoadedConfigLayers,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> io::Result<Vec<RequirementsLayerEntry>> {
     // List the file-backed legacy layer first because requirements layers are
     // composed lowest-precedence to highest-precedence, and MDM has higher
@@ -879,7 +879,7 @@ fn requirements_layers_from_legacy_scheme(
     let layer_count =
         usize::from(managed_config.is_some()) + usize::from(managed_config_from_mdm.is_some());
     let mut layers = Vec::with_capacity(layer_count);
-    let codex_home = AbsolutePathBuf::from_absolute_path(codex_home)?;
+    let ava_home = AbsolutePathBuf::from_absolute_path(ava_home)?;
     for (source, config, base_dir) in managed_config
         .map(|c| {
             let base_dir = c.file.parent().ok_or_else(|| {
@@ -903,7 +903,7 @@ fn requirements_layers_from_legacy_scheme(
             (
                 RequirementSource::LegacyManagedConfigTomlFromMdm,
                 config.managed_config,
-                codex_home.clone(),
+                ava_home.clone(),
             )
         }))
     {
@@ -952,7 +952,7 @@ fn legacy_requirements_to_toml_value(legacy: LegacyManagedConfigToml) -> io::Res
     }
     if let Some(sandbox_mode) = sandbox_mode {
         let required_mode: SandboxModeRequirement = sandbox_mode.into();
-        // Allowing read-only is a requirement for Codex to function correctly.
+        // Allowing read-only is a requirement for Ava to function correctly.
         // So in this backfill path, we append read-only if it's not already specified.
         let mut allowed_modes = vec![SandboxModeRequirement::ReadOnly];
         if required_mode != SandboxModeRequirement::ReadOnly {
@@ -1113,13 +1113,13 @@ impl ProjectTrustContext {
 }
 
 fn project_layer_entry(
-    dot_codex_folder: &AbsolutePathBuf,
+    dot_ava_folder: &AbsolutePathBuf,
     config: TomlValue,
     disabled_reason: Option<String>,
     hooks_config_folder_override: Option<AbsolutePathBuf>,
 ) -> ConfigLayerEntry {
     let source = ConfigLayerSource::Project {
-        dot_codex_folder: dot_codex_folder.clone(),
+        dot_ava_folder: dot_ava_folder.clone(),
     };
 
     let entry = if let Some(reason) = disabled_reason {
@@ -1226,10 +1226,10 @@ fn sanitize_project_config(
 }
 
 fn project_ignored_config_keys_warning(
-    dot_codex_folder: &AbsolutePathBuf,
+    dot_ava_folder: &AbsolutePathBuf,
     ignored_keys: &[String],
 ) -> String {
-    let config_path = dot_codex_folder.join(CONFIG_TOML_FILE);
+    let config_path = dot_ava_folder.join(CONFIG_TOML_FILE);
     let ignored_keys = ignored_keys.join(", ");
     format!(
         concat!(
@@ -1567,7 +1567,7 @@ struct LoadedProjectLayers {
 
 #[derive(Debug, Clone)]
 struct DiscoveredProjectLayer {
-    dot_codex_folder: AbsolutePathBuf,
+    dot_ava_folder: AbsolutePathBuf,
     config: TomlValue,
     disabled_reason: Option<String>,
     hooks_config_folder_override: Option<AbsolutePathBuf>,
@@ -1590,7 +1590,7 @@ async fn load_project_layers(
     cwd: &AbsolutePathBuf,
     project_root: &AbsolutePathBuf,
     trust_context: &ProjectTrustContext,
-    codex_home: &Path,
+    ava_home: &Path,
     strict_config: bool,
 ) -> io::Result<LoadedProjectLayers> {
     let discovered = discover_project_layers(
@@ -1598,14 +1598,14 @@ async fn load_project_layers(
         cwd,
         project_root,
         trust_context,
-        codex_home,
+        ava_home,
         strict_config,
     )
     .await?;
     let mut layers = Vec::with_capacity(discovered.layers.len());
     for layer in discovered.layers {
         let config =
-            resolve_relative_paths_in_config_toml(layer.config, layer.dot_codex_folder.as_path())?;
+            resolve_relative_paths_in_config_toml(layer.config, layer.dot_ava_folder.as_path())?;
         let config = if layer.load_root_checkout_hooks {
             merge_root_checkout_project_hooks(
                 fs,
@@ -1618,7 +1618,7 @@ async fn load_project_layers(
             config
         };
         layers.push(project_layer_entry(
-            &layer.dot_codex_folder,
+            &layer.dot_ava_folder,
             config,
             layer.disabled_reason,
             layer.hooks_config_folder_override,
@@ -1636,12 +1636,12 @@ async fn discover_project_layers(
     cwd: &AbsolutePathBuf,
     project_root: &AbsolutePathBuf,
     trust_context: &ProjectTrustContext,
-    codex_home: &Path,
+    ava_home: &Path,
     strict_config: bool,
 ) -> io::Result<DiscoveredProjectLayers> {
-    let codex_home_abs = AbsolutePathBuf::from_absolute_path(codex_home)?;
-    let codex_home_normalized =
-        normalize_path(codex_home_abs.as_path()).unwrap_or_else(|_| codex_home_abs.to_path_buf());
+    let ava_home_abs = AbsolutePathBuf::from_absolute_path(ava_home)?;
+    let ava_home_normalized =
+        normalize_path(ava_home_abs.as_path()).unwrap_or_else(|_| ava_home_abs.to_path_buf());
     let mut dirs = cwd
         .ancestors()
         .scan(false, |done, a| {
@@ -1688,7 +1688,7 @@ async fn discover_project_layers(
         let hooks_config_folder_override = trust_context.root_checkout_hooks_folder_for_dir(&dir);
         let dot_config_normalized = normalize_path(dot_config_abs.as_path())
             .unwrap_or_else(|_| dot_config_abs.to_path_buf());
-        if dot_config_abs == codex_home_abs || dot_config_normalized == codex_home_normalized {
+        if dot_config_abs == ava_home_abs || dot_config_normalized == ava_home_normalized {
             continue;
         }
         let config_file = dot_config_abs.join(CONFIG_TOML_FILE);
@@ -1711,7 +1711,7 @@ async fn discover_project_layers(
                             ));
                         }
                         layers.push(DiscoveredProjectLayer {
-                            dot_codex_folder: dot_config_abs,
+                            dot_ava_folder: dot_config_abs,
                             config: TomlValue::Table(toml::map::Map::new()),
                             disabled_reason,
                             hooks_config_folder_override,
@@ -1741,7 +1741,7 @@ async fn discover_project_layers(
                     ));
                 }
                 layers.push(DiscoveredProjectLayer {
-                    dot_codex_folder: dot_config_abs.clone(),
+                    dot_ava_folder: dot_config_abs.clone(),
                     config,
                     disabled_reason,
                     hooks_config_folder_override,
@@ -1754,7 +1754,7 @@ async fn discover_project_layers(
                     // for this project layer, as this may still have subfolders
                     // that are significant in the overall ConfigLayerStack.
                     layers.push(DiscoveredProjectLayer {
-                        dot_codex_folder: dot_config_abs,
+                        dot_ava_folder: dot_config_abs,
                         config: TomlValue::Table(toml::map::Map::new()),
                         disabled_reason,
                         hooks_config_folder_override,
@@ -1853,7 +1853,7 @@ async fn load_root_checkout_project_config(
     )
 }
 /// The legacy mechanism for specifying admin-enforced configuration is to read
-/// from a file like `/etc/codex/managed_config.toml` that has the same
+/// from a file like `/etc/ava/managed_config.toml` that has the same
 /// structure as `config.toml` where fields like `approval_policy` can specify
 /// exactly one value rather than a list of allowed values.
 ///
@@ -1979,7 +1979,7 @@ foo = "xyzzy"
         let expected = windows_program_data_dir_from_known_folder()
             .unwrap_or_else(|_| PathBuf::from(DEFAULT_PROGRAM_DATA_DIR_WINDOWS))
             .join("OpenAI")
-            .join("Codex")
+            .join("Ava")
             .join("requirements.toml");
         assert_eq!(
             windows_system_requirements_toml_file()
@@ -1991,7 +1991,7 @@ foo = "xyzzy"
             windows_system_requirements_toml_file()
                 .expect("requirements.toml path")
                 .as_path()
-                .ends_with(Path::new("OpenAI").join("Codex").join("requirements.toml"))
+                .ends_with(Path::new("OpenAI").join("Ava").join("requirements.toml"))
         );
     }
 
@@ -2001,7 +2001,7 @@ foo = "xyzzy"
         let expected = windows_program_data_dir_from_known_folder()
             .unwrap_or_else(|_| PathBuf::from(DEFAULT_PROGRAM_DATA_DIR_WINDOWS))
             .join("OpenAI")
-            .join("Codex")
+            .join("Ava")
             .join("config.toml");
         assert_eq!(
             windows_system_config_toml_file()
@@ -2013,7 +2013,7 @@ foo = "xyzzy"
             windows_system_config_toml_file()
                 .expect("config.toml path")
                 .as_path()
-                .ends_with(Path::new("OpenAI").join("Codex").join("config.toml"))
+                .ends_with(Path::new("OpenAI").join("Ava").join("config.toml"))
         );
     }
 }

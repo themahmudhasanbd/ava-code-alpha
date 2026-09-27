@@ -1,7 +1,7 @@
 //! User-message and shell-prompt submission behavior for `ChatWidget`.
 
 use super::*;
-use codex_app_server_protocol::ImageReference;
+use ava_app_server_protocol::ImageReference;
 
 impl ChatWidget {
     pub(crate) fn set_task_mentions_enabled(&mut self, enabled: bool) {
@@ -381,7 +381,7 @@ impl ChatWidget {
 
             let app_mentions = find_app_mentions(&mentions, apps, &skill_names_lower);
             for app in app_mentions {
-                let slug = codex_connectors::metadata::connector_mention_slug(&app);
+                let slug = ava_connectors::metadata::connector_mention_slug(&app);
                 if bound_names.contains(&slug) || !selected_app_ids.insert(app.id.clone()) {
                     continue;
                 }
@@ -471,7 +471,7 @@ impl ChatWidget {
             self.clear_recap_loading();
         }
         let render_before_submit =
-            render_in_history && matches!(&self.codex_op_target, CodexOpTarget::AppEvent);
+            render_in_history && matches!(&self.ava_op_target, AvaOpTarget::AppEvent);
         if render_before_submit {
             self.on_user_message_display(user_message_display_for_history(
                 submitted_message.clone(),

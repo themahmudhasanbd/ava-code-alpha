@@ -60,10 +60,10 @@ jobs:
           cd ava-desktop
           pnpm build:js
 
-      - name: Build Native AvA Core (codex-app-server release)
+      - name: Build Native AvA Core (ava-app-server release)
         run: |
           cd ava-rs
-          cargo build --release -p codex-app-server
+          cargo build --release -p ava-app-server
 
       - name: Bundle Agent Runtime Sidecar
         run: |
@@ -115,7 +115,7 @@ jobs:
           body: |
             ## 🚀 AvA Code Alpha — Linux DEB Release
 
-            Standalone desktop app with embedded native Rust Core (`codex-app-server`).
+            Standalone desktop app with embedded native Rust Core (`ava-app-server`).
             No Node.js, Rust or CLI installation required.
 
             ### Install on Debian/Ubuntu

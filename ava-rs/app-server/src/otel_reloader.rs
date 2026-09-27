@@ -1,7 +1,7 @@
 use crate::OTEL_SERVICE_NAME;
 use crate::config_manager::ConfigManager;
-use codex_login::AuthManager;
-use codex_otel::OtelProvider;
+use ava_login::AuthManager;
+use ava_otel::OtelProvider;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::task::JoinHandle;
@@ -73,7 +73,7 @@ where
                             continue;
                         }
                     };
-                    let next_provider = match codex_core::otel_init::build_provider(
+                    let next_provider = match ava_core::otel_init::build_provider(
                         &config,
                         env!("CARGO_PKG_VERSION"),
                         Some(OTEL_SERVICE_NAME),
@@ -98,7 +98,7 @@ where
                         drop(tokio::task::spawn_blocking(move || previous_provider.shutdown()));
                     }
                     info!(
-                        event.name = "codex.app_server.otel_reloaded",
+                        event.name = "ava.app_server.otel_reloaded",
                         "reloaded telemetry exporters after account change"
                     );
                 }

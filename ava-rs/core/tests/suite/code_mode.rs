@@ -3,71 +3,71 @@
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_analytics::AnalyticsEventsClient;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_core::config::CurrentTimeReminderConfig;
-use codex_core::context::NodeReplReviewEvidence;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_extension_api::ToolCallOutcome;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolFinishInput;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::ToolLifecycleFuture;
-use codex_extension_api::ToolStartInput;
-use codex_features::CurrentTimeSource;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::codex_apps_mcp_server_config;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-use codex_protocol::dynamic_tools::DynamicToolResponse;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_tools::FreeformTool;
-use codex_tools::FreeformToolFormat;
-use codex_tools::FunctionCallError;
-use codex_tools::JsonToolOutput;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ToolCall;
-use codex_tools::ToolExecutor;
-use codex_tools::ToolExecutorFuture;
-use codex_tools::ToolName;
-use codex_tools::ToolOutput;
-use codex_tools::ToolPayload;
-use codex_tools::ToolSpec;
-use codex_web_search_extension::install as install_web_search_extension;
+use ava_analytics::AnalyticsEventsClient;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_core::config::CurrentTimeReminderConfig;
+use ava_core::context::NodeReplReviewEvidence;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_extension_api::ToolCallOutcome;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolFinishInput;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::ToolLifecycleFuture;
+use ava_extension_api::ToolStartInput;
+use ava_features::CurrentTimeSource;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::ava_apps_mcp_server_config;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+use ava_protocol::dynamic_tools::DynamicToolResponse;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_tools::FreeformTool;
+use ava_tools::FreeformToolFormat;
+use ava_tools::FunctionCallError;
+use ava_tools::JsonToolOutput;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ToolCall;
+use ava_tools::ToolExecutor;
+use ava_tools::ToolExecutorFuture;
+use ava_tools::ToolName;
+use ava_tools::ToolOutput;
+use ava_tools::ToolPayload;
+use ava_tools::ToolSpec;
+use ava_web_search_extension::install as install_web_search_extension;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::AppsTestToolLoading;
 use core_test_support::apps_test_server::DIRECT_CALENDAR_APP_ONLY_TOOL;
@@ -89,10 +89,10 @@ use core_test_support::skip_if_wine_exec;
 use core_test_support::stdio_server_bin;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_mcp_server;
@@ -232,7 +232,7 @@ async fn run_code_mode_turn(
     server: &MockServer,
     prompt: &str,
     code: &str,
-) -> Result<(TestCodex, ResponseMock)> {
+) -> Result<(TestAva, ResponseMock)> {
     run_code_mode_turn_with_config(server, prompt, code, |_| {}).await
 }
 
@@ -241,8 +241,8 @@ async fn run_code_mode_turn_with_config(
     prompt: &str,
     code: &str,
     configure: impl FnOnce(&mut Config) + Send + 'static,
-) -> Result<(TestCodex, ResponseMock)> {
-    run_code_mode_turn_with_model_and_config(server, prompt, code, "test-gpt-5.1-codex", configure)
+) -> Result<(TestAva, ResponseMock)> {
+    run_code_mode_turn_with_model_and_config(server, prompt, code, "test-gpt-5.1-ava", configure)
         .await
 }
 
@@ -252,8 +252,8 @@ async fn run_code_mode_turn_with_model_and_config(
     code: &str,
     model: &'static str,
     configure: impl FnOnce(&mut Config) + Send + 'static,
-) -> Result<(TestCodex, ResponseMock)> {
-    let builder = test_codex().with_model(model).with_config(move |config| {
+) -> Result<(TestAva, ResponseMock)> {
+    let builder = test_ava().with_model(model).with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
         let _ = config.features.enable(Feature::ExecutedToolCallMetadata);
         configure(config);
@@ -265,8 +265,8 @@ async fn run_code_mode_turn_with_builder(
     server: &MockServer,
     prompt: &str,
     code: &str,
-    mut builder: TestCodexBuilder,
-) -> Result<(TestCodex, ResponseMock)> {
+    mut builder: TestAvaBuilder,
+) -> Result<(TestAva, ResponseMock)> {
     let test = builder.build(server).await?;
 
     responses::mount_sse_once(
@@ -294,7 +294,7 @@ async fn run_code_mode_turn_with_builder(
 
 async fn run_unavailable_code_mode_turn(
     server: &MockServer,
-    test: &TestCodex,
+    test: &TestAva,
 ) -> Result<(Value, Vec<String>)> {
     let response_mock = responses::mount_sse_once(
         server,
@@ -306,7 +306,7 @@ async fn run_unavailable_code_mode_turn(
     )
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "list available tools".to_string(),
             text_elements: Vec::new(),
@@ -315,7 +315,7 @@ async fn run_unavailable_code_mode_turn(
 
     let mut warnings = Vec::new();
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::Warning(warning) => warnings.push(warning.message),
             EventMsg::TurnComplete(_) => break,
             _ => {}
@@ -330,9 +330,9 @@ async fn missing_process_host_falls_back_to_direct_tools_and_warns_once() -> Res
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
-        .with_code_mode_host_program("codex-code-mode-host-does-not-exist".into())
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
+        .with_code_mode_host_program("ava-code-mode-host-does-not-exist".into())
         .with_config(|config| {
             config
                 .features
@@ -351,7 +351,7 @@ async fn missing_process_host_falls_back_to_direct_tools_and_warns_once() -> Res
     assert!(
         first_warnings.iter().any(|warning| {
             warning.contains("Code Mode is unavailable")
-                && warning.contains("codex-code-mode-host-does-not-exist")
+                && warning.contains("ava-code-mode-host-does-not-exist")
         }),
         "missing host should produce an actionable warning: {first_warnings:?}"
     );
@@ -372,9 +372,9 @@ async fn missing_process_host_keeps_code_mode_only_and_fails_closed() -> Result<
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
-        .with_code_mode_host_program("codex-code-mode-host-does-not-exist".into())
+    let builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
+        .with_code_mode_host_program("ava-code-mode-host-does-not-exist".into())
         .with_config(|config| {
             config
                 .features
@@ -402,7 +402,7 @@ async fn missing_process_host_keeps_code_mode_only_and_fails_closed() -> Result<
     );
     let (output, _) = custom_tool_output_body_and_success(&request, "call-1");
     assert!(
-        output.contains("codex-code-mode-host-does-not-exist"),
+        output.contains("ava-code-mode-host-does-not-exist"),
         "code-mode-only must report the host failure: {output}"
     );
 
@@ -414,9 +414,9 @@ async fn missing_process_host_fails_closed_when_direct_fallback_is_disabled() ->
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
-        .with_code_mode_host_program("codex-code-mode-host-does-not-exist".into())
+    let builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
+        .with_code_mode_host_program("ava-code-mode-host-does-not-exist".into())
         .with_config(|config| {
             config
                 .features
@@ -439,7 +439,7 @@ async fn missing_process_host_fails_closed_when_direct_fallback_is_disabled() ->
     );
     let (output, _) = custom_tool_output_body_and_success(&request, "call-1");
     assert!(
-        output.contains("codex-code-mode-host-does-not-exist"),
+        output.contains("ava-code-mode-host-does-not-exist"),
         "disabled fallback must report the host failure: {output}"
     );
 
@@ -451,8 +451,8 @@ async fn disabled_process_host_with_fallback_disabled_attempts_the_host() -> Res
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(|config| {
             config
                 .features
@@ -535,14 +535,14 @@ text(result);
     )
     .await;
 
-    let auth = CodexAuth::from_api_key("dummy");
-    let auth_manager = codex_core::test_support::auth_manager_from_auth(auth.clone());
+    let auth = AvaAuth::from_api_key("dummy");
+    let auth_manager = ava_core::test_support::auth_manager_from_auth(auth.clone());
     let mut extension_builder = ExtensionRegistryBuilder::<Config>::new();
     install_web_search_extension(&mut extension_builder, auth_manager);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(Arc::new(extension_builder.build()))
-        .with_model("test-gpt-5.1-codex")
+        .with_model("test-gpt-5.1-ava")
         .with_config(move |config| {
             config
                 .features
@@ -573,7 +573,7 @@ text(result);
         .expect("search request body should be JSON");
     assert_eq!(
         search_body["model"],
-        serde_json::json!("test-gpt-5.1-codex")
+        serde_json::json!("test-gpt-5.1-ava")
     );
     assert_eq!(
         search_body["commands"],
@@ -600,8 +600,8 @@ async fn run_code_mode_turn_with_rmcp(
     server: &MockServer,
     prompt: &str,
     code: &str,
-) -> Result<(TestCodex, ResponseMock)> {
-    run_code_mode_turn_with_rmcp_model(server, prompt, code, "test-gpt-5.1-codex").await
+) -> Result<(TestAva, ResponseMock)> {
+    run_code_mode_turn_with_rmcp_model(server, prompt, code, "test-gpt-5.1-ava").await
 }
 
 async fn run_code_mode_turn_with_rmcp_model(
@@ -609,7 +609,7 @@ async fn run_code_mode_turn_with_rmcp_model(
     prompt: &str,
     code: &str,
     model: &'static str,
-) -> Result<(TestCodex, ResponseMock)> {
+) -> Result<(TestAva, ResponseMock)> {
     run_code_mode_turn_with_rmcp_config(
         server, prompt, code, model, /*code_mode_only*/ false,
         /*non_prefixed_mcp_tool_names*/ false,
@@ -622,12 +622,12 @@ async fn run_code_mode_turn_with_rmcp_mode(
     prompt: &str,
     code: &str,
     code_mode_only: bool,
-) -> Result<(TestCodex, ResponseMock)> {
+) -> Result<(TestAva, ResponseMock)> {
     run_code_mode_turn_with_rmcp_config(
         server,
         prompt,
         code,
-        "test-gpt-5.1-codex",
+        "test-gpt-5.1-ava",
         code_mode_only,
         /*non_prefixed_mcp_tool_names*/ false,
     )
@@ -641,9 +641,9 @@ async fn run_code_mode_turn_with_rmcp_config(
     model: &'static str,
     code_mode_only: bool,
     non_prefixed_mcp_tool_names: bool,
-) -> Result<(TestCodex, ResponseMock)> {
+) -> Result<(TestAva, ResponseMock)> {
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let mut builder = test_codex().with_model(model).with_config(move |config| {
+    let mut builder = test_ava().with_model(model).with_config(move |config| {
         let _ = if code_mode_only {
             config.features.enable(Feature::CodeModeOnly)
         } else {
@@ -691,7 +691,7 @@ async fn run_code_mode_turn_with_rmcp_config(
             .expect("test mcp servers should accept any configuration");
     });
     let test = builder.build(server).await?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
     responses::mount_sse_once(
         server,
@@ -761,8 +761,8 @@ text(JSON.stringify(await tools.exec_command({ cmd: "printf code_mode_exec_marke
 #[tokio::test]
 async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()> {
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(|config| {
             let _ = config.features.enable(Feature::CodeMode);
         });
@@ -787,11 +787,11 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
     .await;
 
     assert_eq!(
-        test.codex.increment_out_of_band_elicitation_count().await?,
+        test.ava-code.increment_out_of_band_elicitation_count().await?,
         1
     );
     assert_eq!(
-        test.codex.increment_out_of_band_elicitation_count().await?,
+        test.ava-code.increment_out_of_band_elicitation_count().await?,
         2
     );
     let release_elicitation = async {
@@ -808,7 +808,7 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
             "captured exec result should not return during an elicitation"
         );
         assert_eq!(
-            test.codex.decrement_out_of_band_elicitation_count().await?,
+            test.ava-code.decrement_out_of_band_elicitation_count().await?,
             1
         );
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -817,7 +817,7 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
             "captured exec result should wait for every elicitation"
         );
         assert_eq!(
-            test.codex.decrement_out_of_band_elicitation_count().await?,
+            test.ava-code.decrement_out_of_band_elicitation_count().await?,
             0
         );
         Ok::<(), anyhow::Error>(())
@@ -843,7 +843,7 @@ async fn code_mode_only_restricts_prompt_tools() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         let _ = config.features.enable(Feature::CodeModeOnly);
     });
     let test = builder.build(&server).await?;
@@ -903,7 +903,7 @@ async fn code_mode_excludes_mcp_servers_using_their_configured_identity() -> Res
             .await;
             let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
             let environment_id = remote_aware_environment_id();
-            let mut builder = test_codex()
+            let mut builder = test_ava()
                 .with_model_info_override("gpt-5.4", move |model| {
                     model.supports_search_tool = supports_search_tool;
                 })
@@ -970,9 +970,9 @@ async fn code_mode_excludes_mcp_servers_using_their_configured_identity() -> Res
                 })
                 .await?;
             let mut test = base_test;
-            test.codex = new_thread.thread;
+            test.ava-code = new_thread.thread;
             test.session_configured = new_thread.session_configured;
-            wait_for_mcp_server(&test.codex, "rmcp").await?;
+            wait_for_mcp_server(&test.ava-code, "rmcp").await?;
             test.submit_turn("inspect the directly callable MCP tool")
                 .await?;
 
@@ -1136,7 +1136,7 @@ async fn mcp_code_mode_exclusion_does_not_change_direct_mode_tool_exposure() -> 
             };
             let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
             let environment_id = remote_aware_environment_id();
-            let mut builder = test_codex()
+            let mut builder = test_ava()
                 .with_model_info_override("gpt-5.4", move |model| {
                     model.supports_search_tool = supports_search_tool;
                 })
@@ -1175,7 +1175,7 @@ async fn mcp_code_mode_exclusion_does_not_change_direct_mode_tool_exposure() -> 
                         .expect("test config should allow MCP servers");
                 });
             let test = builder.build_with_auto_env(&server).await?;
-            wait_for_mcp_server(&test.codex, "rmcp").await?;
+            wait_for_mcp_server(&test.ava-code, "rmcp").await?;
             test.submit_turn("inspect ordinary direct-mode MCP tool exposure")
                 .await?;
 
@@ -1373,7 +1373,7 @@ await new Promise(() => {});
             metadata["executed_tool_calls"]
                 .as_array()
                 .is_some_and(|calls| calls.iter().any(|call| call["arguments"]
-                    .get("_codex_executed_tool_call_truncated")
+                    .get("_ava_executed_tool_call_truncated")
                     .is_some()))
         );
     } else {
@@ -1409,8 +1409,8 @@ await new Promise(() => {});
                 ]),
             )
             .await;
-            test.codex.submit(Op::Compact).await?;
-            wait_for_event(&test.codex, |event| {
+            test.ava-code.submit(Op::Compact).await?;
+            wait_for_event(&test.ava-code, |event| {
                 matches!(event, EventMsg::TurnComplete(_))
             })
             .await;
@@ -1465,8 +1465,8 @@ async fn code_mode_compaction_request_preserves_tool_inventory(
 ) -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(move |config| {
             config.features.enable(Feature::CodeMode).unwrap();
             config.features.enable(Feature::CodeModeHost).unwrap();
@@ -1522,15 +1522,15 @@ async fn code_mode_compaction_request_preserves_tool_inventory(
     });
     let compact =
         responses::mount_sse_once(&server, sse(vec![summary, ev_completed("resp-compact")])).await;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     let request = compact.single_request();
     assert_eq!(request.inputs_of_type("compaction_trigger").len(), 1);
     assert_eq!(request.custom_tool_call_output("call-exec"), original);
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1544,8 +1544,8 @@ async fn code_mode_wait_id_stays_known_after_compaction(
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(|config| {
             let _ = config.features.enable(Feature::CodeMode);
             let _ = config.features.enable(Feature::CodeModeHost);
@@ -1614,8 +1614,8 @@ async fn code_mode_wait_id_stays_known_after_compaction(
         ]),
     )
     .await;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1660,7 +1660,7 @@ async fn code_mode_wait_id_stays_known_after_compaction(
         metadata.get("executed_tool_calls").cloned(),
         expected_complete.map(|_| serde_json::json!([])),
     );
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1747,7 +1747,7 @@ async fn mount_result_metadata_app(
         ("tools/call", tool_result),
     ] {
         Mock::given(method("POST"))
-            .and(path("/api/codex/ps/mcp"))
+            .and(path("/api/ava/ps/mcp"))
             .and(body_partial_json(
                 serde_json::json!({ "method": method_name }),
             ))
@@ -1766,7 +1766,7 @@ async fn mount_result_metadata_app(
     Ok(apps_server)
 }
 
-fn result_metadata_apps_builder(base_url: String, account_email: &str) -> TestCodexBuilder {
+fn result_metadata_apps_builder(base_url: String, account_email: &str) -> TestAvaBuilder {
     let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
         serde_json::json!({
             "email": account_email,
@@ -1774,7 +1774,7 @@ fn result_metadata_apps_builder(base_url: String, account_email: &str) -> TestCo
         })
         .to_string(),
     );
-    let auth = CodexAuth::from_external_chatgpt_tokens(
+    let auth = AvaAuth::from_external_chatgpt_tokens(
         &format!("e30.{payload}.signature"),
         "account_id",
         /*chatgpt_plan_type*/ None,
@@ -1805,7 +1805,7 @@ async fn code_mode_mcp_metadata_keeps_originating_window_after_compaction() -> R
     let (release_tx, release_rx) = oneshot::channel();
     let control = Arc::new(ResultMetadataTestControl {
         server: Mutex::new(McpServerContribution::HostedApps {
-            config: Box::new(codex_apps_mcp_server_config(
+            config: Box::new(ava_apps_mcp_server_config(
                 &apps_server.chatgpt_base_url,
                 /*apps_mcp_product_sku*/ None,
                 /*originator*/ None,
@@ -1818,7 +1818,7 @@ async fn code_mode_mcp_metadata_keeps_originating_window_after_compaction() -> R
     extensions.tool_lifecycle_contributor(control);
     let mut builder =
         result_metadata_apps_builder(apps_server.chatgpt_base_url, "user@example.com")
-            .with_model("test-gpt-5.1-codex")
+            .with_model("test-gpt-5.1-ava")
             .with_extensions(Arc::new(extensions.build()));
     let test = builder.build_with_auto_env(&server).await?;
     let originating_item_id = "ctc_before_compaction";
@@ -1850,7 +1850,7 @@ text("done");"#,
     let first_items = custom_tool_output_items(&yielded.single_request(), "call-exec");
     let cell_id = extract_running_cell_id(text_item(&first_items, /*index*/ 0));
     let originating_window_id =
-        started.single_request().body_json()["client_metadata"]["x-codex-window-id"].clone();
+        started.single_request().body_json()["client_metadata"]["x-ava-window-id"].clone();
     assert!(originating_window_id.is_string());
 
     let compact = responses::mount_sse_once(
@@ -1864,8 +1864,8 @@ text("done");"#,
         ]),
     )
     .await;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1888,7 +1888,7 @@ text("done");"#,
     test.submit_turn("Finish the code-mode cell").await?;
     let resumed_request = resumed.function_call.single_request();
     assert_ne!(
-        resumed_request.body_json()["client_metadata"]["x-codex-window-id"],
+        resumed_request.body_json()["client_metadata"]["x-ava-window-id"],
         originating_window_id
     );
     assert!(
@@ -1921,7 +1921,7 @@ text("done");"#,
             }),
         );
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -2023,8 +2023,8 @@ async fn result_metadata_follows_call_binding(
         let mut extensions = ExtensionRegistryBuilder::<Config>::new();
         extensions.mcp_server_contributor(Arc::new(ResultMetadataTestControl {
             server: Mutex::new(McpServerContribution::Set {
-                name: CODEX_APPS_MCP_SERVER_NAME.to_string(),
-                config: Box::new(codex_apps_mcp_server_config(
+                name: AVA_APPS_MCP_SERVER_NAME.to_string(),
+                config: Box::new(ava_apps_mcp_server_config(
                     &apps_server.chatgpt_base_url,
                     /*apps_mcp_product_sku*/ None,
                     /*originator*/ None,
@@ -2042,7 +2042,7 @@ async fn result_metadata_follows_call_binding(
             sse(vec![
                 responses::ev_function_call_with_namespace(
                     "call-1",
-                    "mcp__codex_apps__messagesearch",
+                    "mcp__ava_apps__messagesearch",
                     RESULT_METADATA_TOOL,
                     &arguments.to_string(),
                 ),
@@ -2061,7 +2061,7 @@ async fn result_metadata_follows_call_binding(
         );
         run_code_mode_turn_with_builder(&server, "Search a connected app", &code, builder).await?
     };
-    assert_eq!(test.codex.analytics_enabled(), effective_analytics_enabled);
+    assert_eq!(test.ava-code.analytics_enabled(), effective_analytics_enabled);
     let request = follow_up.single_request();
     assert_eq!(recorded_apps_tool_calls(&server).await.len(), 1);
     let output = if direct {
@@ -2092,12 +2092,12 @@ async fn result_metadata_follows_call_binding(
         result_metadata_fixture_calls(&request.input()).count(),
         usize::from(metadata_enabled),
     );
-    let captured = codex_core::test_support::history_with_tool_call_metadata(&test.codex).await;
+    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava-code).await;
     if direct {
         let result = captured
             .iter()
             .find_map(|item| match item {
-                codex_protocol::models::ResponseItem::FunctionCallOutput {
+                ava_protocol::models::ResponseItem::FunctionCallOutput {
                     call_id,
                     output,
                     ..
@@ -2169,11 +2169,11 @@ async fn code_mode_result_metadata_follows_runtime_recording_enablement() -> Res
                 .features
                 .enable(Feature::ExecutedToolCallMetadata)
                 .unwrap();
-            test.codex.refresh_runtime_config(config).await;
+            test.ava-code.refresh_runtime_config(config).await;
             // Runtime recording changes without updating the session's execution features.
             assert!(
                 !test
-                    .codex
+                    .ava-code
                     .config()
                     .await
                     .features
@@ -2220,7 +2220,7 @@ async fn code_mode_result_metadata_follows_runtime_recording_enablement() -> Res
         }
     }
     assert_eq!(recorded_apps_tool_calls(&server).await.len(), 2);
-    let captured = codex_core::test_support::history_with_tool_call_metadata(&test.codex).await;
+    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava-code).await;
     let captured = serde_json::to_value(captured)?;
     let captured_output = captured
         .as_array()
@@ -2257,7 +2257,7 @@ async fn code_mode_result_metadata_keeps_prepared_call_binding_across_runtime_re
     let (release_tx, release_rx) = oneshot::channel();
     let control = Arc::new(ResultMetadataTestControl {
         server: Mutex::new(McpServerContribution::HostedApps {
-            config: Box::new(codex_apps_mcp_server_config(
+            config: Box::new(ava_apps_mcp_server_config(
                 &apps_server.chatgpt_base_url,
                 /*apps_mcp_product_sku*/ None,
                 /*originator*/ None,
@@ -2325,14 +2325,14 @@ async fn code_mode_result_metadata_keeps_prepared_call_binding_across_runtime_re
     );
     // The next call uses an extension-owned binding, but the held call keeps its host proof.
     *control.server.lock().unwrap() = McpServerContribution::Set {
-        name: CODEX_APPS_MCP_SERVER_NAME.to_string(),
-        config: Box::new(codex_apps_mcp_server_config(
+        name: AVA_APPS_MCP_SERVER_NAME.to_string(),
+        config: Box::new(ava_apps_mcp_server_config(
             &refreshed_apps.chatgpt_base_url,
             /*apps_mcp_product_sku*/ None,
             /*originator*/ None,
         )),
     };
-    test.codex.refresh_runtime_config(test.config.clone()).await;
+    test.ava-code.refresh_runtime_config(test.config.clone()).await;
     release_tx.send(()).unwrap();
     let wait = responses::mount_function_call_agent_response(
         &server,
@@ -2360,7 +2360,7 @@ async fn code_mode_result_metadata_keeps_prepared_call_binding_across_runtime_re
         2,
         "late results must not duplicate the call"
     );
-    let captured = codex_core::test_support::history_with_tool_call_metadata(&test.codex).await;
+    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava-code).await;
     let captured = serde_json::to_value(captured)?;
     // A's accepted result must update the output that first reported it, not the final wait.
     let expected_metadata = Some(original_metadata);
@@ -2402,8 +2402,8 @@ async fn code_mode_resumed_wait_does_not_certify_a_reused_runtime_cell() -> Resu
         let _ = config.features.enable(Feature::ExecutedToolCallMetadata);
         config.code_mode.disable_in_process_fallback = true;
     };
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_history_mode(ThreadHistoryMode::Legacy)
         .with_config(configure);
     let initial = builder.build(&server).await?;
@@ -2433,8 +2433,8 @@ async fn code_mode_resumed_wait_does_not_certify_a_reused_runtime_cell() -> Resu
     assert_eq!(text_item(&old_items, /*index*/ 1), "A");
 
     // Restart loads the old running-cell output, but starts a new host whose IDs reset.
-    let resumed = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let resumed = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(configure)
         .restart(&server, &initial)
         .await?;
@@ -2548,7 +2548,7 @@ async fn code_mode_resumed_wait_does_not_certify_a_reused_runtime_cell() -> Resu
     );
     assert_eq!(metadata["cell_id"], "call-fresh");
     assert_eq!(metadata["tool_calls_complete"], true);
-    resumed.codex.shutdown_and_wait().await?;
+    resumed.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -2626,8 +2626,8 @@ async fn code_mode_recovers_complete_inventory_after_orphaned_mapping_pressure()
     }));
     let base_url = format!("{}/v1", server.uri());
     let config_server = responses::start_mock_server().await;
-    let test = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let test = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_extensions(Arc::new(extensions.build()))
         .with_config(move |config| {
             config.model_provider.base_url = Some(base_url);
@@ -2639,7 +2639,7 @@ async fn code_mode_recovers_complete_inventory_after_orphaned_mapping_pressure()
         .await?;
     test.submit_turn("Record a fresh call after orphaned mapping pressure")
         .await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
 
     let requests = server.requests().await;
     assert_eq!(requests.len(), 3);
@@ -2707,7 +2707,7 @@ async fn code_mode_complete_call_survives_unrelated_truncation() -> Result<()> {
     )
     .await;
     test.submit_turn("Record a complete call").await?;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
 
     let request = follow_up.single_request();
     let overflow =
@@ -2716,7 +2716,7 @@ async fn code_mode_complete_call_survives_unrelated_truncation() -> Result<()> {
         overflow["executed_tool_calls"]
             .as_array()
             .is_some_and(|calls| calls.iter().any(|call| call["arguments"]
-                .get("_codex_executed_tool_call_truncated")
+                .get("_ava_executed_tool_call_truncated")
                 .is_some()))
     );
     assert!(overflow.get("tool_calls_complete").is_none());
@@ -2744,7 +2744,7 @@ async fn code_mode_only_guides_all_tools_search_and_calls_deferred_app_tools() -
         "exec",
         r#"
 const tool = ALL_TOOLS.find(
-  ({ name }) => name === "mcp__codex_apps__calendar_timezone_option_99"
+  ({ name }) => name === "mcp__ava_apps__calendar_timezone_option_99"
 );
 if (!tool) {
   text(JSON.stringify({ found: false }));
@@ -2778,8 +2778,8 @@ if (!tool) {
     .await;
 
     let apps_base_url = apps_server.chatgpt_base_url.clone();
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config
                 .features
@@ -2864,7 +2864,7 @@ if (!tool) {
                 && call.pointer("/params/_meta/sessionId")
                     == Some(&serde_json::json!(test.session_configured.session_id))
                 && call.pointer("/params/_meta/windowId")
-                    == Some(&first_body["client_metadata"]["x-codex-window-id"])
+                    == Some(&first_body["client_metadata"]["x-ava-window-id"])
         }),
         "the nested MCP call should inherit its code cell's originating Responses item"
     );
@@ -2896,7 +2896,7 @@ text(JSON.stringify({{
   error,
 }}));
 "#,
-        visible_tool_name = "mcp__codex_apps__calendar_timezone_option_99",
+        visible_tool_name = "mcp__ava_apps__calendar_timezone_option_99",
         tool_name = DIRECT_CALENDAR_APP_ONLY_TOOL,
     );
 
@@ -2989,7 +2989,7 @@ text(output.output);
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         let _ = config.features.enable(Feature::CodeModeOnly);
     });
     let test = builder.build(&server).await?;
@@ -3168,8 +3168,8 @@ async fn code_mode_nested_tool_calls_can_run_in_parallel() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(move |config| {
             let _ = config.features.enable(Feature::CodeMode);
             let _ = config.features.enable(Feature::ExecutedToolCallMetadata);
@@ -3673,8 +3673,8 @@ async fn code_mode_wait_timeout_reconnects_on_next_exec() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_config(|config| {
             config
                 .features
@@ -3722,13 +3722,13 @@ async fn code_mode_wait_timeout_reconnects_on_next_exec() -> Result<()> {
     .await
     .completion;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "wait for the stalled cell".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event_match(&test.codex, |event| match event {
+    wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RawResponseItem(raw) => match &raw.item {
             ResponseItem::FunctionCall { call_id, .. } if call_id == "call-2" => Some(()),
             _ => None,
@@ -3748,7 +3748,7 @@ async fn code_mode_wait_timeout_reconnects_on_next_exec() -> Result<()> {
         }
     }
     tokio::time::resume();
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3798,7 +3798,7 @@ async fn code_mode_wait_timeout_reconnects_on_next_exec() -> Result<()> {
 #[derive(Default)]
 struct ResponseIdObserver {
     response_ids: Mutex<Vec<(String, Option<String>)>>,
-    originating_items: Mutex<Vec<(String, Option<codex_protocol::ResponseItemId>)>>,
+    originating_items: Mutex<Vec<(String, Option<ava_protocol::ResponseItemId>)>>,
     wait_started: tokio::sync::Notify,
 }
 
@@ -3816,7 +3816,7 @@ impl ToolLifecycleContributor for ResponseIdObserver {
                     input.tool_name.name.clone(),
                     input
                         .turn_store
-                        .get::<codex_api::ResponseId>()
+                        .get::<ava_api::ResponseId>()
                         .map(|id| id.0.clone()),
                 ));
                 if input.tool_name.name == "wait" {
@@ -3836,7 +3836,7 @@ async fn code_mode_can_yield_and_resume_with_wait() -> Result<()> {
     let observer = Arc::new(ResponseIdObserver::default());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(observer.clone());
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(move |config| {
             let _ = config.features.enable(Feature::CodeMode);
@@ -4025,7 +4025,7 @@ async fn code_mode_yield_and_termination_are_not_starved_by_runtime_output() -> 
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;
@@ -4122,7 +4122,7 @@ async fn code_mode_can_run_multiple_yielded_sessions() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
         let _ = config.features.enable(Feature::ExecutedToolCallMetadata);
     });
@@ -4331,7 +4331,7 @@ async fn code_mode_concurrent_cells_merge_only_the_stored_values_they_write() ->
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;
@@ -4484,7 +4484,7 @@ async fn code_mode_wait_can_terminate_and_continue() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;
@@ -4610,7 +4610,7 @@ async fn code_mode_wait_returns_error_for_unknown_session() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;
@@ -4672,7 +4672,7 @@ async fn code_mode_wait_terminate_returns_completed_session_if_it_finished_after
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;
@@ -4867,7 +4867,7 @@ async fn code_mode_background_keeps_running_on_later_turn_without_wait() -> Resu
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;
@@ -4962,7 +4962,7 @@ struct InterruptedNestedToolObserver {
 impl ToolLifecycleContributor for InterruptedNestedToolObserver {
     fn on_tool_start<'a>(&'a self, input: ToolStartInput<'a>) -> ToolLifecycleFuture<'a> {
         Box::pin(async move {
-            let codex_extension_api::ToolCallSource::CodeMode { cell_id, .. } = input.source else {
+            let ava_extension_api::ToolCallSource::CodeMode { cell_id, .. } = input.source else {
                 return;
             };
             if input.tool_name.name != "test_sync_tool" {
@@ -4984,7 +4984,7 @@ impl ToolLifecycleContributor for InterruptedNestedToolObserver {
             if input.tool_name.name != "test_sync_tool"
                 || !matches!(
                     input.source,
-                    codex_extension_api::ToolCallSource::CodeMode { .. }
+                    ava_extension_api::ToolCallSource::CodeMode { .. }
                 )
             {
                 return;
@@ -5014,8 +5014,8 @@ async fn code_mode_interrupt_terminates_active_cells_and_nested_tools() -> Resul
     }));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             let _ = config.features.enable(Feature::CodeMode);
@@ -5082,7 +5082,7 @@ async fn code_mode_interrupt_terminates_active_cells_and_nested_tools() -> Resul
     )
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "start a long-running nested tool".to_string(),
             text_elements: Vec::new(),
@@ -5090,8 +5090,8 @@ async fn code_mode_interrupt_terminates_active_cells_and_nested_tools() -> Resul
         .await?;
     let active_cell_id = tokio::time::timeout(Duration::from_secs(10), started_rx).await??;
 
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -5163,7 +5163,7 @@ async fn code_mode_wait_uses_its_own_max_tokens_budget() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;
@@ -5386,7 +5386,7 @@ text("after");
     );
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.input_modalities.push(InputModality::Audio);
         })
@@ -5538,7 +5538,7 @@ image({{
   type: "image",
   data,
   mimeType: "image/png",
-  _meta: {{ "codex/imageDetail": "original" }}
+  _meta: {{ "ava/imageDetail": "original" }}
 }});
 "#,
         serde_json::to_string(&image_data)?
@@ -5582,7 +5582,7 @@ image({{
         exec_description
             .contains("`image(imageUrlOrItem: string | { image_url: string } | ImageContent)`")
     );
-    assert!(!exec_description.contains("codex/imageDetail"));
+    assert!(!exec_description.contains("ava/imageDetail"));
     assert!(!exec_description.contains("detail?:"));
 
     Ok(())
@@ -5594,7 +5594,7 @@ async fn code_mode_unified_image_budget_preserves_legacy_contract_for_unsupporte
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let builder = test_codex()
+    let builder = test_ava()
         .with_model_info_override("image-budget-unsupported-model", |model| {
             model.tool_mode = Some(ToolMode::CodeMode);
             model.supports_image_detail_original = false;
@@ -5623,7 +5623,7 @@ async fn code_mode_unified_image_budget_preserves_legacy_contract_for_unsupporte
         .and_then(|tools| tools.iter().find(|tool| tool["name"] == "exec"))
         .and_then(|tool| tool["description"].as_str())
         .expect("the model request should contain the code-mode exec tool");
-    assert!(exec_description.contains("codex/imageDetail"));
+    assert!(exec_description.contains("ava/imageDetail"));
     assert!(exec_description.contains("detail?:"));
 
     Ok(())
@@ -5636,7 +5636,7 @@ async fn code_mode_view_image_rejects_invalid_file_without_exposing_contents() -
     const INVALID_IMAGE_CONTENTS: &str = "private-file-contents-must-not-be-exposed";
 
     let server = responses::start_mock_server().await;
-    let builder = test_codex()
+    let builder = test_ava()
         .with_model("gpt-5.5")
         .with_config(|config| {
             let _ = config.features.enable(Feature::CodeMode);
@@ -5685,7 +5685,7 @@ async fn code_mode_can_use_view_image_result_with_image_helper(
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.5")
         .with_config(move |config| {
             let _ = config.features.enable(Feature::CodeMode);
@@ -5954,7 +5954,7 @@ async fn code_mode_node_repl_screenshots_can_be_captured_without_guardian_transc
     const SCREENSHOT: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==";
     let server = responses::start_mock_server().await;
     let mcp_server_bin = remote_aware_stdio_server_bin()?;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config
             .features
             .enable(Feature::CodeMode)
@@ -5973,9 +5973,9 @@ async fn code_mode_node_repl_screenshots_can_be_captured_without_guardian_transc
             .expect("configure REPL MCP server");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    core_test_support::wait_for_mcp_server(&test.codex, repl_server).await?;
+    core_test_support::wait_for_mcp_server(&test.ava-code, repl_server).await?;
     let evidence = test
-        .codex
+        .ava-code
         .thread_extension_data()
         .get_or_init(NodeReplReviewEvidence::default);
     evidence.enable_image_capture();
@@ -6033,7 +6033,7 @@ async fn code_mode_node_repl_image_flag_without_enhanced_stays_disabled(
 
     let server = responses::start_mock_server().await;
     let mcp_server_bin = remote_aware_stdio_server_bin()?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.5", |model| {
             model.node_repl_auto_review_required = false;
         })
@@ -6069,7 +6069,7 @@ async fn code_mode_node_repl_image_flag_without_enhanced_stays_disabled(
                 .expect("configure REPL MCP server");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, repl_server).await?;
+    wait_for_mcp_server(&test.ava-code, repl_server).await?;
 
     let code = r#"
 await tools.mcp__node_repl__js({ code: 'await nodeRepl.emitImage(await tab.screenshot())' });
@@ -6165,7 +6165,7 @@ async fn code_mode_node_repl_text_evidence_is_visible_only_to_guardian(
         DynamicImage::new_rgba8(/*w*/ 2049, /*h*/ 32)
             .write_to(&mut large_image, ImageFormat::Png)?;
     }
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.5", move |model| {
             model.node_repl_auto_review_required = auto_review_required
         })
@@ -6189,7 +6189,7 @@ async fn code_mode_node_repl_text_evidence_is_visible_only_to_guardian(
                     reviewer.use_responses_lite = false;
                 } else if reviewer_constraint == Some("unsupported") {
                     reviewer.input_modalities =
-                        vec![codex_protocol::openai_models::InputModality::Text];
+                        vec![ava_protocol::openai_models::InputModality::Text];
                 } else {
                     // Fit the required text and request-only prefix, while leaving
                     // insufficient room for the additional image reservation.
@@ -6242,7 +6242,7 @@ async fn code_mode_node_repl_text_evidence_is_visible_only_to_guardian(
                 .expect("configure MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, repl_server).await?;
+    wait_for_mcp_server(&test.ava-code, repl_server).await?;
     let images_enabled = auto_review_required || (enhanced_transcripts && transcript_images);
     let reviewer_images = images_enabled && (reviewer_constraint.is_none() || reviewer_compaction);
     let snapshot_padding = if images_enabled && reviewer_constraint != Some("large_prompt") {
@@ -6552,7 +6552,7 @@ text(JSON.stringify({
         &server,
         "use exec to inspect non-prefixed MCP names",
         code,
-        "test-gpt-5.1-codex",
+        "test-gpt-5.1-ava",
         /*code_mode_only*/ false,
         /*non_prefixed_mcp_tool_names*/ true,
     )
@@ -6656,7 +6656,7 @@ async fn yielded_code_mode_tool_callbacks_keep_their_originating_step() -> Resul
         generation: 0,
         generations: Arc::new(AtomicUsize::new(0)),
     }));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_model_info_override("gpt-5.4", |model| {
             model.tool_mode = Some(ToolMode::CodeMode);
@@ -6744,8 +6744,8 @@ async fn code_mode_exposes_and_dispatches_namespaced_custom_tools() -> Result<()
         generation: 0,
         generations: Arc::new(AtomicUsize::new(0)),
     }));
-    let mut builder = test_codex()
-        .with_model("test-gpt-5.1-codex")
+    let mut builder = test_ava()
+        .with_model("test-gpt-5.1-ava")
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             let _ = config.features.enable(Feature::CodeMode);
@@ -7017,7 +7017,7 @@ async fn code_mode_uses_the_first_dynamic_tool_for_a_normalized_name() -> Result
 
     for use_responses_lite in [false, true] {
         let server = responses::start_mock_server().await;
-        let mut builder = test_codex()
+        let mut builder = test_ava()
             .with_model_info_override("gpt-5.5", move |model_info| {
                 model_info.use_responses_lite = use_responses_lite;
                 model_info.tool_mode = Some(ToolMode::CodeMode);
@@ -7055,7 +7055,7 @@ async fn code_mode_uses_the_first_dynamic_tool_for_a_normalized_name() -> Result
             })
             .await?;
         let mut test = base_test;
-        test.codex = new_thread.thread;
+        test.ava-code = new_thread.thread;
         test.session_configured = new_thread.session_configured;
 
         let first_response = if use_responses_lite {
@@ -7102,14 +7102,14 @@ text(JSON.stringify({
         let cwd = test.config.cwd.clone();
         let (sandbox_policy, permission_profile) =
             turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
-        test.codex
+        test.ava-code
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "inspect and call normalized dynamic tools".to_string(),
                     text_elements: Vec::new(),
                 }])
                 .with_thread_settings(ThreadSettingsOverrides {
-                    environments: Some(codex_protocol::protocol::TurnEnvironmentSelections::new(
+                    environments: Some(ava_protocol::protocol::TurnEnvironmentSelections::new(
                         cwd,
                         Vec::new(),
                     )),
@@ -7129,13 +7129,13 @@ text(JSON.stringify({
             )
             .await?;
 
-        let turn_id = wait_for_event_match(&test.codex, |event| match event {
+        let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
             _ => None,
         })
         .await;
         if use_responses_lite {
-            let request = wait_for_event_match(&test.codex, |event| match event {
+            let request = wait_for_event_match(&test.ava-code, |event| match event {
                 EventMsg::DynamicToolCallRequest(request) => Some(request.clone()),
                 _ => None,
             })
@@ -7143,7 +7143,7 @@ text(JSON.stringify({
             assert_eq!(request.namespace, None);
             assert_eq!(request.tool, "foo-bar");
             assert_eq!(request.arguments, serde_json::json!({}));
-            test.codex
+            test.ava-code
                 .submit(Op::DynamicToolResponse {
                     id: request.call_id,
                     response: DynamicToolResponse {
@@ -7155,7 +7155,7 @@ text(JSON.stringify({
                 })
                 .await?;
         }
-        wait_for_event(&test.codex, |event| match event {
+        wait_for_event(&test.ava-code, |event| match event {
             EventMsg::TurnComplete(event) => event.turn_id == turn_id,
             _ => false,
         })
@@ -7217,7 +7217,7 @@ text(JSON.stringify({
 
         if use_responses_lite {
             let metadata: Value = serde_json::from_str(
-                first_body["client_metadata"]["x-codex-turn-metadata"]
+                first_body["client_metadata"]["x-ava-turn-metadata"]
                     .as_str()
                     .expect("Responses Lite should contain serialized turn metadata"),
             )?;
@@ -7266,7 +7266,7 @@ async fn code_mode_renders_local_refs_in_outbound_exec_description() -> Result<(
         ]),
     )
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::CodeModeOnly)
@@ -7315,7 +7315,7 @@ async fn code_mode_renders_local_refs_in_outbound_exec_description() -> Result<(
         })
         .await?;
     let mut test = base_test;
-    test.codex = new_thread.thread;
+    test.ava-code = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
     test.submit_turn("inspect the tool schema").await?;
@@ -7341,7 +7341,7 @@ async fn code_mode_can_call_hidden_dynamic_tools() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let base_test = builder.build(&server).await?;
@@ -7349,8 +7349,8 @@ async fn code_mode_can_call_hidden_dynamic_tools() -> Result<()> {
         .thread_manager
         .start_thread(StartThreadOptions {
             dynamic_tools: vec![DynamicToolSpec::Namespace(DynamicToolNamespaceSpec {
-                name: "codex_app".to_string(),
-                description: "Codex app tools.".to_string(),
+                name: "ava_app".to_string(),
+                description: "Ava app tools.".to_string(),
                 tools: vec![DynamicToolNamespaceTool::Function(
                     DynamicToolFunctionSpec {
                         name: "hidden_dynamic_tool".to_string(),
@@ -7371,12 +7371,12 @@ async fn code_mode_can_call_hidden_dynamic_tools() -> Result<()> {
         })
         .await?;
     let mut test = base_test;
-    test.codex = new_thread.thread;
+    test.ava-code = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
     let code = r#"
-const tool = ALL_TOOLS.find(({ name }) => name === "codex_app__hidden_dynamic_tool");
-const out = await tools.codex_app__hidden_dynamic_tool({ city: "Paris" });
+const tool = ALL_TOOLS.find(({ name }) => name === "ava_app__hidden_dynamic_tool");
+const out = await tools.ava_app__hidden_dynamic_tool({ city: "Paris" });
 text(
   JSON.stringify({
     name: tool?.name ?? null,
@@ -7409,14 +7409,14 @@ text(
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "use exec to inspect and call hidden tools".into(),
                 text_elements: Vec::new(),
             }])
             .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(codex_protocol::protocol::TurnEnvironmentSelections::new(
+                environments: Some(ava_protocol::protocol::TurnEnvironmentSelections::new(
                     cwd,
                     Vec::new(),
                 )),
@@ -7436,20 +7436,20 @@ text(
         )
         .await?;
 
-    let turn_id = wait_for_event_match(&test.codex, |event| match event {
+    let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
         _ => None,
     })
     .await;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::DynamicToolCallRequest(request) => Some(request.clone()),
         _ => None,
     })
     .await;
-    assert_eq!(request.namespace.as_deref(), Some("codex_app"));
+    assert_eq!(request.namespace.as_deref(), Some("ava_app"));
     assert_eq!(request.tool, "hidden_dynamic_tool");
     assert_eq!(request.arguments, serde_json::json!({ "city": "Paris" }));
-    test.codex
+    test.ava-code
         .submit(Op::DynamicToolResponse {
             id: request.call_id,
             response: DynamicToolResponse {
@@ -7460,7 +7460,7 @@ text(
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| match event {
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::TurnComplete(event) => event.turn_id == turn_id,
         _ => false,
     })
@@ -7480,7 +7480,7 @@ text(
     )?;
     assert_eq!(
         parsed.get("name"),
-        Some(&Value::String("codex_app__hidden_dynamic_tool".to_string()))
+        Some(&Value::String("ava_app__hidden_dynamic_tool".to_string()))
     );
     assert_eq!(
         parsed.get("out"),
@@ -7491,10 +7491,10 @@ text(
             .get("description")
             .and_then(Value::as_str)
             .is_some_and(|description| {
-                description.contains("Codex app tools.")
+                description.contains("Ava app tools.")
                     && description.contains("A hidden dynamic tool.")
                     && description.contains("declare const tools:")
-                    && description.contains("codex_app__hidden_dynamic_tool(args:")
+                    && description.contains("ava_app__hidden_dynamic_tool(args:")
             })
     );
 
@@ -7506,7 +7506,7 @@ async fn code_mode_excludes_configured_nested_tool_namespaces() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.update_plan_enabled = true;
         let _ = config.features.enable(Feature::CodeMode);
         config.code_mode.excluded_tool_namespaces = vec!["excluded".to_string()];
@@ -7535,7 +7535,7 @@ async fn code_mode_excludes_configured_nested_tool_namespaces() -> Result<()> {
         })
         .await?;
     let mut test = base_test;
-    test.codex = new_thread.thread;
+    test.ava-code = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
     let first_mock = responses::mount_sse_once(
@@ -7605,7 +7605,7 @@ async fn code_mode_omits_configured_mcp_server_tools() -> Result<()> {
     let server = responses::start_mock_server().await;
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
     let environment_id = remote_aware_environment_id();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.supports_search_tool = false;
         })
@@ -7629,7 +7629,7 @@ async fn code_mode_omits_configured_mcp_server_tools() -> Result<()> {
                 .expect("test config should allow MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
     let first_mock = responses::mount_sse_once(
         &server,
@@ -7698,7 +7698,7 @@ async fn code_mode_only_keeps_mcp_tools_direct_when_nested_exposure_is_omitted()
     let server = responses::start_mock_server().await;
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
     let environment_id = remote_aware_environment_id();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.supports_search_tool = true;
         })
@@ -7721,7 +7721,7 @@ async fn code_mode_only_keeps_mcp_tools_direct_when_nested_exposure_is_omitted()
                 .expect("test config should allow MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
     let first_mock = responses::mount_sse_once(
         &server,
@@ -7792,7 +7792,7 @@ async fn code_mode_only_can_call_mcp_tools_hidden_from_direct_and_deferred_expos
     let server = responses::start_mock_server().await;
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
     let environment_id = remote_aware_environment_id();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.supports_search_tool = true;
         })
@@ -7816,7 +7816,7 @@ async fn code_mode_only_can_call_mcp_tools_hidden_from_direct_and_deferred_expos
                 .expect("test config should allow MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
     let first_mock = responses::mount_sse_once(
         &server,
@@ -7968,7 +7968,7 @@ async fn code_mode_can_store_and_load_values_across_turns() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let _ = config.features.enable(Feature::CodeMode);
     });
     let test = builder.build(&server).await?;

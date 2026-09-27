@@ -3,15 +3,15 @@
 
 use super::LocalAgentControl;
 use crate::rollout_budget::RolloutBudgetReminder;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::protocol::TokenUsage;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::protocol::TokenUsage;
 
 impl LocalAgentControl {
-    pub(crate) fn record_rollout_budget_usage(&self, usage: &TokenUsage) -> CodexResult<()> {
+    pub(crate) fn record_rollout_budget_usage(&self, usage: &TokenUsage) -> AvaResult<()> {
         if self.rollout_budget.record_usage(usage)? {
-            return Err(CodexErr::SessionBudgetExceeded);
+            return Err(AvaErr::SessionBudgetExceeded);
         }
         Ok(())
     }

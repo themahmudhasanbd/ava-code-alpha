@@ -5,15 +5,15 @@ use crate::images::ImageEditRequest;
 use crate::images::ImageGenerationRequest;
 use crate::images::ImageResponse;
 use crate::provider::Provider;
-use codex_client::HttpTransport;
-use codex_client::RequestTelemetry;
+use ava_client::HttpTransport;
+use ava_client::RequestTelemetry;
 use http::HeaderMap;
 use http::Method;
 use serde::Serialize;
 use serde_json::to_value;
 use std::sync::Arc;
 
-const X_CODEX_IMAGEGEN_REQUEST_ID_HEADER: &str = "x-codex-imagegen-request-id";
+const X_AVA_IMAGEGEN_REQUEST_ID_HEADER: &str = "x-ava-imagegen-request-id";
 
 pub struct ImagesClient<T: HttpTransport> {
     session: EndpointSession<T>,
@@ -70,7 +70,7 @@ impl<T: HttpTransport> ImagesClient<T> {
             .await?;
         let imagegen_request_id = resp
             .headers
-            .get(X_CODEX_IMAGEGEN_REQUEST_ID_HEADER)
+            .get(X_AVA_IMAGEGEN_REQUEST_ID_HEADER)
             .and_then(|value| value.to_str().ok())
             .filter(|request_id| !request_id.is_empty())
             .map(str::to_string);
@@ -89,11 +89,11 @@ mod tests {
     use crate::images::ImageQuality;
     use crate::images::ImageUrl;
     use crate::provider::RetryConfig;
-    use codex_client::Request;
-    use codex_client::RequestBody;
-    use codex_client::Response;
-    use codex_client::StreamResponse;
-    use codex_client::TransportError;
+    use ava_client::Request;
+    use ava_client::RequestBody;
+    use ava_client::Response;
+    use ava_client::StreamResponse;
+    use ava_client::TransportError;
     use http::StatusCode;
     use pretty_assertions::assert_eq;
     use serde_json::json;
@@ -211,7 +211,7 @@ mod tests {
     async fn generate_posts_typed_request_and_parses_image_response() {
         let mut response_headers = HeaderMap::new();
         response_headers.insert(
-            X_CODEX_IMAGEGEN_REQUEST_ID_HEADER,
+            X_AVA_IMAGEGEN_REQUEST_ID_HEADER,
             http::HeaderValue::from_static("req-imagegen-123"),
         );
         response_headers.insert(

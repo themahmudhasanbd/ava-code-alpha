@@ -637,7 +637,7 @@ fn find_reveals_hidden_command_output_and_restores_compact_presentation() {
             output: Some(crate::exec_cell::CommandOutput::new(
                 /*exit_code*/ 0, output,
             )),
-            source: codex_app_server_protocol::CommandExecutionSource::Agent,
+            source: ava_app_server_protocol::CommandExecutionSource::Agent,
             start_time: None,
             duration: None,
             interaction_input: None,

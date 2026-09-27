@@ -1,7 +1,7 @@
 //! Compaction checkpoints retain the summary captured after a mid-turn settings update.
 
 use super::*;
-use codex_history::RolloutItem;
+use ava_history::RolloutItem;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use test_case::test_case;
@@ -43,7 +43,7 @@ async fn compaction_preserves_updated_summary(mode: CompactionMode) -> Result<()
     bodies.push(sse_completed("done"));
     let responses = mount_sse_sequence(&server, bodies).await;
     let test = step_settings_test()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.model_auto_compact_token_limit = Some(200_000);
             config
@@ -58,10 +58,10 @@ async fn compaction_preserves_updated_summary(mode: CompactionMode) -> Result<()
         })
         .build_with_auto_env(&server)
         .await?;
-    let pause = start_paused_turn(&test.codex).await?;
+    let pause = start_paused_turn(&test.ava-code).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.codex,
+            &test.ava-code,
             &pause.turn_id,
             TurnSettingsUpdate {
                 summary: Some(ReasoningSummary::Detailed),
@@ -71,12 +71,12 @@ async fn compaction_preserves_updated_summary(mode: CompactionMode) -> Result<()
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.codex, &pause.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &pause.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
 
     let requests = responses.requests();
     assert_eq!(
@@ -90,7 +90,7 @@ async fn compaction_preserves_updated_summary(mode: CompactionMode) -> Result<()
         std::fs::read_to_string(test.session_configured.rollout_path.expect("rollout path"))?;
     let items = rollout
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<std::result::Result<Vec<_>, _>>()?;
     let checkpoint = items
         .iter()

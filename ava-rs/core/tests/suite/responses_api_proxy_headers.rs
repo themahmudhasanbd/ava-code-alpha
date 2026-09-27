@@ -3,16 +3,16 @@
 
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::ResponsesRequest;
 use core_test_support::responses::ev_assistant_message;
@@ -23,10 +23,10 @@ use core_test_support::responses::mount_sse_once_match;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::time::Duration;
@@ -90,14 +90,14 @@ async fn responses_api_parent_and_subagent_requests_include_identity_headers_and
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .disable(Feature::EnableRequestCompression)
             .expect("test config should allow feature update");
         config
             .responses_api_metadata
-            .insert("codex_security_surface".to_string(), "sdk".to_string());
+            .insert("ava_security_surface".to_string(), "sdk".to_string());
     });
     let test = builder.build(&server).await?;
     submit_turn_with_timeout(&test, PARENT_PROMPT).await?;
@@ -114,11 +114,11 @@ async fn responses_api_parent_and_subagent_requests_include_identity_headers_and
     .await?;
 
     let parent_window_id = parent
-        .header("x-codex-window-id")
-        .ok_or_else(|| anyhow!("parent request missing x-codex-window-id"))?;
+        .header("x-ava-window-id")
+        .ok_or_else(|| anyhow!("parent request missing x-ava-window-id"))?;
     let child_window_id = child
-        .header("x-codex-window-id")
-        .ok_or_else(|| anyhow!("child request missing x-codex-window-id"))?;
+        .header("x-ava-window-id")
+        .ok_or_else(|| anyhow!("child request missing x-ava-window-id"))?;
     let (parent_thread_id, parent_generation) = split_window_id(&parent_window_id)?;
     let (child_thread_id, child_generation) = split_window_id(&child_window_id)?;
 
@@ -131,36 +131,36 @@ async fn responses_api_parent_and_subagent_requests_include_identity_headers_and
         Some("collab_spawn")
     );
     assert_eq!(
-        child.header("x-codex-parent-thread-id").as_deref(),
+        child.header("x-ava-parent-thread-id").as_deref(),
         Some(parent_thread_id)
     );
     let parent_turn_metadata: serde_json::Value = serde_json::from_str(
         &parent
-            .header("x-codex-turn-metadata")
-            .ok_or_else(|| anyhow!("parent request missing x-codex-turn-metadata"))?,
+            .header("x-ava-turn-metadata")
+            .ok_or_else(|| anyhow!("parent request missing x-ava-turn-metadata"))?,
     )?;
-    assert_eq!(parent_turn_metadata["codex_security_surface"], json!("sdk"));
+    assert_eq!(parent_turn_metadata["ava_security_surface"], json!("sdk"));
     let child_turn_metadata: serde_json::Value = serde_json::from_str(
         &child
-            .header("x-codex-turn-metadata")
-            .ok_or_else(|| anyhow!("child request missing x-codex-turn-metadata"))?,
+            .header("x-ava-turn-metadata")
+            .ok_or_else(|| anyhow!("child request missing x-ava-turn-metadata"))?,
     )?;
     assert!(child_turn_metadata.get("forked_from_thread_id").is_none());
     assert_eq!(
         child_turn_metadata["parent_thread_id"].as_str(),
         Some(parent_thread_id)
     );
-    assert_eq!(child_turn_metadata["codex_security_surface"], json!("sdk"));
+    assert_eq!(child_turn_metadata["ava_security_surface"], json!("sdk"));
 
     Ok(())
 }
 
-async fn submit_turn_with_timeout(test: &TestCodex, prompt: &str) -> Result<()> {
+async fn submit_turn_with_timeout(test: &TestAva, prompt: &str) -> Result<()> {
     let session_model = test.session_configured.model.clone();
     let cwd = test.config.cwd.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::workspace_write(), cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -225,7 +225,7 @@ where
 }
 
 async fn wait_for_event_result<F>(
-    test: &TestCodex,
+    test: &TestAva,
     stage: &str,
     mut predicate: F,
 ) -> Result<EventMsg>
@@ -235,7 +235,7 @@ where
     let mut seen_events = Vec::new();
     tokio::time::timeout(TURN_TIMEOUT, async {
         loop {
-            let event = test.codex.next_event().await?;
+            let event = test.ava-code.next_event().await?;
             seen_events.push(event_summary(&event.msg));
             if predicate(&event.msg) {
                 return Ok::<EventMsg, anyhow::Error>(event.msg);

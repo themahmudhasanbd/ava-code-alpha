@@ -1,5 +1,5 @@
 use super::*;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::LegacyAppPathString;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::path::Path;
@@ -363,7 +363,7 @@ fn deserialize_streamable_http_server_config_with_oauth_client_id() {
             url = "https://example.com/mcp"
 
             [oauth]
-            client_id = "eci-prd-pub-codex-123"
+            client_id = "eci-prd-pub-ava-123"
             callback_url = "http://127.0.0.1/callback/registered"
             callback_port = 9876
         "#,
@@ -373,7 +373,7 @@ fn deserialize_streamable_http_server_config_with_oauth_client_id() {
     assert_eq!(
         cfg.oauth,
         Some(McpServerOAuthConfig {
-            client_id: Some("eci-prd-pub-codex-123".to_string()),
+            client_id: Some("eci-prd-pub-ava-123".to_string()),
             callback_url: Some("http://127.0.0.1/callback/registered".to_string()),
             callback_port: Some(9876),
             ..Default::default()
@@ -621,7 +621,7 @@ fn deserialize_rejects_headers_for_stdio() {
     let err = toml::from_str::<McpServerConfig>(
         r#"
             command = "echo"
-            oauth = { client_id = "eci-prd-pub-codex-123" }
+            oauth = { client_id = "eci-prd-pub-ava-123" }
         "#,
     )
     .expect_err("should reject oauth for stdio transport");

@@ -26,10 +26,10 @@ use crate::tool_output::tool_output_hyperlink_preview;
 use crate::ui_consts::TRANSCRIPT_HINT;
 use crate::wrapping::RtOptions;
 use crate::wrapping::adaptive_wrap_line_with_source;
-use codex_ansi_escape::ansi_escape_line;
-use codex_app_server_protocol::CommandExecutionSource as ExecCommandSource;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_shell_command::bash::extract_bash_command;
+use ava_ansi_escape::ansi_escape_line;
+use ava_app_server_protocol::CommandExecutionSource as ExecCommandSource;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_shell_command::bash::extract_bash_command;
 use itertools::Itertools;
 use ratatui::prelude::*;
 use ratatui::style::Modifier;
@@ -839,7 +839,7 @@ mod tests {
     use crate::render::line_utils::prefix_lines;
     use crate::render::line_utils::push_owned_lines;
     use crate::wrapping::adaptive_wrap_line;
-    use codex_app_server_protocol::CommandExecutionSource as ExecCommandSource;
+    use ava_app_server_protocol::CommandExecutionSource as ExecCommandSource;
     use pretty_assertions::assert_eq;
 
     fn render_line_text(line: &Line<'static>) -> String {
@@ -1109,7 +1109,7 @@ mod tests {
             "-Command".to_string(),
             r"Get-Content C:\skills\demo\SKILL.md".to_string(),
         ];
-        let parsed = codex_shell_command::parse_command::parse_command(&command);
+        let parsed = ava_shell_command::parse_command::parse_command(&command);
         let cell = new_active_exec_command(
             "call-id".to_string(),
             command,

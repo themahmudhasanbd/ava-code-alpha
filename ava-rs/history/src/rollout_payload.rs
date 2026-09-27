@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use super::CodexHarnessMetadata;
+use super::AvaHarnessMetadata;
 use super::CompactedItem;
 use super::EventMsg;
 use super::InterAgentCommunication;
@@ -28,7 +28,7 @@ pub(super) enum RolloutItemWire<'a> {
     ResponseItem {
         payload: Cow<'a, ResponseItem>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        metadata: Option<Cow<'a, CodexHarnessMetadata>>,
+        metadata: Option<Cow<'a, AvaHarnessMetadata>>,
     },
     InterAgentCommunication {
         payload: Cow<'a, InterAgentCommunication>,
@@ -157,7 +157,7 @@ pub(super) struct CompactedItemWire<'a> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     replacement_history: Option<Vec<Cow<'a, ResponseItem>>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    replacement_history_metadata: Option<Vec<Cow<'a, CodexHarnessMetadata>>>,
+    replacement_history_metadata: Option<Vec<Cow<'a, AvaHarnessMetadata>>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     guardian_history: Option<Cow<'a, crate::GuardianHistoryCheckpoint>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -190,7 +190,7 @@ impl<'a> From<&'a CompactedItem> for CompactedItemWire<'a> {
                     .iter()
                     .map(|envelope| match envelope.metadata.as_ref() {
                         Some(metadata) => Cow::Borrowed(metadata),
-                        None => Cow::Owned(CodexHarnessMetadata::default()),
+                        None => Cow::Owned(AvaHarnessMetadata::default()),
                     })
                     .collect()
             });

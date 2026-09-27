@@ -1,10 +1,10 @@
 #[cfg(test)]
 use super::*;
 use crate::GuardianAssessment;
-use codex_analytics::GuardianReviewFailureReason;
-use codex_protocol::protocol::GuardianAssessmentOutcome;
-use codex_protocol::protocol::GuardianRiskLevel;
-use codex_protocol::protocol::GuardianUserAuthorization;
+use ava_analytics::GuardianReviewFailureReason;
+use ava_protocol::protocol::GuardianAssessmentOutcome;
+use ava_protocol::protocol::GuardianRiskLevel;
+use ava_protocol::protocol::GuardianUserAuthorization;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
 
@@ -15,7 +15,7 @@ fn guardian_review_error_reason_distinguishes_error_kinds() {
     let session_error = GuardianReviewError::session(anyhow::anyhow!("guardian runtime failed"));
     let structured_session_error = GuardianReviewError::session_with_error_info(
         anyhow::anyhow!("temporary guardian failure"),
-        CodexErrorInfo::ServerOverloaded,
+        AvaErrorInfo::ServerOverloaded,
     );
 
     assert!(matches!(
@@ -45,15 +45,15 @@ fn guardian_review_retry_only_retries_transient_session_and_parse_errors() {
         rationale: "deny".to_string(),
     };
     let transient_error_info = [
-        CodexErrorInfo::ServerOverloaded,
-        CodexErrorInfo::HttpConnectionFailed {
+        AvaErrorInfo::ServerOverloaded,
+        AvaErrorInfo::HttpConnectionFailed {
             http_status_code: Some(502),
         },
-        CodexErrorInfo::ResponseStreamConnectionFailed {
+        AvaErrorInfo::ResponseStreamConnectionFailed {
             http_status_code: Some(503),
         },
-        CodexErrorInfo::InternalServerError,
-        CodexErrorInfo::ResponseStreamDisconnected {
+        AvaErrorInfo::InternalServerError,
+        AvaErrorInfo::ResponseStreamDisconnected {
             http_status_code: None,
         },
     ];
@@ -88,14 +88,14 @@ fn guardian_review_retry_only_retries_transient_session_and_parse_errors() {
         (
             GuardianReviewOutcome::Error(GuardianReviewError::session_with_error_info(
                 anyhow::anyhow!("bad request"),
-                CodexErrorInfo::BadRequest,
+                AvaErrorInfo::BadRequest,
             )),
             false,
         ),
         (
             GuardianReviewOutcome::Error(GuardianReviewError::session_with_error_info(
                 anyhow::anyhow!("bio policy"),
-                CodexErrorInfo::BioPolicy,
+                AvaErrorInfo::BioPolicy,
             )),
             false,
         ),

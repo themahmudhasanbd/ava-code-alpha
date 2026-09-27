@@ -4,9 +4,9 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCResponse;
-use codex_exec_server_protocol::RequestId;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCResponse;
+use ava_exec_server_protocol::RequestId;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -142,7 +142,7 @@ async fn missing_pong_disconnects_physical_relay() -> Result<()> {
         environment_websocket,
         ConnectionProcessor::new(ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?),
         ENVIRONMENT_ID.to_string(),
         EXECUTOR_REGISTRATION_ID.to_string(),
@@ -173,7 +173,7 @@ async fn pong_keeps_physical_relay_connected() -> Result<()> {
         environment_websocket,
         ConnectionProcessor::new(ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?),
         ENVIRONMENT_ID.to_string(),
         EXECUTOR_REGISTRATION_ID.to_string(),
@@ -247,7 +247,7 @@ async fn processor_exit_resets_noise_harness_stream() -> Result<()> {
         ObservedRegistration(
             ConnectionProcessor::new(ExecServerRuntimePaths::new(
                 std::env::current_exe()?,
-                /*codex_linux_sandbox_exe*/ None,
+                /*ava_linux_sandbox_exe*/ None,
             )?),
             registration_tx,
         ),
@@ -317,7 +317,7 @@ async fn pending_harness_key_validation_does_not_block_new_handshakes() -> Resul
         environment_websocket,
         ConnectionProcessor::new(ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?),
         ENVIRONMENT_ID.to_string(),
         EXECUTOR_REGISTRATION_ID.to_string(),
@@ -371,7 +371,7 @@ async fn duplicate_handshakes_pause_admission_without_disconnecting() -> Result<
         environment_websocket,
         ConnectionProcessor::new(ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?),
         ENVIRONMENT_ID.to_string(),
         EXECUTOR_REGISTRATION_ID.to_string(),
@@ -480,7 +480,7 @@ async fn oversized_harness_authorization_is_rejected_before_validation() -> Resu
         environment_websocket,
         ConnectionProcessor::new(ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?),
         ENVIRONMENT_ID.to_string(),
         EXECUTOR_REGISTRATION_ID.to_string(),
@@ -699,7 +699,7 @@ async fn early_data_during_validation_pauses_admission_without_disconnecting() -
         environment_websocket,
         ConnectionProcessor::new(ExecServerRuntimePaths::new(
             std::env::current_exe()?,
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )?),
         ENVIRONMENT_ID.to_string(),
         EXECUTOR_REGISTRATION_ID.to_string(),

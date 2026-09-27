@@ -1,21 +1,21 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-model-provider-info"
+name = "ava-model-provider-info"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_model_provider_info"
+name = "ava_model_provider_info"
 path = "src/lib.rs"
 
 [lints]
 workspace = true
 
 [dependencies]
-codex-api = { workspace = true }
-codex-protocol = { workspace = true }
-codex-utils-redacted-string = { workspace = true }
+ava-api = { workspace = true }
+ava-protocol = { workspace = true }
+ava-utils-redacted-string = { workspace = true }
 dirs = { workspace = true }
 http = { workspace = true }
 schemars = { workspace = true }
@@ -24,7 +24,7 @@ serde_json = { workspace = true }
 url = { workspace = true }
 
 [dev-dependencies]
-codex-utils-absolute-path = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
 maplit = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }

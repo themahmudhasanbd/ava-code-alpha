@@ -8,7 +8,7 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
-use codex_exec_server::HttpClient;
+use ava_exec_server::HttpClient;
 use rmcp::transport::AuthorizationManager;
 use rmcp::transport::AuthorizationSession;
 use rmcp::transport::auth::AuthorizationMetadata;
@@ -42,8 +42,8 @@ use crate::oauth_client_registration::start_authorization as start_client_regist
 use crate::oauth_http_client::OAuthHttpClientAdapter;
 use crate::save_oauth_tokens;
 use crate::utils::build_default_headers;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
 
 #[path = "oauth_callback_input.rs"]
 mod callback_input;
@@ -904,16 +904,16 @@ mod tests {
     use axum::Router;
     use axum::routing::get;
     use axum::routing::post;
-    use codex_config::types::AuthKeyringBackendKind;
-    use codex_config::types::OAuthCredentialsStoreMode;
-    use codex_exec_server::ExecServerError;
-    use codex_exec_server::HttpClient;
-    use codex_exec_server::HttpRequestParams;
-    use codex_exec_server::HttpRequestResponse;
-    use codex_exec_server::HttpResponseBodyStream;
-    use codex_exec_server::RouteAwareHttpClient;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
+    use ava_config::types::AuthKeyringBackendKind;
+    use ava_config::types::OAuthCredentialsStoreMode;
+    use ava_exec_server::ExecServerError;
+    use ava_exec_server::HttpClient;
+    use ava_exec_server::HttpRequestParams;
+    use ava_exec_server::HttpRequestResponse;
+    use ava_exec_server::HttpResponseBodyStream;
+    use ava_exec_server::RouteAwareHttpClient;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
     use futures::future::BoxFuture;
     use http::HeaderMap;
     use oauth2::TokenResponse;
@@ -940,7 +940,7 @@ mod tests {
     use super::resolve_authorization_manager;
     use super::start_authorization;
     use crate::oauth::stored_oauth_credentials;
-    use crate::oauth::test_support::TempCodexHome;
+    use crate::oauth::test_support::TempAvaHome;
 
     #[derive(Default)]
     struct RecordingHttpClient {
@@ -1064,7 +1064,7 @@ mod tests {
 
     #[tokio::test]
     async fn ordinary_oauth_login_persists_issuer_without_a_refresh_token() -> anyhow::Result<()> {
-        let _env = TempCodexHome::new();
+        let _env = TempAvaHome::new();
         let (base_url, _registration_requests) = spawn_oauth_metadata_server().await;
         let server_url = format!("{base_url}/mcp");
         let flow = OauthLoginFlow::new(
@@ -1144,7 +1144,7 @@ mod tests {
                 scopes,
                 redirect_uri,
                 "configured-client",
-                "eci-prd-pub-codex-123",
+                "eci-prd-pub-ava-123",
                 OAuthLoginPurpose::Mcp,
             )
             .await
@@ -1163,7 +1163,7 @@ mod tests {
 
             assert_eq!(
                 query.get("client_id").map(String::as_str),
-                Some("eci-prd-pub-codex-123")
+                Some("eci-prd-pub-ava-123")
             );
             assert_eq!(
                 query.get("redirect_uri").map(String::as_str),

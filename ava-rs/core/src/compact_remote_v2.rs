@@ -20,7 +20,7 @@ use crate::hook_runtime::PostCompactHookOutcome;
 use crate::hook_runtime::PreCompactHookOutcome;
 use crate::hook_runtime::run_post_compact_hooks;
 use crate::hook_runtime::run_pre_compact_hooks;
-use crate::responses_metadata::CodexResponsesMetadata;
+use crate::responses_metadata::AvaResponsesMetadata;
 use crate::responses_metadata::CompactionTurnMetadata;
 use crate::responses_retry::ResponsesStreamRequest;
 use crate::responses_retry::ResponsesStreamRetryState;
@@ -29,32 +29,32 @@ use crate::session::RequestEffortUsage;
 use crate::session::session::Session;
 use crate::session::step_context::StepContext;
 use crate::session::turn_context::TurnContext;
-use codex_analytics::CompactionImplementation;
-use codex_analytics::CompactionPhase;
-use codex_analytics::CompactionReason;
-use codex_analytics::CompactionTrigger;
-use codex_context_fragments::set_annotated_content;
-use codex_context_fragments::to_annotated_content;
-use codex_features::Feature;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::items::ContextCompactionItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::AgentMessageInputContent;
-use codex_protocol::models::ContentItem;
+use ava_analytics::CompactionImplementation;
+use ava_analytics::CompactionPhase;
+use ava_analytics::CompactionReason;
+use ava_analytics::CompactionTrigger;
+use ava_context_fragments::set_annotated_content;
+use ava_context_fragments::to_annotated_content;
+use ava_features::Feature;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::items::ContextCompactionItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::AgentMessageInputContent;
+use ava_protocol::models::ContentItem;
 #[cfg(test)]
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TruncationPolicy;
-use codex_rollout_trace::CompactionCheckpointTracePayload;
-use codex_rollout_trace::InferenceTraceContext;
-use codex_utils_output_truncation::approx_token_count;
-use codex_utils_output_truncation::truncate_text;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TruncationPolicy;
+use ava_rollout_trace::CompactionCheckpointTracePayload;
+use ava_rollout_trace::InferenceTraceContext;
+use ava_utils_output_truncation::approx_token_count;
+use ava_utils_output_truncation::truncate_text;
 use futures::StreamExt;
 use tokio_util::sync::CancellationToken;
 
@@ -86,7 +86,7 @@ pub(crate) async fn run_inline_remote_auto_compact_task(
     initial_context_injection: InitialContextInjection,
     reason: CompactionReason,
     phase: CompactionPhase,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let compaction_metadata = CompactionTurnMetadata::new(
         CompactionTrigger::Auto,
         reason,
@@ -107,7 +107,7 @@ pub(crate) async fn run_inline_remote_auto_compact_task(
 pub(crate) async fn run_remote_compact_task(
     sess: Arc<Session>,
     turn_context: Arc<TurnContext>,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     // Standalone compaction is its own request boundary, so it captures a fresh step.
     let step_context = sess
         .capture_step_context(Arc::clone(&turn_context), &CancellationToken::new())
@@ -138,7 +138,7 @@ async fn run_remote_compact_task_inner(
     client_session: Option<&mut ModelClientSession>,
     initial_context_injection: InitialContextInjection,
     compaction_metadata: CompactionTurnMetadata,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let turn_context = &step_context.turn;
     let trigger = compaction_metadata.trigger();
     let reason = compaction_metadata.reason();
@@ -161,11 +161,11 @@ async fn run_remote_compact_task_inner(
     match pre_compact_outcome {
         PreCompactHookOutcome::Continue => {}
         PreCompactHookOutcome::Stopped => {
-            let error = CodexErr::TurnAborted;
+            let error = AvaErr::TurnAborted;
             attempt
                 .track(
                     sess.as_ref(),
-                    codex_analytics::CompactionStatus::Interrupted,
+                    ava_analytics::CompactionStatus::Interrupted,
                     Some(&error),
                     analytics_details,
                 )
@@ -184,29 +184,29 @@ async fn run_remote_compact_task_inner(
     )
     .await;
     let status = compaction_status_from_result(&result);
-    let codex_error = result.as_ref().err();
+    let ava_error = result.as_ref().err();
     if result.is_ok() {
         let post_compact_outcome = run_post_compact_hooks(sess, turn_context, trigger).await;
         if let PostCompactHookOutcome::Stopped = post_compact_outcome {
             attempt
-                .track(sess.as_ref(), status, codex_error, analytics_details)
+                .track(sess.as_ref(), status, ava_error, analytics_details)
                 .await;
-            return Err(CodexErr::TurnAborted);
+            return Err(AvaErr::TurnAborted);
         }
     }
     attempt
-        .track(sess.as_ref(), status, codex_error, analytics_details)
+        .track(sess.as_ref(), status, ava_error, analytics_details)
         .await;
     match result {
         Ok(()) => Ok(()),
         Err(err)
-            if matches!(err.details(), CodexErrorDetails::TurnAborted)
+            if matches!(err.details(), AvaErrorDetails::TurnAborted)
                 || matches!(phase, CompactionPhase::PostTurn) =>
         {
             Err(err)
         }
         Err(err) => {
-            sess.track_turn_codex_error(turn_context, &err);
+            sess.track_turn_ava_error(turn_context, &err);
             // Pre-turn failures are reported by run_turn after preserving the incoming prompt.
             if !matches!(phase, CompactionPhase::PreTurn) {
                 let event = EventMsg::Error(
@@ -227,7 +227,7 @@ async fn run_remote_compact_task_inner_impl(
     initial_context_injection: InitialContextInjection,
     compaction_metadata: CompactionTurnMetadata,
     analytics_details: &mut CompactionAnalyticsDetails,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let turn_context = &step_context.turn;
     let context_compaction_item = ContextCompactionItem::new();
     let compaction_id = context_compaction_item.id.clone();
@@ -389,8 +389,8 @@ async fn run_remote_compaction_request_v2(
     step_context: &StepContext,
     client_session: &mut ModelClientSession,
     prompt: &Prompt,
-    responses_metadata: &CodexResponsesMetadata,
-) -> CodexResult<RemoteCompactionV2Output> {
+    responses_metadata: &AvaResponsesMetadata,
+) -> AvaResult<RemoteCompactionV2Output> {
     let turn_context = &step_context.turn;
     let max_retries = turn_context
         .provider
@@ -442,7 +442,7 @@ async fn collect_compaction_output(
     sess: &Session,
     turn_context: &TurnContext,
     mut stream: ResponseStream,
-) -> CodexResult<RemoteCompactionV2Output> {
+) -> AvaResult<RemoteCompactionV2Output> {
     let mut output_item_count = 0usize;
     let mut compaction_count = 0usize;
     let mut compaction_output = None;
@@ -481,13 +481,13 @@ async fn collect_compaction_output(
     }
 
     let Some(response_id) = completed_response_id else {
-        return Err(CodexErr::Stream(
+        return Err(AvaErr::Stream(
             "remote compaction v2 stream closed before response.completed".to_string(),
         ));
     };
 
     if compaction_count != 1 {
-        return Err(CodexErr::Fatal(format!(
+        return Err(AvaErr::Fatal(format!(
             "remote compaction v2 expected exactly one compaction output item, got {compaction_count} from {output_item_count} output items"
         )));
     }
@@ -504,7 +504,7 @@ async fn collect_compaction_output(
 
 fn build_v2_compacted_history(
     prompt_input: Vec<ResponseItem>,
-    prompt_input_metadata: Vec<Option<CodexHarnessMetadata>>,
+    prompt_input_metadata: Vec<Option<AvaHarnessMetadata>>,
     compaction_output: ResponseItem,
     retain_client_developer_messages: bool,
     image_budget: RetainedImageBudget,
@@ -780,10 +780,10 @@ fn truncate_message_text_to_token_budget(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_protocol::models::ContentItem;
-    use codex_protocol::models::ContentItemKind;
-    use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-    use codex_protocol::models::MessagePhase;
+    use ava_protocol::models::ContentItem;
+    use ava_protocol::models::ContentItemKind;
+    use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+    use ava_protocol::models::MessagePhase;
     use pretty_assertions::assert_eq;
     use tokio::sync::mpsc;
     use tokio_util::sync::CancellationToken;
@@ -832,7 +832,7 @@ mod tests {
         ))
     }
 
-    fn response_stream(events: Vec<CodexResult<ResponseEvent>>) -> ResponseStream {
+    fn response_stream(events: Vec<AvaResult<ResponseEvent>>) -> ResponseStream {
         let (tx_event, rx_event) = mpsc::channel(events.len().max(1));
         for event in events {
             tx_event
@@ -848,8 +848,8 @@ mod tests {
 
     #[test]
     fn build_v2_compacted_history_filters_to_installed_retention_shape() {
-        let hook = codex_protocol::items::build_hook_prompt_message(&[
-            codex_protocol::items::HookPromptFragment::from_single_hook("hook", "hook-run"),
+        let hook = ava_protocol::items::build_hook_prompt_message(&[
+            ava_protocol::items::HookPromptFragment::from_single_hook("hook", "hook-run"),
         ])
         .expect("hook prompt");
         let input = vec![
@@ -918,11 +918,11 @@ mod tests {
                 ],
                 vec![
                     None,
-                    Some(CodexHarnessMetadata {
+                    Some(AvaHarnessMetadata {
                         client_authored: true,
                         ..Default::default()
                     }),
-                    Some(CodexHarnessMetadata::default()),
+                    Some(AvaHarnessMetadata::default()),
                     None,
                 ],
                 output.clone(),
@@ -932,7 +932,7 @@ mod tests {
             let mut expected = vec![
                 ResponseItemEnvelope {
                     item: retained.clone(),
-                    metadata: Some(CodexHarnessMetadata::default()),
+                    metadata: Some(AvaHarnessMetadata::default()),
                 },
                 ResponseItemEnvelope::new(generated_notice.clone()),
                 ResponseItemEnvelope::new(output.clone()),
@@ -942,7 +942,7 @@ mod tests {
                     0,
                     ResponseItemEnvelope {
                         item: client.clone(),
-                        metadata: Some(CodexHarnessMetadata {
+                        metadata: Some(AvaHarnessMetadata {
                             client_authored: true,
                             ..Default::default()
                         }),
@@ -957,14 +957,14 @@ mod tests {
     fn retained_history_truncation_preserves_metadata() {
         let item = ResponseItemEnvelope {
             item: message("user", "word ".repeat(200).as_str(), /*phase*/ None),
-            metadata: Some(CodexHarnessMetadata::default()),
+            metadata: Some(AvaHarnessMetadata::default()),
         };
 
         let truncated =
             truncate_retained_messages_for_remote_compaction(vec![item], /*max_tokens*/ 4);
 
         assert_eq!(truncated.len(), 1);
-        assert_eq!(truncated[0].metadata, Some(CodexHarnessMetadata::default()));
+        assert_eq!(truncated[0].metadata, Some(AvaHarnessMetadata::default()));
     }
 
     #[test]
@@ -1222,9 +1222,9 @@ mod tests {
                     output_tokens: 42,
                     reasoning_output_tokens: 5,
                     total_tokens: 123_498,
-                    codex_rollout_budget_units: None,
+                    ava_rollout_budget_units: None,
                 }),
-                usage_metadata: Some(codex_protocol::ResponseUsageMetadata {
+                usage_metadata: Some(ava_protocol::ResponseUsageMetadata {
                     amount: Some("0.125".to_string()),
                     metadata: Some(serde_json::json!({ "extra": { "label": "example" } })),
                 }),
@@ -1247,7 +1247,7 @@ mod tests {
         assert_eq!(completed.response_id, "resp-compact");
         assert_eq!(
             completed.usage_metadata,
-            Some(codex_protocol::ResponseUsageMetadata {
+            Some(ava_protocol::ResponseUsageMetadata {
                 amount: Some("0.125".to_string()),
                 metadata: Some(serde_json::json!({ "extra": { "label": "example" } })),
             })
@@ -1261,7 +1261,7 @@ mod tests {
                 output_tokens: 42,
                 reasoning_output_tokens: 5,
                 total_tokens: 123_498,
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             })
         );
     }

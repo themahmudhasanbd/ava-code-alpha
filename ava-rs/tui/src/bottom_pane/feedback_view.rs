@@ -1,9 +1,9 @@
-use codex_feedback::CODEX_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME;
-use codex_feedback::CODEX_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME;
-use codex_feedback::DOCTOR_REPORT_ATTACHMENT_FILENAME;
-use codex_feedback::FEEDBACK_DIAGNOSTICS_ATTACHMENT_FILENAME;
-use codex_feedback::FeedbackDiagnostics;
-use codex_feedback::WINDOWS_SANDBOX_LOG_ATTACHMENT_FILENAME;
+use ava_feedback::AVA_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME;
+use ava_feedback::AVA_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME;
+use ava_feedback::DOCTOR_REPORT_ATTACHMENT_FILENAME;
+use ava_feedback::FEEDBACK_DIAGNOSTICS_ATTACHMENT_FILENAME;
+use ava_feedback::FeedbackDiagnostics;
+use ava_feedback::WINDOWS_SANDBOX_LOG_ATTACHMENT_FILENAME;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 
@@ -17,7 +17,7 @@ use super::popup_consts::standard_popup_hint_line;
 const BASE_CLI_BUG_ISSUE_URL: &str =
     "https://github.com/openai/codex/issues/new?template=3-cli.yml";
 /// Internal routing link for employee feedback follow-ups. This must not be shown to external users.
-const CODEX_FEEDBACK_INTERNAL_URL: &str = "http://go/codex-feedback-internal";
+const AVA_FEEDBACK_INTERNAL_URL: &str = "http://go/codex-feedback-internal";
 
 /// The target audience for feedback disclosure and follow-up instructions.
 ///
@@ -59,7 +59,7 @@ pub(crate) fn feedback_success_cell(
     let issue_url = issue_url_for_category(category, thread_id, feedback_audience);
     let mut lines = vec![Line::from(match issue_url.as_ref() {
         Some(_) if feedback_audience == FeedbackAudience::OpenAiEmployee => {
-            format!("{prefix} You can share this in #codex-feedback:")
+            format!("{prefix} You can share this in #ava-feedback:")
         }
         Some(_) => format!("{prefix} Please open an issue using the following URL:"),
         None => format!("{prefix} Thanks for the feedback!"),
@@ -137,7 +137,7 @@ fn issue_url_for_category(
 /// We accept a `thread_id` so the call site stays symmetric with the external
 /// path, but we currently point to a fixed channel without prefilling text.
 fn slack_feedback_url(_thread_id: &str) -> String {
-    CODEX_FEEDBACK_INTERNAL_URL.to_string()
+    AVA_FEEDBACK_INTERNAL_URL.to_string()
 }
 
 // Build the selection popup params for feedback categories.
@@ -252,7 +252,7 @@ pub(crate) fn feedback_upload_consent_params(
         Line::from("Upload logs?".bold()).into(),
         Line::from("").into(),
         Line::from("The following files will be sent:".dim()).into(),
-        Line::from(vec!["  • ".into(), "codex-logs.log".into()]).into(),
+        Line::from(vec!["  • ".into(), "ava-logs.log".into()]).into(),
         Line::from(vec![
             "  • ".into(),
             DOCTOR_REPORT_ATTACHMENT_FILENAME.into(),
@@ -260,12 +260,12 @@ pub(crate) fn feedback_upload_consent_params(
         .into(),
         Line::from(vec![
             "  • ".into(),
-            format!("{CODEX_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME} (if available)").into(),
+            format!("{AVA_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME} (if available)").into(),
         ])
         .into(),
         Line::from(vec![
             "  • ".into(),
-            format!("{CODEX_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME} (if available)").into(),
+            format!("{AVA_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME} (if available)").into(),
         ])
         .into(),
     ];
@@ -313,7 +313,7 @@ pub(crate) fn feedback_upload_consent_params(
             super::SelectionItem {
                 name: "Yes".to_string(),
                 description: Some(
-                    "Share the current Codex session logs and diagnostics with the team for troubleshooting."
+                    "Share the current Ava session logs and diagnostics with the team for troubleshooting."
                         .to_string(),
                 ),
                 actions: vec![yes_action],
@@ -340,7 +340,7 @@ mod tests {
     use crate::app_event::AppEvent;
     use crate::app_event_sender::AppEventSender;
     use crate::render::renderable::Renderable;
-    use codex_feedback::FeedbackDiagnostic;
+    use ava_feedback::FeedbackDiagnostic;
     use pretty_assertions::assert_eq;
     use ratatui::buffer::Buffer;
     use ratatui::layout::Rect;

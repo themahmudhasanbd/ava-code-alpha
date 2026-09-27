@@ -7,15 +7,15 @@ use super::LunaSamplerConfig;
 use super::LunaSamplerError;
 use super::MAX_OUTPUT_BYTES;
 use super::connection_pool::RequestMode;
-use codex_api::ApiError;
-use codex_api::ResponseEvent;
-use codex_api::ResponsesApiRequest;
-use codex_api::TransportError;
-use codex_extension_api::ExtensionMetrics;
-use codex_login::UnauthorizedRecovery;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::TokenUsage;
+use ava_api::ApiError;
+use ava_api::ResponseEvent;
+use ava_api::ResponsesApiRequest;
+use ava_api::TransportError;
+use ava_extension_api::ExtensionMetrics;
+use ava_login::UnauthorizedRecovery;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::TokenUsage;
 use http::StatusCode;
 use serde_json::json;
 use std::collections::HashMap;
@@ -26,8 +26,8 @@ use tokio::sync::oneshot;
 
 const MAX_SAMPLING_RETRIES: usize = 2;
 const RESPONSES_LITE_METADATA_KEY: &str =
-    "ws_request_header_x_openai_internal_codex_responses_lite";
-const TURN_METADATA_KEY: &str = "x-codex-turn-metadata";
+    "ws_request_header_x_openai_internal_ava_responses_lite";
+const TURN_METADATA_KEY: &str = "x-ava-turn-metadata";
 
 pub(super) struct SamplingExecution {
     pub(super) config: Arc<LunaSamplerConfig>,
@@ -152,7 +152,7 @@ impl SamplingExecution {
                 ("parent_turn_id".to_owned(), self.parent_turn_id.clone()),
                 ("x-openai-subagent".to_owned(), "guardian".to_owned()),
                 // Classifier requests do not advance their own context window.
-                ("x-codex-window-id".to_owned(), format!("{thread_id}:0")),
+                ("x-ava-window-id".to_owned(), format!("{thread_id}:0")),
                 (RESPONSES_LITE_METADATA_KEY.to_owned(), "true".to_owned()),
             ]);
             if let Some(root_turn_id) = &self.root_turn_id {

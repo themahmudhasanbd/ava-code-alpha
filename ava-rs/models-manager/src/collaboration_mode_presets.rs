@@ -1,7 +1,7 @@
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::openai_models::ReasoningEffort;
 
 pub fn builtin_collaboration_mode_presets() -> Vec<CollaborationModeMask> {
     let messages = ResolvedModelMessages::bundled().collaboration_modes();

@@ -36,7 +36,7 @@ async fn bedrock_onboarding_leaves_a_running_daemon_untouched() -> Result<()> {
 }
 
 async fn daemon_startup(command: &str) -> Result<()> {
-    let codex = codex_utils_cargo_bin::cargo_bin("codex")?.canonicalize()?;
+    let ava = ava_utils_cargo_bin::cargo_bin("ava")?.canonicalize()?;
     let workspace = tempfile::tempdir()?;
     let workspace_path = workspace.path().canonicalize()?;
     #[cfg(unix)]
@@ -64,10 +64,10 @@ async fn daemon_startup(command: &str) -> Result<()> {
     }
     let mut env = std::env::vars().collect::<std::collections::HashMap<_, _>>();
     for key in [
-        "CODEX_EXEC_SERVER_URL",
-        "CODEX_ACCESS_TOKEN",
-        "CODEX_API_KEY",
-        "CODEX_CLOUD_TASKS_MODE",
+        "AVA_EXEC_SERVER_URL",
+        "AVA_ACCESS_TOKEN",
+        "AVA_API_KEY",
+        "AVA_CLOUD_TASKS_MODE",
         "OPENAI_API_KEY",
         "OPENAI_FEDERATION_RULE_ID",
         "OPENAI_IDENTITY_TOKEN_FILE",
@@ -75,9 +75,9 @@ async fn daemon_startup(command: &str) -> Result<()> {
     ] {
         env.remove(key);
     }
-    env.insert("CODEX_HOME".into(), home.path().display().to_string());
+    env.insert("AVA_HOME".into(), home.path().display().to_string());
     env.insert(
-        "CODEX_SQLITE_HOME".into(),
+        "AVA_SQLITE_HOME".into(),
         home.path().display().to_string(),
     );
     env.insert("TERM".into(), "xterm-256color".into());
@@ -87,9 +87,9 @@ async fn daemon_startup(command: &str) -> Result<()> {
         // A selected package with a stopped daemon avoids installing a release.
         let managed = home
             .path()
-            .join("packages/app-server-daemon/current/bin/codex");
+            .join("packages/app-server-daemon/current/bin/ava");
         fs::create_dir_all(home.path().join("packages/app-server-daemon/current/bin"))?;
-        fs::hard_link(&codex, &managed).or_else(|_| fs::copy(&codex, &managed).map(|_| ()))?;
+        fs::hard_link(&ava, &managed).or_else(|_| fs::copy(&ava, &managed).map(|_| ()))?;
         fs::create_dir(home.path().join("app-server-daemon"))?;
         fs::write(
             home.path().join("app-server-daemon/settings.json"),
@@ -99,7 +99,7 @@ async fn daemon_startup(command: &str) -> Result<()> {
     let pid_file = home.path().join("app-server-daemon/daemon.pid");
     let result = async {
         let existing_daemon = if command == "bedrock-running" {
-            let started = Command::new(&codex)
+            let started = Command::new(&ava)
                 .env_clear()
                 .envs(&env)
                 .current_dir(&workspace_path)
@@ -126,13 +126,13 @@ async fn daemon_startup(command: &str) -> Result<()> {
             steps.push_back(("GPT-5.6-Terra", b"\x14"));
             "Runningwithoutthesharedbackgroundserver:--strict-config"
         };
-        let spawned = codex_utils_pty::spawn_pty_process(
-            &codex.to_string_lossy(),
+        let spawned = ava_utils_pty::spawn_pty_process(
+            &ava.to_string_lossy(),
             &args,
             &workspace_path,
             &env,
             /*arg0*/ &None,
-            codex_utils_pty::TerminalSize {
+            ava_utils_pty::TerminalSize {
                 rows: 40,
                 cols: 120,
             },
@@ -200,7 +200,7 @@ async fn daemon_startup(command: &str) -> Result<()> {
     }
     .await;
     // Always stop the detached daemon, including on timeout or failed assertions.
-    let stopped = Command::new(&codex)
+    let stopped = Command::new(&ava)
         .env_clear()
         .envs(&env)
         .args(["app-server", "daemon", "stop"])

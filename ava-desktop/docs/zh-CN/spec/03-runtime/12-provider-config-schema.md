@@ -56,7 +56,7 @@
         "responses",
         "anthropic_messages",
         "google_generative_ai",
-        "openai_codex_responses",
+        "openai_ava_responses",
         "pi_messages",
         "auto"
       ]
@@ -156,7 +156,7 @@ token 与思考等级；未发布的 id 仍沿用通用种子值。
 `authKind: "oauth"` 标记厂商账户行（ADR 0095、D237）：其凭据是保存在
 `secret:provider:<id>:oauth` 下的 OAuth 授权，而不是粘贴的密钥，因此该行
 不为它保存 `secretRef`，并以空密钥启动。两种账户专用 apiStyle 是厂商账户专用的
-线路 API —— `openai_codex_responses`（Codex 会话封装）与 `pi_messages`
+线路 API —— `openai_ava_responses`（Ava 会话封装）与 `pi_messages`
 （radius 网关）—— 自定义提供商对话框不提供它们，因为二者都无法配合手输的
 base URL 与粘贴的密钥工作。新建自定义服务只提供 Chat Completions、Responses、Anthropic
 Messages 和 Google Generative AI；OpenCode Go 仍通过具名服务配置。
@@ -229,7 +229,7 @@ OpenCode Go（以及任何 `opencode.ai` 主机）的 LLM 请求必须带稳定�
 上发送该头，并附带 `x-opencode-client: pi-desktop` 与
 `User-Agent: pi-desktop/<APP_VERSION>`。行上可选的 `headers` 会覆盖这些默认值；留空则保持适配器默认。
 
-每行（AI 服务或 OAuth 账户）可在高级选项中用键值行编辑自定义请求头。空映射保持 pi-ai / `claude-cli` / OpenCode 默认。fetch 包装器是最后写入者，因此 Codex 与 Anthropic SDK 无法覆盖。禁止 `Authorization` / `Host` / `Content-Type` 等保留头。遗留的 `userAgent` 读取时迁入 `headers["User-Agent"]`。首次 OAuth 登录不收集请求头，登录后再编辑。覆盖 Anthropic OAuth 的 `claude-cli/…` 可能导致 Claude Pro/Max 拒绝请求。
+每行（AI 服务或 OAuth 账户）可在高级选项中用键值行编辑自定义请求头。空映射保持 pi-ai / `claude-cli` / OpenCode 默认。fetch 包装器是最后写入者，因此 Ava 与 Anthropic SDK 无法覆盖。禁止 `Authorization` / `Host` / `Content-Type` 等保留头。遗留的 `userAgent` 读取时迁入 `headers["User-Agent"]`。首次 OAuth 登录不收集请求头，登录后再编辑。覆盖 Anthropic OAuth 的 `claude-cli/…` 可能导致 Claude Pro/Max 拒绝请求。
 
 ### 命名端点预设
 
@@ -260,7 +260,7 @@ MiniMax (OpenAI)（`chat_completions`，`https://api.minimaxi.com/v1`，别名
 | vendorKey | 订阅 | 典型 apiStyle | 登录形态 |
 |---|---|---|---|
 | anthropic | Claude Pro/Max | anthropic_messages | PKCE + 本地回调 |
-| openai-codex | ChatGPT Plus/Pro | openai_codex_responses | PKCE + 本地回调，或手动贴码 |
+| openai-ava | ChatGPT Plus/Pro | openai_ava_responses | PKCE + 本地回调，或手动贴码 |
 | github-copilot | Copilot | 随模型而变 | 设备码 |
 | openrouter | 账户余额 | chat_completions | PKCE + 本地回调 |
 | kimi-coding | Kimi | chat_completions（仅 headers 认证） | 设备码 |
@@ -393,7 +393,7 @@ Copilot 的上下文相关请求标头；已保存的同名自定义 header 会�
 - 对 `authKind: "oauth"` 行，Electron 主进程读取已认证的目录
   （`models.getAvailable`，它已应用厂商自己的 `filterModels`，因此 Copilot
   账户列出的是其订阅包含的模型），而不是调用 `/models`；返回的每个模型都
-  带着其线路 API 所隐含的 apiStyle。`openai-codex` 这类静态厂商使用已固定
+  带着其线路 API 所隐含的 apiStyle。`openai-ava` 这类静态厂商使用已固定
   的 pi-ai 目录（0.86.1 包含 `gpt-6-astra`）；models.dev 不会发明这些 ID。
 - 输出：`{ models: ModelCatalogItem[] }`；每个模型都带有 pi-resolved
   `reasoning` 功能和 `supportedThinkingLevels`。缓存的功能标签

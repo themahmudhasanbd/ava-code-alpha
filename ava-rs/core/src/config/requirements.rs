@@ -1,12 +1,12 @@
-use codex_config::ConfigRequirements;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
-use codex_config::config_toml::ConfigToml;
-use codex_config::types::ApprovalsReviewer;
-use codex_config::types::FeedbackConfigToml;
-use codex_features::FeatureToml;
-use codex_login::default_client::RESIDENCY_HEADER_NAME;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::ConfigRequirements;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
+use ava_config::config_toml::ConfigToml;
+use ava_config::types::ApprovalsReviewer;
+use ava_config::types::FeedbackConfigToml;
+use ava_features::FeatureToml;
+use ava_login::default_client::RESIDENCY_HEADER_NAME;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -150,10 +150,10 @@ pub(super) fn push_sqlite_home_env_override_warning(
     tracing::warn!(
         ?source,
         ?value,
-        "`CODEX_SQLITE_HOME` is overridden by an exact requirement for sqlite_home"
+        "`AVA_SQLITE_HOME` is overridden by an exact requirement for sqlite_home"
     );
     startup_warnings.push(format!(
-        "Environment value for `$CODEX_SQLITE_HOME` is overridden by the required `sqlite_home` value {value:?} from {source}."
+        "Environment value for `$AVA_SQLITE_HOME` is overridden by the required `sqlite_home` value {value:?} from {source}."
     ));
 }
 

@@ -7,17 +7,17 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::PoisonError;
 
-use codex_features::Feature;
-use codex_guardian_context::NodeReplContext;
-use codex_guardian_context::NodeReplResponse;
-pub(crate) use codex_guardian_context::NodeReplReviewEvidenceMode;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageReference;
-use codex_protocol::user_input::UserInput;
-use codex_protocol::user_input::UserInput::Image;
-use codex_protocol::user_input::UserInput::Text;
-use codex_utils_output_truncation::approx_token_count;
-use codex_utils_string::take_bytes_at_char_boundary;
+use ava_features::Feature;
+use ava_guardian_context::NodeReplContext;
+use ava_guardian_context::NodeReplResponse;
+pub(crate) use ava_guardian_context::NodeReplReviewEvidenceMode;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::user_input::UserInput;
+use ava_protocol::user_input::UserInput::Image;
+use ava_protocol::user_input::UserInput::Text;
+use ava_utils_output_truncation::approx_token_count;
+use ava_utils_string::take_bytes_at_char_boundary;
 
 use crate::guardian::GUARDIAN_MAX_NODE_REPL_TOOL_RESULT_TOKENS;
 use crate::guardian::guardian_truncate_text;

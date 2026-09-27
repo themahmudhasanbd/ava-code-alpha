@@ -28,8 +28,8 @@ use crate::mentions::collect_explicit_app_ids;
 use crate::mentions::collect_explicit_plugin_mentions;
 use crate::mentions::collect_tool_mentions_from_messages;
 use crate::plugins::build_plugin_injections;
-use crate::responses_metadata::CodexResponsesMetadata;
-use crate::responses_metadata::CodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesMetadata;
+use crate::responses_metadata::AvaResponsesRequestKind;
 use crate::responses_retry::ResponsesStreamRequest;
 use crate::responses_retry::ResponsesStreamRetryState;
 use crate::responses_retry::handle_response_stream_error;
@@ -62,69 +62,69 @@ use crate::tools::spec_plan::tool_suggest_enabled;
 use crate::turn_diff_tracker::TurnDiffTracker;
 use crate::turn_timing::record_turn_ttft_metric;
 use crate::util::error_or_panic;
-use codex_analytics::AppInvocation;
-use codex_analytics::CompactionPhase;
-use codex_analytics::CompactionReason;
-use codex_analytics::InvocationType;
-use codex_analytics::TurnResolvedConfigFact;
-use codex_analytics::build_track_events_context;
-use codex_async_utils::OrCancelExt;
-use codex_connectors::AppToolPolicyEvaluator;
-use codex_core_plugins::RecommendedPluginCandidatesInput;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::TurnInputContext;
-use codex_extension_api::TurnInputEnvironment;
-use codex_features::Feature;
-use codex_file_system::FindUpErrorPolicy;
-use codex_file_system::find_nearest_ancestor_with_markers;
-use codex_login::CodexAuth;
-use codex_model_provider::RemoteCompactionSupport;
-use codex_protocol::ResponseItemId;
-use codex_protocol::config_types::AutoCompactTokenLimitScope;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::items::PlanItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::build_hook_prompt_message;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::AgentMessageContentDeltaEvent;
-use codex_protocol::protocol::AgentReasoningSectionBreakEvent;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::PlanDeltaEvent;
-use codex_protocol::protocol::ReasoningContentDeltaEvent;
-use codex_protocol::protocol::ReasoningRawContentDeltaEvent;
-use codex_protocol::protocol::SafetyBufferingEvent;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TurnDiffEvent;
-use codex_protocol::protocol::WarningEvent;
-use codex_protocol::user_input::UserInput;
-use codex_skills::ToolMentionKind;
-use codex_skills::app_id_from_path;
-use codex_skills::build_skill_name_counts;
-use codex_skills::collect_explicit_skill_mentions;
-use codex_skills::tool_kind_for_path;
-use codex_skills_extension::HostSkillPrompts;
-use codex_skills_extension::InjectedHostSkillPrompts;
-use codex_thread_store::PersistContext;
-use codex_tools::DiscoverableTool;
-use codex_tools::ToolName;
-use codex_tools::filter_request_plugin_install_discoverable_tools_for_client;
-use codex_utils_path_uri::PathUri;
-use codex_utils_stream_parser::AssistantTextChunk;
-use codex_utils_stream_parser::AssistantTextStreamParser;
-use codex_utils_stream_parser::ProposedPlanSegment;
-use codex_utils_stream_parser::extract_proposed_plan_text;
-use codex_utils_stream_parser::strip_citations;
+use ava_analytics::AppInvocation;
+use ava_analytics::CompactionPhase;
+use ava_analytics::CompactionReason;
+use ava_analytics::InvocationType;
+use ava_analytics::TurnResolvedConfigFact;
+use ava_analytics::build_track_events_context;
+use ava_async_utils::OrCancelExt;
+use ava_connectors::AppToolPolicyEvaluator;
+use ava_core_plugins::RecommendedPluginCandidatesInput;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::TurnInputContext;
+use ava_extension_api::TurnInputEnvironment;
+use ava_features::Feature;
+use ava_file_system::FindUpErrorPolicy;
+use ava_file_system::find_nearest_ancestor_with_markers;
+use ava_login::AvaAuth;
+use ava_model_provider::RemoteCompactionSupport;
+use ava_protocol::ResponseItemId;
+use ava_protocol::config_types::AutoCompactTokenLimitScope;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::items::PlanItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::build_hook_prompt_message;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::AgentMessageContentDeltaEvent;
+use ava_protocol::protocol::AgentReasoningSectionBreakEvent;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::PlanDeltaEvent;
+use ava_protocol::protocol::ReasoningContentDeltaEvent;
+use ava_protocol::protocol::ReasoningRawContentDeltaEvent;
+use ava_protocol::protocol::SafetyBufferingEvent;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TurnDiffEvent;
+use ava_protocol::protocol::WarningEvent;
+use ava_protocol::user_input::UserInput;
+use ava_skills::ToolMentionKind;
+use ava_skills::app_id_from_path;
+use ava_skills::build_skill_name_counts;
+use ava_skills::collect_explicit_skill_mentions;
+use ava_skills::tool_kind_for_path;
+use ava_skills_extension::HostSkillPrompts;
+use ava_skills_extension::InjectedHostSkillPrompts;
+use ava_thread_store::PersistContext;
+use ava_tools::DiscoverableTool;
+use ava_tools::ToolName;
+use ava_tools::filter_request_plugin_install_discoverable_tools_for_client;
+use ava_utils_path_uri::PathUri;
+use ava_utils_stream_parser::AssistantTextChunk;
+use ava_utils_stream_parser::AssistantTextStreamParser;
+use ava_utils_stream_parser::ProposedPlanSegment;
+use ava_utils_stream_parser::extract_proposed_plan_text;
+use ava_utils_stream_parser::strip_citations;
 use futures::prelude::*;
 use futures::stream::FuturesOrdered;
 use tokio_util::sync::CancellationToken;
@@ -137,7 +137,7 @@ use tracing::trace;
 use tracing::trace_span;
 use tracing::warn;
 
-const POST_SAMPLING_TOKEN_ESTIMATE_TARGET: &str = "codex_core::post_sampling_token_estimate";
+const POST_SAMPLING_TOKEN_ESTIMATE_TARGET: &str = "ava_core::post_sampling_token_estimate";
 
 /// Explicit MCP startup requirements retained across restarts within one user turn.
 #[derive(Default)]
@@ -167,7 +167,7 @@ pub(crate) async fn run_turn(
     mcp_startup_requirements: &mut McpStartupRequirements,
     prewarmed_client_session: Option<ModelClientSession>,
     cancellation_token: CancellationToken,
-) -> CodexResult<Option<String>> {
+) -> AvaResult<Option<String>> {
     if crate::guardian::is_basic_session_source(&turn_context.session_source) {
         crate::guardian::check_pending_guardian_input(&sess, &turn_context).await?;
     }
@@ -197,13 +197,13 @@ pub(crate) async fn run_turn(
             PersistContext::Standard,
         )
         .await;
-        if matches!(err.details(), CodexErrorDetails::TurnAborted) {
+        if matches!(err.details(), AvaErrorDetails::TurnAborted) {
             return Err(err);
         }
-        if matches!(err.details(), CodexErrorDetails::ToolCollision(_)) {
+        if matches!(err.details(), AvaErrorDetails::ToolCollision(_)) {
             return Err(err);
         }
-        let error = err.to_codex_protocol_error();
+        let error = err.to_ava_protocol_error();
         sess.emit_turn_error_lifecycle(turn_context.as_ref(), error.clone())
             .await;
         // Publish the failure only after prompt hooks finish, so clients cannot react to
@@ -265,7 +265,7 @@ pub(crate) async fn run_turn(
         .await
     {
         Ok(step_context) => step_context,
-        Err(err) if matches!(err.details(), CodexErrorDetails::TurnAborted) => {
+        Err(err) if matches!(err.details(), AvaErrorDetails::TurnAborted) => {
             run_hooks_and_record_inputs(
                 &sess,
                 &turn_context,
@@ -325,13 +325,13 @@ pub(crate) async fn run_turn(
             &sess,
             &first_step_context,
             &mut input,
-            codex_guardian_context::HistoryTruncation::Preserve,
+            ava_guardian_context::HistoryTruncation::Preserve,
         )
         .await
     {
         // Token-budget compaction resets history, which can discard the evidence
         // referenced by a pending delta review. Leave budget failures unreusable.
-        if !matches!(error.details(), CodexErrorDetails::ContextWindowExceeded)
+        if !matches!(error.details(), AvaErrorDetails::ContextWindowExceeded)
             || turn_context.config.features.enabled(Feature::TokenBudget)
         {
             return Err(error);
@@ -358,7 +358,7 @@ pub(crate) async fn run_turn(
             &sess,
             &first_step_context,
             &mut input,
-            codex_guardian_context::HistoryTruncation::Allow,
+            ava_guardian_context::HistoryTruncation::Allow,
         )
         .await?;
     }
@@ -405,7 +405,7 @@ pub(crate) async fn run_turn(
 
     let mut last_agent_message: Option<String> = None;
     let mut stop_hook_active = false;
-    // Although from the perspective of codex.rs, TurnDiffTracker has the lifecycle of a Task which contains
+    // Although from the perspective of ava.rs, TurnDiffTracker has the lifecycle of a Task which contains
     // many turns, from the perspective of the user, it is a single turn.
     let turn_diff_tracker = Arc::new(tokio::sync::Mutex::new(
         TurnDiffTracker::with_environment_display_roots(display_roots),
@@ -493,7 +493,7 @@ pub(crate) async fn run_turn(
                 .await?
             }
         };
-        let sampling_request_result: CodexResult<_> = async {
+        let sampling_request_result: AvaResult<_> = async {
             super::time_reminder::maybe_record_current_time_reminder(
                 sess.as_ref(),
                 turn_context.as_ref(),
@@ -519,7 +519,7 @@ pub(crate) async fn run_turn(
             .await;
 
             let responses_metadata = sess
-                .responses_metadata(step_context.as_ref(), CodexResponsesRequestKind::Turn)
+                .responses_metadata(step_context.as_ref(), AvaResponsesRequestKind::Turn)
                 .await;
             run_sampling_request(
                 Arc::clone(&sess),
@@ -626,10 +626,10 @@ pub(crate) async fn run_turn(
                     )
                     .await
                     {
-                        if matches!(err.details(), CodexErrorDetails::TurnAborted) {
+                        if matches!(err.details(), AvaErrorDetails::TurnAborted) {
                             return Err(err);
                         }
-                        let error = err.to_codex_protocol_error();
+                        let error = err.to_ava_protocol_error();
                         sess.emit_turn_error_lifecycle(turn_context.as_ref(), error.clone())
                             .await;
                         return Ok(None);
@@ -656,7 +656,7 @@ pub(crate) async fn run_turn(
                     ) && (stop_outcome.should_block || stop_outcome.should_stop)
                     {
                         // Do not feed managed rejections back into an unattended memory loop.
-                        return Err(CodexErr::InvalidRequest(
+                        return Err(AvaErr::InvalidRequest(
                             "Memory consolidation was rejected by a Stop hook.".to_string(),
                         ));
                     }
@@ -727,7 +727,7 @@ pub(crate) async fn run_turn(
                     {
                         if matches!(
                             err.details(),
-                            CodexErrorDetails::Interrupted | CodexErrorDetails::TurnAborted
+                            AvaErrorDetails::Interrupted | AvaErrorDetails::TurnAborted
                         ) {
                             return Err(err);
                         }
@@ -738,7 +738,7 @@ pub(crate) async fn run_turn(
                 continue;
             }
             Err(err)
-                if matches!(err.details(), CodexErrorDetails::ContextWindowExceeded)
+                if matches!(err.details(), AvaErrorDetails::ContextWindowExceeded)
                     && !guardian_budget_compacted
                     && !turn_context.config.features.enabled(Feature::TokenBudget)
                     && sess
@@ -771,24 +771,24 @@ pub(crate) async fn run_turn(
                 can_drain_pending_input = false;
                 continue;
             }
-            Err(err) if matches!(err.details(), CodexErrorDetails::TurnAborted) => {
+            Err(err) if matches!(err.details(), AvaErrorDetails::TurnAborted) => {
                 return Err(err);
             }
-            Err(codex_error)
+            Err(ava_error)
                 if matches!(
-                    codex_error.details(),
-                    CodexErrorDetails::InvalidImageRequest()
+                    ava_error.details(),
+                    AvaErrorDetails::InvalidImageRequest()
                 ) =>
             {
-                sess.track_turn_codex_error(turn_context.as_ref(), &codex_error);
-                let error = CodexErrorInfo::BadRequest;
+                sess.track_turn_ava_error(turn_context.as_ref(), &ava_error);
+                let error = AvaErrorInfo::BadRequest;
                 sess.emit_turn_error_lifecycle(turn_context.as_ref(), error.clone())
                     .await;
                 let event = EventMsg::Error(ErrorEvent {
                     misalignment: None,
                     message: "Invalid image in your last message. Please remove it and try again."
                         .to_string(),
-                    codex_error_info: Some(error),
+                    ava_error_info: Some(error),
                 });
                 sess.send_event(&turn_context, event).await;
                 break;
@@ -797,14 +797,14 @@ pub(crate) async fn run_turn(
                 info!("Turn error: {e:#}");
                 if matches!(
                     e.details(),
-                    CodexErrorDetails::MisalignmentPolicyViolation { .. }
+                    AvaErrorDetails::MisalignmentPolicyViolation { .. }
                 ) {
                     sess.conversation.retire_handoffs_for_misalignment().await;
                 }
-                let error = e.to_codex_protocol_error();
+                let error = e.to_ava_protocol_error();
                 sess.emit_turn_error_lifecycle(turn_context.as_ref(), error.clone())
                     .await;
-                sess.track_turn_codex_error(turn_context.as_ref(), &e);
+                sess.track_turn_ava_error(turn_context.as_ref(), &e);
                 let event = EventMsg::Error(e.to_error_event(/*message_prefix*/ None));
                 sess.send_event(&turn_context, event).await;
                 // let the user continue the conversation
@@ -1011,7 +1011,7 @@ async fn required_mcp_servers_for_input(
             .flat_map(|config| config.connector_snapshot.connector_ids())
             .map(|connector_id| connector_id.0.clone());
         build_connector_slug_counts(
-            &codex_connectors::merge::merge_plugin_connectors_with_accessible(
+            &ava_connectors::merge::merge_plugin_connectors_with_accessible(
                 connector_ids,
                 accessible_connectors,
             ),
@@ -1077,7 +1077,7 @@ async fn build_skills_and_plugins(
         &[]
     };
     let available_connectors = if turn_context.apps_enabled() {
-        let connectors = codex_connectors::merge::merge_plugin_connectors_with_accessible(
+        let connectors = ava_connectors::merge::merge_plugin_connectors_with_accessible(
             connector_snapshot
                 .connector_ids()
                 .iter()
@@ -1301,7 +1301,7 @@ async fn track_turn_resolved_config_analytics(
             guardian_v2_enabled: sess
                 .services
                 .thread_extension_data
-                .get::<codex_extension_api::GuardianV2Enabled>()
+                .get::<ava_extension_api::GuardianV2Enabled>()
                 .is_some(),
             sandbox_network_access: turn_context.network_sandbox_policy().is_enabled(),
             collaboration_mode: turn_context.mode(),
@@ -1317,7 +1317,7 @@ async fn run_pre_sampling_compact(
     turn_context: &Arc<TurnContext>,
     client_session: &mut ModelClientSession,
     cancellation_token: &CancellationToken,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     maybe_run_previous_model_inline_compact(sess, turn_context, client_session, cancellation_token)
         .await?;
     let token_status =
@@ -1353,19 +1353,19 @@ fn comp_hash_changed(previous: Option<&str>, current: Option<&str>) -> bool {
 
 /// Captures the current model's request-scoped state for retrying previous-model compaction.
 ///
-/// Returns `None` when the active authentication does not use the Codex backend, the provider is
+/// Returns `None` when the active authentication does not use the Ava backend, the provider is
 /// not OpenAI, or the previous and current model are the same.
 async fn capture_current_model_fallback_step_context(
     sess: &Arc<Session>,
     turn_context: &Arc<TurnContext>,
     previous_model: &str,
     cancellation_token: &CancellationToken,
-) -> CodexResult<Option<Arc<StepContext>>> {
-    let uses_codex_backend = turn_context
+) -> AvaResult<Option<Arc<StepContext>>> {
+    let uses_ava_backend = turn_context
         .auth_manager
         .as_deref()
-        .is_some_and(codex_login::AuthManager::current_auth_uses_codex_backend);
-    if !uses_codex_backend
+        .is_some_and(ava_login::AuthManager::current_auth_uses_ava_backend);
+    if !uses_ava_backend
         || !turn_context.provider.info().is_openai()
         || previous_model == turn_context.model_info().slug
     {
@@ -1385,7 +1385,7 @@ async fn maybe_run_previous_model_inline_compact(
     turn_context: &Arc<TurnContext>,
     client_session: &mut ModelClientSession,
     cancellation_token: &CancellationToken,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let Some(previous_turn_settings) = sess.previous_turn_settings().await else {
         return Ok(());
     };
@@ -1492,7 +1492,7 @@ async fn run_auto_compact(
     initial_context_injection: InitialContextInjection,
     reason: CompactionReason,
     phase: CompactionPhase,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let turn_context = &step_context.turn;
     let _profile_guard = turn_context.turn_timing_state.begin_compaction();
     if turn_context.config.features.enabled(Feature::TokenBudget) {
@@ -1584,7 +1584,7 @@ pub(super) fn collect_explicit_app_ids_from_skill_items(
 
     let connector_slug_counts = build_connector_slug_counts(connectors);
     for connector in connectors {
-        let slug = codex_connectors::metadata::connector_mention_slug(connector);
+        let slug = ava_connectors::metadata::connector_mention_slug(connector);
         let connector_count = connector_slug_counts.get(&slug).copied().unwrap_or(0);
         let skill_count = skill_name_counts_lower.get(&slug).copied().unwrap_or(0);
         if connector_count == 1 && skill_count == 0 && mention_names_lower.contains(&slug) {
@@ -1628,13 +1628,13 @@ pub(crate) fn build_prompt(
 async fn run_sampling_request(
     sess: Arc<Session>,
     step_context: Arc<StepContext>,
-    turn_store: Arc<codex_extension_api::ExtensionData>,
+    turn_store: Arc<ava_extension_api::ExtensionData>,
     turn_diff_tracker: SharedTurnDiffTracker,
     client_session: &mut ModelClientSession,
-    responses_metadata: &CodexResponsesMetadata,
+    responses_metadata: &AvaResponsesMetadata,
     input: Vec<ResponseItem>,
     cancellation_token: CancellationToken,
-) -> CodexResult<(SamplingRequestResult, Vec<ResponseItem>)> {
+) -> AvaResult<(SamplingRequestResult, Vec<ResponseItem>)> {
     let turn_context = Arc::clone(&step_context.turn);
     let base_instructions = sess.get_prompt_base_instructions().await;
 
@@ -1698,11 +1698,11 @@ async fn run_sampling_request(
                 return Ok((output, original_input.unwrap_or(prompt.input)));
             }
             Err(err) => match err.details() {
-                CodexErrorDetails::ContextWindowExceeded => {
+                AvaErrorDetails::ContextWindowExceeded => {
                     sess.set_total_tokens_full(&turn_context).await;
                     return Err(err);
                 }
-                CodexErrorDetails::UsageLimitReached(e) => {
+                AvaErrorDetails::UsageLimitReached(e) => {
                     let rate_limits = e.rate_limits.clone();
                     if let Some(rate_limits) = rate_limits {
                         sess.update_rate_limits(&turn_context, *rate_limits).await;
@@ -1732,7 +1732,7 @@ async fn run_sampling_request(
 }
 
 pub(crate) struct PreparedToolRecommendations {
-    auth: Option<CodexAuth>,
+    auth: Option<AvaAuth>,
     endpoint_candidates: Option<Vec<DiscoverableTool>>,
 }
 
@@ -1787,12 +1787,12 @@ pub(crate) async fn prepare_tool_recommendations(
 pub(crate) async fn built_tools(
     sess: &Session,
     turn_context: &TurnContext,
-    model_info: &codex_protocol::openai_models::ModelInfo,
+    model_info: &ava_protocol::openai_models::ModelInfo,
     environments: &TurnEnvironmentSnapshot,
-    mcp: &Arc<codex_mcp::McpBinding>,
+    mcp: &Arc<ava_mcp::McpBinding>,
     step_store: &ExtensionData,
     prepared_recommendations: PreparedToolRecommendations,
-) -> CodexResult<Arc<ToolRouter>> {
+) -> AvaResult<Arc<ToolRouter>> {
     let all_mcp_tools = mcp.tools();
     let connector_snapshot = mcp.config().connector_snapshot.clone();
 
@@ -2033,11 +2033,11 @@ async fn maybe_emit_pending_agent_message_start(
 }
 
 /// Agent messages are text-only today; concatenate all text entries.
-pub(super) fn agent_message_text(item: &codex_protocol::items::AgentMessageItem) -> String {
+pub(super) fn agent_message_text(item: &ava_protocol::items::AgentMessageItem) -> String {
     item.content
         .iter()
         .map(|entry| match entry {
-            codex_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
+            ava_protocol::items::AgentMessageContent::Text { text } => text.as_str(),
         })
         .collect()
 }
@@ -2047,7 +2047,7 @@ pub(super) fn realtime_text_for_event(msg: &EventMsg) -> Option<(String, Option<
         EventMsg::ElicitationRequest(request)
             if matches!(
                 &request.request,
-                codex_protocol::approvals::ElicitationRequest::UserVerification { .. }
+                ava_protocol::approvals::ElicitationRequest::UserVerification { .. }
             ) =>
         {
             Some((UserVerificationNotice.render(), None))
@@ -2317,7 +2317,7 @@ async fn maybe_complete_plan_item_from_message(
 async fn emit_agent_message_in_plan_mode(
     sess: &Session,
     turn_context: &TurnContext,
-    agent_message: codex_protocol::items::AgentMessageItem,
+    agent_message: ava_protocol::items::AgentMessageItem,
     state: &mut PlanModeStreamState,
 ) {
     let agent_message_id = agent_message.id.clone();
@@ -2338,7 +2338,7 @@ async fn emit_agent_message_in_plan_mode(
             .pending_agent_message_items
             .remove(&agent_message_id)
             .unwrap_or_else(|| {
-                TurnItem::AgentMessage(codex_protocol::items::AgentMessageItem {
+                TurnItem::AgentMessage(ava_protocol::items::AgentMessageItem {
                     id: agent_message_id.clone(),
                     content: Vec::new(),
                     phase: None,
@@ -2383,7 +2383,7 @@ async fn emit_turn_item_in_plan_mode(
 async fn handle_assistant_item_done_in_plan_mode(
     sess: &Session,
     step_context: &StepContext,
-    turn_store: &codex_extension_api::ExtensionData,
+    turn_store: &ava_extension_api::ExtensionData,
     item: &ResponseItem,
     state: &mut PlanModeStreamState,
     previously_active_item: Option<&TurnItem>,
@@ -2438,7 +2438,7 @@ async fn drain_in_flight(
     in_flight: &mut FuturesOrdered<InFlightFuture<'static>>,
     sess: Arc<Session>,
     step_context: &StepContext,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let turn_context = &step_context.turn;
     while let Some(res) = in_flight.next().await {
         match res {
@@ -2491,13 +2491,13 @@ async fn try_run_sampling_request(
     tool_runtime: ToolCallRuntime,
     sess: Arc<Session>,
     step_context: Arc<StepContext>,
-    turn_store: Arc<codex_extension_api::ExtensionData>,
+    turn_store: Arc<ava_extension_api::ExtensionData>,
     client_session: &mut ModelClientSession,
-    responses_metadata: &CodexResponsesMetadata,
+    responses_metadata: &AvaResponsesMetadata,
     turn_diff_tracker: SharedTurnDiffTracker,
     prompt: &Prompt,
     cancellation_token: CancellationToken,
-) -> CodexResult<SamplingRequestResult> {
+) -> AvaResult<SamplingRequestResult> {
     let turn_context = Arc::clone(&step_context.turn);
     feedback_tags!(
         model = step_context.settings.model_info.slug.clone(),
@@ -2570,20 +2570,20 @@ async fn try_run_sampling_request(
         !sess.services.extensions.turn_item_contributors().is_empty();
     let mut active_item_is_streaming_to_client = false;
     let receiving_span = trace_span!("receiving_stream");
-    let outcome: CodexResult<SamplingRequestResult> = loop {
+    let outcome: AvaResult<SamplingRequestResult> = loop {
         let handle_responses = trace_span!(
             parent: &receiving_span,
             "handle_responses",
             otel.name = field::Empty,
             tool_name = field::Empty,
             from = field::Empty,
-            codex.request.reasoning_effort = %reasoning_effort,
+            ava.request.reasoning_effort = %reasoning_effort,
             gen_ai.usage.input_tokens = field::Empty,
             gen_ai.usage.cache_read.input_tokens = field::Empty,
             gen_ai.usage.cache_write.input_tokens = field::Empty,
             gen_ai.usage.output_tokens = field::Empty,
-            codex.usage.reasoning_output_tokens = field::Empty,
-            codex.usage.total_tokens = field::Empty,
+            ava.usage.reasoning_output_tokens = field::Empty,
+            ava.usage.total_tokens = field::Empty,
         );
 
         let event = match stream
@@ -2593,8 +2593,8 @@ async fn try_run_sampling_request(
             .await
         {
             Ok(event) => event,
-            Err(codex_async_utils::CancelErr::Cancelled) => {
-                break Err(CodexErr::TurnAborted);
+            Err(ava_async_utils::CancelErr::Cancelled) => {
+                break Err(AvaErr::TurnAborted);
             }
         };
 
@@ -2602,7 +2602,7 @@ async fn try_run_sampling_request(
             Some(Ok(event)) => event,
             Some(Err(err)) => break Err(err),
             None => {
-                break Err(CodexErr::Stream(
+                break Err(AvaErr::Stream(
                     "stream closed before response.completed".into(),
                 ));
             }
@@ -2618,7 +2618,7 @@ async fn try_run_sampling_request(
                 if let Some(response_id) = response_id {
                     turn_context
                         .extension_data
-                        .insert(codex_api::ResponseId(response_id));
+                        .insert(ava_api::ResponseId(response_id));
                 }
             }
             ResponseEvent::OutputItemDone(mut item) => {
@@ -2631,7 +2631,7 @@ async fn try_run_sampling_request(
                         | ResponseItem::LocalShellCall { call_id, .. } => call_id.as_deref(),
                         ResponseItem::WebSearchCall { id, .. }
                         | ResponseItem::ImageGenerationCall { id, .. } => {
-                            id.as_ref().map(codex_protocol::ResponseItemId::as_str)
+                            id.as_ref().map(ava_protocol::ResponseItemId::as_str)
                         }
                         _ => None,
                     };
@@ -2770,7 +2770,7 @@ async fn try_run_sampling_request(
                             assistant_message_stream_parsers.seed_item_text(&item_id, &raw_text);
                         if let TurnItem::AgentMessage(agent_message) = &mut turn_item {
                             agent_message.content =
-                                vec![codex_protocol::items::AgentMessageContent::Text {
+                                vec![ava_protocol::items::AgentMessageContent::Text {
                                     text: if plan_mode {
                                         String::new()
                                     } else {
@@ -2875,7 +2875,7 @@ async fn try_run_sampling_request(
                 sess.services
                     .analytics_events_client
                     .track_code_mode_tool_call(
-                        codex_analytics::CodeModeToolCallFact::SamplingResponseCompleted {
+                        ava_analytics::CodeModeToolCallFact::SamplingResponseCompleted {
                             thread_id: sess.thread_id.to_string(),
                             turn_id: turn_context.sub_id.clone(),
                             response_id: response_id.clone(),
@@ -3092,7 +3092,7 @@ async fn try_run_sampling_request(
     }
 
     if cancellation_token.is_cancelled() {
-        return Err(CodexErr::TurnAborted);
+        return Err(AvaErr::TurnAborted);
     }
 
     if should_emit_turn_diff {

@@ -3,32 +3,32 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirementsToml;
-use codex_exec_server::CopyOptions;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::ExecutorFileSystemFuture;
-use codex_exec_server::FileMetadata;
-use codex_exec_server::FileSystemReadStream;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::LOCAL_FS;
-use codex_exec_server::ReadDirectoryEntry;
-use codex_exec_server::ReadFileOptions;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WalkOptions;
-use codex_exec_server::WalkOutcome;
-use codex_exec_server::WriteFileOptions;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::SkillMetadata;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
-use codex_utils_plugins::SkillDiscoveryMode;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirementsToml;
+use ava_exec_server::CopyOptions;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::ExecutorFileSystemFuture;
+use ava_exec_server::FileMetadata;
+use ava_exec_server::FileSystemReadStream;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::LOCAL_FS;
+use ava_exec_server::ReadDirectoryEntry;
+use ava_exec_server::ReadFileOptions;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WalkOptions;
+use ava_exec_server::WalkOutcome;
+use ava_exec_server::WriteFileOptions;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::SkillMetadata;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
+use ava_utils_plugins::SkillDiscoveryMode;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio::sync::Notify;
@@ -192,20 +192,20 @@ fn stack(layers: Vec<ConfigLayerEntry>) -> ConfigLayerStack {
     .expect("valid config stack")
 }
 
-fn user_layer(codex_home: &AbsolutePathBuf) -> ConfigLayerEntry {
+fn user_layer(ava_home: &AbsolutePathBuf) -> ConfigLayerEntry {
     ConfigLayerEntry::new(
         ConfigLayerSource::User {
-            file: codex_home.join("config.toml"),
+            file: ava_home.join("config.toml"),
             profile: None,
         },
         empty_config(),
     )
 }
 
-fn project_layer(dot_codex_folder: &AbsolutePathBuf) -> ConfigLayerEntry {
+fn project_layer(dot_ava_folder: &AbsolutePathBuf) -> ConfigLayerEntry {
     ConfigLayerEntry::new(
         ConfigLayerSource::Project {
-            dot_codex_folder: dot_codex_folder.clone(),
+            dot_ava_folder: dot_ava_folder.clone(),
         },
         empty_config(),
     )
@@ -244,11 +244,11 @@ fn expected_skill(path: AbsolutePathBuf, name: &str, scope: SkillScope) -> Skill
 #[test]
 fn layer_roots_preserve_scope_precedence_and_disabled_projects() {
     let temp_dir = TempDir::new().expect("temp dir");
-    let system_folder = absolute(temp_dir.path().join("etc/codex"));
+    let system_folder = absolute(temp_dir.path().join("etc/ava"));
     let home_folder = absolute(temp_dir.path().join("home"));
-    let user_folder = home_folder.join("codex");
-    let project_folder = absolute(temp_dir.path().join("repo/.codex"));
-    let nested_project_folder = absolute(temp_dir.path().join("repo/nested/.codex"));
+    let user_folder = home_folder.join("ava");
+    let project_folder = absolute(temp_dir.path().join("repo/.ava-code"));
+    let nested_project_folder = absolute(temp_dir.path().join("repo/nested/.ava-code"));
     let config_stack = stack(vec![
         ConfigLayerEntry::new(
             ConfigLayerSource::System {
@@ -259,7 +259,7 @@ fn layer_roots_preserve_scope_precedence_and_disabled_projects() {
         user_layer(&user_folder),
         ConfigLayerEntry::new_disabled(
             ConfigLayerSource::Project {
-                dot_codex_folder: project_folder.clone(),
+                dot_ava_folder: project_folder.clone(),
             },
             empty_config(),
             "untrusted project",
@@ -447,11 +447,11 @@ async fn repo_ancestry_stops_at_project_root_and_preserves_root_to_cwd_order() {
 async fn resolved_project_layer_loads_skill_without_git_marker() {
     let temp_dir = TempDir::new().expect("temp dir");
     let workspace = absolute(temp_dir.path().join("workspace"));
-    let dot_codex = workspace.join(".codex");
-    let skill_root = dot_codex.join("skills");
+    let dot_ava = workspace.join(".ava-code");
+    let skill_root = dot_ava.join("skills");
     fs::create_dir_all(&workspace).expect("create workspace");
     let skill_path = write_skill(&skill_root, "local", "local-skill");
-    let config_stack = stack(vec![project_layer(&dot_codex)]);
+    let config_stack = stack(vec![project_layer(&dot_ava)]);
 
     let roots = resolve_skill_roots_with_home_dir(
         Some(Arc::clone(&LOCAL_FS)),
@@ -481,14 +481,14 @@ async fn resolved_project_layer_loads_skill_without_git_marker() {
 async fn resolved_project_layer_loads_skill_when_cwd_is_file() {
     let temp_dir = TempDir::new().expect("temp dir");
     let repository = absolute(temp_dir.path().join("repo"));
-    let dot_codex = repository.join(".codex");
-    let skill_root = dot_codex.join("skills");
+    let dot_ava = repository.join(".ava-code");
+    let skill_root = dot_ava.join("skills");
     fs::create_dir_all(&repository).expect("create repository");
     fs::write(repository.join(".git"), "gitdir: fake\n").expect("write git marker");
     let cwd = repository.join("some-file.txt");
     fs::write(&cwd, "contents").expect("write cwd file");
     let skill_path = write_skill(&skill_root, "repo", "repo-skill");
-    let config_stack = stack(vec![project_layer(&dot_codex)]);
+    let config_stack = stack(vec![project_layer(&dot_ava)]);
 
     let roots = resolve_skill_roots_with_home_dir(
         Some(Arc::clone(&LOCAL_FS)),
@@ -598,29 +598,29 @@ async fn repo_ancestry_limits_concurrent_probes_and_preserves_order() {
 async fn resolved_config_and_repo_roots_preserve_order_and_dedupe_paths_not_names() {
     let temp_dir = TempDir::new().expect("temp dir");
     let home_folder = absolute(temp_dir.path().join("home"));
-    let codex_home = home_folder.join("codex");
-    let system_folder = absolute(temp_dir.path().join("etc/codex"));
+    let ava_home = home_folder.join("ava");
+    let system_folder = absolute(temp_dir.path().join("etc/ava"));
     let repository = absolute(temp_dir.path().join("repo"));
     let cwd = repository.join("nested/inner");
     fs::create_dir_all(&cwd).expect("create cwd");
     fs::write(repository.join(".git"), "gitdir: fake\n").expect("write git marker");
 
-    let project_dot_codex = repository.join(".codex");
-    let nested_project_dot_codex = repository.join("nested/.codex");
-    let user_skills = codex_home.join("skills");
+    let project_dot_ava = repository.join(".ava-code");
+    let nested_project_dot_ava = repository.join("nested/.ava-code");
+    let user_skills = ava_home.join("skills");
     let root_project_skill = write_skill(
-        &project_dot_codex.join("skills"),
+        &project_dot_ava.join("skills"),
         "root-duplicate",
         "duplicate-skill",
     );
     let nested_project_skill = write_skill(
-        &nested_project_dot_codex.join("skills"),
+        &nested_project_dot_ava.join("skills"),
         "nested-duplicate",
         "duplicate-skill",
     );
     let user_skill = write_skill(&user_skills, "user-duplicate", "duplicate-skill");
     let home_skill = write_skill(&home_folder.join(".agents/skills"), "home", "home-skill");
-    let system_skill = write_skill(&codex_home.join("skills/.system"), "system", "system-skill");
+    let system_skill = write_skill(&ava_home.join("skills/.system"), "system", "system-skill");
     let admin_skill = write_skill(&system_folder.join("skills"), "admin", "admin-skill");
     let repo_agent_skill = write_skill(
         &repository.join(".agents/skills"),
@@ -639,9 +639,9 @@ async fn resolved_config_and_repo_roots_preserve_order_and_dedupe_paths_not_name
             },
             empty_config(),
         ),
-        user_layer(&codex_home),
-        project_layer(&project_dot_codex),
-        project_layer(&nested_project_dot_codex),
+        user_layer(&ava_home),
+        project_layer(&project_dot_ava),
+        project_layer(&nested_project_dot_ava),
     ]);
 
     let roots = resolve_skill_roots_with_home_dir(

@@ -1,8 +1,8 @@
 //! Builds a redacted doctor report attachment for feedback uploads.
 //!
 //! Feedback upload should never depend on doctor succeeding. This module runs
-//! the configured Codex executable as a subprocess, accepts only valid JSON from
-//! `codex doctor --json --feedback`, derives a small set of Sentry tags, and otherwise
+//! the configured Ava executable as a subprocess, accepts only valid JSON from
+//! `ava doctor --json --feedback`, derives a small set of Sentry tags, and otherwise
 //! skips the attachment with a warning. Keeping the report generation out of the
 //! app-server process avoids sharing doctor internals across crates while still
 //! using the CLI's JSON report format with bounded database scans.
@@ -12,9 +12,9 @@ use std::path::Path;
 use std::process::Stdio;
 use std::time::Duration;
 
-use codex_core::config::Config;
-use codex_feedback::DOCTOR_REPORT_ATTACHMENT_FILENAME;
-use codex_feedback::FeedbackAttachment;
+use ava_core::config::Config;
+use ava_feedback::DOCTOR_REPORT_ATTACHMENT_FILENAME;
+use ava_feedback::FeedbackAttachment;
 use serde_json::Value;
 use tokio::process::Command;
 use tokio::time::timeout;
@@ -27,16 +27,16 @@ const MAX_DOCTOR_TAG_VALUE_LEN: usize = 256;
 
 /// Redacted doctor report data that can be merged into a feedback upload.
 pub(crate) struct DoctorFeedbackReport {
-    /// JSON support report to upload as `codex-doctor-report.json`.
+    /// JSON support report to upload as `ava-doctor-report.json`.
     pub(crate) attachment: FeedbackAttachment,
     /// Low-cardinality Sentry tags derived from the report status and check ids.
     pub(crate) tags: BTreeMap<String, String>,
 }
 
-/// Runs `codex --cd <workspace> doctor --json --feedback` and returns a best-effort
+/// Runs `ava --cd <workspace> doctor --json --feedback` and returns a best-effort
 /// feedback attachment.
 ///
-/// Failure to spawn Codex, finish before the timeout, or parse JSON means the
+/// Failure to spawn Ava, finish before the timeout, or parse JSON means the
 /// feedback upload proceeds without the doctor report. Callers should merge the
 /// returned tags without overriding explicit client-provided tags.
 pub(crate) async fn doctor_feedback_report(
@@ -44,11 +44,11 @@ pub(crate) async fn doctor_feedback_report(
     workspace: &Path,
 ) -> Option<DoctorFeedbackReport> {
     let executable = config
-        .codex_self_exe
+        .ava_self_exe
         .clone()
         .or_else(|| std::env::current_exe().ok())?;
 
-    let mut command = doctor_command(&executable, workspace, config.codex_home.as_path());
+    let mut command = doctor_command(&executable, workspace, config.ava_home.as_path());
     command.stdin(Stdio::null());
     command.kill_on_drop(/*kill_on_drop*/ true);
     let output = match timeout(DOCTOR_FEEDBACK_REPORT_TIMEOUT, command.output()).await {
@@ -105,7 +105,7 @@ pub(crate) async fn doctor_feedback_report(
     })
 }
 
-fn doctor_command(executable: &Path, cwd: &Path, codex_home: &Path) -> Command {
+fn doctor_command(executable: &Path, cwd: &Path, ava_home: &Path) -> Command {
     let mut command = Command::new(executable);
     command
         .arg("--cd")
@@ -113,8 +113,8 @@ fn doctor_command(executable: &Path, cwd: &Path, codex_home: &Path) -> Command {
         .arg("doctor")
         .arg("--json")
         .arg("--feedback")
-        .current_dir(codex_home)
-        .env("CODEX_HOME", codex_home);
+        .current_dir(ava_home)
+        .env("AVA_HOME", ava_home);
     command
 }
 
@@ -201,13 +201,13 @@ mod tests {
 
     #[test]
     fn doctor_command_keeps_missing_workspace_out_of_process_cwd() {
-        let codex_home = tempdir().expect("codex home");
-        let workspace = codex_home.path().join("deleted-workspace");
+        let ava_home = tempdir().expect("ava home");
+        let workspace = ava_home.path().join("deleted-workspace");
 
-        let command = doctor_command(Path::new("codex"), &workspace, codex_home.path());
+        let command = doctor_command(Path::new("ava"), &workspace, ava_home.path());
         let command = command.as_std();
 
-        assert_eq!(command.get_current_dir(), Some(codex_home.path()));
+        assert_eq!(command.get_current_dir(), Some(ava_home.path()));
         assert_eq!(
             command.get_args().collect::<Vec<_>>(),
             [
@@ -220,7 +220,7 @@ mod tests {
         );
         assert_eq!(
             command.get_envs().collect::<Vec<_>>(),
-            [("CODEX_HOME".as_ref(), Some(codex_home.path().as_os_str()))]
+            [("AVA_HOME".as_ref(), Some(ava_home.path().as_os_str()))]
         );
     }
 

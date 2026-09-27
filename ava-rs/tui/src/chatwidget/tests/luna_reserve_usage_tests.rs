@@ -93,7 +93,7 @@ async fn luna_reserve_selector_supports_arrows_enter_shortcuts_and_escape_withou
         assert!(
             !queued
                 .iter()
-                .any(|event| matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })))
+                .any(|event| matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })))
         );
         assert_eq!(chat.composer_text_with_pending(), "saved draft");
         // A periodic usage reply must not reopen a selector the user just closed.
@@ -144,7 +144,7 @@ async fn luna_reserve_usage_survives_banner_dismissal_and_typing_during_a_turn()
     chat.on_rate_limit_snapshot(Some(reserve_snapshot(
         /*primary_used*/ 48, /*weekly_used*/ 20,
     )));
-    let response = codex_app_server_protocol::GetAccountRateLimitsResponse {
+    let response = ava_app_server_protocol::GetAccountRateLimitsResponse {
         ordinary_usage_allowed: Some(false),
         account_id: Some("account-preview".into()),
         rate_limits: snapshot(/*percent*/ 100.0),

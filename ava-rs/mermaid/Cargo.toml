@@ -1,11 +1,11 @@
 [package]
-name = "codex-mermaid"
+name = "ava-mermaid"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "codex_mermaid"
+name = "ava_mermaid"
 path = "src/lib.rs"
 doctest = false
 

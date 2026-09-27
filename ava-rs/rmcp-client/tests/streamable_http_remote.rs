@@ -10,12 +10,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::McpProtocolMode;
-use codex_rmcp_client::RmcpClient;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::McpProtocolMode;
+use ava_rmcp_client::RmcpClient;
 use futures::FutureExt as _;
 use pretty_assertions::assert_eq;
 use rmcp::model::ClientCapabilities;
@@ -96,7 +96,7 @@ async fn stalled_handshake_unblocks_remote_executor(
     .await?;
     let params = InitializeRequestParams::new(
         ClientCapabilities::default(),
-        Implementation::new("codex-test", "0.0.0-test"),
+        Implementation::new("ava-test", "0.0.0-test"),
     )
     .with_protocol_version(ProtocolVersion::V_2025_06_18);
     let error = client

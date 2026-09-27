@@ -2,10 +2,10 @@
 
 use super::ThreadRequestProcessor;
 use super::thread_processor::unsupported_thread_store_operation;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RolloutCompressResponse;
-use codex_thread_store::LocalThreadStore;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RolloutCompressResponse;
+use ava_thread_store::LocalThreadStore;
 
 impl ThreadRequestProcessor {
     pub(crate) fn rollout_compress(
@@ -15,9 +15,9 @@ impl ThreadRequestProcessor {
             return Err(unsupported_thread_store_operation("rollout/compress"));
         }
 
-        codex_rollout::spawn_rollout_compression_worker(
-            self.config.codex_home.to_path_buf(),
-            codex_rollout::RolloutCompressionTrigger::Rpc,
+        ava_rollout::spawn_rollout_compression_worker(
+            self.config.ava_home.to_path_buf(),
+            ava_rollout::RolloutCompressionTrigger::Rpc,
         );
         Ok(Some(RolloutCompressResponse {}.into()))
     }

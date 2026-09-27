@@ -2,13 +2,13 @@ use super::apply_live_thread_settings;
 use super::thread_input::can_accept_direct_input;
 use crate::thread_status::ThreadWatchManager;
 use crate::thread_status::resolve_thread_status;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadStatus;
-use codex_core::ThreadManager;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadStatus;
+use ava_core::ThreadManager;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::SubAgentSource;
 
 pub(super) async fn enrich_loaded_threads<T>(
     thread_manager: &ThreadManager,

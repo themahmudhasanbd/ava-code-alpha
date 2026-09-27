@@ -11,7 +11,7 @@ impl ChatWidget {
     /// Its completion carries the full summary if the bounded event buffer lost earlier deltas.
     pub(crate) fn restore_active_reasoning_item(
         &mut self,
-        started: codex_app_server_protocol::ItemStartedNotification,
+        started: ava_app_server_protocol::ItemStartedNotification,
         parts: Option<(Vec<String>, Vec<String>)>,
     ) {
         let turn_id = started.turn_id;
@@ -52,7 +52,7 @@ impl ChatWidget {
             ServerNotification::ReasoningTextDelta(delta) => (&delta.turn_id, &delta.item_id),
             ServerNotification::ReasoningSummaryPartAdded(part) => (&part.turn_id, &part.item_id),
             ServerNotification::ItemCompleted(
-                codex_app_server_protocol::ItemCompletedNotification {
+                ava_app_server_protocol::ItemCompletedNotification {
                     turn_id,
                     item: ThreadItem::Reasoning { id, .. },
                     ..
@@ -75,7 +75,7 @@ impl ChatWidget {
             return false;
         }
         self.restore_active_reasoning_item(
-            codex_app_server_protocol::ItemStartedNotification {
+            ava_app_server_protocol::ItemStartedNotification {
                 thread_id: self.thread_id.map(|id| id.to_string()).unwrap_or_default(),
                 turn_id: turn_id.clone(),
                 item: ThreadItem::Reasoning {
@@ -119,7 +119,7 @@ impl ChatWidget {
             // Defer completed metadata-only turns until their page loads. Active
             // turns must restore their lifecycle even before any items are available.
             if turn.status == TurnStatus::Completed
-                && turn.items_view == codex_app_server_protocol::TurnItemsView::NotLoaded
+                && turn.items_view == ava_app_server_protocol::TurnItemsView::NotLoaded
                 && turn.items.is_empty()
             {
                 continue;
@@ -177,7 +177,7 @@ impl ChatWidget {
                     } = item
                 {
                     self.restore_active_reasoning_item(
-                        codex_app_server_protocol::ItemStartedNotification {
+                        ava_app_server_protocol::ItemStartedNotification {
                             thread_id: self.thread_id.map(|id| id.to_string()).unwrap_or_default(),
                             turn_id: turn_id.clone(),
                             item: ThreadItem::Reasoning {
@@ -204,8 +204,8 @@ impl ChatWidget {
             // A resolved historical precaution must not clear the restored draft or input queue.
             if Some(&turn_id) != latest_turn_id.as_ref()
                 && error.as_ref().is_some_and(|error| {
-                    error.codex_error_info
-                        == Some(AppServerCodexErrorInfo::MisalignmentPolicyViolation)
+                    error.ava_error_info
+                        == Some(AppServerAvaErrorInfo::MisalignmentPolicyViolation)
                 })
             {
                 error = None;
@@ -224,7 +224,7 @@ impl ChatWidget {
                         thread_id: self.thread_id.map(|id| id.to_string()).unwrap_or_default(),
                         turn: Turn {
                             id: turn_id,
-                            items_view: codex_app_server_protocol::TurnItemsView::NotLoaded,
+                            items_view: ava_app_server_protocol::TurnItemsView::NotLoaded,
                             items: Vec::new(),
                             status,
                             error,
@@ -249,7 +249,7 @@ impl ChatWidget {
             // Snapshots contain the completed item, without the live start that renders its diff.
             ThreadItem::FileChange {
                 changes,
-                status: codex_app_server_protocol::PatchApplyStatus::Completed,
+                status: ava_app_server_protocol::PatchApplyStatus::Completed,
                 ..
             } => {
                 if !changes.is_empty() {
@@ -319,12 +319,12 @@ impl ChatWidget {
                         content: vec![AgentMessageContent::Text { text }],
                         phase,
                         memory_citation: memory_citation.map(|citation| {
-                            codex_protocol::memory_citation::MemoryCitation {
+                            ava_protocol::memory_citation::MemoryCitation {
                                 entries: citation
                                     .entries
                                     .into_iter()
                                     .map(|entry| {
-                                        codex_protocol::memory_citation::MemoryCitationEntry {
+                                        ava_protocol::memory_citation::MemoryCitationEntry {
                                             path: entry.path,
                                             line_start: entry.line_start,
                                             line_end: entry.line_end,
@@ -377,24 +377,24 @@ impl ChatWidget {
                 self.on_agent_reasoning_final();
             }
             item @ ThreadItem::CommandExecution {
-                status: codex_app_server_protocol::CommandExecutionStatus::InProgress,
+                status: ava_app_server_protocol::CommandExecutionStatus::InProgress,
                 ..
             } => self.on_command_execution_started(item),
             item @ ThreadItem::CommandExecution {
                 source: ExecCommandSource::Agent | ExecCommandSource::UnifiedExecStartup,
                 status:
-                    codex_app_server_protocol::CommandExecutionStatus::Completed
-                    | codex_app_server_protocol::CommandExecutionStatus::Failed,
+                    ava_app_server_protocol::CommandExecutionStatus::Completed
+                    | ava_app_server_protocol::CommandExecutionStatus::Failed,
                 ..
             } if from_replay => self.handle_command_execution_completed_now(item),
             item @ ThreadItem::CommandExecution { .. } => self.on_command_execution_completed(item),
             ThreadItem::FileChange {
-                status: codex_app_server_protocol::PatchApplyStatus::InProgress,
+                status: ava_app_server_protocol::PatchApplyStatus::InProgress,
                 ..
             } => {}
             item @ ThreadItem::FileChange { .. } => self.on_file_change_completed(item),
             item @ ThreadItem::McpToolCall {
-                status: codex_app_server_protocol::McpToolCallStatus::InProgress,
+                status: ava_app_server_protocol::McpToolCallStatus::InProgress,
                 ..
             } => self.on_mcp_tool_call_started(item),
             item @ ThreadItem::McpToolCall { .. } => self.on_mcp_tool_call_completed(item),
@@ -404,7 +404,7 @@ impl ChatWidget {
                     item.id,
                     item.query,
                     item.action
-                        .unwrap_or(codex_app_server_protocol::WebSearchAction::Other),
+                        .unwrap_or(ava_app_server_protocol::WebSearchAction::Other),
                 );
             }
             ThreadItem::ImageView { id: _, path } => {
@@ -443,7 +443,7 @@ impl ChatWidget {
                     )
                 {
                     self.add_to_history(history_cell::PrefixedWrappedHistoryCell::new(
-                        format!("Sent by Codex from task {source_thread_id}\n{prompt}"),
+                        format!("Sent by Ava from task {source_thread_id}\n{prompt}"),
                         "• ".dim(),
                         "  ",
                     ));

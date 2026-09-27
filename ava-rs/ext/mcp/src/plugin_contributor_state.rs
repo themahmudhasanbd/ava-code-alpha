@@ -1,10 +1,10 @@
 //! Thread-owned cloud catalog and legacy selected-root cache, guarded by a short-lived mutex.
 
-use codex_core_plugins::PluginCatalog;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::McpResourceClient;
-use codex_mcp::McpResourceClientAuthKey;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
+use ava_core_plugins::PluginCatalog;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::McpResourceClient;
+use ava_mcp::McpResourceClientAuthKey;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 
@@ -46,7 +46,7 @@ impl CloudPluginGeneration {
     pub(crate) fn new(mcp_resources: Option<McpResourceClient>) -> Self {
         let auth_cache_key = mcp_resources
             .as_ref()
-            .map(|client| client.auth_cache_key_for_server(CODEX_APPS_MCP_SERVER_NAME));
+            .map(|client| client.auth_cache_key_for_server(AVA_APPS_MCP_SERVER_NAME));
         Self {
             auth_cache_key,
             mcp_resources,
@@ -59,7 +59,7 @@ impl CloudPluginGeneration {
             == self
                 .mcp_resources
                 .as_ref()
-                .map(|client| client.auth_cache_key_for_server(CODEX_APPS_MCP_SERVER_NAME))
+                .map(|client| client.auth_cache_key_for_server(AVA_APPS_MCP_SERVER_NAME))
     }
 }
 
@@ -78,7 +78,7 @@ impl PluginContributorState {
     ) -> Option<McpResourceClientAuthKey> {
         let auth_cache_key = mcp_resources
             .as_ref()
-            .map(|client| client.auth_cache_key_for_server(CODEX_APPS_MCP_SERVER_NAME));
+            .map(|client| client.auth_cache_key_for_server(AVA_APPS_MCP_SERVER_NAME));
         if self
             .cloud_generation
             .as_ref()
@@ -117,6 +117,6 @@ pub(crate) struct CachedSelectedRoot {
 pub(crate) struct SelectedPluginMetadata {
     pub(crate) plugin_id: String,
     pub(crate) plugin_display_name: String,
-    pub(crate) servers: Vec<(String, codex_config::McpServerConfig)>,
+    pub(crate) servers: Vec<(String, ava_config::McpServerConfig)>,
     pub(crate) connector_ids: Vec<String>,
 }

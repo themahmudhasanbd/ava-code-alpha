@@ -1,42 +1,42 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ToolContributor;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-use codex_protocol::dynamic_tools::DynamicToolResponse;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::McpInvocation;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
-use codex_tools::FreeformTool;
-use codex_tools::FreeformToolFormat;
-use codex_tools::FunctionCallError;
-use codex_tools::JsonToolOutput;
-use codex_tools::ToolCall;
-use codex_tools::ToolExecutor;
-use codex_tools::ToolExecutorFuture;
-use codex_tools::ToolExposure;
-use codex_tools::ToolName;
-use codex_tools::ToolOutput;
-use codex_tools::ToolPayload;
-use codex_tools::ToolSpec;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ToolContributor;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+use ava_protocol::dynamic_tools::DynamicToolResponse;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::McpInvocation;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
+use ava_tools::FreeformTool;
+use ava_tools::FreeformToolFormat;
+use ava_tools::FunctionCallError;
+use ava_tools::JsonToolOutput;
+use ava_tools::ToolCall;
+use ava_tools::ToolExecutor;
+use ava_tools::ToolExecutorFuture;
+use ava_tools::ToolExposure;
+use ava_tools::ToolName;
+use ava_tools::ToolOutput;
+use ava_tools::ToolPayload;
+use ava_tools::ToolSpec;
+use ava_utils_path_uri::LegacyAppPathString;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::AppsTestToolLoading;
 use core_test_support::apps_test_server::CALENDAR_CREATE_EVENT_MCP_APP_RESOURCE_URI;
@@ -67,7 +67,7 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -343,8 +343,8 @@ async fn app_search_sources_are_hidden_for_api_key_auth() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::from_api_key("Test API Key"))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::from_api_key("Test API Key"))
         .with_config(move |config| {
             configure_search_capable_apps(config, apps_server.chatgpt_base_url.as_str())
         });
@@ -599,14 +599,14 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
 
     let mut builder = configured_builder(apps_server.chatgpt_base_url.clone());
     let test = builder.build_with_auto_env(&server).await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Find the calendar create tool".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let EventMsg::McpToolCallBegin(begin) = wait_for_event(&test.codex, |event| {
+    let EventMsg::McpToolCallBegin(begin) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallBegin(_))
     })
     .await
@@ -621,7 +621,7 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
         Some(CALENDAR_CREATE_EVENT_MCP_APP_RESOURCE_URI)
     );
 
-    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.codex, |event| {
+    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await
@@ -640,7 +640,7 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
     assert_eq!(
         end.invocation,
         McpInvocation {
-            server: "codex_apps".to_string(),
+            server: "ava_apps".to_string(),
             tool: "calendar_create_event".to_string(),
             arguments: Some(json!({
                 "title": "Lunch",
@@ -654,7 +654,7 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
             .expect("tool call should succeed")
             .structured_content,
         Some(json!({
-            "_codex_apps": {
+            "_ava_apps": {
                 "call_id": "calendar-call-1",
                 "resource_uri": CALENDAR_CREATE_EVENT_RESOURCE_URI,
                 "contains_mcp_source": true,
@@ -663,7 +663,7 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
         }))
     );
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -675,7 +675,7 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
     let apps_tool_call = recorded_apps_tool_call_by_call_id(&server, "calendar-call-1").await;
 
     assert_eq!(
-        apps_tool_call.pointer("/params/_meta/_codex_apps"),
+        apps_tool_call.pointer("/params/_meta/_ava_apps"),
         Some(&json!({
             "call_id": "calendar-call-1",
             "resource_uri": CALENDAR_CREATE_EVENT_RESOURCE_URI,
@@ -684,23 +684,23 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
         }))
     );
     assert_eq!(
-        apps_tool_call.pointer("/params/_meta/x-codex-turn-metadata/session_id"),
+        apps_tool_call.pointer("/params/_meta/x-ava-turn-metadata/session_id"),
         Some(&json!(test.session_configured.session_id.to_string()))
     );
     assert_eq!(
-        apps_tool_call.pointer("/params/_meta/x-codex-turn-metadata/thread_id"),
+        apps_tool_call.pointer("/params/_meta/x-ava-turn-metadata/thread_id"),
         Some(&json!(test.session_configured.thread_id.to_string()))
     );
     assert!(
         apps_tool_call
-            .pointer("/params/_meta/x-codex-turn-metadata/turn_id")
+            .pointer("/params/_meta/x-ava-turn-metadata/turn_id")
             .and_then(Value::as_str)
             .is_some_and(|turn_id| !turn_id.is_empty()),
         "apps tools/call should include turn metadata turn_id: {apps_tool_call:?}"
     );
     assert_eq!(
         apps_tool_call
-            .pointer("/params/_meta/x-codex-turn-metadata/model")
+            .pointer("/params/_meta/x-ava-turn-metadata/model")
             .and_then(Value::as_str),
         Some("gpt-5.5")
     );
@@ -710,12 +710,12 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
         .expect("first response request should include reasoning effort");
     assert_eq!(
         apps_tool_call
-            .pointer("/params/_meta/x-codex-turn-metadata/reasoning_effort")
+            .pointer("/params/_meta/x-ava-turn-metadata/reasoning_effort")
             .and_then(Value::as_str),
         Some(first_request_reasoning_effort)
     );
     let mcp_turn_started_at_unix_ms = apps_tool_call
-        .pointer("/params/_meta/x-codex-turn-metadata/turn_started_at_unix_ms")
+        .pointer("/params/_meta/x-ava-turn-metadata/turn_started_at_unix_ms")
         .and_then(Value::as_i64)
         .expect("apps tools/call should include turn_started_at_unix_ms");
     assert!(
@@ -725,7 +725,7 @@ async fn tool_search_returns_deferred_tools_without_follow_up_tool_injection() -
 
     let first_request_turn_metadata: Value = serde_json::from_str(
         &requests[0]
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("first response request should include turn metadata"),
     )
     .expect("first response request turn metadata should be valid JSON");
@@ -861,7 +861,7 @@ async fn tool_search_returns_deferred_v1_multi_agent_tools() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_config(configure_search_capable_model);
+    let mut builder = test_ava().with_config(configure_search_capable_model);
     let test = builder.build_with_auto_env(&server).await?;
     test.submit_turn_with_approval_and_permission_profile(
         "Find the spawn agent tool",
@@ -1016,7 +1016,7 @@ async fn tool_search_returns_deferred_custom_tool_and_routes_follow_up_call() ->
 
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_contributor(Arc::new(DeferredCustomTool));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(configure_search_capable_model);
     let test = builder.build_with_auto_env(&server).await?;
@@ -1095,7 +1095,7 @@ async fn tool_search_returns_deferred_dynamic_tool_and_routes_follow_up_call() -
                     "item": {
                         "type": "function_call",
                         "call_id": dynamic_call_id,
-                        "namespace": "codex_app",
+                        "namespace": "ava_app",
                         "name": tool_name,
                         "arguments": tool_call_arguments,
                     }
@@ -1120,7 +1120,7 @@ async fn tool_search_returns_deferred_dynamic_tool_and_routes_follow_up_call() -
         "additionalProperties": false,
     });
     let dynamic_tool = DynamicToolSpec::Namespace(DynamicToolNamespaceSpec {
-        name: "codex_app".to_string(),
+        name: "ava_app".to_string(),
         description: "Automation tools.".to_string(),
         tools: vec![DynamicToolNamespaceTool::Function(
             DynamicToolFunctionSpec {
@@ -1142,7 +1142,7 @@ async fn tool_search_returns_deferred_dynamic_tool_and_routes_follow_up_call() -
         defer_loading: false,
     });
 
-    let mut builder = test_codex().with_config(configure_search_capable_model);
+    let mut builder = test_ava().with_config(configure_search_capable_model);
     let base_test = builder.build_with_auto_env(&server).await?;
     let new_thread = base_test
         .thread_manager
@@ -1152,17 +1152,17 @@ async fn tool_search_returns_deferred_dynamic_tool_and_routes_follow_up_call() -
         })
         .await?;
     let mut test = base_test;
-    test.codex = new_thread.thread;
+    test.ava-code = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Use the automation tool".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let EventMsg::DynamicToolCallRequest(request) = wait_for_event(&test.codex, |event| {
+    let EventMsg::DynamicToolCallRequest(request) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::DynamicToolCallRequest(_))
     })
     .await
@@ -1170,11 +1170,11 @@ async fn tool_search_returns_deferred_dynamic_tool_and_routes_follow_up_call() -
         unreachable!("event guard guarantees DynamicToolCallRequest");
     };
     assert_eq!(request.call_id, dynamic_call_id);
-    assert_eq!(request.namespace.as_deref(), Some("codex_app"));
+    assert_eq!(request.namespace.as_deref(), Some("ava_app"));
     assert_eq!(request.tool, tool_name);
     assert_eq!(request.arguments, tool_args);
 
-    test.codex
+    test.ava-code
         .submit(Op::DynamicToolResponse {
             id: request.call_id,
             response: DynamicToolResponse {
@@ -1186,7 +1186,7 @@ async fn tool_search_returns_deferred_dynamic_tool_and_routes_follow_up_call() -
         })
         .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1224,7 +1224,7 @@ async fn tool_search_returns_deferred_dynamic_tool_and_routes_follow_up_call() -
         tools,
         vec![json!({
             "type": "namespace",
-            "name": "codex_app",
+            "name": "ava_app",
             "description": "Automation tools.",
             "tools": [{
                 "type": "function",
@@ -1346,7 +1346,7 @@ async fn tool_search_indexes_only_enabled_non_app_mcp_tools() -> Result<()> {
                 .expect("test mcp servers should accept any configuration");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
     test.submit_turn_with_approval_and_permission_profile(
         "Find the rmcp echo and image tools.",
@@ -1479,16 +1479,16 @@ async fn tool_search_surfaced_mcp_tool_errors_are_returned_to_model() -> Result<
                 .expect("test mcp servers should accept any configuration");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Find the rmcp echo tool and call it.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.codex, |event| {
+    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await
@@ -1508,7 +1508,7 @@ async fn tool_search_surfaced_mcp_tool_errors_are_returned_to_model() -> Result<
         "MCP invocation should report the execution failure: {tool_error}"
     );
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1628,7 +1628,7 @@ async fn tool_search_uses_non_app_mcp_server_instructions_as_namespace_descripti
                 .expect("test mcp servers should accept any configuration");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.codex, "rmcp").await?;
+    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
 
     test.submit_turn_with_approval_and_permission_profile(
         "Find the rmcp echo tool.",
@@ -1795,7 +1795,7 @@ async fn tool_search_matches_dynamic_tools_by_name_description_namespace_and_sch
         )],
     });
 
-    let mut builder = test_codex().with_config(configure_search_capable_model);
+    let mut builder = test_ava().with_config(configure_search_capable_model);
     let base_test = builder.build_with_auto_env(&server).await?;
     let new_thread = base_test
         .thread_manager
@@ -1805,17 +1805,17 @@ async fn tool_search_matches_dynamic_tools_by_name_description_namespace_and_sch
         })
         .await?;
     let mut test = base_test;
-    test.codex = new_thread.thread;
+    test.ava-code = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Search for the dynamic tool".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

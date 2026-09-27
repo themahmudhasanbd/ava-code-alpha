@@ -8,8 +8,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_diagnostics::Gauge;
-use codex_extension_api::ThreadIdleCause;
+use ava_diagnostics::Gauge;
+use ava_extension_api::ThreadIdleCause;
 use futures::future::BoxFuture;
 use tokio::select;
 use tokio::sync::Mutex;
@@ -24,7 +24,7 @@ use tracing::trace;
 use tracing::trace_span;
 use tracing::warn;
 
-use crate::codex_thread::BackgroundTerminalInfo;
+use crate::ava_thread::BackgroundTerminalInfo;
 use crate::config::Config;
 use crate::context::ContextualUserFragment;
 use crate::hook_runtime::run_turn_interrupt_hooks;
@@ -37,28 +37,28 @@ use crate::state::ActiveTurn;
 use crate::state::RunningTask;
 use crate::state::TaskKind;
 use crate::state::TurnState;
-use codex_analytics::TurnProfileFact;
-use codex_analytics::TurnTokenUsageFact;
-use codex_context_fragments::RenderedFragment;
-use codex_otel::SessionTelemetry;
-use codex_otel::TURN_E2E_DURATION_METRIC;
-use codex_otel::TURN_MEMORY_METRIC;
-use codex_otel::TURN_NETWORK_PROXY_METRIC;
-use codex_otel::TURN_TOOL_CALL_METRIC;
-use codex_otel::TURN_UNIFIED_EXEC_RUNNING_PROCESSES_METRIC;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::WarningEvent;
-use codex_thread_store::PersistContext;
+use ava_analytics::TurnProfileFact;
+use ava_analytics::TurnTokenUsageFact;
+use ava_context_fragments::RenderedFragment;
+use ava_otel::SessionTelemetry;
+use ava_otel::TURN_E2E_DURATION_METRIC;
+use ava_otel::TURN_MEMORY_METRIC;
+use ava_otel::TURN_NETWORK_PROXY_METRIC;
+use ava_otel::TURN_TOOL_CALL_METRIC;
+use ava_otel::TURN_UNIFIED_EXEC_RUNNING_PROCESSES_METRIC;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::WarningEvent;
+use ava_thread_store::PersistContext;
 
-use codex_features::Feature;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
+use ava_features::Feature;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
 pub(crate) use compact::CompactTask;
 pub(crate) use regular::RegularTask;
 pub(crate) use review::ReviewTask;
@@ -67,10 +67,10 @@ pub(crate) use user_shell::UserShellCommandTask;
 pub(crate) use user_shell::execute_user_shell_command;
 
 pub(crate) const GRACEFULL_INTERRUPTION_TIMEOUT_MS: u64 = 100;
-const TASK_COMPACT_METRIC: &str = "codex.task.compact";
+const TASK_COMPACT_METRIC: &str = "ava.task.compact";
 static ACTIVE_TURNS: Gauge = Gauge::new("core.turns.active");
 
-pub(crate) type SessionTaskResult = CodexResult<Option<String>>;
+pub(crate) type SessionTaskResult = AvaResult<Option<String>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum InterruptedTurnHistoryMarker {
@@ -169,7 +169,7 @@ fn bool_tag(value: bool) -> &'static str {
 
 /// Async task that drives a [`Session`] turn.
 ///
-/// Implementations encapsulate a specific Codex workflow (regular chat,
+/// Implementations encapsulate a specific Ava workflow (regular chat,
 /// reviews, ghost snapshots, etc.). Each task instance is owned by a
 /// [`Session`] and executed on a background Tokio task. The trait is
 /// intentionally small: implementers identify themselves via
@@ -191,7 +191,7 @@ pub(crate) trait SessionTask: Send + Sync + 'static {
     /// abort; implementers should watch for it and terminate quickly once it
     /// fires. Returning [`Some`] yields a final message that
     /// [`Session::on_task_finished`] will emit to the client. Returning
-    /// [`CodexErr::TurnAborted`] completes the task through the aborted-turn
+    /// [`AvaErr::TurnAborted`] completes the task through the aborted-turn
     /// lifecycle instead.
     fn run(
         self: Arc<Self>,
@@ -325,7 +325,7 @@ impl Session {
         self.emit_turn_start_lifecycle(
             turn_context.as_ref(),
             Some(&token_usage_at_turn_start),
-            codex_extension_api::TurnStartPhase::BeforeTaskRegistration,
+            ava_extension_api::TurnStartPhase::BeforeTaskRegistration,
         )
         .await;
 
@@ -351,14 +351,14 @@ impl Session {
             thread.id = %self.thread_id,
             turn.id = %turn_context.sub_id,
             model = %turn_context.model_info().slug,
-            codex.turn.reasoning_effort = %reasoning_effort,
-            codex.turn.token_usage.input_tokens = field::Empty,
-            codex.turn.token_usage.cached_input_tokens = field::Empty,
-            codex.turn.token_usage.cache_write_input_tokens = field::Empty,
-            codex.turn.token_usage.non_cached_input_tokens = field::Empty,
-            codex.turn.token_usage.output_tokens = field::Empty,
-            codex.turn.token_usage.reasoning_output_tokens = field::Empty,
-            codex.turn.token_usage.total_tokens = field::Empty,
+            ava.turn.reasoning_effort = %reasoning_effort,
+            ava.turn.token_usage.input_tokens = field::Empty,
+            ava.turn.token_usage.cached_input_tokens = field::Empty,
+            ava.turn.token_usage.cache_write_input_tokens = field::Empty,
+            ava.turn.token_usage.non_cached_input_tokens = field::Empty,
+            ava.turn.token_usage.output_tokens = field::Empty,
+            ava.turn.token_usage.reasoning_output_tokens = field::Empty,
+            ava.turn.token_usage.total_tokens = field::Empty,
         );
         let handle = tokio::spawn(
             async move {
@@ -385,7 +385,7 @@ impl Session {
                         ctx_for_finish.as_ref(),
                         EventMsg::Warning(WarningEvent {
                             message: format!(
-                                "Failed to save the conversation transcript; Codex will continue retrying. Error: {err}"
+                                "Failed to save the conversation transcript; Ava will continue retrying. Error: {err}"
                             ),
                         }),
                     )
@@ -422,7 +422,7 @@ impl Session {
     pub(crate) fn has_outstanding_durable_sleep(&self) -> bool {
         self.services
             .thread_extension_data
-            .get::<codex_extension_items::sleep::SleepItem>()
+            .get::<ava_extension_items::sleep::SleepItem>()
             .is_some()
     }
 
@@ -618,17 +618,17 @@ impl Session {
     ) {
         let (last_agent_message, abort_reason) = match task_result {
             Ok(last_agent_message) => (last_agent_message, None),
-            Err(err) if matches!(err.details(), CodexErrorDetails::TurnAborted) => {
+            Err(err) if matches!(err.details(), AvaErrorDetails::TurnAborted) => {
                 (None, Some(TurnAbortReason::Interrupted))
             }
             Err(err) => {
                 warn!(%err, "session task returned an unexpected error");
                 self.emit_turn_error_lifecycle(
                     turn_context.as_ref(),
-                    err.to_codex_protocol_error(),
+                    err.to_ava_protocol_error(),
                 )
                 .await;
-                self.track_turn_codex_error(turn_context.as_ref(), &err);
+                self.track_turn_ava_error(turn_context.as_ref(), &err);
                 self.send_event(
                     turn_context.as_ref(),
                     EventMsg::Error(err.to_error_event(/*message_prefix*/ None)),
@@ -731,35 +731,35 @@ impl Session {
                 total_tokens: (total_token_usage.total_tokens
                     - token_usage_at_turn_start.total_tokens)
                     .max(0),
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             };
             let current_span = Span::current();
             current_span.record(
-                "codex.turn.token_usage.input_tokens",
+                "ava.turn.token_usage.input_tokens",
                 turn_token_usage.input_tokens,
             );
             current_span.record(
-                "codex.turn.token_usage.cached_input_tokens",
+                "ava.turn.token_usage.cached_input_tokens",
                 turn_token_usage.cached_input(),
             );
             current_span.record(
-                "codex.turn.token_usage.cache_write_input_tokens",
+                "ava.turn.token_usage.cache_write_input_tokens",
                 turn_token_usage.cache_write_input_tokens,
             );
             current_span.record(
-                "codex.turn.token_usage.non_cached_input_tokens",
+                "ava.turn.token_usage.non_cached_input_tokens",
                 turn_token_usage.non_cached_input(),
             );
             current_span.record(
-                "codex.turn.token_usage.output_tokens",
+                "ava.turn.token_usage.output_tokens",
                 turn_token_usage.output_tokens,
             );
             current_span.record(
-                "codex.turn.token_usage.reasoning_output_tokens",
+                "ava.turn.token_usage.reasoning_output_tokens",
                 turn_token_usage.reasoning_output_tokens,
             );
             current_span.record(
-                "codex.turn.token_usage.total_tokens",
+                "ava.turn.token_usage.total_tokens",
                 turn_token_usage.total_tokens,
             );
             self.services

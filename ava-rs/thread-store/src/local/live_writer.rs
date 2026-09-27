@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_rollout::RolloutConfig;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::RolloutRecorderParams;
-use codex_rollout::is_persisted_rollout_item;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_rollout::RolloutConfig;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::RolloutRecorderParams;
+use ava_rollout::is_persisted_rollout_item;
 use tracing::warn;
 
 use super::LocalThreadStore;
@@ -20,7 +20,7 @@ use crate::ThreadStoreError;
 use crate::ThreadStoreResult;
 use crate::types::canonical_history_mode_from_rollout_items;
 
-const ROLLOUT_SIZE_BYTES_METRIC: &str = "codex.rollout.size_bytes";
+const ROLLOUT_SIZE_BYTES_METRIC: &str = "ava.rollout.size_bytes";
 
 pub(super) async fn create_thread(
     store: &LocalThreadStore,
@@ -94,7 +94,7 @@ pub(super) async fn resume_thread(
             message: "local thread store requires a cwd".to_string(),
         })?;
     let config = RolloutConfig {
-        codex_home: store.config.codex_home.clone(),
+        ava_home: store.config.ava_home.clone(),
         sqlite: store.config.sqlite.clone(),
         cwd,
         model_provider_id: params.metadata.model_provider.clone(),
@@ -179,7 +179,7 @@ pub(super) async fn shutdown_thread(
         }
     }
     sync_materialized_rollout_path(store, thread_id, rollout_path.as_path()).await?;
-    if let Some(metrics) = codex_otel::global()
+    if let Some(metrics) = ava_otel::global()
         && let Ok(metadata) = tokio::fs::metadata(&rollout_path).await
     {
         let size_bytes = i64::try_from(metadata.len()).unwrap_or(i64::MAX);
@@ -244,7 +244,7 @@ async fn sync_materialized_rollout_path(
     thread_id: ThreadId,
     rollout_path: &std::path::Path,
 ) -> ThreadStoreResult<()> {
-    if codex_rollout::existing_rollout_path(rollout_path)
+    if ava_rollout::existing_rollout_path(rollout_path)
         .await
         .is_none()
     {

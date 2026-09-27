@@ -1,12 +1,12 @@
 [package]
-name = "codex-otel"
+name = "ava-otel"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
 doctest = false
-name = "codex_otel"
+name = "ava_otel"
 path = "src/lib.rs"
 
 [lints]
@@ -14,10 +14,10 @@ workspace = true
 
 [dependencies]
 chrono = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-string = { workspace = true }
-codex-api = { workspace = true }
-codex-protocol = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-string = { workspace = true }
+ava-api = { workspace = true }
+ava-protocol = { workspace = true }
 eventsource-stream = { workspace = true }
 gethostname = { workspace = true }
 opentelemetry = { workspace = true, features = ["logs", "metrics", "trace"] }

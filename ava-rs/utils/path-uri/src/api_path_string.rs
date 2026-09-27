@@ -2,7 +2,7 @@ use crate::PathConvention;
 use crate::PathUri;
 use crate::PathUriParseError;
 use crate::is_windows_separator_byte;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -13,7 +13,7 @@ use thiserror::Error;
 use ts_rs::TS;
 
 /// A UTF-8 path for preserving raw path compatibility at the app-server API
-/// boundary while Codex migrates to [`PathUri`].
+/// boundary while Ava migrates to [`PathUri`].
 ///
 /// Supports storing arbitrary strings read from the API and converting to and
 /// from [`PathUri`] using an explicitly selected native path convention.

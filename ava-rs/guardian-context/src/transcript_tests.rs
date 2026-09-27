@@ -1,12 +1,12 @@
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::LocalShellAction;
-use codex_protocol::models::LocalShellExecAction;
-use codex_protocol::models::LocalShellStatus;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::LocalShellAction;
+use ava_protocol::models::LocalShellExecAction;
+use ava_protocol::models::LocalShellStatus;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 
 use super::ConversationTranscriptConfig;

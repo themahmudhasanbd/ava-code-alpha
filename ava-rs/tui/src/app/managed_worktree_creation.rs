@@ -7,8 +7,8 @@ use super::*;
 use crate::app_event::ManagedWorktreeCreated;
 use crate::app_event::ManagedWorktreeTransition;
 use crate::history_cell::McpInventoryLoadingCell as LoadingCell;
-use codex_app_server_protocol::ThreadBackgroundTerminalsListParams;
-use codex_app_server_protocol::ThreadBackgroundTerminalsListResponse as ListResponse;
+use ava_app_server_protocol::ThreadBackgroundTerminalsListParams;
+use ava_app_server_protocol::ThreadBackgroundTerminalsListResponse as ListResponse;
 
 pub(super) fn background_terminals_blocker(
     result: Result<ListResponse, TypedRequestError>,
@@ -25,7 +25,7 @@ pub(super) fn background_terminals_blocker(
                             || source.message.contains("unknown method"))) =>
         {
             Some(
-                "The local Codex service cannot check background terminals. Run `codex app-server daemon update`, then restart Codex.",
+                "The local Ava service cannot check background terminals. Run `ava app-server daemon update`, then restart Ava.",
             )
         }
         _ => Some("Active background terminals block /cd."),
@@ -41,7 +41,7 @@ impl App {
     ) {
         if !self.config.features.enabled(Feature::Worktrees) {
             self.chat_widget.add_error_message(
-                "Enable worktrees in your Codex configuration to create a worktree.".to_string(),
+                "Enable worktrees in your Ava configuration to create a worktree.".to_string(),
             );
         } else if self.config.active_project.is_untrusted() {
             self.chat_widget.add_error_message(
@@ -160,17 +160,17 @@ impl App {
                     "Cannot create a worktree from an explicitly untrusted source."
                 );
                 let host = crate::legacy_core::config::load_config_toml_with_layer_stack(
-                    &self.config.codex_home,
+                    &self.config.ava_home,
                     /*cwd*/ None,
                     Vec::new(),
-                    codex_config::ConfigLoadOptions::default(),
+                    ava_config::ConfigLoadOptions::default(),
                 )
                 .await?;
-                let settings = codex_worktree::WorktreeSettings::for_cli(
-                    &self.config.codex_home,
+                let settings = ava_worktree::WorktreeSettings::for_cli(
+                    &self.config.ava_home,
                     host.config_toml.desktop.as_ref(),
                 )?;
-                let manager = codex_worktree::WorktreeManager::new(settings);
+                let manager = ava_worktree::WorktreeManager::new(settings);
                 anyhow::Ok(manager)
             }
             .await;
@@ -183,7 +183,7 @@ impl App {
                         let create_cwd = source_cwd.to_path_buf();
                         let result = tokio::task::spawn_blocking(move || {
                             manager
-                                .create(&codex_worktree::CreateWorktree {
+                                .create(&ava_worktree::CreateWorktree {
                                     source_cwd: create_cwd,
                                     base: None,
                                 })
@@ -254,7 +254,7 @@ impl App {
             Ok(_) => {
                 return self.retained_worktree_error(
                     &checkout,
-                    "The new worktree is not trusted; run Codex there.",
+                    "The new worktree is not trusted; run Ava there.",
                 );
             }
             Err(error) => {
@@ -277,7 +277,7 @@ impl App {
 
     fn retained_worktree_error(
         &mut self,
-        checkout: &codex_worktree::ManagedWorktree,
+        checkout: &ava_worktree::ManagedWorktree,
         reason: impl std::fmt::Display,
     ) {
         self.working_directory_error(format!(

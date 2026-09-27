@@ -1,22 +1,22 @@
 use std::sync::Arc;
 
-use codex_core::config::Config;
-use codex_extension_api::ConfigContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadOriginator;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolExecutor;
-use codex_login::AuthManager;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_core::config::Config;
+use ava_extension_api::ConfigContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadOriginator;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolExecutor;
+use ava_login::AuthManager;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
-use crate::backend::CodexImagesBackend;
+use crate::backend::AvaImagesBackend;
 use crate::tool::ImageGenerationTool;
 
 #[derive(Clone)]
@@ -95,7 +95,7 @@ impl ToolContributor for ImageGenerationExtension {
         }
 
         vec![Arc::new(ImageGenerationTool::new(
-            CodexImagesBackend::new(
+            AvaImagesBackend::new(
                 create_model_provider(config.provider.clone(), Some(self.auth_manager.clone())),
                 thread_store
                     .get::<ThreadOriginator>()

@@ -16,7 +16,7 @@ inside the existing client area. That removed races and post-release jumps, but
 opening the panel still consumed chat width, collapsing it expanded chat again,
 and a native window-edge resize could temporarily compress the panel.
 
-The intended docked behavior is closer to Codex: the panel has a committed
+The intended docked behavior is closer to Ava: the panel has a committed
 width of its own, the normal window reserves native width for that panel while
 it is visible, and native window edges resize the conversation surface rather
 than the tool surface. This requires controlled BrowserWindow geometry without

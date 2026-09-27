@@ -1,38 +1,38 @@
 use super::mcp_refresh::McpRefreshInvalidationGuard;
 use super::*;
 use crate::environment_selection::combine_selected_capability_roots;
-use codex_exec_server::ExecutorCapabilityDiscoveryCache;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_exec_server::MAX_SELECTED_CAPABILITY_ROOTS;
-use codex_exec_server::ResolvedSelectedCapabilityRoot;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::ElicitationReviewRequest;
-use codex_mcp::ElicitationReviewer;
-use codex_mcp::ElicitationReviewerHandle;
-use codex_mcp::MCP_TOOL_CODEX_APPS_META_KEY;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::mcp::is_node_repl_backed_server;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_KEY as MCP_ELICITATION_APPROVAL_KIND_KEY;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_MCP_TOOL_CALL as MCP_ELICITATION_APPROVAL_KIND_MCP_TOOL_CALL;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_TOOL_SUGGESTION as MCP_ELICITATION_APPROVAL_KIND_TOOL_SUGGESTION;
-use codex_protocol::mcp_approval_meta::APPROVALS_REVIEWER_KEY as MCP_ELICITATION_APPROVALS_REVIEWER_KEY;
-use codex_protocol::mcp_approval_meta::CONNECTOR_DESCRIPTION_KEY as MCP_ELICITATION_CONNECTOR_DESCRIPTION_KEY;
-use codex_protocol::mcp_approval_meta::CONNECTOR_ID_KEY as MCP_ELICITATION_CONNECTOR_ID_KEY;
-use codex_protocol::mcp_approval_meta::CONNECTOR_NAME_KEY as MCP_ELICITATION_CONNECTOR_NAME_KEY;
-use codex_protocol::mcp_approval_meta::PERSIST_KEY as MCP_ELICITATION_PERSIST_KEY;
-use codex_protocol::mcp_approval_meta::REQUEST_TYPE_APPROVAL_REQUEST as MCP_ELICITATION_REQUEST_TYPE_APPROVAL_REQUEST;
-use codex_protocol::mcp_approval_meta::REQUEST_TYPE_KEY as MCP_ELICITATION_REQUEST_TYPE_KEY;
-use codex_protocol::mcp_approval_meta::SENSITIVE_ACTION_KEY as MCP_ELICITATION_SENSITIVE_ACTION_KEY;
-use codex_protocol::mcp_approval_meta::STRICT_AUTO_REVIEW_KEY as MCP_ELICITATION_STRICT_AUTO_REVIEW_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_DESCRIPTION_KEY as MCP_ELICITATION_TOOL_DESCRIPTION_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_NAME_KEY as MCP_ELICITATION_TOOL_NAME_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_PARAMS_KEY as MCP_ELICITATION_TOOL_PARAMS_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_TITLE_KEY as MCP_ELICITATION_TOOL_TITLE_KEY;
-use codex_protocol::openai_models::ModelInfo;
-use codex_rmcp_client::Elicitation;
+use ava_exec_server::ExecutorCapabilityDiscoveryCache;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_exec_server::MAX_SELECTED_CAPABILITY_ROOTS;
+use ava_exec_server::ResolvedSelectedCapabilityRoot;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::ElicitationReviewRequest;
+use ava_mcp::ElicitationReviewer;
+use ava_mcp::ElicitationReviewerHandle;
+use ava_mcp::MCP_TOOL_AVA_APPS_META_KEY;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::mcp::is_node_repl_backed_server;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_KEY as MCP_ELICITATION_APPROVAL_KIND_KEY;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_MCP_TOOL_CALL as MCP_ELICITATION_APPROVAL_KIND_MCP_TOOL_CALL;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_TOOL_SUGGESTION as MCP_ELICITATION_APPROVAL_KIND_TOOL_SUGGESTION;
+use ava_protocol::mcp_approval_meta::APPROVALS_REVIEWER_KEY as MCP_ELICITATION_APPROVALS_REVIEWER_KEY;
+use ava_protocol::mcp_approval_meta::CONNECTOR_DESCRIPTION_KEY as MCP_ELICITATION_CONNECTOR_DESCRIPTION_KEY;
+use ava_protocol::mcp_approval_meta::CONNECTOR_ID_KEY as MCP_ELICITATION_CONNECTOR_ID_KEY;
+use ava_protocol::mcp_approval_meta::CONNECTOR_NAME_KEY as MCP_ELICITATION_CONNECTOR_NAME_KEY;
+use ava_protocol::mcp_approval_meta::PERSIST_KEY as MCP_ELICITATION_PERSIST_KEY;
+use ava_protocol::mcp_approval_meta::REQUEST_TYPE_APPROVAL_REQUEST as MCP_ELICITATION_REQUEST_TYPE_APPROVAL_REQUEST;
+use ava_protocol::mcp_approval_meta::REQUEST_TYPE_KEY as MCP_ELICITATION_REQUEST_TYPE_KEY;
+use ava_protocol::mcp_approval_meta::SENSITIVE_ACTION_KEY as MCP_ELICITATION_SENSITIVE_ACTION_KEY;
+use ava_protocol::mcp_approval_meta::STRICT_AUTO_REVIEW_KEY as MCP_ELICITATION_STRICT_AUTO_REVIEW_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_DESCRIPTION_KEY as MCP_ELICITATION_TOOL_DESCRIPTION_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_NAME_KEY as MCP_ELICITATION_TOOL_NAME_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_PARAMS_KEY as MCP_ELICITATION_TOOL_PARAMS_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_TITLE_KEY as MCP_ELICITATION_TOOL_TITLE_KEY;
+use ava_protocol::openai_models::ModelInfo;
+use ava_rmcp_client::Elicitation;
 use rmcp::model::ElicitationAction;
 use rmcp::model::RequestMetaObject;
 use serde_json::Map;
@@ -164,7 +164,7 @@ impl Session {
         &self,
         config: &Config,
     ) -> HashMap<String, McpServerConfig> {
-        codex_mcp::configured_mcp_servers(&self.runtime_mcp_config(config).await)
+        ava_mcp::configured_mcp_servers(&self.runtime_mcp_config(config).await)
     }
 
     /// Publishes changed MCP state, waiting for any refresh already in progress.
@@ -247,9 +247,9 @@ impl Session {
     }
 
     /// Refreshes Apps tools on the published thread runtime and returns that client's snapshot.
-    pub(crate) async fn refresh_codex_apps_tools(
+    pub(crate) async fn refresh_ava_apps_tools(
         self: &Arc<Self>,
-    ) -> anyhow::Result<codex_mcp::CodexAppsToolSnapshot> {
+    ) -> anyhow::Result<ava_mcp::AvaAppsToolSnapshot> {
         // Reconcile unchanged config so failed or closed clients can be replaced.
         self.mark_mcp_runtime_dirty();
         self.refresh_mcp_if_dirty().await;
@@ -258,13 +258,13 @@ impl Session {
             .acquire()
             .await
             .map_err(|_| anyhow::anyhow!("MCP runtime refresh semaphore closed"))?;
-        self.services.mcp_runtime.refresh_codex_apps_tools().await
+        self.services.mcp_runtime.refresh_ava_apps_tools().await
     }
 
     /// Reconnects the runtime so refreshed Apps tools belong to their new exact client.
-    pub(crate) async fn hard_refresh_latest_codex_apps_tools(
+    pub(crate) async fn hard_refresh_latest_ava_apps_tools(
         self: &Arc<Self>,
-    ) -> anyhow::Result<Vec<codex_mcp::ToolInfo>> {
+    ) -> anyhow::Result<Vec<ava_mcp::ToolInfo>> {
         self.refresh_mcp_if_dirty().await;
         let _refresh = self
             .mcp_refresh
@@ -323,8 +323,8 @@ impl Session {
             Some(self.mcp_elicitation_reviewer()),
         );
         anyhow::ensure!(
-            input.mcp_servers.contains_key(CODEX_APPS_MCP_SERVER_NAME),
-            "unknown MCP server '{CODEX_APPS_MCP_SERVER_NAME}'"
+            input.mcp_servers.contains_key(AVA_APPS_MCP_SERVER_NAME),
+            "unknown MCP server '{AVA_APPS_MCP_SERVER_NAME}'"
         );
         let refreshed = self.services.mcp_runtime.replace_fresh(input).await;
         self.services.thread_extension_data.insert(selected_plugins);
@@ -342,7 +342,7 @@ impl Session {
         selected_capability_roots: &[ResolvedSelectedCapabilityRoot],
         required_servers: &[String],
         required_plugins: &HashSet<String>,
-    ) -> Arc<codex_mcp::McpBinding> {
+    ) -> Arc<ava_mcp::McpBinding> {
         let ready_selected_capability_roots =
             Self::ready_selected_capability_roots(selected_capability_roots);
         if self
@@ -384,7 +384,7 @@ impl Session {
             return binding;
         }
         let config = Arc::new(self.runtime_mcp_config(&turn_context.config).await);
-        Arc::new(codex_mcp::McpBinding::empty(config))
+        Arc::new(ava_mcp::McpBinding::empty(config))
     }
 
     #[tracing::instrument(
@@ -535,11 +535,11 @@ impl Session {
         )
     }
 
-    pub(crate) fn mcp_elicitation_lifecycle(&self) -> codex_mcp::ElicitationLifecycle {
+    pub(crate) fn mcp_elicitation_lifecycle(&self) -> ava_mcp::ElicitationLifecycle {
         self.mcp_elicitation_lifecycle_handle
             .get_or_init(|| {
                 let elicitations = self.services.elicitations.clone();
-                codex_mcp::ElicitationLifecycle::new(move || elicitations.register())
+                ava_mcp::ElicitationLifecycle::new(move || elicitations.register())
             })
             .clone()
     }
@@ -557,12 +557,12 @@ impl Session {
     ) -> anyhow::Result<McpServerElicitationOutcome> {
         anyhow::ensure!(
             !turn_context.session_source.is_non_root_agent(),
-            codex_mcp::MCP_ELICITATION_HANDOFF_MESSAGE
+            ava_mcp::MCP_ELICITATION_HANDOFF_MESSAGE
         );
         if self.services.mcp_runtime.elicitations_auto_deny() {
             return Ok(McpServerElicitationOutcome {
                 response: Some(ElicitationResponse {
-                    action: codex_rmcp_client::ElicitationAction::Accept,
+                    action: ava_rmcp_client::ElicitationAction::Accept,
                     content: Some(serde_json::json!({})),
                     meta: None,
                 }),
@@ -593,10 +593,10 @@ impl Session {
         }
         let id = match request_id {
             rmcp::model::NumberOrString::String(value) => {
-                codex_protocol::mcp::RequestId::String(value.to_string())
+                ava_protocol::mcp::RequestId::String(value.to_string())
             }
             rmcp::model::NumberOrString::Number(value) => {
-                codex_protocol::mcp::RequestId::Integer(value)
+                ava_protocol::mcp::RequestId::Integer(value)
             }
         };
         let event = EventMsg::ElicitationRequest(ElicitationRequestEvent {
@@ -759,7 +759,7 @@ async fn review_guardian_mcp_elicitation(
                 && metadata_str(meta, MCP_ELICITATION_APPROVAL_KIND_KEY)
                     == Some(MCP_ELICITATION_APPROVAL_KIND_MCP_TOOL_CALL)
                 && meta.get(MCP_ELICITATION_SENSITIVE_ACTION_KEY) != Some(&Value::Bool(true))
-                && meta.get("codex_requires_user_input") != Some(&Value::Bool(true))
+                && meta.get("ava_requires_user_input") != Some(&Value::Bool(true))
         });
 
     // Full Access skips inference, not the active-turn and cancellation checks.
@@ -824,11 +824,11 @@ async fn review_guardian_mcp_elicitation(
     );
     let guardian_request = if strict_auto_review {
         let connector_id = elicitation_connector_id(&request.elicitation);
-        let trusted_guardian_request = if request.server_name == CODEX_APPS_MCP_SERVER_NAME {
+        let trusted_guardian_request = if request.server_name == AVA_APPS_MCP_SERVER_NAME {
             let Some(call_id) = request
                 .elicitation
                 .meta()
-                .and_then(|meta| meta.get(MCP_TOOL_CODEX_APPS_META_KEY))
+                .and_then(|meta| meta.get(MCP_TOOL_AVA_APPS_META_KEY))
                 .and_then(Value::as_object)
                 .and_then(|meta| meta.get("call_id"))
                 .and_then(Value::as_str)
@@ -901,10 +901,10 @@ async fn review_guardian_mcp_elicitation(
                 else {
                     return Ok(Some(mcp_elicitation_decline_without_message()));
                 };
-                if codex_mcp::mcp_permission_prompt_is_auto_approved(
+                if ava_mcp::mcp_permission_prompt_is_auto_approved(
                     approval_policy,
                     permission_profile,
-                    codex_mcp::McpPermissionPromptAutoApproveContext::default(),
+                    ava_mcp::McpPermissionPromptAutoApproveContext::default(),
                 ) && matches!(
                     &request.elicitation,
                     Elicitation::Mcp(
@@ -958,7 +958,7 @@ async fn review_guardian_mcp_elicitation(
                             })
                         })
                         .map_err(|error| error.to_string()),
-                    category: codex_protocol::openai_models::GuardianScope::for_mcp_server(
+                    category: ava_protocol::openai_models::GuardianScope::for_mcp_server(
                         &request.server_name,
                     ),
                     request: Err(reason.to_owned()),
@@ -982,7 +982,7 @@ async fn review_guardian_mcp_elicitation(
         crate::guardian::GuardianReviewOptions {
             require_guardian: strict_auto_review,
             plugin_attribution_override: None,
-            approval_request_source: codex_analytics::GuardianApprovalRequestSource::MainTurn,
+            approval_request_source: ava_analytics::GuardianApprovalRequestSource::MainTurn,
             external_cancel: Some(cancellation_token),
             require_synchronous_review,
         },
@@ -1123,7 +1123,7 @@ fn plugin_install_elicitation_telemetry_metadata(
     let EventMsg::ElicitationRequest(ElicitationRequestEvent { request, .. }) = event else {
         return None;
     };
-    let codex_protocol::approvals::ElicitationRequest::Form {
+    let ava_protocol::approvals::ElicitationRequest::Form {
         meta: Some(Value::Object(meta)),
         ..
     } = request

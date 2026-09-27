@@ -10,18 +10,18 @@ use crate::AppInfo;
 use crate::ConnectorDirectoryCacheKey;
 
 pub(crate) const CONNECTOR_DIRECTORY_DISK_CACHE_SCHEMA_VERSION: u8 = 1;
-const CONNECTOR_DIRECTORY_DISK_CACHE_DIR: &str = "cache/codex_app_directory";
+const CONNECTOR_DIRECTORY_DISK_CACHE_DIR: &str = "cache/ava_app_directory";
 
 #[derive(Clone)]
 pub struct ConnectorDirectoryCacheContext {
-    pub(crate) codex_home: PathBuf,
+    pub(crate) ava_home: PathBuf,
     pub(crate) cache_key: ConnectorDirectoryCacheKey,
 }
 
 impl ConnectorDirectoryCacheContext {
-    pub fn new(codex_home: PathBuf, cache_key: ConnectorDirectoryCacheKey) -> Self {
+    pub fn new(ava_home: PathBuf, cache_key: ConnectorDirectoryCacheKey) -> Self {
         Self {
-            codex_home,
+            ava_home,
             cache_key,
         }
     }
@@ -30,7 +30,7 @@ impl ConnectorDirectoryCacheContext {
     pub fn cache_path(&self) -> PathBuf {
         let cache_key_json = serde_json::to_string(&self.cache_key).unwrap_or_default();
         let cache_key_hash = sha1_hex(&cache_key_json);
-        self.codex_home
+        self.ava_home
             .join(CONNECTOR_DIRECTORY_DISK_CACHE_DIR)
             .join(format!("{cache_key_hash}.json"))
     }

@@ -1,15 +1,15 @@
 use super::feedback_thread_index::FeedbackThreadIndex;
 use super::*;
 use crate::error_code::OVERLOADED_ERROR_CODE;
-use codex_connectors::ConnectorDirectoryCacheContext;
-use codex_connectors::ConnectorDirectoryCacheKey;
-use codex_connectors::connector_runtime_cache_path;
-use codex_feedback::CODEX_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME;
-use codex_feedback::CODEX_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME;
+use ava_connectors::ConnectorDirectoryCacheContext;
+use ava_connectors::ConnectorDirectoryCacheKey;
+use ava_connectors::connector_runtime_cache_path;
+use ava_feedback::AVA_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME;
+use ava_feedback::AVA_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME;
 #[cfg(target_os = "windows")]
-use codex_feedback::WINDOWS_SANDBOX_LOG_ATTACHMENT_FILENAME;
-use codex_feedback::guardian_review_failures;
-use codex_rollout::RolloutRecorder;
+use ava_feedback::WINDOWS_SANDBOX_LOG_ATTACHMENT_FILENAME;
+use ava_feedback::guardian_review_failures;
+use ava_rollout::RolloutRecorder;
 use sha2::Digest;
 use sha2::Sha256;
 use tokio::sync::Semaphore;
@@ -19,7 +19,7 @@ pub(crate) struct FeedbackRequestProcessor {
     auth_manager: Arc<AuthManager>,
     thread_manager: Arc<ThreadManager>,
     config: Arc<Config>,
-    feedback: CodexFeedback,
+    feedback: AvaFeedback,
     log_db: Option<LogDbLayer>,
     state_db: Option<StateDbHandle>,
     uploads: Arc<Semaphore>,
@@ -30,7 +30,7 @@ impl FeedbackRequestProcessor {
         auth_manager: Arc<AuthManager>,
         thread_manager: Arc<ThreadManager>,
         config: Arc<Config>,
-        feedback: CodexFeedback,
+        feedback: AvaFeedback,
         log_db: Option<LogDbLayer>,
         state_db: Option<StateDbHandle>,
     ) -> Self {
@@ -112,13 +112,13 @@ impl FeedbackRequestProcessor {
 
         if let Some(chatgpt_user_id) = auth
             .as_ref()
-            .and_then(codex_login::CodexAuth::get_chatgpt_user_id)
+            .and_then(ava_login::AvaAuth::get_chatgpt_user_id)
         {
             tracing::info!(target: "feedback_tags", chatgpt_user_id);
         }
         if let Some(account_id) = auth
             .as_ref()
-            .and_then(codex_login::CodexAuth::get_account_id)
+            .and_then(ava_login::AvaAuth::get_account_id)
         {
             tracing::info!(target: "feedback_tags", account_id);
         }
@@ -207,7 +207,7 @@ impl FeedbackRequestProcessor {
                     .await
                     && seen_attachment_paths.insert(rollout_path.clone())
                 {
-                    thread.rollout_filename = codex_rollout::plain_rollout_path(&rollout_path)
+                    thread.rollout_filename = ava_rollout::plain_rollout_path(&rollout_path)
                         .file_name()
                         .map(|name| name.to_string_lossy().into_owned());
                     attachment_paths.push(FeedbackAttachmentPath {
@@ -235,13 +235,13 @@ impl FeedbackRequestProcessor {
                 }
             }
             if let Some(sandbox_log_attachment) =
-                windows_sandbox_log_attachment(&self.config.codex_home)
+                windows_sandbox_log_attachment(&self.config.ava_home)
                 && seen_attachment_paths.insert(sandbox_log_attachment.path.clone())
             {
                 attachment_paths.push(sandbox_log_attachment);
             }
             for cache_attachment in tool_cache_feedback_attachments(
-                self.config.codex_home.as_path(),
+                self.config.ava_home.as_path(),
                 &self.config.chatgpt_base_url,
                 auth.as_ref(),
             ) {
@@ -436,26 +436,26 @@ fn normalized_prompt_hash(prompt: &str) -> String {
 }
 
 fn tool_cache_feedback_attachments(
-    codex_home: &Path,
+    ava_home: &Path,
     chatgpt_base_url: &str,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> Vec<FeedbackAttachmentPath> {
     let mut attachments = Vec::with_capacity(2);
-    let tools_cache_path = connector_runtime_cache_path(codex_home, auth);
+    let tools_cache_path = connector_runtime_cache_path(ava_home, auth);
     if tools_cache_path.is_file() {
         attachments.push(FeedbackAttachmentPath {
             path: tools_cache_path,
             attachment_filename_override: Some(
-                CODEX_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME.to_string(),
+                AVA_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME.to_string(),
             ),
         });
     }
 
-    let Some(auth) = auth.filter(|auth| auth.uses_codex_backend()) else {
+    let Some(auth) = auth.filter(|auth| auth.uses_ava_backend()) else {
         return attachments;
     };
     let directory_cache_context = ConnectorDirectoryCacheContext::new(
-        codex_home.to_path_buf(),
+        ava_home.to_path_buf(),
         ConnectorDirectoryCacheKey::new(
             chatgpt_base_url.to_string(),
             auth.get_account_id(),
@@ -468,7 +468,7 @@ fn tool_cache_feedback_attachments(
         attachments.push(FeedbackAttachmentPath {
             path: directory_cache_path,
             attachment_filename_override: Some(
-                CODEX_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME.to_string(),
+                AVA_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME.to_string(),
             ),
         });
     }
@@ -481,8 +481,8 @@ fn auto_review_rollout_filename(thread_id: ThreadId) -> String {
 }
 
 #[cfg(target_os = "windows")]
-fn windows_sandbox_log_attachment(codex_home: &Path) -> Option<FeedbackAttachmentPath> {
-    let sandbox_log_path = codex_windows_sandbox::current_log_file_path_for_codex_home(codex_home);
+fn windows_sandbox_log_attachment(ava_home: &Path) -> Option<FeedbackAttachmentPath> {
+    let sandbox_log_path = ava_windows_sandbox::current_log_file_path_for_ava_home(ava_home);
     sandbox_log_path
         .is_file()
         .then_some(FeedbackAttachmentPath {
@@ -492,24 +492,24 @@ fn windows_sandbox_log_attachment(codex_home: &Path) -> Option<FeedbackAttachmen
 }
 
 #[cfg(not(target_os = "windows"))]
-fn windows_sandbox_log_attachment(_codex_home: &Path) -> Option<FeedbackAttachmentPath> {
+fn windows_sandbox_log_attachment(_ava_home: &Path) -> Option<FeedbackAttachmentPath> {
     None
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_protocol::protocol::TurnContextItem;
-    use codex_rollout::RolloutLine;
+    use ava_protocol::protocol::TurnContextItem;
+    use ava_rollout::RolloutLine;
     use core_test_support::responses::start_mock_server;
-    use core_test_support::test_codex::test_codex;
+    use core_test_support::test_ava::test_ava;
     use http::HeaderMap;
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
     async fn doctor_uses_loaded_feedback_thread_cwd() -> anyhow::Result<()> {
         let server = start_mock_server().await;
-        let test = test_codex().build_with_auto_env(&server).await?;
+        let test = test_ava().build_with_auto_env(&server).await?;
         let daemon_workspace = tempfile::tempdir()?;
 
         let cwd = feedback_cwd(
@@ -709,9 +709,9 @@ mod tests {
             timestamp: "2026-07-24T00:00:00Z".to_string(),
             ordinal: None,
             item: RolloutItem::SessionMeta(SessionMetaLine {
-                meta: codex_protocol::protocol::SessionMeta {
+                meta: ava_protocol::protocol::SessionMeta {
                     cwd: tempdir.path().to_path_buf(),
-                    base_instructions: Some(codex_protocol::models::BaseInstructions {
+                    base_instructions: Some(ava_protocol::models::BaseInstructions {
                         text: "actual developer prompt".to_string(),
                         provenance: None,
                     }),
@@ -733,9 +733,9 @@ mod tests {
                     workspace_roots: None,
                     current_date: None,
                     timezone: None,
-                    approval_policy: codex_protocol::protocol::AskForApproval::Never,
+                    approval_policy: ava_protocol::protocol::AskForApproval::Never,
                     approvals_reviewer: None,
-                    sandbox_policy: codex_protocol::protocol::SandboxPolicy::new_read_only_policy(),
+                    sandbox_policy: ava_protocol::protocol::SandboxPolicy::new_read_only_policy(),
                     permission_profile: None,
                     active_permission_profile: None,
                     network: None,
@@ -766,16 +766,16 @@ mod tests {
 
     #[test]
     fn tool_cache_feedback_attachments_include_existing_active_cache_files() {
-        let codex_home = tempfile::tempdir().expect("create tempdir");
-        let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
-        let tools_cache_path = connector_runtime_cache_path(codex_home.path(), Some(&auth));
+        let ava_home = tempfile::tempdir().expect("create tempdir");
+        let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
+        let tools_cache_path = connector_runtime_cache_path(ava_home.path(), Some(&auth));
         std::fs::create_dir_all(tools_cache_path.parent().expect("tools cache parent"))
             .expect("create tools cache directory");
         std::fs::write(&tools_cache_path, b"tools").expect("write tools cache");
 
         let account_id = auth.get_account_id().expect("dummy auth account id");
         let directory_cache_context = ConnectorDirectoryCacheContext::new(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             ConnectorDirectoryCacheKey::new(
                 "https://chatgpt.com/backend-api".to_string(),
                 Some(account_id),
@@ -793,7 +793,7 @@ mod tests {
         std::fs::write(&directory_cache_path, b"directory").expect("write directory cache");
 
         let attachments = tool_cache_feedback_attachments(
-            codex_home.path(),
+            ava_home.path(),
             "https://chatgpt.com/backend-api",
             Some(&auth),
         )
@@ -806,11 +806,11 @@ mod tests {
             vec![
                 (
                     tools_cache_path,
-                    Some(CODEX_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME.to_string()),
+                    Some(AVA_APPS_TOOLS_CACHE_ATTACHMENT_FILENAME.to_string()),
                 ),
                 (
                     directory_cache_path,
-                    Some(CODEX_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME.to_string()),
+                    Some(AVA_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME.to_string()),
                 ),
             ]
         );
@@ -818,10 +818,10 @@ mod tests {
 
     #[test]
     fn tool_cache_feedback_attachments_include_directory_cache_without_account_id() {
-        let codex_home = tempfile::tempdir().expect("create tempdir");
-        let auth = CodexAuth::Headers(codex_login::AuthHeaders::new(HeaderMap::new()));
+        let ava_home = tempfile::tempdir().expect("create tempdir");
+        let auth = AvaAuth::Headers(ava_login::AuthHeaders::new(HeaderMap::new()));
         let directory_cache_context = ConnectorDirectoryCacheContext::new(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             ConnectorDirectoryCacheKey::new(
                 "https://chatgpt.com/backend-api".to_string(),
                 /*account_id*/ None,
@@ -839,7 +839,7 @@ mod tests {
         std::fs::write(&directory_cache_path, b"directory").expect("write directory cache");
 
         let attachments = tool_cache_feedback_attachments(
-            codex_home.path(),
+            ava_home.path(),
             "https://chatgpt.com/backend-api",
             Some(&auth),
         )
@@ -851,7 +851,7 @@ mod tests {
             attachments,
             vec![(
                 directory_cache_path,
-                Some(CODEX_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME.to_string()),
+                Some(AVA_APP_DIRECTORY_CACHE_ATTACHMENT_FILENAME.to_string()),
             )]
         );
     }
@@ -859,14 +859,14 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn windows_sandbox_log_attachment_uses_current_log() {
-        let codex_home = tempfile::tempdir().expect("create tempdir");
-        let sandbox_dir = codex_windows_sandbox::sandbox_dir(codex_home.path());
+        let ava_home = tempfile::tempdir().expect("create tempdir");
+        let sandbox_dir = ava_windows_sandbox::sandbox_dir(ava_home.path());
         std::fs::create_dir_all(&sandbox_dir).expect("create sandbox dir");
         let sandbox_log_path =
-            codex_windows_sandbox::current_log_file_path_for_codex_home(codex_home.path());
+            ava_windows_sandbox::current_log_file_path_for_ava_home(ava_home.path());
         std::fs::write(&sandbox_log_path, "sandbox log").expect("write sandbox log");
 
-        let attachment = windows_sandbox_log_attachment(codex_home.path())
+        let attachment = windows_sandbox_log_attachment(ava_home.path())
             .map(|attachment| (attachment.path, attachment.attachment_filename_override));
 
         assert_eq!(

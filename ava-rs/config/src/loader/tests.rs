@@ -1,19 +1,19 @@
 use super::*;
 use crate::ConfigRequirementsToml;
-use codex_file_system::CopyOptions;
-use codex_file_system::CreateDirectoryOptions;
-use codex_file_system::ExecutorFileSystemFuture;
-use codex_file_system::FileMetadata;
-use codex_file_system::FileSystemReadStream;
-use codex_file_system::FileSystemSandboxContext;
-use codex_file_system::GetMetadataOptions;
-use codex_file_system::ReadDirectoryEntry;
-use codex_file_system::ReadFileOptions;
-use codex_file_system::RemoveOptions;
-use codex_file_system::WalkOptions;
-use codex_file_system::WalkOutcome;
-use codex_file_system::WriteFileOptions;
-use codex_utils_path_uri::PathUri;
+use ava_file_system::CopyOptions;
+use ava_file_system::CreateDirectoryOptions;
+use ava_file_system::ExecutorFileSystemFuture;
+use ava_file_system::FileMetadata;
+use ava_file_system::FileSystemReadStream;
+use ava_file_system::FileSystemSandboxContext;
+use ava_file_system::GetMetadataOptions;
+use ava_file_system::ReadDirectoryEntry;
+use ava_file_system::ReadFileOptions;
+use ava_file_system::RemoveOptions;
+use ava_file_system::WalkOptions;
+use ava_file_system::WalkOutcome;
+use ava_file_system::WriteFileOptions;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use tempfile::tempdir;
@@ -243,7 +243,7 @@ fn project_environment_filters_keep_excluded_hosts_out_of_children() {
             .clone()
             .try_into()
             .expect("valid shell environment policy");
-        let actual = codex_protocol::shell_environment::populate_env(
+        let actual = ava_protocol::shell_environment::populate_env(
             [
                 ("GH_HOST", host),
                 ("AWS_SECRET_ACCESS_KEY", "unrelated_secret"),
@@ -588,9 +588,9 @@ async fn missing_packaged_defaults_file_returns_an_error() {
 #[tokio::test]
 async fn default_windows_managed_config_is_ignored_with_warning() {
     let tmp = tempdir().expect("tempdir");
-    let codex_home = tmp.path().join("codex-home");
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
-    let managed_config_path = codex_home.join("managed_config.toml");
+    let ava_home = tmp.path().join("ava-home");
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
+    let managed_config_path = ava_home.join("managed_config.toml");
     std::fs::write(
         &managed_config_path,
         r#"
@@ -600,7 +600,7 @@ sandbox_mode = "danger-full-access"
 "#,
     )
     .expect("write default legacy managed config");
-    std::fs::write(codex_home.join(CONFIG_TOML_FILE), r#"model = "user-model""#)
+    std::fs::write(ava_home.join(CONFIG_TOML_FILE), r#"model = "user-model""#)
         .expect("write user config");
 
     let mut overrides = LoaderOverrides::without_managed_config_for_tests();
@@ -609,7 +609,7 @@ sandbox_mode = "danger-full-access"
     overrides.system_requirements_path = Some(tmp.path().join("requirements.toml"));
     let stack = load_config_layers_state(
         &TestFileSystem,
-        &codex_home,
+        &ava_home,
         /*cwd*/ None,
         &[],
         overrides,
@@ -629,7 +629,7 @@ sandbox_mode = "danger-full-access"
         ConfigLayerSource::LegacyManagedConfigTomlFromFile { .. }
     )));
     let expected_warnings = vec![format!(
-        "Ignoring deprecated managed config file at {}; CODEX_HOME/managed_config.toml is no longer supported on Windows. Use %ProgramData%\\OpenAI\\Codex\\requirements.toml for enforced settings or config.toml for defaults.",
+        "Ignoring deprecated managed config file at {}; AVA_HOME/managed_config.toml is no longer supported on Windows. Use %ProgramData%\\OpenAI\\Ava\\requirements.toml for enforced settings or config.toml for defaults.",
         managed_config_path.display()
     )];
     assert_eq!(stack.startup_warnings(), Some(expected_warnings.as_slice()));
@@ -639,20 +639,20 @@ sandbox_mode = "danger-full-access"
 #[test]
 fn windows_local_managed_configuration_ignores_legacy_file_but_detects_requirements() {
     let tmp = tempdir().expect("tempdir");
-    let codex_home = tmp.path().join("codex-home");
-    std::fs::create_dir_all(&codex_home).expect("create codex home");
-    std::fs::write(codex_home.join("managed_config.toml"), "")
+    let ava_home = tmp.path().join("ava-home");
+    std::fs::create_dir_all(&ava_home).expect("create ava home");
+    std::fs::write(ava_home.join("managed_config.toml"), "")
         .expect("write default legacy managed config");
     let system_requirements_path = tmp.path().join("requirements.toml");
 
     let legacy_only = has_local_managed_configuration_with_system_requirements_path(
-        &codex_home,
+        &ava_home,
         &system_requirements_path,
     )
     .expect("check legacy-only managed configuration");
     std::fs::write(&system_requirements_path, "").expect("write system requirements");
     let with_system_requirements = has_local_managed_configuration_with_system_requirements_path(
-        &codex_home,
+        &ava_home,
         &system_requirements_path,
     )
     .expect("check system managed configuration");
@@ -898,12 +898,12 @@ fn local_layer_projection_preserves_override_blockers_and_cloud_position() {
 #[tokio::test]
 async fn local_layers_keep_raw_paths_order_and_legacy_requirements() {
     let tmp = tempdir().expect("tempdir");
-    let codex_home = tmp.path().join("codex-home");
+    let ava_home = tmp.path().join("ava-home");
     let project = tmp.path().join("project");
-    let dot_codex = project.join(".codex");
+    let dot_ava = project.join(".ava-code");
     let system_dir = tmp.path().join("system");
     let managed_dir = tmp.path().join("managed");
-    for dir in [&codex_home, &dot_codex, &system_dir, &managed_dir] {
+    for dir in [&ava_home, &dot_ava, &system_dir, &managed_dir] {
         std::fs::create_dir_all(dir).expect("create fixture directory");
     }
     std::fs::write(project.join(".project-root"), "").expect("write project marker");
@@ -915,7 +915,7 @@ async fn local_layers_keep_raw_paths_order_and_legacy_requirements() {
             "project_root_markers=[\".project-root\"]\nmodel_instructions_file=\"./user.md\"\n[projects.{project_key}]\ntrust_level=\"{trust_level}\""
         )
     };
-    let user_file = codex_home.join(CONFIG_TOML_FILE);
+    let user_file = ava_home.join(CONFIG_TOML_FILE);
     std::fs::write(
         &user_file,
         format!(
@@ -928,7 +928,7 @@ async fn local_layers_keep_raw_paths_order_and_legacy_requirements() {
     std::fs::write(&system_file, "model_instructions_file = \"./system.md\"")
         .expect("write system config");
     std::fs::write(
-        dot_codex.join(CONFIG_TOML_FILE),
+        dot_ava.join(CONFIG_TOML_FILE),
         "model_instructions_file = \"./project.md\"\nopenai_base_url = \"https://ignored\"",
     )
     .expect("write project config");
@@ -951,7 +951,7 @@ async fn local_layers_keep_raw_paths_order_and_legacy_requirements() {
     let cwd = AbsolutePathBuf::from_absolute_path(&project).expect("absolute cwd");
     let layers = local::load_local_config_layers_with_overrides(
         &TestFileSystem,
-        &codex_home,
+        &ava_home,
         &cwd,
         &overrides,
     )
@@ -967,8 +967,8 @@ async fn local_layers_keep_raw_paths_order_and_legacy_requirements() {
             .collect::<Vec<_>>(),
         vec![
             system_dir.clone(),
-            codex_home.clone(),
-            dot_codex.clone(),
+            ava_home.clone(),
+            dot_ava.clone(),
             managed_dir.clone(),
         ]
     );
@@ -1018,13 +1018,13 @@ async fn local_layers_keep_raw_paths_order_and_legacy_requirements() {
         )
         .expect("write lowercase trusted GitHub host");
         std::fs::write(
-            dot_codex.join(CONFIG_TOML_FILE),
+            dot_ava.join(CONFIG_TOML_FILE),
             "[shell_environment_policy]\ninherit='none'\n",
         )
         .expect("write project environment policy");
         let layers = local::load_local_config_layers_with_overrides(
             &TestFileSystem,
-            &codex_home,
+            &ava_home,
             &cwd,
             &overrides,
         )
@@ -1040,7 +1040,7 @@ async fn local_layers_keep_raw_paths_order_and_legacy_requirements() {
     std::fs::write(&user_file, user_config("untrusted")).expect("write user config");
     let layers = local::load_local_config_layers_with_overrides(
         &TestFileSystem,
-        &codex_home,
+        &ava_home,
         &cwd,
         &overrides,
     )

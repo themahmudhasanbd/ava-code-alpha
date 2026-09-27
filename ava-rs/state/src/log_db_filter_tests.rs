@@ -1,4 +1,4 @@
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -8,13 +8,13 @@ use super::*;
 
 #[tokio::test]
 async fn sqlite_sink_filters_noisy_targets_without_dropping_useful_diagnostics() {
-    let codex_home =
-        std::env::temp_dir().join(format!("codex-state-log-db-filter-{}", Uuid::new_v4()));
-    let _cleanup = scopeguard::guard(codex_home.clone(), |codex_home| {
-        let _ = std::fs::remove_dir_all(codex_home);
+    let ava_home =
+        std::env::temp_dir().join(format!("ava-state-log-db-filter-{}", Uuid::new_v4()));
+    let _cleanup = scopeguard::guard(ava_home.clone(), |ava_home| {
+        let _ = std::fs::remove_dir_all(ava_home);
     });
     let runtime = StateRuntime::init(
-        crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+        crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
         "test-provider".to_string(),
     )
     .await
@@ -47,41 +47,41 @@ async fn sqlite_sink_filters_noisy_targets_without_dropping_useful_diagnostics()
     tracing::debug!(target: "rmcp::transport", "dropped-rmcp-debug");
     tracing::info!(target: "rmcp::transport", "retained-rmcp-info");
     tracing::debug!(
-        target: "codex_rmcp_client::oauth",
-        "dropped-codex-rmcp-client-debug"
+        target: "ava_rmcp_client::oauth",
+        "dropped-ava-rmcp-client-debug"
     );
     tracing::info!(
-        target: "codex_rmcp_client::oauth",
-        "retained-codex-rmcp-client-info"
+        target: "ava_rmcp_client::oauth",
+        "retained-ava-rmcp-client-info"
     );
-    tracing::trace!(target: "codex_http_client::transport", "dropped-request-body");
-    tracing::debug!(target: "codex_http_client::transport", "retained-request-diagnostic");
-    tracing::trace!(target: "codex_api::sse", "dropped-sse-parent");
-    tracing::trace!(target: "codex_api::sse::responses", "dropped-sse-payload");
-    tracing::debug!(target: "codex_api::sse::responses", "retained-sse-diagnostic");
-    tracing::trace!(target: "codex_state", "retained-trace");
+    tracing::trace!(target: "ava_http_client::transport", "dropped-request-body");
+    tracing::debug!(target: "ava_http_client::transport", "retained-request-diagnostic");
+    tracing::trace!(target: "ava_api::sse", "dropped-sse-parent");
+    tracing::trace!(target: "ava_api::sse::responses", "dropped-sse-payload");
+    tracing::debug!(target: "ava_api::sse::responses", "retained-sse-diagnostic");
+    tracing::trace!(target: "ava_state", "retained-trace");
     tracing::trace!(
-        target: "codex_tui::streaming::controller",
+        target: "ava_tui::streaming::controller",
         "dropped-controller-trace"
     );
     tracing::debug!(
-        target: "codex_tui::streaming::controller",
+        target: "ava_tui::streaming::controller",
         "retained-controller-debug"
     );
     tracing::trace!(
-        target: "codex_tui::streaming::table_holdback",
+        target: "ava_tui::streaming::table_holdback",
         "dropped-table-holdback-trace"
     );
     tracing::debug!(
-        target: "codex_tui::streaming::table_holdback",
+        target: "ava_tui::streaming::table_holdback",
         "retained-table-holdback-debug"
     );
     tracing::trace!(
-        target: "codex_tui::streaming::commit_tick",
+        target: "ava_tui::streaming::commit_tick",
         "retained-commit-tick-trace"
     );
     tracing::trace!(
-        target: "codex_api::responses_websocket_timing",
+        target: "ava_api::responses_websocket_timing",
         payload = "complete timing payload",
         "dropped-websocket-timing"
     );
@@ -117,33 +117,33 @@ async fn sqlite_sink_filters_noisy_targets_without_dropping_useful_diagnostics()
             ("INFO", "rmcp::transport", Some("retained-rmcp-info")),
             (
                 "INFO",
-                "codex_rmcp_client::oauth",
-                Some("retained-codex-rmcp-client-info")
+                "ava_rmcp_client::oauth",
+                Some("retained-ava-rmcp-client-info")
             ),
             (
                 "DEBUG",
-                "codex_http_client::transport",
+                "ava_http_client::transport",
                 Some("retained-request-diagnostic")
             ),
             (
                 "DEBUG",
-                "codex_api::sse::responses",
+                "ava_api::sse::responses",
                 Some("retained-sse-diagnostic")
             ),
-            ("TRACE", "codex_state", Some("retained-trace")),
+            ("TRACE", "ava_state", Some("retained-trace")),
             (
                 "DEBUG",
-                "codex_tui::streaming::controller",
+                "ava_tui::streaming::controller",
                 Some("retained-controller-debug"),
             ),
             (
                 "DEBUG",
-                "codex_tui::streaming::table_holdback",
+                "ava_tui::streaming::table_holdback",
                 Some("retained-table-holdback-debug"),
             ),
             (
                 "TRACE",
-                "codex_tui::streaming::commit_tick",
+                "ava_tui::streaming::commit_tick",
                 Some("retained-commit-tick-trace"),
             ),
         ]

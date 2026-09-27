@@ -7,46 +7,46 @@ use crate::error_code::invalid_request;
 use crate::outgoing_message::ConnectionRequestId;
 use crate::outgoing_message::OutgoingMessageSender;
 use crate::request_processors::ConfigRequestProcessor;
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::ExternalAgentConfigImportCompletedInput;
-use codex_analytics::ExternalAgentConfigImportFailureInput;
-use codex_app_server_protocol::ExternalAgentConfigDetectParams;
-use codex_app_server_protocol::ExternalAgentConfigDetectResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
-use codex_app_server_protocol::ExternalAgentConfigImportHistoriesReadResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportHistoryRecordParams;
-use codex_app_server_protocol::ExternalAgentConfigImportHistoryRecordResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportItemTypeFailure as ProtocolImportFailure;
-use codex_app_server_protocol::ExternalAgentConfigImportItemTypeSuccess as ProtocolImportSuccess;
-use codex_app_server_protocol::ExternalAgentConfigImportParams;
-use codex_app_server_protocol::ExternalAgentConfigImportProgressNotification;
-use codex_app_server_protocol::ExternalAgentConfigImportResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportTypeResult as ProtocolImportTypeResult;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItem;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItemType;
-use codex_app_server_protocol::ExternalAgentImportedConnectorCandidate;
-use codex_app_server_protocol::ExternalAgentImportedConnectorSource;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::ServerNotification;
-use codex_arg0::Arg0DispatchPaths;
-use codex_core::ThreadManager;
-use codex_external_agent_migration::DetectedConnectorCandidate;
-use codex_external_agent_migration::ExternalAgentConfigDetectOptions;
-use codex_external_agent_migration::ExternalAgentConfigImportItemResult as CoreImportItemResult;
-use codex_external_agent_migration::ExternalAgentConfigImportOutcome as CoreImportOutcome;
-use codex_external_agent_migration::ExternalAgentConfigMigrationItemType as CoreMigrationItemType;
-use codex_external_agent_migration::ExternalAgentConfigService;
-use codex_external_agent_migration::ExternalAgentSessionImportLimits;
-use codex_external_agent_migration::PluginImportOutcome;
-use codex_external_agent_migration::record_import_error;
-use codex_external_agent_migration::sessions::ExternalAgentSessionMigration as CoreSessionMigration;
-use codex_external_agent_migration::sessions::read_imported_connector_candidates;
-use codex_external_agent_migration::sessions::record_detected_session_connectors;
-use codex_features::Feature;
-use codex_rollout::StateDbHandle;
-use codex_state::ExternalAgentConfigImportFailureRecord;
-use codex_state::ExternalAgentConfigImportSuccessRecord;
-use codex_thread_store::ThreadStore;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::ExternalAgentConfigImportCompletedInput;
+use ava_analytics::ExternalAgentConfigImportFailureInput;
+use ava_app_server_protocol::ExternalAgentConfigDetectParams;
+use ava_app_server_protocol::ExternalAgentConfigDetectResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
+use ava_app_server_protocol::ExternalAgentConfigImportHistoriesReadResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportHistoryRecordParams;
+use ava_app_server_protocol::ExternalAgentConfigImportHistoryRecordResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportItemTypeFailure as ProtocolImportFailure;
+use ava_app_server_protocol::ExternalAgentConfigImportItemTypeSuccess as ProtocolImportSuccess;
+use ava_app_server_protocol::ExternalAgentConfigImportParams;
+use ava_app_server_protocol::ExternalAgentConfigImportProgressNotification;
+use ava_app_server_protocol::ExternalAgentConfigImportResponse;
+use ava_app_server_protocol::ExternalAgentConfigImportTypeResult as ProtocolImportTypeResult;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItem;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItemType;
+use ava_app_server_protocol::ExternalAgentImportedConnectorCandidate;
+use ava_app_server_protocol::ExternalAgentImportedConnectorSource;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::ServerNotification;
+use ava_arg0::Arg0DispatchPaths;
+use ava_core::ThreadManager;
+use ava_external_agent_migration::DetectedConnectorCandidate;
+use ava_external_agent_migration::ExternalAgentConfigDetectOptions;
+use ava_external_agent_migration::ExternalAgentConfigImportItemResult as CoreImportItemResult;
+use ava_external_agent_migration::ExternalAgentConfigImportOutcome as CoreImportOutcome;
+use ava_external_agent_migration::ExternalAgentConfigMigrationItemType as CoreMigrationItemType;
+use ava_external_agent_migration::ExternalAgentConfigService;
+use ava_external_agent_migration::ExternalAgentSessionImportLimits;
+use ava_external_agent_migration::PluginImportOutcome;
+use ava_external_agent_migration::record_import_error;
+use ava_external_agent_migration::sessions::ExternalAgentSessionMigration as CoreSessionMigration;
+use ava_external_agent_migration::sessions::read_imported_connector_candidates;
+use ava_external_agent_migration::sessions::record_detected_session_connectors;
+use ava_features::Feature;
+use ava_rollout::StateDbHandle;
+use ava_state::ExternalAgentConfigImportFailureRecord;
+use ava_state::ExternalAgentConfigImportSuccessRecord;
+use ava_thread_store::ThreadStore;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -80,7 +80,7 @@ pub(crate) struct ExternalAgentConfigRequestProcessorArgs {
     pub(crate) state_db: Option<StateDbHandle>,
     pub(crate) analytics_events_client: AnalyticsEventsClient,
     pub(crate) arg0_paths: Arg0DispatchPaths,
-    pub(crate) codex_home: PathBuf,
+    pub(crate) ava_home: PathBuf,
 }
 
 impl ExternalAgentConfigRequestProcessor {
@@ -94,16 +94,16 @@ impl ExternalAgentConfigRequestProcessor {
             state_db,
             analytics_events_client,
             arg0_paths,
-            codex_home,
+            ava_home,
         } = args;
         let migration_service = ExternalAgentConfigService::new(
-            codex_home.clone(),
+            ava_home.clone(),
             thread_manager.auth_manager(),
             analytics_events_client.clone(),
             state_db.clone(),
         );
         let session_importer = ExternalAgentSessionImporter::new(
-            codex_home,
+            ava_home,
             migration_service.connector_metadata_roots().to_vec(),
             Arc::clone(&thread_manager),
             thread_store,
@@ -158,7 +158,7 @@ impl ExternalAgentConfigRequestProcessor {
         let (connector_names_by_source_path, connectors) =
             detected_session_connectors(&migration_service, &sessions);
         record_detected_session_connectors(
-            self.migration_service.codex_home(),
+            self.migration_service.ava_home(),
             connector_names_by_source_path,
         )
         .map_err(|err| {
@@ -388,7 +388,7 @@ impl ExternalAgentConfigRequestProcessor {
             .into_iter()
             .map(protocol_import_history)
             .collect::<Result<Vec<_>, _>>()?;
-        let connectors = read_imported_connector_candidates(self.migration_service.codex_home())
+        let connectors = read_imported_connector_candidates(self.migration_service.ava_home())
             .map_err(|err| {
                 internal_error(format!(
                     "failed to read imported connector candidates: {err}"

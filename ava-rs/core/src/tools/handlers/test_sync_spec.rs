@@ -1,6 +1,6 @@
-use codex_tools::JsonSchema;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolSpec;
+use ava_tools::JsonSchema;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolSpec;
 use std::collections::BTreeMap;
 
 pub fn create_test_sync_tool() -> ToolSpec {
@@ -57,7 +57,7 @@ pub fn create_test_sync_tool() -> ToolSpec {
 
     ToolSpec::Function(ResponsesApiTool {
         name: "test_sync_tool".to_string(),
-        description: "Internal synchronization helper used by Codex integration tests.".to_string(),
+        description: "Internal synchronization helper used by Ava integration tests.".to_string(),
         strict: false,
         defer_loading: None,
         parameters: JsonSchema::object(properties, /*required*/ None, Some(false.into())),

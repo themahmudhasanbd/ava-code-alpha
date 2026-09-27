@@ -25,56 +25,56 @@ use anyhow::bail;
 use clap::ArgAction;
 use clap::Parser;
 use clap::Subcommand;
-use codex_app_server_protocol::AccountLoginCompletedNotification;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionRequestApprovalParams;
-use codex_app_server_protocol::CommandExecutionRequestApprovalResponse;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::DynamicToolSpec;
-use codex_app_server_protocol::FileChangeApprovalDecision;
-use codex_app_server_protocol::FileChangeRequestApprovalParams;
-use codex_app_server_protocol::FileChangeRequestApprovalResponse;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::InitializeResponse;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::JSONRPCRequest;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::LogoutAccountResponse;
-use codex_app_server_protocol::ModelListParams;
-use codex_app_server_protocol::ModelListResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadDecrementElicitationParams;
-use codex_app_server_protocol::ThreadDecrementElicitationResponse;
-use codex_app_server_protocol::ThreadIncrementElicitationParams;
-use codex_app_server_protocol::ThreadIncrementElicitationResponse;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_core::config::Config;
-use codex_otel::OtelProvider;
-use codex_otel::current_span_w3c_trace_context;
-use codex_protocol::dynamic_tools::normalize_dynamic_tool_specs;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_utils_cli::CliConfigOverrides;
+use ava_app_server_protocol::AccountLoginCompletedNotification;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionRequestApprovalParams;
+use ava_app_server_protocol::CommandExecutionRequestApprovalResponse;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::DynamicToolSpec;
+use ava_app_server_protocol::FileChangeApprovalDecision;
+use ava_app_server_protocol::FileChangeRequestApprovalParams;
+use ava_app_server_protocol::FileChangeRequestApprovalResponse;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::InitializeResponse;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::JSONRPCRequest;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::LogoutAccountResponse;
+use ava_app_server_protocol::ModelListParams;
+use ava_app_server_protocol::ModelListResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadDecrementElicitationParams;
+use ava_app_server_protocol::ThreadDecrementElicitationResponse;
+use ava_app_server_protocol::ThreadIncrementElicitationParams;
+use ava_app_server_protocol::ThreadIncrementElicitationResponse;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_core::config::Config;
+use ava_otel::OtelProvider;
+use ava_otel::current_span_w3c_trace_context;
+use ava_protocol::dynamic_tools::normalize_dynamic_tool_specs;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_utils_cli::CliConfigOverrides;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -106,27 +106,27 @@ const NOTIFICATIONS_TO_OPT_OUT: &[&str] = &[
 const APP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 const APP_SERVER_GRACEFUL_SHUTDOWN_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const DEFAULT_ANALYTICS_ENABLED: bool = true;
-const OTEL_SERVICE_NAME: &str = "codex-app-server-test-client";
+const OTEL_SERVICE_NAME: &str = "ava-app-server-test-client";
 const TRACE_DISABLED_MESSAGE: &str =
-    "Not enabled - enable tracing in $CODEX_HOME/config.toml to get a trace URL!";
+    "Not enabled - enable tracing in $AVA_HOME/config.toml to get a trace URL!";
 
-/// Minimal launcher that initializes the Codex app-server and logs the handshake.
+/// Minimal launcher that initializes the Ava app-server and logs the handshake.
 #[derive(Parser)]
-#[command(author = "Codex", version, about = "Bootstrap Codex app-server", long_about = None)]
+#[command(author = "Ava", version, about = "Bootstrap Ava app-server", long_about = None)]
 struct Cli {
-    /// Path to the `codex` CLI binary. When set, requests use stdio by
-    /// spawning `codex app-server` as a child process.
-    #[arg(long, env = "CODEX_BIN", global = true)]
-    codex_bin: Option<PathBuf>,
+    /// Path to the `ava` CLI binary. When set, requests use stdio by
+    /// spawning `ava app-server` as a child process.
+    #[arg(long, env = "AVA_BIN", global = true)]
+    ava_bin: Option<PathBuf>,
 
     /// Existing websocket server URL to connect to.
     ///
-    /// If neither `--codex-bin` nor `--url` is provided, defaults to
+    /// If neither `--ava-bin` nor `--url` is provided, defaults to
     /// `ws://127.0.0.1:4222`.
-    #[arg(long, env = "CODEX_APP_SERVER_URL", global = true)]
+    #[arg(long, env = "AVA_APP_SERVER_URL", global = true)]
     url: Option<String>,
 
-    /// Forwarded to the `codex` CLI as `--config key=value`. Repeatable.
+    /// Forwarded to the `ava` CLI as `--config key=value`. Repeatable.
     ///
     /// Example:
     ///   `--config 'model_providers.mock.base_url="http://localhost:4010/v2"'`
@@ -154,21 +154,21 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum CliCommand {
-    /// Start `codex app-server` on a websocket endpoint in the background.
+    /// Start `ava app-server` on a websocket endpoint in the background.
     ///
     /// Logs are written to:
-    ///   `/tmp/codex-app-server-test-client/`
+    ///   `/tmp/ava-app-server-test-client/`
     Serve {
-        /// WebSocket listen URL passed to `codex app-server --listen`.
+        /// WebSocket listen URL passed to `ava app-server --listen`.
         #[arg(long, default_value = "ws://127.0.0.1:4222")]
         listen: String,
         /// Kill any process listening on the same port before starting.
         #[arg(long, default_value_t = false)]
         kill: bool,
     },
-    /// Send a user message through the Codex app-server.
+    /// Send a user message through the Ava app-server.
     SendMessage {
-        /// User message to send to Codex.
+        /// User message to send to Ava.
         user_message: String,
     },
     /// Send a user message through the app-server V2 thread/turn APIs.
@@ -176,14 +176,14 @@ enum CliCommand {
         /// Opt into experimental app-server methods and fields.
         #[arg(long)]
         experimental_api: bool,
-        /// User message to send to Codex.
+        /// User message to send to Ava.
         user_message: String,
     },
     /// Resume a V2 thread by id, then send a user message.
     ResumeMessageV2 {
         /// Existing thread id to resume.
         thread_id: String,
-        /// User message to send to Codex.
+        /// User message to send to Ava.
         user_message: String,
     },
     /// Resume a V2 thread and continuously stream notifications/events.
@@ -236,7 +236,7 @@ enum CliCommand {
         /// Use the device-code login flow instead of the browser callback flow.
         #[arg(long, default_value_t = false, conflicts_with = "amazon_bedrock")]
         device_code: bool,
-        /// Use a Codex-managed Amazon Bedrock API key.
+        /// Use a Ava-managed Amazon Bedrock API key.
         #[arg(long, default_value_t = false, conflicts_with = "device_code")]
         amazon_bedrock: bool,
         /// Amazon Bedrock API key.
@@ -248,12 +248,12 @@ enum CliCommand {
     },
     /// Log out of the current account and wait for the account update.
     TestLogout,
-    /// Fetch the current account rate limits from the Codex app-server.
+    /// Fetch the current account rate limits from the Ava app-server.
     GetAccountRateLimits,
-    /// List the available models from the Codex app-server.
+    /// List the available models from the Ava app-server.
     #[command(name = "model-list")]
     ModelList,
-    /// List stored threads from the Codex app-server.
+    /// List stored threads from the Ava app-server.
     #[command(name = "thread-list")]
     ThreadList {
         /// Number of threads to return.
@@ -277,7 +277,7 @@ enum CliCommand {
     #[command(name = "live-elicitation-timeout-pause")]
     LiveElicitationTimeoutPause {
         /// Model passed to `thread/start`.
-        #[arg(long, env = "CODEX_E2E_MODEL", default_value = "gpt-5")]
+        #[arg(long, env = "AVA_E2E_MODEL", default_value = "gpt-5")]
         model: String,
         /// Existing workspace path used as the turn cwd.
         #[arg(long, value_name = "path", default_value = ".")]
@@ -333,7 +333,7 @@ enum TestLoginMode {
 
 pub async fn run() -> Result<()> {
     let Cli {
-        codex_bin,
+        ava_bin,
         url,
         config_overrides,
         dynamic_tools,
@@ -345,19 +345,19 @@ pub async fn run() -> Result<()> {
     match command {
         CliCommand::Serve { listen, kill } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "serve")?;
-            let codex_bin = codex_bin.unwrap_or_else(|| PathBuf::from("codex"));
-            serve(&codex_bin, &config_overrides, &listen, kill)
+            let ava_bin = ava_bin.unwrap_or_else(|| PathBuf::from("ava"));
+            serve(&ava_bin, &config_overrides, &listen, kill)
         }
         CliCommand::SendMessage { user_message } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "send-message")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             send_message(&endpoint, &config_overrides, user_message).await
         }
         CliCommand::SendMessageV2 {
             experimental_api,
             user_message,
         } => {
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             send_message_v2_endpoint(
                 &endpoint,
                 &config_overrides,
@@ -371,7 +371,7 @@ pub async fn run() -> Result<()> {
             thread_id,
             user_message,
         } => {
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             resume_message_v2(
                 &endpoint,
                 &config_overrides,
@@ -383,31 +383,31 @@ pub async fn run() -> Result<()> {
         }
         CliCommand::ThreadResume { thread_id } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "thread-resume")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             thread_resume_follow(&endpoint, &config_overrides, thread_id).await
         }
         CliCommand::Watch => {
             ensure_dynamic_tools_unused(&dynamic_tools, "watch")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             watch(&endpoint, &config_overrides).await
         }
         CliCommand::TriggerCmdApproval { user_message } => {
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             trigger_cmd_approval(&endpoint, &config_overrides, user_message, &dynamic_tools).await
         }
         CliCommand::TriggerPatchApproval { user_message } => {
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             trigger_patch_approval(&endpoint, &config_overrides, user_message, &dynamic_tools).await
         }
         CliCommand::NoTriggerCmdApproval => {
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             no_trigger_cmd_approval(&endpoint, &config_overrides, &dynamic_tools).await
         }
         CliCommand::SendFollowUpV2 {
             first_message,
             follow_up_message,
         } => {
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             send_follow_up_v2(
                 &endpoint,
                 &config_overrides,
@@ -422,7 +422,7 @@ pub async fn run() -> Result<()> {
             min_approvals,
             abort_on,
         } => {
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             trigger_zsh_fork_multi_cmd_approval(
                 &endpoint,
                 &config_overrides,
@@ -440,7 +440,7 @@ pub async fn run() -> Result<()> {
             region,
         } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "test-login")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             let mode = if amazon_bedrock {
                 let api_key = api_key.context("--api-key is required with --amazon-bedrock")?;
                 let region = region.context("--region is required with --amazon-bedrock")?;
@@ -454,32 +454,32 @@ pub async fn run() -> Result<()> {
         }
         CliCommand::TestLogout => {
             ensure_dynamic_tools_unused(&dynamic_tools, "test-logout")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             test_logout(&endpoint, &config_overrides).await
         }
         CliCommand::GetAccountRateLimits => {
             ensure_dynamic_tools_unused(&dynamic_tools, "get-account-rate-limits")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             get_account_rate_limits(&endpoint, &config_overrides).await
         }
         CliCommand::ModelList => {
             ensure_dynamic_tools_unused(&dynamic_tools, "model-list")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             model_list(&endpoint, &config_overrides).await
         }
         CliCommand::ThreadList { limit } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "thread-list")?;
-            let endpoint = resolve_endpoint(codex_bin, url)?;
+            let endpoint = resolve_endpoint(ava_bin, url)?;
             thread_list(&endpoint, &config_overrides, limit).await
         }
         CliCommand::ThreadIncrementElicitation { thread_id } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "thread-increment-elicitation")?;
-            let url = resolve_shared_websocket_url(codex_bin, url, "thread-increment-elicitation")?;
+            let url = resolve_shared_websocket_url(ava_bin, url, "thread-increment-elicitation")?;
             thread_increment_elicitation(&url, thread_id)
         }
         CliCommand::ThreadDecrementElicitation { thread_id } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "thread-decrement-elicitation")?;
-            let url = resolve_shared_websocket_url(codex_bin, url, "thread-decrement-elicitation")?;
+            let url = resolve_shared_websocket_url(ava_bin, url, "thread-decrement-elicitation")?;
             thread_decrement_elicitation(&url, thread_id)
         }
         CliCommand::LiveElicitationTimeoutPause {
@@ -490,7 +490,7 @@ pub async fn run() -> Result<()> {
         } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "live-elicitation-timeout-pause")?;
             live_elicitation_timeout_pause(
-                codex_bin,
+                ava_bin,
                 url,
                 &config_overrides,
                 model,
@@ -505,10 +505,10 @@ pub async fn run() -> Result<()> {
         } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "plugin-analytics-smoke")?;
             if url.is_some() {
-                bail!("plugin-analytics-smoke requires --codex-bin and does not support --url");
+                bail!("plugin-analytics-smoke requires --ava-bin and does not support --url");
             }
-            let codex_bin = codex_bin.context("plugin-analytics-smoke requires --codex-bin")?;
-            plugin_analytics_smoke::run(&codex_bin, &config_overrides, &plugin_id, capture_file)
+            let ava_bin = ava_bin.context("plugin-analytics-smoke requires --ava-bin")?;
+            plugin_analytics_smoke::run(&ava_bin, &config_overrides, &plugin_id, capture_file)
         }
         CliCommand::PluginAnalyticsMutationSmoke {
             remote_plugin_id,
@@ -518,13 +518,13 @@ pub async fn run() -> Result<()> {
             ensure_dynamic_tools_unused(&dynamic_tools, "plugin-analytics-mutation-smoke")?;
             if url.is_some() {
                 bail!(
-                    "plugin-analytics-mutation-smoke requires --codex-bin and does not support --url"
+                    "plugin-analytics-mutation-smoke requires --ava-bin and does not support --url"
                 );
             }
-            let codex_bin =
-                codex_bin.context("plugin-analytics-mutation-smoke requires --codex-bin")?;
+            let ava_bin =
+                ava_bin.context("plugin-analytics-mutation-smoke requires --ava-bin")?;
             plugin_analytics_mutation_smoke::run(
-                &codex_bin,
+                &ava_bin,
                 &config_overrides,
                 &remote_plugin_id,
                 plugin_analytics_mutation_smoke::AccountMutationConfirmation::from_flag(
@@ -539,11 +539,11 @@ pub async fn run() -> Result<()> {
         } => {
             ensure_dynamic_tools_unused(&dynamic_tools, "plugin-remote-uninstall")?;
             if url.is_some() {
-                bail!("plugin-remote-uninstall requires --codex-bin and does not support --url");
+                bail!("plugin-remote-uninstall requires --ava-bin and does not support --url");
             }
-            let codex_bin = codex_bin.context("plugin-remote-uninstall requires --codex-bin")?;
+            let ava_bin = ava_bin.context("plugin-remote-uninstall requires --ava-bin")?;
             plugin_analytics_mutation_smoke::run_cleanup(
-                &codex_bin,
+                &ava_bin,
                 &config_overrides,
                 &remote_plugin_id,
                 plugin_analytics_mutation_smoke::AccountMutationConfirmation::from_flag(
@@ -555,7 +555,7 @@ pub async fn run() -> Result<()> {
 }
 
 enum Endpoint {
-    SpawnCodex(PathBuf),
+    SpawnAva(PathBuf),
     ConnectWs(String),
 }
 
@@ -564,12 +564,12 @@ struct BackgroundAppServer {
     url: String,
 }
 
-fn resolve_endpoint(codex_bin: Option<PathBuf>, url: Option<String>) -> Result<Endpoint> {
-    if codex_bin.is_some() && url.is_some() {
-        bail!("--codex-bin and --url are mutually exclusive");
+fn resolve_endpoint(ava_bin: Option<PathBuf>, url: Option<String>) -> Result<Endpoint> {
+    if ava_bin.is_some() && url.is_some() {
+        bail!("--ava-bin and --url are mutually exclusive");
     }
-    if let Some(codex_bin) = codex_bin {
-        return Ok(Endpoint::SpawnCodex(codex_bin));
+    if let Some(ava_bin) = ava_bin {
+        return Ok(Endpoint::SpawnAva(ava_bin));
     }
     if let Some(url) = url {
         return Ok(Endpoint::ConnectWs(url));
@@ -578,13 +578,13 @@ fn resolve_endpoint(codex_bin: Option<PathBuf>, url: Option<String>) -> Result<E
 }
 
 fn resolve_shared_websocket_url(
-    codex_bin: Option<PathBuf>,
+    ava_bin: Option<PathBuf>,
     url: Option<String>,
     command: &str,
 ) -> Result<String> {
-    if codex_bin.is_some() {
+    if ava_bin.is_some() {
         bail!(
-            "{command} requires --url or an already-running websocket app-server; --codex-bin would spawn a private stdio app-server instead"
+            "{command} requires --url or an already-running websocket app-server; --ava-bin would spawn a private stdio app-server instead"
         );
     }
 
@@ -592,16 +592,16 @@ fn resolve_shared_websocket_url(
 }
 
 impl BackgroundAppServer {
-    fn spawn(codex_bin: &Path, config_overrides: &[String]) -> Result<Self> {
+    fn spawn(ava_bin: &Path, config_overrides: &[String]) -> Result<Self> {
         let listener = TcpListener::bind("127.0.0.1:0")
             .context("failed to reserve a local port for websocket app-server")?;
         let addr = listener.local_addr()?;
         drop(listener);
 
         let url = format!("ws://{addr}");
-        let mut cmd = Command::new(codex_bin);
-        if let Some(codex_bin_parent) = codex_bin.parent() {
-            let mut path = OsString::from(codex_bin_parent.as_os_str());
+        let mut cmd = Command::new(ava_bin);
+        if let Some(ava_bin_parent) = ava_bin.parent() {
+            let mut path = OsString::from(ava_bin_parent.as_os_str());
             if let Some(existing_path) = std::env::var_os("PATH") {
                 path.push(":");
                 path.push(existing_path);
@@ -619,7 +619,7 @@ impl BackgroundAppServer {
             .stdout(Stdio::null())
             .stderr(Stdio::inherit())
             .spawn()
-            .with_context(|| format!("failed to start `{}` app-server", codex_bin.display()))?;
+            .with_context(|| format!("failed to start `{}` app-server", ava_bin.display()))?;
 
         Ok(Self { process, url })
     }
@@ -637,8 +637,8 @@ impl Drop for BackgroundAppServer {
     }
 }
 
-fn serve(codex_bin: &Path, config_overrides: &[String], listen: &str, kill: bool) -> Result<()> {
-    let runtime_dir = PathBuf::from("/tmp/codex-app-server-test-client");
+fn serve(ava_bin: &Path, config_overrides: &[String], listen: &str, kill: bool) -> Result<()> {
+    let runtime_dir = PathBuf::from("/tmp/ava-app-server-test-client");
     fs::create_dir_all(&runtime_dir)
         .with_context(|| format!("failed to create runtime dir {}", runtime_dir.display()))?;
     let log_path = runtime_dir.join("app-server.log");
@@ -656,8 +656,8 @@ fn serve(codex_bin: &Path, config_overrides: &[String], listen: &str, kill: bool
         .with_context(|| format!("failed to clone log file handle {}", log_path.display()))?;
 
     let mut cmdline = format!(
-        "tail -f /dev/null | RUST_BACKTRACE=full RUST_LOG=warn,codex_=trace {}",
-        shell_quote(&codex_bin.display().to_string())
+        "tail -f /dev/null | RUST_BACKTRACE=full RUST_LOG=warn,ava_=trace {}",
+        shell_quote(&ava_bin.display().to_string())
     );
     for override_kv in config_overrides {
         cmdline.push_str(&format!(" --config {}", shell_quote(override_kv)));
@@ -672,11 +672,11 @@ fn serve(codex_bin: &Path, config_overrides: &[String], listen: &str, kill: bool
         .stdout(Stdio::from(log_file))
         .stderr(Stdio::from(log_file_stderr))
         .spawn()
-        .with_context(|| format!("failed to start `{}` app-server", codex_bin.display()))?;
+        .with_context(|| format!("failed to start `{}` app-server", ava_bin.display()))?;
 
     let pid = child.id();
 
-    println!("started codex app-server");
+    println!("started ava app-server");
     println!("listen: {listen}");
     println!("pid: {pid} (launcher process)");
     println!("log: {}", log_path.display());
@@ -779,12 +779,12 @@ async fn send_message(
 }
 
 pub async fn send_message_v2(
-    codex_bin: &Path,
+    ava_bin: &Path,
     config_overrides: &[String],
     user_message: String,
     dynamic_tools: &Option<Vec<DynamicToolSpec>>,
 ) -> Result<()> {
-    let endpoint = Endpoint::SpawnCodex(codex_bin.to_path_buf());
+    let endpoint = Endpoint::SpawnAva(ava_bin.to_path_buf());
     send_message_v2_endpoint(
         &endpoint,
         config_overrides,
@@ -1179,7 +1179,7 @@ async fn test_login(
                 let login_response: LoginAccountResponse = client.send_request(
                     ClientRequest::LoginAccount {
                         request_id: request_id.clone(),
-                        params: codex_app_server_protocol::LoginAccountParams::AmazonBedrock {
+                        params: ava_app_server_protocol::LoginAccountParams::AmazonBedrock {
                             api_key,
                             region,
                         },
@@ -1328,7 +1328,7 @@ async fn with_client<T>(
     command_name: &'static str,
     endpoint: &Endpoint,
     config_overrides: &[String],
-    f: impl FnOnce(&mut CodexClient) -> Result<T>,
+    f: impl FnOnce(&mut AvaClient) -> Result<T>,
 ) -> Result<T> {
     let tracing = TestClientTracing::initialize(config_overrides).await?;
     let command_span = info_span!(
@@ -1339,7 +1339,7 @@ async fn with_client<T>(
     );
     let trace_summary = command_span.in_scope(|| TraceSummary::capture(tracing.traces_enabled));
     let result = command_span.in_scope(|| {
-        let mut client = CodexClient::connect(endpoint, config_overrides)?;
+        let mut client = AvaClient::connect(endpoint, config_overrides)?;
         f(&mut client)
     });
     print_trace_summary(&trace_summary);
@@ -1348,7 +1348,7 @@ async fn with_client<T>(
 
 fn thread_increment_elicitation(url: &str, thread_id: String) -> Result<()> {
     let endpoint = Endpoint::ConnectWs(url.to_string());
-    let mut client = CodexClient::connect(&endpoint, &[])?;
+    let mut client = AvaClient::connect(&endpoint, &[])?;
 
     let initialize = client.initialize()?;
     println!("< initialize response: {initialize:?}");
@@ -1362,7 +1362,7 @@ fn thread_increment_elicitation(url: &str, thread_id: String) -> Result<()> {
 
 fn thread_decrement_elicitation(url: &str, thread_id: String) -> Result<()> {
     let endpoint = Endpoint::ConnectWs(url.to_string());
-    let mut client = CodexClient::connect(&endpoint, &[])?;
+    let mut client = AvaClient::connect(&endpoint, &[])?;
 
     let initialize = client.initialize()?;
     println!("< initialize response: {initialize:?}");
@@ -1375,7 +1375,7 @@ fn thread_decrement_elicitation(url: &str, thread_id: String) -> Result<()> {
 }
 
 fn live_elicitation_timeout_pause(
-    codex_bin: Option<PathBuf>,
+    ava_bin: Option<PathBuf>,
     url: Option<String>,
     config_overrides: &[String],
     model: String,
@@ -1391,10 +1391,10 @@ fn live_elicitation_timeout_pause(
     }
 
     let mut _background_server = None;
-    let websocket_url = match (codex_bin, url) {
-        (Some(_), Some(_)) => bail!("--codex-bin and --url are mutually exclusive"),
-        (Some(codex_bin), None) => {
-            let server = BackgroundAppServer::spawn(&codex_bin, config_overrides)?;
+    let websocket_url = match (ava_bin, url) {
+        (Some(_), Some(_)) => bail!("--ava-bin and --url are mutually exclusive"),
+        (Some(ava_bin), None) => {
+            let server = BackgroundAppServer::spawn(&ava_bin, config_overrides)?;
             let websocket_url = server.url.clone();
             _background_server = Some(server);
             websocket_url
@@ -1416,9 +1416,9 @@ fn live_elicitation_timeout_pause(
         .canonicalize()
         .with_context(|| format!("failed to resolve workspace `{}`", workspace.display()))?;
     let app_server_test_client_bin = std::env::current_exe()
-        .context("failed to resolve codex-app-server-test-client binary path")?;
+        .context("failed to resolve ava-app-server-test-client binary path")?;
     let endpoint = Endpoint::ConnectWs(websocket_url.clone());
-    let mut client = CodexClient::connect(&endpoint, &[])?;
+    let mut client = AvaClient::connect(&endpoint, &[])?;
 
     let initialize = client.initialize()?;
     println!("< initialize response: {initialize:?}");
@@ -1578,7 +1578,7 @@ enum ClientTransport {
     },
 }
 
-struct CodexClient {
+struct AvaClient {
     transport: ClientTransport,
     pending_notifications: VecDeque<JSONRPCNotification>,
     command_approval_behavior: CommandApprovalBehavior,
@@ -1613,27 +1613,27 @@ fn item_started_before_helper_done_is_unexpected(
     !matches!(item, ThreadItem::UserMessage { .. })
 }
 
-impl CodexClient {
+impl AvaClient {
     fn connect(endpoint: &Endpoint, config_overrides: &[String]) -> Result<Self> {
         match endpoint {
-            Endpoint::SpawnCodex(codex_bin) => Self::spawn_stdio(codex_bin, config_overrides),
+            Endpoint::SpawnAva(ava_bin) => Self::spawn_stdio(ava_bin, config_overrides),
             Endpoint::ConnectWs(url) => Self::connect_websocket(url),
         }
     }
 
-    fn spawn_stdio(codex_bin: &Path, config_overrides: &[String]) -> Result<Self> {
-        Self::spawn_stdio_with_env(codex_bin, config_overrides, &[])
+    fn spawn_stdio(ava_bin: &Path, config_overrides: &[String]) -> Result<Self> {
+        Self::spawn_stdio_with_env(ava_bin, config_overrides, &[])
     }
 
     fn spawn_stdio_with_env(
-        codex_bin: &Path,
+        ava_bin: &Path,
         config_overrides: &[String],
         environment: &[(OsString, OsString)],
     ) -> Result<Self> {
-        let codex_bin_display = codex_bin.display();
-        let mut cmd = Command::new(codex_bin);
-        if let Some(codex_bin_parent) = codex_bin.parent() {
-            let mut path = OsString::from(codex_bin_parent.as_os_str());
+        let ava_bin_display = ava_bin.display();
+        let mut cmd = Command::new(ava_bin);
+        if let Some(ava_bin_parent) = ava_bin.parent() {
+            let mut path = OsString::from(ava_bin_parent.as_os_str());
             if let Some(existing_path) = std::env::var_os("PATH") {
                 path.push(":");
                 path.push(existing_path);
@@ -1646,26 +1646,26 @@ impl CodexClient {
         for (name, value) in environment {
             cmd.env(name, value);
         }
-        let mut codex_app_server = cmd
+        let mut ava_app_server = cmd
             .arg("app-server")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
             .spawn()
-            .with_context(|| format!("failed to start `{codex_bin_display}` app-server"))?;
+            .with_context(|| format!("failed to start `{ava_bin_display}` app-server"))?;
 
-        let stdin = codex_app_server
+        let stdin = ava_app_server
             .stdin
             .take()
-            .context("codex app-server stdin unavailable")?;
-        let stdout = codex_app_server
+            .context("ava app-server stdin unavailable")?;
+        let stdout = ava_app_server
             .stdout
             .take()
-            .context("codex app-server stdout unavailable")?;
+            .context("ava app-server stdout unavailable")?;
 
         Ok(Self {
             transport: ClientTransport::Stdio {
-                child: codex_app_server,
+                child: ava_app_server,
                 stdin: Some(stdin),
                 stdout: BufReader::new(stdout),
             },
@@ -1695,7 +1695,7 @@ impl CodexClient {
                     if Instant::now() >= deadline {
                         return Err(err).with_context(|| {
                             format!(
-                                "failed to connect to websocket app-server at `{url}`; if no server is running, start one with `codex-app-server-test-client serve --listen {url}`"
+                                "failed to connect to websocket app-server at `{url}`; if no server is running, start one with `ava-app-server-test-client serve --listen {url}`"
                             )
                         });
                     }
@@ -1747,8 +1747,8 @@ impl CodexClient {
             request_id: request_id.clone(),
             params: InitializeParams {
                 client_info: ClientInfo {
-                    name: "codex-toy-app-server".to_string(),
-                    title: Some("Codex Toy App Server".to_string()),
+                    name: "ava-toy-app-server".to_string(),
+                    title: Some("Ava Toy App Server".to_string()),
                     version: env!("CARGO_PKG_VERSION").to_string(),
                 },
                 capabilities: Some(InitializeCapabilities {
@@ -1812,9 +1812,9 @@ impl CodexClient {
         let request_id = self.request_id();
         let request = ClientRequest::LoginAccount {
             request_id: request_id.clone(),
-            params: codex_app_server_protocol::LoginAccountParams::Chatgpt {
+            params: ava_app_server_protocol::LoginAccountParams::Chatgpt {
                 app_brand: None,
-                codex_streamlined_login: false,
+                ava_streamlined_login: false,
                 use_hosted_login_success_page: false,
             },
         };
@@ -1826,7 +1826,7 @@ impl CodexClient {
         let request_id = self.request_id();
         let request = ClientRequest::LoginAccount {
             request_id: request_id.clone(),
-            params: codex_app_server_protocol::LoginAccountParams::ChatgptDeviceCode,
+            params: ava_app_server_protocol::LoginAccountParams::ChatgptDeviceCode,
         };
 
         self.send_request(request, request_id, "account/login/start")
@@ -2301,10 +2301,10 @@ impl CodexClient {
                     writeln!(stdin, "{payload}")?;
                     stdin
                         .flush()
-                        .context("failed to flush payload to codex app-server")?;
+                        .context("failed to flush payload to ava app-server")?;
                     return Ok(());
                 }
-                bail!("codex app-server stdin closed")
+                bail!("ava app-server stdin closed")
             }
             ClientTransport::WebSocket { socket, url } => {
                 socket
@@ -2321,9 +2321,9 @@ impl CodexClient {
                 let mut response_line = String::new();
                 let bytes = stdout
                     .read_line(&mut response_line)
-                    .context("failed to read from codex app-server")?;
+                    .context("failed to read from ava app-server")?;
                 if bytes == 0 {
-                    bail!("codex app-server closed stdout");
+                    bail!("ava app-server closed stdout");
                 }
                 Ok(response_line)
             }
@@ -2365,7 +2365,7 @@ impl TestClientTracing {
         let config = Config::load_with_cli_overrides(cli_kv_overrides)
             .await
             .context("error loading config")?;
-        let otel_provider = codex_core::otel_init::build_provider(
+        let otel_provider = ava_core::otel_init::build_provider(
             &config,
             env!("CARGO_PKG_VERSION"),
             Some(OTEL_SERVICE_NAME),
@@ -2429,7 +2429,7 @@ fn print_trace_summary(trace_summary: &TraceSummary) {
     }
 }
 
-impl Drop for CodexClient {
+impl Drop for AvaClient {
     fn drop(&mut self) {
         let ClientTransport::Stdio { child, stdin, .. } = &mut self.transport else {
             return;
@@ -2438,14 +2438,14 @@ impl Drop for CodexClient {
         let _ = stdin.take();
 
         if let Ok(Some(status)) = child.try_wait() {
-            println!("[codex app-server exited: {status}]");
+            println!("[ava app-server exited: {status}]");
             return;
         }
 
         let deadline = SystemTime::now() + APP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT;
         loop {
             if let Ok(Some(status)) = child.try_wait() {
-                println!("[codex app-server exited: {status}]");
+                println!("[ava app-server exited: {status}]");
                 return;
             }
 

@@ -23,42 +23,42 @@ use crate::sandboxing::SandboxPermissions;
 use crate::spawn::SpawnChildRequest;
 use crate::spawn::StdioPolicy;
 use crate::spawn::spawn_child_async;
-use codex_network_proxy::NetworkProxy;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::exec_output::StreamOutput;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandOutputDeltaEvent;
-use codex_protocol::protocol::ExecOutputStream;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxTransformRequest;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::SandboxablePreference;
-use codex_sandboxing::WindowsSandboxFilesystemOverrides;
-pub(crate) use codex_sandboxing::is_likely_sandbox_denied;
+use ava_network_proxy::NetworkProxy;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::exec_output::StreamOutput;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandOutputDeltaEvent;
+use ava_protocol::protocol::ExecOutputStream;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxTransformRequest;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::SandboxablePreference;
+use ava_sandboxing::WindowsSandboxFilesystemOverrides;
+pub(crate) use ava_sandboxing::is_likely_sandbox_denied;
 #[cfg(test)]
-use codex_sandboxing::permission_profile_supports_windows_restricted_token_sandbox;
-use codex_sandboxing::record_filesystem_sandbox_violation;
+use ava_sandboxing::permission_profile_supports_windows_restricted_token_sandbox;
+use ava_sandboxing::record_filesystem_sandbox_violation;
 #[cfg(test)]
-use codex_sandboxing::resolve_windows_elevated_filesystem_overrides;
+use ava_sandboxing::resolve_windows_elevated_filesystem_overrides;
 #[cfg(test)]
-use codex_sandboxing::resolve_windows_restricted_token_filesystem_overrides;
+use ava_sandboxing::resolve_windows_restricted_token_filesystem_overrides;
 #[cfg(test)]
-use codex_sandboxing::unsupported_windows_restricted_token_sandbox_reason;
+use ava_sandboxing::unsupported_windows_restricted_token_sandbox_reason;
 #[cfg(any(test, target_os = "windows"))]
-use codex_sandboxing::windows_sandbox_uses_elevated_backend;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
-use codex_utils_pty::process_group::kill_child_process_group;
-use codex_utils_pty::process_group::kill_process_group;
-use codex_utils_pty::process_group::terminate_process_group;
+use ava_sandboxing::windows_sandbox_uses_elevated_backend;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
+use ava_utils_pty::process_group::kill_child_process_group;
+use ava_utils_pty::process_group::kill_process_group;
+use ava_utils_pty::process_group::terminate_process_group;
 
 pub const DEFAULT_EXEC_COMMAND_TIMEOUT_MS: u64 = 10_000;
 
@@ -105,7 +105,7 @@ pub struct ExecParams {
     pub sandbox_permissions: SandboxPermissions,
     // TODO(anp): Reconcile these launch settings with TurnEnvironment::sandbox_context
     // so turn-scoped execution uses the selected environment's backend.
-    pub windows_sandbox_level: codex_protocol::config_types::WindowsSandboxLevel,
+    pub windows_sandbox_level: ava_protocol::config_types::WindowsSandboxLevel,
     pub justification: Option<String>,
     pub arg0: Option<String>,
 }
@@ -140,9 +140,9 @@ fn select_process_exec_tool_sandbox_type(
 fn network_proxy_environment_error(
     network_environment_id: Option<&str>,
     err: impl std::fmt::Display,
-) -> CodexErr {
+) -> AvaErr {
     let environment_id = network_environment_id.unwrap_or("default");
-    CodexErr::Io(io::Error::other(format!(
+    AvaErr::Io(io::Error::other(format!(
         "failed to prepare network proxy for environment `{environment_id}`: {err}"
     )))
 }
@@ -304,13 +304,13 @@ pub async fn process_exec_tool_call(
     permission_profile: &PermissionProfile,
     sandbox_cwd: &AbsolutePathBuf,
     windows_sandbox_workspace_roots: &[AbsolutePathBuf],
-    codex_linux_sandbox_exe: &Option<PathBuf>,
-    codex_self_exe: &Option<PathBuf>,
+    ava_linux_sandbox_exe: &Option<PathBuf>,
+    ava_self_exe: &Option<PathBuf>,
     use_legacy_landlock: bool,
     stdout_stream: Option<StdoutStream>,
 ) -> Result<ExecToolCallOutput> {
     let windows_sandbox_type = if params.windows_sandbox_level
-        == codex_protocol::config_types::WindowsSandboxLevel::Disabled
+        == ava_protocol::config_types::WindowsSandboxLevel::Disabled
     {
         SandboxType::None
     } else {
@@ -325,8 +325,8 @@ pub async fn process_exec_tool_call(
         permission_profile,
         sandbox_cwd,
         &windows_sandbox_workspace_roots,
-        codex_linux_sandbox_exe,
-        codex_self_exe,
+        ava_linux_sandbox_exe,
+        ava_self_exe,
         windows_sandbox_type,
         use_legacy_landlock,
     )?;
@@ -343,8 +343,8 @@ pub fn build_exec_request(
     permission_profile: &PermissionProfile,
     sandbox_cwd: &AbsolutePathBuf,
     windows_sandbox_workspace_roots: &[PathUri],
-    codex_linux_sandbox_exe: &Option<PathBuf>,
-    codex_self_exe: &Option<PathBuf>,
+    ava_linux_sandbox_exe: &Option<PathBuf>,
+    ava_self_exe: &Option<PathBuf>,
     windows_sandbox_type: SandboxType,
     use_legacy_landlock: bool,
 ) -> Result<ExecRequest> {
@@ -381,7 +381,7 @@ pub fn build_exec_request(
             })?;
     }
     let (program, args) = command.split_first().ok_or_else(|| {
-        CodexErr::Io(io::Error::new(
+        AvaErr::Io(io::Error::new(
             io::ErrorKind::InvalidInput,
             "command args are empty",
         ))
@@ -412,14 +412,14 @@ pub fn build_exec_request(
             network: network.as_ref(),
             sandbox_policy_cwd: &sandbox_policy_cwd_uri,
             sandbox_exe: if cfg!(windows) {
-                codex_self_exe.as_deref()
+                ava_self_exe.as_deref()
             } else {
-                codex_linux_sandbox_exe.as_deref()
+                ava_linux_sandbox_exe.as_deref()
             },
             use_legacy_landlock,
             windows_sandbox_level,
         })
-        .map_err(CodexErr::from)?;
+        .map_err(AvaErr::from)?;
     // These hints belong to the native Windows backend. Other backends use
     // the materialized profile and must not project executor paths onto this host.
     let windows_sandbox_workspace_roots = if sandbox_type == SandboxType::WindowsRestrictedToken {
@@ -431,7 +431,7 @@ pub fn build_exec_request(
                 .map(PathUri::to_abs_path)
                 .collect::<io::Result<Vec<_>>>()
                 .map_err(|err| {
-                    CodexErr::InvalidRequest(format!(
+                    AvaErr::InvalidRequest(format!(
                         "invalid Windows sandbox workspace roots: {err}"
                     ))
                 })?
@@ -474,11 +474,11 @@ pub(crate) async fn execute_exec_request(
     // TODO(anp): Keep PathUri through the local process launch boundary.
     let cwd = cwd
         .to_abs_path()
-        .map_err(|err| CodexErr::InvalidRequest(format!("invalid exec cwd: {err}")))?;
+        .map_err(|err| AvaErr::InvalidRequest(format!("invalid exec cwd: {err}")))?;
     // TODO(anp): Keep PathUri through the Windows sandbox launch boundary.
     let windows_sandbox_policy_cwd = windows_sandbox_policy_cwd
         .to_abs_path()
-        .map_err(|err| CodexErr::InvalidRequest(format!("invalid sandbox cwd: {err}")))?;
+        .map_err(|err| AvaErr::InvalidRequest(format!("invalid sandbox cwd: {err}")))?;
 
     let params = ExecParams {
         command,
@@ -572,7 +572,7 @@ fn windowsapps_path_kind(path: &str) -> &'static str {
 #[cfg(target_os = "windows")]
 fn record_windows_sandbox_spawn_failure(
     command_path: Option<&str>,
-    windows_sandbox_level: codex_protocol::config_types::WindowsSandboxLevel,
+    windows_sandbox_level: ava_protocol::config_types::WindowsSandboxLevel,
     err: &str,
 ) {
     let Some(error_code) = extract_create_process_as_user_error_code(err) else {
@@ -587,15 +587,15 @@ fn record_windows_sandbox_spawn_failure(
     let path_kind = windowsapps_path_kind(path);
     let level = if matches!(
         windows_sandbox_level,
-        codex_protocol::config_types::WindowsSandboxLevel::Elevated
+        ava_protocol::config_types::WindowsSandboxLevel::Elevated
     ) {
         "elevated"
     } else {
         "legacy"
     };
-    if let Some(metrics) = codex_otel::global() {
+    if let Some(metrics) = ava_otel::global() {
         let _ = metrics.counter(
-            "codex.windows_sandbox.createprocessasuserw_failed",
+            "ava.windows_sandbox.createprocessasuserw_failed",
             /*inc*/ 1,
             &[
                 ("error_code", error_code.as_str()),
@@ -615,9 +615,9 @@ async fn exec_windows_sandbox(
     windows_sandbox_workspace_roots: &[AbsolutePathBuf],
     windows_sandbox_filesystem_overrides: Option<&WindowsSandboxFilesystemOverrides>,
 ) -> Result<RawExecToolCallOutput> {
-    use crate::config::find_codex_home;
-    use codex_windows_sandbox::run_windows_sandbox_capture_for_permission_profile_elevated;
-    use codex_windows_sandbox::run_windows_sandbox_capture_with_filesystem_overrides;
+    use crate::config::find_ava_home;
+    use ava_windows_sandbox::run_windows_sandbox_capture_for_permission_profile_elevated;
+    use ava_windows_sandbox::run_windows_sandbox_capture_with_filesystem_overrides;
 
     let ExecParams {
         command,
@@ -643,7 +643,7 @@ async fn exec_windows_sandbox(
             network
                 .network_proxy_restricting_sid(network_environment_id.as_deref())
                 .ok_or_else(|| {
-                    CodexErr::Io(io::Error::other(
+                    AvaErr::Io(io::Error::other(
                         "managed Windows proxy route is missing its restricting SID",
                     ))
                 })
@@ -653,7 +653,7 @@ async fn exec_windows_sandbox(
     // Windows sandbox capture still receives timeout and cancellation separately.
     let (cancellation, timeout_ms) = if capture_policy.uses_expiration() {
         let cancellation = expiration.cancellation_token().map(|token| {
-            codex_windows_sandbox::WindowsSandboxCancellationToken::new(move || {
+            ava_windows_sandbox::WindowsSandboxCancellationToken::new(move || {
                 token.is_cancelled()
             })
         });
@@ -668,9 +668,9 @@ async fn exec_windows_sandbox(
         windows_sandbox_workspace_roots.to_vec()
     };
     let permission_profile = permission_profile.clone();
-    let codex_home = find_codex_home().map_err(|err| {
-        CodexErr::Io(io::Error::other(format!(
-            "windows sandbox: failed to resolve codex_home: {err}"
+    let ava_home = find_ava_home().map_err(|err| {
+        AvaErr::Io(io::Error::other(format!(
+            "windows sandbox: failed to resolve ava_home: {err}"
         )))
     })?;
     let command_path = command.first().cloned();
@@ -692,10 +692,10 @@ async fn exec_windows_sandbox(
     let spawn_res = tokio::task::spawn_blocking(move || {
         if use_elevated {
             run_windows_sandbox_capture_for_permission_profile_elevated(
-                codex_windows_sandbox::ElevatedSandboxProfileCaptureRequest {
+                ava_windows_sandbox::ElevatedSandboxProfileCaptureRequest {
                     permission_profile: &permission_profile,
                     workspace_roots: workspace_roots.as_slice(),
-                    codex_home: codex_home.as_ref(),
+                    ava_home: ava_home.as_ref(),
                     command,
                     cwd: &cwd,
                     env_map: env,
@@ -715,7 +715,7 @@ async fn exec_windows_sandbox(
             run_windows_sandbox_capture_with_filesystem_overrides(
                 &permission_profile,
                 workspace_roots.as_slice(),
-                codex_home.as_ref(),
+                ava_home.as_ref(),
                 command,
                 &cwd,
                 env,
@@ -736,12 +736,12 @@ async fn exec_windows_sandbox(
                 sandbox_level,
                 &err.to_string(),
             );
-            return Err(CodexErr::Io(io::Error::other(format!(
+            return Err(AvaErr::Io(io::Error::other(format!(
                 "windows sandbox: {err}"
             ))));
         }
         Err(join_err) => {
-            return Err(CodexErr::Io(io::Error::other(format!(
+            return Err(AvaErr::Io(io::Error::other(format!(
                 "windows sandbox join error: {join_err}"
             ))));
         }
@@ -780,7 +780,7 @@ async fn exec_windows_sandbox(
 }
 
 fn finalize_exec_result(
-    raw_output_result: std::result::Result<RawExecToolCallOutput, CodexErr>,
+    raw_output_result: std::result::Result<RawExecToolCallOutput, AvaErr>,
     sandbox_type: SandboxType,
     duration: Duration,
     capture_policy: ExecCapturePolicy,
@@ -796,7 +796,7 @@ fn finalize_exec_result(
                     if signal == TIMEOUT_CODE {
                         timed_out = true;
                     } else {
-                        return Err(CodexErr::Sandbox(SandboxErr::Signal(signal)));
+                        return Err(AvaErr::Sandbox(SandboxErr::Signal(signal)));
                     }
                 }
             }
@@ -819,7 +819,7 @@ fn finalize_exec_result(
             };
 
             if timed_out {
-                return Err(CodexErr::Sandbox(SandboxErr::Timeout {
+                return Err(AvaErr::Sandbox(SandboxErr::Timeout {
                     output: Box::new(exec_output),
                 }));
             }
@@ -828,7 +828,7 @@ fn finalize_exec_result(
                 if capture_policy != ExecCapturePolicy::SensitiveFullBuffer {
                     record_filesystem_sandbox_violation(sandbox_type, &exec_output);
                 }
-                return Err(CodexErr::Sandbox(SandboxErr::Denied {
+                return Err(AvaErr::Sandbox(SandboxErr::Denied {
                     output: Box::new(exec_output),
                     network_policy_decision: None,
                 }));
@@ -912,7 +912,7 @@ fn aggregate_output(
 /// output consumption begins.
 ///
 /// `network_sandbox_policy` is used to determine whether
-/// CODEX_SANDBOX_NETWORK_DISABLED=1 is added to the environment of the spawned
+/// AVA_SANDBOX_NETWORK_DISABLED=1 is added to the environment of the spawned
 /// process.
 ///
 /// Note this command does not apply any sandboxing logic. The caller is
@@ -950,7 +950,7 @@ async fn exec(
     }
 
     let (program, args) = command.split_first().ok_or_else(|| {
-        CodexErr::Io(io::Error::new(
+        AvaErr::Io(io::Error::new(
             io::ErrorKind::InvalidInput,
             "command args are empty",
         ))
@@ -989,12 +989,12 @@ async fn consume_output(
     // we treat it as an exceptional I/O error
 
     let stdout_reader = child.stdout.take().ok_or_else(|| {
-        CodexErr::Io(io::Error::other(
+        AvaErr::Io(io::Error::other(
             "stdout pipe was unexpectedly not available",
         ))
     })?;
     let stderr_reader = child.stderr.take().ok_or_else(|| {
-        CodexErr::Io(io::Error::other(
+        AvaErr::Io(io::Error::other(
             "stderr pipe was unexpectedly not available",
         ))
     })?;

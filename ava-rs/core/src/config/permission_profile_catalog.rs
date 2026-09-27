@@ -1,11 +1,11 @@
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigPathContext;
-use codex_config::RequirementSource;
-use codex_config::SandboxModeRequirement;
-use codex_config::Sourced;
-use codex_config::permissions_toml::PermissionsToml;
-use codex_config::sandbox_mode_requirement_for_permission_profile;
-use codex_protocol::models::PermissionProfile;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigPathContext;
+use ava_config::RequirementSource;
+use ava_config::SandboxModeRequirement;
+use ava_config::Sourced;
+use ava_config::permissions_toml::PermissionsToml;
+use ava_config::sandbox_mode_requirement_for_permission_profile;
+use ava_protocol::models::PermissionProfile;
 
 use super::ConstraintError;
 use super::ConstraintResult;

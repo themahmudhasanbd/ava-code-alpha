@@ -1,7 +1,7 @@
-use codex_config::McpServerConfig;
-use codex_exec_server_protocol::ExecutorCapabilityDiscoverySnapshot;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::protocol::SessionSource;
+use ava_config::McpServerConfig;
+use ava_exec_server_protocol::ExecutorCapabilityDiscoverySnapshot;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::protocol::SessionSource;
 
 use crate::ExtensionData;
 use crate::ExtensionDataInit;

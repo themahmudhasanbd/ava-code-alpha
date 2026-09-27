@@ -2,24 +2,24 @@ use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CyberAccessProgram;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadMetadataUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_login::AuthCredentialsStoreMode;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CyberAccessProgram;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadMetadataUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_login::AuthCredentialsStoreMode;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -408,12 +408,12 @@ async fn turn_start_forwards_cyber_access_program_with_personal_access_token() -
     )?;
     let authapi_base_url = server.uri();
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .without_managed_config()
         .with_env_overrides(&[
             ("OPENAI_API_KEY", None),
-            ("CODEX_ACCESS_TOKEN", Some("at-test-token")),
-            ("CODEX_AUTHAPI_BASE_URL", Some(authapi_base_url.as_str())),
+            ("AVA_ACCESS_TOKEN", Some("at-test-token")),
+            ("AVA_AUTHAPI_BASE_URL", Some(authapi_base_url.as_str())),
         ])
         .build_initialized()
         .await?;
@@ -456,7 +456,7 @@ async fn start_chatgpt_app(home: &Path, server: &MockServer) -> Result<TestAppSe
         AuthCredentialsStoreMode::File,
     )?;
     TestAppServer::builder()
-        .with_codex_home(home)
+        .with_ava_home(home)
         .without_managed_config()
         .build_initialized()
         .await

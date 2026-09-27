@@ -1,55 +1,55 @@
 #![allow(clippy::unwrap_used)]
-use codex_api::WS_REQUEST_HEADER_TRACEPARENT_CLIENT_METADATA_KEY;
-use codex_api::WS_REQUEST_HEADER_TRACESTATE_CLIENT_METADATA_KEY;
-use codex_core::CodexResponsesMetadata;
-use codex_core::ModelClient;
-use codex_core::ModelClientSession;
-use codex_core::Prompt;
-use codex_core::ResponseEvent;
-use codex_core::TurnInputRequest;
-use codex_core::X_CODEX_ROUTING_HINT_HEADER;
-use codex_core::X_RESPONSESAPI_INCLUDE_TIMING_METRICS_HEADER;
-use codex_core::test_support::with_parent_turn;
-use codex_features::Feature;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_otel::MetricsClient;
-use codex_otel::MetricsConfig;
-use codex_otel::SessionTelemetry;
-use codex_otel::TelemetryAuthMode;
-use codex_otel::current_span_w3c_trace_context;
-use codex_protocol::ResponseItemId;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::account::PlanType;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ExecutedToolCall;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::ToolResultMetadata;
-use codex_protocol::models::ToolResultSource;
-use codex_protocol::models::ToolResultSources;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelServiceTier;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_protocol::user_input::UserInput;
-use codex_rollout_trace::ConversationPart;
-use codex_rollout_trace::InferenceTraceContext;
-use codex_rollout_trace::RawTraceEventPayload;
-use codex_rollout_trace::TraceWriter;
-use codex_rollout_trace::replay_bundle;
-use core_test_support::TestCodexResponsesRequestKind;
+use ava_api::WS_REQUEST_HEADER_TRACEPARENT_CLIENT_METADATA_KEY;
+use ava_api::WS_REQUEST_HEADER_TRACESTATE_CLIENT_METADATA_KEY;
+use ava_core::AvaResponsesMetadata;
+use ava_core::ModelClient;
+use ava_core::ModelClientSession;
+use ava_core::Prompt;
+use ava_core::ResponseEvent;
+use ava_core::TurnInputRequest;
+use ava_core::X_AVA_ROUTING_HINT_HEADER;
+use ava_core::X_RESPONSESAPI_INCLUDE_TIMING_METRICS_HEADER;
+use ava_core::test_support::with_parent_turn;
+use ava_features::Feature;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_otel::MetricsClient;
+use ava_otel::MetricsConfig;
+use ava_otel::SessionTelemetry;
+use ava_otel::TelemetryAuthMode;
+use ava_otel::current_span_w3c_trace_context;
+use ava_protocol::ResponseItemId;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::account::PlanType;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ExecutedToolCall;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::ToolResultMetadata;
+use ava_protocol::models::ToolResultSource;
+use ava_protocol::models::ToolResultSources;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelServiceTier;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_protocol::user_input::UserInput;
+use ava_rollout_trace::ConversationPart;
+use ava_rollout_trace::InferenceTraceContext;
+use ava_rollout_trace::RawTraceEventPayload;
+use ava_rollout_trace::TraceWriter;
+use ava_rollout_trace::replay_bundle;
+use core_test_support::TestAvaResponsesRequestKind;
 use core_test_support::load_default_config_for_test;
 use core_test_support::responses::WebSocketConnectionConfig;
 use core_test_support::responses::WebSocketTestServer;
@@ -60,7 +60,7 @@ use core_test_support::responses::start_websocket_server;
 use core_test_support::responses::start_websocket_server_with_headers;
 use core_test_support::responses_metadata as test_responses_metadata;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::tracing::install_test_tracing;
 use core_test_support::wait_for_event;
 use futures::StreamExt;
@@ -79,11 +79,11 @@ const USER_AGENT_HEADER: &str = "user-agent";
 const WS_V2_BETA_HEADER_VALUE: &str = "responses_websockets=2026-02-06";
 const X_CLIENT_REQUEST_ID_HEADER: &str = "x-client-request-id";
 const WS_REQUEST_HEADER_RESPONSES_LITE_CLIENT_METADATA_KEY: &str =
-    "ws_request_header_x_openai_internal_codex_responses_lite";
+    "ws_request_header_x_openai_internal_ava_responses_lite";
 const TEST_INSTALLATION_ID: &str = "11111111-1111-4111-8111-111111111111";
 const TEST_WINDOW_ID: &str = "test-thread:0";
-const X_CODEX_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY: &str =
-    "x-codex-ws-stream-request-start-ms";
+const X_AVA_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY: &str =
+    "x-ava-ws-stream-request-start-ms";
 
 fn assert_request_trace_matches(body: &serde_json::Value, expected_trace: &W3cTraceContext) {
     let client_metadata = body["client_metadata"]
@@ -112,7 +112,7 @@ fn assert_request_trace_matches(body: &serde_json::Value, expected_trace: &W3cTr
 }
 
 struct WebsocketTestHarness {
-    codex_home: TempDir,
+    ava_home: TempDir,
     auth_manager: Arc<AuthManager>,
     client: ModelClient,
     outbound_proxy_policy: OutboundProxyPolicy,
@@ -127,8 +127,8 @@ struct WebsocketTestHarness {
 fn responses_metadata(
     harness: &WebsocketTestHarness,
     turn_id: Option<&str>,
-    request_kind: TestCodexResponsesRequestKind,
-) -> CodexResponsesMetadata {
+    request_kind: TestAvaResponsesRequestKind,
+) -> AvaResponsesMetadata {
     test_responses_metadata(
         TEST_INSTALLATION_ID,
         &harness.session_id.to_string(),
@@ -141,22 +141,22 @@ fn responses_metadata(
     )
 }
 
-fn turn_metadata(harness: &WebsocketTestHarness, turn_id: Option<&str>) -> CodexResponsesMetadata {
-    responses_metadata(harness, turn_id, TestCodexResponsesRequestKind::Turn)
+fn turn_metadata(harness: &WebsocketTestHarness, turn_id: Option<&str>) -> AvaResponsesMetadata {
+    responses_metadata(harness, turn_id, TestAvaResponsesRequestKind::Turn)
 }
 
 fn prewarm_metadata(
     harness: &WebsocketTestHarness,
     turn_id: Option<&str>,
-) -> CodexResponsesMetadata {
-    responses_metadata(harness, turn_id, TestCodexResponsesRequestKind::Prewarm)
+) -> AvaResponsesMetadata {
+    responses_metadata(harness, turn_id, TestAvaResponsesRequestKind::Prewarm)
 }
 
-fn websocket_connection_metadata(harness: &WebsocketTestHarness) -> CodexResponsesMetadata {
+fn websocket_connection_metadata(harness: &WebsocketTestHarness) -> AvaResponsesMetadata {
     responses_metadata(
         harness,
         /*turn_id*/ None,
-        TestCodexResponsesRequestKind::WebsocketConnection,
+        TestAvaResponsesRequestKind::WebsocketConnection,
     )
 }
 
@@ -169,7 +169,7 @@ async fn responses_websocket_preserves_credit_usage_metadata() {
     let expected_metadata = completed["response"]["usage"].clone();
     let server =
         start_websocket_server(vec![vec![vec![ev_response_created("resp-1"), completed]]]).await;
-    let harness = websocket_harness_for_codex_backend(&server).await;
+    let harness = websocket_harness_for_ava_backend(&server).await;
     let mut client_session = harness.client.new_session();
     let prompt = prompt_with_input(vec![message_item("hello")]);
     let responses_metadata = turn_metadata(&harness, /*turn_id*/ None);
@@ -200,7 +200,7 @@ async fn responses_websocket_preserves_credit_usage_metadata() {
     }
     assert_eq!(
         usage_metadata,
-        Some(codex_protocol::ResponseUsageMetadata {
+        Some(ava_protocol::ResponseUsageMetadata {
             amount: Some("0.12345678901234567890".to_string()),
             metadata: Some(expected_metadata),
         }),
@@ -218,7 +218,7 @@ async fn responses_websocket_omits_raw_tool_metadata_for_openai_named_custom_end
         ev_completed("resp-1"),
     ]]])
     .await;
-    let harness = websocket_harness_for_codex_backend(&server).await;
+    let harness = websocket_harness_for_ava_backend(&server).await;
     let mut call = ExecutedToolCall::new("test_tool".to_string(), json!({ "query": "keep" }));
     call.set_tool_result_sources(ToolResultSources::new(vec![ToolResultSource {
         r#type: "test_resource".to_string(),
@@ -269,7 +269,7 @@ async fn responses_websocket_streams_request() {
     ]]])
     .await;
 
-    let harness = websocket_harness_for_codex_backend(&server).await;
+    let harness = websocket_harness_for_ava_backend(&server).await;
     let mut client_session = harness.client.new_session();
     let prompt = prompt_with_input(vec![message_item("hello")]);
 
@@ -289,7 +289,7 @@ async fn responses_websocket_streams_request() {
         Some(WS_V2_BETA_HEADER_VALUE.to_string())
     );
     assert_eq!(
-        handshake.header(X_CODEX_ROUTING_HINT_HEADER),
+        handshake.header(X_AVA_ROUTING_HINT_HEADER),
         Some(format!("model={MODEL}"))
     );
     assert_eq!(
@@ -306,14 +306,14 @@ async fn responses_websocket_streams_request() {
     );
     assert_eq!(
         handshake.header(USER_AGENT_HEADER),
-        Some(codex_login::default_client::get_codex_user_agent())
+        Some(ava_login::default_client::get_ava_user_agent())
     );
     assert_eq!(
-        body["client_metadata"]["x-codex-installation-id"].as_str(),
+        body["client_metadata"]["x-ava-installation-id"].as_str(),
         Some(TEST_INSTALLATION_ID)
     );
     let stream_request_start_ms = body["client_metadata"]
-        [X_CODEX_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY]
+        [X_AVA_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY]
         .as_str()
         .expect("missing websocket stream request start timestamp")
         .parse::<i64>()
@@ -341,7 +341,7 @@ async fn responses_websocket_omits_routing_hint_for_provider_with_own_credential
         /*runtime_metrics_enabled*/ false,
         /*concurrent_reasoning_summaries_enabled*/ false,
         /*enabled_features*/ &[],
-        Some(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        Some(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
     )
     .await;
     let mut client_session = harness.client.new_session();
@@ -354,7 +354,7 @@ async fn responses_websocket_omits_routing_hint_for_provider_with_own_credential
         handshake.header("authorization"),
         Some("Bearer provider-specific-token".to_string())
     );
-    assert_eq!(handshake.header(X_CODEX_ROUTING_HINT_HEADER), None);
+    assert_eq!(handshake.header(X_AVA_ROUTING_HINT_HEADER), None);
 
     server.shutdown().await;
 }
@@ -509,7 +509,7 @@ async fn responses_websocket_reuses_connection_with_per_turn_trace_payloads() {
     assert_eq!(server.handshakes().len(), 1);
     assert_eq!(
         server.single_handshake().header(USER_AGENT_HEADER),
-        Some(codex_login::default_client::get_codex_user_agent())
+        Some(ava_login::default_client::get_ava_user_agent())
     );
     let connection = server.single_connection();
     assert_eq!(connection.len(), 2);
@@ -608,10 +608,10 @@ async fn responses_websocket_preconnect_reuses_connection() {
     assert_eq!(server.handshakes().len(), 1);
     assert_eq!(
         server.single_handshake().header(USER_AGENT_HEADER),
-        Some(codex_login::default_client::get_codex_user_agent())
+        Some(ava_login::default_client::get_ava_user_agent())
     );
     assert_eq!(
-        server.single_handshake().header("x-codex-window-id"),
+        server.single_handshake().header("x-ava-window-id"),
         Some(TEST_WINDOW_ID.to_string())
     );
     let connection = server.single_connection();
@@ -659,7 +659,7 @@ async fn responses_websocket_request_prewarm_reuses_connection() {
     assert_eq!(server.handshakes().len(), 1);
     assert_eq!(
         server.single_handshake().header(USER_AGENT_HEADER),
-        Some(codex_login::default_client::get_codex_user_agent())
+        Some(ava_login::default_client::get_ava_user_agent())
     );
     let connection = server.single_connection();
     assert_eq!(connection.len(), 2);
@@ -680,7 +680,7 @@ async fn responses_websocket_request_prewarm_reuses_connection() {
     );
     assert_eq!(warmup["tools"], serde_json::json!([]));
     let warmup_turn_metadata: serde_json::Value = serde_json::from_str(
-        warmup["client_metadata"]["x-codex-turn-metadata"]
+        warmup["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("warmup turn metadata"),
     )
@@ -741,7 +741,7 @@ async fn responses_websocket_request_prewarm_uses_caller_supplied_metadata() {
         .expect("missing warmup request")
         .body_json();
     let warmup_turn_metadata: serde_json::Value = serde_json::from_str(
-        warmup["client_metadata"]["x-codex-turn-metadata"]
+        warmup["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("warmup turn metadata"),
     )
@@ -797,8 +797,8 @@ async fn responses_websocket_request_prewarm_traces_logical_request() {
         })
         .expect("thread started");
     writer
-        .append(RawTraceEventPayload::CodexTurnStarted {
-            codex_turn_id: "turn-1".to_string(),
+        .append(RawTraceEventPayload::AvaTurnStarted {
+            ava_turn_id: "turn-1".to_string(),
             thread_id: harness.thread_id.to_string(),
         })
         .expect("turn started");
@@ -907,7 +907,7 @@ async fn responses_websocket_reconnects_after_account_switch() {
                             ev_response_created(&id),
                             json!({
                                 "type": "response.metadata",
-                                "headers": {"x-codex-turn-state": turn_state},
+                                "headers": {"x-ava-turn-state": turn_state},
                             }),
                             ev_completed(&id),
                         ]
@@ -917,7 +917,7 @@ async fn responses_websocket_reconnects_after_account_switch() {
             .collect(),
         )
         .await;
-        let harness = websocket_harness_for_codex_backend(&server).await;
+        let harness = websocket_harness_for_ava_backend(&server).await;
         let mut client_session = harness.client.new_session();
         let mut input = Vec::new();
 
@@ -933,7 +933,7 @@ async fn responses_websocket_reconnects_after_account_switch() {
                 tokens.account_id = Some("second-account".into());
                 tokens.access_token = "second-account-token".into();
                 std::fs::write(
-                    harness.codex_home.path().join("auth.json"),
+                    harness.ava_home.path().join("auth.json"),
                     serde_json::to_vec(&json!({
                         "auth_mode": "chatgpt",
                         "tokens": tokens,
@@ -990,7 +990,7 @@ async fn responses_websocket_reconnects_after_account_switch() {
                         (
                             body["previous_response_id"].clone(),
                             body["input"].as_array().unwrap().len(),
-                            body["client_metadata"]["x-codex-turn-state"].clone(),
+                            body["client_metadata"]["x-ava-turn-state"].clone(),
                         )
                     })
                     .collect::<Vec<_>>())
@@ -1130,7 +1130,7 @@ async fn responses_websocket_preconnect_is_reused_even_with_header_changes() {
             harness.summary,
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");
@@ -1183,7 +1183,7 @@ async fn responses_websocket_request_prewarm_is_reused_even_with_header_changes(
             harness.summary,
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");
@@ -1225,7 +1225,7 @@ async fn responses_websocket_prewarm_includes_model_and_tier_routing_hint() {
     ]]])
     .await;
 
-    let harness = websocket_harness_for_codex_backend(&server).await;
+    let harness = websocket_harness_for_ava_backend(&server).await;
     let mut model_info = harness.model_info.clone();
     let service_tier = ServiceTier::Fast.request_value();
     model_info.service_tiers.push(ModelServiceTier {
@@ -1251,7 +1251,7 @@ async fn responses_websocket_prewarm_includes_model_and_tier_routing_hint() {
 
     let handshake = server.single_handshake();
     assert_eq!(
-        handshake.header(X_CODEX_ROUTING_HINT_HEADER),
+        handshake.header(X_AVA_ROUTING_HINT_HEADER),
         Some(format!("model={MODEL};tier={service_tier}"))
     );
     assert_eq!(
@@ -1351,13 +1351,13 @@ async fn responses_websocket_preconnect_runs_when_only_v2_feature_enabled() {
     assert_eq!(server.handshakes().len(), 1);
     assert_eq!(server.single_connection().len(), 0);
     assert_eq!(
-        server.single_handshake().header("x-codex-turn-metadata"),
+        server.single_handshake().header("x-ava-turn-metadata"),
         None
     );
     assert_eq!(
         server
             .single_handshake()
-            .header(X_CODEX_ROUTING_HINT_HEADER),
+            .header(X_AVA_ROUTING_HINT_HEADER),
         None
     );
 
@@ -1712,7 +1712,7 @@ async fn responses_websocket_emits_reasoning_included_event() {
             harness.summary,
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");
@@ -1737,7 +1737,7 @@ async fn responses_websocket_emits_rate_limit_events() {
     skip_if_no_network!();
 
     let rate_limit_event = json!({
-        "type": "codex.rate_limits",
+        "type": "ava.rate_limits",
         "plan_type": "plus",
         "rate_limits": {
             "allowed": true,
@@ -1761,7 +1761,7 @@ async fn responses_websocket_emits_rate_limit_events() {
     let server = start_websocket_server_with_headers(vec![WebSocketConnectionConfig {
         requests: vec![vec![
             json!({
-                "type": "codex.response.metadata",
+                "type": "ava.response.metadata",
                 "headers": {"x-models-etag": "etag-123"},
             }),
             rate_limit_event,
@@ -1788,7 +1788,7 @@ async fn responses_websocket_emits_rate_limit_events() {
             harness.summary,
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");
@@ -1844,15 +1844,15 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
             "resets_in_seconds": 1234
         },
         "headers": {
-            "x-codex-primary-used-percent": "100.0",
-            "x-codex-secondary-used-percent": "87.5",
-            "x-codex-primary-over-secondary-limit-percent": "95.0",
-            "x-codex-primary-window-minutes": "15",
-            "x-codex-secondary-window-minutes": "60",
-            "x-codex-credits-has-credits": "true",
-            "x-codex-credits-unlimited": "false",
-            "x-codex-credits-balance": "",
-            "x-codex-rate-limit-reached-type": "workspace_member_usage_limit_reached"
+            "x-ava-primary-used-percent": "100.0",
+            "x-ava-secondary-used-percent": "87.5",
+            "x-ava-primary-over-secondary-limit-percent": "95.0",
+            "x-ava-primary-window-minutes": "15",
+            "x-ava-secondary-window-minutes": "60",
+            "x-ava-credits-has-credits": "true",
+            "x-ava-credits-unlimited": "false",
+            "x-ava-credits-balance": "",
+            "x-ava-rate-limit-reached-type": "workspace_member_usage_limit_reached"
         }
     });
 
@@ -1864,17 +1864,17 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
         vec![usage_limit_error],
     ]])
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.model_provider.request_max_retries = Some(0);
         config.model_provider.stream_max_retries = Some(0);
     });
     let test = builder
         .build_with_websocket_server(&server)
         .await
-        .expect("build websocket codex");
+        .expect("build websocket ava");
 
     let submission = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -1883,7 +1883,7 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
         .expect("submission should succeed while emitting usage limit error events");
 
     let token_event =
-        wait_for_event(&test.codex, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
+        wait_for_event(&test.ava-code, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
     let EventMsg::TokenCount(event) = token_event else {
         unreachable!();
     };
@@ -1894,7 +1894,7 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
         json!({
             "info": null,
             "rate_limits": {
-                "limit_id": "codex",
+                "limit_id": "ava",
                 "limit_name": null,
                 "primary": {
                     "used_percent": 100.0,
@@ -1919,7 +1919,7 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
         })
     );
 
-    let error_event = wait_for_event(&test.codex, |msg| matches!(msg, EventMsg::Error(_))).await;
+    let error_event = wait_for_event(&test.ava-code, |msg| matches!(msg, EventMsg::Error(_))).await;
     let EventMsg::Error(error_event) = error_event else {
         unreachable!();
     };
@@ -1953,17 +1953,17 @@ async fn responses_websocket_invalid_request_error_with_status_is_forwarded() {
         vec![invalid_request_error],
     ]])
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.model_provider.request_max_retries = Some(0);
         config.model_provider.stream_max_retries = Some(0);
     });
     let test = builder
         .build_with_websocket_server(&server)
         .await
-        .expect("build websocket codex");
+        .expect("build websocket ava");
 
     let submission = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -1971,7 +1971,7 @@ async fn responses_websocket_invalid_request_error_with_status_is_forwarded() {
         .await
         .expect("submission should succeed while emitting invalid request events");
 
-    let error_event = wait_for_event(&test.codex, |msg| matches!(msg, EventMsg::Error(_))).await;
+    let error_event = wait_for_event(&test.ava-code, |msg| matches!(msg, EventMsg::Error(_))).await;
     let EventMsg::Error(error_event) = error_event else {
         unreachable!();
     };
@@ -2006,14 +2006,14 @@ async fn responses_websocket_connection_limit_error_reconnects_and_completes() {
         vec![vec![ev_response_created("resp-1"), ev_completed("resp-1")]],
     ])
     .await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.model_provider.request_max_retries = Some(0);
         config.model_provider.stream_max_retries = Some(1);
     });
     let test = builder
         .build_with_websocket_server(&server)
         .await
-        .expect("build websocket codex");
+        .expect("build websocket ava");
 
     test.submit_turn("hello")
         .await
@@ -2029,8 +2029,8 @@ async fn responses_websocket_connection_limit_error_reconnects_and_completes() {
     assert_eq!(
         handshake_user_agents,
         vec![
-            Some(codex_login::default_client::get_codex_user_agent()),
-            Some(codex_login::default_client::get_codex_user_agent()),
+            Some(ava_login::default_client::get_ava_user_agent()),
+            Some(ava_login::default_client::get_ava_user_agent()),
         ]
     );
 
@@ -2206,13 +2206,13 @@ async fn responses_websocket_forwards_turn_metadata_on_initial_and_incremental_c
     assert_eq!(second["type"].as_str(), Some("response.create"));
     assert_eq!(second["previous_response_id"].as_str(), Some("resp-1"));
     let first_metadata: serde_json::Value = serde_json::from_str(
-        first["client_metadata"]["x-codex-turn-metadata"]
+        first["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("first turn metadata"),
     )
     .expect("first metadata should be valid json");
     let second_metadata: serde_json::Value = serde_json::from_str(
-        second["client_metadata"]["x-codex-turn-metadata"]
+        second["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("second turn metadata"),
     )
@@ -2268,7 +2268,7 @@ async fn responses_websocket_sends_canonical_turn_metadata() {
 
     assert_eq!(body["type"].as_str(), Some("response.create"));
     let turn_metadata: serde_json::Value = serde_json::from_str(
-        body["client_metadata"]["x-codex-turn-metadata"]
+        body["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("turn metadata"),
     )
@@ -2527,7 +2527,7 @@ async fn responses_websocket_v2_after_error_uses_full_create_without_previous_re
             harness.summary,
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");
@@ -2625,7 +2625,7 @@ async fn responses_websocket_v2_surfaces_terminal_error_without_close_handshake(
             harness.summary,
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");
@@ -2746,14 +2746,14 @@ async fn websocket_harness(server: &WebSocketTestServer) -> WebsocketTestHarness
     websocket_harness_with_runtime_metrics(server, /*runtime_metrics_enabled*/ false).await
 }
 
-async fn websocket_harness_for_codex_backend(server: &WebSocketTestServer) -> WebsocketTestHarness {
+async fn websocket_harness_for_ava_backend(server: &WebSocketTestServer) -> WebsocketTestHarness {
     let provider = ModelProviderInfo::create_openai_provider(Some(format!("{}/v1", server.uri())));
     websocket_harness_with_provider_options_and_auth(
         provider,
         /*runtime_metrics_enabled*/ false,
         /*concurrent_reasoning_summaries_enabled*/ false,
         /*enabled_features*/ &[],
-        Some(CodexAuth::create_dummy_chatgpt_auth_for_testing()),
+        Some(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
     )
     .await
 }
@@ -2806,10 +2806,10 @@ async fn websocket_harness_with_provider_options_and_auth(
     runtime_metrics_enabled: bool,
     concurrent_reasoning_summaries_enabled: bool,
     enabled_features: &[Feature],
-    auth: Option<CodexAuth>,
+    auth: Option<AvaAuth>,
 ) -> WebsocketTestHarness {
-    let codex_home = TempDir::new().unwrap();
-    let mut config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new().unwrap();
+    let mut config = load_default_config_for_test(&ava_home).await;
     config.model = Some(MODEL.to_string());
     if runtime_metrics_enabled {
         config
@@ -2833,21 +2833,21 @@ async fn websocket_harness_with_provider_options_and_auth(
     let http_client_factory = config.http_client_factory();
     let outbound_proxy_policy = http_client_factory.outbound_proxy_policy();
     let config = Arc::new(config);
-    let model_info = codex_core::test_support::construct_model_info_offline(MODEL, &config);
+    let model_info = ava_core::test_support::construct_model_info_offline(MODEL, &config);
     let thread_id = ThreadId::new();
     let session_id = SessionId::new();
     let client_auth_manager = auth.map(|auth| {
-        codex_core::test_support::auth_manager_from_auth_with_home(
+        ava_core::test_support::auth_manager_from_auth_with_home(
             auth,
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
         )
     });
     let auth_manager = client_auth_manager.clone().unwrap_or_else(|| {
-        codex_core::test_support::auth_manager_from_auth(CodexAuth::from_api_key("Test API Key"))
+        ava_core::test_support::auth_manager_from_auth(AvaAuth::from_api_key("Test API Key"))
     });
     let exporter = InMemoryMetricExporter::default();
     let metrics = MetricsClient::new(
-        MetricsConfig::in_memory("test", "codex-core", env!("CARGO_PKG_VERSION"), exporter)
+        MetricsConfig::in_memory("test", "ava-core", env!("CARGO_PKG_VERSION"), exporter)
             .with_runtime_reader(),
     )
     .expect("in-memory metrics client");
@@ -2889,7 +2889,7 @@ async fn websocket_harness_with_provider_options_and_auth(
     );
 
     WebsocketTestHarness {
-        codex_home,
+        ava_home,
         auth_manager,
         client,
         outbound_proxy_policy,
@@ -2910,32 +2910,32 @@ async fn responses_websocket_restored_history_metric(fork: bool) -> anyhow::Resu
 
     let exporter = InMemoryMetricExporter::default();
     let config =
-        MetricsConfig::in_memory("test", "codex-core", "test", exporter).with_runtime_reader();
+        MetricsConfig::in_memory("test", "ava-core", "test", exporter).with_runtime_reader();
     let metrics = MetricsClient::new(config)?;
     let warmup = vec![ev_response_created("warmup"), ev_completed("warmup")];
     let turn = vec![ev_response_created("turn"), ev_completed("turn")];
     let server = start_websocket_server(vec![vec![warmup, turn]; 2]).await;
-    let mut initial = test_codex().build_with_websocket_server(&server).await?;
+    let mut initial = test_ava().build_with_websocket_server(&server).await?;
     initial.submit_text_turn("original history marker").await?;
-    let rollout_path = initial.codex.rollout_path().expect("persisted history");
-    initial.codex.shutdown_and_wait().await?;
+    let rollout_path = initial.ava-code.rollout_path().expect("persisted history");
+    initial.ava-code.shutdown_and_wait().await?;
 
     let manager = &initial.thread_manager;
-    let mut options = codex_core::StartThreadOptions::new(initial.config.clone());
+    let mut options = ava_core::StartThreadOptions::new(initial.config.clone());
     options.thread_extension_init.insert(metrics);
     let restored = if fork {
         manager
-            .fork_thread(codex_core::ForkSnapshot::Interrupted, options, rollout_path)
+            .fork_thread(ava_core::ForkSnapshot::Interrupted, options, rollout_path)
             .await?
     } else {
         options.initial_history =
-            codex_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
+            ava_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
         manager.start_thread(options).await?
     };
-    initial.codex = restored.thread;
+    initial.ava-code = restored.thread;
     initial.submit_text_turn("continue").await?;
     assert_continuation_metrics(
-        &initial.codex.session_telemetry(),
+        &initial.ava-code.session_telemetry(),
         &[
             (["full", "restored_history", "warmup"], 1),
             (["incremental", "incremental", "generation"], 1),
@@ -2946,7 +2946,7 @@ async fn responses_websocket_restored_history_metric(fork: bool) -> anyhow::Resu
             .to_string()
             .contains("original history marker")
     }));
-    initial.codex.shutdown_and_wait().await?;
+    initial.ava-code.shutdown_and_wait().await?;
     server.shutdown().await;
     Ok(())
 }
@@ -2959,7 +2959,7 @@ fn assert_continuation_metrics(telemetry: &SessionTelemetry, expected: &[([&str;
     let metric = snapshot
         .scope_metrics()
         .flat_map(opentelemetry_sdk::metrics::data::ScopeMetrics::metrics)
-        .find(|metric| metric.name() == codex_otel::WEBSOCKET_CONTINUATION_COUNT_METRIC)
+        .find(|metric| metric.name() == ava_otel::WEBSOCKET_CONTINUATION_COUNT_METRIC)
         .expect("continuation counter");
     let AggregatedMetrics::U64(MetricData::Sum(sum)) = metric.data() else {
         panic!("expected counter");
@@ -3018,7 +3018,7 @@ async fn stream_until_complete_with_model_info(
             harness.summary,
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");
@@ -3056,7 +3056,7 @@ async fn stream_until_complete_with_metadata(
     harness: &WebsocketTestHarness,
     prompt: &Prompt,
     service_tier: Option<ServiceTier>,
-    responses_metadata: &CodexResponsesMetadata,
+    responses_metadata: &AvaResponsesMetadata,
 ) {
     let mut stream = client_session
         .stream(
@@ -3067,7 +3067,7 @@ async fn stream_until_complete_with_metadata(
             harness.summary,
             service_tier.map(|service_tier| service_tier.request_value().to_string()),
             responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("websocket stream failed");

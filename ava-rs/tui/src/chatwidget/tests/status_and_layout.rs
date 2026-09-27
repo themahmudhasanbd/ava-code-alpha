@@ -5,8 +5,8 @@ use crate::chatwidget::ThreadUsageOutcome;
 use crate::chatwidget::rate_limits::NUDGE_MODEL_SLUG;
 use crate::chatwidget::rate_limits::get_limits_duration;
 use crate::chatwidget::realtime::tests::activate_voice_for_thread;
-use codex_app_server_protocol::SpendControlLimitSnapshot;
-use codex_app_server_protocol::ThreadUsage;
+use ava_app_server_protocol::SpendControlLimitSnapshot;
+use ava_app_server_protocol::ThreadUsage;
 use pretty_assertions::assert_eq;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -126,7 +126,7 @@ async fn app_server_cyber_policy_error_renders_dedicated_notice() {
     handle_error(
         &mut chat,
         "server fallback message",
-        Some(CodexErrorInfo::CyberPolicy),
+        Some(AvaErrorInfo::CyberPolicy),
     );
 
     let cells = drain_insert_history(&mut rx);
@@ -454,14 +454,14 @@ async fn completed_plan_table_tail_skips_provisional_history_insert() {
     );
     controller.push("| Step | Owner |\n");
     controller.push("| --- | --- |\n");
-    controller.push("| Verify | Codex |\n");
+    controller.push("| Verify | Ava |\n");
     assert!(
         controller.has_live_tail(),
         "expected plan table holdback to leave a live tail",
     );
     chat.plan_stream_controller = Some(controller);
     chat.transcript.plan_delta_buffer =
-        "| Step | Owner |\n| --- | --- |\n| Verify | Codex |\n".to_string();
+        "| Step | Owner |\n| --- | --- |\n| Verify | Ava |\n".to_string();
 
     while rx.try_recv().is_ok() {}
 
@@ -498,7 +498,7 @@ async fn configured_pet_load_is_deferred_until_after_construction() {
     let tx = AppEventSender::new(tx_raw);
     let mut cfg = test_config().await;
     cfg.tui_pet = Some(crate::pets::DEFAULT_PET_ID.to_string());
-    crate::pets::write_test_pack(&cfg.codex_home);
+    crate::pets::write_test_pack(&cfg.ava_home);
     let resolved_model = get_model_offline_for_tests(cfg.model.as_deref());
     let session_telemetry = test_session_telemetry(&cfg, resolved_model.as_str());
     let init = ChatWidgetInit {
@@ -511,9 +511,9 @@ async fn configured_pet_load_is_deferred_until_after_construction() {
         initial_user_message: None,
         enhanced_keys_supported: false,
         has_chatgpt_account: false,
-        has_codex_backend_auth: false,
+        has_ava_backend_auth: false,
         model_catalog: test_model_catalog(&cfg),
-        feedback: codex_feedback::CodexFeedback::new(),
+        feedback: ava_feedback::AvaFeedback::new(),
         is_first_run: true,
         status_account_display: None,
         initial_plan_type: None,
@@ -927,7 +927,7 @@ async fn rate_limit_snapshot_keeps_prior_credits_when_missing_from_headers() {
     }));
     let initial_balance = chat
         .rate_limit_snapshots_by_limit_id
-        .get("codex")
+        .get("ava")
         .and_then(|snapshot| snapshot.credits.as_ref())
         .and_then(|credits| credits.balance.as_deref());
     assert_eq!(initial_balance, Some("17.5"));
@@ -951,7 +951,7 @@ async fn rate_limit_snapshot_keeps_prior_credits_when_missing_from_headers() {
 
     let display = chat
         .rate_limit_snapshots_by_limit_id
-        .get("codex")
+        .get("ava")
         .expect("rate limits should be cached");
     let credits = display
         .credits
@@ -982,7 +982,7 @@ async fn rolling_rate_limit_snapshot_preserves_prior_individual_limit() {
 
     let display = chat
         .rate_limit_snapshots_by_limit_id
-        .get("codex")
+        .get("ava")
         .expect("rate limits should be cached");
     let individual_limit = display
         .individual_limit
@@ -995,7 +995,7 @@ async fn rolling_rate_limit_snapshot_preserves_prior_individual_limit() {
     chat.on_rate_limit_snapshot(Some(snapshot(/*percent*/ 30.0)));
     let display = chat
         .rate_limit_snapshots_by_limit_id
-        .get("codex")
+        .get("ava")
         .expect("rate limits should be cached");
     assert!(display.individual_limit.is_none());
 }
@@ -1076,8 +1076,8 @@ async fn rate_limit_snapshots_keep_separate_entries_per_limit_id() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
 
     chat.on_rate_limit_snapshot(Some(RateLimitSnapshot {
-        limit_id: Some("codex".to_string()),
-        limit_name: Some("codex".to_string()),
+        limit_id: Some("ava".to_string()),
+        limit_name: Some("ava".to_string()),
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
             used_percent: 20,
@@ -1097,8 +1097,8 @@ async fn rate_limit_snapshots_keep_separate_entries_per_limit_id() {
     }));
 
     chat.on_rate_limit_snapshot(Some(RateLimitSnapshot {
-        limit_id: Some("codex_other".to_string()),
-        limit_name: Some("codex_other".to_string()),
+        limit_id: Some("ava_other".to_string()),
+        limit_name: Some("ava_other".to_string()),
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
             used_percent: 90,
@@ -1113,18 +1113,18 @@ async fn rate_limit_snapshots_keep_separate_entries_per_limit_id() {
         rate_limit_reached_type: None,
     }));
 
-    let codex = chat
+    let ava = chat
         .rate_limit_snapshots_by_limit_id
-        .get("codex")
-        .expect("codex snapshot should exist");
+        .get("ava")
+        .expect("ava snapshot should exist");
     let other = chat
         .rate_limit_snapshots_by_limit_id
-        .get("codex_other")
-        .expect("codex_other snapshot should exist");
+        .get("ava_other")
+        .expect("ava_other snapshot should exist");
 
-    assert_eq!(codex.primary.as_ref().map(|w| w.used_percent), Some(20.0));
+    assert_eq!(ava.primary.as_ref().map(|w| w.used_percent), Some(20.0));
     assert_eq!(
-        codex
+        ava
             .credits
             .as_ref()
             .and_then(|credits| credits.balance.as_deref()),
@@ -1148,13 +1148,13 @@ async fn rate_limit_switch_prompt_skips_when_on_lower_cost_model() {
 }
 
 #[tokio::test]
-async fn rate_limit_switch_prompt_skips_non_codex_limit() {
+async fn rate_limit_switch_prompt_skips_non_ava_limit() {
     let (mut chat, _, _) = make_chatwidget_manual(Some("gpt-5")).await;
     chat.has_chatgpt_account = true;
 
     chat.on_rate_limit_snapshot(Some(RateLimitSnapshot {
-        limit_id: Some("codex_other".to_string()),
-        limit_name: Some("codex_other".to_string()),
+        limit_id: Some("ava_other".to_string()),
+        limit_name: Some("ava_other".to_string()),
         normal_model_slug: None,
         primary: Some(RateLimitWindow {
             used_percent: 95,
@@ -1440,7 +1440,7 @@ async fn rate_limit_usage_warnings_keep_workspace_limit_after_rolling_credits() 
                 RateLimitSwitchPromptState::Pending
             ));
             assert_eq!(
-                chat.codex_rate_limit_reached_type,
+                chat.ava_rate_limit_reached_type,
                 Some(rate_limit_reached_type)
             );
         }
@@ -1478,7 +1478,7 @@ async fn rate_limit_usage_warnings_keep_explicit_rolling_workspace_limit() {
                 RateLimitSwitchPromptState::Pending
             ));
             assert_eq!(
-                chat.codex_rate_limit_reached_type,
+                chat.ava_rate_limit_reached_type,
                 Some(rate_limit_reached_type)
             );
         }
@@ -1487,7 +1487,7 @@ async fn rate_limit_usage_warnings_keep_explicit_rolling_workspace_limit() {
 
 #[tokio::test]
 async fn rate_limit_usage_warnings_keep_newly_reached_workspace_limit() {
-    for (limit_id, should_warn) in [("codex", true), ("codex_other", false)] {
+    for (limit_id, should_warn) in [("ava", true), ("ava_other", false)] {
         let (mut chat, mut rx, _) = make_chatwidget_manual(Some("gpt-5")).await;
         chat.has_chatgpt_account = true;
 
@@ -1520,7 +1520,7 @@ async fn rate_limit_usage_warnings_keep_newly_reached_workspace_limit() {
             should_warn
         );
         assert_eq!(
-            chat.codex_rate_limit_reached_type,
+            chat.ava_rate_limit_reached_type,
             Some(RateLimitReachedType::WorkspaceMemberUsageLimitReached)
         );
 
@@ -1548,7 +1548,7 @@ async fn rate_limit_usage_warnings_preserve_and_clear_spend_control_state() {
     blocked_snapshot.rate_limit_reached_type =
         Some(RateLimitReachedType::WorkspaceMemberUsageLimitReached);
     chat.on_rate_limit_snapshot(Some(blocked_snapshot));
-    assert_eq!(chat.codex_spend_control_reached, Some(true));
+    assert_eq!(chat.ava_spend_control_reached, Some(true));
 
     chat.on_rolling_rate_limit_snapshot(snapshot(/*percent*/ 95.0));
     assert!(
@@ -1559,7 +1559,7 @@ async fn rate_limit_usage_warnings_preserve_and_clear_spend_control_state() {
         chat.rate_limit_switch_prompt,
         RateLimitSwitchPromptState::Pending
     ));
-    assert_eq!(chat.codex_spend_control_reached, Some(true));
+    assert_eq!(chat.ava_spend_control_reached, Some(true));
 
     let mut recovered_snapshot = snapshot(/*percent*/ 95.0);
     recovered_snapshot.credits = Some(CreditsSnapshot {
@@ -1575,9 +1575,9 @@ async fn rate_limit_usage_warnings_preserve_and_clear_spend_control_state() {
         chat.rate_limit_switch_prompt,
         RateLimitSwitchPromptState::Pending
     ));
-    assert_eq!(chat.codex_spend_control_reached, Some(false));
+    assert_eq!(chat.ava_spend_control_reached, Some(false));
     assert_eq!(
-        chat.codex_rate_limit_reached_type,
+        chat.ava_rate_limit_reached_type,
         Some(RateLimitReachedType::WorkspaceMemberUsageLimitReached)
     );
 
@@ -1590,9 +1590,9 @@ async fn rate_limit_usage_warnings_preserve_and_clear_spend_control_state() {
         chat.rate_limit_switch_prompt,
         RateLimitSwitchPromptState::Pending
     ));
-    assert_eq!(chat.codex_spend_control_reached, Some(false));
+    assert_eq!(chat.ava_spend_control_reached, Some(false));
     assert_eq!(
-        chat.codex_rate_limit_reached_type,
+        chat.ava_rate_limit_reached_type,
         Some(RateLimitReachedType::WorkspaceMemberUsageLimitReached)
     );
 }
@@ -1622,7 +1622,7 @@ async fn rolling_credits_preserve_depleted_workspace_error_routing() {
         RateLimitSwitchPromptState::Pending
     ));
     assert_eq!(
-        chat.codex_rate_limit_reached_type,
+        chat.ava_rate_limit_reached_type,
         Some(RateLimitReachedType::WorkspaceMemberCreditsDepleted)
     );
 
@@ -1669,7 +1669,7 @@ async fn rate_limit_usage_warnings_clear_workspace_limit_from_authoritative_snap
         chat.rate_limit_switch_prompt,
         RateLimitSwitchPromptState::Idle
     ));
-    assert_eq!(chat.codex_rate_limit_reached_type, None);
+    assert_eq!(chat.ava_rate_limit_reached_type, None);
 }
 
 #[tokio::test]
@@ -1706,8 +1706,8 @@ async fn account_update_clears_derived_usage_limit_state_and_prompt() {
     chat.maybe_show_pending_rate_limit_prompt();
 
     assert!(chat.rate_limit_warnings.primary_index > 0);
-    assert!(chat.codex_rate_limit_reached_type.is_some());
-    assert_eq!(chat.codex_spend_control_reached, Some(true));
+    assert!(chat.ava_rate_limit_reached_type.is_some());
+    assert_eq!(chat.ava_spend_control_reached, Some(true));
     assert!(matches!(
         chat.rate_limit_switch_prompt,
         RateLimitSwitchPromptState::Shown
@@ -1716,13 +1716,13 @@ async fn account_update_clears_derived_usage_limit_state_and_prompt() {
 
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ true, /*has_codex_backend_auth*/ true,
+        /*has_chatgpt_account*/ true, /*has_ava_backend_auth*/ true,
     );
 
     assert_eq!(chat.rate_limit_warnings.primary_index, 0);
     assert_eq!(chat.rate_limit_warnings.secondary_index, 0);
-    assert_eq!(chat.codex_rate_limit_reached_type, None);
-    assert_eq!(chat.codex_spend_control_reached, None);
+    assert_eq!(chat.ava_rate_limit_reached_type, None);
+    assert_eq!(chat.ava_spend_control_reached, None);
     assert!(matches!(
         chat.rate_limit_switch_prompt,
         RateLimitSwitchPromptState::Idle
@@ -1898,12 +1898,12 @@ async fn workspace_owner_limit_states_render_state_specific_messages() {
         (
             RateLimitReachedType::WorkspaceOwnerCreditsDepleted,
             RateLimitErrorKind::Generic,
-            "You're out of credits. Your workspace is out of credits. Add credits to continue using Codex.",
+            "You're out of credits. Your workspace is out of credits. Add credits to continue using Ava.",
         ),
         (
             RateLimitReachedType::WorkspaceOwnerUsageLimitReached,
             RateLimitErrorKind::UsageLimit,
-            "Usage limit reached. You've reached your usage limit. Increase your limits to continue using codex.",
+            "Usage limit reached. You've reached your usage limit. Increase your limits to continue using ava.",
         ),
     ];
 
@@ -2183,7 +2183,7 @@ async fn esc_interrupt_pauses_active_goal_turn() {
 
     chat.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
-    assert_matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt)));
+    assert_matches!(rx.try_recv(), Ok(AppEvent::AvaOp(Op::Interrupt)));
     assert_goal_paused_event(&mut rx, thread_id);
 
     update_thread_goal(&mut chat, thread_id, AppThreadGoalStatus::Paused);
@@ -2221,7 +2221,7 @@ async fn request_user_input_interrupt_pauses_active_goal_turn() {
 
         chat.handle_key_event(key_event);
 
-        assert_matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt)));
+        assert_matches!(rx.try_recv(), Ok(AppEvent::AvaOp(Op::Interrupt)));
         assert_goal_paused_event(&mut rx, thread_id);
     }
 }
@@ -2245,7 +2245,7 @@ fn update_thread_goal(chat: &mut ChatWidget, thread_id: ThreadId, status: AppThr
     goal.thread_id = thread_id.clone();
     chat.handle_server_notification(
         ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id,
                 turn_id: None,
                 goal,
@@ -2462,8 +2462,8 @@ async fn ambient_pet_stays_hidden_until_a_pet_is_selected() {
     ));
     assert!(chat.ambient_pet.is_none());
 
-    crate::pets::write_test_pack(&chat.config.codex_home);
-    chat.set_tui_pet(Some("codex".to_string()));
+    crate::pets::write_test_pack(&chat.config.ava_home);
+    chat.set_tui_pet(Some("ava".to_string()));
 
     let area = Rect::new(
         /*x*/ 0, /*y*/ 0, /*width*/ 60, /*height*/ 20,
@@ -2495,7 +2495,7 @@ async fn ambient_pet_stays_hidden_until_a_pet_is_selected() {
 #[tokio::test]
 #[serial]
 async fn ambient_pet_screen_bottom_anchor_uses_terminal_bottom() {
-    use codex_config::types::TuiPetAnchor;
+    use ava_config::types::TuiPetAnchor;
     use ratatui::layout::Rect;
 
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
@@ -2929,7 +2929,7 @@ async fn status_line_hostname_renders_current_machine_hostname() {
 
     chat.refresh_status_line();
 
-    assert_eq!(status_line_text(&chat), codex_config::os_host_name());
+    assert_eq!(status_line_text(&chat), ava_config::os_host_name());
     assert!(
         drain_insert_history(&mut rx).is_empty(),
         "hostname should be accepted as a status line item"
@@ -2989,7 +2989,7 @@ async fn status_line_estimated_thread_cost_fetches_and_renders_backend_estimate(
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
 
@@ -3025,7 +3025,7 @@ async fn status_line_thread_credits_fetches_and_renders_fractional_credits() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["thread-credits".to_string()]);
 
@@ -3061,7 +3061,7 @@ async fn status_line_thread_credits_and_cost_share_one_backend_request() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec![
         "thread-credits".to_string(),
@@ -3097,7 +3097,7 @@ async fn status_line_thread_credits_remain_visible_when_usd_is_unavailable() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec![
         "thread-credits".to_string(),
@@ -3132,7 +3132,7 @@ async fn terminal_title_thread_usage_fetches_and_renders_without_status_line() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(Vec::new());
     chat.local_settings.tui.terminal_title = Some(vec![
@@ -3175,7 +3175,7 @@ async fn terminal_title_thread_credits_remain_visible_when_usd_is_unavailable() 
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(Vec::new());
     chat.local_settings.tui.terminal_title = Some(vec![
@@ -3211,7 +3211,7 @@ async fn terminal_title_and_status_line_share_one_thread_usage_request() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
     chat.local_settings.tui.terminal_title = Some(vec!["thread-credits".to_string()]);
@@ -3244,7 +3244,7 @@ async fn terminal_title_and_status_line_share_one_thread_usage_request() {
 async fn status_line_estimated_thread_cost_avoids_unsupported_plan_requests() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.thread_id = Some(ThreadId::new());
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Pro);
     chat.local_settings.tui.status_line = Some(vec![
         "estimated-thread-cost".to_string(),
@@ -3265,7 +3265,7 @@ async fn status_line_estimated_thread_cost_stops_after_backend_disables_feature(
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::EnterpriseCbpAutomation);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
     chat.refresh_status_line();
@@ -3290,7 +3290,7 @@ async fn status_line_estimated_thread_cost_preserves_cached_amount_during_settle
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
     chat.refresh_status_line();
@@ -3337,7 +3337,7 @@ async fn completed_turn_refreshes_estimated_thread_cost() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
     chat.refresh_status_line();
@@ -3388,7 +3388,7 @@ async fn completed_turn_refreshes_credits_only_terminal_title() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(Vec::new());
     chat.local_settings.tui.terminal_title = Some(vec!["thread-credits".to_string()]);
@@ -3440,7 +3440,7 @@ async fn interrupted_turn_refreshes_estimated_thread_usage() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
     chat.refresh_status_line();
@@ -3481,7 +3481,7 @@ async fn failed_turn_refreshes_estimated_thread_usage() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
     chat.refresh_status_line();
@@ -3503,7 +3503,7 @@ async fn failed_turn_refreshes_estimated_thread_usage() {
 
     chat.handle_non_retry_error(
         "turn failed after generating tokens".to_string(),
-        /*codex_error_info*/ None,
+        /*ava_error_info*/ None,
     );
 
     assert!(
@@ -3526,7 +3526,7 @@ async fn status_line_estimated_thread_cost_rejects_stale_thread_completions() {
     let previous_thread_id = ThreadId::new();
     let active_thread_id = ThreadId::new();
     chat.thread_id = Some(previous_thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.local_settings.tui.status_line = Some(vec!["estimated-thread-cost".to_string()]);
     chat.refresh_status_line();
@@ -3574,7 +3574,7 @@ async fn status_line_estimated_thread_cost_footer_snapshot() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
-    chat.has_codex_backend_auth = true;
+    chat.has_ava_backend_auth = true;
     chat.plan_type = Some(PlanType::Business);
     chat.show_welcome_banner = false;
     chat.local_settings.tui.status_line = Some(vec![
@@ -3698,7 +3698,7 @@ async fn account_update_clears_workspace_headline_state() {
 
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ false, /*has_codex_backend_auth*/ false,
+        /*has_chatgpt_account*/ false, /*has_ava_backend_auth*/ false,
     );
 
     assert_eq!(
@@ -3719,7 +3719,7 @@ async fn workspace_headline_fetch_allows_backend_auth_without_chatgpt_account() 
 
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ false, /*has_codex_backend_auth*/ true,
+        /*has_chatgpt_account*/ false, /*has_ava_backend_auth*/ true,
     );
 
     let request_id = take_workspace_headline_request_id(&mut rx);
@@ -3741,7 +3741,7 @@ async fn account_update_discards_stale_workspace_headline_results() {
         }),
         /*plan_type*/ None,
         /*has_chatgpt_account*/ true,
-        /*has_codex_backend_auth*/ true,
+        /*has_ava_backend_auth*/ true,
     );
     let stale_request_id = take_workspace_headline_request_id(&mut rx);
 
@@ -3752,7 +3752,7 @@ async fn account_update_discards_stale_workspace_headline_results() {
         }),
         /*plan_type*/ None,
         /*has_chatgpt_account*/ true,
-        /*has_codex_backend_auth*/ true,
+        /*has_ava_backend_auth*/ true,
     );
     let current_request_id = take_workspace_headline_request_id(&mut rx);
 
@@ -3877,7 +3877,7 @@ async fn interrupted_turn_clears_visible_running_hook() {
         &mut chat,
         hook_started_run(
             "pre-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookEventName::PreToolUse,
             Some("checking command policy"),
         ),
     );
@@ -3904,7 +3904,7 @@ async fn completed_turn_clears_visible_running_hook() {
         &mut chat,
         hook_started_run(
             "post-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PostToolUse,
+            ava_app_server_protocol::HookEventName::PostToolUse,
             /*status_message*/ None,
         ),
     );
@@ -4131,7 +4131,7 @@ async fn renamed_thread_footer_title_snapshot() {
     chat.thread_id = Some(thread_id);
     chat.handle_server_notification(
         ServerNotification::ThreadNameUpdated(
-            codex_app_server_protocol::ThreadNameUpdatedNotification {
+            ava_app_server_protocol::ThreadNameUpdatedNotification {
                 thread_id: thread_id.to_string(),
                 thread_name: Some("Roadmap cleanup".to_string()),
             },
@@ -4231,11 +4231,11 @@ async fn status_line_goal_active_token_budget_footer_snapshot() {
     chat.refresh_status_line();
     chat.handle_server_notification(
         ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: None,
                 goal: test_thread_goal(
-                    codex_app_server_protocol::ThreadGoalStatus::Active,
+                    ava_app_server_protocol::ThreadGoalStatus::Active,
                     /*token_budget*/ Some(50_000),
                     /*tokens_used*/ 40_000,
                 ),
@@ -4267,14 +4267,14 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
     chat.local_settings.tui.status_line = Some(vec!["model-name".to_string()]);
     chat.refresh_status_line();
     let mut goal = test_thread_goal(
-        codex_app_server_protocol::ThreadGoalStatus::Complete,
+        ava_app_server_protocol::ThreadGoalStatus::Complete,
         /*token_budget*/ None,
         /*tokens_used*/ 40_000,
     );
     goal.time_used_seconds = 2 * 24 * 60 * 60 + 23 * 60 * 60 + 42 * 60;
     chat.handle_server_notification(
         ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: None,
                 goal,
@@ -4301,11 +4301,11 @@ async fn session_configured_clears_goal_status_footer() {
     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
     chat.handle_server_notification(
         ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: None,
                 goal: test_thread_goal(
-                    codex_app_server_protocol::ThreadGoalStatus::Active,
+                    ava_app_server_protocol::ThreadGoalStatus::Active,
                     /*token_budget*/ Some(50_000),
                     /*tokens_used*/ 40_000,
                 ),
@@ -4359,7 +4359,7 @@ async fn thread_goal_update_for_other_thread_is_ignored() {
     chat.thread_id = Some(ThreadId::new());
     let other_thread_id = ThreadId::new().to_string();
     let mut goal = test_thread_goal(
-        codex_app_server_protocol::ThreadGoalStatus::BudgetLimited,
+        ava_app_server_protocol::ThreadGoalStatus::BudgetLimited,
         /*token_budget*/ Some(50_000),
         /*tokens_used*/ 50_000,
     );
@@ -4367,7 +4367,7 @@ async fn thread_goal_update_for_other_thread_is_ignored() {
 
     chat.handle_server_notification(
         ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id: other_thread_id,
                 turn_id: Some("turn-other".to_string()),
                 goal,
@@ -4385,7 +4385,7 @@ async fn thread_goal_update_for_other_thread_is_ignored() {
 fn goal_status_indicator_formats_statuses_and_budgets() {
     assert_eq!(
         goal_status_indicator_from_app_goal(&test_thread_goal(
-            codex_app_server_protocol::ThreadGoalStatus::Active,
+            ava_app_server_protocol::ThreadGoalStatus::Active,
             /*token_budget*/ Some(50_000),
             /*tokens_used*/ 40_000,
         )),
@@ -4395,7 +4395,7 @@ fn goal_status_indicator_formats_statuses_and_budgets() {
     );
     assert_eq!(
         goal_status_indicator_from_app_goal(&test_thread_goal(
-            codex_app_server_protocol::ThreadGoalStatus::Active,
+            ava_app_server_protocol::ThreadGoalStatus::Active,
             /*token_budget*/ None,
             /*tokens_used*/ 0,
         )),
@@ -4405,7 +4405,7 @@ fn goal_status_indicator_formats_statuses_and_budgets() {
     );
     assert_eq!(
         goal_status_indicator_from_app_goal(&test_thread_goal(
-            codex_app_server_protocol::ThreadGoalStatus::Blocked,
+            ava_app_server_protocol::ThreadGoalStatus::Blocked,
             /*token_budget*/ None,
             /*tokens_used*/ 0,
         )),
@@ -4413,7 +4413,7 @@ fn goal_status_indicator_formats_statuses_and_budgets() {
     );
     assert_eq!(
         goal_status_indicator_from_app_goal(&test_thread_goal(
-            codex_app_server_protocol::ThreadGoalStatus::UsageLimited,
+            ava_app_server_protocol::ThreadGoalStatus::UsageLimited,
             /*token_budget*/ None,
             /*tokens_used*/ 0,
         )),
@@ -4421,7 +4421,7 @@ fn goal_status_indicator_formats_statuses_and_budgets() {
     );
     assert_eq!(
         goal_status_indicator_from_app_goal(&test_thread_goal(
-            codex_app_server_protocol::ThreadGoalStatus::BudgetLimited,
+            ava_app_server_protocol::ThreadGoalStatus::BudgetLimited,
             /*token_budget*/ Some(50_000),
             /*tokens_used*/ 51_000,
         )),
@@ -4431,7 +4431,7 @@ fn goal_status_indicator_formats_statuses_and_budgets() {
     );
     assert_eq!(
         goal_status_indicator_from_app_goal(&test_thread_goal(
-            codex_app_server_protocol::ThreadGoalStatus::BudgetLimited,
+            ava_app_server_protocol::ThreadGoalStatus::BudgetLimited,
             /*token_budget*/ None,
             /*tokens_used*/ 0,
         )),
@@ -4439,7 +4439,7 @@ fn goal_status_indicator_formats_statuses_and_budgets() {
     );
     assert_eq!(
         goal_status_indicator_from_app_goal(&test_thread_goal(
-            codex_app_server_protocol::ThreadGoalStatus::Complete,
+            ava_app_server_protocol::ThreadGoalStatus::Complete,
             /*token_budget*/ Some(50_000),
             /*tokens_used*/ 40_000,
         )),
@@ -4499,11 +4499,11 @@ fn goal_status_indicator_line_formats_goal_text() {
 }
 
 fn test_thread_goal(
-    status: codex_app_server_protocol::ThreadGoalStatus,
+    status: ava_app_server_protocol::ThreadGoalStatus,
     token_budget: Option<i64>,
     tokens_used: i64,
-) -> codex_app_server_protocol::ThreadGoal {
-    codex_app_server_protocol::ThreadGoal {
+) -> ava_app_server_protocol::ThreadGoal {
+    ava_app_server_protocol::ThreadGoal {
         thread_id: "thread-1".to_string(),
         objective: "Keep improving the benchmark".to_string(),
         status,
@@ -4739,7 +4739,7 @@ async fn newline_agent_delta_redraws_stream_tail_after_noop_catch_up() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual_with_auth(
         /*model_override*/ None,
         /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ false,
+        /*has_ava_backend_auth*/ false,
         frame_requester,
     )
     .await;
@@ -4764,7 +4764,7 @@ async fn newline_plan_delta_redraws_stream_tail_after_noop_catch_up() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual_with_auth(
         /*model_override*/ Some("gpt-5"),
         /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ false,
+        /*has_ava_backend_auth*/ false,
         frame_requester,
     )
     .await;
@@ -4841,7 +4841,7 @@ async fn reasoning_delta_does_not_double_schedule_visible_status_redraw() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual_with_auth(
         /*model_override*/ None,
         /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ false,
+        /*has_ava_backend_auth*/ false,
         frame_requester,
     )
     .await;
@@ -4913,7 +4913,7 @@ async fn user_prompt_submit_app_server_hook_notifications_render_snapshot() {
                 execution_mode: AppServerHookExecutionMode::Sync,
                 scope: AppServerHookScope::Turn,
                 source_path: PathBuf::from(test_path_display("/tmp/hooks.json")).abs(),
-                source: codex_app_server_protocol::HookSource::User,
+                source: ava_app_server_protocol::HookSource::User,
                 display_order: 0,
                 status: AppServerHookRunStatus::Running,
                 status_message: Some("checking go-workflow input policy".to_string()),
@@ -4936,7 +4936,7 @@ async fn user_prompt_submit_app_server_hook_notifications_render_snapshot() {
                 execution_mode: AppServerHookExecutionMode::Sync,
                 scope: AppServerHookScope::Turn,
                 source_path: PathBuf::from(test_path_display("/tmp/hooks.json")).abs(),
-                source: codex_app_server_protocol::HookSource::User,
+                source: ava_app_server_protocol::HookSource::User,
                 display_order: 0,
                 status: AppServerHookRunStatus::Stopped,
                 status_message: Some("checking go-workflow input policy".to_string()),
@@ -4973,7 +4973,7 @@ async fn user_prompt_submit_app_server_hook_notifications_render_snapshot() {
 #[tokio::test]
 async fn interrupt_hook_events_render_snapshot() {
     assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::Interrupt,
+        ava_app_server_protocol::HookEventName::Interrupt,
         "interrupt:0:/tmp/hooks.json",
         "cleaning up the interrupted turn",
         "interrupt_hook_events_render_snapshot",
@@ -4984,7 +4984,7 @@ async fn interrupt_hook_events_render_snapshot() {
 #[tokio::test]
 async fn pre_tool_use_hook_events_render_snapshot() {
     assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::PreToolUse,
+        ava_app_server_protocol::HookEventName::PreToolUse,
         "pre-tool-use:0:/tmp/hooks.json",
         "warming the shell",
         "pre_tool_use_hook_events_render_snapshot",
@@ -4995,7 +4995,7 @@ async fn pre_tool_use_hook_events_render_snapshot() {
 #[tokio::test]
 async fn post_tool_use_hook_events_render_snapshot() {
     assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::PostToolUse,
+        ava_app_server_protocol::HookEventName::PostToolUse,
         "post-tool-use:0:/tmp/hooks.json",
         "warming the shell",
         "post_tool_use_hook_events_render_snapshot",
@@ -5011,7 +5011,7 @@ async fn quiet_hook_cleanup_starts_when_the_hook_is_revealed() {
             &mut chat,
             hook_started_run(
                 "post-tool-use:0:/tmp/hooks.json",
-                codex_app_server_protocol::HookEventName::PostToolUse,
+                ava_app_server_protocol::HookEventName::PostToolUse,
                 Some("checking output policy"),
             ),
         );
@@ -5024,8 +5024,8 @@ async fn quiet_hook_cleanup_starts_when_the_hook_is_revealed() {
             &mut chat,
             hook_completed_run(
                 "post-tool-use:0:/tmp/hooks.json",
-                codex_app_server_protocol::HookEventName::PostToolUse,
-                codex_app_server_protocol::HookRunStatus::Completed,
+                ava_app_server_protocol::HookEventName::PostToolUse,
+                ava_app_server_protocol::HookRunStatus::Completed,
                 Vec::new(),
             ),
         );
@@ -5051,10 +5051,10 @@ async fn blocked_and_failed_hooks_render_feedback_and_errors() {
         &mut chat,
         hook_completed_run(
             "pre-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PreToolUse,
-            codex_app_server_protocol::HookRunStatus::Blocked,
-            vec![codex_app_server_protocol::HookOutputEntry {
-                kind: codex_app_server_protocol::HookOutputEntryKind::Feedback,
+            ava_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookRunStatus::Blocked,
+            vec![ava_app_server_protocol::HookOutputEntry {
+                kind: ava_app_server_protocol::HookOutputEntryKind::Feedback,
                 text: "run tests before touching the fixture".to_string(),
             }],
         ),
@@ -5063,10 +5063,10 @@ async fn blocked_and_failed_hooks_render_feedback_and_errors() {
         &mut chat,
         hook_completed_run(
             "post-tool-use:1:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PostToolUse,
-            codex_app_server_protocol::HookRunStatus::Failed,
-            vec![codex_app_server_protocol::HookOutputEntry {
-                kind: codex_app_server_protocol::HookOutputEntryKind::Error,
+            ava_app_server_protocol::HookEventName::PostToolUse,
+            ava_app_server_protocol::HookRunStatus::Failed,
+            vec![ava_app_server_protocol::HookOutputEntry {
+                kind: ava_app_server_protocol::HookOutputEntryKind::Error,
                 text: "hook exited with code 7".to_string(),
             }],
         ),
@@ -5095,7 +5095,7 @@ async fn completed_hook_with_output_flushes_immediately() {
         &mut chat,
         hook_started_run(
             "pre-tool-use:0:/tmp/hooks.json:tool-call-1",
-            codex_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookEventName::PreToolUse,
             Some("checking command"),
         ),
     );
@@ -5106,10 +5106,10 @@ async fn completed_hook_with_output_flushes_immediately() {
         &mut chat,
         hook_completed_run(
             "pre-tool-use:0:/tmp/hooks.json:tool-call-1",
-            codex_app_server_protocol::HookEventName::PreToolUse,
-            codex_app_server_protocol::HookRunStatus::Blocked,
-            vec![codex_app_server_protocol::HookOutputEntry {
-                kind: codex_app_server_protocol::HookOutputEntryKind::Feedback,
+            ava_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookRunStatus::Blocked,
+            vec![ava_app_server_protocol::HookOutputEntry {
+                kind: ava_app_server_protocol::HookOutputEntryKind::Feedback,
                 text: "command blocked by policy".to_string(),
             }],
         ),
@@ -5134,7 +5134,7 @@ async fn completed_hook_output_precedes_following_assistant_message() {
         &mut chat,
         hook_started_run(
             "pre-tool-use:0:/tmp/hooks.json:tool-call-1",
-            codex_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookEventName::PreToolUse,
             Some("checking command"),
         ),
     );
@@ -5144,10 +5144,10 @@ async fn completed_hook_output_precedes_following_assistant_message() {
         &mut chat,
         hook_completed_run(
             "pre-tool-use:0:/tmp/hooks.json:tool-call-1",
-            codex_app_server_protocol::HookEventName::PreToolUse,
-            codex_app_server_protocol::HookRunStatus::Blocked,
-            vec![codex_app_server_protocol::HookOutputEntry {
-                kind: codex_app_server_protocol::HookOutputEntryKind::Feedback,
+            ava_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookRunStatus::Blocked,
+            vec![ava_app_server_protocol::HookOutputEntry {
+                kind: ava_app_server_protocol::HookOutputEntryKind::Feedback,
                 text: "command blocked by policy".to_string(),
             }],
         ),
@@ -5189,7 +5189,7 @@ async fn completed_same_id_hook_output_survives_restart() {
         &mut chat,
         hook_started_run(
             hook_id,
-            codex_app_server_protocol::HookEventName::Stop,
+            ava_app_server_protocol::HookEventName::Stop,
             Some("checking stop condition"),
         ),
     );
@@ -5198,10 +5198,10 @@ async fn completed_same_id_hook_output_survives_restart() {
         &mut chat,
         hook_completed_run(
             hook_id,
-            codex_app_server_protocol::HookEventName::Stop,
-            codex_app_server_protocol::HookRunStatus::Stopped,
-            vec![codex_app_server_protocol::HookOutputEntry {
-                kind: codex_app_server_protocol::HookOutputEntryKind::Stop,
+            ava_app_server_protocol::HookEventName::Stop,
+            ava_app_server_protocol::HookRunStatus::Stopped,
+            vec![ava_app_server_protocol::HookOutputEntry {
+                kind: ava_app_server_protocol::HookOutputEntryKind::Stop,
                 text: "continue with more context".to_string(),
             }],
         ),
@@ -5210,7 +5210,7 @@ async fn completed_same_id_hook_output_survives_restart() {
         &mut chat,
         hook_started_run(
             hook_id,
-            codex_app_server_protocol::HookEventName::Stop,
+            ava_app_server_protocol::HookEventName::Stop,
             Some("checking stop condition"),
         ),
     );
@@ -5262,7 +5262,7 @@ async fn running_hooks_fit_around_background_activity_and_finish_without_history
                 &mut chat,
                 hook_started_run(
                     &format!("hook-{index}"),
-                    codex_app_server_protocol::HookEventName::PreToolUse,
+                    ava_app_server_protocol::HookEventName::PreToolUse,
                     Some(message),
                 ),
             );
@@ -5283,8 +5283,8 @@ async fn running_hooks_fit_around_background_activity_and_finish_without_history
                 &mut chat,
                 hook_completed_run(
                     &format!("hook-{index}"),
-                    codex_app_server_protocol::HookEventName::PreToolUse,
-                    codex_app_server_protocol::HookRunStatus::Completed,
+                    ava_app_server_protocol::HookEventName::PreToolUse,
+                    ava_app_server_protocol::HookRunStatus::Completed,
                     Vec::new(),
                 ),
             );
@@ -5308,7 +5308,7 @@ async fn session_end_hook_has_standalone_activity_row() {
             &mut chat,
             hook_started_run(
                 "session-end",
-                codex_app_server_protocol::HookEventName::SessionEnd,
+                ava_app_server_protocol::HookEventName::SessionEnd,
                 message,
             ),
         );
@@ -5319,8 +5319,8 @@ async fn session_end_hook_has_standalone_activity_row() {
             &mut chat,
             hook_completed_run(
                 "session-end",
-                codex_app_server_protocol::HookEventName::SessionEnd,
-                codex_app_server_protocol::HookRunStatus::Completed,
+                ava_app_server_protocol::HookEventName::SessionEnd,
+                ava_app_server_protocol::HookRunStatus::Completed,
                 Vec::new(),
             ),
         );
@@ -5346,7 +5346,7 @@ async fn overlapping_hook_live_cell_tracks_parallel_quiet_hooks() {
         &mut chat,
         hook_started_run(
             "pre-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookEventName::PreToolUse,
             Some("checking command policy"),
         ),
     );
@@ -5358,7 +5358,7 @@ async fn overlapping_hook_live_cell_tracks_parallel_quiet_hooks() {
         &mut chat,
         hook_started_run(
             "post-tool-use:1:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PostToolUse,
+            ava_app_server_protocol::HookEventName::PostToolUse,
             Some("checking output policy"),
         ),
     );
@@ -5370,8 +5370,8 @@ async fn overlapping_hook_live_cell_tracks_parallel_quiet_hooks() {
         &mut chat,
         hook_completed_run(
             "pre-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PreToolUse,
-            codex_app_server_protocol::HookRunStatus::Completed,
+            ava_app_server_protocol::HookEventName::PreToolUse,
+            ava_app_server_protocol::HookRunStatus::Completed,
             Vec::new(),
         ),
     );
@@ -5390,8 +5390,8 @@ async fn overlapping_hook_live_cell_tracks_parallel_quiet_hooks() {
         &mut chat,
         hook_completed_run(
             "post-tool-use:1:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PostToolUse,
-            codex_app_server_protocol::HookRunStatus::Completed,
+            ava_app_server_protocol::HookEventName::PostToolUse,
+            ava_app_server_protocol::HookRunStatus::Completed,
             Vec::new(),
         ),
     );
@@ -5420,7 +5420,7 @@ async fn running_hook_does_not_displace_active_exec_cell() {
         &mut chat,
         hook_started_run(
             "post-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PostToolUse,
+            ava_app_server_protocol::HookEventName::PostToolUse,
             Some("checking output policy"),
         ),
     );
@@ -5438,8 +5438,8 @@ async fn running_hook_does_not_displace_active_exec_cell() {
         &mut chat,
         hook_completed_run(
             "post-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PostToolUse,
-            codex_app_server_protocol::HookRunStatus::Completed,
+            ava_app_server_protocol::HookEventName::PostToolUse,
+            ava_app_server_protocol::HookRunStatus::Completed,
             Vec::new(),
         ),
     );
@@ -5470,7 +5470,7 @@ async fn running_hook_never_adds_active_transcript_lines() {
         &mut chat,
         hook_started_run(
             "post-tool-use:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::PostToolUse,
+            ava_app_server_protocol::HookEventName::PostToolUse,
             Some("checking output policy"),
         ),
     );
@@ -5494,7 +5494,7 @@ async fn context_only_hook_completed_before_reveal_stays_out_of_history() {
         &mut chat,
         hook_started_run(
             "session-start:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::SessionStart,
+            ava_app_server_protocol::HookEventName::SessionStart,
             Some("warming the shell"),
         ),
     );
@@ -5503,10 +5503,10 @@ async fn context_only_hook_completed_before_reveal_stays_out_of_history() {
         &mut chat,
         hook_completed_run(
             "session-start:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::SessionStart,
-            codex_app_server_protocol::HookRunStatus::Completed,
-            vec![codex_app_server_protocol::HookOutputEntry {
-                kind: codex_app_server_protocol::HookOutputEntryKind::Context,
+            ava_app_server_protocol::HookEventName::SessionStart,
+            ava_app_server_protocol::HookRunStatus::Completed,
+            vec![ava_app_server_protocol::HookOutputEntry {
+                kind: ava_app_server_protocol::HookOutputEntryKind::Context,
                 text: "session context\nsecond line".to_string(),
             }],
         ),
@@ -5524,16 +5524,16 @@ async fn stopped_hook_hides_model_context_and_preserves_stop_reason_snapshot() {
         &mut chat,
         hook_completed_run(
             "session-start:0:/tmp/hooks.json",
-            codex_app_server_protocol::HookEventName::SessionStart,
-            codex_app_server_protocol::HookRunStatus::Stopped,
+            ava_app_server_protocol::HookEventName::SessionStart,
+            ava_app_server_protocol::HookRunStatus::Stopped,
             vec![
-                codex_app_server_protocol::HookOutputEntry {
-                    kind: codex_app_server_protocol::HookOutputEntryKind::Context,
+                ava_app_server_protocol::HookOutputEntry {
+                    kind: ava_app_server_protocol::HookOutputEntryKind::Context,
                     text: "This hook context is intentionally long enough to wrap across several terminal rows while keeping the complete value available in the transcript overlay. The main conversation should stay compact even when a hook injects a large block of instructions for the model."
                         .to_string(),
                 },
-                codex_app_server_protocol::HookOutputEntry {
-                    kind: codex_app_server_protocol::HookOutputEntryKind::Stop,
+                ava_app_server_protocol::HookOutputEntry {
+                    kind: ava_app_server_protocol::HookOutputEntryKind::Stop,
                     text: "The hook stopped this turn for an important reason.\nThis second line must remain visible in full."
                         .to_string(),
                 },
@@ -5554,7 +5554,7 @@ async fn stopped_hook_hides_model_context_and_preserves_stop_reason_snapshot() {
 #[tokio::test]
 async fn session_start_hook_events_render_snapshot() {
     assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::SessionStart,
+        ava_app_server_protocol::HookEventName::SessionStart,
         "session-start:0:/tmp/hooks.json",
         "warming the shell",
         "session_start_hook_events_render_snapshot",
@@ -5564,13 +5564,13 @@ async fn session_start_hook_events_render_snapshot() {
 
 fn hook_started_run(
     id: &str,
-    event_name: codex_app_server_protocol::HookEventName,
+    event_name: ava_app_server_protocol::HookEventName,
     status_message: Option<&str>,
-) -> codex_app_server_protocol::HookRunSummary {
+) -> ava_app_server_protocol::HookRunSummary {
     hook_run_summary(
         id,
         event_name,
-        codex_app_server_protocol::HookRunStatus::Running,
+        ava_app_server_protocol::HookRunStatus::Running,
         status_message,
         Vec::new(),
     )
@@ -5578,10 +5578,10 @@ fn hook_started_run(
 
 fn hook_completed_run(
     id: &str,
-    event_name: codex_app_server_protocol::HookEventName,
-    status: codex_app_server_protocol::HookRunStatus,
-    entries: Vec<codex_app_server_protocol::HookOutputEntry>,
-) -> codex_app_server_protocol::HookRunSummary {
+    event_name: ava_app_server_protocol::HookEventName,
+    status: ava_app_server_protocol::HookRunStatus,
+    entries: Vec<ava_app_server_protocol::HookOutputEntry>,
+) -> ava_app_server_protocol::HookRunSummary {
     hook_run_summary(
         id, event_name, status, /*status_message*/ None, entries,
     )
@@ -5589,25 +5589,25 @@ fn hook_completed_run(
 
 fn hook_run_summary(
     id: &str,
-    event_name: codex_app_server_protocol::HookEventName,
-    status: codex_app_server_protocol::HookRunStatus,
+    event_name: ava_app_server_protocol::HookEventName,
+    status: ava_app_server_protocol::HookRunStatus,
     status_message: Option<&str>,
-    entries: Vec<codex_app_server_protocol::HookOutputEntry>,
-) -> codex_app_server_protocol::HookRunSummary {
-    codex_app_server_protocol::HookRunSummary {
+    entries: Vec<ava_app_server_protocol::HookOutputEntry>,
+) -> ava_app_server_protocol::HookRunSummary {
+    ava_app_server_protocol::HookRunSummary {
         id: id.to_string(),
         event_name,
-        handler_type: codex_app_server_protocol::HookHandlerType::Command,
-        execution_mode: codex_app_server_protocol::HookExecutionMode::Sync,
-        scope: codex_app_server_protocol::HookScope::Turn,
+        handler_type: ava_app_server_protocol::HookHandlerType::Command,
+        execution_mode: ava_app_server_protocol::HookExecutionMode::Sync,
+        scope: ava_app_server_protocol::HookScope::Turn,
         source_path: PathBuf::from(test_path_display("/tmp/hooks.json")).abs(),
-        source: codex_app_server_protocol::HookSource::User,
+        source: ava_app_server_protocol::HookSource::User,
         display_order: 0,
         status,
         status_message: status_message.map(str::to_string),
         started_at: 1,
-        completed_at: (status != codex_app_server_protocol::HookRunStatus::Running).then_some(2),
-        duration_ms: (status != codex_app_server_protocol::HookRunStatus::Running).then_some(1),
+        completed_at: (status != ava_app_server_protocol::HookRunStatus::Running).then_some(2),
+        duration_ms: (status != ava_app_server_protocol::HookRunStatus::Running).then_some(1),
         entries,
     }
 }
@@ -5675,7 +5675,7 @@ async fn chatwidget_exec_and_status_layout_vt100_snapshot() {
         AppServerThreadItem::CommandExecution {
             model_context: None,
             id: "c1".into(),
-            command: codex_shell_command::parse_command::shlex_join(&command),
+            command: ava_shell_command::parse_command::shlex_join(&command),
             cwd: cwd.clone().into(),
             process_id: None,
             plugin_id: None,
@@ -5693,7 +5693,7 @@ async fn chatwidget_exec_and_status_layout_vt100_snapshot() {
         AppServerThreadItem::CommandExecution {
             model_context: None,
             id: "c1".into(),
-            command: codex_shell_command::parse_command::shlex_join(&command),
+            command: ava_shell_command::parse_command::shlex_join(&command),
             cwd: cwd.into(),
             process_id: None,
             plugin_id: None,

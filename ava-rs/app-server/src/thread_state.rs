@@ -1,27 +1,27 @@
 use crate::outgoing_message::ConnectionId;
 use crate::outgoing_message::ConnectionRequestId;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadGoal;
-use codex_app_server_protocol::ThreadHistoryBuilder;
-use codex_app_server_protocol::ThreadHistoryTurnMetadata;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadSettings;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnError;
-use codex_app_server_protocol::TurnItemsView;
-use codex_core::CodexThread;
-use codex_core::ThreadConfigSnapshot;
-use codex_file_watcher::WatchRegistration;
-use codex_protocol::ThreadId;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadGoal;
+use ava_app_server_protocol::ThreadHistoryBuilder;
+use ava_app_server_protocol::ThreadHistoryTurnMetadata;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadSettings;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnError;
+use ava_app_server_protocol::TurnItemsView;
+use ava_core::AvaThread;
+use ava_core::ThreadConfigSnapshot;
+use ava_file_watcher::WatchRegistration;
+use ava_protocol::ThreadId;
 #[cfg(test)]
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::items::AgentMessageContent as CoreAgentMessageContent;
-use codex_protocol::items::TurnItem as CoreTurnItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::protocol::EventMsg;
-use codex_rollout::RolloutItem;
-use codex_rollout::state_db::StateDbHandle;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::items::AgentMessageContent as CoreAgentMessageContent;
+use ava_protocol::items::TurnItem as CoreTurnItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::protocol::EventMsg;
+use ava_rollout::RolloutItem;
+use ava_rollout::state_db::StateDbHandle;
+use ava_utils_path_uri::LegacyAppPathString;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -42,17 +42,17 @@ pub(crate) struct PendingThreadResumeRequest {
     pub(crate) cold_resume_token_usage_turn_id: Option<String>,
     pub(crate) config_snapshot: ThreadConfigSnapshot,
     pub(crate) instruction_sources: Vec<LegacyAppPathString>,
-    pub(crate) thread_summary: codex_app_server_protocol::Thread,
+    pub(crate) thread_summary: ava_app_server_protocol::Thread,
     pub(crate) emit_thread_goal_update: bool,
     pub(crate) thread_goal_state_db: Option<StateDbHandle>,
     pub(crate) include_turns: bool,
     pub(crate) initial_turns_page:
-        Option<codex_app_server_protocol::ThreadResumeInitialTurnsPageParams>,
+        Option<ava_app_server_protocol::ThreadResumeInitialTurnsPageParams>,
     pub(crate) paginated_turns: Option<Vec<Turn>>,
-    pub(crate) paginated_initial_turns_page: Option<codex_app_server_protocol::TurnsPage>,
+    pub(crate) paginated_initial_turns_page: Option<ava_app_server_protocol::TurnsPage>,
     pub(crate) paginated_initial_turns_page_with_active_slot:
-        Option<codex_app_server_protocol::TurnsPage>,
-    pub(crate) resume_cursor_store: Option<Arc<dyn codex_thread_store::ThreadStore>>,
+        Option<ava_app_server_protocol::TurnsPage>,
+    pub(crate) resume_cursor_store: Option<Arc<dyn ava_thread_store::ThreadStore>>,
     pub(crate) redact_resume_payloads: bool,
 }
 
@@ -111,12 +111,12 @@ pub(crate) struct ThreadState {
     last_thread_settings: Option<ThreadSettings>,
     listener_command_tx: Option<mpsc::UnboundedSender<ThreadListenerCommand>>,
     current_turn_history: ThreadHistoryBuilder,
-    listener_thread: Option<Weak<CodexThread>>,
+    listener_thread: Option<Weak<AvaThread>>,
     watch_registration: WatchRegistration,
 }
 
 impl ThreadState {
-    pub(crate) fn listener_matches(&self, conversation: &Arc<CodexThread>) -> bool {
+    pub(crate) fn listener_matches(&self, conversation: &Arc<AvaThread>) -> bool {
         self.listener_thread
             .as_ref()
             .and_then(Weak::upgrade)
@@ -126,7 +126,7 @@ impl ThreadState {
     pub(crate) fn set_listener(
         &mut self,
         cancel_tx: oneshot::Sender<()>,
-        conversation: &Arc<CodexThread>,
+        conversation: &Arc<AvaThread>,
         watch_registration: WatchRegistration,
         thread_settings_baseline: ThreadSettings,
     ) -> (mpsc::UnboundedReceiver<ThreadListenerCommand>, u64) {
@@ -259,13 +259,13 @@ pub(crate) async fn resolve_server_request_on_thread_listener(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_app_server_protocol::ApprovalsReviewer;
-    use codex_app_server_protocol::AskForApproval;
-    use codex_app_server_protocol::SandboxPolicy;
-    use codex_protocol::config_types::CollaborationMode;
-    use codex_protocol::config_types::ModeKind;
-    use codex_protocol::config_types::Settings;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_app_server_protocol::ApprovalsReviewer;
+    use ava_app_server_protocol::AskForApproval;
+    use ava_app_server_protocol::SandboxPolicy;
+    use ava_protocol::config_types::CollaborationMode;
+    use ava_protocol::config_types::ModeKind;
+    use ava_protocol::config_types::Settings;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
 
     #[test]

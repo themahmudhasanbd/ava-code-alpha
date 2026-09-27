@@ -6,7 +6,7 @@ use std::future::Future;
 use std::io;
 use std::time::Duration;
 
-use codex_utils_pty::Command;
+use ava_utils_pty::Command;
 use futures::FutureExt;
 use rmcp::service::RoleClient;
 use rmcp::service::RxJsonRpcMessage;
@@ -19,7 +19,7 @@ use tokio::process::ChildStdout;
 
 use crate::bounded_stdio_transport::BoundedStdioTransport;
 use crate::protocol_mode::McpProtocolMode;
-use codex_utils_pty::Child;
+use ava_utils_pty::Child;
 
 pub(super) struct LocalStdioTransport {
     child: Box<Child>,

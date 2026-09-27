@@ -3,8 +3,8 @@
 use super::tools::CommandHistory;
 use crate::exec_cell::ExecCell;
 use crate::history_cell::HistoryCell;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::Turn;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::Turn;
 use std::sync::Arc;
 
 pub(crate) fn join_exploration_groups(

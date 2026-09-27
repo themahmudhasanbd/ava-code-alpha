@@ -5,39 +5,39 @@ use app_test_support::TestAppServer;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
 use app_test_support::write_models_cache;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_app_server_protocol::ThreadSettingsUpdateResponse;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadUnsubscribeParams;
-use codex_app_server_protocol::ThreadUnsubscribeResponse;
-use codex_app_server_protocol::ThreadUnsubscribeStatus;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_core::test_support::all_model_presets;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::config_types::Settings;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::ThreadSettingsUpdateResponse;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadUnsubscribeParams;
+use ava_app_server_protocol::ThreadUnsubscribeResponse;
+use ava_app_server_protocol::ThreadUnsubscribeStatus;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_core::test_support::all_model_presets;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::config_types::Settings;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -52,10 +52,10 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 #[tokio::test]
 async fn disabled_plugin_ids_replace_preserve_and_clear_without_inference() -> Result<()> {
     let server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let started = start_thread(&mut mcp).await?;
@@ -104,10 +104,10 @@ async fn disabled_plugin_ids_restore_from_fork_boundary(
         create_final_assistant_message_sse_response("done again")?,
     ])
     .await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let started = mcp
@@ -167,7 +167,7 @@ async fn disabled_plugin_ids_restore_from_fork_boundary(
     if restart_before_fork {
         mcp.shutdown_gracefully().await?;
         mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build_initialized()
             .await?;
     }
@@ -232,13 +232,13 @@ async fn thread_settings_update_emits_notification_and_updates_future_turns() ->
         create_final_assistant_message_sse_response("done")?,
     ])
     .await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
+    write_models_cache(ava_home.path()).await?;
     let (model_id, service_tier_id) = service_tier_model_and_tier_id()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let thread = start_thread(&mut mcp).await?.thread;
@@ -282,13 +282,13 @@ async fn thread_settings_update_emits_notification_and_updates_future_turns() ->
     .await??;
 
     // Loaded metadata must come from live settings, even if stored metadata is stale.
-    let state_db = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+    let state_db = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "mock_provider".to_string(),
     )
     .await?;
     let mut stored = state_db
-        .get_thread(codex_protocol::ThreadId::from_string(&thread.id)?)
+        .get_thread(ava_protocol::ThreadId::from_string(&thread.id)?)
         .await?
         .expect("completed thread should be persisted");
     stored.model = Some("stored-model".to_string());
@@ -362,13 +362,13 @@ async fn thread_settings_update_cwd_retargets_default_environment() -> Result<()
         responses::ev_completed("resp-1"),
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let initial_workspace = TempDir::new()?;
     let workspace = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let request_id = mcp
@@ -431,11 +431,11 @@ async fn thread_settings_update_while_turn_is_active_emits_notification() -> Res
         responses::sse_response(create_final_assistant_message_sse_response("first done")?)
             .set_delay(Duration::from_secs(2));
     let _requests = responses::mount_response_sequence(&server, vec![first_response]).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let thread = start_thread(&mut mcp).await?.thread;
@@ -474,13 +474,13 @@ async fn thread_settings_update_null_service_tier_uses_default() -> Result<()> {
         create_final_assistant_message_sse_response("done")?,
     ])
     .await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
+    write_models_cache(ava_home.path()).await?;
     let (model_id, service_tier_id) = service_tier_model_and_tier_id()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let thread = start_thread(&mut mcp).await?.thread;
@@ -544,11 +544,11 @@ async fn thread_settings_update_null_service_tier_uses_default() -> Result<()> {
 #[tokio::test]
 async fn thread_settings_update_rejects_sandbox_policy_with_permissions() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let thread = start_thread(&mut mcp).await?.thread;
@@ -580,11 +580,11 @@ async fn turn_start_settings_override_emits_thread_settings_updated() -> Result<
         create_final_assistant_message_sse_response("done")?,
     ])
     .await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri())?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let thread = start_thread(&mut mcp).await?.thread;
@@ -696,11 +696,11 @@ fn service_tier_model_and_tier_id() -> Result<(String, String)> {
     Ok((model.id.clone(), model.service_tiers[0].id.clone()))
 }
 
-fn create_config_toml(codex_home: &std::path::Path, server_uri: &str) -> std::io::Result<()> {
+fn create_config_toml(ava_home: &std::path::Path, server_uri: &str) -> std::io::Result<()> {
     MockResponsesConfig::new(server_uri)
         .with_root_config("compact_prompt = \"compact\"\nmodel_auto_compact_token_limit = 200000")
         .with_provider_config("supports_websockets = false")
-        .write(codex_home)
+        .write(ava_home)
 }
 
 #[tokio::test]
@@ -718,7 +718,7 @@ async fn thread_settings_update_preserves_session_profiles() -> Result<()> {
         )?;
         write_models_cache(home.path()).await?;
         let mut server = TestAppServer::builder()
-            .with_codex_home(home.path())
+            .with_ava_home(home.path())
             .build_initialized_with_timeout(DEFAULT_TIMEOUT)
             .await?;
         let mut config = std::collections::HashMap::from([

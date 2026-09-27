@@ -4,31 +4,31 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::sync::Arc;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::InvocationType;
-use codex_analytics::SkillInvocation;
-use codex_analytics::SkillInvocationLocation;
-use codex_analytics::build_track_events_context;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::FunctionCallError;
-use codex_extension_api::JsonToolOutput;
-use codex_extension_api::ResponsesApiTool;
-use codex_extension_api::SelectedPluginSnapshot;
-use codex_extension_api::ThreadOriginator;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolOutput;
-use codex_extension_api::ToolSpec;
-use codex_extension_api::parse_tool_input_schema;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::McpResourceClient;
-use codex_otel::sanitize_metric_tag_value;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::default_namespace_description;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::InvocationType;
+use ava_analytics::SkillInvocation;
+use ava_analytics::SkillInvocationLocation;
+use ava_analytics::build_track_events_context;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::FunctionCallError;
+use ava_extension_api::JsonToolOutput;
+use ava_extension_api::ResponsesApiTool;
+use ava_extension_api::SelectedPluginSnapshot;
+use ava_extension_api::ThreadOriginator;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolOutput;
+use ava_extension_api::ToolSpec;
+use ava_extension_api::parse_tool_input_schema;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::McpResourceClient;
+use ava_otel::sanitize_metric_tag_value;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::default_namespace_description;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -155,7 +155,7 @@ impl SkillAnalytics {
                 InvocationType::Implicit => "implicit",
             };
             metrics.counter(
-                "codex.skill.injected",
+                "ava.skill.injected",
                 /*inc*/ 1,
                 &[
                     ("status", "ok"),
@@ -279,7 +279,7 @@ impl SkillToolAuthority {
 
     pub(crate) fn from_authority(authority: &SkillAuthority) -> Option<Self> {
         match &authority.kind {
-            SkillSourceKind::Orchestrator if authority.id == CODEX_APPS_MCP_SERVER_NAME => {
+            SkillSourceKind::Orchestrator if authority.id == AVA_APPS_MCP_SERVER_NAME => {
                 Some(Self::Orchestrator)
             }
             SkillSourceKind::Executor => Some(Self::Executor {

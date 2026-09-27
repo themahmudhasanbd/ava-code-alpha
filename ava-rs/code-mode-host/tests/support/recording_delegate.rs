@@ -1,11 +1,11 @@
 use std::sync::Mutex;
 use std::sync::PoisonError;
 
-use codex_code_mode::CellId;
-use codex_code_mode::CodeModeNestedToolCall;
-use codex_code_mode::CodeModeSessionDelegate;
-use codex_code_mode::NotificationFuture;
-use codex_code_mode::ToolInvocationFuture;
+use ava_code_mode::CellId;
+use ava_code_mode::CodeModeNestedToolCall;
+use ava_code_mode::CodeModeSessionDelegate;
+use ava_code_mode::NotificationFuture;
+use ava_code_mode::ToolInvocationFuture;
 use serde_json::json;
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;

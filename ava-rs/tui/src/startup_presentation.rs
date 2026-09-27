@@ -8,15 +8,15 @@
 use std::io;
 use std::path::Path;
 
-use codex_config::CloudConfigBundleLoader;
-use codex_config::ConfigLoadOptions;
-use codex_config::LoaderOverrides;
-use codex_config::TomlValue;
-use codex_features::Feature;
-use codex_features::FeatureConfigSource;
-use codex_features::FeatureOverrides;
-use codex_features::Features;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::ConfigLoadOptions;
+use ava_config::LoaderOverrides;
+use ava_config::TomlValue;
+use ava_features::Feature;
+use ava_features::FeatureConfigSource;
+use ava_features::FeatureOverrides;
+use ava_features::Features;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 use crate::Cli;
 use crate::keymap::RuntimeKeymap;
@@ -39,13 +39,13 @@ pub(super) struct StartupPresentation {
 /// returned bootstrap only when these loading inputs still match the later startup context.
 pub(super) async fn load(
     cli: &Cli,
-    codex_home: &Path,
+    ava_home: &Path,
     loader_overrides: LoaderOverrides,
     cli_kv_overrides: Vec<(String, TomlValue)>,
     config_cwd: Option<AbsolutePathBuf>,
 ) -> io::Result<StartupPresentation> {
     let bootstrap_config = load_config_toml_with_layer_stack(
-        codex_home,
+        ava_home,
         config_cwd.as_ref(),
         cli_kv_overrides,
         ConfigLoadOptions {
@@ -90,7 +90,7 @@ pub(super) async fn load(
         .as_ref()
         .and_then(|tui| tui.status_line.as_ref())
         .is_none_or(|items| !items.is_empty());
-    let default_tui_settings = codex_config::types::Tui::default();
+    let default_tui_settings = ava_config::types::Tui::default();
     let tui_settings = config_toml.tui.as_ref().unwrap_or(&default_tui_settings);
     let keymap = RuntimeKeymap::from_config(&tui_settings.keymap).map_err(io::Error::other)?;
     let disable_paste_burst = tui_settings

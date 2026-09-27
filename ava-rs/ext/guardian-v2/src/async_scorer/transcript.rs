@@ -1,25 +1,25 @@
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_extension_api::ResponseItem;
-pub(crate) use codex_features::GuardianV2TranscriptSource as TranscriptSource;
-use codex_guardian_context::ComposedContext;
-use codex_guardian_context::ContextPresentation;
-use codex_guardian_context::ContextProfile;
-use codex_guardian_context::ContextTarget;
-use codex_guardian_context::ConversationTranscriptConfig;
-use codex_guardian_context::ConversationTranscriptOptions;
-use codex_guardian_context::GuardianRootMessage;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_extension_api::ResponseItem;
+pub(crate) use ava_features::GuardianV2TranscriptSource as TranscriptSource;
+use ava_guardian_context::ComposedContext;
+use ava_guardian_context::ContextPresentation;
+use ava_guardian_context::ContextProfile;
+use ava_guardian_context::ContextTarget;
+use ava_guardian_context::ConversationTranscriptConfig;
+use ava_guardian_context::ConversationTranscriptOptions;
+use ava_guardian_context::GuardianRootMessage;
 #[cfg(test)]
-use codex_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX;
-use codex_guardian_context::PlannedAction;
-use codex_guardian_context::PreviousReviews;
-use codex_guardian_context::SectionError;
-use codex_guardian_context::SectionHistory;
-use codex_guardian_context::SectionInput;
-use codex_guardian_context::TranscriptEntryLimits;
-use codex_guardian_context::TranscriptImageInput;
-use codex_guardian_context::TranscriptRetentionConfig;
-use codex_guardian_context::TrustedTool;
-use codex_guardian_context::default_registry;
+use ava_guardian_context::MANUAL_APPROVAL_DEVELOPER_PREFIX;
+use ava_guardian_context::PlannedAction;
+use ava_guardian_context::PreviousReviews;
+use ava_guardian_context::SectionError;
+use ava_guardian_context::SectionHistory;
+use ava_guardian_context::SectionInput;
+use ava_guardian_context::TranscriptEntryLimits;
+use ava_guardian_context::TranscriptImageInput;
+use ava_guardian_context::TranscriptRetentionConfig;
+use ava_guardian_context::TrustedTool;
+use ava_guardian_context::default_registry;
 
 pub(crate) const MAX_MESSAGE_ENTRY_TOKENS: usize = ContextProfile::asynchronous()
     .transcript
@@ -48,7 +48,7 @@ pub(crate) struct ContextInput<'a> {
     pub(crate) previous_reviews: Option<&'a PreviousReviews>,
     pub(crate) trusted_tool: Option<&'a TrustedTool>,
     pub(crate) trusted_skill_paths: &'a [String],
-    pub(crate) node_repl_images: Option<&'a [codex_protocol::models::ContentItem]>,
+    pub(crate) node_repl_images: Option<&'a [ava_protocol::models::ContentItem]>,
 }
 
 pub(crate) type RenderedContext = ComposedContext;
@@ -143,7 +143,7 @@ impl TranscriptConfig {
 struct SnapshotHistory<'a>(&'a dyn ConversationHistorySnapshot);
 
 impl SectionHistory for SnapshotHistory<'_> {
-    fn retained_context(&self) -> Option<&codex_history::RetainedContext> {
+    fn retained_context(&self) -> Option<&ava_history::RetainedContext> {
         self.0.retained_context()
     }
 

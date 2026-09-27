@@ -10,15 +10,15 @@ use std::os::unix::fs::OpenOptionsExt;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use tokio::fs;
 use uuid::Uuid;
 
 pub(crate) const INSTALLATION_ID_FILENAME: &str = "installation_id";
 
-pub async fn resolve_installation_id(codex_home: &AbsolutePathBuf) -> Result<String> {
-    let path = codex_home.join(INSTALLATION_ID_FILENAME);
-    fs::create_dir_all(codex_home).await?;
+pub async fn resolve_installation_id(ava_home: &AbsolutePathBuf) -> Result<String> {
+    let path = ava_home.join(INSTALLATION_ID_FILENAME);
+    fs::create_dir_all(ava_home).await?;
     tokio::task::spawn_blocking(move || {
         let mut options = OpenOptions::new();
         options.read(true).write(true).create(true);
@@ -77,11 +77,11 @@ mod tests {
 
     #[tokio::test]
     async fn resolve_installation_id_generates_and_persists_uuid() {
-        let codex_home = TempDir::new().expect("create temp dir");
-        let codex_home_abs = codex_home.path().abs();
-        let persisted_path = codex_home.path().join(INSTALLATION_ID_FILENAME);
+        let ava_home = TempDir::new().expect("create temp dir");
+        let ava_home_abs = ava_home.path().abs();
+        let persisted_path = ava_home.path().join(INSTALLATION_ID_FILENAME);
 
-        let installation_id = resolve_installation_id(&codex_home_abs)
+        let installation_id = resolve_installation_id(&ava_home_abs)
             .await
             .expect("resolve installation id");
 
@@ -104,16 +104,16 @@ mod tests {
 
     #[tokio::test]
     async fn resolve_installation_id_reuses_existing_uuid() {
-        let codex_home = TempDir::new().expect("create temp dir");
-        let codex_home_abs = codex_home.path().abs();
+        let ava_home = TempDir::new().expect("create temp dir");
+        let ava_home_abs = ava_home.path().abs();
         let existing = Uuid::new_v4().to_string().to_uppercase();
         std::fs::write(
-            codex_home.path().join(INSTALLATION_ID_FILENAME),
+            ava_home.path().join(INSTALLATION_ID_FILENAME),
             existing.clone(),
         )
         .expect("write installation id");
 
-        let resolved = resolve_installation_id(&codex_home_abs)
+        let resolved = resolve_installation_id(&ava_home_abs)
             .await
             .expect("resolve installation id");
 
@@ -127,21 +127,21 @@ mod tests {
 
     #[tokio::test]
     async fn resolve_installation_id_rewrites_invalid_file_contents() {
-        let codex_home = TempDir::new().expect("create temp dir");
-        let codex_home_abs = codex_home.path().abs();
+        let ava_home = TempDir::new().expect("create temp dir");
+        let ava_home_abs = ava_home.path().abs();
         std::fs::write(
-            codex_home.path().join(INSTALLATION_ID_FILENAME),
+            ava_home.path().join(INSTALLATION_ID_FILENAME),
             "not-a-uuid",
         )
         .expect("write invalid installation id");
 
-        let resolved = resolve_installation_id(&codex_home_abs)
+        let resolved = resolve_installation_id(&ava_home_abs)
             .await
             .expect("resolve installation id");
 
         assert!(Uuid::parse_str(&resolved).is_ok());
         assert_eq!(
-            std::fs::read_to_string(codex_home.path().join(INSTALLATION_ID_FILENAME))
+            std::fs::read_to_string(ava_home.path().join(INSTALLATION_ID_FILENAME))
                 .expect("read rewritten installation id"),
             resolved
         );

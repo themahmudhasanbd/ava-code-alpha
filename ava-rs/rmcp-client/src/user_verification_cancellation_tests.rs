@@ -5,7 +5,7 @@ use super::ElicitationPauseState;
 use super::ElicitationResponse;
 use super::RmcpClient;
 use crate::InProcessTransportFactory;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
 use futures::future::BoxFuture;
 use pretty_assertions::assert_eq;
 use rmcp::RoleServer;

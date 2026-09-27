@@ -4,7 +4,7 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_windows_sandbox::SetupRuntime;
+use ava_windows_sandbox::SetupRuntime;
 use windows_sys::Win32::System::Threading;
 
 use super::AuthorizedClientProcess;
@@ -31,10 +31,10 @@ pub(crate) fn authorize_setup_runtime(
 }
 
 fn authorize_runtime_client_process(process: &AuthorizedClientProcess) -> Result<()> {
-    let client_family = unsafe { codex_windows_sandbox::process_package_family(process.handle.0) }
+    let client_family = unsafe { ava_windows_sandbox::process_package_family(process.handle.0) }
         .context("read runtime registration client package family")?;
     let service_family =
-        unsafe { codex_windows_sandbox::process_package_family(Threading::GetCurrentProcess()) }
+        unsafe { ava_windows_sandbox::process_package_family(Threading::GetCurrentProcess()) }
             .context("read runtime registration service package family")?;
     require_runtime_package_family(client_family.as_deref(), service_family.as_deref())?;
     let mut image = [0u16; 32768];
@@ -50,7 +50,7 @@ fn authorize_runtime_client_process(process: &AuthorizedClientProcess) -> Result
     let service = std::env::current_exe()?.canonicalize()?;
     let directory = service.parent().context("service image has no directory")?;
     anyhow::ensure!(
-        ["codex.exe", "codex-code-mode-host.exe"]
+        ["ava.exe", "ava-code-mode-host.exe"]
             .iter()
             .any(|name| {
                 image

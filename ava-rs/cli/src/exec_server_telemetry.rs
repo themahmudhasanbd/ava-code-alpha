@@ -5,7 +5,7 @@ use tracing_subscriber::prelude::*;
 
 const DEFAULT_ANALYTICS_ENABLED: bool = false;
 const DEFAULT_LOG_FILTER: &str = "error,opentelemetry_sdk=off,opentelemetry_otlp=off";
-const OTEL_SERVICE_NAME: &str = "codex-exec-server";
+const OTEL_SERVICE_NAME: &str = "ava-exec-server";
 
 pub(crate) enum ParentLifetime {
     Independent,
@@ -18,13 +18,13 @@ pub(crate) enum ShutdownBehavior {
 }
 
 pub(crate) fn init(
-    config: Option<&codex_core::config::Config>,
-) -> (impl Send + Sync, codex_exec_server::ExecServerTelemetry) {
+    config: Option<&ava_core::config::Config>,
+) -> (impl Send + Sync, ava_exec_server::ExecServerTelemetry) {
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_writer(std::io::stderr)
         .with_filter(stderr_env_filter());
     let otel = match config {
-        Some(config) => codex_core::otel_init::build_provider(
+        Some(config) => ava_core::otel_init::build_provider(
             config,
             env!("CARGO_PKG_VERSION"),
             Some(OTEL_SERVICE_NAME),
@@ -37,14 +37,14 @@ pub(crate) fn init(
         None => None,
     };
     let provider = otel.as_ref();
-    codex_core::otel_init::record_process_start(provider, OTEL_SERVICE_NAME);
+    ava_core::otel_init::record_process_start(provider, OTEL_SERVICE_NAME);
 
     let otel_logger_layer = provider.and_then(|otel| otel.logger_layer());
     let otel_tracing_layer = provider.and_then(|otel| otel.tracing_layer());
     let telemetry = provider
         .and_then(|otel| otel.metrics())
         .cloned()
-        .map(codex_exec_server::ExecServerTelemetry::new)
+        .map(ava_exec_server::ExecServerTelemetry::new)
         .unwrap_or_default();
     let _ = tracing_subscriber::registry()
         .with(fmt_layer)

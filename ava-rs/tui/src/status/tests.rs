@@ -27,32 +27,32 @@ use chrono::Duration as ChronoDuration;
 use chrono::Local;
 use chrono::TimeZone;
 use chrono::Utc;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::CreditsSnapshot;
-use codex_app_server_protocol::RateLimitSnapshot;
-use codex_app_server_protocol::RateLimitWindow;
-use codex_app_server_protocol::SpendControlLimitSnapshot;
-use codex_config::LoaderOverrides;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_models_manager::test_support::construct_model_info_offline_for_tests;
-use codex_models_manager::test_support::get_model_offline_for_tests;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::CreditsSnapshot;
+use ava_app_server_protocol::RateLimitSnapshot;
+use ava_app_server_protocol::RateLimitWindow;
+use ava_app_server_protocol::SpendControlLimitSnapshot;
+use ava_config::LoaderOverrides;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_models_manager::test_support::construct_model_info_offline_for_tests;
+use ava_models_manager::test_support::get_model_offline_for_tests;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
 use ratatui::prelude::*;
@@ -64,7 +64,7 @@ use unicode_width::UnicodeWidthStr;
 fn stale_monthly_limit_marks_fresh_rolling_snapshot_stale() {
     let now = Local::now();
     let snapshot = RateLimitSnapshotDisplay {
-        limit_name: "codex".to_string(),
+        limit_name: "ava".to_string(),
         normal_model_slug: None,
         captured_at: now,
         primary: Some(RateLimitWindowDisplay {
@@ -134,7 +134,7 @@ fn app_server_workspace_write_profile(network_enabled: bool) -> PermissionProfil
 
 async fn test_config(temp_home: &TempDir) -> Config {
     let mut config = ConfigBuilder::default()
-        .codex_home(temp_home.path().to_path_buf())
+        .ava_home(temp_home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .build()
         .await
@@ -287,7 +287,7 @@ fn permissions_text_for_width(config: &Config, width: u16) -> Option<String> {
 async fn status_snapshot_includes_reasoning_details() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     config.model_reasoning_summary = Some(ReasoningSummary::Detailed);
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
@@ -364,7 +364,7 @@ async fn status_snapshot_includes_reasoning_details() {
 async fn status_snapshot_shows_chatgpt_plan_without_email() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     config.cli_auth_credentials_store_mode = AuthCredentialsStoreMode::File;
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
@@ -427,7 +427,7 @@ async fn status_snapshot_shows_chatgpt_plan_without_email() {
 async fn status_permissions_non_default_workspace_write_uses_workspace_label() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     config
         .permissions
@@ -695,7 +695,7 @@ async fn status_permissions_user_defined_profile_shows_name() {
 async fn status_snapshot_shows_active_user_defined_profile() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
     config
         .permissions
@@ -841,7 +841,7 @@ async fn status_uses_server_provider_id_and_auth_requirement() {
 async fn status_snapshot_shows_auto_review_permissions() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
     config.approvals_reviewer = ApprovalsReviewer::AutoReview;
     config
@@ -935,7 +935,7 @@ async fn status_permissions_full_disk_managed_without_network_is_external_sandbo
 async fn status_snapshot_includes_forked_from() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
@@ -989,7 +989,7 @@ async fn status_snapshot_includes_forked_from() {
 async fn status_snapshot_includes_monthly_limit() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
@@ -1055,7 +1055,7 @@ async fn status_snapshot_includes_monthly_limit() {
 async fn status_snapshot_includes_enterprise_monthly_credit_limit() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
@@ -1133,7 +1133,7 @@ async fn status_snapshot_includes_enterprise_monthly_credit_limit() {
 async fn status_snapshot_uses_generic_limit_labels_for_unsupported_windows() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
@@ -1423,7 +1423,7 @@ async fn status_snapshot_respects_unlimited_without_has_credits_flag() {
 async fn status_card_token_usage_excludes_cached_tokens() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let account_display = test_status_account_display();
@@ -1469,7 +1469,7 @@ async fn status_card_token_usage_excludes_cached_tokens() {
 async fn status_snapshot_truncates_in_narrow_terminal() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     config.model_provider_id = "openai".to_string();
     config.model_reasoning_summary = Some(ReasoningSummary::Detailed);
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
@@ -1574,7 +1574,7 @@ async fn status_snapshot_truncates_halfwidth_kana_in_narrow_terminal() {
 async fn status_snapshot_shows_missing_limits_message() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let account_display = test_status_account_display();
@@ -1622,7 +1622,7 @@ async fn status_snapshot_shows_missing_limits_message() {
 async fn status_snapshot_uses_default_reasoning_when_config_empty() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let account_display = test_status_account_display();
@@ -1639,7 +1639,7 @@ async fn status_snapshot_uses_default_reasoning_when_config_empty() {
         .single()
         .expect("timestamp");
     let remote_connection = RemoteConnectionStatus {
-        address: "unix:///tmp/codex-home/app-server-control/app-server-control.sock".to_string(),
+        address: "unix:///tmp/ava-home/app-server-control/app-server-control.sock".to_string(),
         version: "v0.133.0".to_string(),
     };
 
@@ -1679,7 +1679,7 @@ async fn status_snapshot_uses_default_reasoning_when_config_empty() {
 async fn status_snapshot_shows_refreshing_limits_notice() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let usage = TokenUsage {
@@ -1747,7 +1747,7 @@ async fn status_snapshot_shows_refreshing_limits_notice() {
 async fn transcript_overlay_remeasures_status_after_rate_limit_refresh() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
     let usage = TokenUsage::default();
     let now = Local
@@ -1832,7 +1832,7 @@ async fn transcript_overlay_remeasures_status_after_rate_limit_refresh() {
 async fn status_snapshot_includes_credits_and_limits() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex".to_string());
+    config.model = Some("gpt-5.1-ava".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let account_display = test_status_account_display();
@@ -1905,7 +1905,7 @@ async fn status_snapshot_includes_credits_and_limits() {
 async fn status_snapshot_shows_unavailable_limits_message() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let account_display = test_status_account_display();
@@ -1966,7 +1966,7 @@ async fn status_snapshot_shows_unavailable_limits_message() {
 async fn status_snapshot_treats_refreshing_empty_limits_as_unavailable() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let usage = TokenUsage {
@@ -2027,7 +2027,7 @@ async fn status_snapshot_treats_refreshing_empty_limits_as_unavailable() {
 async fn status_snapshot_shows_stale_limits_message() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex-max".to_string());
+    config.model = Some("gpt-5.1-ava-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let account_display = test_status_account_display();
@@ -2097,7 +2097,7 @@ async fn status_snapshot_shows_stale_limits_message() {
 async fn status_snapshot_cached_limits_hide_credits_without_flag() {
     let temp_home = TempDir::new().expect("temp home");
     let mut config = test_config(&temp_home).await;
-    config.model = Some("gpt-5.1-codex".to_string());
+    config.model = Some("gpt-5.1-ava".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
 
     let account_display = test_status_account_display();

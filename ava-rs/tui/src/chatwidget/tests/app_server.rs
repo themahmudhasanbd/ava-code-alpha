@@ -1,8 +1,8 @@
 use super::helpers::drain_insert_history_transcript;
 use super::*;
-use codex_app_server_protocol::AuthRecoveryNotification;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
+use ava_app_server_protocol::AuthRecoveryNotification;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
 use pretty_assertions::assert_eq;
 
 const SAFETY_BUFFERING_HEADER_TEXT: &str = "Giving this request a little extra thought";
@@ -10,19 +10,19 @@ const SAFETY_BUFFERING_HEADER_TEXT: &str = "Giving this request a little extra t
 fn thread_settings_for_test(
     model: &str,
     thread_id: ThreadId,
-) -> codex_app_server_protocol::ThreadSettingsUpdatedNotification {
-    codex_app_server_protocol::ThreadSettingsUpdatedNotification {
+) -> ava_app_server_protocol::ThreadSettingsUpdatedNotification {
+    ava_app_server_protocol::ThreadSettingsUpdatedNotification {
         thread_id: thread_id.to_string(),
-        thread_settings: codex_app_server_protocol::ThreadSettings {
+        thread_settings: ava_app_server_protocol::ThreadSettings {
             disabled_plugin_ids: Vec::new(),
             cwd: test_path_buf("/tmp/thread-settings").abs(),
             approval_policy: AskForApproval::OnRequest,
-            approvals_reviewer: codex_app_server_protocol::ApprovalsReviewer::AutoReview,
-            sandbox_policy: codex_app_server_protocol::SandboxPolicy::ReadOnly {
+            approvals_reviewer: ava_app_server_protocol::ApprovalsReviewer::AutoReview,
+            sandbox_policy: ava_app_server_protocol::SandboxPolicy::ReadOnly {
                 network_access: false,
             },
             active_permission_profile: Some(
-                codex_app_server_protocol::ActivePermissionProfile::read_only(),
+                ava_app_server_protocol::ActivePermissionProfile::read_only(),
             ),
             model: model.to_string(),
             model_provider: "openai".to_string(),
@@ -31,7 +31,7 @@ fn thread_settings_for_test(
             summary: None,
             collaboration_mode: CollaborationMode {
                 mode: ModeKind::Plan,
-                settings: codex_protocol::config_types::Settings {
+                settings: ava_protocol::config_types::Settings {
                     model: model.to_string(),
                     reasoning_effort: Some(ReasoningEffortConfig::High),
                     developer_instructions: None,
@@ -95,7 +95,7 @@ async fn session_header_uses_catalog_display_name_without_changing_model() {
             .iter()
             .map(|lines| lines_to_single_string(lines))
             .collect::<String>()
-            .replace(CODEX_CLI_VERSION, "<VERSION>")
+            .replace(AVA_CLI_VERSION, "<VERSION>")
             .replace("C:\\tmp\\thread-settings", "/tmp/thread-settings");
         assert_chatwidget_snapshot!(format!("catalog_model_session_header_{name}"), rendered);
         assert_eq!(chat.current_model(), slug);
@@ -162,7 +162,7 @@ fn start_safety_buffering_test_turn(
             thread_id: thread_id.to_string(),
             turn: AppServerTurn {
                 id: turn_id.to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -514,12 +514,12 @@ async fn invalid_url_elicitation_is_declined() {
     chat.thread_id = Some(visible_thread_id);
 
     chat.handle_elicitation_request_now(
-        codex_app_server_protocol::RequestId::Integer(9),
-        codex_app_server_protocol::McpServerElicitationRequestParams {
+        ava_app_server_protocol::RequestId::Integer(9),
+        ava_app_server_protocol::McpServerElicitationRequestParams {
             thread_id: request_thread_id.to_string(),
             turn_id: Some("turn-auth".to_string()),
             server_name: "payments".to_string(),
-            request: codex_app_server_protocol::McpServerElicitationRequest::Url {
+            request: ava_app_server_protocol::McpServerElicitationRequest::Url {
                 meta: None,
                 message: "Review the payment details to continue.".to_string(),
                 url: "http://payments.example/checkout/123".to_string(),
@@ -534,8 +534,8 @@ async fn invalid_url_elicitation_is_declined() {
             thread_id: op_thread_id,
             op: Op::ResolveElicitation {
                 server_name,
-                request_id: codex_app_server_protocol::RequestId::Integer(9),
-                decision: codex_app_server_protocol::McpServerElicitationAction::Decline,
+                request_id: ava_app_server_protocol::RequestId::Integer(9),
+                decision: ava_app_server_protocol::McpServerElicitationAction::Decline,
                 content: None,
                 meta: None,
             },
@@ -592,7 +592,7 @@ async fn thread_settings_updated_updates_visible_state_without_transcript() {
             .active_permission_profile()
             .expect("active profile")
             .id,
-        codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY
+        ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY
     );
     assert_eq!(chat.config_ref().personality, Some(Personality::Pragmatic));
     assert_eq!(chat.active_collaboration_mode_kind(), ModeKind::Plan);
@@ -801,7 +801,7 @@ async fn live_app_server_turn_completed_clears_working_status_after_answer_item(
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -848,7 +848,7 @@ async fn live_app_server_turn_completed_clears_working_status_after_answer_item(
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Summary,
+                items_view: ava_app_server_protocol::TurnItemsView::Summary,
                 items: vec![item],
                 status: AppServerTurnStatus::Completed,
                 error: None,
@@ -882,7 +882,7 @@ async fn live_app_server_turn_started_sets_feedback_turn_id() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -996,7 +996,7 @@ async fn live_app_server_strict_review_required_notification_renders_message() {
 
     chat.handle_server_notification(
         ServerNotification::StrictReviewRequired(
-            codex_app_server_protocol::StrictReviewRequiredNotification {
+            ava_app_server_protocol::StrictReviewRequiredNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: "turn-1".to_string(),
                 started_at_ms: 1_000,
@@ -1046,7 +1046,7 @@ async fn config_warning_during_turn_retains_transcript_details() {
 #[tokio::test]
 async fn startup_config_warning_is_not_repeated_by_thread() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
-    let message = "Codex is ignoring 1 unrecognized configuration setting. Check for typos or deprecated settings.";
+    let message = "Ava is ignoring 1 unrecognized configuration setting. Check for typos or deprecated settings.";
 
     for notification in [
         ServerNotification::ConfigWarning(ConfigWarningNotification {
@@ -1066,7 +1066,7 @@ async fn startup_config_warning_is_not_repeated_by_thread() {
     let cells = drain_insert_history_transcript(&mut rx);
     assert_eq!(cells.len(), 1);
     insta::assert_snapshot!(lines_to_single_string(&cells[0]), @"
-    ⚠ Codex is ignoring 1 unrecognized configuration setting. Check for typos or
+    ⚠ Ava is ignoring 1 unrecognized configuration setting. Check for typos or
       deprecated settings.
     ");
 }
@@ -1198,7 +1198,7 @@ async fn live_app_server_command_output_delta_transcript_snapshot() {
     for delta in ["stdout\n", "stderr\n"] {
         chat.handle_server_notification(
             ServerNotification::CommandExecutionOutputDelta(
-                codex_app_server_protocol::CommandExecutionOutputDeltaNotification {
+                ava_app_server_protocol::CommandExecutionOutputDeltaNotification {
                     thread_id: "thread-1".to_string(),
                     turn_id: "turn-1".to_string(),
                     item_id: "cmd-1".to_string(),
@@ -1245,7 +1245,7 @@ async fn live_app_server_sub_agent_activity_renders_once() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let activity = AppServerThreadItem::SubAgentActivity {
         id: "activity-1".to_string(),
-        kind: codex_app_server_protocol::SubAgentActivityKind::Completed,
+        kind: ava_app_server_protocol::SubAgentActivityKind::Completed,
         agent_thread_id: ThreadId::new().to_string(),
         agent_path: "/root/researcher".to_string(),
     };
@@ -1438,7 +1438,7 @@ async fn live_app_server_failed_turn_does_not_duplicate_error_history() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -1455,7 +1455,7 @@ async fn live_app_server_failed_turn_does_not_duplicate_error_history() {
             error: AppServerTurnError {
                 misalignment: None,
                 message: "permission denied".to_string(),
-                codex_error_info: None,
+                ava_error_info: None,
                 additional_details: None,
             },
             will_retry: false,
@@ -1473,13 +1473,13 @@ async fn live_app_server_failed_turn_does_not_duplicate_error_history() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::Failed,
                 error: Some(AppServerTurnError {
                     misalignment: None,
                     message: "permission denied".to_string(),
-                    codex_error_info: None,
+                    ava_error_info: None,
                     additional_details: None,
                 }),
                 started_at: None,
@@ -1508,7 +1508,7 @@ async fn live_app_server_failed_turn_consolidates_streamed_answer() {
     handle_error(
         &mut chat,
         "stream disconnected before completion",
-        /*codex_error_info*/ None,
+        /*ava_error_info*/ None,
     );
 
     let mut saw_consolidate = false;
@@ -1544,7 +1544,7 @@ async fn live_app_server_turn_completion_repairs_dropped_message_deltas() {
         Some(1_000),
         /*error*/ None,
     );
-    completed_turn.items_view = codex_app_server_protocol::TurnItemsView::Summary;
+    completed_turn.items_view = ava_app_server_protocol::TurnItemsView::Summary;
     completed_turn.items = vec![AppServerThreadItem::AgentMessage {
         id: "msg-1".to_string(),
         text: concat!(
@@ -1597,7 +1597,7 @@ async fn live_app_server_stream_recovery_restores_previous_status_header() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -1615,7 +1615,7 @@ async fn live_app_server_stream_recovery_restores_previous_status_header() {
             error: AppServerTurnError {
                 misalignment: None,
                 message: "Reconnecting... 1/5".to_string(),
-                codex_error_info: Some(CodexErrorInfo::Other),
+                ava_error_info: Some(AvaErrorInfo::Other),
                 additional_details: None,
             },
             will_retry: true,
@@ -1628,7 +1628,7 @@ async fn live_app_server_stream_recovery_restores_previous_status_header() {
 
     chat.handle_server_notification(
         ServerNotification::AgentMessageDelta(
-            codex_app_server_protocol::AgentMessageDeltaNotification {
+            ava_app_server_protocol::AgentMessageDeltaNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: "turn-1".to_string(),
                 item_id: "item-1".to_string(),
@@ -1648,14 +1648,14 @@ async fn live_app_server_stream_recovery_restores_previous_status_header() {
 #[tokio::test]
 async fn live_app_server_rate_limit_error_renders_upstream_message() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
-    let error = CodexErr::from(CodexErrorDetails::RateLimitExceeded(
+    let error = AvaErr::from(AvaErrorDetails::RateLimitExceeded(
         "Please try again in 10s.".to_string(),
     ));
 
     handle_error(
         &mut chat,
         error.to_string(),
-        Some(error.to_codex_protocol_error().into()),
+        Some(error.to_ava_protocol_error().into()),
     );
 
     let lines = drain_insert_history(&mut rx)
@@ -1674,7 +1674,7 @@ async fn live_app_server_server_overloaded_error_renders_error() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -1692,7 +1692,7 @@ async fn live_app_server_server_overloaded_error_renders_error() {
             error: AppServerTurnError {
                 misalignment: None,
                 message: "server overloaded".to_string(),
-                codex_error_info: Some(CodexErrorInfo::ServerOverloaded),
+                ava_error_info: Some(AvaErrorInfo::ServerOverloaded),
                 additional_details: None,
             },
             will_retry: false,
@@ -1717,7 +1717,7 @@ async fn live_app_server_cyber_policy_error_renders_dedicated_notice() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -1735,7 +1735,7 @@ async fn live_app_server_cyber_policy_error_renders_dedicated_notice() {
             error: AppServerTurnError {
                 misalignment: None,
                 message: "server fallback message".to_string(),
-                codex_error_info: Some(CodexErrorInfo::CyberPolicy),
+                ava_error_info: Some(AvaErrorInfo::CyberPolicy),
                 additional_details: None,
             },
             will_retry: false,
@@ -1777,7 +1777,7 @@ async fn app_server_safety_access_errors_render_dedicated_notice() {
     let mut rendered_cases = Vec::new();
     for (case, message) in cases {
         let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
-        chat.handle_non_retry_error(message, /*codex_error_info*/ None);
+        chat.handle_non_retry_error(message, /*ava_error_info*/ None);
 
         let cells = drain_insert_history(&mut rx);
         assert_eq!(cells.len(), 1);
@@ -1828,7 +1828,7 @@ async fn live_app_server_invalid_thread_name_update_is_ignored() {
 
     chat.handle_server_notification(
         ServerNotification::ThreadNameUpdated(
-            codex_app_server_protocol::ThreadNameUpdatedNotification {
+            ava_app_server_protocol::ThreadNameUpdatedNotification {
                 thread_id: "not-a-thread-id".to_string(),
                 thread_name: Some("bad update".to_string()),
             },
@@ -1851,7 +1851,7 @@ async fn live_app_server_manual_thread_name_updates_status_surfaces() {
 
     chat.handle_server_notification(
         ServerNotification::ThreadNameUpdated(
-            codex_app_server_protocol::ThreadNameUpdatedNotification {
+            ava_app_server_protocol::ThreadNameUpdatedNotification {
                 thread_id: thread_id.to_string(),
                 thread_name: Some("review-fix".to_string()),
             },
@@ -1891,7 +1891,7 @@ async fn live_app_server_automatic_thread_name_update_is_silent() {
 
         chat.handle_server_notification(
             ServerNotification::ThreadNameUpdated(
-                codex_app_server_protocol::ThreadNameUpdatedNotification {
+                ava_app_server_protocol::ThreadNameUpdatedNotification {
                     thread_id: thread_id.to_string(),
                     thread_name: Some("Generated title".to_string()),
                 },
@@ -1923,7 +1923,7 @@ async fn live_app_server_manual_thread_name_is_visible_before_notification() {
 
     chat.handle_server_notification(
         ServerNotification::ThreadNameUpdated(
-            codex_app_server_protocol::ThreadNameUpdatedNotification {
+            ava_app_server_protocol::ThreadNameUpdatedNotification {
                 thread_id: thread_id.to_string(),
                 thread_name: Some("Manual title".to_string()),
             },

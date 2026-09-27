@@ -1,6 +1,6 @@
 //! Captures one approval action for the extension-owned synchronous reviewer.
 
-use codex_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::ReviewDecision;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
@@ -16,7 +16,7 @@ use crate::session::session::Session;
 #[derive(Clone)]
 pub(crate) struct ReviewAction {
     pub(crate) action: Result<serde_json::Value, String>,
-    pub(crate) category: codex_protocol::openai_models::GuardianScope,
+    pub(crate) category: ava_protocol::openai_models::GuardianScope,
     pub(crate) request: Result<GuardianApprovalRequest, String>,
 }
 
@@ -33,7 +33,7 @@ impl From<GuardianApprovalRequest> for ReviewAction {
 impl ReviewAction {
     pub(crate) fn from_approval_action(
         action: crate::tools::sandboxing::ApprovalAction,
-        exec_command_cwd_convention: Option<codex_utils_path_uri::PathConvention>,
+        exec_command_cwd_convention: Option<ava_utils_path_uri::PathConvention>,
     ) -> Self {
         let category = action.guardian_scope();
         let original = serde_json::to_value(&action).map_err(|error| error.to_string());

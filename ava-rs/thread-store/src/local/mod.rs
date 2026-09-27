@@ -36,12 +36,12 @@ mod pending_thread_metadata_tests;
 #[cfg(test)]
 mod test_support;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::StateDbHandle;
-use codex_rollout::WriterLockCoordinator;
-use codex_state::SqliteConfig;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::StateDbHandle;
+use ava_rollout::WriterLockCoordinator;
+use ava_state::SqliteConfig;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::path::PathBuf;
@@ -144,7 +144,7 @@ pub struct LocalThreadStore {
     thread_history_db: Arc<OnceCell<sqlx::SqlitePool>>,
 }
 
-type WriterLockGuard = Arc<codex_rollout::WriterLockGuard>;
+type WriterLockGuard = Arc<ava_rollout::WriterLockGuard>;
 
 struct LiveRecorderEntry {
     recorder: RolloutRecorder,
@@ -220,16 +220,16 @@ impl LiveWriterLocks {
 /// as cwd, provider, and memory mode is supplied when live persistence is opened.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LocalThreadStoreConfig {
-    pub codex_home: PathBuf,
+    pub ava_home: PathBuf,
     pub sqlite: SqliteConfig,
     /// Provider used only when older local metadata does not contain one.
     pub default_model_provider_id: String,
 }
 
 impl LocalThreadStoreConfig {
-    pub fn from_config(config: &impl codex_rollout::RolloutConfigView) -> Self {
+    pub fn from_config(config: &impl ava_rollout::RolloutConfigView) -> Self {
         Self {
-            codex_home: config.codex_home().to_path_buf(),
+            ava_home: config.ava_home().to_path_buf(),
             sqlite: config.sqlite_config().clone(),
             default_model_provider_id: config.model_provider_id().to_string(),
         }
@@ -247,7 +247,7 @@ impl std::fmt::Debug for LocalThreadStore {
 impl LocalThreadStore {
     /// Create a local store using an already initialized state DB handle.
     pub fn new(config: LocalThreadStoreConfig, state_db: Option<StateDbHandle>) -> Self {
-        let writer_lock_coordinator = Arc::new(WriterLockCoordinator::new(&config.codex_home));
+        let writer_lock_coordinator = Arc::new(WriterLockCoordinator::new(&config.ava_home));
         Self {
             config,
             live_recorders: Arc::new(Mutex::new(HashMap::new())),
@@ -273,7 +273,7 @@ impl LocalThreadStore {
         }
         self.thread_history_db
             .get_or_try_init(|| async {
-                codex_state::open_thread_history_db(&self.config.sqlite).await
+                ava_state::open_thread_history_db(&self.config.sqlite).await
             })
             .await
             .map_err(|err| ThreadStoreError::Internal {
@@ -376,7 +376,7 @@ impl LocalThreadStore {
         if let Ok(rollout_path) = live_writer::rollout_path(self, params.thread_id).await {
             if !params.include_archived
                 && helpers::rollout_path_is_archived(
-                    self.config.codex_home.as_path(),
+                    self.config.ava_home.as_path(),
                     rollout_path.as_path(),
                 )
             {
@@ -765,27 +765,27 @@ mod tests {
     mod acquisition_tests;
     use std::sync::Arc;
 
-    use codex_protocol::ThreadId;
-    use codex_protocol::config_types::ReasoningSummary;
-    use codex_protocol::items::TurnItem;
-    use codex_protocol::items::UserMessageItem;
-    use codex_protocol::models::BaseInstructions;
-    use codex_protocol::models::FunctionCallOutputPayload;
-    use codex_protocol::models::MessagePhase;
-    use codex_protocol::models::ResponseItem;
-    use codex_protocol::protocol::AgentMessageEvent;
-    use codex_protocol::protocol::AskForApproval;
-    use codex_protocol::protocol::EventMsg;
-    use codex_protocol::protocol::ItemCompletedEvent;
-    use codex_protocol::protocol::SandboxPolicy;
-    use codex_protocol::protocol::SessionSource;
-    use codex_protocol::protocol::ThreadHistoryMode;
-    use codex_protocol::protocol::ThreadMemoryMode;
-    use codex_protocol::protocol::TurnCompleteEvent;
-    use codex_protocol::protocol::TurnContextItem;
-    use codex_protocol::protocol::TurnStartedEvent;
-    use codex_protocol::protocol::UserMessageEvent;
-    use codex_rollout::RolloutItem;
+    use ava_protocol::ThreadId;
+    use ava_protocol::config_types::ReasoningSummary;
+    use ava_protocol::items::TurnItem;
+    use ava_protocol::items::UserMessageItem;
+    use ava_protocol::models::BaseInstructions;
+    use ava_protocol::models::FunctionCallOutputPayload;
+    use ava_protocol::models::MessagePhase;
+    use ava_protocol::models::ResponseItem;
+    use ava_protocol::protocol::AgentMessageEvent;
+    use ava_protocol::protocol::AskForApproval;
+    use ava_protocol::protocol::EventMsg;
+    use ava_protocol::protocol::ItemCompletedEvent;
+    use ava_protocol::protocol::SandboxPolicy;
+    use ava_protocol::protocol::SessionSource;
+    use ava_protocol::protocol::ThreadHistoryMode;
+    use ava_protocol::protocol::ThreadMemoryMode;
+    use ava_protocol::protocol::TurnCompleteEvent;
+    use ava_protocol::protocol::TurnContextItem;
+    use ava_protocol::protocol::TurnStartedEvent;
+    use ava_protocol::protocol::UserMessageEvent;
+    use ava_rollout::RolloutItem;
     use tempfile::TempDir;
 
     use super::*;
@@ -851,7 +851,7 @@ mod tests {
         // metadata updates must use LiveThread or call update_thread_metadata explicitly.
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -886,7 +886,7 @@ mod tests {
     async fn live_thread_observes_appended_items_into_sqlite_metadata() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -921,7 +921,7 @@ mod tests {
     async fn paginated_resume_prefers_explicit_rollout_path_over_stale_sqlite_path() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -941,7 +941,7 @@ mod tests {
         tokio::fs::write(&stale_rollout_path, "malformed session metadata\n")
             .await
             .expect("write stale rollout");
-        let mut builder = codex_state::ThreadMetadataBuilder::new(
+        let mut builder = ava_state::ThreadMetadataBuilder::new(
             thread_id,
             stale_rollout_path,
             chrono::Utc::now(),
@@ -1004,7 +1004,7 @@ mod tests {
     async fn live_thread_does_not_derive_metadata_from_inherited_items() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1082,7 +1082,7 @@ mod tests {
     async fn live_thread_output_advances_updated_at_but_not_recency_at() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1147,7 +1147,7 @@ mod tests {
                     .into(),
                 ),
                 RolloutItem::EventMsg(EventMsg::TokenCount(
-                    codex_protocol::protocol::TokenCountEvent {
+                    ava_protocol::protocol::TokenCountEvent {
                         info: None,
                         rate_limits: None,
                     },
@@ -1179,7 +1179,7 @@ mod tests {
     async fn live_thread_shutdown_does_not_materialize_empty_thread_metadata() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1215,7 +1215,7 @@ mod tests {
     async fn live_thread_memory_mode_update_before_rollout_materializes_keeps_history_mode() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1255,7 +1255,7 @@ mod tests {
     async fn live_thread_shutdown_with_buffered_items_materializes_before_metadata_read() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1273,7 +1273,7 @@ mod tests {
 
         live_thread
             .append_items(&[RolloutItem::EventMsg(EventMsg::TokenCount(
-                codex_protocol::protocol::TokenCountEvent {
+                ava_protocol::protocol::TokenCountEvent {
                     info: None,
                     rate_limits: None,
                 },
@@ -1299,7 +1299,7 @@ mod tests {
     async fn live_thread_resume_loads_history_before_observing_metadata() {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1354,7 +1354,7 @@ mod tests {
         let home = TempDir::new().expect("temp dir");
         let external_home = TempDir::new().expect("external temp dir");
         let config = test_config(home.path());
-        let runtime = codex_state::StateRuntime::init(
+        let runtime = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -1797,7 +1797,7 @@ mod tests {
             })
             .await
             .expect_err("external rollouts cannot be referenced by thread id");
-        assert!(error.to_string().contains("must be in Codex home"));
+        assert!(error.to_string().contains("must be in Ava home"));
     }
 
     #[tokio::test]

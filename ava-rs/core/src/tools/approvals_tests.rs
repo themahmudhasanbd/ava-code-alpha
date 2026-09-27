@@ -1,7 +1,7 @@
 use super::*;
 use crate::session::tests::make_session_and_context_with_rx;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::approvals::NetworkPolicyAmendment;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::approvals::NetworkPolicyAmendment;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -44,10 +44,10 @@ fn approval_resolution_aborts_turn_when_approval_is_aborted() {
 
     assert!(matches!(
         resolution.into_tool_result(&model_info_from_slug("acting-model")),
-        Err(ToolError::Codex(error))
+        Err(ToolError::Ava(error))
             if matches!(
                 error.details(),
-                codex_protocol::error::CodexErrorDetails::TurnAborted
+                ava_protocol::error::AvaErrorDetails::TurnAborted
             )
     ));
 }
@@ -77,27 +77,27 @@ fn approval_resolution_uses_acting_model_timeout_instructions() {
 }
 
 #[cfg(unix)]
-#[test_case::test_case(ApprovalsReviewer::User, codex_extension_api::ApprovalDecision::AskUser; "manual prompt")]
-#[test_case::test_case(ApprovalsReviewer::AutoReview, codex_extension_api::ApprovalDecision::Allow; "cached allow")]
+#[test_case::test_case(ApprovalsReviewer::User, ava_extension_api::ApprovalDecision::AskUser; "manual prompt")]
+#[test_case::test_case(ApprovalsReviewer::AutoReview, ava_extension_api::ApprovalDecision::Allow; "cached allow")]
 #[tokio::test]
 async fn non_utf8_cwd_preserves_approval_routing(
     reviewer: ApprovalsReviewer,
-    decision: codex_extension_api::ApprovalDecision,
+    decision: ava_extension_api::ApprovalDecision,
 ) -> anyhow::Result<()> {
     use anyhow::Context;
-    use codex_extension_api::ApprovalDecision;
+    use ava_extension_api::ApprovalDecision;
     use std::os::unix::ffi::OsStringExt;
 
     struct Contributor {
-        cwd: codex_utils_path_uri::LegacyAppPathString,
+        cwd: ava_utils_path_uri::LegacyAppPathString,
         decision: ApprovalDecision,
     }
 
-    impl codex_extension_api::ApprovalReviewContributor for Contributor {
+    impl ava_extension_api::ApprovalReviewContributor for Contributor {
         fn decide<'a>(
             &'a self,
-            input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Option<ApprovalDecision>> {
+            input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Option<ApprovalDecision>> {
             Box::pin(async move {
                 assert_eq!(input.action["cwd"], serde_json::json!(self.cwd));
                 Some(self.decision.clone())
@@ -109,9 +109,9 @@ async fn non_utf8_cwd_preserves_approval_routing(
         std::ffi::OsString::from_vec(b"/tmp/non-utf8-\xe9".to_vec()),
     ))?);
     let (mut session, turn, events) = make_session_and_context_with_rx().await;
-    let mut extensions = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut extensions = ava_extension_api::ExtensionRegistryBuilder::new();
     extensions.approval_review_contributor(Arc::new(Contributor {
-        cwd: codex_utils_path_uri::LegacyAppPathString::from_path_uri(&cwd, PathConvention::Posix)?,
+        cwd: ava_utils_path_uri::LegacyAppPathString::from_path_uri(&cwd, PathConvention::Posix)?,
         decision,
     }));
     Arc::get_mut(&mut session)
@@ -134,7 +134,7 @@ async fn non_utf8_cwd_preserves_approval_routing(
     };
     let action = ApprovalAction::ExecCommand {
         id: context.call_id.clone(),
-        environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
         command: vec!["npm".to_string(), "install".to_string()],
         hook_command: "npm install".to_string(),
         cwd: cwd.clone(),
@@ -154,12 +154,12 @@ async fn non_utf8_cwd_preserves_approval_routing(
         tokio::select! {
             resolution = &mut approval => panic!("expected a user prompt, got {resolution:?}"),
             event = events.recv() => {
-                let codex_protocol::protocol::EventMsg::ExecApprovalRequest(request) =
+                let ava_protocol::protocol::EventMsg::ExecApprovalRequest(request) =
                     event.context("receive user prompt")?.msg
                 else {
                     panic!("expected a command approval prompt");
                 };
-                assert_eq!(request.cwd, codex_utils_path_uri::LegacyAppPathString::from(cwd));
+                assert_eq!(request.cwd, ava_utils_path_uri::LegacyAppPathString::from(cwd));
                 assert_eq!(request.command, vec!["npm", "install"]);
                 session.notify_approval(&request.call_id, ReviewDecision::Approved).await;
             }
@@ -220,7 +220,7 @@ async fn explicit_mcp_reviewer_override_takes_precedence_over_action_context() {
             panic!("expected a user approval request, got {resolution:?}");
         }
         event = events.recv() => {
-            let codex_protocol::protocol::EventMsg::ElicitationRequest(request) =
+            let ava_protocol::protocol::EventMsg::ElicitationRequest(request) =
                 event.expect("receive user approval request").msg
             else {
                 panic!("expected an MCP user approval request");
@@ -228,7 +228,7 @@ async fn explicit_mcp_reviewer_override_takes_precedence_over_action_context() {
             assert_eq!(request.server_name, "example");
             assert_eq!(
                 request.id,
-                codex_protocol::mcp::RequestId::String(
+                ava_protocol::mcp::RequestId::String(
                     "mcp_tool_call_approval_mcp-override".to_string()
                 )
             );

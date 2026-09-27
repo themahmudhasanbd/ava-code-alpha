@@ -4,13 +4,13 @@ use app_test_support::TestAppServer;
 use app_test_support::encode_id_token;
 use app_test_support::to_response;
 use app_test_support::write_mock_responses_config_toml_with_chatgpt_base_url;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::responses;
 use serde_json::Value;
@@ -55,7 +55,7 @@ async fn recommended_plugins_after_external_login(
     let server = responses::start_mock_server().await;
     let apps_server = AppsTestServer::mount(&server).await?;
     Mock::given(method("GET"))
-        .and(path("/ps/plugins/suggested/codex"))
+        .and(path("/ps/plugins/suggested/ava"))
         .and(query_param("scope", "GLOBAL"))
         .respond_with(
             ResponseTemplate::new(200)
@@ -79,13 +79,13 @@ async fn recommended_plugins_after_external_login(
     ]);
     let responses_mock = responses::mount_sse_once(&server, response).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         &apps_server.chatgpt_base_url,
     )?;
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         config_path,
@@ -94,11 +94,11 @@ async fn recommended_plugins_after_external_login(
         ),
     )?;
 
-    let sqlite_home = codex_home.path().to_string_lossy();
+    let sqlite_home = ava_home.path().to_string_lossy();
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
-        .with_env_overrides(&[("CODEX_SQLITE_HOME", Some(sqlite_home.as_ref()))])
+        .with_env_overrides(&[("AVA_SQLITE_HOME", Some(sqlite_home.as_ref()))])
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, app_server.initialize()).await??;

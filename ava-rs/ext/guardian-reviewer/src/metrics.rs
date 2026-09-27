@@ -2,24 +2,24 @@
 
 use std::time::Duration;
 
-use codex_analytics::GuardianApprovalRequestSource;
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_analytics::GuardianReviewDecision;
-use codex_analytics::GuardianReviewFailureReason;
-use codex_analytics::GuardianReviewSessionKind;
-use codex_analytics::GuardianReviewTerminalStatus;
-use codex_analytics::GuardianReviewedAction;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_otel::GUARDIAN_REVIEW_COUNT_METRIC;
-use codex_otel::GUARDIAN_REVIEW_DURATION_METRIC;
-use codex_otel::GUARDIAN_REVIEW_TOKEN_USAGE_METRIC;
-use codex_otel::GUARDIAN_REVIEW_TTFT_DURATION_METRIC;
-use codex_otel::SessionTelemetry;
-use codex_otel::sanitize_metric_tag_value;
-use codex_protocol::protocol::GuardianAssessmentOutcome;
-use codex_protocol::protocol::GuardianRiskLevel;
-use codex_protocol::protocol::GuardianUserAuthorization;
-use codex_protocol::protocol::TokenUsage;
+use ava_analytics::GuardianApprovalRequestSource;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_analytics::GuardianReviewDecision;
+use ava_analytics::GuardianReviewFailureReason;
+use ava_analytics::GuardianReviewSessionKind;
+use ava_analytics::GuardianReviewTerminalStatus;
+use ava_analytics::GuardianReviewedAction;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_otel::GUARDIAN_REVIEW_COUNT_METRIC;
+use ava_otel::GUARDIAN_REVIEW_DURATION_METRIC;
+use ava_otel::GUARDIAN_REVIEW_TOKEN_USAGE_METRIC;
+use ava_otel::GUARDIAN_REVIEW_TTFT_DURATION_METRIC;
+use ava_otel::SessionTelemetry;
+use ava_otel::sanitize_metric_tag_value;
+use ava_protocol::protocol::GuardianAssessmentOutcome;
+use ava_protocol::protocol::GuardianRiskLevel;
+use ava_protocol::protocol::GuardianUserAuthorization;
+use ava_protocol::protocol::TokenUsage;
 
 pub(crate) fn emit_guardian_review_metrics(
     session_telemetry: &SessionTelemetry,
@@ -38,7 +38,7 @@ pub(crate) fn emit_guardian_review_metrics(
     let mcp_tags = if let GuardianReviewedAction::McpToolCall {
         server, tool_name, ..
     } = reviewed_action
-        && server == CODEX_APPS_MCP_SERVER_NAME
+        && server == AVA_APPS_MCP_SERVER_NAME
     {
         vec![("tool", sanitize_metric_tag_value(tool_name))]
     } else {
@@ -259,10 +259,10 @@ fn outcome_tag(outcome: Option<GuardianAssessmentOutcome>) -> &'static str {
 mod tests {
     use super::*;
 
-    use codex_otel::MetricsClient;
-    use codex_otel::MetricsConfig;
-    use codex_protocol::ThreadId;
-    use codex_protocol::protocol::SessionSource;
+    use ava_otel::MetricsClient;
+    use ava_otel::MetricsConfig;
+    use ava_protocol::ThreadId;
+    use ava_protocol::protocol::SessionSource;
     use opentelemetry::KeyValue;
     use opentelemetry_sdk::metrics::InMemoryMetricExporter;
     use opentelemetry_sdk::metrics::data::AggregatedMetrics;
@@ -276,7 +276,7 @@ mod tests {
     fn test_session_telemetry() -> SessionTelemetry {
         let exporter = InMemoryMetricExporter::default();
         let metrics = MetricsClient::new(
-            MetricsConfig::in_memory("test", "codex-core", env!("CARGO_PKG_VERSION"), exporter)
+            MetricsConfig::in_memory("test", "ava-core", env!("CARGO_PKG_VERSION"), exporter)
                 .with_runtime_reader(),
         )
         .expect("in-memory metrics client");
@@ -360,7 +360,7 @@ mod tests {
 
     #[test_case(
         GuardianReviewedAction::NetworkAccess {
-            protocol: codex_protocol::approvals::NetworkApprovalProtocol::Https,
+            protocol: ava_protocol::approvals::NetworkApprovalProtocol::Https,
             port: 443,
         },
         "network_access",
@@ -369,7 +369,7 @@ mod tests {
     )]
     #[test_case(
         GuardianReviewedAction::McpToolCall {
-            server: CODEX_APPS_MCP_SERVER_NAME.to_string(),
+            server: AVA_APPS_MCP_SERVER_NAME.to_string(),
             tool_name: "search docs".to_string(),
             connector_id: None,
             connector_name: None,
@@ -381,7 +381,7 @@ mod tests {
     )]
     #[test_case(
         GuardianReviewedAction::McpToolCall {
-            server: "codex_apps_custom".to_string(),
+            server: "ava_apps_custom".to_string(),
             tool_name: "search_private_docs".to_string(),
             connector_id: None,
             connector_name: None,
@@ -415,7 +415,7 @@ mod tests {
                 output_tokens: 3,
                 reasoning_output_tokens: 2,
                 total_tokens: 15,
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             }),
             time_to_first_token_ms: Some(123),
             ..GuardianReviewAnalyticsResult::without_session()

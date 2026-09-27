@@ -54,7 +54,7 @@ jobs:
       - name: Build Core Binary
         run: |
           cd ava-rs
-          cargo build --release --target ${{ matrix.target }} -p codex-app-server --bin ava-app-server -p codex-cli --bin ava --bin ava-cli || cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} -p ava-app-server --bin ava-app-server -p ava-cli --bin ava --bin ava-cli || cargo build --release --target ${{ matrix.target }}
 
       - name: Package Binaries
         shell: bash

@@ -1,12 +1,12 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::RolloutBudgetConfig;
-use codex_features::Feature;
-use codex_model_provider_info::built_in_model_providers;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::RolloutBudgetConfig;
+use ava_features::Feature;
+use ava_model_provider_info::built_in_model_providers;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ResponsesRequest;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -18,7 +18,7 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -79,7 +79,7 @@ async fn adds_weighted_initial_and_threshold_reminders(
                             "output_tokens": 15,
                             "output_tokens_details": null,
                             "total_tokens": 75,
-                            "codex_rollout_budget_units": rollout_budget_units
+                            "ava_rollout_budget_units": rollout_budget_units
                         }
                     }
                 }),
@@ -88,7 +88,7 @@ async fn adds_weighted_initial_and_threshold_reminders(
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.rollout_budget = Some(RolloutBudgetConfig {
                 sampling_token_weight: 2.0,
@@ -129,20 +129,20 @@ async fn invalid_provider_rollout_budget_units_fail_without_retry() -> Result<()
 
     let server = start_mock_server().await;
     let mut completed = ev_completed_with_tokens("invalid-units", /*total_tokens*/ 11);
-    completed["response"]["usage"]["codex_rollout_budget_units"] = json!(-1.0);
+    completed["response"]["usage"]["ava_rollout_budget_units"] = json!(-1.0);
     let responses = mount_sse_sequence(
         &server,
         vec![sse(vec![ev_response_created("invalid-units"), completed])],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.rollout_budget = Some(rollout_budget());
         })
         .build(&server)
         .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "reject invalid provider budget units".to_string(),
             text_elements: Vec::new(),
@@ -150,16 +150,16 @@ async fn invalid_provider_rollout_budget_units_fail_without_retry() -> Result<()
         .await?;
 
     let EventMsg::Error(error) =
-        wait_for_event(&test.codex, |event| matches!(event, EventMsg::Error(_))).await
+        wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await
     else {
         unreachable!();
     };
     assert_eq!(
         error.message,
-        "Fatal error: response.completed usage.codex_rollout_budget_units must be finite and non-negative"
+        "Fatal error: response.completed usage.ava_rollout_budget_units must be finite and non-negative"
     );
-    assert_eq!(error.codex_error_info, Some(CodexErrorInfo::Other));
-    wait_for_event(&test.codex, |event| {
+    assert_eq!(error.ava_error_info, Some(AvaErrorInfo::Other));
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -230,7 +230,7 @@ async fn subagent_usage_draws_from_the_shared_budget() -> Result<()> {
     )
     .await;
 
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config
                 .features
@@ -295,7 +295,7 @@ async fn exhausted_budget_fails_current_and_later_turns() -> Result<()> {
         ],
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.rollout_budget = Some(RolloutBudgetConfig {
                 limit_tokens: 30,
@@ -307,22 +307,22 @@ async fn exhausted_budget_fails_current_and_later_turns() -> Result<()> {
         .await?;
 
     for prompt in ["exhaust the budget", "try another turn"] {
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.to_string(),
                 text_elements: Vec::new(),
             }]))
             .await?;
 
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(
                 event,
                 EventMsg::Error(error)
-                    if error.codex_error_info == Some(CodexErrorInfo::SessionBudgetExceeded)
+                    if error.ava_error_info == Some(AvaErrorInfo::SessionBudgetExceeded)
             )
         })
         .await;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -348,7 +348,7 @@ async fn compaction_budget_exhaustion_fails_without_retry(
         /*total_tokens*/ if provider_units { 1 } else { 10 },
     );
     if provider_units {
-        completed["response"]["usage"]["codex_rollout_budget_units"] = json!(10.0);
+        completed["response"]["usage"]["ava_rollout_budget_units"] = json!(10.0);
     }
     let compact_response = if remote_v2 {
         sse(vec![
@@ -369,7 +369,7 @@ async fn compaction_budget_exhaustion_fails_without_retry(
         ])
     };
     let responses = mount_sse_sequence(&server, vec![compact_response]).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.rollout_budget = Some(RolloutBudgetConfig {
                 limit_tokens: 10,
@@ -383,16 +383,16 @@ async fn compaction_budget_exhaustion_fails_without_retry(
         .build(&server)
         .await?;
 
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::Error(error)
-                if error.codex_error_info == Some(CodexErrorInfo::SessionBudgetExceeded)
+                if error.ava_error_info == Some(AvaErrorInfo::SessionBudgetExceeded)
         )
     })
     .await;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -426,7 +426,7 @@ async fn restates_the_current_remainder_after_compaction() -> Result<()> {
     model_provider.name = "OpenAI-compatible test provider".to_string();
     model_provider.base_url = Some(format!("{}/v1", server.uri()));
     model_provider.supports_websockets = false;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.model_provider = model_provider;
             config.rollout_budget = Some(RolloutBudgetConfig {
@@ -438,8 +438,8 @@ async fn restates_the_current_remainder_after_compaction() -> Result<()> {
         .await?;
 
     test.submit_turn("first turn").await?;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

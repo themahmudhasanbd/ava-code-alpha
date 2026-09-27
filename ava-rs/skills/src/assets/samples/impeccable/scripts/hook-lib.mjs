@@ -1022,7 +1022,7 @@ function relativize(filePath, cwd) {
   }
 }
 
-// Codex `apply_patch` exposes the raw patch in `tool_input.command`, not
+// Ava `apply_patch` exposes the raw patch in `tool_input.command`, not
 // `tool_input.file_path`. Claude Code may send both; parse the patch body
 // so we can scan the file(s) the tool actually touched.
 // https://developers.openai.com/codex/hooks#posttooluse
@@ -1068,7 +1068,7 @@ export function resolveHarness(env = {}, event = null) {
   const explicit = env?.IMPECCABLE_HOOK_HARNESS;
   if (explicit === 'cursor') return 'cursor';
   if (explicit === 'github') return 'github';
-  if (explicit === 'claude' || explicit === 'codex') return 'claude';
+  if (explicit === 'claude' || explicit === 'ava') return 'claude';
   // GitHub Copilot's postToolUse event uses camelCase `toolName`/`toolArgs` and
   // has no `tool_name`/`tool_input`. That shape is the discriminator.
   if (event && typeof event === 'object'

@@ -24,7 +24,7 @@ use tokio::signal::unix::SignalKind;
 use tokio::signal::unix::signal;
 
 // libc does not expose this Apple extension. It is available since macOS 10.15,
-// before Codex's minimum supported macOS version (12).
+// before Ava's minimum supported macOS version (12).
 unsafe extern "C" {
     fn posix_spawn_file_actions_addchdir_np(
         actions: *mut libc::posix_spawn_file_actions_t,

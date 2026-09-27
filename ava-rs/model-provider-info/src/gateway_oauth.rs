@@ -24,7 +24,7 @@ const RESERVED_GATEWAY_OAUTH_HEADERS: &[&str] = &[
     "chatgpt-account-id",
 ];
 const RESERVED_GATEWAY_OAUTH_HEADER_PREFIXES: &[&str] =
-    &["x-codex-", "x-openai-", "sec-websocket-"];
+    &["x-ava-", "x-openai-", "sec-websocket-"];
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Eq, JsonSchema)]
 #[serde(deny_unknown_fields)]

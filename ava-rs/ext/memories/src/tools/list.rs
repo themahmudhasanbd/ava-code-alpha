@@ -1,9 +1,9 @@
-use codex_extension_api::JsonToolOutput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolSpec;
-use codex_otel::MetricsClient;
+use ava_extension_api::JsonToolOutput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolSpec;
+use ava_otel::MetricsClient;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::json;
@@ -50,11 +50,11 @@ where
     fn spec(&self) -> ToolSpec {
         memory_function_tool::<ListArgs, ListMemoriesResponse>(
             LIST_TOOL_NAME,
-            "List immediate files and directories under a path in the Codex memories store.",
+            "List immediate files and directories under a path in the Ava memories store.",
         )
     }
 
-    fn handle<'a>(&'a self, call: ToolCall<'call>) -> codex_extension_api::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, call: ToolCall<'call>) -> ava_extension_api::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -69,7 +69,7 @@ where
     async fn handle_call(
         &self,
         call: ToolCall<'_>,
-    ) -> Result<Box<dyn codex_extension_api::ToolOutput>, codex_extension_api::FunctionCallError>
+    ) -> Result<Box<dyn ava_extension_api::ToolOutput>, ava_extension_api::FunctionCallError>
     {
         let backend = self.backend.clone();
         let args: ListArgs = parse_args(&call)?;

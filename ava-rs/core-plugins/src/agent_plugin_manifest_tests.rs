@@ -1,8 +1,8 @@
 use super::PluginManifest;
 use super::PluginManifestMcpServers;
 use super::load_plugin_manifest;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::AGENT_PLUGIN_SCHEMA_URI;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::AGENT_PLUGIN_SCHEMA_URI;
 use pretty_assertions::assert_eq;
 use std::fs;
 use std::path::Path;
@@ -191,7 +191,7 @@ fn rejects_overlong_name_and_wrong_metadata_types() {
 }
 
 #[test]
-fn legacy_codex_overlay_keeps_portable_components_fixed() {
+fn legacy_ava_overlay_keeps_portable_components_fixed() {
     let tmp = tempdir().expect("tempdir");
     let plugin_root = tmp.path().join("demo-plugin");
     write_agent_plugin_manifest(
@@ -200,16 +200,16 @@ fn legacy_codex_overlay_keeps_portable_components_fixed() {
   "version": "portable-version",
   "description": "Portable description""#,
     );
-    fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create overlay dir");
+    fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create overlay dir");
     fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{
   "name": "different-name",
   "version": "9.9.9",
-  "description": "Codex description",
+  "description": "Ava description",
   "skills": [],
   "mcpServers": null,
-  "interface": {"displayName": "Codex Demo"}
+  "interface": {"displayName": "Ava Demo"}
 }"#,
     )
     .expect("write overlay");
@@ -240,7 +240,7 @@ fn legacy_codex_overlay_keeps_portable_components_fixed() {
         manifest
             .interface
             .and_then(|interface| interface.display_name),
-        Some("Codex Demo".to_string())
+        Some("Ava Demo".to_string())
     );
 }
 
@@ -253,14 +253,14 @@ fn inline_openai_extension_precedes_legacy_overlay() {
         r#",
   "extensions": {
     "com.openai": {
-      "interface": {"displayName": "Inline Codex"}
+      "interface": {"displayName": "Inline Ava"}
     }
   }"#,
     );
-    fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create overlay dir");
+    fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create overlay dir");
     fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
-        r#"{"interface":{"displayName":"Legacy Codex"}}"#,
+        plugin_root.join(".ava-plugin/plugin.json"),
+        r#"{"interface":{"displayName":"Legacy Ava"}}"#,
     )
     .expect("write overlay");
 
@@ -270,6 +270,6 @@ fn inline_openai_extension_precedes_legacy_overlay() {
         manifest
             .interface
             .and_then(|interface| interface.display_name),
-        Some("Inline Codex".to_string())
+        Some("Inline Ava".to_string())
     );
 }

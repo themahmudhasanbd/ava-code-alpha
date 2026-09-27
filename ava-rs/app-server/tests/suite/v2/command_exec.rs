@@ -4,22 +4,22 @@ use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use codex_app_server_protocol::CommandExecOutputDeltaNotification;
-use codex_app_server_protocol::CommandExecOutputStream;
-use codex_app_server_protocol::CommandExecParams;
-use codex_app_server_protocol::CommandExecResizeParams;
-use codex_app_server_protocol::CommandExecResponse;
-use codex_app_server_protocol::CommandExecTerminalSize;
-use codex_app_server_protocol::CommandExecTerminateParams;
-use codex_app_server_protocol::CommandExecWriteParams;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_core::exec_env::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR;
-use codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-use codex_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
+use ava_app_server_protocol::CommandExecOutputDeltaNotification;
+use ava_app_server_protocol::CommandExecOutputStream;
+use ava_app_server_protocol::CommandExecParams;
+use ava_app_server_protocol::CommandExecResizeParams;
+use ava_app_server_protocol::CommandExecResponse;
+use ava_app_server_protocol::CommandExecTerminalSize;
+use ava_app_server_protocol::CommandExecTerminateParams;
+use ava_app_server_protocol::CommandExecWriteParams;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_core::exec_env::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR;
+use ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::path::Path;
@@ -41,10 +41,10 @@ use super::connection_handling_websocket::spawn_websocket_server;
 #[tokio::test]
 async fn command_exec_without_streams_can_be_terminated() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -91,10 +91,10 @@ async fn command_exec_without_streams_can_be_terminated() -> Result<()> {
 #[tokio::test]
 async fn command_exec_without_process_id_keeps_buffered_compatibility() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -139,10 +139,10 @@ async fn command_exec_without_process_id_keeps_buffered_compatibility() -> Resul
 async fn command_exec_env_overrides_merge_with_server_environment_and_support_unset() -> Result<()>
 {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("COMMAND_EXEC_BASELINE", Some("server"))])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -153,7 +153,7 @@ async fn command_exec_env_overrides_merge_with_server_environment_and_support_un
             command: vec![
                 "/bin/sh".to_string(),
                 "-lc".to_string(),
-                "printf '%s|%s|%s|%s|%s|%s' \"$COMMAND_EXEC_BASELINE\" \"$COMMAND_EXEC_EXTRA\" \"${RUST_LOG-unset}\" \"$CODEX_HOME\" \"$OPENAI_FEDERATION_RULE_ID\" \"$openai_identity_token_file\"".to_string(),
+                "printf '%s|%s|%s|%s|%s|%s' \"$COMMAND_EXEC_BASELINE\" \"$COMMAND_EXEC_EXTRA\" \"${RUST_LOG-unset}\" \"$AVA_HOME\" \"$OPENAI_FEDERATION_RULE_ID\" \"$openai_identity_token_file\"".to_string(),
             ],
             process_id: None,
             tty: false,
@@ -191,7 +191,7 @@ async fn command_exec_env_overrides_merge_with_server_environment_and_support_un
         response,
         CommandExecResponse {
             exit_code: 0,
-            stdout: format!("request|added|unset|{}||", codex_home.path().display()),
+            stdout: format!("request|added|unset|{}||", ava_home.path().display()),
             stderr: String::new(),
         }
     );
@@ -227,12 +227,12 @@ async fn assert_command_exec_apply_patch_rollout(
     expected_contents: &[u8],
 ) -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
     let feature_enabled = matches!(rollout, CommandExecApplyPatchRollout::Enabled);
     insert_command_exec_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("[features]\napply_patch_preserve_line_endings = {feature_enabled}\n"),
     )?;
 
@@ -241,9 +241,9 @@ async fn assert_command_exec_apply_patch_rollout(
     std::fs::write(&file_path, b"before\r\n")?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
-        .with_env_overrides(&[(CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR, Some("1"))])
+        .with_env_overrides(&[(AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR, Some("1"))])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -261,7 +261,7 @@ async fn assert_command_exec_apply_patch_rollout(
             timeout_ms: None,
             cwd: Some(workspace.path().to_path_buf()),
             env: Some(HashMap::from([(
-                CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
+                AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
                 Some(client_override.to_string()),
             )])),
             size: None,
@@ -286,10 +286,10 @@ async fn assert_command_exec_apply_patch_rollout(
 #[tokio::test]
 async fn command_exec_accepts_permission_profile() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -334,29 +334,29 @@ async fn command_exec_accepts_permission_profile() -> Result<()> {
 #[tokio::test]
 async fn command_exec_enforces_managed_deny_read_requirements() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
-    let denied_root = codex_home.path().join("private");
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
+    let denied_root = ava_home.path().join("private");
     let nested_root = denied_root.join("nested");
     std::fs::create_dir_all(&nested_root)?;
     let denied_path = nested_root.join("secret.txt");
     std::fs::write(&denied_path, "managed secret")?;
-    let user_denied_root = codex_home.path().join("user-private");
+    let user_denied_root = ava_home.path().join("user-private");
     std::fs::create_dir_all(&user_denied_root)?;
     let user_denied_path = user_denied_root.join("secret.txt");
     std::fs::write(&user_denied_path, "user secret")?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         format!("[permissions.filesystem]\ndeny_read = [{denied_root:?}]\n"),
     )?;
     insert_command_exec_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!(
             "default_permissions = \"thread-policy\"\n\n[permissions.thread-policy.filesystem]\n\":root\" = \"read\"\n{user_denied_root:?} = \"deny\"\n\n[permissions.nested.filesystem]\n\":root\" = \"read\"\n{nested_root:?} = \"write\"\n"
         ),
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -377,7 +377,7 @@ async fn command_exec_enforces_managed_deny_read_requirements() -> Result<()> {
         disable_output_cap: false,
         disable_timeout: false,
         timeout_ms: None,
-        cwd: Some(codex_home.path().to_path_buf()),
+        cwd: Some(ava_home.path().to_path_buf()),
         env: None,
         size: None,
         sandbox_policy: Some(SandboxPolicy::ReadOnly {
@@ -446,14 +446,14 @@ async fn command_exec_enforces_managed_deny_read_requirements() -> Result<()> {
 #[tokio::test]
 async fn command_exec_permission_profile_starts_selected_network_proxy() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     insert_networked_permission_profile_config(
-        codex_home.path(),
+        ava_home.path(),
         /*default_permissions*/ None,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -463,7 +463,7 @@ async fn command_exec_permission_profile_starts_selected_network_proxy() -> Resu
             command: vec![
                 "sh".to_string(),
                 "-lc".to_string(),
-                "printf '%s' \"${CODEX_NETWORK_PROXY_ACTIVE-unset}\"".to_string(),
+                "printf '%s' \"${AVA_NETWORK_PROXY_ACTIVE-unset}\"".to_string(),
             ],
             process_id: None,
             tty: false,
@@ -497,11 +497,11 @@ async fn command_exec_permission_profile_starts_selected_network_proxy() -> Resu
 #[tokio::test]
 async fn command_exec_permission_profile_does_not_reuse_default_network_proxy() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
-    insert_networked_permission_profile_config(codex_home.path(), Some("networked"))?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
+    insert_networked_permission_profile_config(ava_home.path(), Some("networked"))?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -511,7 +511,7 @@ async fn command_exec_permission_profile_does_not_reuse_default_network_proxy() 
             command: vec![
                 "sh".to_string(),
                 "-lc".to_string(),
-                "printf '%s' \"${CODEX_NETWORK_PROXY_ACTIVE-unset}\"".to_string(),
+                "printf '%s' \"${AVA_NETWORK_PROXY_ACTIVE-unset}\"".to_string(),
             ],
             process_id: None,
             tty: false,
@@ -546,12 +546,12 @@ async fn command_exec_permission_profile_does_not_reuse_default_network_proxy() 
 #[tokio::test]
 async fn command_exec_permission_profile_project_roots_use_command_cwd() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    let command_dir = codex_home.path().join("command-cwd");
+    let ava_home = TempDir::new()?;
+    let command_dir = ava_home.path().join("command-cwd");
     std::fs::create_dir(&command_dir)?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     insert_command_exec_config(
-        codex_home.path(),
+        ava_home.path(),
         r#"
 [permissions.command-cwd.filesystem]
 ":root" = "read"
@@ -559,7 +559,7 @@ async fn command_exec_permission_profile_project_roots_use_command_cwd() -> Resu
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -597,7 +597,7 @@ async fn command_exec_permission_profile_project_roots_use_command_cwd() -> Resu
         "child"
     );
     assert!(
-        !codex_home.path().join("parent.txt").exists(),
+        !ava_home.path().join("parent.txt").exists(),
         "permissionProfile :workspace_roots write should not grant the server cwd when command cwd differs"
     );
 
@@ -607,12 +607,12 @@ async fn command_exec_permission_profile_project_roots_use_command_cwd() -> Resu
 #[tokio::test]
 async fn command_exec_returns_error_when_local_environment_is_disabled() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
-        .with_env_overrides(&[(CODEX_EXEC_SERVER_URL_ENV_VAR, Some("none"))])
+        .with_env_overrides(&[(AVA_EXEC_SERVER_URL_ENV_VAR, Some("none"))])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -646,10 +646,10 @@ async fn command_exec_returns_error_when_local_environment_is_disabled() -> Resu
 #[tokio::test]
 async fn command_exec_rejects_sandbox_policy_with_permission_profile() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -687,10 +687,10 @@ async fn command_exec_rejects_sandbox_policy_with_permission_profile() -> Result
 #[tokio::test]
 async fn command_exec_rejects_disable_timeout_with_timeout_ms() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -728,10 +728,10 @@ async fn command_exec_rejects_disable_timeout_with_timeout_ms() -> Result<()> {
 #[tokio::test]
 async fn command_exec_rejects_disable_output_cap_with_output_bytes_cap() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -769,10 +769,10 @@ async fn command_exec_rejects_disable_output_cap_with_output_bytes_cap() -> Resu
 #[tokio::test]
 async fn command_exec_rejects_negative_timeout_ms() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -810,10 +810,10 @@ async fn command_exec_rejects_negative_timeout_ms() -> Result<()> {
 #[tokio::test]
 async fn command_exec_without_process_id_rejects_streaming() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -851,10 +851,10 @@ async fn command_exec_without_process_id_rejects_streaming() -> Result<()> {
 #[tokio::test]
 async fn command_exec_non_streaming_respects_output_cap() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -898,10 +898,10 @@ async fn command_exec_non_streaming_respects_output_cap() -> Result<()> {
 #[tokio::test]
 async fn command_exec_streaming_does_not_buffer_output() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -962,10 +962,10 @@ async fn command_exec_streaming_does_not_buffer_output() -> Result<()> {
 #[tokio::test]
 async fn command_exec_pipe_streams_output_and_accepts_write() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1038,10 +1038,10 @@ async fn command_exec_pipe_streams_output_and_accepts_write() -> Result<()> {
 #[tokio::test]
 async fn command_exec_tty_implies_streaming_and_reports_pty_output() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1109,10 +1109,10 @@ async fn command_exec_tty_implies_streaming_and_reports_pty_output() -> Result<(
 #[tokio::test]
 async fn command_exec_tty_supports_initial_size_and_resize() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -1198,16 +1198,16 @@ async fn command_exec_tty_supports_initial_size_and_resize() -> Result<()> {
 async fn command_exec_process_ids_are_connection_scoped_and_disconnect_terminates_process()
 -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let marker = format!(
-        "codex-command-exec-marker-{}",
+        "ava-command-exec-marker-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos()
     );
 
-    let (mut process, bind_addr) = spawn_websocket_server(codex_home.path()).await?;
+    let (mut process, bind_addr) = spawn_websocket_server(ava_home.path()).await?;
 
     let mut ws1 = connect_websocket(bind_addr).await?;
     let mut ws2 = connect_websocket(bind_addr).await?;
@@ -1405,7 +1405,7 @@ fn decode_delta_notification(
 }
 
 fn insert_networked_permission_profile_config(
-    codex_home: &Path,
+    ava_home: &Path,
     default_permissions: Option<&str>,
 ) -> Result<()> {
     let default_permissions = default_permissions
@@ -1425,12 +1425,12 @@ enable_socks5 = false
 
 "#
     );
-    insert_command_exec_config(codex_home, &inserted_config)?;
+    insert_command_exec_config(ava_home, &inserted_config)?;
     Ok(())
 }
 
-fn insert_command_exec_config(codex_home: &Path, inserted_config: &str) -> Result<()> {
-    let config_path = codex_home.join("config.toml");
+fn insert_command_exec_config(ava_home: &Path, inserted_config: &str) -> Result<()> {
+    let config_path = ava_home.join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     let marker = "\n[model_providers.mock_provider]\n";
     let (prefix, suffix) = config

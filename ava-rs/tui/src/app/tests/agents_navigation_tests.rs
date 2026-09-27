@@ -7,7 +7,7 @@ async fn agents_navigation_requires_local_daemon() -> Result<()> {
     let mut tui = crate::tui::test_support::make_test_tui()?;
     let mut app_server = start_config_write_test_app_server(&app).await?;
     let endpoint = crate::RemoteAppServerEndpoint::UnixSocket {
-        socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock")?,
+        socket_path: AbsolutePathBuf::relative_to_current_dir("ava.sock")?,
     };
     for target in [
         AppServerTarget::Embedded,
@@ -62,7 +62,7 @@ async fn pending_windows_sandbox_setup_blocks_thread_replacement() -> Result<()>
     let other = ThreadId::new();
     app.active_thread_id = Some(current);
     app.primary_thread_id = Some(current);
-    let preset = codex_utils_approval_presets::builtin_approval_presets()
+    let preset = ava_utils_approval_presets::builtin_approval_presets()
         .into_iter()
         .find(|preset| preset.id == "auto")
         .expect("auto preset");

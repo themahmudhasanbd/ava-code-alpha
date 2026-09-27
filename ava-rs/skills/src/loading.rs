@@ -6,8 +6,8 @@ use std::hash::Hasher;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use codex_protocol::protocol::Product;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::protocol::Product;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 use crate::SkillMetadata;
 

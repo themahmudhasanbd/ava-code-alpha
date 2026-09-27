@@ -2,29 +2,29 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::ApprovalsReviewer::AutoReview;
-use codex_app_server_protocol::ApprovalsReviewer::User;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::AskForApproval::Never;
-use codex_app_server_protocol::AskForApproval::OnRequest;
-use codex_app_server_protocol::AskForApproval::UnlessTrusted;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_app_server_protocol::ThreadForkParams as ForkParams;
-use codex_app_server_protocol::ThreadForkResponse as ForkResponse;
-use codex_app_server_protocol::ThreadResumeParams as ResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse as ResumeResponse;
-use codex_app_server_protocol::ThreadSettingsUpdateParams as UpdateParams;
-use codex_app_server_protocol::ThreadSettingsUpdateResponse as UpdateResponse;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification as SettingsUpdated;
-use codex_app_server_protocol::ThreadStartParams as StartParams;
-use codex_app_server_protocol::TurnStartParams as TurnParams;
-use codex_app_server_protocol::TurnStartResponse as TurnResponse;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::ApprovalsReviewer::AutoReview;
+use ava_app_server_protocol::ApprovalsReviewer::User;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::AskForApproval::Never;
+use ava_app_server_protocol::AskForApproval::OnRequest;
+use ava_app_server_protocol::AskForApproval::UnlessTrusted;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_app_server_protocol::ThreadForkParams as ForkParams;
+use ava_app_server_protocol::ThreadForkResponse as ForkResponse;
+use ava_app_server_protocol::ThreadResumeParams as ResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse as ResumeResponse;
+use ava_app_server_protocol::ThreadSettingsUpdateParams as UpdateParams;
+use ava_app_server_protocol::ThreadSettingsUpdateResponse as UpdateResponse;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification as SettingsUpdated;
+use ava_app_server_protocol::ThreadStartParams as StartParams;
+use ava_app_server_protocol::TurnStartParams as TurnParams;
+use ava_app_server_protocol::TurnStartResponse as TurnResponse;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
 use tempfile::TempDir;
@@ -61,7 +61,7 @@ async fn app_server(
     config.write(home.path())?;
     std::fs::write(home.path().join("requirements.toml"), requirements)?;
     let server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     Ok((home, server))
@@ -318,7 +318,7 @@ async fn thread_resume_and_fork_upgrade_legacy_protected_model_settings() -> Res
         .write(home.path())?;
     std::fs::write(home.path().join("requirements.toml"), REQUIREMENTS)?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
 

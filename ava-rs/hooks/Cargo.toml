@@ -1,12 +1,12 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-hooks"
+name = "ava-hooks"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_hooks"
+name = "ava_hooks"
 path = "src/lib.rs"
 
 [lints]
@@ -16,12 +16,12 @@ workspace = true
 anyhow = { workspace = true }
 async-channel = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-codex-config = { workspace = true }
-codex-plugin = { workspace = true }
-codex-protocol = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-output-truncation = { workspace = true }
-codex-utils-path-uri = { workspace = true }
+ava-config = { workspace = true }
+ava-plugin = { workspace = true }
+ava-protocol = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-output-truncation = { workspace = true }
+ava-utils-path-uri = { workspace = true }
 futures = { workspace = true, features = ["alloc"] }
 regex = { workspace = true }
 schemars = { workspace = true }
@@ -37,4 +37,4 @@ tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
 
 [target.'cfg(any(unix, windows))'.dependencies]
-codex-utils-pty = { workspace = true }
+ava-utils-pty = { workspace = true }

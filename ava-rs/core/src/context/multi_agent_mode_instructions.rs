@@ -1,9 +1,9 @@
 use super::ContextualUserFragment;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::protocol::MULTI_AGENT_MODE_CLOSE_TAG;
-use codex_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::protocol::MULTI_AGENT_MODE_CLOSE_TAG;
+use ava_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct MultiAgentModeInstructions {

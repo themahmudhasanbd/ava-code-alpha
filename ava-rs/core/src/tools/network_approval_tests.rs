@@ -1,10 +1,10 @@
 use super::*;
 use crate::sandboxing::SandboxPermissions;
-use codex_network_proxy::BlockedRequestArgs;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::BlockedRequestArgs;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::test_path_buf;
 use futures::poll;
@@ -61,7 +61,7 @@ async fn execution_cancellation_respects_network_approval_boundary(
             crate::session::SessionSettingsUpdate {
                 step_settings: crate::session::step_settings::StepSettingsUpdate {
                     approval_policy: Some(AskForApproval::OnRequest),
-                    approvals_reviewer: Some(codex_config::types::ApprovalsReviewer::User),
+                    approvals_reviewer: Some(ava_config::types::ApprovalsReviewer::User),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -155,7 +155,7 @@ async fn execution_cancellation_respects_network_approval_boundary(
         ));
     }
     session
-        .abort_all_tasks(codex_protocol::protocol::TurnAbortReason::Interrupted)
+        .abort_all_tasks(ava_protocol::protocol::TurnAbortReason::Interrupted)
         .await;
 }
 
@@ -817,7 +817,7 @@ fn approval_denial_messages_are_bounded_for_model_context() {
         panic!("approval denial should produce a rejected tool error");
     };
 
-    assert!(codex_utils_string::approx_token_count(&message) < 1_000);
+    assert!(ava_utils_string::approx_token_count(&message) < 1_000);
     assert!(message.contains("tokens truncated"));
 }
 

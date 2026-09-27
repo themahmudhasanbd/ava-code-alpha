@@ -8,35 +8,35 @@ use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
 use app_test_support::write_mock_responses_config_toml_with_chatgpt_base_url;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnSettingsUpdateParams;
-use codex_app_server_protocol::TurnSettingsUpdateResponse;
-use codex_app_server_protocol::TurnSettingsUpdateStatus;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_config::types::OtelExporterKind;
-use codex_config::types::OtelHttpProtocol;
-use codex_core::config::ConfigBuilder;
-use codex_core_plugins::loader::curated_plugin_cache_version;
-use codex_core_plugins::store::PluginStore;
-use codex_features::Feature;
-use codex_models_manager::bundled_models_response;
-use codex_plugin::PluginId;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnSettingsUpdateParams;
+use ava_app_server_protocol::TurnSettingsUpdateResponse;
+use ava_app_server_protocol::TurnSettingsUpdateStatus;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_config::types::OtelExporterKind;
+use ava_config::types::OtelHttpProtocol;
+use ava_core::config::ConfigBuilder;
+use ava_core_plugins::loader::curated_plugin_cache_version;
+use ava_core_plugins::store::PluginStore;
+use ava_features::Feature;
+use ava_models_manager::bundled_models_response;
+use ava_plugin::PluginId;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_remote;
@@ -65,14 +65,14 @@ async fn guardian_review_turns_and_tools_reach_analytics() -> Result<()> {
     const PRIVATE: &str = "guardian-private-content";
     const READ_TIMEOUT: Duration = Duration::from_secs(60);
     let server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
         .with_provider_config("supports_websockets = false")
         .enable_feature(Feature::GuardianApproval)
         .disable_feature(Feature::Apps)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let parent_tool = |id: &str| {
         responses::sse_response(responses::sse(vec![
             responses::ev_response_created(id),
@@ -119,7 +119,7 @@ async fn guardian_review_turns_and_tools_reach_analytics() -> Result<()> {
     )
     .await;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         // Basic Guardian command approvals require host-native paths.
         .without_auto_env()
@@ -167,7 +167,7 @@ async fn guardian_review_turns_and_tools_reach_analytics() -> Result<()> {
         .interrupt_turn_and_wait_for_aborted(thread.id.clone(), turn.id, READ_TIMEOUT)
         .await?;
     wait_for_matching_analytics_event(&server, READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_turn_event"
+        event["event_type"] == "ava_turn_event"
             && event["event_params"]["turn_id"] == reviews[2]["turn_id"]
     })
     .await?;
@@ -177,7 +177,7 @@ async fn guardian_review_turns_and_tools_reach_analytics() -> Result<()> {
     let parent_command = events
         .iter()
         .find(|event| {
-            event["event_type"] == "codex_command_execution_event"
+            event["event_type"] == "ava_command_execution_event"
                 && event["event_params"]["thread_id"] == thread.id
                 && event["event_params"]["item_id"] == "parent-first"
         })
@@ -210,7 +210,7 @@ async fn guardian_review_turns_and_tools_reach_analytics() -> Result<()> {
     }
     let turns = children
         .iter()
-        .filter(|event| event["event_type"] == "codex_turn_event")
+        .filter(|event| event["event_type"] == "ava_turn_event")
         .map(|event| {
             let params = &event["event_params"];
             let started_at = params["started_at"].as_u64().expect("turn start time");
@@ -239,7 +239,7 @@ async fn guardian_review_turns_and_tools_reach_analytics() -> Result<()> {
     );
     let tools = children
         .iter()
-        .filter(|event| event["event_type"] == "codex_web_search_event")
+        .filter(|event| event["event_type"] == "ava_web_search_event")
         .collect::<Vec<_>>();
     let [tool] = tools.as_slice() else {
         anyhow::bail!(
@@ -331,14 +331,14 @@ async fn multi_agent_v2_tools_emit_collaborator_analytics() -> Result<()> {
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::MultiAgentV2)
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -399,7 +399,7 @@ async fn multi_agent_v2_tools_emit_collaborator_analytics() -> Result<()> {
 
     for (index, (tool, _)) in calls.iter().enumerate() {
         let event = wait_for_matching_analytics_event(&server, READ_TIMEOUT, |event| {
-            event["event_type"] == "codex_collab_agent_tool_call_event"
+            event["event_type"] == "ava_collab_agent_tool_call_event"
                 && event["event_params"]["item_id"] == format!("call-{index}")
         })
         .await?;
@@ -437,7 +437,7 @@ async fn multi_agent_v2_tools_emit_collaborator_analytics() -> Result<()> {
         assert!(!event.to_string().contains("PRIVATE_"));
     }
     let turn_event = wait_for_matching_analytics_event(&server, READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_turn_event"
+        event["event_type"] == "ava_turn_event"
             && event["event_params"]["turn_id"] == completed.turn.id
     })
     .await?;
@@ -453,7 +453,7 @@ async fn multi_agent_v2_tools_emit_collaborator_analytics() -> Result<()> {
     Ok(())
 }
 
-fn set_metrics_exporter(config: &mut codex_core::config::Config) {
+fn set_metrics_exporter(config: &mut ava_core::config::Config) {
     config.otel.metrics_exporter = OtelExporterKind::OtlpHttp {
         endpoint: "http://localhost:4318".to_string(),
         headers: HashMap::new(),
@@ -464,18 +464,18 @@ fn set_metrics_exporter(config: &mut codex_core::config::Config) {
 
 #[tokio::test]
 async fn app_server_default_analytics_disabled_without_flag() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await?;
     set_metrics_exporter(&mut config);
     config.analytics_enabled = None;
 
-    let provider = codex_core::otel_init::build_provider(
+    let provider = ava_core::otel_init::build_provider(
         &config,
         SERVICE_VERSION,
-        Some("codex-app-server"),
+        Some("ava-app-server"),
         /*default_analytics_enabled*/ false,
     )
     .map_err(|err| anyhow::anyhow!(err.to_string()))?;
@@ -489,18 +489,18 @@ async fn app_server_default_analytics_disabled_without_flag() -> Result<()> {
 
 #[tokio::test]
 async fn app_server_default_analytics_enabled_with_flag() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await?;
     set_metrics_exporter(&mut config);
     config.analytics_enabled = None;
 
-    let provider = codex_core::otel_init::build_provider(
+    let provider = ava_core::otel_init::build_provider(
         &config,
         SERVICE_VERSION,
-        Some("codex-app-server"),
+        Some("ava-app-server"),
         /*default_analytics_enabled*/ true,
     )
     .map_err(|err| anyhow::anyhow!(err.to_string()))?;
@@ -511,15 +511,15 @@ async fn app_server_default_analytics_enabled_with_flag() -> Result<()> {
     Ok(())
 }
 
-pub(crate) async fn mount_analytics_capture(server: &MockServer, codex_home: &Path) -> Result<()> {
+pub(crate) async fn mount_analytics_capture(server: &MockServer, ava_home: &Path) -> Result<()> {
     Mock::given(method("POST"))
-        .and(path("/codex/analytics-events/events"))
+        .and(path("/ava/analytics-events/events"))
         .respond_with(ResponseTemplate::new(200))
         .mount(server)
         .await;
 
     write_chatgpt_auth(
-        codex_home,
+        ava_home,
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -537,7 +537,7 @@ pub(crate) async fn captured_analytics_events(server: &MockServer) -> Vec<Value>
         .await
         .unwrap_or_default()
         .into_iter()
-        .filter(|request| request.url.path() == "/codex/analytics-events/events")
+        .filter(|request| request.url.path() == "/ava/analytics-events/events")
         .flat_map(|request| {
             let payload: Value = serde_json::from_slice(&request.body).expect("analytics payload");
             payload["events"]
@@ -559,7 +559,7 @@ pub(crate) async fn wait_for_analytics_payload(
                 continue;
             };
             if let Some(request) = requests.iter().find(|request| {
-                request.method == "POST" && request.url.path() == "/codex/analytics-events/events"
+                request.method == "POST" && request.url.path() == "/ava/analytics-events/events"
             }) {
                 break request.body.clone();
             }
@@ -588,7 +588,7 @@ pub(crate) async fn wait_for_goal_event(
     goal_status: &str,
 ) -> Result<Value> {
     wait_for_matching_analytics_event(server, read_timeout, |event| {
-        event["event_type"] == "codex_goal_event"
+        event["event_type"] == "ava_goal_event"
             && event["event_params"]["event_kind"] == event_kind
             && event["event_params"]["goal_status"] == goal_status
     })
@@ -611,7 +611,7 @@ pub(crate) async fn wait_for_matching_analytics_event(
                     || !request
                         .url
                         .path()
-                        .ends_with("/codex/analytics-events/events")
+                        .ends_with("/ava/analytics-events/events")
                 {
                     continue;
                 }
@@ -636,8 +636,8 @@ pub(crate) fn thread_initialized_event(payload: &Value) -> Result<&Value> {
         .ok_or_else(|| anyhow::anyhow!("analytics payload missing events array"))?;
     events
         .iter()
-        .find(|event| event["event_type"] == "codex_thread_initialized")
-        .ok_or_else(|| anyhow::anyhow!("codex_thread_initialized event should be present"))
+        .find(|event| event["event_type"] == "ava_thread_initialized")
+        .ok_or_else(|| anyhow::anyhow!("ava_thread_initialized event should be present"))
 }
 
 pub(crate) fn assert_basic_thread_initialized_event(
@@ -687,17 +687,17 @@ pub(crate) fn assert_basic_thread_initialized_event(
 const METRICS_PLUGIN_ID: &str = "sample@openai-curated";
 const TEST_CURATED_PLUGIN_SHA: &str = "0123456789abcdef0123456789abcdef01234567";
 
-fn write_curated_metrics_plugin(codex_home: &Path) -> Result<PathBuf> {
+fn write_curated_metrics_plugin(ava_home: &Path) -> Result<PathBuf> {
     let plugin_id = PluginId::parse(METRICS_PLUGIN_ID)?;
-    let plugin_root = PluginStore::new(codex_home.to_path_buf()).plugin_root(
+    let plugin_root = PluginStore::new(ava_home.to_path_buf()).plugin_root(
         &plugin_id,
         &curated_plugin_cache_version(TEST_CURATED_PLUGIN_SHA),
     );
     let script_path = plugin_root.join("scripts/run.sh");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::create_dir_all(script_path.parent().expect("script path has parent"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","version":"0.1.0"}"#,
     )?;
     std::fs::write(
@@ -715,14 +715,14 @@ operations:
     )?;
     std::fs::write(
         &script_path,
-        r#"test -n "$CODEX_PLUGIN_METRICS_OUTPUT"
+        r#"test -n "$AVA_PLUGIN_METRICS_OUTPUT"
 sleep "${1:-0.3}"
 while [ -n "${2:-}" ] && [ ! -f "$2" ]; do sleep 0.01; done
-printf '%s' '{"version":1,"measurements":[{"name":"findings","value":3,"dimensions":{"severity":"high"}},{"name":"files_scanned","value":17}]}' > "$CODEX_PLUGIN_METRICS_OUTPUT"
+printf '%s' '{"version":1,"measurements":[{"name":"findings","value":3,"dimensions":{"severity":"high"}},{"name":"files_scanned","value":17}]}' > "$AVA_PLUGIN_METRICS_OUTPUT"
 "#,
     )?;
 
-    let curated_repo = codex_home.join(".tmp/plugins");
+    let curated_repo = ava_home.join(".tmp/plugins");
     std::fs::create_dir_all(curated_repo.join(".agents/plugins"))?;
     std::fs::write(
         curated_repo.join(".agents/plugins/marketplace.json"),
@@ -734,7 +734,7 @@ printf '%s' '{"version":1,"measurements":[{"name":"findings","value":3,"dimensio
 }"#,
     )?;
     std::fs::write(
-        codex_home.join(".tmp/plugins.sha"),
+        ava_home.join(".tmp/plugins.sha"),
         format!("{TEST_CURATED_PLUGIN_SHA}\n"),
     )?;
     Ok(script_path.into_path_buf())
@@ -744,13 +744,13 @@ async fn assert_plugin_measurement_analytics(remote: bool, background: bool) -> 
     skip_if_no_network!(Ok(()));
     skip_if_remote!(
         Ok(()),
-        "trusted plugin metrics fixture uses a local Codex home cache"
+        "trusted plugin metrics fixture uses a local Ava home cache"
     );
     skip_if_wine_exec!(Ok(()), "plugin metrics fixture is Unix-only");
 
-    let codex_home = TempDir::new()?;
-    let script_path = write_curated_metrics_plugin(codex_home.path())?.canonicalize()?;
-    let release_path = codex_home.path().join("release-command");
+    let ava_home = TempDir::new()?;
+    let script_path = write_curated_metrics_plugin(ava_home.path())?.canonicalize()?;
+    let release_path = ava_home.path().join("release-command");
     let mut command = vec![
         "/bin/sh".to_string(),
         script_path.to_string_lossy().into_owned(),
@@ -799,11 +799,11 @@ async fn assert_plugin_measurement_analytics(remote: bool, background: bool) -> 
 
     let analytics_server = responses::start_mock_server().await;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         &analytics_server.uri(),
     )?;
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     let model = bundled_models_response()?
         .models
@@ -822,7 +822,7 @@ async fn assert_plugin_measurement_analytics(remote: bool, background: bool) -> 
         model
     })
     .collect();
-    let catalog_path = codex_home.path().join("measurement-models.json");
+    let catalog_path = ava_home.path().join("measurement-models.json");
     std::fs::write(
         &catalog_path,
         serde_json::to_vec(&ModelsResponse { models })?,
@@ -850,10 +850,10 @@ enabled = true
 "#,
         ),
     )?;
-    mount_analytics_capture(&analytics_server, codex_home.path()).await?;
+    mount_analytics_capture(&analytics_server, ava_home.path()).await?;
 
     let mut builder = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config();
     if remote {
         builder = builder.with_exec_server_delay(Duration::ZERO);
@@ -862,14 +862,14 @@ enabled = true
     if remote {
         assert_eq!(
             mcp.auto_env_params()?.environment_id,
-            codex_exec_server::REMOTE_ENVIRONMENT_ID
+            ava_exec_server::REMOTE_ENVIRONMENT_ID
         );
     }
     timeout(Duration::from_secs(10), mcp.initialize()).await??;
     let thread_request = mcp
         .send_thread_start_request_with_auto_env(ThreadStartParams {
             model: Some("initial-model".to_string()),
-            service_name: Some("codex_work_desktop".to_string()),
+            service_name: Some("ava_work_desktop".to_string()),
             ..Default::default()
         })
         .await?;
@@ -948,7 +948,7 @@ enabled = true
 
     for measurement_name in ["findings", "files_scanned"] {
         wait_for_matching_analytics_event(&analytics_server, Duration::from_secs(10), |event| {
-            event["event_type"] == "codex_plugin_measurement_event"
+            event["event_type"] == "ava_plugin_measurement_event"
                 && event["event_params"]["item_id"] == call_id
                 && event["event_params"]["measurement_name"] == measurement_name
         })
@@ -956,7 +956,7 @@ enabled = true
     }
     let command_event =
         wait_for_matching_analytics_event(&analytics_server, Duration::from_secs(10), |event| {
-            event["event_type"] == "codex_command_execution_event"
+            event["event_type"] == "ava_command_execution_event"
                 && event["event_params"]["item_id"] == call_id
         })
         .await?;
@@ -984,7 +984,7 @@ enabled = true
         .await
         .unwrap_or_default()
     {
-        if request.method != "POST" || request.url.path() != "/codex/analytics-events/events" {
+        if request.method != "POST" || request.url.path() != "/ava/analytics-events/events" {
             continue;
         }
         let payload: Value = serde_json::from_slice(&request.body)?;
@@ -995,7 +995,7 @@ enabled = true
             events
                 .iter()
                 .filter(|event| {
-                    event["event_type"] == "codex_plugin_measurement_event"
+                    event["event_type"] == "ava_plugin_measurement_event"
                         && event["event_params"]["item_id"] == call_id
                 })
                 .cloned(),
@@ -1071,7 +1071,7 @@ enabled = true
         );
         assert_eq!(event_params["thread_id"], thread_id);
         assert_eq!(event_params["turn_id"], turn_id);
-        assert_eq!(event_params["originator"], "codex_work_desktop");
+        assert_eq!(event_params["originator"], "ava_work_desktop");
         assert_eq!(event_params["model_slug"], "invoking-model");
         assert_eq!(event_params["reasoning_effort"], "high");
     }

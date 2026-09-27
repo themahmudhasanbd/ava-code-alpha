@@ -1,8 +1,8 @@
 use chrono::Utc;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::ThreadItem;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::ThreadItem;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -44,7 +44,7 @@ async fn search_matches_selected_rollout_across_path_spellings_and_compression()
     for compressed in [false, true] {
         let home = TempDir::new().expect("temp dir");
         let config = test_config(home.path());
-        let state_db = codex_state::StateRuntime::init(
+        let state_db = ava_state::StateRuntime::init(
             config.sqlite.clone(),
             config.default_model_provider_id.clone(),
         )
@@ -79,7 +79,7 @@ async fn search_matches_selected_rollout_across_path_spellings_and_compression()
         let home_paths = {
             let verbatim = std::fs::canonicalize(&home_paths[0]).expect("canonicalize home");
             let ordinary =
-                codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(&verbatim)
+                ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(&verbatim)
                     .expect("normalize home")
                     .into_path_buf();
             [ordinary, verbatim]
@@ -107,16 +107,16 @@ async fn search_matches_selected_rollout_across_path_spellings_and_compression()
             })
             .collect::<Vec<_>>();
 
-        for codex_home in home_paths {
+        for ava_home in home_paths {
             let store = LocalThreadStore::new(
                 super::super::LocalThreadStoreConfig {
-                    codex_home,
+                    ava_home,
                     ..config.clone()
                 },
                 Some(state_db.clone()),
             );
             for selected_path in &selected_paths {
-                let mut metadata = codex_state::ThreadMetadataBuilder::new(
+                let mut metadata = ava_state::ThreadMetadataBuilder::new(
                     thread_id,
                     selected_path.clone(),
                     Utc::now(),

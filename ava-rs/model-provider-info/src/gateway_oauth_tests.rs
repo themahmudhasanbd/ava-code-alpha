@@ -8,7 +8,7 @@ base_url = "https://gateway.example.test/v1"
 [gateway_oauth]
 authorization_url = "https://login.example.test/authorize"
 token_url = "https://login.example.test/token"
-client_id = "codex"
+client_id = "ava"
 {extra}
 "#
     ))

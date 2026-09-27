@@ -5,13 +5,13 @@ use futures::stream::FuturesUnordered;
 use serde_json::Map;
 use serde_json::Value;
 
-use codex_protocol::protocol::HookCompletedEvent;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookExecutionMode;
-use codex_protocol::protocol::HookHandlerType;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookRunSummary;
-use codex_protocol::protocol::HookScope;
+use ava_protocol::protocol::HookCompletedEvent;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookExecutionMode;
+use ava_protocol::protocol::HookHandlerType;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookRunSummary;
+use ava_protocol::protocol::HookScope;
 
 use super::ClaudeHooksEngine;
 use super::ConfiguredHandler;
@@ -229,7 +229,7 @@ pub(crate) fn completed_summary(
     handler: &ConfiguredHandler,
     run_result: &HandlerRunResult,
     status: HookRunStatus,
-    entries: Vec<codex_protocol::protocol::HookOutputEntry>,
+    entries: Vec<ava_protocol::protocol::HookOutputEntry>,
 ) -> HookRunSummary {
     let HandlerSourcePath::Local(source_path) = &handler.source_path else {
         unreachable!("executor-scoped hooks do not produce public hook summaries");
@@ -312,30 +312,30 @@ pub(crate) fn hook_scope_label(scope: HookScope) -> &'static str {
     }
 }
 
-pub(crate) fn hook_source_label(source: codex_protocol::protocol::HookSource) -> &'static str {
+pub(crate) fn hook_source_label(source: ava_protocol::protocol::HookSource) -> &'static str {
     match source {
-        codex_protocol::protocol::HookSource::System => "system",
-        codex_protocol::protocol::HookSource::User => "user",
-        codex_protocol::protocol::HookSource::Project => "project",
-        codex_protocol::protocol::HookSource::Mdm => "mdm",
-        codex_protocol::protocol::HookSource::SessionFlags => "session_flags",
-        codex_protocol::protocol::HookSource::Plugin => "plugin",
-        codex_protocol::protocol::HookSource::CloudRequirements => "cloud_requirements",
-        codex_protocol::protocol::HookSource::CloudManagedConfig => "cloud_managed_config",
-        codex_protocol::protocol::HookSource::LegacyManagedConfigFile => {
+        ava_protocol::protocol::HookSource::System => "system",
+        ava_protocol::protocol::HookSource::User => "user",
+        ava_protocol::protocol::HookSource::Project => "project",
+        ava_protocol::protocol::HookSource::Mdm => "mdm",
+        ava_protocol::protocol::HookSource::SessionFlags => "session_flags",
+        ava_protocol::protocol::HookSource::Plugin => "plugin",
+        ava_protocol::protocol::HookSource::CloudRequirements => "cloud_requirements",
+        ava_protocol::protocol::HookSource::CloudManagedConfig => "cloud_managed_config",
+        ava_protocol::protocol::HookSource::LegacyManagedConfigFile => {
             "legacy_managed_config_file"
         }
-        codex_protocol::protocol::HookSource::LegacyManagedConfigMdm => "legacy_managed_config_mdm",
-        codex_protocol::protocol::HookSource::Unknown => "unknown",
+        ava_protocol::protocol::HookSource::LegacyManagedConfigMdm => "legacy_managed_config_mdm",
+        ava_protocol::protocol::HookSource::Unknown => "unknown",
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::protocol::HookEventName;
-    use codex_protocol::protocol::HookSource;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_protocol::protocol::HookEventName;
+    use ava_protocol::protocol::HookSource;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
 
     use super::ConfiguredHandler;

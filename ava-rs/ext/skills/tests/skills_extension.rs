@@ -5,79 +5,79 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use assert_matches::assert_matches;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirementsToml;
-use codex_exec_server::CapabilityRootDiscovery;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_exec_server::LOCAL_FS;
-use codex_extension_api::ConversationHistory;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ExtensionWarning;
-use codex_extension_api::FunctionCallError;
-use codex_extension_api::NoopTurnItemEmitter;
-use codex_extension_api::PreviousWorldStateSection;
-use codex_extension_api::RenderedWorldStateFragment;
-use codex_extension_api::SkillInvocationInput;
-use codex_extension_api::SkillInvocationKind;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolCallSource;
-use codex_extension_api::ToolPayload;
-use codex_extension_api::TurnInputContext;
-use codex_extension_api::WorldStateContributionInput;
-use codex_extension_api::WorldStateSectionContribution;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_otel::MetricsClient;
-use codex_otel::MetricsConfig;
-use codex_otel::THREAD_SKILLS_DESCRIPTION_TRUNCATED_CHARS_METRIC;
-use codex_otel::THREAD_SKILLS_ENABLED_TOTAL_METRIC;
-use codex_otel::THREAD_SKILLS_KEPT_TOTAL_METRIC;
-use codex_otel::THREAD_SKILLS_TRUNCATED_METRIC;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::SKILLS_INSTRUCTIONS_CLOSE_TAG;
-use codex_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SkillScope;
-use codex_protocol::protocol::TruncationPolicy;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::user_input::UserInput;
-use codex_skills::SkillMetadata;
-use codex_skills_extension::HostSkillProvider;
-use codex_skills_extension::HostSkillsLoadInput;
-use codex_skills_extension::HostSkillsService;
-use codex_skills_extension::HostSkillsSnapshot;
-use codex_skills_extension::InjectedHostSkillPrompts;
-use codex_skills_extension::SkillLoadOutcome;
-use codex_skills_extension::SkillProviders;
-use codex_skills_extension::SkillsExtensionConfig;
-use codex_skills_extension::catalog::SkillAuthority;
-use codex_skills_extension::catalog::SkillCatalog;
-use codex_skills_extension::catalog::SkillCatalogEntry;
-use codex_skills_extension::catalog::SkillPackageId;
-use codex_skills_extension::catalog::SkillProviderError;
-use codex_skills_extension::catalog::SkillReadResult;
-use codex_skills_extension::catalog::SkillResourceId;
-use codex_skills_extension::catalog::SkillSearchResult;
-use codex_skills_extension::catalog::SkillSourceKind;
-use codex_skills_extension::install;
-use codex_skills_extension::install_with_providers;
-use codex_skills_extension::install_with_providers_and_metrics;
-use codex_skills_extension::provider::SkillListQuery;
-use codex_skills_extension::provider::SkillProvider;
-use codex_skills_extension::provider::SkillProviderFuture;
-use codex_skills_extension::provider::SkillReadRequest;
-use codex_skills_extension::provider::SkillSearchRequest;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirementsToml;
+use ava_exec_server::CapabilityRootDiscovery;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_exec_server::LOCAL_FS;
+use ava_extension_api::ConversationHistory;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ExtensionWarning;
+use ava_extension_api::FunctionCallError;
+use ava_extension_api::NoopTurnItemEmitter;
+use ava_extension_api::PreviousWorldStateSection;
+use ava_extension_api::RenderedWorldStateFragment;
+use ava_extension_api::SkillInvocationInput;
+use ava_extension_api::SkillInvocationKind;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolCallSource;
+use ava_extension_api::ToolPayload;
+use ava_extension_api::TurnInputContext;
+use ava_extension_api::WorldStateContributionInput;
+use ava_extension_api::WorldStateSectionContribution;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_otel::MetricsClient;
+use ava_otel::MetricsConfig;
+use ava_otel::THREAD_SKILLS_DESCRIPTION_TRUNCATED_CHARS_METRIC;
+use ava_otel::THREAD_SKILLS_ENABLED_TOTAL_METRIC;
+use ava_otel::THREAD_SKILLS_KEPT_TOTAL_METRIC;
+use ava_otel::THREAD_SKILLS_TRUNCATED_METRIC;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::SKILLS_INSTRUCTIONS_CLOSE_TAG;
+use ava_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SkillScope;
+use ava_protocol::protocol::TruncationPolicy;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::user_input::UserInput;
+use ava_skills::SkillMetadata;
+use ava_skills_extension::HostSkillProvider;
+use ava_skills_extension::HostSkillsLoadInput;
+use ava_skills_extension::HostSkillsService;
+use ava_skills_extension::HostSkillsSnapshot;
+use ava_skills_extension::InjectedHostSkillPrompts;
+use ava_skills_extension::SkillLoadOutcome;
+use ava_skills_extension::SkillProviders;
+use ava_skills_extension::SkillsExtensionConfig;
+use ava_skills_extension::catalog::SkillAuthority;
+use ava_skills_extension::catalog::SkillCatalog;
+use ava_skills_extension::catalog::SkillCatalogEntry;
+use ava_skills_extension::catalog::SkillPackageId;
+use ava_skills_extension::catalog::SkillProviderError;
+use ava_skills_extension::catalog::SkillReadResult;
+use ava_skills_extension::catalog::SkillResourceId;
+use ava_skills_extension::catalog::SkillSearchResult;
+use ava_skills_extension::catalog::SkillSourceKind;
+use ava_skills_extension::install;
+use ava_skills_extension::install_with_providers;
+use ava_skills_extension::install_with_providers_and_metrics;
+use ava_skills_extension::provider::SkillListQuery;
+use ava_skills_extension::provider::SkillProvider;
+use ava_skills_extension::provider::SkillProviderFuture;
+use ava_skills_extension::provider::SkillReadRequest;
+use ava_skills_extension::provider::SkillSearchRequest;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use opentelemetry_sdk::metrics::InMemoryMetricExporter;
 use opentelemetry_sdk::metrics::data::AggregatedMetrics;
 use opentelemetry_sdk::metrics::data::MetricData;
@@ -88,7 +88,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[path = "skills_extension/shadow_task_context_tests.rs"]
 mod shadow_task_context_tests;
 
-static NEXT_CODEX_HOME_ID: AtomicUsize = AtomicUsize::new(0);
+static NEXT_AVA_HOME_ID: AtomicUsize = AtomicUsize::new(0);
 const SKILLS_INTRO_WITH_ABSOLUTE_PATHS: &str = "A skill is a set of instructions provided through a `SKILL.md` source. Below is the list of skills that can be used. Each entry includes a name, description, and source locator. `file` locators are on the host filesystem, `executor package` locators are owned by their execution environment, `orchestrator package` locators are opaque package identifiers, and `custom resource` locators use their provider's access mechanism.";
 const DEMO_SKILL_CONTENTS: &str =
     "---\nname: demo\ndescription: Demo skill.\n---\n# Demo\n\nUse the demo skill.\n";
@@ -113,7 +113,7 @@ fn world_state_section<'a>(
 }
 
 async fn skill_world_state_fragments(
-    registry: &codex_extension_api::ExtensionRegistry<TestConfig>,
+    registry: &ava_extension_api::ExtensionRegistry<TestConfig>,
     session_store: &ExtensionData,
     thread_store: &ExtensionData,
     turn_id: &str,
@@ -129,7 +129,7 @@ async fn skill_world_state_fragments(
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id,
             environments: &[],
             ready_selected_capability_roots: &selected_roots,
@@ -152,8 +152,8 @@ async fn skill_world_state_fragments(
 
 #[tokio::test]
 async fn installed_extension_uses_host_service_snapshot() -> TestResult {
-    let codex_home = test_codex_home();
-    let skill_path = codex_home.join("skills").join("demo").join("SKILL.md");
+    let ava_home = test_ava_home();
+    let skill_path = ava_home.join("skills").join("demo").join("SKILL.md");
     std::fs::create_dir_all(
         skill_path
             .parent()
@@ -237,7 +237,7 @@ async fn installed_extension_uses_host_service_snapshot() -> TestResult {
         .ok_or("host skill prompt marker should be set")?;
     assert!(injected_host_skill_prompts.contains_path(&skill_path_string));
 
-    std::fs::remove_dir_all(codex_home)?;
+    std::fs::remove_dir_all(ava_home)?;
     Ok(())
 }
 
@@ -264,7 +264,7 @@ async fn host_world_state_records_catalog_metrics_on_publish_and_change() -> Tes
         })
         .await;
 
-    let skill_path = AbsolutePathBuf::try_from(test_codex_home().join("skills/demo/SKILL.md"))?;
+    let skill_path = AbsolutePathBuf::try_from(test_ava_home().join("skills/demo/SKILL.md"))?;
     let mut outcome = SkillLoadOutcome::default();
     outcome.skills.push(SkillMetadata {
         name: "demo".to_string(),
@@ -284,7 +284,7 @@ async fn host_world_state_records_catalog_metrics_on_publish_and_change() -> Tes
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -311,7 +311,7 @@ async fn host_world_state_records_catalog_metrics_on_publish_and_change() -> Tes
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -331,7 +331,7 @@ async fn host_world_state_records_catalog_metrics_on_publish_and_change() -> Tes
     assert_eq!(turn_metrics.samples(), expected);
 
     let second_skill_path =
-        AbsolutePathBuf::try_from(test_codex_home().join("skills/other/SKILL.md"))?;
+        AbsolutePathBuf::try_from(test_ava_home().join("skills/other/SKILL.md"))?;
     outcome.skills.push(SkillMetadata {
         name: "other".to_string(),
         description: "Other skill.".to_string(),
@@ -348,7 +348,7 @@ async fn host_world_state_records_catalog_metrics_on_publish_and_change() -> Tes
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -383,7 +383,7 @@ async fn persisted_host_snapshot_deduplicates_warning_after_reinitialization() -
     let registry = builder.build();
     let session_store = ExtensionData::new("session");
     let config = default_config();
-    let skill_path = AbsolutePathBuf::try_from(test_codex_home().join("skills/demo/SKILL.md"))?;
+    let skill_path = AbsolutePathBuf::try_from(test_ava_home().join("skills/demo/SKILL.md"))?;
     let mut outcome = SkillLoadOutcome::default();
     outcome.skills.push(SkillMetadata {
         name: "demo".to_string(),
@@ -419,7 +419,7 @@ async fn persisted_host_snapshot_deduplicates_warning_after_reinitialization() -
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &model_info,
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -460,7 +460,7 @@ async fn persisted_host_snapshot_deduplicates_warning_after_reinitialization() -
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &model_info,
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-2",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -503,7 +503,7 @@ async fn executor_orchestrator_and_host_share_catalog_world_state_flow() -> Test
         )))
         .with_orchestrator_provider(provider(test_entry(
             SkillSourceKind::Orchestrator,
-            "codex_apps",
+            "ava_apps",
             "orchestrator/orchestrator-skill",
             "skill://orchestrator/orchestrator-skill/SKILL.md",
         )))
@@ -549,7 +549,7 @@ async fn executor_orchestrator_and_host_share_catalog_world_state_flow() -> Test
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &selected_roots,
@@ -657,7 +657,7 @@ async fn nonempty_executor_empty_host_records_catalog_metrics() -> TestResult {
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &selected_roots,
@@ -735,7 +735,7 @@ async fn host_world_state_uses_provider_catalog_with_core_compatible_rendering()
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -776,7 +776,7 @@ async fn shadow_selection_uses_host_catalog_when_instructions_are_disabled() -> 
     let metrics = MetricsClient::new(
         MetricsConfig::in_memory(
             "test",
-            "codex-skills-extension",
+            "ava-skills-extension",
             env!("CARGO_PKG_VERSION"),
             InMemoryMetricExporter::default(),
         )
@@ -815,7 +815,7 @@ async fn shadow_selection_uses_host_catalog_when_instructions_are_disabled() -> 
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -853,7 +853,7 @@ async fn shadow_selection_uses_host_catalog_when_instructions_are_disabled() -> 
     let catalog_entry_counts = snapshot
         .scope_metrics()
         .flat_map(opentelemetry_sdk::metrics::data::ScopeMetrics::metrics)
-        .find(|metric| metric.name() == "codex.skills.shadow_selection.catalog_entries")
+        .find(|metric| metric.name() == "ava.skills.shadow_selection.catalog_entries")
         .map(|metric| match metric.data() {
             AggregatedMetrics::F64(MetricData::Histogram(histogram)) => histogram
                 .data_points()
@@ -890,7 +890,7 @@ async fn shadow_lru_selector_recovers_a_skill_invoked_on_an_earlier_turn() -> Te
     let metrics = MetricsClient::new(
         MetricsConfig::in_memory(
             "test",
-            "codex-skills-extension",
+            "ava-skills-extension",
             env!("CARGO_PKG_VERSION"),
             InMemoryMetricExporter::default(),
         )
@@ -957,7 +957,7 @@ async fn shadow_lru_selector_recovers_a_skill_invoked_on_an_earlier_turn() -> Te
     let metric = snapshot
         .scope_metrics()
         .flat_map(opentelemetry_sdk::metrics::data::ScopeMetrics::metrics)
-        .find(|metric| metric.name() == "codex.skills.shadow_selection.invocation")
+        .find(|metric| metric.name() == "ava.skills.shadow_selection.invocation")
         .ok_or("shadow invocation metric should be recorded")?;
     let mut selector_hits = match metric.data() {
         AggregatedMetrics::U64(MetricData::Sum(sum)) => sum
@@ -1073,7 +1073,7 @@ async fn selected_executor_catalog_follows_step_availability_and_reuses_its_cach
     let available_sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: std::slice::from_ref(&turn_environment),
             ready_selected_capability_roots: &selected_roots,
@@ -1129,7 +1129,7 @@ async fn selected_executor_catalog_follows_step_availability_and_reuses_its_cach
     let unavailable_sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-2",
             environments: &[],
             ready_selected_capability_roots: &[],
@@ -1154,7 +1154,7 @@ async fn selected_executor_catalog_follows_step_availability_and_reuses_its_cach
     let restored_sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-3",
             environments: &[turn_environment],
             ready_selected_capability_roots: &selected_roots,
@@ -1198,7 +1198,7 @@ async fn selected_executor_catalog_follows_step_availability_and_reuses_its_cach
         registry.context_contributors()[0]
             .contribute_world_state(WorldStateContributionInput {
                 model_info: &catalog_model_info(),
-                thread_id: codex_protocol::ThreadId::new(),
+                thread_id: ava_protocol::ThreadId::new(),
                 turn_id,
                 environments: &[],
                 ready_selected_capability_roots: &selected_roots,
@@ -1224,7 +1224,7 @@ async fn selected_executor_catalog_follows_step_availability_and_reuses_its_cach
     let listing_disabled_sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-4",
             environments: &[],
             ready_selected_capability_roots: &selected_roots,
@@ -1270,7 +1270,7 @@ async fn default_context_truncates_catalog_descriptions() -> TestResult {
     executor_entry.description = description.clone();
     let mut orchestrator_entry = test_entry(
         SkillSourceKind::Orchestrator,
-        "codex_apps",
+        "ava_apps",
         "orchestrator/orchestrator-long-description",
         "skill://orchestrator/orchestrator-long-description/SKILL.md",
     );
@@ -1352,7 +1352,7 @@ async fn moderate_budget_pressure_keeps_every_catalog_entry() -> TestResult {
             let package_id = format!("orchestrator/orchestrator-skill-{index:02}");
             let mut entry = test_entry(
                 SkillSourceKind::Orchestrator,
-                "codex_apps",
+                "ava_apps",
                 &package_id,
                 &format!("skill://{package_id}/SKILL.md"),
             );
@@ -1466,7 +1466,7 @@ async fn extreme_budget_pressure_removes_descriptions_before_omitting_entries() 
             let package_id = format!("orchestrator/orchestrator-skill-{index:03}");
             let mut entry = test_entry(
                 SkillSourceKind::Orchestrator,
-                "codex_apps",
+                "ava_apps",
                 &package_id,
                 &format!("skill://{package_id}/SKILL.md"),
             );
@@ -1573,7 +1573,7 @@ async fn skills_list_only_returns_model_visible_bounded_metadata() -> TestResult
     let opaque_suffix = "\\".repeat(1_500);
     let mut entry = test_entry(
         SkillSourceKind::Orchestrator,
-        "codex_apps",
+        "ava_apps",
         &format!("orchestrator/{opaque_suffix}"),
         &format!("skill://orchestrator/{opaque_suffix}/SKILL.md"),
     );
@@ -1581,7 +1581,7 @@ async fn skills_list_only_returns_model_visible_bounded_metadata() -> TestResult
     let [first_entry, mut middle_entry, mut final_entry] = ["p0", "p1", "p2"].map(|name| {
         test_entry(
             SkillSourceKind::Orchestrator,
-            "codex_apps",
+            "ava_apps",
             name,
             &format!("skill://{name}/SKILL.md"),
         )
@@ -1598,7 +1598,7 @@ async fn skills_list_only_returns_model_visible_bounded_metadata() -> TestResult
                     final_entry,
                     test_entry(
                         SkillSourceKind::Orchestrator,
-                        "codex_apps",
+                        "ava_apps",
                         "orchestrator/hidden",
                         "skill://orchestrator/hidden/SKILL.md",
                     )
@@ -1648,7 +1648,7 @@ async fn skills_list_only_returns_model_visible_bounded_metadata() -> TestResult
         call_id: "call-1".to_string(),
         tool_name: list_tool.tool_name(),
         model: "gpt-test".to_string(),
-        codex_turn_metadata: None,
+        ava_turn_metadata: None,
         truncation_policy: TruncationPolicy::Bytes(10_000),
         source: ToolCallSource::Direct,
         conversation_history: ConversationHistory::default(),
@@ -1808,7 +1808,7 @@ async fn skills_list_only_returns_model_visible_bounded_metadata() -> TestResult
             call_id: "insufficient-read-budget".to_string(),
             tool_name: read_tool.tool_name(),
             model: "gpt-test".to_string(),
-            codex_turn_metadata: None,
+            ava_turn_metadata: None,
             truncation_policy: TruncationPolicy::Bytes(2_000),
             source: ToolCallSource::Direct,
             conversation_history: ConversationHistory::default(),
@@ -1839,7 +1839,7 @@ async fn orchestrator_catalog_snapshot_caches_failure() -> TestResult {
             catalog: SkillCatalog {
                 entries: vec![test_entry(
                     SkillSourceKind::Orchestrator,
-                    "codex_apps",
+                    "ava_apps",
                     "orchestrator/first",
                     "skill://orchestrator/first/SKILL.md",
                 )],
@@ -1913,7 +1913,7 @@ async fn orchestrator_catalog_snapshot_caches_failure() -> TestResult {
                 call_id: "unavailable-skills".to_string(),
                 tool_name: list_tool.tool_name(),
                 model: "gpt-test".to_string(),
-                codex_turn_metadata: None,
+                ava_turn_metadata: None,
                 truncation_policy: TruncationPolicy::Bytes(64),
                 source: ToolCallSource::Direct,
                 conversation_history: ConversationHistory::default(),
@@ -1996,7 +1996,7 @@ async fn root_qualified_locator_selects_only_the_matching_executor_skill() -> Te
     registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[TurnEnvironmentSelection {
                 environment_id: "env-1".to_string(),
@@ -2124,7 +2124,7 @@ async fn model_context_window_scales_executor_and_orchestrator_catalogs() -> Tes
     let sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &model_info,
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &selected_roots,
@@ -2139,7 +2139,7 @@ async fn model_context_window_scales_executor_and_orchestrator_catalogs() -> Tes
     let _repeated_sections = registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &model_info,
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &selected_roots,
@@ -2239,7 +2239,7 @@ async fn executor_catalog_emits_at_most_four_warnings() -> TestResult {
     registry.context_contributors()[0]
         .contribute_world_state(WorldStateContributionInput {
             model_info: &catalog_model_info(),
-            thread_id: codex_protocol::ThreadId::new(),
+            thread_id: ava_protocol::ThreadId::new(),
             turn_id: "turn-1",
             environments: &[],
             ready_selected_capability_roots: &selected_roots,
@@ -2278,7 +2278,7 @@ async fn executor_catalog_emits_at_most_four_warnings() -> TestResult {
 
 #[tokio::test]
 async fn host_catalog_compacts_shared_paths_under_budget_pressure() -> TestResult {
-    let test_root = test_codex_home();
+    let test_root = test_ava_home();
     let root = test_root.join(
         "plugins/cache/openai-curated/example/hash1234567890/skills-with-a-very-long-shared-prefix",
     );
@@ -2312,16 +2312,16 @@ async fn host_catalog_compacts_shared_paths_under_budget_pressure() -> TestResul
         Default::default(),
         ConfigRequirementsToml::default(),
     )?;
-    let codex_home = AbsolutePathBuf::try_from(test_root.clone())?;
+    let ava_home = AbsolutePathBuf::try_from(test_root.clone())?;
     let service = HostSkillsService::new_with_restriction_product(
-        codex_home.clone(),
+        ava_home.clone(),
         /*bundled_skills_enabled*/ false,
         /*restriction_product*/ None,
     );
     service.set_extra_roots(vec![root]);
     let snapshot = service
         .snapshot_for_config(
-            &HostSkillsLoadInput::new(codex_home, Vec::new(), config_layer_stack),
+            &HostSkillsLoadInput::new(ava_home, Vec::new(), config_layer_stack),
             Some(Arc::clone(&LOCAL_FS)),
         )
         .await;
@@ -2671,10 +2671,10 @@ fn skills_extension_config(config: &TestConfig) -> SkillsExtensionConfig {
     }
 }
 
-fn test_codex_home() -> PathBuf {
-    let id = NEXT_CODEX_HOME_ID.fetch_add(1, Ordering::Relaxed);
+fn test_ava_home() -> PathBuf {
+    let id = NEXT_AVA_HOME_ID.fetch_add(1, Ordering::Relaxed);
     std::env::temp_dir().join(format!(
-        "codex-skills-extension-test-{}-{id}",
+        "ava-skills-extension-test-{}-{id}",
         std::process::id(),
     ))
 }

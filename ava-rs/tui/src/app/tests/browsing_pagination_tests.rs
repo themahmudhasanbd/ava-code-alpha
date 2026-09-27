@@ -10,7 +10,7 @@ use pretty_assertions::assert_eq;
 #[tokio::test]
 async fn browsing_loads_before_the_oldest_prompt_after_a_partial_answer() -> Result<()> {
     for cancel_before_completion in [false, true] {
-        let (mut app, _codex_home, thread_id) =
+        let (mut app, _ava_home, thread_id) =
             completed_history_app(&["Oldest", "Middle", "Newest"]).await?;
         let (mut app_server, _requests, proxy) = start_recording_app_server(
             &app.config,

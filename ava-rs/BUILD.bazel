@@ -20,7 +20,7 @@ test_suite(
     name = "e2e-benchmarks",
     tags = ["manual"],
     tests = [
-        "//ava-rs/cli:codex-help-bench",
+        "//ava-rs/cli:ava-help-bench",
     ],
     visibility = ["//visibility:public"],
 )

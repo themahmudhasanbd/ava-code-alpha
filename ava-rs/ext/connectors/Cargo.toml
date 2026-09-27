@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-connectors-extension"
+name = "ava-connectors-extension"
 version.workspace = true
 
 [lib]
-name = "codex_connectors_extension"
+name = "ava_connectors_extension"
 path = "src/lib.rs"
 doctest = false
 test = false
@@ -14,11 +14,11 @@ test = false
 workspace = true
 
 [dependencies]
-codex-connectors = { workspace = true }
-codex-core-plugins = { workspace = true }
-codex-file-system = { workspace = true }
-codex-plugin = { workspace = true }
-codex-utils-path-uri = { workspace = true }
+ava-connectors = { workspace = true }
+ava-core-plugins = { workspace = true }
+ava-file-system = { workspace = true }
+ava-plugin = { workspace = true }
+ava-utils-path-uri = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

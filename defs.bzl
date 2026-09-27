@@ -183,7 +183,7 @@ workspace_root_test = rule(
     },
 )
 
-def codex_rust_crate(
+def ava_rust_crate(
         name,
         crate_name,
         crate_features = [],
@@ -225,7 +225,7 @@ def codex_rust_crate(
         name: Bazel target name for the library, should be the directory name.
             Example: `app-server`.
         crate_name: Cargo crate name from Cargo.toml
-            Example: `codex_app_server`.
+            Example: `ava_app_server`.
         crate_features: Cargo features to enable for this crate.
             Crates are only compiled in a single configuration across the workspace, i.e.
             with all features in this list enabled. So use sparingly, and prefer to refactor
@@ -280,7 +280,7 @@ def codex_rust_crate(
     test_env = {
         # The launcher resolves an absolute workspace root at runtime so
         # manifest-only platforms like macOS still point Insta at the real
-        # `codex-rs` checkout.
+        # `ava-rs` checkout.
         "INSTA_WORKSPACE_ROOT": ".",
         "INSTA_SNAPSHOT_PATH": "src",
     }
@@ -306,8 +306,8 @@ def codex_rust_crate(
     manifest_relpath = native.package_name()
     if manifest_relpath.startswith("ava-rs/"):
         manifest_relpath = manifest_relpath[len("ava-rs/"):]
-    elif manifest_relpath.startswith("codex-rs/"):
-        manifest_relpath = manifest_relpath[len("codex-rs/"):]
+    elif manifest_relpath.startswith("ava-rs/"):
+        manifest_relpath = manifest_relpath[len("ava-rs/"):]
     manifest_path = manifest_relpath + "/Cargo.toml"
 
     binaries = DEP_DATA.get(native.package_name())["binaries"]
@@ -360,15 +360,15 @@ def codex_rust_crate(
             # Unit tests also compile to standalone Windows executables, so
             # keep their stack reserve aligned with binaries and integration
             # tests under gnullvm.
-            # Bazel has emitted both `codex-rs/<crate>/...` and
-            # `../codex-rs/<crate>/...` paths for `file!()`. Strip either
+            # Bazel has emitted both `ava-rs/<crate>/...` and
+            # `../ava-rs/<crate>/...` paths for `file!()`. Strip either
             # prefix so the workspace-root launcher sees Cargo-like metadata
             # such as `tui/src/...`.
             rustc_flags = rustc_flags_extra + WINDOWS_RUSTC_LINK_FLAGS + [
                 "--remap-path-prefix=../ava-rs=",
                 "--remap-path-prefix=ava-rs=",
-                "--remap-path-prefix=../codex-rs=",
-                "--remap-path-prefix=codex-rs=",
+                "--remap-path-prefix=../ava-rs=",
+                "--remap-path-prefix=ava-rs=",
             ],
             rustc_env = rustc_env,
             data = test_data_extra,
@@ -440,8 +440,8 @@ def codex_rust_crate(
             rustc_flags = rustc_flags_extra + WINDOWS_RUSTC_LINK_FLAGS + [
                 "--remap-path-prefix=../ava-rs=",
                 "--remap-path-prefix=ava-rs=",
-                "--remap-path-prefix=../codex-rs=",
-                "--remap-path-prefix=codex-rs=",
+                "--remap-path-prefix=../ava-rs=",
+                "--remap-path-prefix=ava-rs=",
             ],
             rustc_env = rustc_env,
             data = test_data_extra,
@@ -567,12 +567,12 @@ def codex_rust_crate(
                 data = integration_test_files + integration_test_binaries + integration_test_data_extra,
                 compile_data = integration_test_files + integration_compile_data_extra,
                 deps = all_crate_deps(normal = True, normal_dev = True) + maybe_deps + deps_extra,
-                # Bazel has emitted both `codex-rs/<crate>/...` and
-                # `../codex-rs/<crate>/...` paths for `file!()`. Strip either
+                # Bazel has emitted both `ava-rs/<crate>/...` and
+                # `../ava-rs/<crate>/...` paths for `file!()`. Strip either
                 # prefix so Insta records Cargo-like metadata such as `core/tests/...`.
                 rustc_flags = rustc_flags_extra + WINDOWS_RUSTC_LINK_FLAGS + [
-                    "--remap-path-prefix=../codex-rs=",
-                    "--remap-path-prefix=codex-rs=",
+                    "--remap-path-prefix=../ava-rs=",
+                    "--remap-path-prefix=ava-rs=",
                 ],
                 rustc_env = rustc_env,
                 target_compatible_with = WINDOWS_GNULLVM_INCOMPATIBLE,
@@ -607,12 +607,12 @@ def codex_rust_crate(
                 data = integration_test_files + integration_test_binaries + integration_test_data_extra,
                 compile_data = integration_test_files + integration_compile_data_extra,
                 deps = all_crate_deps(normal = True, normal_dev = True) + maybe_deps + deps_extra,
-                # Bazel has emitted both `codex-rs/<crate>/...` and
-                # `../codex-rs/<crate>/...` paths for `file!()`. Strip either
+                # Bazel has emitted both `ava-rs/<crate>/...` and
+                # `../ava-rs/<crate>/...` paths for `file!()`. Strip either
                 # prefix so Insta records Cargo-like metadata such as `core/tests/...`.
                 rustc_flags = rustc_flags_extra + WINDOWS_RUSTC_LINK_FLAGS + [
-                    "--remap-path-prefix=../codex-rs=",
-                    "--remap-path-prefix=codex-rs=",
+                    "--remap-path-prefix=../ava-rs=",
+                    "--remap-path-prefix=ava-rs=",
                 ],
                 rustc_env = rustc_env,
                 env = integration_test_cargo_env,
@@ -643,7 +643,7 @@ def codex_rust_crate(
             wine_test_binaries["wine-windows-exec-server"] = ":" + wine_exec_server
             wine_runtime = wine_test_runtime(wine_test_binaries)
             wine_runfile_env = dict(wine_runtime.runfile_env)
-            wine_runfile_env[native_test_binary] = "CODEX_WINE_EXEC_TEST_BINARY"
+            wine_runfile_env[native_test_binary] = "AVA_WINE_EXEC_TEST_BINARY"
 
             wine_test_kwargs = {}
             wine_test_kwargs.update(integration_test_kwargs)
@@ -685,8 +685,8 @@ def codex_rust_crate(
             rustc_flags = rustc_flags_extra + WINDOWS_RUSTC_LINK_FLAGS + [
                 "--remap-path-prefix=../ava-rs=",
                 "--remap-path-prefix=ava-rs=",
-                "--remap-path-prefix=../codex-rs=",
-                "--remap-path-prefix=codex-rs=",
+                "--remap-path-prefix=../ava-rs=",
+                "--remap-path-prefix=ava-rs=",
             ],
             rustc_env = rustc_env,
             env = integration_test_cargo_env,

@@ -4,7 +4,7 @@
 //! The UI supplies an explicit presentation; unused screen space only controls placement.
 //! Rendering never changes layout or cursor state; reduced motion hides the decoration entirely.
 //! The stage is anchored near the top-right corner, with room around the terminal edges.
-//! A nonempty composer or unfocused terminal fades and holds the current Codex pose.
+//! A nonempty composer or unfocused terminal fades and holds the current Ava pose.
 //! The intact logo spins immediately; focus loss and drafting fade it into rest.
 //! Motion is limited to three rotations, followed by a fade to nothing. Focus and drafting
 //! pause that budget; completed animations never restart until a genuinely fresh thread.

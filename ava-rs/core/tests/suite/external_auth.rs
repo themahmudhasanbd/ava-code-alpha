@@ -1,20 +1,20 @@
-use codex_core::TurnInputRequest;
-use codex_login::AuthHeaders;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_login::auth::BedrockAccessKeysAuth;
-use codex_model_provider_info::AwsAuthRefreshConfig;
-use codex_model_provider_info::AwsCredentialExportConfig;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_model_provider_info::create_oss_provider_with_base_url;
-use codex_protocol::protocol::AuthRecoveryEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::UserInput;
-use codex_utils_redacted_string::RedactedString;
+use ava_core::TurnInputRequest;
+use ava_login::AuthHeaders;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_login::auth::BedrockAccessKeysAuth;
+use ava_model_provider_info::AwsAuthRefreshConfig;
+use ava_model_provider_info::AwsCredentialExportConfig;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_model_provider_info::create_oss_provider_with_base_url;
+use ava_protocol::protocol::AuthRecoveryEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::UserInput;
+use ava_utils_redacted_string::RedactedString;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_response_sequence;
@@ -23,7 +23,7 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use http::HeaderMap;
 use http::HeaderValue;
@@ -46,12 +46,12 @@ const INITIAL_ACCESS_TOKEN: &str = "header.e30.initial";
 const REFRESHED_ACCESS_TOKEN: &str = "header.e30.refreshed";
 
 struct ScriptedExternalAuth {
-    current: Mutex<CodexAuth>,
-    refreshed: CodexAuth,
+    current: Mutex<AvaAuth>,
+    refreshed: AvaAuth,
 }
 
 impl ExternalAuth for ScriptedExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         let auth = self
             .current
             .lock()
@@ -60,7 +60,7 @@ impl ExternalAuth for ScriptedExternalAuth {
         Box::pin(async move { auth })
     }
 
-    fn refresh(&self, context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         let auth = if context.previous_account_id.as_deref() != Some(CHATGPT_ACCOUNT_ID) {
             Err(std::io::Error::other(
                 "external auth refresh changed the ChatGPT workspace",
@@ -78,8 +78,8 @@ impl ExternalAuth for ScriptedExternalAuth {
     }
 }
 
-fn external_chatgpt_auth(access_token: &str) -> std::io::Result<CodexAuth> {
-    CodexAuth::from_external_chatgpt_tokens(access_token, CHATGPT_ACCOUNT_ID, Some("enterprise"))
+fn external_chatgpt_auth(access_token: &str) -> std::io::Result<AvaAuth> {
+    AvaAuth::from_external_chatgpt_tokens(access_token, CHATGPT_ACCOUNT_ID, Some("enterprise"))
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -99,7 +99,7 @@ async fn header_auth_is_attached_to_responses_requests() -> anyhow::Result<()> {
         HeaderValue::from_static("account-123"),
     );
     headers.insert("x-external-auth", HeaderValue::from_static("enabled"));
-    let mut builder = test_codex().with_auth(CodexAuth::Headers(AuthHeaders::new(headers)));
+    let mut builder = test_ava().with_auth(AvaAuth::Headers(AuthHeaders::new(headers)));
     let test = builder.build_with_auto_env(&server).await?;
 
     test.submit_turn("hello").await?;
@@ -138,8 +138,8 @@ async fn custom_provider_does_not_receive_ambient_auth_headers() -> anyhow::Resu
     );
     let provider =
         create_oss_provider_with_base_url(&format!("{}/v1", server.uri()), WireApi::Responses);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::Headers(AuthHeaders::new(headers)))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::Headers(AuthHeaders::new(headers)))
         .with_config(move |config| {
             config.model_provider_id = provider.name.clone();
             config.model_provider = provider;
@@ -173,8 +173,8 @@ async fn custom_provider_uses_explicit_bearer_without_ambient_account() -> anyho
     let mut provider =
         create_oss_provider_with_base_url(&format!("{}/v1", server.uri()), WireApi::Responses);
     provider.experimental_bearer_token = Some("provider-token".into());
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::Headers(AuthHeaders::new(headers)))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::Headers(AuthHeaders::new(headers)))
         .with_config(move |config| {
             config.model_provider_id = provider.name.clone();
             config.model_provider = provider;
@@ -211,9 +211,9 @@ async fn amazon_bedrock_managed_access_keys_sign_requests() -> anyhow::Result<()
         }));
     provider.base_url = Some(format!("{}/v1", server.uri()));
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("openai.gpt-5.5")
-        .with_auth(CodexAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
+        .with_auth(AvaAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
             access_key_id: "managed-access-key-id".to_string(),
             secret_access_key: "managed-secret-access-key".to_string(),
             session_token: Some("managed-session-token".to_string()),
@@ -333,9 +333,9 @@ async fn amazon_bedrock_credential_export_precedence_and_caching() -> anyhow::Re
     provider.request_max_retries = Some(0);
     provider.stream_max_retries = Some(2);
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("openai.gpt-5.5")
-        .with_auth(CodexAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
+        .with_auth(AvaAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
             access_key_id: "managed-access-key-id".to_string(),
             secret_access_key: "managed-secret-access-key".to_string(),
             session_token: Some("managed-session-token".to_string()),
@@ -428,8 +428,8 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
     skip_if_no_network!(Ok(()));
 
     const TEST_NAME: &str = "suite::external_auth::amazon_bedrock_aws_auth_refresh_resigns";
-    const SUBPROCESS_ENV: &str = "CODEX_BEDROCK_AWS_REFRESH_TEST";
-    const HELPER_ARG: &str = "CODEX_BEDROCK_AWS_REFRESH_COMMAND";
+    const SUBPROCESS_ENV: &str = "AVA_BEDROCK_AWS_REFRESH_TEST";
+    const HELPER_ARG: &str = "AVA_BEDROCK_AWS_REFRESH_COMMAND";
     const OLD: &str = "[default]\naws_access_key_id=OLD\naws_secret_access_key=s\n";
     const NEW: &str = "[default]\naws_access_key_id=NEW\naws_secret_access_key=s\n";
 
@@ -558,7 +558,7 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
     provider.stream_max_retries = Some(stream_max_retries);
     let recovery_attempts = stream_max_retries as usize + 1;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("openai.gpt-5.5")
         .with_config(move |config| {
             config.model_provider_id = provider.name.clone();
@@ -566,13 +566,13 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
         });
     let test = builder.build_with_auto_env(&server).await?;
     if persistent_export_failure {
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "fail export even after login".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
-        let EventMsg::TurnComplete(completed) = wait_for_event(&test.codex, |event| {
+        let EventMsg::TurnComplete(completed) = wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await
@@ -606,7 +606,7 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
         server.verify().await;
         return Ok(());
     }
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".to_string(),
             text_elements: Vec::new(),
@@ -615,7 +615,7 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
 
     let mut recovery_events = Vec::new();
     loop {
-        match core_test_support::wait_for_event(&test.codex, |_| true).await {
+        match core_test_support::wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::AuthRecoveryStarted(event) => recovery_events.push(("started", event)),
             EventMsg::AuthRecoveryCompleted(event) => recovery_events.push(("completed", event)),
             EventMsg::TurnComplete(_) => break,
@@ -670,19 +670,19 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
         ],
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "reject the refreshed credentials too".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
     let EventMsg::Error(error) =
-        wait_for_event(&test.codex, |event| matches!(event, EventMsg::Error(_))).await
+        wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await
     else {
         unreachable!("predicate guarantees an error event");
     };
     assert!(error.message.contains("ExpiredTokenException"), "{error:?}");
-    let EventMsg::TurnComplete(completed) = wait_for_event(&test.codex, |event| {
+    let EventMsg::TurnComplete(completed) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await
@@ -761,7 +761,7 @@ async fn external_auth_401_retry_uses_refreshed_chatgpt_headers() -> anyhow::Res
         .mount(&server)
         .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::from_api_key("seed"));
+    let mut builder = test_ava().with_auth(AvaAuth::from_api_key("seed"));
     let test = builder.build_with_auto_env(&server).await?;
     let external_auth = Arc::new(ScriptedExternalAuth {
         current: Mutex::new(external_chatgpt_auth(INITIAL_ACCESS_TOKEN)?),

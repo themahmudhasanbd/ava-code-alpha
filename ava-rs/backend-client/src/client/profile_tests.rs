@@ -13,8 +13,8 @@ async fn profile_keeps_missing_zero_and_future_invocations_distinct() {
     let server = MockServer::start().await;
     let client = Client::new(
         server.uri(),
-        codex_http_client::HttpClientFactory::new(
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+        ava_http_client::HttpClientFactory::new(
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
     );
     let empty = AccountProfile {
@@ -108,7 +108,7 @@ async fn profile_keeps_missing_zero_and_future_invocations_distinct() {
         ),
     ] {
         Mock::given(method("GET"))
-            .and(path("/api/codex/profiles/me"))
+            .and(path("/api/ava/profiles/me"))
             .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_json(body))
             .expect(/*r*/ 1)
             .mount(&server)

@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::time::Duration;
 
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_protocol::config_types::ModelProviderAuthInfo;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_redacted_string::RedactedString;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_protocol::config_types::ModelProviderAuthInfo;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_redacted_string::RedactedString;
 
 use super::SessionThreadConfig;
 use super::ThreadConfigContext;
@@ -19,7 +19,7 @@ use super::ThreadConfigSource;
 use super::UserThreadConfig;
 use proto::thread_config_loader_client::ThreadConfigLoaderClient;
 
-#[path = "proto/codex.thread_config.v1.rs"]
+#[path = "proto/ava.thread_config.v1.rs"]
 mod proto;
 
 const REMOTE_THREAD_CONFIG_LOAD_TIMEOUT: Duration = Duration::from_secs(5);
@@ -333,10 +333,10 @@ mod tests {
     use std::collections::HashMap;
     use std::num::NonZeroU64;
 
-    use codex_model_provider_info::ModelProviderInfo;
-    use codex_model_provider_info::WireApi;
-    use codex_protocol::config_types::ModelProviderAuthInfo;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_model_provider_info::ModelProviderInfo;
+    use ava_model_provider_info::WireApi;
+    use ava_protocol::config_types::ModelProviderAuthInfo;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
     use tonic::Request;
     use tonic::Response;

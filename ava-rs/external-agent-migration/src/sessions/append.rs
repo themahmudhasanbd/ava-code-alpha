@@ -2,17 +2,17 @@ use std::path::Path;
 
 use super::export::EXTERNAL_SESSION_IMPORTED_MARKER;
 use super::ledger::checkpoint_existing_session_import;
-use codex_core::ThreadManager;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_rollout::RolloutItem;
-use codex_thread_store::AppendThreadItemsParams;
-use codex_thread_store::ReadThreadParams;
-use codex_thread_store::ResumeThreadParams;
-use codex_thread_store::ThreadPersistenceMetadata;
-use codex_thread_store::ThreadStore;
+use ava_core::ThreadManager;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_rollout::RolloutItem;
+use ava_thread_store::AppendThreadItemsParams;
+use ava_thread_store::ReadThreadParams;
+use ava_thread_store::ResumeThreadParams;
+use ava_thread_store::ThreadPersistenceMetadata;
+use ava_thread_store::ThreadStore;
 use tokio::sync::Semaphore;
 
 /// A changed external session and the existing native thread it may extend.
@@ -28,7 +28,7 @@ pub struct ExistingSessionAppend<'a> {
 ///
 /// Any unavailable, active, archived, malformed, or diverged destination fails closed.
 pub async fn append_existing_session(
-    codex_home: &Path,
+    ava_home: &Path,
     checkpoint_permits: &Semaphore,
     thread_manager: &ThreadManager,
     thread_store: &dyn ThreadStore,
@@ -139,14 +139,14 @@ pub async fn append_existing_session(
         return false;
     }
 
-    let codex_home = codex_home.to_path_buf();
+    let ava_home = ava_home.to_path_buf();
     let source_path = source_path.to_path_buf();
     let expected_source_content_sha256 = expected_source_content_sha256.to_string();
     let source_content_sha256 = source_content_sha256.to_string();
     matches!(
         tokio::task::spawn_blocking(move || {
             checkpoint_existing_session_import(
-                &codex_home,
+                &ava_home,
                 &source_path,
                 thread_id,
                 &expected_source_content_sha256,

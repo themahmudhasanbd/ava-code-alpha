@@ -33,7 +33,7 @@ unsafe extern "system" {
 pub fn registered_core_requested() -> bool {
     static REQUESTED: OnceLock<bool> = OnceLock::new();
     *REQUESTED.get_or_init(|| {
-        requested_value(std::env::var_os("CODEX_WINDOWS_REGISTERED_CORE").as_deref())
+        requested_value(std::env::var_os("AVA_WINDOWS_REGISTERED_CORE").as_deref())
     })
 }
 
@@ -117,7 +117,7 @@ pub(crate) fn verify_registered_core_runner(process: HANDLE, expected_runner: &P
             staged
                 .join("app")
                 .join("resources")
-                .join("codex-command-runner.exe")
+                .join("ava-command-runner.exe")
                 .as_os_str()
         ),
         "registered alias selected a different package identity"
@@ -141,7 +141,7 @@ pub(crate) fn verify_registered_core_runner(process: HANDLE, expected_runner: &P
 }
 
 /// Checks the service's committed receipt without provisioning or mutating either account.
-pub(crate) fn registered_setup_is_ready(codex_home: &Path) -> Result<bool> {
+pub(crate) fn registered_setup_is_ready(ava_home: &Path) -> Result<bool> {
     for account in [
         crate::setup::OFFLINE_USERNAME,
         crate::setup::ONLINE_USERNAME,
@@ -158,13 +158,13 @@ pub(crate) fn registered_setup_is_ready(codex_home: &Path) -> Result<bool> {
     let Some(record) = crate::runtime_ownership::load_installation()? else {
         return Ok(false);
     };
-    Ok(record.codex_home == codex_home.canonicalize()?
+    Ok(record.ava_home == ava_home.canonicalize()?
         && record.runtime()?.ready_for_package(&package))
 }
 
 /// A startup hint only; the service rechecks ownership and readiness under its setup lock.
 #[doc(hidden)]
-pub fn registered_core_needs_refresh(codex_home: &Path) -> Result<bool> {
+pub fn registered_core_needs_refresh(ava_home: &Path) -> Result<bool> {
     let Some(package) = current_package_full_name()? else {
         return Ok(false);
     };
@@ -172,7 +172,7 @@ pub fn registered_core_needs_refresh(codex_home: &Path) -> Result<bool> {
         return Ok(false);
     };
     let runtime = record.runtime()?;
-    Ok(record.codex_home == codex_home.canonicalize()?
+    Ok(record.ava_home == ava_home.canonicalize()?
         && runtime
             .ready_package
             .as_deref()
@@ -181,7 +181,7 @@ pub fn registered_core_needs_refresh(codex_home: &Path) -> Result<bool> {
 
 /// Consume the service's setup receipt; launching a command never installs a package.
 pub(crate) fn registered_runner_alias(
-    codex_home: &Path,
+    ava_home: &Path,
     sandbox_username: &str,
 ) -> anyhow::Result<PathBuf> {
     let account = if sandbox_username.eq_ignore_ascii_case(crate::setup::OFFLINE_USERNAME) {
@@ -199,7 +199,7 @@ pub(crate) fn registered_runner_alias(
     anyhow::ensure!(
         record.user_sid
             == crate::winutil::string_from_sid_bytes(&owner).map_err(anyhow::Error::msg)?
-            && record.codex_home == codex_home.canonicalize()?
+            && record.ava_home == ava_home.canonicalize()?
             && record.runtime()?.ready_for_package(&package),
         "registered Core setup belongs to another owner or is being removed"
     );

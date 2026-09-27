@@ -1,8 +1,8 @@
 use crate::config::RolloutBudgetConfig;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::protocol::TokenUsage;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::protocol::TokenUsage;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
@@ -45,15 +45,15 @@ impl RolloutBudget {
     }
 
     /// Returns true once the configured budget is exhausted, including on later calls.
-    pub(crate) fn record_usage(&self, usage: &TokenUsage) -> CodexResult<bool> {
+    pub(crate) fn record_usage(&self, usage: &TokenUsage) -> AvaResult<bool> {
         let Some(mut state) = self.lock() else {
             return Ok(false);
         };
-        let units = if let Some(units) = usage.codex_rollout_budget_units.as_ref() {
+        let units = if let Some(units) = usage.ava_rollout_budget_units.as_ref() {
             let units = units.as_f64().unwrap_or(f64::NAN);
             if !units.is_finite() || units < 0.0 {
-                return Err(CodexErr::Fatal(
-                    "response.completed usage.codex_rollout_budget_units must be finite and non-negative"
+                return Err(AvaErr::Fatal(
+                    "response.completed usage.ava_rollout_budget_units must be finite and non-negative"
                         .to_string(),
                 ));
             }

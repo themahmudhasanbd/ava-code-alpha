@@ -73,7 +73,7 @@ async function readInstruction(
  * Resolve project instructions from the workspace root to a workspace path.
  * Each directory contributes at most one file: AGENTS.override.md takes
  * precedence over AGENTS.md. The returned order gives nested files the last
- * word, matching Codex's project instruction chain.
+ * word, matching Ava's project instruction chain.
  */
 export async function loadProjectInstructions(
   workspaceRoot: string | null | undefined,

@@ -38,7 +38,7 @@ impl fmt::Debug for WindowsSandboxCancellationToken {
     }
 }
 
-pub use codex_protocol::config_types::WindowsSandboxProxySettingsMode;
+pub use ava_protocol::config_types::WindowsSandboxProxySettingsMode;
 
 /// Network settings installed by an administrator during managed Windows sandbox setup.
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -319,7 +319,7 @@ pub use ipc_framed::write_frame;
 #[cfg(target_os = "windows")]
 pub use logging::current_log_file_path;
 #[cfg(target_os = "windows")]
-pub use logging::current_log_file_path_for_codex_home;
+pub use logging::current_log_file_path_for_ava_home;
 #[cfg(target_os = "windows")]
 pub use logging::log_file_path_for_utc_date;
 #[cfg(target_os = "windows")]
@@ -518,7 +518,7 @@ pub use winutil::to_wide;
 #[cfg(target_os = "windows")]
 pub use workspace_acl::is_command_cwd_root;
 #[cfg(target_os = "windows")]
-pub use wrapper::CODEX_WINDOWS_SANDBOX_ARG1;
+pub use wrapper::AVA_WINDOWS_SANDBOX_ARG1;
 #[cfg(target_os = "windows")]
 pub use wrapper::create_windows_sandbox_command_args_for_permission_profile;
 #[cfg(target_os = "windows")]
@@ -539,7 +539,7 @@ mod windows_impl {
     use super::logging::log_success;
     use super::process::ConsoleMode;
     use super::process::create_process_as_user;
-    use super::sandbox_utils::ensure_codex_home_exists;
+    use super::sandbox_utils::ensure_ava_home_exists;
     use super::spawn_prep::LegacyAclSids;
     use super::spawn_prep::SpawnPrepOptions;
     use super::spawn_prep::allow_null_device_for_workspace_write;
@@ -549,8 +549,8 @@ mod windows_impl {
     use super::spawn_prep::prepare_legacy_spawn_context;
     use super::spawn_prep::root_capability_sids;
     use anyhow::Result;
-    use codex_protocol::models::PermissionProfile;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_protocol::models::PermissionProfile;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use std::collections::HashMap;
     use std::io;
     use std::path::Path;
@@ -653,7 +653,7 @@ mod windows_impl {
     pub fn run_windows_sandbox_capture(
         permission_profile: &PermissionProfile,
         workspace_roots: &[AbsolutePathBuf],
-        codex_home: &Path,
+        ava_home: &Path,
         command: Vec<String>,
         cwd: &Path,
         env_map: HashMap<String, String>,
@@ -663,7 +663,7 @@ mod windows_impl {
         run_windows_sandbox_capture_with_filesystem_overrides(
             permission_profile,
             workspace_roots,
-            codex_home,
+            ava_home,
             command,
             cwd,
             env_map,
@@ -678,7 +678,7 @@ mod windows_impl {
     pub fn run_windows_sandbox_capture_with_filesystem_overrides(
         permission_profile: &PermissionProfile,
         workspace_roots: &[AbsolutePathBuf],
-        codex_home: &Path,
+        ava_home: &Path,
         command: Vec<String>,
         cwd: &Path,
         mut env_map: HashMap<String, String>,
@@ -698,7 +698,7 @@ mod windows_impl {
         let common = prepare_legacy_spawn_context(
             permission_profile,
             workspace_roots,
-            codex_home,
+            ava_home,
             cwd,
             &mut env_map,
             &command,
@@ -722,17 +722,17 @@ mod windows_impl {
             anyhow::bail!("deny-read overrides require the elevated Windows sandbox backend");
         }
         let capability_roots =
-            legacy_session_capability_roots(&permissions, &current_dir, &env_map, codex_home);
+            legacy_session_capability_roots(&permissions, &current_dir, &env_map, ava_home);
         let security = prepare_legacy_session_security(
             uses_write_capabilities,
-            codex_home,
+            ava_home,
             cwd,
             capability_roots,
         )?;
         allow_null_device_for_workspace_write(uses_write_capabilities);
         apply_legacy_session_acl_rules(
             &permissions,
-            codex_home,
+            ava_home,
             &current_dir,
             &env_map,
             &additional_deny_read_paths,
@@ -907,7 +907,7 @@ mod windows_impl {
     pub fn run_windows_sandbox_legacy_preflight(
         permission_profile: &PermissionProfile,
         workspace_roots: &[AbsolutePathBuf],
-        codex_home: &Path,
+        ava_home: &Path,
         cwd: &Path,
         env_map: &HashMap<String, String>,
     ) -> Result<()> {
@@ -921,14 +921,14 @@ mod windows_impl {
             return Ok(());
         }
 
-        ensure_codex_home_exists(codex_home)?;
+        ensure_ava_home_exists(ava_home)?;
         let current_dir = cwd.to_path_buf();
         let capability_roots =
-            legacy_session_capability_roots(&permissions, &current_dir, env_map, codex_home);
-        let write_root_sids = root_capability_sids(codex_home, cwd, capability_roots)?;
+            legacy_session_capability_roots(&permissions, &current_dir, env_map, ava_home);
+        let write_root_sids = root_capability_sids(ava_home, cwd, capability_roots)?;
         apply_legacy_session_acl_rules(
             &permissions,
-            codex_home,
+            ava_home,
             &current_dir,
             env_map,
             &[],
@@ -946,8 +946,8 @@ mod windows_impl {
     #[cfg(test)]
     mod tests {
         use crate::resolved_permissions::ResolvedWindowsSandboxPermissions;
-        use codex_protocol::models::PermissionProfile;
-        use codex_protocol::permissions::NetworkSandboxPolicy;
+        use ava_protocol::models::PermissionProfile;
+        use ava_protocol::permissions::NetworkSandboxPolicy;
         use std::collections::HashMap;
         use std::path::Path;
 
@@ -1014,8 +1014,8 @@ mod stub {
     use super::WindowsSandboxCancellationToken;
     use anyhow::Result;
     use anyhow::bail;
-    use codex_protocol::models::PermissionProfile;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_protocol::models::PermissionProfile;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use std::collections::HashMap;
     use std::path::Path;
 
@@ -1031,7 +1031,7 @@ mod stub {
     pub fn run_windows_sandbox_capture(
         _permission_profile: &PermissionProfile,
         _workspace_roots: &[AbsolutePathBuf],
-        _codex_home: &Path,
+        _ava_home: &Path,
         _command: Vec<String>,
         _cwd: &Path,
         _env_map: HashMap<String, String>,
@@ -1044,7 +1044,7 @@ mod stub {
     pub fn run_windows_sandbox_legacy_preflight(
         _permission_profile: &PermissionProfile,
         _workspace_roots: &[AbsolutePathBuf],
-        _codex_home: &Path,
+        _ava_home: &Path,
         _cwd: &Path,
         _env_map: &HashMap<String, String>,
     ) -> Result<()> {

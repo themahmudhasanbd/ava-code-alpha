@@ -1,7 +1,12 @@
 /**
  * Universal runtime polyfills for React Native / Hermes in AvA Mobile v2.
- * Ensures Web Crypto API, randomUUID, and global environments are safely initialized.
+ * Ensures Web Crypto API, randomUUID, global environments, and dynamic theme stylesheets are safely initialized.
  */
+
+import { patchStyleSheet } from "@/theme/style-registry";
+
+// Intercept and register all StyleSheet.create calls for seamless live theme swapping
+patchStyleSheet();
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare const global: any;

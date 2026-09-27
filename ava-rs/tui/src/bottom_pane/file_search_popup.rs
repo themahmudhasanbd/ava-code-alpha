@@ -3,8 +3,8 @@
 
 use std::path::PathBuf;
 
-use codex_file_search::FileMatch;
-use codex_utils_fuzzy_match::fuzzy_match;
+use ava_file_search::FileMatch;
+use ava_utils_fuzzy_match::fuzzy_match;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::Line;
@@ -197,7 +197,7 @@ impl WidgetRef for &FileSearchPopup {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_file_search::MatchType;
+    use ava_file_search::MatchType;
     use pretty_assertions::assert_eq;
 
     fn file_match(index: usize) -> FileMatch {

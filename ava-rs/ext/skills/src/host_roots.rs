@@ -2,19 +2,19 @@ use std::collections::HashSet;
 use std::io;
 use std::sync::Arc;
 
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::default_project_root_markers;
-use codex_config::merge_toml_values;
-use codex_config::project_root_markers_from_config;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::LOCAL_FS;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::system_cache_root_dir;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::PluginSkillRoot;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::default_project_root_markers;
+use ava_config::merge_toml_values;
+use ava_config::project_root_markers_from_config;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::LOCAL_FS;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::system_cache_root_dir;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::PluginSkillRoot;
 use dirs::home_dir;
 use futures::StreamExt;
 use toml::Value as TomlValue;
@@ -93,7 +93,7 @@ fn roots_from_layer_stack(
                 }
             }
             ConfigLayerSource::User { .. } => {
-                // User skills location (`~/.ava-code/skills` or `$AVA_CODE_HOME/skills` or `$CODEX_HOME/skills`)
+                // User skills location (`~/.ava-code/skills` or `$AVA_CODE_HOME/skills` or `$AVA_HOME/skills`)
                 roots.push(local_root(
                     config_folder.join(SKILLS_DIR_NAME),
                     SkillScope::User,

@@ -2,7 +2,7 @@
 //! steal the reader's position in the owned transcript.
 
 use super::*;
-use codex_app_server_protocol::RateLimitResetCreditsSummary;
+use ava_app_server_protocol::RateLimitResetCreditsSummary;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use pretty_assertions::assert_eq;

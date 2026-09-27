@@ -1,8 +1,8 @@
 //! Best-effort classification of shell reads by memory artifact and root version.
 
-use codex_protocol::MemoryVersion;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_shell_command::parse_command::parse_shell_script;
+use ava_protocol::MemoryVersion;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_shell_command::parse_command::parse_shell_script;
 
 pub use crate::metrics::MEMORIES_USAGE_METRIC;
 

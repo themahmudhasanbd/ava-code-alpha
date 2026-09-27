@@ -19,30 +19,30 @@ use crate::tools::sandboxing::ApprovalRequestReasons;
 use crate::tools::sandboxing::PermissionRequestPayload;
 use crate::tools::sandboxing::ToolError;
 use crate::tools::sandboxing::with_cached_approval;
-use codex_analytics::GuardianApprovalRequestSource;
-use codex_config::types::AppToolApproval;
-use codex_hooks::PermissionRequestDecision;
-use codex_otel::ToolDecisionSource;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::approvals::ExecApprovalKind;
-use codex_protocol::approvals::ExecPolicyAmendment;
+use ava_analytics::GuardianApprovalRequestSource;
+use ava_config::types::AppToolApproval;
+use ava_hooks::PermissionRequestDecision;
+use ava_otel::ToolDecisionSource;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::approvals::ExecApprovalKind;
+use ava_protocol::approvals::ExecPolicyAmendment;
 #[cfg(unix)]
-use codex_protocol::approvals::GuardianCommandSource;
-use codex_protocol::approvals::NetworkApprovalContext;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::error::CodexErr;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::FileChange;
-use codex_protocol::protocol::NetworkPolicyRuleAction;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_tools::ToolName;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::approvals::GuardianCommandSource;
+use ava_protocol::approvals::NetworkApprovalContext;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::error::AvaErr;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::FileChange;
+use ava_protocol::protocol::NetworkPolicyRuleAction;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_tools::ToolName;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -196,7 +196,7 @@ impl ApprovalAction {
             },
             #[cfg(unix)]
             Self::Execve { command, .. } => PermissionRequestPayload::bash(
-                codex_shell_command::parse_command::shlex_join(command),
+                ava_shell_command::parse_command::shlex_join(command),
                 /*description*/ None,
             ),
             Self::ApplyPatch { patch, .. } => PermissionRequestPayload {
@@ -296,7 +296,7 @@ impl ApprovalAction {
                 id,
                 environment_id,
                 command,
-                guardian_cwd: codex_utils_path_uri::LegacyAppPathString::from_path_uri(
+                guardian_cwd: ava_utils_path_uri::LegacyAppPathString::from_path_uri(
                     &cwd,
                     exec_command_cwd_convention.ok_or_else(|| {
                         std::io::Error::other("missing exec command cwd convention")
@@ -464,7 +464,7 @@ impl ApprovalResolution {
                     .timeout_instructions
                     .to_string(),
             )),
-            ReviewDecision::Abort => Err(ToolError::Codex(CodexErr::TurnAborted)),
+            ReviewDecision::Abort => Err(ToolError::Ava(AvaErr::TurnAborted)),
             decision => Ok(decision),
         }
     }
@@ -698,7 +698,7 @@ impl Session {
                     .turn_environments()
                     .find(|environment| environment.selection.environment_id == *environment_id)
                     .and_then(|environment| environment.config().exec_policy.as_ref())
-                    .map(codex_execpolicy::RequirementsExecPolicy::fingerprint);
+                    .map(ava_execpolicy::RequirementsExecPolicy::fingerprint);
                 let cache_keys = action
                     .cache_keys()
                     .into_iter()

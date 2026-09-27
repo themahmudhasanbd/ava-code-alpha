@@ -1,13 +1,13 @@
-use codex_backend_client::Client as BackendClient;
-use codex_backend_client::ConfigBundleResponse;
-use codex_backend_client::DeliveredTomlFragment;
-use codex_config::CloudConfigBundle;
-use codex_config::CloudConfigFragment;
-use codex_config::CloudConfigTomlBundle;
-use codex_config::CloudRequirementsFragment;
-use codex_config::CloudRequirementsTomlBundle;
-use codex_http_client::HttpClientFactory;
-use codex_login::CodexAuth;
+use ava_backend_client::Client as BackendClient;
+use ava_backend_client::ConfigBundleResponse;
+use ava_backend_client::DeliveredTomlFragment;
+use ava_config::CloudConfigBundle;
+use ava_config::CloudConfigFragment;
+use ava_config::CloudConfigTomlBundle;
+use ava_config::CloudRequirementsFragment;
+use ava_config::CloudRequirementsTomlBundle;
+use ava_http_client::HttpClientFactory;
+use ava_login::AvaAuth;
 use std::future::Future;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -39,7 +39,7 @@ pub(crate) enum BundleRequestError {
 pub(crate) trait BundleClient: Send + Sync {
     fn get_bundle(
         &self,
-        auth: &CodexAuth,
+        auth: &AvaAuth,
     ) -> impl Future<Output = Result<CloudConfigBundle, BundleRequestError>> + Send;
 }
 
@@ -58,7 +58,7 @@ impl BackendBundleClient {
 }
 
 impl BundleClient for BackendBundleClient {
-    async fn get_bundle(&self, auth: &CodexAuth) -> Result<CloudConfigBundle, BundleRequestError> {
+    async fn get_bundle(&self, auth: &AvaAuth) -> Result<CloudConfigBundle, BundleRequestError> {
         let client = BackendClient::from_auth(
             self.base_url.clone(),
             auth,

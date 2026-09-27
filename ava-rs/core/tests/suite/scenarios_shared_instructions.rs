@@ -6,16 +6,16 @@ use super::super::agents_md::instruction_fragments;
 use super::super::agents_md::persisted_resume_history;
 use super::super::agents_md::submit_thread_turn;
 use super::*;
-use codex_core::StartThreadOptions;
-use codex_core::config::Constrained;
-use codex_extension_api::Instructions;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::ToolLifecycleFuture;
-use codex_extension_api::ToolStartInput;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_core::StartThreadOptions;
+use ava_core::config::Constrained;
+use ava_extension_api::Instructions;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::ToolLifecycleFuture;
+use ava_extension_api::ToolStartInput;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 use core_test_support::responses;
 use core_test_support::responses::mount_sse_once;
 use pretty_assertions::assert_eq;
@@ -28,7 +28,7 @@ const UPDATED: &str = "Never send email.";
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn running_descendants_refresh_only_shared_thread_instructions(shared: bool) -> Result<()> {
     let server = start_mock_server().await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let provider = RecordingThreadInstructionsProvider::with_text(INITIAL);
     let provider = Arc::new(if shared { provider.shared() } else { provider });
     let root = test
@@ -191,7 +191,7 @@ async fn guardian_tracks_shared_instruction_updates_in_running_descendants() -> 
     let provider = Arc::new(RecordingThreadInstructionsProvider::with_text(INITIAL).shared());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(Arc::new(UpdateRulesOnAction(provider.clone())));
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);

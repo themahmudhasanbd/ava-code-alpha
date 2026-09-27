@@ -1,4 +1,4 @@
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::PathExt;
 use std::fs;
 use std::fs::FileTimes;
 #[cfg(unix)]
@@ -6,13 +6,13 @@ use std::os::unix::fs::PermissionsExt;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::UserMessageEvent;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::UserMessageEvent;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -395,8 +395,8 @@ async fn worker_skips_unreadable_metadata_without_blocking_other_compression() -
 async fn resume_materializes_compressed_rollout_path() -> anyhow::Result<()> {
     let home = TempDir::new()?;
     let config = RolloutConfig {
-        codex_home: home.path().to_path_buf(),
-        sqlite: codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        ava_home: home.path().to_path_buf(),
+        sqlite: ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         cwd: home.path().to_path_buf(),
         model_provider_id: "test-provider".to_string(),
         generate_memories: true,

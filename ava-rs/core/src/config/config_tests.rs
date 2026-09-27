@@ -5,104 +5,104 @@ use crate::context::ContextualUserFragment;
 use crate::plugins::plugins_manager_for_config;
 use crate::session::multi_agents::resolve_usage_hints;
 use assert_matches::assert_matches;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::McpServerCommandMatcher;
-use codex_config::McpServerIdentity;
-use codex_config::McpServerRequirement;
-use codex_config::McpServerValueMatcher;
-use codex_config::ProfileV2Name;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
-use codex_config::config_toml::AgentRoleToml;
-use codex_config::config_toml::AgentsToml;
-use codex_config::config_toml::AutoReviewToml;
-use codex_config::config_toml::ConfigToml;
-use codex_config::config_toml::ExperimentalRequestUserInput;
-use codex_config::config_toml::ProjectConfig;
-use codex_config::config_toml::RealtimeConfig;
-use codex_config::config_toml::RealtimeToml;
-use codex_config::config_toml::RealtimeTransport;
-use codex_config::config_toml::RealtimeWsMode;
-use codex_config::config_toml::RealtimeWsVersion;
-use codex_config::config_toml::ToolsToml;
-use codex_config::loader::project_trust_key;
-use codex_config::permissions_toml::FilesystemPermissionToml;
-use codex_config::permissions_toml::FilesystemPermissionsToml;
-use codex_config::permissions_toml::NetworkDomainPermissionToml;
-use codex_config::permissions_toml::NetworkDomainPermissionsToml;
-use codex_config::permissions_toml::NetworkMitmActionToml;
-use codex_config::permissions_toml::NetworkMitmHookToml;
-use codex_config::permissions_toml::NetworkMitmToml;
-use codex_config::permissions_toml::NetworkToml;
-use codex_config::permissions_toml::PermissionProfileToml;
-use codex_config::permissions_toml::PermissionsToml;
-use codex_config::permissions_toml::WorkspaceRootsToml;
-use codex_config::types::AppToolApproval;
-use codex_config::types::ApprovalsReviewer;
-use codex_config::types::BundledSkillsConfig;
-use codex_config::types::FeedbackConfigToml;
-use codex_config::types::HistoryPersistence;
-use codex_config::types::McpServerEnvVar;
-use codex_config::types::McpServerOAuthConfig;
-use codex_config::types::McpServerToolConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_config::types::MemoriesConfig;
-use codex_config::types::MemoriesToml;
-use codex_config::types::ModelAvailabilityNuxConfig;
-use codex_config::types::Notice;
-use codex_config::types::NotificationCondition;
-use codex_config::types::NotificationMethod;
-use codex_config::types::Notifications;
-use codex_config::types::OtelConfigToml;
-use codex_config::types::OtelExporterKind;
-use codex_config::types::ResumeCwdMode;
-use codex_config::types::SandboxWorkspaceWrite;
-use codex_config::types::SessionPickerViewMode;
-use codex_config::types::SkillsConfig;
-use codex_config::types::ToolSuggestDisabledTool;
-use codex_config::types::ToolSuggestDiscoverableType;
-use codex_config::types::Tui;
-use codex_config::types::TuiKeymap;
-use codex_config::types::TuiNotificationSettings;
-use codex_config::types::TuiPetAnchor;
-use codex_config::types::WindowsSandboxModeToml;
-use codex_config::types::WindowsToml;
-use codex_exec_server::LOCAL_FS;
-use codex_features::Feature;
-use codex_features::FeaturesToml;
-use codex_login::default_client::RESIDENCY_HEADER_NAME;
-use codex_login::test_support::auth_manager_from_optional_auth;
-use codex_model_provider::ProviderCapabilities;
-use codex_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
-use codex_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
-use codex_model_provider_info::WireApi;
-use codex_models_manager::bundled_models_response;
-use codex_network_proxy::NetworkMode;
-use codex_prompts::ResolvedMessage;
-use codex_protocol::config_types::ModelProviderAuthInfo;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::SandboxEnforcement;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::NetworkAccess;
-use codex_protocol::protocol::RealtimeVoice;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::McpServerCommandMatcher;
+use ava_config::McpServerIdentity;
+use ava_config::McpServerRequirement;
+use ava_config::McpServerValueMatcher;
+use ava_config::ProfileV2Name;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
+use ava_config::config_toml::AgentRoleToml;
+use ava_config::config_toml::AgentsToml;
+use ava_config::config_toml::AutoReviewToml;
+use ava_config::config_toml::ConfigToml;
+use ava_config::config_toml::ExperimentalRequestUserInput;
+use ava_config::config_toml::ProjectConfig;
+use ava_config::config_toml::RealtimeConfig;
+use ava_config::config_toml::RealtimeToml;
+use ava_config::config_toml::RealtimeTransport;
+use ava_config::config_toml::RealtimeWsMode;
+use ava_config::config_toml::RealtimeWsVersion;
+use ava_config::config_toml::ToolsToml;
+use ava_config::loader::project_trust_key;
+use ava_config::permissions_toml::FilesystemPermissionToml;
+use ava_config::permissions_toml::FilesystemPermissionsToml;
+use ava_config::permissions_toml::NetworkDomainPermissionToml;
+use ava_config::permissions_toml::NetworkDomainPermissionsToml;
+use ava_config::permissions_toml::NetworkMitmActionToml;
+use ava_config::permissions_toml::NetworkMitmHookToml;
+use ava_config::permissions_toml::NetworkMitmToml;
+use ava_config::permissions_toml::NetworkToml;
+use ava_config::permissions_toml::PermissionProfileToml;
+use ava_config::permissions_toml::PermissionsToml;
+use ava_config::permissions_toml::WorkspaceRootsToml;
+use ava_config::types::AppToolApproval;
+use ava_config::types::ApprovalsReviewer;
+use ava_config::types::BundledSkillsConfig;
+use ava_config::types::FeedbackConfigToml;
+use ava_config::types::HistoryPersistence;
+use ava_config::types::McpServerEnvVar;
+use ava_config::types::McpServerOAuthConfig;
+use ava_config::types::McpServerToolConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_config::types::MemoriesConfig;
+use ava_config::types::MemoriesToml;
+use ava_config::types::ModelAvailabilityNuxConfig;
+use ava_config::types::Notice;
+use ava_config::types::NotificationCondition;
+use ava_config::types::NotificationMethod;
+use ava_config::types::Notifications;
+use ava_config::types::OtelConfigToml;
+use ava_config::types::OtelExporterKind;
+use ava_config::types::ResumeCwdMode;
+use ava_config::types::SandboxWorkspaceWrite;
+use ava_config::types::SessionPickerViewMode;
+use ava_config::types::SkillsConfig;
+use ava_config::types::ToolSuggestDisabledTool;
+use ava_config::types::ToolSuggestDiscoverableType;
+use ava_config::types::Tui;
+use ava_config::types::TuiKeymap;
+use ava_config::types::TuiNotificationSettings;
+use ava_config::types::TuiPetAnchor;
+use ava_config::types::WindowsSandboxModeToml;
+use ava_config::types::WindowsToml;
+use ava_exec_server::LOCAL_FS;
+use ava_features::Feature;
+use ava_features::FeaturesToml;
+use ava_login::default_client::RESIDENCY_HEADER_NAME;
+use ava_login::test_support::auth_manager_from_optional_auth;
+use ava_model_provider::ProviderCapabilities;
+use ava_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
+use ava_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
+use ava_model_provider_info::WireApi;
+use ava_models_manager::bundled_models_response;
+use ava_network_proxy::NetworkMode;
+use ava_prompts::ResolvedMessage;
+use ava_protocol::config_types::ModelProviderAuthInfo;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::SandboxEnforcement;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::NetworkAccess;
+use ava_protocol::protocol::RealtimeVoice;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_utils_path_uri::LegacyAppPathString;
 use serde::Deserialize;
 use tempfile::tempdir;
 
@@ -117,7 +117,7 @@ use rmcp::model::ElicitationCapability;
 use rmcp::model::FormElicitationCapability;
 use rmcp::model::UrlElicitationCapability;
 
-use codex_config::test_support::CloudConfigBundleFixture;
+use ava_config::test_support::CloudConfigBundleFixture;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::path::Path;
@@ -138,7 +138,7 @@ fn stdio_mcp_with_args(command: &str, args: &[&str]) -> McpServerConfig {
             env_vars: Vec::new(),
             cwd: None,
         },
-        environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
         enabled: true,
         required: false,
         supports_parallel_tool_calls: false,
@@ -166,7 +166,7 @@ fn http_mcp(url: &str) -> McpServerConfig {
             env_http_headers: None,
             http_headers_helper: None,
         },
-        environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
         enabled: true,
         required: false,
         supports_parallel_tool_calls: false,
@@ -213,14 +213,14 @@ async fn derive_legacy_sandbox_policy_for_test(
 #[tokio::test]
 async fn load_config_normalizes_relative_cwd_override() -> std::io::Result<()> {
     let expected_cwd = AbsolutePathBuf::relative_to_current_dir("nested")?;
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
         ConfigOverrides {
             cwd: Some(PathBuf::from("nested")),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -230,13 +230,13 @@ async fn load_config_normalizes_relative_cwd_override() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn load_config_applies_optional_mcp_startup_grace() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let config_toml: ConfigToml = toml::from_str("mcp_optional_startup_grace_ms = 2500")
         .expect("optional MCP startup grace should parse from config.toml");
     let config = Config::load_from_base_config_with_overrides(
         config_toml,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -249,7 +249,7 @@ async fn load_config_applies_optional_mcp_startup_grace() -> std::io::Result<()>
 
 #[tokio::test]
 async fn load_config_resolves_thread_unload_delay() -> anyhow::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     for (toml, seconds) in [
         ("", 60),
         ("thread_unload_delay_secs = 0", 0),
@@ -258,7 +258,7 @@ async fn load_config_resolves_thread_unload_delay() -> anyhow::Result<()> {
         let config = Config::load_from_base_config_with_overrides(
             toml::from_str(toml)?,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
         assert_eq!(config.thread_unload_delay, Duration::from_secs(seconds));
@@ -268,14 +268,14 @@ async fn load_config_resolves_thread_unload_delay() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn load_config_rejects_thread_unload_delay_overflow() -> anyhow::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let error = Config::load_from_base_config_with_overrides(
         ConfigToml {
             thread_unload_delay_secs: Some(u64::MAX),
             ..Default::default()
         },
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("idle timeout must fit in a monotonic deadline");
@@ -363,7 +363,7 @@ consolidation_model = "gpt-5.2"
         config.memories,
         MemoriesConfig {
             dual_write: false,
-            version: codex_protocol::MemoryVersion::V1,
+            version: ava_protocol::MemoryVersion::V1,
             disable_on_external_context: true,
             generate_memories: false,
             use_memories: false,
@@ -522,7 +522,7 @@ enabled = false
 
 #[tokio::test]
 async fn load_config_resolves_experimental_request_user_input_enabled() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml {
             tools: Some(ToolsToml {
@@ -535,7 +535,7 @@ async fn load_config_resolves_experimental_request_user_input_enabled() -> std::
             ..ConfigToml::default()
         },
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -579,13 +579,13 @@ async fn load_config_resolves_non_prefixed_mcp_tool_servers() -> std::io::Result
     ];
 
     for (config_contents, expected_servers, expected_prefix) in cases {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         let config_toml = toml::from_str::<ConfigToml>(config_contents)
             .expect("TOML deserialization should succeed");
         let config = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -605,7 +605,7 @@ async fn load_config_resolves_non_prefixed_mcp_tool_servers() -> std::io::Result
 
 #[tokio::test]
 async fn load_config_resolves_update_plan_enabled() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     for (config_toml, expected_enabled) in [
         ("", true),
         ("[tools.update_plan]", true),
@@ -615,7 +615,7 @@ async fn load_config_resolves_update_plan_enabled() -> std::io::Result<()> {
         let config = Config::load_from_base_config_with_overrides(
             toml::from_str(config_toml).expect("TOML deserialization should succeed"),
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -629,14 +629,14 @@ async fn load_config_resolves_update_plan_enabled() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn load_config_resolves_code_mode_config() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let config_toml: ConfigToml = toml::from_str(
         r#"
 [features.code_mode]
 enabled = true
 default_exec_yield_time_ms = 10000
 experimental_show_cell_overhead = true
-excluded_tool_namespaces = ["mcp__codex_apps", "multi_agent_v1"]
+excluded_tool_namespaces = ["mcp__ava_apps", "multi_agent_v1"]
 direct_only_tool_namespaces = ["mcp__history", "mcp__notes"]
 
 [features.code_mode_host]
@@ -648,7 +648,7 @@ disable_in_process_fallback = true
     let config = Config::load_from_base_config_with_overrides(
         config_toml,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -656,7 +656,7 @@ disable_in_process_fallback = true
     assert!(config.code_mode.experimental_show_cell_overhead);
     assert_eq!(
         config.code_mode.excluded_tool_namespaces,
-        vec!["mcp__codex_apps".to_string(), "multi_agent_v1".to_string()]
+        vec!["mcp__ava_apps".to_string(), "multi_agent_v1".to_string()]
     );
     assert_eq!(
         config.code_mode.direct_only_tool_namespaces,
@@ -670,7 +670,7 @@ disable_in_process_fallback = true
 
 #[tokio::test]
 async fn load_config_resolves_tool_registry_config() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
 
     for (config_toml, error_on_tool_collisions, turn_metadata_includes_tool_info) in [
         ("", false, false),
@@ -690,7 +690,7 @@ async fn load_config_resolves_tool_registry_config() -> std::io::Result<()> {
         let config = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -740,12 +740,12 @@ auto_compact_fallback_buffer_tokens = 8000
             }),
         ),
     ] {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         let config_toml = toml::from_str(config_toml).expect("TOML should deserialize");
         let config = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -763,7 +763,7 @@ auto_compact_fallback_buffer_tokens = 8000
 
 #[tokio::test]
 async fn load_config_rejects_overlong_auto_compact_fallback_prompt() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let prompt = "x".repeat(AUTO_COMPACT_FALLBACK_PROMPT_MAX_BYTES + 1);
     let config_toml = toml::from_str(&format!(
         "[features.token_budget]\nenabled = true\nauto_compact_fallback_prompt = {prompt:?}\n"
@@ -772,7 +772,7 @@ async fn load_config_rejects_overlong_auto_compact_fallback_prompt() -> std::io:
     let error = Config::load_from_base_config_with_overrides(
         config_toml,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("overlong fallback prompt should be rejected");
@@ -787,7 +787,7 @@ async fn load_config_rejects_invalid_token_budget_reminder_template() -> std::io
         String::new(),
         "x".repeat(TOKEN_BUDGET_REMINDER_MESSAGE_TEMPLATE_MAX_BYTES + 1),
     ] {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         let config_toml = toml::from_str(&format!(
             "[features.token_budget]\nenabled = true\nreminder_message_template = {reminder_message_template:?}\n"
         ))
@@ -795,7 +795,7 @@ async fn load_config_rejects_invalid_token_budget_reminder_template() -> std::io
         let error = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await
         .expect_err("invalid reminder template should be rejected");
@@ -808,7 +808,7 @@ async fn load_config_rejects_invalid_token_budget_reminder_template() -> std::io
 #[tokio::test]
 async fn load_config_rejects_non_positive_token_budget_reminder_threshold() -> std::io::Result<()> {
     for reminder_threshold_tokens in [-1, 0] {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         let config_toml = toml::from_str(&format!(
             "[features.token_budget]\nenabled = true\nreminder_threshold_tokens = {reminder_threshold_tokens}\n"
         ))
@@ -816,7 +816,7 @@ async fn load_config_rejects_non_positive_token_budget_reminder_threshold() -> s
         let error = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await
         .expect_err("non-positive reminder threshold should be rejected");
@@ -833,7 +833,7 @@ async fn load_config_rejects_non_positive_token_budget_reminder_threshold() -> s
 #[tokio::test]
 async fn load_config_rejects_non_positive_auto_compact_fallback_buffer() -> std::io::Result<()> {
     for auto_compact_fallback_buffer_tokens in [-1, 0] {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         let config_toml = toml::from_str(&format!(
             "[features.token_budget]\nenabled = true\nauto_compact_fallback_prompt = \"Write notes.\"\nauto_compact_fallback_buffer_tokens = {auto_compact_fallback_buffer_tokens}\n"
         ))
@@ -841,7 +841,7 @@ async fn load_config_rejects_non_positive_auto_compact_fallback_buffer() -> std:
         let error = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await
         .expect_err("non-positive fallback buffer should be rejected");
@@ -857,7 +857,7 @@ async fn load_config_rejects_non_positive_auto_compact_fallback_buffer() -> std:
 
 #[tokio::test]
 async fn load_config_rejects_missing_auto_compact_fallback_buffer() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let config_toml = toml::from_str(
         "[features.token_budget]\nenabled = true\nauto_compact_fallback_prompt = \"Write notes.\"\n",
     )
@@ -866,7 +866,7 @@ async fn load_config_rejects_missing_auto_compact_fallback_buffer() -> std::io::
     let error = Config::load_from_base_config_with_overrides(
         config_toml,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("missing fallback buffer should be rejected");
@@ -881,7 +881,7 @@ async fn load_config_rejects_missing_auto_compact_fallback_buffer() -> std::io::
 
 #[tokio::test]
 async fn load_config_resolves_rollout_budget() -> std::io::Result<()> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let config_toml: ConfigToml = toml::from_str(
         r#"
 [features.rollout_budget]
@@ -896,7 +896,7 @@ prefill_token_weight = 0.1
     let config = Config::load_from_base_config_with_overrides(
         config_toml,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -920,13 +920,13 @@ async fn load_config_rejects_enabled_rollout_budget_without_limit() -> std::io::
         "[features]\nrollout_budget = true\n",
         "[features.rollout_budget]\nenabled = true\n",
     ] {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         let config_toml: ConfigToml =
             toml::from_str(config_toml).expect("TOML deserialization should succeed");
         let err = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await
         .expect_err("enabled rollout budget without limit_tokens should be rejected");
@@ -975,12 +975,12 @@ sleep_tool = true
 }
 
 async fn load_current_time_reminder_config(config_toml: &str) -> std::io::Result<Config> {
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     let config_toml = toml::from_str(config_toml).expect("TOML should deserialize");
     Config::load_from_base_config_with_overrides(
         config_toml,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
 }
@@ -1013,7 +1013,7 @@ fn rejects_provider_aws_for_custom_provider() {
 name = "Custom Provider"
 
 [model_providers.custom.aws]
-profile = "codex-bedrock"
+profile = "ava-bedrock"
 "#,
     )
     .unwrap_err();
@@ -1035,8 +1035,8 @@ model_provider = "custom-openai"
 
 [model_providers.custom-openai]
 name = "OpenAI"
-http_headers = { "X-OpenAI-Internal-Codex-Residency" = "request-override", "x-provider-header" = "preserved" }
-env_http_headers = { "x-openai-internal-codex-residency" = "CODEX_TEST_UNSET_RESIDENCY_HEADER", "x-provider-env-header" = "CODEX_TEST_UNSET_PROVIDER_HEADER" }
+http_headers = { "X-OpenAI-Internal-Ava-Residency" = "request-override", "x-provider-header" = "preserved" }
+env_http_headers = { "x-openai-internal-ava-residency" = "AVA_TEST_UNSET_RESIDENCY_HEADER", "x-provider-env-header" = "AVA_TEST_UNSET_PROVIDER_HEADER" }
 "#,
         )
         .expect("existing provider configuration should remain loadable");
@@ -1073,14 +1073,14 @@ env_http_headers = { "x-openai-internal-codex-residency" = "CODEX_TEST_UNSET_RES
             .as_ref()
             .expect("environment-backed headers should remain configured");
         assert_eq!(
-            static_headers.get("X-OpenAI-Internal-Codex-Residency"),
+            static_headers.get("X-OpenAI-Internal-Ava-Residency"),
             Some(&"request-override".into())
         );
         assert_eq!(
             environment_headers
                 .get(RESIDENCY_HEADER_NAME)
                 .map(String::as_str),
-            Some("CODEX_TEST_UNSET_RESIDENCY_HEADER")
+            Some("AVA_TEST_UNSET_RESIDENCY_HEADER")
         );
         assert_eq!(
             static_headers.get("x-provider-header"),
@@ -1090,7 +1090,7 @@ env_http_headers = { "x-openai-internal-codex-residency" = "CODEX_TEST_UNSET_RES
             environment_headers
                 .get("x-provider-env-header")
                 .map(String::as_str),
-            Some("CODEX_TEST_UNSET_PROVIDER_HEADER")
+            Some("AVA_TEST_UNSET_PROVIDER_HEADER")
         );
 
         let expected_warning = format!(
@@ -1110,7 +1110,7 @@ fn accepts_amazon_bedrock_aws_profile_override() {
     let cfg = toml::from_str::<ConfigToml>(
         r#"
 [model_providers.amazon-bedrock.aws]
-profile = "codex-bedrock"
+profile = "ava-bedrock"
 region = "us-west-2"
 "#,
     )
@@ -1121,7 +1121,7 @@ region = "us-west-2"
             .get("amazon-bedrock")
             .and_then(|provider| provider.aws.as_ref())
             .and_then(|aws| aws.profile.as_deref()),
-        Some("codex-bedrock")
+        Some("ava-bedrock")
     );
     assert_eq!(
         cfg.model_providers
@@ -1139,7 +1139,7 @@ async fn load_config_applies_amazon_bedrock_aws_profile_override() {
 model_provider = "amazon-bedrock"
 
 [model_providers.amazon-bedrock.aws]
-profile = "codex-bedrock"
+profile = "ava-bedrock"
 region = "us-west-2"
 "#,
     )
@@ -1160,7 +1160,7 @@ region = "us-west-2"
             .aws
             .as_ref()
             .and_then(|aws| aws.profile.as_deref()),
-        Some("codex-bedrock")
+        Some("ava-bedrock")
     );
     assert_eq!(
         config
@@ -1374,11 +1374,11 @@ async fn tui_auto_recap_defaults_and_cli_overrides() -> anyhow::Result<()> {
         ("[tui]\nauto_recap = true", Some(false), false),
         ("[tui]\nauto_recap = false", Some(true), true),
     ] {
-        let codex_home = TempDir::new()?;
-        std::fs::write(codex_home.path().join(CONFIG_TOML_FILE), toml)?;
+        let ava_home = TempDir::new()?;
+        std::fs::write(ava_home.path().join(CONFIG_TOML_FILE), toml)?;
         let config = ConfigBuilder::without_managed_config_for_tests()
-            .codex_home(codex_home.path().to_path_buf())
-            .fallback_cwd(Some(codex_home.path().to_path_buf()))
+            .ava_home(ava_home.path().to_path_buf())
+            .fallback_cwd(Some(ava_home.path().to_path_buf()))
             .cli_overrides(
                 override_value
                     .into_iter()
@@ -1656,7 +1656,7 @@ action = ["noop"]
 #[tokio::test]
 async fn permissions_profiles_proxy_policy_does_not_start_managed_network_proxy_without_feature()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -1690,7 +1690,7 @@ async fn permissions_profiles_proxy_policy_does_not_start_managed_network_proxy_
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     assert_eq!(
@@ -1706,7 +1706,7 @@ async fn permissions_profiles_proxy_policy_does_not_start_managed_network_proxy_
 
 #[tokio::test]
 async fn permissions_profiles_proxy_policy_starts_managed_network_proxy() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -1742,7 +1742,7 @@ async fn permissions_profiles_proxy_policy_starts_managed_network_proxy() -> std
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     assert_eq!(
@@ -1758,7 +1758,7 @@ async fn permissions_profiles_proxy_policy_starts_managed_network_proxy() -> std
 
 #[tokio::test]
 async fn network_proxy_feature_is_no_op_without_sandbox_network() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml {
@@ -1769,7 +1769,7 @@ async fn network_proxy_feature_is_no_op_without_sandbox_network() -> std::io::Re
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -1860,7 +1860,7 @@ async fn network_proxy_feature_matrix_preserves_sandbox_network_semantics() -> s
     ];
 
     for case in cases {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let cwd = TempDir::new()?;
         std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
         let features = case
@@ -1912,7 +1912,7 @@ async fn network_proxy_feature_matrix_preserves_sandbox_network_semantics() -> s
                 cwd: Some(cwd.path().to_path_buf()),
                 ..Default::default()
             },
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -1935,10 +1935,10 @@ async fn network_proxy_feature_matrix_preserves_sandbox_network_semantics() -> s
 
 #[tokio::test]
 async fn network_proxy_cli_overrides_merge_toggle_with_proxy_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 sandbox_mode = "workspace-write"
 
@@ -1950,7 +1950,7 @@ sandbox = "elevated"
 "#,
     )?;
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cli_overrides(vec![
             (
                 "features.network_proxy.enabled".to_string(),
@@ -1984,7 +1984,7 @@ sandbox = "elevated"
 
 #[tokio::test]
 async fn respect_system_proxy_feature_resolves_enabled() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml {
             features: Some(
@@ -1998,28 +1998,28 @@ respect_system_proxy = true
             ..Default::default()
         },
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
     assert!(config.respect_system_proxy);
     assert_eq!(
         config.http_client_factory().outbound_proxy_policy(),
-        codex_http_client::OutboundProxyPolicy::RespectSystemProxy
+        ava_http_client::OutboundProxyPolicy::RespectSystemProxy
     );
     assert_eq!(
         config
             .auth_route_config()
             .http_client_factory()
             .outbound_proxy_policy(),
-        codex_http_client::OutboundProxyPolicy::RespectSystemProxy
+        ava_http_client::OutboundProxyPolicy::RespectSystemProxy
     );
     assert_eq!(
         config.plugins_config_input().remote_plugin_service_config(),
-        codex_core_plugins::remote::RemotePluginServiceConfig::new(
+        ava_core_plugins::remote::RemotePluginServiceConfig::new(
             config.chatgpt_base_url,
-            codex_http_client::HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::RespectSystemProxy,
+            ava_http_client::HttpClientFactory::new(
+                ava_http_client::OutboundProxyPolicy::RespectSystemProxy,
             ),
         )
     );
@@ -2053,7 +2053,7 @@ respect_system_proxy = true
         resolve_bootstrap_auth_route_config(&configured, Some(&disabled))?
             .http_client_factory()
             .outbound_proxy_policy(),
-        codex_http_client::OutboundProxyPolicy::ReqwestDefault
+        ava_http_client::OutboundProxyPolicy::ReqwestDefault
     );
     assert!(
         resolve_bootstrap_http_client_factory(&configured, Some(&disabled))?
@@ -2075,7 +2075,7 @@ respect_system_proxy = true
         resolve_bootstrap_auth_route_config(&configured, Some(&enabled))?
             .http_client_factory()
             .outbound_proxy_policy(),
-        codex_http_client::OutboundProxyPolicy::RespectSystemProxy
+        ava_http_client::OutboundProxyPolicy::RespectSystemProxy
     );
     assert!(
         !resolve_bootstrap_http_client_factory(&configured, Some(&enabled))?
@@ -2094,36 +2094,36 @@ async fn system_proxy_fallback_config_matches_bootstrap() -> std::io::Result<()>
         (
             "",
             true,
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
         (
             "respect_system_proxy = false",
             true,
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
         (
             "system_proxy_fallback = false",
             false,
-            codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::OutboundProxyPolicy::ReqwestDefault,
         ),
         (
             "respect_system_proxy = true",
             false,
-            codex_http_client::OutboundProxyPolicy::RespectSystemProxy,
+            ava_http_client::OutboundProxyPolicy::RespectSystemProxy,
         ),
         (
             "respect_system_proxy = true\nsystem_proxy_fallback = false",
             false,
-            codex_http_client::OutboundProxyPolicy::RespectSystemProxy,
+            ava_http_client::OutboundProxyPolicy::RespectSystemProxy,
         ),
     ] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         std::fs::write(
-            codex_home.path().join(CONFIG_TOML_FILE),
+            ava_home.path().join(CONFIG_TOML_FILE),
             format!("[features]\n{features}\n"),
         )?;
         let config = ConfigBuilder::without_managed_config_for_tests()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .build()
             .await?;
         let bootstrap = ConfigToml {
@@ -2170,13 +2170,13 @@ async fn system_proxy_fallback_honors_feature_requirements() -> std::io::Result<
         );
         let bootstrap = resolve_bootstrap_http_client_factory(&cfg, Some(&requirements))?;
         assert_eq!(bootstrap.allows_system_proxy_fallback(), required);
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         std::fs::write(
-            codex_home.path().join(CONFIG_TOML_FILE),
+            ava_home.path().join(CONFIG_TOML_FILE),
             format!("[features]\nsystem_proxy_fallback = {configured}\n"),
         )?;
         let config = ConfigBuilder::without_managed_config_for_tests()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .cloud_config_bundle(
                 CloudConfigBundleFixture::loader_with_enterprise_requirement(format!(
                     "[features]\nsystem_proxy_fallback = {required}\n"
@@ -2191,9 +2191,9 @@ async fn system_proxy_fallback_honors_feature_requirements() -> std::io::Result<
 
 #[tokio::test]
 async fn respect_system_proxy_cli_override_enables_feature() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 [features]
 respect_system_proxy = false
@@ -2201,7 +2201,7 @@ respect_system_proxy = false
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cli_overrides(vec![(
             "features.respect_system_proxy".to_string(),
             toml::Value::Boolean(true),
@@ -2215,10 +2215,10 @@ respect_system_proxy = false
 
 #[tokio::test]
 async fn experimental_network_requirements_enable_proxy_without_feature() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -2245,7 +2245,7 @@ enabled = true
 
 #[tokio::test]
 async fn network_proxy_feature_uses_profile_network_proxy_settings() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml {
@@ -2280,7 +2280,7 @@ async fn network_proxy_feature_uses_profile_network_proxy_settings() -> std::io:
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2301,7 +2301,7 @@ async fn network_proxy_feature_uses_profile_network_proxy_settings() -> std::io:
 #[tokio::test]
 async fn disabled_network_proxy_feature_does_not_start_profile_proxy_policy() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml {
@@ -2344,7 +2344,7 @@ enabled = false
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2359,7 +2359,7 @@ enabled = false
 #[tokio::test]
 async fn permissions_profiles_network_disabled_by_default_does_not_start_proxy()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -2398,7 +2398,7 @@ async fn permissions_profiles_network_disabled_by_default_does_not_start_proxy()
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2408,7 +2408,7 @@ async fn permissions_profiles_network_disabled_by_default_does_not_start_proxy()
 
 #[tokio::test]
 async fn default_permissions_profile_populates_runtime_sandbox_policy() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::create_dir_all(cwd.path().join("docs"))?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
@@ -2451,7 +2451,7 @@ async fn default_permissions_profile_populates_runtime_sandbox_policy() -> std::
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2514,7 +2514,7 @@ async fn default_permissions_profile_populates_runtime_sandbox_policy() -> std::
 
 #[tokio::test]
 async fn default_permissions_extended_profile_preserves_parent_metadata() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -2557,7 +2557,7 @@ async fn default_permissions_extended_profile_preserves_parent_metadata() -> std
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2573,7 +2573,7 @@ async fn default_permissions_extended_profile_preserves_parent_metadata() -> std
 
 #[tokio::test]
 async fn permission_profile_override_populates_runtime_permissions() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let permission_profile = PermissionProfile::Disabled;
 
@@ -2584,7 +2584,7 @@ async fn permission_profile_override_populates_runtime_permissions() -> std::io:
             permission_profile: Some(permission_profile.clone()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2602,7 +2602,7 @@ async fn permission_profile_override_populates_runtime_permissions() -> std::io:
 
 #[tokio::test]
 async fn persisted_permission_profile_id_wins_over_configured_default() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let config_toml = toml::from_str(
         r#"
@@ -2621,7 +2621,7 @@ extends = ":workspace"
             persisted_permission_profile_id: Some("dev".to_string()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2641,7 +2641,7 @@ extends = ":workspace"
 
 #[tokio::test]
 async fn missing_persisted_permission_profile_id_uses_configured_default() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let project_key = cwd.path().to_string_lossy().to_string();
 
@@ -2670,7 +2670,7 @@ async fn missing_persisted_permission_profile_id_uses_configured_default() -> st
                 persisted_permission_profile_id: Some("removed-profile".to_string()),
                 ..Default::default()
             },
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -2688,7 +2688,7 @@ async fn missing_persisted_permission_profile_id_uses_configured_default() -> st
 
 #[tokio::test]
 async fn invalid_persisted_permission_profile_uses_configured_default() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     for invalid_profile in [
         "extends = \"removed-parent\"",
@@ -2706,7 +2706,7 @@ async fn invalid_persisted_permission_profile_uses_configured_default() -> std::
                 persisted_permission_profile_id: Some("dev".to_string()),
                 ..Default::default()
             },
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -2726,7 +2726,7 @@ async fn invalid_persisted_permission_profile_uses_configured_default() -> std::
 
 #[tokio::test]
 async fn persisted_profile_cycle_uses_configured_default() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let config_toml = toml::from_str(
         r#"
@@ -2748,7 +2748,7 @@ extends = "dev"
             persisted_permission_profile_id: Some("dev".to_string()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2767,7 +2767,7 @@ extends = "dev"
 
 #[tokio::test]
 async fn missing_explicit_default_permissions_remains_an_error() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let error = Config::load_from_base_config_with_overrides(
@@ -2777,7 +2777,7 @@ async fn missing_explicit_default_permissions_remains_an_error() -> std::io::Res
             default_permissions: Some("removed-profile".to_string()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("explicit missing profile should be rejected");
@@ -2817,7 +2817,7 @@ fn permission_snapshot_setter_preserves_permission_constraints() {
 #[tokio::test]
 async fn permission_profile_override_preserves_managed_unrestricted_filesystem()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let permission_profile = PermissionProfile::Managed {
         file_system: ManagedFileSystemPermissions::Unrestricted,
@@ -2831,7 +2831,7 @@ async fn permission_profile_override_preserves_managed_unrestricted_filesystem()
             permission_profile: Some(permission_profile.clone()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -2851,7 +2851,7 @@ async fn permission_profile_override_preserves_managed_unrestricted_filesystem()
 #[tokio::test]
 async fn managed_unrestricted_permission_profile_still_enables_network_requirements()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let permission_profile = PermissionProfile::Managed {
         file_system: ManagedFileSystemPermissions::Unrestricted,
@@ -2865,7 +2865,7 @@ async fn managed_unrestricted_permission_profile_still_enables_network_requireme
             permission_profile: Some(permission_profile),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     assert_eq!(
@@ -2881,14 +2881,14 @@ async fn managed_unrestricted_permission_profile_still_enables_network_requireme
         .collect();
     let mut requirements = config.config_layer_stack.requirements().clone();
     requirements.network = Some(Sourced::new(
-        codex_config::NetworkConstraints {
+        ava_config::NetworkConstraints {
             enabled: Some(true),
             ..Default::default()
         },
         RequirementSource::LegacyManagedConfigTomlFromMdm,
     ));
     let mut requirements_toml = config.config_layer_stack.requirements_toml().clone();
-    requirements_toml.network = Some(codex_config::NetworkRequirementsToml {
+    requirements_toml.network = Some(ava_config::NetworkRequirementsToml {
         enabled: Some(true),
         ..Default::default()
     });
@@ -2902,7 +2902,7 @@ async fn managed_unrestricted_permission_profile_still_enables_network_requireme
 #[tokio::test]
 async fn permission_profile_override_keeps_memories_root_out_of_legacy_projection()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let permission_profile = PermissionProfile::from_runtime_permissions(
         &FileSystemSandboxPolicy::restricted(vec![
@@ -2931,11 +2931,11 @@ async fn permission_profile_override_keeps_memories_root_out_of_legacy_projectio
             permission_profile: Some(permission_profile),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
-    let memories_root = codex_home.path().join("memories").abs();
+    let memories_root = ava_home.path().join("memories").abs();
     assert!(
         !config
             .permissions
@@ -2957,7 +2957,7 @@ async fn permission_profile_override_keeps_memories_root_out_of_legacy_projectio
 #[tokio::test]
 async fn permission_profile_override_preserves_configured_network_policy_without_starting_proxy()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let permission_profile = PermissionProfile::Disabled;
 
@@ -3001,7 +3001,7 @@ async fn permission_profile_override_preserves_configured_network_policy_without
             permission_profile: Some(permission_profile.clone()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     assert!(
@@ -3017,7 +3017,7 @@ async fn permission_profile_override_preserves_configured_network_policy_without
 
 #[tokio::test]
 async fn workspace_root_glob_none_compiles_to_filesystem_pattern_entry() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let extra_root = TempDir::new()?;
     tokio::fs::write(cwd.path().join(".git"), "gitdir: nowhere").await?;
@@ -3054,7 +3054,7 @@ async fn workspace_root_glob_none_compiles_to_filesystem_pattern_entry() -> std:
             additional_writable_roots: vec![extra_root.path().to_path_buf()],
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3102,7 +3102,7 @@ async fn workspace_root_glob_none_compiles_to_filesystem_pattern_entry() -> std:
 
 #[tokio::test]
 async fn permissions_profiles_require_default_permissions() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -3132,7 +3132,7 @@ async fn permissions_profiles_require_default_permissions() -> std::io::Result<(
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("missing default_permissions should be rejected");
@@ -3148,7 +3148,7 @@ async fn permissions_profiles_require_default_permissions() -> std::io::Result<(
 #[tokio::test]
 async fn default_permissions_can_select_builtin_profile_without_permissions_table()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let config = Config::load_from_base_config_with_overrides(
@@ -3160,7 +3160,7 @@ async fn default_permissions_can_select_builtin_profile_without_permissions_tabl
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3188,7 +3188,7 @@ async fn default_permissions_can_select_builtin_profile_without_permissions_tabl
 
 #[tokio::test]
 async fn default_permissions_read_only_keeps_add_dir_read_only() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let extra_root = TempDir::new()?;
     let extra_root = extra_root.path().abs();
@@ -3203,7 +3203,7 @@ async fn default_permissions_read_only_keeps_add_dir_read_only() -> std::io::Res
             additional_writable_roots: vec![extra_root.to_path_buf()],
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3225,13 +3225,13 @@ async fn default_permissions_read_only_keeps_add_dir_read_only() -> std::io::Res
 async fn workspace_profile_applies_rules_to_runtime_and_profile_workspace_roots()
 -> std::io::Result<()> {
     let temp_dir = TempDir::new()?;
-    let codex_home = temp_dir.path().join("codex-home");
+    let ava_home = temp_dir.path().join("ava-home");
     let cwd = temp_dir.path().join("frontend");
     let runtime_root = temp_dir.path().join("backend");
     let profile_root = temp_dir.path().join("shared");
     for root in [&cwd, &runtime_root, &profile_root] {
         std::fs::create_dir_all(root.join(".git"))?;
-        std::fs::create_dir_all(root.join(".codex"))?;
+        std::fs::create_dir_all(root.join(".ava-code"))?;
     }
 
     let config = Config::load_from_base_config_with_overrides(
@@ -3256,7 +3256,7 @@ async fn workspace_profile_applies_rules_to_runtime_and_profile_workspace_roots(
                                 FilesystemPermissionToml::Scoped(BTreeMap::from([
                                     (".".to_string(), FileSystemAccessMode::Write),
                                     (".git".to_string(), FileSystemAccessMode::Read),
-                                    (".codex".to_string(), FileSystemAccessMode::Read),
+                                    (".ava-code".to_string(), FileSystemAccessMode::Read),
                                 ])),
                             )]),
                         }),
@@ -3271,7 +3271,7 @@ async fn workspace_profile_applies_rules_to_runtime_and_profile_workspace_roots(
             additional_writable_roots: vec![runtime_root.clone()],
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3306,8 +3306,8 @@ async fn workspace_profile_applies_rules_to_runtime_and_profile_workspace_roots(
             "expected .git carveout under {root:?}, policy: {policy:?}"
         );
         assert!(
-            !policy.can_write_local_path_with_cwd(&root.join(".codex"), cwd.as_path()),
-            "expected .codex carveout under {root:?}, policy: {policy:?}"
+            !policy.can_write_local_path_with_cwd(&root.join(".ava-code"), cwd.as_path()),
+            "expected .ava-code carveout under {root:?}, policy: {policy:?}"
         );
     }
     assert_eq!(
@@ -3324,7 +3324,7 @@ async fn workspace_profile_applies_rules_to_runtime_and_profile_workspace_roots(
 #[tokio::test]
 async fn explicit_builtin_workspace_profile_ignores_legacy_workspace_write_settings()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let extra_root = TempDir::new()?;
 
@@ -3343,7 +3343,7 @@ async fn explicit_builtin_workspace_profile_ignores_legacy_workspace_write_setti
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3366,7 +3366,7 @@ async fn explicit_builtin_workspace_profile_ignores_legacy_workspace_write_setti
 
 #[tokio::test]
 async fn default_permissions_profile_can_extend_builtin_workspace() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let config = Config::load_from_base_config_with_overrides(
@@ -3399,7 +3399,7 @@ async fn default_permissions_profile_can_extend_builtin_workspace() -> std::io::
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3467,7 +3467,7 @@ async fn default_permissions_profile_can_extend_builtin_workspace() -> std::io::
 
 #[tokio::test]
 async fn default_permissions_profile_can_extend_builtin_read_only() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let config = Config::load_from_base_config_with_overrides(
@@ -3494,7 +3494,7 @@ async fn default_permissions_profile_can_extend_builtin_read_only() -> std::io::
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3523,7 +3523,7 @@ async fn default_permissions_profile_can_extend_builtin_read_only() -> std::io::
 
 #[tokio::test]
 async fn empty_config_defaults_to_builtin_profile_for_trusted_project() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let project_key = cwd.path().to_string_lossy().to_string();
 
@@ -3541,7 +3541,7 @@ async fn empty_config_defaults_to_builtin_profile_for_trusted_project() -> std::
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3569,7 +3569,7 @@ async fn empty_config_defaults_to_builtin_profile_for_trusted_project() -> std::
             "expected trusted project fallback to use :workspace, policy: {policy:?}"
         );
         assert!(
-            !policy.can_write_local_path_with_cwd(&cwd.path().join(".codex"), cwd.path()),
+            !policy.can_write_local_path_with_cwd(&cwd.path().join(".ava-code"), cwd.path()),
             "expected :workspace metadata carveouts, policy: {policy:?}"
         );
     }
@@ -3578,7 +3578,7 @@ async fn empty_config_defaults_to_builtin_profile_for_trusted_project() -> std::
 
 #[tokio::test]
 async fn empty_config_defaults_to_builtin_profile_for_untrusted_project() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let project_key = cwd.path().to_string_lossy().to_string();
 
@@ -3596,7 +3596,7 @@ async fn empty_config_defaults_to_builtin_profile_for_untrusted_project() -> std
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3628,7 +3628,7 @@ async fn empty_config_defaults_to_builtin_profile_for_untrusted_project() -> std
             "expected untrusted project fallback to use :workspace, policy: {policy:?}"
         );
         assert!(
-            !policy.can_write_local_path_with_cwd(&cwd.path().join(".codex"), cwd.path()),
+            !policy.can_write_local_path_with_cwd(&cwd.path().join(".ava-code"), cwd.path()),
             "expected :workspace metadata carveouts, policy: {policy:?}"
         );
     }
@@ -3638,7 +3638,7 @@ async fn empty_config_defaults_to_builtin_profile_for_untrusted_project() -> std
 #[tokio::test]
 async fn implicit_builtin_workspace_profile_preserves_sandbox_workspace_write_settings()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let extra_root = TempDir::new()?;
     let extra_root = extra_root.path().abs();
@@ -3667,7 +3667,7 @@ async fn implicit_builtin_workspace_profile_preserves_sandbox_workspace_write_se
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3706,10 +3706,10 @@ async fn implicit_builtin_workspace_profile_preserves_sandbox_workspace_write_se
 #[tokio::test]
 async fn implicit_builtin_workspace_profile_preserves_add_dir_metadata_carveouts()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let extra_root = TempDir::new()?;
-    for subpath in [".git", ".agents", ".codex"] {
+    for subpath in [".git", ".agents", ".ava-code"] {
         std::fs::create_dir_all(extra_root.path().join(subpath))?;
     }
     let project_key = cwd.path().to_string_lossy().to_string();
@@ -3732,7 +3732,7 @@ async fn implicit_builtin_workspace_profile_preserves_add_dir_metadata_carveouts
             additional_writable_roots: vec![extra_root.path().to_path_buf()],
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3742,7 +3742,7 @@ async fn implicit_builtin_workspace_profile_preserves_add_dir_metadata_carveouts
         policy.can_write_local_path_with_cwd(extra_root.as_path(), cwd.path()),
         "expected implicit :workspace to preserve additional writable roots, policy: {policy:?}"
     );
-    for subpath in [".git", ".agents", ".codex"] {
+    for subpath in [".git", ".agents", ".ava-code"] {
         assert!(
             !policy.can_write_local_path_with_cwd(&extra_root.join(subpath), cwd.path()),
             "expected implicit :workspace to preserve legacy metadata carveout for {subpath}, \
@@ -3755,7 +3755,7 @@ async fn implicit_builtin_workspace_profile_preserves_add_dir_metadata_carveouts
 #[tokio::test]
 async fn empty_config_defaults_to_builtin_read_only_without_trust_decision() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let config = Config::load_from_base_config_with_overrides(
@@ -3764,7 +3764,7 @@ async fn empty_config_defaults_to_builtin_read_only_without_trust_decision() -> 
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3782,7 +3782,7 @@ async fn empty_config_defaults_to_builtin_read_only_without_trust_decision() -> 
 
 #[tokio::test]
 async fn default_permissions_can_select_builtin_full_access_profile() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let config = Config::load_from_base_config_with_overrides(
@@ -3794,7 +3794,7 @@ async fn default_permissions_can_select_builtin_full_access_profile() -> std::io
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3815,7 +3815,7 @@ async fn default_permissions_can_select_builtin_full_access_profile() -> std::io
 
 #[tokio::test]
 async fn legacy_danger_no_sandbox_is_rejected() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let err = Config::load_from_base_config_with_overrides(
@@ -3827,7 +3827,7 @@ async fn legacy_danger_no_sandbox_is_rejected() -> std::io::Result<()> {
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("legacy full-access alias should be rejected");
@@ -3841,7 +3841,7 @@ async fn legacy_danger_no_sandbox_is_rejected() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn user_defined_permission_profile_names_cannot_use_builtin_prefix() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let err = Config::load_from_base_config_with_overrides(
@@ -3859,7 +3859,7 @@ async fn user_defined_permission_profile_names_cannot_use_builtin_prefix() -> st
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("reserved profile name should be rejected");
@@ -3874,7 +3874,7 @@ async fn user_defined_permission_profile_names_cannot_use_builtin_prefix() -> st
 
 #[tokio::test]
 async fn unknown_builtin_permission_profile_name_is_rejected() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
 
     let err = Config::load_from_base_config_with_overrides(
@@ -3886,7 +3886,7 @@ async fn unknown_builtin_permission_profile_name_is_rejected() -> std::io::Resul
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("unknown built-in profile name should be rejected");
@@ -3902,7 +3902,7 @@ async fn unknown_builtin_permission_profile_name_is_rejected() -> std::io::Resul
 #[tokio::test]
 async fn permissions_profiles_allow_direct_write_roots_outside_workspace_root()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
     let external_write_dir = TempDir::new()?;
@@ -3936,7 +3936,7 @@ async fn permissions_profiles_allow_direct_write_roots_outside_workspace_root()
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -3969,7 +3969,7 @@ async fn permissions_profiles_allow_direct_write_roots_outside_workspace_root()
 #[tokio::test]
 async fn permissions_profiles_reject_nested_entries_for_non_workspace_roots() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -4003,7 +4003,7 @@ async fn permissions_profiles_reject_nested_entries_for_non_workspace_roots() ->
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("nested entries outside :workspace_roots should be rejected");
@@ -4019,7 +4019,7 @@ async fn permissions_profiles_reject_nested_entries_for_non_workspace_roots() ->
 async fn load_workspace_permission_profile(
     profile: PermissionProfileToml,
 ) -> std::io::Result<Config> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -4035,7 +4035,7 @@ async fn load_workspace_permission_profile(
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
 }
@@ -4078,7 +4078,7 @@ async fn permissions_profiles_allow_unknown_special_paths() -> std::io::Result<(
     );
     assert!(
         config.startup_warnings.iter().any(|warning| warning.contains(
-            "Configured filesystem path `:future_special_path` is not recognized by this version of Codex and will be ignored."
+            "Configured filesystem path `:future_special_path` is not recognized by this version of Ava and will be ignored."
         )),
         "{:?}",
         config.startup_warnings
@@ -4119,7 +4119,7 @@ async fn permissions_profiles_allow_unknown_special_paths_with_nested_entries()
     );
     assert!(
         config.startup_warnings.iter().any(|warning| warning.contains(
-            "Configured filesystem path `:future_special_path` with nested entry `docs` is not recognized by this version of Codex and will be ignored."
+            "Configured filesystem path `:future_special_path` with nested entry `docs` is not recognized by this version of Ava and will be ignored."
         )),
         "{:?}",
         config.startup_warnings
@@ -4150,7 +4150,7 @@ async fn permissions_profiles_allow_missing_filesystem_with_warning() -> std::io
     );
     assert!(
         config.startup_warnings.iter().any(|warning| warning.contains(
-            "Permissions profile `dev` does not define any recognized filesystem entries for this version of Codex."
+            "Permissions profile `dev` does not define any recognized filesystem entries for this version of Ava."
         )),
         "{:?}",
         config.startup_warnings
@@ -4178,7 +4178,7 @@ async fn permissions_profiles_allow_empty_filesystem_with_warning() -> std::io::
     );
     assert!(
         config.startup_warnings.iter().any(|warning| warning.contains(
-            "Permissions profile `dev` does not define any recognized filesystem entries for this version of Codex."
+            "Permissions profile `dev` does not define any recognized filesystem entries for this version of Ava."
         )),
         "{:?}",
         config.startup_warnings
@@ -4188,7 +4188,7 @@ async fn permissions_profiles_allow_empty_filesystem_with_warning() -> std::io::
 
 #[tokio::test]
 async fn permissions_profiles_reject_workspace_root_parent_traversal() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -4222,7 +4222,7 @@ async fn permissions_profiles_reject_workspace_root_parent_traversal() -> std::i
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("parent traversal should be rejected for project root subpaths");
@@ -4237,7 +4237,7 @@ async fn permissions_profiles_reject_workspace_root_parent_traversal() -> std::i
 
 #[tokio::test]
 async fn permissions_profiles_allow_network_enablement() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     std::fs::write(cwd.path().join(".git"), "gitdir: nowhere")?;
 
@@ -4271,7 +4271,7 @@ async fn permissions_profiles_allow_network_enablement() -> std::io::Result<()> 
             cwd: Some(cwd.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -4466,11 +4466,11 @@ async fn disable_paste_burst_preserves_layering_and_new_key_precedence() -> anyh
             false,
         ),
     ] {
-        let codex_home = TempDir::new()?;
-        std::fs::write(codex_home.path().join(CONFIG_TOML_FILE), toml)?;
+        let ava_home = TempDir::new()?;
+        std::fs::write(ava_home.path().join(CONFIG_TOML_FILE), toml)?;
         let config = ConfigBuilder::without_managed_config_for_tests()
-            .codex_home(codex_home.path().to_path_buf())
-            .fallback_cwd(Some(codex_home.path().to_path_buf()))
+            .ava_home(ava_home.path().to_path_buf())
+            .fallback_cwd(Some(ava_home.path().to_path_buf()))
             .cli_overrides(vec![(key.to_string(), TomlValue::Boolean(value))])
             .build()
             .await?;
@@ -4813,7 +4813,7 @@ exclude_slash_tmp = true
 
 #[tokio::test]
 async fn legacy_sandbox_mode_builds_profiles_with_compatible_projection() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
     let extra_root = test_absolute_path("/tmp/legacy-extra-root");
     let cases = vec![
@@ -4853,7 +4853,7 @@ exclude_slash_tmp = true
                 cwd: Some(cwd.path().to_path_buf()),
                 ..Default::default()
             },
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -4927,7 +4927,7 @@ exclude_slash_tmp = true
                             missing_path_behavior: None,
                         })
                 );
-                for subpath in [".git", ".agents", ".codex"] {
+                for subpath in [".git", ".agents", ".ava-code"] {
                     assert!(
                         file_system_policy
                             .entries
@@ -4941,7 +4941,7 @@ exclude_slash_tmp = true
                                 },
                                 access: FileSystemAccessMode::Read,
                                 missing_path_behavior: Some(
-                                    codex_protocol::permissions::FileSystemSandboxEntryMissingPathBehavior::Skip,
+                                    ava_protocol::permissions::FileSystemSandboxEntryMissingPathBehavior::Skip,
                                 ),
                             }),
                         "case `{name}` should materialize `{subpath}` for the runtime workspace \
@@ -5210,7 +5210,7 @@ fn filter_plugin_mcp_servers_without_allowlists_does_not_filter_any_plugin() {
     let requirements = Sourced::new(
         BTreeMap::from([(
             "sites@openai-bundled".to_string(),
-            codex_config::PluginRequirementsToml { mcp_servers: None },
+            ava_config::PluginRequirementsToml { mcp_servers: None },
         )]),
         RequirementSource::LegacyManagedConfigTomlFromMdm,
     );
@@ -5233,7 +5233,7 @@ fn filter_plugin_mcp_servers_by_empty_allowlist_blocks_all() {
     let requirements = Sourced::new(
         BTreeMap::from([(
             "sample@test".to_string(),
-            codex_config::PluginRequirementsToml {
+            ava_config::PluginRequirementsToml {
                 mcp_servers: Some(BTreeMap::new()),
             },
         )]),
@@ -5277,7 +5277,7 @@ fn filter_plugin_mcp_servers_by_allowlist_enforces_plugin_and_identity_rules() {
     let requirements = Sourced::new(
         BTreeMap::from([(
             "sample@test".to_string(),
-            codex_config::PluginRequirementsToml {
+            ava_config::PluginRequirementsToml {
                 mcp_servers: Some(BTreeMap::from([
                     (
                         MATCHED_SERVER.to_string(),
@@ -5327,7 +5327,7 @@ fn filter_plugin_mcp_servers_by_allowlist_blocks_unlisted_plugin() {
     let requirements = Sourced::new(
         BTreeMap::from([(
             "other@test".to_string(),
-            codex_config::PluginRequirementsToml {
+            ava_config::PluginRequirementsToml {
                 mcp_servers: Some(BTreeMap::from([(
                     "server-a".to_string(),
                     McpServerRequirement::Identity {
@@ -5391,7 +5391,7 @@ fn filter_plugin_mcp_servers_by_matchers_enforces_name_and_invocation() {
     let requirements = Sourced::new(
         BTreeMap::from([(
             "sample@test".to_string(),
-            codex_config::PluginRequirementsToml {
+            ava_config::PluginRequirementsToml {
                 mcp_servers: Some(BTreeMap::from([
                     (MATCHED_SERVER.to_string(), requirement.clone()),
                     (MISMATCHED_SERVER.to_string(), requirement),
@@ -5422,10 +5422,10 @@ fn filter_plugin_mcp_servers_by_matchers_enforces_name_and_invocation() {
 
 #[tokio::test]
 async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let user_file = AbsolutePathBuf::resolve_path_against_base(CONFIG_TOML_FILE, codex_home.path());
-    let project_dot_codex =
-        AbsolutePathBuf::resolve_path_against_base("project/.codex", codex_home.path());
+    let ava_home = TempDir::new()?;
+    let user_file = AbsolutePathBuf::resolve_path_against_base(CONFIG_TOML_FILE, ava_home.path());
+    let project_dot_ava =
+        AbsolutePathBuf::resolve_path_against_base("project/.ava-code", ava_home.path());
     let mcp_requirements = BTreeMap::from([
         (
             "session_overrides_user".to_string(),
@@ -5460,11 +5460,11 @@ async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result
             },
         ),
     ]);
-    let requirements_toml = codex_config::ConfigRequirementsToml {
+    let requirements_toml = ava_config::ConfigRequirementsToml {
         mcp_servers: Some(mcp_requirements.clone()),
         ..Default::default()
     };
-    let requirements = codex_config::ConfigRequirements {
+    let requirements = ava_config::ConfigRequirements {
         mcp_servers: Some(Sourced::new(mcp_requirements, RequirementSource::Unknown)),
         ..Default::default()
     };
@@ -5487,7 +5487,7 @@ async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result
             ),
             ConfigLayerEntry::new(
                 ConfigLayerSource::Project {
-                    dot_codex_folder: project_dot_codex.clone(),
+                    dot_ava_folder: project_dot_ava.clone(),
                 },
                 toml::toml! {
                     [mcp_servers.fresh_project]
@@ -5516,10 +5516,10 @@ async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result
         LOCAL_FS.as_ref(),
         refreshed_toml,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         refreshed_layer_stack,
     )
     .await?;
@@ -5542,7 +5542,7 @@ async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result
             ),
             ConfigLayerEntry::new(
                 ConfigLayerSource::Project {
-                    dot_codex_folder: project_dot_codex,
+                    dot_ava_folder: project_dot_ava,
                 },
                 toml::toml! {
                     [mcp_servers.fresh_project]
@@ -5583,10 +5583,10 @@ async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result
         LOCAL_FS.as_ref(),
         thread_toml,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         thread_layer_stack,
     )
     .await?;
@@ -5595,7 +5595,7 @@ async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result
         &thread_config.config_layer_stack,
         thread_config.cwd.to_path_buf(),
         &refreshed_config.config_layer_stack,
-        refreshed_config.codex_home.clone(),
+        refreshed_config.ava_home.clone(),
         zsh_path.map(AbsolutePathBuf::try_from).transpose()?,
     )
     .await?;
@@ -5637,14 +5637,14 @@ async fn rebuild_with_session_layers_refreshes_requirements() -> std::io::Result
 
 #[tokio::test]
 async fn rebuild_with_session_layers_refreshes_plugin_derived_mcp_config() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let plugin_root = codex_home
+    let ava_home = TempDir::new()?;
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache")
         .join("test/sample/local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample"}"#,
     )?;
     std::fs::write(
@@ -5659,7 +5659,7 @@ async fn rebuild_with_session_layers_refreshes_plugin_derived_mcp_config() -> an
 }"#,
     )?;
 
-    let user_file = AbsolutePathBuf::resolve_path_against_base(CONFIG_TOML_FILE, codex_home.path());
+    let user_file = AbsolutePathBuf::resolve_path_against_base(CONFIG_TOML_FILE, ava_home.path());
     let refreshed_layer_stack = ConfigLayerStack::new(
         vec![ConfigLayerEntry::new(
             ConfigLayerSource::User {
@@ -5682,10 +5682,10 @@ async fn rebuild_with_session_layers_refreshes_plugin_derived_mcp_config() -> an
         LOCAL_FS.as_ref(),
         refreshed_layer_stack.effective_config().try_into()?,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         refreshed_layer_stack,
     )
     .await?;
@@ -5711,10 +5711,10 @@ async fn rebuild_with_session_layers_refreshes_plugin_derived_mcp_config() -> an
         LOCAL_FS.as_ref(),
         thread_layer_stack.effective_config().try_into()?,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         thread_layer_stack,
     )
     .await?;
@@ -5723,7 +5723,7 @@ async fn rebuild_with_session_layers_refreshes_plugin_derived_mcp_config() -> an
         &thread_config.config_layer_stack,
         thread_config.cwd.to_path_buf(),
         &refreshed_config.config_layer_stack,
-        refreshed_config.codex_home.clone(),
+        refreshed_config.ava_home.clone(),
         zsh_path.map(AbsolutePathBuf::try_from).transpose()?,
     )
     .await?;
@@ -5752,14 +5752,14 @@ async fn rebuild_with_session_layers_refreshes_plugin_derived_mcp_config() -> an
 
 #[tokio::test]
 async fn to_mcp_config_omits_plugin_id_when_user_server_shadows_plugin_mcp() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let plugin_root = codex_home
+    let ava_home = TempDir::new()?;
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache")
         .join("test/sample/local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample"}"#,
     )?;
     std::fs::write(
@@ -5774,7 +5774,7 @@ async fn to_mcp_config_omits_plugin_id_when_user_server_shadows_plugin_mcp() -> 
 }"#,
     )?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 [features]
 plugins = true
@@ -5788,7 +5788,7 @@ enabled = true
     )?;
 
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await?;
     let plugins_manager =
@@ -5812,14 +5812,14 @@ enabled = true
 
 #[tokio::test]
 async fn selected_plugin_wins_after_discovered_plugin_requirements() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let plugin_root = codex_home
+    let ava_home = TempDir::new()?;
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache")
         .join("test/sample/local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample"}"#,
     )?;
     std::fs::write(
@@ -5838,7 +5838,7 @@ async fn selected_plugin_wins_after_discovered_plugin_requirements() -> anyhow::
 }"#,
     )?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 [features]
 plugins = true
@@ -5849,7 +5849,7 @@ enabled = true
     )?;
 
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -5908,7 +5908,7 @@ url = "https://sample.example/mcp"
             .server("unlisted")
             .map(|server| (server.source().clone(), server.config().clone())),
         Some((
-            codex_mcp::McpServerSource::SelectedPlugin(McpPluginAttribution::new(
+            ava_mcp::McpServerSource::SelectedPlugin(McpPluginAttribution::new(
                 "selected-root".to_string(),
                 "Selected Plugin".to_string(),
             )),
@@ -5920,14 +5920,14 @@ url = "https://sample.example/mcp"
 
 #[tokio::test]
 async fn to_mcp_config_empty_mcp_requirements_disable_plugin_mcps() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let plugin_root = codex_home
+    let ava_home = TempDir::new()?;
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache")
         .join("test/sample/local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample"}"#,
     )?;
     std::fs::write(
@@ -5942,7 +5942,7 @@ async fn to_mcp_config_empty_mcp_requirements_disable_plugin_mcps() -> anyhow::R
 }"#,
     )?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 [features]
 plugins = true
@@ -5953,7 +5953,7 @@ enabled = true
     )?;
 
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -6035,8 +6035,8 @@ async fn add_dir_override_extends_workspace_writable_roots() -> std::io::Result<
 
 #[tokio::test]
 async fn default_zsh_path_sets_runtime_zsh_path() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let default_zsh_path = codex_home.path().join("packaged-zsh");
+    let ava_home = TempDir::new()?;
+    let default_zsh_path = ava_home.path().join("packaged-zsh");
 
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
@@ -6044,7 +6044,7 @@ async fn default_zsh_path_sets_runtime_zsh_path() -> std::io::Result<()> {
             default_zsh_path: Some(default_zsh_path.abs()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     assert_eq!(config.zsh_path, Some(default_zsh_path));
@@ -6053,19 +6053,19 @@ async fn default_zsh_path_sets_runtime_zsh_path() -> std::io::Result<()> {
 }
 
 #[tokio::test]
-async fn sqlite_home_defaults_to_codex_home_for_workspace_write() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+async fn sqlite_home_defaults_to_ava_home_for_workspace_write() -> std::io::Result<()> {
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
         ConfigOverrides {
             sandbox_mode: Some(SandboxMode::WorkspaceWrite),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
-    assert_eq!(config.sqlite.home(), codex_home.path());
+    assert_eq!(config.sqlite.home(), ava_home.path());
 
     Ok(())
 }
@@ -6073,9 +6073,9 @@ async fn sqlite_home_defaults_to_codex_home_for_workspace_write() -> std::io::Re
 #[tokio::test]
 async fn workspace_write_includes_configured_writable_root_once_without_memories_root()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let memories_root = codex_home.path().join("memories");
-    let writable_root = codex_home.path().join("writable").abs();
+    let ava_home = TempDir::new()?;
+    let memories_root = ava_home.path().join("memories");
+    let writable_root = ava_home.path().join("writable").abs();
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml {
             sandbox_workspace_write: Some(SandboxWorkspaceWrite {
@@ -6088,7 +6088,7 @@ async fn workspace_write_includes_configured_writable_root_once_without_memories
             sandbox_mode: Some(SandboxMode::WorkspaceWrite),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6127,9 +6127,9 @@ async fn workspace_write_includes_configured_writable_root_once_without_memories
 #[tokio::test]
 async fn memory_tool_makes_memories_root_readable_without_creating_or_widening_writes()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cwd = TempDir::new()?;
-    let memories_root = codex_home.path().join("memories");
+    let memories_root = ava_home.path().join("memories");
     let memories_root_abs = memories_root.abs();
 
     let config = Config::load_from_base_config_with_overrides(
@@ -6150,7 +6150,7 @@ async fn memory_tool_makes_memories_root_readable_without_creating_or_widening_w
             sandbox_mode: Some(SandboxMode::WorkspaceWrite),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6186,13 +6186,13 @@ async fn memory_tool_makes_memories_root_readable_without_creating_or_widening_w
 
 #[tokio::test]
 async fn config_defaults_to_file_cli_auth_store_mode() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml::default();
 
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6206,7 +6206,7 @@ async fn config_defaults_to_file_cli_auth_store_mode() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn config_resolves_explicit_keyring_auth_store_mode() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         cli_auth_credentials_store: Some(AuthCredentialsStoreMode::Keyring),
         ..Default::default()
@@ -6215,7 +6215,7 @@ async fn config_resolves_explicit_keyring_auth_store_mode() -> std::io::Result<(
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6232,10 +6232,10 @@ async fn config_resolves_explicit_keyring_auth_store_mode() -> std::io::Result<(
 
 #[tokio::test]
 async fn config_applies_managed_auth_store_and_chatgpt_base_url() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let managed_store = AuthCredentialsStoreMode::Keyring;
     let managed_url = "https://managed.example/backend-api/";
-    let requirements = codex_config::ConfigRequirements {
+    let requirements = ava_config::ConfigRequirements {
         cli_auth_credentials_store: Some(Sourced::new(managed_store, RequirementSource::Unknown)),
         chatgpt_base_url: Some(Sourced::new(
             managed_url.to_string(),
@@ -6246,7 +6246,7 @@ async fn config_applies_managed_auth_store_and_chatgpt_base_url() -> std::io::Re
     let config_layer_stack = ConfigLayerStack::new(
         Vec::new(),
         requirements,
-        codex_config::ConfigRequirementsToml::default(),
+        ava_config::ConfigRequirementsToml::default(),
     )?;
 
     let config = Config::load_config_with_layer_stack(
@@ -6257,10 +6257,10 @@ async fn config_applies_managed_auth_store_and_chatgpt_base_url() -> std::io::Re
             ..Default::default()
         },
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         config_layer_stack,
     )
     .await?;
@@ -6279,11 +6279,11 @@ async fn config_applies_managed_auth_store_and_chatgpt_base_url() -> std::io::Re
 
 #[tokio::test]
 async fn project_cannot_be_the_only_xaa_opt_in_source() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config_layer_stack = ConfigLayerStack::new(
         vec![ConfigLayerEntry::new(
             ConfigLayerSource::Project {
-                dot_codex_folder: codex_home.path().join("project/.codex").abs(),
+                dot_ava_folder: ava_home.path().join("project/.ava-code").abs(),
             },
             toml::toml! {
                 [features]
@@ -6303,10 +6303,10 @@ async fn project_cannot_be_the_only_xaa_opt_in_source() -> std::io::Result<()> {
         LOCAL_FS.as_ref(),
         cfg,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         config_layer_stack,
     )
     .await
@@ -6323,13 +6323,13 @@ async fn project_cannot_be_the_only_xaa_opt_in_source() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn config_resolves_default_oauth_store_mode() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml::default();
 
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6397,7 +6397,7 @@ fn local_dev_builds_force_file_mcp_oauth_store_modes() {
 
 #[tokio::test]
 async fn feedback_enabled_defaults_to_true() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         feedback: Some(FeedbackConfigToml::default()),
         ..Default::default()
@@ -6406,7 +6406,7 @@ async fn feedback_enabled_defaults_to_true() -> std::io::Result<()> {
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6610,11 +6610,11 @@ fn web_search_mode_for_turn_does_not_implicitly_select_indexed() -> anyhow::Resu
 
 #[tokio::test]
 async fn project_profiles_are_ignored() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
     let workspace_key = workspace.path().to_string_lossy().replace('\\', "\\\\");
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"
 [projects."{workspace_key}"]
@@ -6622,7 +6622,7 @@ trust_level = "trusted"
 "#,
         ),
     )?;
-    let project_config_dir = workspace.path().join(".codex");
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
         project_config_dir.join(CONFIG_TOML_FILE),
@@ -6635,7 +6635,7 @@ model = "gpt-project-local"
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(workspace.path().to_path_buf()),
             ..Default::default()
@@ -6661,7 +6661,7 @@ model = "gpt-project-local"
 
 #[tokio::test]
 async fn feature_table_overrides_legacy_flags() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut entries = BTreeMap::new();
     entries.insert("apply_patch_freeform".to_string(), false);
     let cfg = ConfigToml {
@@ -6672,7 +6672,7 @@ async fn feature_table_overrides_legacy_flags() -> std::io::Result<()> {
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6683,7 +6683,7 @@ async fn feature_table_overrides_legacy_flags() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn legacy_toggles_map_to_features() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         experimental_use_unified_exec_tool: Some(true),
         ..Default::default()
@@ -6692,7 +6692,7 @@ async fn legacy_toggles_map_to_features() -> std::io::Result<()> {
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6717,11 +6717,11 @@ async fn legacy_unified_exec_disable_flags_do_not_disable_command_execution() ->
             ..Default::default()
         },
     ] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let mut config = Config::load_from_base_config_with_overrides(
             cfg,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -6748,7 +6748,7 @@ async fn legacy_unified_exec_disable_flags_do_not_disable_command_execution() ->
 #[tokio::test]
 async fn responses_websocket_features_do_not_change_wire_api() -> std::io::Result<()> {
     for feature_key in ["responses_websockets", "responses_websockets_v2"] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let mut entries = BTreeMap::new();
         entries.insert(feature_key.to_string(), true);
         let cfg = ConfigToml {
@@ -6759,7 +6759,7 @@ async fn responses_websocket_features_do_not_change_wire_api() -> std::io::Resul
         let config = Config::load_from_base_config_with_overrides(
             cfg,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -6771,7 +6771,7 @@ async fn responses_websocket_features_do_not_change_wire_api() -> std::io::Resul
 
 #[tokio::test]
 async fn config_honors_explicit_file_oauth_store_mode() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         mcp_oauth_credentials_store: Some(OAuthCredentialsStoreMode::File),
         ..Default::default()
@@ -6780,7 +6780,7 @@ async fn config_honors_explicit_file_oauth_store_mode() -> std::io::Result<()> {
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -6794,27 +6794,27 @@ async fn config_honors_explicit_file_oauth_store_mode() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn managed_config_overrides_oauth_store_mode() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let managed_path = codex_home.path().join("managed_config.toml");
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let ava_home = TempDir::new()?;
+    let managed_path = ava_home.path().join("managed_config.toml");
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
 
     std::fs::write(&config_path, "mcp_oauth_credentials_store = \"file\"\n")?;
     std::fs::write(&managed_path, "mcp_oauth_credentials_store = \"keyring\"\n")?;
 
     let overrides = LoaderOverrides::with_managed_config_path_for_tests(managed_path.clone());
 
-    let cwd = codex_home.path().abs();
+    let cwd = ava_home.path().abs();
     let config_layer_stack = load_config_layers_state(
         LOCAL_FS.as_ref(),
-        codex_home.path(),
+        ava_home.path(),
         Some(cwd),
         &Vec::new(),
         overrides,
-        &codex_config::NoopThreadConfigLoader,
+        &ava_config::NoopThreadConfigLoader,
     )
     .await?;
     let cfg =
-        deserialize_config_toml_with_base(config_layer_stack.effective_config(), codex_home.path())
+        deserialize_config_toml_with_base(config_layer_stack.effective_config(), ava_home.path())
             .map_err(|e| {
                 tracing::error!("Failed to deserialize overridden config: {e}");
                 e
@@ -6827,7 +6827,7 @@ async fn managed_config_overrides_oauth_store_mode() -> anyhow::Result<()> {
     let final_config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     assert_eq!(
@@ -6843,9 +6843,9 @@ async fn managed_config_overrides_oauth_store_mode() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn load_global_mcp_servers_returns_empty_if_missing() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let servers = load_global_mcp_servers(codex_home.path()).await?;
+    let servers = load_global_mcp_servers(ava_home.path()).await?;
     assert!(servers.is_empty());
 
     Ok(())
@@ -6853,8 +6853,8 @@ async fn load_global_mcp_servers_returns_empty_if_missing() -> anyhow::Result<()
 
 #[tokio::test]
 async fn replace_mcp_servers_round_trips_entries() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let expected_cwd = LegacyAppPathString::from_path(codex_home.path());
+    let ava_home = TempDir::new()?;
+    let expected_cwd = LegacyAppPathString::from_path(ava_home.path());
 
     let mut servers = BTreeMap::new();
     servers.insert(
@@ -6887,11 +6887,11 @@ async fn replace_mcp_servers_round_trips_entries() -> anyhow::Result<()> {
     );
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     assert_eq!(loaded.len(), 1);
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
@@ -6917,10 +6917,10 @@ async fn replace_mcp_servers_round_trips_entries() -> anyhow::Result<()> {
 
     let empty = BTreeMap::new();
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(empty.clone())],
     )?;
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     assert!(loaded.is_empty());
 
     Ok(())
@@ -6928,30 +6928,30 @@ async fn replace_mcp_servers_round_trips_entries() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn managed_config_wins_over_cli_overrides() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let managed_path = codex_home.path().join("managed_config.toml");
+    let ava_home = TempDir::new()?;
+    let managed_path = ava_home.path().join("managed_config.toml");
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         "model = \"base\"\n",
     )?;
     std::fs::write(&managed_path, "model = \"managed_config\"\n")?;
 
     let overrides = LoaderOverrides::with_managed_config_path_for_tests(managed_path);
 
-    let cwd = codex_home.path().abs();
+    let cwd = ava_home.path().abs();
     let config_layer_stack = load_config_layers_state(
         LOCAL_FS.as_ref(),
-        codex_home.path(),
+        ava_home.path(),
         Some(cwd),
         &[("model".to_string(), TomlValue::String("cli".to_string()))],
         overrides,
-        &codex_config::NoopThreadConfigLoader,
+        &ava_config::NoopThreadConfigLoader,
     )
     .await?;
 
     let cfg =
-        deserialize_config_toml_with_base(config_layer_stack.effective_config(), codex_home.path())
+        deserialize_config_toml_with_base(config_layer_stack.effective_config(), ava_home.path())
             .map_err(|e| {
                 tracing::error!("Failed to deserialize overridden config: {e}");
                 e
@@ -6963,8 +6963,8 @@ async fn managed_config_wins_over_cli_overrides() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn load_global_mcp_servers_accepts_legacy_ms_field() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let ava_home = TempDir::new()?;
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
 
     std::fs::write(
         &config_path,
@@ -6976,7 +6976,7 @@ startup_timeout_ms = 2500
 "#,
     )?;
 
-    let servers = load_global_mcp_servers(codex_home.path()).await?;
+    let servers = load_global_mcp_servers(ava_home.path()).await?;
     let docs = servers.get("docs").expect("docs entry");
     assert_eq!(docs.startup_timeout_sec, Some(Duration::from_millis(2500)));
 
@@ -7066,7 +7066,7 @@ fn desktop_toml_round_trips_opaque_nested_values() -> anyhow::Result<()> {
         r#"
 [desktop]
 appearanceTheme = "dark"
-selected-avatar-id = "codex"
+selected-avatar-id = "ava"
 recentViews = ["threads", "settings"]
 
 [desktop.workspace]
@@ -7086,7 +7086,7 @@ pane = { selected = "console", expanded = false }
     );
     assert_eq!(
         desktop.get("selected-avatar-id"),
-        Some(&serde_json::json!("codex"))
+        Some(&serde_json::json!("ava"))
     );
     assert_eq!(
         desktop.get("recentViews"),
@@ -7113,11 +7113,11 @@ pane = { selected = "console", expanded = false }
 
 #[tokio::test]
 async fn to_mcp_config_preserves_apps_feature_from_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     let plugins_manager =
@@ -7141,11 +7141,11 @@ async fn to_mcp_config_preserves_apps_feature_from_config() -> std::io::Result<(
 
 #[tokio::test]
 async fn to_mcp_config_flows_mcp_tool_prefix_from_feature() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     let plugins_manager =
@@ -7178,11 +7178,11 @@ async fn to_mcp_config_flows_mcp_tool_prefix_from_feature() -> std::io::Result<(
 
 #[tokio::test]
 async fn to_mcp_config_flows_independent_mcp_2026_features() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     let plugins_manager =
@@ -7195,8 +7195,8 @@ async fn to_mcp_config_flows_independent_mcp_2026_features() -> std::io::Result<
             mcp_config.host_owned_apps_protocol_mode,
         ),
         (
-            codex_mcp::McpProtocolMode::Legacy,
-            codex_mcp::McpProtocolMode::Legacy,
+            ava_mcp::McpProtocolMode::Legacy,
+            ava_mcp::McpProtocolMode::Legacy,
         )
     );
 
@@ -7208,13 +7208,13 @@ async fn to_mcp_config_flows_independent_mcp_2026_features() -> std::io::Result<
             mcp_config.host_owned_apps_protocol_mode,
         ),
         (
-            codex_mcp::McpProtocolMode::V20260728,
-            codex_mcp::McpProtocolMode::Legacy,
+            ava_mcp::McpProtocolMode::V20260728,
+            ava_mcp::McpProtocolMode::Legacy,
         )
     );
 
     let _ = config.features.disable(Feature::Mcp20260728);
-    let _ = config.features.enable(Feature::CodexAppsMcp20260728);
+    let _ = config.features.enable(Feature::AvaAppsMcp20260728);
     let mcp_config = config.to_mcp_config(&plugins_manager).await;
     assert_eq!(
         (
@@ -7222,8 +7222,8 @@ async fn to_mcp_config_flows_independent_mcp_2026_features() -> std::io::Result<
             mcp_config.host_owned_apps_protocol_mode,
         ),
         (
-            codex_mcp::McpProtocolMode::Legacy,
-            codex_mcp::McpProtocolMode::V20260728,
+            ava_mcp::McpProtocolMode::Legacy,
+            ava_mcp::McpProtocolMode::V20260728,
         )
     );
 
@@ -7232,11 +7232,11 @@ async fn to_mcp_config_flows_independent_mcp_2026_features() -> std::io::Result<
 
 #[tokio::test]
 async fn to_mcp_config_preserves_auth_elicitation_feature_from_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
     let plugins_manager =
@@ -7262,8 +7262,8 @@ async fn to_mcp_config_preserves_auth_elicitation_feature_from_config() -> std::
 
 #[tokio::test]
 async fn load_global_mcp_servers_rejects_inline_bearer_token() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let ava_home = TempDir::new()?;
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
 
     std::fs::write(
         &config_path,
@@ -7274,7 +7274,7 @@ bearer_token = "secret"
 "#,
     )?;
 
-    let err = load_global_mcp_servers(codex_home.path())
+    let err = load_global_mcp_servers(ava_home.path())
         .await
         .expect_err("bearer_token entries should be rejected");
 
@@ -7287,7 +7287,7 @@ bearer_token = "secret"
 
 #[tokio::test]
 async fn replace_mcp_servers_serializes_env_sorted() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7303,7 +7303,7 @@ async fn replace_mcp_servers_serializes_env_sorted() -> anyhow::Result<()> {
                 env_vars: Vec::new(),
                 cwd: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7322,11 +7322,11 @@ async fn replace_mcp_servers_serializes_env_sorted() -> anyhow::Result<()> {
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert_eq!(
         serialized,
@@ -7340,7 +7340,7 @@ ZIG_VAR = "3"
 "#
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
         McpServerTransportConfig::Stdio {
@@ -7368,7 +7368,7 @@ ZIG_VAR = "3"
 
 #[tokio::test]
 async fn replace_mcp_servers_serializes_env_vars() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7381,7 +7381,7 @@ async fn replace_mcp_servers_serializes_env_vars() -> anyhow::Result<()> {
                 env_vars: vec!["ALPHA".into(), "BETA".into()],
                 cwd: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7400,18 +7400,18 @@ async fn replace_mcp_servers_serializes_env_vars() -> anyhow::Result<()> {
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert!(
         serialized.contains(r#"env_vars = ["ALPHA", "BETA"]"#),
         "serialized config missing env_vars field:\n{serialized}"
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
         McpServerTransportConfig::Stdio { env_vars, .. } => {
@@ -7425,7 +7425,7 @@ async fn replace_mcp_servers_serializes_env_vars() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn replace_mcp_servers_serializes_sourced_env_vars() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7444,7 +7444,7 @@ async fn replace_mcp_servers_serializes_sourced_env_vars() -> anyhow::Result<()>
                 ],
                 cwd: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7463,11 +7463,11 @@ async fn replace_mcp_servers_serializes_sourced_env_vars() -> anyhow::Result<()>
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert!(
         serialized
@@ -7475,7 +7475,7 @@ async fn replace_mcp_servers_serializes_sourced_env_vars() -> anyhow::Result<()>
         "serialized config missing sourced env_vars field:\n{serialized}"
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     assert_eq!(loaded, servers);
 
     Ok(())
@@ -7483,9 +7483,9 @@ async fn replace_mcp_servers_serializes_sourced_env_vars() -> anyhow::Result<()>
 
 #[tokio::test]
 async fn replace_mcp_servers_serializes_cwd() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let cwd_path = PathBuf::from("/tmp/codex-mcp");
+    let cwd_path = PathBuf::from("/tmp/ava-mcp");
     let cwd = LegacyAppPathString::from_path(&cwd_path);
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7498,7 +7498,7 @@ async fn replace_mcp_servers_serializes_cwd() -> anyhow::Result<()> {
                 env_vars: Vec::new(),
                 cwd: Some(cwd.clone()),
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7517,18 +7517,18 @@ async fn replace_mcp_servers_serializes_cwd() -> anyhow::Result<()> {
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert!(
-        serialized.contains(r#"cwd = "/tmp/codex-mcp""#),
+        serialized.contains(r#"cwd = "/tmp/ava-mcp""#),
         "serialized config missing cwd field:\n{serialized}"
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
         McpServerTransportConfig::Stdio { cwd, .. } => {
@@ -7542,7 +7542,7 @@ async fn replace_mcp_servers_serializes_cwd() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn replace_mcp_servers_streamable_http_serializes_bearer_token() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7555,7 +7555,7 @@ async fn replace_mcp_servers_streamable_http_serializes_bearer_token() -> anyhow
                 env_http_headers: None,
                 http_headers_helper: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7574,11 +7574,11 @@ async fn replace_mcp_servers_streamable_http_serializes_bearer_token() -> anyhow
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert_eq!(
         serialized,
@@ -7589,7 +7589,7 @@ startup_timeout_sec = 2.0
 "#
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
         McpServerTransportConfig::StreamableHttp {
@@ -7613,7 +7613,7 @@ startup_timeout_sec = 2.0
 
 #[tokio::test]
 async fn replace_mcp_servers_streamable_http_serializes_custom_headers() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7629,7 +7629,7 @@ async fn replace_mcp_servers_streamable_http_serializes_custom_headers() -> anyh
                 )])),
                 http_headers_helper: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7647,11 +7647,11 @@ async fn replace_mcp_servers_streamable_http_serializes_custom_headers() -> anyh
         },
     )]);
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert_eq!(
         serialized,
@@ -7668,7 +7668,7 @@ X-Auth = "DOCS_AUTH"
 "#
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
         McpServerTransportConfig::StreamableHttp {
@@ -7696,9 +7696,9 @@ X-Auth = "DOCS_AUTH"
 
 #[tokio::test]
 async fn replace_mcp_servers_streamable_http_removes_optional_sections() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
 
     let mut servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7714,7 +7714,7 @@ async fn replace_mcp_servers_streamable_http_removes_optional_sections() -> anyh
                 )])),
                 http_headers_helper: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7733,7 +7733,7 @@ async fn replace_mcp_servers_streamable_http_removes_optional_sections() -> anyh
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
     let serialized_with_optional = std::fs::read_to_string(&config_path)?;
@@ -7752,7 +7752,7 @@ async fn replace_mcp_servers_streamable_http_removes_optional_sections() -> anyh
                 env_http_headers: None,
                 http_headers_helper: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7770,7 +7770,7 @@ async fn replace_mcp_servers_streamable_http_removes_optional_sections() -> anyh
         },
     );
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
@@ -7782,7 +7782,7 @@ url = "https://example.com/mcp"
 "#
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
         McpServerTransportConfig::StreamableHttp {
@@ -7808,8 +7808,8 @@ url = "https://example.com/mcp"
 #[tokio::test]
 async fn replace_mcp_servers_streamable_http_isolates_headers_between_servers() -> anyhow::Result<()>
 {
-    let codex_home = TempDir::new()?;
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let ava_home = TempDir::new()?;
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
 
     let servers = BTreeMap::from([
         (
@@ -7826,7 +7826,7 @@ async fn replace_mcp_servers_streamable_http_isolates_headers_between_servers() 
                     )])),
                     http_headers_helper: None,
                 },
-                environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+                environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
                 enabled: true,
                 required: false,
                 supports_parallel_tool_calls: false,
@@ -7854,7 +7854,7 @@ async fn replace_mcp_servers_streamable_http_isolates_headers_between_servers() 
                     env_vars: Vec::new(),
                     cwd: None,
                 },
-                environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+                environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
                 enabled: true,
                 required: false,
                 supports_parallel_tool_calls: false,
@@ -7874,7 +7874,7 @@ async fn replace_mcp_servers_streamable_http_isolates_headers_between_servers() 
     ]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
@@ -7896,7 +7896,7 @@ async fn replace_mcp_servers_streamable_http_isolates_headers_between_servers() 
         "serialized config should not add bearer token to logs:\n{serialized}"
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     match &docs.transport {
         McpServerTransportConfig::StreamableHttp {
@@ -7931,7 +7931,7 @@ async fn replace_mcp_servers_streamable_http_isolates_headers_between_servers() 
 
 #[tokio::test]
 async fn replace_mcp_servers_serializes_disabled_flag() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7944,7 +7944,7 @@ async fn replace_mcp_servers_serializes_disabled_flag() -> anyhow::Result<()> {
                 env_vars: Vec::new(),
                 cwd: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: false,
             required: false,
             supports_parallel_tool_calls: false,
@@ -7963,18 +7963,18 @@ async fn replace_mcp_servers_serializes_disabled_flag() -> anyhow::Result<()> {
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert!(
         serialized.contains("enabled = false"),
         "serialized config missing disabled flag:\n{serialized}"
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     assert!(!docs.enabled);
 
@@ -7983,7 +7983,7 @@ async fn replace_mcp_servers_serializes_disabled_flag() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn replace_mcp_servers_serializes_required_flag() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -7996,7 +7996,7 @@ async fn replace_mcp_servers_serializes_required_flag() -> anyhow::Result<()> {
                 env_vars: Vec::new(),
                 cwd: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: true,
             supports_parallel_tool_calls: false,
@@ -8015,18 +8015,18 @@ async fn replace_mcp_servers_serializes_required_flag() -> anyhow::Result<()> {
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert!(
         serialized.contains("required = true"),
         "serialized config missing required flag:\n{serialized}"
     );
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     assert!(docs.required);
 
@@ -8035,7 +8035,7 @@ async fn replace_mcp_servers_serializes_required_flag() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn replace_mcp_servers_serializes_tool_filters() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -8048,7 +8048,7 @@ async fn replace_mcp_servers_serializes_tool_filters() -> anyhow::Result<()> {
                 env_vars: Vec::new(),
                 cwd: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -8067,16 +8067,16 @@ async fn replace_mcp_servers_serializes_tool_filters() -> anyhow::Result<()> {
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert!(serialized.contains(r#"enabled_tools = ["allowed"]"#));
     assert!(serialized.contains(r#"disabled_tools = ["blocked"]"#));
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     assert_eq!(
         docs.enabled_tools.as_ref(),
@@ -8092,7 +8092,7 @@ async fn replace_mcp_servers_serializes_tool_filters() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn replace_mcp_servers_streamable_http_serializes_oauth_resource() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let servers = BTreeMap::from([(
         "docs".to_string(),
@@ -8105,7 +8105,7 @@ async fn replace_mcp_servers_streamable_http_serializes_oauth_resource() -> anyh
                 env_http_headers: None,
                 http_headers_helper: None,
             },
-            environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+            environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
             enabled: true,
             required: false,
             supports_parallel_tool_calls: false,
@@ -8118,7 +8118,7 @@ async fn replace_mcp_servers_streamable_http_serializes_oauth_resource() -> anyh
             disabled_tools: None,
             scopes: None,
             oauth: Some(McpServerOAuthConfig {
-                client_id: Some("eci-prd-pub-codex-123".to_string()),
+                client_id: Some("eci-prd-pub-ava-123".to_string()),
                 callback_url: None,
                 callback_port: None,
                 ..Default::default()
@@ -8129,37 +8129,37 @@ async fn replace_mcp_servers_streamable_http_serializes_oauth_resource() -> anyh
     )]);
 
     apply_blocking(
-        codex_home.path(),
+        ava_home.path(),
         &[ConfigEdit::ReplaceMcpServers(servers.clone())],
     )?;
 
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
     let serialized = std::fs::read_to_string(&config_path)?;
     assert!(serialized.contains("[mcp_servers.docs.oauth]"));
-    assert!(serialized.contains(r#"client_id = "eci-prd-pub-codex-123""#));
+    assert!(serialized.contains(r#"client_id = "eci-prd-pub-ava-123""#));
     assert!(serialized.contains(r#"oauth_resource = "https://resource.example.com""#));
 
-    let loaded = load_global_mcp_servers(codex_home.path()).await?;
+    let loaded = load_global_mcp_servers(ava_home.path()).await?;
     let docs = loaded.get("docs").expect("docs entry");
     assert_eq!(
         docs.oauth_resource.as_deref(),
         Some("https://resource.example.com")
     );
-    assert_eq!(docs.oauth_client_id(), Some("eci-prd-pub-codex-123"));
+    assert_eq!(docs.oauth_client_id(), Some("eci-prd-pub-ava-123"));
 
     Ok(())
 }
 
 #[tokio::test]
 async fn set_model_updates_defaults() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    ConfigEditsBuilder::new(codex_home.path())
+    ConfigEditsBuilder::new(ava_home.path())
         .set_model(Some("gpt-5.4"), Some(ReasoningEffort::High))
         .apply()
         .await?;
 
-    let serialized = tokio::fs::read_to_string(codex_home.path().join(CONFIG_TOML_FILE)).await?;
+    let serialized = tokio::fs::read_to_string(ava_home.path().join(CONFIG_TOML_FILE)).await?;
     let parsed: ConfigToml = toml::from_str(&serialized)?;
 
     assert_eq!(parsed.model.as_deref(), Some("gpt-5.4"));
@@ -8170,14 +8170,14 @@ async fn set_model_updates_defaults() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn for_config_writes_selected_user_config_file() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let base_config = codex_home.path().join(CONFIG_TOML_FILE);
-    let selected_config = codex_home.path().join("work.config.toml");
+    let ava_home = TempDir::new()?;
+    let base_config = ava_home.path().join(CONFIG_TOML_FILE);
+    let selected_config = ava_home.path().join("work.config.toml");
     tokio::fs::write(&base_config, r#"model_provider = "openai""#).await?;
     tokio::fs::write(&selected_config, r#"model = "gpt-old""#).await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .loader_overrides(LoaderOverrides {
             user_config_path: Some(selected_config.abs()),
             user_config_profile: Some("work".parse().expect("profile-v2 name")),
@@ -8205,19 +8205,19 @@ async fn for_config_writes_selected_user_config_file() -> anyhow::Result<()> {
 
 #[test]
 fn profile_v2_config_path_resolves_validated_names() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let profile_name: ProfileV2Name = "work".parse()?;
     assert_eq!(
-        resolve_profile_v2_config_path(codex_home.path(), &profile_name),
-        codex_home.path().join("work.config.toml").abs()
+        resolve_profile_v2_config_path(ava_home.path(), &profile_name),
+        ava_home.path().join("work.config.toml").abs()
     );
     Ok(())
 }
 
 #[tokio::test]
 async fn set_model_overwrites_existing_model() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let config_path = codex_home.path().join(CONFIG_TOML_FILE);
+    let ava_home = TempDir::new()?;
+    let config_path = ava_home.path().join(CONFIG_TOML_FILE);
 
     tokio::fs::write(
         &config_path,
@@ -8231,7 +8231,7 @@ model = "gpt-4.1"
     )
     .await?;
 
-    ConfigEditsBuilder::new(codex_home.path())
+    ConfigEditsBuilder::new(ava_home.path())
         .set_model(Some("o4-mini"), Some(ReasoningEffort::High))
         .apply()
         .await?;
@@ -8254,7 +8254,7 @@ model = "gpt-4.1"
 
 struct PrecedenceTestFixture {
     cwd: TempDir,
-    codex_home: TempDir,
+    ava_home: TempDir,
     cfg: ConfigToml,
 }
 
@@ -8263,14 +8263,14 @@ impl PrecedenceTestFixture {
         self.cwd.path().to_path_buf()
     }
 
-    fn codex_home(&self) -> AbsolutePathBuf {
-        self.codex_home.abs()
+    fn ava_home(&self) -> AbsolutePathBuf {
+        self.ava_home.abs()
     }
 }
 
 #[tokio::test]
 async fn cli_override_sets_compact_prompt() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let overrides = ConfigOverrides {
         compact_prompt: Some("Use the compact override".to_string()),
         ..Default::default()
@@ -8279,7 +8279,7 @@ async fn cli_override_sets_compact_prompt() -> std::io::Result<()> {
     let config = Config::load_from_base_config_with_overrides(
         ConfigToml::default(),
         overrides,
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -8293,8 +8293,8 @@ async fn cli_override_sets_compact_prompt() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn loads_compact_prompt_from_file() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let workspace = codex_home.path().join("workspace");
+    let ava_home = TempDir::new()?;
+    let workspace = ava_home.path().join("workspace");
     std::fs::create_dir_all(&workspace)?;
 
     let prompt_path = workspace.join("compact_prompt.txt");
@@ -8311,7 +8311,7 @@ async fn loads_compact_prompt_from_file() -> std::io::Result<()> {
     };
 
     let config =
-        Config::load_from_base_config_with_overrides(cfg, overrides, codex_home.abs()).await?;
+        Config::load_from_base_config_with_overrides(cfg, overrides, ava_home.abs()).await?;
 
     assert_eq!(
         config.compact_prompt.as_deref(),
@@ -8323,11 +8323,11 @@ async fn loads_compact_prompt_from_file() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn load_config_uses_requirements_guardian_policy_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config_layer_stack = ConfigLayerStack::new(
         Vec::new(),
         Default::default(),
-        codex_config::ConfigRequirementsToml {
+        ava_config::ConfigRequirementsToml {
             guardian_policy_config: Some(
                 "  Use the workspace-managed guardian policy.  ".to_string(),
             ),
@@ -8340,10 +8340,10 @@ async fn load_config_uses_requirements_guardian_policy_config() -> std::io::Resu
         LOCAL_FS.as_ref(),
         ConfigToml::default(),
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         config_layer_stack,
     )
     .await?;
@@ -8382,7 +8382,7 @@ experimental_policy_template = "Configured template: {{ tenant_policy_config }}"
 
 #[tokio::test]
 async fn load_config_uses_auto_review_guardian_policy_config_and_template() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         auto_review: Some(AutoReviewToml {
             policy: Some("  Use the user-configured guardian policy.  ".to_string()),
@@ -8396,10 +8396,10 @@ async fn load_config_uses_auto_review_guardian_policy_config_and_template() -> s
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -8419,11 +8419,11 @@ async fn load_config_uses_auto_review_guardian_policy_config_and_template() -> s
 
 #[tokio::test]
 async fn requirements_guardian_policy_beats_auto_review() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config_layer_stack = ConfigLayerStack::new(
         Vec::new(),
         Default::default(),
-        codex_config::ConfigRequirementsToml {
+        ava_config::ConfigRequirementsToml {
             guardian_policy_config: Some("Use the managed guardian policy.".to_string()),
             ..Default::default()
         },
@@ -8441,10 +8441,10 @@ async fn requirements_guardian_policy_beats_auto_review() -> std::io::Result<()>
         LOCAL_FS.as_ref(),
         cfg,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         config_layer_stack,
     )
     .await?;
@@ -8459,7 +8459,7 @@ async fn requirements_guardian_policy_beats_auto_review() -> std::io::Result<()>
 
 #[tokio::test]
 async fn load_config_ignores_empty_auto_review_guardian_policy_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         auto_review: Some(AutoReviewToml {
             policy: Some("   ".to_string()),
@@ -8471,10 +8471,10 @@ async fn load_config_ignores_empty_auto_review_guardian_policy_config() -> std::
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -8485,11 +8485,11 @@ async fn load_config_ignores_empty_auto_review_guardian_policy_config() -> std::
 
 #[tokio::test]
 async fn load_config_ignores_empty_requirements_guardian_policy_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config_layer_stack = ConfigLayerStack::new(
         Vec::new(),
         Default::default(),
-        codex_config::ConfigRequirementsToml {
+        ava_config::ConfigRequirementsToml {
             guardian_policy_config: Some("   ".to_string()),
             ..Default::default()
         },
@@ -8500,10 +8500,10 @@ async fn load_config_ignores_empty_requirements_guardian_policy_config() -> std:
         LOCAL_FS.as_ref(),
         ConfigToml::default(),
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         config_layer_stack,
     )
     .await?;
@@ -8515,8 +8515,8 @@ async fn load_config_ignores_empty_requirements_guardian_policy_config() -> std:
 
 #[tokio::test]
 async fn load_config_rejects_missing_agent_role_config_file() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let missing_path = codex_home.path().join("agents").join("researcher.toml");
+    let ava_home = TempDir::new()?;
+    let missing_path = ava_home.path().join("agents").join("researcher.toml");
     let cfg = ConfigToml {
         agents: Some(AgentsToml {
             enabled: None,
@@ -8541,7 +8541,7 @@ async fn load_config_rejects_missing_agent_role_config_file() -> std::io::Result
     let result = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await;
     let err = result.expect_err("missing role config file should be rejected");
@@ -8555,8 +8555,8 @@ async fn load_config_rejects_missing_agent_role_config_file() -> std::io::Result
 
 #[tokio::test]
 async fn agent_role_relative_config_file_resolves_against_config_toml() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let role_config_path = codex_home.path().join("agents").join("researcher.toml");
+    let ava_home = TempDir::new()?;
+    let role_config_path = ava_home.path().join("agents").join("researcher.toml");
     tokio::fs::create_dir_all(
         role_config_path
             .parent()
@@ -8569,7 +8569,7 @@ async fn agent_role_relative_config_file_resolves_against_config_toml() -> std::
     )
     .await?;
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[agents.researcher]
 description = "Research role"
 config_file = "./agents/researcher.toml"
@@ -8579,8 +8579,8 @@ nickname_candidates = ["Hypatia", "Noether"]
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
     assert_eq!(
@@ -8604,8 +8604,8 @@ nickname_candidates = ["Hypatia", "Noether"]
 
 #[tokio::test]
 async fn agent_role_relative_config_file_resolves_from_config_layer() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let role_config_path = codex_home.path().join("agents").join("researcher.toml");
+    let ava_home = TempDir::new()?;
+    let role_config_path = ava_home.path().join("agents").join("researcher.toml");
     tokio::fs::create_dir_all(
         role_config_path
             .parent()
@@ -8624,16 +8624,16 @@ config_file = "./agents/researcher.toml"
 "#,
     )
     .expect("agent role layer config should parse");
-    let config_layer_stack = codex_config::ConfigLayerStack::new(
-        vec![codex_config::ConfigLayerEntry::new(
+    let config_layer_stack = ava_config::ConfigLayerStack::new(
+        vec![ava_config::ConfigLayerEntry::new(
             ConfigLayerSource::User {
-                file: codex_home.path().join(CONFIG_TOML_FILE).abs(),
+                file: ava_home.path().join(CONFIG_TOML_FILE).abs(),
                 profile: None,
             },
             layer_config,
         )],
         Default::default(),
-        codex_config::ConfigRequirementsToml::default(),
+        ava_config::ConfigRequirementsToml::default(),
     )
     .map_err(std::io::Error::other)?;
 
@@ -8641,10 +8641,10 @@ config_file = "./agents/researcher.toml"
         LOCAL_FS.as_ref(),
         ConfigToml::default(),
         ConfigOverrides {
-            cwd: Some(codex_home.path().to_path_buf()),
+            cwd: Some(ava_home.path().to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
         config_layer_stack,
     )
     .await?;
@@ -8662,8 +8662,8 @@ config_file = "./agents/researcher.toml"
 
 #[tokio::test]
 async fn agent_role_file_metadata_overrides_config_toml_metadata() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let role_config_path = codex_home.path().join("agents").join("researcher.toml");
+    let ava_home = TempDir::new()?;
+    let role_config_path = ava_home.path().join("agents").join("researcher.toml");
     tokio::fs::create_dir_all(
         role_config_path
             .parent()
@@ -8681,7 +8681,7 @@ model = "gpt-5.2"
     )
     .await?;
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[agents.researcher]
 description = "Research role from config"
 config_file = "./agents/researcher.toml"
@@ -8691,8 +8691,8 @@ nickname_candidates = ["Noether"]
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
     let role = config
@@ -8714,7 +8714,7 @@ nickname_candidates = ["Noether"]
 #[tokio::test]
 async fn agent_role_file_without_developer_instructions_is_dropped_with_warning()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let nested_cwd = repo_root.path().join("packages").join("app");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
@@ -8723,7 +8723,7 @@ async fn agent_role_file_without_developer_instructions_is_dropped_with_warning(
 
     let workspace_key = repo_root.path().to_string_lossy().replace('\\', "\\\\");
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"[projects."{workspace_key}"]
 trust_level = "trusted"
@@ -8732,7 +8732,7 @@ trust_level = "trusted"
     )
     .await?;
 
-    let standalone_agents_dir = repo_root.path().join(".codex").join("agents");
+    let standalone_agents_dir = repo_root.path().join(".ava-code").join("agents");
     tokio::fs::create_dir_all(&standalone_agents_dir).await?;
     tokio::fs::write(
         standalone_agents_dir.join("researcher.toml"),
@@ -8755,7 +8755,7 @@ model = "gpt-5.2"
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(nested_cwd),
             ..Default::default()
@@ -8783,8 +8783,8 @@ model = "gpt-5.2"
 #[tokio::test]
 async fn legacy_agent_role_config_file_allows_missing_developer_instructions() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
-    let role_config_path = codex_home.path().join("agents").join("researcher.toml");
+    let ava_home = TempDir::new()?;
+    let role_config_path = ava_home.path().join("agents").join("researcher.toml");
     tokio::fs::create_dir_all(
         role_config_path
             .parent()
@@ -8800,7 +8800,7 @@ model_reasoning_effort = "high"
     )
     .await?;
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[agents.researcher]
 description = "Research role from config"
 config_file = "./agents/researcher.toml"
@@ -8809,8 +8809,8 @@ config_file = "./agents/researcher.toml"
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
     assert_eq!(
@@ -8834,8 +8834,8 @@ config_file = "./agents/researcher.toml"
 #[tokio::test]
 async fn agent_role_without_description_after_merge_is_dropped_with_warning() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
-    let role_config_path = codex_home.path().join("agents").join("researcher.toml");
+    let ava_home = TempDir::new()?;
+    let role_config_path = ava_home.path().join("agents").join("researcher.toml");
     tokio::fs::create_dir_all(
         role_config_path
             .parent()
@@ -8851,7 +8851,7 @@ model = "gpt-5.2"
     )
     .await?;
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[agents.researcher]
 config_file = "./agents/researcher.toml"
 
@@ -8862,8 +8862,8 @@ description = "Review role"
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
     assert!(!config.agent_roles.contains_key("researcher"));
@@ -8886,7 +8886,7 @@ description = "Review role"
 
 #[tokio::test]
 async fn discovered_agent_role_file_without_name_is_dropped_with_warning() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let nested_cwd = repo_root.path().join("packages").join("app");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
@@ -8895,7 +8895,7 @@ async fn discovered_agent_role_file_without_name_is_dropped_with_warning() -> st
 
     let workspace_key = repo_root.path().to_string_lossy().replace('\\', "\\\\");
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"[projects."{workspace_key}"]
 trust_level = "trusted"
@@ -8904,7 +8904,7 @@ trust_level = "trusted"
     )
     .await?;
 
-    let standalone_agents_dir = repo_root.path().join(".codex").join("agents");
+    let standalone_agents_dir = repo_root.path().join(".ava-code").join("agents");
     tokio::fs::create_dir_all(&standalone_agents_dir).await?;
     tokio::fs::write(
         standalone_agents_dir.join("researcher.toml"),
@@ -8925,7 +8925,7 @@ developer_instructions = "Review carefully"
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(nested_cwd),
             ..Default::default()
@@ -8952,8 +8952,8 @@ developer_instructions = "Review carefully"
 
 #[tokio::test]
 async fn agent_role_file_name_takes_precedence_over_config_key() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let role_config_path = codex_home.path().join("agents").join("researcher.toml");
+    let ava_home = TempDir::new()?;
+    let role_config_path = ava_home.path().join("agents").join("researcher.toml");
     tokio::fs::create_dir_all(
         role_config_path
             .parent()
@@ -8971,7 +8971,7 @@ model = "gpt-5.2"
     )
     .await?;
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[agents.researcher]
 description = "Research role from config"
 config_file = "./agents/researcher.toml"
@@ -8980,8 +8980,8 @@ config_file = "./agents/researcher.toml"
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
     assert_eq!(config.agent_roles.contains_key("researcher"), false);
@@ -8997,9 +8997,9 @@ config_file = "./agents/researcher.toml"
 
 #[tokio::test]
 async fn loads_legacy_split_agent_roles_from_config_toml() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let researcher_path = codex_home.path().join("agents").join("researcher.toml");
-    let reviewer_path = codex_home.path().join("agents").join("reviewer.toml");
+    let ava_home = TempDir::new()?;
+    let researcher_path = ava_home.path().join("agents").join("researcher.toml");
+    let reviewer_path = ava_home.path().join("agents").join("reviewer.toml");
     tokio::fs::create_dir_all(
         researcher_path
             .parent()
@@ -9017,7 +9017,7 @@ async fn loads_legacy_split_agent_roles_from_config_toml() -> std::io::Result<()
     )
     .await?;
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[agents.researcher]
 description = "Research role"
 config_file = "./agents/researcher.toml"
@@ -9032,8 +9032,8 @@ nickname_candidates = ["Atlas"]
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -9087,7 +9087,7 @@ nickname_candidates = ["Atlas"]
 
 #[tokio::test]
 async fn discovers_multiple_standalone_agent_role_files() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let nested_cwd = repo_root.path().join("packages").join("app");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
@@ -9096,7 +9096,7 @@ async fn discovers_multiple_standalone_agent_role_files() -> std::io::Result<()>
 
     let workspace_key = repo_root.path().to_string_lossy().replace('\\', "\\\\");
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"[projects."{workspace_key}"]
 trust_level = "trusted"
@@ -9106,7 +9106,7 @@ trust_level = "trusted"
 
     let root_agent = repo_root
         .path()
-        .join(".codex")
+        .join(".ava-code")
         .join("agents")
         .join("root.toml");
     std::fs::create_dir_all(
@@ -9126,7 +9126,7 @@ developer_instructions = "Research carefully"
     let nested_agent = repo_root
         .path()
         .join("packages")
-        .join(".codex")
+        .join(".ava-code")
         .join("agents")
         .join("review")
         .join("nested.toml");
@@ -9148,7 +9148,7 @@ developer_instructions = "Review carefully"
     let sibling_agent = repo_root
         .path()
         .join("packages")
-        .join(".codex")
+        .join(".ava-code")
         .join("agents")
         .join("writer.toml");
     std::fs::create_dir_all(
@@ -9167,7 +9167,7 @@ developer_instructions = "Write carefully"
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(nested_cwd),
             ..Default::default()
@@ -9219,7 +9219,7 @@ developer_instructions = "Write carefully"
 #[tokio::test]
 async fn mixed_legacy_and_standalone_agent_role_sources_merge_with_precedence()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let nested_cwd = repo_root.path().join("packages").join("app");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
@@ -9228,7 +9228,7 @@ async fn mixed_legacy_and_standalone_agent_role_sources_merge_with_precedence()
 
     let workspace_key = repo_root.path().to_string_lossy().replace('\\', "\\\\");
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"[projects."{workspace_key}"]
 trust_level = "trusted"
@@ -9247,7 +9247,7 @@ nickname_candidates = ["Ada"]
     )
     .await?;
 
-    let home_agents_dir = codex_home.path().join("agents");
+    let home_agents_dir = ava_home.path().join("agents");
     tokio::fs::create_dir_all(&home_agents_dir).await?;
     tokio::fs::write(
         home_agents_dir.join("researcher.toml"),
@@ -9266,7 +9266,7 @@ model = "gpt-4.1"
     )
     .await?;
 
-    let standalone_agents_dir = repo_root.path().join(".codex").join("agents");
+    let standalone_agents_dir = repo_root.path().join(".ava-code").join("agents");
     tokio::fs::create_dir_all(&standalone_agents_dir).await?;
     tokio::fs::write(
         standalone_agents_dir.join("researcher.toml"),
@@ -9292,7 +9292,7 @@ model = "gpt-5.2"
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(nested_cwd),
             ..Default::default()
@@ -9366,7 +9366,7 @@ model = "gpt-5.2"
 #[tokio::test]
 async fn higher_precedence_agent_role_can_inherit_description_from_lower_layer()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let nested_cwd = repo_root.path().join("packages").join("app");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
@@ -9375,7 +9375,7 @@ async fn higher_precedence_agent_role_can_inherit_description_from_lower_layer()
 
     let workspace_key = repo_root.path().to_string_lossy().replace('\\', "\\\\");
     tokio::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"[projects."{workspace_key}"]
 trust_level = "trusted"
@@ -9388,7 +9388,7 @@ config_file = "./agents/researcher.toml"
     )
     .await?;
 
-    let home_agents_dir = codex_home.path().join("agents");
+    let home_agents_dir = ava_home.path().join("agents");
     tokio::fs::create_dir_all(&home_agents_dir).await?;
     tokio::fs::write(
         home_agents_dir.join("researcher.toml"),
@@ -9399,7 +9399,7 @@ model = "gpt-5.2"
     )
     .await?;
 
-    let standalone_agents_dir = repo_root.path().join(".codex").join("agents");
+    let standalone_agents_dir = repo_root.path().join(".ava-code").join("agents");
     tokio::fs::create_dir_all(&standalone_agents_dir).await?;
     tokio::fs::write(
         standalone_agents_dir.join("researcher.toml"),
@@ -9413,7 +9413,7 @@ model = "gpt-5-mini"
     .await?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(nested_cwd),
             ..Default::default()
@@ -9468,7 +9468,7 @@ job_max_runtime_seconds = 900
 
 #[tokio::test]
 async fn load_config_resolves_agent_controls() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         agents: Some(AgentsToml {
             enabled: Some(false),
@@ -9484,7 +9484,7 @@ async fn load_config_resolves_agent_controls() -> std::io::Result<()> {
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -9531,7 +9531,7 @@ max_threads = 7
 
 #[tokio::test]
 async fn load_config_normalizes_agent_role_nickname_candidates() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         agents: Some(AgentsToml {
             enabled: None,
@@ -9559,7 +9559,7 @@ async fn load_config_normalizes_agent_role_nickname_candidates() -> std::io::Res
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -9577,7 +9577,7 @@ async fn load_config_normalizes_agent_role_nickname_candidates() -> std::io::Res
 
 #[tokio::test]
 async fn load_config_rejects_empty_agent_role_nickname_candidates() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         agents: Some(AgentsToml {
             enabled: None,
@@ -9602,7 +9602,7 @@ async fn load_config_rejects_empty_agent_role_nickname_candidates() -> std::io::
     let result = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await;
     let err = result.expect_err("empty nickname candidates should be rejected");
@@ -9617,7 +9617,7 @@ async fn load_config_rejects_empty_agent_role_nickname_candidates() -> std::io::
 
 #[tokio::test]
 async fn load_config_rejects_duplicate_agent_role_nickname_candidates() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         agents: Some(AgentsToml {
             enabled: None,
@@ -9642,7 +9642,7 @@ async fn load_config_rejects_duplicate_agent_role_nickname_candidates() -> std::
     let result = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await;
     let err = result.expect_err("duplicate nickname candidates should be rejected");
@@ -9657,7 +9657,7 @@ async fn load_config_rejects_duplicate_agent_role_nickname_candidates() -> std::
 
 #[tokio::test]
 async fn load_config_rejects_unsafe_agent_role_nickname_candidates() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         agents: Some(AgentsToml {
             enabled: None,
@@ -9682,7 +9682,7 @@ async fn load_config_rejects_unsafe_agent_role_nickname_candidates() -> std::io:
     let result = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await;
     let err = result.expect_err("unsafe nickname candidates should be rejected");
@@ -9696,8 +9696,8 @@ async fn load_config_rejects_unsafe_agent_role_nickname_candidates() -> std::io:
 
 #[tokio::test]
 async fn model_catalog_json_loads_from_path() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let catalog_path = codex_home.path().join("catalog.json");
+    let ava_home = TempDir::new()?;
+    let catalog_path = ava_home.path().join("catalog.json");
     let mut catalog = bundled_models_response()
         .unwrap_or_else(|err| panic!("bundled models.json should parse: {err}"));
     catalog.models = catalog.models.into_iter().take(1).collect();
@@ -9714,7 +9714,7 @@ async fn model_catalog_json_loads_from_path() -> std::io::Result<()> {
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -9724,8 +9724,8 @@ async fn model_catalog_json_loads_from_path() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn model_catalog_json_rejects_empty_catalog() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let catalog_path = codex_home.path().join("catalog.json");
+    let ava_home = TempDir::new()?;
+    let catalog_path = ava_home.path().join("catalog.json");
     std::fs::write(&catalog_path, r#"{"models":[]}"#)?;
 
     let cfg = ConfigToml {
@@ -9736,7 +9736,7 @@ async fn model_catalog_json_rejects_empty_catalog() -> std::io::Result<()> {
     let err = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await
     .expect_err("empty custom catalog should fail config load");
@@ -9805,11 +9805,11 @@ model_verbosity = "high"
     // a parent folder, either.
     std::fs::write(cwd.join(".git"), "gitdir: nowhere")?;
 
-    let codex_home_temp_dir = TempDir::new().unwrap();
+    let ava_home_temp_dir = TempDir::new().unwrap();
 
     Ok(PrecedenceTestFixture {
         cwd: cwd_temp_dir,
-        codex_home: codex_home_temp_dir,
+        ava_home: ava_home_temp_dir,
         cfg,
     })
 }
@@ -9825,7 +9825,7 @@ async fn legacy_profile_selection_is_rejected() -> std::io::Result<()> {
             cwd: Some(fixture.cwd_path()),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await
     .expect_err("legacy profile selection should be rejected");
@@ -9849,7 +9849,7 @@ async fn metrics_exporter_defaults_to_statsig_when_missing() -> std::io::Result<
             cwd: Some(fixture.cwd_path()),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -9866,7 +9866,7 @@ async fn trace_exporter_defaults_to_none_when_log_exporter_is_set() -> std::io::
         exporter: Some(OtelExporterKind::OtlpHttp {
             endpoint: "http://localhost:14318/v1/logs".to_string(),
             headers: HashMap::new(),
-            protocol: codex_config::types::OtelHttpProtocol::Binary,
+            protocol: ava_config::types::OtelHttpProtocol::Binary,
             tls: None,
         }),
         metrics_exporter: Some(OtelExporterKind::None),
@@ -9879,7 +9879,7 @@ async fn trace_exporter_defaults_to_none_when_log_exporter_is_set() -> std::io::
             cwd: Some(fixture.cwd_path()),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -9913,7 +9913,7 @@ beta = "two"
             cwd: Some(fixture.cwd_path()),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -9962,7 +9962,7 @@ alpha = "one\ntwo"
             cwd: Some(fixture.cwd_path()),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -10016,7 +10016,7 @@ async fn explicit_null_service_tier_override_maps_to_default_service_tier() -> s
             service_tier: Some(None),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -10039,7 +10039,7 @@ async fn default_service_tier_override_uses_default_request_value() -> std::io::
             service_tier: Some(Some("default".to_string())),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -10061,7 +10061,7 @@ async fn legacy_fast_service_tier_override_uses_priority_request_value() -> std:
             service_tier: Some(Some("fast".to_string())),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -10077,7 +10077,7 @@ async fn config_toml_priority_service_tier_uses_priority_request_value() -> std:
     let mut fixture = create_test_fixture()?;
     fixture.cfg.service_tier = Some(ServiceTier::Fast.request_value().to_string());
     let cwd = fixture.cwd_path();
-    let codex_home = fixture.codex_home();
+    let ava_home = fixture.ava_home();
 
     let config = Config::load_from_base_config_with_overrides(
         fixture.cfg,
@@ -10085,7 +10085,7 @@ async fn config_toml_priority_service_tier_uses_priority_request_value() -> std:
             cwd: Some(cwd),
             ..Default::default()
         },
-        codex_home,
+        ava_home,
     )
     .await?;
 
@@ -10101,7 +10101,7 @@ async fn config_toml_service_tier_accepts_arbitrary_string() -> std::io::Result<
     let mut fixture = create_test_fixture()?;
     fixture.cfg.service_tier = Some("experimental-tier-id".to_string());
     let cwd = fixture.cwd_path();
-    let codex_home = fixture.codex_home();
+    let ava_home = fixture.ava_home();
 
     let config = Config::load_from_base_config_with_overrides(
         fixture.cfg,
@@ -10109,7 +10109,7 @@ async fn config_toml_service_tier_accepts_arbitrary_string() -> std::io::Result<
             cwd: Some(cwd),
             ..Default::default()
         },
-        codex_home,
+        ava_home,
     )
     .await?;
 
@@ -10125,7 +10125,7 @@ async fn config_toml_legacy_fast_service_tier_uses_priority_request_value() -> s
     let mut fixture = create_test_fixture()?;
     fixture.cfg.service_tier = Some("fast".to_string());
     let cwd = fixture.cwd_path();
-    let codex_home = fixture.codex_home();
+    let ava_home = fixture.ava_home();
 
     let config = Config::load_from_base_config_with_overrides(
         fixture.cfg,
@@ -10133,7 +10133,7 @@ async fn config_toml_legacy_fast_service_tier_uses_priority_request_value() -> s
             cwd: Some(cwd),
             ..Default::default()
         },
-        codex_home,
+        ava_home,
     )
     .await?;
 
@@ -10159,7 +10159,7 @@ async fn fast_default_opt_out_notice_config_is_respected() -> std::io::Result<()
             cwd: Some(fixture.cwd_path()),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
     )
     .await?;
 
@@ -10173,7 +10173,7 @@ async fn test_requirements_web_search_mode_allowlist_does_not_warn_when_unset() 
 {
     let fixture = create_test_fixture()?;
 
-    let requirements_toml = codex_config::ConfigRequirementsToml {
+    let requirements_toml = ava_config::ConfigRequirementsToml {
         model_provider: None,
         model_providers: None,
         allowed_login_methods: None,
@@ -10192,7 +10192,7 @@ async fn test_requirements_web_search_mode_allowlist_does_not_warn_when_unset() 
         allowed_permission_profiles: None,
         default_permissions: None,
         remote_sandbox_config: None,
-        allowed_web_search_modes: Some(vec![codex_config::WebSearchModeRequirement::Cached]),
+        allowed_web_search_modes: Some(vec![ava_config::WebSearchModeRequirement::Cached]),
         application: None,
         allow_managed_hooks_only: None,
         allow_appshots: None,
@@ -10217,7 +10217,7 @@ async fn test_requirements_web_search_mode_allowlist_does_not_warn_when_unset() 
         additional_developer_instructions: None,
         guardian_policy_config: None,
     };
-    let requirement_source = codex_config::RequirementSource::Unknown;
+    let requirement_source = ava_config::RequirementSource::Unknown;
     let requirement_source_for_error = requirement_source.clone();
     let allowed = vec![WebSearchMode::Disabled, WebSearchMode::Cached];
     let constrained = Constrained::new(WebSearchMode::Cached, move |candidate| {
@@ -10232,15 +10232,15 @@ async fn test_requirements_web_search_mode_allowlist_does_not_warn_when_unset() 
             })
         }
     })?;
-    let requirements = codex_config::ConfigRequirements {
-        web_search_mode: codex_config::ConstrainedWithSource::new(
+    let requirements = ava_config::ConfigRequirements {
+        web_search_mode: ava_config::ConstrainedWithSource::new(
             constrained,
             Some(requirement_source),
         ),
         ..Default::default()
     };
     let config_layer_stack =
-        codex_config::ConfigLayerStack::new(Vec::new(), requirements, requirements_toml)
+        ava_config::ConfigLayerStack::new(Vec::new(), requirements, requirements_toml)
             .expect("config layer stack");
 
     let config = Config::load_config_with_layer_stack(
@@ -10250,7 +10250,7 @@ async fn test_requirements_web_search_mode_allowlist_does_not_warn_when_unset() 
             cwd: Some(fixture.cwd_path()),
             ..Default::default()
         },
-        fixture.codex_home(),
+        fixture.ava_home(),
         config_layer_stack,
     )
     .await?;
@@ -10333,12 +10333,12 @@ trust_level = "trusted"
 fn test_set_project_trusted_migrates_top_level_inline_projects_preserving_entries()
 -> anyhow::Result<()> {
     let initial = r#"toplevel = "baz"
-projects = { "/Users/mbolin/code/codex4" = { trust_level = "trusted", foo = "bar" } , "/Users/mbolin/code/codex3" = { trust_level = "trusted" } }
+projects = { "/Users/mbolin/code/ava4" = { trust_level = "trusted", foo = "bar" } , "/Users/mbolin/code/ava3" = { trust_level = "trusted" } }
 model = "foo""#;
     let mut doc = initial.parse::<DocumentMut>()?;
 
     // Approve a new directory
-    let new_project = Path::new("/Users/mbolin/code/codex2");
+    let new_project = Path::new("/Users/mbolin/code/ava2");
     set_project_trust_level_inner(&mut doc, new_project, TrustLevel::Trusted)?;
 
     let contents = doc.to_string();
@@ -10350,11 +10350,11 @@ model = "foo""#;
         r#"toplevel = "baz"
 model = "foo"
 
-[projects."/Users/mbolin/code/codex4"]
+[projects."/Users/mbolin/code/ava4"]
 trust_level = "trusted"
 foo = "bar"
 
-[projects."/Users/mbolin/code/codex3"]
+[projects."/Users/mbolin/code/ava3"]
 trust_level = "trusted"
 
 [projects."{new_project_key}"]
@@ -10396,29 +10396,29 @@ async fn active_project_does_not_match_configured_alias_for_canonical_cwd() -> a
 #[test]
 fn test_set_default_oss_provider() -> std::io::Result<()> {
     let temp_dir = TempDir::new()?;
-    let codex_home = temp_dir.path();
-    let config_path = codex_home.join(CONFIG_TOML_FILE);
+    let ava_home = temp_dir.path();
+    let config_path = ava_home.join(CONFIG_TOML_FILE);
 
     // Test setting valid provider on empty config
-    set_default_oss_provider(codex_home, OLLAMA_OSS_PROVIDER_ID)?;
+    set_default_oss_provider(ava_home, OLLAMA_OSS_PROVIDER_ID)?;
     let content = std::fs::read_to_string(&config_path)?;
     assert!(content.contains("oss_provider = \"ollama\""));
 
     // Test updating existing config
     std::fs::write(&config_path, "model = \"gpt-4\"\n")?;
-    set_default_oss_provider(codex_home, LMSTUDIO_OSS_PROVIDER_ID)?;
+    set_default_oss_provider(ava_home, LMSTUDIO_OSS_PROVIDER_ID)?;
     let content = std::fs::read_to_string(&config_path)?;
     assert!(content.contains("oss_provider = \"lmstudio\""));
     assert!(content.contains("model = \"gpt-4\""));
 
     // Test overwriting existing oss_provider
-    set_default_oss_provider(codex_home, OLLAMA_OSS_PROVIDER_ID)?;
+    set_default_oss_provider(ava_home, OLLAMA_OSS_PROVIDER_ID)?;
     let content = std::fs::read_to_string(&config_path)?;
     assert!(content.contains("oss_provider = \"ollama\""));
     assert!(!content.contains("oss_provider = \"lmstudio\""));
 
     // Test invalid provider
-    let result = set_default_oss_provider(codex_home, "invalid_provider");
+    let result = set_default_oss_provider(ava_home, "invalid_provider");
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
@@ -10431,9 +10431,9 @@ fn test_set_default_oss_provider() -> std::io::Result<()> {
 #[test]
 fn test_set_default_oss_provider_rejects_legacy_ollama_chat_provider() -> std::io::Result<()> {
     let temp_dir = TempDir::new()?;
-    let codex_home = temp_dir.path();
+    let ava_home = temp_dir.path();
 
-    let result = set_default_oss_provider(codex_home, LEGACY_OLLAMA_CHAT_PROVIDER_ID);
+    let result = set_default_oss_provider(ava_home, LEGACY_OLLAMA_CHAT_PROVIDER_ID);
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
@@ -10449,7 +10449,7 @@ fn test_set_default_oss_provider_rejects_legacy_ollama_chat_provider() -> std::i
 #[tokio::test]
 async fn test_load_config_rejects_legacy_ollama_chat_provider_with_helpful_error()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg = ConfigToml {
         model_provider: Some(LEGACY_OLLAMA_CHAT_PROVIDER_ID.to_string()),
         ..Default::default()
@@ -10458,7 +10458,7 @@ async fn test_load_config_rejects_legacy_ollama_chat_provider_with_helpful_error
     let result = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await;
     assert!(result.is_err());
@@ -10668,7 +10668,7 @@ fn config_toml_deserializes_mcp_oauth_callback_url() {
 
 #[tokio::test]
 async fn config_loads_mcp_oauth_callback_port_from_toml() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let toml = r#"
 model = "gpt-5.4"
 mcp_oauth_callback_port = 5678
@@ -10679,7 +10679,7 @@ mcp_oauth_callback_port = 5678
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -10689,7 +10689,7 @@ mcp_oauth_callback_port = 5678
 
 #[tokio::test]
 async fn config_loads_allow_login_shell_from_toml() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg: ConfigToml = toml::from_str(
         r#"
 model = "gpt-5.4"
@@ -10701,7 +10701,7 @@ allow_login_shell = false
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -10711,7 +10711,7 @@ allow_login_shell = false
 
 #[tokio::test]
 async fn config_loads_apps_mcp_product_sku_from_toml() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let toml = r#"
 model = "gpt-5.4"
 apps_mcp_product_sku = "tpp"
@@ -10722,7 +10722,7 @@ apps_mcp_product_sku = "tpp"
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -10732,7 +10732,7 @@ apps_mcp_product_sku = "tpp"
 
 #[tokio::test]
 async fn config_loads_orchestrator_settings_from_toml() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let cfg: ConfigToml = toml::from_str(
         r#"
 model = "gpt-5.4"
@@ -10749,7 +10749,7 @@ enabled = false
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -10765,7 +10765,7 @@ enabled = false
 
 #[tokio::test]
 async fn config_loads_mcp_oauth_callback_url_from_toml() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let toml = r#"
 model = "gpt-5.4"
 mcp_oauth_callback_url = "https://example.com/callback"
@@ -10776,7 +10776,7 @@ mcp_oauth_callback_url = "https://example.com/callback"
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -10790,7 +10790,7 @@ mcp_oauth_callback_url = "https://example.com/callback"
 #[tokio::test]
 async fn untrusted_parent_repo_with_incomplete_child_git_keeps_unless_trusted_approval_policy()
 -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo = TempDir::new()?;
     let cwd = repo.path().join("sub");
     std::fs::create_dir_all(repo.path().join(".git"))?;
@@ -10811,7 +10811,7 @@ async fn untrusted_parent_repo_with_incomplete_child_git_keeps_unless_trusted_ap
             cwd: Some(cwd),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -10824,7 +10824,7 @@ async fn untrusted_parent_repo_with_incomplete_child_git_keeps_unless_trusted_ap
 
 #[tokio::test]
 async fn test_untrusted_project_gets_unless_trusted_approval_policy() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let test_project_dir = TempDir::new()?;
     let test_path = test_project_dir.path();
 
@@ -10842,7 +10842,7 @@ async fn test_untrusted_project_gets_unless_trusted_approval_policy() -> anyhow:
             cwd: Some(test_path.to_path_buf()),
             ..Default::default()
         },
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -10878,15 +10878,15 @@ async fn test_untrusted_project_gets_unless_trusted_approval_policy() -> anyhow:
 #[tokio::test]
 async fn oversized_managed_developer_instructions_are_rejected_during_config_load()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     // The policy text alone fits; rendering its required context markers must not.
-    let instructions = "x".repeat(codex_utils_string::approx_bytes_for_tokens(
+    let instructions = "x".repeat(ava_utils_string::approx_bytes_for_tokens(
         /*tokens*/ 10_000,
     ));
 
     let error = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(format!(
                 "additional_developer_instructions = {instructions:?}"
@@ -10910,10 +10910,10 @@ async fn oversized_managed_developer_instructions_are_rejected_during_config_loa
 #[tokio::test]
 async fn requirements_disallowing_default_sandbox_falls_back_to_required_default()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_sandbox_modes = ["read-only"]"#,
@@ -10930,16 +10930,16 @@ async fn requirements_disallowing_default_sandbox_falls_back_to_required_default
 
 #[tokio::test]
 async fn explicit_sandbox_mode_falls_back_when_disallowed_by_requirements() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"sandbox_mode = "danger-full-access"
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_sandbox_modes = ["read-only"]"#,
@@ -10956,17 +10956,17 @@ async fn explicit_sandbox_mode_falls_back_when_disallowed_by_requirements() -> s
 
 #[tokio::test]
 async fn windows_sandbox_mode_falls_back_when_disallowed_by_requirements() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[windows]
 sandbox = "unelevated"
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"[windows]
@@ -10979,7 +10979,7 @@ allowed_sandbox_implementations = ["elevated"]
 
     assert_eq!(
         config.permissions.windows_sandbox_mode,
-        Some(codex_config::types::WindowsSandboxModeToml::Elevated)
+        Some(ava_config::types::WindowsSandboxModeToml::Elevated)
     );
     assert!(
         config.startup_warnings.iter().any(|warning| warning
@@ -10993,17 +10993,17 @@ allowed_sandbox_implementations = ["elevated"]
 #[tokio::test]
 async fn danger_full_access_with_never_is_rejected_when_requirements_force_read_only()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"approval_policy = "never"
 sandbox_mode = "danger-full-access"
 "#,
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_sandbox_modes = ["read-only"]"#,
@@ -11016,7 +11016,7 @@ sandbox_mode = "danger-full-access"
     assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
     assert_eq!(
         err.to_string(),
-        "`approval_policy = \"never\"` cannot be used because requirements do not allow `sandbox_mode = \"danger-full-access\"`; Codex would fall back to read-only permissions with approvals disabled. Choose an `approval_policy` based on what you need, such as `on-request`, or choose an allowed sandbox mode."
+        "`approval_policy = \"never\"` cannot be used because requirements do not allow `sandbox_mode = \"danger-full-access\"`; Ava would fall back to read-only permissions with approvals disabled. Choose an `approval_policy` based on what you need, such as `on-request`, or choose an allowed sandbox mode."
     );
     Ok(())
 }
@@ -11024,9 +11024,9 @@ sandbox_mode = "danger-full-access"
 #[tokio::test]
 async fn named_full_access_profile_with_never_is_rejected_when_requirements_force_read_only()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"approval_policy = "never"
 default_permissions = "dev"
 
@@ -11036,8 +11036,8 @@ default_permissions = "dev"
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_sandbox_modes = ["read-only"]"#,
@@ -11050,7 +11050,7 @@ default_permissions = "dev"
     assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
     assert_eq!(
         err.to_string(),
-        "`approval_policy = \"never\"` cannot be used because requirements do not allow `sandbox_mode = \"danger-full-access\"`; Codex would fall back to read-only permissions with approvals disabled. Choose an `approval_policy` based on what you need, such as `on-request`, or choose an allowed sandbox mode."
+        "`approval_policy = \"never\"` cannot be used because requirements do not allow `sandbox_mode = \"danger-full-access\"`; Ava would fall back to read-only permissions with approvals disabled. Choose an `approval_policy` based on what you need, such as `on-request`, or choose an allowed sandbox mode."
     );
     Ok(())
 }
@@ -11058,14 +11058,14 @@ default_permissions = "dev"
 #[tokio::test]
 async fn permission_profile_override_falls_back_when_disallowed_by_requirements()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         "[features.network_proxy]\nenabled = true\nproxy_url = 'http://127.0.0.1:43128'\n",
     )?;
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .harness_overrides(ConfigOverrides {
             permission_profile: Some(PermissionProfile::Disabled),
             ..Default::default()
@@ -11100,7 +11100,7 @@ async fn permission_profile_override_falls_back_when_disallowed_by_requirements(
 
 #[tokio::test]
 async fn active_profile_is_cleared_when_requirements_force_fallback() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     for overrides in [
         ConfigOverrides {
             default_permissions: Some(BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS.to_string()),
@@ -11114,8 +11114,8 @@ async fn active_profile_is_cleared_when_requirements_force_fallback() -> std::io
         },
     ] {
         let config = ConfigBuilder::without_managed_config_for_tests()
-            .codex_home(codex_home.path().to_path_buf())
-            .fallback_cwd(Some(codex_home.path().to_path_buf()))
+            .ava_home(ava_home.path().to_path_buf())
+            .fallback_cwd(Some(ava_home.path().to_path_buf()))
             .harness_overrides(overrides)
             .cloud_config_bundle(
                 CloudConfigBundleFixture::loader_with_enterprise_requirement(
@@ -11146,11 +11146,11 @@ async fn active_profile_is_cleared_when_requirements_force_fallback() -> std::io
 
 #[tokio::test]
 async fn bypass_hook_trust_adds_startup_warning() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .harness_overrides(ConfigOverrides {
             bypass_hook_trust: Some(true),
             ..Default::default()
@@ -11169,9 +11169,9 @@ async fn bypass_hook_trust_adds_startup_warning() -> std::io::Result<()> {
 
 #[tokio::test]
 async fn permission_profile_override_preserves_split_write_roots() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let cwd = codex_home.path().join("workspace");
-    let outside_root = codex_home.path().join("outside-write");
+    let ava_home = TempDir::new()?;
+    let cwd = ava_home.path().join("workspace");
+    let outside_root = ava_home.path().join("outside-write");
     std::fs::create_dir_all(&cwd)?;
     std::fs::create_dir_all(&outside_root)?;
     let outside_root =
@@ -11199,7 +11199,7 @@ async fn permission_profile_override_preserves_split_write_roots() -> std::io::R
     );
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(cwd))
         .harness_overrides(ConfigOverrides {
             permission_profile: Some(permission_profile),
@@ -11228,16 +11228,16 @@ async fn permission_profile_override_preserves_split_write_roots() -> std::io::R
 #[tokio::test]
 async fn requirements_web_search_mode_overrides_danger_full_access_default() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"sandbox_mode = "danger-full-access"
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_web_search_modes = ["cached"]"#,
@@ -11261,11 +11261,11 @@ async fn requirements_web_search_mode_overrides_danger_full_access_default() -> 
 #[tokio::test]
 async fn requirements_disallowing_default_approval_falls_back_to_required_default()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
     let workspace_key = workspace.path().to_string_lossy().replace('\\', "\\\\");
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"
 [projects."{workspace_key}"]
@@ -11275,7 +11275,7 @@ trust_level = "untrusted"
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(workspace.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
@@ -11294,16 +11294,16 @@ trust_level = "untrusted"
 
 #[tokio::test]
 async fn explicit_untrusted_approval_policy_is_rejected() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"approval_policy = "untrusted"
 "#,
     )?;
 
     let error = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("untrusted approval policy should be rejected");
@@ -11318,10 +11318,10 @@ async fn explicit_untrusted_approval_policy_is_rejected() -> std::io::Result<()>
 
 #[tokio::test]
 async fn feature_requirements_normalize_effective_feature_values() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11351,14 +11351,14 @@ use_xaa = true
 
 #[tokio::test]
 async fn feature_requirements_can_still_disable_unified_exec() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         "[features]\nuse_xaa = true\n",
     )?;
 
     let mut config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11402,10 +11402,10 @@ use_xaa = false
 
 #[tokio::test]
 async fn feature_requirements_auto_review_disables_guardian_approval() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11424,10 +11424,10 @@ auto_review = false
 
 #[tokio::test]
 async fn browser_feature_requirements_are_valid() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11450,10 +11450,10 @@ browser_use_full_cdp_access = false
 
 #[tokio::test]
 async fn in_app_chat_feature_requirements_are_valid() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11472,10 +11472,10 @@ in_app_chat = false
 
 #[tokio::test]
 async fn in_app_dictation_feature_requirements_are_valid() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11494,10 +11494,10 @@ in_app_dictation = false
 
 #[tokio::test]
 async fn in_app_local_automation_feature_requirements_are_valid() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11516,9 +11516,9 @@ in_app_local_automation = false
 
 #[tokio::test]
 async fn explicit_feature_config_is_normalized_by_requirements() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 [features]
 view_image = false
@@ -11527,8 +11527,8 @@ shell_tool = true
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -11607,11 +11607,11 @@ fn retired_personality_feature_requirements_do_not_reject_configured_values() ->
 #[tokio::test]
 async fn approvals_reviewer_defaults_to_manual_only_without_guardian_feature() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -11621,9 +11621,9 @@ async fn approvals_reviewer_defaults_to_manual_only_without_guardian_feature() -
 
 #[tokio::test]
 async fn prompt_instruction_blocks_can_be_disabled_from_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"include_permissions_instructions = false
 include_apps_instructions = false
 include_collaboration_mode_instructions = false
@@ -11635,8 +11635,8 @@ include_instructions = false
     )?;
 
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -11651,17 +11651,17 @@ include_instructions = false
 #[tokio::test]
 async fn approvals_reviewer_stays_manual_only_when_guardian_feature_is_enabled()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features]
 guardian_approval = true
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -11672,16 +11672,16 @@ guardian_approval = true
 #[tokio::test]
 async fn approvals_reviewer_can_be_set_in_config_without_guardian_approval() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"approvals_reviewer = "user"
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -11692,10 +11692,10 @@ async fn approvals_reviewer_can_be_set_in_config_without_guardian_approval() -> 
 #[tokio::test]
 async fn requirements_disallowing_default_approvals_reviewer_falls_back_to_required_default()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_approvals_reviewers = ["guardian_subagent"]"#,
@@ -11711,16 +11711,16 @@ async fn requirements_disallowing_default_approvals_reviewer_falls_back_to_requi
 #[tokio::test]
 async fn root_approvals_reviewer_falls_back_when_disallowed_by_requirements() -> std::io::Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"approvals_reviewer = "user"
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_approvals_reviewers = ["guardian_subagent"]"#,
@@ -11744,8 +11744,8 @@ async fn root_approvals_reviewer_falls_back_when_disallowed_by_requirements() ->
 #[tokio::test]
 async fn profile_approvals_reviewer_falls_back_when_disallowed_by_requirements()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let selected_config = codex_home.path().join("default.config.toml");
+    let ava_home = TempDir::new()?;
+    let selected_config = ava_home.path().join("default.config.toml");
     std::fs::write(
         &selected_config,
         r#"approvals_reviewer = "user"
@@ -11753,8 +11753,8 @@ async fn profile_approvals_reviewer_falls_back_when_disallowed_by_requirements()
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(LoaderOverrides {
             user_config_path: Some(selected_config.abs()),
             user_config_profile: Some("default".parse().expect("profile-v2 name")),
@@ -11775,16 +11775,16 @@ async fn profile_approvals_reviewer_falls_back_when_disallowed_by_requirements()
 #[tokio::test]
 async fn approvals_reviewer_preserves_valid_user_choice_when_allowed_by_requirements()
 -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"approvals_reviewer = "guardian_subagent"
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"allowed_approvals_reviewers = ["user", "guardian_subagent"]"#,
@@ -11807,24 +11807,24 @@ async fn approvals_reviewer_preserves_valid_user_choice_when_allowed_by_requirem
 
 #[tokio::test]
 async fn smart_approvals_alias_is_ignored() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features]
 smart_approvals = true
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
     assert!(config.features.enabled(Feature::GuardianApproval));
     assert_eq!(config.approvals_reviewer, ApprovalsReviewer::User);
 
-    let serialized = tokio::fs::read_to_string(codex_home.path().join(CONFIG_TOML_FILE)).await?;
+    let serialized = tokio::fs::read_to_string(ava_home.path().join(CONFIG_TOML_FILE)).await?;
     assert!(serialized.contains("smart_approvals = true"));
     assert!(!serialized.contains("guardian_approval"));
     assert!(!serialized.contains("approvals_reviewer"));
@@ -11834,9 +11834,9 @@ smart_approvals = true
 
 #[tokio::test]
 async fn multi_agent_v2_config_from_feature_table() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 max_concurrent_threads_per_session = 5
@@ -11860,8 +11860,8 @@ max_concurrent_threads_per_session = 9
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -11914,17 +11914,17 @@ max_concurrent_threads_per_session = 9
 
 #[tokio::test]
 async fn multi_agent_v2_default_session_thread_cap_counts_root() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 "#,
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -12096,12 +12096,12 @@ enabled = false
 sleep_tool = true
 "#,
     ] {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         let config_toml = toml::from_str(config_toml).expect("TOML should deserialize");
         let config = Config::load_from_base_config_with_overrides(
             config_toml,
             ConfigOverrides::default(),
-            codex_home.abs(),
+            ava_home.abs(),
         )
         .await?;
 
@@ -12131,9 +12131,9 @@ subagent_developer_instructions = "  \t  "
 
 #[tokio::test]
 async fn multi_agent_v2_empty_usage_hint_overrides_are_preserved() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 root_agent_usage_hint_text = ""
@@ -12142,8 +12142,8 @@ subagent_usage_hint_text = ""
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -12170,9 +12170,9 @@ subagent_usage_hint_text = ""
 
 #[tokio::test]
 async fn multi_agent_v2_uses_agents_max_concurrent_threads_per_session() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 
@@ -12182,8 +12182,8 @@ max_concurrent_threads_per_session = 7
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
     assert_eq!(
@@ -12199,9 +12199,9 @@ max_concurrent_threads_per_session = 7
 
 #[tokio::test]
 async fn catalog_v2_allows_agents_thread_limit_when_feature_disabled() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = false
 
@@ -12211,8 +12211,8 @@ max_concurrent_threads_per_session = 3
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -12229,9 +12229,9 @@ max_concurrent_threads_per_session = 3
 
 #[tokio::test]
 async fn multi_agent_v2_rejects_invalid_wait_timeouts() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 min_wait_timeout_ms = 0
@@ -12241,8 +12241,8 @@ default_wait_timeout_ms = 0
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -12251,7 +12251,7 @@ default_wait_timeout_ms = 0
     assert_eq!(config.multi_agent_v2.default_wait_timeout_ms, 0);
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 min_wait_timeout_ms = -1
@@ -12259,8 +12259,8 @@ min_wait_timeout_ms = -1
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("negative min_wait_timeout_ms should be rejected");
@@ -12272,7 +12272,7 @@ min_wait_timeout_ms = -1
     );
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 min_wait_timeout_ms = 3600001
@@ -12280,8 +12280,8 @@ min_wait_timeout_ms = 3600001
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("too large min_wait_timeout_ms should be rejected");
@@ -12293,7 +12293,7 @@ min_wait_timeout_ms = 3600001
     );
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 max_wait_timeout_ms = -1
@@ -12301,8 +12301,8 @@ max_wait_timeout_ms = -1
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("negative max_wait_timeout_ms should be rejected");
@@ -12314,7 +12314,7 @@ max_wait_timeout_ms = -1
     );
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 max_wait_timeout_ms = 3600001
@@ -12322,8 +12322,8 @@ max_wait_timeout_ms = 3600001
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("too large max_wait_timeout_ms should be rejected");
@@ -12335,7 +12335,7 @@ max_wait_timeout_ms = 3600001
     );
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 default_wait_timeout_ms = -1
@@ -12343,8 +12343,8 @@ default_wait_timeout_ms = -1
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("negative default_wait_timeout_ms should be rejected");
@@ -12356,7 +12356,7 @@ default_wait_timeout_ms = -1
     );
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 min_wait_timeout_ms = 1000
@@ -12365,8 +12365,8 @@ max_wait_timeout_ms = 500
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("min greater than max should be rejected");
@@ -12378,7 +12378,7 @@ max_wait_timeout_ms = 500
     );
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 min_wait_timeout_ms = 1000
@@ -12388,8 +12388,8 @@ default_wait_timeout_ms = 500
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("default less than min should be rejected");
@@ -12401,7 +12401,7 @@ default_wait_timeout_ms = 500
     );
 
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 min_wait_timeout_ms = 1000
@@ -12411,8 +12411,8 @@ default_wait_timeout_ms = 2500
     )?;
 
     let err = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect_err("default greater than max should be rejected");
@@ -12438,9 +12438,9 @@ async fn multi_agent_v2_rejects_invalid_tool_namespace() -> std::io::Result<()> 
             "features.multi_agent_v2.tool_namespace uses a reserved namespace: functions",
         ),
     ] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         std::fs::write(
-            codex_home.path().join(CONFIG_TOML_FILE),
+            ava_home.path().join(CONFIG_TOML_FILE),
             format!(
                 r#"[features.multi_agent_v2]
 enabled = true
@@ -12450,8 +12450,8 @@ tool_namespace = "{namespace}"
         )?;
 
         let err = ConfigBuilder::without_managed_config_for_tests()
-            .codex_home(codex_home.path().to_path_buf())
-            .fallback_cwd(Some(codex_home.path().to_path_buf()))
+            .ava_home(ava_home.path().to_path_buf())
+            .fallback_cwd(Some(ava_home.path().to_path_buf()))
             .build()
             .await
             .expect_err("invalid multi_agent_v2 tool namespace should fail");
@@ -12464,9 +12464,9 @@ tool_namespace = "{namespace}"
 
 #[tokio::test]
 async fn multi_agent_v2_session_thread_cap_one_disallows_subagents() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"[features.multi_agent_v2]
 enabled = true
 max_concurrent_threads_per_session = 1
@@ -12474,8 +12474,8 @@ max_concurrent_threads_per_session = 1
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await?;
 
@@ -12493,10 +12493,10 @@ max_concurrent_threads_per_session = 1
 
 #[tokio::test]
 async fn feature_requirements_normalize_runtime_feature_mutations() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -12527,10 +12527,10 @@ shell_tool = false
 
 #[tokio::test]
 async fn feature_requirements_warn_on_collab_legacy_alias() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -12557,10 +12557,10 @@ collab = true
 
 #[tokio::test]
 async fn feature_requirements_warn_and_ignore_unknown_feature() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(
                 r#"
@@ -12620,11 +12620,11 @@ discoverables = [
         })
     );
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12675,11 +12675,11 @@ disabled_tools = [
         })
     );
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12698,11 +12698,11 @@ disabled_tools = [
 
 #[tokio::test]
 async fn tool_suggest_disabled_tools_merge_across_config_layers() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
     let workspace_key = workspace.path().to_string_lossy().replace('\\', "\\\\");
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         format!(
             r#"
 [projects."{workspace_key}"]
@@ -12718,7 +12718,7 @@ disabled_tools = [
         ),
     )?;
 
-    let project_config_dir = workspace.path().join(".codex");
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
         project_config_dir.join(CONFIG_TOML_FILE),
@@ -12733,7 +12733,7 @@ disabled_tools = [
     )?;
 
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(workspace.path().to_path_buf()),
             ..Default::default()
@@ -12767,11 +12767,11 @@ experimental_realtime_start_instructions = "start instructions from config"
         Some("start instructions from config")
     );
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12799,11 +12799,11 @@ experimental_realtime_webrtc_call_base_url = "http://127.0.0.1:8082/v1"
         cfg.experimental_realtime_webrtc_call_base_url.as_deref(),
         Some("http://127.0.0.1:8082/v1")
     );
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12832,11 +12832,11 @@ experimental_realtime_ws_backend_prompt = "prompt from config"
         Some("prompt from config")
     );
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12861,11 +12861,11 @@ experimental_realtime_ws_startup_context = "startup context from config"
         Some("startup context from config")
     );
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12890,11 +12890,11 @@ experimental_realtime_ws_model = "realtime-test-model"
         Some("realtime-test-model")
     );
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12915,11 +12915,11 @@ voice = "marin"
     )
     .expect("TOML deserialization should succeed");
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12956,11 +12956,11 @@ voice = "cedar"
         })
     );
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -12994,11 +12994,11 @@ speaker = "Desk Speakers"
     assert_eq!(realtime_audio.microphone.as_deref(), Some("USB Mic"));
     assert_eq!(realtime_audio.speaker.as_deref(), Some("Desk Speakers"));
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = Config::load_from_base_config_with_overrides(
         cfg,
         ConfigOverrides::default(),
-        codex_home.abs(),
+        ava_home.abs(),
     )
     .await?;
 
@@ -13102,12 +13102,12 @@ fn test_tui_notification_condition_rejects_unknown_value() {
 }
 
 async fn load_with_enterprise_requirement(
-    codex_home: &TempDir,
+    ava_home: &TempDir,
     requirements: impl Into<String>,
 ) -> std::io::Result<Config> {
     ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(requirements),
         )
@@ -13117,8 +13117,8 @@ async fn load_with_enterprise_requirement(
 
 #[tokio::test]
 async fn exact_requirements_apply_to_runtime_config() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let catalog_path = codex_home.path().join("required-models.json");
+    let ava_home = TempDir::new()?;
+    let catalog_path = ava_home.path().join("required-models.json");
     let mut catalog = bundled_models_response()
         .unwrap_or_else(|err| panic!("bundled models.json should parse: {err}"));
     catalog.models = catalog.models.into_iter().take(1).collect();
@@ -13127,7 +13127,7 @@ async fn exact_requirements_apply_to_runtime_config() -> std::io::Result<()> {
         serde_json::to_string(&catalog).expect("serialize catalog"),
     )?;
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 check_for_update_on_startup = true
 allow_login_shell = true
@@ -13137,8 +13137,8 @@ enabled = true
 "#,
     )?;
 
-    let required_sqlite_home = codex_home.path().join("required-state");
-    let required_log_dir = codex_home.path().join("required-logs");
+    let required_sqlite_home = ava_home.path().join("required-state");
+    let required_log_dir = ava_home.path().join("required-logs");
     let requirements = format!(
         r#"
 sqlite_home = {:?}
@@ -13154,7 +13154,7 @@ enabled = false
         required_log_dir.display(),
         catalog_path.display(),
     );
-    let config = load_with_enterprise_requirement(&codex_home, requirements).await?;
+    let config = load_with_enterprise_requirement(&ava_home, requirements).await?;
 
     assert_eq!(config.sqlite.home(), required_sqlite_home.as_path());
     assert_eq!(config.log_dir, required_log_dir);
@@ -13170,8 +13170,8 @@ enabled = false
 
 #[tokio::test]
 async fn absent_allow_login_shell_does_not_report_an_override() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let config = load_with_enterprise_requirement(&codex_home, "allow_login_shell = false").await?;
+    let ava_home = TempDir::new()?;
+    let config = load_with_enterprise_requirement(&ava_home, "allow_login_shell = false").await?;
 
     assert!(!config.permissions.allow_login_shell);
     assert!(
@@ -13185,9 +13185,9 @@ async fn absent_allow_login_shell_does_not_report_an_override() -> std::io::Resu
 
 #[test]
 fn sqlite_home_env_conflict_reports_an_override() -> std::io::Result<()> {
-    let codex_home = TempDir::new()?;
-    let required = AbsolutePathBuf::try_from(codex_home.path().join("required-state"))?;
-    let environment = codex_home.path().join("environment-state");
+    let ava_home = TempDir::new()?;
+    let required = AbsolutePathBuf::try_from(ava_home.path().join("required-state"))?;
+    let environment = ava_home.path().join("environment-state");
     let requirement = Sourced::new(required.clone(), RequirementSource::Unknown);
     let mut warnings = Vec::new();
 
@@ -13200,7 +13200,7 @@ fn sqlite_home_env_conflict_reports_an_override() -> std::io::Result<()> {
     assert_eq!(
         warnings,
         vec![format!(
-            "Environment value for `$CODEX_SQLITE_HOME` is overridden by the required `sqlite_home` value {required:?} from {}.",
+            "Environment value for `$AVA_SQLITE_HOME` is overridden by the required `sqlite_home` value {required:?} from {}.",
             RequirementSource::Unknown
         )]
     );

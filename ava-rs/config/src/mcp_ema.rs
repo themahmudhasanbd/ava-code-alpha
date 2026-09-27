@@ -9,7 +9,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 
-use codex_features::Feature;
+use ava_features::Feature;
 
 use crate::ConfigLayerSource;
 use crate::ConfigLayerStack;
@@ -29,7 +29,7 @@ pub struct McpServerIdpOAuthConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct McpEnterpriseManagedAuthConfig {
-    /// Shared enterprise authorization, independent of Codex account credentials.
+    /// Shared enterprise authorization, independent of Ava account credentials.
     pub idp: McpServerIdpOAuthConfig,
 }
 

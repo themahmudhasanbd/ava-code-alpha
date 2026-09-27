@@ -18,7 +18,7 @@ export function formatCoreError(err: Raw, fallback = "Something went wrong"): st
   if (err instanceof Error && !(err instanceof CoreError)) return friendly(err.message || fallback);
   const e = err.error && typeof err.error === "object" ? err.error : err;
   const message = friendly(text(e.message) || fallback);
-  const info = e.codexErrorInfo ?? e.errorInfo ?? e.code;
+  const info = e.avaErrorInfo ?? e.errorInfo ?? e.code;
   const extra = [
     info && typeof info === "object" ? Object.keys(info)[0] ?? text(info) : info ? String(info) : "",
     text(e.additionalDetails ?? e.details ?? (e instanceof CoreError ? e.details : e.data)),

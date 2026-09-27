@@ -62,7 +62,7 @@ impl Client {
     /// Fetches seven days of snapshot history. An undeployed route has no report.
     pub async fn get_plan_limit_history(&self) -> Result<Option<PlanLimitHistory>, RequestError> {
         let prefix = match self.path_style {
-            PathStyle::CodexApi => "api/codex",
+            PathStyle::AvaApi => "api/ava",
             PathStyle::ChatGptApi => "wham",
         };
         let url = format!("{}/{prefix}/usage/plan_limit_history?days=7", self.base_url);

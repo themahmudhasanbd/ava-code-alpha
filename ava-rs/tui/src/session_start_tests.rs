@@ -2,8 +2,8 @@ use super::*;
 use crate::legacy_core::config::ConfigBuilder;
 use app_test_support::create_fake_rollout;
 use app_test_support::rollout_path;
-use codex_config::LoaderOverrides;
-use codex_protocol::ThreadId;
+use ava_config::LoaderOverrides;
+use ava_protocol::ThreadId;
 use pretty_assertions::assert_eq;
 use std::cell::Cell;
 use tempfile::TempDir;
@@ -40,15 +40,15 @@ async fn archived_session_requires_confirmation_before_resume_or_fork() -> Resul
         SessionStartAction::Resume(ResumeModelSettings::RestoreFromThread),
         SessionStartAction::Fork(crate::app_server_session::ForkPermissionMode::InheritSaved),
     ] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         let config = ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .build()
             .await?;
         let timestamp = "2025-01-05T12-00-00";
         let id = create_fake_rollout(
-            codex_home.path(),
+            ava_home.path(),
             timestamp,
             "2025-01-05T12:00:00Z",
             "Archived saved user message",
@@ -56,8 +56,8 @@ async fn archived_session_requires_confirmation_before_resume_or_fork() -> Resul
             /*git_info*/ None,
         )
         .expect("create source rollout");
-        let active_path = rollout_path(codex_home.path(), timestamp, &id);
-        let archived_dir = codex_home.path().join("archived_sessions");
+        let active_path = rollout_path(ava_home.path(), timestamp, &id);
+        let archived_dir = ava_home.path().join("archived_sessions");
         std::fs::create_dir_all(&archived_dir)?;
         let archived_path = archived_dir.join(active_path.file_name().unwrap());
         std::fs::rename(&active_path, &archived_path)?;
@@ -189,14 +189,14 @@ fn session_start_error_surfaces_archived_guidance_without_rollout_path() {
         ThreadId::from_string("019e72f4-e09a-70f2-b2c2-a153a57b8cc0").expect("thread id");
     let target_session = SessionTarget {
         path: Some(std::path::PathBuf::from(
-            "/Users/me/.codex/archived_sessions/rollout.jsonl",
+            "/Users/me/.ava-code/archived_sessions/rollout.jsonl",
         )),
         thread_id,
         cwd: None,
         history_mode: None,
     };
     let expected = format!(
-        "session {thread_id} is archived. Run `codex unarchive {thread_id}` to unarchive it first."
+        "session {thread_id} is archived. Run `ava unarchive {thread_id}` to unarchive it first."
     );
 
     for action in ["resume", "fork"] {

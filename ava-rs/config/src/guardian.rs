@@ -1,13 +1,13 @@
 //! Translates legacy Guardian settings and applies live managed constraints.
 //! Catalog policies take precedence over legacy scope and feature settings.
 
-use codex_features::FeatureToml;
-use codex_features::GuardianV2ConfigToml;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::openai_models::GuardianModelPolicy;
-use codex_protocol::openai_models::GuardianReviewMode;
-use codex_protocol::openai_models::GuardianUnscoredAction;
-use codex_protocol::openai_models::ModelInfo;
+use ava_features::FeatureToml;
+use ava_features::GuardianV2ConfigToml;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::openai_models::GuardianModelPolicy;
+use ava_protocol::openai_models::GuardianReviewMode;
+use ava_protocol::openai_models::GuardianUnscoredAction;
+use ava_protocol::openai_models::ModelInfo;
 
 use crate::ConfigRequirements;
 

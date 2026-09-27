@@ -68,7 +68,7 @@ describe("mergeProviderHeaders", () => {
 });
 
 describe("withProviderHeadersFetch", () => {
-  it("wins over a Codex-style last Headers.set of User-Agent", async () => {
+  it("wins over a Ava-style last Headers.set of User-Agent", async () => {
     const captured: Headers[] = [];
     const base = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       captured.push(new Headers(init?.headers));

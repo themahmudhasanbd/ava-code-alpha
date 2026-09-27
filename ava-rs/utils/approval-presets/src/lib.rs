@@ -1,9 +1,9 @@
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
 
 /// A simple preset pairing an approval policy with a permission profile.
 #[derive(Debug, Clone)]
@@ -30,7 +30,7 @@ pub fn builtin_approval_presets() -> Vec<ApprovalPreset> {
         ApprovalPreset {
             id: "read-only",
             label: "Read Only",
-            description: "Codex can read files in the current workspace. Approval is required to edit files or access the internet.",
+            description: "Ava can read files in the current workspace. Approval is required to edit files or access the internet.",
             approval: AskForApproval::OnRequest,
             active_permission_profile: ActivePermissionProfile::new(
                 BUILT_IN_PERMISSION_PROFILE_READ_ONLY,
@@ -40,7 +40,7 @@ pub fn builtin_approval_presets() -> Vec<ApprovalPreset> {
         ApprovalPreset {
             id: "auto",
             label: "Default",
-            description: "Codex can read and edit files in the current workspace, and run commands. Approval is required to access the internet or edit other files. (Identical to Agent mode)",
+            description: "Ava can read and edit files in the current workspace, and run commands. Approval is required to access the internet or edit other files. (Identical to Agent mode)",
             approval: AskForApproval::OnRequest,
             active_permission_profile: ActivePermissionProfile::new(
                 BUILT_IN_PERMISSION_PROFILE_WORKSPACE,
@@ -50,7 +50,7 @@ pub fn builtin_approval_presets() -> Vec<ApprovalPreset> {
         ApprovalPreset {
             id: "full-access",
             label: "Full Access",
-            description: "Codex can edit files outside this workspace and access the internet without asking for approval. Exercise caution when using.",
+            description: "Ava can edit files outside this workspace and access the internet without asking for approval. Exercise caution when using.",
             approval: AskForApproval::Never,
             active_permission_profile: ActivePermissionProfile::new(
                 BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS,

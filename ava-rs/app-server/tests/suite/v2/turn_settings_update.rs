@@ -2,30 +2,30 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_app_server_protocol::ThreadSettingsUpdateResponse;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnSettingsUpdateParams;
-use codex_app_server_protocol::TurnSettingsUpdateResponse;
-use codex_app_server_protocol::TurnSettingsUpdateStatus;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::ThreadSettingsUpdateResponse;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnSettingsUpdateParams;
+use ava_app_server_protocol::TurnSettingsUpdateResponse;
+use ava_app_server_protocol::TurnSettingsUpdateStatus;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
 use core_test_support::responses;
 use core_test_support::skip_if_wine_exec;
 use pretty_assertions::assert_eq;
@@ -95,12 +95,12 @@ async fn settings_updates_report_results_and_preserve_the_target_on_saved_thread
         ],
     )
     .await;
-    let codex_home = TempDir::new()?;
-    mock_config(codex_home.path(), &server.uri())?
+    let ava_home = TempDir::new()?;
+    mock_config(ava_home.path(), &server.uri())?
         .enable_feature(Feature::StepModelSwitching)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     if matches!(scenario, UpdateScenario::Rejected) {
-        let path = codex_home.path().join("step-models.json");
+        let path = ava_home.path().join("step-models.json");
         let mut catalog: ModelsResponse = serde_json::from_slice(&std::fs::read(&path)?)?;
         for model in &mut catalog.models {
             model.node_repl_disabled = model.slug == MODEL_B;
@@ -108,7 +108,7 @@ async fn settings_updates_report_results_and_preserve_the_target_on_saved_thread
         std::fs::write(path, serde_json::to_vec(&catalog)?)?;
     }
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let request_id = app
@@ -291,12 +291,12 @@ async fn turn_settings_update_reports_unavailable_without_starting_or_changing_a
         ]),
     )
     .await;
-    let codex_home = TempDir::new()?;
-    mock_config(codex_home.path(), &server.uri())?
+    let ava_home = TempDir::new()?;
+    mock_config(ava_home.path(), &server.uri())?
         .enable_feature(Feature::StepModelSwitching)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let request_id = app
@@ -369,10 +369,10 @@ async fn disabled_turn_settings_update_reports_rejection_without_changing_future
         ]),
     )
     .await;
-    let codex_home = TempDir::new()?;
-    mock_config(codex_home.path(), &server.uri())?.write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    mock_config(ava_home.path(), &server.uri())?.write(ava_home.path())?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let request_id = app
@@ -465,13 +465,13 @@ async fn live_reviewer_updates_route_approvals_without_changing_future_turns(
         replies.push(responses::sse_completed(&format!("done-{index}")));
     }
     let requests = responses::mount_sse_sequence(&server, replies).await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     // Reviewer-only updates do not require the experimental model-switching feature.
-    mock_config(codex_home.path(), &server.uri())?
+    mock_config(ava_home.path(), &server.uri())?
         .enable_feature(Feature::GuardianApproval)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let id = app
@@ -553,7 +553,7 @@ async fn start_turn(app: &mut TestAppServer, thread_id: &str) -> Result<String> 
     Ok(response.turn.id)
 }
 
-fn mock_config(codex_home: &Path, server_uri: &str) -> Result<MockResponsesConfig> {
+fn mock_config(ava_home: &Path, server_uri: &str) -> Result<MockResponsesConfig> {
     let model = bundled_models_response()?
         .models
         .into_iter()
@@ -567,7 +567,7 @@ fn mock_config(codex_home: &Path, server_uri: &str) -> Result<MockResponsesConfi
             model
         })
         .collect();
-    let catalog_path = codex_home.join("step-models.json");
+    let catalog_path = ava_home.join("step-models.json");
     std::fs::write(
         &catalog_path,
         serde_json::to_vec(&ModelsResponse { models })?,

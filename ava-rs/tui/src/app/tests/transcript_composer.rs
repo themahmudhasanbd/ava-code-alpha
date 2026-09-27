@@ -108,15 +108,15 @@ async fn analytics_menu_reopen_preserves_navigation_and_explicit_view_selects_su
         .mount(&http)
         .await;
     app.config.chatgpt_base_url = format!("{}/backend-api", http.uri());
-    app.config.cli_auth_credentials_store_mode = codex_login::AuthCredentialsStoreMode::File;
+    app.config.cli_auth_credentials_store_mode = ava_login::AuthCredentialsStoreMode::File;
     app_test_support::write_chatgpt_auth(
-        &app.config.codex_home,
+        &app.config.ava_home,
         app_test_support::ChatGptAuthFixture::new("test-access-token")
             .account_id("test-account")
             .chatgpt_account_id("test-account")
             .chatgpt_user_id("test-user")
             .plan_type("plus"),
-        codex_login::AuthCredentialsStoreMode::File,
+        ava_login::AuthCredentialsStoreMode::File,
     )
     .unwrap();
     let mut app_server = start_config_write_test_app_server(&app).await?;

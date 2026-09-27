@@ -1,10 +1,10 @@
 use super::*;
 use crate::chatwidget::ThreadUsageOutcome;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::AccountUpdatedNotification;
-use codex_app_server_protocol::AuthMode;
-use codex_app_server_protocol::ThreadUsage;
-use codex_protocol::account::PlanType;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::AccountUpdatedNotification;
+use ava_app_server_protocol::AuthMode;
+use ava_app_server_protocol::ThreadUsage;
+use ava_protocol::account::PlanType;
 use pretty_assertions::assert_eq;
 use ratatui::layout::Rect;
 use ratatui::layout::Size;
@@ -21,7 +21,7 @@ async fn app_with_pending_thread_usage() -> Result<(App, AppServerSession, tui::
         /*status_account_display*/ None,
         Some(PlanType::Business),
         /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ true,
+        /*has_ava_backend_auth*/ true,
     );
     while app_event_rx.try_recv().is_ok() {}
     let mut app_server =
@@ -102,7 +102,7 @@ async fn account_updated_with_backend_only_auth_enables_thread_usage() -> Result
     .await;
 
     assert!(!app.chat_widget.has_chatgpt_account());
-    assert!(app.chat_widget.has_codex_backend_auth());
+    assert!(app.chat_widget.has_ava_backend_auth());
     app.chat_widget.add_status_output(
         /*refreshing_rate_limits*/ false, /*request_id*/ None,
     );
@@ -285,7 +285,7 @@ async fn terminal_reflow_rebases_pending_status_update_to_new_width() -> Result<
                 namespace: None,
                 tool: "lookup".into(),
                 arguments: serde_json::json!({}),
-                status: codex_app_server_protocol::DynamicToolCallStatus::InProgress,
+                status: ava_app_server_protocol::DynamicToolCallStatus::InProgress,
                 success: None,
                 duration_ms: None,
                 content_items: None,

@@ -1,15 +1,15 @@
-//! Validates and pins local Codex home and sandbox directories, keeping sandbox
+//! Validates and pins local Ava home and sandbox directories, keeping sandbox
 //! leaves nonempty so they cannot become junctions during provisioning.
 
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_windows_sandbox::DirectoryOpenDisposition;
-use codex_windows_sandbox::SetupRuntime;
-use codex_windows_sandbox::create_directory_guard;
-use codex_windows_sandbox::open_directory_no_reparse;
-use codex_windows_sandbox::to_wide;
-use codex_windows_sandbox::validate_local_directory_path;
+use ava_windows_sandbox::DirectoryOpenDisposition;
+use ava_windows_sandbox::SetupRuntime;
+use ava_windows_sandbox::create_directory_guard;
+use ava_windows_sandbox::open_directory_no_reparse;
+use ava_windows_sandbox::to_wide;
+use ava_windows_sandbox::validate_local_directory_path;
 use std::os::windows::fs::MetadataExt;
 use std::os::windows::io::BorrowedHandle;
 use std::os::windows::io::IntoRawHandle;
@@ -34,7 +34,7 @@ impl Drop for OwnedHandle {
     }
 }
 
-pub(super) fn prepare_codex_home(
+pub(super) fn prepare_ava_home(
     requested: &Path,
     runtime: SetupRuntime,
     disposition: DirectoryOpenDisposition,
@@ -48,15 +48,15 @@ pub(super) fn prepare_codex_home(
     let requested_root = requested
         .ancestors()
         .last()
-        .context("find the root of the requested Codex home")?;
+        .context("find the root of the requested Ava home")?;
     if unsafe { filesystem::GetDriveTypeW(to_wide(requested_root.as_os_str()).as_ptr()) }
         != DRIVE_FIXED
     {
-        return Err(ServiceUnavailable("Codex home must be located on a fixed local drive").into());
+        return Err(ServiceUnavailable("Ava home must be located on a fixed local drive").into());
     }
     let parent = requested
         .parent()
-        .context("Codex home must have an existing parent directory")?;
+        .context("Ava home must have an existing parent directory")?;
     pin_existing_ancestors(parent, &mut handles)?;
     handles.push(pin_directory(
         requested,
@@ -65,14 +65,14 @@ pub(super) fn prepare_codex_home(
     )?);
     let home = requested
         .canonicalize()
-        .with_context(|| format!("canonicalize Codex home {}", requested.display()))?;
+        .with_context(|| format!("canonicalize Ava home {}", requested.display()))?;
     validate_local_directory_path(&home)?;
     let root = home
         .ancestors()
         .last()
-        .context("find the root of the requested Codex home")?;
+        .context("find the root of the requested Ava home")?;
     if unsafe { filesystem::GetDriveTypeW(to_wide(root.as_os_str()).as_ptr()) } != DRIVE_FIXED {
-        return Err(ServiceUnavailable("Codex home must be located on a fixed local drive").into());
+        return Err(ServiceUnavailable("Ava home must be located on a fixed local drive").into());
     }
     if home != requested {
         pin_existing_ancestors(&home, &mut handles)?;
@@ -110,7 +110,7 @@ pub(super) fn prepare_codex_home(
             .with_context(|| {
             if index == 0 {
                 format!(
-                    "requesting user must be permitted to write Codex home {}",
+                    "requesting user must be permitted to write Ava home {}",
                     directory.display()
                 )
             } else {

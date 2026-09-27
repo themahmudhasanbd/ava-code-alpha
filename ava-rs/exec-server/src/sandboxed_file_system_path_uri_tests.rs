@@ -1,11 +1,11 @@
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tokio::io;
 
@@ -131,7 +131,7 @@ fn sandbox_routing_uses_independent_read_write_policies_and_executor_temp_rules(
 async fn sandboxed_file_system_rejects_non_native_uri_as_invalid_input() {
     let runtime_paths = ExecServerRuntimePaths::new(
         std::env::current_exe().expect("current exe"),
-        /*codex_linux_sandbox_exe*/ None,
+        /*ava_linux_sandbox_exe*/ None,
     )
     .expect("runtime paths");
     let file_system = SandboxedFileSystem::new(runtime_paths.clone());

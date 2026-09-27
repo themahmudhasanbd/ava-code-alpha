@@ -15,15 +15,15 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use chrono::DateTime;
-use codex_app_server_protocol::project_rollout_line;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_app_server_protocol::project_rollout_line;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 use serde::Serialize;
 use tokio::fs::File;
 use tokio::io::AsyncBufReadExt;
@@ -318,7 +318,7 @@ impl LocalThreadStore {
         let _maintenance_guard = match options.mode {
             RolloutMigrationMode::DryRun => None,
             RolloutMigrationMode::Apply => Some(
-                codex_rollout::try_acquire_rollout_maintenance_lock(&self.config.codex_home)
+                ava_rollout::try_acquire_rollout_maintenance_lock(&self.config.ava_home)
                     .map_err(migration_error)?
                     .ok_or_else(|| ThreadStoreError::Conflict {
                         message: "rollout compression or another migration is already running"
@@ -328,12 +328,12 @@ impl LocalThreadStore {
         };
         let mut paths = match paths {
             RolloutMigrationPaths::Discover => {
-                find_all_rollout_paths(&self.config.codex_home).await?
+                find_all_rollout_paths(&self.config.ava_home).await?
             }
             RolloutMigrationPaths::Known(paths) => paths,
         };
         if options.mode == RolloutMigrationMode::Apply {
-            let pending_thread_ids = pending_migration_thread_ids(&self.config.codex_home).await?;
+            let pending_thread_ids = pending_migration_thread_ids(&self.config.ava_home).await?;
             paths.sort_by_key(|path| {
                 !thread_id_from_rollout_filename(path)
                     .is_some_and(|thread_id| pending_thread_ids.contains(&thread_id))
@@ -345,7 +345,7 @@ impl LocalThreadStore {
                 .iter()
                 .filter_map(|path| thread_id_from_rollout_filename(path))
                 .collect();
-            codex_rollout::find_thread_names_by_ids(&self.config.codex_home, &thread_ids)
+            ava_rollout::find_thread_names_by_ids(&self.config.ava_home, &thread_ids)
                 .await
                 .unwrap_or_default()
         } else {
@@ -381,14 +381,14 @@ impl LocalThreadStore {
     ) -> ThreadStoreResult<Option<RolloutMigrationOutcome>> {
         let mut retried_moved_path = false;
         let metadata = loop {
-            let error = match codex_rollout::read_session_meta_line(&path).await {
+            let error = match ava_rollout::read_session_meta_line(&path).await {
                 Ok(metadata) => break metadata,
                 Err(error) if !retried_moved_path && error.kind() == io::ErrorKind::NotFound => {
-                    // A different Codex process can archive or compress this rollout after path
+                    // A different Ava process can archive or compress this rollout after path
                     // discovery but before we take its writer lock. Retry the same rollout under
                     // its current root/suffix before treating the missing snapshot path as failed.
                     if let Some(current_path) =
-                        find_current_rollout_path(&self.config.codex_home, &path).await?
+                        find_current_rollout_path(&self.config.ava_home, &path).await?
                     {
                         path = current_path;
                         retried_moved_path = true;
@@ -420,7 +420,7 @@ impl LocalThreadStore {
                     }
                     Err(error) => return Err(error),
                 };
-                match codex_rollout::read_session_meta_line(&path).await {
+                match ava_rollout::read_session_meta_line(&path).await {
                     Ok(metadata) => break metadata,
                     Err(error) => error,
                 }
@@ -471,7 +471,7 @@ impl LocalThreadStore {
             RolloutMigrationKind::Ordinary
         };
 
-        let journal_path = migration_journal_path(&self.config.codex_home, thread_id);
+        let journal_path = migration_journal_path(&self.config.ava_home, thread_id);
         let pending_published_migration = metadata.meta.history_mode
             == ThreadHistoryMode::Paginated
             && options.mode == RolloutMigrationMode::Apply
@@ -560,7 +560,7 @@ impl LocalThreadStore {
             .await
             .map_err(migration_error)?
             && let Some(current_path) =
-                find_current_rollout_path(&self.config.codex_home, &path).await?
+                find_current_rollout_path(&self.config.ava_home, &path).await?
         {
             path = current_path;
         }
@@ -805,7 +805,7 @@ impl LocalThreadStore {
                 || current_source_metadata.modified().ok() != source_modified
             {
                 return Err(ThreadStoreError::Conflict {
-                    message: "rollout changed while migration was staging it; close older Codex processes and retry".to_string(),
+                    message: "rollout changed while migration was staging it; close older Ava processes and retry".to_string(),
                 });
             }
 
@@ -957,7 +957,7 @@ impl LocalThreadStore {
             if plan.is_none()
                 && matches!(
                     &line.item,
-                    RolloutItem::EventMsg(codex_protocol::protocol::EventMsg::ThreadRolledBack(_))
+                    RolloutItem::EventMsg(ava_protocol::protocol::EventMsg::ThreadRolledBack(_))
                 )
             {
                 return Ok(CanonicalizationAttempt::NeedsRollbackPlan);
@@ -1052,7 +1052,7 @@ impl LocalThreadStore {
         rollout_path: &Path,
         journal_path: &Path,
     ) -> ThreadStoreResult<()> {
-        let Ok(metadata) = codex_rollout::read_session_meta_line(rollout_path).await else {
+        let Ok(metadata) = ava_rollout::read_session_meta_line(rollout_path).await else {
             return Ok(());
         };
         if metadata.meta.history_mode == ThreadHistoryMode::Paginated {
@@ -1125,7 +1125,7 @@ impl LocalThreadStore {
         rollout_path: &Path,
         limiter: &mut RolloutMigrationRateLimiter,
     ) -> ThreadStoreResult<()> {
-        let subagent_history_start_ordinal = codex_rollout::read_session_meta_line(rollout_path)
+        let subagent_history_start_ordinal = ava_rollout::read_session_meta_line(rollout_path)
             .await
             .map_err(migration_error)?
             .meta
@@ -1276,7 +1276,7 @@ async fn find_rollout_paths(root: &Path) -> ThreadStoreResult<Vec<PathBuf>> {
             {
                 let path = entry.path();
                 if name.ends_with(".jsonl.zst")
-                    && tokio::fs::try_exists(codex_rollout::plain_rollout_path(&path))
+                    && tokio::fs::try_exists(ava_rollout::plain_rollout_path(&path))
                         .await
                         .map_err(migration_error)?
                 {
@@ -1291,27 +1291,27 @@ async fn find_rollout_paths(root: &Path) -> ThreadStoreResult<Vec<PathBuf>> {
     Ok(paths)
 }
 
-async fn find_all_rollout_paths(codex_home: &Path) -> ThreadStoreResult<Vec<PathBuf>> {
-    let mut paths = find_rollout_paths(&codex_home.join(codex_rollout::SESSIONS_SUBDIR)).await?;
+async fn find_all_rollout_paths(ava_home: &Path) -> ThreadStoreResult<Vec<PathBuf>> {
+    let mut paths = find_rollout_paths(&ava_home.join(ava_rollout::SESSIONS_SUBDIR)).await?;
     paths.extend(
-        find_rollout_paths(&codex_home.join(codex_rollout::ARCHIVED_SESSIONS_SUBDIR)).await?,
+        find_rollout_paths(&ava_home.join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR)).await?,
     );
     Ok(paths)
 }
 
 async fn find_current_rollout_path(
-    codex_home: &Path,
+    ava_home: &Path,
     stale_path: &Path,
 ) -> ThreadStoreResult<Option<PathBuf>> {
-    let plain_path = codex_rollout::plain_rollout_path(stale_path);
+    let plain_path = ava_rollout::plain_rollout_path(stale_path);
     let Some(file_name) = plain_path.file_name() else {
         return Ok(None);
     };
-    Ok(find_all_rollout_paths(codex_home)
+    Ok(find_all_rollout_paths(ava_home)
         .await?
         .into_iter()
         .find(|candidate| {
-            codex_rollout::plain_rollout_path(candidate).file_name() == Some(file_name)
+            ava_rollout::plain_rollout_path(candidate).file_name() == Some(file_name)
         }))
 }
 

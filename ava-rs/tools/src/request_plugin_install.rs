@@ -1,5 +1,5 @@
-use codex_connectors::AppInfo;
-use codex_protocol::approvals::ElicitationRequest;
+use ava_connectors::AppInfo;
+use ava_protocol::approvals::ElicitationRequest;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
@@ -33,7 +33,7 @@ pub struct RequestPluginInstallResult {
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
 pub struct RequestPluginInstallMeta<'a> {
-    pub codex_approval_kind: &'static str,
+    pub ava_approval_kind: &'static str,
     pub persist: &'static str,
     pub tool_type: DiscoverableToolType,
     pub suggest_type: DiscoverableToolAction,
@@ -105,7 +105,7 @@ fn build_request_plugin_install_meta<'a>(
         ),
     };
     RequestPluginInstallMeta {
-        codex_approval_kind: REQUEST_PLUGIN_INSTALL_APPROVAL_KIND_VALUE,
+        ava_approval_kind: REQUEST_PLUGIN_INSTALL_APPROVAL_KIND_VALUE,
         persist: REQUEST_PLUGIN_INSTALL_PERSIST_ALWAYS_VALUE,
         tool_type,
         suggest_type: DiscoverableToolAction::Install,

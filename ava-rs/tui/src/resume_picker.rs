@@ -33,21 +33,21 @@ use crate::wrapping::RtOptions;
 use crate::wrapping::adaptive_wrap_lines;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadListCwdFilter;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadSortKey;
-use codex_app_server_protocol::ThreadUnarchiveParams;
-use codex_app_server_protocol::ThreadUnarchiveResponse;
-use codex_config::types::SessionPickerViewMode;
-use codex_protocol::ThreadId;
-use codex_utils_path as path_utils;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadListCwdFilter;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadSortKey;
+use ava_app_server_protocol::ThreadUnarchiveParams;
+use ava_app_server_protocol::ThreadUnarchiveResponse;
+use ava_config::types::SessionPickerViewMode;
+use ava_protocol::ThreadId;
+use ava_utils_path as path_utils;
 use color_eyre::eyre::Result;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -329,7 +329,7 @@ struct PickerPage {
 
 #[derive(Clone)]
 struct SessionPickerViewPersistence {
-    codex_home: PathBuf,
+    ava_home: PathBuf,
 }
 
 struct SessionPickerRunOptions {
@@ -447,7 +447,7 @@ async fn run_resume_picker_with_launch_context(
         show_all,
         filter_cwd: cwd_filter,
         local_filter_cwd,
-        worktrees_enabled: config.features.enabled(codex_features::Feature::Worktrees),
+        worktrees_enabled: config.features.enabled(ava_features::Feature::Worktrees),
         action: SessionPickerAction::Resume,
         launch_context,
         provider_filter,
@@ -455,7 +455,7 @@ async fn run_resume_picker_with_launch_context(
             local_settings.tui.session_picker_view.unwrap_or_default(),
         ),
         view_persistence: Some(SessionPickerViewPersistence {
-            codex_home: local_settings.codex_home.to_path_buf(),
+            ava_home: local_settings.ava_home.to_path_buf(),
         }),
         keymap: runtime_keymap,
         initial_page_mode: if uses_remote_workspace {
@@ -506,7 +506,7 @@ pub async fn run_fork_picker_with_app_server(
         show_all,
         filter_cwd: cwd_filter,
         local_filter_cwd,
-        worktrees_enabled: config.features.enabled(codex_features::Feature::Worktrees),
+        worktrees_enabled: config.features.enabled(ava_features::Feature::Worktrees),
         action: SessionPickerAction::Fork,
         launch_context: SessionPickerLaunchContext::Startup,
         provider_filter,
@@ -514,7 +514,7 @@ pub async fn run_fork_picker_with_app_server(
             local_settings.tui.session_picker_view.unwrap_or_default(),
         ),
         view_persistence: Some(SessionPickerViewPersistence {
-            codex_home: local_settings.codex_home.to_path_buf(),
+            ava_home: local_settings.ava_home.to_path_buf(),
         }),
         keymap: runtime_keymap,
         initial_page_mode: if uses_remote_workspace {
@@ -702,7 +702,7 @@ fn spawn_app_server_page_loader(
                         request.cwd_filter.as_deref(),
                         uses_remote_filesystem,
                         config.as_ref().is_some_and(|config| {
-                            config.features.enabled(codex_features::Feature::Worktrees)
+                            config.features.enabled(ava_features::Feature::Worktrees)
                         }),
                     );
                     let cursor = request.cursor.map(|PageCursor::AppServer(cursor)| cursor);
@@ -1653,8 +1653,8 @@ impl PickerState {
         };
         paths_match(row_cwd, filter_cwd)
             || (self.worktrees_enabled
-                && codex_git_utils::repository_identity(row_cwd)
-                    .zip(codex_git_utils::repository_identity(filter_cwd))
+                && ava_git_utils::repository_identity(row_cwd)
+                    .zip(ava_git_utils::repository_identity(filter_cwd))
                     .is_some_and(|(row, filter)| {
                         row.common_dir == filter.common_dir
                             && row.relative_cwd == filter.relative_cwd
@@ -1903,7 +1903,7 @@ impl PickerState {
             return Ok(());
         };
 
-        ConfigEditsBuilder::new(&persistence.codex_home)
+        ConfigEditsBuilder::new(&persistence.ava_home)
             .set_session_picker_view(SessionPickerViewMode::from(self.density))
             .apply()
             .await
@@ -2079,7 +2079,7 @@ pub(crate) fn repository_cwd_filter(
 ) -> ThreadListCwdFilter {
     if worktrees_enabled
         && !uses_remote_filesystem
-        && let Some(cwds) = codex_git_utils::linked_worktree_cwds(cwd)
+        && let Some(cwds) = ava_git_utils::linked_worktree_cwds(cwd)
         && cwds.len() > 1
     {
         return ThreadListCwdFilter::Many(
@@ -3536,12 +3536,12 @@ fn render_empty_state_line(state: &PickerState) -> Line<'static> {
 mod tests {
     use super::*;
     use chrono::Duration;
-    use codex_app_server_protocol::ThreadItem;
-    use codex_app_server_protocol::ThreadSourceKind;
-    use codex_config::CONFIG_TOML_FILE;
-    use codex_protocol::ThreadId;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_app_server_protocol::ThreadItem;
+    use ava_app_server_protocol::ThreadSourceKind;
+    use ava_config::CONFIG_TOML_FILE;
+    use ava_protocol::ThreadId;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
 
     use crossterm::event::KeyCode;
     use crossterm::event::KeyEvent;
@@ -3768,13 +3768,13 @@ mod tests {
             );
         }
         let mut config = crate::legacy_core::config::ConfigBuilder::default()
-            .codex_home(root.path().to_path_buf())
+            .ava_home(root.path().to_path_buf())
             .build()
             .await
             .unwrap();
         config
             .features
-            .set_enabled(codex_features::Feature::Worktrees, /*enabled*/ true)
+            .set_enabled(ava_features::Feature::Worktrees, /*enabled*/ true)
             .unwrap();
         for (filename_ts, timestamp, cwd) in [
             ("2025-01-02T10-00-00", "2025-01-02T10:00:00Z", &primary),
@@ -4075,7 +4075,7 @@ mod tests {
             thread_name: Some(String::from("My session")),
             created_at: None,
             updated_at: None,
-            cwd: Some(PathBuf::from("/tmp/codex-session-picker")),
+            cwd: Some(PathBuf::from("/tmp/ava-session-picker")),
             git_branch: Some(String::from("fcoury/session-picker")),
         };
 
@@ -4135,8 +4135,8 @@ mod tests {
             thread_name: Some(String::from("feat(tui): add raw scrollback mode")),
             created_at: parse_timestamp_str("2026-05-02T14:31:08Z"),
             updated_at: parse_timestamp_str("2026-05-02T14:48:19Z"),
-            cwd: Some(PathBuf::from("/Users/felipe.coury/code/codex")),
-            git_branch: Some(String::from("codex/raw-scrollback-mode")),
+            cwd: Some(PathBuf::from("/Users/felipe.coury/code/ava")),
+            git_branch: Some(String::from("ava/raw-scrollback-mode")),
         };
 
         let rendered = render_expanded_session_details(&row, &state, /*width*/ 120)
@@ -4153,7 +4153,7 @@ mod tests {
         assert!(rendered.contains("Created:    17 minutes ago · 2026-05-02 14:31:08"));
         assert!(rendered.contains("Updated:    now · 2026-05-02 14:48:19"));
         assert!(rendered.contains(&format!("Directory:  {expected_directory}")));
-        assert!(rendered.contains("Branch:      codex/raw-scrollback-mode"));
+        assert!(rendered.contains("Branch:      ava/raw-scrollback-mode"));
         assert!(rendered.contains("Conversation:"));
     }
 
@@ -4164,7 +4164,7 @@ mod tests {
             "5h ago",
             "3h ago",
             Some("main"),
-            Some("tmp/codex"),
+            Some("tmp/ava"),
             /*show_cwd*/ true,
             /*width*/ 80,
         );
@@ -4173,7 +4173,7 @@ mod tests {
             "5h ago",
             "3h ago",
             Some("main"),
-            Some("tmp/codex"),
+            Some("tmp/ava"),
             /*show_cwd*/ true,
             /*width*/ 80,
         );
@@ -4184,8 +4184,8 @@ mod tests {
         assert!(created[0].to_string().starts_with("  5h ago"));
         assert!(!updated[0].to_string().contains("created 5h ago"));
         assert!(!created[0].to_string().contains("updated 3h ago"));
-        assert_metadata_order(&updated[0], "⌁ tmp/codex", " main");
-        assert_metadata_order(&created[0], "⌁ tmp/codex", " main");
+        assert_metadata_order(&updated[0], "⌁ tmp/ava", " main");
+        assert_metadata_order(&created[0], "⌁ tmp/ava", " main");
     }
 
     #[test]
@@ -4195,16 +4195,16 @@ mod tests {
             "5h ago",
             "3h ago",
             /*branch*/ None,
-            Some("/tmp/codex"),
+            Some("/tmp/ava"),
             /*show_cwd*/ true,
             /*width*/ 80,
         );
 
         assert_eq!(footer.len(), 1);
         let rendered = footer[0].to_string();
-        assert!(rendered.contains("⌁ /tmp/codex"));
+        assert!(rendered.contains("⌁ /tmp/ava"));
         assert!(rendered.contains(" no branch"));
-        assert_metadata_order(&footer[0], "⌁ /tmp/codex", " no branch");
+        assert_metadata_order(&footer[0], "⌁ /tmp/ava", " no branch");
     }
 
     #[test]
@@ -4215,7 +4215,7 @@ mod tests {
             "5h ago",
             "4h ago",
             Some(branch),
-            Some("~/code/codex.etraut-animations-false-improvements/codex-rs"),
+            Some("~/code/ava.etraut-animations-false-improvements/ava-rs"),
             /*show_cwd*/ true,
             /*width*/ 140,
         );
@@ -4226,7 +4226,7 @@ mod tests {
 
     #[test]
     fn footer_cwd_truncates_to_responsive_column() {
-        let cwd = "~/code/codex.owner-extremely-long-worktree-name-that-needs-truncating/codex-rs";
+        let cwd = "~/code/ava.owner-extremely-long-worktree-name-that-needs-truncating/ava-rs";
         let branch = "owner/branch";
         let footer = render_footer_lines(
             ThreadSortKey::UpdatedAt,
@@ -4241,7 +4241,7 @@ mod tests {
         assert_eq!(footer.len(), 1);
         let footer = footer[0].to_string();
         assert!(!footer.contains(cwd));
-        assert!(footer.contains("⌁ ~/code/codex."));
+        assert!(footer.contains("⌁ ~/code/ava."));
         assert!(footer.contains("..."));
         assert!(footer.contains(" owner/branch"));
     }
@@ -4253,7 +4253,7 @@ mod tests {
             "5h ago",
             "4h ago",
             Some("owner/branch"),
-            Some("~/code/codex.owner-worktree/codex-rs"),
+            Some("~/code/ava.owner-worktree/ava-rs"),
             /*show_cwd*/ false,
             /*width*/ 80,
         );
@@ -5294,7 +5294,7 @@ mod tests {
             SessionPickerAction::Resume,
         );
         state.view_persistence = Some(SessionPickerViewPersistence {
-            codex_home: tmp.path().to_path_buf(),
+            ava_home: tmp.path().to_path_buf(),
         });
 
         state
@@ -5316,8 +5316,8 @@ session_picker_view = "dense"
     #[tokio::test]
     async fn ctrl_o_keeps_toggled_density_when_persistence_fails() {
         let tmp = tempdir().expect("tmpdir");
-        let codex_home_file = tmp.path().join("codex-home-file");
-        std::fs::write(&codex_home_file, "not a directory").expect("write codex home file");
+        let ava_home_file = tmp.path().join("ava-home-file");
+        std::fs::write(&ava_home_file, "not a directory").expect("write ava home file");
         let loader = page_only_loader(|_| {});
         let mut state = PickerState::new(
             FrameRequester::test_dummy(),
@@ -5328,7 +5328,7 @@ session_picker_view = "dense"
             SessionPickerAction::Resume,
         );
         state.view_persistence = Some(SessionPickerViewPersistence {
-            codex_home: codex_home_file,
+            ava_home: ava_home_file,
         });
 
         state
@@ -5537,7 +5537,7 @@ session_picker_view = "dense"
             created_at: parse_timestamp_str("2026-04-28T16:30:00Z"),
             updated_at: parse_timestamp_str("2026-04-28T17:45:00Z"),
             cwd: Some(PathBuf::from(
-                "/Users/felipe.coury/code/codex.fcoury-session-picker/codex-rs",
+                "/Users/felipe.coury/code/ava.fcoury-session-picker/ava-rs",
             )),
             git_branch: Some(String::from("fcoury/session-picker")),
         }
@@ -5588,7 +5588,7 @@ session_picker_view = "dense"
             render_dense_row_snapshot(
                 /*show_all*/ false,
                 Some(PathBuf::from(
-                    "/Users/felipe.coury/code/codex.fcoury-session-picker/codex-rs"
+                    "/Users/felipe.coury/code/ava.fcoury-session-picker/ava-rs"
                 )),
                 /*width*/ 100,
             )
@@ -5751,7 +5751,7 @@ session_picker_view = "dense"
             ProviderFilter::MatchDefault(String::from("openai")),
             /*show_all*/ false,
             Some(PathBuf::from(
-                "/Users/felipe.coury/code/codex.fcoury-session-picker/codex-rs",
+                "/Users/felipe.coury/code/ava.fcoury-session-picker/ava-rs",
             )),
             SessionPickerAction::Resume,
         );
@@ -5794,7 +5794,7 @@ session_picker_view = "dense"
             thread_name: None,
             created_at: parse_timestamp_str("2026-04-28T16:30:00Z"),
             updated_at: parse_timestamp_str("2026-04-28T17:45:00Z"),
-            cwd: Some(PathBuf::from("/tmp/codex")),
+            cwd: Some(PathBuf::from("/tmp/ava")),
             git_branch: Some(String::from("fcoury/session-picker")),
         };
         let mut state = PickerState::new(
@@ -5820,7 +5820,7 @@ session_picker_view = "dense"
                 TranscriptPreviewLine {
                     speaker: TranscriptPreviewSpeaker::Assistant,
                     text: String::from(
-                        r#"Here are the *last* lines: [docs](https://example.com) :codex-file-citation{path="/tmp/codex/report.xlsx"}."#,
+                        r#"Here are the *last* lines: [docs](https://example.com) :ava-file-citation{path="/tmp/ava/report.xlsx"}."#,
                     ),
                 },
             ]),
@@ -5865,7 +5865,7 @@ session_picker_view = "dense"
             thread_name: None,
             created_at: parse_timestamp_str("2026-04-28T16:30:00Z"),
             updated_at: parse_timestamp_str("2026-04-28T17:45:00Z"),
-            cwd: Some(PathBuf::from("/tmp/codex")),
+            cwd: Some(PathBuf::from("/tmp/ava")),
             git_branch: Some(String::from("fcoury/session-picker")),
         };
         let mut state = PickerState::new(
@@ -6627,11 +6627,11 @@ session_picker_view = "dense"
             created_at: 1,
             updated_at: 2,
             recency_at: Some(2),
-            status: codex_app_server_protocol::ThreadStatus::Idle,
+            status: ava_app_server_protocol::ThreadStatus::Idle,
             path: None,
             cwd: test_path_buf("/tmp").abs(),
             cli_version: String::from("0.0.0"),
-            source: codex_app_server_protocol::SessionSource::Cli,
+            source: ava_app_server_protocol::SessionSource::Cli,
             can_accept_direct_input: None,
             thread_source: None,
             agent_nickname: None,
@@ -6674,25 +6674,25 @@ session_picker_view = "dense"
             created_at: 1,
             updated_at: 2,
             recency_at: Some(2),
-            status: codex_app_server_protocol::ThreadStatus::Idle,
+            status: ava_app_server_protocol::ThreadStatus::Idle,
             path: None,
             cwd: test_path_buf("/tmp").abs(),
             cli_version: String::from("0.0.0"),
-            source: codex_app_server_protocol::SessionSource::Cli,
+            source: ava_app_server_protocol::SessionSource::Cli,
             can_accept_direct_input: None,
             thread_source: None,
             agent_nickname: None,
             agent_role: None,
             git_info: None,
             name: None,
-            turns: vec![codex_app_server_protocol::Turn {
+            turns: vec![ava_app_server_protocol::Turn {
                 id: String::from("turn-1"),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: vec![
                     ThreadItem::UserMessage {
                         id: String::from("user-1"),
                         client_id: None,
-                        content: vec![codex_app_server_protocol::UserInput::Text {
+                        content: vec![ava_app_server_protocol::UserInput::Text {
                             text: String::from("hello from user"),
                             text_elements: Vec::new(),
                         }],
@@ -6710,7 +6710,7 @@ session_picker_view = "dense"
                         text: String::from("1. Do the thing"),
                     },
                 ],
-                status: codex_app_server_protocol::TurnStatus::Completed,
+                status: ava_app_server_protocol::TurnStatus::Completed,
                 error: None,
                 started_at: None,
                 completed_at: None,
@@ -6761,26 +6761,26 @@ session_picker_view = "dense"
             created_at: 1,
             updated_at: 2,
             recency_at: Some(2),
-            status: codex_app_server_protocol::ThreadStatus::Idle,
+            status: ava_app_server_protocol::ThreadStatus::Idle,
             path: None,
             cwd: test_path_buf("/tmp").abs(),
             cli_version: String::from("0.0.0"),
-            source: codex_app_server_protocol::SessionSource::Cli,
+            source: ava_app_server_protocol::SessionSource::Cli,
             can_accept_direct_input: None,
             thread_source: None,
             agent_nickname: None,
             agent_role: None,
             git_info: None,
             name: None,
-            turns: vec![codex_app_server_protocol::Turn {
+            turns: vec![ava_app_server_protocol::Turn {
                 id: String::from("turn-1"),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: vec![ThreadItem::Reasoning {
                     id: String::from("reasoning-1"),
                     summary: Vec::new(),
                     content: vec![String::from("private raw chain of thought")],
                 }],
-                status: codex_app_server_protocol::TurnStatus::Completed,
+                status: ava_app_server_protocol::TurnStatus::Completed,
                 error: None,
                 started_at: None,
                 completed_at: None,
@@ -6839,26 +6839,26 @@ session_picker_view = "dense"
             created_at: 1,
             updated_at: 2,
             recency_at: Some(2),
-            status: codex_app_server_protocol::ThreadStatus::Idle,
+            status: ava_app_server_protocol::ThreadStatus::Idle,
             path: None,
             cwd: test_path_buf("/tmp").abs(),
             cli_version: String::from("0.0.0"),
-            source: codex_app_server_protocol::SessionSource::Cli,
+            source: ava_app_server_protocol::SessionSource::Cli,
             can_accept_direct_input: None,
             thread_source: None,
             agent_nickname: None,
             agent_role: None,
             git_info: None,
             name: None,
-            turns: vec![codex_app_server_protocol::Turn {
+            turns: vec![ava_app_server_protocol::Turn {
                 id: String::from("turn-1"),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: vec![ThreadItem::Reasoning {
                     id: String::from("reasoning-1"),
                     summary: vec![String::from("public summary")],
                     content: vec![String::from("raw reasoning content")],
                 }],
-                status: codex_app_server_protocol::TurnStatus::Completed,
+                status: ava_app_server_protocol::TurnStatus::Completed,
                 error: None,
                 started_at: None,
                 completed_at: None,

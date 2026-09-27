@@ -3,7 +3,7 @@ use super::invalid_data_error;
 use super::json_u64;
 use super::rewrite_hook_command_for_source;
 use super::write_hook_migration;
-use codex_hooks::HOOK_EVENT_NAMES_WITH_MATCHERS;
+use ava_hooks::HOOK_EVENT_NAMES_WITH_MATCHERS;
 use serde_json::Value as JsonValue;
 use std::fs;
 use std::io;
@@ -67,7 +67,7 @@ fn hook_migration_cur(
             let Some(handler) = handler.as_object() else {
                 continue;
             };
-            // Codex does not currently support a per-hook failure policy, so accept
+            // Ava does not currently support a per-hook failure policy, so accept
             // Cursor's `failClosed` field without copying it into the migrated handler.
             if handler.keys().any(|key| {
                 !matches!(

@@ -339,7 +339,7 @@ fn tiny_output_callbacks_pack_references_without_delaying_rendering() {
     }
     assert_eq!(
         buffers.take_state().unwrap(),
-        codex_realtime_webrtc::AudioState {
+        ava_realtime_webrtc::AudioState {
             microphone_peak: 49151,
             speaker_peak: 32767,
         }
@@ -348,7 +348,7 @@ fn tiny_output_callbacks_pack_references_without_delaying_rendering() {
     record_peak(&buffers.microphone_peak, /*sample*/ 1.5);
     assert_eq!(
         buffers.take_state().unwrap(),
-        codex_realtime_webrtc::AudioState {
+        ava_realtime_webrtc::AudioState {
             microphone_peak: u16::MAX,
             speaker_peak: 0,
         }

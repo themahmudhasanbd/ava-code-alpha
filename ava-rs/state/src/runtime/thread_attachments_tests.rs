@@ -11,17 +11,17 @@ use crate::runtime::test_support::test_thread_metadata;
 use crate::runtime::test_support::unique_temp_dir;
 use anyhow::Result;
 use chrono::Utc;
-use codex_protocol::ThreadId;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_protocol::ThreadId;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 async fn runtime_with_threads(count: usize) -> Result<(Arc<StateRuntime>, PathBuf, Vec<ThreadId>)> {
-    let codex_home = unique_temp_dir();
+    let ava_home = unique_temp_dir();
     let runtime = StateRuntime::init(
-        crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+        crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
         "test-provider".to_string(),
     )
     .await?;
@@ -30,19 +30,19 @@ async fn runtime_with_threads(count: usize) -> Result<(Arc<StateRuntime>, PathBu
         let thread_id = ThreadId::new();
         runtime
             .upsert_thread(&test_thread_metadata(
-                &codex_home,
+                &ava_home,
                 thread_id,
-                codex_home.clone(),
+                ava_home.clone(),
             ))
             .await?;
         thread_ids.push(thread_id);
     }
-    Ok((runtime, codex_home, thread_ids))
+    Ok((runtime, ava_home, thread_ids))
 }
 
 #[tokio::test]
 async fn copying_attachments_is_atomic_and_independent() -> Result<()> {
-    let (runtime, _codex_home, thread_ids) = runtime_with_threads(/*count*/ 2).await?;
+    let (runtime, _ava_home, thread_ids) = runtime_with_threads(/*count*/ 2).await?;
     let source = thread_ids[0];
     let destination = thread_ids[1];
     for key in ["first", "second"] {
@@ -108,12 +108,12 @@ async fn copying_attachments_is_atomic_and_independent() -> Result<()> {
 
 #[tokio::test]
 async fn attachment_attachments_are_idempotent_and_scoped_to_their_thread() -> Result<()> {
-    let (runtime, _codex_home, thread_ids) = runtime_with_threads(/*count*/ 2).await?;
+    let (runtime, _ava_home, thread_ids) = runtime_with_threads(/*count*/ 2).await?;
     let first = runtime
         .add_thread_attachment(
             thread_ids[0],
             "pull_request",
-            "openai/codex#123",
+            "openai/ava#123",
             &json!({ "url": "https://github.com/openai/codex/pull/123" }),
         )
         .await?;
@@ -126,7 +126,7 @@ async fn attachment_attachments_are_idempotent_and_scoped_to_their_thread() -> R
         .add_thread_attachment(
             thread_ids[0],
             "pull_request",
-            "openai/codex#123",
+            "openai/ava#123",
             &json!({ "url": "https://github.com/openai/codex/pull/456" }),
         )
         .await?;
@@ -139,7 +139,7 @@ async fn attachment_attachments_are_idempotent_and_scoped_to_their_thread() -> R
         .add_thread_attachment(
             thread_ids[1],
             "pull_request",
-            "openai/codex#123",
+            "openai/ava#123",
             &json!({ "url": "https://github.com/openai/codex/pull/123" }),
         )
         .await?;
@@ -159,10 +159,10 @@ async fn attachment_attachments_are_idempotent_and_scoped_to_their_thread() -> R
 
 #[tokio::test]
 async fn attachment_removals_return_not_found_or_the_removed_record() -> Result<()> {
-    let (runtime, _codex_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
+    let (runtime, _ava_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
     let thread_id = thread_ids[0];
     let removed_before_attach = runtime
-        .remove_thread_attachment(thread_id, "pull_request", "openai/codex#123")
+        .remove_thread_attachment(thread_id, "pull_request", "openai/ava#123")
         .await?;
     assert_eq!(
         removed_before_attach,
@@ -173,7 +173,7 @@ async fn attachment_removals_return_not_found_or_the_removed_record() -> Result<
         .add_thread_attachment(
             thread_id,
             "pull_request",
-            "openai/codex#123",
+            "openai/ava#123",
             &json!({ "url": "https://github.com/openai/codex/pull/123" }),
         )
         .await?;
@@ -182,7 +182,7 @@ async fn attachment_removals_return_not_found_or_the_removed_record() -> Result<
     };
     assert_eq!(
         runtime
-            .remove_thread_attachment(thread_id, "pull_request", "openai/codex#123")
+            .remove_thread_attachment(thread_id, "pull_request", "openai/ava#123")
             .await?,
         RemoveThreadAttachmentOutcome::Removed(explicit)
     );
@@ -198,7 +198,7 @@ async fn attachment_removals_return_not_found_or_the_removed_record() -> Result<
 
 #[tokio::test]
 async fn attachment_listing_scopes_pagination_to_one_thread() -> Result<()> {
-    let (runtime, _codex_home, thread_ids) = runtime_with_threads(/*count*/ 2).await?;
+    let (runtime, _ava_home, thread_ids) = runtime_with_threads(/*count*/ 2).await?;
     let mut expected = Vec::new();
     for (thread_id, identity_key) in [
         (thread_ids[0], "first"),
@@ -253,7 +253,7 @@ async fn attachment_listing_scopes_pagination_to_one_thread() -> Result<()> {
 
 #[tokio::test]
 async fn active_attachment_limit_is_freed_by_removal() -> Result<()> {
-    let (runtime, _codex_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
+    let (runtime, _ava_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
     let thread_id = thread_ids[0];
 
     for index in 0..MAX_THREAD_ATTACHMENTS_PER_THREAD {
@@ -309,13 +309,13 @@ async fn active_attachment_limit_is_freed_by_removal() -> Result<()> {
 
 #[tokio::test]
 async fn attachments_survive_restart_and_archive_but_cascade_on_thread_deletion() -> Result<()> {
-    let (runtime, codex_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
+    let (runtime, ava_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
     let thread_id = thread_ids[0];
     let AddThreadAttachmentOutcome::Created(attachment) = runtime
         .add_thread_attachment(
             thread_id,
             "pull_request",
-            "openai/codex#123",
+            "openai/ava#123",
             &json!({ "url": "https://github.com/openai/codex/pull/123" }),
         )
         .await?
@@ -324,7 +324,7 @@ async fn attachments_survive_restart_and_archive_but_cascade_on_thread_deletion(
     };
 
     let reopened = StateRuntime::init(
-        crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+        crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
         "test-provider".to_string(),
     )
     .await?;
@@ -336,7 +336,7 @@ async fn attachments_survive_restart_and_archive_but_cascade_on_thread_deletion(
         vec![attachment.clone()]
     );
 
-    let rollout_path = codex_home.join("archived.jsonl");
+    let rollout_path = ava_home.join("archived.jsonl");
     reopened
         .mark_archived(thread_id, &rollout_path, Utc::now())
         .await?;
@@ -362,7 +362,7 @@ async fn attachments_survive_restart_and_archive_but_cascade_on_thread_deletion(
 
 #[tokio::test]
 async fn attachment_requests_reject_invalid_identity_payload_and_cursor() -> Result<()> {
-    let (runtime, _codex_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
+    let (runtime, _ava_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
     let thread_id = thread_ids[0];
     for (attachment_type, identity_key, expected) in [
         (" ".to_string(), "pr".to_string(), "type must not be empty"),
@@ -419,7 +419,7 @@ async fn attachment_requests_reject_invalid_identity_payload_and_cursor() -> Res
 
 #[tokio::test]
 async fn concurrent_attachment_attachments_preserve_one_deterministic_identity() -> Result<()> {
-    let (runtime, _codex_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
+    let (runtime, _ava_home, thread_ids) = runtime_with_threads(/*count*/ 1).await?;
     let thread_id = thread_ids[0];
     let mut joins = Vec::new();
     for _ in 0..8 {
@@ -429,7 +429,7 @@ async fn concurrent_attachment_attachments_preserve_one_deterministic_identity()
                 .add_thread_attachment(
                     thread_id,
                     "pull_request",
-                    "openai/codex#123",
+                    "openai/ava#123",
                     &json!({ "url": "https://github.com/openai/codex/pull/123" }),
                 )
                 .await

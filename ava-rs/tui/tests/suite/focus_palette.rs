@@ -24,11 +24,11 @@ const FOCUS_PROBE_INPUT: &str = "focus-palette-24527";
 
 #[test]
 fn focus_gained_with_unanswered_palette_queries_preserves_immediate_input() -> Result<()> {
-    let repo_root = codex_utils_cargo_bin::repo_root()?;
-    let codex_home = tempfile::tempdir()?;
-    write_test_config(codex_home.path(), &repo_root)?;
+    let repo_root = ava_utils_cargo_bin::repo_root()?;
+    let ava_home = tempfile::tempdir()?;
+    write_test_config(ava_home.path(), &repo_root)?;
 
-    let mut terminal = PtyCodex::start(&repo_root, codex_home, &["--no-alt-screen"])?;
+    let mut terminal = PtyAva::start(&repo_root, ava_home, &["--no-alt-screen"])?;
     terminal.wait_for_startup()?;
 
     let startup_output_len = terminal.output.len();
@@ -48,18 +48,18 @@ fn focus_gained_with_unanswered_palette_queries_preserves_immediate_input() -> R
 
 #[cfg(target_os = "macos")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn interactive_startup_honors_codex_home_symlink_opt_out() -> Result<()> {
+async fn interactive_startup_honors_ava_home_symlink_opt_out() -> Result<()> {
     use core_test_support::responses;
     use wiremock::matchers::body_string_contains;
 
     core_test_support::skip_if_sandbox!(Ok(()));
     let workspace = tempfile::tempdir()?;
     let workspace_path = workspace.path().canonicalize()?;
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     let target = tempfile::tempdir()?;
-    let visualizations = codex_home.path().join("visualizations");
+    let visualizations = ava_home.path().join("visualizations");
     std::os::unix::fs::symlink(target.path(), &visualizations)?;
-    write_test_config(codex_home.path(), &workspace_path)?;
+    write_test_config(ava_home.path(), &workspace_path)?;
 
     let server = responses::start_mock_server().await;
     // Automatic thread-title requests must not consume the tool responses.
@@ -100,12 +100,12 @@ async fn interactive_startup_honors_codex_home_symlink_opt_out() -> Result<()> {
     .await;
     let base_url = server.uri();
     let visualizations = toml::Value::String(visualizations.display().to_string());
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         config_path,
         format!(
-            "allow_symlinked_codex_home = true\n\
+            "allow_symlinked_ava_home = true\n\
              sandbox_mode = \"workspace-write\"\n\
              approval_policy = \"never\"\n\
              {config}\n\
@@ -118,9 +118,9 @@ async fn interactive_startup_honors_codex_home_symlink_opt_out() -> Result<()> {
 
     // A fresh home has no daemon. Writing through the link exercises the embedded server's
     // local executor and its sandbox policy.
-    let mut terminal = PtyCodex::start(
+    let mut terminal = PtyAva::start(
         &workspace_path,
-        codex_home,
+        ava_home,
         &[
             "--no-alt-screen",
             "-c",
@@ -155,12 +155,12 @@ async fn interactive_startup_honors_codex_home_symlink_opt_out() -> Result<()> {
 
 #[test]
 fn owned_screen_entry_paints_before_sync_ends_and_exit_clears_inline_draft() -> Result<()> {
-    let repo_root = codex_utils_cargo_bin::repo_root()?;
-    let codex_home = tempfile::tempdir()?;
-    write_test_config(codex_home.path(), &repo_root)?;
-    let mut terminal = PtyCodex::start(
+    let repo_root = ava_utils_cargo_bin::repo_root()?;
+    let ava_home = tempfile::tempdir()?;
+    write_test_config(ava_home.path(), &repo_root)?;
+    let mut terminal = PtyAva::start(
         &repo_root,
-        codex_home,
+        ava_home,
         &[
             "-c",
             "tui.alternate_screen=\"always\"",
@@ -208,17 +208,17 @@ fn owned_screen_entry_paints_before_sync_ends_and_exit_clears_inline_draft() -> 
     first_frame.process(&terminal.output[..end]);
     let first_contents = first_frame.screen().contents();
     ensure!(
-        first_contents.contains("OpenAI Codex")
-            && first_contents.contains("Ask Codex to do anything"),
+        first_contents.contains("OpenAI Ava")
+            && first_contents.contains("Ask Ava to do anything"),
         "owned-screen synchronization ended before its first complete loading frame:\n{first_contents}"
     );
     let composer_row = first_contents
         .lines()
-        .position(|line| line.contains("Ask Codex to do anything"))
+        .position(|line| line.contains("Ask Ava to do anything"))
         .context("missing composer in first owned-screen frame")?;
     assert_eq!(
         (
-            first_contents.matches("Ask Codex to do anything").count(),
+            first_contents.matches("Ask Ava to do anything").count(),
             first_frame.screen().cursor_position(),
             first_frame.screen().hide_cursor(),
         ),
@@ -246,13 +246,13 @@ fn owned_screen_entry_paints_before_sync_ends_and_exit_clears_inline_draft() -> 
     ensure!(
         !terminal
             .screen_contents()
-            .contains("Ask Codex to do anything"),
+            .contains("Ask Ava to do anything"),
         "owned-screen exit left the inline composer visible"
     );
     Ok(())
 }
 
-pub(super) struct PtyCodex {
+pub(super) struct PtyAva {
     master: File,
     child: Child,
     parser: vt100::Parser,
@@ -260,35 +260,35 @@ pub(super) struct PtyCodex {
     cursor_answered: bool,
     palette_answered: bool,
     keyboard_answered: bool,
-    _codex_home: TempDir,
+    _ava_home: TempDir,
 }
 
-impl PtyCodex {
+impl PtyAva {
     pub(super) fn start(
         repo_root: &Path,
-        codex_home: TempDir,
+        ava_home: TempDir,
         extra_args: &[&str],
     ) -> Result<Self> {
-        let codex = codex_utils_cargo_bin::cargo_bin("codex-tui")
-            .or_else(|_| codex_utils_cargo_bin::cargo_bin("codex"))?;
-        Self::start_binary(&codex, repo_root, codex_home, extra_args)
+        let ava = ava_utils_cargo_bin::cargo_bin("ava-tui")
+            .or_else(|_| ava_utils_cargo_bin::cargo_bin("ava"))?;
+        Self::start_binary(&ava, repo_root, ava_home, extra_args)
     }
 
     /// Include the CLI dispatch futures when testing production stack headroom.
     pub(super) fn start_cli(
         repo_root: &Path,
-        codex_home: TempDir,
+        ava_home: TempDir,
         extra_args: &[&str],
     ) -> Result<Self> {
-        let codex = codex_utils_cargo_bin::cargo_bin("codex")
-            .context("build codex-cli and set CARGO_BIN_EXE_codex to its executable")?;
-        Self::start_binary(&codex, repo_root, codex_home, extra_args)
+        let ava = ava_utils_cargo_bin::cargo_bin("ava")
+            .context("build ava-cli and set CARGO_BIN_EXE_ava to its executable")?;
+        Self::start_binary(&ava, repo_root, ava_home, extra_args)
     }
 
     fn start_binary(
-        codex: &Path,
+        ava: &Path,
         repo_root: &Path,
-        codex_home: TempDir,
+        ava_home: TempDir,
         extra_args: &[&str],
     ) -> Result<Self> {
         let mut master_fd = -1;
@@ -322,7 +322,7 @@ impl PtyCodex {
         let stdin = slave.try_clone().context("clone pseudo-terminal stdin")?;
         let stdout = slave.try_clone().context("clone pseudo-terminal stdout")?;
 
-        let child = Command::new(codex)
+        let child = Command::new(ava)
             .args(extra_args)
             .arg("-C")
             .arg(repo_root)
@@ -334,12 +334,12 @@ impl PtyCodex {
             .env("TERM_PROGRAM", "kitty")
             .env_remove("TERM_PROGRAM_VERSION")
             .env("OPENAI_API_KEY", "focus-palette-test")
-            .env("CODEX_HOME", codex_home.path())
+            .env("AVA_HOME", ava_home.path())
             .stdin(stdin)
             .stdout(stdout)
             .stderr(slave)
             .spawn()
-            .context("start Codex in focus-test pseudo-terminal")?;
+            .context("start Ava in focus-test pseudo-terminal")?;
 
         Ok(Self {
             master,
@@ -351,7 +351,7 @@ impl PtyCodex {
             cursor_answered: false,
             palette_answered: false,
             keyboard_answered: false,
-            _codex_home: codex_home,
+            _ava_home: ava_home,
         })
     }
 
@@ -361,20 +361,20 @@ impl PtyCodex {
             self.read_output(Duration::from_millis(/*millis*/ 50))?;
             self.answer_startup_queries()?;
 
-            if self.palette_answered && self.screen_contains("OpenAI Codex") {
+            if self.palette_answered && self.screen_contains("OpenAI Ava") {
                 return Ok(());
             }
 
             if let Some(status) = self.child.try_wait()? {
                 bail!(
-                    "Codex exited before the focus test started ({status}); screen:\n{}",
+                    "Ava exited before the focus test started ({status}); screen:\n{}",
                     self.screen_contents(),
                 );
             }
         }
 
         bail!(
-            "Codex did not initialize within {:?}; screen:\n{}",
+            "Ava did not initialize within {:?}; screen:\n{}",
             STARTUP_TIMEOUT,
             self.screen_contents(),
         );
@@ -483,7 +483,7 @@ impl PtyCodex {
                 return Ok(());
             }
             if let Some(status) = self.child.try_wait()? {
-                bail!("Codex exited while waiting for {text:?} ({status})");
+                bail!("Ava exited while waiting for {text:?} ({status})");
             }
         }
         bail!("missing {text:?}; screen:\n{}", self.screen_contents())
@@ -492,14 +492,14 @@ impl PtyCodex {
     pub(super) fn ensure_running(&mut self) -> Result<()> {
         ensure!(
             self.child.try_wait()?.is_none(),
-            "Codex exited unexpectedly; screen:\n{}",
+            "Ava exited unexpectedly; screen:\n{}",
             self.screen_contents()
         );
         Ok(())
     }
 }
 
-impl Drop for PtyCodex {
+impl Drop for PtyAva {
     fn drop(&mut self) {
         let _ = self.child.kill();
         let _ = self.child.wait();
@@ -510,17 +510,17 @@ fn contains_bytes(buffer: &[u8], needle: &[u8]) -> bool {
     buffer.windows(needle.len()).any(|window| window == needle)
 }
 
-pub(super) fn write_test_config(codex_home: &Path, repo_root: &Path) -> Result<()> {
+pub(super) fn write_test_config(ava_home: &Path, repo_root: &Path) -> Result<()> {
     let repo_root = repo_root.display();
     let config = format!(
         "model = \"gpt-5.6-terra\"\nmodel_provider = \"openai\"\n\
          suppress_unstable_features_warning = true\nanalytics.enabled = false\n\n\
          [projects.\"{repo_root}\"]\ntrust_level = \"trusted\"\n"
     );
-    std::fs::write(codex_home.join("config.toml"), config)
-        .context("write focus-test Codex configuration")?;
+    std::fs::write(ava_home.join("config.toml"), config)
+        .context("write focus-test Ava configuration")?;
     std::fs::write(
-        codex_home.join("auth.json"),
+        ava_home.join("auth.json"),
         r#"{"OPENAI_API_KEY":"focus-palette-test","tokens":null,"last_refresh":null}"#,
     )
     .context("write focus-test API-key authentication")
@@ -538,7 +538,7 @@ fn no_daemon_skips_startup_and_discovery() -> Result<()> {
             config,
             format!("features.daemon_auto_start = true\n{contents}"),
         )?;
-        let socket_path = codex_app_server_client::app_server_control_socket_path(home.path())?;
+        let socket_path = ava_app_server_client::app_server_control_socket_path(home.path())?;
         std::fs::create_dir_all(socket_path.as_path().parent().unwrap())?;
         let listener = if running {
             let listener = std::os::unix::net::UnixListener::bind(socket_path.as_path())?;
@@ -547,7 +547,7 @@ fn no_daemon_skips_startup_and_discovery() -> Result<()> {
         } else {
             None
         };
-        let mut terminal = PtyCodex::start(workspace.path(), home, &["--no-daemon"])?;
+        let mut terminal = PtyAva::start(workspace.path(), home, &["--no-daemon"])?;
         terminal.wait_for_startup()?;
         terminal.write_input(b"/status")?;
         terminal.wait_for_screen("show current session configuration")?;
@@ -556,7 +556,7 @@ fn no_daemon_skips_startup_and_discovery() -> Result<()> {
         terminal.wait_for_screen("Model:")?;
         ensure!(
             !terminal
-                ._codex_home
+                ._ava_home
                 .path()
                 .join("app-server-daemon")
                 .exists()
@@ -588,7 +588,7 @@ fn auto_daemon_start_failure_exits_with_manual_fallback_hint() -> Result<()> {
     )?;
     // An incomplete selected package must fail without installing a replacement.
     std::fs::create_dir_all(home.path().join("packages/app-server-daemon/current"))?;
-    let mut terminal = PtyCodex::start(
+    let mut terminal = PtyAva::start(
         workspace.path(),
         home,
         &[
@@ -606,20 +606,20 @@ fn auto_daemon_start_failure_exits_with_manual_fallback_hint() -> Result<()> {
             ensure!(!status.success());
             let output = String::from_utf8_lossy(&terminal.output);
             let failure = &output[output.find("Error:").context("missing fatal error")?..];
-            let failure = codex_ansi_escape::ansi_escape(failure)
+            let failure = ava_ansi_escape::ansi_escape(failure)
                 .to_string()
                 .replace(
                     terminal
-                        ._codex_home
+                        ._ava_home
                         .path()
                         .canonicalize()?
                         .to_string_lossy()
                         .as_ref(),
-                    "[CODEX_HOME]",
+                    "[AVA_HOME]",
                 )
                 .replace(
-                    terminal._codex_home.path().to_string_lossy().as_ref(),
-                    "[CODEX_HOME]",
+                    terminal._ava_home.path().to_string_lossy().as_ref(),
+                    "[AVA_HOME]",
                 )
                 .replace('\r', "");
             insta::assert_snapshot!("daemon_auto_start_failure", failure.trim());

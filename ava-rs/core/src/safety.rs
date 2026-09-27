@@ -1,12 +1,12 @@
-use codex_apply_patch::ApplyPatchAction;
-use codex_apply_patch::ApplyPatchFileChange;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::protocol::AskForApproval;
-use codex_sandboxing::get_platform_sandbox;
-use codex_utils_path_uri::PathUri;
+use ava_apply_patch::ApplyPatchAction;
+use ava_apply_patch::ApplyPatchFileChange;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::protocol::AskForApproval;
+use ava_sandboxing::get_platform_sandbox;
+use ava_utils_path_uri::PathUri;
 
 const PATCH_REJECTED_OUTSIDE_PROJECT_REASON: &str =
     "writing outside of the project; rejected by user approval settings";

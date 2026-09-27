@@ -3,12 +3,12 @@
 use super::RequestEffortUsage;
 use crate::session::step_settings::ResolvedStepSettings;
 use crate::session::tests::make_session_and_context_with_auth_and_config_and_rx;
-use codex_features::Feature;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_login::CodexAuth;
-use codex_protocol::ThreadId;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_features::Feature;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_login::AvaAuth;
+use ava_protocol::ThreadId;
+use ava_protocol::openai_models::ReasoningEffort;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 use test_case::test_case;
@@ -22,7 +22,7 @@ use test_case::test_case;
 #[tokio::test]
 async fn initial_replay_preserves_prewarmed_effort(history: InitialHistory) {
     let (session, turn_context, _events) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config
@@ -67,7 +67,7 @@ async fn initial_replay_preserves_prewarmed_effort(history: InitialHistory) {
 #[tokio::test]
 async fn compaction_effort_lookup_preserves_pin_for_fallback_models() {
     let (session, turn_context, _events) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config
@@ -110,7 +110,7 @@ async fn compaction_effort_lookup_preserves_pin_for_fallback_models() {
 #[tokio::test]
 async fn unsupported_model_compaction_uses_selected_effort_without_mutating_pin() {
     let (session, turn_context, _events) = make_session_and_context_with_auth_and_config_and_rx(
-        CodexAuth::from_api_key("Test API Key"),
+        AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config

@@ -1,6 +1,6 @@
-# codex-network-proxy
+# ava-network-proxy
 
-`codex-network-proxy` is Codex's local network policy enforcement proxy. It runs:
+`ava-network-proxy` is Ava's local network policy enforcement proxy. It runs:
 
 - an HTTP proxy (default `127.0.0.1:3128`)
 - a SOCKS5 proxy (default `127.0.0.1:8081`, enabled by default)
@@ -15,7 +15,7 @@ It enforces an allow/deny policy and a "limited" mode intended for read-only net
 
 ### 1) Configure
 
-`codex-network-proxy` reads from Codex's merged `config.toml` (via `codex-core` config loading).
+`ava-network-proxy` reads from Ava's merged `config.toml` (via `ava-core` config loading).
 
 Network settings live under the selected permissions profile. Example config:
 
@@ -39,7 +39,7 @@ dangerously_allow_non_loopback_proxy = false
 mode = "full" # default when unset; use "limited" for read-only mode
 # HTTPS MITM is enabled automatically when `mode = "limited"` or when MITM hooks are configured.
 # The CA private key remains in proxy memory. When MITM is active, spawned commands receive CA
-# bundle env vars pointing at immutable public files under $CODEX_HOME/proxy/ so common HTTPS
+# bundle env vars pointing at immutable public files under $AVA_HOME/proxy/ so common HTTPS
 # clients trust the managed CA.
 
 # If false, local/private networking is rejected. Explicit allowlisting of local IP literals
@@ -83,7 +83,7 @@ strip_request_headers = ["authorization"]
 
 ### 2) Run the proxy
 
-The proxy can also run without a full Codex permissions profile. Put the network policy in a
+The proxy can also run without a full Ava permissions profile. Put the network policy in a
 standalone JSON file:
 
 ```json
@@ -109,7 +109,7 @@ HTTPS MITM is enabled automatically for limited mode or configured `mitm_hooks`.
 fields, including fields nested inside MITM hooks.
 
 ```bash
-cargo run -p codex-network-proxy -- --config /path/to/network-proxy.json
+cargo run -p ava-network-proxy -- --config /path/to/network-proxy.json
 ```
 
 ### 3) Point a client at it
@@ -148,10 +148,10 @@ through the same host allowlist/denylist checks.
 
 ## Library API
 
-`codex-network-proxy` can be embedded as a library with a thin API:
+`ava-network-proxy` can be embedded as a library with a thin API:
 
 ```rust
-use codex_network_proxy::{NetworkProxy, NetworkDecision, NetworkPolicyRequest};
+use ava_network_proxy::{NetworkProxy, NetworkDecision, NetworkPolicyRequest};
 
 let proxy = NetworkProxy::builder()
     .http_addr("127.0.0.1:8080".parse()?)
@@ -189,12 +189,12 @@ the decider can auto-allow network requests originating from that command.
 
 ## OTEL Audit Events (embedded/managed)
 
-When `codex-network-proxy` is embedded in managed Codex runtime, policy decisions emit structured
-OTEL-compatible events with `target=codex_otel.network_proxy`.
+When `ava-network-proxy` is embedded in managed Ava runtime, policy decisions emit structured
+OTEL-compatible events with `target=ava_otel.network_proxy`.
 
 Event name:
 
-- `codex.network_proxy.policy_decision`
+- `ava.network_proxy.policy_decision`
   - emitted for each policy decision (`domain` and `non_domain`).
   - `network.policy.scope = "domain"` for host-policy evaluations (`evaluate_host_policy`).
   - `network.policy.scope = "non_domain"` for mode-guard/proxy-state checks (including unix-socket guard paths and unix-socket allow decisions).
@@ -235,7 +235,7 @@ Audit events intentionally avoid logging full URL/path/query data.
 
 ## Security notes (important)
 
-This section documents the protections implemented by `codex-network-proxy`, and the boundaries of
+This section documents the protections implemented by `ava-network-proxy`, and the boundaries of
 what it can reasonably guarantee.
 
 - Allowlist-first policy: if `domains` has no `allow` entries, requests are blocked until an allowlist is configured.

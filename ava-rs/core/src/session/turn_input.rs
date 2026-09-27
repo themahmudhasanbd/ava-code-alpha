@@ -22,28 +22,28 @@ use crate::context::GuardianContextMode;
 use crate::state::ActiveTurn;
 use crate::state::TurnState;
 use crate::tasks::RegularTask;
-use codex_history::CodexHarnessMetadata;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AdditionalContextEntry;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::NonSteerableTurnKind;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::turn_input::NotSubmittedReason;
-use codex_protocol::turn_input::TurnInput as SubmittedTurnInput;
-use codex_protocol::turn_input::TurnInputMode;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnInputSubmission;
-use codex_protocol::turn_input::TurnStartOptions;
-use codex_protocol::user_input::UserInput;
+use ava_history::AvaHarnessMetadata;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AdditionalContextEntry;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::NonSteerableTurnKind;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::turn_input::NotSubmittedReason;
+use ava_protocol::turn_input::TurnInput as SubmittedTurnInput;
+use ava_protocol::turn_input::TurnInputMode;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnInputSubmission;
+use ava_protocol::turn_input::TurnStartOptions;
+use ava_protocol::user_input::UserInput;
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -98,7 +98,7 @@ impl PreparedTurnInputSettings {
         session: &Session,
         thread_settings: ThreadSettingsOverrides,
         start_options: TurnStartOptions,
-    ) -> CodexResult<Self> {
+    ) -> AvaResult<Self> {
         let thread_settings_update = if thread_settings == ThreadSettingsOverrides::default() {
             None
         } else {
@@ -106,7 +106,7 @@ impl PreparedTurnInputSettings {
             session
                 .preview_settings(&updates)
                 .await
-                .map_err(|error| CodexErr::InvalidRequest(error.to_string()))?;
+                .map_err(|error| AvaErr::InvalidRequest(error.to_string()))?;
             Some(updates)
         };
         Ok(Self {
@@ -127,7 +127,7 @@ impl PreparedTurnInputSettings {
         session: &Arc<Session>,
         submission_id: String,
         kind: TurnStartKind,
-    ) -> CodexResult<Option<Arc<TurnContext>>> {
+    ) -> AvaResult<Option<Arc<TurnContext>>> {
         let TurnStartOptions {
             turn_trigger,
             final_output_json_schema,
@@ -192,13 +192,13 @@ impl PreparedTurnInputSettings {
 
     /// Applies only persistent settings after steering succeeds. The active
     /// turn keeps its existing context; subsequent turns see the update.
-    async fn apply_steered(self, session: &Session, submission_id: String) -> CodexResult<()> {
+    async fn apply_steered(self, session: &Session, submission_id: String) -> AvaResult<()> {
         let Some(thread_settings_update) = self.thread_settings_update else {
             return Ok(());
         };
         thread_settings::apply_update(session, submission_id, thread_settings_update)
             .await
-            .map_err(|error| CodexErr::InvalidRequest(error.to_string()))
+            .map_err(|error| AvaErr::InvalidRequest(error.to_string()))
     }
 }
 
@@ -207,7 +207,7 @@ pub(super) async fn handle(
     request: TurnInputRequest,
     mode: TurnInputMode,
     submission_id: String,
-) -> CodexResult<TurnInputSubmission> {
+) -> AvaResult<TurnInputSubmission> {
     match mode {
         TurnInputMode::StartOrSteer => start_or_steer(session, request, submission_id).await,
         TurnInputMode::StartIfIdle => {
@@ -232,7 +232,7 @@ pub(super) async fn handle(
             expected_previous_turn_id,
         } => {
             if !matches!(&request.input, SubmittedTurnInput::ResponseItem(_)) {
-                return Err(CodexErr::InvalidRequest(
+                return Err(AvaErr::InvalidRequest(
                     "continuation requires internal response input".to_string(),
                 ));
             }
@@ -256,7 +256,7 @@ pub(super) async fn handle_recovery(
     thread_settings: ThreadSettingsOverrides,
     start_options: TurnStartOptions,
     submission_id: String,
-) -> CodexResult<TurnInputSubmission> {
+) -> AvaResult<TurnInputSubmission> {
     let request = TurnInputRequest::user_input(Vec::new())
         .with_thread_settings(thread_settings)
         .on_start(TurnStartOptions {
@@ -277,7 +277,7 @@ async fn start_or_steer(
     session: &Arc<Session>,
     request: TurnInputRequest,
     submission_id: String,
-) -> CodexResult<TurnInputSubmission> {
+) -> AvaResult<TurnInputSubmission> {
     let TurnInputRequest {
         mut input,
         thread_settings,
@@ -293,7 +293,7 @@ async fn start_or_steer(
             ..
         }) => true,
         _ => {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "only user input or standalone function-call outputs can start or steer a turn"
                     .to_string(),
             ));
@@ -379,7 +379,7 @@ async fn start_if_idle(
     submission_id: String,
     kind: TurnStartKind,
     expected_previous_turn_id: Option<String>,
-) -> CodexResult<TurnInputSubmission> {
+) -> AvaResult<TurnInputSubmission> {
     let TurnInputRequest {
         input,
         thread_settings,
@@ -517,7 +517,7 @@ async fn steer(
     request: TurnInputRequest,
     expected_turn_id: String,
     submission_id: String,
-) -> CodexResult<TurnInputSubmission> {
+) -> AvaResult<TurnInputSubmission> {
     let TurnInputRequest {
         mut input,
         thread_settings,
@@ -527,7 +527,7 @@ async fn steer(
         ..
     } = request;
     if !matches!(&input, SubmittedTurnInput::UserInput { .. }) {
-        return Err(CodexErr::InvalidRequest(
+        return Err(AvaErr::InvalidRequest(
             "only user input can steer a turn".to_string(),
         ));
     }
@@ -588,7 +588,7 @@ impl Session {
                     msg: EventMsg::Error(ErrorEvent {
                         misalignment: None,
                         message: format!("failed to submit turn input: {reason:?}"),
-                        codex_error_info: Some(CodexErrorInfo::BadRequest),
+                        ava_error_info: Some(AvaErrorInfo::BadRequest),
                     }),
                 })
                 .await;
@@ -747,7 +747,7 @@ async fn pending_turn_input(
                     .capture_sender_user_messages(&item, session.thread_id, turn_id)
                     .await
             {
-                Some(CodexHarnessMetadata {
+                Some(AvaHarnessMetadata {
                     user_input_order: session.reserve_user_input_order().await,
                     sender_user_messages: Some(Box::new(messages)),
                     ..Default::default()

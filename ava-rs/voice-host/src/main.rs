@@ -32,10 +32,10 @@ use std::io::Write;
 use std::sync::mpsc;
 use std::time::Duration;
 
-use codex_realtime_webrtc::HelperExitStage;
-use codex_realtime_webrtc::Message;
-use codex_realtime_webrtc::encode_frame;
-use codex_realtime_webrtc::read_message;
+use ava_realtime_webrtc::HelperExitStage;
+use ava_realtime_webrtc::Message;
+use ava_realtime_webrtc::encode_frame;
+use ava_realtime_webrtc::read_message;
 use service_failure::ServiceFailure;
 
 const DEVICE_SERVICE_INTERVAL: Duration = Duration::from_millis(/*millis*/ 5);
@@ -46,7 +46,7 @@ const BUILD_COMMIT: &str = match option_env!("STABLE_GIT_COMMIT") {
 };
 
 fn main() {
-    codex_process_hardening::pre_main_hardening();
+    ava_process_hardening::pre_main_hardening();
     let mut args = std::env::args_os().skip(/*n*/ 1);
     match (args.next(), args.next()) {
         (Some(arg), None) if arg == "--build-commit" => println!("{BUILD_COMMIT}"),

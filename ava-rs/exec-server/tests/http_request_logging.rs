@@ -2,12 +2,12 @@ use std::io::Write;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use codex_exec_server::HttpClient;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestParams;
-use codex_exec_server::RouteAwareHttpClient;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_exec_server::HttpClient;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestParams;
+use ava_exec_server::RouteAwareHttpClient;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use pretty_assertions::assert_eq;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncWriteExt;
@@ -27,12 +27,12 @@ async fn delegated_http_success_logs_do_not_expose_sensitive_request_or_response
             .with_writer(move || TestLogWriter(Arc::clone(&writer_buffer)))
             .with_filter(
                 tracing_subscriber::filter::Targets::new()
-                    .with_target("codex_http_client", tracing::Level::TRACE)
-                    .with_target("codex_exec_server", tracing::Level::TRACE),
+                    .with_target("ava_http_client", tracing::Level::TRACE)
+                    .with_target("ava_exec_server", tracing::Level::TRACE),
             ),
     );
     let _guard = tracing::subscriber::set_default(subscriber);
-    tracing::debug!(target: "codex_exec_server", "log capture sentinel");
+    tracing::debug!(target: "ava_exec_server", "log capture sentinel");
     let client =
         RouteAwareHttpClient::new(HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault));
 
@@ -119,8 +119,8 @@ async fn delegated_http_failure_warning_redacts_request_url() -> anyhow::Result<
             .with_writer(move || TestLogWriter(Arc::clone(&writer_buffer)))
             .with_filter(
                 tracing_subscriber::filter::Targets::new()
-                    .with_target("codex_http_client", tracing::Level::TRACE)
-                    .with_target("codex_exec_server", tracing::Level::TRACE),
+                    .with_target("ava_http_client", tracing::Level::TRACE)
+                    .with_target("ava_exec_server", tracing::Level::TRACE),
             ),
     );
     let _guard = tracing::subscriber::set_default(subscriber);

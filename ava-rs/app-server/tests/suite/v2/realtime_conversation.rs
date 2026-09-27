@@ -5,65 +5,65 @@ use app_test_support::TestAppServer;
 use app_test_support::create_command_execution_sse_response;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadRealtimeAppendAudioParams;
-use codex_app_server_protocol::ThreadRealtimeAppendAudioResponse;
-use codex_app_server_protocol::ThreadRealtimeAppendSpeechParams;
-use codex_app_server_protocol::ThreadRealtimeAppendSpeechResponse;
-use codex_app_server_protocol::ThreadRealtimeAppendTextParams;
-use codex_app_server_protocol::ThreadRealtimeAppendTextResponse;
-use codex_app_server_protocol::ThreadRealtimeAudioChunk;
-use codex_app_server_protocol::ThreadRealtimeClosedNotification;
-use codex_app_server_protocol::ThreadRealtimeErrorNotification;
-use codex_app_server_protocol::ThreadRealtimeInitialItem;
-use codex_app_server_protocol::ThreadRealtimeItem;
-use codex_app_server_protocol::ThreadRealtimeItemAddedNotification;
-use codex_app_server_protocol::ThreadRealtimeItemCompletedNotification;
-use codex_app_server_protocol::ThreadRealtimeItemContent;
-use codex_app_server_protocol::ThreadRealtimeItemStartedNotification;
-use codex_app_server_protocol::ThreadRealtimeItemTranscriptDeltaNotification;
-use codex_app_server_protocol::ThreadRealtimeListVoicesParams;
-use codex_app_server_protocol::ThreadRealtimeListVoicesResponse;
-use codex_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
-use codex_app_server_protocol::ThreadRealtimeSdpNotification;
-use codex_app_server_protocol::ThreadRealtimeStartParams;
-use codex_app_server_protocol::ThreadRealtimeStartResponse;
-use codex_app_server_protocol::ThreadRealtimeStartTransport;
-use codex_app_server_protocol::ThreadRealtimeStartedNotification;
-use codex_app_server_protocol::ThreadRealtimeStopParams;
-use codex_app_server_protocol::ThreadRealtimeStopResponse;
-use codex_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification;
-use codex_app_server_protocol::ThreadRealtimeTranscriptDoneNotification;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadTimelineEntry;
-use codex_app_server_protocol::ThreadTimelineListParams;
-use codex_app_server_protocol::ThreadTimelineListResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::TurnSteerResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_login::default_client::RESIDENCY_HEADER_NAME;
-use codex_protocol::protocol::CodexResponseHandoffMode;
-use codex_protocol::protocol::ConversationTextRole;
-use codex_protocol::protocol::RealtimeConversationVersion;
-use codex_protocol::protocol::RealtimeOutputModality;
-use codex_protocol::protocol::RealtimeVoice;
-use codex_protocol::protocol::RealtimeVoicesList;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadRealtimeAppendAudioParams;
+use ava_app_server_protocol::ThreadRealtimeAppendAudioResponse;
+use ava_app_server_protocol::ThreadRealtimeAppendSpeechParams;
+use ava_app_server_protocol::ThreadRealtimeAppendSpeechResponse;
+use ava_app_server_protocol::ThreadRealtimeAppendTextParams;
+use ava_app_server_protocol::ThreadRealtimeAppendTextResponse;
+use ava_app_server_protocol::ThreadRealtimeAudioChunk;
+use ava_app_server_protocol::ThreadRealtimeClosedNotification;
+use ava_app_server_protocol::ThreadRealtimeErrorNotification;
+use ava_app_server_protocol::ThreadRealtimeInitialItem;
+use ava_app_server_protocol::ThreadRealtimeItem;
+use ava_app_server_protocol::ThreadRealtimeItemAddedNotification;
+use ava_app_server_protocol::ThreadRealtimeItemCompletedNotification;
+use ava_app_server_protocol::ThreadRealtimeItemContent;
+use ava_app_server_protocol::ThreadRealtimeItemStartedNotification;
+use ava_app_server_protocol::ThreadRealtimeItemTranscriptDeltaNotification;
+use ava_app_server_protocol::ThreadRealtimeListVoicesParams;
+use ava_app_server_protocol::ThreadRealtimeListVoicesResponse;
+use ava_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
+use ava_app_server_protocol::ThreadRealtimeSdpNotification;
+use ava_app_server_protocol::ThreadRealtimeStartParams;
+use ava_app_server_protocol::ThreadRealtimeStartResponse;
+use ava_app_server_protocol::ThreadRealtimeStartTransport;
+use ava_app_server_protocol::ThreadRealtimeStartedNotification;
+use ava_app_server_protocol::ThreadRealtimeStopParams;
+use ava_app_server_protocol::ThreadRealtimeStopResponse;
+use ava_app_server_protocol::ThreadRealtimeTranscriptDeltaNotification;
+use ava_app_server_protocol::ThreadRealtimeTranscriptDoneNotification;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadTimelineEntry;
+use ava_app_server_protocol::ThreadTimelineListParams;
+use ava_app_server_protocol::ThreadTimelineListResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_login::default_client::RESIDENCY_HEADER_NAME;
+use ava_protocol::protocol::AvaResponseHandoffMode;
+use ava_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::RealtimeConversationVersion;
+use ava_protocol::protocol::RealtimeOutputModality;
+use ava_protocol::protocol::RealtimeVoice;
+use ava_protocol::protocol::RealtimeVoicesList;
 use core_test_support::responses;
 use core_test_support::responses::WebSocketConnectionConfig;
 use core_test_support::responses::WebSocketRequest;
@@ -101,7 +101,7 @@ use wiremock::matchers::path_regex;
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 const DELEGATED_SHELL_TURN_TIMEOUT: Duration = Duration::from_secs(30);
 const DELEGATED_SHELL_TOOL_TIMEOUT_MS: u64 = 30_000;
-const STARTUP_CONTEXT_HEADER: &str = "Startup context from Codex.";
+const STARTUP_CONTEXT_HEADER: &str = "Startup context from Ava.";
 const V2_STEERING_ACKNOWLEDGEMENT: &str =
     "This was sent to steer the previous background agent task.";
 const V2_HANDOFF_COMPLETE_ACKNOWLEDGEMENT: &str =
@@ -222,7 +222,7 @@ struct RealtimeSidebandScript {
 
 struct RealtimeE2eHarness {
     mcp: TestAppServer,
-    _codex_home: TempDir,
+    _ava_home: TempDir,
     main_loop_responses_server: MockServer,
     realtime_server: WebSocketTestServer,
     call_capture: RealtimeCallRequestCapture,
@@ -309,9 +309,9 @@ impl RealtimeE2eHarness {
 
         let realtime_server =
             start_websocket_server_with_headers(realtime_sideband.connections).await;
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         create_config_toml_with_realtime_version(
-            codex_home.path(),
+            ava_home.path(),
             &main_loop_responses_server.uri(),
             realtime_server.uri(),
             StartupContextConfig::Override("startup context"),
@@ -320,7 +320,7 @@ impl RealtimeE2eHarness {
         )?;
 
         let mut mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build_initialized_with_timeout(DEFAULT_TIMEOUT)
             .await?;
         login_with_api_key(&mut mcp, "sk-test-key").await?;
@@ -333,7 +333,7 @@ impl RealtimeE2eHarness {
 
         Ok(Self {
             mcp,
-            _codex_home: codex_home,
+            _ava_home: ava_home,
             main_loop_responses_server,
             realtime_server,
             call_capture,
@@ -342,38 +342,38 @@ impl RealtimeE2eHarness {
     }
 
     async fn start_webrtc_realtime(&mut self, offer_sdp: &str) -> Result<StartedWebrtcRealtime> {
-        self.start_webrtc_realtime_with_codex_response_routing(
+        self.start_webrtc_realtime_with_ava_response_routing(
             offer_sdp,
             /*client_managed_handoffs*/ None,
-            /*codex_responses_as_items*/ None,
-            /*codex_response_handoff_mode*/ None,
+            /*ava_responses_as_items*/ None,
+            /*ava_response_handoff_mode*/ None,
             /*delegation_ack_filler*/ None,
             RealtimeConversationVersion::V1,
         )
         .await
     }
 
-    async fn start_webrtc_realtime_with_codex_response_items(
+    async fn start_webrtc_realtime_with_ava_response_items(
         &mut self,
         offer_sdp: &str,
     ) -> Result<StartedWebrtcRealtime> {
-        self.start_webrtc_realtime_with_codex_response_routing(
+        self.start_webrtc_realtime_with_ava_response_routing(
             offer_sdp,
             /*client_managed_handoffs*/ None,
-            /*codex_responses_as_items*/ Some(true),
-            /*codex_response_handoff_mode*/ None,
+            /*ava_responses_as_items*/ Some(true),
+            /*ava_response_handoff_mode*/ None,
             /*delegation_ack_filler*/ None,
             RealtimeConversationVersion::V1,
         )
         .await
     }
 
-    async fn start_webrtc_realtime_with_codex_response_routing(
+    async fn start_webrtc_realtime_with_ava_response_routing(
         &mut self,
         offer_sdp: &str,
         client_managed_handoffs: Option<bool>,
-        codex_responses_as_items: Option<bool>,
-        codex_response_handoff_mode: Option<CodexResponseHandoffMode>,
+        ava_responses_as_items: Option<bool>,
+        ava_response_handoff_mode: Option<AvaResponseHandoffMode>,
         delegation_ack_filler: Option<bool>,
         version: RealtimeConversationVersion,
     ) -> Result<StartedWebrtcRealtime> {
@@ -386,12 +386,12 @@ impl RealtimeE2eHarness {
                 delegation_ack_filler,
                 flush_transcript_tail_on_session_end: None,
                 thread_id: self.thread_id.clone(),
-                codex_response_item_prefix: codex_responses_as_items
+                ava_response_item_prefix: ava_responses_as_items
                     .unwrap_or(false)
                     .then(|| RESPONSE_ITEM_PREFIX.to_string()),
-                codex_response_handoff_mode,
-                codex_response_handoff_channel_prefixes: None,
-                codex_responses_as_items,
+                ava_response_handoff_mode,
+                ava_response_handoff_channel_prefixes: None,
+                ava_responses_as_items,
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
                 include_startup_context: None,
@@ -421,24 +421,24 @@ impl RealtimeE2eHarness {
     }
 
     async fn start_websocket_realtime(&mut self) -> Result<ThreadRealtimeStartedNotification> {
-        self.start_websocket_realtime_with_codex_responses_as_items(
-            /*codex_responses_as_items*/ None,
+        self.start_websocket_realtime_with_ava_responses_as_items(
+            /*ava_responses_as_items*/ None,
         )
         .await
     }
 
-    async fn start_websocket_realtime_with_codex_response_items(
+    async fn start_websocket_realtime_with_ava_response_items(
         &mut self,
     ) -> Result<ThreadRealtimeStartedNotification> {
-        self.start_websocket_realtime_with_codex_responses_as_items(
-            /*codex_responses_as_items*/ Some(true),
+        self.start_websocket_realtime_with_ava_responses_as_items(
+            /*ava_responses_as_items*/ Some(true),
         )
         .await
     }
 
-    async fn start_websocket_realtime_with_codex_responses_as_items(
+    async fn start_websocket_realtime_with_ava_responses_as_items(
         &mut self,
-        codex_responses_as_items: Option<bool>,
+        ava_responses_as_items: Option<bool>,
     ) -> Result<ThreadRealtimeStartedNotification> {
         let start_request_id = self
             .mcp
@@ -447,12 +447,12 @@ impl RealtimeE2eHarness {
                 client_managed_handoffs: None,
                 delegation_ack_filler: None,
                 flush_transcript_tail_on_session_end: None,
-                codex_response_item_prefix: codex_responses_as_items
+                ava_response_item_prefix: ava_responses_as_items
                     .unwrap_or(false)
                     .then(|| RESPONSE_ITEM_PREFIX.to_string()),
-                codex_response_handoff_mode: None,
-                codex_response_handoff_channel_prefixes: None,
-                codex_responses_as_items,
+                ava_response_handoff_mode: None,
+                ava_response_handoff_channel_prefixes: None,
+                ava_responses_as_items,
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
                 include_startup_context: None,
@@ -475,8 +475,8 @@ impl RealtimeE2eHarness {
 
     async fn start_frameless_bidi_realtime(
         &mut self,
-        codex_response_handoff_mode: Option<CodexResponseHandoffMode>,
-        codex_response_handoff_channel_prefixes: Option<BTreeMap<String, Vec<String>>>,
+        ava_response_handoff_mode: Option<AvaResponseHandoffMode>,
+        ava_response_handoff_channel_prefixes: Option<BTreeMap<String, Vec<String>>>,
         initial_items: Option<Vec<ThreadRealtimeInitialItem>>,
     ) -> Result<ThreadRealtimeStartedNotification> {
         let start_request_id = self
@@ -486,10 +486,10 @@ impl RealtimeE2eHarness {
                 client_managed_handoffs: None,
                 delegation_ack_filler: None,
                 flush_transcript_tail_on_session_end: None,
-                codex_response_item_prefix: None,
-                codex_response_handoff_mode,
-                codex_response_handoff_channel_prefixes,
-                codex_responses_as_items: None,
+                ava_response_item_prefix: None,
+                ava_response_handoff_mode,
+                ava_response_handoff_channel_prefixes,
+                ava_responses_as_items: None,
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
                 include_startup_context: None,
@@ -674,16 +674,16 @@ async fn realtime_conversation_streams_timeline_items() -> Result<()> {
         }),
     ]]])
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &responses_server.uri(),
         realtime_server.uri(),
         StartupContextConfig::Generated,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     mcp.initialize().await?;
@@ -703,10 +703,10 @@ async fn realtime_conversation_streams_timeline_items() -> Result<()> {
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: None,
@@ -871,16 +871,16 @@ async fn realtime_conversation_streams_v2_notifications() -> Result<()> {
     ]])
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &responses_server.uri(),
         realtime_server.uri(),
         StartupContextConfig::Generated,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     login_with_api_key(&mut mcp, "sk-test-key").await?;
@@ -899,10 +899,10 @@ async fn realtime_conversation_streams_v2_notifications() -> Result<()> {
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: thread_start.thread.id.clone(),
             model: Some("realtime-treatment-model".to_string()),
             output_modality: RealtimeOutputModality::Audio,
@@ -1200,7 +1200,7 @@ async fn realtime_timeline_splits_accepted_steering_and_persists_promoted_artifa
                 responses::ev_response_created("response-1"),
                 responses::ev_assistant_message(
                     "promoted-message",
-                    "::codex-realtime-inline{}\nVisible artifact",
+                    "::ava-realtime-inline{}\nVisible artifact",
                 ),
                 responses::ev_completed("response-1"),
             ]),
@@ -1443,16 +1443,16 @@ async fn realtime_start_can_skip_startup_context() -> Result<()> {
     })]]])
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &responses_server.uri(),
         realtime_server.uri(),
         StartupContextConfig::Generated,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     login_with_api_key(&mut mcp, "sk-test-key").await?;
@@ -1468,10 +1468,10 @@ async fn realtime_start_can_skip_startup_context() -> Result<()> {
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: thread_start.thread.id.clone(),
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -1540,16 +1540,16 @@ async fn realtime_text_output_modality_requests_text_output_and_final_transcript
     ]]])
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &responses_server.uri(),
         realtime_server.uri(),
         StartupContextConfig::Generated,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     login_with_api_key(&mut mcp, "sk-test-key").await?;
@@ -1565,10 +1565,10 @@ async fn realtime_text_output_modality_requests_text_output_and_final_transcript
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: thread_start.thread.id.clone(),
             model: None,
             output_modality: RealtimeOutputModality::Text,
@@ -1648,16 +1648,16 @@ async fn realtime_text_output_modality_requests_text_output_and_final_transcript
 
 #[tokio::test]
 async fn realtime_list_voices_returns_supported_names() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         "http://127.0.0.1:1",
         "ws://127.0.0.1:1",
         StartupContextConfig::Generated,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -1717,16 +1717,16 @@ async fn realtime_conversation_stop_emits_closed_notification() -> Result<()> {
     ]])
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &responses_server.uri(),
         realtime_server.uri(),
         StartupContextConfig::Generated,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     login_with_api_key(&mut mcp, "sk-test-key").await?;
@@ -1742,10 +1742,10 @@ async fn realtime_conversation_stop_emits_closed_notification() -> Result<()> {
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: thread_start.thread.id.clone(),
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -1816,10 +1816,10 @@ async fn realtime_mode_uses_client_instructions_on_entry_and_exit() -> Result<()
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: None,
@@ -1897,7 +1897,7 @@ async fn realtime_mode_uses_client_instructions_on_entry_and_exit() -> Result<()
     Ok(())
 }
 
-const PROVIDER_RESIDENCY_ENV_VAR: &str = "CODEX_TEST_REALTIME_RESIDENCY_HEADER";
+const PROVIDER_RESIDENCY_ENV_VAR: &str = "AVA_TEST_REALTIME_RESIDENCY_HEADER";
 
 #[derive(Clone, Copy, Debug)]
 enum RealtimeTransport {
@@ -1948,7 +1948,7 @@ async fn realtime_respects_managed_residency(
     .await;
     let responses_uri = responses_server.uri();
     let realtime_uri = realtime_server.uri();
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = MockResponsesConfig::new(&responses_uri)
         .with_root_config(&format!(
             "experimental_realtime_ws_base_url = \"{realtime_uri}\"\n\
@@ -1958,7 +1958,7 @@ async fn realtime_respects_managed_residency(
         .with_extra_config("[realtime]\nversion = \"v1\"\ntype = \"conversational\"")
         .with_extra_config(
             "[model_providers.mock_provider.http_headers]\n\
-             \"X-OpenAI-Internal-Codex-Residency\" = \"eu-static\"\n\
+             \"X-OpenAI-Internal-Ava-Residency\" = \"eu-static\"\n\
              \"x-provider-header\" = \"preserved\"",
         );
     let configured_residency = match provider_headers {
@@ -1966,16 +1966,16 @@ async fn realtime_respects_managed_residency(
         ProviderHeaders::StaticAndEnvironment => {
             config = config.with_extra_config(&format!(
                 "[model_providers.mock_provider.env_http_headers]\n\
-                 \"x-openai-internal-codex-residency\" = \"{PROVIDER_RESIDENCY_ENV_VAR}\""
+                 \"x-openai-internal-ava-residency\" = \"{PROVIDER_RESIDENCY_ENV_VAR}\""
             ));
             "eu-environment"
         }
     };
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
     let expected_residency = match residency {
         ResidencyPolicy::Required => {
             std::fs::write(
-                codex_home.path().join("requirements.toml"),
+                ava_home.path().join("requirements.toml"),
                 "enforce_residency = \"us\"\n",
             )?;
             "us"
@@ -1984,7 +1984,7 @@ async fn realtime_respects_managed_residency(
     };
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[(PROVIDER_RESIDENCY_ENV_VAR, Some("eu-environment"))])
         .build()
         .await?;
@@ -1997,7 +1997,7 @@ async fn realtime_respects_managed_residency(
         timeout(DEFAULT_TIMEOUT, mcp.read_response(thread_request)).await??;
     let mut harness = RealtimeE2eHarness {
         mcp,
-        _codex_home: codex_home,
+        _ava_home: ava_home,
         main_loop_responses_server: responses_server,
         realtime_server,
         call_capture,
@@ -2074,16 +2074,16 @@ async fn realtime_webrtc_start_emits_sdp_notification() -> Result<()> {
     }])
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &responses_server.uri(),
         realtime_server.uri(),
         StartupContextConfig::Override("startup context"),
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     login_with_api_key(&mut mcp, "sk-test-key").await?;
@@ -2100,10 +2100,10 @@ async fn realtime_webrtc_start_emits_sdp_notification() -> Result<()> {
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: thread_id.clone(),
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2188,25 +2188,25 @@ async fn realtime_webrtc_start_emits_sdp_notification() -> Result<()> {
             .headers
             .get("content-type")
             .and_then(|value| value.to_str().ok()),
-        Some("multipart/form-data; boundary=codex-realtime-call-boundary")
+        Some("multipart/form-data; boundary=ava-realtime-call-boundary")
     );
     let body = String::from_utf8(request.body).context("multipart body should be utf-8")?;
     let session = normalized_json_string(v1_session_create_json())?;
     assert_eq!(
         body,
         format!(
-            "--codex-realtime-call-boundary\r\n\
+            "--ava-realtime-call-boundary\r\n\
              Content-Disposition: form-data; name=\"sdp\"\r\n\
              Content-Type: application/sdp\r\n\
              \r\n\
              v=offer\r\n\
              \r\n\
-             --codex-realtime-call-boundary\r\n\
+             --ava-realtime-call-boundary\r\n\
              Content-Disposition: form-data; name=\"session\"\r\n\
              Content-Type: application/json\r\n\
              \r\n\
              {session}\r\n\
-             --codex-realtime-call-boundary--\r\n"
+             --ava-realtime-call-boundary--\r\n"
         )
     );
 
@@ -2319,10 +2319,10 @@ async fn existing_call_attaches_without_reinitializing_the_client_session(
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
-            codex_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
             include_startup_context: None,
@@ -2407,10 +2407,10 @@ async fn existing_call_rejects_client_owned_session_configuration(option: &str) 
         client_managed_handoffs: None,
         delegation_ack_filler: None,
         flush_transcript_tail_on_session_end: None,
-        codex_response_item_prefix: None,
-        codex_response_handoff_mode: None,
-        codex_response_handoff_channel_prefixes: None,
-        codex_responses_as_items: None,
+        ava_response_item_prefix: None,
+        ava_response_handoff_mode: None,
+        ava_response_handoff_channel_prefixes: None,
+        ava_responses_as_items: None,
         model: None,
         output_modality: RealtimeOutputModality::Audio,
         include_startup_context: None,
@@ -2473,11 +2473,11 @@ async fn webrtc_v3_start_posts_live_session_and_joins_without_session_update() -
     .await?;
 
     let started = harness
-        .start_webrtc_realtime_with_codex_response_routing(
+        .start_webrtc_realtime_with_ava_response_routing(
             "v=offer\r\n",
             /*client_managed_handoffs*/ None,
-            /*codex_responses_as_items*/ None,
-            /*codex_response_handoff_mode*/ None,
+            /*ava_responses_as_items*/ None,
+            /*ava_response_handoff_mode*/ None,
             /*delegation_ack_filler*/ Some(false),
             RealtimeConversationVersion::V3,
         )
@@ -2500,7 +2500,7 @@ async fn webrtc_v3_start_posts_live_session_and_joins_without_session_update() -
     assert_call_create_multipart(
         harness.call_capture.single_request(),
         "v=offer\r\n",
-        r#"{"audio":{"output":{"voice":"cove"}},"delegation":{"ack_filler":false,"type":"client"},"instructions":"backend prompt\n\nstartup context","model":"gpt-live-1-codex"}"#,
+        r#"{"audio":{"output":{"voice":"cove"}},"delegation":{"ack_filler":false,"type":"client"},"instructions":"backend prompt\n\nstartup context","model":"gpt-live-1-ava"}"#,
         "/v1/live",
     )?;
     assert!(
@@ -2573,7 +2573,7 @@ async fn webrtc_v1_default_automatic_output_uses_handoff_append() -> Result<()> 
         harness.sideband_outbound_request(/*request_index*/ 1).await,
         json!({
             "type": "conversation.handoff.append",
-            "handoff_id": "codex",
+            "handoff_id": "ava",
             "output_text": "\"Agent Final Message\":\n\nlegacy automatic speech",
         })
     );
@@ -2599,11 +2599,11 @@ async fn webrtc_v1_client_managed_handoffs_disable_automatic_output() -> Result<
     .await?;
 
     let started = harness
-        .start_webrtc_realtime_with_codex_response_routing(
+        .start_webrtc_realtime_with_ava_response_routing(
             "v=offer\r\n",
             /*client_managed_handoffs*/ Some(true),
-            /*codex_responses_as_items*/ None,
-            /*codex_response_handoff_mode*/ None,
+            /*ava_responses_as_items*/ None,
+            /*ava_response_handoff_mode*/ None,
             /*delegation_ack_filler*/ None,
             RealtimeConversationVersion::V1,
         )
@@ -2637,7 +2637,7 @@ async fn webrtc_v1_client_managed_handoffs_disable_automatic_output() -> Result<
     .await;
     assert!(
         automatic_handoff.is_err(),
-        "automatic Codex output should not reach realtime in client-managed handoff mode"
+        "automatic Ava output should not reach realtime in client-managed handoff mode"
     );
 
     harness
@@ -2647,7 +2647,7 @@ async fn webrtc_v1_client_managed_handoffs_disable_automatic_output() -> Result<
         harness.sideband_outbound_request(/*request_index*/ 1).await,
         json!({
             "type": "conversation.handoff.append",
-            "handoff_id": "codex",
+            "handoff_id": "ava",
             "output_text": "client-selected speech",
         })
     );
@@ -2657,7 +2657,7 @@ async fn webrtc_v1_client_managed_handoffs_disable_automatic_output() -> Result<
 }
 
 #[tokio::test]
-async fn webrtc_v1_ignores_codex_response_handoff_mode() -> Result<()> {
+async fn webrtc_v1_ignores_ava_response_handoff_mode() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let mut commentary = responses::ev_assistant_message("msg-commentary", "background progress");
@@ -2690,11 +2690,11 @@ async fn webrtc_v1_ignores_codex_response_handoff_mode() -> Result<()> {
     .await?;
 
     let started = harness
-        .start_webrtc_realtime_with_codex_response_routing(
+        .start_webrtc_realtime_with_ava_response_routing(
             "v=offer\r\n",
             /*client_managed_handoffs*/ None,
-            /*codex_responses_as_items*/ None,
-            /*codex_response_handoff_mode*/ Some(CodexResponseHandoffMode::BemTags),
+            /*ava_responses_as_items*/ None,
+            /*ava_response_handoff_mode*/ Some(AvaResponseHandoffMode::BemTags),
             /*delegation_ack_filler*/ None,
             RealtimeConversationVersion::V1,
         )
@@ -2764,7 +2764,7 @@ async fn webrtc_v1_handoff_request_delegates_context_and_manual_append_speaks() 
     .await?;
 
     let started = harness
-        .start_webrtc_realtime_with_codex_response_items("v=offer\r\n")
+        .start_webrtc_realtime_with_ava_response_items("v=offer\r\n")
         .await?;
     assert_eq!(started.started.version, RealtimeConversationVersion::V1);
     assert_call_create_multipart(
@@ -2821,7 +2821,7 @@ async fn webrtc_v1_handoff_request_delegates_context_and_manual_append_speaks() 
         spoken_append,
         json!({
             "type": "conversation.handoff.append",
-            "handoff_id": "codex",
+            "handoff_id": "ava",
             "output_text": "manual spoken v1 update",
         })
     );
@@ -2849,7 +2849,7 @@ async fn realtime_automatic_standalone_output_is_item_and_append_speaks() -> Res
     .await?;
 
     let started = harness
-        .start_websocket_realtime_with_codex_response_items()
+        .start_websocket_realtime_with_ava_response_items()
         .await?;
     assert_eq!(started.version, RealtimeConversationVersion::V2);
     assert_eq!(
@@ -2926,7 +2926,7 @@ async fn realtime_automatic_handoff_output_is_item_and_append_speaks() -> Result
     .await?;
 
     let started = harness
-        .start_websocket_realtime_with_codex_response_items()
+        .start_websocket_realtime_with_ava_response_items()
         .await?;
     assert_eq!(started.version, RealtimeConversationVersion::V2);
     assert_eq!(
@@ -3009,7 +3009,7 @@ async fn websocket_v2_assistant_output_without_handoff_reaches_realtime_context(
     .await?;
 
     let started = harness
-        .start_websocket_realtime_with_codex_response_items()
+        .start_websocket_realtime_with_ava_response_items()
         .await?;
     assert_eq!(started.version, RealtimeConversationVersion::V2);
 
@@ -3066,8 +3066,8 @@ async fn websocket_v3_passes_initial_items_through_session_start() -> Result<()>
 
     let started = harness
         .start_frameless_bidi_realtime(
-            /*codex_response_handoff_mode*/ None,
-            /*codex_response_handoff_channel_prefixes*/ None,
+            /*ava_response_handoff_mode*/ None,
+            /*ava_response_handoff_channel_prefixes*/ None,
             Some(vec![
                 ThreadRealtimeInitialItem {
                     role: ConversationTextRole::Developer,
@@ -3119,7 +3119,7 @@ async fn websocket_v3_routes_handoffs_by_session_mode() -> Result<()> {
             [None, None, None, None],
         ),
         (
-            Some(CodexResponseHandoffMode::Commentary),
+            Some(AvaResponseHandoffMode::Commentary),
             None,
             [
                 "[ANALYSIS]silent context",
@@ -3135,7 +3135,7 @@ async fn websocket_v3_routes_handoffs_by_session_mode() -> Result<()> {
             ],
         ),
         (
-            Some(CodexResponseHandoffMode::BemTags),
+            Some(AvaResponseHandoffMode::BemTags),
             None,
             [
                 "[ANALYSIS]silent context",
@@ -3151,7 +3151,7 @@ async fn websocket_v3_routes_handoffs_by_session_mode() -> Result<()> {
             ],
         ),
         (
-            Some(CodexResponseHandoffMode::BemTags),
+            Some(AvaResponseHandoffMode::BemTags),
             Some(BTreeMap::from([
                 ("analysis".to_string(), vec!["[THOUGHT]".to_string()]),
                 (
@@ -3645,7 +3645,7 @@ async fn websocket_v2_background_agent_steering_ack_requests_response_create() -
     // acknowledgement so it can surface that acknowledgement to the user.
     assert_v2_response_create(&harness.sideband_outbound_request(/*request_index*/ 2).await);
 
-    // Phase 4: release the gated delegated turn. Codex should then continue
+    // Phase 4: release the gated delegated turn. Ava should then continue
     // the same run with the steering text included in the follow-up Responses
     // request, proving realtime did not merely acknowledge and drop it.
     let _ = gate_completed_tx.send(());
@@ -3899,16 +3899,16 @@ async fn realtime_webrtc_start_surfaces_backend_error() -> Result<()> {
         .await;
     let realtime_server = start_websocket_server(vec![vec![]]).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     create_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &responses_server.uri(),
         realtime_server.uri(),
         StartupContextConfig::Override("startup context"),
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     login_with_api_key(&mut mcp, "sk-test-key").await?;
@@ -3925,10 +3925,10 @@ async fn realtime_webrtc_start_surfaces_backend_error() -> Result<()> {
             client_managed_handoffs: None,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: None,
-            codex_responses_as_items: None,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode: None,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: None,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode: None,
+            ava_response_handoff_channel_prefixes: None,
             thread_id: thread_start.thread.id,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -4020,7 +4020,7 @@ async fn realtime_starts_on_forked_and_resumed_threads(
     if let RealtimeThreadLoad::ColdResume = load {
         timeout(DEFAULT_TIMEOUT, harness.mcp.shutdown_gracefully()).await??;
         harness.mcp = TestAppServer::builder()
-            .with_codex_home(harness._codex_home.path())
+            .with_ava_home(harness._ava_home.path())
             .build_initialized_with_timeout(DEFAULT_TIMEOUT)
             .await?;
         let resume_id = harness
@@ -4283,23 +4283,23 @@ fn assert_call_create_multipart(
             .headers
             .get("content-type")
             .and_then(|value| value.to_str().ok()),
-        Some("multipart/form-data; boundary=codex-realtime-call-boundary")
+        Some("multipart/form-data; boundary=ava-realtime-call-boundary")
     );
     let body = String::from_utf8(request.body).context("multipart body should be utf-8")?;
     let session_prefix = format!(
-        "--codex-realtime-call-boundary\r\n\
+        "--ava-realtime-call-boundary\r\n\
              Content-Disposition: form-data; name=\"sdp\"\r\n\
              Content-Type: application/sdp\r\n\
              \r\n\
              {offer_sdp}\r\n\
-             --codex-realtime-call-boundary\r\n\
+             --ava-realtime-call-boundary\r\n\
              Content-Disposition: form-data; name=\"session\"\r\n\
              Content-Type: application/json\r\n\
              \r\n"
     );
     let actual_session = body
         .strip_prefix(&session_prefix)
-        .and_then(|body| body.strip_suffix("\r\n--codex-realtime-call-boundary--\r\n"))
+        .and_then(|body| body.strip_suffix("\r\n--ava-realtime-call-boundary--\r\n"))
         .context("multipart body should contain one JSON session part")?;
     let actual_session: Value =
         serde_json::from_str(actual_session).context("session part should be valid JSON")?;
@@ -4314,13 +4314,13 @@ fn v1_session_create_json() -> &'static str {
 }
 
 fn create_config_toml(
-    codex_home: &Path,
+    ava_home: &Path,
     responses_server_uri: &str,
     realtime_server_uri: &str,
     startup_context: StartupContextConfig<'_>,
 ) -> std::io::Result<()> {
     create_config_toml_with_realtime_version(
-        codex_home,
+        ava_home,
         responses_server_uri,
         realtime_server_uri,
         startup_context,
@@ -4330,7 +4330,7 @@ fn create_config_toml(
 }
 
 fn create_config_toml_with_realtime_version(
-    codex_home: &Path,
+    ava_home: &Path,
     responses_server_uri: &str,
     realtime_server_uri: &str,
     startup_context: StartupContextConfig<'_>,
@@ -4353,7 +4353,7 @@ fn create_config_toml_with_realtime_version(
             "experimental_realtime_ws_startup_context = {context:?}"
         ));
     }
-    config.write(codex_home)
+    config.write(ava_home)
 }
 
 fn assert_invalid_request(error: JSONRPCError, message: String) {

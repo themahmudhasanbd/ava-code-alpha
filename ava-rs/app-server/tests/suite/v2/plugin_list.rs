@@ -11,33 +11,33 @@ use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
 use chrono::Duration as ChronoDuration;
 use chrono::Utc;
-use codex_app_server_protocol::HookMetadata;
-use codex_app_server_protocol::HookTrustStatus;
-use codex_app_server_protocol::HooksListParams;
-use codex_app_server_protocol::HooksListResponse;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::PluginAuthPolicy;
-use codex_app_server_protocol::PluginDisabledReason;
-use codex_app_server_protocol::PluginInstallParams;
-use codex_app_server_protocol::PluginInstallPolicy;
-use codex_app_server_protocol::PluginInstallPolicySource;
-use codex_app_server_protocol::PluginInstalledParams;
-use codex_app_server_protocol::PluginInstalledResponse;
-use codex_app_server_protocol::PluginListMarketplaceKind;
-use codex_app_server_protocol::PluginListParams;
-use codex_app_server_protocol::PluginListResponse;
-use codex_app_server_protocol::PluginMarketplaceEntry;
-use codex_app_server_protocol::PluginShareDiscoverability;
-use codex_app_server_protocol::PluginSource;
-use codex_app_server_protocol::PluginSummary;
-use codex_app_server_protocol::RequestId;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::config::set_project_trust_level;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::login_with_api_key;
-use codex_protocol::config_types::TrustLevel;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::HookMetadata;
+use ava_app_server_protocol::HookTrustStatus;
+use ava_app_server_protocol::HooksListParams;
+use ava_app_server_protocol::HooksListResponse;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::PluginAuthPolicy;
+use ava_app_server_protocol::PluginDisabledReason;
+use ava_app_server_protocol::PluginInstallParams;
+use ava_app_server_protocol::PluginInstallPolicy;
+use ava_app_server_protocol::PluginInstallPolicySource;
+use ava_app_server_protocol::PluginInstalledParams;
+use ava_app_server_protocol::PluginInstalledResponse;
+use ava_app_server_protocol::PluginListMarketplaceKind;
+use ava_app_server_protocol::PluginListParams;
+use ava_app_server_protocol::PluginListResponse;
+use ava_app_server_protocol::PluginMarketplaceEntry;
+use ava_app_server_protocol::PluginShareDiscoverability;
+use ava_app_server_protocol::PluginSource;
+use ava_app_server_protocol::PluginSummary;
+use ava_app_server_protocol::RequestId;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::config::set_project_trust_level;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::login_with_api_key;
+use ava_protocol::config_types::TrustLevel;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use pretty_assertions::assert_eq;
@@ -57,16 +57,16 @@ use wiremock::matchers::query_param_is_missing;
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 const TEST_CURATED_PLUGIN_SHA: &str = "0123456789abcdef0123456789abcdef01234567";
 const TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS: &str =
-    "CODEX_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS";
+    "AVA_TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS";
 const ALTERNATE_MARKETPLACE_RELATIVE_PATH: &str = ".claude-plugin/marketplace.json";
 const ALTERNATE_PLUGIN_MANIFEST_RELATIVE_PATH: &str = ".claude-plugin/plugin.json";
 type RemoteInstalledPluginFixtures = BTreeMap<String, BTreeMap<String, Vec<serde_json::Value>>>;
 static REMOTE_INSTALLED_PLUGIN_FIXTURES: OnceLock<Mutex<RemoteInstalledPluginFixtures>> =
     OnceLock::new();
 
-fn write_plugins_enabled_config(codex_home: &std::path::Path) -> std::io::Result<()> {
+fn write_plugins_enabled_config(ava_home: &std::path::Path) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         r#"[features]
 plugins = true
 "#,
@@ -74,11 +74,11 @@ plugins = true
 }
 
 fn write_plugins_enabled_config_with_base_url(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     base_url: &str,
 ) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{base_url}"
 
@@ -90,11 +90,11 @@ plugins = true
 }
 
 fn write_remote_plugins_disabled_config_with_base_url(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     base_url: &str,
 ) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{base_url}"
 
@@ -108,18 +108,18 @@ remote_plugin = false
 
 #[tokio::test]
 async fn plugin_list_skips_invalid_marketplace_file_and_reports_error() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
     std::fs::create_dir_all(repo_root.path().join(".agents/plugins"))?;
-    write_plugins_enabled_config(codex_home.path())?;
+    write_plugins_enabled_config(ava_home.path())?;
     let marketplace_path =
         AbsolutePathBuf::try_from(repo_root.path().join(".agents/plugins/marketplace.json"))?;
     std::fs::write(marketplace_path.as_path(), "{not json")?;
 
-    let home = codex_home.path().to_string_lossy().into_owned();
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -162,13 +162,13 @@ async fn plugin_list_skips_invalid_marketplace_file_and_reports_error() -> Resul
 
 #[tokio::test]
 async fn plugin_rpcs_reject_repository_spoofing_openai_curated() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repository = TempDir::new()?;
     std::fs::create_dir_all(repository.path().join(".git"))?;
     std::fs::create_dir_all(repository.path().join(".agents/plugins"))?;
-    std::fs::create_dir_all(repository.path().join("attacker/.codex-plugin"))?;
+    std::fs::create_dir_all(repository.path().join("attacker/.ava-plugin"))?;
     std::fs::write(
-        repository.path().join("attacker/.codex-plugin/plugin.json"),
+        repository.path().join("attacker/.ava-plugin/plugin.json"),
         r#"{"name":"attacker"}"#,
     )?;
     let marketplace_path =
@@ -177,10 +177,10 @@ async fn plugin_rpcs_reject_repository_spoofing_openai_curated() -> Result<()> {
         marketplace_path.as_path(),
         r#"{"name":"openai-curated","plugins":[{"name":"attacker","source":{"source":"local","path":"./attacker"}}]}"#,
     )?;
-    write_plugins_enabled_config(codex_home.path())?;
-    let original_config = std::fs::read(codex_home.path().join("config.toml"))?;
+    write_plugins_enabled_config(ava_home.path())?;
+    let original_config = std::fs::read(ava_home.path().join("config.toml"))?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -214,9 +214,9 @@ async fn plugin_rpcs_reject_repository_spoofing_openai_curated() -> Result<()> {
     )
     .await??;
     assert!(error.error.message.contains("reserved"));
-    assert!(!codex_home.path().join("plugins/cache").exists());
+    assert!(!ava_home.path().join("plugins/cache").exists());
     assert_eq!(
-        std::fs::read(codex_home.path().join("config.toml"))?,
+        std::fs::read(ava_home.path().join("config.toml"))?,
         original_config
     );
     Ok(())
@@ -225,14 +225,14 @@ async fn plugin_rpcs_reject_repository_spoofing_openai_curated() -> Result<()> {
 #[tokio::test]
 async fn plugin_installed_includes_installed_plugins_and_explicit_install_suggestions() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_openai_api_curated_marketplace(
-        codex_home.path(),
+        ava_home.path(),
         &["linear", "computer-use", "not-mentioned"],
     )?;
-    write_installed_plugin(&codex_home, "openai-api-curated", "linear")?;
+    write_installed_plugin(&ava_home, "openai-api-curated", "linear")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 
@@ -242,7 +242,7 @@ enabled = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -282,13 +282,13 @@ enabled = true
 #[tokio::test]
 async fn plugin_installed_prefers_remote_curated_conflicts_when_remote_plugin_enabled() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_openai_curated_marketplace(codex_home.path(), &["linear", "calendar"])?;
-    write_installed_plugin(&codex_home, "openai-curated", "linear")?;
-    write_installed_plugin(&codex_home, "openai-curated", "calendar")?;
+    write_openai_curated_marketplace(ava_home.path(), &["linear", "calendar"])?;
+    write_installed_plugin(&ava_home, "openai-curated", "linear")?;
+    write_installed_plugin(&ava_home, "openai-curated", "calendar")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -306,7 +306,7 @@ enabled = true
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -333,7 +333,7 @@ enabled = true
     mount_empty_user_installed_plugins(&server).await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -397,10 +397,10 @@ enabled = true
 #[tokio::test]
 async fn plugin_installed_prefers_api_curated_conflicts_after_switching_to_api_auth() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_openai_api_curated_marketplace(codex_home.path(), &["linear"])?;
-    write_installed_plugin(&codex_home, "openai-api-curated", "linear")?;
+    write_openai_api_curated_marketplace(ava_home.path(), &["linear"])?;
+    write_installed_plugin(&ava_home, "openai-api-curated", "linear")?;
     let config = format!(
         r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -413,9 +413,9 @@ enabled = true
 "#,
         server.uri()
     );
-    std::fs::write(codex_home.path().join("config.toml"), &config)?;
+    std::fs::write(ava_home.path().join("config.toml"), &config)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -433,7 +433,7 @@ enabled = true
     mount_empty_user_installed_plugins(&server).await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -457,7 +457,7 @@ enabled = true
 
     // Keep the ChatGPT remote snapshot cached while changing auth to exercise endpoint-level
     // filtering even when the account-change cache refresh cannot run.
-    std::fs::write(codex_home.path().join("config.toml"), "invalid config")?;
+    std::fs::write(ava_home.path().join("config.toml"), "invalid config")?;
     let request_id = app_server
         .send_login_account_api_key_request("sk-test-key")
         .await?;
@@ -469,7 +469,7 @@ enabled = true
         app_server.read_stream_until_notification_message("account/updated"),
     )
     .await??;
-    std::fs::write(codex_home.path().join("config.toml"), config)?;
+    std::fs::write(ava_home.path().join("config.toml"), config)?;
 
     let request_id = app_server
         .send_plugin_installed_request(PluginInstalledParams {
@@ -495,10 +495,10 @@ enabled = true
 
 #[tokio::test]
 async fn plugin_installed_ignores_local_cache_without_catalog() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_installed_plugin(&codex_home, "openai-curated", "linear")?;
+    let ava_home = TempDir::new()?;
+    write_installed_plugin(&ava_home, "openai-curated", "linear")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 
@@ -508,7 +508,7 @@ enabled = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -529,9 +529,9 @@ enabled = true
 
 #[tokio::test]
 async fn plugin_list_rejects_relative_cwds() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -558,7 +558,7 @@ async fn plugin_list_rejects_relative_cwds() -> Result<()> {
 #[tokio::test]
 async fn plugin_list_keeps_valid_marketplaces_when_another_marketplace_fails_to_load() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let valid_repo_root = TempDir::new()?;
     let invalid_repo_root = TempDir::new()?;
     std::fs::create_dir_all(valid_repo_root.path().join(".git"))?;
@@ -566,11 +566,11 @@ async fn plugin_list_keeps_valid_marketplaces_when_another_marketplace_fails_to_
     std::fs::create_dir_all(
         valid_repo_root
             .path()
-            .join("plugins/valid-plugin/.codex-plugin"),
+            .join("plugins/valid-plugin/.ava-plugin"),
     )?;
     std::fs::create_dir_all(invalid_repo_root.path().join(".git"))?;
     std::fs::create_dir_all(invalid_repo_root.path().join(".agents/plugins"))?;
-    write_plugins_enabled_config(codex_home.path())?;
+    write_plugins_enabled_config(ava_home.path())?;
 
     let valid_marketplace_path = AbsolutePathBuf::try_from(
         valid_repo_root
@@ -603,14 +603,14 @@ async fn plugin_list_keeps_valid_marketplaces_when_another_marketplace_fails_to_
     std::fs::write(
         valid_repo_root
             .path()
-            .join("plugins/valid-plugin/.codex-plugin/plugin.json"),
+            .join("plugins/valid-plugin/.ava-plugin/plugin.json"),
         r#"{"name":"valid-plugin","keywords":["api-key","developer tools"]}"#,
     )?;
     std::fs::write(invalid_marketplace_path.as_path(), "{not json")?;
 
-    let home = codex_home.path().to_string_lossy().into_owned();
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -655,7 +655,7 @@ async fn plugin_list_keeps_valid_marketplaces_when_another_marketplace_fails_to_
                 install_policy_source: None,
                 must_show_installation_interstitial: None,
                 auth_policy: PluginAuthPolicy::OnInstall,
-                availability: codex_app_server_protocol::PluginAvailability::Available,
+                availability: ava_app_server_protocol::PluginAvailability::Available,
                 disabled_reason: None,
                 eligible_plan_types: None,
                 interface: None,
@@ -682,7 +682,7 @@ async fn plugin_list_keeps_valid_marketplaces_when_another_marketplace_fails_to_
 #[tokio::test]
 async fn plugin_list_uses_alternate_discoverable_manifest_and_keeps_undiscoverable_plugins()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let valid_plugin_root = repo_root.path().join("plugins/valid-plugin");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
@@ -699,7 +699,7 @@ async fn plugin_list_uses_alternate_discoverable_manifest_and_keeps_undiscoverab
             .parent()
             .unwrap(),
     )?;
-    write_plugins_enabled_config(codex_home.path())?;
+    write_plugins_enabled_config(ava_home.path())?;
 
     let marketplace_path =
         AbsolutePathBuf::try_from(repo_root.path().join(ALTERNATE_MARKETPLACE_RELATIVE_PATH))?;
@@ -731,9 +731,9 @@ async fn plugin_list_uses_alternate_discoverable_manifest_and_keeps_undiscoverab
 }"#,
     )?;
 
-    let home = codex_home.path().to_string_lossy().into_owned();
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -776,10 +776,10 @@ async fn plugin_list_uses_alternate_discoverable_manifest_and_keeps_undiscoverab
                     install_policy_source: None,
                     must_show_installation_interstitial: None,
                     auth_policy: PluginAuthPolicy::OnInstall,
-                    availability: codex_app_server_protocol::PluginAvailability::Available,
+                    availability: ava_app_server_protocol::PluginAvailability::Available,
                     disabled_reason: None,
                     eligible_plan_types: None,
-                    interface: Some(codex_app_server_protocol::PluginInterface {
+                    interface: Some(ava_app_server_protocol::PluginInterface {
                         display_name: Some("Valid Plugin".to_string()),
                         short_description: None,
                         long_description: None,
@@ -821,7 +821,7 @@ async fn plugin_list_uses_alternate_discoverable_manifest_and_keeps_undiscoverab
                     install_policy_source: None,
                     must_show_installation_interstitial: None,
                     auth_policy: PluginAuthPolicy::OnInstall,
-                    availability: codex_app_server_protocol::PluginAvailability::Available,
+                    availability: ava_app_server_protocol::PluginAvailability::Available,
                     disabled_reason: None,
                     eligible_plan_types: None,
                     interface: None,
@@ -836,19 +836,19 @@ async fn plugin_list_uses_alternate_discoverable_manifest_and_keeps_undiscoverab
 
 #[tokio::test]
 async fn plugin_list_omitted_cwds_excludes_server_project_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let project_marketplace = TempDir::new()?;
-    std::fs::create_dir_all(codex_home.path().join(".agents/plugins"))?;
-    std::fs::create_dir_all(codex_home.path().join(".git"))?;
-    std::fs::create_dir_all(codex_home.path().join(".codex"))?;
+    std::fs::create_dir_all(ava_home.path().join(".agents/plugins"))?;
+    std::fs::create_dir_all(ava_home.path().join(".git"))?;
+    std::fs::create_dir_all(ava_home.path().join(".ava-code"))?;
     std::fs::create_dir_all(project_marketplace.path().join(".agents/plugins"))?;
-    write_installed_plugin(&codex_home, "home-marketplace", "home-plugin")?;
+    write_installed_plugin(&ava_home, "home-marketplace", "home-plugin")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[features]\nplugins = true\n[plugins.\"home-plugin@home-marketplace\"]\nenabled = true\n",
     )?;
     std::fs::write(
-        codex_home.path().join(".agents/plugins/marketplace.json"),
+        ava_home.path().join(".agents/plugins/marketplace.json"),
         r#"{
   "name": "home-marketplace",
   "plugins": [
@@ -870,15 +870,15 @@ async fn plugin_list_omitted_cwds_excludes_server_project_config() -> Result<()>
     )?;
     let source = serde_json::to_string(&project_marketplace.path().to_string_lossy())?;
     std::fs::write(
-        codex_home.path().join(".codex/config.toml"),
+        ava_home.path().join(".ava-code/config.toml"),
         format!(
             "[marketplaces.project-marketplace]\nsource_type = \"local\"\nsource = {source}\n\n[plugins.\"home-plugin@home-marketplace\"]\nenabled = false\n"
         ),
     )?;
-    set_project_trust_level(codex_home.path(), codex_home.path(), TrustLevel::Trusted)?;
-    let home = codex_home.path().to_string_lossy().into_owned();
+    set_project_trust_level(ava_home.path(), ava_home.path(), TrustLevel::Trusted)?;
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -893,7 +893,7 @@ async fn plugin_list_omitted_cwds_excludes_server_project_config() -> Result<()>
             vec![("home-plugin@home-marketplace", true, true)],
         ),
         (
-            Some(vec![AbsolutePathBuf::try_from(codex_home.path())?]),
+            Some(vec![AbsolutePathBuf::try_from(ava_home.path())?]),
             vec![
                 ("home-plugin@home-marketplace", true, false),
                 ("project-plugin@project-marketplace", false, false),
@@ -924,17 +924,17 @@ async fn plugin_list_omitted_cwds_excludes_server_project_config() -> Result<()>
 
 #[tokio::test]
 async fn plugin_list_returns_share_context_for_shared_local_plugin() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let plugin_root = repo_root.path().join("plugins/demo-plugin");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
     std::fs::create_dir_all(repo_root.path().join(".agents/plugins"))?;
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
-    write_plugins_enabled_config(codex_home.path())?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
+    write_plugins_enabled_config(ava_home.path())?;
     std::fs::write(
         repo_root.path().join(".agents/plugins/marketplace.json"),
         r#"{
-  "name": "codex-curated",
+  "name": "ava-curated",
   "plugins": [
     {
       "name": "demo-plugin",
@@ -947,17 +947,17 @@ async fn plugin_list_returns_share_context_for_shared_local_plugin() -> Result<(
 }"#,
     )?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"demo-plugin","version":"1.2.3"}"#,
     )?;
     write_plugin_share_local_path_mapping(
-        codex_home.path(),
+        ava_home.path(),
         "plugins_123",
         &AbsolutePathBuf::try_from(plugin_root)?,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -996,13 +996,13 @@ async fn plugin_list_returns_share_context_for_shared_local_plugin() -> Result<(
 
 #[tokio::test]
 async fn plugin_list_force_refetch_waits_for_same_path_local_plugin_upgrade() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let marketplace_root = TempDir::new()?;
     std::fs::create_dir_all(marketplace_root.path().join(".git"))?;
     std::fs::create_dir_all(marketplace_root.path().join(".agents/plugins"))?;
     let source_manifest = marketplace_root
         .path()
-        .join("sample-plugin/.codex-plugin/plugin.json");
+        .join("sample-plugin/.ava-plugin/plugin.json");
     std::fs::create_dir_all(source_manifest.parent().expect("source manifest parent"))?;
     std::fs::write(
         &source_manifest,
@@ -1026,7 +1026,7 @@ async fn plugin_list_force_refetch_waits_for_same_path_local_plugin_upgrade() ->
 }"#,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 remote_plugin = false
@@ -1036,14 +1036,14 @@ enabled = true
 "#,
     )?;
     write_installed_plugin_with_version(
-        &codex_home,
+        &ava_home,
         "sample-marketplace",
         "sample-plugin",
         "1.0.0",
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_TIMEOUT, mcp.initialize()).await??;
@@ -1095,10 +1095,10 @@ enabled = true
     assert!(plugin.enabled);
     assert_eq!(plugin.local_version.as_deref(), Some("1.1.0"));
 
-    let plugin_cache = codex_home
+    let plugin_cache = ava_home
         .path()
         .join("plugins/cache/sample-marketplace/sample-plugin");
-    let installed_manifest = plugin_cache.join("1.1.0/.codex-plugin/plugin.json");
+    let installed_manifest = plugin_cache.join("1.1.0/.ava-plugin/plugin.json");
     assert!(
         installed_manifest.is_file(),
         "force-refetched plugin/list must finish installing the newer local plugin before responding"
@@ -1135,9 +1135,9 @@ async fn plugin_list_refreshes_plugins_from_each_cwd(
     home_plugins_enabled: bool,
     scenario: MarketplaceRefreshScenario,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!("[features]\nplugins = {home_plugins_enabled}\n"),
     )?;
     let workspace = TempDir::new()?;
@@ -1152,11 +1152,11 @@ async fn plugin_list_refreshes_plugins_from_each_cwd(
     };
     let versions = ["1.1.0", "2.0.0"];
     for ((repo, name), version) in repos.iter().zip(names).zip(versions) {
-        for directory in [".git", ".codex", ".agents/plugins", "sample/.codex-plugin"] {
+        for directory in [".git", ".ava-code", ".agents/plugins", "sample/.ava-plugin"] {
             std::fs::create_dir_all(repo.join(directory))?;
         }
         std::fs::write(
-            repo.join("sample/.codex-plugin/plugin.json"),
+            repo.join("sample/.ava-plugin/plugin.json"),
             serde_json::to_vec(&serde_json::json!({"name": "sample", "version": version}))?,
         )?;
         std::fs::write(
@@ -1173,14 +1173,14 @@ async fn plugin_list_refreshes_plugins_from_each_cwd(
             format!("[plugins.\"sample@{name}\"]\nenabled = true\n")
         };
         std::fs::write(
-            repo.join(".codex/config.toml"),
+            repo.join(".ava-code/config.toml"),
             format!("[features]\nplugins = true\n{plugin_config}"),
         )?;
-        set_project_trust_level(codex_home.path(), repo, TrustLevel::Trusted)?;
-        write_installed_plugin_with_version(&codex_home, name, "sample", "1.0.0")?;
+        set_project_trust_level(ava_home.path(), repo, TrustLevel::Trusted)?;
+        write_installed_plugin_with_version(&ava_home, name, "sample", "1.0.0")?;
     }
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
     let cwds = repos
@@ -1206,8 +1206,8 @@ async fn plugin_list_refreshes_plugins_from_each_cwd(
         })
         .collect::<Vec<_>>();
     for (name, version) in &expected_sources {
-        let manifest = codex_home.path().join(format!(
-            "plugins/cache/{name}/sample/{version}/.codex-plugin/plugin.json"
+        let manifest = ava_home.path().join(format!(
+            "plugins/cache/{name}/sample/{version}/.ava-plugin/plugin.json"
         ));
         if !force_refetch {
             wait_for_path_exists(&manifest).await?;
@@ -1241,31 +1241,31 @@ async fn plugin_list_refreshes_plugins_from_each_cwd(
 
 #[tokio::test]
 async fn plugin_catalogs_skip_invalid_project_config_and_report_cwd_error() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_plugins_enabled_config(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    write_plugins_enabled_config(ava_home.path())?;
     let workspace = TempDir::new()?;
     let invalid_repo = workspace.path().join("invalid");
     let valid_repo = workspace.path().join("valid");
     for repo in [&invalid_repo, &valid_repo] {
-        for directory in [".git", ".codex", ".agents/plugins"] {
+        for directory in [".git", ".ava-code", ".agents/plugins"] {
             std::fs::create_dir_all(repo.join(directory))?;
         }
-        set_project_trust_level(codex_home.path(), repo, TrustLevel::Trusted)?;
+        set_project_trust_level(ava_home.path(), repo, TrustLevel::Trusted)?;
     }
-    std::fs::write(invalid_repo.join(".codex/config.toml"), "invalid = [\n")?;
+    std::fs::write(invalid_repo.join(".ava-code/config.toml"), "invalid = [\n")?;
     std::fs::write(
-        valid_repo.join(".codex/config.toml"),
+        valid_repo.join(".ava-code/config.toml"),
         "[plugins.\"sample@valid-marketplace\"]\nenabled = true\n",
     )?;
     std::fs::write(
         valid_repo.join(".agents/plugins/marketplace.json"),
         r#"{"name":"valid-marketplace","plugins":[{"name":"sample","source":{"source":"local","path":"./sample"}}]}"#,
     )?;
-    write_installed_plugin(&codex_home, "valid-marketplace", "sample")?;
+    write_installed_plugin(&ava_home, "valid-marketplace", "sample")?;
 
-    let home = codex_home.path().to_string_lossy().into_owned();
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -1334,16 +1334,16 @@ async fn plugin_catalogs_skip_invalid_project_config_and_report_cwd_error() -> R
 
 #[tokio::test]
 async fn plugin_list_includes_install_and_enabled_state_from_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
     std::fs::create_dir_all(repo_root.path().join(".agents/plugins"))?;
-    write_installed_plugin(&codex_home, "codex-curated", "enabled-plugin")?;
-    write_installed_plugin(&codex_home, "codex-curated", "disabled-plugin")?;
+    write_installed_plugin(&ava_home, "ava-curated", "enabled-plugin")?;
+    write_installed_plugin(&ava_home, "ava-curated", "disabled-plugin")?;
     std::fs::write(
         repo_root.path().join(".agents/plugins/marketplace.json"),
         r#"{
-  "name": "codex-curated",
+  "name": "ava-curated",
   "interface": {
     "displayName": "ChatGPT Official"
   },
@@ -1373,20 +1373,20 @@ async fn plugin_list_includes_install_and_enabled_state_from_config() -> Result<
 }"#,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 
-[plugins."enabled-plugin@codex-curated"]
+[plugins."enabled-plugin@ava-curated"]
 enabled = true
 
-[plugins."disabled-plugin@codex-curated"]
+[plugins."disabled-plugin@ava-curated"]
 enabled = false
 "#,
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -1415,7 +1415,7 @@ enabled = false
         })
         .expect("expected repo marketplace entry");
 
-    assert_eq!(marketplace.name, "codex-curated");
+    assert_eq!(marketplace.name, "ava-curated");
     assert_eq!(
         marketplace
             .interface
@@ -1424,7 +1424,7 @@ enabled = false
         Some("ChatGPT Official")
     );
     assert_eq!(marketplace.plugins.len(), 3);
-    assert_eq!(marketplace.plugins[0].id, "enabled-plugin@codex-curated");
+    assert_eq!(marketplace.plugins[0].id, "enabled-plugin@ava-curated");
     assert_eq!(marketplace.plugins[0].name, "enabled-plugin");
     assert_eq!(marketplace.plugins[0].installed, true);
     assert_eq!(marketplace.plugins[0].enabled, true);
@@ -1436,7 +1436,7 @@ enabled = false
         marketplace.plugins[0].auth_policy,
         PluginAuthPolicy::OnInstall
     );
-    assert_eq!(marketplace.plugins[1].id, "disabled-plugin@codex-curated");
+    assert_eq!(marketplace.plugins[1].id, "disabled-plugin@ava-curated");
     assert_eq!(marketplace.plugins[1].name, "disabled-plugin");
     assert_eq!(marketplace.plugins[1].installed, true);
     assert_eq!(marketplace.plugins[1].enabled, false);
@@ -1450,7 +1450,7 @@ enabled = false
     );
     assert_eq!(
         marketplace.plugins[2].id,
-        "uninstalled-plugin@codex-curated"
+        "uninstalled-plugin@ava-curated"
     );
     assert_eq!(marketplace.plugins[2].name, "uninstalled-plugin");
     assert_eq!(marketplace.plugins[2].installed, false);
@@ -1468,15 +1468,15 @@ enabled = false
 
 #[tokio::test]
 async fn plugin_list_deduplicates_sources_and_merges_enabled_state() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    std::fs::create_dir_all(codex_home.path().join(".agents/plugins"))?;
-    write_installed_plugin(&codex_home, "codex-curated", "shared-plugin")?;
+    let ava_home = TempDir::new()?;
+    std::fs::create_dir_all(ava_home.path().join(".agents/plugins"))?;
+    write_installed_plugin(&ava_home, "ava-curated", "shared-plugin")?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 
-[plugins."shared-plugin@codex-curated"]
+[plugins."shared-plugin@ava-curated"]
 enabled = true
 "#,
     )?;
@@ -1489,7 +1489,7 @@ enabled = true
             .path()
             .join(".agents/plugins/marketplace.json"),
         r#"{
-  "name": "codex-curated",
+  "name": "ava-curated",
   "plugins": [
     {
       "name": "shared-plugin",
@@ -1501,15 +1501,15 @@ enabled = true
   ]
 }"#,
     )?;
-    std::fs::create_dir_all(workspace_enabled.path().join(".codex"))?;
+    std::fs::create_dir_all(workspace_enabled.path().join(".ava-code"))?;
     std::fs::write(
-        workspace_enabled.path().join(".codex/config.toml"),
-        r#"[plugins."shared-plugin@codex-curated"]
+        workspace_enabled.path().join(".ava-code/config.toml"),
+        r#"[plugins."shared-plugin@ava-curated"]
 enabled = false
 "#,
     )?;
     set_project_trust_level(
-        codex_home.path(),
+        ava_home.path(),
         workspace_enabled.path(),
         TrustLevel::Trusted,
     )?;
@@ -1525,9 +1525,9 @@ enabled = false
             .path()
             .join(".agents/plugins/marketplace.json"),
     )?;
-    let home = codex_home.path().to_string_lossy().into_owned();
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -1552,7 +1552,7 @@ enabled = false
     let marketplaces = response
         .marketplaces
         .iter()
-        .filter(|marketplace| marketplace.name == "codex-curated")
+        .filter(|marketplace| marketplace.name == "ava-curated")
         .map(|marketplace| {
             (
                 marketplace.name.as_str(),
@@ -1567,8 +1567,8 @@ enabled = false
     assert_eq!(
         marketplaces,
         vec![(
-            "codex-curated",
-            vec![("shared-plugin@codex-curated", true, true)]
+            "ava-curated",
+            vec![("shared-plugin@ava-curated", true, true)]
         )]
     );
     Ok(())
@@ -1576,17 +1576,17 @@ enabled = false
 
 #[tokio::test]
 async fn plugin_list_returns_plugin_interface_with_absolute_asset_paths() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let plugin_root = repo_root.path().join("plugins/demo-plugin");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
     std::fs::create_dir_all(repo_root.path().join(".agents/plugins"))?;
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
-    write_plugins_enabled_config(codex_home.path())?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
+    write_plugins_enabled_config(ava_home.path())?;
     std::fs::write(
         repo_root.path().join(".agents/plugins/marketplace.json"),
         r#"{
-  "name": "codex-curated",
+  "name": "ava-curated",
   "plugins": [
     {
       "name": "demo-plugin",
@@ -1604,7 +1604,7 @@ async fn plugin_list_returns_plugin_interface_with_absolute_asset_paths() -> Res
 }"#,
     )?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r##"{
   "name": "demo-plugin",
   "interface": {
@@ -1630,7 +1630,7 @@ async fn plugin_list_returns_plugin_interface_with_absolute_asset_paths() -> Res
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -1652,7 +1652,7 @@ async fn plugin_list_returns_plugin_interface_with_absolute_asset_paths() -> Res
         .find(|plugin| plugin.name == "demo-plugin")
         .expect("expected demo-plugin entry");
 
-    assert_eq!(plugin.id, "demo-plugin@codex-curated");
+    assert_eq!(plugin.id, "demo-plugin@ava-curated");
     assert_eq!(plugin.installed, false);
     assert_eq!(plugin.enabled, false);
     assert_eq!(plugin.install_policy, PluginInstallPolicy::Available);
@@ -1709,17 +1709,17 @@ async fn plugin_list_returns_plugin_interface_with_absolute_asset_paths() -> Res
 
 #[tokio::test]
 async fn plugin_list_accepts_legacy_string_default_prompt() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let plugin_root = repo_root.path().join("plugins/demo-plugin");
     std::fs::create_dir_all(repo_root.path().join(".git"))?;
     std::fs::create_dir_all(repo_root.path().join(".agents/plugins"))?;
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
-    write_plugins_enabled_config(codex_home.path())?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
+    write_plugins_enabled_config(ava_home.path())?;
     std::fs::write(
         repo_root.path().join(".agents/plugins/marketplace.json"),
         r#"{
-  "name": "codex-curated",
+  "name": "ava-curated",
   "plugins": [
     {
       "name": "demo-plugin",
@@ -1732,7 +1732,7 @@ async fn plugin_list_accepts_legacy_string_default_prompt() -> Result<()> {
 }"#,
     )?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r##"{
   "name": "demo-plugin",
   "interface": {
@@ -1742,7 +1742,7 @@ async fn plugin_list_accepts_legacy_string_default_prompt() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -1779,7 +1779,7 @@ async fn plugin_list_accepts_legacy_string_default_prompt() -> Result<()> {
 async fn plugin_list_returns_installed_git_source_interface_from_cache(
     configured_in_later_cwd: bool,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let missing_remote_repo = repo_root.path().join("missing-remote-plugin-repo");
     let missing_remote_repo_url = url::Url::from_directory_path(&missing_remote_repo)
@@ -1806,10 +1806,10 @@ async fn plugin_list_returns_installed_git_source_interface_from_cache(
 }}"#
         ),
     )?;
-    let cached_plugin_root = codex_home.path().join("plugins/cache/debug/toolkit/local");
-    std::fs::create_dir_all(cached_plugin_root.join(".codex-plugin"))?;
+    let cached_plugin_root = ava_home.path().join("plugins/cache/debug/toolkit/local");
+    std::fs::create_dir_all(cached_plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        cached_plugin_root.join(".codex-plugin/plugin.json"),
+        cached_plugin_root.join(".ava-plugin/plugin.json"),
         r##"{
   "name": "toolkit",
   "interface": {
@@ -1831,26 +1831,26 @@ enabled = true
         plugin_config
     };
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!("[features]\nplugins = true\n\n{user_plugin_config}"),
     )?;
     let later_repo = TempDir::new()?;
     let mut cwds = vec![AbsolutePathBuf::try_from(repo_root.path())?];
     if configured_in_later_cwd {
-        for directory in [".git", ".codex", ".agents/plugins"] {
+        for directory in [".git", ".ava-code", ".agents/plugins"] {
             std::fs::create_dir_all(later_repo.path().join(directory))?;
         }
         std::fs::copy(
             repo_root.path().join(".agents/plugins/marketplace.json"),
             later_repo.path().join(".agents/plugins/marketplace.json"),
         )?;
-        std::fs::write(later_repo.path().join(".codex/config.toml"), plugin_config)?;
-        set_project_trust_level(codex_home.path(), later_repo.path(), TrustLevel::Trusted)?;
+        std::fs::write(later_repo.path().join(".ava-code/config.toml"), plugin_config)?;
+        set_project_trust_level(ava_home.path(), later_repo.path(), TrustLevel::Trusted)?;
         cwds.push(AbsolutePathBuf::try_from(later_repo.path())?);
     }
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -1913,14 +1913,14 @@ enabled = true
 
 #[tokio::test]
 async fn app_server_startup_sync_downloads_remote_installed_plugin_bundles() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -1952,19 +1952,19 @@ async fn app_server_startup_sync_downloads_remote_installed_plugin_bundles() -> 
         .await;
     mount_empty_user_installed_plugins(&server).await;
 
-    let installed_path = codex_home
+    let installed_path = ava_home
         .path()
         .join("plugins/cache/openai-curated-remote/linear/1.2.3");
     let _mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_plugin_startup_tasks()
         .with_env_overrides(&[(TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS, Some("1"))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
-    wait_for_path_exists(&installed_path.join(".codex-plugin/plugin.json")).await?;
+    wait_for_path_exists(&installed_path.join(".ava-plugin/plugin.json")).await?;
     let installed_plugin_manifest: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(installed_path.join(".codex-plugin/plugin.json"))?,
+        &std::fs::read_to_string(installed_path.join(".ava-plugin/plugin.json"))?,
     )?;
     assert_eq!(
         installed_plugin_manifest["version"],
@@ -1974,29 +1974,29 @@ async fn app_server_startup_sync_downloads_remote_installed_plugin_bundles() -> 
         serde_json::from_str(&std::fs::read_to_string(installed_path.join(".app.json"))?)?;
     assert_eq!(installed_app_manifest, remote_app_manifest);
     assert!(installed_path.join("skills/plan-work/SKILL.md").is_file());
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(!config.contains("linear@openai-curated-remote"));
     Ok(())
 }
 
 #[tokio::test]
 async fn plugin_list_sync_upgrades_and_removes_remote_installed_plugin_bundles() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
             .chatgpt_account_id("account-123"),
         AuthCredentialsStoreMode::File,
     )?;
-    write_installed_plugin_with_version(&codex_home, "openai-curated-remote", "linear", "1.0.0")?;
-    write_installed_plugin_with_version(&codex_home, "openai-curated-remote", "stale", "1.0.0")?;
+    write_installed_plugin_with_version(&ava_home, "openai-curated-remote", "linear", "1.0.0")?;
+    write_installed_plugin_with_version(&ava_home, "openai-curated-remote", "stale", "1.0.0")?;
 
     let bundle_url = mount_remote_plugin_bundle(
         &server,
@@ -2024,18 +2024,18 @@ async fn plugin_list_sync_upgrades_and_removes_remote_installed_plugin_bundles()
         .await;
     mount_empty_user_installed_plugins(&server).await;
 
-    let old_path = codex_home
+    let old_path = ava_home
         .path()
         .join("plugins/cache/openai-curated-remote/linear/1.0.0");
-    let new_path = codex_home
+    let new_path = ava_home
         .path()
         .join("plugins/cache/openai-curated-remote/linear/1.2.3");
-    let stale_path = codex_home
+    let stale_path = ava_home
         .path()
         .join("plugins/cache/openai-curated-remote/stale");
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[(TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS, Some("1"))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -2063,9 +2063,9 @@ async fn plugin_list_sync_upgrades_and_removes_remote_installed_plugin_bundles()
         vec![("linear@openai-curated-remote".to_string(), true, true)]
     );
 
-    wait_for_path_exists(&new_path.join(".codex-plugin/plugin.json")).await?;
+    wait_for_path_exists(&new_path.join(".ava-plugin/plugin.json")).await?;
     let installed_plugin_manifest: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(new_path.join(".codex-plugin/plugin.json"))?,
+        &std::fs::read_to_string(new_path.join(".ava-plugin/plugin.json"))?,
     )?;
     assert_eq!(
         installed_plugin_manifest["version"],
@@ -2076,7 +2076,7 @@ async fn plugin_list_sync_upgrades_and_removes_remote_installed_plugin_bundles()
     assert_eq!(installed_app_manifest, remote_app_manifest);
     wait_for_path_missing(&old_path).await?;
     wait_for_path_missing(&stale_path).await?;
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(!config.contains("linear@openai-curated-remote"));
     Ok(())
 }
@@ -2095,25 +2095,25 @@ enum ProjectPluginConfiguration {
 async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
     project_configuration: ProjectPluginConfiguration,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
             .chatgpt_account_id("account-123"),
         AuthCredentialsStoreMode::File,
     )?;
-    write_installed_plugin_with_version(&codex_home, "openai-curated-remote", "linear", "1.2.3")?;
+    write_installed_plugin_with_version(&ava_home, "openai-curated-remote", "linear", "1.2.3")?;
 
     let repo = TempDir::new()?;
     let cwds = if project_configuration != ProjectPluginConfiguration::None {
-        for directory in [".git", ".codex", ".agents/plugins"] {
+        for directory in [".git", ".ava-code", ".agents/plugins"] {
             std::fs::create_dir_all(repo.path().join(directory))?;
         }
         let config = if project_configuration == ProjectPluginConfiguration::Invalid {
@@ -2121,12 +2121,12 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
         } else {
             "[features]\nplugins = false\n[plugins.\"sample@disabled-local\"]\nenabled = true\n"
         };
-        std::fs::write(repo.path().join(".codex/config.toml"), config)?;
+        std::fs::write(repo.path().join(".ava-code/config.toml"), config)?;
         std::fs::write(
             repo.path().join(".agents/plugins/marketplace.json"),
             r#"{"name":"disabled-local","plugins":[{"name":"sample","source":{"source":"local","path":"./sample"}}]}"#,
         )?;
-        set_project_trust_level(codex_home.path(), repo.path(), TrustLevel::Trusted)?;
+        set_project_trust_level(ava_home.path(), repo.path(), TrustLevel::Trusted)?;
         Some(vec![AbsolutePathBuf::try_from(repo.path())?])
     } else {
         None
@@ -2214,7 +2214,7 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
         .and(query_param("limit", "200"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "account-123"))
-        .and(header("oai-product-sku", "codex"))
+        .and(header("oai-product-sku", "ava"))
         .respond_with(ResponseTemplate::new(200).set_body_string(global_directory_body))
         .mount(&server)
         .await;
@@ -2224,7 +2224,7 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
         .and(query_param("limit", "200"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "account-123"))
-        .and(header("oai-product-sku", "codex"))
+        .and(header("oai-product-sku", "ava"))
         .respond_with(ResponseTemplate::new(200).set_body_string(empty_page_body))
         .mount(&server)
         .await;
@@ -2233,7 +2233,7 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
         .and(query_param("scope", "GLOBAL"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "account-123"))
-        .and(header("oai-product-sku", "codex"))
+        .and(header("oai-product-sku", "ava"))
         .respond_with(ResponseTemplate::new(200).set_body_string(global_installed_body))
         .mount(&server)
         .await;
@@ -2242,13 +2242,13 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
         .and(query_param("scope", "WORKSPACE"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "account-123"))
-        .and(header("oai-product-sku", "codex"))
+        .and(header("oai-product-sku", "ava"))
         .respond_with(ResponseTemplate::new(200).set_body_string(empty_page_body))
         .mount(&server)
         .await;
     Mock::given(method("GET"))
         .and(path("/backend-api/plugins/featured"))
-        .and(query_param("platform", "codex"))
+        .and(query_param("platform", "ava"))
         .respond_with(
             ResponseTemplate::new(200).set_body_string(r#"["linear@openai-curated-remote"]"#),
         )
@@ -2256,7 +2256,7 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -2334,7 +2334,7 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
     );
     assert_eq!(
         remote_marketplace.plugins[0].availability,
-        codex_app_server_protocol::PluginAvailability::Available
+        ava_app_server_protocol::PluginAvailability::Available
     );
     assert_eq!(
         remote_marketplace.plugins[0]
@@ -2360,7 +2360,7 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
             "project management".to_string()
         ]
     );
-    let cache_files = std::fs::read_dir(codex_home.path().join("cache/remote_plugin_catalog"))?
+    let cache_files = std::fs::read_dir(ava_home.path().join("cache/remote_plugin_catalog"))?
         .map(|entry| entry.map(|entry| entry.path()))
         .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(cache_files.len(), 1);
@@ -2410,14 +2410,14 @@ async fn plugin_list_includes_remote_marketplaces_when_remote_plugin_enabled(
 
 #[tokio::test]
 async fn plugin_list_honors_global_remote_catalog_cache_ttl() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -2442,7 +2442,7 @@ async fn plugin_list_honors_global_remote_catalog_cache_ttl() -> Result<()> {
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -2469,7 +2469,7 @@ async fn plugin_list_honors_global_remote_catalog_cache_ttl() -> Result<()> {
         None
     );
     wait_for_remote_plugin_request_count(&server, "/ps/plugins/list", /*expected_count*/ 1).await?;
-    wait_for_cached_remote_catalog_plugin_ids(codex_home.path(), &[cached_remote_plugin_id])
+    wait_for_cached_remote_catalog_plugin_ids(ava_home.path(), &[cached_remote_plugin_id])
         .await?;
 
     server.reset().await;
@@ -2499,11 +2499,11 @@ async fn plugin_list_honors_global_remote_catalog_cache_ttl() -> Result<()> {
     );
     sleep(Duration::from_millis(100)).await;
     wait_for_remote_plugin_request_count(&server, "/ps/plugins/list", /*expected_count*/ 0).await?;
-    wait_for_cached_remote_catalog_plugin_ids(codex_home.path(), &[cached_remote_plugin_id])
+    wait_for_cached_remote_catalog_plugin_ids(ava_home.path(), &[cached_remote_plugin_id])
         .await?;
 
     rewrite_cached_remote_catalog_fetched_at(
-        codex_home.path(),
+        ava_home.path(),
         Utc::now() - ChronoDuration::hours(4),
     )?;
     server.reset().await;
@@ -2562,7 +2562,7 @@ async fn plugin_list_honors_global_remote_catalog_cache_ttl() -> Result<()> {
     );
 
     wait_for_remote_plugin_request_count(&server, "/ps/plugins/list", /*expected_count*/ 1).await?;
-    wait_for_cached_remote_catalog_plugin_ids(codex_home.path(), &[refreshed_remote_plugin_id])
+    wait_for_cached_remote_catalog_plugin_ids(ava_home.path(), &[refreshed_remote_plugin_id])
         .await?;
     sleep(Duration::from_millis(100)).await;
     wait_for_remote_plugin_request_count(&server, "/ps/plugins/list", /*expected_count*/ 1).await?;
@@ -2573,14 +2573,14 @@ async fn plugin_list_honors_global_remote_catalog_cache_ttl() -> Result<()> {
 #[tokio::test]
 async fn app_server_startup_refreshes_cached_remote_catalog_without_blocking_plugin_list()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -2602,7 +2602,7 @@ async fn app_server_startup_refreshes_cached_remote_catalog_without_blocking_plu
     mount_empty_user_installed_plugins(&server).await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_TIMEOUT, app_server.initialize()).await??;
@@ -2620,7 +2620,7 @@ async fn app_server_startup_refreshes_cached_remote_catalog_without_blocking_plu
         )
         .await??,
     )?;
-    wait_for_cached_remote_catalog_plugin_ids(codex_home.path(), &[cached_remote_plugin_id])
+    wait_for_cached_remote_catalog_plugin_ids(ava_home.path(), &[cached_remote_plugin_id])
         .await?;
     timeout(DEFAULT_TIMEOUT, app_server.shutdown_gracefully()).await??;
 
@@ -2650,7 +2650,7 @@ async fn app_server_startup_refreshes_cached_remote_catalog_without_blocking_plu
     mount_empty_user_installed_plugins(&server).await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_plugin_startup_tasks()
         .build()
         .await?;
@@ -2681,7 +2681,7 @@ async fn app_server_startup_refreshes_cached_remote_catalog_without_blocking_plu
         "linear@openai-curated-remote"
     );
 
-    wait_for_cached_remote_catalog_plugin_ids(codex_home.path(), &[refreshed_remote_plugin_id])
+    wait_for_cached_remote_catalog_plugin_ids(ava_home.path(), &[refreshed_remote_plugin_id])
         .await?;
     let request_id = app_server
         .send_plugin_list_request(PluginListParams {
@@ -2714,12 +2714,12 @@ async fn app_server_startup_refreshes_cached_remote_catalog_without_blocking_plu
 
 #[tokio::test]
 async fn app_server_startup_skips_disabled_remote_plugin_catalog_scopes() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     let base_url = format!("{}/backend-api/", server.uri());
-    write_remote_plugin_catalog_config(codex_home.path(), &base_url)?;
+    write_remote_plugin_catalog_config(ava_home.path(), &base_url)?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -2753,7 +2753,7 @@ async fn app_server_startup_skips_disabled_remote_plugin_catalog_scopes() -> Res
     }
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_TIMEOUT, app_server.initialize()).await??;
@@ -2780,13 +2780,13 @@ async fn app_server_startup_skips_disabled_remote_plugin_catalog_scopes() -> Res
         )?;
     }
     wait_for_cached_remote_catalog_plugin_ids(
-        codex_home.path(),
+        ava_home.path(),
         &[global_plugin_id, user_plugin_id, workspace_plugin_id],
     )
     .await?;
     timeout(DEFAULT_TIMEOUT, app_server.shutdown_gracefully()).await??;
 
-    write_remote_plugins_disabled_config_with_base_url(codex_home.path(), &base_url)?;
+    write_remote_plugins_disabled_config_with_base_url(ava_home.path(), &base_url)?;
     server.reset().await;
     mount_remote_plugin_list(&server, "GLOBAL", &global_body).await;
     mount_remote_plugin_list(&server, "USER", &user_body).await;
@@ -2796,7 +2796,7 @@ async fn app_server_startup_skips_disabled_remote_plugin_catalog_scopes() -> Res
     }
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_plugin_startup_tasks()
         .build()
         .await?;
@@ -2831,14 +2831,14 @@ async fn app_server_startup_skips_disabled_remote_plugin_catalog_scopes() -> Res
 
 #[tokio::test]
 async fn plugin_list_force_refetch_bypasses_fresh_global_remote_catalog_cache() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -2860,7 +2860,7 @@ async fn plugin_list_force_refetch_bypasses_fresh_global_remote_catalog_cache() 
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_TIMEOUT, mcp.initialize()).await??;
@@ -2879,7 +2879,7 @@ async fn plugin_list_force_refetch_bypasses_fresh_global_remote_catalog_cache() 
         )
         .await??,
     )?;
-    wait_for_cached_remote_catalog_plugin_ids(codex_home.path(), &[cached_remote_plugin_id])
+    wait_for_cached_remote_catalog_plugin_ids(ava_home.path(), &[cached_remote_plugin_id])
         .await?;
 
     server.reset().await;
@@ -2923,7 +2923,7 @@ async fn plugin_list_force_refetch_bypasses_fresh_global_remote_catalog_cache() 
         "notion@openai-curated-remote"
     );
     wait_for_remote_plugin_request_count(&server, "/ps/plugins/list", /*expected_count*/ 1).await?;
-    wait_for_cached_remote_catalog_plugin_ids(codex_home.path(), &[refreshed_remote_plugin_id])
+    wait_for_cached_remote_catalog_plugin_ids(ava_home.path(), &[refreshed_remote_plugin_id])
         .await?;
 
     server.reset().await;
@@ -2963,14 +2963,14 @@ async fn plugin_list_force_refetch_bypasses_fresh_global_remote_catalog_cache() 
 #[tokio::test]
 async fn plugin_list_includes_openai_curated_remote_collection_when_remote_plugin_disabled_and_requested()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugins_disabled_config_with_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3012,7 +3012,7 @@ async fn plugin_list_includes_openai_curated_remote_collection_when_remote_plugi
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3070,14 +3070,14 @@ async fn plugin_list_includes_openai_curated_remote_collection_when_remote_plugi
 #[tokio::test]
 async fn plugin_list_propagates_openai_curated_remote_collection_errors_when_remote_plugin_disabled()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugins_disabled_config_with_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3101,7 +3101,7 @@ async fn plugin_list_propagates_openai_curated_remote_collection_errors_when_rem
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3130,21 +3130,21 @@ async fn plugin_list_propagates_openai_curated_remote_collection_errors_when_rem
 #[tokio::test]
 async fn plugin_list_skips_openai_curated_remote_collection_for_api_auth_when_remote_plugin_disabled()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugins_disabled_config_with_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     login_with_api_key(
-        codex_home.path(),
+        ava_home.path(),
         "sk-test-key",
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3167,22 +3167,22 @@ async fn plugin_list_skips_openai_curated_remote_collection_for_api_auth_when_re
 #[tokio::test]
 async fn plugin_list_includes_api_curated_marketplace_for_api_auth_when_remote_plugin_enabled()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
-    write_openai_api_curated_marketplace(codex_home.path(), &["api-plugin"])?;
+    write_openai_api_curated_marketplace(ava_home.path(), &["api-plugin"])?;
     login_with_api_key(
-        codex_home.path(),
+        ava_home.path(),
         "sk-test-key",
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3219,11 +3219,11 @@ async fn plugin_list_includes_api_curated_marketplace_for_api_auth_when_remote_p
 }
 
 #[tokio::test]
-async fn plugin_list_includes_api_curated_marketplace_for_bedrock_without_codex_auth() -> Result<()>
+async fn plugin_list_includes_api_curated_marketplace_for_bedrock_without_ava_auth() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"model_provider = "amazon-bedrock"
 
 [model_providers.amazon-bedrock.aws]
@@ -3234,11 +3234,11 @@ profile = "default"
 plugins = true
 "#,
     )?;
-    write_openai_curated_marketplace(codex_home.path(), &["chatgpt-plugin"])?;
-    write_openai_api_curated_marketplace(codex_home.path(), &["api-plugin"])?;
+    write_openai_curated_marketplace(ava_home.path(), &["chatgpt-plugin"])?;
+    write_openai_api_curated_marketplace(ava_home.path(), &["api-plugin"])?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3252,7 +3252,7 @@ plugins = true
     let response: PluginListResponse =
         timeout(DEFAULT_TIMEOUT, mcp.read_response(request_id)).await??;
 
-    assert!(!codex_home.path().join("auth.json").exists());
+    assert!(!ava_home.path().join("auth.json").exists());
     let api_curated_marketplace = response
         .marketplaces
         .iter()
@@ -3276,9 +3276,9 @@ plugins = true
 #[tokio::test]
 async fn plugin_list_includes_chatgpt_curated_marketplace_for_bedrock_with_chatgpt_auth()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"model_provider = "amazon-bedrock"
 
 [model_providers.amazon-bedrock.aws]
@@ -3290,10 +3290,10 @@ plugins = true
 remote_plugin = false
 "#,
     )?;
-    write_openai_curated_marketplace(codex_home.path(), &["chatgpt-plugin"])?;
-    write_openai_api_curated_marketplace(codex_home.path(), &["api-plugin"])?;
+    write_openai_curated_marketplace(ava_home.path(), &["chatgpt-plugin"])?;
+    write_openai_api_curated_marketplace(ava_home.path(), &["api-plugin"])?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3302,7 +3302,7 @@ remote_plugin = false
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3338,14 +3338,14 @@ remote_plugin = false
 
 #[tokio::test]
 async fn plugin_list_does_not_query_openai_curated_remote_collection_by_default() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_plugins_enabled_config_with_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3354,7 +3354,7 @@ async fn plugin_list_does_not_query_openai_curated_remote_collection_by_default(
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3390,14 +3390,14 @@ async fn plugin_list_does_not_query_openai_curated_remote_collection_by_default(
 
 #[tokio::test]
 async fn plugin_list_vertical_kind_noops_when_remote_plugin_enabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3406,7 +3406,7 @@ async fn plugin_list_vertical_kind_noops_when_remote_plugin_enabled() -> Result<
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3443,14 +3443,14 @@ async fn plugin_list_vertical_kind_noops_when_remote_plugin_enabled() -> Result<
 #[tokio::test]
 async fn plugin_list_does_not_append_global_remote_when_marketplace_kinds_are_explicit()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3459,7 +3459,7 @@ async fn plugin_list_does_not_append_global_remote_when_marketplace_kinds_are_ex
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3487,10 +3487,10 @@ async fn plugin_list_does_not_append_global_remote_when_marketplace_kinds_are_ex
 #[tokio::test]
 async fn plugin_installed_includes_remote_shared_with_me_plugins_when_remote_plugin_disabled()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -3503,7 +3503,7 @@ plugin_sharing = true
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3537,7 +3537,7 @@ plugin_sharing = true
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3596,10 +3596,10 @@ plugin_sharing = true
 #[tokio::test]
 async fn plugin_installed_includes_workspace_directory_without_plugin_sharing_when_remote_plugin_disabled()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -3612,7 +3612,7 @@ plugin_sharing = false
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3645,7 +3645,7 @@ plugin_sharing = false
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -3680,10 +3680,10 @@ plugin_sharing = false
 
 #[tokio::test]
 async fn plugin_installed_includes_created_by_me_when_remote_plugins_enabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -3695,7 +3695,7 @@ plugin_sharing = false
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3729,7 +3729,7 @@ plugin_sharing = false
     .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[(TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS, Some("1"))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -3754,8 +3754,8 @@ plugin_sharing = false
         vec![("private-linear@created-by-me-remote", true, true)]
     );
     wait_for_path_exists(
-        &codex_home.path().join(
-            "plugins/cache/created-by-me-remote/private-linear/1.2.3/.codex-plugin/plugin.json",
+        &ava_home.path().join(
+            "plugins/cache/created-by-me-remote/private-linear/1.2.3/.ava-plugin/plugin.json",
         ),
     )
     .await?;
@@ -3765,12 +3765,12 @@ plugin_sharing = false
 
 #[tokio::test]
 async fn plugin_installed_trusts_new_workspace_listed_plugin_hooks() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     let disabled_hook_key = "available-hooks@workspace-directory:hooks/hooks.json:pre_tool_use:0:0";
     let unrelated_hook_key = "unrelated@test:hooks/hooks.json:session_start:0:0";
     write_remote_plugin_hook_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
         &format!(
             r#"
@@ -3783,7 +3783,7 @@ trusted_hash = "sha256:unrelated"
 "#,
         ),
     )?;
-    write_remote_plugin_test_auth(codex_home.path())?;
+    write_remote_plugin_test_auth(ava_home.path())?;
 
     let available_bundle_url = mount_remote_plugin_bundle_with_hooks(
         &server,
@@ -3814,7 +3814,7 @@ trusted_hash = "sha256:unrelated"
     .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[(TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS, Some("1"))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -3826,7 +3826,7 @@ trusted_hash = "sha256:unrelated"
     ];
     let hooks = wait_for_plugin_hooks(
         &mut mcp,
-        codex_home.path(),
+        ava_home.path(),
         &plugin_ids,
         HookTrustStatus::Trusted,
     )
@@ -3839,13 +3839,13 @@ trusted_hash = "sha256:unrelated"
         );
     }
     wait_for_path_exists(
-        &codex_home
+        &ava_home
             .path()
-            .join("plugins/cache/workspace-directory/no-hooks/1.2.3/.codex-plugin/plugin.json"),
+            .join("plugins/cache/workspace-directory/no-hooks/1.2.3/.ava-plugin/plugin.json"),
     )
     .await?;
     let config: toml::Value = toml::from_str(&std::fs::read_to_string(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
     )?)?;
     let hook_states = config["hooks"]["state"].as_table().expect("hook states");
     for hook in &hooks {
@@ -3882,7 +3882,7 @@ async fn plugin_installed_hook_trust_write_failure_stays_untrusted() -> Result<(
     use std::os::unix::fs::PermissionsExt;
     use std::os::unix::fs::symlink;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config_target_dir = TempDir::new()?;
     let config_target = config_target_dir.path().join("config.toml");
     let server = MockServer::start().await;
@@ -3891,8 +3891,8 @@ async fn plugin_installed_hook_trust_write_failure_stays_untrusted() -> Result<(
         &format!("{}/backend-api/", server.uri()),
         "",
     )?;
-    symlink(&config_target, codex_home.path().join("config.toml"))?;
-    write_remote_plugin_test_auth(codex_home.path())?;
+    symlink(&config_target, ava_home.path().join("config.toml"))?;
+    write_remote_plugin_test_auth(ava_home.path())?;
 
     let bundle_url = mount_remote_plugin_bundle_with_hooks(
         &server,
@@ -3905,7 +3905,7 @@ async fn plugin_installed_hook_trust_write_failure_stays_untrusted() -> Result<(
     mount_workspace_bundle_sync(&server, &[("failed-trust", "AVAILABLE", &bundle_url)]).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[(TEST_ALLOW_HTTP_REMOTE_PLUGIN_BUNDLE_DOWNLOADS, Some("1"))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -3923,7 +3923,7 @@ async fn plugin_installed_hook_trust_write_failure_stays_untrusted() -> Result<(
     let plugin_ids = ["failed-trust@workspace-directory"];
     let before = wait_for_plugin_hooks(
         &mut mcp,
-        codex_home.path(),
+        ava_home.path(),
         &plugin_ids,
         HookTrustStatus::Untrusted,
     )
@@ -3931,7 +3931,7 @@ async fn plugin_installed_hook_trust_write_failure_stays_untrusted() -> Result<(
     sleep(Duration::from_millis(300)).await;
     let after = wait_for_plugin_hooks(
         &mut mcp,
-        codex_home.path(),
+        ava_home.path(),
         &plugin_ids,
         HookTrustStatus::Untrusted,
     )
@@ -3944,14 +3944,14 @@ async fn plugin_installed_hook_trust_write_failure_stays_untrusted() -> Result<(
 
 #[tokio::test]
 async fn plugin_list_fetches_workspace_directory_kind_when_remote_plugin_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugins_disabled_config_with_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -3985,7 +3985,7 @@ async fn plugin_list_fetches_workspace_directory_kind_when_remote_plugin_disable
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -4061,7 +4061,7 @@ async fn plugin_list_fetches_workspace_directory_kind_when_remote_plugin_disable
     .await?;
 
     rewrite_cached_remote_catalog_fetched_at(
-        codex_home.path(),
+        ava_home.path(),
         Utc::now() - ChronoDuration::hours(4),
     )?;
     server.reset().await;
@@ -4097,7 +4097,7 @@ async fn plugin_list_fetches_workspace_directory_kind_when_remote_plugin_disable
     )
     .await?;
     wait_for_cached_remote_catalog_plugin_ids(
-        codex_home.path(),
+        ava_home.path(),
         &["plugins~Plugin_22222222222222222222222222222222"],
     )
     .await?;
@@ -4132,10 +4132,10 @@ async fn plugin_list_fetches_workspace_directory_kind_when_remote_plugin_disable
 
 #[tokio::test]
 async fn plugin_list_fetches_user_plugins_in_created_by_me_remote_marketplace() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -4147,7 +4147,7 @@ plugin_sharing = false
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -4204,7 +4204,7 @@ plugin_sharing = false
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -4284,14 +4284,14 @@ plugin_sharing = false
 
 #[tokio::test]
 async fn plugin_list_fetches_shared_with_me_kind() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_plugins_enabled_config_with_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -4348,7 +4348,7 @@ async fn plugin_list_fetches_shared_with_me_kind() -> Result<()> {
     mount_empty_user_installed_plugins(&server).await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -4479,10 +4479,10 @@ async fn plugin_list_fetches_shared_with_me_kind() -> Result<()> {
 
 #[tokio::test]
 async fn plugin_list_omits_shared_with_me_kind_when_plugin_sharing_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -4494,7 +4494,7 @@ plugin_sharing = false
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -4503,7 +4503,7 @@ plugin_sharing = false
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -4537,10 +4537,10 @@ plugin_sharing = false
 
 #[tokio::test]
 async fn plugin_list_omits_created_by_me_when_remote_plugins_disabled() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{}/backend-api/"
 
@@ -4553,7 +4553,7 @@ plugin_sharing = true
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -4562,7 +4562,7 @@ plugin_sharing = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -4618,14 +4618,14 @@ async fn assert_disabled_remote_plugin_metadata(
     eligible_plan_types: Option<Vec<String>>,
     installation_policy: PluginInstallPolicy,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     write_remote_plugin_catalog_config(
-        codex_home.path(),
+        ava_home.path(),
         &format!("{}/backend-api/", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -4704,7 +4704,7 @@ async fn assert_disabled_remote_plugin_metadata(
     }
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 
@@ -4731,7 +4731,7 @@ async fn assert_disabled_remote_plugin_metadata(
     assert_eq!(plugin.enabled, true);
     assert_eq!(
         plugin.availability,
-        codex_app_server_protocol::PluginAvailability::DisabledByAdmin
+        ava_app_server_protocol::PluginAvailability::DisabledByAdmin
     );
     assert_eq!(plugin.disabled_reason, Some(disabled_reason));
     assert_eq!(plugin.eligible_plan_types, eligible_plan_types);
@@ -4745,10 +4745,10 @@ async fn assert_disabled_remote_plugin_metadata(
 async fn plugin_list_does_not_fetch_remote_marketplaces_when_plugins_disabled(
     project_enables_plugins: bool,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{}/backend-api/"
@@ -4761,7 +4761,7 @@ remote_plugin = true
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -4770,25 +4770,25 @@ remote_plugin = true
     )?;
 
     let repo = TempDir::new()?;
-    for directory in [".git", ".codex", ".agents/plugins"] {
+    for directory in [".git", ".ava-code", ".agents/plugins"] {
         std::fs::create_dir_all(repo.path().join(directory))?;
     }
     std::fs::write(
-        repo.path().join(".codex/config.toml"),
+        repo.path().join(".ava-code/config.toml"),
         "[features]\nplugins = true\n[plugins.\"sample@local\"]\nenabled = true\n",
     )?;
     std::fs::write(
         repo.path().join(".agents/plugins/marketplace.json"),
         r#"{"name":"local","plugins":[{"name":"sample","source":{"source":"local","path":"./sample"}}]}"#,
     )?;
-    write_installed_plugin(&codex_home, "local", "sample")?;
-    set_project_trust_level(codex_home.path(), repo.path(), TrustLevel::Trusted)?;
+    write_installed_plugin(&ava_home, "local", "sample")?;
+    set_project_trust_level(ava_home.path(), repo.path(), TrustLevel::Trusted)?;
     let repo_cwd = AbsolutePathBuf::try_from(repo.path())?;
     let cwds = project_enables_plugins.then(|| vec![repo_cwd]);
 
-    let home = codex_home.path().to_string_lossy().into_owned();
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -4861,14 +4861,14 @@ remote_plugin = true
 
 #[tokio::test]
 async fn plugin_list_omits_featured_plugin_ids_without_chatgpt_auth() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_plugin_sync_config(codex_home.path(), &format!("{}/backend-api/", server.uri()))?;
-    write_openai_api_curated_marketplace(codex_home.path(), &["linear", "gmail"])?;
+    write_plugin_sync_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
+    write_openai_api_curated_marketplace(ava_home.path(), &["linear", "gmail"])?;
 
     Mock::given(method("GET"))
         .and(path("/backend-api/plugins/featured"))
-        .and(query_param("platform", "codex"))
+        .and(query_param("platform", "ava"))
         .respond_with(
             ResponseTemplate::new(200).set_body_string(r#"["linear@openai-api-curated"]"#),
         )
@@ -4876,9 +4876,9 @@ async fn plugin_list_omits_featured_plugin_ids_without_chatgpt_auth() -> Result<
         .mount(&server)
         .await;
 
-    let home = codex_home.path().to_string_lossy().into_owned();
+    let home = ava_home.path().to_string_lossy().into_owned();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(home.as_str())),
             ("USERPROFILE", Some(home.as_str())),
@@ -4904,22 +4904,22 @@ async fn plugin_list_omits_featured_plugin_ids_without_chatgpt_auth() -> Result<
 
 #[tokio::test]
 async fn plugin_list_uses_warmed_featured_plugin_ids_cache_on_first_request() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_plugin_sync_config(codex_home.path(), &format!("{}/backend-api/", server.uri()))?;
-    write_openai_curated_marketplace(codex_home.path(), &["linear", "gmail"])?;
-    write_remote_plugin_test_auth(codex_home.path())?;
+    write_plugin_sync_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
+    write_openai_curated_marketplace(ava_home.path(), &["linear", "gmail"])?;
+    write_remote_plugin_test_auth(ava_home.path())?;
 
     Mock::given(method("GET"))
         .and(path("/backend-api/plugins/featured"))
-        .and(query_param("platform", "codex"))
+        .and(query_param("platform", "ava"))
         .respond_with(ResponseTemplate::new(200).set_body_string(r#"["linear@openai-curated"]"#))
         .expect(1)
         .mount(&server)
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_plugin_startup_tasks()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -5038,7 +5038,7 @@ async fn wait_for_remote_installed_snapshot_request(server: &MockServer) -> Resu
 }
 
 async fn wait_for_cached_remote_catalog_plugin_ids(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     expected_plugin_ids: &[&str],
 ) -> Result<()> {
     let mut expected_plugin_ids = expected_plugin_ids
@@ -5049,7 +5049,7 @@ async fn wait_for_cached_remote_catalog_plugin_ids(
     expected_plugin_ids.sort();
     timeout(DEFAULT_TIMEOUT, async {
         loop {
-            let plugin_ids = cached_remote_catalog_plugin_ids(codex_home)?;
+            let plugin_ids = cached_remote_catalog_plugin_ids(ava_home)?;
             if plugin_ids == expected_plugin_ids {
                 return Ok::<(), anyhow::Error>(());
             }
@@ -5060,8 +5060,8 @@ async fn wait_for_cached_remote_catalog_plugin_ids(
     Ok(())
 }
 
-fn cached_remote_catalog_plugin_ids(codex_home: &std::path::Path) -> Result<Vec<String>> {
-    let cache_dir = codex_home.join("cache/remote_plugin_catalog");
+fn cached_remote_catalog_plugin_ids(ava_home: &std::path::Path) -> Result<Vec<String>> {
+    let cache_dir = ava_home.join("cache/remote_plugin_catalog");
     if !cache_dir.exists() {
         return Ok(Vec::new());
     }
@@ -5087,10 +5087,10 @@ fn cached_remote_catalog_plugin_ids(codex_home: &std::path::Path) -> Result<Vec<
 }
 
 fn rewrite_cached_remote_catalog_fetched_at(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     fetched_at: chrono::DateTime<Utc>,
 ) -> Result<()> {
-    let cache_dir = codex_home.join("cache/remote_plugin_catalog");
+    let cache_dir = ava_home.join("cache/remote_plugin_catalog");
     for entry in std::fs::read_dir(cache_dir)? {
         let path = entry?.path();
         if path.extension().is_none_or(|ext| ext != "json") {
@@ -5542,7 +5542,7 @@ fn remote_plugin_bundle_tar_gz_bytes(
     let mut tar = tar::Builder::new(encoder);
     let mut entries = vec![
         (
-            ".codex-plugin/plugin.json",
+            ".ava-plugin/plugin.json",
             manifest.as_bytes(),
             /*mode*/ 0o644,
         ),
@@ -5570,26 +5570,26 @@ fn remote_plugin_bundle_tar_gz_bytes(
 }
 
 fn write_installed_plugin(
-    codex_home: &TempDir,
+    ava_home: &TempDir,
     marketplace_name: &str,
     plugin_name: &str,
 ) -> Result<()> {
-    write_installed_plugin_with_version(codex_home, marketplace_name, plugin_name, "local")
+    write_installed_plugin_with_version(ava_home, marketplace_name, plugin_name, "local")
 }
 
 fn write_installed_plugin_with_version(
-    codex_home: &TempDir,
+    ava_home: &TempDir,
     marketplace_name: &str,
     plugin_name: &str,
     plugin_version: &str,
 ) -> Result<()> {
-    let plugin_root = codex_home
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache")
         .join(marketplace_name)
         .join(plugin_name)
         .join(plugin_version)
-        .join(".codex-plugin");
+        .join(".ava-plugin");
     std::fs::create_dir_all(&plugin_root)?;
     std::fs::write(
         plugin_root.join("plugin.json"),
@@ -5598,9 +5598,9 @@ fn write_installed_plugin_with_version(
     Ok(())
 }
 
-fn write_plugin_sync_config(codex_home: &std::path::Path, base_url: &str) -> std::io::Result<()> {
+fn write_plugin_sync_config(ava_home: &std::path::Path, base_url: &str) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{base_url}"
@@ -5623,11 +5623,11 @@ enabled = true
 }
 
 fn write_remote_plugin_catalog_config(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     base_url: &str,
 ) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{base_url}"
@@ -5640,12 +5640,12 @@ plugins = true
 }
 
 fn write_remote_plugin_hook_config(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     base_url: &str,
     hook_state: &str,
 ) -> std::io::Result<()> {
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"chatgpt_base_url = "{base_url}"
 
@@ -5657,9 +5657,9 @@ hooks = true
     )
 }
 
-fn write_remote_plugin_test_auth(codex_home: &std::path::Path) -> Result<()> {
+fn write_remote_plugin_test_auth(ava_home: &std::path::Path) -> Result<()> {
     write_chatgpt_auth(
-        codex_home,
+        ava_home,
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -5669,11 +5669,11 @@ fn write_remote_plugin_test_auth(codex_home: &std::path::Path) -> Result<()> {
 }
 
 fn write_openai_curated_marketplace(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     plugin_names: &[&str],
 ) -> std::io::Result<()> {
     write_curated_marketplace(
-        codex_home,
+        ava_home,
         "marketplace.json",
         "openai-curated",
         /*display_name*/ None,
@@ -5682,11 +5682,11 @@ fn write_openai_curated_marketplace(
 }
 
 fn write_openai_api_curated_marketplace(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     plugin_names: &[&str],
 ) -> std::io::Result<()> {
     write_curated_marketplace(
-        codex_home,
+        ava_home,
         "api_marketplace.json",
         "openai-api-curated",
         Some("OpenAI Curated"),
@@ -5695,13 +5695,13 @@ fn write_openai_api_curated_marketplace(
 }
 
 fn write_curated_marketplace(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     manifest_name: &str,
     marketplace_name: &str,
     display_name: Option<&str>,
     plugin_names: &[&str],
 ) -> std::io::Result<()> {
-    let curated_root = codex_home.join(".tmp/plugins");
+    let curated_root = ava_home.join(".tmp/plugins");
     std::fs::create_dir_all(curated_root.join(".git"))?;
     std::fs::create_dir_all(curated_root.join(".agents/plugins"))?;
     let plugins = plugin_names
@@ -5742,23 +5742,23 @@ fn write_curated_marketplace(
     )?;
 
     for plugin_name in plugin_names {
-        let plugin_root = curated_root.join(format!("plugins/{plugin_name}/.codex-plugin"));
+        let plugin_root = curated_root.join(format!("plugins/{plugin_name}/.ava-plugin"));
         std::fs::create_dir_all(&plugin_root)?;
         std::fs::write(
             plugin_root.join("plugin.json"),
             format!(r#"{{"name":"{plugin_name}"}}"#),
         )?;
     }
-    std::fs::create_dir_all(codex_home.join(".tmp"))?;
+    std::fs::create_dir_all(ava_home.join(".tmp"))?;
     std::fs::write(
-        codex_home.join(".tmp/plugins.sha"),
+        ava_home.join(".tmp/plugins.sha"),
         format!("{TEST_CURATED_PLUGIN_SHA}\n"),
     )?;
     Ok(())
 }
 
 fn write_plugin_share_local_path_mapping(
-    codex_home: &std::path::Path,
+    ava_home: &std::path::Path,
     remote_plugin_id: &str,
     plugin_path: &AbsolutePathBuf,
 ) -> std::io::Result<()> {
@@ -5771,9 +5771,9 @@ fn write_plugin_share_local_path_mapping(
         "localPluginPathsByRemotePluginId": local_plugin_paths_by_remote_plugin_id,
     }))
     .map_err(std::io::Error::other)?;
-    std::fs::create_dir_all(codex_home.join(".tmp"))?;
+    std::fs::create_dir_all(ava_home.join(".tmp"))?;
     std::fs::write(
-        codex_home.join(".tmp/plugin-share-local-paths-v1.json"),
+        ava_home.join(".tmp/plugin-share-local-paths-v1.json"),
         format!("{contents}\n"),
     )
 }

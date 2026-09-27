@@ -1,12 +1,12 @@
 use std::path::Path;
 
 use anyhow::Result;
-use codex_extension_api::McpToolInfo;
-use codex_extension_api::McpToolSource;
-use codex_login::CodexAuth;
+use ava_extension_api::McpToolInfo;
+use ava_extension_api::McpToolSource;
+use ava_login::AvaAuth;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -35,8 +35,8 @@ fn mcp_tool(server: &str, connector_id: Option<&str>) -> Result<McpToolInfo> {
     }))?)
 }
 
-fn expected_context(tool: &McpToolInfo, source: &Path) -> codex_guardian_context::TrustedTool {
-    codex_guardian_context::TrustedTool {
+fn expected_context(tool: &McpToolInfo, source: &Path) -> ava_guardian_context::TrustedTool {
+    ava_guardian_context::TrustedTool {
         server: tool.server_name.clone(),
         connector_id: tool.connector_id.clone(),
         source: source.display().to_string(),
@@ -44,11 +44,11 @@ fn expected_context(tool: &McpToolInfo, source: &Path) -> codex_guardian_context
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn trusts_only_tools_configured_in_codex_home() -> Result<()> {
+async fn trusts_only_tools_configured_in_ava_home() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             std::fs::write(
                 home.join("config.toml"),
@@ -65,8 +65,8 @@ async fn trusts_only_tools_configured_in_codex_home() -> Result<()> {
             McpToolSource::Config,
         ),
         (
-            mcp_tool("codex_apps", Some("connector_home"))?,
-            mcp_tool("codex_apps", Some("connector_other"))?,
+            mcp_tool("ava_apps", Some("connector_home"))?,
+            mcp_tool("ava_apps", Some("connector_other"))?,
             McpToolSource::Connector,
         ),
     ] {
@@ -91,14 +91,14 @@ async fn trusts_connector_declared_by_home_owned_plugin() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_pre_build_hook(|home| {
             let plugin_root = home.join("plugins/cache/test/trusted/local");
-            std::fs::create_dir_all(plugin_root.join(".codex-plugin"))
+            std::fs::create_dir_all(plugin_root.join(".ava-plugin"))
                 .expect("create plugin manifest directory");
             std::fs::write(
-                plugin_root.join(".codex-plugin/plugin.json"),
+                plugin_root.join(".ava-plugin/plugin.json"),
                 r#"{"name":"trusted","description":"Trusted plugin instructions"}"#,
             )
             .expect("write plugin manifest");
@@ -128,7 +128,7 @@ async fn trusts_connector_declared_by_home_owned_plugin() -> Result<()> {
         .join("test")
         .join("trusted")
         .join("local");
-    let tool = mcp_tool("codex_apps", Some("connector_calendar"))?;
+    let tool = mcp_tool("ava_apps", Some("connector_calendar"))?;
     let context = trusted_tool_context(
         &tool,
         &McpToolSource::Connector,
@@ -146,7 +146,7 @@ async fn trusts_connector_declared_by_home_owned_plugin() -> Result<()> {
             id: "trusted@test".to_string(),
             root: test
                 .config
-                .codex_home
+                .ava_home
                 .join("plugins/cache/test/trusted/local")
                 .into(),
         },
@@ -186,11 +186,11 @@ async fn trusts_connector_declared_by_home_owned_plugin() -> Result<()> {
 
 #[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn rejects_paths_that_escape_codex_home_through_symlinks() -> Result<()> {
+async fn rejects_paths_that_escape_ava_home_through_symlinks() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let test = test_codex().build_with_auto_env(&server).await?;
+    let test = test_ava().build_with_auto_env(&server).await?;
     let link = test.home.path().join("external-plugin");
     std::os::unix::fs::symlink(test.cwd.path(), &link)?;
     let canonical_home = test.home.path().canonicalize()?;
@@ -198,9 +198,9 @@ async fn rejects_paths_that_escape_codex_home_through_symlinks() -> Result<()> {
     assert!(!is_home_owned_path(&link, &canonical_home));
 
     let plugin_root = test.home.path().join("trusted-plugin");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin").join("plugin.json"),
+        plugin_root.join(".ava-plugin").join("plugin.json"),
         r#"{"name":"trusted"}"#,
     )?;
     let outside_apps = test.cwd.path().join("outside-app.json");

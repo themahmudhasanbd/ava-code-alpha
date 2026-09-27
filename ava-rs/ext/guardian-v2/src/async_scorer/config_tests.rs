@@ -1,11 +1,11 @@
-use codex_features::GuardianV2ConfigToml;
-use codex_features::GuardianV2TranscriptConfigToml;
-use codex_guardian_context::truncate_text as truncate_entry;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::models::ContentItem;
-use codex_protocol::openai_models::GuardianV2ModelConfig;
-use codex_protocol::openai_models::GuardianV2TranscriptModelConfig;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_features::GuardianV2ConfigToml;
+use ava_features::GuardianV2TranscriptConfigToml;
+use ava_guardian_context::truncate_text as truncate_entry;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::models::ContentItem;
+use ava_protocol::openai_models::GuardianV2ModelConfig;
+use ava_protocol::openai_models::GuardianV2TranscriptModelConfig;
+use ava_protocol::openai_models::ReasoningEffort;
 use pretty_assertions::assert_eq;
 
 use super::CLASSIFICATION_OUTPUT_INSTRUCTIONS;

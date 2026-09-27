@@ -1,16 +1,16 @@
 use std::fs;
 
-use codex_exec_server::CapabilityRootDiscoverRequest;
-use codex_exec_server::CapabilityRootsDiscoverParams;
-use codex_exec_server::FileSystemEnvironmentAccessor;
-use codex_exec_server::LOCAL_FS;
-use codex_exec_server::discover_capability_roots;
-use codex_protocol::protocol::Product;
-use codex_skills::EnvironmentSkillMetadata;
-use codex_skills::SkillDependencies;
-use codex_skills::SkillPolicy;
-use codex_skills::SkillToolDependency;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::CapabilityRootDiscoverRequest;
+use ava_exec_server::CapabilityRootsDiscoverParams;
+use ava_exec_server::FileSystemEnvironmentAccessor;
+use ava_exec_server::LOCAL_FS;
+use ava_exec_server::discover_capability_roots;
+use ava_protocol::protocol::Product;
+use ava_skills::EnvironmentSkillMetadata;
+use ava_skills::SkillDependencies;
+use ava_skills::SkillPolicy;
+use ava_skills::SkillToolDependency;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 
@@ -21,10 +21,10 @@ use super::load_environment_skills_from_root;
 async fn direct_environment_loader_preserves_plugin_dependencies_and_product_policy() {
     let root = tempdir().expect("tempdir");
     let skill_dir = root.path().join("skills/deploy");
-    fs::create_dir_all(root.path().join(".codex-plugin")).expect("manifest dir");
+    fs::create_dir_all(root.path().join(".ava-plugin")).expect("manifest dir");
     fs::create_dir_all(skill_dir.join("agents")).expect("metadata dir");
     fs::write(
-        root.path().join(".codex-plugin/plugin.json"),
+        root.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"demo-plugin"}"#,
     )
     .expect("manifest");
@@ -45,7 +45,7 @@ dependencies:
       command: deploy-mcp
 policy:
   allow_implicit_invocation: false
-  products: [codex, atlas]
+  products: [ava, atlas]
 "#,
     )
     .expect("metadata");
@@ -53,7 +53,7 @@ policy:
     let root_uri = PathUri::from_host_native_path(root.path()).expect("root URI");
     let file_system = FileSystemEnvironmentAccessor::unrestricted(&LOCAL_FS);
     let outcome =
-        load_environment_skills_from_root(&file_system, &root_uri, Some(Product::Codex)).await;
+        load_environment_skills_from_root(&file_system, &root_uri, Some(Product::Ava)).await;
 
     assert_eq!(
         outcome.skills,
@@ -75,7 +75,7 @@ policy:
             }),
             policy: Some(SkillPolicy {
                 allow_implicit_invocation: Some(false),
-                products: vec![Product::Codex, Product::Atlas],
+                products: vec![Product::Ava, Product::Atlas],
             }),
         }]
     );
@@ -90,7 +90,7 @@ policy:
 #[tokio::test]
 async fn executor_bundle_parser_matches_direct_environment_loader() {
     let root = tempdir().expect("tempdir");
-    let plugin_manifest = root.path().join(".codex-plugin/plugin.json");
+    let plugin_manifest = root.path().join(".ava-plugin/plugin.json");
     let nested_manifest = root.path().join("nested/.claude-plugin/plugin.json");
     let deploy_skill = root.path().join("skills/deploy/SKILL.md");
     let deploy_metadata = root.path().join("skills/deploy/agents/openai.yaml");
@@ -165,7 +165,7 @@ async fn executor_bundle_parser_matches_direct_environment_loader() {
 async fn executor_bundle_preserves_parent_namespace_and_manifest_precedence() {
     let plugin = tempdir().expect("tempdir");
     for (relative_path, name) in [
-        (".codex-plugin/plugin.json", "codex-name"),
+        (".ava-plugin/plugin.json", "ava-name"),
         (".claude-plugin/plugin.json", "claude-name"),
         (".cursor-plugin/plugin.json", "cursor-name"),
     ] {
@@ -212,7 +212,7 @@ async fn executor_bundle_preserves_parent_namespace_and_manifest_precedence() {
         discovery.namespace_manifests[0]
             .path
             .to_string()
-            .ends_with("/.codex-plugin/plugin.json")
+            .ends_with("/.ava-plugin/plugin.json")
     );
     assert_eq!(bundled.warnings, existing.warnings);
     assert_eq!(
@@ -223,5 +223,5 @@ async fn executor_bundle_preserves_parent_namespace_and_manifest_precedence() {
             .collect::<Vec<_>>(),
         existing.skills
     );
-    assert_eq!(bundled.skills[0].metadata.name, "codex-name:search");
+    assert_eq!(bundled.skills[0].metadata.name, "ava-name:search");
 }

@@ -3,8 +3,8 @@
 mod common;
 
 use anyhow::Result;
-use codex_realtime_webrtc::AudioControls;
-use codex_realtime_webrtc::RealtimeWebrtcSession;
+use ava_realtime_webrtc::AudioControls;
+use ava_realtime_webrtc::RealtimeWebrtcSession;
 use futures::future::AbortHandle;
 use pretty_assertions::assert_eq;
 use std::fs;
@@ -18,7 +18,7 @@ fn startup_controls_meters_and_helper_loss() -> Result<()> {
     #[cfg(target_os = "linux")]
     {
         assert!(!RealtimeWebrtcSession::is_supported());
-        let libraries = root.join("codex-resources/voice/lib");
+        let libraries = root.join("ava-resources/voice/lib");
         fs::create_dir_all(&libraries)?;
         fs::write(libraries.join("libgstreamer-1.0.so.0"), b"fixture runtime")?;
         assert!(RealtimeWebrtcSession::is_supported());
@@ -124,7 +124,7 @@ fn device_failure_reaches_startup_completion_without_duplicate_error() -> Result
     let started = RealtimeWebrtcSession::start(registration)?;
     assert_eq!(
         started.handle.apply_answer_sdp("synthetic-answer".into()),
-        Err(codex_realtime_webrtc::ConnectionError::AudioDevices)
+        Err(ava_realtime_webrtc::ConnectionError::AudioDevices)
     );
     #[cfg(unix)]
     common::wait_for_helper_reaped(&root)?;
@@ -143,8 +143,8 @@ fn runtime_failure_reaches_offer_caller_without_native_error_text() -> Result<()
     let (_abort, registration) = AbortHandle::new_pair();
     let error = RealtimeWebrtcSession::start(registration).unwrap_err();
     assert_eq!(
-        error.downcast_ref::<codex_realtime_webrtc::ConnectionError>(),
-        Some(&codex_realtime_webrtc::ConnectionError::RuntimeInitialization)
+        error.downcast_ref::<ava_realtime_webrtc::ConnectionError>(),
+        Some(&ava_realtime_webrtc::ConnectionError::RuntimeInitialization)
     );
     assert_eq!(
         format!("{error:#}"),

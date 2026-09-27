@@ -16,11 +16,11 @@ use std::time::Duration;
 use std::time::SystemTime;
 
 use chrono::NaiveDateTime;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::StateDbHandle;
-use codex_state::RolloutMigrationCursor;
-use codex_state::RolloutMigrationSkippedRollout;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::StateDbHandle;
+use ava_state::RolloutMigrationCursor;
+use ava_state::RolloutMigrationSkippedRollout;
 
 use super::LocalThreadStore;
 use super::RolloutMigrationMode;
@@ -62,7 +62,7 @@ pub(super) async fn migrate_rollouts_on_startup(store: &LocalThreadStore) -> Thr
     let Some(state_db) = store.state_db.as_ref() else {
         return Ok(());
     };
-    let paths = find_all_rollout_paths(&store.config.codex_home).await?;
+    let paths = find_all_rollout_paths(&store.config.ava_home).await?;
     let mut skipped_rollouts = state_db
         .list_rollout_migration_skipped_rollouts(LEGACY_TO_PAGINATED_MIGRATION_ID)
         .await
@@ -72,7 +72,7 @@ pub(super) async fn migrate_rollouts_on_startup(store: &LocalThreadStore) -> Thr
         .list_rollout_migration_skipped_rollouts(LEGACY_TO_PAGINATED_MIGRATION_ID)
         .await
         .map_err(migration_error)?;
-    if !pending_migration_thread_ids(&store.config.codex_home)
+    if !pending_migration_thread_ids(&store.config.ava_home)
         .await?
         .is_empty()
     {
@@ -133,7 +133,7 @@ async fn migrate_all_rollouts(
     existing_skips: &[RolloutMigrationSkippedRollout],
 ) -> ThreadStoreResult<()> {
     let skipped_file_names = skipped_rollout_file_names(store, existing_skips);
-    let pending_thread_ids = pending_migration_thread_ids(&store.config.codex_home).await?;
+    let pending_thread_ids = pending_migration_thread_ids(&store.config.ava_home).await?;
     let paths_to_migrate = paths_before_migration
         .iter()
         .filter(|path| {
@@ -163,7 +163,7 @@ async fn retry_busy_rollouts(
         .iter()
         .filter(|skipped_rollout| skipped_rollout.skip_reason == BUSY_SKIP_REASON)
     {
-        let stored_path = store.config.codex_home.join(&skipped_rollout.rollout_path);
+        let stored_path = store.config.ava_home.join(&skipped_rollout.rollout_path);
         let path = if tokio::fs::try_exists(&stored_path)
             .await
             .map_err(migration_error)?
@@ -205,7 +205,7 @@ async fn run_startup_migration(
 ) -> ThreadStoreResult<RolloutMigrationReport> {
     loop {
         let Some(maintenance_guard) =
-            codex_rollout::try_acquire_rollout_maintenance_lock(&store.config.codex_home)
+            ava_rollout::try_acquire_rollout_maintenance_lock(&store.config.ava_home)
                 .map_err(migration_error)?
         else {
             tokio::time::sleep(MAINTENANCE_RETRY_DELAY).await;
@@ -250,7 +250,7 @@ async fn update_skip_after_outcome(
         }
         RolloutMigrationStatus::Failed => {
             if outcome.thread_id.is_some_and(|thread_id| {
-                migration_journal_path(&store.config.codex_home, thread_id).exists()
+                migration_journal_path(&store.config.ava_home, thread_id).exists()
             }) {
                 return Ok(());
             }
@@ -265,7 +265,7 @@ async fn inspect_rollout_path(
     path: &Path,
 ) -> ThreadStoreResult<StartupInspection> {
     let before = rollout_fingerprint(path).await?;
-    match codex_rollout::read_session_meta_line(path).await {
+    match ava_rollout::read_session_meta_line(path).await {
         Ok(metadata) if metadata.meta.history_mode == ThreadHistoryMode::Legacy => {
             Ok(StartupInspection::Legacy)
         }
@@ -367,7 +367,7 @@ fn thread_creation_cursor(path: &Path) -> Option<RolloutMigrationCursor> {
 }
 
 fn relative_rollout_path(store: &LocalThreadStore, path: &Path) -> String {
-    path.strip_prefix(&store.config.codex_home)
+    path.strip_prefix(&store.config.ava_home)
         .unwrap_or(path)
         .to_string_lossy()
         .replace('\\', "/")
@@ -380,13 +380,13 @@ fn skipped_rollout_file_names(
     skipped_rollouts
         .iter()
         .filter_map(|skipped_rollout| {
-            plain_rollout_file_name(&store.config.codex_home.join(&skipped_rollout.rollout_path))
+            plain_rollout_file_name(&store.config.ava_home.join(&skipped_rollout.rollout_path))
         })
         .collect()
 }
 
 fn plain_rollout_file_name(path: &Path) -> Option<OsString> {
-    codex_rollout::plain_rollout_path(path)
+    ava_rollout::plain_rollout_path(path)
         .file_name()
         .map(std::ffi::OsStr::to_os_string)
 }

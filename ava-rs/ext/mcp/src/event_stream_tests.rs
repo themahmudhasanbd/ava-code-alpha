@@ -15,25 +15,25 @@ use axum::response::IntoResponse;
 use axum::response::sse::Event;
 use axum::response::sse::Sse;
 use axum::routing::post;
-use codex_config::McpServerTransportConfig;
-use codex_core::config::ConfigBuilder;
-use codex_core::plugins_manager_for_config;
-use codex_exec_server_test_support::environment_manager_without_environments;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::EffectiveMcpServer;
-use codex_mcp::McpEventNotification;
-use codex_mcp::McpResourceClient;
-use codex_mcp::McpRuntime;
-use codex_mcp::McpRuntimeContext;
-use codex_mcp::McpRuntimeInput;
-use codex_mcp::McpServerRegistration;
-use codex_mcp::McpStartupPolicy;
-use codex_mcp::ResolvedMcpCatalog;
+use ava_config::McpServerTransportConfig;
+use ava_core::config::ConfigBuilder;
+use ava_core::plugins_manager_for_config;
+use ava_exec_server_test_support::environment_manager_without_environments;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::EffectiveMcpServer;
+use ava_mcp::McpEventNotification;
+use ava_mcp::McpResourceClient;
+use ava_mcp::McpRuntime;
+use ava_mcp::McpRuntimeContext;
+use ava_mcp::McpRuntimeInput;
+use ava_mcp::McpServerRegistration;
+use ava_mcp::McpStartupPolicy;
+use ava_mcp::ResolvedMcpCatalog;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -121,7 +121,7 @@ impl Fixture {
         let url = format!("http://{}", listener.local_addr()?);
         let server = tokio::spawn(async move { axum::serve(listener, router).await });
         let home = tempfile::tempdir()?;
-        let auth_value = CodexAuth::from_external_chatgpt_tokens(
+        let auth_value = AvaAuth::from_external_chatgpt_tokens(
             "header.e30.first",
             "account",
             /*chatgpt_plan_type*/ None,
@@ -129,13 +129,13 @@ impl Fixture {
         let auth =
             AuthManager::from_auth_for_testing_with_home(auth_value.clone(), home.path().into());
         let config = ConfigBuilder::default()
-            .codex_home(home.path().into())
+            .ava_home(home.path().into())
             .fallback_cwd(Some(home.path().into()))
             .build()
             .await?;
         let plugins = plugins_manager_for_config(&config, Arc::clone(&auth));
         let mut config = config.to_mcp_config(&plugins).await;
-        let mut server_config = codex_mcp::hosted_plugin_runtime_mcp_server_config(
+        let mut server_config = ava_mcp::hosted_plugin_runtime_mcp_server_config(
             &url, /*apps_mcp_product_sku*/ None, /*originator*/ None,
         );
         let McpServerTransportConfig::StreamableHttp {
@@ -160,7 +160,7 @@ impl Fixture {
             plugins_available: false,
             ready_selected_capability_roots: Vec::new(),
             mcp_servers: HashMap::from([(
-                CODEX_APPS_MCP_SERVER_NAME.into(),
+                AVA_APPS_MCP_SERVER_NAME.into(),
                 EffectiveMcpServer::configured(server_config.clone()),
             )]),
             submit_id: "test".into(),
@@ -170,9 +170,9 @@ impl Fixture {
                 Arc::new(environment_manager_without_environments()),
                 home.path().into(),
             ),
-            codex_apps_tools_cache: Default::default(),
+            ava_apps_tools_cache: Default::default(),
             tool_catalog_cache: Default::default(),
-            codex_apps_tools_cache_key: codex_mcp::codex_apps_tools_cache_key(Some(&auth_value)),
+            ava_apps_tools_cache_key: ava_mcp::ava_apps_tools_cache_key(Some(&auth_value)),
             client_mcp_extensions: Default::default(),
             auth: Some(auth_value.clone()),
             auth_manager: Some(Arc::clone(&auth)),
@@ -184,7 +184,7 @@ impl Fixture {
         let runtime_input = runtime_input();
         assert!(
             runtime
-                .latest_wait_for_server_ready(CODEX_APPS_MCP_SERVER_NAME, WAIT)
+                .latest_wait_for_server_ready(AVA_APPS_MCP_SERVER_NAME, WAIT)
                 .await
         );
         Ok(Self {
@@ -198,13 +198,13 @@ impl Fixture {
     }
 }
 
-pub(super) struct StaticAuth(pub CodexAuth);
+pub(super) struct StaticAuth(pub AvaAuth);
 
 impl ExternalAuth for StaticAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
-    fn refresh(&self, _: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         self.resolve()
     }
 }
@@ -219,7 +219,7 @@ async fn event_connections_open_after_runtime_shutdown_with_current_auth() -> Re
     fixture
         .auth
         .set_external_auth(Arc::new(StaticAuth(
-            CodexAuth::from_external_chatgpt_tokens(
+            AvaAuth::from_external_chatgpt_tokens(
                 "header.e30.refreshed",
                 "account",
                 /*chatgpt_plan_type*/ None,

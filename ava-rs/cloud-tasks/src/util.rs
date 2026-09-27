@@ -3,14 +3,14 @@ use chrono::Local;
 use chrono::Utc;
 use http::header::HeaderMap;
 
-use codex_core::config::Config;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::AuthManager;
+use ava_core::config::Config;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::AuthManager;
 use std::sync::Arc;
 
 pub fn set_user_agent_suffix(suffix: &str) {
-    if let Ok(mut guard) = codex_login::default_client::USER_AGENT_SUFFIX.lock() {
+    if let Ok(mut guard) = ava_login::default_client::USER_AGENT_SUFFIX.lock() {
         guard.replace(suffix.to_string());
     }
 }
@@ -49,7 +49,7 @@ pub fn normalize_base_url(input: &str) -> String {
 pub(crate) fn validate_chatgpt_base_url(input: &str) -> anyhow::Result<String> {
     let invalid_url = || {
         anyhow::anyhow!(
-            "CODEX_CLOUD_TASKS_BASE_URL must use a trusted HTTPS origin on port 443, without user information, a query, or a fragment; custom backends cannot use saved ChatGPT credentials"
+            "AVA_CLOUD_TASKS_BASE_URL must use a trusted HTTPS origin on port 443, without user information, a query, or a fragment; custom backends cannot use saved ChatGPT credentials"
         )
     };
     let uri = input.parse::<http::Uri>().map_err(|_| invalid_url())?;
@@ -98,7 +98,7 @@ pub async fn load_auth_manager(
     auth_config.chatgpt_base_url = chatgpt_base_url.or(Some(config.chatgpt_base_url.clone()));
     let auth_manager = match AuthManager::shared_from_auth_config(
         auth_config,
-        /*enable_codex_api_key_env*/ false,
+        /*enable_ava_api_key_env*/ false,
     )
     .await
     {
@@ -117,18 +117,18 @@ pub async fn build_chatgpt_headers() -> HeaderMap {
     use http::header::HeaderValue;
     use http::header::USER_AGENT;
 
-    set_user_agent_suffix("codex_cloud_tasks_tui");
-    let ua = codex_login::default_client::get_codex_user_agent();
+    set_user_agent_suffix("ava_cloud_tasks_tui");
+    let ua = ava_login::default_client::get_ava_user_agent();
     let mut headers = HeaderMap::new();
     headers.insert(
         USER_AGENT,
-        HeaderValue::from_str(&ua).unwrap_or(HeaderValue::from_static("codex-cli")),
+        HeaderValue::from_str(&ua).unwrap_or(HeaderValue::from_static("ava-cli")),
     );
     if let Some(am) = load_auth_manager(/*chatgpt_base_url*/ None).await.0
         && let Some(auth) = am.auth().await
-        && auth.uses_codex_backend()
+        && auth.uses_ava_backend()
     {
-        headers.extend(codex_model_provider::auth_provider_from_auth(&auth).to_auth_headers());
+        headers.extend(ava_model_provider::auth_provider_from_auth(&auth).to_auth_headers());
     }
     headers
 }
@@ -137,15 +137,15 @@ pub async fn build_chatgpt_headers() -> HeaderMap {
 pub fn task_url(base_url: &str, task_id: &str) -> String {
     let normalized = normalize_base_url(base_url);
     if let Some(root) = normalized.strip_suffix("/backend-api") {
-        return format!("{root}/codex/tasks/{task_id}");
+        return format!("{root}/ava/tasks/{task_id}");
     }
-    if let Some(root) = normalized.strip_suffix("/api/codex") {
-        return format!("{root}/codex/tasks/{task_id}");
+    if let Some(root) = normalized.strip_suffix("/api/ava") {
+        return format!("{root}/ava/tasks/{task_id}");
     }
-    if normalized.ends_with("/codex") {
+    if normalized.ends_with("/ava") {
         return format!("{normalized}/tasks/{task_id}");
     }
-    format!("{normalized}/codex/tasks/{task_id}")
+    format!("{normalized}/ava/tasks/{task_id}")
 }
 
 pub fn format_relative_time(reference: DateTime<Utc>, ts: DateTime<Utc>) -> String {

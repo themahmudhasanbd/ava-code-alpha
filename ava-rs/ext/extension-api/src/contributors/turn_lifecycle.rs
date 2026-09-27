@@ -1,9 +1,9 @@
 //! Turn lifecycle inputs and scheduling phases for host-owned contributors.
 
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TurnAbortReason;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TurnAbortReason;
 
 use crate::ExtensionData;
 
@@ -59,7 +59,7 @@ pub struct TurnErrorInput<'a> {
     /// Stable host-owned turn identifier.
     pub turn_id: &'a str,
     /// Error surfaced by the host for this turn.
-    pub error: CodexErrorInfo,
+    pub error: AvaErrorInfo,
     /// Store scoped to the host session runtime.
     pub session_store: &'a ExtensionData,
     /// Store scoped to this thread runtime.

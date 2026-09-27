@@ -17,8 +17,8 @@ use super::parse_keybinding;
 use super::runtime_action_bindings;
 use crate::key_hint::KeyBinding;
 use crate::key_hint::ctrl;
-use codex_config::types::KeybindingsSpec;
-use codex_config::types::TuiKeymap;
+use ava_config::types::KeybindingsSpec;
+use ava_config::types::TuiKeymap;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -28,7 +28,7 @@ use tokio::time::Instant;
 
 pub(crate) const KEY_CHORD_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 1);
 
-const FIRST_DISPATCH_FUNCTION_KEY: u8 = codex_config::types::MAX_FUNCTION_KEY + 1;
+const FIRST_DISPATCH_FUNCTION_KEY: u8 = ava_config::types::MAX_FUNCTION_KEY + 1;
 const LAST_DISPATCH_FUNCTION_KEY: u8 = u8::MAX;
 const LIST_RESERVED_BINDINGS: &[(&str, KeyBinding)] = &[
     ("cancel", ctrl(KeyCode::Char('c'))),

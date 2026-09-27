@@ -1,5 +1,5 @@
 use super::*;
-use crate::CodexThread;
+use crate::AvaThread;
 use crate::StateDbHandle;
 use crate::ThreadManager;
 use crate::agent::agent_status_from_event;
@@ -24,64 +24,64 @@ use crate::session::SessionSettingsUpdate;
 use crate::thread_manager::StartThreadOptions;
 use crate::tools::handlers::multi_agents_common::thread_spawn_source;
 use assert_matches::assert_matches;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::Instructions;
-use codex_extension_api::LoadInstructionsFuture;
-use codex_extension_api::LoadedUserInstructions;
-use codex_extension_api::ThreadInstructionsProvider;
-use codex_extension_api::empty_extension_registry;
-use codex_features::Feature;
-use codex_history::CompactedItem;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_protocol::AgentPath;
-use codex_protocol::ResponseItemId;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TokenUsageRecord;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_thread_store::ArchiveThreadParams;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::LocalThreadStore;
-use codex_thread_store::LocalThreadStoreConfig;
-use codex_thread_store::PersistContext;
-use codex_thread_store::ThreadStore;
-use codex_utils_path_uri::PathUri;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::Instructions;
+use ava_extension_api::LoadInstructionsFuture;
+use ava_extension_api::LoadedUserInstructions;
+use ava_extension_api::ThreadInstructionsProvider;
+use ava_extension_api::empty_extension_registry;
+use ava_features::Feature;
+use ava_history::CompactedItem;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_protocol::AgentPath;
+use ava_protocol::ResponseItemId;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::OPENAI_FORM_EXTENSION_ID;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TokenUsageRecord;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_thread_store::ArchiveThreadParams;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::LocalThreadStore;
+use ava_thread_store::LocalThreadStoreConfig;
+use ava_thread_store::PersistContext;
+use ava_thread_store::ThreadStore;
+use ava_utils_path_uri::PathUri;
 use core_test_support::responses::strip_response_item_ids;
 use pretty_assertions::assert_eq;
 use std::sync::RwLock;
@@ -101,7 +101,7 @@ async fn test_config_with_cli_overrides(
         TomlValue::String("gpt-5.5".to_string()),
     ));
     let config = ConfigBuilder::without_managed_config_for_tests()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .cli_overrides(cli_overrides)
         .build()
         .await
@@ -205,10 +205,10 @@ impl AgentControlHarness {
     async fn new_with_config(home: TempDir, config: Config) -> Self {
         let state_db = init_state_db(&config).await;
         let manager = ThreadManager::with_models_provider_home_and_state_for_tests(
-            CodexAuth::from_api_key("dummy"),
+            AvaAuth::from_api_key("dummy"),
             config.model_provider.clone(),
-            config.codex_home.to_path_buf(),
-            std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+            config.ava_home.to_path_buf(),
+            std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
             state_db.clone(),
         );
         let control = manager.agent_control();
@@ -221,7 +221,7 @@ impl AgentControlHarness {
         }
     }
 
-    async fn start_thread(&self) -> (ThreadId, Arc<CodexThread>) {
+    async fn start_thread(&self) -> (ThreadId, Arc<AvaThread>) {
         let new_thread = self
             .manager
             .start_thread(StartThreadOptions::new(self.config.clone()))
@@ -230,7 +230,7 @@ impl AgentControlHarness {
         (new_thread.thread_id, new_thread.thread)
     }
 
-    async fn start_paginated_thread(&self) -> (ThreadId, Arc<CodexThread>) {
+    async fn start_paginated_thread(&self) -> (ThreadId, Arc<AvaThread>) {
         let new_thread = self
             .manager
             .start_thread(StartThreadOptions {
@@ -267,7 +267,7 @@ impl AgentControlHarness {
     }
 }
 
-async fn persisted_originator(thread: &CodexThread) -> String {
+async fn persisted_originator(thread: &AvaThread) -> String {
     thread.ensure_rollout_materialized().await;
     thread
         .flush_rollout()
@@ -337,7 +337,7 @@ fn history_contains_text<'a>(
     })
 }
 
-async fn wait_for_recorded_user_message(thread: &CodexThread, needle: &str) {
+async fn wait_for_recorded_user_message(thread: &AvaThread, needle: &str) {
     timeout(Duration::from_secs(5), async {
         loop {
             let event = thread
@@ -385,7 +385,7 @@ fn history_contains_assistant_inter_agent_communication<'a>(
     })
 }
 
-async fn wait_for_subagent_notification(parent_thread: &Arc<CodexThread>) -> bool {
+async fn wait_for_subagent_notification(parent_thread: &Arc<AvaThread>) -> bool {
     let wait = async {
         loop {
             let history = parent_thread.session.clone_history().await;
@@ -400,7 +400,7 @@ async fn wait_for_subagent_notification(parent_thread: &Arc<CodexThread>) -> boo
     timeout(Duration::from_secs(10), wait).await.is_ok()
 }
 
-async fn persist_thread_for_tree_resume(thread: &Arc<CodexThread>, message: &str) {
+async fn persist_thread_for_tree_resume(thread: &Arc<AvaThread>, message: &str) {
     // These tests only need a durable resume fixture. Stop the child prompt
     // first so this marker records directly instead of waiting behind an
     // unrelated active turn.
@@ -454,7 +454,7 @@ async fn wait_for_live_thread_spawn_children(
 async fn assert_thread_not_loaded(manager: &ThreadManager, thread_id: ThreadId) {
     match manager.get_thread(thread_id).await {
         Err(err) => match err.details() {
-            CodexErrorDetails::ThreadNotFound(id) => assert_eq!(*id, thread_id),
+            AvaErrorDetails::ThreadNotFound(id) => assert_eq!(*id, thread_id),
             _ => panic!("expected ThreadNotFound, got {err:?}"),
         },
         Ok(_) => panic!("expected thread not to be loaded"),
@@ -509,7 +509,7 @@ async fn on_event_updates_status_from_task_complete() {
             Some(ErrorEvent {
                 misalignment: None,
                 message: "denied".to_string(),
-                codex_error_info: None,
+                ava_error_info: None,
             }),
             AgentStatus::Errored("denied".to_string()),
         ),
@@ -532,7 +532,7 @@ async fn on_event_updates_status_from_error() {
     let status = agent_status_from_event(&EventMsg::Error(ErrorEvent {
         misalignment: None,
         message: "boom".to_string(),
-        codex_error_info: None,
+        ava_error_info: None,
     }));
 
     let expected = AgentStatus::Errored("boom".to_string());
@@ -605,7 +605,7 @@ async fn send_input_errors_when_thread_missing() {
         .expect_err("send_input should fail for missing thread");
     assert_matches!(
         err.details(),
-        CodexErrorDetails::ThreadNotFound(id) if *id == thread_id
+        AvaErrorDetails::ThreadNotFound(id) if *id == thread_id
     );
 }
 
@@ -635,7 +635,7 @@ async fn subscribe_status_errors_for_missing_thread() {
         .expect_err("subscribe_status should fail for missing thread");
     assert_matches!(
         err.details(),
-        CodexErrorDetails::ThreadNotFound(id) if *id == thread_id
+        AvaErrorDetails::ThreadNotFound(id) if *id == thread_id
     );
 }
 
@@ -760,7 +760,7 @@ enum V2ReloadRoute {
 async fn spawn_v2_reload_test_child(
     control: &LocalAgentControl,
     config: Config,
-    parent: &CodexThread,
+    parent: &AvaThread,
     task_name: &str,
 ) -> LiveAgent {
     let source = thread_spawn_source(
@@ -883,7 +883,7 @@ async fn check_v2_agent_reload(route: V2ReloadRoute) {
     );
     match harness.manager.get_thread(spawned_agent.thread_id).await {
         Err(err) => match err.details() {
-            CodexErrorDetails::ThreadNotFound(id) => assert_eq!(*id, spawned_agent.thread_id),
+            AvaErrorDetails::ThreadNotFound(id) => assert_eq!(*id, spawned_agent.thread_id),
             _ => panic!("expected ThreadNotFound, got {err:?}"),
         },
         Ok(_) => panic!("expected thread to be removed"),
@@ -1103,10 +1103,10 @@ async fn resume_agent_from_rollout_does_not_reopen_v2_descendants() {
     assert_eq!(report.timed_out, Vec::<ThreadId>::new());
 
     let resumed_manager = ThreadManager::with_models_provider_home_and_state_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         harness.config.model_provider.clone(),
-        harness.config.codex_home.to_path_buf(),
-        std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        harness.config.ava_home.to_path_buf(),
+        std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         harness.state_db.clone(),
     );
     let resumed_control = resumed_manager.agent_control();
@@ -1249,10 +1249,10 @@ async fn cold_resume_with_thread_instructions_preserves_lazy_v2_child_inheritanc
     assert_eq!(report.timed_out, Vec::<ThreadId>::new());
 
     let resumed_manager = ThreadManager::with_models_provider_home_and_state_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         harness.config.model_provider.clone(),
-        harness.config.codex_home.to_path_buf(),
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        harness.config.ava_home.to_path_buf(),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         harness.state_db.clone(),
     );
     let provider: Arc<dyn ThreadInstructionsProvider> = Arc::new(TestThreadInstructionsProvider {
@@ -1655,7 +1655,7 @@ async fn spawn_agent_fork_from_paginated_parent_uses_model_context_prefix() {
     let lines = std::fs::read_to_string(&rollout_path)
         .expect("read child rollout")
         .lines()
-        .map(|line| codex_rollout::parse_rollout_line(line).expect("parse rollout line"))
+        .map(|line| ava_rollout::parse_rollout_line(line).expect("parse rollout line"))
         .collect::<Vec<_>>();
     let RolloutItem::SessionMeta(meta_line) = &lines[0].item else {
         panic!("child rollout should start with session metadata");
@@ -1758,7 +1758,7 @@ async fn spawn_agent_without_fork_from_paginated_parent_stays_fresh_and_paginate
         .flush_rollout()
         .await
         .expect("child rollout should flush");
-    let meta = codex_rollout::read_session_meta_line(
+    let meta = ava_rollout::read_session_meta_line(
         &child_thread
             .rollout_path()
             .expect("child rollout should exist"),
@@ -1876,7 +1876,7 @@ async fn spawn_agent_fork_drops_inherited_token_usage_state(thread_context_enabl
     let lines = std::fs::read_to_string(&rollout_path)
         .expect("read child rollout")
         .lines()
-        .map(|line| codex_rollout::parse_rollout_line(line).expect("parse rollout line"))
+        .map(|line| ava_rollout::parse_rollout_line(line).expect("parse rollout line"))
         .collect::<Vec<_>>();
     assert!(
         !lines.iter().any(|line| {
@@ -2449,19 +2449,19 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
             internal_chat_message_metadata_passthrough: None,
         },
     ];
-    let answer_event: codex_history::RetainedContextEvent = serde_json::from_value(serde_json::json!({
+    let answer_event: ava_history::RetainedContextEvent = serde_json::from_value(serde_json::json!({
         "type": "verified_answer", "turn_id": "parent-answer-turn", "call_id": "parent-answer-call",
         "questions": [{"question": "Parent-local action?", "answer": "Parent only."}]
     })).expect("verified answer fixture");
-    let delivery = codex_history::ResponseItemEnvelope {
+    let delivery = ava_history::ResponseItemEnvelope {
         item: serde_json::from_value(serde_json::json!({
             "type": "function_call_output", "id": "parent-delivery",
             "name": "send_message_to_thread", "output": "Parent delivery"
         }))
         .unwrap(),
-        metadata: Some(codex_history::CodexHarnessMetadata {
+        metadata: Some(ava_history::AvaHarnessMetadata {
             user_input_order: Some(7),
-            sender_user_messages: Some(Box::new(codex_history::SenderUserMessages {
+            sender_user_messages: Some(Box::new(ava_history::SenderUserMessages {
                 receiver_turn_id: "parent-turn".to_owned(),
                 receiver_message_id: "parent-delivery".to_owned(),
                 text: "Parent-only sender context".to_owned(),
@@ -2469,7 +2469,7 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
             ..Default::default()
         }),
     };
-    let mut retained_context = codex_history::RetainedContext::default();
+    let mut retained_context = ava_history::RetainedContext::default();
     retained_context.record(&answer_event);
     retained_context.record_sender_user_messages(delivery.metadata.as_ref().unwrap());
     parent_thread
@@ -2485,7 +2485,7 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
                         .collect(),
                 ),
                 retained_context: Some(retained_context),
-                guardian_history: Some(codex_history::GuardianHistoryCheckpoint(vec![
+                guardian_history: Some(ava_history::GuardianHistoryCheckpoint(vec![
                     user_message("Parent-local approval must not be inherited."),
                 ])),
                 mcp_resource_origins: None,
@@ -2556,7 +2556,7 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
         !thread_context_enabled,
         "only retained mode changes parent approval inheritance",
     );
-    let mut inherited_context = codex_history::RetainedContext::default();
+    let mut inherited_context = ava_history::RetainedContext::default();
     if thread_context_enabled {
         inherited_context.reserve_order();
     } else {
@@ -2791,13 +2791,13 @@ async fn spawn_agent_full_fork_legacy_compaction_rebuilds_child_instructions_onc
         let _ = parent_config.features.enable(Feature::MultiAgentV2);
         parent_config.developer_instructions = parent_developer_instructions.map(str::to_string);
         let mut requirements = parent_config.config_layer_stack.requirements().clone();
-        requirements.additional_developer_instructions = Some(codex_config::Sourced::new(
+        requirements.additional_developer_instructions = Some(ava_config::Sourced::new(
             managed_policy.to_string(),
-            codex_config::RequirementSource::Unknown,
+            ava_config::RequirementSource::Unknown,
         ));
         let mut requirements_toml = parent_config.config_layer_stack.requirements_toml().clone();
         requirements_toml.additional_developer_instructions = Some(managed_policy.to_string());
-        parent_config.config_layer_stack = codex_config::ConfigLayerStack::new(
+        parent_config.config_layer_stack = ava_config::ConfigLayerStack::new(
             parent_config
                 .config_layer_stack
                 .all_layers_low_to_high()
@@ -3442,10 +3442,10 @@ async fn spawn_agent_respects_legacy_max_threads_alias() {
     )])
     .await;
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let control = manager.agent_control();
 
@@ -3471,7 +3471,7 @@ async fn spawn_agent_respects_legacy_max_threads_alias() {
         )
         .await
         .expect_err("spawn_agent should respect max threads");
-    let CodexErrorDetails::AgentLimitReached {
+    let AvaErrorDetails::AgentLimitReached {
         max_threads: seen_max_threads,
     } = err.details()
     else {
@@ -3494,10 +3494,10 @@ async fn spawn_agent_releases_slot_after_shutdown() {
     )])
     .await;
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let control = manager.agent_control();
 
@@ -3537,10 +3537,10 @@ async fn spawn_agent_limit_shared_across_clones() {
     )])
     .await;
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let control = manager.agent_control();
     let cloned = control.clone();
@@ -3562,7 +3562,7 @@ async fn spawn_agent_limit_shared_across_clones() {
         )
         .await
         .expect_err("spawn_agent should respect shared guard");
-    let CodexErrorDetails::AgentLimitReached { max_threads } = err.details() else {
+    let AvaErrorDetails::AgentLimitReached { max_threads } = err.details() else {
         panic!("expected AgentLimitReached");
     };
     assert_eq!(*max_threads, 1);
@@ -3582,10 +3582,10 @@ async fn resume_agent_respects_max_threads_limit() {
     )])
     .await;
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let control = manager.agent_control();
 
@@ -3615,7 +3615,7 @@ async fn resume_agent_respects_max_threads_limit() {
         .resume_agent_from_rollout(config, resumable_id, SessionSource::Exec)
         .await
         .expect_err("resume should respect max threads");
-    let CodexErrorDetails::AgentLimitReached {
+    let AvaErrorDetails::AgentLimitReached {
         max_threads: seen_max_threads,
     } = err.details()
     else {
@@ -3638,10 +3638,10 @@ async fn resume_agent_releases_slot_after_resume_failure() {
     )])
     .await;
     let manager = ThreadManager::with_models_provider_and_home_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     );
     let control = manager.agent_control();
 
@@ -3982,14 +3982,14 @@ async fn spawn_thread_subagents_persist_parent_originator_across_new_and_truncat
     let parent = harness
         .manager
         .start_thread(StartThreadOptions {
-            metrics_service_name: Some("codex_work_desktop".to_string()),
+            metrics_service_name: Some("ava_work_desktop".to_string()),
             environments: Some(Vec::new()),
             ..StartThreadOptions::new(harness.config.clone())
         })
         .await
         .expect("parent thread should start");
     let parent_originator = persisted_originator(&parent.thread).await;
-    assert_eq!(parent_originator, "codex_work_desktop");
+    assert_eq!(parent_originator, "ava_work_desktop");
 
     let child_thread_id = harness
         .control
@@ -4093,14 +4093,14 @@ async fn spawn_thread_subagent_uses_role_specific_nickname_candidates() {
 async fn resume_thread_subagent_restores_stored_metadata() {
     let (home, config) = test_config().await;
     let thread_store = Arc::new(InMemoryThreadStore::default());
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("dummy"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("dummy"));
     let manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
         crate::thread_manager::build_models_manager(&config, auth_manager),
-        crate::CodexAppsToolsCache::default(),
+        crate::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
         Arc::new(crate::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
@@ -4491,10 +4491,10 @@ async fn list_agent_subtree_thread_ids_includes_anonymous_and_closed_descendants
 async fn list_agent_subtree_thread_ids_finds_live_descendants_of_unloaded_root() {
     let (_home, config) = test_config().await;
     let manager = ThreadManager::with_models_provider_home_and_state_for_tests(
-        CodexAuth::from_api_key("dummy"),
+        AvaAuth::from_api_key("dummy"),
         config.model_provider.clone(),
-        config.codex_home.to_path_buf(),
-        std::sync::Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        config.ava_home.to_path_buf(),
+        std::sync::Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         /*state_db*/ None,
     );
     let control = manager.agent_control();

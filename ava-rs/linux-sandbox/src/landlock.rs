@@ -5,13 +5,13 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 use landlock::ABI;
 #[allow(unused_imports)]
@@ -79,7 +79,7 @@ pub(crate) fn apply_permission_profile_to_current_thread(
 
     if apply_landlock_fs && !file_system_sandbox_policy.has_full_disk_write_access() {
         if !file_system_sandbox_policy.has_full_disk_read_access() {
-            return Err(CodexErr::UnsupportedOperation(
+            return Err(AvaErr::UnsupportedOperation(
                 "Restricted read-only access is not supported by the legacy Linux Landlock filesystem backend."
                     .to_string(),
             ));
@@ -140,7 +140,7 @@ fn set_no_new_privs() -> Result<()> {
 /// `/dev/null` and the provided list of `writable_roots`.
 ///
 /// # Errors
-/// Returns [`CodexErr::Sandbox`] variants when the ruleset fails to apply.
+/// Returns [`AvaErr::Sandbox`] variants when the ruleset fails to apply.
 ///
 /// Note: this is currently unused because filesystem sandboxing is performed
 /// via bubblewrap. It is kept for reference and potential fallback use.
@@ -166,7 +166,7 @@ fn install_filesystem_landlock_rules_on_current_thread(
     let status = ruleset.restrict_self()?;
 
     if status.ruleset == landlock::RulesetStatus::NotEnforced {
-        return Err(CodexErr::Sandbox(SandboxErr::LandlockRestrict));
+        return Err(AvaErr::Sandbox(SandboxErr::LandlockRestrict));
     }
 
     Ok(())
@@ -304,7 +304,7 @@ mod tests {
     use super::NetworkSeccompMode;
     use super::network_seccomp_mode;
     use super::should_install_network_seccomp;
-    use codex_protocol::protocol::NetworkSandboxPolicy;
+    use ava_protocol::protocol::NetworkSandboxPolicy;
     use pretty_assertions::assert_eq;
 
     #[test]

@@ -43,7 +43,7 @@ async fn review_picker_filtered_accept_and_cancel_preserve_parent_and_draft() {
         chat.handle_key_event(KeyEvent::from(KeyCode::Char(ch)));
     }
     chat.handle_key_event(KeyEvent::from(KeyCode::F(/*n*/ 3)));
-    let AppEvent::CodexOp(Op::Review { target }) = rx.try_recv().unwrap() else {
+    let AppEvent::AvaOp(Op::Review { target }) = rx.try_recv().unwrap() else {
         panic!("expected the filtered review target");
     };
     assert_eq!(

@@ -1,11 +1,11 @@
-//! Adapts Codex's pinned credential storage to RMCP-owned OAuth refreshes.
+//! Adapts Ava's pinned credential storage to RMCP-owned OAuth refreshes.
 //!
 //! Attach this store only after `AuthorizationManager::initialize_from_store` completes
 //! against an in-memory store. Initialization may save tokenless client credentials, which
 //! this refresh adapter does not support.
 //!
 //! Ordinary token reads use the cached credentials. Refresh-guard acquisition rereads
-//! the pinned store before RMCP exchanges the token and saves the result. Codex
+//! the pinned store before RMCP exchanges the token and saves the result. Ava
 //! preparation rechecks freshness under that guard before asking RMCP to refresh.
 //! Saves and clears require an active guard; no store operation reacquires the lock.
 //! The runtime snapshot advances only for credentials compatible with this connection,
@@ -18,8 +18,8 @@ use std::sync::Weak;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_keyring_store::DefaultKeyringStore;
-use codex_keyring_store::KeyringStore;
+use ava_keyring_store::DefaultKeyringStore;
+use ava_keyring_store::KeyringStore;
 use futures::future::BoxFuture;
 use oauth2::Scope;
 use oauth2::TokenResponse;
@@ -192,7 +192,7 @@ impl<K: KeyringStore + Clone + 'static> CredentialStore for OAuthCredentialStore
             let mut token_response = credentials
                 .token_response
                 .ok_or(AuthError::AuthorizationRequired)?;
-            // Codex stores granted scopes in the token response rather than a separate field.
+            // Ava stores granted scopes in the token response rather than a separate field.
             if token_response.scopes().is_none() && !credentials.granted_scopes.is_empty() {
                 token_response.set_scopes(Some(
                     credentials

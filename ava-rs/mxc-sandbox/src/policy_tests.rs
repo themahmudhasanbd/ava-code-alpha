@@ -5,17 +5,17 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::Result;
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::protocol::FileSystemAccessMode;
-use codex_protocol::protocol::FileSystemPath;
-use codex_protocol::protocol::FileSystemSandboxEntry;
-use codex_protocol::protocol::FileSystemSandboxPolicy;
-use codex_protocol::protocol::FileSystemSpecialPath;
-use codex_protocol::protocol::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::protocol::FileSystemAccessMode;
+use ava_protocol::protocol::FileSystemPath;
+use ava_protocol::protocol::FileSystemSandboxEntry;
+use ava_protocol::protocol::FileSystemSandboxPolicy;
+use ava_protocol::protocol::FileSystemSpecialPath;
+use ava_protocol::protocol::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use wxc_common::models::NetworkAction;
 use wxc_common::models::NetworkCidr;
@@ -128,7 +128,7 @@ fn wrapper_preserves_exact_argv_and_separate_command_cwd() -> Result<()> {
         managed_network: None,
         env: &mut env,
     })?;
-    assert_eq!(wrapped, vec![crate::CODEX_WINDOWS_MXC_ARG1]);
+    assert_eq!(wrapped, vec![crate::AVA_WINDOWS_MXC_ARG1]);
     let parsed = crate::transport::decode(&mut env)?;
     assert_eq!(
         (
@@ -184,11 +184,11 @@ fn native_grants_preserve_denies_and_read_only_carveouts() -> Result<()> {
     let request = build_request(&command(&profile, root), root, Vec::new(), &[], &[])?;
     let mut expected_read = [
         root.join(".agents"),
-        root.join(".codex"),
+        root.join(".ava-code"),
         root.join(".git"),
         readonly,
         writable_child.join(".agents"),
-        writable_child.join(".codex"),
+        writable_child.join(".ava-code"),
         writable_child.join(".git"),
     ];
     expected_read.sort();
@@ -244,7 +244,7 @@ fn volume_expansion_does_not_turn_read_only_child_writable() -> Result<()> {
         request.policy.readonly_paths,
         vec![
             root.join(".agents").to_str().unwrap(),
-            root.join(".codex").to_str().unwrap(),
+            root.join(".ava-code").to_str().unwrap(),
             root.join(".git").to_str().unwrap(),
             readonly.to_str().unwrap()
         ]
@@ -557,7 +557,7 @@ fn root_deny_keeps_only_narrow_explicit_grants() -> Result<()> {
             FileSystemAccessMode::Read => (Vec::new(), allowed),
             FileSystemAccessMode::Write => (
                 allowed,
-                [".agents", ".codex", ".git"]
+                [".agents", ".ava-code", ".git"]
                     .map(|name| child.join(name).to_str().unwrap().to_owned())
                     .to_vec(),
             ),
@@ -730,7 +730,7 @@ fn symbolic_root_preserves_equal_path_precedence_and_denies() -> Result<()> {
         reads_in_volumes,
         volumes[..2]
             .iter()
-            .flat_map(|volume| [".agents", ".codex", ".git"].map(|name| volume
+            .flat_map(|volume| [".agents", ".ava-code", ".git"].map(|name| volume
                 .join(name)
                 .to_str()
                 .unwrap()

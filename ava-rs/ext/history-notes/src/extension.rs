@@ -1,26 +1,26 @@
 use std::sync::Arc;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::ThreadHintStatus;
-use codex_analytics::ThreadHintStatusEvent;
-use codex_core::config::Config;
-use codex_extension_api::ConfigContributor;
-use codex_extension_api::ContentItemKind;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::PromptFragment;
-use codex_extension_api::PromptSlot;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolExecutor;
-use codex_login::AuthManager;
-use codex_model_provider::create_model_provider;
-use codex_protocol::AgentPath;
-use codex_utils_output_truncation::TruncationPolicy;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::ThreadHintStatus;
+use ava_analytics::ThreadHintStatusEvent;
+use ava_core::config::Config;
+use ava_extension_api::ConfigContributor;
+use ava_extension_api::ContentItemKind;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::PromptFragment;
+use ava_extension_api::PromptSlot;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolExecutor;
+use ava_login::AuthManager;
+use ava_model_provider::create_model_provider;
+use ava_protocol::AgentPath;
+use ava_utils_output_truncation::TruncationPolicy;
 use serde_json::json;
 
 use crate::backend::HistoryNotesBackend;
@@ -49,7 +49,7 @@ impl HistoryNotesExtension {
             .as_ref()
             .is_some_and(|token_budget| token_budget.use_history_notes_extension)
             && config.model_provider.is_openai()
-            && self.auth_manager.current_auth_uses_codex_backend()
+            && self.auth_manager.current_auth_uses_ava_backend()
         {
             thread_store.insert(HistoryNotesExtensionConfig {
                 backend: HistoryNotesBackend::new(create_model_provider(
@@ -112,7 +112,7 @@ impl ContextContributor for HistoryNotesExtension {
                     analytics.track_thread_hint_status(ThreadHintStatusEvent {
                         thread_id: thread_store.level_id().to_string(),
                         status,
-                        occurred_at_ms: codex_analytics::now_unix_millis(),
+                        occurred_at_ms: ava_analytics::now_unix_millis(),
                     });
                 }
             };
@@ -178,7 +178,7 @@ impl ToolContributor for HistoryNotesExtension {
     }
 }
 
-/// Installs the standalone history and notes tools backed by the Codex backend.
+/// Installs the standalone history and notes tools backed by the Ava backend.
 pub fn install(registry: &mut ExtensionRegistryBuilder<Config>, auth_manager: Arc<AuthManager>) {
     let extension = Arc::new(HistoryNotesExtension { auth_manager });
     registry.thread_lifecycle_contributor(extension.clone());

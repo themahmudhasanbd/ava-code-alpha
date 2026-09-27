@@ -328,7 +328,7 @@ Options:
   --help              Show this help message
 
 Harness note:
-  Default one-shot mode is the portable contract for Claude Code, Codex, and Cursor.
+  Default one-shot mode is the portable contract for Claude Code, Ava, and Cursor.
   --stream is experimental for harnesses with fast incremental stdout; do not use on Cursor.`);
     process.exit(0);
   }

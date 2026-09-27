@@ -20,8 +20,8 @@ use crate::RequirementsLayerEntry;
 use crate::compose_requirements;
 use crate::default_project_root_markers;
 use crate::merge_toml_values;
-use codex_file_system::ExecutorFileSystem;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_file_system::ExecutorFileSystem;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::collections::BTreeMap;
 use std::io;
 use std::path::Path;
@@ -95,22 +95,22 @@ pub struct LocalTomlLayer<S> {
 /// legacy managed configuration.
 pub async fn load_local_config_layers(
     fs: &dyn ExecutorFileSystem,
-    codex_home: &Path,
+    ava_home: &Path,
     cwd: &AbsolutePathBuf,
 ) -> io::Result<LocalConfigLayers> {
-    load_local_config_layers_with_overrides(fs, codex_home, cwd, &LoaderOverrides::default()).await
+    load_local_config_layers_with_overrides(fs, ava_home, cwd, &LoaderOverrides::default()).await
 }
 
 pub(super) async fn load_local_config_layers_with_overrides(
     fs: &dyn ExecutorFileSystem,
-    codex_home: &Path,
+    ava_home: &Path,
     cwd: &AbsolutePathBuf,
     overrides: &LoaderOverrides,
 ) -> io::Result<LocalConfigLayers> {
-    let codex_home = AbsolutePathBuf::from_absolute_path(codex_home)?;
+    let ava_home = AbsolutePathBuf::from_absolute_path(ava_home)?;
     let loaded_managed = layer_io::load_config_layers_internal(
         fs,
-        codex_home.as_path(),
+        ava_home.as_path(),
         overrides.clone(),
         /*strict_config*/ false,
     )
@@ -119,7 +119,7 @@ pub(super) async fn load_local_config_layers_with_overrides(
     let system_file = system_config_toml_file_with_overrides(overrides)?;
     let system =
         load_config_toml_for_required_layer_raw(fs, &system_file, /*strict_config*/ false).await?;
-    let user_file = codex_home.join(CONFIG_TOML_FILE);
+    let user_file = ava_home.join(CONFIG_TOML_FILE);
     let user =
         load_config_toml_for_required_layer_raw(fs, &user_file, /*strict_config*/ false).await?;
 
@@ -133,12 +133,12 @@ pub(super) async fn load_local_config_layers_with_overrides(
     project_discovery::merge_managed_config_for_discovery(
         &mut discovery_config,
         &loaded_managed,
-        codex_home.as_path(),
+        ava_home.as_path(),
     )?;
     let project_root_markers = project_root_markers_from_config(&discovery_config)?
         .unwrap_or_else(default_project_root_markers);
     let requirements =
-        local_requirements_layers(fs, codex_home.as_path(), overrides, loaded_managed.clone())
+        local_requirements_layers(fs, ava_home.as_path(), overrides, loaded_managed.clone())
             .await?;
     let mut trust_context = project_trust_context(
         fs,
@@ -146,7 +146,7 @@ pub(super) async fn load_local_config_layers_with_overrides(
         &trusted_broker_config,
         cwd,
         &project_root_markers,
-        codex_home.as_path(),
+        ava_home.as_path(),
         &user_file,
     )
     .await?;
@@ -172,7 +172,7 @@ pub(super) async fn load_local_config_layers_with_overrides(
         cwd,
         &trust_context.project_root,
         &trust_context,
-        codex_home.as_path(),
+        ava_home.as_path(),
         /*strict_config*/ false,
     )
     .await?;
@@ -194,7 +194,7 @@ pub(super) async fn load_local_config_layers_with_overrides(
     ];
     append_project_layers(fs, &mut config_layers, project_layers.layers).await?;
 
-    append_legacy_config_layers(&mut config_layers, loaded_managed, &codex_home)?;
+    append_legacy_config_layers(&mut config_layers, loaded_managed, &ava_home)?;
 
     Ok(LocalConfigLayers {
         config: LocalTomlLayerStack {
@@ -223,9 +223,9 @@ async fn append_project_layers(
         }
         output.push(LocalTomlLayer {
             source: ConfigLayerSource::Project {
-                dot_codex_folder: layer.dot_codex_folder.clone(),
+                dot_ava_folder: layer.dot_ava_folder.clone(),
             },
-            base_dir: layer.dot_codex_folder,
+            base_dir: layer.dot_ava_folder,
             toml: config,
         });
 
@@ -240,7 +240,7 @@ async fn append_project_layers(
         };
         output.push(LocalTomlLayer {
             source: ConfigLayerSource::Project {
-                dot_codex_folder: hooks_config_folder.clone(),
+                dot_ava_folder: hooks_config_folder.clone(),
             },
             base_dir: hooks_config_folder,
             toml: TomlValue::Table(toml::map::Map::from_iter([(
@@ -255,7 +255,7 @@ async fn append_project_layers(
 fn append_legacy_config_layers(
     output: &mut Vec<LocalTomlLayer<ConfigLayerSource>>,
     loaded: layer_io::LoadedConfigLayers,
-    codex_home: &AbsolutePathBuf,
+    ava_home: &AbsolutePathBuf,
 ) -> io::Result<()> {
     if let Some(config) = loaded.managed_config {
         let base_dir = config.file.parent().ok_or_else(|| {
@@ -276,7 +276,7 @@ fn append_legacy_config_layers(
     if let Some(config) = loaded.managed_config_from_mdm {
         output.push(LocalTomlLayer {
             source: ConfigLayerSource::LegacyManagedConfigTomlFromMdm,
-            base_dir: codex_home.clone(),
+            base_dir: ava_home.clone(),
             toml: config.managed_config,
         });
     }
@@ -285,7 +285,7 @@ fn append_legacy_config_layers(
 
 async fn local_requirements_layers(
     fs: &dyn ExecutorFileSystem,
-    codex_home: &Path,
+    ava_home: &Path,
     overrides: &LoaderOverrides,
     loaded_managed: layer_io::LoadedConfigLayers,
 ) -> io::Result<LocalTomlLayerStack<RequirementSource>> {
@@ -296,12 +296,12 @@ async fn local_requirements_layers(
     entries.extend(system);
     entries.extend(requirements_layers_from_legacy_scheme(
         loaded_managed,
-        codex_home,
+        ava_home,
     )?);
 
     #[cfg(target_os = "macos")]
     {
-        let codex_home = AbsolutePathBuf::from_absolute_path(codex_home)?;
+        let ava_home = AbsolutePathBuf::from_absolute_path(ava_home)?;
         entries.extend(
             super::macos::load_managed_admin_requirements_layer(
                 overrides
@@ -309,7 +309,7 @@ async fn local_requirements_layers(
                     .as_deref(),
             )
             .await?
-            .map(|layer| layer.with_base_dir(codex_home)),
+            .map(|layer| layer.with_base_dir(ava_home)),
         );
     }
 

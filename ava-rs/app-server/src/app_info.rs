@@ -1,21 +1,21 @@
-use codex_app_server_protocol::AppBranding as ApiAppBranding;
-use codex_app_server_protocol::AppInfo as ApiAppInfo;
-use codex_app_server_protocol::AppMetadata as ApiAppMetadata;
-use codex_app_server_protocol::AppReview as ApiAppReview;
-use codex_app_server_protocol::AppScreenshot as ApiAppScreenshot;
-use codex_app_server_protocol::AppToolSummary as ApiAppToolSummary;
-use codex_app_server_protocol::ConnectorMetadata as ApiConnectorMetadata;
-use codex_connectors::AppBranding;
-use codex_connectors::AppInfo;
-use codex_connectors::AppMetadata;
-use codex_connectors::AppReview;
-use codex_connectors::AppScreenshot;
-use codex_connectors::ConnectorMetadata;
-use codex_connectors::ConnectorToolSummary;
-use codex_connectors::metadata::connector_install_url;
+use ava_app_server_protocol::AppBranding as ApiAppBranding;
+use ava_app_server_protocol::AppInfo as ApiAppInfo;
+use ava_app_server_protocol::AppMetadata as ApiAppMetadata;
+use ava_app_server_protocol::AppReview as ApiAppReview;
+use ava_app_server_protocol::AppScreenshot as ApiAppScreenshot;
+use ava_app_server_protocol::AppToolSummary as ApiAppToolSummary;
+use ava_app_server_protocol::ConnectorMetadata as ApiConnectorMetadata;
+use ava_connectors::AppBranding;
+use ava_connectors::AppInfo;
+use ava_connectors::AppMetadata;
+use ava_connectors::AppReview;
+use ava_connectors::AppScreenshot;
+use ava_connectors::ConnectorMetadata;
+use ava_connectors::ConnectorToolSummary;
+use ava_connectors::metadata::connector_install_url;
 
-/// Converts connector-domain app metadata owned by `codex-connectors` into the app-server wire
-/// type owned by `codex-app-server-protocol`.
+/// Converts connector-domain app metadata owned by `ava-connectors` into the app-server wire
+/// type owned by `ava-app-server-protocol`.
 ///
 /// The types stay separate so app-server protocol ownership does not leak into the connector
 /// domain crate. Because this crate owns neither type, Rust's orphan rules require an explicit

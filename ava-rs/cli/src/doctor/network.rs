@@ -2,15 +2,15 @@ use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use codex_core::config::Config;
+use ava_core::config::Config;
 #[cfg(target_os = "macos")]
-use codex_http_client::MacosSystemProxyConfiguration;
-use codex_http_client::RouteAwareClientPool;
-use codex_http_client::RouteAwareRequestError;
-use codex_http_client::RouteFailureClass;
+use ava_http_client::MacosSystemProxyConfiguration;
+use ava_http_client::RouteAwareClientPool;
+use ava_http_client::RouteAwareRequestError;
+use ava_http_client::RouteFailureClass;
 #[cfg(target_os = "macos")]
-use codex_http_client::macos_system_proxy_configuration;
-use codex_login::default_client::create_client_without_request_logging;
+use ava_http_client::macos_system_proxy_configuration;
+use ava_login::default_client::create_client_without_request_logging;
 use http::HeaderMap;
 use http::Method;
 
@@ -51,7 +51,7 @@ pub(super) fn check(config: Option<&Config>) -> DoctorCheck {
 
     let mut status = CheckStatus::Ok;
     let mut summary = "network-related environment looks readable".to_string();
-    for name in ["CODEX_CA_CERTIFICATE", "SSL_CERT_FILE"] {
+    for name in ["AVA_CA_CERTIFICATE", "SSL_CERT_FILE"] {
         if let Some(raw) = env::var_os(name) {
             let path = PathBuf::from(raw);
             match std::fs::metadata(&path) {
@@ -108,7 +108,7 @@ pub(super) fn with_system_proxy_remediation(
         })
     {
         check.remediation = Some(
-            "A macOS system proxy is configured but unused. If your organization requires it, ask your administrator whether to enable the under-development feature with `codex features enable respect_system_proxy`."
+            "A macOS system proxy is configured but unused. If your organization requires it, ask your administrator whether to enable the under-development feature with `ava features enable respect_system_proxy`."
                 .to_string(),
         );
     }
@@ -121,7 +121,7 @@ pub(super) async fn probe_status(
     method: Method,
     headers: HeaderMap,
 ) -> Result<u16, String> {
-    let response = if env::var("CODEX_SANDBOX").as_deref() == Ok("seatbelt") {
+    let response = if env::var("AVA_SANDBOX").as_deref() == Ok("seatbelt") {
         create_client_without_request_logging()
             .request(method, url)
             .headers(headers)

@@ -6,7 +6,7 @@ use crate::exec_cell::model::ExecCall;
 use crate::history_cell::HistoryCell;
 use crate::history_cell::new_reasoning_summary_block;
 use crate::history_cell::new_unified_exec_interaction;
-use codex_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionSource;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use std::sync::Arc;
@@ -14,7 +14,7 @@ use std::time::Duration;
 
 fn completed_read(name: &str, output: &str) -> ExecCell {
     let command = vec!["cat".to_owned(), name.to_owned()];
-    let parsed = codex_shell_command::parse_command::parse_command(&command);
+    let parsed = ava_shell_command::parse_command::parse_command(&command);
     ExecCell::new(
         ExecCall {
             call_id: name.to_owned(),

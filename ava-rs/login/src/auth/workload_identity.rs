@@ -7,20 +7,20 @@ use std::sync::Weak;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 
-use codex_http_client::HttpClientFactory;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
-use codex_protocol::shell_environment::OPENAI_WORKLOAD_IDENTITY_CONTEXT_ENV_VAR;
-use codex_workload_identity::WorkloadIdentityConfig;
-use codex_workload_identity::WorkloadIdentityError;
-use codex_workload_identity::WorkloadIdentityExchange;
-use codex_workload_identity::WorkloadIdentityToken;
+use ava_http_client::HttpClientFactory;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
+use ava_protocol::shell_environment::OPENAI_WORKLOAD_IDENTITY_CONTEXT_ENV_VAR;
+use ava_workload_identity::WorkloadIdentityConfig;
+use ava_workload_identity::WorkloadIdentityError;
+use ava_workload_identity::WorkloadIdentityExchange;
+use ava_workload_identity::WorkloadIdentityToken;
 use thiserror::Error;
 use url::Url;
 
 use super::AuthConfig;
-use super::CodexAuth;
+use super::AvaAuth;
 use super::ExternalAuth;
 use super::ExternalAuthFuture;
 use super::ExternalAuthRefreshContext;
@@ -399,7 +399,7 @@ impl WorkloadIdentityExternalAuth {
         &self,
         token: WorkloadIdentityToken,
         previous_account_id: Option<&str>,
-    ) -> std::io::Result<CodexAuth> {
+    ) -> std::io::Result<AvaAuth> {
         let token_version = token.version();
         let result = self.validate_auth(&token, previous_account_id);
         if result.is_err() {
@@ -418,8 +418,8 @@ impl WorkloadIdentityExternalAuth {
         &self,
         token: &WorkloadIdentityToken,
         previous_account_id: Option<&str>,
-    ) -> std::io::Result<CodexAuth> {
-        let auth = CodexAuth::from_external_chatgpt_tokens(
+    ) -> std::io::Result<AvaAuth> {
+        let auth = AvaAuth::from_external_chatgpt_tokens(
             &token.access_token,
             &token.chatgpt_account_id,
             token.chatgpt_plan_type.as_deref(),
@@ -438,7 +438,7 @@ impl WorkloadIdentityExternalAuth {
 }
 
 impl ExternalAuth for WorkloadIdentityExternalAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async move {
             let token = self
                 .session
@@ -451,7 +451,7 @@ impl ExternalAuth for WorkloadIdentityExternalAuth {
         })
     }
 
-    fn refresh(&self, context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async move {
             let observed_version = self.observed_token_version.load(Ordering::Acquire);
             let token = self

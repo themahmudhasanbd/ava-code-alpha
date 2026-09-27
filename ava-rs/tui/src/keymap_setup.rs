@@ -37,10 +37,10 @@ pub(crate) use picker::build_keymap_picker_params_for_selected_action;
 pub(crate) use picker::build_keymap_picker_params_for_selected_action_with_filter;
 pub(crate) use picker::build_keymap_picker_params_with_filter;
 
-use codex_config::types::KeybindingSpec;
-use codex_config::types::KeybindingsSpec;
-use codex_config::types::MAX_FUNCTION_KEY;
-use codex_config::types::TuiKeymap;
+use ava_config::types::KeybindingSpec;
+use ava_config::types::KeybindingsSpec;
+use ava_config::types::MAX_FUNCTION_KEY;
+use ava_config::types::TuiKeymap;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
@@ -786,7 +786,7 @@ mod tests {
             frame_requester: FrameRequester::test_dummy(),
             has_input_focus: true,
             enhanced_keys_supported: false,
-            placeholder_text: "Ask Codex to do anything".to_string(),
+            placeholder_text: "Ask Ava to do anything".to_string(),
             disable_paste_burst: false,
             animations_enabled: false,
             skills: Some(Vec::new()),

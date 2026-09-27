@@ -1,10 +1,10 @@
 use crate::ResponseItemEnvelope;
 use crate::RolloutItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::SessionMetaLine;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::SessionMetaLine;
 
 /// Whether a reverse model-context scan needs more rollout items.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

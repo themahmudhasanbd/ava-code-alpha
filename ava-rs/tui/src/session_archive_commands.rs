@@ -1,4 +1,4 @@
-//! Shared implementation for `codex archive`, `codex delete`, and `codex unarchive`.
+//! Shared implementation for `ava archive`, `ava delete`, and `ava unarchive`.
 //!
 //! The CLI commands are thin app-server clients: resolve a user-provided UUID or exact session
 //! name, then call the corresponding app-server RPC.
@@ -19,17 +19,17 @@ use crate::legacy_core::config::resolve_profile_v2_config_path;
 use crate::named_session_lookup::SessionCollection;
 use crate::named_session_lookup::display_label;
 use crate::named_session_lookup::lookup;
-use codex_app_server_protocol::Thread as AppServerThread;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::ConfigLoadOptions;
-use codex_config::LoaderOverrides;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_protocol::ThreadId;
-use codex_utils_cli::CliConfigOverrides;
-use codex_utils_home_dir::find_codex_home;
-use codex_utils_oss::get_default_model_for_oss_provider;
+use ava_app_server_protocol::Thread as AppServerThread;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::ConfigLoadOptions;
+use ava_config::LoaderOverrides;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_protocol::ThreadId;
+use ava_utils_cli::CliConfigOverrides;
+use ava_utils_home_dir::find_ava_home;
+use ava_utils_oss::get_default_model_for_oss_provider;
 use color_eyre::eyre::Result;
 use color_eyre::eyre::WrapErr;
 use color_eyre::eyre::eyre;
@@ -81,12 +81,12 @@ pub async fn run_session_archive_command(
     target: String,
     options: SessionArchiveCommandOptions,
 ) -> Result<String> {
-    let codex_home = find_codex_home().wrap_err("failed to find Codex home")?;
+    let ava_home = find_ava_home().wrap_err("failed to find Ava home")?;
     let mut app_server =
-        start_app_server_for_session_command(options, codex_home.to_path_buf()).await?;
+        start_app_server_for_session_command(options, ava_home.to_path_buf()).await?;
     run_session_archive_action_with_app_server(
         &mut app_server,
-        codex_home.as_path(),
+        ava_home.as_path(),
         action,
         &target,
     )
@@ -95,11 +95,11 @@ pub async fn run_session_archive_command(
 
 async fn run_session_archive_action_with_app_server(
     app_server: &mut AppServerSession,
-    codex_home: &Path,
+    ava_home: &Path,
     action: SessionArchiveAction,
     target: &str,
 ) -> Result<String> {
-    let resolved = resolve_session_target(app_server, codex_home, action, target).await?;
+    let resolved = resolve_session_target(app_server, ava_home, action, target).await?;
     let session_name = match action {
         SessionArchiveAction::Archive => {
             app_server.thread_archive(resolved.session_id).await?;
@@ -128,7 +128,7 @@ async fn run_session_archive_action_with_app_server(
 
 async fn resolve_session_target(
     app_server: &mut AppServerSession,
-    codex_home: &Path,
+    ava_home: &Path,
     action: SessionArchiveAction,
     target: &str,
 ) -> Result<ResolvedSessionTarget> {
@@ -164,7 +164,7 @@ async fn resolve_session_target(
     };
     if let Some(thread) = lookup(
         app_server,
-        codex_home,
+        ava_home,
         target,
         collections,
         &[super::resume_source_kinds(
@@ -221,7 +221,7 @@ fn confirm_session_delete(target: &ResolvedSessionTarget) -> Result<bool> {
 
 pub(super) async fn start_app_server_for_session_command(
     options: SessionArchiveCommandOptions,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
 ) -> Result<AppServerSession> {
     let SessionArchiveCommandOptions {
         cli,
@@ -241,13 +241,13 @@ pub(super) async fn start_app_server_for_session_command(
     let mut launch_loader_overrides = loader_overrides.clone();
     if let Some(profile_v2) = cli.config_profile_v2.as_ref() {
         launch_loader_overrides.user_config_path = Some(resolve_profile_v2_config_path(
-            codex_home.as_path(),
+            ava_home.as_path(),
             profile_v2,
         ));
         launch_loader_overrides.user_config_profile = Some(profile_v2.clone());
     }
 
-    let workload_identity_selected = codex_login::is_workload_identity_selected();
+    let workload_identity_selected = ava_login::is_workload_identity_selected();
     let reuse_implicit_local_daemon = !cli.no_daemon
         && !workload_identity_selected
         && super::daemon_startup::config_exclusion(
@@ -258,7 +258,7 @@ pub(super) async fn start_app_server_for_session_command(
         )
         .is_none();
     let default_daemon = if explicit_remote_endpoint.is_none() && reuse_implicit_local_daemon {
-        super::maybe_probe_default_daemon_socket(codex_home.as_path()).await
+        super::maybe_probe_default_daemon_socket(ava_home.as_path()).await
     } else {
         None
     };
@@ -267,7 +267,7 @@ pub(super) async fn start_app_server_for_session_command(
         default_daemon,
         reuse_implicit_local_daemon,
         workload_identity_selected,
-        std::env::var_os(codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR).as_deref(),
+        std::env::var_os(ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR).as_deref(),
     )?;
     let remote_cwd_override = cli
         .cwd
@@ -275,8 +275,8 @@ pub(super) async fn start_app_server_for_session_command(
         .filter(|_| app_server_target.uses_remote_workspace());
 
     let local_runtime_paths = ExecServerRuntimePaths::from_optional_paths(
-        arg0_paths.codex_self_exe.clone(),
-        arg0_paths.codex_linux_sandbox_exe.clone(),
+        arg0_paths.ava_self_exe.clone(),
+        arg0_paths.ava_linux_sandbox_exe.clone(),
     )
     .wrap_err("failed to resolve local runtime paths")?;
     let prepared_environment_manager = EnvironmentManager::prepare_from_env()
@@ -292,7 +292,7 @@ pub(super) async fn start_app_server_for_session_command(
     let mut loader_overrides = loader_overrides;
     if let Some(profile_v2) = cli.config_profile_v2.as_ref() {
         loader_overrides.user_config_path = Some(resolve_profile_v2_config_path(
-            codex_home.as_path(),
+            ava_home.as_path(),
             profile_v2,
         ));
         loader_overrides.user_config_profile = Some(profile_v2.clone());
@@ -300,7 +300,7 @@ pub(super) async fn start_app_server_for_session_command(
     loader_overrides.ignore_login_requirements = app_server_target.uses_remote_workspace();
 
     let bootstrap_config = load_config_toml_with_layer_stack(
-        codex_home.as_path(),
+        ava_home.as_path(),
         config_cwd.as_ref(),
         cli_kv_overrides.clone(),
         ConfigLoadOptions {
@@ -315,7 +315,7 @@ pub(super) async fn start_app_server_for_session_command(
     let cloud_config_bundle = super::cloud_config_bundle_for_app_server_target(
         &app_server_target,
         &bootstrap_config,
-        codex_home.as_path(),
+        ava_home.as_path(),
     )
     .await?;
 
@@ -341,8 +341,8 @@ pub(super) async fn start_app_server_for_session_command(
                 cwd
             },
             model_provider,
-            codex_self_exe: arg0_paths.codex_self_exe.clone(),
-            codex_linux_sandbox_exe: arg0_paths.codex_linux_sandbox_exe.clone(),
+            ava_self_exe: arg0_paths.ava_self_exe.clone(),
+            ava_linux_sandbox_exe: arg0_paths.ava_linux_sandbox_exe.clone(),
             main_execve_wrapper_exe: arg0_paths.main_execve_wrapper_exe.clone(),
             show_raw_agent_reasoning: cli.oss.then_some(true),
             bypass_hook_trust: cli.bypass_hook_trust.then_some(true),
@@ -370,7 +370,7 @@ pub(super) async fn start_app_server_for_session_command(
         loader_overrides,
         strict_config,
         cloud_config_bundle,
-        codex_feedback::CodexFeedback::new(),
+        ava_feedback::AvaFeedback::new(),
         /*log_db*/ None,
         &mut state_db,
         environment_manager,

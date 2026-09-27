@@ -2,10 +2,10 @@ use crate::app_server_session::AppServerSession;
 use crate::app_server_session::EXTERNAL_AGENT_CONFIG_IMPORT_IN_PROGRESS_MESSAGE;
 use crate::legacy_core::config::Config;
 use crate::tui;
-use codex_app_server_protocol::ExternalAgentConfigDetectParams;
-use codex_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItem;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItemType;
+use ava_app_server_protocol::ExternalAgentConfigDetectParams;
+use ava_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItem;
+use ava_app_server_protocol::ExternalAgentConfigMigrationItemType;
 use ratatui::prelude::Stylize as _;
 use ratatui::text::Line;
 
@@ -18,8 +18,8 @@ use super::source::run_external_agent_config_source_prompt;
 
 pub(crate) const EXTERNAL_AGENT_CONFIG_MIGRATION_NO_ITEMS_MESSAGE: &str =
     "No compatible setup was found to import.";
-pub(crate) const EXTERNAL_AGENT_CONFIG_MIGRATION_REMOTE_UNAVAILABLE_MESSAGE: &str = "Import from other apps is unavailable in remote sessions. Start Codex locally and run /import.";
-pub(crate) const EXTERNAL_AGENT_CONFIG_MIGRATION_DAEMON_UNAVAILABLE_MESSAGE: &str = "Import from other apps is unavailable while Codex is connected to the local app-server daemon. Restart with `codex --no-daemon` and run /import.";
+pub(crate) const EXTERNAL_AGENT_CONFIG_MIGRATION_REMOTE_UNAVAILABLE_MESSAGE: &str = "Import from other apps is unavailable in remote sessions. Start Ava locally and run /import.";
+pub(crate) const EXTERNAL_AGENT_CONFIG_MIGRATION_DAEMON_UNAVAILABLE_MESSAGE: &str = "Import from other apps is unavailable while Ava is connected to the local app-server daemon. Restart with `ava --no-daemon` and run /import.";
 
 pub(crate) enum ExternalAgentConfigMigrationFlowOutcome {
     Started(Vec<Line<'static>>),

@@ -57,7 +57,7 @@ impl App {
         app_server: &AppServerSession,
         thread_id: ThreadId,
         mut response_tx: oneshot::Sender<
-            Result<Vec<codex_app_server_protocol::ExperimentalFeature>, String>,
+            Result<Vec<ava_app_server_protocol::ExperimentalFeature>, String>,
         >,
     ) {
         let lock = self.feature_write_lock.clone();

@@ -5,10 +5,10 @@
 > Interaction behavior: [09-interaction-patterns.md](09-interaction-patterns.md)
 
 
-> Shell layout is Codex-aligned: left thread sidebar (240–520px, default 275px), main transcript, floating bottom composer with runtime mode/permission/model controls, and a compact action-only top bar. Prefer neutral charcoal surfaces over blue-slate chrome.
+> Shell layout is Ava-aligned: left thread sidebar (240–520px, default 275px), main transcript, floating bottom composer with runtime mode/permission/model controls, and a compact action-only top bar. Prefer neutral charcoal surfaces over blue-slate chrome.
 >
 > **Precedence rule**: where a metric or copy string below disagrees with a
-> Codex parity decision in [decisions-log §D](../08-meta/decisions-log.md)
+> Ava parity decision in [decisions-log §D](../08-meta/decisions-log.md)
 > (D034+), the decision log wins — it tracks the live gold captures. Known
 > updated values: sidebar 240–520px (default 275px), toolbar 46px (not 44px),
 > composer placeholder per D094/D066, home empty stack and bottom composer per
@@ -250,7 +250,7 @@ combined model × reasoning selection (§11).
 
 ### 2.3 Layout
 
-- Height: `--ds-toolbar-height` (46px; Codex toolbar rhythm, D034; supersedes
+- Height: `--ds-toolbar-height` (46px; Ava toolbar rhythm, D034; supersedes
   the old 44px)
 - Background: bg-primary for the conversation bar and every route-owned
   frameless drag band
@@ -409,7 +409,7 @@ tier; weight, indentation, and disclosure icons preserve their hierarchy:
 | Footer status / version | `--text-sm` (12px) | Right-aligned build/version chip |
 
 Do not render primary sidebar list content below `--text-md`. Keep row heights
-(≈28–32px) so density stays WorkBuddy/Codex-like while primary actions remain
+(≈28–32px) so density stays WorkBuddy/Ava-like while primary actions remain
 visually distinct from list content.
 
 ### 3.4 States
@@ -641,7 +641,7 @@ visually distinct from list content.
 
 ### 3.7 Brand and icon contract
 
-- The visible shell name is `PI-Desktop`; Codex is not used as the renderer
+- The visible shell name is `PI-Desktop`; Ava is not used as the renderer
   identity.
 - A control with no label states `.icon-btn-square`, which pins both axes to
   `--ds-control-size` (28px). `.icon-btn` on its own takes its width from its
@@ -1765,7 +1765,7 @@ Single message render — either user (plaintext) or assistant (markdown streami
   contentful fragment so existing durable transcript semantics remain intact
   (D157).
 - Assistant meta: optional model badge under the answer. The compact
-  Codex-style context inspector lives in the composer right toolbar,
+  Ava-style context inspector lives in the composer right toolbar,
   immediately left of the model × reasoning chip, and always mirrors the
   newest assistant turn that reported usage (D347). Occupancy, remaining
   capacity, used/window counts, turn total, and provider
@@ -3490,11 +3490,11 @@ CLAUDE CODE              ~/code/pi                                  4
 - A successful scan replaces the prior candidate set, clears selection, and
   shows every group expanded: the found candidates are the answer to the scan,
   so they are not hidden behind a second click.
-- Codex session discovery walks `~/.codex/sessions/YYYY/MM/DD` newest-path-first
+- Ava session discovery walks `~/.ava-code/sessions/YYYY/MM/DD` newest-path-first
   and stops after 250 `.jsonl` files. That order is folder-date lexicographic,
   not `updatedAt`. When the cap hits, `session/importScan` returns
-  `truncated.codex = 250` and the sessions toolbar shows the localized cap note;
-  older Codex files are absent from the candidate list.
+  `truncated.ava-code = 250` and the sessions toolbar shows the localized cap note;
+  older Ava files are absent from the candidate list.
 
 - Every kind scans on its own: a session scan never starts a model-config,
   skills, or MCP scan, and switching tabs preserves the result and the

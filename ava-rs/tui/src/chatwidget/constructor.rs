@@ -4,12 +4,12 @@ use super::*;
 
 impl ChatWidget {
     pub(crate) fn new_with_app_event(common: ChatWidgetInit) -> Self {
-        Self::new_with_op_target(common, CodexOpTarget::AppEvent)
+        Self::new_with_op_target(common, AvaOpTarget::AppEvent)
     }
 
     pub(super) fn new_with_op_target(
         common: ChatWidgetInit,
-        codex_op_target: CodexOpTarget,
+        ava_op_target: AvaOpTarget,
     ) -> Self {
         let ChatWidgetInit {
             config,
@@ -21,7 +21,7 @@ impl ChatWidget {
             enhanced_keys_supported,
             has_chatgpt_account,
             requires_openai_auth,
-            has_codex_backend_auth,
+            has_ava_backend_auth,
             model_catalog,
             feedback,
             is_first_run,
@@ -85,9 +85,9 @@ impl ChatWidget {
             runtime_keymap.as_ref().unwrap_or(&default_keymap),
             current_terminal_info,
         );
-        let pet_http_client = codex_http_client::RouteAwareClientPool::new(
+        let pet_http_client = ava_http_client::RouteAwareClientPool::new(
             config.http_client_factory(),
-            codex_http_client::ClientRouteClass::Other,
+            ava_http_client::ClientRouteClass::Other,
         );
         pets::start_configured_pet_load_if_needed(
             &local_settings,
@@ -101,7 +101,7 @@ impl ChatWidget {
             cyber_policy_notice: Default::default(),
             app_event_tx: app_event_tx.clone(),
             frame_requester: frame_requester.clone(),
-            codex_op_target,
+            ava_op_target,
             bottom_pane: BottomPane::new(BottomPaneParams {
                 frame_requester,
                 app_event_tx,
@@ -123,7 +123,7 @@ impl ChatWidget {
             active_collaboration_mask,
             has_chatgpt_account,
             requires_openai_auth,
-            has_codex_backend_auth,
+            has_ava_backend_auth,
             model_catalog,
             model_popup_request_id: None,
             permission_popup_request_id: None,
@@ -157,8 +157,8 @@ impl ChatWidget {
             available_rate_limit_reset_credits: None,
             next_rate_limit_reset_request_id: 0,
             plan_type: initial_plan_type,
-            codex_rate_limit_reached_type: None,
-            codex_spend_control_reached: None,
+            ava_rate_limit_reached_type: None,
+            ava_spend_control_reached: None,
             rate_limit_warnings: RateLimitWarningState::default(),
             backend_banner_state: backend_banners::BackendBannerState::default(),
             automatic_model_switch_state: backend_banners::AutomaticModelSwitchState::default(),
@@ -313,7 +313,7 @@ impl ChatWidget {
             .set_connectors_enabled(widget.connectors_enabled());
         widget
             .bottom_pane
-            .set_token_activity_command_enabled(widget.has_codex_backend_auth);
+            .set_token_activity_command_enabled(widget.has_ava_backend_auth);
         widget.refresh_status_surfaces();
 
         widget

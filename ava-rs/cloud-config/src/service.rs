@@ -13,16 +13,16 @@ use crate::metrics::emit_fetch_attempt_metric;
 use crate::metrics::emit_fetch_final_metric;
 use crate::metrics::emit_load_metric;
 use crate::validation::validate_bundle;
-use codex_async_utils::backoff;
-use codex_config::AbsolutePathBuf;
-use codex_config::CloudConfigBundle;
-use codex_config::CloudConfigBundleLoadError;
-use codex_config::CloudConfigBundleLoadErrorCode;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::RefreshTokenError;
-use codex_login::UnauthorizedRecovery;
-use codex_protocol::account::PlanType;
+use ava_async_utils::backoff;
+use ava_config::AbsolutePathBuf;
+use ava_config::CloudConfigBundle;
+use ava_config::CloudConfigBundleLoadError;
+use ava_config::CloudConfigBundleLoadErrorCode;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::RefreshTokenError;
+use ava_login::UnauthorizedRecovery;
+use ava_protocol::account::PlanType;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -43,15 +43,15 @@ const CLOUD_CONFIG_BUNDLE_AUTH_RECOVERY_FAILED_MESSAGE: &str = concat!(
     "Please log out and sign in again."
 );
 
-fn auth_identity(auth: &CodexAuth) -> (Option<String>, Option<String>) {
+fn auth_identity(auth: &AvaAuth) -> (Option<String>, Option<String>) {
     (auth.get_chatgpt_user_id(), auth.get_account_id())
 }
 
-fn cloud_config_eligible_auth(auth: &CodexAuth) -> bool {
+fn cloud_config_eligible_auth(auth: &AvaAuth) -> bool {
     let Some(plan_type) = auth.account_plan_type() else {
         return false;
     };
-    auth.uses_codex_backend()
+    auth.uses_ava_backend()
         && (plan_type.is_business_like()
             || plan_type.is_education_like()
             || plan_type == PlanType::Enterprise)
@@ -80,7 +80,7 @@ pub(crate) struct CloudConfigBundleService<C> {
     client: Arc<C>,
     cache: CloudConfigBundleCache,
     cache_enabled: bool,
-    codex_home: AbsolutePathBuf,
+    ava_home: AbsolutePathBuf,
     timeout: Duration,
     latest_bundle: OnceCell<Mutex<Result<Option<CloudConfigBundle>, CloudConfigBundleLoadError>>>,
 }
@@ -92,16 +92,16 @@ where
     pub(crate) fn new(
         auth_manager: Arc<AuthManager>,
         client: Arc<C>,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         timeout: Duration,
     ) -> Self {
-        let codex_home = AbsolutePathBuf::resolve_path_against_base(codex_home, "/");
+        let ava_home = AbsolutePathBuf::resolve_path_against_base(ava_home, "/");
         Self {
             auth_manager,
             client,
-            cache: CloudConfigBundleCache::new(codex_home.clone()),
+            cache: CloudConfigBundleCache::new(ava_home.clone()),
             cache_enabled: true,
-            codex_home,
+            ava_home,
             timeout,
             latest_bundle: OnceCell::new(),
         }
@@ -127,7 +127,7 @@ where
         &self,
     ) -> Result<Option<CloudConfigBundle>, CloudConfigBundleLoadError> {
         let _timer =
-            codex_otel::start_global_timer("codex.cloud_config_bundle.fetch.duration_ms", &[]);
+            ava_otel::start_global_timer("ava.cloud_config_bundle.fetch.duration_ms", &[]);
         let started_at = Instant::now();
         let load_result = timeout(self.timeout, self.load_startup_bundle())
             .await
@@ -214,7 +214,7 @@ where
     ) -> CachedBundleLookup {
         match self.cache.load(chatgpt_user_id, account_id).await {
             Ok(signed_payload) => {
-                if let Err(err) = validate_bundle(&signed_payload.bundle, &self.codex_home) {
+                if let Err(err) = validate_bundle(&signed_payload.bundle, &self.ava_home) {
                     tracing::warn!(
                         path = %self.cache.path().display(),
                         error = %err,
@@ -240,7 +240,7 @@ where
 
     async fn fetch_remote_bundle_and_update_cache_with_retries(
         &self,
-        mut auth: CodexAuth,
+        mut auth: AvaAuth,
         trigger: &'static str,
     ) -> Result<Option<CloudConfigBundle>, CloudConfigBundleLoadError> {
         let mut attempt = 1;
@@ -313,13 +313,13 @@ where
 
     async fn validate_and_cache_remote_bundle(
         &self,
-        auth: &CodexAuth,
+        auth: &AvaAuth,
         trigger: &'static str,
         attempt: usize,
         bundle: CloudConfigBundle,
     ) -> Result<Option<CloudConfigBundle>, CloudConfigBundleLoadError> {
         emit_fetch_attempt_metric(trigger, attempt, "success", /*status_code*/ None);
-        if let Err(err) = validate_bundle(&bundle, &self.codex_home) {
+        if let Err(err) = validate_bundle(&bundle, &self.ava_home) {
             emit_fetch_final_metric(
                 trigger,
                 "error",
@@ -379,7 +379,7 @@ where
 
     async fn handle_unauthorized(
         &self,
-        auth: &mut CodexAuth,
+        auth: &mut AvaAuth,
         auth_recovery: &mut UnauthorizedRecovery,
         trigger: &'static str,
         attempt: usize,

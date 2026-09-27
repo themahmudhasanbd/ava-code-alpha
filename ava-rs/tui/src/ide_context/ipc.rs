@@ -20,14 +20,14 @@ const IDE_CONTEXT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 #[cfg(any(unix, windows))]
 const MAX_IPC_FRAME_BYTES: usize = 256 * 1024 * 1024;
 #[cfg(any(unix, windows))]
-const TUI_SOURCE_CLIENT_ID: &str = "codex-tui";
+const TUI_SOURCE_CLIENT_ID: &str = "ava-tui";
 #[cfg(any(unix, windows))]
 const OPEN_IDE_HINT: &str =
-    "Open this project in VS Code or Cursor with the Codex extension active.";
+    "Open this project in VS Code or Cursor with the Ava extension active.";
 #[cfg(any(unix, windows))]
 const IDE_DID_NOT_PROVIDE_CONTEXT_HINT: &str = "The IDE extension did not provide context.";
 #[cfg(any(unix, windows))]
-const KEEP_TRYING_HINT: &str = "Codex will keep trying on future messages.";
+const KEEP_TRYING_HINT: &str = "Ava will keep trying on future messages.";
 
 #[derive(Debug, Error)]
 pub(crate) enum IdeContextError {
@@ -69,10 +69,10 @@ impl IdeContextError {
                 "The selected IDE context is too large. Clear any large selection in your IDE and try /ide again.".to_string()
             }
             IdeContextError::Send(_) => {
-                "Codex could not request IDE context. Try /ide again.".to_string()
+                "Ava could not request IDE context. Try /ide again.".to_string()
             }
             IdeContextError::Read(_) | IdeContextError::InvalidResponse(_) => {
-                "Codex could not read IDE context. Try /ide again.".to_string()
+                "Ava could not read IDE context. Try /ide again.".to_string()
             }
         }
     }
@@ -89,11 +89,11 @@ impl IdeContextError {
                 OPEN_IDE_HINT.to_string()
             }
             IdeContextError::Read(error) if error.kind() == std::io::ErrorKind::TimedOut => {
-                "Codex timed out waiting for IDE context. It will keep trying on future messages."
+                "Ava timed out waiting for IDE context. It will keep trying on future messages."
                     .to_string()
             }
             IdeContextError::RequestFailed(error) if error == "client-disconnected" => {
-                hint_with_retry("The IDE connection changed while Codex was requesting context.")
+                hint_with_retry("The IDE connection changed while Ava was requesting context.")
             }
             IdeContextError::RequestFailed(error) if error == "request-timeout" => {
                 hint_with_retry("The IDE extension did not answer in time.")
@@ -106,13 +106,13 @@ impl IdeContextError {
                 "The connected IDE client does not support IDE context requests.".to_string()
             }
             IdeContextError::Send(_) => {
-                hint_with_retry("Codex lost the IDE connection while requesting context.")
+                hint_with_retry("Ava lost the IDE connection while requesting context.")
             }
             IdeContextError::InvalidResponse(_) => {
-                hint_with_retry("Codex received an unexpected IDE context response.")
+                hint_with_retry("Ava received an unexpected IDE context response.")
             }
             IdeContextError::RequestFailed(_) => hint_with_retry(IDE_DID_NOT_PROVIDE_CONTEXT_HINT),
-            IdeContextError::Read(_) => hint_with_retry("Codex could not read IDE context."),
+            IdeContextError::Read(_) => hint_with_retry("Ava could not read IDE context."),
         }
     }
 
@@ -141,10 +141,10 @@ type IdeContextStream = super::windows_pipe::WindowsPipeStream;
 #[cfg(unix)]
 pub(crate) fn fetch_ide_context(
     workspace_root: &Path,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> Result<IdeContext, IdeContextError> {
     let deadline = Instant::now() + IDE_CONTEXT_REQUEST_TIMEOUT;
-    let primary_socket_path = primary_ipc_socket_path(codex_home);
+    let primary_socket_path = primary_ipc_socket_path(ava_home);
     let uid = unsafe { libc::getuid() };
     let legacy_socket_paths = legacy_ipc_socket_paths(&std::env::temp_dir(), uid);
     fetch_ide_context_from_unix_socket_paths(
@@ -158,7 +158,7 @@ pub(crate) fn fetch_ide_context(
 #[cfg(windows)]
 pub(crate) fn fetch_ide_context(
     workspace_root: &Path,
-    _codex_home: &Path,
+    _ava_home: &Path,
 ) -> Result<IdeContext, IdeContextError> {
     fetch_ide_context_from_socket(
         default_ipc_socket_path(),
@@ -170,19 +170,19 @@ pub(crate) fn fetch_ide_context(
 #[cfg(not(any(unix, windows)))]
 pub(crate) fn fetch_ide_context(
     _workspace_root: &Path,
-    _codex_home: &Path,
+    _ava_home: &Path,
 ) -> Result<IdeContext, IdeContextError> {
     Err(IdeContextError::UnsupportedPlatform)
 }
 
 #[cfg(unix)]
-fn primary_ipc_socket_path(codex_home: &Path) -> PathBuf {
-    codex_home.join("ipc").join("ipc.sock")
+fn primary_ipc_socket_path(ava_home: &Path) -> PathBuf {
+    ava_home.join("ipc").join("ipc.sock")
 }
 
 #[cfg(unix)]
 fn legacy_ipc_socket_paths(temp_dir: &Path, uid: libc::uid_t) -> Vec<PathBuf> {
-    let ipc_dir = temp_dir.join("codex-ipc");
+    let ipc_dir = temp_dir.join("ava-ipc");
     if uid == 0 {
         vec![ipc_dir.join("ipc.sock"), ipc_dir.join("ipc-0.sock")]
     } else {
@@ -192,7 +192,7 @@ fn legacy_ipc_socket_paths(temp_dir: &Path, uid: libc::uid_t) -> Vec<PathBuf> {
 
 #[cfg(windows)]
 fn default_ipc_socket_path() -> PathBuf {
-    PathBuf::from(r"\\.\pipe\codex-ipc")
+    PathBuf::from(r"\\.\pipe\ava-ipc")
 }
 
 #[cfg(not(any(unix, windows)))]
@@ -959,12 +959,12 @@ mod tests {
     }
 
     #[test]
-    fn primary_ipc_socket_path_uses_codex_home() {
-        let codex_home = Path::new("/home/test/.codex");
+    fn primary_ipc_socket_path_uses_ava_home() {
+        let ava_home = Path::new("/home/test/.ava-code");
 
         assert_eq!(
-            primary_ipc_socket_path(codex_home),
-            codex_home.join("ipc").join("ipc.sock")
+            primary_ipc_socket_path(ava_home),
+            ava_home.join("ipc").join("ipc.sock")
         );
     }
 
@@ -1154,7 +1154,7 @@ mod tests {
         let tempdir = tempfile::tempdir().expect("tempdir");
         std::fs::set_permissions(tempdir.path(), std::fs::Permissions::from_mode(0o777))
             .expect("set unsafe permissions");
-        let socket_path = tempdir.path().join("codex-ipc.sock");
+        let socket_path = tempdir.path().join("ava-ipc.sock");
         let _listener = UnixListener::bind(&socket_path).expect("bind socket");
 
         let err = validate_unix_socket_path(&socket_path)
@@ -1170,7 +1170,7 @@ mod tests {
         use std::thread;
 
         let tempdir = tempfile::tempdir().expect("tempdir");
-        let socket_path = tempdir.path().join("codex-ipc.sock");
+        let socket_path = tempdir.path().join("ava-ipc.sock");
         let listener = UnixListener::bind(&socket_path).expect("bind socket");
 
         let server = thread::spawn(move || {

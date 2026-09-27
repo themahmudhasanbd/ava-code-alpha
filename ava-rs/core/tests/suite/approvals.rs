@@ -2,39 +2,39 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::types::ApprovalsReviewer;
-use codex_core::CodexThread;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_core::config::ThreadStoreConfig;
-use codex_core::sandboxing::SandboxPermissions;
-use codex_features::Feature;
-use codex_protocol::approvals::NetworkApprovalProtocol;
-use codex_protocol::approvals::NetworkPolicyAmendment;
-use codex_protocol::approvals::NetworkPolicyRuleAction;
-use codex_protocol::config_types::CollaborationMode;
+use ava_config::types::ApprovalsReviewer;
+use ava_core::AvaThread;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_core::config::ThreadStoreConfig;
+use ava_core::sandboxing::SandboxPermissions;
+use ava_features::Feature;
+use ava_protocol::approvals::NetworkApprovalProtocol;
+use ava_protocol::approvals::NetworkPolicyAmendment;
+use ava_protocol::approvals::NetworkPolicyRuleAction;
+use ava_protocol::config_types::CollaborationMode;
 #[cfg(unix)]
-use codex_protocol::config_types::EnvironmentVariablePattern;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::ApplyPatchApprovalRequestEvent;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecApprovalRequestEvent;
-use codex_protocol::protocol::ExecPolicyAmendment;
-use codex_protocol::protocol::GranularApprovalConfig;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_protocol::config_types::EnvironmentVariablePattern;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::ApplyPatchApprovalRequestEvent;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecApprovalRequestEvent;
+use ava_protocol::protocol::ExecPolicyAmendment;
+use ava_protocol::protocol::GranularApprovalConfig;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::managed_network_requirements_loader;
 use core_test_support::responses::ev_apply_patch_custom_tool_call;
 use core_test_support::responses::ev_assistant_message;
@@ -48,10 +48,10 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_with_timeout;
 use core_test_support::zsh_fork::build_zsh_fork_test;
@@ -84,7 +84,7 @@ enum TargetPath {
 }
 
 impl TargetPath {
-    fn resolve_for_patch(self, test: &TestCodex) -> (PathBuf, String) {
+    fn resolve_for_patch(self, test: &TestAva) -> (PathBuf, String) {
         match self {
             TargetPath::Workspace(name) => {
                 let path = test.cwd.path().join(name);
@@ -159,7 +159,7 @@ impl ActionKind {
 
     async fn prepare(
         &self,
-        test: &TestCodex,
+        test: &TestAva,
         server: &MockServer,
         call_id: &str,
         sandbox_permissions: SandboxPermissions,
@@ -296,7 +296,7 @@ impl ActionKind {
                 let _ = fs::remove_file(&path);
                 let patch = build_add_file_patch(&patch_path, content);
                 let command = shell_apply_patch_command(&patch);
-                // Bazel may need to launch the configured Codex helper binary
+                // Bazel may need to launch the configured Ava helper binary
                 // to apply the verified patch, which can exceed the normal
                 // short command timeout on slower CI runners.
                 let timeout_ms = 30_000;
@@ -419,7 +419,7 @@ enum Expectation {
 }
 
 impl Expectation {
-    fn verify(&self, test: &TestCodex, result: &CommandResult) -> Result<()> {
+    fn verify(&self, test: &TestAva, result: &CommandResult) -> Result<()> {
         match self {
             Expectation::FileCreated { target, content } => {
                 let (path, _) = target.resolve_for_patch(test);
@@ -663,14 +663,14 @@ struct CommandResult {
 }
 
 async fn submit_turn(
-    test: &TestCodex,
+    test: &TestAva,
     prompt: &str,
     approval_policy: AskForApproval,
     sandbox_policy: SandboxPolicy,
 ) -> Result<()> {
     let session_model = test.session_configured.model.clone();
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -698,13 +698,13 @@ async fn submit_turn(
 }
 
 async fn submit_turn_preserving_active_permission_profile(
-    test: &TestCodex,
+    test: &TestAva,
     prompt: &str,
     approval_policy: AskForApproval,
 ) -> Result<()> {
     let session_model = test.session_configured.model.clone();
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -730,7 +730,7 @@ async fn submit_turn_preserving_active_permission_profile(
     Ok(())
 }
 
-fn assert_active_workspace_permission_profile(test: &TestCodex) {
+fn assert_active_workspace_permission_profile(test: &TestAva) {
     assert_eq!(
         test.session_configured
             .active_permission_profile
@@ -781,10 +781,10 @@ fn parse_result(item: &Value) -> CommandResult {
 }
 
 async fn expect_exec_approval(
-    test: &TestCodex,
+    test: &TestAva,
     expected_command: &str,
 ) -> ExecApprovalRequestEvent {
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -808,11 +808,11 @@ async fn expect_exec_approval(
 }
 
 async fn expect_patch_approval(
-    test: &TestCodex,
+    test: &TestAva,
     expected_call_id: &str,
 ) -> ApplyPatchApprovalRequestEvent {
     let event = wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| {
             matches!(
                 event,
@@ -838,8 +838,8 @@ async fn expect_patch_approval(
     }
 }
 
-async fn wait_for_completion_without_approval(test: &TestCodex) {
-    let event = wait_for_event(&test.codex, |event| {
+async fn wait_for_completion_without_approval(test: &TestAva) {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -856,8 +856,8 @@ async fn wait_for_completion_without_approval(test: &TestCodex) {
     }
 }
 
-async fn wait_for_completion(test: &TestCodex) {
-    wait_for_event(&test.codex, |event| {
+async fn wait_for_completion(test: &TestAva) {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -883,7 +883,7 @@ fn body_contains(req: &Request, text: &str) -> bool {
         .is_some_and(|body| body.contains(text))
 }
 
-async fn wait_for_spawned_thread(test: &TestCodex) -> Result<Arc<CodexThread>> {
+async fn wait_for_spawned_thread(test: &TestAva) -> Result<Arc<AvaThread>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     loop {
         let ids = test.thread_manager.list_thread_ids().await;
@@ -1972,7 +1972,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
     let policy_src = scenario.action.policy_src();
     let thread_store_id = format!("approval-scenario-{}", scenario.name);
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.5")
         .with_config(move |config| {
             // These scenarios assert tool behavior, not rollout persistence.
@@ -2054,7 +2054,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
                     scenario.name
                 );
             }
-            test.codex
+            test.ava-code
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: None,
@@ -2094,7 +2094,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
                 "unexpected execpolicy amendment for {}",
                 scenario.name
             );
-            test.codex
+            test.ava-code
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: None,
@@ -2116,7 +2116,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
                     scenario.name
                 );
             }
-            test.codex
+            test.ava-code
                 .submit(Op::PatchApproval {
                     id: approval.call_id,
                     decision: decision.clone(),
@@ -2138,7 +2138,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
         scenario.name, result.exit_code, result.stdout
     );
     let verification_result = scenario.expectation.verify(&test, &result);
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     verification_result
 }
 
@@ -2152,7 +2152,7 @@ async fn approving_apply_patch_for_session_skips_future_prompts_for_same_file() 
     let sandbox_policy = SandboxPolicy::DangerFullAccess;
     let sandbox_policy_for_config = sandbox_policy.clone();
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.4")
         .with_config(move |config| {
             config.permissions.approval_policy = Constrained::allow_any(approval_policy);
@@ -2202,7 +2202,7 @@ async fn approving_apply_patch_for_session_skips_future_prompts_for_same_file() 
     )
     .await?;
     let approval = expect_patch_approval(&test, call_id_1).await;
-    test.codex
+    test.ava-code
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::ApprovedForSession,
@@ -2237,7 +2237,7 @@ async fn approving_apply_patch_for_session_skips_future_prompts_for_same_file() 
     )
     .await?;
 
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ApplyPatchApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -2287,7 +2287,7 @@ async fn assert_execpolicy_amendment_context(
     let approval_policy = AskForApproval::OnRequest;
     let sandbox_policy = SandboxPolicy::new_read_only_policy();
     let sandbox_policy_for_config = sandbox_policy.clone();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model_info| {
             model_info.model_messages = None;
         })
@@ -2347,7 +2347,7 @@ async fn assert_execpolicy_amendment_context(
         approval.proposed_execpolicy_amendment,
         Some(expected_execpolicy_amendment.clone())
     );
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -2386,7 +2386,7 @@ async fn approving_execpolicy_amendment_persists_policy_and_skips_future_prompts
     let approval_policy = AskForApproval::UnlessTrusted;
     let sandbox_policy = SandboxPolicy::new_workspace_write_policy();
     let sandbox_policy_for_config = sandbox_policy.clone();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(approval_policy);
         config
             .set_legacy_sandbox_policy(sandbox_policy_for_config)
@@ -2444,7 +2444,7 @@ async fn approving_execpolicy_amendment_persists_policy_and_skips_future_prompts
         Some(expected_execpolicy_amendment.clone())
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -2559,7 +2559,7 @@ async fn spawned_subagent_execpolicy_amendment_propagates_to_parent_session() ->
     let approval_policy = AskForApproval::UnlessTrusted;
     let sandbox_policy = SandboxPolicy::new_workspace_write_policy();
     let sandbox_policy_for_config = sandbox_policy.clone();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(approval_policy);
         config
             .set_legacy_sandbox_policy(sandbox_policy_for_config)
@@ -2776,10 +2776,10 @@ async fn shell_startup_credentials_are_brokered(
         };
         zsh_fork_test_builder(runtime, AskForApproval::Never)
     } else {
-        let Some(zsh) = codex_core::shell::get_shell(codex_core::shell::ShellType::Zsh) else {
+        let Some(zsh) = ava_core::shell::get_shell(ava_core::shell::ShellType::Zsh) else {
             return Ok(());
         };
-        test_codex()
+        test_ava()
             .with_user_shell(zsh)
             .with_config(move |config| {
                 config.permissions.approval_policy = Constrained::allow_any(approval_policy);
@@ -2827,7 +2827,7 @@ async fn shell_startup_credentials_are_brokered(
         "export LOGIN_SHELL_READY=ready\n",
     )?;
     let startup_shell = if global_startup {
-        let Some(zsh) = codex_core::shell::get_shell(codex_core::shell::ShellType::Zsh) else {
+        let Some(zsh) = ava_core::shell::get_shell(ava_core::shell::ShellType::Zsh) else {
             return Ok(());
         };
         let zsh_path = zsh.derive_exec_args("", /*use_login_shell*/ false)[0].clone();
@@ -2869,7 +2869,7 @@ ZDOTDIR = "{}"
         .with_home(home)
         .with_cloud_config_bundle(managed_network_requirements_loader());
     if direct && !allow_login_shell {
-        let Some(bash) = codex_core::shell::get_shell(codex_core::shell::ShellType::Bash) else {
+        let Some(bash) = ava_core::shell::get_shell(ava_core::shell::ShellType::Bash) else {
             return Ok(());
         };
         builder = builder.with_user_shell(bash);
@@ -2925,7 +2925,7 @@ ZDOTDIR = "{}"
         workdir
     };
     let call_id = "zsh-fork-brokered-github-credential";
-    let command = r#"printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n' "$GH_HOST" "$GH_ENTERPRISE_TOKEN" "$CUSTOM_HOST" "$CUSTOM_API_KEY" "$CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE" "$PWD" "$BROKERED_STARTUP_CWD" "${LOGIN_SNAPSHOT_READY-unset}" "$AUTH_HEADER""#;
+    let command = r#"printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n' "$GH_HOST" "$GH_ENTERPRISE_TOKEN" "$CUSTOM_HOST" "$CUSTOM_API_KEY" "$AVA_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE" "$PWD" "$BROKERED_STARTUP_CWD" "${LOGIN_SNAPSHOT_READY-unset}" "$AUTH_HEADER""#;
     let command = format!(
         "APP_SETTING=production; EXCLUDED_SETTING=denied; [ \"$(/usr/bin/printenv APP_SETTING)\" = production ] || exit 1; if /usr/bin/printenv EXCLUDED_SETTING >/dev/null; then exit 1; fi; {command}"
     );
@@ -2938,7 +2938,7 @@ ZDOTDIR = "{}"
     let snapshot_dir_arg = shlex::try_join([snapshot_dir.to_string_lossy().as_ref()])?;
     let command = format!("{command}; /bin/cat {snapshot_dir_arg}/*.sh > captured-snapshot");
     let mut arguments = if direct {
-        let Some(zsh) = codex_core::shell::get_shell(codex_core::shell::ShellType::Zsh) else {
+        let Some(zsh) = ava_core::shell::get_shell(ava_core::shell::ShellType::Zsh) else {
             return Ok(());
         };
         json!({
@@ -2991,7 +2991,7 @@ ZDOTDIR = "{}"
     if request_extra_permissions {
         let mut approvals = 0;
         loop {
-            let event = wait_for_event(&test.codex, |event| {
+            let event = wait_for_event(&test.ava-code, |event| {
                 matches!(
                     event,
                     EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -3002,7 +3002,7 @@ ZDOTDIR = "{}"
                 break;
             };
             approvals += 1;
-            test.codex
+            test.ava-code
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: None,
@@ -3094,7 +3094,7 @@ async fn brokered_shell_snapshot_fallback(mode: &'static str) -> Result<()> {
     const REAL_GITHUB_TOKEN: &str =
         "ghp_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    let Some(bash) = codex_core::shell::get_shell(codex_core::shell::ShellType::Bash) else {
+    let Some(bash) = ava_core::shell::get_shell(ava_core::shell::ShellType::Bash) else {
         return Ok(());
     };
     let startup_dir = tempfile::tempdir_in(std::env::current_dir()?)?;
@@ -3148,7 +3148,7 @@ GH_TOKEN = "{REAL_GITHUB_TOKEN}"
         AskForApproval::Never
     };
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_user_shell(bash)
         .with_cloud_config_bundle(managed_network_requirements_loader())
@@ -3339,7 +3339,7 @@ GH_TOKEN = "{REAL_GITHUB_TOKEN}"
 async fn brokered_posix_startup_preserves_application_env(credential_startup: bool) -> Result<()> {
     skip_if_no_network!(Ok(()));
     const REAL_TOKEN: &str = "ghp_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let Some(shell) = codex_core::shell::get_shell(codex_core::shell::ShellType::Sh) else {
+    let Some(shell) = ava_core::shell::get_shell(ava_core::shell::ShellType::Sh) else {
         return Ok(());
     };
     let home = Arc::new(TempDir::new()?);
@@ -3370,7 +3370,7 @@ ENV = "{}"
     )?;
     let shell_path = shell.derive_exec_args("", /*use_login_shell*/ false)[0].clone();
     let server = start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_home(home)
         .with_user_shell(shell)
         .with_cloud_config_bundle(managed_network_requirements_loader())
@@ -3389,7 +3389,7 @@ ENV = "{}"
         })
         .build(&server)
         .await?;
-    let script = r#"printf '%s\n%s\n%s\n%s\n' "$GH_TOKEN" "$CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE" "${ENV-unset}" "$CORP_REGION""#;
+    let script = r#"printf '%s\n%s\n%s\n%s\n' "$GH_TOKEN" "$AVA_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE" "${ENV-unset}" "$CORP_REGION""#;
     let command = format!(
         "{} 2>/dev/null",
         shlex::try_join([shell_path.as_str(), "-i", "-c", script])?
@@ -3520,7 +3520,7 @@ async fn env_zsh_script_spawned_by_python_can_request_escalation_under_zsh_fork(
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.cwd.path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run nested env zsh script through python".into(),
@@ -3546,7 +3546,7 @@ async fn env_zsh_script_spawned_by_python_can_request_escalation_under_zsh_fork(
         .await?;
 
     let approval_event = wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| {
             matches!(
                 event,
@@ -3569,7 +3569,7 @@ async fn env_zsh_script_spawned_by_python_can_request_escalation_under_zsh_fork(
         approval.command
     );
 
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -3661,7 +3661,7 @@ async fn matched_prefix_rule_runs_unsandboxed_under_zsh_fork() -> Result<()> {
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.cwd.path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run allowed touch under zsh fork".into(),
@@ -3704,7 +3704,7 @@ async fn matched_prefix_rule_runs_unsandboxed_under_zsh_fork() -> Result<()> {
 ///
 /// Tool owners use this pattern when a trusted wrapper must run outside the
 /// current sandbox, but then needs to launch child commands back inside the
-/// same sandbox with `codex sandbox -P`. The nested invocation must also pass
+/// same sandbox with `ava sandbox -P`. The nested invocation must also pass
 /// `--include-managed-config` so it continues to honor enterprise requirements.
 /// The test proves both halves of that contract: the wrapper writes outside the
 /// `:workspace` sandbox, while its inherited profile name remains `:workspace`.
@@ -3728,7 +3728,7 @@ async fn allowed_escalated_exec_command_inherits_active_permission_profile() -> 
         format!(
             r#"#!/bin/sh
 # Print the inherited profile so the test can verify that it reached this script.
-printenv CODEX_PERMISSION_PROFILE
+printenv AVA_PERMISSION_PROFILE
 touch {outside_path:?}
 "#
         ),
@@ -3743,7 +3743,7 @@ touch {outside_path:?}
     )?;
 
     let approval_policy = AskForApproval::OnRequest;
-    let mut builder = test_codex().with_home(home).with_config(move |config| {
+    let mut builder = test_ava().with_home(home).with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(approval_policy);
     });
     let test = builder.build(&server).await?;
@@ -3792,7 +3792,7 @@ touch {outside_path:?}
             exit_code: Some(0),
             stdout: format!("{BUILT_IN_PERMISSION_PROFILE_WORKSPACE}\n"),
         },
-        "the unsandboxed script should inherit CODEX_PERMISSION_PROFILE from the shell command"
+        "the unsandboxed script should inherit AVA_PERMISSION_PROFILE from the shell command"
     );
     assert!(
         outside_path.exists(),
@@ -3807,7 +3807,7 @@ touch {outside_path:?}
 /// named profile needed to reconstruct the original sandbox remotely without
 /// dropping managed enterprise requirements. The script treats the inherited
 /// environment value as untrusted and accepts only explicitly allowlisted
-/// profile names before passing one to `codex sandbox -P`.
+/// profile names before passing one to `ava sandbox -P`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[cfg(unix)]
 async fn zsh_fork_inner_allowed_script_inherits_active_permission_profile() -> Result<()> {
@@ -3841,7 +3841,7 @@ ALLOWED_PROFILES = (":workspace",)
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Print an ssh command that recreates the current Codex sandbox remotely."
+        description="Print an ssh command that recreates the current Ava sandbox remotely."
     )
     parser.add_argument("--host", required=True)
     try:
@@ -3859,16 +3859,16 @@ def parse_args():
 
 def main():
     args = parse_args()
-    profile_name = os.environ.get("CODEX_PERMISSION_PROFILE")
+    profile_name = os.environ.get("AVA_PERMISSION_PROFILE")
     if not profile_name:
-        raise SystemExit("CODEX_PERMISSION_PROFILE must not be empty")
+        raise SystemExit("AVA_PERMISSION_PROFILE must not be empty")
     if profile_name not in ALLOWED_PROFILES:
-        raise SystemExit("CODEX_PERMISSION_PROFILE is not allowlisted")
+        raise SystemExit("AVA_PERMISSION_PROFILE is not allowlisted")
 
     shell_command = shlex.join(args.command)
     sandbox_command = shlex.join(
         [
-            "codex",
+            "ava",
             "sandbox",
             "-P",
             profile_name,
@@ -3988,12 +3988,12 @@ exec {remote_bash_exec} "$@"
     assert_eq!(
         sandbox_argv.len(),
         9,
-        "expected codex sandbox ... bash -lc CMD"
+        "expected ava sandbox ... bash -lc CMD"
     );
     assert_eq!(
         sandbox_argv[..8],
         [
-            "codex",
+            "ava",
             "sandbox",
             "-P",
             BUILT_IN_PERMISSION_PROFILE_WORKSPACE,
@@ -4002,7 +4002,7 @@ exec {remote_bash_exec} "$@"
             "bash",
             "-lc",
         ],
-        "remote_bash.py should use the allowlisted inherited profile and managed configuration to reconstruct the Codex sandbox"
+        "remote_bash.py should use the allowlisted inherited profile and managed configuration to reconstruct the Ava sandbox"
     );
     let command_argv = shlex::split(&sandbox_argv[8]).context("parse remote bash command")?;
     assert_eq!(
@@ -4025,7 +4025,7 @@ async fn invalid_requested_prefix_rule_falls_back_for_compound_command() -> Resu
     let approval_policy = AskForApproval::OnRequest;
     let sandbox_policy = SandboxPolicy::new_read_only_policy();
     let sandbox_policy_for_config = sandbox_policy.clone();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(approval_policy);
         config
             .set_legacy_sandbox_policy(sandbox_policy_for_config)
@@ -4035,7 +4035,7 @@ async fn invalid_requested_prefix_rule_falls_back_for_compound_command() -> Resu
 
     let call_id = "invalid-prefix-rule";
     let command =
-        "touch /tmp/codex-fallback-rule-test.txt && echo hello > /tmp/codex-fallback-rule-test.txt";
+        "touch /tmp/ava-fallback-rule-test.txt && echo hello > /tmp/ava-fallback-rule-test.txt";
     let event = shell_event_with_prefix_rule(
         call_id,
         command,
@@ -4078,7 +4078,7 @@ async fn approving_fallback_rule_for_compound_command_works() -> Result<()> {
     let approval_policy = AskForApproval::OnRequest;
     let sandbox_policy = SandboxPolicy::new_read_only_policy();
     let sandbox_policy_for_config = sandbox_policy.clone();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(approval_policy);
         config
             .set_legacy_sandbox_policy(sandbox_policy_for_config)
@@ -4088,7 +4088,7 @@ async fn approving_fallback_rule_for_compound_command_works() -> Result<()> {
 
     let call_id = "invalid-prefix-rule";
     let command =
-        "touch /tmp/codex-fallback-rule-test.txt && echo hello > /tmp/codex-fallback-rule-test.txt";
+        "touch /tmp/ava-fallback-rule-test.txt && echo hello > /tmp/ava-fallback-rule-test.txt";
     let event = shell_event_with_prefix_rule(
         call_id,
         command,
@@ -4122,7 +4122,7 @@ async fn approving_fallback_rule_for_compound_command_works() -> Result<()> {
         .expect("should have a proposed execpolicy amendment");
     assert!(amendment.command.contains(&command.to_string()));
 
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval_id,
             turn_id: None,
@@ -4135,7 +4135,7 @@ async fn approving_fallback_rule_for_compound_command_works() -> Result<()> {
 
     let call_id = "invalid-prefix-rule-again";
     let command =
-        "touch /tmp/codex-fallback-rule-test.txt && echo hello > /tmp/codex-fallback-rule-test.txt";
+        "touch /tmp/ava-fallback-rule-test.txt && echo hello > /tmp/ava-fallback-rule-test.txt";
     let event = shell_event_with_prefix_rule(
         call_id,
         command,
@@ -4215,7 +4215,7 @@ allow_local_binding = true
         exclude_slash_tmp: true,
     };
     let sandbox_policy_for_config = sandbox_policy.clone();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_cloud_config_bundle(managed_network_requirements_loader())
         .with_config(move |config| {
@@ -4282,7 +4282,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for network approval request");
         let event = wait_for_event_with_timeout(
-            &test.codex,
+            &test.ava-code,
             |event| {
                 matches!(
                     event,
@@ -4299,7 +4299,7 @@ allow_local_binding = true
                 {
                     break approval;
                 }
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4337,7 +4337,7 @@ allow_local_binding = true
         .find(|amendment| amendment.action == NetworkPolicyRuleAction::Deny)
         .expect("expected deny network policy amendment");
 
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -4428,7 +4428,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for second turn completion");
         let event = wait_for_event_with_timeout(
-            &test.codex,
+            &test.ava-code,
             |event| {
                 matches!(
                     event,
@@ -4448,7 +4448,7 @@ allow_local_binding = true
                         approval.command
                     );
                 }
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4501,7 +4501,7 @@ allow_local_binding = true
         exclude_tmpdir_env_var: true,
         exclude_slash_tmp: true,
     };
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_cloud_config_bundle(managed_network_requirements_loader())
         .with_config(move |config| {
@@ -4575,7 +4575,7 @@ allow_local_binding = true
     let (turn_sandbox_policy, turn_permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
     let session_model = test.session_configured.model.clone();
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "deny-read network retry".into(),
@@ -4607,7 +4607,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for network approval request");
         let event = wait_for_event_with_timeout(
-            &test.codex,
+            &test.ava-code,
             |event| {
                 matches!(
                     event,
@@ -4629,7 +4629,7 @@ allow_local_binding = true
                     command_approval_count, 1,
                     "expected only the outer explicit escalation approval"
                 );
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4657,7 +4657,7 @@ allow_local_binding = true
         .find(|amendment| amendment.action == NetworkPolicyRuleAction::Allow)
         .expect("expected allow network policy amendment");
 
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -4703,7 +4703,7 @@ allow_local_binding = true
         exclude_tmpdir_env_var: true,
         exclude_slash_tmp: true,
     };
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_cloud_config_bundle(managed_network_requirements_loader())
         .with_config(move |config| {
@@ -4770,7 +4770,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for network approval request");
         let event = wait_for_event_with_timeout(
-            &test.codex,
+            &test.ava-code,
             |event| {
                 matches!(
                     event,
@@ -4787,7 +4787,7 @@ allow_local_binding = true
                 {
                     break approval;
                 }
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4808,7 +4808,7 @@ allow_local_binding = true
         .expect("expected network approval context");
     assert_eq!(network_context.protocol, NetworkApprovalProtocol::Http);
 
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -4830,7 +4830,7 @@ async fn compound_command_with_one_safe_command_still_requires_approval() -> Res
     let approval_policy = AskForApproval::UnlessTrusted;
     let sandbox_policy = SandboxPolicy::new_workspace_write_policy();
     let sandbox_policy_for_config = sandbox_policy.clone();
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.permissions.approval_policy = Constrained::allow_any(approval_policy);
         config
             .set_legacy_sandbox_policy(sandbox_policy_for_config)
@@ -4880,7 +4880,7 @@ async fn compound_command_with_one_safe_command_still_requires_approval() -> Res
     .await?;
 
     let approval = expect_exec_approval(&test, expected_command.as_str()).await;
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,

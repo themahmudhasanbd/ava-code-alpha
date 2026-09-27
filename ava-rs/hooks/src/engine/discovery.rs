@@ -3,23 +3,23 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::HookEventsToml;
-use codex_config::HookHandlerConfig;
-use codex_config::HookStateToml;
-use codex_config::HooksFile;
-use codex_config::ManagedHooksRequirementsToml;
-use codex_config::MatcherGroup;
-use codex_config::RequirementSource;
-use codex_config::TomlValue;
-use codex_config::version_for_toml;
-use codex_plugin::PluginHookSource;
-use codex_plugin::is_allowlisted_bundled_cleanup_hook;
-use codex_protocol::protocol::HookEventName;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::HookEventsToml;
+use ava_config::HookHandlerConfig;
+use ava_config::HookStateToml;
+use ava_config::HooksFile;
+use ava_config::ManagedHooksRequirementsToml;
+use ava_config::MatcherGroup;
+use ava_config::RequirementSource;
+use ava_config::TomlValue;
+use ava_config::version_for_toml;
+use ava_plugin::PluginHookSource;
+use ava_plugin::is_allowlisted_bundled_cleanup_hook;
+use ava_protocol::protocol::HookEventName;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -35,8 +35,8 @@ use crate::events::session_end::SESSION_END_DEFAULT_TIMEOUT_SEC;
 use crate::events::session_end::SESSION_END_MAX_TIMEOUT_SEC;
 use crate::output_spill::AdditionalContextLimit;
 use crate::output_spill::DEFAULT_HOOK_OUTPUT_TOKEN_LIMIT;
-use codex_protocol::protocol::HookSource;
-use codex_protocol::protocol::HookTrustStatus;
+use ava_protocol::protocol::HookSource;
+use ava_protocol::protocol::HookTrustStatus;
 
 pub(crate) struct DiscoveryResult {
     pub handlers: Vec<ConfiguredHandler>,
@@ -405,9 +405,9 @@ fn config_toml_source_path(layer: &ConfigLayerEntry) -> AbsolutePathBuf {
         | ConfigLayerSource::System { file }
         | ConfigLayerSource::User { file, .. }
         | ConfigLayerSource::LegacyManagedConfigTomlFromFile { file } => file.clone(),
-        ConfigLayerSource::Project { dot_codex_folder } => layer
+        ConfigLayerSource::Project { dot_ava_folder } => layer
             .hooks_config_folder()
-            .unwrap_or_else(|| dot_codex_folder.clone())
+            .unwrap_or_else(|| dot_ava_folder.clone())
             .join(CONFIG_TOML_FILE),
         ConfigLayerSource::Mdm { domain, key } => {
             synthetic_layer_path(&format!("<mdm:{domain}:{key}>/{CONFIG_TOML_FILE}"))
@@ -481,7 +481,7 @@ fn append_matcher_groups(
     warnings: &mut Vec<String>,
     display_order: &mut i64,
     source: &mut HookHandlerSource<'_>,
-    event_name: codex_protocol::protocol::HookEventName,
+    event_name: ava_protocol::protocol::HookEventName,
     groups: Vec<MatcherGroup>,
 ) {
     for (group_index, group) in groups.into_iter().enumerate() {
@@ -538,11 +538,11 @@ fn append_matcher_groups(
                     }
                     let additional_context_limit = if matches!(
                         event_name,
-                        codex_protocol::protocol::HookEventName::PreToolUse
-                            | codex_protocol::protocol::HookEventName::PostToolUse
-                            | codex_protocol::protocol::HookEventName::SessionStart
-                            | codex_protocol::protocol::HookEventName::UserPromptSubmit
-                            | codex_protocol::protocol::HookEventName::SubagentStart
+                        ava_protocol::protocol::HookEventName::PreToolUse
+                            | ava_protocol::protocol::HookEventName::PostToolUse
+                            | ava_protocol::protocol::HookEventName::SessionStart
+                            | ava_protocol::protocol::HookEventName::UserPromptSubmit
+                            | ava_protocol::protocol::HookEventName::SubagentStart
                     ) {
                         additional_context_limit
                     } else {
@@ -773,7 +773,7 @@ struct NormalizedHookIdentity {
 }
 
 fn hook_hash(
-    event_name: codex_protocol::protocol::HookEventName,
+    event_name: ava_protocol::protocol::HookEventName,
     matcher: Option<&str>,
     group: &MatcherGroup,
     normalized_handler: &HookHandlerConfig,
@@ -862,16 +862,16 @@ fn hook_source_for_requirement_source(source: Option<&RequirementSource>) -> Hoo
 
 #[cfg(test)]
 mod tests {
-    use codex_config::ConfigLayerEntry;
-    use codex_config::ConfigLayerSource;
-    use codex_config::HookEventsToml;
-    use codex_config::RequirementSource;
-    use codex_protocol::protocol::HookEventName;
-    use codex_protocol::protocol::HookExecutionMode;
-    use codex_protocol::protocol::HookSource;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_config::ConfigLayerEntry;
+    use ava_config::ConfigLayerSource;
+    use ava_config::HookEventsToml;
+    use ava_config::RequirementSource;
+    use ava_protocol::protocol::HookEventName;
+    use ava_protocol::protocol::HookExecutionMode;
+    use ava_protocol::protocol::HookSource;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
 
     use super::ConfiguredHandler;
@@ -882,11 +882,11 @@ mod tests {
     use super::normalize_command_hook;
     use crate::output_spill::AdditionalContextLimit;
     use crate::output_spill::DEFAULT_HOOK_OUTPUT_TOKEN_LIMIT;
-    use codex_config::HookHandlerConfig;
-    use codex_config::HookStateToml;
-    use codex_config::MatcherGroup;
-    use codex_config::TomlValue;
-    use codex_protocol::protocol::HookTrustStatus;
+    use ava_config::HookHandlerConfig;
+    use ava_config::HookStateToml;
+    use ava_config::MatcherGroup;
+    use ava_config::TomlValue;
+    use ava_protocol::protocol::HookTrustStatus;
 
     fn source_path() -> AbsolutePathBuf {
         test_path_buf("/tmp/hooks.json").abs()
@@ -936,7 +936,7 @@ mod tests {
         let source = RequirementSource::Composite {
             sources: vec![
                 RequirementSource::SystemRequirementsToml {
-                    file: test_path_buf("/etc/codex/requirements.toml").abs(),
+                    file: test_path_buf("/etc/ava/requirements.toml").abs(),
                 },
                 RequirementSource::EnterpriseManaged {
                     id: "layer-1".to_string(),
@@ -1685,8 +1685,8 @@ mod tests {
 
     #[test]
     fn hook_metadata_for_config_layer_source_discards_source_details() {
-        let config_file = test_path_buf("/tmp/.codex/config.toml").abs();
-        let dot_codex_folder = test_path_buf("/tmp/worktree/.codex").abs();
+        let config_file = test_path_buf("/tmp/.ava-code/config.toml").abs();
+        let dot_ava_folder = test_path_buf("/tmp/worktree/.ava-code").abs();
 
         assert_eq!(
             super::hook_metadata_for_config_layer_source(&ConfigLayerSource::System {
@@ -1703,13 +1703,13 @@ mod tests {
         );
         assert_eq!(
             super::hook_metadata_for_config_layer_source(&ConfigLayerSource::Project {
-                dot_codex_folder
+                dot_ava_folder
             }),
             (HookSource::Project, false),
         );
         assert_eq!(
             super::hook_metadata_for_config_layer_source(&ConfigLayerSource::Mdm {
-                domain: "com.openai.codex".to_string(),
+                domain: "com.openai.ava-code".to_string(),
                 key: "config".to_string(),
             }),
             (HookSource::Mdm, true),

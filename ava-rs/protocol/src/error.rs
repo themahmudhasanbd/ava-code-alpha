@@ -5,7 +5,7 @@ pub use crate::auth::RefreshTokenFailedError;
 pub use crate::auth::RefreshTokenFailedReason;
 use crate::exec_output::ExecToolCallOutput;
 use crate::network_policy::NetworkPolicyDecisionPayload;
-use crate::protocol::CodexErrorInfo;
+use crate::protocol::AvaErrorInfo;
 use crate::protocol::ErrorEvent;
 use crate::protocol::MisalignmentErrorDetails;
 use crate::protocol::RateLimitReachedType;
@@ -15,11 +15,11 @@ use chrono::DateTime;
 use chrono::Datelike;
 use chrono::Local;
 use chrono::Utc;
-use codex_async_utils::CancelErr;
-use codex_async_utils::backoff;
-use codex_http_client::HttpError;
-use codex_utils_string::truncate_middle_chars;
-use codex_utils_string::truncate_middle_with_token_budget;
+use ava_async_utils::CancelErr;
+use ava_async_utils::backoff;
+use ava_http_client::HttpError;
+use ava_utils_string::truncate_middle_chars;
+use ava_utils_string::truncate_middle_with_token_budget;
 use http::StatusCode;
 use serde_json;
 use std::fmt;
@@ -29,7 +29,7 @@ use strum_macros::EnumDiscriminants;
 use thiserror::Error;
 use tokio::task::JoinError;
 
-pub type Result<T> = std::result::Result<T, CodexErr>;
+pub type Result<T> = std::result::Result<T, AvaErr>;
 
 /// Limit UI error messages to a reasonable size while keeping useful context.
 const ERROR_MESSAGE_UI_MAX_BYTES: usize = 2 * 1024;
@@ -69,18 +69,18 @@ pub enum SandboxErr {
     LandlockRestrict,
 }
 
-pub struct CodexErr {
-    details: CodexErrorDetails,
+pub struct AvaErr {
+    details: AvaErrorDetails,
     server_retry_delay: Option<Duration>,
 }
 
-/// The semantic category and diagnostic payload for a [`CodexErr`].
+/// The semantic category and diagnostic payload for a [`AvaErr`].
 #[derive(Error, Debug, EnumDiscriminants)]
-#[strum_discriminants(name(CodexErrKind))]
+#[strum_discriminants(name(AvaErrKind))]
 #[strum_discriminants(derive(serde::Serialize))]
 #[strum_discriminants(serde(rename_all = "snake_case"))]
 #[strum_discriminants(doc = "The payload-free semantic category used for analytics.")]
-pub enum CodexErrorDetails {
+pub enum AvaErrorDetails {
     #[error("turn aborted. Something went wrong? Hit `/feedback` to report the issue.")]
     TurnAborted,
 
@@ -98,7 +98,7 @@ pub enum CodexErrorDetails {
     RateLimitExceeded(String),
     // The iOS input-limit classifier matches this message's ASCII prefix.
     #[error(
-        "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying."
+        "Ava ran out of room in the model's context window. Start a new thread or clear earlier history before retrying."
     )]
     ContextWindowExceeded,
     #[error("no thread with id: {0}")]
@@ -113,7 +113,7 @@ pub enum CodexErrorDetails {
     #[error("request timed out")]
     RequestTimeout,
     /// Returned by run_command_stream when the child could not be spawned (its stdout/stderr pipes
-    /// could not be captured). Analogous to the previous `CodexError::Spawn` variant.
+    /// could not be captured). Analogous to the previous `AvaError::Spawn` variant.
     #[error("spawn failed: child stdout/stderr not captured")]
     Spawn,
     /// Returned by run_command_stream when the user pressed Ctrl-C (SIGINT). Session uses this to
@@ -152,7 +152,7 @@ pub enum CodexErrorDetails {
     #[error("Quota exceeded. Check your plan and billing details.")]
     QuotaExceeded,
     #[error(
-        "To use Codex with your ChatGPT plan, upgrade to Plus: https://chatgpt.com/explore/plus."
+        "To use Ava with your ChatGPT plan, upgrade to Plus: https://chatgpt.com/explore/plus."
     )]
     UsageNotIncluded,
     #[error("We’re currently experiencing high demand, which may cause temporary errors.")]
@@ -166,7 +166,7 @@ pub enum CodexErrorDetails {
     /// Sandbox error
     #[error("sandbox error: {0}")]
     Sandbox(#[from] SandboxErr),
-    #[error("codex-linux-sandbox was required but not provided")]
+    #[error("ava-linux-sandbox was required but not provided")]
     LandlockSandboxExecutableNotProvided,
     #[error("unsupported operation: {0}")]
     UnsupportedOperation(String),
@@ -193,16 +193,16 @@ pub enum CodexErrorDetails {
     EnvVar(EnvVarError),
 }
 
-impl From<&CodexErr> for CodexErrKind {
-    fn from(error: &CodexErr) -> Self {
+impl From<&AvaErr> for AvaErrKind {
+    fn from(error: &AvaErr) -> Self {
         error.details().into()
     }
 }
 
-impl fmt::Debug for CodexErr {
+impl fmt::Debug for AvaErr {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.details {
-            CodexErrorDetails::Stream(message) => formatter
+            AvaErrorDetails::Stream(message) => formatter
                 .debug_tuple("Stream")
                 .field(message)
                 .field(&self.server_retry_delay)
@@ -212,20 +212,20 @@ impl fmt::Debug for CodexErr {
     }
 }
 
-impl fmt::Display for CodexErr {
+impl fmt::Display for AvaErr {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.details, formatter)
     }
 }
 
-impl std::error::Error for CodexErr {
+impl std::error::Error for AvaErr {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.details.source()
     }
 }
 
-impl From<CodexErrorDetails> for CodexErr {
-    fn from(details: CodexErrorDetails) -> Self {
+impl From<AvaErrorDetails> for AvaErr {
+    fn from(details: AvaErrorDetails) -> Self {
         Self {
             details,
             server_retry_delay: None,
@@ -233,65 +233,65 @@ impl From<CodexErrorDetails> for CodexErr {
     }
 }
 
-impl From<CancelErr> for CodexErr {
+impl From<CancelErr> for AvaErr {
     fn from(error: CancelErr) -> Self {
-        CodexErrorDetails::from(error).into()
+        AvaErrorDetails::from(error).into()
     }
 }
 
-impl From<SandboxErr> for CodexErr {
+impl From<SandboxErr> for AvaErr {
     fn from(error: SandboxErr) -> Self {
-        CodexErrorDetails::from(error).into()
+        AvaErrorDetails::from(error).into()
     }
 }
 
-impl From<io::Error> for CodexErr {
+impl From<io::Error> for AvaErr {
     fn from(error: io::Error) -> Self {
-        CodexErrorDetails::from(error).into()
+        AvaErrorDetails::from(error).into()
     }
 }
 
-impl From<serde_json::Error> for CodexErr {
+impl From<serde_json::Error> for AvaErr {
     fn from(error: serde_json::Error) -> Self {
-        CodexErrorDetails::from(error).into()
+        AvaErrorDetails::from(error).into()
     }
 }
 
-impl From<JoinError> for CodexErr {
+impl From<JoinError> for AvaErr {
     fn from(error: JoinError) -> Self {
-        CodexErrorDetails::from(error).into()
+        AvaErrorDetails::from(error).into()
     }
 }
 
 #[cfg(target_os = "linux")]
-impl From<landlock::RulesetError> for CodexErr {
+impl From<landlock::RulesetError> for AvaErr {
     fn from(error: landlock::RulesetError) -> Self {
-        CodexErrorDetails::from(error).into()
+        AvaErrorDetails::from(error).into()
     }
 }
 
 #[cfg(target_os = "linux")]
-impl From<landlock::PathFdError> for CodexErr {
+impl From<landlock::PathFdError> for AvaErr {
     fn from(error: landlock::PathFdError) -> Self {
-        CodexErrorDetails::from(error).into()
+        AvaErrorDetails::from(error).into()
     }
 }
 
-impl From<CancelErr> for CodexErrorDetails {
+impl From<CancelErr> for AvaErrorDetails {
     fn from(_: CancelErr) -> Self {
-        CodexErrorDetails::TurnAborted
+        AvaErrorDetails::TurnAborted
     }
 }
 
 // TODO(anp): Remove this compatibility macro once callers construct
-// `CodexErrorDetails` directly.
-macro_rules! codex_err_unit_constructors {
+// `AvaErrorDetails` directly.
+macro_rules! ava_err_unit_constructors {
     ($($variant:ident),* $(,)?) => {
         $(
             #[doc(hidden)]
             #[allow(non_upper_case_globals)]
             pub const $variant: Self = Self {
-                details: CodexErrorDetails::$variant,
+                details: AvaErrorDetails::$variant,
                 server_retry_delay: None,
             };
         )*
@@ -299,22 +299,22 @@ macro_rules! codex_err_unit_constructors {
 }
 
 // TODO(anp): Remove this compatibility macro once callers construct
-// `CodexErrorDetails` directly.
-macro_rules! codex_err_tuple_constructors {
+// `AvaErrorDetails` directly.
+macro_rules! ava_err_tuple_constructors {
     ($($(#[$attr:meta])* $variant:ident($value:ident: $value_type:ty)),* $(,)?) => {
         $(
             $(#[$attr])*
             #[doc(hidden)]
             #[allow(non_snake_case)]
             pub fn $variant($value: $value_type) -> Self {
-                CodexErrorDetails::$variant($value).into()
+                AvaErrorDetails::$variant($value).into()
             }
         )*
     };
 }
 
-impl CodexErr {
-    codex_err_unit_constructors!(
+impl AvaErr {
+    ava_err_unit_constructors!(
         TurnAborted,
         SessionBudgetExceeded,
         ContextWindowExceeded,
@@ -331,7 +331,7 @@ impl CodexErr {
         LandlockSandboxExecutableNotProvided,
     );
 
-    codex_err_tuple_constructors!(
+    ava_err_tuple_constructors!(
         Stream(message: String),
         ThreadNotFound(thread_id: ThreadId),
         UnexpectedStatus(error: UnexpectedResponseError),
@@ -355,20 +355,20 @@ impl CodexErr {
     );
 
     // TODO(anp): Remove this compatibility constructor once callers construct
-    // `CodexErrorDetails` directly.
+    // `AvaErrorDetails` directly.
     #[doc(hidden)]
     #[allow(non_snake_case)]
     pub fn InvalidImageRequest() -> Self {
-        CodexErrorDetails::InvalidImageRequest().into()
+        AvaErrorDetails::InvalidImageRequest().into()
     }
 
     /// Creates an error with no server-provided retry delay.
-    pub fn new(details: CodexErrorDetails) -> Self {
+    pub fn new(details: AvaErrorDetails) -> Self {
         details.into()
     }
 
     /// Returns the semantic failure and its diagnostic payload.
-    pub fn details(&self) -> &CodexErrorDetails {
+    pub fn details(&self) -> &AvaErrorDetails {
         &self.details
     }
 
@@ -378,48 +378,48 @@ impl CodexErr {
     /// otherwise use exponential backoff with jitter. Callers enforce their own retry budgets.
     pub fn retry_delay(&self, retry_count: u64) -> Option<Duration> {
         match self.details() {
-            CodexErrorDetails::TurnAborted
-            | CodexErrorDetails::SessionBudgetExceeded
-            | CodexErrorDetails::Interrupted
-            | CodexErrorDetails::EnvVar(_)
-            | CodexErrorDetails::Fatal(_)
-            | CodexErrorDetails::UsageNotIncluded
-            | CodexErrorDetails::QuotaExceeded
-            | CodexErrorDetails::InvalidImageRequest()
-            | CodexErrorDetails::InvalidRequest(_)
-            | CodexErrorDetails::ToolCollision(_)
-            | CodexErrorDetails::RefreshTokenFailed(_)
-            | CodexErrorDetails::UnsupportedOperation(_)
-            | CodexErrorDetails::Sandbox(_)
-            | CodexErrorDetails::LandlockSandboxExecutableNotProvided
-            | CodexErrorDetails::RetryLimit(_)
-            | CodexErrorDetails::ContextWindowExceeded
-            | CodexErrorDetails::ThreadNotFound(_)
-            | CodexErrorDetails::AgentLimitReached { .. }
-            | CodexErrorDetails::Spawn
-            | CodexErrorDetails::SessionConfiguredNotFirstEvent
-            | CodexErrorDetails::UsageLimitReached(_)
-            | CodexErrorDetails::ServerOverloaded
-            | CodexErrorDetails::CyberPolicy { .. }
-            | CodexErrorDetails::BioPolicy { .. }
-            | CodexErrorDetails::MisalignmentPolicyViolation { .. } => None,
-            CodexErrorDetails::Stream(..)
-            | CodexErrorDetails::RateLimitExceeded(_)
-            | CodexErrorDetails::Timeout
-            | CodexErrorDetails::RequestTimeout
-            | CodexErrorDetails::UnexpectedStatus(_)
-            | CodexErrorDetails::ResponseStreamFailed(_)
-            | CodexErrorDetails::ConnectionFailed(_)
-            | CodexErrorDetails::InternalServerError
-            | CodexErrorDetails::InternalAgentDied
-            | CodexErrorDetails::Io(_)
-            | CodexErrorDetails::Json(_)
-            | CodexErrorDetails::TokioJoin(_) => Some(
+            AvaErrorDetails::TurnAborted
+            | AvaErrorDetails::SessionBudgetExceeded
+            | AvaErrorDetails::Interrupted
+            | AvaErrorDetails::EnvVar(_)
+            | AvaErrorDetails::Fatal(_)
+            | AvaErrorDetails::UsageNotIncluded
+            | AvaErrorDetails::QuotaExceeded
+            | AvaErrorDetails::InvalidImageRequest()
+            | AvaErrorDetails::InvalidRequest(_)
+            | AvaErrorDetails::ToolCollision(_)
+            | AvaErrorDetails::RefreshTokenFailed(_)
+            | AvaErrorDetails::UnsupportedOperation(_)
+            | AvaErrorDetails::Sandbox(_)
+            | AvaErrorDetails::LandlockSandboxExecutableNotProvided
+            | AvaErrorDetails::RetryLimit(_)
+            | AvaErrorDetails::ContextWindowExceeded
+            | AvaErrorDetails::ThreadNotFound(_)
+            | AvaErrorDetails::AgentLimitReached { .. }
+            | AvaErrorDetails::Spawn
+            | AvaErrorDetails::SessionConfiguredNotFirstEvent
+            | AvaErrorDetails::UsageLimitReached(_)
+            | AvaErrorDetails::ServerOverloaded
+            | AvaErrorDetails::CyberPolicy { .. }
+            | AvaErrorDetails::BioPolicy { .. }
+            | AvaErrorDetails::MisalignmentPolicyViolation { .. } => None,
+            AvaErrorDetails::Stream(..)
+            | AvaErrorDetails::RateLimitExceeded(_)
+            | AvaErrorDetails::Timeout
+            | AvaErrorDetails::RequestTimeout
+            | AvaErrorDetails::UnexpectedStatus(_)
+            | AvaErrorDetails::ResponseStreamFailed(_)
+            | AvaErrorDetails::ConnectionFailed(_)
+            | AvaErrorDetails::InternalServerError
+            | AvaErrorDetails::InternalAgentDied
+            | AvaErrorDetails::Io(_)
+            | AvaErrorDetails::Json(_)
+            | AvaErrorDetails::TokioJoin(_) => Some(
                 self.server_retry_delay
                     .unwrap_or_else(|| backoff(retry_count)),
             ),
             #[cfg(target_os = "linux")]
-            CodexErrorDetails::LandlockRuleset(_) | CodexErrorDetails::LandlockPathFd(_) => None,
+            AvaErrorDetails::LandlockRuleset(_) | AvaErrorDetails::LandlockPathFd(_) => None,
         }
     }
 
@@ -433,7 +433,7 @@ impl CodexErr {
         self
     }
 
-    /// Minimal shim so that existing `e.downcast_ref::<CodexErr>()` checks continue to compile
+    /// Minimal shim so that existing `e.downcast_ref::<AvaErr>()` checks continue to compile
     /// after replacing `anyhow::Error` in the return signature. This mirrors the behavior of
     /// `anyhow::Error::downcast_ref` but works directly on our concrete error type.
     pub fn downcast_ref<T: std::any::Any>(&self) -> Option<&T> {
@@ -441,40 +441,40 @@ impl CodexErr {
     }
 
     /// Translate core error to client-facing protocol error.
-    pub fn to_codex_protocol_error(&self) -> CodexErrorInfo {
+    pub fn to_ava_protocol_error(&self) -> AvaErrorInfo {
         match &self.details {
-            CodexErrorDetails::ContextWindowExceeded => CodexErrorInfo::ContextWindowExceeded,
-            CodexErrorDetails::SessionBudgetExceeded => CodexErrorInfo::SessionBudgetExceeded,
-            CodexErrorDetails::RateLimitExceeded(_) => CodexErrorInfo::RateLimitExceeded,
-            CodexErrorDetails::UsageLimitReached(_)
-            | CodexErrorDetails::QuotaExceeded
-            | CodexErrorDetails::UsageNotIncluded => CodexErrorInfo::UsageLimitExceeded,
-            CodexErrorDetails::ServerOverloaded => CodexErrorInfo::ServerOverloaded,
-            CodexErrorDetails::CyberPolicy { .. } => CodexErrorInfo::CyberPolicy,
-            CodexErrorDetails::BioPolicy { .. } => CodexErrorInfo::BioPolicy,
-            CodexErrorDetails::MisalignmentPolicyViolation { .. } => {
-                CodexErrorInfo::MisalignmentPolicyViolation
+            AvaErrorDetails::ContextWindowExceeded => AvaErrorInfo::ContextWindowExceeded,
+            AvaErrorDetails::SessionBudgetExceeded => AvaErrorInfo::SessionBudgetExceeded,
+            AvaErrorDetails::RateLimitExceeded(_) => AvaErrorInfo::RateLimitExceeded,
+            AvaErrorDetails::UsageLimitReached(_)
+            | AvaErrorDetails::QuotaExceeded
+            | AvaErrorDetails::UsageNotIncluded => AvaErrorInfo::UsageLimitExceeded,
+            AvaErrorDetails::ServerOverloaded => AvaErrorInfo::ServerOverloaded,
+            AvaErrorDetails::CyberPolicy { .. } => AvaErrorInfo::CyberPolicy,
+            AvaErrorDetails::BioPolicy { .. } => AvaErrorInfo::BioPolicy,
+            AvaErrorDetails::MisalignmentPolicyViolation { .. } => {
+                AvaErrorInfo::MisalignmentPolicyViolation
             }
-            CodexErrorDetails::RetryLimit(_) => CodexErrorInfo::ResponseTooManyFailedAttempts {
+            AvaErrorDetails::RetryLimit(_) => AvaErrorInfo::ResponseTooManyFailedAttempts {
                 http_status_code: self.http_status_code_value(),
             },
-            CodexErrorDetails::ConnectionFailed(_) => CodexErrorInfo::HttpConnectionFailed {
+            AvaErrorDetails::ConnectionFailed(_) => AvaErrorInfo::HttpConnectionFailed {
                 http_status_code: self.http_status_code_value(),
             },
-            CodexErrorDetails::ResponseStreamFailed(_) => {
-                CodexErrorInfo::ResponseStreamConnectionFailed {
+            AvaErrorDetails::ResponseStreamFailed(_) => {
+                AvaErrorInfo::ResponseStreamConnectionFailed {
                     http_status_code: self.http_status_code_value(),
                 }
             }
-            CodexErrorDetails::RefreshTokenFailed(_) => CodexErrorInfo::Unauthorized,
-            CodexErrorDetails::SessionConfiguredNotFirstEvent
-            | CodexErrorDetails::InternalServerError
-            | CodexErrorDetails::InternalAgentDied => CodexErrorInfo::InternalServerError,
-            CodexErrorDetails::UnsupportedOperation(_)
-            | CodexErrorDetails::ThreadNotFound(_)
-            | CodexErrorDetails::AgentLimitReached { .. } => CodexErrorInfo::BadRequest,
-            CodexErrorDetails::Sandbox(_) => CodexErrorInfo::SandboxError,
-            _ => CodexErrorInfo::Other,
+            AvaErrorDetails::RefreshTokenFailed(_) => AvaErrorInfo::Unauthorized,
+            AvaErrorDetails::SessionConfiguredNotFirstEvent
+            | AvaErrorDetails::InternalServerError
+            | AvaErrorDetails::InternalAgentDied => AvaErrorInfo::InternalServerError,
+            AvaErrorDetails::UnsupportedOperation(_)
+            | AvaErrorDetails::ThreadNotFound(_)
+            | AvaErrorDetails::AgentLimitReached { .. } => AvaErrorInfo::BadRequest,
+            AvaErrorDetails::Sandbox(_) => AvaErrorInfo::SandboxError,
+            _ => AvaErrorInfo::Other,
         }
     }
 
@@ -486,9 +486,9 @@ impl CodexErr {
         };
         ErrorEvent {
             message,
-            codex_error_info: Some(self.to_codex_protocol_error()),
+            ava_error_info: Some(self.to_ava_protocol_error()),
             misalignment: match &self.details {
-                CodexErrorDetails::MisalignmentPolicyViolation { misalignment, .. } => {
+                AvaErrorDetails::MisalignmentPolicyViolation { misalignment, .. } => {
                     misalignment.clone()
                 }
                 _ => None,
@@ -498,10 +498,10 @@ impl CodexErr {
 
     pub fn http_status_code_value(&self) -> Option<u16> {
         let http_status_code = match &self.details {
-            CodexErrorDetails::RetryLimit(err) => Some(err.status),
-            CodexErrorDetails::UnexpectedStatus(err) => Some(err.status),
-            CodexErrorDetails::ConnectionFailed(err) => err.source.status(),
-            CodexErrorDetails::ResponseStreamFailed(err) => err.source.status(),
+            AvaErrorDetails::RetryLimit(err) => Some(err.status),
+            AvaErrorDetails::UnexpectedStatus(err) => Some(err.status),
+            AvaErrorDetails::ConnectionFailed(err) => err.source.status(),
+            AvaErrorDetails::ResponseStreamFailed(err) => err.source.status(),
             _ => None,
         };
         http_status_code.as_ref().map(StatusCode::as_u16)
@@ -672,7 +672,7 @@ impl std::fmt::Display for UsageLimitReachedError {
             .and_then(|snapshot| snapshot.limit_name.as_deref())
             .map(str::trim)
             .filter(|name| !name.is_empty())
-            && !limit_name.eq_ignore_ascii_case("codex")
+            && !limit_name.eq_ignore_ascii_case("ava")
             && !limit_name.eq_ignore_ascii_case("gpt-reserve")
         {
             return write!(
@@ -743,7 +743,7 @@ impl std::fmt::Display for UsageLimitReachedError {
             }
             Some(PlanType::Known(KnownPlan::Free)) | Some(PlanType::Known(KnownPlan::Go)) => {
                 format!(
-                    "You’ve hit your usage limit. Upgrade to Plus to continue using Codex (https://chatgpt.com/explore/plus),{}",
+                    "You’ve hit your usage limit. Upgrade to Plus to continue using Ava (https://chatgpt.com/explore/plus),{}",
                     retry_suffix_after_or(self.resets_at.as_ref())
                 )
             }
@@ -845,9 +845,9 @@ impl std::fmt::Display for EnvVarError {
     }
 }
 
-pub fn get_error_message_ui(e: &CodexErr) -> String {
+pub fn get_error_message_ui(e: &AvaErr) -> String {
     let message = match e.details() {
-        CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
+        AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
             let aggregated = output.aggregated_output.text.trim();
             if !aggregated.is_empty() {
                 output.aggregated_output.text.clone()
@@ -866,7 +866,7 @@ pub fn get_error_message_ui(e: &CodexErr) -> String {
             }
         }
         // Timeouts are not sandbox errors from a UX perspective; present them plainly.
-        CodexErrorDetails::Sandbox(SandboxErr::Timeout { output }) => {
+        AvaErrorDetails::Sandbox(SandboxErr::Timeout { output }) => {
             format!(
                 "error: command timed out after {} ms",
                 output.duration.as_millis()

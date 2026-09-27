@@ -3,19 +3,19 @@ use std::fs;
 #[cfg(target_os = "windows")]
 use std::io;
 
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::RequirementSource;
-use codex_core::config::Config;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::RequirementSource;
+use ava_core::config::Config;
 #[cfg(target_os = "windows")]
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
 #[cfg(target_os = "windows")]
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
 #[cfg(target_os = "windows")]
-use codex_sandboxing::windows_sandbox_uses_elevated_backend;
+use ava_sandboxing::windows_sandbox_uses_elevated_backend;
 #[cfg(target_os = "windows")]
-use codex_windows_sandbox::SetupErrorCode;
+use ava_windows_sandbox::SetupErrorCode;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::ERROR_ACCESS_DENIED;
 #[cfg(target_os = "windows")]
@@ -42,7 +42,7 @@ use super::DoctorIssue;
 use super::push_path_detail;
 
 #[cfg(target_os = "windows")]
-const WINDOWS_SETUP_REMEDIATION: &str = "run codex sandbox setup --elevated --user <end-user> --codex-home <authoritative-home> from an elevated shell";
+const WINDOWS_SETUP_REMEDIATION: &str = "run ava sandbox setup --elevated --user <end-user> --ava-home <authoritative-home> from an elevated shell";
 
 pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> DoctorCheck {
     let mut details = Vec::new();
@@ -97,8 +97,8 @@ pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> 
     ));
     push_path_detail(
         &mut details,
-        "codex-linux-sandbox helper",
-        arg0_paths.codex_linux_sandbox_exe.as_deref(),
+        "ava-linux-sandbox helper",
+        arg0_paths.ava_linux_sandbox_exe.as_deref(),
     );
     push_path_detail(
         &mut details,
@@ -108,7 +108,7 @@ pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> 
 
     let mut status = CheckStatus::Ok;
     let mut summary = "sandbox configuration is readable".to_string();
-    if let Some(helper) = arg0_paths.codex_linux_sandbox_exe.as_deref()
+    if let Some(helper) = arg0_paths.ava_linux_sandbox_exe.as_deref()
         && !helper.exists()
     {
         status = CheckStatus::Warning;
@@ -124,7 +124,7 @@ pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> 
     {
         let configured_level = WindowsSandboxLevel::from_config(config);
         let mxc = config.permissions.windows_sandbox_type
-            == codex_protocol::sandbox::SandboxType::WindowsMxc;
+            == ava_protocol::sandbox::SandboxType::WindowsMxc;
         let elevated = !mxc
             && configured_level != WindowsSandboxLevel::Disabled
             && windows_sandbox_uses_elevated_backend(configured_level);
@@ -157,12 +157,12 @@ pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> 
         }
 
         if elevated {
-            let home = config.codex_home.as_path();
-            let path = codex_windows_sandbox::setup_error_path(home);
+            let home = config.ava_home.as_path();
+            let path = ava_windows_sandbox::setup_error_path(home);
             let report = match fs::metadata(&path) {
                 Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
                 Ok(metadata) if metadata.is_file() && metadata.len() <= 64 * 1024 => {
-                    codex_windows_sandbox::read_setup_error_report(home)
+                    ava_windows_sandbox::read_setup_error_report(home)
                         .map_err(|error| error.to_string())
                 }
                 Ok(metadata) if !metadata.is_file() => Err("not a regular file".to_string()),
@@ -189,14 +189,14 @@ pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> 
                 }
             };
 
-            if report.is_none() && codex_windows_sandbox::sandbox_setup_is_complete(home) {
+            if report.is_none() && ava_windows_sandbox::sandbox_setup_is_complete(home) {
                 check
                     .details
                     .push("sandbox provisioning: complete".to_string());
 
                 for username in [
-                    codex_windows_sandbox::OFFLINE_USERNAME,
-                    codex_windows_sandbox::ONLINE_USERNAME,
+                    ava_windows_sandbox::OFFLINE_USERNAME,
+                    ava_windows_sandbox::ONLINE_USERNAME,
                 ] {
                     let username_wide = username.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
                     let mut buffer = std::ptr::null_mut();
@@ -285,7 +285,7 @@ pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> 
                         | SetupErrorCode::OrchestratorHelperReportReadFailed
                         | SetupErrorCode::OrchestratorHelperIncomplete
                         | SetupErrorCode::HelperReadAclHelperSpawnFailed => {
-                            "repair the installed Codex helpers or ask IT to allow their execution"
+                            "repair the installed Ava helpers or ask IT to allow their execution"
                         }
                         SetupErrorCode::HelperUserProvisionFailed
                         | SetupErrorCode::HelperUsersGroupCreateFailed
@@ -301,19 +301,19 @@ pub(super) fn sandbox_check(config: &Config, arg0_paths: &Arg0DispatchPaths) -> 
                         | SetupErrorCode::HelperUsersFileWriteFailed
                         | SetupErrorCode::HelperSetupMarkerWriteFailed
                         | SetupErrorCode::HelperSandboxLockFailed => {
-                            "rerun elevated setup for the authoritative Codex home or ask IT"
+                            "rerun elevated setup for the authoritative Ava home or ask IT"
                         }
                         SetupErrorCode::HelperFirewallComInitFailed
                         | SetupErrorCode::HelperFirewallPolicyAccessFailed
                         | SetupErrorCode::HelperFirewallPolicyIneffective
                         | SetupErrorCode::HelperFirewallRuleCreateOrAddFailed
                         | SetupErrorCode::HelperFirewallRuleVerifyFailed => {
-                            "ask IT to allow Codex sandbox rules in managed Windows Firewall policy"
+                            "ask IT to allow Ava sandbox rules in managed Windows Firewall policy"
                         }
                         SetupErrorCode::OrchestratorPayloadSerializeFailed
                         | SetupErrorCode::HelperRequestArgsFailed
                         | SetupErrorCode::HelperUnknownError => {
-                            "repair or reinstall the Codex CLI from an approved distribution"
+                            "repair or reinstall the Ava CLI from an approved distribution"
                         }
                     };
                     check

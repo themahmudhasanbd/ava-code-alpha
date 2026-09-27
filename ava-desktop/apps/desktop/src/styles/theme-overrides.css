@@ -1,5 +1,5 @@
 /*
-  Light-theme density and chrome overrides (LIGHT_CODEX_OVERRIDES) layered on
+  Light-theme density and chrome overrides (LIGHT_AVA_OVERRIDES) layered on
   top of the semantic tokens, together with the sidebar footer, build chip, and
   composer toolbar chips they interleave with.
 */
@@ -45,7 +45,7 @@
   color: var(--ds-text-secondary);
 }
 
-/* LIGHT_CODEX_OVERRIDES — density/chrome tweaks on top of semantic tokens */
+/* LIGHT_AVA_OVERRIDES — density/chrome tweaks on top of semantic tokens */
 :root[data-theme="light"] .composer-shell {
   /* WorkBuddy-style restraint: one solid plate, no decorative gradient. */
   background: var(--ds-bg-composer);

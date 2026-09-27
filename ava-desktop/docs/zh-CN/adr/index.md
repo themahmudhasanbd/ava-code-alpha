@@ -35,7 +35,7 @@ ADR 记录那些不应被静默改变的架构选择。中文入口与英文索�
 | [ADR 0176：按供应商覆盖 User-Agent](/adr/0176-per-provider-user-agent) | 每个 AI 服务/OAuth 行可设置可选 User-Agent（已被 0178 的 headers 映射取代） |
 | [ADR 0177：用户可配置的出站代理](/adr/0177-user-configurable-outbound-proxy) | 设置里的系统/直连/自定义代理覆盖模型请求、市场、更新和内置浏览器 |
 | [ADR 0178：按供应商自定义 HTTP 请求头](/adr/0178-per-provider-custom-headers) | 每个 AI 服务/OAuth 行可在高级选项中编辑任意非敏感请求头 |
-| [ADR 0179：从本地智能体存储导入模型配置](/adr/0179-import-model-configuration) | 设置 → 导入显式扫描 Claude Code / Codex / OpenCode / Pi 的提供商配置并复制 API 密钥 |
+| [ADR 0179：从本地智能体存储导入模型配置](/adr/0179-import-model-configuration) | 设置 → 导入显式扫描 Claude Code / Ava / OpenCode / Pi 的提供商配置并复制 API 密钥 |
 | [ADR 0180：自定义全局文字缩放](/adr/0180-custom-reading-font-size) | 设置外观按比例缩放全部界面文字，不使用 px，窗口缩放仍独立 |
 | [ADR 0181：主进程拥有的文件选择能力](/adr/0181-main-owned-picker-capabilities) | 文件选择路径留在主进程，以一次性令牌保护导入边界，并移除不支持的文件夹选择 |
 | [ADR 0182：繁体中文应用程序壳](/adr/0182-traditional-chinese-shell-locale) | 提供独立的繁体中文外壳、系统语言解析和发版日志目录 |
@@ -131,7 +131,7 @@ ADR 记录那些不应被静默改变的架构选择。中文入口与英文索�
 | 0061 | [无感知的后台上下文压缩](/adr/0061-imperceptible-background-context-compaction) | 已接受（修订 ADR 0030 / ADR 0049；第 2/4/6/7/8 条由 ADR 0064 修订） |
 | 0062 | [Task 工具背后的有界子智能体](/adr/0062-bounded-subagents-behind-a-task-tool) | 已接受待实现 |
 | 0063 | [全局子智能体定义的托管界面](/adr/0063-subagent-management-ui) | 已接受待实现 |
-| 0064 | [与 Codex 对齐的上下文压缩](/adr/0064-codex-parity-context-compaction) | 已接受（修订 ADR 0061 / ADR 0030） |
+| 0064 | [与 Ava 对齐的上下文压缩](/adr/0064-ava-parity-context-compaction) | 已接受（修订 ADR 0061 / ADR 0030） |
 | 0065 | [平滑的外壳布局与流式反馈](/adr/0065-smooth-shell-layout-and-stream-feedback) | 已接受待实现 |
 | 0066 | [空首页直接使用底部输入框](/adr/0066-empty-home-direct-bottom-composer) | 已接受待实现（修订 D111） |
 | 0067 | [受 ChatGPT 启发的空首页起始引导](/adr/0067-chatgpt-inspired-empty-home-starters) | 已被 D206 取代 |

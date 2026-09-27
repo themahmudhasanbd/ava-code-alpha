@@ -1,13 +1,13 @@
 use super::*;
-use codex_apply_patch::MaybeApplyPatchVerified;
-use codex_exec_server::LOCAL_FS;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::protocol::FileChange;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_apply_patch::MaybeApplyPatchVerified;
+use ava_exec_server::LOCAL_FS;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::protocol::FileChange;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use pretty_assertions::assert_eq;
@@ -52,7 +52,7 @@ async fn invocation_for_payload(payload: ToolPayload) -> ToolInvocation {
         cancellation_token: tokio_util::sync::CancellationToken::new(),
         tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
         call_id: "call-apply-patch".to_string(),
-        tool_name: codex_tools::ToolName::plain("apply_patch"),
+        tool_name: ava_tools::ToolName::plain("apply_patch"),
         source: crate::tools::context::ToolCallSource::Direct,
         payload,
     }
@@ -63,16 +63,16 @@ async fn file_update_mode_follows_preserve_line_endings_feature() {
     let (_, mut turn) = make_session_and_context().await;
     assert_eq!(
         apply_patch_file_update_mode(&turn),
-        codex_apply_patch::ApplyPatchFileUpdateMode::NormalizeToLf
+        ava_apply_patch::ApplyPatchFileUpdateMode::NormalizeToLf
     );
 
     Arc::make_mut(&mut turn.config)
         .features
-        .enable(codex_features::Feature::ApplyPatchPreserveLineEndings)
+        .enable(ava_features::Feature::ApplyPatchPreserveLineEndings)
         .expect("feature should be enabled");
     assert_eq!(
         apply_patch_file_update_mode(&turn),
-        codex_apply_patch::ApplyPatchFileUpdateMode::PreserveLineEndings
+        ava_apply_patch::ApplyPatchFileUpdateMode::PreserveLineEndings
     );
 }
 
@@ -262,7 +262,7 @@ async fn approval_keys_include_move_destination() {
     let argv = vec!["apply_patch".to_string(), patch.to_string()];
     // TODO(anp): Keep apply_patch handler test cwd values as PathUri.
     let cwd = PathUri::from_abs_path(&cwd);
-    let action = match codex_apply_patch::maybe_parse_apply_patch_verified(
+    let action = match ava_apply_patch::maybe_parse_apply_patch_verified(
         &argv,
         &cwd,
         LOCAL_FS.as_ref(),

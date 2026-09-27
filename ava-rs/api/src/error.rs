@@ -1,6 +1,6 @@
 use crate::rate_limits::RateLimitError;
-use codex_client::TransportError;
-use codex_protocol::protocol::MisalignmentErrorDetails;
+use ava_client::TransportError;
+use ava_protocol::protocol::MisalignmentErrorDetails;
 use http::StatusCode;
 use std::time::Duration;
 use thiserror::Error;

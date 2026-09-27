@@ -2,16 +2,16 @@ use super::thread_input::DIRECT_INPUT_TO_MULTI_AGENT_V2_SUBAGENT_ERROR;
 use super::thread_input::can_accept_direct_input;
 use super::thread_input::ensure_direct_input_allowed;
 use super::*;
-use codex_goal_extension::GoalObjectiveUpdate;
-use codex_goal_extension::GoalService;
-use codex_goal_extension::GoalServiceError;
-use codex_goal_extension::GoalSetRequest;
-use codex_goal_extension::GoalTokenBudgetUpdate;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_rollout::RolloutRecorder;
+use ava_goal_extension::GoalObjectiveUpdate;
+use ava_goal_extension::GoalService;
+use ava_goal_extension::GoalServiceError;
+use ava_goal_extension::GoalSetRequest;
+use ava_goal_extension::GoalTokenBudgetUpdate;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_rollout::RolloutRecorder;
 
 enum GoalAccess {
     Read,
@@ -88,7 +88,7 @@ impl ThreadGoalRequestProcessor {
 
     pub(crate) async fn pending_resume_goal_state(
         &self,
-        thread: &CodexThread,
+        thread: &AvaThread,
     ) -> (bool, Option<StateDbHandle>) {
         let emit_thread_goal_update = self.config.features.enabled(Feature::Goals);
         let thread_goal_state_db = if emit_thread_goal_update {
@@ -149,8 +149,8 @@ impl ThreadGoalRequestProcessor {
             .status
             .map(ThreadGoalStatus::to_core)
             .or_else(|| existing_goal.as_ref().map(|goal| goal.status))
-            .unwrap_or(codex_protocol::protocol::ThreadGoalStatus::Active);
-        if resulting_status == codex_protocol::protocol::ThreadGoalStatus::Active
+            .unwrap_or(ava_protocol::protocol::ThreadGoalStatus::Active);
+        if resulting_status == ava_protocol::protocol::ThreadGoalStatus::Active
             && let Ok(thread) = self.thread_manager.get_thread(thread_id).await
         {
             self.config_manager
@@ -194,7 +194,7 @@ impl ThreadGoalRequestProcessor {
 
         let persist_result = match self.thread_manager.get_thread(thread_id).await {
             Ok(thread) => match thread.rollout_path() {
-                Some(path) if codex_rollout::existing_rollout_path(&path).await.is_none() => {
+                Some(path) if ava_rollout::existing_rollout_path(&path).await.is_none() => {
                     // Goal-first threads need their settings captured when the goal creates the
                     // rollout. Once materialized, normal settings updates own this event.
                     let persisted_settings = thread.thread_settings_snapshot().await;
@@ -320,8 +320,8 @@ impl ThreadGoalRequestProcessor {
                 return Ok(state_db);
             }
         } else {
-            let rollout_path = codex_rollout::find_thread_path_by_id_str(
-                &self.config.codex_home,
+            let rollout_path = ava_rollout::find_thread_path_by_id_str(
+                &self.config.ava_home,
                 &thread_id.to_string(),
                 self.state_db.as_deref(),
             )
@@ -331,7 +331,7 @@ impl ThreadGoalRequestProcessor {
             })?
             .ok_or_else(|| invalid_request(format!("thread not found: {thread_id}")))?;
             if matches!(access, GoalAccess::Mutate) {
-                let session_meta = codex_rollout::read_session_meta_line(&rollout_path)
+                let session_meta = ava_rollout::read_session_meta_line(&rollout_path)
                     .await
                     .map_err(|err| {
                         internal_error(format!("failed to read thread ownership: {err}"))
@@ -381,8 +381,8 @@ impl ThreadGoalRequestProcessor {
                     "ephemeral thread does not support goals: {thread_id}"
                 ))
             })?,
-            None => codex_rollout::find_thread_path_by_id_str(
-                &self.config.codex_home,
+            None => ava_rollout::find_thread_path_by_id_str(
+                &self.config.ava_home,
                 &thread_id.to_string(),
                 self.state_db.as_deref(),
             )
@@ -394,11 +394,11 @@ impl ThreadGoalRequestProcessor {
         };
 
         if let Ok(Some(metadata)) = state_db.get_thread(thread_id).await
-            && codex_rollout::plain_rollout_path(metadata.rollout_path.as_path())
-                == codex_rollout::plain_rollout_path(rollout_path.as_path())
+            && ava_rollout::plain_rollout_path(metadata.rollout_path.as_path())
+                == ava_rollout::plain_rollout_path(rollout_path.as_path())
             && let Some(existing_path) =
-                codex_rollout::existing_rollout_path(metadata.rollout_path.as_path()).await
-            && codex_rollout::read_session_meta_line(existing_path.as_path())
+                ava_rollout::existing_rollout_path(metadata.rollout_path.as_path()).await
+            && ava_rollout::read_session_meta_line(existing_path.as_path())
                 .await
                 .is_ok_and(|session_meta| session_meta.meta.id == thread_id)
         {
@@ -516,7 +516,7 @@ fn thread_settings_applied_item(
     ))
 }
 
-pub(super) fn api_thread_goal_from_state(goal: codex_state::ThreadGoal) -> ThreadGoal {
+pub(super) fn api_thread_goal_from_state(goal: ava_state::ThreadGoal) -> ThreadGoal {
     ThreadGoal {
         thread_id: goal.thread_id.to_string(),
         objective: goal.objective,
@@ -529,14 +529,14 @@ pub(super) fn api_thread_goal_from_state(goal: codex_state::ThreadGoal) -> Threa
     }
 }
 
-fn api_thread_goal_status_from_state(status: codex_state::ThreadGoalStatus) -> ThreadGoalStatus {
+fn api_thread_goal_status_from_state(status: ava_state::ThreadGoalStatus) -> ThreadGoalStatus {
     match status {
-        codex_state::ThreadGoalStatus::Active => ThreadGoalStatus::Active,
-        codex_state::ThreadGoalStatus::Paused => ThreadGoalStatus::Paused,
-        codex_state::ThreadGoalStatus::Blocked => ThreadGoalStatus::Blocked,
-        codex_state::ThreadGoalStatus::UsageLimited => ThreadGoalStatus::UsageLimited,
-        codex_state::ThreadGoalStatus::BudgetLimited => ThreadGoalStatus::BudgetLimited,
-        codex_state::ThreadGoalStatus::Complete => ThreadGoalStatus::Complete,
+        ava_state::ThreadGoalStatus::Active => ThreadGoalStatus::Active,
+        ava_state::ThreadGoalStatus::Paused => ThreadGoalStatus::Paused,
+        ava_state::ThreadGoalStatus::Blocked => ThreadGoalStatus::Blocked,
+        ava_state::ThreadGoalStatus::UsageLimited => ThreadGoalStatus::UsageLimited,
+        ava_state::ThreadGoalStatus::BudgetLimited => ThreadGoalStatus::BudgetLimited,
+        ava_state::ThreadGoalStatus::Complete => ThreadGoalStatus::Complete,
     }
 }
 

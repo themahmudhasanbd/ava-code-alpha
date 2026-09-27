@@ -8,19 +8,19 @@ use crate::PluginProviders;
 use crate::PluginsThreadState;
 use crate::install_plugin_providers;
 use anyhow::Context;
-use codex_core_plugins::ExecutorPluginProvider;
-use codex_core_plugins::PluginCatalog;
-use codex_core_plugins::PluginCatalogEntry;
-use codex_core_plugins::PluginIdentity;
-use codex_exec_server::EnvironmentManager;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::SelectedPluginSnapshot;
-use codex_extension_api::WorldStateContributionInput;
-use codex_extension_api::WorldStateSectionContribution;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
+use ava_core_plugins::ExecutorPluginProvider;
+use ava_core_plugins::PluginCatalog;
+use ava_core_plugins::PluginCatalogEntry;
+use ava_core_plugins::PluginIdentity;
+use ava_exec_server::EnvironmentManager;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::SelectedPluginSnapshot;
+use ava_extension_api::WorldStateContributionInput;
+use ava_extension_api::WorldStateSectionContribution;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::recorded_apps_tool_calls;
 use core_test_support::responses;
@@ -29,8 +29,8 @@ use core_test_support::responses::ev_function_call_with_namespace;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
-use core_test_support::test_codex::run_test_with_large_stack;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::run_test_with_large_stack;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Arc;
@@ -92,8 +92,8 @@ async fn cloud_discovery_selects_regular_task_phase() {
 #[tokio::test]
 async fn disabling_plugins_clears_cloud_catalog_and_skips_discovery() -> anyhow::Result<()> {
     let config_home = tempfile::tempdir()?;
-    let mut config = codex_core::config::ConfigBuilder::default()
-        .codex_home(config_home.path().to_path_buf())
+    let mut config = ava_core::config::ConfigBuilder::default()
+        .ava_home(config_home.path().to_path_buf())
         .fallback_cwd(Some(config_home.path().to_path_buf()))
         .build()
         .await?;
@@ -115,7 +115,7 @@ async fn disabling_plugins_clears_cloud_catalog_and_skips_discovery() -> anyhow:
     let registry = builder.build();
     let session = ExtensionData::new("session");
     let thread = ExtensionData::new("thread");
-    let thread_init = codex_extension_api::ExtensionDataInit::default();
+    let thread_init = ava_extension_api::ExtensionDataInit::default();
     for (turn_id, plugins_enabled, reply) in [
         ("off", false, Ok(cloud_catalog())),
         ("on", true, Ok(cloud_catalog())),
@@ -157,7 +157,7 @@ async fn disabling_plugins_clears_cloud_catalog_and_skips_discovery() -> anyhow:
                 .await;
         }
         registry.mcp_server_contributors()[0]
-            .contribute(codex_extension_api::McpServerContributionContext::for_step(
+            .contribute(ava_extension_api::McpServerContributionContext::for_step(
                 &config,
                 &thread_init,
                 &thread,
@@ -269,7 +269,7 @@ fn cloud_catalog() -> PluginCatalog {
             version: Some("1.0.0".to_string()),
             mcp_servers: Default::default(),
             connector_ids: vec!["calendar".to_string()],
-            locations: vec![codex_core_plugins::PluginSourceLocation::Cloud {
+            locations: vec![ava_core_plugins::PluginSourceLocation::Cloud {
                 resource_uri: "plugin://plugin_remote".to_string(),
                 bundle_uri: None,
             }],
@@ -287,7 +287,7 @@ fn app_tool(connector: &str, action: &str) -> serde_json::Value {
         "_meta": {
             "connector_id": connector,
             "connector_name": connector,
-            "_codex_apps": {
+            "_ava_apps": {
                 "resource_uri": format!("connector://{connector}/tools/{connector}_{action}"),
                 "contains_mcp_source": true,
                 "connector_id": connector,
@@ -326,10 +326,10 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
         ))))
         .with_cloud_provider(provider.clone()),
     );
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_exec_server_url("none")
         .with_extensions(Arc::new(extensions.build()))
-        .with_auth(codex_login::CodexAuth::from_external_chatgpt_tokens(
+        .with_auth(ava_login::AvaAuth::from_external_chatgpt_tokens(
             "header.e30.initial",
             "account-a",
             /*chatgpt_plan_type*/ None,
@@ -417,9 +417,9 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
                 .clone()
                 .context("cloud provider resource client missing")?;
             let previous_auth =
-                resources.auth_cache_key_for_server(codex_mcp::CODEX_APPS_MCP_SERVER_NAME);
-            codex_login::auth::login_with_chatgpt_auth_tokens(
-                test.codex_home_path(),
+                resources.auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME);
+            ava_login::auth::login_with_chatgpt_auth_tokens(
+                test.ava_home_path(),
                 "header.e30.changed",
                 account,
                 /*chatgpt_plan_type*/ None,
@@ -427,10 +427,10 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
             test.thread_manager.auth_manager().reload().await;
             tokio::time::timeout(std::time::Duration::from_secs(10), async {
                 loop {
-                    if resources.auth_cache_key_for_server(codex_mcp::CODEX_APPS_MCP_SERVER_NAME)
+                    if resources.auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME)
                         != previous_auth
                         && test
-                            .codex
+                            .ava-code
                             .thread_extension_data()
                             .get::<SelectedPluginSnapshot>()
                             .is_some_and(|snapshot| snapshot.plugins.is_empty())
@@ -450,7 +450,7 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
         if let Some((connector, action, _)) = tool_call {
             events.push(ev_function_call_with_namespace(
                 &call_id,
-                &format!("mcp__codex_apps__{connector}"),
+                &format!("mcp__ava_apps__{connector}"),
                 &format!("_{action}"),
                 "{}",
             ));
@@ -482,17 +482,17 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
                             .clone()
                             .context("cloud provider resource client missing")?;
                         let previous_auth = resources
-                            .auth_cache_key_for_server(codex_mcp::CODEX_APPS_MCP_SERVER_NAME);
+                            .auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME);
                         // Rotate credentials without replacing the captured runtime/client.
-                        codex_login::auth::login_with_chatgpt_auth_tokens(
-                            test.codex_home_path(),
+                        ava_login::auth::login_with_chatgpt_auth_tokens(
+                            test.ava_home_path(),
                             "header.e30.rotated",
                             "account-b",
                             /*chatgpt_plan_type*/ None,
                         )?;
                         test.thread_manager.auth_manager().reload().await;
                         while resources
-                            .auth_cache_key_for_server(codex_mcp::CODEX_APPS_MCP_SERVER_NAME)
+                            .auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME)
                             == previous_auth
                         {
                             tokio::task::yield_now().await;
@@ -505,7 +505,7 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
             .await??;
             // The old request must not republish its catalog after credentials change.
             let state = test
-                .codex
+                .ava-code
                 .thread_extension_data()
                 .get::<PluginsThreadState>()
                 .context("plugin state missing")?;
@@ -535,14 +535,14 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
             );
             assert_eq!(call["params"]["arguments"], json!({}));
             let (other_namespace, other_tool) = if connector == "calendar" {
-                ("mcp__codex_apps__gmail", "_search_email")
+                ("mcp__ava_apps__gmail", "_search_email")
             } else {
-                ("mcp__codex_apps__calendar", "_list_events")
+                ("mcp__ava_apps__calendar", "_list_events")
             };
             assert!(request.tool_by_name(other_namespace, other_tool).is_none());
             let tool = request
                 .tool_by_name(
-                    &format!("mcp__codex_apps__{connector}"),
+                    &format!("mcp__ava_apps__{connector}"),
                     &format!("_{action}"),
                 )
                 .expect("the current account's tool should be advertised");

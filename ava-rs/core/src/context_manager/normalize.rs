@@ -1,12 +1,12 @@
-use codex_context_fragments::set_annotated_content;
-use codex_context_fragments::to_annotated_content;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::ResponseItemId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::InputModality;
+use ava_context_fragments::set_annotated_content;
+use ava_context_fragments::to_annotated_content;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::ResponseItemId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::InputModality;
 use std::collections::HashSet;
 use uuid::Uuid;
 

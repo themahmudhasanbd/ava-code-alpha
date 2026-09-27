@@ -7,30 +7,30 @@ use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_login::AuthCredentialsStoreMode;
-use codex_login::AuthHeaders;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_login::login_with_api_key;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::AgentPath;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_login::AuthCredentialsStoreMode;
+use ava_login::AuthHeaders;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_login::login_with_api_key;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::AgentPath;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use http::HeaderMap;
 use http::HeaderValue;
@@ -44,14 +44,14 @@ use wiremock::matchers::header;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-struct SelectedAuth(CodexAuth);
+struct SelectedAuth(AvaAuth);
 
 impl ExternalAuth for SelectedAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.0.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         self.resolve()
     }
 }
@@ -63,7 +63,7 @@ struct StallingAuth {
 }
 
 impl ExternalAuth for StallingAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async {
             if self.stall.load(Ordering::SeqCst) {
                 self.released.cancelled().await;
@@ -72,13 +72,13 @@ impl ExternalAuth for StallingAuth {
         })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         self.resolve()
     }
 }
 
-fn header_auth(token: &'static str) -> CodexAuth {
-    CodexAuth::Headers(AuthHeaders::new(HeaderMap::from_iter([
+fn header_auth(token: &'static str) -> AvaAuth {
+    AvaAuth::Headers(AuthHeaders::new(HeaderMap::from_iter([
         (http::header::AUTHORIZATION, HeaderValue::from_static(token)),
         (
             http::header::HeaderName::from_static("chatgpt-account-id"),
@@ -120,7 +120,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         .expect("bundled model");
     let fallback_context_window = model.usable_context_window();
     responses::mount_models_once(&server, catalog).await;
-    let test = test_codex()
+    let test = test_ava()
         .with_auth(header_auth("Bearer rotated"))
         .with_model(&model.slug)
         .with_config(|config| config.model_provider.request_max_retries = Some(0))
@@ -165,7 +165,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         .get_models_manager()
         .raw_model_catalog(
             RefreshStrategy::Online,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     let auth: Arc<dyn ExternalAuth> = if stalls_auth {
@@ -183,7 +183,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         Input::User => {
             tokio::time::timeout(
                 Duration::from_secs(/*secs*/ 7),
-                test.codex
+                test.ava-code
                     .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                         text: "hello".into(),
                         text_elements: Vec::new(),
@@ -192,7 +192,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
             .await??;
         }
         Input::Mail => {
-            test.codex
+            test.ava-code
                 .submit(Op::InterAgentCommunication {
                     communication: InterAgentCommunication::new(
                         AgentPath::root().join("worker").expect("valid path"),
@@ -206,7 +206,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
                 .await?;
         }
     }
-    let started = wait_for_event(&test.codex, |event| {
+    let started = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnStarted(_))
     })
     .await;
@@ -218,7 +218,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         stalled_auth.stall.store(/*val*/ false, Ordering::SeqCst);
         stalled_auth.released.cancel();
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -235,8 +235,8 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         .iter()
         .any(|item| item["type"] == "additional_tools");
     assert_eq!(uses_responses_lite, succeeds);
-    test.codex.submit(Op::Shutdown).await?;
-    test.codex.wait_until_terminated().await;
+    test.ava-code.submit(Op::Shutdown).await?;
+    test.ava-code.wait_until_terminated().await;
     Ok(())
 }
 
@@ -258,9 +258,9 @@ async fn auth_and_provider_switches_do_not_reuse_chatgpt_catalog() -> Result<()>
         },
     )
     .await;
-    let chatgpt = test_codex()
+    let chatgpt = test_ava()
         .with_home(home.clone())
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("gpt-5.5")
         .build_with_auto_env(&server)
         .await?;
@@ -287,7 +287,7 @@ async fn auth_and_provider_switches_do_not_reuse_chatgpt_catalog() -> Result<()>
         manager
             .raw_model_catalog(
                 RefreshStrategy::Offline,
-                codex_core::test_support::default_http_client_factory()
+                ava_core::test_support::default_http_client_factory()
             )
             .await
             .models,
@@ -306,9 +306,9 @@ async fn auth_and_provider_switches_do_not_reuse_chatgpt_catalog() -> Result<()>
         },
     )
     .await;
-    let api = test_codex()
+    let api = test_ava()
         .with_home(home.clone())
-        .with_auth(CodexAuth::from_api_key("api-key"))
+        .with_auth(AvaAuth::from_api_key("api-key"))
         .with_config(|config| {
             config.model_provider.model_catalog_url = config
                 .model_provider
@@ -317,7 +317,7 @@ async fn auth_and_provider_switches_do_not_reuse_chatgpt_catalog() -> Result<()>
                 .map(|base_url| format!("{base_url}/models").into());
             config
                 .features
-                .enable(codex_features::Feature::ApiKeyModelDiscovery)
+                .enable(ava_features::Feature::ApiKeyModelDiscovery)
                 .expect("enable API-key model discovery");
         })
         .with_model("gpt-5.5")
@@ -364,9 +364,9 @@ async fn auth_and_provider_switches_do_not_reuse_chatgpt_catalog() -> Result<()>
         },
     )
     .await;
-    let other = test_codex()
+    let other = test_ava()
         .with_home(home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("gpt-5.5")
         .with_config(|config| {
             config.model_provider_id = "second".into();

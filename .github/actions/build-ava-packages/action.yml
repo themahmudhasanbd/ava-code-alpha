@@ -1,5 +1,5 @@
-name: build-codex-packages
-description: Build and smoke-test unsigned Codex CLI and app-server release packages.
+name: build-ava-packages
+description: Build and smoke-test unsigned Ava CLI and app-server release packages.
 inputs:
   target:
     description: Rust release target triple to build and test.
@@ -17,10 +17,10 @@ runs:
   steps:
     - name: Select release binaries
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
-        BASE_BINARIES: "codex codex-app-server codex-code-mode-host"
-        WINDOWS_ONLY_BINARIES: "codex-command-runner codex-windows-sandbox-setup"
+        BASE_BINARIES: "ava ava-app-server ava-code-mode-host"
+        WINDOWS_ONLY_BINARIES: "ava-command-runner ava-windows-sandbox-setup"
         BUILD_MODE: ${{ inputs.build-mode }}
         # macOS symbol extraction needs packed dSYM bundles before binaries are stripped.
         CARGO_PROFILE_RELEASE_SPLIT_DEBUGINFO: ${{ contains(inputs.target, 'apple-darwin') && 'packed' || 'off' }}
@@ -61,7 +61,7 @@ runs:
     - name: Install Linux build dependencies
       if: ${{ runner.os == 'Linux' }}
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       run: |
         set -euo pipefail
         sudo apt-get update -y
@@ -74,7 +74,7 @@ runs:
     - name: Use hermetic Cargo home (musl)
       if: ${{ runner.os == 'Linux' }}
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       run: |
         set -euo pipefail
         cargo_home="${GITHUB_WORKSPACE}/.cargo-home"
@@ -93,7 +93,7 @@ runs:
     - name: Install musl build tools
       if: ${{ runner.os == 'Linux' }}
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
       run: bash "${GITHUB_WORKSPACE}/.github/scripts/install-musl-build-tools.sh"
@@ -101,7 +101,7 @@ runs:
     - name: Disable aws-lc jitter entropy (musl)
       if: ${{ runner.os == 'Linux' }}
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
       run: |
@@ -127,7 +127,7 @@ runs:
     - name: Build bwrap and export digest
       if: ${{ runner.os == 'Linux' }}
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
       run: |
@@ -135,15 +135,15 @@ runs:
         cargo build --target "${TARGET}" --release --timings --bin bwrap
 
         bwrap_path="${CARGO_TARGET_DIR}/${TARGET}/release/bwrap"
-        # Codex embeds this digest at build time and verifies the packaged
+        # Ava embeds this digest at build time and verifies the packaged
         # bwrap at runtime, so hash its final stripped bytes first.
         strip --strip-debug --strip-unneeded "$bwrap_path"
         digest="$(sha256sum "$bwrap_path" | awk '{print $1}')"
-        echo "CODEX_BWRAP_SHA256=${digest}" >> "$GITHUB_ENV"
+        echo "AVA_BWRAP_SHA256=${digest}" >> "$GITHUB_ENV"
 
-    - name: Build Codex package binaries
+    - name: Build Ava package binaries
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
       run: |
@@ -164,7 +164,7 @@ runs:
     - name: Normalize Windows PDB filenames
       if: ${{ runner.os == 'Windows' }}
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
       run: |
@@ -187,16 +187,16 @@ runs:
     - name: Download packaged zsh manifest
       if: ${{ runner.os != 'Windows' }}
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       run: |
         set -euo pipefail
         curl -fsSL \
           "https://github.com/openai/codex/releases/download/codex-zsh-v0.1.0/codex-zsh" \
-          -o "${RUNNER_TEMP}/codex-zsh"
+          -o "${RUNNER_TEMP}/ava-zsh"
 
     - name: Archive symbols and strip binaries
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
         PACKAGE_ACTION_PATH: ${{ github.action_path }}
@@ -209,12 +209,12 @@ runs:
           --archive-dir "../symbols-dist/${TARGET}" \
           --binaries "$NEEDED_BINARIES"
 
-    - name: Build Codex package archives
+    - name: Build Ava package archives
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
-        CODEX_PACKAGE_VERSION: ${{ inputs.package-version }}
+        AVA_PACKAGE_VERSION: ${{ inputs.package-version }}
         PACKAGE_ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
@@ -228,9 +228,9 @@ runs:
 
         package_args=(
           --target "$target"
-          --code-mode-host-bin "${release_dir}/codex-code-mode-host${exe_suffix}"
+          --code-mode-host-bin "${release_dir}/ava-code-mode-host${exe_suffix}"
           --cargo-profile release
-          --package-version "$CODEX_PACKAGE_VERSION"
+          --package-version "$AVA_PACKAGE_VERSION"
           --force
         )
         if [[ "$RUNNER_OS" == "Linux" ]]; then
@@ -238,47 +238,47 @@ runs:
         fi
         if [[ "$RUNNER_OS" == "Windows" ]]; then
           package_args+=(
-            --codex-command-runner-bin "${release_dir}/codex-command-runner.exe"
-            --codex-windows-sandbox-setup-bin "${release_dir}/codex-windows-sandbox-setup.exe"
+            --ava-command-runner-bin "${release_dir}/ava-command-runner.exe"
+            --ava-windows-sandbox-setup-bin "${release_dir}/ava-windows-sandbox-setup.exe"
           )
         else
-          package_args+=(--zsh-manifest "${RUNNER_TEMP}/codex-zsh")
+          package_args+=(--zsh-manifest "${RUNNER_TEMP}/ava-zsh")
         fi
 
-        python3 "${PACKAGE_ACTION_PATH}/../../../scripts/build_codex_package.py" \
+        python3 "${PACKAGE_ACTION_PATH}/../../../scripts/build_ava_package.py" \
           "${package_args[@]}" \
-          --variant codex \
-          --entrypoint-bin "${release_dir}/codex${exe_suffix}" \
-          --package-dir "${RUNNER_TEMP}/codex-package-${target}" \
-          --archive-output "${archive_dir}/codex-package-${target}.tar.gz" \
-          --archive-output "${archive_dir}/codex-package-${target}.tar.zst"
+          --variant ava \
+          --entrypoint-bin "${release_dir}/ava${exe_suffix}" \
+          --package-dir "${RUNNER_TEMP}/ava-package-${target}" \
+          --archive-output "${archive_dir}/ava-package-${target}.tar.gz" \
+          --archive-output "${archive_dir}/ava-package-${target}.tar.zst"
 
-        python3 "${PACKAGE_ACTION_PATH}/../../../scripts/build_codex_package.py" \
+        python3 "${PACKAGE_ACTION_PATH}/../../../scripts/build_ava_package.py" \
           "${package_args[@]}" \
-          --variant codex-app-server \
-          --entrypoint-bin "${release_dir}/codex-app-server${exe_suffix}" \
-          --package-dir "${RUNNER_TEMP}/codex-app-server-package-${target}" \
-          --archive-output "${archive_dir}/codex-app-server-package-${target}.tar.gz" \
-          --archive-output "${archive_dir}/codex-app-server-package-${target}.tar.zst"
+          --variant ava-app-server \
+          --entrypoint-bin "${release_dir}/ava-app-server${exe_suffix}" \
+          --package-dir "${RUNNER_TEMP}/ava-app-server-package-${target}" \
+          --archive-output "${archive_dir}/ava-app-server-package-${target}.tar.gz" \
+          --archive-output "${archive_dir}/ava-app-server-package-${target}.tar.zst"
 
     - name: Smoke-test assembled packages
       shell: bash
-      working-directory: codex-rs
+      working-directory: ava-rs
       env:
         TARGET: ${{ inputs.target }}
         PYTHONPATH: ${{ github.workspace }}/sdk/python/src${{ runner.os == 'Windows' && ';' || ':' }}${{ github.workspace }}/sdk/python/tests
         PACKAGE_ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
-        cd "${PACKAGE_ACTION_PATH}/../../../scripts/codex_package/smoke_tests"
+        cd "${PACKAGE_ACTION_PATH}/../../../scripts/ava_package/smoke_tests"
         target="${TARGET}"
         archive_dir="${GITHUB_WORKSPACE}/dist/${target}"
-        mkdir -p "${GITHUB_WORKSPACE}/codex-rs/target"
+        mkdir -p "${GITHUB_WORKSPACE}/ava-rs/target"
         pytest_args=(
           -v
-          --basetemp "${GITHUB_WORKSPACE}/codex-rs/target/package-smoke-tmp"
+          --basetemp "${GITHUB_WORKSPACE}/ava-rs/target/package-smoke-tmp"
           --package-target "$target"
-          --symbols-archive "${GITHUB_WORKSPACE}/symbols-dist/${target}/codex-symbols-${target}.tar.gz"
+          --symbols-archive "${GITHUB_WORKSPACE}/symbols-dist/${target}/ava-symbols-${target}.tar.gz"
         )
 
         # CI must exercise packaged tools; local smoke runs may use host tools.
@@ -289,12 +289,12 @@ runs:
 
         uv run --frozen pytest "${pytest_args[@]}" \
           --compression gzip \
-          --cli-archive "${archive_dir}/codex-package-${target}.tar.gz" \
-          --app-server-archive "${archive_dir}/codex-app-server-package-${target}.tar.gz" \
-          test_codex_package.py
+          --cli-archive "${archive_dir}/ava-package-${target}.tar.gz" \
+          --app-server-archive "${archive_dir}/ava-app-server-package-${target}.tar.gz" \
+          test_ava_package.py
 
         uv run --frozen pytest "${pytest_args[@]}" \
           --compression zstd \
-          --cli-archive "${archive_dir}/codex-package-${target}.tar.zst" \
-          --app-server-archive "${archive_dir}/codex-app-server-package-${target}.tar.zst" \
-          test_codex_package.py
+          --cli-archive "${archive_dir}/ava-package-${target}.tar.zst" \
+          --app-server-archive "${archive_dir}/ava-app-server-package-${target}.tar.zst" \
+          test_ava_package.py

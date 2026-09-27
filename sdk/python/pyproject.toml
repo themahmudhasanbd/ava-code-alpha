@@ -68,10 +68,10 @@ combine-as-imports = true
 
 [tool.uv]
 exclude-newer = "7 days"
-exclude-newer-package = { openai-codex-cli-bin = "2026-09-09T06:06:45Z" }
+exclude-newer-package = { openai-ava-cli-bin = "2026-09-09T06:06:45Z" }
 index-strategy = "first-index"
 
 [tool.uv.pip]
 exclude-newer = "7 days"
-exclude-newer-package = { openai-codex-cli-bin = "2026-09-09T06:06:45Z" }
+exclude-newer-package = { openai-ava-cli-bin = "2026-09-09T06:06:45Z" }
 index-strategy = "first-index"

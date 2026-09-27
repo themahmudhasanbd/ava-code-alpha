@@ -463,7 +463,7 @@ Keep your existing work.
 
 PI-Desktop can import local sessions from:
 
-**Claude Code · Codex · OpenCode · Pi**
+**Claude Code · Ava · OpenCode · Pi**
 
 ---
 

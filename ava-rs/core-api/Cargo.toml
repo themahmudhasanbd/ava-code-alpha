@@ -1,12 +1,12 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-core-api"
+name = "ava-core-api"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_core_api"
+name = "ava_core_api"
 path = "src/lib.rs"
 test = false
 
@@ -14,20 +14,20 @@ test = false
 workspace = true
 
 [dependencies]
-codex-app-server-protocol = { workspace = true }
-codex-arg0 = { workspace = true }
-codex-analytics = { workspace = true }
-codex-config = { workspace = true }
-codex-core = { workspace = true }
-codex-extension-api = { workspace = true }
-codex-home = { workspace = true }
-codex-history = { workspace = true }
-codex-image-generation-extension = { workspace = true }
-codex-exec-server = { workspace = true }
-codex-features = { workspace = true }
-codex-login = { workspace = true }
-codex-model-provider-info = { workspace = true }
-codex-models-manager = { workspace = true }
-codex-protocol = { workspace = true }
-codex-state = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
+ava-app-server-protocol = { workspace = true }
+ava-arg0 = { workspace = true }
+ava-analytics = { workspace = true }
+ava-config = { workspace = true }
+ava-core = { workspace = true }
+ava-extension-api = { workspace = true }
+ava-home = { workspace = true }
+ava-history = { workspace = true }
+ava-image-generation-extension = { workspace = true }
+ava-exec-server = { workspace = true }
+ava-features = { workspace = true }
+ava-login = { workspace = true }
+ava-model-provider-info = { workspace = true }
+ava-models-manager = { workspace = true }
+ava-protocol = { workspace = true }
+ava-state = { workspace = true }
+ava-utils-absolute-path = { workspace = true }

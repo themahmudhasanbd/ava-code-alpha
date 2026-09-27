@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 
-use codex_extension_api::ExtensionMetrics;
+use ava_extension_api::ExtensionMetrics;
 
 pub(crate) const CLASSIFICATION_TRUNCATION_METRIC: &str =
-    "codex.guardian_v2.classification.truncation";
+    "ava.guardian_v2.classification.truncation";
 pub(crate) const CLASSIFICATION_TRUNCATION_BYTES_METRIC: &str =
-    "codex.guardian_v2.classification.truncation.bytes";
+    "ava.guardian_v2.classification.truncation.bytes";
 
-pub(crate) use codex_guardian_context::TruncationObservation;
+pub(crate) use ava_guardian_context::TruncationObservation;
 
 /// Aggregates actual context reductions once per component and classifier request.
 #[derive(Default)]

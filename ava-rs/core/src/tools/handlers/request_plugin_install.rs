@@ -1,30 +1,30 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use codex_analytics::PluginInstallRequestSource;
-use codex_analytics::PluginInstallRequested;
-use codex_analytics::PluginInstallRequestedPlugin;
-use codex_analytics::build_track_events_context;
-use codex_config::types::ToolSuggestDisabledTool;
-use codex_core_plugins::remote::REMOTE_GLOBAL_MARKETPLACE_NAME;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_tools::DiscoverableTool;
-use codex_tools::DiscoverableToolAction;
-use codex_tools::DiscoverableToolType;
-use codex_tools::LIST_AVAILABLE_PLUGINS_TO_INSTALL_TOOL_NAME;
-use codex_tools::REQUEST_PLUGIN_INSTALL_PERSIST_ALWAYS_VALUE;
-use codex_tools::REQUEST_PLUGIN_INSTALL_PERSIST_KEY;
-use codex_tools::REQUEST_PLUGIN_INSTALL_TOOL_NAME;
-use codex_tools::RequestPluginInstallArgs;
-use codex_tools::RequestPluginInstallResult;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
-use codex_tools::all_requested_connectors_picked_up;
-use codex_tools::build_request_plugin_install_elicitation_request;
-use codex_tools::filter_request_plugin_install_discoverable_tools_for_client;
-use codex_tools::verified_connector_install_completed;
+use ava_analytics::PluginInstallRequestSource;
+use ava_analytics::PluginInstallRequested;
+use ava_analytics::PluginInstallRequestedPlugin;
+use ava_analytics::build_track_events_context;
+use ava_config::types::ToolSuggestDisabledTool;
+use ava_core_plugins::remote::REMOTE_GLOBAL_MARKETPLACE_NAME;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_tools::DiscoverableTool;
+use ava_tools::DiscoverableToolAction;
+use ava_tools::DiscoverableToolType;
+use ava_tools::LIST_AVAILABLE_PLUGINS_TO_INSTALL_TOOL_NAME;
+use ava_tools::REQUEST_PLUGIN_INSTALL_PERSIST_ALWAYS_VALUE;
+use ava_tools::REQUEST_PLUGIN_INSTALL_PERSIST_KEY;
+use ava_tools::REQUEST_PLUGIN_INSTALL_TOOL_NAME;
+use ava_tools::RequestPluginInstallArgs;
+use ava_tools::RequestPluginInstallResult;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
+use ava_tools::all_requested_connectors_picked_up;
+use ava_tools::build_request_plugin_install_elicitation_request;
+use ava_tools::filter_request_plugin_install_discoverable_tools_for_client;
+use ava_tools::verified_connector_install_completed;
 use rmcp::model::RequestId;
 use serde::Deserialize;
 use serde_json::Value;
@@ -82,7 +82,7 @@ impl ToolExecutor<ToolInvocation> for RequestPluginInstallHandler {
         false
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -144,10 +144,10 @@ impl RequestPluginInstallHandler {
         }
         if (requested_tool_type == Some(DiscoverableToolType::Plugin)
             || self.presentation == ToolSuggestPresentation::RecommendationContext)
-            && turn.app_server_client_name.as_deref() == Some("codex-tui")
+            && turn.app_server_client_name.as_deref() == Some("ava-tui")
         {
             return Err(FunctionCallError::RespondToModel(
-                "plugin install requests are not available in codex-tui yet".to_string(),
+                "plugin install requests are not available in ava-tui yet".to_string(),
             ));
         }
 
@@ -190,7 +190,7 @@ impl RequestPluginInstallHandler {
             let plugin_id = tool.id().to_string();
             let auth = session.services.auth_manager.auth().await;
             let plugins_config = turn.config.plugins_config_input();
-            match codex_core_plugins::hydrate_selected_recommended_plugin_install_metadata(
+            match ava_core_plugins::hydrate_selected_recommended_plugin_install_metadata(
                 &plugins_config,
                 auth.as_ref(),
                 tool,
@@ -250,7 +250,7 @@ impl RequestPluginInstallHandler {
         let elicitation = session
             .request_mcp_server_elicitation(
                 turn.as_ref(),
-                CODEX_APPS_MCP_SERVER_NAME.to_string(),
+                AVA_APPS_MCP_SERVER_NAME.to_string(),
                 request_id,
                 request,
             )
@@ -348,7 +348,7 @@ async fn maybe_persist_disabled_install_request(
         return;
     }
 
-    if let Err(err) = persist_disabled_install_request(&turn.config.codex_home, tool).await {
+    if let Err(err) = persist_disabled_install_request(&turn.config.ava_home, tool).await {
         warn!(
             error = %err,
             tool_id = tool.id(),
@@ -377,10 +377,10 @@ fn request_plugin_install_response_requests_persistent_disable(
 }
 
 async fn persist_disabled_install_request(
-    codex_home: &codex_utils_absolute_path::AbsolutePathBuf,
+    ava_home: &ava_utils_absolute_path::AbsolutePathBuf,
     tool: &DiscoverableTool,
 ) -> anyhow::Result<()> {
-    ConfigEditsBuilder::new(codex_home)
+    ConfigEditsBuilder::new(ava_home)
         .with_edits([ConfigEdit::AddToolSuggestDisabledTool(
             disabled_install_request(tool),
         )])
@@ -400,9 +400,9 @@ fn disabled_install_request(tool: &DiscoverableTool) -> ToolSuggestDisabledTool 
 async fn verify_request_plugin_install_completed(
     session: &Arc<crate::session::session::Session>,
     turn: &crate::session::turn_context::TurnContext,
-    mcp: &codex_mcp::McpBinding,
+    mcp: &ava_mcp::McpBinding,
     tool: &DiscoverableTool,
-    auth: Option<&codex_login::CodexAuth>,
+    auth: Option<&ava_login::AvaAuth>,
 ) -> bool {
     match tool {
         DiscoverableTool::Connector(connector) => refresh_missing_requested_connectors(
@@ -467,7 +467,7 @@ async fn verify_request_plugin_install_completed(
 async fn refresh_remote_installed_plugins_cache_after_install(
     session: &crate::session::session::Session,
     turn: &crate::session::turn_context::TurnContext,
-    auth: Option<&codex_login::CodexAuth>,
+    auth: Option<&ava_login::AvaAuth>,
     tool_id: &str,
 ) {
     let plugins_manager = &session.services.plugins_manager;
@@ -496,8 +496,8 @@ fn is_remote_plugin_install_suggestion(plugin_id: &str) -> bool {
 async fn refresh_missing_requested_connectors(
     session: &Arc<crate::session::session::Session>,
     turn: &crate::session::turn_context::TurnContext,
-    mcp: &codex_mcp::McpBinding,
-    auth: Option<&codex_login::CodexAuth>,
+    mcp: &ava_mcp::McpBinding,
+    auth: Option<&ava_login::AvaAuth>,
     expected_connector_ids: &[String],
     tool_id: &str,
 ) -> Option<Vec<AppInfo>> {
@@ -511,7 +511,7 @@ async fn refresh_missing_requested_connectors(
         return Some(accessible_connectors);
     }
 
-    match session.hard_refresh_latest_codex_apps_tools().await {
+    match session.hard_refresh_latest_ava_apps_tools().await {
         Ok(mcp_tools) => {
             let accessible_connectors =
                 connectors::accessible_connectors_from_mcp_tools(&mcp_tools);
@@ -524,7 +524,7 @@ async fn refresh_missing_requested_connectors(
         }
         Err(err) => {
             warn!(
-                "failed to refresh codex apps tools cache after plugin install request for {tool_id}: {err:#}"
+                "failed to refresh ava apps tools cache after plugin install request for {tool_id}: {err:#}"
             );
             None
         }
@@ -534,7 +534,7 @@ async fn refresh_missing_requested_connectors(
 fn verified_plugin_install_completed(
     tool_id: &str,
     config: &crate::config::Config,
-    plugins_manager: &codex_core_plugins::PluginsManager,
+    plugins_manager: &ava_core_plugins::PluginsManager,
 ) -> bool {
     let plugins_input = config.plugins_config_input();
     plugins_manager

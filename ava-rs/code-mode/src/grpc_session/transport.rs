@@ -1,9 +1,9 @@
 use std::io;
 
-use codex_code_mode_protocol::grpc::code_mode_host_client::CodeModeHostClient;
-use codex_code_mode_protocol::host::MAX_FRAME_BYTES;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
+use ava_code_mode_protocol::grpc::code_mode_host_client::CodeModeHostClient;
+use ava_code_mode_protocol::host::MAX_FRAME_BYTES;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
 use http_body_util::BodyExt;
 use tonic::body::Body;
 use tonic::codegen::http::Request;

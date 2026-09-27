@@ -1,7 +1,7 @@
 /**
  * Recovery policy for a provider transport that keeps failing (issue #234).
  *
- * One turn retried a Codex request ten times and every attempt died with a bare
+ * One turn retried a Ava request ten times and every attempt died with a bare
  * `fetch failed`, while a new turn on the same network and provider recovered
  * immediately. `phase=stream` / `streamMs=1~2` looked like a failure after the
  * response headers, but pi-agent-core emits `message_start` for a stream that

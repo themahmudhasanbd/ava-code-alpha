@@ -1,10 +1,10 @@
 use super::*;
 use crate::session::tests::make_session_and_context;
 use crate::session::tests::update_selected_settings_for_test;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 
@@ -66,7 +66,7 @@ async fn prepare_apply_patch_uses_action_policy_before_turn_policy() {
         &environment,
         &file_system_policy,
         &context,
-        PatchSandboxRoute::Platform(codex_protocol::config_types::WindowsSandboxLevel::Disabled),
+        PatchSandboxRoute::Platform(ava_protocol::config_types::WindowsSandboxLevel::Disabled),
         action,
     )
     .expect("issuing action policy should request approval");

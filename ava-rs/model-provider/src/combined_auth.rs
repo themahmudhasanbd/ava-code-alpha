@@ -3,17 +3,17 @@
 use std::sync::Arc;
 
 use crate::auth::ResolvedProviderAuth;
-use codex_api::AuthError;
-use codex_api::AuthHeadersFuture;
-use codex_api::AuthProvider;
-use codex_api::AuthProviderFuture;
-use codex_api::SharedAuthProvider;
-use codex_login::GatewayAuthManager;
-use codex_model_provider_info::GatewayOAuthConfig;
-use codex_model_provider_info::GatewayOAuthDelivery;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result;
+use ava_api::AuthError;
+use ava_api::AuthHeadersFuture;
+use ava_api::AuthProvider;
+use ava_api::AuthProviderFuture;
+use ava_api::SharedAuthProvider;
+use ava_login::GatewayAuthManager;
+use ava_model_provider_info::GatewayOAuthConfig;
+use ava_model_provider_info::GatewayOAuthDelivery;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result;
 use http::HeaderMap;
 use http::HeaderName;
 use http::HeaderValue;
@@ -26,13 +26,13 @@ pub(crate) async fn compose_auth(
     let Some(config) = provider.gateway_oauth.as_ref() else {
         return Ok(resolved);
     };
-    provider.validate().map_err(CodexErr::InvalidRequest)?;
+    provider.validate().map_err(AvaErr::InvalidRequest)?;
     let manager = manager.ok_or_else(|| {
-        CodexErr::InvalidRequest("gateway_oauth requires auth runtime configuration".into())
+        AvaErr::InvalidRequest("gateway_oauth requires auth runtime configuration".into())
     })?;
     let manager = manager
         .as_ref()
-        .map_err(|error| CodexErr::InvalidRequest(error.clone()))?;
+        .map_err(|error| AvaErr::InvalidRequest(error.clone()))?;
     let token = manager.resolve_access_token().await.map_err(|error| {
             // Issuer errors may echo arbitrary credentials from configured URLs. Keep the
             // diagnostic safe and bounded for callers that return it as tool output.
@@ -43,7 +43,7 @@ pub(crate) async fn compose_auth(
         })?;
     let (name, value) = gateway_header(config, &token)?;
     if resolved.auth.to_auth_headers().contains_key(&name) {
-        return Err(CodexErr::InvalidRequest(
+        return Err(AvaErr::InvalidRequest(
             "gateway OAuth conflicts with primary auth headers".into(),
         ));
     }
@@ -57,14 +57,14 @@ pub(crate) async fn compose_auth(
 
 fn gateway_header(config: &GatewayOAuthConfig, token: &str) -> Result<(HeaderName, HeaderValue)> {
     if token.is_empty() {
-        return Err(CodexErr::InvalidRequest(
+        return Err(AvaErr::InvalidRequest(
             "gateway OAuth returned an empty token".into(),
         ));
     }
     let (name, value) = match &config.delivery {
         GatewayOAuthDelivery::Header { name, scheme } => (
             HeaderName::from_bytes(name.as_bytes())
-                .map_err(|_| CodexErr::InvalidRequest("invalid gateway header".into()))?,
+                .map_err(|_| AvaErr::InvalidRequest("invalid gateway header".into()))?,
             format!("{scheme} {token}"),
         ),
         GatewayOAuthDelivery::Cookie { name } => {
@@ -72,7 +72,7 @@ fn gateway_header(config: &GatewayOAuthConfig, token: &str) -> Result<(HeaderNam
             if !token.bytes().all(
                 |byte| matches!(byte, 0x21 | 0x23..=0x2b | 0x2d..=0x3a | 0x3c..=0x5b | 0x5d..=0x7e),
             ) {
-                return Err(CodexErr::InvalidRequest(
+                return Err(AvaErr::InvalidRequest(
                     "gateway OAuth token is not a valid cookie value".into(),
                 ));
             }
@@ -80,7 +80,7 @@ fn gateway_header(config: &GatewayOAuthConfig, token: &str) -> Result<(HeaderNam
         }
     };
     let mut value = HeaderValue::from_str(&value)
-        .map_err(|_| CodexErr::InvalidRequest("invalid gateway OAuth token header".into()))?;
+        .map_err(|_| AvaErr::InvalidRequest("invalid gateway OAuth token header".into()))?;
     value.set_sensitive(true);
     Ok((name, value))
 }
@@ -112,7 +112,7 @@ impl AuthProvider for CombinedAuth {
         })
     }
 
-    fn apply_auth(&self, request: codex_http_client::Request) -> AuthProviderFuture<'_> {
+    fn apply_auth(&self, request: ava_http_client::Request) -> AuthProviderFuture<'_> {
         Box::pin(async move {
             let mut request = self.primary.apply_auth(request).await?;
             if request.headers.contains_key(&self.name) {

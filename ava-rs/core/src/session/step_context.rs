@@ -8,12 +8,12 @@ use crate::environment_selection::TurnEnvironmentSnapshot;
 use crate::session::step_settings::ResolvedStepSettings;
 use crate::session::turn_context::TurnContext;
 use crate::tools::router::ToolRouter;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_exec_server::ResolvedSelectedCapabilityRoot;
-use codex_mcp::McpBinding;
-use codex_otel::SessionTelemetry;
-use codex_protocol::items::ModelInvocationContext;
-use codex_protocol::protocol::TurnContextItem;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_exec_server::ResolvedSelectedCapabilityRoot;
+use ava_mcp::McpBinding;
+use ava_otel::SessionTelemetry;
+use ava_protocol::items::ModelInvocationContext;
+use ava_protocol::protocol::TurnContextItem;
 
 /// Inputs for the next step, published together so capture cannot mix versions.
 #[derive(Debug)]

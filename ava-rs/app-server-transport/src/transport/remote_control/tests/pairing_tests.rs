@@ -1,7 +1,7 @@
 use super::super::protocol::RemoteControlPairingStatusRequest;
 use super::super::protocol::StartRemoteControlPairingRequest;
 use super::*;
-use codex_login::AuthKeyringBackendKind;
+use ava_login::AuthKeyringBackendKind;
 use pretty_assertions::assert_eq;
 use std::io;
 
@@ -26,7 +26,7 @@ fn remote_control_enrollment(
 }
 
 async fn auth_manager_with_replacement(
-    codex_home: &TempDir,
+    ava_home: &TempDir,
     replacement_account_id: &str,
 ) -> Arc<AuthManager> {
     let mut stale_auth = remote_control_auth_dot_json(Some("account_id"));
@@ -36,20 +36,20 @@ async fn auth_manager_with_replacement(
         .expect("stale auth should include tokens")
         .access_token = "stale-token".to_string();
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &stale_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )
     .expect("stale auth should save");
     let auth_manager = AuthManager::shared(
-        codex_home.path().to_path_buf(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path().to_path_buf(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*forced_chatgpt_workspace_id*/ None,
         /*chatgpt_base_url*/ None,
         AuthKeyringBackendKind::default(),
-        codex_login::test_support::transport_default_auth_route_config(),
+        ava_login::test_support::transport_default_auth_route_config(),
     )
     .await;
     let mut replacement_auth = remote_control_auth_dot_json(Some(replacement_account_id));
@@ -59,7 +59,7 @@ async fn auth_manager_with_replacement(
         .expect("replacement auth should include tokens")
         .access_token = "fresh-token".to_string();
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &replacement_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -727,8 +727,8 @@ async fn remote_control_handle_recovers_auth_before_refreshing_pairing() {
         )
         .await;
     });
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let auth_manager = auth_manager_with_replacement(&codex_home, "account_id").await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let auth_manager = auth_manager_with_replacement(&ava_home, "account_id").await;
     let remote_handle =
         remote_control_handle_with_current_enrollment(&remote_control_url, auth_manager);
     remote_handle
@@ -780,8 +780,8 @@ async fn pairing_publishes_refresh_deferral_after_auth_recovery() {
         .await;
         response_started_at
     });
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let auth_manager = auth_manager_with_replacement(&codex_home, "account_id").await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let auth_manager = auth_manager_with_replacement(&ava_home, "account_id").await;
     let remote_handle =
         remote_control_handle_with_current_enrollment(&remote_control_url, auth_manager);
     remote_handle
@@ -841,8 +841,8 @@ async fn pairing_auth_recovery_failure_publishes_cleared_server_token() {
         );
         respond_with_status(stale_refresh_request.stream, "401 Unauthorized", "").await;
     });
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let auth_manager = auth_manager_with_replacement(&codex_home, "different_account_id").await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let auth_manager = auth_manager_with_replacement(&ava_home, "different_account_id").await;
     let remote_handle =
         remote_control_handle_with_current_enrollment(&remote_control_url, auth_manager);
     remote_handle
@@ -955,11 +955,11 @@ async fn remote_control_handle_reenrolls_after_stale_pairing_enrollment() {
         .await
         .expect("listener should bind");
     let remote_control_url = remote_control_url_for_listener(&listener);
-    let codex_home = TempDir::new().expect("temp dir should create");
-    let state_db = remote_control_state_runtime(&codex_home).await;
+    let ava_home = TempDir::new().expect("temp dir should create");
+    let state_db = remote_control_state_runtime(&ava_home).await;
     let mut remote_handle = remote_control_handle_with_current_enrollment(
         &remote_control_url,
-        remote_control_auth_manager_with_home(&codex_home),
+        remote_control_auth_manager_with_home(&ava_home),
     );
     remote_handle.state_db = Some(state_db.clone());
     let stale_enrollment = remote_handle
@@ -1073,22 +1073,22 @@ async fn remote_control_handle_discards_pairing_response_after_auth_change() {
         .await
         .expect("listener should bind");
     let remote_control_url = remote_control_url_for_listener(&listener);
-    let codex_home = TempDir::new().expect("temp dir should create");
+    let ava_home = TempDir::new().expect("temp dir should create");
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &remote_control_auth_dot_json(Some("account_id")),
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )
     .expect("initial auth should save");
     let auth_manager = AuthManager::shared(
-        codex_home.path().to_path_buf(),
-        /*enable_codex_api_key_env*/ false,
+        ava_home.path().to_path_buf(),
+        /*enable_ava_api_key_env*/ false,
         AuthCredentialsStoreMode::File,
         /*forced_chatgpt_workspace_id*/ None,
         /*chatgpt_base_url*/ None,
         AuthKeyringBackendKind::default(),
-        codex_login::test_support::transport_default_auth_route_config(),
+        ava_login::test_support::transport_default_auth_route_config(),
     )
     .await;
     let remote_handle =
@@ -1107,7 +1107,7 @@ async fn remote_control_handle_discards_pairing_response_after_auth_change() {
 
     let pairing_request = accept_http_request(&listener).await;
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &remote_control_auth_dot_json(Some("next_account_id")),
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),

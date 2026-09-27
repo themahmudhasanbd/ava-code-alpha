@@ -1,14 +1,14 @@
-use codex_code_mode::ImageDetailVisibility;
-use codex_code_mode::ToolDefinition as CodeModeToolDefinition;
-use codex_tools::FreeformTool;
-use codex_tools::FreeformToolFormat;
-use codex_tools::ToolSpec;
+use ava_code_mode::ImageDetailVisibility;
+use ava_code_mode::ToolDefinition as CodeModeToolDefinition;
+use ava_tools::FreeformTool;
+use ava_tools::FreeformToolFormat;
+use ava_tools::ToolSpec;
 use std::collections::BTreeMap;
 
 pub(crate) fn create_code_mode_tool(
     enabled_tools: &[CodeModeToolDefinition],
     deferred_tools: &[CodeModeToolDefinition],
-    namespace_descriptions: &BTreeMap<String, codex_code_mode::ToolNamespaceDescription>,
+    namespace_descriptions: &BTreeMap<String, ava_code_mode::ToolNamespaceDescription>,
     default_exec_yield_time_ms: u64,
     code_mode_only: bool,
     image_detail_visibility: ImageDetailVisibility,
@@ -24,8 +24,8 @@ SOURCE: /[\s\S]+/
 "#;
 
     ToolSpec::Freeform(FreeformTool {
-        name: codex_code_mode::PUBLIC_TOOL_NAME.to_string(),
-        description: codex_code_mode::build_exec_tool_description(
+        name: ava_code_mode::PUBLIC_TOOL_NAME.to_string(),
+        description: ava_code_mode::build_exec_tool_description(
             enabled_tools,
             deferred_tools,
             namespace_descriptions,
@@ -45,16 +45,16 @@ SOURCE: /[\s\S]+/
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_tools::ToolName;
+    use ava_tools::ToolName;
     use pretty_assertions::assert_eq;
 
     #[test]
     fn create_code_mode_tool_matches_expected_spec() {
-        let enabled_tools = vec![codex_code_mode::ToolDefinition {
+        let enabled_tools = vec![ava_code_mode::ToolDefinition {
             name: "update_plan".to_string(),
             tool_name: ToolName::plain("update_plan"),
             description: "Update the plan".to_string(),
-            kind: codex_code_mode::CodeModeToolKind::Function,
+            kind: ava_code_mode::CodeModeToolKind::Function,
             input_schema: None,
             output_schema: None,
         }];
@@ -64,17 +64,17 @@ mod tests {
                 &enabled_tools,
                 &[],
                 &BTreeMap::new(),
-                codex_code_mode::DEFAULT_EXEC_YIELD_TIME_MS,
+                ava_code_mode::DEFAULT_EXEC_YIELD_TIME_MS,
                 /*code_mode_only*/ true,
                 ImageDetailVisibility::Visible,
             ),
             ToolSpec::Freeform(FreeformTool {
-                name: codex_code_mode::PUBLIC_TOOL_NAME.to_string(),
-                description: codex_code_mode::build_exec_tool_description(
+                name: ava_code_mode::PUBLIC_TOOL_NAME.to_string(),
+                description: ava_code_mode::build_exec_tool_description(
                     &enabled_tools,
                     &[],
                     &BTreeMap::new(),
-                    codex_code_mode::DEFAULT_EXEC_YIELD_TIME_MS,
+                    ava_code_mode::DEFAULT_EXEC_YIELD_TIME_MS,
                     /*code_mode_only*/ true,
                     ImageDetailVisibility::Visible,
                 ),

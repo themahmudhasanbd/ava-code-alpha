@@ -3,21 +3,21 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use crate::outgoing_message::OutgoingMessageSender;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SkillsChangedNotification;
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_file_watcher::FileWatcher;
-use codex_file_watcher::FileWatcherSubscriber;
-use codex_file_watcher::Receiver;
-use codex_file_watcher::ThrottledWatchReceiver;
-use codex_file_watcher::WatchPath;
-use codex_file_watcher::WatchRegistration;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_skills::system_cache_root_dir;
-use codex_skills_extension::HostSkillsLoadInput;
-use codex_skills_extension::HostSkillsService;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SkillsChangedNotification;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_file_watcher::FileWatcher;
+use ava_file_watcher::FileWatcherSubscriber;
+use ava_file_watcher::Receiver;
+use ava_file_watcher::ThrottledWatchReceiver;
+use ava_file_watcher::WatchPath;
+use ava_file_watcher::WatchRegistration;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_skills::system_cache_root_dir;
+use ava_skills_extension::HostSkillsLoadInput;
+use ava_skills_extension::HostSkillsService;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use tokio_util::sync::CancellationToken;
 use tokio_util::sync::DropGuard;
 use tracing::warn;
@@ -37,7 +37,7 @@ pub(crate) struct SkillsWatcher {
 impl SkillsWatcher {
     pub(crate) fn new(
         skills_service: Arc<HostSkillsService>,
-        codex_home: &AbsolutePathBuf,
+        ava_home: &AbsolutePathBuf,
         outgoing: Arc<OutgoingMessageSender>,
     ) -> Arc<Self> {
         let file_watcher = match FileWatcher::new() {
@@ -50,7 +50,7 @@ impl SkillsWatcher {
         let (subscriber, rx) = file_watcher.add_subscriber();
         let shutdown_token = CancellationToken::new();
         let shutdown_drop_guard = shutdown_token.clone().drop_guard();
-        let system_skills_root = system_cache_root_dir(codex_home);
+        let system_skills_root = system_cache_root_dir(ava_home);
         Self::spawn_event_loop(
             rx,
             skills_service,

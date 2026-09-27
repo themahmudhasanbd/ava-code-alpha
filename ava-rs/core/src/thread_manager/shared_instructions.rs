@@ -1,10 +1,10 @@
 //! Keeps one replaceable instruction provider per root while its agent tree is alive.
 
-use codex_extension_api::Instructions;
-use codex_extension_api::LoadInstructionsFuture;
-use codex_extension_api::LoadedUserInstructions;
-use codex_extension_api::ThreadInstructionsProvider;
-use codex_protocol::ThreadId;
+use ava_extension_api::Instructions;
+use ava_extension_api::LoadInstructionsFuture;
+use ava_extension_api::LoadedUserInstructions;
+use ava_extension_api::ThreadInstructionsProvider;
+use ava_protocol::ThreadId;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;

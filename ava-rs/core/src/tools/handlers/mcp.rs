@@ -23,22 +23,22 @@ use crate::tools::registry::PostToolUsePayload;
 use crate::tools::registry::PreToolUsePayload;
 use crate::tools::registry::ToolExecutor;
 use crate::tools::registry::ToolTelemetryTags;
-use codex_extension_api::McpToolContext;
-use codex_mcp::ToolInfo;
-use codex_protocol::mcp::is_node_repl_backed_server;
-use codex_protocol::user_input::UserInput;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ToolName;
-use codex_tools::ToolSearchInfo;
-use codex_tools::ToolSearchSourceInfo;
-use codex_tools::ToolSpec;
-use codex_tools::agent_plugin_mcp_tool_to_responses_api_tool;
-use codex_tools::mcp_tool_to_responses_api_tool;
-use codex_utils_image::PromptImageMode;
-use codex_utils_image::load_data_url_for_prompt_uncached;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_string::take_bytes_at_char_boundary;
+use ava_extension_api::McpToolContext;
+use ava_mcp::ToolInfo;
+use ava_protocol::mcp::is_node_repl_backed_server;
+use ava_protocol::user_input::UserInput;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ToolName;
+use ava_tools::ToolSearchInfo;
+use ava_tools::ToolSearchSourceInfo;
+use ava_tools::ToolSpec;
+use ava_tools::agent_plugin_mcp_tool_to_responses_api_tool;
+use ava_tools::mcp_tool_to_responses_api_tool;
+use ava_utils_image::PromptImageMode;
+use ava_utils_image::load_data_url_for_prompt_uncached;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_string::take_bytes_at_char_boundary;
 use futures::future::BoxFuture;
 use serde_json::Map;
 use serde_json::Value;
@@ -51,7 +51,7 @@ const MAX_MCP_NAMESPACE_DESCRIPTION_BYTES: usize = 512 * 1024;
 pub struct McpHandler {
     tool_info: ToolInfo,
     spec: Arc<ToolSpec>,
-    code_mode_tool_definitions: OnceLock<Vec<codex_code_mode::ToolDefinition>>,
+    code_mode_tool_definitions: OnceLock<Vec<ava_code_mode::ToolDefinition>>,
 }
 
 impl McpHandler {
@@ -164,7 +164,7 @@ impl ToolExecutor<ToolInvocation> for McpHandler {
         )
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -192,7 +192,7 @@ impl McpHandler {
             .is_enabled()
             && prepared_mcp_call
                 .as_ref()
-                .is_some_and(codex_mcp::PreparedMcpCall::is_host_owned_apps);
+                .is_some_and(ava_mcp::PreparedMcpCall::is_host_owned_apps);
         let mcp_tool = prepared_mcp_call.as_ref().map(|call| {
             McpToolContext::from_prepared_call(
                 call,
@@ -229,7 +229,7 @@ impl McpHandler {
         // Capture presentation policy from the same config snapshot used for execution.
         let truncation_policy = prepared_mcp_call
             .as_ref()
-            .and_then(codex_mcp::PreparedMcpCall::output_token_limit)
+            .and_then(ava_mcp::PreparedMcpCall::output_token_limit)
             .map(TruncationPolicy::Tokens)
             .unwrap_or(step_context.settings.model_info.truncation_policy.into());
         let started = Instant::now();
@@ -265,11 +265,11 @@ impl CoreToolRuntime for McpHandler {
         Some(&self.spec)
     }
 
-    fn cached_code_mode_definitions(&self) -> Option<&[codex_code_mode::ToolDefinition]> {
+    fn cached_code_mode_definitions(&self) -> Option<&[ava_code_mode::ToolDefinition]> {
         Some(
             self.code_mode_tool_definitions
                 .get_or_init(|| {
-                    let mut definitions = codex_tools::collect_code_mode_tool_definitions(
+                    let mut definitions = ava_tools::collect_code_mode_tool_definitions(
                         std::iter::once(self.spec.as_ref()),
                     );
                     for definition in &mut definitions {
@@ -323,7 +323,7 @@ impl CoreToolRuntime for McpHandler {
         };
         let is_encrypted = |item: &Value| {
             item.get("_meta")
-                .and_then(|meta| meta.get("codex/encryptedContent"))
+                .and_then(|meta| meta.get("ava/encryptedContent"))
                 .and_then(Value::as_bool)
                 == Some(true)
         };
@@ -366,7 +366,7 @@ impl CoreToolRuntime for McpHandler {
                         }
                         let detail = item
                             .get("_meta")
-                            .and_then(|meta| meta.get("codex/imageDetail"))
+                            .and_then(|meta| meta.get("ava/imageDetail"))
                             .and_then(|detail| serde_json::from_value(detail.clone()).ok());
                         let image_url =
                             format!("data:{};base64,{payload}", mime_type.to_ascii_lowercase());
@@ -374,7 +374,7 @@ impl CoreToolRuntime for McpHandler {
                             .ok()?;
                         captured_image_bytes = next_image_bytes;
                         Some(UserInput::Image {
-                            image: codex_protocol::models::ImageReference::Inline { image_url },
+                            image: ava_protocol::models::ImageReference::Inline { image_url },
                             detail,
                         })
                     }
@@ -579,7 +579,7 @@ mod tests {
     use crate::tools::registry::PostToolUsePayload;
     use crate::tools::registry::PreToolUsePayload;
     use crate::turn_diff_tracker::TurnDiffTracker;
-    use codex_features::Feature;
+    use ava_features::Feature;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use std::time::Duration;
@@ -608,7 +608,7 @@ mod tests {
                 cancellation_token: tokio_util::sync::CancellationToken::new(),
                 tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
                 call_id: "call-mcp-pre".to_string(),
-                tool_name: codex_tools::ToolName::namespaced("memory", "create_entities"),
+                tool_name: ava_tools::ToolName::namespaced("memory", "create_entities"),
                 source: ToolCallSource::Direct,
                 payload,
             }),
@@ -642,7 +642,7 @@ mod tests {
                 cancellation_token: tokio_util::sync::CancellationToken::new(),
                 tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
                 call_id: "call-mcp-pre-builtin-like".to_string(),
-                tool_name: codex_tools::ToolName::namespaced("mcp__foo", "exec_command"),
+                tool_name: ava_tools::ToolName::namespaced("mcp__foo", "exec_command"),
                 source: ToolCallSource::Direct,
                 payload,
             }),
@@ -672,7 +672,7 @@ mod tests {
                     cancellation_token: tokio_util::sync::CancellationToken::new(),
                     tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
                     call_id: "call-mcp-rewrite-builtin-like".to_string(),
-                    tool_name: codex_tools::ToolName::namespaced("mcp__foo", "exec_command"),
+                    tool_name: ava_tools::ToolName::namespaced("mcp__foo", "exec_command"),
                     source: ToolCallSource::Direct,
                     payload,
                 },
@@ -692,7 +692,7 @@ mod tests {
             arguments: json!({ "path": "/tmp/notes.txt" }).to_string(),
         };
         let output = McpToolOutput {
-            result: codex_protocol::mcp::CallToolResult {
+            result: ava_protocol::mcp::CallToolResult {
                 content: vec![json!({
                     "type": "text",
                     "text": "notes"
@@ -709,7 +709,7 @@ mod tests {
             result_metadata_capture_allowed: false,
             wall_time: Duration::from_millis(42),
             original_image_detail_supported: true,
-            truncation_policy: codex_utils_output_truncation::TruncationPolicy::Bytes(1024),
+            truncation_policy: ava_utils_output_truncation::TruncationPolicy::Bytes(1024),
         };
         let (session, turn) = make_session_and_context().await;
         let mut session = session;
@@ -720,7 +720,7 @@ mod tests {
             .expect("test feature must be configurable");
         let recorder = crate::tools::executed_tool_calls::ExecutedToolCalls::new(
             &turn.config.features,
-            &codex_history::InitialHistory::New,
+            &ava_history::InitialHistory::New,
         );
         session.services.executed_tool_calls = recorder.clone();
         let turn = Arc::new(turn);
@@ -733,7 +733,7 @@ mod tests {
             cancellation_token: tokio_util::sync::CancellationToken::new(),
             tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
             call_id: "call-mcp-post".to_string(),
-            tool_name: codex_tools::ToolName::namespaced("filesystem", "read_file"),
+            tool_name: ava_tools::ToolName::namespaced("filesystem", "read_file"),
             source: ToolCallSource::Direct,
             payload,
         };
@@ -758,7 +758,7 @@ mod tests {
         );
 
         // Nested MCP result metadata still reaches the owning Code Mode cell.
-        let cell_id = codex_code_mode::CellId::new("mcp-cell".to_string());
+        let cell_id = ava_code_mode::CellId::new("mcp-cell".to_string());
         recorder.start_cell(&cell_id, "exec-mcp-post");
         let mut invocation = invocation;
         invocation.source = ToolCallSource::CodeMode {
@@ -787,7 +787,7 @@ mod tests {
         assert_eq!(
             serde_json::to_value(items[0].executed_tool_call_metadata()).unwrap()["executed_tool_calls"],
             json!([{
-                "name": codex_tools::code_mode_name_for_tool_name(&invocation.tool_name),
+                "name": ava_tools::code_mode_name_for_tool_name(&invocation.tool_name),
                 "arguments": { "path": "/tmp/notes.txt" },
                 "tool_result_metadata": { "provider/custom": { "items": [1, null] } },
             }]),

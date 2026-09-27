@@ -20,10 +20,10 @@ impl FailureMetric {
             Self::File(trigger) => (metrics::FILE_COUNTER, "outcome", Some(trigger)),
             Self::Materialize => (metrics::MATERIALIZE_COUNTER, "outcome", None),
             Self::Run(trigger) => (metrics::RUN_COUNTER, "status", Some(trigger)),
-            Self::Scan(trigger) => ("codex.rollout_compression.scan", "outcome", Some(trigger)),
+            Self::Scan(trigger) => ("ava.rollout_compression.scan", "outcome", Some(trigger)),
             Self::TempCleanup(trigger) => (metrics::TEMP_CLEANUP_COUNTER, "outcome", Some(trigger)),
         };
-        let Some(metrics) = codex_otel::global() else {
+        let Some(metrics) = ava_otel::global() else {
             return;
         };
         let tags = [

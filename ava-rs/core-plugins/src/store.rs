@@ -3,12 +3,12 @@ use crate::manifest::PluginManifest;
 use crate::manifest::PluginManifestFormat;
 use crate::manifest::load_plugin_manifest;
 use crate::manifest::parse_plugin_manifest;
-use codex_plugin::PluginId;
-use codex_plugin::validate_plugin_segment;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::AgentPluginSchemaStatus;
-use codex_utils_plugins::agent_plugin_schema_status;
-use codex_utils_plugins::find_plugin_manifest_path;
+use ava_plugin::PluginId;
+use ava_plugin::validate_plugin_segment;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::AgentPluginSchemaStatus;
+use ava_utils_plugins::agent_plugin_schema_status;
+use ava_utils_plugins::find_plugin_manifest_path;
 use semver::Version;
 use serde::Deserialize;
 use serde::Serialize;
@@ -26,7 +26,7 @@ pub const DEFAULT_PLUGIN_VERSION: &str = "local";
 pub const PLUGINS_CACHE_DIR: &str = "plugins/cache";
 pub const PLUGINS_DATA_DIR: &str = "plugins/data";
 const AGENT_PLUGINS_DATA_DIR: &str = "agent-plugins";
-const REMOTE_PLUGIN_INSTALL_METADATA_FILE: &str = ".codex-remote-plugin-install.json";
+const REMOTE_PLUGIN_INSTALL_METADATA_FILE: &str = ".ava-remote-plugin-install.json";
 const REMOTE_PLUGIN_INSTALL_METADATA_SCHEMA_VERSION: u8 = 1;
 const DEFAULT_AGENT_PLUGIN_VERSION: &str = "1.0.0";
 
@@ -45,7 +45,7 @@ pub struct PluginInstallResult {
 
 #[derive(Debug, Clone)]
 pub struct PluginStore {
-    codex_home: AbsolutePathBuf,
+    ava_home: AbsolutePathBuf,
     root: AbsolutePathBuf,
     data_root: AbsolutePathBuf,
 }
@@ -99,22 +99,22 @@ enum InstallManifest<'a> {
 }
 
 impl PluginStore {
-    pub fn new(codex_home: PathBuf) -> Self {
-        Self::try_new(codex_home)
+    pub fn new(ava_home: PathBuf) -> Self {
+        Self::try_new(ava_home)
             .unwrap_or_else(|err| panic!("plugin cache root should be absolute: {err}"))
     }
 
-    pub fn try_new(codex_home: PathBuf) -> Result<Self, PluginStoreError> {
-        let root = AbsolutePathBuf::from_absolute_path_checked(codex_home.join(PLUGINS_CACHE_DIR))
+    pub fn try_new(ava_home: PathBuf) -> Result<Self, PluginStoreError> {
+        let root = AbsolutePathBuf::from_absolute_path_checked(ava_home.join(PLUGINS_CACHE_DIR))
             .map_err(|err| PluginStoreError::io("failed to resolve plugin cache root", err))?;
         let data_root =
-            AbsolutePathBuf::from_absolute_path_checked(codex_home.join(PLUGINS_DATA_DIR))
+            AbsolutePathBuf::from_absolute_path_checked(ava_home.join(PLUGINS_DATA_DIR))
                 .map_err(|err| PluginStoreError::io("failed to resolve plugin data root", err))?;
-        let codex_home = AbsolutePathBuf::from_absolute_path_checked(codex_home)
-            .map_err(|err| PluginStoreError::io("failed to resolve Codex home", err))?;
+        let ava_home = AbsolutePathBuf::from_absolute_path_checked(ava_home)
+            .map_err(|err| PluginStoreError::io("failed to resolve Ava home", err))?;
 
         Ok(Self {
-            codex_home,
+            ava_home,
             root,
             data_root,
         })
@@ -124,8 +124,8 @@ impl PluginStore {
         &self.root
     }
 
-    pub(crate) fn codex_home(&self) -> &AbsolutePathBuf {
-        &self.codex_home
+    pub(crate) fn ava_home(&self) -> &AbsolutePathBuf {
+        &self.ava_home
     }
 
     pub fn plugin_base_root(&self, plugin_id: &PluginId) -> AbsolutePathBuf {
@@ -522,7 +522,7 @@ fn plugin_manifest_for_source(
             .ok_or_else(|| PluginStoreError::Invalid("missing or invalid plugin.json".to_string())),
         InstallManifest::Fallback(contents) => parse_plugin_manifest(
             source_path,
-            &source_path.join(".codex-plugin/plugin.json"),
+            &source_path.join(".ava-plugin/plugin.json"),
             contents,
         )
         .map_err(|err| PluginStoreError::Invalid(format!("failed to parse plugin.json: {err}"))),
@@ -649,7 +649,7 @@ fn replace_plugin_root_atomically(
             (relative_path, contents)
         }
         InstallManifest::Fallback(contents) => (
-            PathBuf::from(".codex-plugin/plugin.json"),
+            PathBuf::from(".ava-plugin/plugin.json"),
             contents.as_bytes().to_vec(),
         ),
     };
@@ -657,7 +657,7 @@ fn replace_plugin_root_atomically(
     if let InstallManifest::Fallback(contents) = manifest {
         // Inject the generated manifest into Store's existing atomic copy so install does not
         // mutate the original source or require a second staging directory.
-        let manifest_path = staged_version_root.join(".codex-plugin/plugin.json");
+        let manifest_path = staged_version_root.join(".ava-plugin/plugin.json");
         let Some(manifest_parent) = manifest_path.parent() else {
             return Err(PluginStoreError::Invalid(
                 "plugin manifest path has no parent".to_string(),

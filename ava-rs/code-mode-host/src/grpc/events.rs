@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use codex_code_mode_protocol::grpc as proto;
-use codex_code_mode_protocol::host::MAX_FRAME_BYTES;
-use codex_code_mode_protocol::host::MAX_PENDING_DELEGATE_CALLS;
+use ava_code_mode_protocol::grpc as proto;
+use ava_code_mode_protocol::host::MAX_FRAME_BYTES;
+use ava_code_mode_protocol::host::MAX_PENDING_DELEGATE_CALLS;
 use prost::Message;
 use tokio::sync::OwnedSemaphorePermit;
 use tokio::sync::Semaphore;

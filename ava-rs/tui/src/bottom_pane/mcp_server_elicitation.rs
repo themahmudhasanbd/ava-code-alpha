@@ -4,24 +4,24 @@ use std::path::PathBuf;
 
 #[cfg(test)]
 use crate::app_command::AppCommand as Op;
-use codex_app_server_protocol::McpElicitationEnumSchema;
-use codex_app_server_protocol::McpElicitationPrimitiveSchema;
-use codex_app_server_protocol::McpElicitationSingleSelectEnumSchema;
-use codex_app_server_protocol::McpServerElicitationAction;
-use codex_app_server_protocol::McpServerElicitationRequest;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::RequestId as AppServerRequestId;
-use codex_protocol::ThreadId;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_KEY as APPROVAL_META_KIND_KEY;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_MCP_TOOL_CALL as APPROVAL_META_KIND_MCP_TOOL_CALL;
-use codex_protocol::mcp_approval_meta::APPROVAL_KIND_TOOL_SUGGESTION as APPROVAL_META_KIND_TOOL_SUGGESTION;
-use codex_protocol::mcp_approval_meta::PERSIST_ALWAYS as APPROVAL_PERSIST_ALWAYS_VALUE;
-use codex_protocol::mcp_approval_meta::PERSIST_KEY as APPROVAL_PERSIST_KEY;
-use codex_protocol::mcp_approval_meta::PERSIST_SESSION as APPROVAL_PERSIST_SESSION_VALUE;
-use codex_protocol::mcp_approval_meta::TOOL_NAME_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_PARAMS_DISPLAY_KEY as APPROVAL_TOOL_PARAMS_DISPLAY_KEY;
-use codex_protocol::mcp_approval_meta::TOOL_PARAMS_KEY as APPROVAL_TOOL_PARAMS_KEY;
-use codex_protocol::user_input::TextElement;
+use ava_app_server_protocol::McpElicitationEnumSchema;
+use ava_app_server_protocol::McpElicitationPrimitiveSchema;
+use ava_app_server_protocol::McpElicitationSingleSelectEnumSchema;
+use ava_app_server_protocol::McpServerElicitationAction;
+use ava_app_server_protocol::McpServerElicitationRequest;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::RequestId as AppServerRequestId;
+use ava_protocol::ThreadId;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_KEY as APPROVAL_META_KIND_KEY;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_MCP_TOOL_CALL as APPROVAL_META_KIND_MCP_TOOL_CALL;
+use ava_protocol::mcp_approval_meta::APPROVAL_KIND_TOOL_SUGGESTION as APPROVAL_META_KIND_TOOL_SUGGESTION;
+use ava_protocol::mcp_approval_meta::PERSIST_ALWAYS as APPROVAL_PERSIST_ALWAYS_VALUE;
+use ava_protocol::mcp_approval_meta::PERSIST_KEY as APPROVAL_PERSIST_KEY;
+use ava_protocol::mcp_approval_meta::PERSIST_SESSION as APPROVAL_PERSIST_SESSION_VALUE;
+use ava_protocol::mcp_approval_meta::TOOL_NAME_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_PARAMS_DISPLAY_KEY as APPROVAL_TOOL_PARAMS_DISPLAY_KEY;
+use ava_protocol::mcp_approval_meta::TOOL_PARAMS_KEY as APPROVAL_TOOL_PARAMS_KEY;
+use ava_protocol::user_input::TextElement;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -1709,9 +1709,9 @@ mod tests {
     use super::*;
     use crate::app_event::AppEvent;
     use crate::render::renderable::Renderable;
-    use codex_config::types::KeybindingSpec;
-    use codex_config::types::KeybindingsSpec;
-    use codex_config::types::TuiKeymap;
+    use ava_config::types::KeybindingSpec;
+    use ava_config::types::KeybindingsSpec;
+    use ava_config::types::TuiKeymap;
     use pretty_assertions::assert_eq;
     use tokio::sync::mpsc::UnboundedReceiver;
     use tokio::sync::mpsc::unbounded_channel;
@@ -2015,7 +2015,7 @@ mod tests {
                 "Suggest Google Calendar",
                 empty_object_schema(),
                 Some(serde_json::json!({
-                    "codex_approval_kind": "tool_suggestion",
+                    "ava_approval_kind": "tool_suggestion",
                     "tool_type": "connector",
                     "suggest_type": "install",
                     "suggest_reason": "Plan and reference events from your calendar",
@@ -2048,7 +2048,7 @@ mod tests {
                 "Suggest Slack",
                 empty_object_schema(),
                 Some(serde_json::json!({
-                    "codex_approval_kind": "tool_suggestion",
+                    "ava_approval_kind": "tool_suggestion",
                     "tool_type": "plugin",
                     "suggest_type": "install",
                     "suggest_reason": "Install the Slack plugin to search messages",
@@ -2237,7 +2237,7 @@ mod tests {
             request, tx, /*has_input_focus*/ true, /*enhanced_keys_supported*/ false,
             /*disable_paste_burst*/ true,
         );
-        overlay.handle_paste("x".repeat(codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1));
+        overlay.handle_paste("x".repeat(ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1));
         overlay.handle_key_event(KeyCode::Enter.into());
         assert!(overlay.next_frame_delay().is_some());
         overlay.handle_key_event(KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL));

@@ -1,12 +1,12 @@
 use crate::legacy_core::config::Config;
-use codex_features::Feature;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::openai_models::ModelPreset;
+use ava_features::Feature;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::openai_models::ModelPreset;
 
 pub(crate) fn configured_service_tier(
     config: &Config,
-    notices: &codex_config::types::Notice,
+    notices: &ava_config::types::Notice,
 ) -> Option<String> {
     config.service_tier.clone().or_else(|| {
         (notices.fast_default_opt_out == Some(true))
@@ -16,7 +16,7 @@ pub(crate) fn configured_service_tier(
 
 pub(crate) fn effective_service_tier(
     config: &Config,
-    notices: &codex_config::types::Notice,
+    notices: &ava_config::types::Notice,
     model: &str,
     models: &[ModelPreset],
 ) -> Option<String> {
@@ -45,7 +45,7 @@ pub(crate) fn effective_service_tier(
 
 pub(crate) fn service_tier_update_for_core(
     config: &Config,
-    notices: &codex_config::types::Notice,
+    notices: &ava_config::types::Notice,
     model: &str,
     models: &[ModelPreset],
 ) -> Option<Option<String>> {

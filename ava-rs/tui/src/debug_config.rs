@@ -2,21 +2,21 @@ use crate::history_cell::PlainHistoryCell;
 use crate::legacy_core::config::Config;
 use crate::legacy_core::config::Permissions;
 use crate::session_state::SessionNetworkProxyRuntime;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::ManagedHooksRequirementsToml;
-use codex_config::NetworkConstraints;
-use codex_config::NetworkDomainPermissionToml;
-use codex_config::NetworkUnixSocketPermissionToml;
-use codex_config::RequirementSource;
-use codex_config::ResidencyRequirement;
-use codex_config::SandboxModeRequirement;
-use codex_config::WebSearchModeRequirement;
-use codex_config::format_config_layer_source;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::ManagedHooksRequirementsToml;
+use ava_config::NetworkConstraints;
+use ava_config::NetworkDomainPermissionToml;
+use ava_config::NetworkUnixSocketPermissionToml;
+use ava_config::RequirementSource;
+use ava_config::ResidencyRequirement;
+use ava_config::SandboxModeRequirement;
+use ava_config::WebSearchModeRequirement;
+use ava_config::format_config_layer_source;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use toml::Value as TomlValue;
@@ -660,51 +660,51 @@ mod tests {
     use super::session_all_proxy_url;
     use crate::legacy_core::config::ConfigBuilder;
     use crate::legacy_core::config::Permissions;
-    use codex_app_server_protocol::AskForApproval;
-    use codex_config::ConfigLayerEntry;
-    use codex_config::ConfigLayerSource;
-    use codex_config::ConfigLayerStack;
-    use codex_config::ConfigRequirements;
-    use codex_config::ConfigRequirementsToml;
-    use codex_config::Constrained;
-    use codex_config::ConstrainedWithSource;
-    use codex_config::ConstraintError;
-    use codex_config::FeatureRequirementsToml;
-    use codex_config::FilesystemConstraints;
-    use codex_config::HookEventsToml;
-    use codex_config::HookHandlerConfig;
-    use codex_config::LoaderOverrides;
-    use codex_config::ManagedHooksRequirementsToml;
-    use codex_config::MatcherGroup;
-    use codex_config::McpServerIdentity;
-    use codex_config::McpServerRequirement;
-    use codex_config::NetworkConstraints;
-    use codex_config::NetworkDomainPermissionToml;
-    use codex_config::NetworkDomainPermissionsToml;
-    use codex_config::NetworkHeaderInjectionToml;
-    use codex_config::NetworkUnixSocketPermissionToml;
-    use codex_config::NetworkUnixSocketPermissionsToml;
-    use codex_config::RequirementSource;
-    use codex_config::ResidencyRequirement;
-    use codex_config::SandboxModeRequirement;
-    use codex_config::Sourced;
-    use codex_config::WebSearchModeRequirement;
-    use codex_config::WindowsRequirementsToml;
-    use codex_config::sandbox_mode_requirement_for_permission_profile;
-    use codex_config::types::FeedbackConfigToml;
-    use codex_protocol::config_types::ApprovalsReviewer;
-    use codex_protocol::config_types::WebSearchMode;
-    use codex_protocol::models::PermissionProfile;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_app_server_protocol::AskForApproval;
+    use ava_config::ConfigLayerEntry;
+    use ava_config::ConfigLayerSource;
+    use ava_config::ConfigLayerStack;
+    use ava_config::ConfigRequirements;
+    use ava_config::ConfigRequirementsToml;
+    use ava_config::Constrained;
+    use ava_config::ConstrainedWithSource;
+    use ava_config::ConstraintError;
+    use ava_config::FeatureRequirementsToml;
+    use ava_config::FilesystemConstraints;
+    use ava_config::HookEventsToml;
+    use ava_config::HookHandlerConfig;
+    use ava_config::LoaderOverrides;
+    use ava_config::ManagedHooksRequirementsToml;
+    use ava_config::MatcherGroup;
+    use ava_config::McpServerIdentity;
+    use ava_config::McpServerRequirement;
+    use ava_config::NetworkConstraints;
+    use ava_config::NetworkDomainPermissionToml;
+    use ava_config::NetworkDomainPermissionsToml;
+    use ava_config::NetworkHeaderInjectionToml;
+    use ava_config::NetworkUnixSocketPermissionToml;
+    use ava_config::NetworkUnixSocketPermissionsToml;
+    use ava_config::RequirementSource;
+    use ava_config::ResidencyRequirement;
+    use ava_config::SandboxModeRequirement;
+    use ava_config::Sourced;
+    use ava_config::WebSearchModeRequirement;
+    use ava_config::WindowsRequirementsToml;
+    use ava_config::sandbox_mode_requirement_for_permission_profile;
+    use ava_config::types::FeedbackConfigToml;
+    use ava_protocol::config_types::ApprovalsReviewer;
+    use ava_protocol::config_types::WebSearchMode;
+    use ava_protocol::models::PermissionProfile;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use ratatui::text::Line;
     use std::collections::BTreeMap;
     use toml::Value as TomlValue;
 
     #[tokio::test]
     async fn debug_config_output_lists_agents_fields() {
-        let codex_home = tempfile::tempdir().expect("create temp dir");
+        let ava_home = tempfile::tempdir().expect("create temp dir");
         std::fs::write(
-            codex_home.path().join(codex_config::CONFIG_TOML_FILE),
+            ava_home.path().join(ava_config::CONFIG_TOML_FILE),
             r#"[agents]
 enabled = false
 max_concurrent_threads_per_session = 7
@@ -716,8 +716,8 @@ interrupt_message = false
         )
         .expect("write config");
         let config = ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
-            .fallback_cwd(Some(codex_home.path().to_path_buf()))
+            .ava_home(ava_home.path().to_path_buf())
+            .fallback_cwd(Some(ava_home.path().to_path_buf()))
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .build()
             .await
@@ -764,14 +764,14 @@ interrupt_message = false
     #[test]
     fn debug_config_output_lists_all_layers_including_disabled() {
         let system_file = if cfg!(windows) {
-            absolute_path("C:\\etc\\codex\\config.toml")
+            absolute_path("C:\\etc\\ava\\config.toml")
         } else {
-            absolute_path("/etc/codex/config.toml")
+            absolute_path("/etc/ava/config.toml")
         };
         let project_folder = if cfg!(windows) {
-            absolute_path("C:\\repo\\.codex")
+            absolute_path("C:\\repo\\.ava-code")
         } else {
-            absolute_path("/repo/.codex")
+            absolute_path("/repo/.ava-code")
         };
 
         let layers = vec![
@@ -781,7 +781,7 @@ interrupt_message = false
             ),
             ConfigLayerEntry::new_disabled(
                 ConfigLayerSource::Project {
-                    dot_codex_folder: project_folder,
+                    dot_ava_folder: project_folder,
                 },
                 empty_toml_table(),
                 "project is untrusted",
@@ -805,9 +805,9 @@ interrupt_message = false
     #[test]
     fn debug_config_output_lists_requirement_sources() {
         let requirements_file = if cfg!(windows) {
-            absolute_path("C:\\ProgramData\\OpenAI\\Codex\\requirements.toml")
+            absolute_path("C:\\ProgramData\\OpenAI\\Ava\\requirements.toml")
         } else {
-            absolute_path("/etc/codex/requirements.toml")
+            absolute_path("/etc/ava/requirements.toml")
         };
         let denied_path = if cfg!(windows) {
             absolute_path("C:\\Users\\alice\\.gitconfig")
@@ -815,19 +815,19 @@ interrupt_message = false
             absolute_path("/home/alice/.gitconfig")
         };
         let sqlite_home = if cfg!(windows) {
-            absolute_path("C:\\Users\\alice\\.codex\\state")
+            absolute_path("C:\\Users\\alice\\.ava-code\\state")
         } else {
-            absolute_path("/home/alice/.codex/state")
+            absolute_path("/home/alice/.ava-code/state")
         };
         let log_dir = if cfg!(windows) {
-            absolute_path("C:\\Users\\alice\\.codex\\logs")
+            absolute_path("C:\\Users\\alice\\.ava-code\\logs")
         } else {
-            absolute_path("/home/alice/.codex/logs")
+            absolute_path("/home/alice/.ava-code/logs")
         };
         let model_catalog_json = if cfg!(windows) {
-            absolute_path("C:\\Users\\alice\\.codex\\models.json")
+            absolute_path("C:\\Users\\alice\\.ava-code\\models.json")
         } else {
-            absolute_path("/home/alice/.codex/models.json")
+            absolute_path("/home/alice/.ava-code/models.json")
         };
 
         let requirements = ConfigRequirements {
@@ -876,7 +876,7 @@ interrupt_message = false
                     "docs".to_string(),
                     McpServerRequirement::Identity {
                         identity: McpServerIdentity::Command {
-                            command: "codex-mcp".to_string(),
+                            command: "ava-mcp".to_string(),
                         },
                     },
                 )]),
@@ -985,7 +985,7 @@ interrupt_message = false
                 "docs".to_string(),
                 McpServerRequirement::Identity {
                     identity: McpServerIdentity::Command {
-                        command: "codex-mcp".to_string(),
+                        command: "ava-mcp".to_string(),
                     },
                 },
             )])),
@@ -1001,9 +1001,9 @@ interrupt_message = false
         };
 
         let user_file = if cfg!(windows) {
-            absolute_path("C:\\users\\alice\\.codex\\config.toml")
+            absolute_path("C:\\users\\alice\\.ava-code\\config.toml")
         } else {
-            absolute_path("/home/alice/.codex/config.toml")
+            absolute_path("/home/alice/.ava-code/config.toml")
         };
         let stack = ConfigLayerStack::new(
             vec![ConfigLayerEntry::new(
@@ -1079,9 +1079,9 @@ interrupt_message = false
     #[test]
     fn debug_config_output_filters_sandbox_modes_blocked_by_deny_read_requirements() {
         let requirements_file = if cfg!(windows) {
-            absolute_path("C:\\ProgramData\\OpenAI\\Codex\\requirements.toml")
+            absolute_path("C:\\ProgramData\\OpenAI\\Ava\\requirements.toml")
         } else {
-            absolute_path("/etc/codex/requirements.toml")
+            absolute_path("/etc/ava/requirements.toml")
         };
         let denied_path = if cfg!(windows) {
             absolute_path("C:\\Users\\alice\\.gitconfig")
@@ -1194,7 +1194,7 @@ interrupt_message = false
                     unix_sockets: Some(NetworkUnixSocketPermissionsToml {
                         entries: BTreeMap::from([
                             (
-                                "/tmp/codex.sock".to_string(),
+                                "/tmp/ava.sock".to_string(),
                                 NetworkUnixSocketPermissionToml::Allow,
                             ),
                             (
@@ -1217,7 +1217,7 @@ interrupt_message = false
         let rendered = render_stack_to_text(&stack);
         let requirements_source = (RequirementSource::LegacyManagedConfigTomlFromMdm).to_string();
         assert!(rendered.contains(&format!(
-            "experimental_network: unix_sockets={{/tmp/blocked.sock=deny, /tmp/codex.sock=allow}} (source: {requirements_source})"
+            "experimental_network: unix_sockets={{/tmp/blocked.sock=deny, /tmp/ava.sock=allow}} (source: {requirements_source})"
         )));
     }
 
@@ -1260,9 +1260,9 @@ approval_policy = "never"
 "#;
         let mdm_value = toml::from_str::<TomlValue>(raw_mdm_toml).expect("MDM value");
         let mdm_base_dir = if cfg!(windows) {
-            absolute_path("C:\\codex")
+            absolute_path("C:\\ava")
         } else {
-            absolute_path("/var/lib/codex")
+            absolute_path("/var/lib/ava")
         };
 
         let stack = ConfigLayerStack::new(
@@ -1294,9 +1294,9 @@ approval_policy = "never"
 "#;
         let cloud_value = toml::from_str::<TomlValue>(raw_cloud_toml).expect("cloud value");
         let cloud_base_dir = if cfg!(windows) {
-            absolute_path("C:\\codex")
+            absolute_path("C:\\ava")
         } else {
-            absolute_path("/var/lib/codex")
+            absolute_path("/var/lib/ava")
         };
 
         let stack = ConfigLayerStack::new(

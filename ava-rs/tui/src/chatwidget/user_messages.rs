@@ -14,17 +14,17 @@ use std::path::PathBuf;
 use crate::bottom_pane::LocalImageAttachment;
 use crate::bottom_pane::MentionBinding;
 use crate::bottom_pane::QueuedInputAction;
-use codex_app_server_protocol::ImageReference;
-use codex_app_server_protocol::TextElement as AppServerTextElement;
-use codex_app_server_protocol::UserInput;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::models::local_image_label_text;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::user_input::ByteRange;
-use codex_protocol::user_input::TextElement;
-use codex_utils_plugins::mention_syntax::PLUGIN_TEXT_MENTION_SIGIL;
-use codex_utils_plugins::mention_syntax::TOOL_MENTION_SIGIL;
+use ava_app_server_protocol::ImageReference;
+use ava_app_server_protocol::TextElement as AppServerTextElement;
+use ava_app_server_protocol::UserInput;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::models::local_image_label_text;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::user_input::ByteRange;
+use ava_protocol::user_input::TextElement;
+use ava_utils_plugins::mention_syntax::PLUGIN_TEXT_MENTION_SIGIL;
+use ava_utils_plugins::mention_syntax::TOOL_MENTION_SIGIL;
 
 use super::ChatWidget;
 
@@ -598,7 +598,7 @@ pub(crate) fn mention_bindings_from_user_inputs(
                         .unwrap_or(plugin_id)
                         .to_string()
                 } else if path.starts_with("app://") {
-                    codex_connectors::metadata::connector_mention_slug_from_name(name)
+                    ava_connectors::metadata::connector_mention_slug_from_name(name)
                 } else {
                     name.clone()
                 };

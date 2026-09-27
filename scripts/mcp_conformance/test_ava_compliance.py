@@ -5,7 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
-from run_codex_compliance import (
+from run_ava_compliance import (
     COMPACT_REGRESSION_BASELINE_KIND,
     LEGACY_VERSION,
     MODERN_VERSION,
@@ -40,18 +40,18 @@ from run_codex_compliance import (
 
 
 def test_registration_commands_select_stdio_then_http_shapes() -> None:
-    codex = Path("/opt/codex")
+    ava = Path("/opt/ava")
     server = Path("/src/server.py")
 
     stdio = _registration_command(
-        codex,
+        ava,
         server,
         transport="stdio",
         mode=MODERN_VERSION,
         http_url=None,
     )
     http = _registration_command(
-        codex,
+        ava,
         server,
         transport="http",
         mode=MODERN_VERSION,
@@ -59,12 +59,12 @@ def test_registration_commands_select_stdio_then_http_shapes() -> None:
     )
 
     assert stdio == [
-        "/opt/codex",
+        "/opt/ava",
         "mcp",
         "add",
         TEST_SERVER_NAME,
         "--env",
-        f"CODEX_MCP_PROTOCOL_VERSION={MODERN_VERSION}",
+        f"AVA_MCP_PROTOCOL_VERSION={MODERN_VERSION}",
         "--",
         sys.executable,
         "/src/server.py",
@@ -74,7 +74,7 @@ def test_registration_commands_select_stdio_then_http_shapes() -> None:
         "stdio",
     ]
     assert http == [
-        "/opt/codex",
+        "/opt/ava",
         "mcp",
         "add",
         TEST_SERVER_NAME,
@@ -120,7 +120,7 @@ def test_registration_validation_checks_transport_and_mode() -> None:
                     "--transport",
                     "stdio",
                 ],
-                "env": {"CODEX_MCP_PROTOCOL_VERSION": MODERN_VERSION},
+                "env": {"AVA_MCP_PROTOCOL_VERSION": MODERN_VERSION},
             },
         },
         transport="stdio",
@@ -207,15 +207,15 @@ def test_isolated_environment_drops_model_credentials(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    monkeypatch.setenv("CODEX_API_KEY", "secret")
-    monkeypatch.setenv("CODEX_ACCESS_TOKEN", "secret")
+    monkeypatch.setenv("AVA_API_KEY", "secret")
+    monkeypatch.setenv("AVA_ACCESS_TOKEN", "secret")
     monkeypatch.setenv("OPENAI_API_KEY", "secret")
 
     env = _isolated_environment(tmp_path)
 
-    assert env["CODEX_HOME"] == str(tmp_path)
-    assert "CODEX_API_KEY" not in env
-    assert "CODEX_ACCESS_TOKEN" not in env
+    assert env["AVA_HOME"] == str(tmp_path)
+    assert "AVA_API_KEY" not in env
+    assert "AVA_ACCESS_TOKEN" not in env
     assert "OPENAI_API_KEY" not in env
     assert env.get("PATH") == os.environ.get("PATH")
 
@@ -402,7 +402,7 @@ def test_scenario_ratio_includes_adapter_failures() -> None:
             category="auth",
         ),
         CheckResult(
-            "harness/auth/example/codex-adapter",
+            "harness/auth/example/ava-adapter",
             False,
             "adapter failed",
             source="harness",
@@ -446,13 +446,13 @@ def test_official_case_preserves_adapter_check_identity_on_failure_and_success(
         adapter_detail="adapter succeeded" if adapter_success else "adapter failed",
     )
     monkeypatch.setattr(
-        "run_codex_compliance.run_official_mode",
+        "run_ava_compliance.run_official_mode",
         lambda **_kwargs: [result],
     )
 
     case = _run_official_case(
-        Path("/opt/codex"),
-        Path("/src/codex_conformance_adapter.py"),
+        Path("/opt/ava"),
+        Path("/src/ava_conformance_adapter.py"),
         conformance_command=["conformance"],
         mode=mode,
         scenarios=[scenario],
@@ -463,7 +463,7 @@ def test_official_case_preserves_adapter_check_identity_on_failure_and_success(
 
     assert case.checks == [
         CheckResult(
-            name=f"harness/{scenario}/codex-adapter",
+            name=f"harness/{scenario}/ava-adapter",
             success=adapter_success,
             detail=result.adapter_detail,
             status=expected_status,
@@ -490,13 +490,13 @@ def test_official_case_preserves_independent_runner_failure_with_successful_adap
         runner_detail="official runner failed",
     )
     monkeypatch.setattr(
-        "run_codex_compliance.run_official_mode",
+        "run_ava_compliance.run_official_mode",
         lambda **_kwargs: [result],
     )
 
     case = _run_official_case(
-        Path("/opt/codex"),
-        Path("/src/codex_conformance_adapter.py"),
+        Path("/opt/ava"),
+        Path("/src/ava_conformance_adapter.py"),
         conformance_command=["conformance"],
         mode=mode,
         scenarios=[scenario],
@@ -507,7 +507,7 @@ def test_official_case_preserves_independent_runner_failure_with_successful_adap
 
     assert case.checks == [
         CheckResult(
-            name=f"harness/{scenario}/codex-adapter",
+            name=f"harness/{scenario}/ava-adapter",
             success=True,
             detail="adapter succeeded",
             status="PASS",
@@ -551,13 +551,13 @@ def test_official_case_keeps_cimd_registration_checks_in_regression_gated_http_c
         ]
 
     monkeypatch.setattr(
-        "run_codex_compliance.run_official_mode",
+        "run_ava_compliance.run_official_mode",
         run_official_mode,
     )
 
     case = _run_official_case(
-        Path("/opt/codex"),
-        Path("/src/codex_conformance_adapter.py"),
+        Path("/opt/ava"),
+        Path("/src/ava_conformance_adapter.py"),
         conformance_command=["conformance"],
         mode=MODERN_VERSION,
         scenarios=["auth/offline-access-scope"],
@@ -574,8 +574,8 @@ def test_official_case_keeps_cimd_registration_checks_in_regression_gated_http_c
     forced_env = calls[2]["base_env"]
     assert isinstance(auto_env, dict)
     assert isinstance(forced_env, dict)
-    assert auto_env.get("CODEX_CONFORMANCE_CLIENT_REGISTRATION") is None
-    assert forced_env["CODEX_CONFORMANCE_CLIENT_REGISTRATION"] == "cimd"
+    assert auto_env.get("AVA_CONFORMANCE_CLIENT_REGISTRATION") is None
+    assert forced_env["AVA_CONFORMANCE_CLIENT_REGISTRATION"] == "cimd"
 
 
 def _regression_report() -> dict[str, object]:
@@ -640,7 +640,7 @@ def _regression_report() -> dict[str, object]:
             if known:
                 official_checks.append(
                     {
-                        "name": f"harness/{scenario}/codex-adapter",
+                        "name": f"harness/{scenario}/ava-adapter",
                         "success": False,
                         "status": "FAIL",
                         "source": "harness",
@@ -864,7 +864,7 @@ def test_regression_gate_accepts_fixed_oauth_official_and_adapter_checks() -> No
             "transport": "official-http",
             "source": "harness",
             "scenario": scenario,
-            "check_id": f"harness/{scenario}/codex-adapter",
+            "check_id": f"harness/{scenario}/ava-adapter",
         },
         {
             "mode": MODERN_VERSION,
@@ -902,7 +902,7 @@ def test_regression_gate_rejects_a_missing_fixed_oauth_adapter_check() -> None:
             "transport": "official-http",
             "source": "harness",
             "scenario": scenario,
-            "check_id": f"harness/{scenario}/codex-adapter",
+            "check_id": f"harness/{scenario}/ava-adapter",
         }
     ]
     assert gate["fixedChecks"] == [
@@ -1091,10 +1091,10 @@ def test_regression_gate_ignores_retry_observation_renumbering() -> None:
 
 def test_regression_cli_accepts_a_baseline_report() -> None:
     args = _parse_args(
-        ["/opt/codex", "--baseline-report", "/tmp/codex-mcp-baseline.json"]
+        ["/opt/ava", "--baseline-report", "/tmp/ava-mcp-baseline.json"]
     )
 
-    assert args.baseline_report == Path("/tmp/codex-mcp-baseline.json")
+    assert args.baseline_report == Path("/tmp/ava-mcp-baseline.json")
     assert args.mode == "all"
     assert args.auth is True
     assert args.enable_modern_feature is True
@@ -1226,9 +1226,9 @@ def test_compact_regression_baselines_are_deterministic(tmp_path: Path) -> None:
 def test_regression_cli_extracts_compact_baseline_without_starting_conformance(
     tmp_path: Path,
 ) -> None:
-    codex = tmp_path / "codex"
-    codex.write_text("#!/bin/sh\nexit 99\n", encoding="utf-8")
-    codex.chmod(0o755)
+    ava = tmp_path / "ava"
+    ava.write_text("#!/bin/sh\nexit 99\n", encoding="utf-8")
+    ava.chmod(0o755)
     source = tmp_path / "full-report.json"
     source.write_text(json.dumps(_regression_report()), encoding="utf-8")
     extracted = tmp_path / "compact.json"
@@ -1236,7 +1236,7 @@ def test_regression_cli_extracts_compact_baseline_without_starting_conformance(
     assert (
         main(
             [
-                str(codex),
+                str(ava),
                 "--baseline-report",
                 str(source),
                 "--extract-baseline",
@@ -1254,11 +1254,11 @@ def test_regression_cli_rejects_extraction_without_a_source_report(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    codex = tmp_path / "codex"
-    codex.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-    codex.chmod(0o755)
+    ava = tmp_path / "ava"
+    ava.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    ava.chmod(0o755)
 
-    assert main([str(codex), "--extract-baseline", str(tmp_path / "compact.json")]) == 2
+    assert main([str(ava), "--extract-baseline", str(tmp_path / "compact.json")]) == 2
     assert "requires --baseline-report" in capsys.readouterr().err
 
 
@@ -1268,13 +1268,13 @@ def test_regression_cli_rejects_malformed_baselines(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    codex = tmp_path / "codex"
-    codex.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-    codex.chmod(0o755)
+    ava = tmp_path / "ava"
+    ava.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    ava.chmod(0o755)
     baseline = tmp_path / "baseline.json"
     baseline.write_text(payload, encoding="utf-8")
 
-    assert main([str(codex), "--baseline-report", str(baseline)]) == 2
+    assert main([str(ava), "--baseline-report", str(baseline)]) == 2
     assert "baseline report" in capsys.readouterr().err
 
 
@@ -1282,9 +1282,9 @@ def test_regression_cli_rejects_missing_baseline_before_starting_conformance(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    codex = tmp_path / "codex"
-    codex.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-    codex.chmod(0o755)
+    ava = tmp_path / "ava"
+    ava.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    ava.chmod(0o755)
 
-    assert main([str(codex), "--baseline-report", str(tmp_path / "missing.json")]) == 2
+    assert main([str(ava), "--baseline-report", str(tmp_path / "missing.json")]) == 2
     assert "cannot read baseline report" in capsys.readouterr().err

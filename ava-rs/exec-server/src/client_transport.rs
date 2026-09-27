@@ -14,16 +14,16 @@ use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tracing::debug;
 use tracing::warn;
 
-use codex_api::AuthError;
-use codex_api::AuthProvider;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::Request;
-use codex_http_client::RequestCompression;
-use codex_protocol::shell_environment::scrub_non_inheritable_env_vars;
-use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
-use codex_websocket_client::WebSocketConnection;
-use codex_websocket_client::WebSocketConnector;
-use codex_websocket_client::WebSocketTlsMode;
+use ava_api::AuthError;
+use ava_api::AuthProvider;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::Request;
+use ava_http_client::RequestCompression;
+use ava_protocol::shell_environment::scrub_non_inheritable_env_vars;
+use ava_utils_rustls_provider::ensure_rustls_crypto_provider;
+use ava_websocket_client::WebSocketConnection;
+use ava_websocket_client::WebSocketConnector;
+use ava_websocket_client::WebSocketTlsMode;
 use http::HeaderMap;
 
 use crate::ExecServerClient;
@@ -50,7 +50,7 @@ use crate::noise_relay::noise_relay_websocket_config;
 use crate::relay::harness_connection_from_websocket;
 use crate::trace_context::current_rendezvous_headers;
 
-const ENVIRONMENT_CLIENT_NAME: &str = "codex-environment";
+const ENVIRONMENT_CLIENT_NAME: &str = "ava-environment";
 const INITIAL_REGISTRY_MAX_RETRIES: u32 = 4;
 const INITIAL_REGISTRY_REQUEST_TIMEOUT: Duration = Duration::from_secs(6);
 const INITIAL_REGISTRY_OPERATION_TIMEOUT: Duration = Duration::from_secs(14);
@@ -424,7 +424,7 @@ impl ExecServerClient {
         .await
     }
 
-    #[tracing::instrument(name = "codex.exec_server.remote.noise.connect", skip_all)]
+    #[tracing::instrument(name = "ava.exec_server.remote.noise.connect", skip_all)]
     async fn open_initial_noise_rendezvous_connection(
         provider: &Arc<dyn NoiseRendezvousConnectProvider>,
         identity: &NoiseChannelIdentity,
@@ -454,7 +454,7 @@ impl ExecServerClient {
             .await
             .unwrap_or_else(|_| {
                 Err(ExecServerError::EnvironmentRegistryRequest(
-                    codex_http_client::RouteAwareRequestError::Timeout,
+                    ava_http_client::RouteAwareRequestError::Timeout,
                 ))
             })
         };
@@ -576,11 +576,11 @@ impl ExecServerClient {
     /// retained [`NoiseRendezvousConnectProvider`] so recovery can fetch a fresh
     /// bundle for each reconnect.
     #[tracing::instrument(
-        name = "codex.exec_server.remote.harness.connect",
+        name = "ava.exec_server.remote.harness.connect",
         skip_all,
         fields(
             otel.kind = "client",
-            otel.name = "codex.exec_server.remote.harness.connect",
+            otel.name = "ava.exec_server.remote.harness.connect",
         )
     )]
     pub async fn connect_noise_rendezvous(
@@ -598,11 +598,11 @@ impl ExecServerClient {
     }
 
     #[tracing::instrument(
-        name = "codex.exec_server.remote.noise.websocket_connect",
+        name = "ava.exec_server.remote.noise.websocket_connect",
         skip_all,
         fields(
             otel.kind = "client",
-            otel.name = "codex.exec_server.remote.noise.websocket_connect",
+            otel.name = "ava.exec_server.remote.noise.websocket_connect",
             environment_id = %args.bundle.environment_id,
             executor_registration_id = %args.bundle.executor_registration_id,
         )
@@ -687,12 +687,12 @@ impl ExecServerClient {
     }
 
     #[tracing::instrument(
-        name = "codex.exec_server.remote.noise.handshake",
+        name = "ava.exec_server.remote.noise.handshake",
         skip_all,
         parent = initialize_span,
         fields(
             otel.kind = "client",
-            otel.name = "codex.exec_server.remote.noise.handshake",
+            otel.name = "ava.exec_server.remote.noise.handshake",
         )
     )]
     async fn wait_for_noise_handshake(
@@ -721,7 +721,7 @@ impl ExecServerClient {
         let noise_context = NoiseInitializeContext {
             executor_registration_id: connection.executor_registration_id,
             span: tracing::info_span!(
-                "codex.exec_server.request",
+                "ava.exec_server.request",
                 otel.kind = "client",
                 otel.name = "initialize",
                 method = "initialize",

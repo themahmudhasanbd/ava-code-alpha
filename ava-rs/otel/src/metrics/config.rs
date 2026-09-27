@@ -16,9 +16,9 @@ use opentelemetry_sdk::metrics::InMemoryMetricExporter;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-const CONVERSATION_TURN_COUNT_METRIC: &str = "codex.conversation.turn.count";
+const CONVERSATION_TURN_COUNT_METRIC: &str = "ava.conversation.turn.count";
 
-// Metrics intentionally not sent through Codex's built-in Statsig route.
+// Metrics intentionally not sent through Ava's built-in Statsig route.
 // Keep this as an exact-name list so custom OTLP exporters still receive them.
 const STATSIG_DISABLED_METRICS: &[&str] = &[
     API_CALL_COUNT_METRIC,

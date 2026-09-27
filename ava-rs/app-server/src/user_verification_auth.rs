@@ -1,6 +1,6 @@
 //! Cancels device ceremonies when cached authentication changes.
 
-use codex_login::AuthManager;
+use ava_login::AuthManager;
 
 use super::*;
 

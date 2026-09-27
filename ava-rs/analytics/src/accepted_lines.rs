@@ -1,8 +1,8 @@
-use crate::events::CodexAcceptedLineFingerprintsEventParams;
-use crate::events::CodexAcceptedLineFingerprintsEventRequest;
+use crate::events::AvaAcceptedLineFingerprintsEventParams;
+use crate::events::AvaAcceptedLineFingerprintsEventRequest;
 use crate::events::TrackEventRequest;
-use codex_git_utils::canonicalize_git_remote_url;
-use codex_git_utils::get_git_remote_urls_assume_git_repo;
+use ava_git_utils::canonicalize_git_remote_url;
+use ava_git_utils::get_git_remote_urls_assume_git_repo;
 use sha1::Digest;
 use std::path::Path;
 
@@ -85,9 +85,9 @@ pub(crate) fn accepted_line_fingerprint_event_requests(
     } = input;
 
     vec![TrackEventRequest::AcceptedLineFingerprints(Box::new(
-        CodexAcceptedLineFingerprintsEventRequest {
-            event_type: "codex_accepted_line_fingerprints",
-            event_params: CodexAcceptedLineFingerprintsEventParams {
+        AvaAcceptedLineFingerprintsEventRequest {
+            event_type: "ava_accepted_line_fingerprints",
+            event_params: AvaAcceptedLineFingerprintsEventParams {
                 event_type,
                 turn_id,
                 thread_id,

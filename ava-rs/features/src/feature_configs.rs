@@ -1,7 +1,7 @@
 use crate::FeatureConfig;
 use crate::FeatureToml;
-use codex_network_proxy::CredentialProviderConfig;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_network_proxy::CredentialProviderConfig;
+use ava_protocol::openai_models::ReasoningEffort;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;

@@ -24,14 +24,14 @@ async fn ordinary_usage_permission_comes_from_backend_not_display_percent() {
             })
         });
         Mock::given(method("GET"))
-            .and(path("/api/codex/usage"))
+            .and(path("/api/ava/usage"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "plan_type": "plus", "rate_limit": rate_limit
             })))
             .expect(1)
             .mount(&server)
             .await;
-        let response = test_client(&server.uri(), PathStyle::CodexApi)
+        let response = test_client(&server.uri(), PathStyle::AvaApi)
             .get_rate_limits_with_reset_credits()
             .await
             .unwrap();
@@ -42,15 +42,15 @@ async fn ordinary_usage_permission_comes_from_backend_not_display_percent() {
 #[test]
 fn rate_limit_reset_contract_uses_expected_paths_and_payloads() {
     assert_eq!(
-        test_client("https://example.test", PathStyle::CodexApi).rate_limit_status_url(),
+        test_client("https://example.test", PathStyle::AvaApi).rate_limit_status_url(),
         "https://example.test/api/codex/usage"
     );
     assert_eq!(
-        test_client("https://example.test", PathStyle::CodexApi).rate_limit_reset_credits_url(),
+        test_client("https://example.test", PathStyle::AvaApi).rate_limit_reset_credits_url(),
         "https://example.test/api/codex/rate-limit-reset-credits"
     );
     assert_eq!(
-        test_client("https://example.test", PathStyle::CodexApi)
+        test_client("https://example.test", PathStyle::AvaApi)
             .consume_rate_limit_reset_credit_url(),
         "https://example.test/api/codex/rate-limit-reset-credits/consume"
     );
@@ -104,7 +104,7 @@ fn rate_limit_reset_contract_uses_expected_paths_and_payloads() {
         "credits": [
             {
                 "id": "credit-1",
-                "reset_type": "codex_rate_limits",
+                "reset_type": "ava_rate_limits",
                 "status": "available",
                 "granted_at": "2026-06-17T00:00:00Z",
                 "expires_at": "2026-07-17T00:00:00Z",
@@ -117,7 +117,7 @@ fn rate_limit_reset_contract_uses_expected_paths_and_payloads() {
             },
             {
                 "id": "credit-2",
-                "reset_type": "codex_rate_limits",
+                "reset_type": "ava_rate_limits",
                 "status": "available",
                 "granted_at": "2026-06-18T00:00:00Z",
                 "expires_at": null
@@ -133,7 +133,7 @@ fn rate_limit_reset_contract_uses_expected_paths_and_payloads() {
             credits: vec![
                 RateLimitResetCreditDetails {
                     id: "credit-1".to_string(),
-                    reset_type: "codex_rate_limits".to_string(),
+                    reset_type: "ava_rate_limits".to_string(),
                     status: "available".to_string(),
                     granted_at: "2026-06-17T00:00:00Z".to_string(),
                     expires_at: Some("2026-07-17T00:00:00Z".to_string()),
@@ -142,7 +142,7 @@ fn rate_limit_reset_contract_uses_expected_paths_and_payloads() {
                 },
                 RateLimitResetCreditDetails {
                     id: "credit-2".to_string(),
-                    reset_type: "codex_rate_limits".to_string(),
+                    reset_type: "ava_rate_limits".to_string(),
                     status: "available".to_string(),
                     granted_at: "2026-06-18T00:00:00Z".to_string(),
                     expires_at: None,
@@ -172,13 +172,13 @@ fn rate_limit_reset_contract_uses_expected_paths_and_payloads() {
 fn test_client(base_url: &str, path_style: PathStyle) -> Client {
     Client {
         base_url: base_url.to_string(),
-        http: codex_http_client::RouteAwareClientPool::new(
-            codex_http_client::HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+        http: ava_http_client::RouteAwareClientPool::new(
+            ava_http_client::HttpClientFactory::new(
+                ava_http_client::OutboundProxyPolicy::ReqwestDefault,
             ),
-            codex_http_client::ClientRouteClass::Api,
+            ava_http_client::ClientRouteClass::Api,
         ),
-        auth_provider: codex_model_provider::unauthenticated_auth_provider(),
+        auth_provider: ava_model_provider::unauthenticated_auth_provider(),
         user_agent: None,
         chatgpt_account_id: None,
         chatgpt_account_is_fedramp: false,

@@ -17,14 +17,14 @@ use crate::bottom_pane::VoiceStripState;
 use crate::history_cell;
 use crate::key_hint::KeyBindingListExt;
 use crate::motion::MotionMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
-use codex_protocol::ThreadId;
-use codex_protocol::models::MessagePhase;
-use codex_realtime_webrtc::RealtimeWebrtcSession;
-use codex_realtime_webrtc::RealtimeWebrtcSessionHandle;
-use codex_realtime_webrtc::StartedRealtimeWebrtcSession;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
+use ava_protocol::ThreadId;
+use ava_protocol::models::MessagePhase;
+use ava_realtime_webrtc::RealtimeWebrtcSession;
+use ava_realtime_webrtc::RealtimeWebrtcSessionHandle;
+use ava_realtime_webrtc::StartedRealtimeWebrtcSession;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
 use futures::future::AbortHandle;
@@ -304,7 +304,7 @@ impl ChatWidget {
         };
 
         self.session_telemetry
-            .counter("codex.voice.session.start", /*inc*/ 1, &[]);
+            .counter("ava.voice.session.start", /*inc*/ 1, &[]);
         self.start_realtime_conversation(thread_id);
     }
 
@@ -443,7 +443,7 @@ impl ChatWidget {
     pub(crate) fn on_realtime_webrtc_connected(
         &mut self,
         attempt_id: u64,
-        result: Result<(), codex_realtime_webrtc::ConnectionError>,
+        result: Result<(), ava_realtime_webrtc::ConnectionError>,
     ) {
         if self.realtime_conversation.phase != RealtimeConversationPhase::Starting
             || self.realtime_conversation.attempt_id != attempt_id
@@ -451,7 +451,7 @@ impl ChatWidget {
             return;
         }
         if let Err(error) = result {
-            if error == codex_realtime_webrtc::ConnectionError::NegotiationTimedOut
+            if error == ava_realtime_webrtc::ConnectionError::NegotiationTimedOut
                 && self.realtime_conversation.startup_retry == StartupRetry::Available
                 && let Some(thread_id) = self.realtime_conversation.thread_id
             {
@@ -490,7 +490,7 @@ impl ChatWidget {
         self.realtime_conversation.phase = RealtimeConversationPhase::Active;
         self.realtime_conversation.active_since = Some(Instant::now());
         self.session_telemetry
-            .counter("codex.voice.session.connected", /*inc*/ 1, &[]);
+            .counter("ava.voice.session.connected", /*inc*/ 1, &[]);
         let running_delegation =
             self.turn_lifecycle
                 .last_turn_id
@@ -931,7 +931,7 @@ impl ChatWidget {
         }
         *may_speak = false;
         if !can_retain_realtime_speech(turn_id, item)
-            || codex_utils_string::approx_token_count(&text) > MAX_SPEAKABLE_FINAL_TOKENS
+            || ava_utils_string::approx_token_count(&text) > MAX_SPEAKABLE_FINAL_TOKENS
         {
             self.remove_waiting_realtime_speech(turn_id, item_id);
             self.finish_realtime_turn(turn_id);
@@ -1610,7 +1610,7 @@ impl ChatWidget {
         }
         self.realtime_conversation.failure_recorded = true;
         self.session_telemetry
-            .counter("codex.voice.session.failure", /*inc*/ 1, &[]);
+            .counter("ava.voice.session.failure", /*inc*/ 1, &[]);
     }
 
     pub(super) fn realtime_retry_cleanup_pending(&self) -> bool {
@@ -1695,9 +1695,9 @@ impl ChatWidget {
     fn finish_realtime_session_metrics(&mut self) {
         if let Some(active_since) = self.realtime_conversation.active_since.take() {
             self.session_telemetry
-                .counter("codex.voice.session.ended", /*inc*/ 1, &[]);
+                .counter("ava.voice.session.ended", /*inc*/ 1, &[]);
             self.session_telemetry.record_duration(
-                "codex.voice.session.duration",
+                "ava.voice.session.duration",
                 active_since.elapsed(),
                 &[],
             );

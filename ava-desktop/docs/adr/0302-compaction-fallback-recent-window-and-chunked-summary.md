@@ -15,7 +15,7 @@ retained-tail checkpoint, and described that checkpoint as preserving "the
 recent provider-valid message tail". ADR 0282 then made the runtime retry a
 failed summary and reduce an oversized prompt once before the fallback ran.
 
-The shipped contract was narrower than either record promised. The Codex-shaped
+The shipped contract was narrower than either record promised. The Ava-shaped
 reshape of a preparation folds the split-turn prefix and pi's recent tail back
 into `messagesToSummarize`, then rebuilds the tail as at most the latest user
 message, and a rebuild of a stored checkpoint narrowed the tail again. On the

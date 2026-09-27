@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use codex_async_utils::OrCancelExt;
-use codex_extension_api::TurnStartPhase;
+use ava_async_utils::OrCancelExt;
+use ava_extension_api::TurnStartPhase;
 use tokio_util::sync::CancellationToken;
 
 use crate::session::TurnInput;
@@ -12,7 +12,7 @@ use crate::session::turn::run_turn;
 use crate::session::turn_context::TurnContext;
 use crate::session_startup_prewarm::SessionStartupPrewarmResolution;
 use crate::state::TaskKind;
-use codex_thread_store::PersistContext;
+use ava_thread_store::PersistContext;
 use tracing::Instrument;
 use tracing::trace_span;
 

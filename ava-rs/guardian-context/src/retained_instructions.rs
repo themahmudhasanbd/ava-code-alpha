@@ -3,9 +3,9 @@
 //! are never truncated into partial permissions, and retained source order is preserved.
 //! Section omissions do not change fast-approval eligibility.
 
-use codex_history::RetainedContext;
-use codex_history::RetainedContextEntry;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_history::RetainedContext;
+use ava_history::RetainedContextEntry;
+use ava_protocol::protocol::TruncationPolicy;
 
 use crate::ContextSection;
 use crate::GuardianRootMessage;

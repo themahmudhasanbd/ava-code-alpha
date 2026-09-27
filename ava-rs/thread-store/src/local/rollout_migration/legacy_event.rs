@@ -8,29 +8,29 @@
 //! It intentionally stays separate from live thread-history reduction because migration needs a
 //! frozen adapter for historical rollout payloads.
 
-use codex_extension_items::ExtensionItem;
-use codex_extension_items::image_generation::ImageGenerationItem;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::CommandExecutionItem;
-use codex_protocol::items::ContextCompactionItem;
-use codex_protocol::items::DynamicToolCallItem;
-use codex_protocol::items::DynamicToolCallStatus;
-use codex_protocol::items::EnteredReviewModeItem;
-use codex_protocol::items::ExitedReviewModeItem;
-use codex_protocol::items::FileChangeItem;
-use codex_protocol::items::McpToolCallError;
-use codex_protocol::items::McpToolCallItem;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::SubAgentActivityItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::items::WebSearchItem;
-use codex_protocol::models::ImageReference;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::UserMessageImageKind;
-use codex_protocol::user_input::UserInput;
+use ava_extension_items::ExtensionItem;
+use ava_extension_items::image_generation::ImageGenerationItem;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::CommandExecutionItem;
+use ava_protocol::items::ContextCompactionItem;
+use ava_protocol::items::DynamicToolCallItem;
+use ava_protocol::items::DynamicToolCallStatus;
+use ava_protocol::items::EnteredReviewModeItem;
+use ava_protocol::items::ExitedReviewModeItem;
+use ava_protocol::items::FileChangeItem;
+use ava_protocol::items::McpToolCallError;
+use ava_protocol::items::McpToolCallItem;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::SubAgentActivityItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::items::WebSearchItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::UserMessageImageKind;
+use ava_protocol::user_input::UserInput;
 
 use crate::ThreadStoreResult;
 

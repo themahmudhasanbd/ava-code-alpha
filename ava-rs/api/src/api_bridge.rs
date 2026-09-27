@@ -6,42 +6,42 @@ use crate::rate_limits::parse_rate_limit_reached_type;
 use base64::Engine;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_protocol::auth::PlanType;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::ConnectionFailedError;
-use codex_protocol::error::RetryLimitReachedError;
-use codex_protocol::error::UnexpectedResponseError;
-use codex_protocol::error::UsageLimitReachedError;
-use codex_protocol::protocol::MisalignmentErrorDetails;
+use ava_protocol::auth::PlanType;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::ConnectionFailedError;
+use ava_protocol::error::RetryLimitReachedError;
+use ava_protocol::error::UnexpectedResponseError;
+use ava_protocol::error::UsageLimitReachedError;
+use ava_protocol::protocol::MisalignmentErrorDetails;
 use http::HeaderMap;
 use serde::Deserialize;
 use serde_json::Value;
 
-pub fn map_api_error(err: ApiError) -> CodexErr {
+pub fn map_api_error(err: ApiError) -> AvaErr {
     match err {
-        ApiError::ContextWindowExceeded => CodexErr::ContextWindowExceeded,
-        ApiError::QuotaExceeded => CodexErr::QuotaExceeded,
-        ApiError::UsageNotIncluded => CodexErr::UsageNotIncluded,
+        ApiError::ContextWindowExceeded => AvaErr::ContextWindowExceeded,
+        ApiError::QuotaExceeded => AvaErr::QuotaExceeded,
+        ApiError::UsageNotIncluded => AvaErr::UsageNotIncluded,
         ApiError::Retryable { message, delay } => {
-            let error = CodexErr::Stream(message);
+            let error = AvaErr::Stream(message);
             match delay {
                 Some(delay) => error.with_retry_delay(delay),
                 None => error,
             }
         }
         ApiError::RateLimitExceeded { message, delay } => {
-            let error = CodexErr::new(CodexErrorDetails::RateLimitExceeded(message));
+            let error = AvaErr::new(AvaErrorDetails::RateLimitExceeded(message));
             match delay {
                 Some(delay) => error.with_retry_delay(delay),
                 None => error,
             }
         }
-        ApiError::Stream(msg) => CodexErr::Stream(msg),
-        ApiError::ServerOverloaded => CodexErr::ServerOverloaded,
+        ApiError::Stream(msg) => AvaErr::Stream(msg),
+        ApiError::ServerOverloaded => AvaErr::ServerOverloaded,
         ApiError::Api { status, message } => {
             let user_message = api_error_user_message(status, &message);
-            CodexErr::UnexpectedStatus(UnexpectedResponseError {
+            AvaErr::UnexpectedStatus(UnexpectedResponseError {
                 status,
                 body: message,
                 user_message,
@@ -52,15 +52,15 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                 identity_error_code: None,
             })
         }
-        ApiError::InvalidRequest { message } => CodexErr::InvalidRequest(message),
+        ApiError::InvalidRequest { message } => AvaErr::InvalidRequest(message),
         ApiError::CyberPolicy { message } => {
-            CodexErr::new(CodexErrorDetails::CyberPolicy { message })
+            AvaErr::new(AvaErrorDetails::CyberPolicy { message })
         }
-        ApiError::BioPolicy { message } => CodexErr::new(CodexErrorDetails::BioPolicy { message }),
+        ApiError::BioPolicy { message } => AvaErr::new(AvaErrorDetails::BioPolicy { message }),
         ApiError::MisalignmentPolicyViolation {
             message,
             misalignment,
-        } => CodexErr::new(CodexErrorDetails::MisalignmentPolicyViolation {
+        } => AvaErr::new(AvaErrorDetails::MisalignmentPolicyViolation {
             message,
             misalignment,
         }),
@@ -78,9 +78,9 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                     && let Some(error) = value.get("error")
                 {
                     match error.get("code").and_then(Value::as_str) {
-                        Some("server_is_overloaded") => return CodexErr::ServerOverloaded,
+                        Some("server_is_overloaded") => return AvaErr::ServerOverloaded,
                         Some("slow_down") => {
-                            return CodexErr::new(CodexErrorDetails::RateLimitExceeded(
+                            return AvaErr::new(AvaErrorDetails::RateLimitExceeded(
                                 error
                                     .get("message")
                                     .and_then(Value::as_str)
@@ -107,7 +107,7 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                         .unwrap_or_else(|| {
                             MISALIGNMENT_POLICY_VIOLATION_FALLBACK_MESSAGE.to_string()
                         });
-                    return CodexErr::new(CodexErrorDetails::MisalignmentPolicyViolation {
+                    return AvaErr::new(AvaErrorDetails::MisalignmentPolicyViolation {
                         message,
                         misalignment: error.get("misalignment").cloned().and_then(|details| {
                             serde_json::from_value::<MisalignmentErrorDetails>(details).ok()
@@ -133,19 +133,19 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                             .map(str::to_string)
                             .unwrap_or_else(|| fallback_message.to_string());
                         if code == BIO_POLICY_ERROR_CODE {
-                            CodexErr::new(CodexErrorDetails::BioPolicy { message })
+                            AvaErr::new(AvaErrorDetails::BioPolicy { message })
                         } else {
-                            CodexErr::new(CodexErrorDetails::CyberPolicy { message })
+                            AvaErr::new(AvaErrorDetails::CyberPolicy { message })
                         }
                     } else if body_text
                         .contains("The image data you provided does not represent a valid image")
                     {
-                        CodexErr::InvalidImageRequest()
+                        AvaErr::InvalidImageRequest()
                     } else {
-                        CodexErr::InvalidRequest(body_text)
+                        AvaErr::InvalidRequest(body_text)
                     }
                 } else if status == http::StatusCode::INTERNAL_SERVER_ERROR {
-                    CodexErr::InternalServerError
+                    AvaErr::InternalServerError
                 } else if status == http::StatusCode::TOO_MANY_REQUESTS {
                     if let Ok(err) = serde_json::from_str::<UsageErrorResponse>(&body_text) {
                         if err.error.error_type.as_deref() == Some("usage_limit_reached") {
@@ -166,7 +166,7 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                                 .error
                                 .resets_at
                                 .and_then(|seconds| DateTime::<Utc>::from_timestamp(seconds, 0));
-                            return CodexErr::UsageLimitReached(UsageLimitReachedError {
+                            return AvaErr::UsageLimitReached(UsageLimitReachedError {
                                 plan_type: err.error.plan_type,
                                 resets_at,
                                 rate_limits: rate_limits.map(Box::new),
@@ -174,7 +174,7 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                                 rate_limit_reached_type,
                             });
                         } else if err.error.error_type.as_deref() == Some("usage_not_included") {
-                            return CodexErr::UsageNotIncluded;
+                            return AvaErr::UsageNotIncluded;
                         } else if err.error.error_type.as_deref() == Some("insufficient_quota")
                             || matches!(
                                 err.error.code.as_deref(),
@@ -187,16 +187,16 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                                 )
                             )
                         {
-                            return CodexErr::QuotaExceeded;
+                            return AvaErr::QuotaExceeded;
                         }
                     }
 
-                    CodexErr::RetryLimit(RetryLimitReachedError {
+                    AvaErr::RetryLimit(RetryLimitReachedError {
                         status,
                         request_id: extract_request_tracking_id(headers.as_ref()),
                     })
                 } else {
-                    CodexErr::UnexpectedStatus(UnexpectedResponseError {
+                    AvaErr::UnexpectedStatus(UnexpectedResponseError {
                         status,
                         user_message: api_error_user_message(status, &body_text),
                         body: body_text,
@@ -211,24 +211,24 @@ pub fn map_api_error(err: ApiError) -> CodexErr {
                     })
                 }
             }
-            TransportError::RetryLimit => CodexErr::RetryLimit(RetryLimitReachedError {
+            TransportError::RetryLimit => AvaErr::RetryLimit(RetryLimitReachedError {
                 status: http::StatusCode::INTERNAL_SERVER_ERROR,
                 request_id: None,
             }),
-            TransportError::Timeout => CodexErr::RequestTimeout,
+            TransportError::Timeout => AvaErr::RequestTimeout,
             TransportError::Connection(source) => {
-                CodexErr::ConnectionFailed(ConnectionFailedError { source })
+                AvaErr::ConnectionFailed(ConnectionFailedError { source })
             }
-            TransportError::Network(msg) | TransportError::Build(msg) => CodexErr::Stream(msg),
+            TransportError::Network(msg) | TransportError::Build(msg) => AvaErr::Stream(msg),
             error @ TransportError::ResponseTooLarge { .. } => {
-                CodexErr::InvalidRequest(error.to_string())
+                AvaErr::InvalidRequest(error.to_string())
             }
         },
-        ApiError::RateLimit(msg) => CodexErr::Stream(msg),
+        ApiError::RateLimit(msg) => AvaErr::Stream(msg),
     }
 }
 
-const ACTIVE_LIMIT_HEADER: &str = "x-codex-active-limit";
+const ACTIVE_LIMIT_HEADER: &str = "x-ava-active-limit";
 const REQUEST_ID_HEADER: &str = "x-request-id";
 const OAI_REQUEST_ID_HEADER: &str = "x-oai-request-id";
 const CF_RAY_HEADER: &str = "cf-ray";

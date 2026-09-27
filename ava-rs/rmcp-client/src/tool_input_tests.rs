@@ -3,7 +3,7 @@
 use super::ElicitationClientService;
 use crate::rmcp_client::ElicitationPauseState;
 use crate::tool_input::call_tool;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
 use rmcp::RoleServer;
 use rmcp::model::CallToolRequestParams;
 use rmcp::model::ClientInfo;

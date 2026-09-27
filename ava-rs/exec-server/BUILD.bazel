@@ -1,14 +1,14 @@
-load("//:defs.bzl", "codex_rust_crate")
+load("//:defs.bzl", "ava_rust_crate")
 load("//bazel/rules/testing/compat:exec_server_compat_test.bzl", "exec_server_compat_test")
 
 exports_files(
-    ["src/proto/codex.exec_server.relay.v1.rs"],
+    ["src/proto/ava.exec_server.relay.v1.rs"],
     visibility = ["//ava-rs/exec-server/tests/support:__pkg__"],
 )
 
-codex_rust_crate(
+ava_rust_crate(
     name = "exec-server",
-    crate_name = "codex_exec_server",
+    crate_name = "ava_exec_server",
     crate_srcs = glob([
         "src/**/*.rs",
         "tests/unit/**/*.rs",
@@ -20,11 +20,11 @@ codex_rust_crate(
     ],
     extra_binaries = [
         "//ava-rs/bwrap:bwrap",
-        "//ava-rs/windows-sandbox-rs:codex-command-runner",
-        "//ava-rs/windows-sandbox-rs:codex-windows-sandbox-setup",
+        "//ava-rs/windows-sandbox-rs:ava-command-runner",
+        "//ava-rs/windows-sandbox-rs:ava-windows-sandbox-setup",
     ],
     integration_compile_data_extra = [
-        "src/proto/codex.exec_server.relay.v1.rs",
+        "src/proto/ava.exec_server.relay.v1.rs",
     ],
     # Keep the crate's tests single-threaded under Bazel because they install
     # process-global test-binary dispatch state, and the remote exec-server
@@ -36,16 +36,16 @@ codex_rust_crate(
 
 exec_server_compat_test(
     name = "exec-server-current-version-test",
-    comparison_binary = "//ava-rs/cli:codex",
-    current_binary = "//ava-rs/cli:codex",
+    comparison_binary = "//ava-rs/cli:ava",
+    current_binary = "//ava-rs/cli:ava",
 )
 
 exec_server_compat_test(
     name = "exec-server-stable-release-test",
-    release = "@codex_release_0.153.1_linux_x86_64",
+    release = "@ava_release_0.153.1_linux_x86_64",
 )
 
 exec_server_compat_test(
     name = "exec-server-minimum-release-test",
-    release = "@codex_release_0.145.0_linux_x86_64",
+    release = "@ava_release_0.145.0_linux_x86_64",
 )

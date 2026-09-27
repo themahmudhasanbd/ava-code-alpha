@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use codex_exec_server_protocol::ExecutorCapabilityDiscoverySnapshot;
-use codex_protocol::ThreadId;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::TurnEnvironmentSelection;
+use ava_exec_server_protocol::ExecutorCapabilityDiscoverySnapshot;
+use ava_protocol::ThreadId;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::TurnEnvironmentSelection;
 use serde_json::Value;
 
 use crate::ExtensionData;

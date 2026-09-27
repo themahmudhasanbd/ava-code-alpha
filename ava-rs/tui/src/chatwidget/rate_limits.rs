@@ -4,7 +4,7 @@ use super::*;
 pub(super) const WORKSPACE_NUDGE_VIEW_ID: &str = "workspace-usage-nudge";
 use crate::bottom_pane::ActionableBanner;
 use crate::model_catalog::LUNA_RESERVE_MODEL;
-use codex_app_server_protocol::CodexErrorInfo as AppServerCodexErrorInfo;
+use ava_app_server_protocol::AvaErrorInfo as AppServerAvaErrorInfo;
 use uuid::Uuid;
 
 pub(super) struct PendingCreditsNudge {
@@ -159,20 +159,20 @@ pub(super) enum RateLimitErrorKind {
 }
 
 pub(super) fn app_server_rate_limit_error_kind(
-    info: &AppServerCodexErrorInfo,
+    info: &AppServerAvaErrorInfo,
 ) -> Option<RateLimitErrorKind> {
     match info {
-        AppServerCodexErrorInfo::ServerOverloaded => Some(RateLimitErrorKind::ServerOverloaded),
-        AppServerCodexErrorInfo::UsageLimitExceeded => Some(RateLimitErrorKind::UsageLimit),
-        AppServerCodexErrorInfo::ResponseTooManyFailedAttempts {
+        AppServerAvaErrorInfo::ServerOverloaded => Some(RateLimitErrorKind::ServerOverloaded),
+        AppServerAvaErrorInfo::UsageLimitExceeded => Some(RateLimitErrorKind::UsageLimit),
+        AppServerAvaErrorInfo::ResponseTooManyFailedAttempts {
             http_status_code: Some(429),
         } => Some(RateLimitErrorKind::Generic),
         _ => None,
     }
 }
 
-pub(super) fn is_app_server_cyber_policy_error(info: &AppServerCodexErrorInfo) -> bool {
-    matches!(info, AppServerCodexErrorInfo::CyberPolicy)
+pub(super) fn is_app_server_cyber_policy_error(info: &AppServerAvaErrorInfo) -> bool {
+    matches!(info, AppServerAvaErrorInfo::CyberPolicy)
 }
 
 #[derive(Clone, Copy)]
@@ -196,7 +196,7 @@ impl ChatWidget {
             .rate_limit_snapshots_by_limit_id
             .iter()
             .filter(|(limit_id, snapshot)| {
-                limit_id.as_str() == "codex" || snapshot.limit_name == self.current_model()
+                limit_id.as_str() == "ava" || snapshot.limit_name == self.current_model()
             })
             .flat_map(|(_, snapshot)| snapshot.primary.iter().chain(snapshot.secondary.iter()))
             .map(|window| window.used_percent)
@@ -235,7 +235,7 @@ impl ChatWidget {
 
     pub(crate) fn on_rolling_rate_limit_snapshot(&mut self, snapshot: RateLimitSnapshot) {
         if let (Some(previous), Some(current)) = (
-            self.codex_rate_limit_reached_type,
+            self.ava_rate_limit_reached_type,
             snapshot.rate_limit_reached_type,
         ) && previous != current
         {
@@ -256,7 +256,7 @@ impl ChatWidget {
             let limit_id = snapshot
                 .limit_id
                 .clone()
-                .unwrap_or_else(|| "codex".to_string());
+                .unwrap_or_else(|| "ava".to_string());
             if matches!(source, RateLimitSnapshotSource::RollingUpdate)
                 && snapshot.credits.is_none()
             {
@@ -272,21 +272,21 @@ impl ChatWidget {
             }
             self.plan_type = snapshot.plan_type.or(self.plan_type);
 
-            let is_codex_limit = limit_id.eq_ignore_ascii_case("codex");
-            if is_codex_limit
+            let is_ava_limit = limit_id.eq_ignore_ascii_case("ava");
+            if is_ava_limit
                 && (matches!(source, RateLimitSnapshotSource::AccountUsage)
                     || snapshot.spend_control_reached.is_some())
             {
-                self.codex_spend_control_reached = snapshot.spend_control_reached;
+                self.ava_spend_control_reached = snapshot.spend_control_reached;
             }
-            if (is_codex_limit && matches!(source, RateLimitSnapshotSource::AccountUsage))
+            if (is_ava_limit && matches!(source, RateLimitSnapshotSource::AccountUsage))
                 || snapshot.rate_limit_reached_type.is_some()
             {
-                self.codex_rate_limit_reached_type = snapshot.rate_limit_reached_type;
+                self.ava_rate_limit_reached_type = snapshot.rate_limit_reached_type;
             }
-            let workspace_limit_reached = self.codex_spend_control_reached == Some(true)
+            let workspace_limit_reached = self.ava_spend_control_reached == Some(true)
                 || matches!(
-                    self.codex_rate_limit_reached_type,
+                    self.ava_rate_limit_reached_type,
                     Some(
                         RateLimitReachedType::WorkspaceOwnerCreditsDepleted
                             | RateLimitReachedType::WorkspaceMemberCreditsDepleted
@@ -299,7 +299,7 @@ impl ChatWidget {
                     .credits
                     .as_ref()
                     .is_some_and(has_usable_workspace_credits);
-            if is_codex_limit && has_workspace_credits {
+            if is_ava_limit && has_workspace_credits {
                 match self.rate_limit_switch_prompt {
                     RateLimitSwitchPromptState::Pending => {
                         self.rate_limit_switch_prompt = RateLimitSwitchPromptState::Idle;
@@ -311,7 +311,7 @@ impl ChatWidget {
                     RateLimitSwitchPromptState::Idle => {}
                 }
             }
-            let should_warn_about_rate_limit_usage = is_codex_limit && !has_workspace_credits;
+            let should_warn_about_rate_limit_usage = is_ava_limit && !has_workspace_credits;
             let warnings = if should_warn_about_rate_limit_usage {
                 self.rate_limit_warnings.take_warnings(
                     self.plan_type,
@@ -336,7 +336,7 @@ impl ChatWidget {
                 vec![]
             };
 
-            let high_usage = is_codex_limit
+            let high_usage = is_ava_limit
                 && (snapshot
                     .secondary
                     .as_ref()
@@ -381,8 +381,8 @@ impl ChatWidget {
             }
         } else {
             self.rate_limit_snapshots_by_limit_id.clear();
-            self.codex_rate_limit_reached_type = None;
-            self.codex_spend_control_reached = None;
+            self.ava_rate_limit_reached_type = None;
+            self.ava_spend_control_reached = None;
         }
         self.refresh_status_line();
     }
@@ -444,7 +444,7 @@ impl ChatWidget {
         let default_effort: ReasoningEffortConfig = preset.default_reasoning_effort;
 
         let switch_actions: Vec<SelectionAction> = vec![Box::new(move |tx| {
-            tx.send(AppEvent::CodexOp(AppCommand::override_turn_context(
+            tx.send(AppEvent::AvaOp(AppCommand::override_turn_context(
                 /*cwd*/ None,
                 /*approval_policy*/ None,
                 /*approvals_reviewer*/ None,
@@ -531,7 +531,7 @@ impl ChatWidget {
             ),
             AddCreditsNudgeCreditType::UsageLimit => (
                 "Usage limit reached",
-                "Request a limit increase from your owner to continue using codex. Request increase?",
+                "Request a limit increase from your owner to continue using ava. Request increase?",
             ),
         };
         let send_actions: Vec<SelectionAction> = vec![Box::new(move |tx| {

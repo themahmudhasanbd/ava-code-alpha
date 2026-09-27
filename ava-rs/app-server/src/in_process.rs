@@ -31,10 +31,10 @@
 //! `MessageProcessor` with overload or internal errors so approval flows do
 //! not hang indefinitely.
 //!
-//! # Relationship to `codex-app-server-client`
+//! # Relationship to `ava-app-server-client`
 //!
 //! This module provides the low-level runtime handle ([`InProcessClientHandle`]).
-//! Higher-level callers (TUI, exec) should go through `codex-app-server-client`,
+//! Higher-level callers (TUI, exec) should go through `ava-app-server-client`,
 //! which wraps this module behind a worker task with async request/response
 //! helpers, surface-specific startup policy, and bounded shutdown.
 
@@ -67,32 +67,32 @@ use crate::plugin_config_reload::PluginStartupConfig;
 use crate::transport::CHANNEL_CAPACITY;
 use crate::transport::OutboundConnectionState;
 use crate::transport::route_outgoing_envelope;
-use codex_analytics::AppServerRpcTransport;
-use codex_app_server_protocol::AgentMessageDelivery;
-use codex_app_server_protocol::ClientNotification;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::Result;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadItem;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::ThreadConfigLoader;
-use codex_core::check_execpolicy_for_warnings;
-use codex_core::config::Config;
-use codex_core::resolve_installation_id;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_login::AuthManager;
-use codex_protocol::protocol::SessionSource;
-pub use codex_rollout::StateDbHandle;
-pub use codex_state::log_db::LogDbLayer;
+use ava_analytics::AppServerRpcTransport;
+use ava_app_server_protocol::AgentMessageDelivery;
+use ava_app_server_protocol::ClientNotification;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::Result;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadItem;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::ThreadConfigLoader;
+use ava_core::check_execpolicy_for_warnings;
+use ava_core::config::Config;
+use ava_core::resolve_installation_id;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_login::AuthManager;
+use ava_protocol::protocol::SessionSource;
+pub use ava_rollout::StateDbHandle;
+pub use ava_state::log_db::LogDbLayer;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
@@ -147,7 +147,7 @@ pub struct InProcessStartArgs {
     /// Loader used to fetch typed thread config sources before a thread starts.
     pub thread_config_loader: Arc<dyn ThreadConfigLoader>,
     /// Feedback sink used by app-server/core telemetry and logs.
-    pub feedback: CodexFeedback,
+    pub feedback: AvaFeedback,
     /// SQLite tracing layer used to flush recently emitted logs before feedback upload.
     pub log_db: Option<LogDbLayer>,
     /// Process-wide SQLite state handle shared with embedded app-server consumers.
@@ -158,8 +158,8 @@ pub struct InProcessStartArgs {
     pub config_warnings: Vec<ConfigWarningNotification>,
     /// Session source stamped into thread/session metadata.
     pub session_source: SessionSource,
-    /// Whether auth loading should honor the `CODEX_API_KEY` environment variable.
-    pub enable_codex_api_key_env: bool,
+    /// Whether auth loading should honor the `AVA_API_KEY` environment variable.
+    pub enable_ava_api_key_env: bool,
     /// Initialize params used for initial handshake.
     pub initialize: InitializeParams,
     /// Capacity used for all runtime queues (clamped to at least 1).
@@ -275,14 +275,14 @@ impl InProcessClientSender {
 /// Handle used by an in-process client to call app-server and consume events.
 ///
 /// This is the low-level runtime handle. Higher-level callers should usually go
-/// through `codex-app-server-client`, which adds worker-task buffering,
+/// through `ava-app-server-client`, which adds worker-task buffering,
 /// request/response helpers, and surface-specific startup policy.
 pub struct InProcessClientHandle {
     client: InProcessClientSender,
     event_rx: mpsc::Receiver<InProcessServerEvent>,
     runtime_handle: tokio::task::JoinHandle<()>,
     #[cfg(test)]
-    _test_codex_home: Option<tempfile::TempDir>,
+    _test_ava_home: Option<tempfile::TempDir>,
 }
 
 impl InProcessClientHandle {
@@ -422,9 +422,9 @@ async fn run_outbound_router(
 async fn start_uninitialized(args: InProcessStartArgs) -> IoResult<InProcessClientHandle> {
     args.config.auth_config().validate()?;
     let channel_capacity = args.channel_capacity.max(1);
-    let installation_id = resolve_installation_id(&args.config.codex_home).await?;
+    let installation_id = resolve_installation_id(&args.config.ava_home).await?;
     let auth_manager =
-        AuthManager::shared_from_config(args.config.as_ref(), args.enable_codex_api_key_env)
+        AuthManager::shared_from_config(args.config.as_ref(), args.enable_ava_api_key_env)
             .await
             .map_err(IoError::other)?;
     let (client_tx, mut client_rx) = mpsc::channel::<InProcessClientMessage>(channel_capacity);
@@ -465,7 +465,7 @@ async fn start_uninitialized(args: InProcessStartArgs) -> IoResult<InProcessClie
 
         let processor_outgoing = Arc::clone(&outgoing_message_sender);
         let config_manager = ConfigManager::new(
-            args.config.codex_home.to_path_buf(),
+            args.config.ava_home.to_path_buf(),
             args.cli_overrides,
             args.loader_overrides,
             args.strict_config,
@@ -793,40 +793,40 @@ async fn start_uninitialized(args: InProcessStartArgs) -> IoResult<InProcessClie
         event_rx,
         runtime_handle,
         #[cfg(test)]
-        _test_codex_home: None,
+        _test_ava_home: None,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_app_server_protocol::ClientInfo;
-    use codex_app_server_protocol::ConfigRequirementsReadResponse;
-    use codex_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
-    use codex_app_server_protocol::SessionSource as ApiSessionSource;
-    use codex_app_server_protocol::ThreadAttachmentOperation;
-    use codex_app_server_protocol::ThreadAttachmentUpdatedNotification;
-    use codex_app_server_protocol::ThreadQueueChangedNotification;
-    use codex_app_server_protocol::ThreadStartParams;
-    use codex_app_server_protocol::ThreadStartResponse;
-    use codex_app_server_protocol::Turn;
-    use codex_app_server_protocol::TurnCompletedNotification;
-    use codex_app_server_protocol::TurnItemsView;
-    use codex_app_server_protocol::TurnStatus;
-    use codex_core::config::ConfigBuilder;
+    use ava_app_server_protocol::ClientInfo;
+    use ava_app_server_protocol::ConfigRequirementsReadResponse;
+    use ava_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
+    use ava_app_server_protocol::SessionSource as ApiSessionSource;
+    use ava_app_server_protocol::ThreadAttachmentOperation;
+    use ava_app_server_protocol::ThreadAttachmentUpdatedNotification;
+    use ava_app_server_protocol::ThreadQueueChangedNotification;
+    use ava_app_server_protocol::ThreadStartParams;
+    use ava_app_server_protocol::ThreadStartResponse;
+    use ava_app_server_protocol::Turn;
+    use ava_app_server_protocol::TurnCompletedNotification;
+    use ava_app_server_protocol::TurnItemsView;
+    use ava_app_server_protocol::TurnStatus;
+    use ava_core::config::ConfigBuilder;
     use pretty_assertions::assert_eq;
     use std::path::Path;
     use tempfile::TempDir;
 
-    async fn build_test_config(codex_home: &Path) -> Config {
+    async fn build_test_config(ava_home: &Path) -> Config {
         match ConfigBuilder::default()
-            .codex_home(codex_home.to_path_buf())
+            .ava_home(ava_home.to_path_buf())
             .build()
             .await
         {
             Ok(config) => config,
-            Err(_) => Config::load_default_with_cli_overrides_for_codex_home(
-                codex_home.to_path_buf(),
+            Err(_) => Config::load_default_with_cli_overrides_for_ava_home(
+                ava_home.to_path_buf(),
                 Vec::new(),
             )
             .await
@@ -838,9 +838,9 @@ mod tests {
         session_source: SessionSource,
         channel_capacity: usize,
     ) -> InProcessClientHandle {
-        let codex_home = TempDir::new().expect("temp dir");
-        let config = Arc::new(build_test_config(codex_home.path()).await);
-        let state_db = codex_rollout::state_db::try_init(config.as_ref())
+        let ava_home = TempDir::new().expect("temp dir");
+        let config = Arc::new(build_test_config(ava_home.path()).await);
+        let state_db = ava_rollout::state_db::try_init(config.as_ref())
             .await
             .expect("state db should initialize for in-process test");
         let args = InProcessStartArgs {
@@ -850,17 +850,17 @@ mod tests {
             loader_overrides: LoaderOverrides::default(),
             strict_config: false,
             cloud_config_bundle: CloudConfigBundleLoader::default(),
-            thread_config_loader: Arc::new(codex_config::NoopThreadConfigLoader),
-            feedback: CodexFeedback::new(),
+            thread_config_loader: Arc::new(ava_config::NoopThreadConfigLoader),
+            feedback: AvaFeedback::new(),
             log_db: None,
             state_db: Some(state_db),
             environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
             config_warnings: Vec::new(),
             session_source,
-            enable_codex_api_key_env: false,
+            enable_ava_api_key_env: false,
             initialize: InitializeParams {
                 client_info: ClientInfo {
-                    name: "codex-in-process-test".to_string(),
+                    name: "ava-in-process-test".to_string(),
                     title: None,
                     version: "0.0.0".to_string(),
                 },
@@ -869,7 +869,7 @@ mod tests {
             channel_capacity,
         };
         let mut client = start(args).await.expect("in-process runtime should start");
-        client._test_codex_home = Some(codex_home);
+        client._test_ava_home = Some(ava_home);
         client
     }
 
@@ -996,7 +996,7 @@ mod tests {
             client: InProcessClientSender { client_tx },
             event_rx,
             runtime_handle,
-            _test_codex_home: None,
+            _test_ava_home: None,
         };
 
         client
@@ -1040,7 +1040,7 @@ mod tests {
             &ServerNotification::ThreadAttachmentUpdated(ThreadAttachmentUpdatedNotification {
                 thread_id: "thread-1".to_string(),
                 attachment_type: "pull_request".to_string(),
-                identity_key: r#"["github.com","openai","codex",123]"#.to_string(),
+                identity_key: r#"["github.com","openai","ava",123]"#.to_string(),
                 attachment_id: "attachment-1".to_string(),
                 operation: ThreadAttachmentOperation::Deleted,
             })

@@ -7,7 +7,7 @@ use tempfile::TempDir;
 #[cfg(any(unix, windows))]
 use tokio::time::sleep;
 
-use codex_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR;
+use ava_app_server_transport::REMOTE_CONTROL_DISABLED_ENV_VAR;
 
 use super::PidBackend;
 use super::PidCommandKind;
@@ -49,7 +49,7 @@ async fn locked_empty_pid_file_is_treated_as_active_reservation() {
         .await
         .expect("write pid file");
     let backend = PidBackend::new(
-        temp_dir.path().join("codex"),
+        temp_dir.path().join("ava"),
         pid_file.clone(),
         /*remote_control_enabled*/ false,
     );
@@ -77,7 +77,7 @@ async fn unlocked_empty_pid_file_is_treated_as_stale_reservation() {
         .await
         .expect("write pid file");
     let backend = PidBackend::new(
-        temp_dir.path().join("codex"),
+        temp_dir.path().join("ava"),
         pid_file.clone(),
         /*remote_control_enabled*/ false,
     );
@@ -97,7 +97,7 @@ async fn stop_waits_for_live_reservation_to_resolve() {
         .await
         .expect("write pid file");
     let backend = PidBackend::new(
-        temp_dir.path().join("codex"),
+        temp_dir.path().join("ava"),
         pid_file.clone(),
         /*remote_control_enabled*/ false,
     );
@@ -125,7 +125,7 @@ async fn stop_waits_for_live_reservation_to_resolve() {
 async fn start_retries_stale_empty_pid_file_under_its_own_lock() {
     let temp_dir = TempDir::new().expect("temp dir");
     let state_dir = temp_dir.path().join("state");
-    codex_uds::prepare_private_socket_directory(&state_dir)
+    ava_uds::prepare_private_socket_directory(&state_dir)
         .await
         .expect("private state directory");
     let pid_file = state_dir.join("app-server.pid");
@@ -133,7 +133,7 @@ async fn start_retries_stale_empty_pid_file_under_its_own_lock() {
         .await
         .expect("write pid file");
     let backend = PidBackend::new(
-        temp_dir.path().join("missing-codex"),
+        temp_dir.path().join("missing-ava"),
         pid_file,
         /*remote_control_enabled*/ false,
     );
@@ -162,14 +162,14 @@ async fn legacy_launch_clears_recovery_best_effort() {
         let home = TempDir::new().expect("temp dir");
         let state_dir = home.path().join("app-server-daemon");
         std::fs::create_dir_all(&state_dir).expect("state dir");
-        let recovery_file = codex_app_server_transport::daemon_recovery_file_path(home.path());
+        let recovery_file = ava_app_server_transport::daemon_recovery_file_path(home.path());
         if snapshot_is_directory {
             std::fs::create_dir(&recovery_file).expect("invalid snapshot directory");
         } else {
             std::fs::write(&recovery_file, "{}").expect("pending snapshot");
         }
         let backend = PidBackend::new(
-            home.path().join("missing-codex"),
+            home.path().join("missing-ava"),
             state_dir.join("app-server.pid"),
             /*remote_control_enabled*/ false,
         );
@@ -190,7 +190,7 @@ async fn stale_record_cleanup_preserves_replacement_record() {
     let temp_dir = TempDir::new().expect("temp dir");
     let pid_file = temp_dir.path().join("app-server.pid");
     let backend = PidBackend::new(
-        temp_dir.path().join("codex"),
+        temp_dir.path().join("ava"),
         pid_file.clone(),
         /*remote_control_enabled*/ false,
     );
@@ -228,8 +228,8 @@ async fn pid_record_captures_the_resolved_launch_binary() {
     use std::os::unix::fs::PermissionsExt;
 
     let temp = TempDir::new().expect("temp dir");
-    let original = temp.path().join("original-codex");
-    let replacement = temp.path().join("replacement-codex");
+    let original = temp.path().join("original-ava");
+    let replacement = temp.path().join("replacement-ava");
     for (path, bytes) in [
         (&original, b"#!/bin/sh\nexec sleep 30\n".as_slice()),
         (
@@ -240,7 +240,7 @@ async fn pid_record_captures_the_resolved_launch_binary() {
         std::fs::write(path, bytes).expect("binary");
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).expect("executable");
     }
-    let selected = temp.path().join("current-codex");
+    let selected = temp.path().join("current-ava");
     std::os::unix::fs::symlink(&original, &selected).expect("selected binary");
     let backend = PidBackend::new(
         selected.clone(),
@@ -283,7 +283,7 @@ async fn pid_record_captures_the_resolved_launch_binary() {
 async fn legacy_start_time_mismatch_preserves_record_and_process() {
     let temp = TempDir::new().unwrap();
     let backend = PidBackend::new(
-        temp.path().join("codex"),
+        temp.path().join("ava"),
         temp.path().join("app-server.pid"),
         /*remote_control_enabled*/ false,
     );
@@ -336,7 +336,7 @@ async fn stop_reaps_untracked_app_server_child() {
     .await
     .expect("write pid file");
     let backend = PidBackend::new(
-        temp_dir.path().join("codex"),
+        temp_dir.path().join("ava"),
         pid_file.clone(),
         /*remote_control_enabled*/ false,
     );
@@ -355,7 +355,7 @@ async fn stop_reaps_untracked_app_server_child() {
 #[cfg(any(unix, windows))]
 #[tokio::test]
 async fn shutdown_grace_child() {
-    let Some(ready) = std::env::var_os("CODEX_TEST_SHUTDOWN_GRACE_READY") else {
+    let Some(ready) = std::env::var_os("AVA_TEST_SHUTDOWN_GRACE_READY") else {
         return;
     };
     let ready = std::path::PathBuf::from(ready);
@@ -373,7 +373,7 @@ async fn shutdown_grace_child() {
             }
             sleep(Duration::from_millis(10)).await;
         }
-        if std::env::var_os("CODEX_TEST_SHUTDOWN_GRACE_EXIT").is_some() {
+        if std::env::var_os("AVA_TEST_SHUTDOWN_GRACE_EXIT").is_some() {
             sleep(Duration::from_millis(150)).await;
             tokio::fs::write(ready.with_extension("exited"), "")
                 .await
@@ -397,8 +397,8 @@ async fn shutdown_grace_handles_process_exit() {
         let ready = temp.path().join(format!("{name}.ready"));
         let mut child = std::process::Command::new(std::env::current_exe().expect("test binary"))
             .args(["--exact", "backend::pid::tests::shutdown_grace_child"])
-            .env("CODEX_TEST_SHUTDOWN_GRACE_READY", &ready)
-            .envs(exits.then_some(("CODEX_TEST_SHUTDOWN_GRACE_EXIT", "1")))
+            .env("AVA_TEST_SHUTDOWN_GRACE_READY", &ready)
+            .envs(exits.then_some(("AVA_TEST_SHUTDOWN_GRACE_EXIT", "1")))
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
@@ -429,13 +429,13 @@ async fn shutdown_grace_handles_process_exit() {
         .expect("write pid file");
         #[cfg(unix)]
         let backend = PidBackend::new(
-            temp.path().join("codex"),
+            temp.path().join("ava"),
             pid_file,
             /*remote_control_enabled*/ false,
         );
         #[cfg(windows)]
         let backend = PidBackend::new_update_loop(
-            temp.path().join("codex"),
+            temp.path().join("ava"),
             pid_file,
             /*restore_release*/ None,
         );
@@ -508,7 +508,7 @@ async fn stopping_updater_signals_its_installer_process_group() {
     .await
     .expect("write pid file");
     let backend = PidBackend::new_update_loop(
-        temp.path().join("codex"),
+        temp.path().join("ava"),
         pid_file,
         /*restore_release*/ None,
     );
@@ -551,7 +551,7 @@ async fn exited_unreaped_updater_is_reaped() {
         executable_identity: None,
     };
     let backend = PidBackend::new_update_loop(
-        temp.path().join("codex"),
+        temp.path().join("ava"),
         temp.path().join("updater.pid"),
         /*restore_release*/ None,
     );
@@ -578,7 +578,7 @@ async fn exited_unreaped_updater_is_reaped() {
 fn update_loop_uses_hidden_app_server_subcommand() {
     let backend = PidBackend {
         feature_overrides: Default::default(),
-        codex_bin: "codex".into(),
+        ava_bin: "ava".into(),
         pid_file: "updater.pid".into(),
         lock_file: "updater.pid.lock".into(),
         command_kind: PidCommandKind::UpdateLoop {
@@ -595,7 +595,7 @@ fn update_loop_uses_hidden_app_server_subcommand() {
 #[test]
 fn app_server_remote_control_uses_runtime_flag() {
     let backend = PidBackend::new(
-        "codex".into(),
+        "ava".into(),
         "app-server.pid".into(),
         /*remote_control_enabled*/ true,
     );
@@ -609,7 +609,7 @@ fn app_server_remote_control_uses_runtime_flag() {
 #[test]
 fn app_server_disabled_remote_control_uses_compatible_args_and_runtime_env() {
     let backend = PidBackend::new(
-        "codex".into(),
+        "ava".into(),
         "app-server.pid".into(),
         /*remote_control_enabled*/ false,
     );
@@ -649,7 +649,7 @@ async fn read_stderr_log_tail_returns_recent_complete_lines() {
 async fn stale_creation_time_never_stops_reused_pid() {
     let temp = TempDir::new().expect("temp");
     let backend = PidBackend::new(
-        temp.path().join("codex.exe"),
+        temp.path().join("ava.exe"),
         temp.path().join("server.pid"),
         /*remote_control_enabled*/ false,
     );
@@ -700,11 +700,11 @@ async fn failed_updater_handoff_preserves_predecessor_record() {
     let elevated = is_elevated_test_process().expect("query administrator membership");
     let temp = TempDir::new().expect("temp");
     let state_dir = temp.path().join("state");
-    codex_uds::prepare_private_socket_directory(&state_dir)
+    ava_uds::prepare_private_socket_directory(&state_dir)
         .await
         .expect("private state directory");
     let backend = PidBackend::new_update_loop(
-        temp.path().join("missing-codex.exe"),
+        temp.path().join("missing-ava.exe"),
         state_dir.join("updater.pid"),
         /*restore_release*/ None,
     );
@@ -751,7 +751,7 @@ async fn updater_readiness_and_post_publication_failure_preserve_ownership() {
 
     let temp = TempDir::new().expect("temp");
     let backend = PidBackend::new_update_loop(
-        temp.path().join("codex.exe"),
+        temp.path().join("ava.exe"),
         temp.path().join("updater.pid"),
         /*restore_release*/ None,
     );

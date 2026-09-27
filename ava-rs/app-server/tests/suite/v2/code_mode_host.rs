@@ -5,20 +5,20 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ThreadDecrementElicitationParams;
-use codex_app_server_protocol::ThreadDecrementElicitationResponse;
-use codex_app_server_protocol::ThreadGoalSetResponse;
-use codex_app_server_protocol::ThreadGoalStatus;
-use codex_app_server_protocol::ThreadGoalUpdatedNotification;
-use codex_app_server_protocol::ThreadIncrementElicitationParams;
-use codex_app_server_protocol::ThreadIncrementElicitationResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
+use ava_app_server_protocol::ThreadDecrementElicitationParams;
+use ava_app_server_protocol::ThreadDecrementElicitationResponse;
+use ava_app_server_protocol::ThreadGoalSetResponse;
+use ava_app_server_protocol::ThreadGoalStatus;
+use ava_app_server_protocol::ThreadGoalUpdatedNotification;
+use ava_app_server_protocol::ThreadIncrementElicitationParams;
+use ava_app_server_protocol::ThreadIncrementElicitationResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -58,7 +58,7 @@ async fn code_mode_model_output_uses_structured_host_timing(
     let experimental_show_cell_overhead = matches!(timing_output, TimingOutput::WithOverhead);
     let mut host = match transport {
         "grpc" => Some(
-            Command::new(codex_utils_cargo_bin::cargo_bin("codex-code-mode-host")?)
+            Command::new(ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")?)
                 .args(["--listen", "grpc://127.0.0.1:0"])
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
@@ -110,17 +110,17 @@ async fn code_mode_model_output_uses_structured_host_timing(
         ]),
     )
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config =
         MockResponsesConfig::new(&model_server.uri()).enable_feature(Feature::CodeModeOnly);
     if experimental_show_cell_overhead {
         config = config
             .with_extra_config("[features.code_mode]\nexperimental_show_cell_overhead = true");
     }
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
     let mut builder = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
-        .with_json_logging("codex_code_mode::timing=info,codex_core::tools::parallel=info");
+        .with_ava_home(ava_home.path())
+        .with_json_logging("ava_code_mode::timing=info,ava_core::tools::parallel=info");
     if let Some(host_url) = host_url.as_deref() {
         builder = builder.with_args(&["--code-mode-host", host_url]);
     }
@@ -149,7 +149,7 @@ async fn code_mode_model_output_uses_structured_host_timing(
         .await?;
     let _: TurnStartResponse = app_server.read_response(start_id).await?;
     let host_timing = app_server
-        .wait_for_json_log_event("codex.code_mode.host_timing")
+        .wait_for_json_log_event("ava.code_mode.host_timing")
         .await?;
     // Hold only the app-server after the host outcome, so local elapsed time
     // cannot round to the same displayed duration as the host measurement.
@@ -179,7 +179,7 @@ async fn code_mode_model_output_uses_structured_host_timing(
     assert_eq!(host_fields["call_id"], "timed-call");
     assert_eq!(host_fields["tool_name"], tool_name);
     let handler_timing = app_server
-        .wait_for_json_log_event("codex.tool_call")
+        .wait_for_json_log_event("ava.tool_call")
         .await?;
     let handler_fields = &handler_timing["fields"];
     let handler_duration_ms = handler_fields["handler_duration_ms"]
@@ -238,7 +238,7 @@ async fn code_mode_model_output_uses_structured_host_timing(
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn app_server_shares_flag_selected_grpc_code_mode_host_across_threads() -> Result<()> {
-    let host_program = codex_utils_cargo_bin::cargo_bin("codex-code-mode-host")?;
+    let host_program = ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")?;
     let mut code_mode_host = Command::new(host_program)
         .args(["--listen", "grpc://127.0.0.1:0"])
         .stdin(Stdio::null())
@@ -291,14 +291,14 @@ async fn app_server_shares_flag_selected_grpc_code_mode_host_across_threads() ->
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&model_server.uri())
         .enable_feature(Feature::CodeModeOnly)
         .enable_feature(Feature::CodeModePrewarm)
-        .write(codex_home.path())?;
-    let original_config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+        .write(ava_home.path())?;
+    let original_config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_args(&["--code-mode-host", &host_url])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -342,7 +342,7 @@ async fn app_server_shares_flag_selected_grpc_code_mode_host_across_threads() ->
         );
     }
     assert_eq!(
-        std::fs::read_to_string(codex_home.path().join("config.toml"))?,
+        std::fs::read_to_string(ava_home.path().join("config.toml"))?,
         original_config
     );
 
@@ -352,15 +352,15 @@ async fn app_server_shares_flag_selected_grpc_code_mode_host_across_threads() ->
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn app_server_prewarms_flag_selected_grpc_code_mode_host_before_first_turn() -> Result<()> {
     let model_server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&model_server.uri())
         .enable_feature(Feature::CodeModePrewarm)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let host_url = format!("http://{}", listener.local_addr()?);
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_args(&["--code-mode-host", &host_url])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -402,18 +402,18 @@ async fn app_server_blocks_goal_after_repeated_code_mode_host_failures() -> Resu
     }
     let response_mock = responses::mount_sse_sequence(&model_server, model_responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&model_server.uri())
         .enable_feature(Feature::CodeModeOnly)
         .enable_feature(Feature::Goals)
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let host_url = format!("http://{}", listener.local_addr()?);
     drop(listener);
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_args(&["--code-mode-host", &host_url])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;

@@ -2,16 +2,16 @@
 
 use anyhow::Result;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ConfigRequirementsReadResponse;
-use codex_app_server_protocol::ConfigValueWriteParams;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_config::config_toml::ConfigToml;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigRequirementsReadResponse;
+use ava_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_config::config_toml::ConfigToml;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::time::Duration;
@@ -44,7 +44,7 @@ X-Local = "no"
     let expected: ConfigToml = toml::from_str(requirements)?;
     let expected_providers = json!(expected.model_providers);
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build()
         .await?;
     timeout(Duration::from_secs(/*secs*/ 60), server.initialize()).await??;
@@ -150,7 +150,7 @@ async fn dotted_managed_provider_id_hides_exact_origins() -> Result<()> {
         "[model_providers.\"corp.gateway\"]\nname = 'Local gateway'\nbase_url = 'https://local.example.test'\n[model_providers.corp]\nname = 'Other provider'\n",
     )?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .build_initialized_with_timeout(Duration::from_secs(/*secs*/ 60))
         .await?;
     let id = server

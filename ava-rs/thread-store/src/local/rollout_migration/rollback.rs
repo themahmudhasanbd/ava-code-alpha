@@ -8,10 +8,10 @@
 //! It stays local to migration because core's live predicate also knows about dynamically
 //! registered contextual fragments that thread-store should not depend on.
 
-use codex_protocol::items::parse_hook_prompt_fragment;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::InterAgentCommunication;
+use ava_protocol::items::parse_hook_prompt_fragment;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::InterAgentCommunication;
 use std::borrow::Borrow;
 
 /// Match the rollback boundaries used by legacy history reconstruction without
@@ -134,8 +134,8 @@ fn is_known_contextual_user_text(text: &str) -> bool {
                 .split_once('>')
                 .and_then(|(start, _)| start.strip_prefix("<external_"))
                 .is_some_and(|key| text.ends_with(&format!("</external_{key}>"))))
-        || (text.starts_with("<codex_internal_context")
-            && text.ends_with("</codex_internal_context>"))
+        || (text.starts_with("<ava_internal_context")
+            && text.ends_with("</ava_internal_context>"))
         || text.starts_with(
             "Warning: The maximum number of unified exec processes you can keep open is",
         )

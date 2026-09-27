@@ -1,8 +1,8 @@
 //! Verifies transparent model-policy wrappers and unchanged legacy Code Mode behavior.
 
 use super::*;
-use codex_protocol::openai_models::GuardianModelPolicy;
-use codex_protocol::openai_models::GuardianReviewMode;
+use ava_protocol::openai_models::GuardianModelPolicy;
+use ava_protocol::openai_models::GuardianReviewMode;
 use pretty_assertions::assert_eq;
 use test_case::test_case;
 
@@ -120,13 +120,13 @@ async fn model_guardian_policy_scores_code_mode_cells(
     });
     let (mcp_url, mcp_server) =
         start_mcp_server_with_tools(&["js"], /*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     if matches!(
         policy_config,
         PolicyConfig::RequiredModel | PolicyConfig::RequiredLegacy
     ) {
         std::fs::write(
-            codex_home.path().join("requirements.toml"),
+            ava_home.path().join("requirements.toml"),
             format!("[auto_review]\nrequired_on_models = [\"{MODEL}\"]\n"),
         )?;
     }
@@ -142,7 +142,7 @@ async fn model_guardian_policy_scores_code_mode_cells(
         }
     };
     let analytics_server = responses::start_mock_server().await;
-    mount_analytics_capture(&analytics_server, codex_home.path()).await?;
+    mount_analytics_capture(&analytics_server, ava_home.path()).await?;
     MockResponsesConfig::new(&responses_url)
         .with_model(MODEL)
         .with_provider_config("supports_websockets = false")
@@ -156,9 +156,9 @@ async fn model_guardian_policy_scores_code_mode_cells(
         ))
         .enable_feature(Feature::GuardianApproval)
         .enable_feature(Feature::CodeModeOnly)
-        .write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let mut model = codex_core::test_support::construct_model_info_offline(MODEL, &config);
+        .write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let mut model = ava_core::test_support::construct_model_info_offline(MODEL, &config);
     model.guardian = match policy_config {
         PolicyConfig::Legacy | PolicyConfig::RequiredLegacy | PolicyConfig::LegacyDisabled => {
             model.node_repl_auto_review_required = computer_use == GuardianReviewMode::Adaptive;
@@ -170,9 +170,9 @@ async fn model_guardian_policy_scores_code_mode_cells(
             ..Default::default()
         }),
     };
-    write_models_cache_with_models(codex_home.path(), vec![model]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![model]).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     let thread = app_server
@@ -209,7 +209,7 @@ async fn model_guardian_policy_scores_code_mode_cells(
                 if events
                     .iter()
                     .filter(|event| {
-                        event["event_type"] == "codex_guardian_v2_classification"
+                        event["event_type"] == "ava_guardian_v2_classification"
                             && matches!(
                                 event["event_params"]["outcome"].as_str(),
                                 Some("success" | "superseded")

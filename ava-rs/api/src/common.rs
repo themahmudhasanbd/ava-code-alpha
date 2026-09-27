@@ -1,15 +1,15 @@
 use crate::error::ApiError;
-use codex_protocol::ResponseUsageMetadata;
-use codex_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
-use codex_protocol::config_types::Verbosity as VerbosityConfig;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::protocol::ModelVerification;
-use codex_protocol::protocol::RateLimitSnapshot;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TurnModerationMetadataEvent;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_protocol::turn_input::CyberAccessProgram;
+use ava_protocol::ResponseUsageMetadata;
+use ava_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
+use ava_protocol::config_types::Verbosity as VerbosityConfig;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::protocol::ModelVerification;
+use ava_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TurnModerationMetadataEvent;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_protocol::turn_input::CyberAccessProgram;
 use futures::Stream;
 use serde::Deserialize;
 use serde::Serialize;
@@ -386,7 +386,7 @@ pub fn create_text_param_for_request(
             r#type: TextFormatType::JsonSchema,
             strict: output_schema_strict,
             schema: schema.clone(),
-            name: "codex_output_schema".to_string(),
+            name: "ava_output_schema".to_string(),
         }),
     })
 }

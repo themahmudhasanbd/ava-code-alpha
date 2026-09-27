@@ -1,9 +1,9 @@
 use crate::memory_extensions_root;
-use codex_protocol::MemoryVersion;
-use codex_protocol::openai_models::ModelInfo;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
-use codex_utils_template::Template;
+use ava_protocol::MemoryVersion;
+use ava_protocol::openai_models::ModelInfo;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
+use ava_utils_template::Template;
 use std::path::Path;
 use std::sync::LazyLock;
 use tracing::warn;
@@ -104,7 +104,7 @@ pub(crate) fn build_consolidation_prompt_for_version(
         .unwrap_or_else(|err| {
             warn!("failed to render memories consolidation prompt template: {err}");
             format!(
-                "## Memory Phase 2 (Consolidation)\nConsolidate Codex memories in: {memory_root}\n\nRead {phase2_workspace_diff_file} first."
+                "## Memory Phase 2 (Consolidation)\nConsolidate Ava memories in: {memory_root}\n\nRead {phase2_workspace_diff_file} first."
             )
         })
 }

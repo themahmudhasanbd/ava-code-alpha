@@ -9,12 +9,12 @@ use std::time::UNIX_EPOCH;
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_exec_server::RouteAwareHttpClient;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_keyring_store::CredentialStoreError;
-use codex_keyring_store::tests::MockKeyringStore;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_exec_server::RouteAwareHttpClient;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_keyring_store::CredentialStoreError;
+use ava_keyring_store::tests::MockKeyringStore;
 use futures::FutureExt;
 use pretty_assertions::assert_eq;
 use pretty_assertions::assert_ne;
@@ -30,7 +30,7 @@ use super::*;
 use crate::EmaAuthFailure;
 use crate::WrappedOAuthTokenResponse;
 use crate::oauth::ResolvedOAuthCredentialStore;
-use crate::oauth::test_support::TempCodexHome;
+use crate::oauth::test_support::TempAvaHome;
 
 fn credentials(issuer: &str, subject: &str, expires_at: u64) -> StoredOAuthTokens {
     let assertion = format!(
@@ -231,7 +231,7 @@ impl KeyringStore for GatedKeyringStore {
 
 #[tokio::test(flavor = "current_thread")]
 async fn refresh_subject_reread_is_cancellable_and_releases_guard_on_failure() -> Result<()> {
-    let _home = TempCodexHome::new();
+    let _home = TempAvaHome::new();
     let (_server, issuer) = discovery().await;
     let store = ResolvedOAuthCredentialStore::Keyring(AuthKeyringBackendKind::Direct);
     let stored = credentials(&issuer, "user", /*expires_at*/ 0);
@@ -298,7 +298,7 @@ async fn refresh_subject_reread_is_cancellable_and_releases_guard_on_failure() -
                 }));
             }
         }
-        // Drain the detached read before TempCodexHome changes the process environment.
+        // Drain the detached read before TempAvaHome changes the process environment.
         let _released = tokio::time::timeout(
             REREAD_TEST_TIMEOUT,
             RefreshCredentialLock::acquire_for_server(&stored.server_name, &issuer),
@@ -310,7 +310,7 @@ async fn refresh_subject_reread_is_cancellable_and_releases_guard_on_failure() -
 
 #[tokio::test]
 async fn refresh_subject_rereads_pinned_credentials_after_id_token_expiry() -> Result<()> {
-    let _home = TempCodexHome::new();
+    let _home = TempAvaHome::new();
     let (_server, issuer) = discovery().await;
     let store = ResolvedOAuthCredentialStore::Keyring(AuthKeyringBackendKind::Direct);
     let stored = credentials(&issuer, "user", /*expires_at*/ 0);
@@ -338,7 +338,7 @@ async fn refresh_subject_rereads_pinned_credentials_after_id_token_expiry() -> R
 
 #[tokio::test]
 async fn refresh_subject_rejects_removed_replaced_or_missing_credentials() -> Result<()> {
-    let _home = TempCodexHome::new();
+    let _home = TempAvaHome::new();
     let (server, issuer) = discovery().await;
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     let store = ResolvedOAuthCredentialStore::Keyring(AuthKeyringBackendKind::Direct);

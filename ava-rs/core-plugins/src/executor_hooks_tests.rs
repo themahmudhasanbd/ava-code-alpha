@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use codex_config::HookEventsToml;
-use codex_config::MatcherGroup;
-use codex_exec_server::CapabilityRootDiscovery;
-use codex_exec_server::CapabilityTextFile;
-use codex_exec_server::DiscoveredPluginFiles;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_plugin::ExecutorPluginHookSource;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_utils_path_uri::PathUri;
+use ava_config::HookEventsToml;
+use ava_config::MatcherGroup;
+use ava_exec_server::CapabilityRootDiscovery;
+use ava_exec_server::CapabilityTextFile;
+use ava_exec_server::DiscoveredPluginFiles;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_plugin::ExecutorPluginHookSource;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -83,9 +83,9 @@ fn expected_source(index: usize) -> ExecutorPluginHookSource {
         mcp_environment_id: None,
         mcp_metadata: None,
         plugin_root: PathUri::parse("file:///plugins/computer-use").expect("plugin root"),
-        manifest_path: PathUri::parse("file:///plugins/computer-use/.codex-plugin/plugin.json")
+        manifest_path: PathUri::parse("file:///plugins/computer-use/.ava-plugin/plugin.json")
             .expect("manifest path"),
-        source_relative_path: format!(".codex-plugin/plugin.json#hooks[{index}]"),
+        source_relative_path: format!(".ava-plugin/plugin.json#hooks[{index}]"),
         hooks: HookEventsToml {
             stop: vec![MatcherGroup {
                 matcher: None,
@@ -126,7 +126,7 @@ fn discovers_allowlisted_executor_plugin_hook_sources() {
     let snapshot = snapshot_for_manifest(
         "computer-use@openai-bundled",
         "executor-a",
-        "file:///plugins/computer-use/.codex-plugin/plugin.json",
+        "file:///plugins/computer-use/.ava-plugin/plugin.json",
         manifest,
     );
 
@@ -154,7 +154,7 @@ fn discovers_unified_computer_use_cleanup_hooks() {
     let snapshot = snapshot_for_manifest(
         "unified-computer-use@openai-bundled",
         "executor-a",
-        "file:///plugins/computer-use/.codex-plugin/plugin.json",
+        "file:///plugins/computer-use/.ava-plugin/plugin.json",
         manifest,
     );
     let mut expected = expected_source(/*index*/ 0);
@@ -197,7 +197,7 @@ fn filters_mixed_handlers_without_rewriting_allowed_groups() {
     let snapshot = snapshot_for_manifest(
         "computer-use@openai-bundled",
         "executor-a",
-        "file:///plugins/computer-use/.codex-plugin/plugin.json",
+        "file:///plugins/computer-use/.ava-plugin/plugin.json",
         manifest,
     );
 
@@ -218,7 +218,7 @@ fn preserves_allowlisted_executor_plugin_hook_options() {
     let snapshot = snapshot_for_manifest(
         "computer-use@openai-bundled",
         "executor-a",
-        "file:///plugins/computer-use/.codex-plugin/plugin.json",
+        "file:///plugins/computer-use/.ava-plugin/plugin.json",
         manifest,
     );
 
@@ -244,7 +244,7 @@ fn resolves_apps_hook_metadata_from_the_registered_connector() {
     let mut manifest = cleanup_hook_manifest();
     manifest["name"] = json!("browser");
     let handler = &mut manifest["hooks"]["hooks"]["Stop"][0]["hooks"][0];
-    handler["server"] = json!("codex_apps");
+    handler["server"] = json!("ava_apps");
     handler["tool"] = json!("browser.turn_ended");
     handler["input"] = json!({});
     let mut expected = expected_source(/*index*/ 0);
@@ -255,7 +255,7 @@ fn resolves_apps_hook_metadata_from_the_registered_connector() {
         "contains_mcp_source": true,
     });
     expected.mcp_metadata = Some(Map::from_iter([(
-        MCP_TOOL_CODEX_APPS_META_KEY.to_string(),
+        MCP_TOOL_AVA_APPS_META_KEY.to_string(),
         routing.clone(),
     )]));
 
@@ -361,19 +361,19 @@ fn resolves_apps_hook_metadata_from_the_registered_connector() {
         let snapshot = snapshot_for_manifest(
             "browser@openai-curated-remote",
             "executor-a",
-            "file:///plugins/computer-use/.codex-plugin/plugin.json",
+            "file:///plugins/computer-use/.ava-plugin/plugin.json",
             manifest,
         );
         let tool_info = connector_id.map(|connector_id| {
             serde_json::from_value::<ToolInfo>(json!({
-                "server_name": "codex_apps",
+                "server_name": "ava_apps",
                 "tool_name": "turn_ended",
                 "tool_namespace": "browser",
                 "connector_id": connector_id,
                 "tool": {
                     "name": "browser.turn_ended",
                     "inputSchema": { "type": "object" },
-                    "_meta": { "_codex_apps": routing_metadata },
+                    "_meta": { "_ava_apps": routing_metadata },
                 },
             }))
             .expect("listed tool")
@@ -449,7 +449,7 @@ fn ignores_unallowlisted_executor_plugin_hooks() {
         let snapshot = snapshot_for_manifest(
             plugin_id,
             "executor-a",
-            "file:///plugins/computer-use/.codex-plugin/plugin.json",
+            "file:///plugins/computer-use/.ava-plugin/plugin.json",
             manifest,
         );
 
@@ -466,7 +466,7 @@ fn ignores_file_backed_executor_plugin_hooks() {
     let file_backed = snapshot_for_manifest(
         "computer-use@openai-bundled",
         "executor-a",
-        "file:///plugins/computer-use/.codex-plugin/plugin.json",
+        "file:///plugins/computer-use/.ava-plugin/plugin.json",
         json!({
             "name": "computer-use",
             "hooks": "./hooks/hooks.json"

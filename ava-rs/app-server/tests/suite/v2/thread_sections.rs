@@ -3,32 +3,32 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_fake_rollout;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server::INVALID_PARAMS_ERROR_CODE;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadArchiveResponse;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadSection;
-use codex_app_server_protocol::ThreadSectionAppearance;
-use codex_app_server_protocol::ThreadSectionCreateParams;
-use codex_app_server_protocol::ThreadSectionCreateResponse;
-use codex_app_server_protocol::ThreadSectionDeleteParams;
-use codex_app_server_protocol::ThreadSectionDeleteResponse;
-use codex_app_server_protocol::ThreadSectionListParams;
-use codex_app_server_protocol::ThreadSectionListResponse;
-use codex_app_server_protocol::ThreadSectionMoveParams;
-use codex_app_server_protocol::ThreadSectionMoveResponse;
-use codex_app_server_protocol::ThreadSectionUpdateParams;
-use codex_app_server_protocol::ThreadSectionUpdateResponse;
-use codex_app_server_protocol::ThreadUnarchiveParams;
-use codex_app_server_protocol::ThreadUnarchiveResponse;
-use codex_features::Feature;
-use codex_state::PINNED_THREAD_SECTION_ID;
-use codex_state::PINNED_THREAD_SECTION_NAME;
+use ava_app_server::INVALID_PARAMS_ERROR_CODE;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadArchiveResponse;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadSection;
+use ava_app_server_protocol::ThreadSectionAppearance;
+use ava_app_server_protocol::ThreadSectionCreateParams;
+use ava_app_server_protocol::ThreadSectionCreateResponse;
+use ava_app_server_protocol::ThreadSectionDeleteParams;
+use ava_app_server_protocol::ThreadSectionDeleteResponse;
+use ava_app_server_protocol::ThreadSectionListParams;
+use ava_app_server_protocol::ThreadSectionListResponse;
+use ava_app_server_protocol::ThreadSectionMoveParams;
+use ava_app_server_protocol::ThreadSectionMoveResponse;
+use ava_app_server_protocol::ThreadSectionUpdateParams;
+use ava_app_server_protocol::ThreadSectionUpdateResponse;
+use ava_app_server_protocol::ThreadUnarchiveParams;
+use ava_app_server_protocol::ThreadUnarchiveResponse;
+use ava_features::Feature;
+use ava_state::PINNED_THREAD_SECTION_ID;
+use ava_state::PINNED_THREAD_SECTION_NAME;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -54,12 +54,12 @@ async fn section_request_error(
 #[tokio::test]
 async fn custom_sections_remain_discoverable_across_ordered_updates_and_restart() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -143,7 +143,7 @@ async fn custom_sections_remain_discoverable_across_ordered_updates_and_restart(
 
     drop(server);
     let mut restarted = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let persisted: ThreadSectionListResponse = restarted
@@ -186,12 +186,12 @@ async fn custom_sections_remain_discoverable_across_ordered_updates_and_restart(
 #[tokio::test]
 async fn deleting_custom_sections_unassigns_active_and_archived_members() -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let first_thread = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T08-00-00",
         "2025-01-06T08:00:00Z",
         "First thread",
@@ -199,7 +199,7 @@ async fn deleting_custom_sections_unassigns_active_and_archived_members() -> Res
         /*git_info*/ None,
     )?;
     let archived_thread = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-06T09-00-00",
         "2025-01-06T09:00:00Z",
         "Archived thread",
@@ -207,7 +207,7 @@ async fn deleting_custom_sections_unassigns_active_and_archived_members() -> Res
         /*git_info*/ None,
     )?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let request_id = server
@@ -309,7 +309,7 @@ async fn deleting_custom_sections_unassigns_active_and_archived_members() -> Res
 
     drop(server);
     let mut restarted = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let restored_after_restart: ThreadReadResponse = restarted
@@ -336,12 +336,12 @@ async fn deleting_custom_sections_unassigns_active_and_archived_members() -> Res
 async fn custom_section_management_rejects_empty_names_missing_ids_and_pinned_mutations()
 -> Result<()> {
     let responses = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses.uri())
         .enable_feature(Feature::Sqlite)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let missing_id = Uuid::now_v7().to_string();

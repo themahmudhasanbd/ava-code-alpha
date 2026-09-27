@@ -1,23 +1,23 @@
-pub use codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR;
-use codex_features::Feature;
-use codex_features::Features;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
+pub use ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR;
+use ava_features::Feature;
+use ava_features::Features;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
 #[cfg(test)]
-use codex_protocol::config_types::EnvironmentVariablePattern;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::shell_environment;
+use ava_protocol::config_types::EnvironmentVariablePattern;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::shell_environment;
 use std::collections::HashMap;
 
-pub use codex_protocol::shell_environment::CODEX_SESSION_ID_ENV_VAR;
-pub use codex_protocol::shell_environment::CODEX_THREAD_ID_ENV_VAR;
+pub use ava_protocol::shell_environment::AVA_SESSION_ID_ENV_VAR;
+pub use ava_protocol::shell_environment::AVA_THREAD_ID_ENV_VAR;
 
-pub(crate) const CODEX_VERSION_ENV_VAR: &str = "CODEX_VERSION";
+pub(crate) const AVA_VERSION_ENV_VAR: &str = "AVA_VERSION";
 
 /// Informational name of the active permission profile. Child processes can
 /// overwrite this value, so it must not be treated as proof of enforcement.
-pub const CODEX_PERMISSION_PROFILE_ENV_VAR: &str = "CODEX_PERMISSION_PROFILE";
+pub const AVA_PERMISSION_PROFILE_ENV_VAR: &str = "AVA_PERMISSION_PROFILE";
 
 /// Construct an environment map based on the rules in the specified policy. The
 /// resulting map can be passed directly to `Command::envs()` after calling
@@ -27,7 +27,7 @@ pub const CODEX_PERMISSION_PROFILE_ENV_VAR: &str = "CODEX_PERMISSION_PROFILE";
 /// The derivation follows the algorithm documented in the struct-level comment
 /// for [`ShellEnvironmentPolicy`].
 ///
-/// `CODEX_THREAD_ID` is injected when a thread id is provided, even when
+/// `AVA_THREAD_ID` is injected when a thread id is provided, even when
 /// `include_only` is set.
 pub fn create_env(
     policy: &ShellEnvironmentPolicy,
@@ -39,12 +39,12 @@ pub fn create_env(
 
 /// Exposes the shared root-session identity and harness version to shell commands.
 pub(crate) fn inject_session_env(env: &mut HashMap<String, String>, session_id: SessionId) {
-    env.insert(CODEX_SESSION_ID_ENV_VAR.to_string(), session_id.to_string());
+    env.insert(AVA_SESSION_ID_ENV_VAR.to_string(), session_id.to_string());
     if cfg!(windows) {
-        env.retain(|key, _| !key.eq_ignore_ascii_case(CODEX_VERSION_ENV_VAR));
+        env.retain(|key, _| !key.eq_ignore_ascii_case(AVA_VERSION_ENV_VAR));
     }
     env.insert(
-        CODEX_VERSION_ENV_VAR.to_string(),
+        AVA_VERSION_ENV_VAR.to_string(),
         env!("CARGO_PKG_VERSION").to_string(),
     );
 }
@@ -58,13 +58,13 @@ pub(crate) fn inject_permission_profile_env(
     active_permission_profile: Option<&ActivePermissionProfile>,
 ) {
     if cfg!(windows) {
-        env.retain(|key, _| !key.eq_ignore_ascii_case(CODEX_PERMISSION_PROFILE_ENV_VAR));
+        env.retain(|key, _| !key.eq_ignore_ascii_case(AVA_PERMISSION_PROFILE_ENV_VAR));
     } else {
-        env.remove(CODEX_PERMISSION_PROFILE_ENV_VAR);
+        env.remove(AVA_PERMISSION_PROFILE_ENV_VAR);
     }
     if let Some(active_permission_profile) = active_permission_profile {
         env.insert(
-            CODEX_PERMISSION_PROFILE_ENV_VAR.to_string(),
+            AVA_PERMISSION_PROFILE_ENV_VAR.to_string(),
             active_permission_profile.id.clone(),
         );
     }
@@ -77,10 +77,10 @@ pub(crate) fn inject_permission_profile_env(
 /// active feature configuration remains authoritative. The in-process
 /// apply-patch path reads the feature directly.
 pub fn inject_apply_patch_env(env: &mut HashMap<String, String>, features: &Features) {
-    env.retain(|key, _| !key.eq_ignore_ascii_case(CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR));
+    env.retain(|key, _| !key.eq_ignore_ascii_case(AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR));
     if features.enabled(Feature::ApplyPatchPreserveLineEndings) {
         env.insert(
-            CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
+            AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
             "1".to_string(),
         );
     }

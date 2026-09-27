@@ -1,13 +1,13 @@
-use codex_analytics::InvocationType;
-use codex_analytics::SkillInvocation;
-use codex_analytics::SkillInvocationLocation;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_extension_api::ExtensionData;
-use codex_skills::ImplicitSkillAccess;
-use codex_skills::detect_implicit_skill_invocation_for_command;
-use codex_skills::implicit_skill_accesses_for_command;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_analytics::InvocationType;
+use ava_analytics::SkillInvocation;
+use ava_analytics::SkillInvocationLocation;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_extension_api::ExtensionData;
+use ava_skills::ImplicitSkillAccess;
+use ava_skills::detect_implicit_skill_invocation_for_command;
+use ava_skills::implicit_skill_accesses_for_command;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 
 use crate::HostSkillsSnapshot;
 use crate::catalog::SkillSourceKind;

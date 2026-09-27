@@ -3,7 +3,7 @@ use crate::config::ConfigBuilder;
 use std::fs;
 use std::path::Path;
 
-use codex_core_plugins::OPENAI_API_CURATED_MARKETPLACE_NAME;
+use ava_core_plugins::OPENAI_API_CURATED_MARKETPLACE_NAME;
 
 pub(crate) const TEST_CURATED_PLUGIN_SHA: &str = "0123456789abcdef0123456789abcdef01234567";
 
@@ -15,7 +15,7 @@ pub(crate) fn write_file(path: &Path, contents: &str) {
 pub(crate) fn write_curated_plugin(root: &Path, plugin_name: &str) {
     let plugin_root = root.join("plugins").join(plugin_name);
     write_file(
-        &plugin_root.join(".codex-plugin/plugin.json"),
+        &plugin_root.join(".ava-plugin/plugin.json"),
         &format!(
             r#"{{
   "name": "{plugin_name}",
@@ -82,27 +82,27 @@ pub(crate) fn write_openai_api_curated_marketplace(root: &Path, plugin_names: &[
     }
 }
 
-pub(crate) fn write_curated_plugin_sha(codex_home: &Path) {
-    write_curated_plugin_sha_with(codex_home, TEST_CURATED_PLUGIN_SHA);
+pub(crate) fn write_curated_plugin_sha(ava_home: &Path) {
+    write_curated_plugin_sha_with(ava_home, TEST_CURATED_PLUGIN_SHA);
 }
 
-pub(crate) fn write_curated_plugin_sha_with(codex_home: &Path, sha: &str) {
-    write_file(&codex_home.join(".tmp/plugins.sha"), &format!("{sha}\n"));
+pub(crate) fn write_curated_plugin_sha_with(ava_home: &Path, sha: &str) {
+    write_file(&ava_home.join(".tmp/plugins.sha"), &format!("{sha}\n"));
 }
 
-pub(crate) fn write_plugins_feature_config(codex_home: &Path) {
+pub(crate) fn write_plugins_feature_config(ava_home: &Path) {
     write_file(
-        &codex_home.join(CONFIG_TOML_FILE),
+        &ava_home.join(CONFIG_TOML_FILE),
         r#"[features]
 plugins = true
 "#,
     );
 }
 
-pub(crate) async fn load_plugins_config(codex_home: &Path) -> crate::config::Config {
+pub(crate) async fn load_plugins_config(ava_home: &Path) -> crate::config::Config {
     ConfigBuilder::default()
-        .codex_home(codex_home.to_path_buf())
-        .fallback_cwd(Some(codex_home.to_path_buf()))
+        .ava_home(ava_home.to_path_buf())
+        .fallback_cwd(Some(ava_home.to_path_buf()))
         .build()
         .await
         .expect("config should load")

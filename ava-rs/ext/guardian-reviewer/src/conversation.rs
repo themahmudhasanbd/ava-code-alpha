@@ -1,7 +1,7 @@
 //! Tracks reviewed transcript progress separately from committed conversation history.
 //! Hosts serialize reviews and checkpoint commits, and supply opaque completed history.
 
-use codex_guardian_context::TranscriptCursor;
+use ava_guardian_context::TranscriptCursor;
 
 /// A completed history and the transcript progress that produced it.
 #[derive(Clone)]

@@ -1,6 +1,6 @@
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_sandboxing::SandboxExecRequest;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_sandboxing::SandboxExecRequest;
+use ava_utils_path_uri::PathUri;
 use tokio::io;
 
 use crate::fs_helper::FsHelperOpenResponse;
@@ -58,7 +58,7 @@ async fn open_platform(
 
     let (mut receiver, sender) = UnixStream::pair().map_err(io_error)?;
     let sender: OwnedFd = sender.into();
-    let child = spawn_command(command, codex_utils_pty::ChildStdin::File(sender))?;
+    let child = spawn_command(command, ava_utils_pty::ChildStdin::File(sender))?;
     receiver.write_all(&request).map_err(io_error)?;
     receiver
         .shutdown(std::net::Shutdown::Write)
@@ -78,7 +78,7 @@ async fn open_platform(
 ) -> Result<tokio::fs::File, JSONRPCErrorError> {
     use tokio::io::AsyncWriteExt;
 
-    let mut child = spawn_command(command, codex_utils_pty::ChildStdin::Piped)?;
+    let mut child = spawn_command(command, ava_utils_pty::ChildStdin::Piped)?;
     let mut stdin = child
         .stdin
         .take()

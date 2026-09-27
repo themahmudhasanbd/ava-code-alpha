@@ -3,20 +3,20 @@
 //! recording. Budget failures preserve it for a compaction retry; successful
 //! finalization consumes it. It is not another retained history.
 
-use codex_features::Feature;
-use codex_guardian_context::ComposedContext;
-use codex_guardian_context::HistoryTruncation;
-use codex_guardian_context::RequestBudget;
-use codex_guardian_context::effective_input_token_limit;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::models::ResponseItem;
+use ava_features::Feature;
+use ava_guardian_context::ComposedContext;
+use ava_guardian_context::HistoryTruncation;
+use ava_guardian_context::RequestBudget;
+use ava_guardian_context::effective_input_token_limit;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::models::ResponseItem;
 
 use crate::context::ContextualUserFragment;
 use crate::context::GuardianBudgetOmission;
 use crate::context_manager::estimate_item_token_count;
-use crate::responses_metadata::CodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesRequestKind;
 use crate::session::TurnInput;
 use crate::session::session::Session;
 use crate::session::step_context::StepContext;
@@ -29,7 +29,7 @@ pub(crate) struct PendingReviewContext(pub ComposedContext);
 /// Reject inputs that cannot fit even without history or tools before Core tries
 /// pre-turn compaction. This is only a feasibility check; its selected copy is
 /// discarded. Actual selection waits for the complete first-step overhead.
-pub(crate) async fn check_pending(session: &Session, turn: &TurnContext) -> CodexResult<()> {
+pub(crate) async fn check_pending(session: &Session, turn: &TurnContext) -> AvaResult<()> {
     let Some(pending) = session
         .services
         .thread_extension_data
@@ -39,7 +39,7 @@ pub(crate) async fn check_pending(session: &Session, turn: &TurnContext) -> Code
     };
     let base = session.get_prompt_base_instructions().await;
     let minimum_prefix =
-        codex_protocol::protocol::TruncationPolicy::Bytes(base.text.len()).token_budget();
+        ava_protocol::protocol::TruncationPolicy::Bytes(base.text.len()).token_budget();
     let maximum = effective_input_token_limit(turn.model_info(), turn.config.model_context_window)
         .saturating_sub(super::request_budget::INPUT_TOKEN_MARGIN);
     if pending.0.estimated_tokens().saturating_add(minimum_prefix) > maximum {
@@ -59,7 +59,7 @@ pub(crate) async fn check_pending(session: &Session, turn: &TurnContext) -> Code
                     .services
                     .thread_extension_data
                     .insert(super::request_budget::ExhaustedReviewBudget::Detected);
-                CodexErr::ContextWindowExceeded
+                AvaErr::ContextWindowExceeded
             })?;
     }
     Ok(())
@@ -70,7 +70,7 @@ pub(crate) async fn finalize(
     step: &StepContext,
     input: &mut [TurnInput],
     history_truncation: HistoryTruncation,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     let Some(pending) = session
         .services
         .thread_extension_data
@@ -79,7 +79,7 @@ pub(crate) async fn finalize(
         return Ok(());
     };
     let [TurnInput::UserInput { content, .. }] = input else {
-        return Err(CodexErr::InvalidRequest(
+        return Err(AvaErr::InvalidRequest(
             "Guardian expects one review input".to_owned(),
         ));
     };
@@ -98,7 +98,7 @@ pub(crate) async fn finalize(
         ReasoningSummary::None,
         /*service_tier*/ None,
         &session
-            .responses_metadata(step, CodexResponsesRequestKind::Turn)
+            .responses_metadata(step, AvaResponsesRequestKind::Turn)
             .await,
     )?;
     let mut existing = super::request_budget::estimate_request_tokens(&request)
@@ -154,10 +154,10 @@ pub(crate) async fn finalize(
                 .thread_extension_data
                 .insert(super::request_budget::ExhaustedReviewBudget::Detected);
             match error {
-                codex_guardian_context::SectionError::EvidenceLimitExceeded { .. } => {
-                    CodexErr::ContextWindowExceeded
+                ava_guardian_context::SectionError::EvidenceLimitExceeded { .. } => {
+                    AvaErr::ContextWindowExceeded
                 }
-                error => CodexErr::InvalidRequest(error.to_string()),
+                error => AvaErr::InvalidRequest(error.to_string()),
             }
         })?;
     for (section, cost) in context.section_costs() {
@@ -166,9 +166,9 @@ pub(crate) async fn finalize(
                 .services
                 .session_telemetry
                 .histogram_with_boundaries(
-                    codex_guardian_context::SECTION_COST_METRIC,
+                    ava_guardian_context::SECTION_COST_METRIC,
                     i64::try_from(value).unwrap_or(i64::MAX),
-                    codex_guardian_context::SECTION_COST_BOUNDARIES,
+                    ava_guardian_context::SECTION_COST_BOUNDARIES,
                     &[
                         ("target", "sync"),
                         ("section", section),
@@ -179,7 +179,7 @@ pub(crate) async fn finalize(
     }
     *content = context
         .into_user_inputs()
-        .map_err(|error| CodexErr::InvalidRequest(error.to_string()))?;
+        .map_err(|error| AvaErr::InvalidRequest(error.to_string()))?;
     session
         .services
         .thread_extension_data

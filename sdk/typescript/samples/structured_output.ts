@@ -1,12 +1,12 @@
 #!/usr/bin/env -S NODE_NO_WARNINGS=1 pnpm ts-node-esm --files
 
-import { Codex } from "@openai/codex-sdk";
+import { Ava } from "@openai/codex-sdk";
 
-import { codexPathOverride } from "./helpers.ts";
+import { avaPathOverride } from "./helpers.ts";
 
-const codex = new Codex({ codexPathOverride: codexPathOverride() });
+const ava = new Ava({ avaPathOverride: avaPathOverride() });
 
-const thread = codex.startThread();
+const thread = ava.startThread();
 
 const schema = {
   type: "object",

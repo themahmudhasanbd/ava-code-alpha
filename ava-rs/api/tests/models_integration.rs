@@ -1,18 +1,18 @@
-use codex_api::AuthProvider;
-use codex_api::ModelsClient;
-use codex_api::Provider;
-use codex_api::RetryConfig;
-use codex_client::ReqwestTransport;
-use codex_http_client::HttpClientBuilder;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::openai_models::default_input_modalities;
+use ava_api::AuthProvider;
+use ava_api::ModelsClient;
+use ava_api::Provider;
+use ava_api::RetryConfig;
+use ava_client::ReqwestTransport;
+use ava_http_client::HttpClientBuilder;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::openai_models::default_input_modalities;
 use http::HeaderMap;
 use http::Method;
 use pretty_assertions::assert_eq;
@@ -104,7 +104,7 @@ async fn invalid_models_response_reports_bounded_decode_metadata() {
 #[tokio::test]
 async fn models_client_hits_models_endpoint() {
     let server = MockServer::start().await;
-    let base_url = format!("{}/api/codex", server.uri());
+    let base_url = format!("{}/api/ava", server.uri());
 
     let response = ModelsResponse {
         models: vec![ModelInfo {
@@ -172,7 +172,7 @@ async fn models_client_hits_models_endpoint() {
     };
 
     Mock::given(method("GET"))
-        .and(path("/api/codex/models"))
+        .and(path("/api/ava/models"))
         .respond_with(
             ResponseTemplate::new(200)
                 .insert_header("content-type", "application/json")
@@ -210,5 +210,5 @@ async fn models_client_hits_models_endpoint() {
         .expect("should capture requests");
     assert_eq!(received.len(), 1);
     assert_eq!(received[0].method, Method::GET.as_str());
-    assert_eq!(received[0].url.path(), "/api/codex/models");
+    assert_eq!(received[0].url.path(), "/api/ava/models");
 }

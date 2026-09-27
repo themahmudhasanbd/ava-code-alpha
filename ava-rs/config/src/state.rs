@@ -13,7 +13,7 @@ use crate::ConfigLayerMetadata;
 use crate::ConfigLayerSource;
 use crate::ProfileV2Name;
 use crate::shell_environment_policy::validate_shell_environment_policy_filter_config;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::path::Path;
@@ -41,7 +41,7 @@ impl From<LoaderOverrides> for ConfigLoadOptions {
 /// LoaderOverrides overrides managed configuration inputs (primarily for tests).
 #[derive(Debug, Default, Clone)]
 pub struct LoaderOverrides {
-    /// Optional configuration file supplied with the installed Codex package.
+    /// Optional configuration file supplied with the installed Ava package.
     pub packaged_defaults_path: Option<AbsolutePathBuf>,
     pub user_config_path: Option<AbsolutePathBuf>,
     pub user_config_profile: Option<ProfileV2Name>,
@@ -66,7 +66,7 @@ impl LoaderOverrides {
     ///
     /// This is intended for tests that should load only repo-controlled config fixtures.
     pub fn without_managed_config_for_tests() -> Self {
-        let base = std::env::temp_dir().join("codex-config-tests");
+        let base = std::env::temp_dir().join("ava-config-tests");
         Self {
             packaged_defaults_path: None,
             user_config_path: None,
@@ -101,12 +101,12 @@ impl LoaderOverrides {
         }
     }
 
-    pub fn user_config_path(&self, codex_home: &Path) -> std::io::Result<AbsolutePathBuf> {
+    pub fn user_config_path(&self, ava_home: &Path) -> std::io::Result<AbsolutePathBuf> {
         match self.user_config_path.as_ref() {
             Some(path) => Ok(path.clone()),
             None => Ok(AbsolutePathBuf::resolve_path_against_base(
                 crate::CONFIG_TOML_FILE,
-                codex_home,
+                ava_home,
             )),
         }
     }
@@ -215,7 +215,7 @@ impl ConfigLayerEntry {
         }
     }
 
-    // Get the `.codex/` folder associated with this config layer, if any.
+    // Get the `.ava-code/` folder associated with this config layer, if any.
     pub fn config_folder(&self) -> Option<AbsolutePathBuf> {
         match &self.name {
             ConfigLayerSource::PackagedDefaults { .. } => None,
@@ -223,14 +223,14 @@ impl ConfigLayerEntry {
             ConfigLayerSource::System { file } => file.parent(),
             ConfigLayerSource::EnterpriseManaged { .. } => None,
             ConfigLayerSource::User { file, .. } => file.parent(),
-            ConfigLayerSource::Project { dot_codex_folder } => Some(dot_codex_folder.clone()),
+            ConfigLayerSource::Project { dot_ava_folder } => Some(dot_ava_folder.clone()),
             ConfigLayerSource::SessionFlags => None,
             ConfigLayerSource::LegacyManagedConfigTomlFromFile { .. } => None,
             ConfigLayerSource::LegacyManagedConfigTomlFromMdm => None,
         }
     }
 
-    /// Returns the `.codex/` folder that should be used for hook declarations.
+    /// Returns the `.ava-code/` folder that should be used for hook declarations.
     ///
     /// Project layers normally use their own config folder. Linked Git worktrees
     /// can instead point hook discovery at the matching folder from the root
@@ -326,7 +326,7 @@ impl ConfigLayerStack {
     ///
     /// This does not merge other config layers or apply any requirements. When
     /// a profile-v2 layer is active, this returns that profile layer rather than
-    /// the base `$CODEX_HOME/config.toml` layer because the active layer is the
+    /// the base `$AVA_HOME/config.toml` layer because the active layer is the
     /// writable target for profile-aware edits.
     pub fn get_active_user_layer(&self) -> Option<&ConfigLayerEntry> {
         self.layers
@@ -603,21 +603,21 @@ fn verify_layer_ordering(layers: &[ConfigLayerEntry]) -> std::io::Result<()> {
     // further verify that project layers are ordered from root to cwd. Multiple
     // user layers are allowed so a profile override can layer on top of the base
     // user config.
-    let mut previous_project_dot_codex_folder: Option<&AbsolutePathBuf> = None;
+    let mut previous_project_dot_ava_folder: Option<&AbsolutePathBuf> = None;
     for layer in layers {
         if let ConfigLayerSource::Project {
-            dot_codex_folder: current_project_dot_codex_folder,
+            dot_ava_folder: current_project_dot_ava_folder,
         } = &layer.name
         {
-            if let Some(previous) = previous_project_dot_codex_folder {
+            if let Some(previous) = previous_project_dot_ava_folder {
                 let Some(parent) = previous.as_path().parent() else {
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::InvalidData,
                         "project layer has no parent directory",
                     ));
                 };
-                if previous == current_project_dot_codex_folder
-                    || !current_project_dot_codex_folder
+                if previous == current_project_dot_ava_folder
+                    || !current_project_dot_ava_folder
                         .as_path()
                         .ancestors()
                         .any(|ancestor| ancestor == parent)
@@ -628,7 +628,7 @@ fn verify_layer_ordering(layers: &[ConfigLayerEntry]) -> std::io::Result<()> {
                     ));
                 }
             }
-            previous_project_dot_codex_folder = Some(current_project_dot_codex_folder);
+            previous_project_dot_ava_folder = Some(current_project_dot_ava_folder);
         }
     }
 

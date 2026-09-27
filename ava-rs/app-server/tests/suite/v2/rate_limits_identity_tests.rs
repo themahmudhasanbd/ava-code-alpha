@@ -10,9 +10,9 @@ use axum::Json;
 use axum::Router;
 use axum::http::HeaderMap;
 use axum::routing::get;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Arc;
@@ -53,7 +53,7 @@ async fn identity_is_rechecked_after_backend_response(
         format!("chatgpt_base_url = \"http://{}\"\n", listener.local_addr()?),
     )?;
     let router = Router::new().route(
-        "/api/codex/usage",
+        "/api/ava/usage",
         get(move |headers: HeaderMap| {
             let entered = Arc::clone(&request_entered);
             let release = Arc::clone(&response_release);
@@ -73,7 +73,7 @@ async fn identity_is_rechecked_after_backend_response(
     );
     let server = tokio::spawn(async move { axum::serve(listener, router).await });
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(READ_TIMEOUT)
         .await?;
@@ -100,13 +100,13 @@ async fn identity_is_rechecked_after_backend_response(
         timeout(READ_TIMEOUT, app.read_response(request)).await??;
     server.abort();
     let snapshot = json!({
-        "limitId": "codex", "planType": "team",
+        "limitId": "ava", "planType": "team",
         "primary": {"usedPercent": 42, "windowDurationMins": 60, "resetsAt": 2000000000}
     });
     let expected: GetAccountRateLimitsResponse = serde_json::from_value(json!({
         "ordinaryUsageAllowed": if verified { Some(true) } else { None },
         "accountId": "workspace-a",
-        "rateLimits": snapshot, "rateLimitsByLimitId": {"codex": snapshot}
+        "rateLimits": snapshot, "rateLimitsByLimitId": {"ava": snapshot}
     }))?;
     assert_eq!(response, expected);
     Ok(())

@@ -3,34 +3,34 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use codex_core::CodexThread;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Constrained;
-use codex_core::context::GuardianContextMode;
-use codex_features::Feature;
-use codex_history::InitialHistory;
-use codex_history::ResumedHistory;
-use codex_history::RolloutItem;
-use codex_history::VerifiedAnswer;
-use codex_history::VerifiedQuestionAnswer;
-use codex_login::CodexAuth;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::LoadThreadHistoryParams;
+use ava_core::AvaThread;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Constrained;
+use ava_core::context::GuardianContextMode;
+use ava_features::Feature;
+use ava_history::InitialHistory;
+use ava_history::ResumedHistory;
+use ava_history::RolloutItem;
+use ava_history::VerifiedAnswer;
+use ava_history::VerifiedQuestionAnswer;
+use ava_login::AvaAuth;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::LoadThreadHistoryParams;
 use core_test_support::responses;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
-async fn finish_turn(thread: &CodexThread) {
+async fn finish_turn(thread: &AvaThread) {
     wait_for_event_match(thread, |event| match event {
         EventMsg::TurnComplete(_) => Some(()),
         EventMsg::Error(error) => panic!("unexpected turn error: {error:?}"),
@@ -39,7 +39,7 @@ async fn finish_turn(thread: &CodexThread) {
     .await;
 }
 
-async fn saved_history(test: &TestCodex, thread: &CodexThread) -> Result<Vec<RolloutItem>> {
+async fn saved_history(test: &TestAva, thread: &AvaThread) -> Result<Vec<RolloutItem>> {
     thread.flush_rollout().await?;
     Ok(test
         .thread_store
@@ -52,10 +52,10 @@ async fn saved_history(test: &TestCodex, thread: &CodexThread) -> Result<Vec<Rol
 }
 
 pub(super) async fn resume(
-    test: &TestCodex,
-    thread: &CodexThread,
+    test: &TestAva,
+    thread: &AvaThread,
     history: Vec<RolloutItem>,
-) -> Result<Arc<CodexThread>> {
+) -> Result<Arc<AvaThread>> {
     let thread_id = thread.startup_metadata().thread_id;
     let environments = thread.environment_selections().await;
     let model = thread.config_snapshot().await.model;
@@ -81,9 +81,9 @@ pub(super) async fn resume(
 
 pub(super) async fn migration_scenario() -> Result<Vec<responses::ResponsesRequest>> {
     let server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_history_mode(ThreadHistoryMode::Paginated)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model_info_override("gpt-5.5", |model| {
             model.comp_hash = Some("previous-model".to_owned());
             model.auto_review_model_override = Some(model.slug.clone());
@@ -133,9 +133,9 @@ pub(super) async fn migration_scenario() -> Result<Vec<responses::ResponsesReque
             "content": [{"type": "input_text", "text": "Keep the working tree unchanged."}]
         }}
     ]))?;
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.append_rollout_items(&history).await?;
-    let thread = resume(&test, &test.codex, history).await?;
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.append_rollout_items(&history).await?;
+    let thread = resume(&test, &test.ava-code, history).await?;
     assert_eq!(
         GuardianContextMode::from_history(thread.conversation_history_snapshot().await.as_ref()),
         GuardianContextMode::Legacy

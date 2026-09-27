@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from ._goal import _GoalOperationState
 from ._message_router import _TurnSubscription
-from .client import CodexClient, CodexConfig
+from .client import AvaClient, AvaConfig
 from .generated.v2_all import (
     AccountLoginCompletedNotification,
     AgentMessageDeltaNotification,
@@ -51,23 +51,23 @@ ParamsT = ParamSpec("ParamsT")
 ReturnT = TypeVar("ReturnT")
 
 # Bound workers while allowing cancellation cleanup to outlive an asyncio waiter.
-_TURN_START_EXECUTOR = ThreadPoolExecutor(thread_name_prefix="codex-turn-start")
+_TURN_START_EXECUTOR = ThreadPoolExecutor(thread_name_prefix="ava-turn-start")
 
 
-class AsyncCodexClient:
-    """Async wrapper around CodexClient using thread offloading."""
+class AsyncAvaClient:
+    """Async wrapper around AvaClient using thread offloading."""
 
-    def __init__(self, config: CodexConfig | None = None) -> None:
+    def __init__(self, config: AvaConfig | None = None) -> None:
         """Create the wrapped sync client that owns the transport process."""
-        self._sync = CodexClient(config=config)
+        self._sync = AvaClient(config=config)
 
-    async def __aenter__(self) -> "AsyncCodexClient":
-        """Start the Codex process when entering an async context."""
+    async def __aenter__(self) -> "AsyncAvaClient":
+        """Start the Ava process when entering an async context."""
         await self.start()
         return self
 
     async def __aexit__(self, _exc_type, _exc, _tb) -> None:
-        """Close the Codex process when leaving an async context."""
+        """Close the Ava process when leaving an async context."""
         await self.close()
 
     async def _call_sync(
@@ -99,7 +99,7 @@ class AsyncCodexClient:
         await self._call_sync(self._sync.close)
 
     async def initialize(self) -> InitializeResponse:
-        """Initialize the Codex session."""
+        """Initialize the Ava session."""
         return await self._call_sync(self._sync.initialize)
 
     def _subscribe_turn_notifications(self, turn_id: str) -> _TurnSubscription:
@@ -257,7 +257,7 @@ class AsyncCodexClient:
 
         worker = threading.Thread(
             target=start_operation,
-            name="codex-goal-start",
+            name="ava-goal-start",
             daemon=True,
         )
         worker.start()
@@ -282,7 +282,7 @@ class AsyncCodexClient:
 
                 threading.Thread(
                     target=stop_cancelled_goal,
-                    name="codex-goal-start-cleanup",
+                    name="ava-goal-start-cleanup",
                     daemon=True,
                 ).start()
 

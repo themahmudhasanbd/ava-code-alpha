@@ -23,5 +23,5 @@ Scenario: Deferred namespaces appear after Apps recovers between sampling reques
     [01] <APPS_INSTRUCTIONS>
     [02] <tools>
         Added deferred tool namespaces:
-        - mcp__codex_apps__calendar: Plan events and manage your calendar.
+        - mcp__ava_apps__calendar: Plan events and manage your calendar.
         </tools>

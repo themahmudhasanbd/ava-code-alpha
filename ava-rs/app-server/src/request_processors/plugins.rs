@@ -3,44 +3,44 @@ use super::config_processor::reload_user_config;
 use super::*;
 use crate::error_code::internal_error;
 use crate::error_code::invalid_request;
-use codex_analytics::PluginInstallSource;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginSharePrincipalRole;
-use codex_app_server_protocol::PluginShareTargetRole;
-use codex_config::types::McpServerConfig;
-use codex_core_plugins::OPENAI_CURATED_MARKETPLACE_NAME;
-use codex_core_plugins::PluginListBackgroundTaskOptions;
-use codex_core_plugins::PluginMarketplaceContext;
-use codex_core_plugins::RemotePluginInstallRequest;
-use codex_core_plugins::RemotePluginOperationError;
-use codex_core_plugins::RemotePluginOperationErrorKind;
-use codex_core_plugins::is_openai_curated_marketplace_name;
-use codex_core_plugins::loader::load_configured_plugin_mcp_servers;
-use codex_core_plugins::manifest::is_agent_plugin_manifest;
-use codex_core_plugins::remote::REMOTE_CREATED_BY_ME_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_GLOBAL_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_PRIVATE_MARKETPLACE_NAME;
-use codex_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_UNLISTED_MARKETPLACE_NAME;
-use codex_core_plugins::remote::RemoteAppTemplateUnavailableReason;
-use codex_core_plugins::remote::RemotePluginCatalogCacheMode;
-use codex_core_plugins::remote::RemotePluginScope;
-use codex_core_plugins::remote::is_valid_remote_plugin_id;
-use codex_core_plugins::remote::validate_remote_plugin_id;
-use codex_core_plugins::remote_bundle::RemotePluginBundleInstallError;
-use codex_mcp::McpOAuthLoginSupport;
-use codex_mcp::McpRuntimeContext;
-use codex_mcp::oauth_login_support;
-use codex_mcp::resolve_oauth_callback;
-use codex_mcp::should_retry_without_scopes;
-use codex_plugin::PluginId;
-use codex_plugin::PluginTelemetryMetadata;
-use codex_protocol::auth::AuthMode as DomainAuthMode;
-use codex_rmcp_client::McpOAuthClientRegistration;
-use codex_rmcp_client::OAuthDiscoveryTimeout;
-use codex_rmcp_client::StreamableHttpRedirectMode;
-use codex_rmcp_client::perform_oauth_login_silent;
+use ava_analytics::PluginInstallSource;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginSharePrincipalRole;
+use ava_app_server_protocol::PluginShareTargetRole;
+use ava_config::types::McpServerConfig;
+use ava_core_plugins::OPENAI_CURATED_MARKETPLACE_NAME;
+use ava_core_plugins::PluginListBackgroundTaskOptions;
+use ava_core_plugins::PluginMarketplaceContext;
+use ava_core_plugins::RemotePluginInstallRequest;
+use ava_core_plugins::RemotePluginOperationError;
+use ava_core_plugins::RemotePluginOperationErrorKind;
+use ava_core_plugins::is_openai_curated_marketplace_name;
+use ava_core_plugins::loader::load_configured_plugin_mcp_servers;
+use ava_core_plugins::manifest::is_agent_plugin_manifest;
+use ava_core_plugins::remote::REMOTE_CREATED_BY_ME_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_GLOBAL_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_PRIVATE_MARKETPLACE_NAME;
+use ava_core_plugins::remote::REMOTE_WORKSPACE_SHARED_WITH_ME_UNLISTED_MARKETPLACE_NAME;
+use ava_core_plugins::remote::RemoteAppTemplateUnavailableReason;
+use ava_core_plugins::remote::RemotePluginCatalogCacheMode;
+use ava_core_plugins::remote::RemotePluginScope;
+use ava_core_plugins::remote::is_valid_remote_plugin_id;
+use ava_core_plugins::remote::validate_remote_plugin_id;
+use ava_core_plugins::remote_bundle::RemotePluginBundleInstallError;
+use ava_mcp::McpOAuthLoginSupport;
+use ava_mcp::McpRuntimeContext;
+use ava_mcp::oauth_login_support;
+use ava_mcp::resolve_oauth_callback;
+use ava_mcp::should_retry_without_scopes;
+use ava_plugin::PluginId;
+use ava_plugin::PluginTelemetryMetadata;
+use ava_protocol::auth::AuthMode as DomainAuthMode;
+use ava_rmcp_client::McpOAuthClientRegistration;
+use ava_rmcp_client::OAuthDiscoveryTimeout;
+use ava_rmcp_client::StreamableHttpRedirectMode;
+use ava_rmcp_client::perform_oauth_login_silent;
 
 mod local;
 mod reconcile;
@@ -62,11 +62,11 @@ pub(crate) struct PluginRequestProcessor {
     analytics_events_client: AnalyticsEventsClient,
     config_manager: ConfigManager,
     on_effective_plugins_changed:
-        Arc<dyn Fn(codex_core_plugins::EffectivePluginsChange) + Send + Sync>,
+        Arc<dyn Fn(ava_core_plugins::EffectivePluginsChange) + Send + Sync>,
 }
 
 fn plugin_skills_to_info<'a>(
-    skills: impl IntoIterator<Item = &'a codex_skills::SkillMetadata>,
+    skills: impl IntoIterator<Item = &'a ava_skills::SkillMetadata>,
     disabled_skill_paths: &HashSet<AbsolutePathBuf>,
 ) -> Vec<SkillSummary> {
     skills
@@ -76,7 +76,7 @@ fn plugin_skills_to_info<'a>(
             description: skill.description.clone(),
             short_description: skill.short_description.clone(),
             interface: skill.interface.clone().map(|interface| {
-                codex_app_server_protocol::SkillInterface {
+                ava_app_server_protocol::SkillInterface {
                     display_name: interface.display_name,
                     short_description: interface.short_description,
                     icon_small: interface.icon_small,
@@ -146,8 +146,8 @@ fn marketplace_plugin_source_to_info(source: MarketplacePluginSource) -> PluginS
 fn load_shared_plugin_ids_by_local_path(
     config: &Config,
 ) -> Result<std::collections::BTreeMap<AbsolutePathBuf, String>, JSONRPCErrorError> {
-    codex_core_plugins::remote::load_plugin_share_remote_ids_by_local_path(
-        config.codex_home.as_path(),
+    ava_core_plugins::remote::load_plugin_share_remote_ids_by_local_path(
+        config.ava_home.as_path(),
     )
     .map_err(|err| {
         internal_error(format!(
@@ -186,7 +186,7 @@ fn share_context_for_source(
 }
 
 fn convert_configured_marketplace_plugin_to_plugin_summary(
-    plugin: codex_core_plugins::ConfiguredMarketplacePlugin,
+    plugin: ava_core_plugins::ConfiguredMarketplacePlugin,
     shared_plugin_ids_by_local_path: &std::collections::BTreeMap<AbsolutePathBuf, String>,
 ) -> PluginSummary {
     let share_context = share_context_for_source(&plugin.source, shared_plugin_ids_by_local_path);
@@ -280,32 +280,32 @@ fn installed_plugin_names(plugins: &[PluginSummary]) -> HashSet<String> {
 
 fn remote_plugin_share_discoverability(
     discoverability: PluginShareDiscoverability,
-) -> codex_core_plugins::remote::RemotePluginShareDiscoverability {
+) -> ava_core_plugins::remote::RemotePluginShareDiscoverability {
     match discoverability {
         PluginShareDiscoverability::Listed => {
-            codex_core_plugins::remote::RemotePluginShareDiscoverability::Listed
+            ava_core_plugins::remote::RemotePluginShareDiscoverability::Listed
         }
         PluginShareDiscoverability::Unlisted => {
-            codex_core_plugins::remote::RemotePluginShareDiscoverability::Unlisted
+            ava_core_plugins::remote::RemotePluginShareDiscoverability::Unlisted
         }
         PluginShareDiscoverability::Private => {
-            codex_core_plugins::remote::RemotePluginShareDiscoverability::Private
+            ava_core_plugins::remote::RemotePluginShareDiscoverability::Private
         }
     }
 }
 
 fn remote_plugin_share_update_discoverability(
     discoverability: PluginShareUpdateDiscoverability,
-) -> codex_core_plugins::remote::RemotePluginShareUpdateDiscoverability {
+) -> ava_core_plugins::remote::RemotePluginShareUpdateDiscoverability {
     match discoverability {
         PluginShareUpdateDiscoverability::Listed => {
-            codex_core_plugins::remote::RemotePluginShareUpdateDiscoverability::Listed
+            ava_core_plugins::remote::RemotePluginShareUpdateDiscoverability::Listed
         }
         PluginShareUpdateDiscoverability::Unlisted => {
-            codex_core_plugins::remote::RemotePluginShareUpdateDiscoverability::Unlisted
+            ava_core_plugins::remote::RemotePluginShareUpdateDiscoverability::Unlisted
         }
         PluginShareUpdateDiscoverability::Private => {
-            codex_core_plugins::remote::RemotePluginShareUpdateDiscoverability::Private
+            ava_core_plugins::remote::RemotePluginShareUpdateDiscoverability::Private
         }
     }
 }
@@ -326,28 +326,28 @@ fn validate_client_plugin_share_targets(
 
 fn remote_plugin_share_target_role(
     role: PluginShareTargetRole,
-) -> codex_core_plugins::remote::RemotePluginShareTargetRole {
+) -> ava_core_plugins::remote::RemotePluginShareTargetRole {
     match role {
         PluginShareTargetRole::Reader => {
-            codex_core_plugins::remote::RemotePluginShareTargetRole::Reader
+            ava_core_plugins::remote::RemotePluginShareTargetRole::Reader
         }
         PluginShareTargetRole::Editor => {
-            codex_core_plugins::remote::RemotePluginShareTargetRole::Editor
+            ava_core_plugins::remote::RemotePluginShareTargetRole::Editor
         }
     }
 }
 
 fn plugin_share_principal_role_from_remote(
-    role: codex_core_plugins::remote::RemotePluginSharePrincipalRole,
+    role: ava_core_plugins::remote::RemotePluginSharePrincipalRole,
 ) -> PluginSharePrincipalRole {
     match role {
-        codex_core_plugins::remote::RemotePluginSharePrincipalRole::Reader => {
+        ava_core_plugins::remote::RemotePluginSharePrincipalRole::Reader => {
             PluginSharePrincipalRole::Reader
         }
-        codex_core_plugins::remote::RemotePluginSharePrincipalRole::Editor => {
+        ava_core_plugins::remote::RemotePluginSharePrincipalRole::Editor => {
             PluginSharePrincipalRole::Editor
         }
-        codex_core_plugins::remote::RemotePluginSharePrincipalRole::Owner => {
+        ava_core_plugins::remote::RemotePluginSharePrincipalRole::Owner => {
             PluginSharePrincipalRole::Owner
         }
     }
@@ -355,20 +355,20 @@ fn plugin_share_principal_role_from_remote(
 
 fn remote_plugin_share_targets(
     targets: Vec<PluginShareTarget>,
-) -> Vec<codex_core_plugins::remote::RemotePluginShareTarget> {
+) -> Vec<ava_core_plugins::remote::RemotePluginShareTarget> {
     targets
         .into_iter()
         .map(
-            |target| codex_core_plugins::remote::RemotePluginShareTarget {
+            |target| ava_core_plugins::remote::RemotePluginShareTarget {
                 principal_type: match target.principal_type {
                     PluginSharePrincipalType::User => {
-                        codex_core_plugins::remote::RemotePluginSharePrincipalType::User
+                        ava_core_plugins::remote::RemotePluginSharePrincipalType::User
                     }
                     PluginSharePrincipalType::Group => {
-                        codex_core_plugins::remote::RemotePluginSharePrincipalType::Group
+                        ava_core_plugins::remote::RemotePluginSharePrincipalType::Group
                     }
                     PluginSharePrincipalType::Workspace => {
-                        codex_core_plugins::remote::RemotePluginSharePrincipalType::Workspace
+                        ava_core_plugins::remote::RemotePluginSharePrincipalType::Workspace
                     }
                 },
                 principal_id: target.principal_id,
@@ -379,17 +379,17 @@ fn remote_plugin_share_targets(
 }
 
 fn plugin_share_principal_from_remote(
-    principal: codex_core_plugins::remote::RemotePluginSharePrincipal,
+    principal: ava_core_plugins::remote::RemotePluginSharePrincipal,
 ) -> PluginSharePrincipal {
     PluginSharePrincipal {
         principal_type: match principal.principal_type {
-            codex_core_plugins::remote::RemotePluginSharePrincipalType::User => {
+            ava_core_plugins::remote::RemotePluginSharePrincipalType::User => {
                 PluginSharePrincipalType::User
             }
-            codex_core_plugins::remote::RemotePluginSharePrincipalType::Group => {
+            ava_core_plugins::remote::RemotePluginSharePrincipalType::Group => {
                 PluginSharePrincipalType::Group
             }
-            codex_core_plugins::remote::RemotePluginSharePrincipalType::Workspace => {
+            ava_core_plugins::remote::RemotePluginSharePrincipalType::Workspace => {
                 PluginSharePrincipalType::Workspace
             }
         },
@@ -407,7 +407,7 @@ impl PluginRequestProcessor {
         analytics_events_client: AnalyticsEventsClient,
         config_manager: ConfigManager,
         on_effective_plugins_changed: Arc<
-            dyn Fn(codex_core_plugins::EffectivePluginsChange) + Send + Sync,
+            dyn Fn(ava_core_plugins::EffectivePluginsChange) + Send + Sync,
         >,
     ) -> Self {
         Self {
@@ -521,7 +521,7 @@ impl PluginRequestProcessor {
 
     pub(crate) fn effective_plugins_changed_callback(
         &self,
-    ) -> Arc<dyn Fn(codex_core_plugins::EffectivePluginsChange) + Send + Sync> {
+    ) -> Arc<dyn Fn(ava_core_plugins::EffectivePluginsChange) + Send + Sync> {
         Arc::clone(&self.on_effective_plugins_changed)
     }
 
@@ -581,7 +581,7 @@ impl PluginRequestProcessor {
             return Ok(empty_response());
         }
         let auth = self.auth_manager.auth().await;
-        let auth_mode = auth.as_ref().map(CodexAuth::api_auth_mode);
+        let auth_mode = auth.as_ref().map(AvaAuth::api_auth_mode);
         if include_local
             && force_refetch
             && plugins_manager
@@ -598,7 +598,7 @@ impl PluginRequestProcessor {
             && marketplace_kinds.contains(&PluginListMarketplaceKind::CreatedByMeRemote);
         let include_global_remote = context.remote_plugins_enabled() && !explicit_marketplace_kinds;
         let use_remote_global_catalog =
-            include_global_remote && auth_mode.is_some_and(DomainAuthMode::uses_codex_backend);
+            include_global_remote && auth_mode.is_some_and(DomainAuthMode::uses_ava_backend);
         let remote_plugin_service_config = remote_plugin_service_config(&config);
         let remote_catalog_cache_mode = if force_refetch {
             RemotePluginCatalogCacheMode::ForceRefetch
@@ -620,8 +620,8 @@ impl PluginRequestProcessor {
                 Ok::<
                     (
                         Vec<PluginMarketplaceEntry>,
-                        Vec<codex_app_server_protocol::MarketplaceLoadErrorInfo>,
-                        Vec<codex_core_plugins::ConfiguredMarketplace>,
+                        Vec<ava_app_server_protocol::MarketplaceLoadErrorInfo>,
+                        Vec<ava_core_plugins::ConfiguredMarketplace>,
                     ),
                     MarketplaceError,
                 >((
@@ -651,7 +651,7 @@ impl PluginRequestProcessor {
                     outcome
                         .errors
                         .into_iter()
-                        .map(|err| codex_app_server_protocol::MarketplaceLoadErrorInfo {
+                        .map(|err| ava_app_server_protocol::MarketplaceLoadErrorInfo {
                             marketplace_path: err.path,
                             message: err.message,
                         })
@@ -678,7 +678,7 @@ impl PluginRequestProcessor {
         // TODO(remote plugins): Remove this once remote plugins are ready and vertical plugins are
         // served directly from the normal remote catalog.
         if include_vertical && !config.features.enabled(Feature::RemotePlugin) {
-            match codex_core_plugins::remote::fetch_openai_curated_remote_collection_marketplace(
+            match ava_core_plugins::remote::fetch_openai_curated_remote_collection_marketplace(
                 &remote_plugin_service_config,
                 auth.as_ref(),
                 /*catalog_cache_root*/ None,
@@ -724,11 +724,11 @@ impl PluginRequestProcessor {
             remote_sources.push(RemoteMarketplaceSource::SharedWithMe);
         }
         if !remote_sources.is_empty() {
-            match codex_core_plugins::remote::fetch_remote_marketplaces(
+            match ava_core_plugins::remote::fetch_remote_marketplaces(
                 &remote_plugin_service_config,
                 auth.as_ref(),
                 &remote_sources,
-                /*catalog_cache_root*/ Some(config.codex_home.as_path()),
+                /*catalog_cache_root*/ Some(config.ava_home.as_path()),
                 remote_catalog_cache_mode,
             )
             .await
@@ -840,10 +840,10 @@ impl PluginRequestProcessor {
             return Ok(empty_response());
         }
         let auth = self.auth_manager.auth().await;
-        let auth_mode = auth.as_ref().map(CodexAuth::api_auth_mode);
+        let auth_mode = auth.as_ref().map(AvaAuth::api_auth_mode);
 
         let use_remote_global_catalog = context.remote_plugins_enabled()
-            && auth_mode.is_some_and(DomainAuthMode::uses_codex_backend);
+            && auth_mode.is_some_and(DomainAuthMode::uses_ava_backend);
         let remote_installed_plugin_visible_marketplaces =
             remote_installed_plugin_visible_marketplaces(&config, use_remote_global_catalog);
         plugins_manager.maybe_start_remote_installed_plugin_bundle_sync(
@@ -882,14 +882,14 @@ impl PluginRequestProcessor {
 
     async fn load_local_installed_and_suggested_plugins(
         &self,
-        plugins_manager: Arc<codex_core_plugins::PluginsManager>,
+        plugins_manager: Arc<ava_core_plugins::PluginsManager>,
         config: &Config,
         context: &PluginMarketplaceContext,
         install_suggestion_plugin_names: HashSet<String>,
     ) -> Result<
         (
             Vec<PluginMarketplaceEntry>,
-            Vec<codex_app_server_protocol::MarketplaceLoadErrorInfo>,
+            Vec<ava_app_server_protocol::MarketplaceLoadErrorInfo>,
         ),
         JSONRPCErrorError,
     > {
@@ -901,7 +901,7 @@ impl PluginRequestProcessor {
             Ok::<
                 (
                     Vec<PluginMarketplaceEntry>,
-                    Vec<codex_app_server_protocol::MarketplaceLoadErrorInfo>,
+                    Vec<ava_app_server_protocol::MarketplaceLoadErrorInfo>,
                 ),
                 MarketplaceError,
             >((
@@ -939,7 +939,7 @@ impl PluginRequestProcessor {
                 outcome
                     .errors
                     .into_iter()
-                    .map(|err| codex_app_server_protocol::MarketplaceLoadErrorInfo {
+                    .map(|err| ava_app_server_protocol::MarketplaceLoadErrorInfo {
                         marketplace_path: err.path,
                         message: err.message,
                     })
@@ -961,10 +961,10 @@ impl PluginRequestProcessor {
 
     async fn load_remote_installed_plugins(
         &self,
-        plugins_manager: Arc<codex_core_plugins::PluginsManager>,
-        plugins_input: &codex_core_plugins::PluginsConfigInput,
+        plugins_manager: Arc<ava_core_plugins::PluginsManager>,
+        plugins_input: &ava_core_plugins::PluginsConfigInput,
         visible_marketplaces: &[&str],
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> Vec<PluginMarketplaceEntry> {
         let remote_marketplaces = if let Some(remote_marketplaces) = plugins_manager
             .build_remote_installed_plugin_marketplaces_from_cache(visible_marketplaces)
@@ -1046,7 +1046,7 @@ impl PluginRequestProcessor {
                 let share_context = match share_context {
                     Some(context) => {
                         let remote_plugin_service_config = remote_plugin_service_config(&config);
-                        match codex_core_plugins::remote::fetch_remote_plugin_share_context(
+                        match ava_core_plugins::remote::fetch_remote_plugin_share_context(
                             &remote_plugin_service_config,
                             auth.as_ref(),
                             &context.remote_plugin_id,
@@ -1147,7 +1147,7 @@ impl PluginRequestProcessor {
                         .plugin
                         .hooks
                         .into_iter()
-                        .map(|hook| codex_app_server_protocol::PluginHookSummary {
+                        .map(|hook| ava_app_server_protocol::PluginHookSummary {
                             key: hook.key,
                             event_name: hook.event_name.into(),
                         })
@@ -1166,7 +1166,7 @@ impl PluginRequestProcessor {
                 }
                 let remote_plugin_service_config = remote_plugin_service_config(&config);
                 validate_remote_plugin_id(&plugin_name)?;
-                let remote_detail = codex_core_plugins::remote::fetch_remote_plugin_detail(
+                let remote_detail = ava_core_plugins::remote::fetch_remote_plugin_detail(
                     &remote_plugin_service_config,
                     auth.as_ref(),
                     &remote_marketplace_name,
@@ -1180,7 +1180,7 @@ impl PluginRequestProcessor {
                     .app_ids
                     .iter()
                     .cloned()
-                    .map(codex_plugin::AppConnectorId)
+                    .map(ava_plugin::AppConnectorId)
                     .collect::<Vec<_>>();
                 let app_category_by_id = remote_detail
                     .app_manifest
@@ -1226,7 +1226,7 @@ impl PluginRequestProcessor {
 
         let auth = self.auth_manager.auth().await;
         let remote_plugin_service_config = remote_plugin_service_config(&config);
-        let remote_skill_detail = codex_core_plugins::remote::fetch_remote_plugin_skill_detail(
+        let remote_skill_detail = ava_core_plugins::remote::fetch_remote_plugin_skill_detail(
             &remote_plugin_service_config,
             auth.as_ref(),
             &remote_marketplace_name,
@@ -1277,22 +1277,22 @@ impl PluginRequestProcessor {
         }
 
         let remote_plugin_service_config = remote_plugin_service_config(&config);
-        let access_policy = codex_core_plugins::remote::RemotePluginShareAccessPolicy {
+        let access_policy = ava_core_plugins::remote::RemotePluginShareAccessPolicy {
             discoverability: discoverability.map(remote_plugin_share_discoverability),
             share_targets: share_targets.map(remote_plugin_share_targets),
         };
-        let result = codex_core_plugins::remote::save_remote_plugin_share(
+        let result = ava_core_plugins::remote::save_remote_plugin_share(
             &remote_plugin_service_config,
             auth.as_ref(),
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
             &plugin_path,
             remote_plugin_id.as_deref(),
             access_policy,
         )
         .await
         .map_err(|err| remote_plugin_catalog_error_to_jsonrpc(err, "save remote plugin share"))?;
-        codex_core_plugins::remote::invalidate_cached_remote_plugin_catalog_scopes(
-            config.codex_home.as_path(),
+        ava_core_plugins::remote::invalidate_cached_remote_plugin_catalog_scopes(
+            config.ava_home.as_path(),
             &remote_plugin_service_config,
             auth.as_ref(),
             &[RemotePluginScope::User, RemotePluginScope::Workspace],
@@ -1325,7 +1325,7 @@ impl PluginRequestProcessor {
         validate_client_plugin_share_targets(&share_targets)?;
 
         let remote_plugin_service_config = remote_plugin_service_config(&config);
-        let result = codex_core_plugins::remote::update_remote_plugin_share_targets(
+        let result = ava_core_plugins::remote::update_remote_plugin_share_targets(
             &remote_plugin_service_config,
             auth.as_ref(),
             &remote_plugin_id,
@@ -1336,8 +1336,8 @@ impl PluginRequestProcessor {
         .map_err(|err| {
             remote_plugin_catalog_error_to_jsonrpc(err, "update remote plugin share targets")
         })?;
-        codex_core_plugins::remote::invalidate_cached_remote_plugin_catalog_scopes(
-            config.codex_home.as_path(),
+        ava_core_plugins::remote::invalidate_cached_remote_plugin_catalog_scopes(
+            config.ava_home.as_path(),
             &remote_plugin_service_config,
             auth.as_ref(),
             &[RemotePluginScope::User, RemotePluginScope::Workspace],
@@ -1359,10 +1359,10 @@ impl PluginRequestProcessor {
     ) -> Result<PluginShareListResponse, JSONRPCErrorError> {
         let (config, auth) = self.load_plugin_share_config_and_auth().await?;
         let remote_plugin_service_config = remote_plugin_service_config(&config);
-        let data = codex_core_plugins::remote::list_remote_plugin_shares(
+        let data = ava_core_plugins::remote::list_remote_plugin_shares(
             &remote_plugin_service_config,
             auth.as_ref(),
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
         )
         .await
         .map_err(|err| remote_plugin_catalog_error_to_jsonrpc(err, "list remote plugin shares"))?
@@ -1396,10 +1396,10 @@ impl PluginRequestProcessor {
         }
 
         let remote_plugin_service_config = remote_plugin_service_config(&config);
-        let result = codex_core_plugins::remote::checkout_remote_plugin_share(
+        let result = ava_core_plugins::remote::checkout_remote_plugin_share(
             &remote_plugin_service_config,
             auth.as_ref(),
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
             &remote_plugin_id,
         )
         .await
@@ -1427,16 +1427,16 @@ impl PluginRequestProcessor {
         }
 
         let remote_plugin_service_config = remote_plugin_service_config(&config);
-        codex_core_plugins::remote::delete_remote_plugin_share(
+        ava_core_plugins::remote::delete_remote_plugin_share(
             &remote_plugin_service_config,
             auth.as_ref(),
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
             &remote_plugin_id,
         )
         .await
         .map_err(|err| remote_plugin_catalog_error_to_jsonrpc(err, "delete remote plugin share"))?;
-        codex_core_plugins::remote::invalidate_cached_remote_plugin_catalog_scopes(
-            config.codex_home.as_path(),
+        ava_core_plugins::remote::invalidate_cached_remote_plugin_catalog_scopes(
+            config.ava_home.as_path(),
             &remote_plugin_service_config,
             auth.as_ref(),
             &[RemotePluginScope::User, RemotePluginScope::Workspace],
@@ -1447,7 +1447,7 @@ impl PluginRequestProcessor {
 
     async fn load_plugin_share_config_and_auth(
         &self,
-    ) -> Result<(Config, Option<CodexAuth>), JSONRPCErrorError> {
+    ) -> Result<(Config, Option<AvaAuth>), JSONRPCErrorError> {
         let config = self.load_latest_config(/*fallback_cwd*/ None).await?;
         if !config.features.enabled(Feature::Plugins) {
             return Err(invalid_request("plugin sharing is not enabled"));
@@ -1526,10 +1526,10 @@ impl PluginRequestProcessor {
 
         let plugin_mcp_servers = load_configured_plugin_mcp_servers(
             result.installed_path.as_path(),
-            auth.as_ref().map(CodexAuth::auth_mode),
+            auth.as_ref().map(AvaAuth::auth_mode),
             &result.plugin_id,
             &config.config_layer_stack,
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
         )
         .await;
         if !plugin_mcp_servers.is_empty() {
@@ -1636,10 +1636,10 @@ impl PluginRequestProcessor {
 
         let plugin_mcp_servers = load_configured_plugin_mcp_servers(
             result.installed_path.as_path(),
-            auth.as_ref().map(CodexAuth::auth_mode),
+            auth.as_ref().map(AvaAuth::auth_mode),
             &result.plugin_id,
             &config.config_layer_stack,
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
         )
         .await;
         if !plugin_mcp_servers.is_empty() {
@@ -1653,7 +1653,7 @@ impl PluginRequestProcessor {
             .await;
         }
 
-        let is_chatgpt_auth = auth.as_ref().is_some_and(CodexAuth::is_chatgpt_auth);
+        let is_chatgpt_auth = auth.as_ref().is_some_and(AvaAuth::is_chatgpt_auth);
         let apps_needing_auth = if let Some(app_ids_needing_auth) =
             installation.app_ids_needing_auth
         {
@@ -1664,7 +1664,7 @@ impl PluginRequestProcessor {
             } else {
                 let plugin_apps = app_ids_needing_auth
                     .into_iter()
-                    .map(codex_plugin::AppConnectorId)
+                    .map(ava_plugin::AppConnectorId)
                     .collect::<Vec<_>>();
                 let app_category_by_id = remote_detail
                     .app_manifest
@@ -1730,20 +1730,20 @@ impl PluginRequestProcessor {
     async fn plugin_apps_needing_auth_for_install(
         &self,
         config: &Config,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         plugin_id: &str,
-        plugin_app_declarations: &[codex_plugin::AppDeclaration],
+        plugin_app_declarations: &[ava_plugin::AppDeclaration],
     ) -> Vec<AppSummary> {
         if plugin_app_declarations.is_empty()
             || !config
                 .features
-                .apps_enabled_for_auth(auth.is_some_and(CodexAuth::is_chatgpt_auth))
+                .apps_enabled_for_auth(auth.is_some_and(AvaAuth::is_chatgpt_auth))
         {
             return Vec::new();
         }
 
         let plugin_apps =
-            codex_plugin::app_connector_ids_from_declarations(plugin_app_declarations);
+            ava_plugin::app_connector_ids_from_declarations(plugin_app_declarations);
         let app_category_by_id = plugin_app_declarations
             .iter()
             .filter_map(|app| {
@@ -1763,8 +1763,8 @@ impl PluginRequestProcessor {
             ),
         );
 
-        let (accessible_connectors, codex_apps_ready) = match accessible_connectors_result {
-            Ok(status) => (status.connectors, status.codex_apps_ready),
+        let (accessible_connectors, ava_apps_ready) = match accessible_connectors_result {
+            Ok(status) => (status.connectors, status.ava_apps_ready),
             Err(err) => {
                 warn!(
                     plugin = plugin_id,
@@ -1778,10 +1778,10 @@ impl PluginRequestProcessor {
                 )
             }
         };
-        if !codex_apps_ready {
+        if !ava_apps_ready {
             warn!(
                 plugin = plugin_id,
-                "codex_apps MCP not ready after plugin install; skipping appsNeedingAuth check"
+                "ava_apps MCP not ready after plugin install; skipping appsNeedingAuth check"
             );
             return Vec::new();
         }
@@ -1811,7 +1811,7 @@ impl PluginRequestProcessor {
         );
         for (name, server) in plugin_mcp_servers {
             // EMA uses the account's enterprise grant, never per-plugin OAuth fallback.
-            if !server.enabled || matches!(server.auth, codex_config::types::McpServerAuth::EmaAuth)
+            if !server.enabled || matches!(server.auth, ava_config::types::McpServerAuth::EmaAuth)
             {
                 continue;
             }
@@ -1949,7 +1949,7 @@ impl PluginRequestProcessor {
         params: PluginUninstallParams,
     ) -> Result<PluginUninstallResponse, JSONRPCErrorError> {
         let PluginUninstallParams { plugin_id } = params;
-        if codex_plugin::PluginId::parse(&plugin_id).is_err()
+        if ava_plugin::PluginId::parse(&plugin_id).is_err()
             && !is_valid_remote_plugin_id(&plugin_id)
         {
             return Err(invalid_request("invalid remote plugin id"));
@@ -2070,8 +2070,8 @@ impl PluginRequestProcessor {
 
 async fn load_plugin_app_summaries(
     config: &Config,
-    auth: Option<&CodexAuth>,
-    plugin_apps: &[codex_plugin::AppConnectorId],
+    auth: Option<&AvaAuth>,
+    plugin_apps: &[ava_plugin::AppConnectorId],
     app_category_by_id: &HashMap<String, String>,
 ) -> Vec<AppSummary> {
     let mut seen_app_ids = HashSet::new();
@@ -2084,10 +2084,10 @@ async fn load_plugin_app_summaries(
     if let Some(auth) = auth.filter(|auth| {
         config
             .features
-            .apps_enabled_for_auth(auth.uses_codex_backend())
+            .apps_enabled_for_auth(auth.uses_ava_backend())
     }) {
         metadata_by_id.extend(
-            codex_connectors::ConnectorMetadataStore::new(
+            ava_connectors::ConnectorMetadataStore::new(
                 config.chatgpt_base_url.clone(),
                 auth.get_account_id(),
                 auth.get_chatgpt_user_id(),
@@ -2124,7 +2124,7 @@ async fn load_plugin_app_summaries(
                 .unwrap_or_else(|| (app_id.clone(), None));
             let category = app_category_by_id.get(&app_id).cloned();
             AppSummary {
-                install_url: Some(codex_connectors::metadata::connector_install_url(
+                install_url: Some(ava_connectors::metadata::connector_install_url(
                     &name, &app_id,
                 )),
                 id: app_id,
@@ -2137,7 +2137,7 @@ async fn load_plugin_app_summaries(
 }
 
 fn plugin_app_category_by_id_from_value(value: &serde_json::Value) -> HashMap<String, String> {
-    codex_core_plugins::loader::plugin_app_declarations_from_value(value)
+    ava_core_plugins::loader::plugin_app_declarations_from_value(value)
         .into_iter()
         .filter_map(|app| app.category.map(|category| (app.connector_id.0, category)))
         .collect()
@@ -2209,16 +2209,16 @@ fn remote_plugin_share_context_to_info(
 }
 
 fn remote_plugin_share_discoverability_to_info(
-    discoverability: codex_core_plugins::remote::RemotePluginShareDiscoverability,
+    discoverability: ava_core_plugins::remote::RemotePluginShareDiscoverability,
 ) -> PluginShareDiscoverability {
     match discoverability {
-        codex_core_plugins::remote::RemotePluginShareDiscoverability::Listed => {
+        ava_core_plugins::remote::RemotePluginShareDiscoverability::Listed => {
             PluginShareDiscoverability::Listed
         }
-        codex_core_plugins::remote::RemotePluginShareDiscoverability::Unlisted => {
+        ava_core_plugins::remote::RemotePluginShareDiscoverability::Unlisted => {
             PluginShareDiscoverability::Unlisted
         }
-        codex_core_plugins::remote::RemotePluginShareDiscoverability::Private => {
+        ava_core_plugins::remote::RemotePluginShareDiscoverability::Private => {
             PluginShareDiscoverability::Private
         }
     }
@@ -2394,7 +2394,7 @@ fn remote_plugin_catalog_error_to_jsonrpc(
 }
 
 fn remote_plugin_bundle_install_error_to_jsonrpc(
-    err: codex_core_plugins::remote_bundle::RemotePluginBundleInstallError,
+    err: ava_core_plugins::remote_bundle::RemotePluginBundleInstallError,
 ) -> JSONRPCErrorError {
     internal_error(format!("install remote plugin bundle: {err}"))
 }

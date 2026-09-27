@@ -4,12 +4,15 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { Appearance, type ColorSchemeName } from "react-native";
 import { storage } from "@/core/storage";
-import { COLORS, THEME, type ColorTokens } from "./colors";
+import { THEME, type ColorTokens } from "./palette";
+import { COLORS } from "./colors";
+import { updateRegisteredStyles } from "./style-registry";
 
 export type ThemeMode = "system" | "light" | "dark";
 
@@ -32,7 +35,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (saved === "light" || saved === "dark" || saved === "system") {
       return saved;
     }
-    return "system";
+    return "light";
   });
 
   const [systemScheme, setSystemScheme] = useState<ColorSchemeName>(() => {
@@ -53,10 +56,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return theme;
   }, [theme, systemScheme]);
 
-  // Synchronize dynamic COLORS object in-place so legacy files see updated tokens
+  const prevResolvedThemeRef = useRef<"light" | "dark">(resolvedTheme);
+
+  // Synchronize dynamic COLORS singleton and all registered StyleSheet objects
   useEffect(() => {
     const activePalette = THEME[resolvedTheme];
     Object.assign(COLORS, activePalette);
+
+    const prev = prevResolvedThemeRef.current;
+    if (prev !== resolvedTheme) {
+      updateRegisteredStyles(prev, resolvedTheme);
+      prevResolvedThemeRef.current = resolvedTheme;
+    }
   }, [resolvedTheme]);
 
   const setTheme = useCallback((mode: ThemeMode) => {
@@ -93,10 +104,10 @@ export function useTheme(): ThemeContextValue {
     // Graceful fallback if called outside provider
     const isDark = Appearance.getColorScheme() === "dark";
     return {
-      theme: "system",
-      resolvedTheme: isDark ? "dark" : "light",
-      isDark,
-      colors: isDark ? THEME.dark : THEME.light,
+      theme: "light",
+      resolvedTheme: "light",
+      isDark: false,
+      colors: THEME.light,
       setTheme: () => {},
       toggleTheme: () => {},
     };

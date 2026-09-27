@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/app_models.dart';
 
-/// Codex Sandbox Permission Modes available across AvA Code
+/// Ava Sandbox Permission Modes available across AvA Code
 const List<Map<String, dynamic>> kDefaultSandboxOptions = [
   {
     'id': 'workspace-write',
@@ -33,7 +33,7 @@ const List<Map<String, dynamic>> kDefaultSandboxOptions = [
   },
 ];
 
-/// Codex Reasoning Effort Presets
+/// Ava Reasoning Effort Presets
 const List<Map<String, dynamic>> kDefaultReasoningEfforts = [
   {
     'id': 'none',
@@ -112,7 +112,7 @@ const List<SlashCommandItem> kDefaultSlashCommands = [
   SlashCommandItem(command: '/workspace', title: 'Workspace Directory', description: 'Switch active workspace project directory', icon: LucideIcons.briefcase, category: 'Tools'),
 ];
 
-/// @-mention context menu items (Codex Workspace Contexts)
+/// @-mention context menu items (Ava Workspace Contexts)
 const List<Map<String, dynamic>> kDefaultAtContextItems = [
   {'label': '@file', 'title': 'Workspace File', 'desc': 'Attach specific workspace file content to prompt', 'icon': LucideIcons.fileCode2, 'category': 'Context', 'color': Color(0xFF38BDF8)},
   {'label': '@folder', 'title': 'Directory Tree', 'desc': 'Attach directory tree and file listing to prompt', 'icon': LucideIcons.folder, 'category': 'Context', 'color': Color(0xFFFBBF24)},

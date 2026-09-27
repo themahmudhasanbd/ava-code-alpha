@@ -3,9 +3,9 @@
 //! This module is only for the new paginated rollout format that persists canonical
 //! `ItemCompleted(TurnItem)` records, not legacy event-only rollouts.
 
-use codex_protocol::protocol::EventMsg;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_protocol::protocol::EventMsg;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 
 use crate::protocol::thread_history::ThreadHistoryChangeSet;
 use crate::protocol::thread_history::ThreadHistoryItemChange;
@@ -44,7 +44,7 @@ pub fn project_rollout_line(line: &RolloutLine) -> ThreadHistoryChangeSet {
                 error: event.error.as_ref().map(|error| TurnError {
                     misalignment: error.misalignment.clone().map(Into::into),
                     message: error.message.clone(),
-                    codex_error_info: error.codex_error_info.clone().map(Into::into),
+                    ava_error_info: error.ava_error_info.clone().map(Into::into),
                     additional_details: None,
                 }),
                 started_at: event.started_at,

@@ -4,15 +4,15 @@
 
 use crate::app_server_session::AppServerSession;
 use crate::legacy_core::config::Config;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_protocol::AuthMode;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::GetAuthStatusParams;
-use codex_app_server_protocol::GetAuthStatusResponse;
-use codex_app_server_protocol::RequestId;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::RouteAwareClientPool;
-use codex_login::CodexAuth;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_protocol::AuthMode;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::GetAuthStatusParams;
+use ava_app_server_protocol::GetAuthStatusResponse;
+use ava_app_server_protocol::RequestId;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::RouteAwareClientPool;
+use ava_login::AvaAuth;
 use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Duration;
@@ -59,11 +59,11 @@ async fn read_notice(config: &Config, request_handle: &AppServerRequestHandle) -
             .ok()?;
         let auth = config
             .auth_config()
-            .load_auth(/*enable_codex_api_key_env*/ false)
+            .load_auth(/*enable_ava_api_key_env*/ false)
             .await
             .ok()
             .flatten()?;
-        let CodexAuth::Chatgpt(_) = &auth else {
+        let AvaAuth::Chatgpt(_) = &auth else {
             return None;
         };
         if status.auth_method != Some(AuthMode::Chatgpt)
@@ -81,7 +81,7 @@ async fn read_notice(config: &Config, request_handle: &AppServerRequestHandle) -
         );
         let response = client
             .get(url)
-            .headers(codex_model_provider::auth_provider_from_auth(&auth).to_auth_headers())
+            .headers(ava_model_provider::auth_provider_from_auth(&auth).to_auth_headers())
             .send()
             .await
             .ok()?;
@@ -91,7 +91,7 @@ async fn read_notice(config: &Config, request_handle: &AppServerRequestHandle) -
         let access = response.json::<VerifiedAccess>().await.ok()?;
         let current_auth = config
             .auth_config()
-            .load_auth(/*enable_codex_api_key_env*/ false)
+            .load_auth(/*enable_ava_api_key_env*/ false)
             .await
             .ok()
             .flatten()?;

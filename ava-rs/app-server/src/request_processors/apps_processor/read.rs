@@ -2,7 +2,7 @@ use super::*;
 use crate::app_info::connector_metadata_to_api;
 
 pub(in crate::request_processors) const APP_READ_MAX_IDS: usize = 100;
-const APPS_READ_DURATION_METRIC: &str = "codex.apps.read.duration_ms";
+const APPS_READ_DURATION_METRIC: &str = "ava.apps.read.duration_ms";
 
 impl AppsRequestProcessor {
     pub(crate) async fn apps_read(
@@ -30,7 +30,7 @@ impl AppsRequestProcessor {
         let auth = self.auth_manager.auth().await;
         if !config
             .features
-            .apps_enabled_for_auth(auth.as_ref().is_some_and(CodexAuth::uses_codex_backend))
+            .apps_enabled_for_auth(auth.as_ref().is_some_and(AvaAuth::uses_ava_backend))
         {
             let response = AppsReadResponse {
                 apps: Vec::new(),
@@ -55,7 +55,7 @@ impl AppsRequestProcessor {
             .plugins_for_config(&config.plugins_config_input())
             .await;
         let connector_snapshot =
-            codex_connectors::ConnectorSnapshot::from_plugin_capability_summaries(
+            ava_connectors::ConnectorSnapshot::from_plugin_capability_summaries(
                 loaded_plugins.capability_summaries(),
             );
         let apps = apps
@@ -79,7 +79,7 @@ impl AppsRequestProcessor {
 
 fn record_apps_read_duration(started_at: Instant, include_tools: bool) {
     let include_tools = if include_tools { "true" } else { "false" };
-    if let Some(metrics) = codex_otel::global() {
+    if let Some(metrics) = ava_otel::global() {
         let _ = metrics.record_duration(
             APPS_READ_DURATION_METRIC,
             started_at.elapsed(),

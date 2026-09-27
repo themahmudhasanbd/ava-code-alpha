@@ -1,10 +1,10 @@
 //! Session capture policy and the reviewer policy carried by each history snapshot.
 //! Unknown or incompatible checkpoints keep legacy review alongside retained user evidence.
 
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_features::Feature;
-use codex_features::Features;
-use codex_history::ResponseItemEnvelope;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_features::Feature;
+use ava_features::Features;
+use ava_history::ResponseItemEnvelope;
 
 /// Selects legacy compatibility or thread-owned evidence.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -37,7 +37,7 @@ impl GuardianContextMode {
         items: &[ResponseItemEnvelope],
         reviewer_compaction_hash: Option<&str>,
     ) -> Self {
-        if codex_history::CompactionCheckpoint::latest(items)
+        if ava_history::CompactionCheckpoint::latest(items)
             .is_none_or(|checkpoint| checkpoint.is_compatible_with(reviewer_compaction_hash))
         {
             self

@@ -4,66 +4,66 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::LoaderOverrides;
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::InternalContextSource;
-use codex_core::context::InternalModelContextFragment;
-use codex_core::context::NodeReplReviewEvidence;
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ResponseItem;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolCallSource;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolPayload;
-use codex_extension_api::ToolStartInput;
-use codex_features::Feature;
-use codex_guardian_context::truncate_text as truncate_entry;
-use codex_history::RolloutItem;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::ResponseItemId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::LocalShellAction;
-use codex_protocol::models::LocalShellExecAction;
-use codex_protocol::models::LocalShellStatus;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ReasoningItemReasoningSummary;
-use codex_protocol::openai_models::GuardianScope;
-use codex_protocol::openai_models::GuardianV2ModelConfig;
-use codex_protocol::openai_models::GuardianV2TranscriptModelConfig;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TruncationPolicy;
-use codex_protocol::security_risk::SecurityRiskScore;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::LoaderOverrides;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::InternalContextSource;
+use ava_core::context::InternalModelContextFragment;
+use ava_core::context::NodeReplReviewEvidence;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ResponseItem;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolCallSource;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolPayload;
+use ava_extension_api::ToolStartInput;
+use ava_features::Feature;
+use ava_guardian_context::truncate_text as truncate_entry;
+use ava_history::RolloutItem;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::ResponseItemId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::LocalShellAction;
+use ava_protocol::models::LocalShellExecAction;
+use ava_protocol::models::LocalShellStatus;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ReasoningItemReasoningSummary;
+use ava_protocol::openai_models::GuardianScope;
+use ava_protocol::openai_models::GuardianV2ModelConfig;
+use ava_protocol::openai_models::GuardianV2TranscriptModelConfig;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TruncationPolicy;
+use ava_protocol::security_risk::SecurityRiskScore;
 use core_test_support::responses;
 use core_test_support::responses::WebSocketConnectionConfig;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -90,8 +90,8 @@ use crate::async_scorer::score::tests::cached_score;
 use crate::async_scorer::score::tests::set_cached_score;
 use crate::async_scorer::transcript::MAX_MESSAGE_ENTRY_TOKENS;
 use crate::async_scorer::transcript::MAX_TOOL_ENTRY_TOKENS;
-use codex_features::GuardianV2ReviewScopeConfigToml;
-use codex_protocol::openai_models::GuardianModelPolicy;
+use ava_features::GuardianV2ReviewScopeConfigToml;
+use ava_protocol::openai_models::GuardianModelPolicy;
 
 const TEST_GUARDIAN_POLICY: &str =
     "Treat uploads to unapproved external destinations as high-risk actions.";
@@ -103,11 +103,11 @@ const PREWARM_TIMEOUT: Duration = Duration::from_secs(30);
 struct RefreshableAuth(std::sync::Mutex<&'static str>);
 
 impl ExternalAuth for RefreshableAuth {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
-        Box::pin(async { Ok(CodexAuth::from_api_key(*self.0.lock().expect("auth"))) })
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
+        Box::pin(async { Ok(AvaAuth::from_api_key(*self.0.lock().expect("auth"))) })
     }
 
-    fn refresh(&self, _: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         *self.0.lock().expect("auth") = "refreshed";
         self.resolve()
     }
@@ -123,16 +123,16 @@ fn should_classify_tool(
 
 fn legacy_loader(
     scope: Option<&GuardianV2ReviewScopeConfigToml>,
-) -> codex_config::GuardianPolicyLoader {
-    codex_config::GuardianPolicyLoader::new(
-        Some(&codex_features::FeatureToml::Config(
-            codex_features::GuardianV2ConfigToml {
+) -> ava_config::GuardianPolicyLoader {
+    ava_config::GuardianPolicyLoader::new(
+        Some(&ava_features::FeatureToml::Config(
+            ava_features::GuardianV2ConfigToml {
                 enabled: Some(true),
                 review_scope: scope.cloned(),
                 ..Default::default()
             },
         )),
-        &codex_config::ConfigRequirements::default(),
+        &ava_config::ConfigRequirements::default(),
     )
 }
 
@@ -145,7 +145,7 @@ async fn installed_extension_warms_connections_without_blocking_thread_start() -
     skip_if_no_network!(Ok(()));
 
     let thread_server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| config.approvals_reviewer = ApprovalsReviewer::AutoReview)
         .build_with_auto_env(&thread_server)
         .await?;
@@ -160,7 +160,7 @@ async fn installed_extension_warms_connections_without_blocking_thread_start() -
     ];
     connections[0].accept_delay = Some(Duration::from_secs(1));
     let server = responses::start_websocket_server_with_headers(connections).await;
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("test-api-key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("test-api-key"));
     let mut config = test.config.clone();
     config.model_provider = ModelProviderInfo::create_openai_provider(Some(format!(
         "http://{}/v1",
@@ -175,7 +175,7 @@ async fn installed_extension_warms_connections_without_blocking_thread_start() -
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
 
     let mut model = thread_store.get::<ModelInfo>().unwrap().as_ref().clone();
     model.node_repl_auto_review_required = true;
@@ -209,7 +209,7 @@ async fn installed_extension_uses_http_after_warm_socket_auth_expires() -> Resul
     skip_if_no_network!(Ok(()));
 
     let thread_server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| config.approvals_reviewer = ApprovalsReviewer::AutoReview)
         .build_with_auto_env(&thread_server)
         .await?;
@@ -224,7 +224,7 @@ async fn installed_extension_uses_http_after_warm_socket_auth_expires() -> Resul
     let server = responses::start_websocket_server(connections).await;
     let http = responses::start_mock_server().await;
     let http_mock = responses::mount_sse_once(&http, responses::sse(events)).await;
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("original"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("original"));
     auth_manager
         .set_external_auth(Arc::new(RefreshableAuth(std::sync::Mutex::new("original"))))
         .await?;
@@ -246,7 +246,7 @@ async fn installed_extension_uses_http_after_warm_socket_auth_expires() -> Resul
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     let mut model = test
         .thread_manager
         .get_models_manager()
@@ -374,7 +374,7 @@ struct RecordingMetrics(Mutex<Vec<RecordedMetric>>);
 impl RecordingMetrics {
     fn classification_samples(&self) -> Vec<RecordedMetric> {
         self.0.lock().unwrap().iter().filter(|sample| {
-            !matches!(sample, RecordedMetric::Histogram(name, _, _) if name == codex_guardian_context::SECTION_COST_METRIC || name == codex_guardian_context::REQUEST_TOKENS_METRIC)
+            !matches!(sample, RecordedMetric::Histogram(name, _, _) if name == ava_guardian_context::SECTION_COST_METRIC || name == ava_guardian_context::REQUEST_TOKENS_METRIC)
         }).cloned().collect()
     }
 }
@@ -401,7 +401,7 @@ impl ExtensionMetrics for RecordingMetrics {
     }
 
     fn histogram(&self, name: &str, value: i64, tags: &[(&str, &str)]) {
-        if name == "codex.guardian_v2.connection.duration_ms" {
+        if name == "ava.guardian_v2.connection.duration_ms" {
             return;
         }
         self.0.lock().unwrap().push(RecordedMetric::Histogram(
@@ -423,7 +423,7 @@ fn user_instruction(text: &str) -> ResponseItem {
         }],
         phase: None,
         internal_chat_message_metadata_passthrough: Some(InternalChatMessageMetadataPassthrough {
-            content_item_kinds: Some(vec![codex_protocol::models::ContentItemKind(
+            content_item_kinds: Some(vec![ava_protocol::models::ContentItemKind(
                 "user.text".to_owned(),
             )]),
             ..Default::default()
@@ -437,18 +437,18 @@ struct TestRetainedHistory {
     current: TestConversationHistory,
     retained: Vec<ResponseItem>,
     compaction_model_hash: Option<String>,
-    retained_context: Option<codex_history::RetainedContext>,
+    retained_context: Option<ava_history::RetainedContext>,
 }
 
 impl ConversationHistorySnapshot for TestRetainedHistory {
-    fn retained_context(&self) -> Option<&codex_history::RetainedContext> {
+    fn retained_context(&self) -> Option<&ava_history::RetainedContext> {
         self.retained_context.as_ref()
     }
 
-    fn latest_compaction(&self) -> Option<codex_history::CompactionCheckpoint<'_>> {
+    fn latest_compaction(&self) -> Option<ava_history::CompactionCheckpoint<'_>> {
         self.items()
             .filter_map(|item| {
-                codex_history::CompactionCheckpoint::from_item(
+                ava_history::CompactionCheckpoint::from_item(
                     item,
                     self.compaction_model_hash.as_deref(),
                 )
@@ -540,7 +540,7 @@ async fn sandboxed_shell_classification_respects_review_scope() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let fixture = GuardianFailureFixture::new().await?;
-    let thread_store = fixture.test.codex.thread_extension_data();
+    let thread_store = fixture.test.ava-code.thread_extension_data();
     let mut score = cached_score(thread_store).expect("fixture should publish a score");
     score.scores.insert("action_risk".to_owned(), 0.0);
     set_cached_score(thread_store, score);
@@ -619,7 +619,7 @@ async fn computer_use_only_scores_cannot_approve_other_actions() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let fixture = GuardianFailureFixture::new().await?;
-    let thread_store = fixture.test.codex.thread_extension_data();
+    let thread_store = fixture.test.ava-code.thread_extension_data();
     let mut model = thread_store.get::<ModelInfo>().unwrap().as_ref().clone();
     model.node_repl_auto_review_required = true;
     thread_store.insert(model);
@@ -645,7 +645,7 @@ async fn computer_use_only_scores_cannot_approve_other_actions() -> Result<()> {
         .expect("Guardian v2 should track score progress per thread");
     // The seeded low score belongs to the model selected above.
     let authorization =
-        super::super::authorization::ScoreAuthorization::current(&fixture.test.codex).await;
+        super::super::authorization::ScoreAuthorization::current(&fixture.test.ava-code).await;
     seed_cached_score(&progress, thread_store, /*index*/ 1, authorization);
     let cached = progress.inspect(/*call_id*/ None);
     let turn_store = ExtensionData::new("turn-1");
@@ -727,8 +727,8 @@ async fn computer_use_only_scores_cannot_approve_other_actions() -> Result<()> {
         .get_models_manager()
         .get_model_info("gpt-5.5", &fixture.test.config.to_models_manager_config())
         .await;
-    changed_model.guardian = Some(codex_protocol::openai_models::GuardianModelPolicy {
-        computer_use: Some(codex_protocol::openai_models::GuardianReviewMode::Adaptive),
+    changed_model.guardian = Some(ava_protocol::openai_models::GuardianModelPolicy {
+        computer_use: Some(ava_protocol::openai_models::GuardianReviewMode::Adaptive),
         ..Default::default()
     });
     thread_store.insert(changed_model);
@@ -810,7 +810,7 @@ async fn sample_conversation_history(
     conversation_history: Vec<ResponseItem>,
     arguments: &str,
     guardian_policy: Option<&str>,
-) -> Result<(serde_json::Value, TestCodex, ExtensionRegistry<Config>)> {
+) -> Result<(serde_json::Value, TestAva, ExtensionRegistry<Config>)> {
     sample_configured_conversation_history(
         conversation_history,
         arguments,
@@ -827,7 +827,7 @@ async fn sample_configured_conversation_history(
     guardian_policy: Option<&str>,
     guardian_config: &str,
     model_defaults: Option<GuardianV2ModelConfig>,
-) -> Result<(serde_json::Value, TestCodex, ExtensionRegistry<Config>)> {
+) -> Result<(serde_json::Value, TestAva, ExtensionRegistry<Config>)> {
     sample_configured_conversation_history_with_source(
         conversation_history,
         arguments,
@@ -846,16 +846,16 @@ async fn sample_configured_conversation_history_with_source(
     guardian_config: &str,
     model_defaults: Option<GuardianV2ModelConfig>,
     source: ToolCallSource,
-) -> Result<(serde_json::Value, TestCodex, ExtensionRegistry<Config>)> {
+) -> Result<(serde_json::Value, TestAva, ExtensionRegistry<Config>)> {
     let thread_server = responses::start_mock_server().await;
     let guardian_policy = guardian_policy.map(str::to_owned);
     let guardian_config = format!(
         "{guardian_config}\n[features.guardianv2.review_scope]\ncomputer_use_only = false\n"
     );
     let has_model_defaults = model_defaults.is_some();
-    let builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
-        .with_model_info_override("codex-auto-review", |model_info| {
+    let builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_model_info_override("ava-auto-review", |model_info| {
             model_info
                 .model_messages
                 .as_mut()
@@ -902,7 +902,7 @@ async fn sample_configured_conversation_history_with_source(
         "http://{}/v1",
         server.uri().trim_start_matches("ws://")
     )));
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("test-api-key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("test-api-key"));
     let mut config = test.config.clone();
     config.model_provider = provider_info;
     config.features.enable(Feature::GuardianV2)?;
@@ -914,7 +914,7 @@ async fn sample_configured_conversation_history_with_source(
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     thread_store.insert(RecordingMetrics::default());
     let metrics = thread_store.get::<RecordingMetrics>().unwrap();
     if has_model_defaults {
@@ -959,12 +959,12 @@ async fn sample_configured_conversation_history_with_source(
     };
     if !conversation_history.is_empty() {
         Box::pin(
-            test.codex
+            test.ava-code
                 .inject_response_items(conversation_history.clone()),
         )
         .await?;
     }
-    let conversation_history = test.codex.conversation_history_snapshot().await;
+    let conversation_history = test.ava-code.conversation_history_snapshot().await;
 
     registry.tool_lifecycle_contributors()[0]
         .on_tool_start(ToolStartInput {
@@ -995,7 +995,7 @@ async fn sample_configured_conversation_history_with_source(
 }
 
 struct GuardianFailureFixture {
-    test: TestCodex,
+    test: TestAva,
     registry: ExtensionRegistry<Config>,
     session_store: ExtensionData,
 }
@@ -1004,14 +1004,14 @@ struct GuardianFailureFixture {
 async fn unscored_tools_invalidate_cached_scores() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let fixture = GuardianFailureFixture::new().await?;
-    let thread_store = fixture.test.codex.thread_extension_data();
+    let thread_store = fixture.test.ava-code.thread_extension_data();
     let mut model = thread_store
-        .get::<codex_protocol::openai_models::ModelInfo>()
+        .get::<ava_protocol::openai_models::ModelInfo>()
         .expect("resolved model")
         .as_ref()
         .clone();
-    model.guardian = Some(codex_protocol::openai_models::GuardianModelPolicy {
-        computer_use: Some(codex_protocol::openai_models::GuardianReviewMode::Adaptive),
+    model.guardian = Some(ava_protocol::openai_models::GuardianModelPolicy {
+        computer_use: Some(ava_protocol::openai_models::GuardianReviewMode::Adaptive),
         ..Default::default()
     });
     thread_store.insert(model);
@@ -1050,7 +1050,7 @@ impl GuardianFailureFixture {
             /*model_defaults*/ None,
         )
         .await?;
-        let thread_store = test.codex.thread_extension_data();
+        let thread_store = test.ava-code.thread_extension_data();
         let score_progress = thread_store
             .get::<GuardianV2ScoreProgress>()
             .expect("Guardian v2 should track score progress per thread");
@@ -1071,7 +1071,7 @@ impl GuardianFailureFixture {
     }
 
     async fn score_tool(&self, tool_name: ToolName) {
-        let thread_store = self.test.codex.thread_extension_data();
+        let thread_store = self.test.ava-code.thread_extension_data();
         set_cached_score(
             thread_store,
             SecurityRiskScore {
@@ -1104,7 +1104,7 @@ impl GuardianFailureFixture {
     }
 
     async fn assert_fails_closed(&self, expected_reason: &str) -> Result<()> {
-        let thread_store = self.test.codex.thread_extension_data();
+        let thread_store = self.test.ava-code.thread_extension_data();
         let score_progress = thread_store
             .get::<GuardianV2ScoreProgress>()
             .expect("Guardian v2 should track score progress per thread");
@@ -1183,7 +1183,7 @@ async fn contributor_fails_closed_when_model_configuration_is_invalid() -> Resul
     });
     fixture
         .test
-        .codex
+        .ava-code
         .thread_extension_data()
         .insert(parent_model);
 
@@ -1218,12 +1218,12 @@ async fn contributor_fails_closed_when_luna_classification_fails() -> Result<()>
             mcp_resource_client: None,
             extension_metrics: None,
             session_store: &fixture.session_store,
-            thread_store: fixture.test.codex.thread_extension_data(),
+            thread_store: fixture.test.ava-code.thread_extension_data(),
         })
         .await;
     fixture
         .test
-        .codex
+        .ava-code
         .thread_extension_data()
         .get::<LunaSampler>()
         .expect("Guardian v2 should initialize")
@@ -1422,7 +1422,7 @@ max_recent_non_user_entries = 8
         json!({"body": "x".repeat(/*n*/ 128), "tool": "read_file"})
     );
 
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     let score_progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("Guardian v2 should track score progress per thread");
@@ -1440,7 +1440,7 @@ max_recent_non_user_entries = 8
     .await?;
     assert!(metrics.0.lock().unwrap().iter().any(|sample| {
         matches!(sample, RecordedMetric::Histogram(name, value, tags)
-        if name == codex_guardian_context::SECTION_COST_METRIC
+        if name == ava_guardian_context::SECTION_COST_METRIC
             && *value > 0
             && tags == &[
                 ("target".to_owned(), "async".to_owned()),
@@ -1553,7 +1553,7 @@ max_recent_non_user_entries = 8
         &score_progress,
         thread_store,
         first_unscored,
-        ScoreAuthorization::current(&test.codex).await,
+        ScoreAuthorization::current(&test.ava-code).await,
     );
     assert_eq!(
         cached_approval(
@@ -1834,7 +1834,7 @@ async fn contributor_uses_model_defaults_and_preserves_local_overrides() -> Resu
         .expect("planned action should be a text item");
     assert!(action.len() <= TruncationPolicy::Tokens(/*limit*/ 128).byte_budget());
 
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     let guardian_config = thread_store
         .get::<crate::async_scorer::config::GuardianV2Config>()
         .expect("Guardian v2 configuration should be installed");
@@ -1944,7 +1944,7 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
     )
     .await?;
     let thread_id = test.session_configured.thread_id;
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     assert_eq!(request["model"], "gpt-5.6-luna");
     let classifier_thread_id = request["client_metadata"]["thread_id"]
         .as_str()
@@ -1954,7 +1954,7 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
         .as_str()
         .expect("classifier turn ID");
     let turn_metadata: serde_json::Value = serde_json::from_str(
-        request["client_metadata"]["x-codex-turn-metadata"]
+        request["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("serialized turn metadata"),
     )?;
@@ -1973,7 +1973,7 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
     );
     assert_eq!(request["client_metadata"]["x-openai-subagent"], "guardian");
     assert_eq!(
-        request["client_metadata"]["x-codex-window-id"],
+        request["client_metadata"]["x-ava-window-id"],
         format!("{classifier_thread_id}:0")
     );
     assert_eq!(request["client_metadata"]["parent_turn_id"], "turn-1");
@@ -2011,7 +2011,7 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
         {"type": "input_text", "text": ">>> TRANSCRIPT END\n\n"},
         {
             "type": "input_text",
-            "text": "The Codex agent has requested the following action:\n"
+            "text": "The Ava agent has requested the following action:\n"
         },
         {"type": "input_text", "text": ">>> APPROVAL REQUEST START\n"},
         {"type": "input_text", "text": "Planned action JSON:\n"},
@@ -2047,10 +2047,10 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
         }
     );
     assert!(score.sampled_at.is_some());
-    test.codex.ensure_rollout_materialized().await;
+    test.ava-code.ensure_rollout_materialized().await;
     assert!(
         !test
-            .codex
+            .ava-code
             .load_history(/*include_archived*/ false)
             .await?
             .items
@@ -2148,12 +2148,12 @@ async fn contributor_persists_nested_code_mode_action_with_score() -> Result<()>
         },
     )
     .await?;
-    test.codex.ensure_rollout_materialized().await;
+    test.ava-code.ensure_rollout_materialized().await;
 
     let score = tokio::time::timeout(ASYNC_TEST_TIMEOUT, async {
         loop {
             if let Some(score) = test
-                .codex
+                .ava-code
                 .load_history(/*include_archived*/ false)
                 .await?
                 .items
@@ -2188,20 +2188,20 @@ async fn contributor_skips_required_models_in_standard_scope() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let thread_server = responses::start_mock_server().await;
-    let initial = test_codex().build_with_auto_env(&thread_server).await?;
+    let initial = test_ava().build_with_auto_env(&thread_server).await?;
     std::fs::write(
         initial.home.path().join("requirements.toml"),
         "[auto_review]\nrequired_on_models = [\"protected-model\"]\n",
     )?;
     let config_layer_stack = ConfigBuilder::default()
-        .codex_home(initial.home.path().to_path_buf())
+        .ava_home(initial.home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::with_managed_config_path_for_tests(
             initial.home.path().join("managed_config.toml"),
         ))
         .build()
         .await?
         .config_layer_stack;
-    let test = test_codex()
+    let test = test_ava()
         .with_home(Arc::clone(&initial.home))
         .with_config(move |config| {
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
@@ -2220,7 +2220,7 @@ async fn contributor_skips_required_models_in_standard_scope() -> Result<()> {
         "http://{}/v1",
         server.uri().trim_start_matches("ws://")
     )));
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("test-api-key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("test-api-key"));
     let mut config = test.config.clone();
     config.model_provider = provider_info;
     let mut builder = ExtensionRegistryBuilder::new();
@@ -2231,7 +2231,7 @@ async fn contributor_skips_required_models_in_standard_scope() -> Result<()> {
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     registry.thread_lifecycle_contributors()[0]
         .on_thread_start(ThreadStartInput {
             config: &config,
@@ -2264,8 +2264,8 @@ async fn contributor_skips_required_models_in_standard_scope() -> Result<()> {
     model_info.slug = "protected-model".to_owned();
     thread_store.insert(model_info);
     // A late prewarm preview must leave the active model's review requirements intact.
-    let _ = codex_core::guardian_review::prepare_review_prewarm(&test.codex).await?;
-    let authorization = ScoreAuthorization::current(&test.codex).await;
+    let _ = ava_core::guardian_review::prepare_review_prewarm(&test.ava-code).await?;
+    let authorization = ScoreAuthorization::current(&test.ava-code).await;
     let progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("Guardian v2 should track score progress per thread");
@@ -2342,7 +2342,7 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
         /*model_defaults*/ None,
     )
     .await?;
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     let progress = thread_store.get::<GuardianV2ScoreProgress>().unwrap();
     tokio::time::timeout(ASYNC_TEST_TIMEOUT, async {
         while progress.inspect(/*call_id*/ None).authorization.is_none() {
@@ -2360,7 +2360,7 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
         },
     );
 
-    test.codex
+    test.ava-code
         .inject_response_items(vec![ContextualUserFragment::into(
             InternalModelContextFragment::new(
                 InternalContextSource::from_static("goal"),
@@ -2368,8 +2368,8 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
             ),
         )])
         .await?;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2384,7 +2384,7 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
         Some(ReviewDecision::Approved),
     );
 
-    test.codex
+    test.ava-code
         .inject_response_items(vec![ResponseItem::Message {
             id: None,
             role: "user".to_owned(),
@@ -2426,7 +2426,7 @@ async fn assert_compaction_approval_policy(thread_context_enabled: bool) -> Resu
         "[features.guardianv2]\nthread_context = {thread_context_enabled}\n"
     ))
     .await?;
-    let thread_store = fixture.test.codex.thread_extension_data();
+    let thread_store = fixture.test.ava-code.thread_extension_data();
     set_cached_score(
         thread_store,
         SecurityRiskScore {
@@ -2446,10 +2446,10 @@ async fn assert_compaction_approval_policy(thread_context_enabled: bool) -> Resu
         .await,
         Some(ReviewDecision::Approved)
     );
-    let authorization = fixture.test.codex.guardian_authorization_version().await;
+    let authorization = fixture.test.ava-code.guardian_authorization_version().await;
     fixture
         .test
-        .codex
+        .ava-code
         .inject_response_items(vec![ResponseItem::Compaction {
             id: Some(ResponseItemId::from_server(
                 "incompatible-checkpoint".to_owned(),
@@ -2466,10 +2466,10 @@ async fn assert_compaction_approval_policy(thread_context_enabled: bool) -> Resu
     model.node_repl_auto_review_required = true;
     thread_store.insert(model);
     assert_eq!(
-        fixture.test.codex.guardian_authorization_version().await,
+        fixture.test.ava-code.guardian_authorization_version().await,
         authorization
     );
-    let score_authorization = ScoreAuthorization::current(&fixture.test.codex).await;
+    let score_authorization = ScoreAuthorization::current(&fixture.test.ava-code).await;
     let progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("score progress");
@@ -2526,7 +2526,7 @@ async fn contributor_counts_failed_thread_lookups_toward_score_lag() -> Result<(
     )
     .await?;
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     let score_progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("Guardian v2 should track score progress per thread");
@@ -2974,7 +2974,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
     skip_if_no_network!(Ok(()));
 
     let thread_server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
             config
@@ -3002,7 +3002,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
         "http://{}/v1",
         server.uri().trim_start_matches("ws://")
     )));
-    let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("test-api-key"));
+    let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("test-api-key"));
     let mut config = test.config.clone();
     config.model_provider = provider_info;
     config.features.enable(Feature::GuardianV2)?;
@@ -3019,7 +3019,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     let metrics = Arc::new(RecordingMetrics::default());
     registry.thread_lifecycle_contributors()[0]
         .on_thread_start(ThreadStartInput {
@@ -3059,7 +3059,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
     ]);
 
     Box::pin(
-        test.codex
+        test.ava-code
             .inject_response_items(conversation_history.0.clone()),
     )
     .await?;
@@ -3072,7 +3072,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
         retained,
         current: conversation_history,
         compaction_model_hash: parent_model.comp_hash.clone(),
-        retained_context: thread_context_enabled.then(codex_history::RetainedContext::default),
+        retained_context: thread_context_enabled.then(ava_history::RetainedContext::default),
     };
     thread_store.insert(parent_model);
 
@@ -3169,7 +3169,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
                 current: TestConversationHistory(vec![latest_compaction, oversized_compaction]),
                 retained: Vec::new(),
                 retained_context: thread_context_enabled
-                    .then(codex_history::RetainedContext::default),
+                    .then(ava_history::RetainedContext::default),
                 compaction_model_hash: thread_store
                     .get::<ModelInfo>()
                     .and_then(|model| model.comp_hash.clone()),
@@ -3250,7 +3250,7 @@ async fn legacy_contributor_can_disable_parent_compaction_reuse() -> Result<()> 
             .all(|item| item["type"] != "compaction" && item["type"] != "context_compaction")
     );
 
-    let thread_store = test.codex.thread_extension_data();
+    let thread_store = test.ava-code.thread_extension_data();
     let score = tokio::time::timeout(ASYNC_TEST_TIMEOUT, async {
         loop {
             if let Some(score) = cached_score(thread_store) {
@@ -3266,11 +3266,11 @@ async fn legacy_contributor_can_disable_parent_compaction_reuse() -> Result<()> 
 }
 
 struct CacheMiss;
-impl codex_extension_api::SynchronousApprovalReviewer for CacheMiss {
+impl ava_extension_api::SynchronousApprovalReviewer for CacheMiss {
     fn review(
         &self,
-        _reason: codex_protocol::approvals::GuardianReviewReason,
-    ) -> codex_extension_api::ExtensionFuture<'_, Option<ReviewDecision>> {
+        _reason: ava_protocol::approvals::GuardianReviewReason,
+    ) -> ava_extension_api::ExtensionFuture<'_, Option<ReviewDecision>> {
         Box::pin(async { Some(ReviewDecision::denied("cache miss")) })
     }
 }
@@ -3279,7 +3279,7 @@ impl codex_extension_api::SynchronousApprovalReviewer for CacheMiss {
 async fn cached_approval_discounts_only_its_own_unscored_wrapper() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let fixture = GuardianFailureFixture::new().await?;
-    let store = fixture.test.codex.thread_extension_data();
+    let store = fixture.test.ava-code.thread_extension_data();
     let progress = store.get::<GuardianV2ScoreProgress>().unwrap();
     let mut score = cached_score(store).unwrap();
     score.scores.insert("action_risk".to_owned(), 0.0);
@@ -3341,14 +3341,14 @@ async fn cached_approval_discounts_only_its_own_unscored_wrapper() -> Result<()>
         &progress,
         store,
         wrapper,
-        ScoreAuthorization::current(&fixture.test.codex).await,
+        ScoreAuthorization::current(&fixture.test.ava-code).await,
     );
     assert_eq!(approve("third").await, None);
     seed_cached_score(
         &progress,
         store,
         wrapper + 3,
-        ScoreAuthorization::current(&fixture.test.codex).await,
+        ScoreAuthorization::current(&fixture.test.ava-code).await,
     );
     let output = start("output-only", &origin, ToolCallSource::Direct);
     let other = ResponseItemId::from_server("other-wrapper".to_owned());
@@ -3363,7 +3363,7 @@ async fn cached_approval_discounts_only_its_own_unscored_wrapper() -> Result<()>
         &progress,
         store,
         output,
-        ScoreAuthorization::current(&fixture.test.codex).await,
+        ScoreAuthorization::current(&fixture.test.ava-code).await,
     );
     assert_eq!(
         approve("other-second").await,
@@ -3383,7 +3383,7 @@ async fn cached_approval_discounts_only_its_own_unscored_wrapper() -> Result<()>
 
 /// Exercises decision routing; a fresh review is observed as a cache miss.
 async fn cached_approval(
-    registry: &codex_extension_api::ExtensionRegistry<Config>,
+    registry: &ava_extension_api::ExtensionRegistry<Config>,
     store: &ExtensionData,
     action: &str,
     metrics: Option<Arc<dyn ExtensionMetrics>>,
@@ -3395,9 +3395,9 @@ async fn cached_approval(
             .get::<super::GuardianV2Config>()?
             .policy_for_model(store.get::<ModelInfo>().as_deref())
             .other_tools
-            == codex_protocol::openai_models::GuardianReviewMode::Adaptive =>
+            == ava_protocol::openai_models::GuardianReviewMode::Adaptive =>
         {
-            codex_protocol::openai_models::GuardianScope::Shell
+            ava_protocol::openai_models::GuardianScope::Shell
         }
         None => {
             super::super::metrics::record_fast_decision(
@@ -3408,14 +3408,14 @@ async fn cached_approval(
             return None;
         }
     };
-    let input = codex_extension_api::ApprovalDecisionInput {
+    let input = ava_extension_api::ApprovalDecisionInput {
         approval_id: "cache-probe",
         tool_call_id: action.get("id").and_then(serde_json::Value::as_str),
         action: &action,
-        thread_id: codex_protocol::ThreadId::from_string(store.level_id()).unwrap(),
+        thread_id: ava_protocol::ThreadId::from_string(store.level_id()).unwrap(),
         thread_store: store,
         category,
-        approval_policy: codex_protocol::protocol::AskForApproval::OnRequest,
+        approval_policy: ava_protocol::protocol::AskForApproval::OnRequest,
         approvals_reviewer: ApprovalsReviewer::AutoReview,
         require_guardian: false,
         require_fresh_review: false,
@@ -3424,7 +3424,7 @@ async fn cached_approval(
         synchronous_reviewer: &CacheMiss,
     };
     match registry.decide_approval(&input).await {
-        Some(codex_extension_api::ApprovalDecision::Allow) => Some(ReviewDecision::Approved),
+        Some(ava_extension_api::ApprovalDecision::Allow) => Some(ReviewDecision::Approved),
         _ => None,
     }
 }
@@ -3483,9 +3483,9 @@ async fn cached_score_publication_rejects_delayed_results_without_changing_cover
 {
     skip_if_no_network!(Ok(()));
     let fixture = GuardianFailureFixture::new().await?;
-    let store = fixture.test.codex.thread_extension_data();
+    let store = fixture.test.ava-code.thread_extension_data();
     let progress = store.get::<GuardianV2ScoreProgress>().unwrap();
-    let authorization = ScoreAuthorization::current(&fixture.test.codex).await;
+    let authorization = ScoreAuthorization::current(&fixture.test.ava-code).await;
     seed_cached_score(&progress, store, /*index*/ 1, authorization.clone());
     let score = cached_score(store).unwrap();
     observe_unscored_call(&progress, store);

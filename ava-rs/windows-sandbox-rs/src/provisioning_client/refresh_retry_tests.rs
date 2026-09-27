@@ -11,7 +11,7 @@ fn authentication_failure_cannot_write_or_replay_the_request() -> anyhow::Result
         version: crate::PROVISIONING_PROTOCOL_VERSION,
         message: crate::ProvisioningMessage::ProvisionSandboxRequest {
             payload: crate::SandboxProvisioningRequest {
-                codex_home: r"C:\test-home".to_owned(),
+                ava_home: r"C:\test-home".to_owned(),
                 registered_core: true,
                 refresh_only: true,
                 settings: crate::WindowsSandboxProvisioningSettings {

@@ -11,10 +11,10 @@ use crate::safety_buffering::treatment_from_headers;
 use crate::sse::ResponsesStreamEvent;
 use crate::sse::process_responses_event;
 use crate::telemetry::WebsocketTelemetry;
-use codex_client::TransportError;
-use codex_http_client::HttpClientFactory;
-use codex_websocket_client::WebSocketConnection;
-use codex_websocket_client::WebSocketConnector;
+use ava_client::TransportError;
+use ava_http_client::HttpClientFactory;
+use ava_websocket_client::WebSocketConnection;
+use ava_websocket_client::WebSocketConnector;
 use futures::SinkExt;
 use futures::StreamExt;
 use http::HeaderMap;
@@ -151,7 +151,7 @@ impl Drop for WsStream {
     }
 }
 
-const X_CODEX_TURN_STATE_HEADER: &str = "x-codex-turn-state";
+const X_AVA_TURN_STATE_HEADER: &str = "x-ava-turn-state";
 const X_MODELS_ETAG_HEADER: &str = "x-models-etag";
 const X_REASONING_INCLUDED_HEADER: &str = "x-reasoning-included";
 const OPENAI_MODEL_HEADER: &str = "openai-model";
@@ -161,11 +161,11 @@ const PREVIOUS_RESPONSE_NOT_FOUND_CODE: &str = "previous_response_not_found";
 const PREVIOUS_RESPONSE_NOT_FOUND_MESSAGE: &str =
     "Previous response was not found. Retrying the full request.";
 const RESPONSES_WEBSOCKET_TIMING_KIND: &str = "responsesapi.websocket_timing";
-const RESPONSES_WEBSOCKET_TIMING_EVENT_TARGET: &str = "codex_api::responses_websocket_timing";
+const RESPONSES_WEBSOCKET_TIMING_EVENT_TARGET: &str = "ava_api::responses_websocket_timing";
 const SESSION_ID_CLIENT_METADATA_KEY: &str = "session_id";
 const THREAD_ID_CLIENT_METADATA_KEY: &str = "thread_id";
 const TURN_ID_CLIENT_METADATA_KEY: &str = "turn_id";
-const WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY: &str = "x-codex-ws-stream-request-start-ms";
+const WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY: &str = "x-ava-ws-stream-request-start-ms";
 
 struct ResponsesWebsocketTimingLogContext {
     model: String,
@@ -526,7 +526,7 @@ async fn connect_websocket(
     if let Some(turn_state) = turn_state
         && let Some(header_value) = response
             .headers()
-            .get(X_CODEX_TURN_STATE_HEADER)
+            .get(X_AVA_TURN_STATE_HEADER)
             .and_then(|value| value.to_str().ok())
     {
         let _ = turn_state.set(header_value.to_string());
@@ -729,7 +729,7 @@ async fn run_websocket_response_stream(
                     text.as_str(),
                     timing_log_context,
                 );
-                if event.kind() == "codex.response.metadata"
+                if event.kind() == "ava.response.metadata"
                     && let Some(etag) =
                         event
                             .headers
@@ -753,7 +753,7 @@ async fn run_websocket_response_stream(
                 let turn_moderation_metadata = event.turn_moderation_metadata();
                 let safety_buffering =
                     safety_buffering_for_event(&event, &mut safety_buffering_treatment);
-                if event.kind() == "codex.rate_limits" {
+                if event.kind() == "ava.rate_limits" {
                     if let Some(snapshot) = parse_rate_limit_event(&text) {
                         let _ = tx_event.send(Ok(ResponseEvent::RateLimits(snapshot))).await;
                     }
@@ -837,7 +837,7 @@ fn emit_responses_websocket_timing_event(
     }
 
     // This full payload is excluded from always-on sinks. Opt in with
-    // `RUST_LOG='codex_api::responses_websocket_timing=trace'`.
+    // `RUST_LOG='ava_api::responses_websocket_timing=trace'`.
     tracing::event!(
         name: RESPONSES_WEBSOCKET_TIMING_KIND,
         target: RESPONSES_WEBSOCKET_TIMING_EVENT_TARGET,
@@ -910,9 +910,9 @@ mod tests {
     use super::*;
     use crate::common::ResponseCreateWsRequest;
     use crate::common::ResponsesApiRequest;
-    use codex_protocol::ResponseItemId;
-    use codex_protocol::models::ContentItem;
-    use codex_protocol::models::ResponseItem;
+    use ava_protocol::ResponseItemId;
+    use ava_protocol::models::ContentItem;
+    use ava_protocol::models::ResponseItem;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use serde_json::value::RawValue;
@@ -956,7 +956,7 @@ mod tests {
             prompt_cache_key: Some("cache-key".to_string()),
             text: None,
             access_programs: Some(
-                codex_protocol::turn_input::CyberAccessProgram::DaybreakBlue.into(),
+                ava_protocol::turn_input::CyberAccessProgram::DaybreakBlue.into(),
             ),
             client_metadata: Some(HashMap::from([(
                 "traceparent".to_string(),
@@ -1000,8 +1000,8 @@ mod tests {
                 "resets_at": 1738888888
             },
             "headers": {
-                "x-codex-primary-used-percent": "100.0",
-                "x-codex-primary-window-minutes": 15
+                "x-ava-primary-used-percent": "100.0",
+                "x-ava-primary-window-minutes": 15
             }
         })
         .to_string();
@@ -1025,13 +1025,13 @@ mod tests {
         let headers = headers.expect("expected headers");
         assert_eq!(
             headers
-                .get("x-codex-primary-used-percent")
+                .get("x-ava-primary-used-percent")
                 .and_then(|value| value.to_str().ok()),
             Some("100.0")
         );
         assert_eq!(
             headers
-                .get("x-codex-primary-window-minutes")
+                .get("x-ava-primary-window-minutes")
                 .and_then(|value| value.to_str().ok()),
             Some("15")
         );
@@ -1112,8 +1112,8 @@ mod tests {
                 "message": "The usage limit has been reached"
             },
             "headers": {
-                "x-codex-primary-used-percent": "100.0",
-                "x-codex-primary-window-minutes": 15
+                "x-ava-primary-used-percent": "100.0",
+                "x-ava-primary-window-minutes": 15
             }
         })
         .to_string();
@@ -1160,10 +1160,10 @@ mod tests {
     #[test]
     fn websocket_safety_buffering_uses_event_before_header_fallback() {
         let metadata: ResponsesStreamEvent = serde_json::from_value(json!({
-            "type": "codex.response.metadata",
+            "type": "ava.response.metadata",
             "headers": {
-                "x-codex-safety-buffering-enabled": "true",
-                "x-codex-safety-buffering-faster-model": "gpt-fast-header"
+                "x-ava-safety-buffering-enabled": "true",
+                "x-ava-safety-buffering-faster-model": "gpt-fast-header"
             }
         }))
         .expect("deserialize treatment metadata");
@@ -1196,10 +1196,10 @@ mod tests {
     #[test]
     fn websocket_safety_buffering_event_controls_visibility_when_header_disables_it() {
         let metadata: ResponsesStreamEvent = serde_json::from_value(json!({
-            "type": "codex.response.metadata",
+            "type": "ava.response.metadata",
             "headers": {
-                "x-codex-safety-buffering-enabled": "false",
-                "x-codex-safety-buffering-faster-model": "gpt-fast-header"
+                "x-ava-safety-buffering-enabled": "false",
+                "x-ava-safety-buffering-faster-model": "gpt-fast-header"
             }
         }))
         .expect("deserialize treatment metadata");

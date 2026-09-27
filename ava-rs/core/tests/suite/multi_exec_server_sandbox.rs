@@ -1,20 +1,20 @@
-use codex_core::TurnInputRequest;
+use ava_core::TurnInputRequest;
 use std::process::Stdio;
 use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -22,8 +22,8 @@ use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event_with_timeout;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -44,7 +44,7 @@ const EXEC_SERVER_START_TIMEOUT: Duration = Duration::from_secs(30);
 const TURN_COMPLETE_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub(super) struct ExecServerProcess {
-    _codex_home: TempDir,
+    _ava_home: TempDir,
     child: Child,
     _stdout: BufReader<ChildStdout>,
     pub(super) websocket_url: String,
@@ -52,10 +52,10 @@ pub(super) struct ExecServerProcess {
 
 impl ExecServerProcess {
     pub(super) async fn start() -> Result<Self> {
-        let codex_home = TempDir::new()?;
-        let mut child = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+        let ava_home = TempDir::new()?;
+        let mut child = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
             .args(["exec-server", "--listen", "ws://127.0.0.1:0"])
-            .env("CODEX_HOME", codex_home.path())
+            .env("AVA_HOME", ava_home.path())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
@@ -85,7 +85,7 @@ impl ExecServerProcess {
         };
 
         Ok(Self {
-            _codex_home: codex_home,
+            _ava_home: ava_home,
             child,
             _stdout: stdout,
             websocket_url,
@@ -107,7 +107,7 @@ async fn two_exec_servers_isolate_workspace_write_roots() -> Result<()> {
     let second_workspace = TempDir::new()?;
 
     let server = start_mock_server().await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build(&server).await?;
     let environment_manager = test.thread_manager.environment_manager();
     environment_manager.upsert_environment(
@@ -201,7 +201,7 @@ async fn two_exec_servers_isolate_workspace_write_roots() -> Result<()> {
     );
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "write one file in each environment".into(),
@@ -220,7 +220,7 @@ async fn two_exec_servers_isolate_workspace_write_roots() -> Result<()> {
         )
         .await?;
     wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         TURN_COMPLETE_TIMEOUT,
     )

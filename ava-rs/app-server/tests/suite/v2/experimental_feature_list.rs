@@ -4,22 +4,22 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_repeating_assistant;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ExperimentalFeature;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetParams;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
-use codex_app_server_protocol::ExperimentalFeatureListParams;
-use codex_app_server_protocol::ExperimentalFeatureListResponse;
-use codex_app_server_protocol::ExperimentalFeatureStage;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_config::LoaderOverrides;
-use codex_core::config::ConfigBuilder;
-use codex_features::FEATURES;
-use codex_features::Stage;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ExperimentalFeature;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetParams;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
+use ava_app_server_protocol::ExperimentalFeatureListParams;
+use ava_app_server_protocol::ExperimentalFeatureListResponse;
+use ava_app_server_protocol::ExperimentalFeatureStage;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_config::LoaderOverrides;
+use ava_core::config::ConfigBuilder;
+use ava_features::FEATURES;
+use ava_features::Stage;
 use pretty_assertions::assert_eq;
 use serde::de::DeserializeOwned;
 use serde_json::json;
@@ -31,17 +31,17 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[tokio::test]
 async fn experimental_feature_list_returns_feature_metadata_with_stage() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(LoaderOverrides::with_managed_config_path_for_tests(
-            codex_home.path().join("managed_config.toml"),
+            ava_home.path().join("managed_config.toml"),
         ))
         .build()
         .await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -96,15 +96,15 @@ async fn experimental_feature_list_returns_feature_metadata_with_stage() -> Resu
 #[tokio::test]
 async fn experimental_feature_list_resolves_thread_project_config() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
     let workspace_key = workspace.path().to_string_lossy().replace('\\', "\\\\");
     MockResponsesConfig::new(&server.uri())
         .with_extra_config(&format!(
             "[projects.\"{workspace_key}\"]\ntrust_level = \"trusted\""
         ))
-        .write(codex_home.path())?;
-    let project_config_dir = workspace.path().join(".codex");
+        .write(ava_home.path())?;
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
         project_config_dir.join("config.toml"),
@@ -114,7 +114,7 @@ memories = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -149,9 +149,9 @@ memories = true
 
 #[tokio::test]
 async fn experimental_feature_list_rejects_unknown_thread_id() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -184,12 +184,12 @@ async fn experimental_feature_list_rejects_unknown_thread_id() -> Result<()> {
 #[tokio::test]
 async fn experimental_feature_enablement_set_applies_to_global_and_thread_config_reads()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let project_cwd = codex_home.path().join("project");
+    let ava_home = TempDir::new()?;
+    let project_cwd = ava_home.path().join("project");
     std::fs::create_dir_all(&project_cwd)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -223,13 +223,13 @@ async fn experimental_feature_enablement_set_applies_to_global_and_thread_config
 
 #[tokio::test]
 async fn experimental_feature_enablement_set_does_not_override_user_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "[features]\nmemories = false\n",
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -261,9 +261,9 @@ async fn experimental_feature_enablement_set_does_not_override_user_config() -> 
 
 #[tokio::test]
 async fn experimental_feature_enablement_set_only_updates_named_features() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -339,9 +339,9 @@ async fn experimental_feature_enablement_set_only_updates_named_features() -> Re
 
 #[tokio::test]
 async fn experimental_feature_enablement_set_allows_remote_control() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -360,9 +360,9 @@ async fn experimental_feature_enablement_set_allows_remote_control() -> Result<(
 
 #[tokio::test]
 async fn experimental_feature_enablement_set_empty_map_is_no_op() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -396,9 +396,9 @@ async fn experimental_feature_enablement_set_empty_map_is_no_op() -> Result<()> 
 
 #[tokio::test]
 async fn experimental_feature_enablement_set_ignores_invalid_features() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;

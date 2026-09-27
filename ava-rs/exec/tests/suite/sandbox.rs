@@ -1,10 +1,10 @@
 #![cfg(unix)]
-use codex_core::spawn::StdioPolicy;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_absolute_path::test_support::PathBufExt;
-use codex_utils_path_uri::PathUri;
+use ava_core::spawn::StdioPolicy;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::test_support::PathBufExt;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::future::Future;
 use std::io;
@@ -20,20 +20,20 @@ pub(super) async fn spawn_command_under_sandbox(
     stdio_policy: StdioPolicy,
     env: HashMap<String, String>,
 ) -> std::io::Result<Child> {
-    use codex_core::exec::ExecCapturePolicy;
-    use codex_core::exec::ExecParams;
-    use codex_core::exec::build_exec_request;
-    use codex_core::sandboxing::SandboxPermissions;
-    use codex_protocol::config_types::WindowsSandboxLevel;
+    use ava_core::exec::ExecCapturePolicy;
+    use ava_core::exec::ExecParams;
+    use ava_core::exec::build_exec_request;
+    use ava_core::sandboxing::SandboxPermissions;
+    use ava_protocol::config_types::WindowsSandboxLevel;
     use std::process::Stdio;
 
     #[cfg(target_os = "linux")]
-    let codex_linux_sandbox_exe = Some(
-        core_test_support::find_codex_linux_sandbox_exe()
+    let ava_linux_sandbox_exe = Some(
+        core_test_support::find_ava_linux_sandbox_exe()
             .map_err(|err| io::Error::new(io::ErrorKind::NotFound, err))?,
     );
     #[cfg(target_os = "macos")]
-    let codex_linux_sandbox_exe = None;
+    let ava_linux_sandbox_exe = None;
     let exec_request = build_exec_request(
         ExecParams {
             command,
@@ -51,9 +51,9 @@ pub(super) async fn spawn_command_under_sandbox(
         permission_profile,
         sandbox_cwd,
         &[PathUri::from_abs_path(sandbox_cwd)],
-        &codex_linux_sandbox_exe,
-        /*codex_self_exe*/ &None,
-        codex_protocol::sandbox::SandboxType::None,
+        &ava_linux_sandbox_exe,
+        /*ava_self_exe*/ &None,
+        ava_protocol::sandbox::SandboxType::None,
         /*use_legacy_landlock*/ false,
     )
     .map_err(|err| io::Error::other(err.to_string()))?;
@@ -352,7 +352,7 @@ async fn sandbox_distinguishes_command_and_policy_cwds() {
 }
 
 #[tokio::test]
-async fn sandbox_blocks_first_time_dot_codex_creation() {
+async fn sandbox_blocks_first_time_dot_ava_creation() {
     core_test_support::skip_if_sandbox!();
     #[cfg(target_os = "linux")]
     let sandbox_env = match linux_sandbox_test_env().await {
@@ -365,8 +365,8 @@ async fn sandbox_blocks_first_time_dot_codex_creation() {
     let temp = tempfile::tempdir().expect("should be able to create temp dir");
     let repo_root = temp.path().join("repo").abs();
     create_dir_all(&repo_root).await.expect("mkdir repo");
-    let dot_codex = repo_root.join(".codex");
-    let config_toml = dot_codex.join("config.toml");
+    let dot_ava = repo_root.join(".ava-code");
+    let config_toml = dot_ava.join("config.toml");
     let permission_profile = PermissionProfile::workspace_write_with(
         &[],
         NetworkSandboxPolicy::Restricted,
@@ -378,7 +378,7 @@ async fn sandbox_blocks_first_time_dot_codex_creation() {
         vec![
             "bash".to_string(),
             "-lc".to_string(),
-            "mkdir -p .codex && echo 'sandbox_mode = \"danger-full-access\"' > .codex/config.toml"
+            "mkdir -p .ava-code && echo 'sandbox_mode = \"danger-full-access\"' > .ava-code/config.toml"
                 .to_string(),
         ],
         repo_root.clone(),
@@ -388,26 +388,26 @@ async fn sandbox_blocks_first_time_dot_codex_creation() {
         sandbox_env,
     )
     .await
-    .expect("should spawn command creating .codex");
+    .expect("should spawn command creating .ava-code");
 
-    let status = child.wait().await.expect("should wait for .codex command");
+    let status = child.wait().await.expect("should wait for .ava-code command");
     assert!(
         !status.success(),
-        "sandbox unexpectedly allowed first-time .codex creation: {status:?}"
+        "sandbox unexpectedly allowed first-time .ava-code creation: {status:?}"
     );
-    let dot_codex_metadata = tokio::fs::symlink_metadata(&dot_codex).await;
-    if let Ok(metadata) = dot_codex_metadata {
+    let dot_ava_metadata = tokio::fs::symlink_metadata(&dot_ava).await;
+    if let Ok(metadata) = dot_ava_metadata {
         assert!(
             !metadata.is_dir(),
             "{} should not be creatable as a directory",
-            dot_codex.display()
+            dot_ava.display()
         );
-    } else if let Err(err) = &dot_codex_metadata {
+    } else if let Err(err) = &dot_ava_metadata {
         assert_eq!(
             err.kind(),
             io::ErrorKind::NotFound,
             "unexpected metadata error for {}: {err}",
-            dot_codex.display()
+            dot_ava.display()
         );
     }
     let config_toml_exists = match tokio::fs::try_exists(&config_toml).await {

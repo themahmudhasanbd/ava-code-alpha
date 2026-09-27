@@ -79,7 +79,7 @@ try {
             $security = [Security.AccessControl.MutexSecurity]::new()
             $security.SetSecurityDescriptorSddlForm('D:P(A;;GA;;;SY)(A;;GA;;;BA)')
             $created = $false
-            $mutex = [Threading.Mutex]::new($false, 'Global\CodexSandboxSetup', [ref]$created, $security)
+            $mutex = [Threading.Mutex]::new($false, 'Global\AvaSandboxSetup', [ref]$created, $security)
             try { $locked = $mutex.WaitOne(30000) }
             catch [Threading.AbandonedMutexException] { $locked = $true }
             if (!$locked) { throw 'Sandbox setup is still active' }
@@ -88,7 +88,7 @@ try {
             $record = Microsoft.PowerShell.Utility\ConvertFrom-Json -InputObject ([string]$key.GetValue($plan.value))
             if ($record.runtime.retiring -ne $plan.record.runtime.retiring -or
                 $record.user_sid -ne $plan.record.user_sid -or
-                $record.codex_home -ne $plan.record.codex_home -or
+                $record.ava_home -ne $plan.record.ava_home -or
                 $record.runtime.package_family -ne $plan.record.runtime.package_family) { return }
             foreach ($entry in $profiles) {
                 if ($removedRegistrations.ContainsKey($entry.sid)) { continue }
@@ -132,15 +132,15 @@ try {
                     # PowerShell converts $null to an empty string; DeleteProfile requires native NULL.
                     if (![CleanupNative]::DeleteProfile($sid, [NullString]::Value, [NullString]::Value)) { throw [ComponentModel.Win32Exception]::new([Runtime.InteropServices.Marshal]::GetLastWin32Error()) }
                 }
-                [CleanupNative]::DeleteUser(('CodexSandbox' + $account.account), $sid)
+                [CleanupNative]::DeleteUser(('AvaSandbox' + $account.account), $sid)
                 [CleanupNative]::Log($plan.service_name, 4, 3004, "Removed $($account.account) sandbox profile and account")
             }
             $groupSid = $null
-            try { if ($plan.group_sid) { $groupSid = ([Security.Principal.NTAccount]::new('CodexSandboxUsers')).Translate([Security.Principal.SecurityIdentifier]).Value } }
+            try { if ($plan.group_sid) { $groupSid = ([Security.Principal.NTAccount]::new('AvaSandboxUsers')).Translate([Security.Principal.SecurityIdentifier]).Value } }
             catch [Security.Principal.IdentityNotMappedException] { }
             if ($groupSid) {
                 if ($groupSid -cne $plan.group_sid) { throw 'Sandbox group was replaced' }
-                $status = [CleanupNative]::NetLocalGroupDel($null, 'CodexSandboxUsers')
+                $status = [CleanupNative]::NetLocalGroupDel($null, 'AvaSandboxUsers')
                 if ($status -ne 0 -and $status -ne 2220) { throw [ComponentModel.Win32Exception]::new($status) }
             }
             $legacy = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($plan.legacy_key, $true)
@@ -148,7 +148,7 @@ try {
             $legacyJson = $legacy.GetValue($plan.value)
             if ($legacyJson) {
                 $owner = Microsoft.PowerShell.Utility\ConvertFrom-Json -InputObject ([string]$legacyJson)
-                if ($owner.user_sid -eq $plan.record.user_sid -and $owner.codex_home -eq $plan.record.codex_home) { $legacy.DeleteValue($plan.value, $false) }
+                if ($owner.user_sid -eq $plan.record.user_sid -and $owner.ava_home -eq $plan.record.ava_home) { $legacy.DeleteValue($plan.value, $false) }
             }
             $key.Dispose(); $key = $null
             $legacy.Flush()

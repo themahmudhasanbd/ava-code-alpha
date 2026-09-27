@@ -117,9 +117,9 @@ fn agents_navigation_hint_snapshots() {
 
 #[test]
 fn left_respects_editor_and_vim_history_remaps() {
-    use codex_config::types::KeybindingSpec;
-    use codex_config::types::KeybindingsSpec;
-    use codex_config::types::TuiKeymap;
+    use ava_config::types::KeybindingSpec;
+    use ava_config::types::KeybindingsSpec;
+    use ava_config::types::TuiKeymap;
 
     for vim in [false, true] {
         let (mut composer, mut events) = new_test_composer();

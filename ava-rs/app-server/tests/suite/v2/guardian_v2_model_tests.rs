@@ -10,15 +10,15 @@ use app_test_support::TestAppServer;
 use app_test_support::write_models_cache_with_models;
 use axum::Router;
 use axum::routing::get;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
 use core_test_support::load_default_config_for_test;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -61,7 +61,7 @@ async fn computer_use_scoring_follows_model_review_requirement(
     });
     let (mcp_url, mcp_server) =
         start_mcp_server_with_tools(&["js"], /*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_url)
         .with_model(MODEL)
         .with_provider_config("supports_websockets = false")
@@ -71,15 +71,15 @@ async fn computer_use_scoring_follows_model_review_requirement(
             "[mcp_servers.{server_name}]\nurl = \"{mcp_url}/mcp\"\ndefault_tools_approval_mode = \"auto\"\n\n[features.guardianv2]\nenabled = true"
         ))
         .enable_feature(Feature::GuardianApproval)
-        .write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let ordinary_model = codex_core::test_support::construct_model_info_offline(MODEL, &config);
+        .write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let ordinary_model = ava_core::test_support::construct_model_info_offline(MODEL, &config);
     let mut reviewed_model =
-        codex_core::test_support::construct_model_info_offline(REVIEWED_MODEL, &config);
+        ava_core::test_support::construct_model_info_offline(REVIEWED_MODEL, &config);
     reviewed_model.node_repl_auto_review_required = true;
-    write_models_cache_with_models(codex_home.path(), vec![ordinary_model, reviewed_model]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![ordinary_model, reviewed_model]).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     let request_id = app_server

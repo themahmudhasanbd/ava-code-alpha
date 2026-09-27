@@ -1,7 +1,7 @@
 //! Exercise dynamic tag collection, upload serialization, and bounded updates.
 
 use super::*;
-use crate::CodexFeedback;
+use crate::AvaFeedback;
 use pretty_assertions::assert_eq;
 use sentry::protocol::Envelope;
 use sentry::protocol::EnvelopeItem;
@@ -10,7 +10,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 #[test]
 fn dynamic_tags_survive_upload_alongside_static_fields() {
-    let feedback = CodexFeedback::new();
+    let feedback = AvaFeedback::new();
     let _guard = tracing_subscriber::registry()
         .with(feedback.metadata_layer())
         .set_default();
@@ -51,7 +51,7 @@ fn dynamic_tags_survive_upload_alongside_static_fields() {
 
 #[test]
 fn bounded_dynamic_tags_still_update_existing_values() {
-    let feedback = CodexFeedback::new();
+    let feedback = AvaFeedback::new();
     let _guard = tracing_subscriber::registry()
         .with(feedback.metadata_layer())
         .set_default();

@@ -1,21 +1,21 @@
 use super::*;
 use crate::ModelsManagerConfig;
-use codex_prompts::render_model_instructions;
-use codex_protocol::config_types::Personality;
-use codex_protocol::openai_models::ApprovalMessages;
-use codex_protocol::openai_models::AutoReviewMessages;
-use codex_protocol::openai_models::CollaborationModeMessages;
-use codex_protocol::openai_models::ConfirmationPolicies;
-use codex_protocol::openai_models::GuardianV2ModelConfig;
-use codex_protocol::openai_models::ModelInstructionsVariables;
-use codex_protocol::openai_models::ModelTokenBudgetConfig;
-use codex_protocol::openai_models::MultiAgentMessages;
-use codex_protocol::openai_models::MultiAgentModeMessages;
-use codex_protocol::openai_models::MultiAgentRoleMessages;
-use codex_protocol::openai_models::MultiAgentToolMessages;
-use codex_protocol::openai_models::PermissionMessages;
-use codex_protocol::openai_models::ToolMessage;
-use codex_protocol::openai_models::ToolMessages;
+use ava_prompts::render_model_instructions;
+use ava_protocol::config_types::Personality;
+use ava_protocol::openai_models::ApprovalMessages;
+use ava_protocol::openai_models::AutoReviewMessages;
+use ava_protocol::openai_models::CollaborationModeMessages;
+use ava_protocol::openai_models::ConfirmationPolicies;
+use ava_protocol::openai_models::GuardianV2ModelConfig;
+use ava_protocol::openai_models::ModelInstructionsVariables;
+use ava_protocol::openai_models::ModelTokenBudgetConfig;
+use ava_protocol::openai_models::MultiAgentMessages;
+use ava_protocol::openai_models::MultiAgentModeMessages;
+use ava_protocol::openai_models::MultiAgentRoleMessages;
+use ava_protocol::openai_models::MultiAgentToolMessages;
+use ava_protocol::openai_models::PermissionMessages;
+use ava_protocol::openai_models::ToolMessage;
+use ava_protocol::openai_models::ToolMessages;
 use pretty_assertions::assert_eq;
 
 fn config_with_personality(personality: Option<Personality>) -> ModelsManagerConfig {

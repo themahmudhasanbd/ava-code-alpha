@@ -8,14 +8,14 @@ use std::collections::HashMap;
 use anyhow::Result;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
-use codex_exec_server::ExecOutputStream;
-use codex_exec_server::ExecParams;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::FsReadFileParams;
-use codex_exec_server::FsWriteFileParams;
-use codex_exec_server::ProcessId;
-use codex_exec_server::ReadParams;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::ExecOutputStream;
+use ava_exec_server::ExecParams;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::FsReadFileParams;
+use ava_exec_server::FsWriteFileParams;
+use ava_exec_server::ProcessId;
+use ava_exec_server::ReadParams;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use relay_support::RelayTest;
 use relay_support::TEST_TIMEOUT;
@@ -29,7 +29,7 @@ async fn forwarder_runs_commands_and_transfers_files() -> Result<()> {
     let mut destination = common::exec_server::exec_server().await?;
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
     let forwarder = AbortOnDropHandle::new(tokio::spawn(
-        codex_exec_server::run_remote_environment_forward_until_shutdown(
+        ava_exec_server::run_remote_environment_forward_until_shutdown(
             relay.config()?,
             destination.websocket_url().to_string(),
             async move {

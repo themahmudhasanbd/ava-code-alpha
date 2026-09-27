@@ -5,7 +5,7 @@ mod pull;
 mod url;
 
 pub use client::OllamaClient;
-use codex_core::config::Config;
+use ava_core::config::Config;
 pub use pull::CliProgressReporter;
 pub use pull::PullEvent;
 pub use pull::PullProgressReporter;
@@ -65,25 +65,25 @@ pub async fn ensure_responses_supported(client: &OllamaClient) -> std::io::Resul
 
     let min = min_responses_version();
     Err(std::io::Error::other(format!(
-        "Ollama {version} is too old. Codex requires Ollama {min} or newer."
+        "Ollama {version} is too old. Ava requires Ollama {min} or newer."
     )))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
-    use codex_model_provider_info::WireApi;
-    use codex_model_provider_info::create_oss_provider_with_base_url;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
+    use ava_model_provider_info::WireApi;
+    use ava_model_provider_info::create_oss_provider_with_base_url;
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
     async fn version_check_reuses_existing_ollama_client() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} set; skipping version_check_reuses_existing_ollama_client",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }

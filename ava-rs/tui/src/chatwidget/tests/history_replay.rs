@@ -1,16 +1,16 @@
 use super::helpers::drain_insert_history_transcript;
 use super::*;
 use crate::app_event::HistoryLookupResponse;
-use codex_app_server_protocol::ImageReference;
-use codex_app_server_protocol::NetworkAccess;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_app_server_protocol::ImageReference;
+use ava_app_server_protocol::NetworkAccess;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -101,7 +101,7 @@ async fn replayed_failed_turns_preserve_overload_warnings_between_retries() {
             Some(AppServerTurnError {
                 misalignment: None,
                 message: error_message.to_string(),
-                codex_error_info: Some(CodexErrorInfo::ServerOverloaded),
+                ava_error_info: Some(AvaErrorInfo::ServerOverloaded),
                 additional_details: None,
             }),
         )
@@ -287,9 +287,9 @@ async fn replayed_delegated_tool_output_is_attributed_without_seeding_composer_h
     let item = AppServerThreadItem::FunctionCallOutput {
         id: "delegation-1".to_string(),
         name: "send_message_to_thread".to_string(),
-        namespace: Some("codex_tui".to_string()),
+        namespace: Some("ava_tui".to_string()),
         output: FunctionCallOutputBody::Text(
-            "<codex_delegation>\n  <source_thread_id>source-task</source_thread_id>\n  <input>Follow &lt;up&gt; &amp; report</input>\n</codex_delegation>".to_string(),
+            "<ava_delegation>\n  <source_thread_id>source-task</source_thread_id>\n  <input>Follow &lt;up&gt; &amp; report</input>\n</ava_delegation>".to_string(),
         ),
     };
     chat.replay_thread_item(
@@ -913,8 +913,8 @@ async fn forked_thread_history_line_without_name_shows_id_once_snapshot() {
     let (chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let mut chat = chat;
     let temp = tempdir().expect("tempdir");
-    chat.config.codex_home =
-        codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(temp.path())
+    chat.config.ava_home =
+        ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(temp.path())
             .expect("temp dir is absolute");
 
     let forked_from_id =
@@ -1021,8 +1021,8 @@ async fn app_server_forked_thread_history_line_uses_app_server_title_snapshot() 
     let (chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let mut chat = chat;
     let temp = tempdir().expect("tempdir");
-    chat.config.codex_home =
-        codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(temp.path())
+    chat.config.ava_home =
+        ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(temp.path())
             .expect("temp dir is absolute");
 
     let forked_from_id =
@@ -1051,7 +1051,7 @@ async fn app_server_forked_thread_history_line_uses_app_server_title_snapshot() 
     assert!(combined.contains("app-server-parent-thread"));
     assert!(
         !combined.contains("stale-local-thread"),
-        "app-server fork title lookup should not read local CODEX_HOME"
+        "app-server fork title lookup should not read local AVA_HOME"
     );
     assert_chatwidget_snapshot!("app_server_forked_thread_history_line", combined);
 }
@@ -1061,8 +1061,8 @@ async fn app_server_forked_thread_history_line_without_app_server_name_ignores_l
     let (chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let mut chat = chat;
     let temp = tempdir().expect("tempdir");
-    chat.config.codex_home =
-        codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(temp.path())
+    chat.config.ava_home =
+        ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(temp.path())
             .expect("temp dir is absolute");
 
     let forked_from_id =
@@ -1090,7 +1090,7 @@ async fn app_server_forked_thread_history_line_without_app_server_name_ignores_l
 
     assert!(
         !combined.contains("stale-local-thread"),
-        "app-server fork title lookup should not read local CODEX_HOME"
+        "app-server fork title lookup should not read local AVA_HOME"
     );
     assert_chatwidget_snapshot!(
         "app_server_forked_thread_history_line_without_app_server_name",
@@ -1126,7 +1126,7 @@ async fn replayed_retryable_app_server_error_keeps_turn_running() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -1144,7 +1144,7 @@ async fn replayed_retryable_app_server_error_keeps_turn_running() {
             error: AppServerTurnError {
                 misalignment: None,
                 message: "Reconnecting... 1/5".to_string(),
-                codex_error_info: None,
+                ava_error_info: None,
                 additional_details: Some("Idle timeout waiting for SSE".to_string()),
             },
             will_retry: true,
@@ -1287,7 +1287,7 @@ async fn replayed_mcp_tool_call_stays_active_until_completion() {
         id: "mcp-1".to_string(),
         server: "copilot-bridge".to_string(),
         tool: "copilot".to_string(),
-        status: codex_app_server_protocol::McpToolCallStatus::InProgress,
+        status: ava_app_server_protocol::McpToolCallStatus::InProgress,
         arguments: json!({"action": "wait"}),
         app_context: None,
         mcp_app_resource_uri: None,
@@ -1310,7 +1310,7 @@ async fn replayed_mcp_tool_call_stays_active_until_completion() {
     assert!(!active.contains("MCP tool call completed without a result"));
 
     if let AppServerThreadItem::McpToolCall { status, .. } = &mut item {
-        *status = codex_app_server_protocol::McpToolCallStatus::Completed;
+        *status = ava_app_server_protocol::McpToolCallStatus::Completed;
     }
     chat.on_mcp_tool_call_completed(item);
     assert!(chat.transcript.active_cell.is_none());
@@ -1336,14 +1336,14 @@ async fn failed_repl_mcp_tool_call_preserves_status_and_result() {
                     id: "mcp-failed".to_string(),
                     server: server.to_string(),
                     tool: "js".to_string(),
-                    status: codex_app_server_protocol::McpToolCallStatus::Failed,
+                    status: ava_app_server_protocol::McpToolCallStatus::Failed,
                     arguments: json!({"title": "Inspect workspace"}),
                     app_context: None,
                     mcp_app_resource_uri: None,
                     mcp_app_ui: None,
                     plugin_id: None,
                     read_only_hint: None,
-                    result: Some(Box::new(codex_app_server_protocol::McpToolCallResult {
+                    result: Some(Box::new(ava_app_server_protocol::McpToolCallResult {
                         content: vec![
                             json!({"type": "text", "text": "Script failed"}),
                             json!({"type": "text", "text": r#"{"exit_code":0,"output":"ready","chunk_id":"chunk-1"}"#}),
@@ -1403,7 +1403,7 @@ async fn deferred_mcp_lifecycle_events_keep_fifo_after_stream_finishes() {
         id: "mcp-deferred".to_string(),
         server: "copilot-bridge".to_string(),
         tool: "copilot".to_string(),
-        status: codex_app_server_protocol::McpToolCallStatus::InProgress,
+        status: ava_app_server_protocol::McpToolCallStatus::InProgress,
         arguments: json!({"action": "wait"}),
         app_context: None,
         mcp_app_resource_uri: None,
@@ -1421,14 +1421,14 @@ async fn deferred_mcp_lifecycle_events_keep_fifo_after_stream_finishes() {
         id: "mcp-deferred".to_string(),
         server: "copilot-bridge".to_string(),
         tool: "copilot".to_string(),
-        status: codex_app_server_protocol::McpToolCallStatus::Completed,
+        status: ava_app_server_protocol::McpToolCallStatus::Completed,
         arguments: json!({"action": "wait"}),
         app_context: None,
         mcp_app_resource_uri: None,
         mcp_app_ui: None,
         plugin_id: None,
         read_only_hint: None,
-        result: Some(Box::new(codex_app_server_protocol::McpToolCallResult {
+        result: Some(Box::new(ava_app_server_protocol::McpToolCallResult {
             content: vec![json!({"type": "text", "text": "deferred result"})],
             structured_content: None,
             meta: None,
@@ -1461,7 +1461,7 @@ async fn live_reasoning_summary_is_not_rendered_twice_when_item_completes() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -1520,7 +1520,7 @@ async fn live_reasoning_summary_drops_empty_parts_without_losing_content() {
             thread_id: "thread-1".to_string(),
             turn: AppServerTurn {
                 id: "turn-1".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
                 status: AppServerTurnStatus::InProgress,
                 error: None,
@@ -1541,7 +1541,7 @@ async fn live_reasoning_summary_drops_empty_parts_without_losing_content() {
     ] {
         chat.handle_server_notification(
             ServerNotification::ReasoningSummaryPartAdded(
-                codex_app_server_protocol::ReasoningSummaryPartAddedNotification {
+                ava_app_server_protocol::ReasoningSummaryPartAddedNotification {
                     thread_id: "thread-1".to_string(),
                     turn_id: "turn-1".to_string(),
                     item_id: "reasoning-1".to_string(),
@@ -1610,8 +1610,8 @@ async fn replayed_in_progress_turn_marks_task_running() {
         ReplayKind::ThreadSnapshot,
     ] {
         for items_view in [
-            codex_app_server_protocol::TurnItemsView::Full,
-            codex_app_server_protocol::TurnItemsView::NotLoaded,
+            ava_app_server_protocol::TurnItemsView::Full,
+            ava_app_server_protocol::TurnItemsView::NotLoaded,
         ] {
             let (mut chat, mut rx, mut op_rx) =
                 make_chatwidget_manual(/*model_override*/ None).await;

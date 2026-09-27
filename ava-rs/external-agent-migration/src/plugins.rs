@@ -1,13 +1,13 @@
-use codex_analytics::PluginInstallSource;
-use codex_core::config::ConfigBuilder;
-use codex_core::plugins_manager_for_config;
-use codex_core_plugins::PluginInstallError;
-use codex_core_plugins::PluginInstallRequest;
-use codex_core_plugins::marketplace::MarketplaceError;
-use codex_core_plugins::marketplace::find_marketplace_manifest_path;
-use codex_core_plugins::marketplace_add::MarketplaceAddRequest;
-use codex_core_plugins::marketplace_add::add_marketplace;
-use codex_core_plugins::marketplace_add::is_local_marketplace_source;
+use ava_analytics::PluginInstallSource;
+use ava_core::config::ConfigBuilder;
+use ava_core::plugins_manager_for_config;
+use ava_core_plugins::PluginInstallError;
+use ava_core_plugins::PluginInstallRequest;
+use ava_core_plugins::marketplace::MarketplaceError;
+use ava_core_plugins::marketplace::find_marketplace_manifest_path;
+use ava_core_plugins::marketplace_add::MarketplaceAddRequest;
+use ava_core_plugins::marketplace_add::add_marketplace;
+use ava_core_plugins::marketplace_add::is_local_marketplace_source;
 use std::collections::BTreeMap;
 use std::io;
 use std::path::Path;
@@ -96,10 +96,10 @@ impl ExternalAgentConfigService {
         };
         let import_sources = self.marketplace_import_sources(cwd)?;
         let config = ConfigBuilder::default()
-            .codex_home(self.codex_home.clone())
+            .ava_home(self.ava_home.clone())
             .fallback_cwd(Some(
                 cwd.map(Path::to_path_buf)
-                    .unwrap_or_else(|| self.codex_home.clone()),
+                    .unwrap_or_else(|| self.ava_home.clone()),
             ))
             .build()
             .await
@@ -159,7 +159,7 @@ impl ExternalAgentConfigService {
                     ref_name: import_source.ref_name,
                     sparse_paths: Vec::new(),
                 };
-                match add_marketplace(self.codex_home.clone(), requirements.clone(), request).await
+                match add_marketplace(self.ava_home.clone(), requirements.clone(), request).await
                 {
                     Ok(add_marketplace_outcome) => {
                         let Some(marketplace_path) = find_marketplace_manifest_path(
@@ -199,10 +199,10 @@ impl ExternalAgentConfigService {
                 }
             };
             let install_config = match ConfigBuilder::default()
-                .codex_home(self.codex_home.clone())
+                .ava_home(self.ava_home.clone())
                 .fallback_cwd(Some(
                     cwd.map(Path::to_path_buf)
-                        .unwrap_or_else(|| self.codex_home.clone()),
+                        .unwrap_or_else(|| self.ava_home.clone()),
                 ))
                 .build()
                 .await

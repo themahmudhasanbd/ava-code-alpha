@@ -15,11 +15,11 @@ use crate::api::TaskText;
 use chrono::DateTime;
 use chrono::Utc;
 
-use codex_api::SharedAuthProvider;
-use codex_backend_client as backend;
-use codex_backend_client::CodeTaskDetailsResponseExt;
-use codex_git_utils::ApplyGitRequest;
-use codex_git_utils::apply_git_patch;
+use ava_api::SharedAuthProvider;
+use ava_backend_client as backend;
+use ava_backend_client::CodeTaskDetailsResponseExt;
+use ava_git_utils::ApplyGitRequest;
+use ava_git_utils::apply_git_patch;
 
 #[derive(Clone)]
 pub struct HttpClient {
@@ -30,7 +30,7 @@ pub struct HttpClient {
 impl HttpClient {
     pub fn new(
         base_url: impl Into<String>,
-        http_client_factory: codex_http_client::HttpClientFactory,
+        http_client_factory: ava_http_client::HttpClientFactory,
     ) -> Self {
         let base_url = base_url.into();
         let backend = backend::Client::new_without_redirects(base_url.clone(), http_client_factory);
@@ -293,7 +293,7 @@ mod api {
 
             let url = match details_path(self.base_url, &id.0) {
                 Some(url) => url,
-                None => format!("{}/api/codex/tasks/{}", self.base_url, id.0),
+                None => format!("{}/api/ava/tasks/{}", self.base_url, id.0),
             };
             Err(CloudTaskError::Http(format!(
                 "No assistant text messages in response. GET {url}; content-type={ct}; body={body}"
@@ -344,7 +344,7 @@ mod api {
                 "content": [{ "content_type": "text", "text": prompt }]
             }));
 
-            if let Ok(diff) = std::env::var("CODEX_STARTING_DIFF")
+            if let Ok(diff) = std::env::var("AVA_STARTING_DIFF")
                 && !diff.is_empty()
             {
                 input_items.push(serde_json::json!({
@@ -577,7 +577,7 @@ mod api {
     fn details_path(base_url: &str, id: &str) -> Option<String> {
         if base_url.contains("/backend-api") {
             Some(format!("{base_url}/wham/tasks/{id}"))
-        } else if base_url.contains("/api/codex") {
+        } else if base_url.contains("/api/ava") {
             Some(format!("{base_url}/tasks/{id}"))
         } else {
             None
@@ -882,7 +882,7 @@ mod api {
     fn summarize_patch_for_logging(patch: &str) -> String {
         let trimmed = patch.trim_start();
         let kind = if trimmed.starts_with("*** Begin Patch") {
-            "codex-patch"
+            "ava-patch"
         } else if trimmed.starts_with("diff --git ") || trimmed.contains("\n*** End Patch\n") {
             "git-diff"
         } else if trimmed.starts_with("@@ ") || trimmed.contains("\n@@ ") {

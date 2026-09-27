@@ -9,17 +9,17 @@ use std::ptr;
 
 use anyhow::Context;
 use anyhow::Result;
-pub(crate) use codex_windows_sandbox::CORE_INSTALLATION_KEY;
-pub(crate) use codex_windows_sandbox::DesktopInstallation;
-pub(crate) use codex_windows_sandbox::INSTALLATION_KEY;
-pub(crate) use codex_windows_sandbox::INSTALLATION_VALUE;
-pub(crate) use codex_windows_sandbox::InstallationRecord;
-pub(crate) use codex_windows_sandbox::RuntimeAccountRegistration;
-pub(crate) use codex_windows_sandbox::RuntimeRegistration;
-pub(crate) use codex_windows_sandbox::load_installation as load;
-pub(crate) use codex_windows_sandbox::remove_installation as remove;
-pub(crate) use codex_windows_sandbox::save_installation as save_runtime;
-use codex_windows_sandbox::validate_local_directory_path;
+pub(crate) use ava_windows_sandbox::CORE_INSTALLATION_KEY;
+pub(crate) use ava_windows_sandbox::DesktopInstallation;
+pub(crate) use ava_windows_sandbox::INSTALLATION_KEY;
+pub(crate) use ava_windows_sandbox::INSTALLATION_VALUE;
+pub(crate) use ava_windows_sandbox::InstallationRecord;
+pub(crate) use ava_windows_sandbox::RuntimeAccountRegistration;
+pub(crate) use ava_windows_sandbox::RuntimeRegistration;
+pub(crate) use ava_windows_sandbox::load_installation as load;
+pub(crate) use ava_windows_sandbox::remove_installation as remove;
+pub(crate) use ava_windows_sandbox::save_installation as save_runtime;
+use ava_windows_sandbox::validate_local_directory_path;
 use windows_sys::Win32::Foundation as foundation;
 use windows_sys::Win32::UI::Shell::GetUserProfileDirectoryW;
 
@@ -41,7 +41,7 @@ pub(crate) fn read_desktop_installation(
         PathBuf::from(OsString::from_wide(&profile[..length as usize - 1])).join(".cache");
     validate_local_directory_path(&cache_home)?;
     Ok(DesktopInstallation {
-        created_codex_home: home.join(DESKTOP_INSTALLATION_MARKER).is_file(),
+        created_ava_home: home.join(DESKTOP_INSTALLATION_MARKER).is_file(),
         cache_home,
     })
 }
@@ -60,7 +60,7 @@ pub(crate) fn is_current_package_family(record: &InstallationRecord) -> Result<b
 }
 
 pub(crate) fn save(mut record: InstallationRecord) -> Result<InstallationRecord> {
-    let _setup_lock = codex_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
+    let _setup_lock = ava_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
 
     record.runtime = None;
     if let Some(current) = load_runtime()? {

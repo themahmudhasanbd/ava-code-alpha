@@ -6,17 +6,17 @@ use super::auth::onboarding_request_id;
 use super::keys;
 use crate::key_hint::KeyBindingListExt;
 use crate::wrapping::word_wrap_lines;
-use codex_app_server_protocol::AwsCredentialType;
-use codex_app_server_protocol::BedrockAwsProfile;
-use codex_app_server_protocol::BedrockDiscoverParams;
-use codex_app_server_protocol::BedrockDiscoverResponse;
-use codex_app_server_protocol::BedrockEnvironmentCredential;
-use codex_app_server_protocol::BedrockSetupParams;
-use codex_app_server_protocol::BedrockSetupResponse;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::LoginAccountParams;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
+use ava_app_server_protocol::AwsCredentialType;
+use ava_app_server_protocol::BedrockAwsProfile;
+use ava_app_server_protocol::BedrockDiscoverParams;
+use ava_app_server_protocol::BedrockDiscoverResponse;
+use ava_app_server_protocol::BedrockEnvironmentCredential;
+use ava_app_server_protocol::BedrockSetupParams;
+use ava_app_server_protocol::BedrockSetupResponse;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::LoginAccountParams;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -437,7 +437,7 @@ impl BedrockState {
             }
             BedrockView::EnvironmentInstructions => {
                 lines.push(
-                    "  Configure AWS credentials in your environment, then restart Codex.".into(),
+                    "  Configure AWS credentials in your environment, then restart Ava.".into(),
                 );
                 lines.push("".into());
                 lines.push(Line::from(vec![

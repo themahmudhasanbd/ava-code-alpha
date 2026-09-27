@@ -1,5 +1,5 @@
-use codex_plugin::AppConnectorId;
-use codex_plugin::AppDeclaration;
+use ava_plugin::AppConnectorId;
+use ava_plugin::AppDeclaration;
 use pretty_assertions::assert_eq;
 
 use super::parse_plugin_app_config;

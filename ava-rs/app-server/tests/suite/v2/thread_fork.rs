@@ -10,71 +10,71 @@ use app_test_support::create_mock_responses_server_sequence_unchecked;
 use app_test_support::rollout_path;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ActivePermissionProfile;
-use codex_app_server_protocol::ApprovalsReviewer;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::DeprecationNoticeNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::ThreadAttachmentAddParams;
-use codex_app_server_protocol::ThreadAttachmentAddResponse;
-use codex_app_server_protocol::ThreadAttachmentListParams;
-use codex_app_server_protocol::ThreadAttachmentListResponse;
-use codex_app_server_protocol::ThreadAttachmentRemoveParams;
-use codex_app_server_protocol::ThreadAttachmentRemoveResponse;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadListParams;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSearchOccurrencesParams;
-use codex_app_server_protocol::ThreadSearchOccurrencesResponse;
-use codex_app_server_protocol::ThreadSource;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStartedNotification;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadStatusChangedNotification;
-use codex_app_server_protocol::ThreadTurnsListParams;
-use codex_app_server_protocol::ThreadTurnsListResponse;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
-use codex_login::REFRESH_TOKEN_URL_OVERRIDE_ENV_VAR;
-use codex_protocol::ThreadId;
-use codex_protocol::items::TurnItem as CoreTurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
-use codex_rollout::append_rollout_item_to_path;
-use codex_rollout::append_thread_name;
-use codex_rollout::read_session_meta_line;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ActivePermissionProfile;
+use ava_app_server_protocol::ApprovalsReviewer;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::DeprecationNoticeNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::ThreadAttachmentAddParams;
+use ava_app_server_protocol::ThreadAttachmentAddResponse;
+use ava_app_server_protocol::ThreadAttachmentListParams;
+use ava_app_server_protocol::ThreadAttachmentListResponse;
+use ava_app_server_protocol::ThreadAttachmentRemoveParams;
+use ava_app_server_protocol::ThreadAttachmentRemoveResponse;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadListParams;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSearchOccurrencesParams;
+use ava_app_server_protocol::ThreadSearchOccurrencesResponse;
+use ava_app_server_protocol::ThreadSource;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStartedNotification;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadStatusChangedNotification;
+use ava_app_server_protocol::ThreadTurnsListParams;
+use ava_app_server_protocol::ThreadTurnsListResponse;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
+use ava_login::REFRESH_TOKEN_URL_OVERRIDE_ENV_VAR;
+use ava_protocol::ThreadId;
+use ava_protocol::items::TurnItem as CoreTurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
+use ava_rollout::append_rollout_item_to_path;
+use ava_rollout::append_thread_name;
+use ava_rollout::read_session_meta_line;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -128,12 +128,12 @@ async fn list_threads(mcp: &mut TestAppServer) -> Result<ThreadListResponse> {
 #[tokio::test]
 async fn thread_fork_creates_new_thread_and_emits_started() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let preview = "Saved user message";
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         preview,
@@ -141,7 +141,7 @@ async fn thread_fork_creates_new_thread_and_emits_started() -> Result<()> {
         /*git_info*/ None,
     )?;
 
-    let original_path = codex_home
+    let original_path = ava_home
         .path()
         .join("sessions")
         .join("2025")
@@ -161,7 +161,7 @@ async fn thread_fork_creates_new_thread_and_emits_started() -> Result<()> {
     let original_contents = std::fs::read_to_string(&original_path)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -310,15 +310,15 @@ async fn thread_fork_preserves_persisted_permission_profile_and_honors_overrides
     let server = create_mock_responses_server_repeating_assistant("Done").await;
 
     for history_mode in [ThreadHistoryMode::Legacy, ThreadHistoryMode::Paginated] {
-        let codex_home = TempDir::new()?;
+        let ava_home = TempDir::new()?;
         MockResponsesConfig::new(&server.uri())
             .with_root_config("default_permissions = \":danger-full-access\"")
             .with_extra_config("[permissions.dev]\nextends = \":read-only\"")
-            .write(codex_home.path())?;
+            .write(ava_home.path())?;
 
         let source_thread_id = {
             let mut mcp = TestAppServer::builder()
-                .with_codex_home(codex_home.path())
+                .with_ava_home(ava_home.path())
                 .without_managed_config()
                 .build_initialized()
                 .await?;
@@ -348,7 +348,7 @@ async fn thread_fork_preserves_persisted_permission_profile_and_honors_overrides
         };
 
         let mut mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .without_managed_config()
             .build_initialized()
             .await?;
@@ -418,12 +418,12 @@ async fn assert_thread_fork_preserves_persisted_approvals_reviewer(
     history_mode: ThreadHistoryMode,
 ) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let (source_thread_id, source_turn_id) = {
         let mut mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build_initialized()
             .await?;
 
@@ -513,7 +513,7 @@ async fn assert_thread_fork_preserves_persisted_approvals_reviewer(
     };
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let fork_id = mcp
@@ -584,11 +584,11 @@ async fn assert_thread_fork_at_named_boundary_keeps_only_terminal_prefix(
     history_mode: ThreadHistoryMode,
 ) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -636,12 +636,12 @@ async fn assert_thread_fork_at_named_boundary_keeps_only_terminal_prefix(
             params: ThreadAttachmentAddParams {
                 thread_id: source_thread_id.clone(),
                 attachment_type: "pull_request".to_string(),
-                identity_key: "openai/codex#123".to_string(),
+                identity_key: "openai/ava#123".to_string(),
                 payload: json!({"url": "https://github.com/openai/codex/pull/123"}),
             },
         })
         .await?;
-    let sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    let sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let pool = sqlite.open_read_write_pool(&sqlite.state_db_path()).await?;
     sqlx::query(
         "CREATE TRIGGER fail_fork_attachment_copy BEFORE INSERT ON thread_attachments \
@@ -742,7 +742,7 @@ async fn assert_thread_fork_at_named_boundary_keeps_only_terminal_prefix(
     assert_ne!(copied.data[0].id, attachment.attachment.id);
     assert_eq!(
         copied.data[0],
-        codex_app_server_protocol::ThreadAttachment {
+        ava_app_server_protocol::ThreadAttachment {
             id: copied.data[0].id.clone(),
             created_at: copied.data[0].created_at,
             ..attachment.attachment.clone()
@@ -864,7 +864,7 @@ async fn assert_thread_fork_at_named_boundary_keeps_only_terminal_prefix(
     // Resuming a fork must not copy its parent's attachments again after an explicit removal.
     mcp.shutdown_gracefully().await?;
     let mut resumed = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let _: ThreadResumeResponse = resumed
@@ -912,9 +912,9 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
         ]),
     ])
     .await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let config_path = codex_home.path().join("config.toml");
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         &config_path,
@@ -922,7 +922,7 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -956,13 +956,13 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
     timeout(DEFAULT_READ_TIMEOUT, mcp.shutdown_gracefully()).await??;
     drop(mcp);
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
 
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "mock_provider".into(),
     )
     .await?;
@@ -971,7 +971,7 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
         .replace_thread_goal(
             source_thread_id,
             "continue after the retry",
-            codex_state::ThreadGoalStatus::Active,
+            ava_state::ThreadGoalStatus::Active,
             /*token_budget*/ Some(150),
         )
         .await?;
@@ -981,7 +981,7 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
             source_thread_id,
             /*time_delta_seconds*/ 11,
             /*token_delta*/ 37,
-            codex_state::GoalAccountingMode::ActiveOnly,
+            ava_state::GoalAccountingMode::ActiveOnly,
             Some(source_goal.goal_id.as_str()),
         )
         .await?;
@@ -1059,7 +1059,7 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
     let forked_thread_id = ThreadId::from_string(&forked_thread.id)?;
     drop(mcp);
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -1123,7 +1123,7 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
     assert!(forked_goal.time_used_seconds >= source_goal.time_used_seconds);
     assert_eq!(
         forked_goal.status,
-        codex_state::ThreadGoalStatus::BudgetLimited
+        ava_state::ThreadGoalStatus::BudgetLimited
     );
     assert_eq!(
         state_db
@@ -1139,11 +1139,11 @@ async fn thread_fork_defers_inherited_active_goal_until_next_turn() -> Result<()
 #[tokio::test]
 async fn thread_fork_inherits_explicit_source_name_from_session_index() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1152,10 +1152,10 @@ async fn thread_fork_inherits_explicit_source_name_from_session_index() -> Resul
     )?;
     let source_thread_id = ThreadId::from_string(&conversation_id)?;
     let source_name = "Renamed parent thread";
-    append_thread_name(codex_home.path(), source_thread_id, source_name).await?;
+    append_thread_name(ava_home.path(), source_thread_id, source_name).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1182,19 +1182,19 @@ async fn thread_fork_inherits_explicit_source_name_from_session_index() -> Resul
 #[tokio::test]
 async fn thread_fork_can_load_source_by_path() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let preview = "Saved user message";
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         preview,
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let original_path = codex_home
+    let original_path = ava_home
         .path()
         .join("sessions")
         .join("2025")
@@ -1205,7 +1205,7 @@ async fn thread_fork_can_load_source_by_path() -> Result<()> {
         ));
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1232,19 +1232,19 @@ async fn thread_fork_can_load_source_by_path() -> Result<()> {
 #[tokio::test]
 async fn thread_fork_can_cut_before_unfinished_stored_turn() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let filename_ts = "2025-01-05T12-00-00";
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         "Saved user message",
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let source_path = rollout_path(codex_home.path(), filename_ts, &conversation_id);
+    let source_path = rollout_path(ava_home.path(), filename_ts, &conversation_id);
     let unfinished_turn_id = "unfinished-turn";
     append_rollout_item_to_path(
         &source_path,
@@ -1268,7 +1268,7 @@ async fn thread_fork_can_cut_before_unfinished_stored_turn() -> Result<()> {
     .await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1306,11 +1306,11 @@ async fn thread_fork_can_cut_before_unfinished_stored_turn() -> Result<()> {
 #[tokio::test]
 async fn thread_fork_emits_restored_token_usage_before_next_turn() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_rollout_with_token_usage(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1318,7 +1318,7 @@ async fn thread_fork_emits_restored_token_usage_before_next_turn() -> Result<()>
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1359,11 +1359,11 @@ async fn thread_fork_emits_restored_token_usage_before_next_turn() -> Result<()>
 #[tokio::test]
 async fn thread_fork_can_exclude_turns_and_skip_restored_token_usage() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_rollout_with_token_usage(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1371,7 +1371,7 @@ async fn thread_fork_can_exclude_turns_and_skip_restored_token_usage() -> Result
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1407,14 +1407,14 @@ async fn thread_fork_can_exclude_turns_and_skip_restored_token_usage() -> Result
 async fn thread_fork_tracks_thread_initialized_analytics() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!(r#"chatgpt_base_url = "{}""#, server.uri()))
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1423,7 +1423,7 @@ async fn thread_fork_tracks_thread_initialized_analytics() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .without_managed_config()
         .build_initialized()
@@ -1445,7 +1445,7 @@ async fn thread_fork_tracks_thread_initialized_analytics() -> Result<()> {
         event,
         &thread.id,
         &thread.session_id,
-        "codex",
+        "ava",
         "mock-model",
         "forked",
         "user",
@@ -1463,11 +1463,11 @@ async fn thread_fork_tracks_thread_initialized_analytics() -> Result<()> {
 #[tokio::test]
 async fn thread_fork_rejects_unmaterialized_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1506,11 +1506,11 @@ async fn thread_fork_rejects_unmaterialized_thread() -> Result<()> {
 #[tokio::test]
 async fn thread_fork_creates_reference_backed_paginated_thread() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1518,7 +1518,7 @@ async fn thread_fork_creates_reference_backed_paginated_thread() -> Result<()> {
         /*git_info*/ None,
     )?;
     let source_path = rollout_path(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         conversation_id.as_str(),
     );
@@ -1544,7 +1544,7 @@ async fn thread_fork_creates_reference_backed_paginated_thread() -> Result<()> {
         append_rollout_item_to_path(source_path.as_path(), &item).await?;
     }
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1594,7 +1594,7 @@ async fn thread_fork_creates_reference_backed_paginated_thread() -> Result<()> {
         .expect("forked turn response request");
     let request_body = response_request.body_json::<Value>()?;
     let turn_metadata: Value = serde_json::from_str(
-        request_body["client_metadata"]["x-codex-turn-metadata"]
+        request_body["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("forked turn metadata"),
     )?;
@@ -1663,18 +1663,18 @@ async fn thread_fork_creates_reference_backed_paginated_thread() -> Result<()> {
 #[tokio::test]
 async fn thread_fork_accepts_resumed_rollout_under_symlinked_sessions_root() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let external = TempDir::new()?;
     let external_sessions = external.path().join("sessions");
     std::fs::create_dir_all(external_sessions.as_path())?;
     std::os::unix::fs::symlink(
         external_sessions.as_path(),
-        codex_home.path().join("sessions"),
+        ava_home.path().join("sessions"),
     )?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1682,12 +1682,12 @@ async fn thread_fork_accepts_resumed_rollout_under_symlinked_sessions_root() -> 
         /*git_info*/ None,
     )?;
     let source_path = rollout_path(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         conversation_id.as_str(),
     );
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1718,11 +1718,11 @@ async fn thread_fork_accepts_resumed_rollout_under_symlinked_sessions_root() -> 
 #[tokio::test]
 async fn thread_fork_warns_for_paginated_full_history_hydration() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -1730,7 +1730,7 @@ async fn thread_fork_warns_for_paginated_full_history_hydration() -> Result<()> 
         /*git_info*/ None,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1799,7 +1799,7 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
     multi_agent_version: MultiAgentVersion,
 ) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = MockResponsesConfig::new(&server.uri());
     let (config, expected_marker_role, thread_source) = match multi_agent_version {
         MultiAgentVersion::V2 => (
@@ -1810,16 +1810,16 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
         MultiAgentVersion::V1 => (config, "user", None),
         MultiAgentVersion::Disabled => unreachable!("interruption markers require agent support"),
     };
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
     let source_thread_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let source_path = rollout_path(codex_home.path(), "2025-01-05T12-00-00", &source_thread_id);
+    let source_path = rollout_path(ava_home.path(), "2025-01-05T12-00-00", &source_thread_id);
     let source_id = ThreadId::from_string(source_thread_id.as_str())?;
     let user_response_item = |id: &str| {
         RolloutItem::ResponseItem(
@@ -1842,7 +1842,7 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
             item: CoreTurnItem::UserMessage(UserMessageItem {
                 id: id.to_string(),
                 client_id: None,
-                content: vec![codex_protocol::user_input::UserInput::Text {
+                content: vec![ava_protocol::user_input::UserInput::Text {
                     text: format!("{id} needle"),
                     text_elements: Vec::new(),
                 }],
@@ -1870,7 +1870,7 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
     )
     .await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1930,7 +1930,7 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
         .expect("fork history base");
     let child_rollout = std::fs::read_to_string(forked_path.as_path())?
         .lines()
-        .map(codex_rollout::parse_rollout_line)
+        .map(ava_rollout::parse_rollout_line)
         .collect::<Result<Vec<_>, _>>()?;
     assert!(matches!(
         child_rollout.as_slice(),
@@ -1950,7 +1950,7 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
             },
         ] if matches!(
             &response_item.item,
-            codex_protocol::models::ResponseItem::Message { role, .. }
+            ava_protocol::models::ResponseItem::Message { role, .. }
                 if role == expected_marker_role
         ) && aborted.turn_id.as_deref() == Some("active-turn")
     ));
@@ -2112,7 +2112,7 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
 
     drop(mcp);
     let mut resumed_app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -2160,7 +2160,7 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
         .expect("cold-resumed model request")
         .body_json::<Value>()?;
     let turn_metadata: Value = serde_json::from_str(
-        request_body["client_metadata"]["x-codex-turn-metadata"]
+        request_body["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("cold-resumed turn metadata"),
     )?;
@@ -2195,11 +2195,11 @@ async fn assert_thread_fork_freezes_active_paginated_turn_as_interrupted(
 #[tokio::test]
 async fn thread_fork_with_empty_path_uses_thread_id() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -2208,7 +2208,7 @@ async fn thread_fork_with_empty_path_uses_thread_id() -> Result<()> {
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -2251,14 +2251,14 @@ async fn thread_fork_surfaces_cloud_config_bundle_load_errors() -> Result<()> {
         .mount(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let model_server = create_mock_responses_server_repeating_assistant("Done").await;
     let chatgpt_base_url = format!("{}/backend-api", server.uri());
     MockResponsesConfig::new(&model_server.uri())
         .with_root_config(&format!(r#"chatgpt_base_url = "{chatgpt_base_url}""#))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .refresh_token("stale-refresh-token")
             .plan_type("business")
@@ -2269,7 +2269,7 @@ async fn thread_fork_surfaces_cloud_config_bundle_load_errors() -> Result<()> {
     )?;
 
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -2279,7 +2279,7 @@ async fn thread_fork_surfaces_cloud_config_bundle_load_errors() -> Result<()> {
 
     let refresh_token_url = format!("{}/oauth/token", server.uri());
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[
             ("OPENAI_API_KEY", None),
@@ -2340,8 +2340,8 @@ async fn assert_thread_fork_ephemeral_remains_pathless_and_omits_listing(
     history_mode: ThreadHistoryMode,
 ) -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let preview = "Saved user message";
     let create_rollout = match history_mode {
@@ -2349,7 +2349,7 @@ async fn assert_thread_fork_ephemeral_remains_pathless_and_omits_listing(
         ThreadHistoryMode::Paginated => create_fake_paginated_rollout,
     };
     let conversation_id = create_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         preview,
@@ -2358,7 +2358,7 @@ async fn assert_thread_fork_ephemeral_remains_pathless_and_omits_listing(
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -2533,10 +2533,10 @@ async fn assert_thread_fork_ephemeral_remains_pathless_and_omits_listing(
 #[tokio::test]
 async fn thread_fork_rejects_incompatible_boundaries_and_ephemeral_goal_deferral() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -2544,7 +2544,7 @@ async fn thread_fork_rejects_incompatible_boundaries_and_ephemeral_goal_deferral
         /*git_info*/ None,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -2582,13 +2582,13 @@ async fn thread_fork_rejects_incompatible_boundaries_and_ephemeral_goal_deferral
 }
 
 #[tokio::test]
-async fn pathless_ephemeral_thread_rejects_codex_home_path_after_reload() -> Result<()> {
+async fn pathless_ephemeral_thread_rejects_ava_home_path_after_reload() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let parent_thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Parent message",
@@ -2598,7 +2598,7 @@ async fn pathless_ephemeral_thread_rejects_codex_home_path_after_reload() -> Res
 
     let side_thread_id = {
         let mut app_server = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .without_auto_env()
             .build_initialized()
             .await?;
@@ -2638,16 +2638,16 @@ async fn pathless_ephemeral_thread_rejects_codex_home_path_after_reload() -> Res
     };
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
-    let codex_home_path = codex_home.path().to_path_buf();
+    let ava_home_path = ava_home.path().to_path_buf();
 
     let resume_id = app_server
         .send_thread_resume_request(ThreadResumeParams {
             thread_id: side_thread_id.clone(),
-            path: Some(codex_home_path.clone()),
+            path: Some(ava_home_path.clone()),
             ..Default::default()
         })
         .await?;
@@ -2670,7 +2670,7 @@ async fn pathless_ephemeral_thread_rejects_codex_home_path_after_reload() -> Res
     let fork_id = app_server
         .send_thread_fork_request(ThreadForkParams {
             thread_id: side_thread_id,
-            path: Some(codex_home_path),
+            path: Some(ava_home_path),
             ..Default::default()
         })
         .await?;

@@ -17,17 +17,17 @@ use crate::store::DEFAULT_PLUGIN_VERSION;
 use crate::store::PluginStore;
 use crate::store::plugin_version_for_source;
 use crate::store::validate_plugin_version_segment;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_plugin::PluginId;
-use codex_protocol::items::is_safe_plugin_relative_path;
-use codex_shell_command::bash::extract_bash_command;
-use codex_shell_command::bash::parse_shell_lc_plain_commands;
-use codex_shell_command::parse_command::is_pathish;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_plugin::PluginId;
+use ava_protocol::items::is_safe_plugin_relative_path;
+use ava_shell_command::bash::extract_bash_command;
+use ava_shell_command::bash::parse_shell_lc_plain_commands;
+use ava_shell_command::parse_command::is_pathish;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::path::Component;
@@ -127,12 +127,12 @@ impl TrustedPluginRoots {
     /// Called only after the authenticated remote bundle installer has prepared
     /// an isolated store. Read declarations without loading plugin capabilities.
     pub(crate) fn from_measurement_reference(
-        codex_home: &Path,
+        ava_home: &Path,
         plugin_id: &PluginId,
         version: &str,
         remote_id: &str,
     ) -> Option<Self> {
-        let store = PluginStore::try_new(codex_home.to_owned()).ok()?;
+        let store = PluginStore::try_new(ava_home.to_owned()).ok()?;
         if store.active_plugin_version(plugin_id).as_deref() != Some(version)
             || store.remote_plugin_id(plugin_id).ok()?.as_deref() != Some(remote_id)
         {
@@ -167,9 +167,9 @@ impl TrustedPluginRoots {
         );
     }
 
-    pub fn from_plugin_load_outcome(loaded_plugins: &PluginLoadOutcome, codex_home: &Path) -> Self {
+    pub fn from_plugin_load_outcome(loaded_plugins: &PluginLoadOutcome, ava_home: &Path) -> Self {
         let primary_runtime_marketplace_root = primary_runtime_marketplace_root();
-        let Ok(store) = PluginStore::try_new(codex_home.to_path_buf()) else {
+        let Ok(store) = PluginStore::try_new(ava_home.to_path_buf()) else {
             return Self::default();
         };
         let mut seen = HashSet::new();
@@ -181,7 +181,7 @@ impl TrustedPluginRoots {
                 let plugin_id = PluginId::parse(&plugin.config_name).ok()?;
                 let expected_root = Self::expected_plugin_root(
                     &store,
-                    codex_home,
+                    ava_home,
                     &plugin_id,
                     primary_runtime_marketplace_root.as_deref(),
                 )?;
@@ -205,7 +205,7 @@ impl TrustedPluginRoots {
 
     fn expected_plugin_root(
         store: &PluginStore,
-        codex_home: &Path,
+        ava_home: &Path,
         plugin_id: &PluginId,
         primary_runtime_marketplace_root: Option<&Path>,
     ) -> Option<AbsolutePathBuf> {
@@ -220,14 +220,14 @@ impl TrustedPluginRoots {
                 Some(store.plugin_root(plugin_id, &active_version))
             }
             OPENAI_CURATED_MARKETPLACE_NAME | OPENAI_API_CURATED_MARKETPLACE_NAME => {
-                let curated_sha = read_curated_plugins_sha(codex_home)?;
+                let curated_sha = read_curated_plugins_sha(ava_home)?;
                 let expected_root =
                     store.plugin_root(plugin_id, &curated_plugin_cache_version(&curated_sha));
                 let marketplace_path = match plugin_id.marketplace_name.as_str() {
-                    OPENAI_CURATED_MARKETPLACE_NAME => curated_plugins_repo_path(codex_home)
+                    OPENAI_CURATED_MARKETPLACE_NAME => curated_plugins_repo_path(ava_home)
                         .join(".agents/plugins/marketplace.json"),
                     OPENAI_API_CURATED_MARKETPLACE_NAME => {
-                        curated_plugins_api_marketplace_path(codex_home)
+                        curated_plugins_api_marketplace_path(ava_home)
                     }
                     _ => return None,
                 };

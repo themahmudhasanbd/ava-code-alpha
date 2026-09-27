@@ -1,40 +1,40 @@
-use codex_core::NotSubmittedReason;
-use codex_core::RecoverTurnRequest;
-use codex_core::StartIfIdleSubmission;
-use codex_core::StartThreadOptions;
-use codex_core::SteerSubmission;
-use codex_core::TurnInput;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_core::TurnStartOptions;
-use codex_core::config::Constrained;
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::InternalContextSource;
-use codex_core::context::InternalModelContextFragment;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::TurnStartAdmission;
-use codex_features::Feature;
-use codex_protocol::AgentPath;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
+use ava_core::NotSubmittedReason;
+use ava_core::RecoverTurnRequest;
+use ava_core::StartIfIdleSubmission;
+use ava_core::StartThreadOptions;
+use ava_core::SteerSubmission;
+use ava_core::TurnInput;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_core::TurnStartOptions;
+use ava_core::config::Constrained;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::InternalContextSource;
+use ava_core::context::InternalModelContextFragment;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::TurnStartAdmission;
+use ava_features::Feature;
+use ava_protocol::AgentPath;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::local;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -67,12 +67,12 @@ async fn host_drain_rejects_turn_start_paths_without_recording_input() -> anyhow
     let admission = Arc::new(TestAdmission(AtomicBool::new(true)));
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.turn_start_admission(admission.clone());
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
     assert_eq!(
-        test.codex
+        test.ava-code
             .start_or_steer_turn(user_message_request("rejected direct input"))
             .await?,
         TurnInputSubmission::NotSubmitted {
@@ -87,7 +87,7 @@ async fn host_drain_rejects_turn_start_paths_without_recording_input() -> anyhow
         ))),
     ] {
         assert_eq!(
-            test.codex.start_turn_if_idle(request).await?,
+            test.ava-code.start_turn_if_idle(request).await?,
             StartIfIdleSubmission::NotSubmitted {
                 reason: NotSubmittedReason::ServerDraining
             },
@@ -95,10 +95,10 @@ async fn host_drain_rejects_turn_start_paths_without_recording_input() -> anyhow
     }
     assert!(response.requests().is_empty());
     admission.0.store(false, Ordering::SeqCst);
-    test.codex
+    test.ava-code
         .start_turn_if_idle(user_message_request("allowed input"))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -116,7 +116,7 @@ async fn host_drain_allows_spawned_agent_input_but_not_automatic_work() -> anyho
     let response = responses::mount_sse_once(&server, responses::sse_completed("child")).await;
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.turn_start_admission(Arc::new(TestAdmission(AtomicBool::new(true))));
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
@@ -130,7 +130,7 @@ async fn host_drain_allows_spawned_agent_input_but_not_automatic_work() -> anyho
                 agent_nickname: None,
                 agent_role: None,
             })),
-            environments: Some(test.codex.environment_selections().await),
+            environments: Some(test.ava-code.environment_selections().await),
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?
@@ -176,9 +176,9 @@ async fn host_drain_allows_spawned_agent_input_but_not_automatic_work() -> anyho
 
 #[tokio::test]
 async fn host_drain_allows_running_review_to_finish_its_delegate() -> anyhow::Result<()> {
-    use codex_protocol::protocol::ReviewOutputEvent;
-    use codex_protocol::protocol::ReviewRequest;
-    use codex_protocol::protocol::ReviewTarget;
+    use ava_protocol::protocol::ReviewOutputEvent;
+    use ava_protocol::protocol::ReviewRequest;
+    use ava_protocol::protocol::ReviewTarget;
 
     let server = responses::start_mock_server().await;
     let expected = ReviewOutputEvent {
@@ -196,12 +196,12 @@ async fn host_drain_allows_running_review_to_finish_its_delegate() -> anyhow::Re
     .await;
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.turn_start_admission(Arc::new(TestAdmission(AtomicBool::new(true))));
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
     // The host already admitted the parent review; only its child start hits Core admission.
-    test.codex
+    test.ava-code
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -211,7 +211,7 @@ async fn host_drain_allows_running_review_to_finish_its_delegate() -> anyhow::Re
             },
         })
         .await?;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::ExitedReviewMode(_))
     })
     .await;
@@ -225,12 +225,12 @@ async fn host_drain_allows_running_review_to_finish_its_delegate() -> anyhow::Re
 
 #[tokio::test]
 async fn host_drain_closes_realtime_after_handoff_error() -> anyhow::Result<()> {
-    use codex_protocol::protocol::ConversationStartParams;
-    use codex_protocol::protocol::RealtimeConversationClosedEvent;
-    use codex_protocol::protocol::RealtimeConversationRealtimeEvent;
-    use codex_protocol::protocol::RealtimeEvent;
-    use codex_protocol::protocol::RealtimeHandoffRequested;
-    use codex_protocol::protocol::RealtimeTranscriptEntry;
+    use ava_protocol::protocol::ConversationStartParams;
+    use ava_protocol::protocol::RealtimeConversationClosedEvent;
+    use ava_protocol::protocol::RealtimeConversationRealtimeEvent;
+    use ava_protocol::protocol::RealtimeEvent;
+    use ava_protocol::protocol::RealtimeHandoffRequested;
+    use ava_protocol::protocol::RealtimeTranscriptEntry;
 
     let server = responses::start_mock_server().await;
     let response = responses::mount_sse_once(&server, responses::sse_completed("unexpected")).await;
@@ -249,29 +249,29 @@ async fn host_drain_closes_realtime_after_handoff_error() -> anyhow::Result<()> 
     .await;
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.turn_start_admission(Arc::new(TestAdmission(AtomicBool::new(true))));
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config({
             let realtime_url = realtime.uri().to_string();
             move |config| {
                 config.experimental_realtime_ws_base_url = Some(realtime_url);
-                config.realtime.version = codex_config::config_toml::RealtimeWsVersion::V1;
+                config.realtime.version = ava_config::config_toml::RealtimeWsVersion::V1;
             }
         })
         .build_with_auto_env(&server)
         .await?;
-    test.codex
+    test.ava-code
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
             flush_transcript_tail_on_session_end: false,
-            codex_responses_as_items: false,
-            codex_response_item_prefix: None,
-            codex_response_handoff_mode:
-                codex_protocol::protocol::CodexResponseHandoffMode::Thinking,
-            codex_response_handoff_channel_prefixes: None,
+            ava_responses_as_items: false,
+            ava_response_item_prefix: None,
+            ava_response_handoff_mode:
+                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_channel_prefixes: None,
             model: None,
-            output_modality: codex_protocol::protocol::RealtimeOutputModality::Audio,
+            output_modality: ava_protocol::protocol::RealtimeOutputModality::Audio,
             include_startup_context: false,
             initial_items: Vec::new(),
             realtime_start_instructions: None,
@@ -304,7 +304,7 @@ async fn host_drain_closes_realtime_after_handoff_error() -> anyhow::Result<()> 
             reason: Some("error".to_string()),
         }),
     ] {
-        let event = wait_for_event(&test.codex, |event| match event {
+        let event = wait_for_event(&test.ava-code, |event| match event {
             EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
                 payload: RealtimeEvent::HandoffRequested(_) | RealtimeEvent::Error(_),
             })
@@ -329,12 +329,12 @@ async fn host_drain_allows_mailbox_work_to_start_a_turn() -> anyhow::Result<()> 
     let response = responses::mount_sse_once(&server, responses::sse_completed("mailbox")).await;
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.turn_start_admission(Arc::new(TestAdmission(AtomicBool::new(true))));
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
     // Mailbox input is memory-only and must be processed before the host exits.
-    test.codex
+    test.ava-code
         .submit(Op::InterAgentCommunication {
             communication: InterAgentCommunication::new(
                 AgentPath::try_from("/root/worker").expect("valid agent path"),
@@ -346,7 +346,7 @@ async fn host_drain_allows_mailbox_work_to_start_a_turn() -> anyhow::Result<()> 
             start_options: Default::default(),
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -366,10 +366,10 @@ fn user_message_request(text: &str) -> TurnInputRequest {
 }
 
 async fn submit_user_message(
-    codex: &codex_core::CodexThread,
+    ava: &ava_core::AvaThread,
     text: &str,
-) -> codex_protocol::error::Result<TurnInputSubmission> {
-    codex.start_or_steer_turn(user_message_request(text)).await
+) -> ava_protocol::error::Result<TurnInputSubmission> {
+    ava.start_or_steer_turn(user_message_request(text)).await
 }
 
 #[test_case(ModeKind::Default, ModeKind::Plan; "automatic input cannot enter Plan")]
@@ -380,14 +380,14 @@ async fn start_turn_if_idle_keeps_automatic_plan_rejections_atomic(
     proposed_mode: ModeKind,
 ) {
     let server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .build_with_auto_env(&server)
         .await
         .expect("build turn-input submission session");
-    let mut collaboration_mode = test.codex.config_snapshot().await.collaboration_mode;
+    let mut collaboration_mode = test.ava-code.config_snapshot().await.collaboration_mode;
     collaboration_mode.mode = current_mode;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collaboration_mode.clone()),
             ..Default::default()
@@ -395,14 +395,14 @@ async fn start_turn_if_idle_keeps_automatic_plan_rejections_atomic(
     )
     .await
     .expect("set the current collaboration mode");
-    let current_settings = test.codex.thread_settings_snapshot().await;
+    let current_settings = test.ava-code.thread_settings_snapshot().await;
     collaboration_mode.mode = proposed_mode;
     let overrides = ThreadSettingsOverrides {
         collaboration_mode: Some(collaboration_mode.clone()),
         ..Default::default()
     };
     let submission = test
-        .codex
+        .ava-code
         .start_turn_if_idle(
             TurnInputRequest::new(TurnInput::ResponseItem(responses::user_message_item(
                 "rejected automatic input",
@@ -418,7 +418,7 @@ async fn start_turn_if_idle_keeps_automatic_plan_rejections_atomic(
         }
     );
     assert_eq!(
-        test.codex.thread_settings_snapshot().await,
+        test.ava-code.thread_settings_snapshot().await,
         current_settings
     );
 
@@ -430,19 +430,19 @@ async fn start_turn_if_idle_keeps_automatic_plan_rejections_atomic(
     )
     .await;
     let started = test
-        .codex
+        .ava-code
         .start_turn_if_idle(
             user_message_request("explicit user input").with_thread_settings(overrides),
         )
         .await
         .expect("rejection must release the idle reservation for explicit user input");
     assert!(matches!(started, StartIfIdleSubmission::Started { .. }));
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     assert_eq!(
-        test.codex.config_snapshot().await.collaboration_mode,
+        test.ava-code.config_snapshot().await.collaboration_mode,
         collaboration_mode
     );
     let request = response_mock.single_request();
@@ -455,14 +455,14 @@ async fn recover_turn_if_idle_preserves_id_and_resumes_plan_mode() {
     let server = responses::start_mock_server().await;
     let response_mock =
         responses::mount_sse_once(&server, responses::sse_completed("resp-1")).await;
-    let test = test_codex()
+    let test = test_ava()
         .build_with_auto_env(&server)
         .await
         .expect("build recovered turn session");
     let turn_id = "durable-recovered-turn";
 
     let submission = test
-        .codex
+        .ava-code
         .recover_turn_if_idle(RecoverTurnRequest {
             turn_id: turn_id.to_string(),
             thread_settings: ThreadSettingsOverrides {
@@ -488,11 +488,11 @@ async fn recover_turn_if_idle_preserves_id_and_resumes_plan_mode() {
         }
     );
     assert_eq!(
-        test.codex.config_snapshot().await.collaboration_mode.mode,
+        test.ava-code.config_snapshot().await.collaboration_mode.mode,
         ModeKind::Plan
     );
 
-    let started = wait_for_event(&test.codex, |event| {
+    let started = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnStarted(_))
     })
     .await;
@@ -500,7 +500,7 @@ async fn recover_turn_if_idle_preserves_id_and_resumes_plan_mode() {
         unreachable!("wait_for_event returned unexpected event");
     };
     assert_eq!(started.turn_id, turn_id);
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -508,7 +508,7 @@ async fn recover_turn_if_idle_preserves_id_and_resumes_plan_mode() {
     let request = response_mock.single_request();
     let turn_metadata: Value = serde_json::from_str(
         request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .as_deref()
             .expect("recovered turn should include turn metadata"),
     )
@@ -524,12 +524,12 @@ async fn recover_turn_if_idle_preserves_id_and_resumes_plan_mode() {
 #[tokio::test]
 async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     let server = responses::start_mock_server().await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-5.6-sol")
         .with_config(|config| {
             config
                 .features
-                .enable(codex_features::Feature::FastMode)
+                .enable(ava_features::Feature::FastMode)
                 .unwrap();
         })
         .build_with_auto_env(&server)
@@ -539,7 +539,7 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     let TurnInputSubmission::Started {
         turn_id: previous_turn_id,
     } = test
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Do the work".to_string(),
             text_elements: Vec::new(),
@@ -549,7 +549,7 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     else {
         panic!("original turn did not start")
     };
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -560,7 +560,7 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     ));
     let schema = serde_json::json!({"type":"object","properties":{},"additionalProperties":false});
     let submission = test
-        .codex
+        .ava-code
         .continue_turn_if_idle(
             TurnInputRequest::new(TurnInput::ResponseItem(input.clone())).on_start(
                 TurnStartOptions {
@@ -577,10 +577,10 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     let TurnInputSubmission::Started { turn_id } = submission else {
         panic!("continuation did not start")
     };
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         assert!(!matches!(event, EventMsg::UserMessage(_)));
         assert!(!matches!(event, EventMsg::ItemCompleted(event)
-            if matches!(event.item, codex_protocol::items::TurnItem::UserMessage(_))));
+            if matches!(event.item, ava_protocol::items::TurnItem::UserMessage(_))));
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -588,7 +588,7 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     assert!(request.has_content_kinds(&["daemon_recovery.internal_context"]));
     let metadata: Value = serde_json::from_str(
         &request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("turn metadata"),
     )
     .unwrap();
@@ -598,7 +598,7 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     assert_eq!(body["service_tier"], "priority");
     // The continuation has completed, but the saved previous ID is still stale.
     assert_eq!(
-        test.codex
+        test.ava-code
             .continue_turn_if_idle(
                 TurnInputRequest::new(TurnInput::ResponseItem(ContextualUserFragment::into(
                     InternalModelContextFragment::new(
@@ -616,7 +616,7 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     );
     assert_eq!(mock.requests().len(), 1);
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::OnRequest),
             ..Default::default()
@@ -625,7 +625,7 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     .await
     .expect("update permissions before continuation admission");
     assert_eq!(
-        test.codex
+        test.ava-code
             .continue_turn_if_idle(
                 TurnInputRequest::new(TurnInput::ResponseItem(input)),
                 turn_id,
@@ -660,28 +660,28 @@ async fn turn_input_submission_reports_started_and_steered_for_concurrent_submis
         }],
     ])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-5.4")
         .build_with_streaming_server(&server)
         .await
         .expect("build turn-input submission session");
-    let codex = Arc::clone(&test.codex);
+    let ava = Arc::clone(&test.ava-code);
     let barrier = Arc::new(Barrier::new(3));
 
     let first_submission = tokio::spawn({
-        let codex = Arc::clone(&codex);
+        let ava = Arc::clone(&ava);
         let barrier = Arc::clone(&barrier);
         async move {
             barrier.wait().await;
-            submit_user_message(codex.as_ref(), "first message").await
+            submit_user_message(ava.as_ref(), "first message").await
         }
     });
     let second_submission = tokio::spawn({
-        let codex = Arc::clone(&codex);
+        let ava = Arc::clone(&ava);
         let barrier = Arc::clone(&barrier);
         async move {
             barrier.wait().await;
-            submit_user_message(codex.as_ref(), "second message").await
+            submit_user_message(ava.as_ref(), "second message").await
         }
     });
     barrier.wait().await;
@@ -724,7 +724,7 @@ async fn turn_input_submission_reports_started_and_steered_for_concurrent_submis
         };
     assert_eq!(started_turn_id, steered_turn_id);
 
-    wait_for_event(codex.as_ref(), |event| {
+    wait_for_event(ava.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -762,7 +762,7 @@ async fn turn_input_submission_applies_thread_settings_only_after_accepted_input
         }],
     ])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-5.4")
         .with_config(|config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
@@ -770,9 +770,9 @@ async fn turn_input_submission_applies_thread_settings_only_after_accepted_input
         .build_with_streaming_server(&server)
         .await
         .expect("build approval-constrained turn-input submission session");
-    let codex = &test.codex;
+    let ava = &test.ava-code;
 
-    let started = submit_user_message(codex, "start turn")
+    let started = submit_user_message(ava, "start turn")
         .await
         .expect("first message should start a turn");
     let TurnInputSubmission::Started { turn_id } = started else {
@@ -788,7 +788,7 @@ async fn turn_input_submission_applies_thread_settings_only_after_accepted_input
     let steered_cwd = test.config.cwd.join("steered-environment");
     let steered_environments =
         TurnEnvironmentSelections::new(steered_cwd.clone(), vec![local(steered_cwd)]);
-    let steered = codex
+    let steered = ava
         .start_or_steer_turn(
             user_message_request("steer active turn").with_thread_settings(
                 ThreadSettingsOverrides {
@@ -802,21 +802,21 @@ async fn turn_input_submission_applies_thread_settings_only_after_accepted_input
         .expect("persistent settings should not reject a steer");
     assert_eq!(steered, TurnInputSubmission::Steered { turn_id });
     assert_eq!(
-        codex.config_snapshot().await.approval_policy,
+        ava.config_snapshot().await.approval_policy,
         AskForApproval::Never
     );
     assert_eq!(
-        codex.environment_selections().await,
+        ava.environment_selections().await,
         steered_environments.environments
     );
 
     release_response
         .send(())
         .expect("response gate should remain open");
-    wait_for_event(codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let rejected_cwd = test.config.cwd.join("rejected-environment");
-    let rejected = codex
+    let rejected = ava
         .steer_turn(
             user_message_request("no active turn").with_thread_settings(ThreadSettingsOverrides {
                 approval_policy: Some(AskForApproval::OnRequest),
@@ -837,11 +837,11 @@ async fn turn_input_submission_applies_thread_settings_only_after_accepted_input
         }
     );
     assert_eq!(
-        codex.config_snapshot().await.approval_policy,
+        ava.config_snapshot().await.approval_policy,
         AskForApproval::Never
     );
     assert_eq!(
-        codex.environment_selections().await,
+        ava.environment_selections().await,
         steered_environments.environments
     );
     server.shutdown().await;
@@ -867,14 +867,14 @@ async fn start_or_steer_turn_requires_matching_active_output_schema() {
         }],
     ])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         })
         .build_with_streaming_server(&server)
         .await
         .expect("build turn-input submission session");
-    let codex = &test.codex;
+    let ava = &test.ava-code;
     let active_schema: Value = serde_json::from_str(
         r#"{"type":"object","properties":{"answer":{"type":"string"},"count":{"type":"number"}},"required":["answer","count"]}"#,
     )
@@ -888,7 +888,7 @@ async fn start_or_steer_turn_requires_matching_active_output_schema() {
     )
     .expect("parse different schema");
 
-    let started = codex
+    let started = ava
         .start_or_steer_turn(
             user_message_request("start turn").on_start(TurnStartOptions {
                 final_output_json_schema: Some(active_schema),
@@ -907,7 +907,7 @@ async fn start_or_steer_turn_requires_matching_active_output_schema() {
     .await
     .expect("started turn should reach its first model request");
 
-    let rejected = codex
+    let rejected = ava
         .start_or_steer_turn(
             user_message_request("rejected steer")
                 .with_thread_settings(ThreadSettingsOverrides {
@@ -928,11 +928,11 @@ async fn start_or_steer_turn_requires_matching_active_output_schema() {
         }
     );
     assert_eq!(
-        codex.config_snapshot().await.approval_policy,
+        ava.config_snapshot().await.approval_policy,
         AskForApproval::OnRequest
     );
 
-    let steered = codex
+    let steered = ava
         .start_or_steer_turn(
             user_message_request("accepted steer").on_start(TurnStartOptions {
                 final_output_json_schema: Some(matching_schema_with_different_object_order),
@@ -946,7 +946,7 @@ async fn start_or_steer_turn_requires_matching_active_output_schema() {
     release_response
         .send(())
         .expect("response gate should remain open");
-    wait_for_event(codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let requests = server.requests().await;
     assert_eq!(requests.len(), 2);
@@ -976,14 +976,14 @@ async fn sampling_is_ready_for_daemon_recovery(
     } else {
         None
     };
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     #[cfg(unix)]
     if let Some(remote) = &remote {
         builder = builder.with_exec_server_url(&remote.websocket_url);
     }
     let test = builder.build_with_streaming_server(&server).await?;
     let StartIfIdleSubmission::Started { turn_id } = test
-        .codex
+        .ava-code
         .start_turn_if_idle(TurnInputRequest::user_input(input))
         .await?
     else {
@@ -994,13 +994,13 @@ async fn sampling_is_ready_for_daemon_recovery(
         server.wait_for_request_count(/*count*/ 1),
     )
     .await?;
-    let active = test.codex.interrupted_turn().await;
+    let active = test.ava-code.interrupted_turn().await;
     assert_eq!(
         active.map(|(id, _, _)| id),
         (executor == "local").then_some(turn_id)
     );
     release.send(()).expect("sampling is waiting");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1029,7 +1029,7 @@ async fn daemon_recovery_includes_local_environment_that_finished_starting() -> 
         }],
     ])
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_config(|config| {
             config.features.enable(Feature::DeferredExecutor).unwrap();
         })
@@ -1041,7 +1041,7 @@ async fn daemon_recovery_includes_local_environment_that_finished_starting() -> 
     // A different workspace starts a new attachment. On this single-threaded runtime,
     // turn startup captures it before the spawned setup task can run.
     let started = test
-        .codex
+        .ava-code
         .start_turn_if_idle(
             user_message_request("wait for the environment").with_thread_settings(
                 ThreadSettingsOverrides {
@@ -1075,14 +1075,14 @@ async fn daemon_recovery_includes_local_environment_that_finished_starting() -> 
         serde_json::json!({"environment_id": "local", "status": "ready"}),
     );
     assert_eq!(
-        test.codex
+        test.ava-code
             .interrupted_turn()
             .await
             .map(|(id, _, environment)| (id, environment)),
         Some((turn_id, selection)),
     );
     release.send(()).expect("the model response is waiting");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

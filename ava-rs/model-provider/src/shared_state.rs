@@ -3,12 +3,12 @@ use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::sync::Weak;
 
-use codex_keyring_store::DefaultKeyringStore;
-use codex_login::AuthRuntimeConfig;
-use codex_login::GatewayAuthConfig;
-use codex_login::GatewayAuthManager;
-use codex_model_provider_info::GatewayOAuthConfig;
-use codex_model_provider_info::ModelProviderAwsAuthInfo;
+use ava_keyring_store::DefaultKeyringStore;
+use ava_login::AuthRuntimeConfig;
+use ava_login::GatewayAuthConfig;
+use ava_login::GatewayAuthManager;
+use ava_model_provider_info::GatewayOAuthConfig;
+use ava_model_provider_info::ModelProviderAwsAuthInfo;
 
 use crate::amazon_bedrock::AwsAuthRecovery;
 use crate::amazon_bedrock::AwsCredentialExport;
@@ -62,7 +62,7 @@ impl ModelProviderSharedState {
         }
         let manager = Arc::new(GatewayAuthManager::new(
             oauth.clone(),
-            runtime.codex_home.clone(),
+            runtime.ava_home.clone(),
             runtime.auth_route_config.http_client_factory(),
             Arc::new(DefaultKeyringStore),
         )?);

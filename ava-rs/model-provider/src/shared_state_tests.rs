@@ -6,22 +6,22 @@ use crate::AgentIdentitySessionFallback;
 use crate::ProviderAuthScope;
 use crate::create_model_provider;
 use crate::test_support::seed_gateway_auth;
-use codex_api::Compression;
-use codex_api::ResponsesClient;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::ReqwestTransport;
-use codex_login::AuthHeaders;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_login::default_client::ClientRedirectPolicy;
-use codex_login::default_client::create_client_for_route;
-use codex_model_provider_info::GatewayOAuthDelivery;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::protocol::SessionSource;
+use ava_api::Compression;
+use ava_api::ResponsesClient;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::ReqwestTransport;
+use ava_login::AuthHeaders;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_login::default_client::ClientRedirectPolicy;
+use ava_login::default_client::create_client_for_route;
+use ava_model_provider_info::GatewayOAuthDelivery;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::protocol::SessionSource;
 use http::HeaderMap;
 use http::HeaderName;
 use http::HeaderValue;
@@ -85,7 +85,7 @@ async fn gateway_credentials_accompany_primary_auth_in_models_and_responses() {
         );
         primary_headers.insert("chatgpt-account-id", HeaderValue::from_static("account"));
         let primary = AuthManager::from_auth_for_testing_with_home(
-            CodexAuth::Headers(AuthHeaders::new(primary_headers)),
+            AvaAuth::Headers(AuthHeaders::new(primary_headers)),
             home.path().to_path_buf(),
         );
         let manager = seed_gateway_auth(
@@ -179,7 +179,7 @@ async fn gateway_refresh_preserves_primary_auth_and_hides_issuer_errors() {
         let server = MockServer::start().await;
         let home = tempfile::tempdir().unwrap();
         let primary = AuthManager::from_auth_for_testing_with_home(
-            CodexAuth::from_api_key("primary-token"),
+            AvaAuth::from_api_key("primary-token"),
             home.path().to_path_buf(),
         );
         let info = ModelProviderInfo {
@@ -243,7 +243,7 @@ async fn gateway_refresh_preserves_primary_auth_and_hides_issuer_errors() {
         }
         assert_eq!(
             primary.auth_cached(),
-            Some(CodexAuth::from_api_key("primary-token"))
+            Some(AvaAuth::from_api_key("primary-token"))
         );
         let requests = server.received_requests().await.unwrap();
         assert!(!requests[0].headers.contains_key("authorization"));
@@ -267,13 +267,13 @@ async fn models_cache_is_reused_only_for_matching_gateway_configuration() {
     let server = MockServer::start().await;
     let home = tempfile::tempdir().unwrap();
     let primary = AuthManager::from_auth_for_testing_with_home(
-        CodexAuth::from_api_key("primary-token"),
+        AvaAuth::from_api_key("primary-token"),
         home.path().to_path_buf(),
     );
     let mut info = ModelProviderInfo {
         model_catalog_url: Some(format!("{}/models", server.uri()).into()),
         http_headers: Some(std::collections::HashMap::from([(
-            codex_login::default_client::RESIDENCY_HEADER_NAME.to_string(),
+            ava_login::default_client::RESIDENCY_HEADER_NAME.to_string(),
             "us".into(),
         )])),
         gateway_oauth: Some(GatewayOAuthConfig {
@@ -291,7 +291,7 @@ async fn models_cache_is_reused_only_for_matching_gateway_configuration() {
         ..ModelProviderInfo::create_openai_provider(Some(server.uri()))
     };
     let factory = HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault);
-    let mut model = codex_models_manager::bundled_models_response()
+    let mut model = ava_models_manager::bundled_models_response()
         .unwrap()
         .models
         .remove(0);
@@ -351,7 +351,7 @@ async fn models_observe_gateway_rotation(instance: ProviderInstance) {
     let server = MockServer::start().await;
     let home = tempfile::tempdir().unwrap();
     let primary = AuthManager::from_auth_for_testing_with_home(
-        CodexAuth::from_api_key("primary-token"),
+        AvaAuth::from_api_key("primary-token"),
         home.path().to_path_buf(),
     );
     let info = ModelProviderInfo {
@@ -382,7 +382,7 @@ async fn models_observe_gateway_rotation(instance: ProviderInstance) {
         ProviderInstance::Same => provider,
         ProviderInstance::Separate => create_model_provider(info, Some(primary)),
     };
-    let mut first = codex_models_manager::bundled_models_response()
+    let mut first = ava_models_manager::bundled_models_response()
         .unwrap()
         .models
         .remove(0);
@@ -464,7 +464,7 @@ async fn models_observe_gateway_rotation(instance: ProviderInstance) {
 
 #[tokio::test]
 async fn gateway_setup_errors_are_reported_when_authentication_is_requested() {
-    use codex_models_manager::manager::ModelsEndpointClient;
+    use ava_models_manager::manager::ModelsEndpointClient;
 
     let server = MockServer::start().await;
     let mut info = ModelProviderInfo {
@@ -493,7 +493,7 @@ async fn gateway_setup_errors_are_reported_when_authentication_is_requested() {
         "gateway_oauth requires auth runtime configuration"
     );
 
-    let primary = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("primary"));
+    let primary = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("primary"));
     let endpoint = crate::models_endpoint::OpenAiModelsEndpoint::new(
         info.clone(),
         Some(primary),
@@ -512,7 +512,7 @@ async fn gateway_setup_errors_are_reported_when_authentication_is_requested() {
     );
 
     info.gateway_oauth.as_mut().unwrap().client_id.clear();
-    let primary = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("primary"));
+    let primary = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("primary"));
     let error = create_model_provider(info, Some(primary))
         .api_auth()
         .await
@@ -520,7 +520,7 @@ async fn gateway_setup_errors_are_reported_when_authentication_is_requested() {
         .unwrap();
     assert!(matches!(
         error.details(),
-        codex_protocol::error::CodexErrorDetails::InvalidRequest(_)
+        ava_protocol::error::AvaErrorDetails::InvalidRequest(_)
     ));
     assert!(server.received_requests().await.unwrap().is_empty());
 }

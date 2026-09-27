@@ -103,7 +103,7 @@ fn test_end_to_end_quality_gate() {
         changed_files: vec!["src/session.rs".to_string()],
         verification_signals: vec![VerificationSignal {
             signal_type: "test".to_string(),
-            command: "cargo test -p codex-core".to_string(),
+            command: "cargo test -p ava-core".to_string(),
             exit_code: 0,
             output: "test result: ok. 15 passed; 0 failed".to_string(),
             duration_ms: Some(400),

@@ -7,20 +7,20 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_app_server_protocol::WebSearchAction;
-use codex_app_server_protocol::WebSearchItem;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_features::Feature;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_app_server_protocol::WebSearchAction;
+use ava_app_server_protocol::WebSearchItem;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_features::Feature;
 use core_test_support::responses;
 use core_test_support::responses::strip_response_item_ids_from_json;
 use pretty_assertions::assert_eq;
@@ -75,7 +75,7 @@ async fn assert_standalone_web_search_round_trips_output(
     )]);
     let server = responses::start_mock_server().await;
     let search_path = match provider {
-        WebSearchProvider::ChatGpt => "/api/codex/alpha/search",
+        WebSearchProvider::ChatGpt => "/api/ava/alpha/search",
         WebSearchProvider::CustomResponses => "/v1/alpha/search",
     };
     mount_search_response(&server, search_path).await;
@@ -104,7 +104,7 @@ async fn assert_standalone_web_search_round_trips_output(
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
         .enable_feature(Feature::StandaloneWebSearch)
@@ -113,7 +113,7 @@ async fn assert_standalone_web_search_round_trips_output(
         WebSearchProvider::ChatGpt => config
             .with_model_provider("openai-custom")
             .with_provider_name("OpenAI")
-            .with_provider_base_url(&format!("{}/api/codex", server.uri()))
+            .with_provider_base_url(&format!("{}/api/ava", server.uri()))
             .with_provider_config("requires_openai_auth = true"),
         WebSearchProvider::CustomResponses => config
             .with_model_provider("custom-responses")
@@ -123,11 +123,11 @@ async fn assert_standalone_web_search_round_trips_output(
             .with_provider_config("supports_standalone_web_search = true")
             .with_provider_config("requires_openai_auth = false"),
     };
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
 
     if matches!(provider, WebSearchProvider::ChatGpt) {
         write_chatgpt_auth(
-            codex_home.path(),
+            ava_home.path(),
             ChatGptAuthFixture::new("access-chatgpt"),
             AuthCredentialsStoreMode::File,
         )?;
@@ -144,7 +144,7 @@ async fn assert_standalone_web_search_round_trips_output(
     };
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&env_overrides)
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -267,12 +267,12 @@ async fn assert_standalone_web_search_round_trips_output(
     );
     let turn_metadata_header = search_request
         .headers
-        .get("x-codex-turn-metadata")
-        .context("standalone search should include x-codex-turn-metadata")?
+        .get("x-ava-turn-metadata")
+        .context("standalone search should include x-ava-turn-metadata")?
         .to_str()
-        .context("x-codex-turn-metadata should be valid ASCII")?;
+        .context("x-ava-turn-metadata should be valid ASCII")?;
     let turn_metadata: Value = serde_json::from_str(turn_metadata_header)
-        .context("x-codex-turn-metadata should be valid JSON")?;
+        .context("x-ava-turn-metadata should be valid JSON")?;
     let mcp_request_meta = turn_metadata["mcp_request_meta"]
         .as_str()
         .context("mcp_request_meta should be a JSON string")?;
@@ -332,7 +332,7 @@ async fn assert_standalone_web_search_round_trips_output(
 
     drop(mcp);
     let mut reloaded_mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&env_overrides)
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;

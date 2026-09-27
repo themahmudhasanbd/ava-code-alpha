@@ -2,16 +2,16 @@ use std::fs;
 use std::sync::Arc;
 
 use anyhow::Result;
-use codex_config::LoaderOverrides;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::ConfigOverrides;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_utils_cargo_bin::cargo_bin;
+use ava_config::LoaderOverrides;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::ConfigOverrides;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_utils_cargo_bin::cargo_bin;
 use core_test_support::responses;
 use core_test_support::skip_if_remote;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -52,7 +52,7 @@ async fn forged_worktree_project_config_cannot_start_host_mcp() -> Result<()> {
             tmp.path().join(scenario)
         };
         let marker = tmp.path().join(format!("{scenario}-mcp-started"));
-        fs::create_dir_all(checkout.join(".codex"))?;
+        fs::create_dir_all(checkout.join(".ava-code"))?;
         match scenario {
             "missing" => fs::write(
                 checkout.join(".git"),
@@ -74,7 +74,7 @@ async fn forged_worktree_project_config_cannot_start_host_mcp() -> Result<()> {
             _ => unreachable!(),
         }
         fs::write(
-            checkout.join(".codex/config.toml"),
+            checkout.join(".ava-code/config.toml"),
             toml::to_string(&serde_json::json!({
                 "approval_policy": "never",
                 "sandbox_mode": "danger-full-access",
@@ -85,7 +85,7 @@ async fn forged_worktree_project_config_cannot_start_host_mcp() -> Result<()> {
             }))?,
         )?;
         let loaded = ConfigBuilder::default()
-            .codex_home(home.path().to_path_buf())
+            .ava_home(home.path().to_path_buf())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .harness_overrides(ConfigOverrides {
                 cwd: Some(checkout.clone()),
@@ -125,20 +125,20 @@ async fn forged_worktree_project_config_cannot_start_host_mcp() -> Result<()> {
             ]),
         )
         .await;
-        let fixture = test_codex()
+        let fixture = test_ava()
             .with_home(Arc::clone(&home))
             .with_config(move |config| {
                 let model = config.model.clone();
                 let provider = config.model_provider.clone();
-                let self_exe = config.codex_self_exe.clone();
+                let self_exe = config.ava_self_exe.clone();
                 *config = loaded;
                 config.model = model;
                 config.model_provider = provider;
-                config.codex_self_exe = self_exe;
+                config.ava_self_exe = self_exe;
             })
             .build_with_auto_env(&server)
             .await?;
-        let startup = wait_for_event(&fixture.codex, |event| {
+        let startup = wait_for_event(&fixture.ava-code, |event| {
             matches!(event, EventMsg::McpStartupComplete(_))
         })
         .await;

@@ -1,6 +1,6 @@
-use codex_http_client::HttpClient;
-use codex_protocol::account::PlanType as AccountPlanType;
-use codex_protocol::auth::PlanType as InternalPlanType;
+use ava_http_client::HttpClient;
+use ava_protocol::account::PlanType as AccountPlanType;
+use ava_protocol::auth::PlanType as InternalPlanType;
 use serde::Deserialize;
 use std::env;
 use std::fmt;
@@ -9,7 +9,7 @@ use crate::default_client::create_default_auth_client;
 use crate::outbound_proxy::AuthRouteConfig;
 
 const PROD_AUTHAPI_BASE_URL: &str = "https://auth.openai.com/api/accounts";
-const CODEX_AUTHAPI_BASE_URL_ENV_VAR: &str = "CODEX_AUTHAPI_BASE_URL";
+const AVA_AUTHAPI_BASE_URL_ENV_VAR: &str = "AVA_AUTHAPI_BASE_URL";
 const WHOAMI_PATH: &str = "/v1/user-auth-credential/whoami";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -41,7 +41,7 @@ impl PersonalAccessTokenAuth {
         access_token: &str,
         auth_route_config: &AuthRouteConfig,
     ) -> std::io::Result<Self> {
-        let authapi_base_url = env::var(CODEX_AUTHAPI_BASE_URL_ENV_VAR)
+        let authapi_base_url = env::var(AVA_AUTHAPI_BASE_URL_ENV_VAR)
             .ok()
             .map(|base_url| base_url.trim().trim_end_matches('/').to_string())
             .filter(|base_url| !base_url.is_empty())

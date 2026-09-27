@@ -2,12 +2,12 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_code_mode_protocol::CellId;
-use codex_code_mode_protocol::RuntimeResponse;
-use codex_code_mode_protocol::StartedCell;
-use codex_code_mode_protocol::host::DelegateRequest;
-use codex_code_mode_protocol::host::RequestId;
-use codex_code_mode_protocol::host::SessionId;
+use ava_code_mode_protocol::CellId;
+use ava_code_mode_protocol::RuntimeResponse;
+use ava_code_mode_protocol::StartedCell;
+use ava_code_mode_protocol::host::DelegateRequest;
+use ava_code_mode_protocol::host::RequestId;
+use ava_code_mode_protocol::host::SessionId;
 use pretty_assertions::assert_eq;
 use tokio::sync::Semaphore;
 use tokio::sync::mpsc;

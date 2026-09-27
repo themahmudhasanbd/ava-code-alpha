@@ -1,5 +1,5 @@
-use codex_git_utils::SanitizedGitUrl;
-use codex_http_client::RouteAwareClientPool;
+use ava_git_utils::SanitizedGitUrl;
+use ava_http_client::RouteAwareClientPool;
 use http::StatusCode;
 use http::header::CONTENT_TYPE;
 use http::header::HeaderMap;
@@ -59,7 +59,7 @@ async fn autodetect_environment_id_with_origins(
                 )
             } else {
                 format!(
-                    "{}/api/codex/environments/by-repo/{}/{}/{}",
+                    "{}/api/ava/environments/by-repo/{}/{}/{}",
                     base_url, "github", owner, repo
                 )
             };
@@ -89,7 +89,7 @@ async fn autodetect_environment_id_with_origins(
     let list_url = if base_url.contains("/backend-api") {
         format!("{base_url}/wham/environments")
     } else {
-        format!("{base_url}/api/codex/environments")
+        format!("{base_url}/api/ava/environments")
     };
     crate::append_error_log(format!("env: GET {list_url}"));
     // Fetch and log the full environments JSON for debugging
@@ -217,7 +217,7 @@ impl EnvironmentHttp for RouteAwareClientPool {
 fn get_git_origins() -> Vec<SanitizedGitUrl> {
     // Prefer: git config --get-regexp remote\..*\.url
     let out = std::process::Command::new("git")
-        .args(["-c", codex_git_utils::SAFE_BARE_REPOSITORY_CONFIG])
+        .args(["-c", ava_git_utils::SAFE_BARE_REPOSITORY_CONFIG])
         .args(["config", "--get-regexp", "remote\\..*\\.url"])
         .output();
     if let Ok(ok) = out
@@ -238,7 +238,7 @@ fn get_git_origins() -> Vec<SanitizedGitUrl> {
     }
     // Fallback: git remote -v
     let out = std::process::Command::new("git")
-        .args(["-c", codex_git_utils::SAFE_BARE_REPOSITORY_CONFIG])
+        .args(["-c", ava_git_utils::SAFE_BARE_REPOSITORY_CONFIG])
         .args(["remote", "-v"])
         .output();
     if let Ok(ok) = out
@@ -332,7 +332,7 @@ async fn list_environments_with_origins(
                 )
             } else {
                 format!(
-                    "{}/api/codex/environments/by-repo/{}/{}/{}",
+                    "{}/api/ava/environments/by-repo/{}/{}/{}",
                     base_url, "github", owner, repo
                 )
             };
@@ -372,7 +372,7 @@ async fn list_environments_with_origins(
     let list_url = if base_url.contains("/backend-api") {
         format!("{base_url}/wham/environments")
     } else {
-        format!("{base_url}/api/codex/environments")
+        format!("{base_url}/api/ava/environments")
     };
     match get_json::<Vec<CodeEnvironment>>(http, &list_url, headers).await {
         Ok(list) => {

@@ -11,7 +11,7 @@ use crate::render::highlight::foreground_style_for_scopes;
 use crate::style::readable_color_on;
 use crate::style::secondary_text_style;
 use crate::thread_color::thread_color;
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 
 const STATUS_LINE_SEPARATOR: &str = " · ";
 const STATUS_LINE_COLOR_SATURATION_PERCENT: u16 = 85;
@@ -51,7 +51,7 @@ impl StatusLineAccent {
             | StatusLineItem::ThreadCredits
             | StatusLineItem::EstimatedThreadCost => Self::Usage,
             StatusLineItem::FiveHourLimit | StatusLineItem::WeeklyLimit => Self::Limit,
-            StatusLineItem::CodexVersion | StatusLineItem::Hostname | StatusLineItem::SessionId => {
+            StatusLineItem::AvaVersion | StatusLineItem::Hostname | StatusLineItem::SessionId => {
                 Self::Metadata
             }
             StatusLineItem::FastMode | StatusLineItem::RawOutput => Self::Mode,

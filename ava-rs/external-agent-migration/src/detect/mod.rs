@@ -23,9 +23,9 @@ use crate::service::named_migrations;
 use crate::utils::display_source_paths;
 use crate::utils::invalid_data_error;
 use crate::utils::is_missing_or_empty_text_file;
-use codex_config::types::PluginConfig;
-use codex_core::config::ConfigBuilder;
-use codex_core::plugins_manager_for_config;
+use ava_config::types::PluginConfig;
+use ava_core::config::ConfigBuilder;
+use ava_core::plugins_manager_for_config;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
@@ -33,7 +33,7 @@ use std::io;
 use std::sync::Arc;
 use toml::Value as TomlValue;
 
-const EXTERNAL_AGENT_CONFIG_DETECT_METRIC: &str = "codex.external_agent_config.detect";
+const EXTERNAL_AGENT_CONFIG_DETECT_METRIC: &str = "ava.external_agent_config.detect";
 
 impl ExternalAgentConfigService {
     pub async fn detect(
@@ -59,7 +59,7 @@ impl ExternalAgentConfigService {
         if params.include_home
             && params.include_memory
             && self.source.supports_memory()
-            && let Some(item) = memory::detect(&self.codex_home, &self.external_agent_home)?
+            && let Some(item) = memory::detect(&self.ava_home, &self.external_agent_home)?
         {
             items.push(item);
             emit_migration_metric(
@@ -82,8 +82,8 @@ impl ExternalAgentConfigService {
         let source_settings = self.source_settings(scope);
         let settings = self.effective_source_settings(scope)?;
         let target_config = repo_root.map_or_else(
-            || self.codex_home.join("config.toml"),
-            |repo_root| repo_root.join(".codex").join("config.toml"),
+            || self.ava_home.join("config.toml"),
+            |repo_root| repo_root.join(".ava-code").join("config.toml"),
         );
         if let Some(settings) = settings.as_ref() {
             let migrated = self.source.build_config(settings)?;
@@ -163,8 +163,8 @@ impl ExternalAgentConfigService {
 
         let source_external_agent_dir = self.source_config_dir(scope);
         let target_hooks = repo_root.map_or_else(
-            || self.codex_home.join("hooks.json"),
-            |repo_root| repo_root.join(".codex").join("hooks.json"),
+            || self.ava_home.join("hooks.json"),
+            |repo_root| repo_root.join(".ava-code").join("hooks.json"),
         );
         let hook_event_names = self
             .source
@@ -266,8 +266,8 @@ impl ExternalAgentConfigService {
 
         let source_subagents = source_external_agent_dir.join("agents");
         let target_subagents = repo_root.map_or_else(
-            || self.codex_home.join("agents"),
-            |repo_root| repo_root.join(".codex").join("agents"),
+            || self.ava_home.join("agents"),
+            |repo_root| repo_root.join(".ava-code").join("agents"),
         );
         let subagents_count = count_missing_subagents(&source_subagents, &target_subagents)?;
         if subagents_count > 0 {
@@ -298,7 +298,7 @@ impl ExternalAgentConfigService {
             let sources = self.home_agents_md_sources()?;
             (!sources.is_empty())
                 .then(|| InstructionSourceGroup {
-                    scope: self.codex_home.clone(),
+                    scope: self.ava_home.clone(),
                     sources,
                 })
                 .into_iter()
@@ -331,8 +331,8 @@ impl ExternalAgentConfigService {
         // settings must never be treated as plugin installation authority.
         if scope.is_home() && self.source.supports_plugin_migration(settings.as_ref()) {
             match ConfigBuilder::default()
-                .codex_home(self.codex_home.clone())
-                .fallback_cwd(Some(self.codex_home.clone()))
+                .ava_home(self.ava_home.clone())
+                .fallback_cwd(Some(self.ava_home.clone()))
                 .build()
                 .await
             {
@@ -394,7 +394,7 @@ impl ExternalAgentConfigService {
         if scope.is_home() {
             let sessions = self.source.recent_sessions(
                 &self.external_agent_home,
-                &self.codex_home,
+                &self.ava_home,
                 self.session_import_limits,
             )?;
             if !sessions.is_empty() {

@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use codex_protocol::parse_command::ParsedCommand;
-use codex_shell_command::parse_command::parse_command_impl;
-use codex_shell_command::parse_command::tokenize_powershell_command;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_shell_command::parse_command::parse_command_impl;
+use ava_shell_command::parse_command::tokenize_powershell_command;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 
 use crate::SkillMetadata;
 

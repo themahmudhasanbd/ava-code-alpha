@@ -1,4 +1,4 @@
-use codex_protocol::models::MessagePhase;
+use ava_protocol::models::MessagePhase;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

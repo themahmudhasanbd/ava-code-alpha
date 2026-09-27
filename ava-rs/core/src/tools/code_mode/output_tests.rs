@@ -1,7 +1,7 @@
 //! Checks code-mode timing headers, including absent and zero host measurements.
 
 use super::*;
-use codex_protocol::models::ImageReference;
+use ava_protocol::models::ImageReference;
 use pretty_assertions::assert_eq;
 
 #[test]

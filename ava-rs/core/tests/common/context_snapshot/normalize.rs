@@ -515,10 +515,10 @@ pub(super) fn portable_tool_schema(tool: &Value) -> Value {
 
 pub(super) fn is_bundled_model_instructions(text: &str) -> bool {
     static PROMPTS: OnceLock<Vec<String>> = OnceLock::new();
-    text == codex_models_manager::model_info::BASE_INSTRUCTIONS
+    text == ava_models_manager::model_info::BASE_INSTRUCTIONS
         || PROMPTS
             .get_or_init(|| {
-                codex_models_manager::bundled_models_response()
+                ava_models_manager::bundled_models_response()
                     .expect("bundled model catalog")
                     .models
                     .into_iter()

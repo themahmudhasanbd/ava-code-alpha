@@ -2,43 +2,43 @@ use crate::session::tests::update_turn_settings_for_test;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use codex_features::Feature;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_mcp::ToolInfo;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_5_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_6_LUNA_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_GPT_5_6_SOL_MODEL_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::openai_models::ApplyPatchToolType;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::openai_models::WebSearchToolType;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::InternalSessionSource;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_tools::DiscoverablePluginInfo;
-use codex_tools::DiscoverableTool;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolCall as ExtensionToolCall;
-use codex_tools::ToolExecutor;
-use codex_tools::ToolExposure;
-use codex_tools::ToolName;
-use codex_tools::ToolOutput;
-use codex_tools::ToolSpec;
+use ava_features::Feature;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_mcp::ToolInfo;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_5_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_6_LUNA_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_GPT_5_6_SOL_MODEL_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::openai_models::ApplyPatchToolType;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::openai_models::WebSearchToolType;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::InternalSessionSource;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_tools::DiscoverablePluginInfo;
+use ava_tools::DiscoverableTool;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolCall as ExtensionToolCall;
+use ava_tools::ToolExecutor;
+use ava_tools::ToolExposure;
+use ava_tools::ToolName;
+use ava_tools::ToolOutput;
+use ava_tools::ToolSpec;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -226,7 +226,7 @@ fn plan_with_model(
     model_info: &ModelInfo,
     inputs: ToolPlanInputs,
 ) -> ToolRouter {
-    let mcp = codex_mcp::McpBinding::empty(mcp_config_for_test(&turn.config));
+    let mcp = ava_mcp::McpBinding::empty(mcp_config_for_test(&turn.config));
     let mut registry = build_core_tool_registry(
         turn,
         model_info,
@@ -279,8 +279,8 @@ fn set_features(turn: &mut TurnContext, features: &[Feature]) {
     }
 }
 
-fn zsh_fork_config_for_spec_plan_tests() -> codex_tools::ZshForkConfig {
-    let placeholder_exe = codex_utils_absolute_path::AbsolutePathBuf::try_from(
+fn zsh_fork_config_for_spec_plan_tests() -> ava_tools::ZshForkConfig {
+    let placeholder_exe = ava_utils_absolute_path::AbsolutePathBuf::try_from(
         std::env::current_exe().expect("current exe path"),
     )
     .expect("current exe should be absolute");
@@ -288,7 +288,7 @@ fn zsh_fork_config_for_spec_plan_tests() -> codex_tools::ZshForkConfig {
     // Spec planning only checks whether the shell mode is ZshFork. These paths
     // are never executed, so use a stable absolute placeholder instead of
     // depending on packaged zsh-fork artifacts in schema tests.
-    codex_tools::ZshForkConfig {
+    ava_tools::ZshForkConfig {
         shell_zsh_path: placeholder_exe.clone(),
         main_execve_wrapper_exe: placeholder_exe,
     }
@@ -311,7 +311,7 @@ fn set_web_search_mode(turn: &mut TurnContext, mode: WebSearchMode) {
 
 fn use_chatgpt_auth(turn: &mut TurnContext) {
     turn.auth_manager = Some(AuthManager::from_auth_for_testing(
-        CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+        AvaAuth::create_dummy_chatgpt_auth_for_testing(),
     ));
     turn.provider = create_model_provider(
         turn.config.model_provider.clone(),
@@ -339,7 +339,7 @@ impl<'call> ToolExecutor<ExtensionToolCall<'call>> for TestNamespaceExtensionToo
     }
 
     fn spec(&self) -> ToolSpec {
-        ToolSpec::Namespace(codex_tools::ResponsesApiNamespace {
+        ToolSpec::Namespace(ava_tools::ResponsesApiNamespace {
             name: self.namespace.to_string(),
             description: "Test namespace.".to_string(),
             tools: vec![ResponsesApiNamespaceTool::Function(ResponsesApiTool {
@@ -347,18 +347,18 @@ impl<'call> ToolExecutor<ExtensionToolCall<'call>> for TestNamespaceExtensionToo
                 description: "Test namespace tool.".to_string(),
                 strict: false,
                 defer_loading: None,
-                parameters: codex_tools::JsonSchema::default(),
+                parameters: ava_tools::JsonSchema::default(),
                 output_schema: None,
             })],
         })
     }
 
-    fn handle<'a>(&'a self, _call: ExtensionToolCall<'call>) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, _call: ExtensionToolCall<'call>) -> ava_tools::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
         Box::pin(async {
-            Ok(Box::new(codex_tools::JsonToolOutput::new(json!({}))) as Box<dyn ToolOutput>)
+            Ok(Box::new(ava_tools::JsonToolOutput::new(json!({}))) as Box<dyn ToolOutput>)
         })
     }
 }
@@ -376,10 +376,10 @@ impl<'call> ToolExecutor<ExtensionToolCall<'call>> for DeferredExtensionTool {
             description: "Echoes arguments through an extension tool.".to_string(),
             strict: true,
             defer_loading: None,
-            parameters: codex_tools::JsonSchema::object(
+            parameters: ava_tools::JsonSchema::object(
                 BTreeMap::from([(
                     "message".to_string(),
-                    codex_tools::JsonSchema::string(/*description*/ None),
+                    ava_tools::JsonSchema::string(/*description*/ None),
                 )]),
                 Some(vec!["message".to_string()]),
                 Some(false.into()),
@@ -392,7 +392,7 @@ impl<'call> ToolExecutor<ExtensionToolCall<'call>> for DeferredExtensionTool {
         ToolExposure::Deferred
     }
 
-    fn handle<'a>(&'a self, _call: ExtensionToolCall<'call>) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, _call: ExtensionToolCall<'call>) -> ava_tools::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -452,7 +452,7 @@ fn mcp_runtime(
 }
 
 fn dynamic_tool(namespace: Option<&str>, name: &str, defer_loading: bool) -> DynamicToolSpec {
-    let function = codex_protocol::dynamic_tools::DynamicToolFunctionSpec {
+    let function = ava_protocol::dynamic_tools::DynamicToolFunctionSpec {
         name: name.to_string(),
         description: format!("{name} dynamic tool"),
         input_schema: json!({
@@ -464,11 +464,11 @@ fn dynamic_tool(namespace: Option<&str>, name: &str, defer_loading: bool) -> Dyn
     };
     match namespace {
         Some(namespace) => {
-            DynamicToolSpec::Namespace(codex_protocol::dynamic_tools::DynamicToolNamespaceSpec {
+            DynamicToolSpec::Namespace(ava_protocol::dynamic_tools::DynamicToolNamespaceSpec {
                 name: namespace.to_string(),
                 description: format!("{namespace} dynamic tools"),
                 tools: vec![
-                    codex_protocol::dynamic_tools::DynamicToolNamespaceTool::Function(function),
+                    ava_protocol::dynamic_tools::DynamicToolNamespaceTool::Function(function),
                 ],
             })
         }
@@ -517,7 +517,7 @@ fn apply_patch_accepts_environment_id(spec: &ToolSpec) -> bool {
 #[tokio::test]
 async fn allowed_tools_filter_sources_before_code_mode_and_discovery() {
     use crate::tools::registry::ToolRegistry;
-    use codex_extension_api::AllowedTools;
+    use ava_extension_api::AllowedTools;
 
     for allowed in [
         None,
@@ -600,7 +600,7 @@ async fn allowed_tools_filter_sources_before_code_mode_and_discovery() {
 async fn internal_guardian_sessions_exclude_optional_core_tools() {
     let (mut session, mut turn) = make_session_and_context().await;
     turn.session_source = SessionSource::Internal(InternalSessionSource::Guardian);
-    session.allowed_tools = Some(Arc::new(codex_guardian_reviewer::reviewer_allowed_tools()));
+    session.allowed_tools = Some(Arc::new(ava_guardian_reviewer::reviewer_allowed_tools()));
     set_feature(&mut turn, Feature::ViewImage, /*enabled*/ true);
     Arc::make_mut(&mut turn.config).update_plan_enabled = true;
     turn.multi_agent_version = MultiAgentVersion::V2;
@@ -623,7 +623,7 @@ async fn internal_guardian_sessions_exclude_optional_core_tools() {
         router
             .model_visible_specs()
             .iter()
-            .map(codex_tools::ToolSpec::name)
+            .map(ava_tools::ToolSpec::name)
             .collect::<Vec<_>>(),
         vec!["exec_command", "write_stdin", "view_image"]
     );
@@ -638,18 +638,18 @@ async fn internal_guardian_sessions_respect_managed_shell_restrictions() {
     ] {
         let (mut session, mut turn) = make_session_and_context().await;
         turn.session_source = SessionSource::Internal(InternalSessionSource::Guardian);
-        session.allowed_tools = Some(Arc::new(codex_guardian_reviewer::reviewer_allowed_tools()));
+        session.allowed_tools = Some(Arc::new(ava_guardian_reviewer::reviewer_allowed_tools()));
         set_feature(&mut turn, Feature::ViewImage, /*enabled*/ true);
         set_feature(&mut turn, Feature::CodeMode, /*enabled*/ true);
         if let Some(feature) = disabled_feature {
             let config = Arc::make_mut(&mut turn.config);
             config.features = crate::config::ManagedFeatures::from_configured(
                 config.features.get().clone(),
-                Some(codex_config::Sourced::new(
-                    codex_config::FeatureRequirementsToml {
+                Some(ava_config::Sourced::new(
+                    ava_config::FeatureRequirementsToml {
                         entries: BTreeMap::from([(feature.key().to_string(), false)]),
                     },
-                    codex_config::RequirementSource::Unknown,
+                    ava_config::RequirementSource::Unknown,
                 )),
             )
             .expect("managed shell restriction should be valid");
@@ -676,11 +676,11 @@ async fn internal_guardian_sessions_respect_managed_shell_restrictions() {
             router
                 .model_visible_specs()
                 .iter()
-                .map(codex_tools::ToolSpec::name)
+                .map(ava_tools::ToolSpec::name)
                 .collect::<Vec<_>>(),
             vec![
-                codex_code_mode::PUBLIC_TOOL_NAME,
-                codex_code_mode::WAIT_TOOL_NAME,
+                ava_code_mode::PUBLIC_TOOL_NAME,
+                ava_code_mode::WAIT_TOOL_NAME,
                 "view_image",
             ],
             "disabled feature: {disabled_feature:?}, shell type: {shell_type:?}"
@@ -692,7 +692,7 @@ async fn internal_guardian_sessions_respect_managed_shell_restrictions() {
 async fn internal_guardian_sessions_preserve_code_mode() {
     let (mut session, mut turn) = make_session_and_context().await;
     turn.session_source = SessionSource::Internal(InternalSessionSource::Guardian);
-    session.allowed_tools = Some(Arc::new(codex_guardian_reviewer::reviewer_allowed_tools()));
+    session.allowed_tools = Some(Arc::new(ava_guardian_reviewer::reviewer_allowed_tools()));
     set_feature(&mut turn, Feature::CodeMode, /*enabled*/ true);
     let turn = Arc::new(turn);
     let step_context = StepContext::for_test(Arc::clone(&turn));
@@ -713,13 +713,13 @@ async fn internal_guardian_sessions_preserve_code_mode() {
         router
             .model_visible_specs()
             .iter()
-            .any(|tool| tool.name() == codex_code_mode::PUBLIC_TOOL_NAME)
+            .any(|tool| tool.name() == ava_code_mode::PUBLIC_TOOL_NAME)
     );
     assert!(
         router
             .model_visible_specs()
             .iter()
-            .any(|tool| tool.name() == codex_code_mode::WAIT_TOOL_NAME)
+            .any(|tool| tool.name() == ava_code_mode::WAIT_TOOL_NAME)
     );
 }
 
@@ -727,17 +727,17 @@ async fn internal_guardian_sessions_preserve_code_mode() {
 async fn internal_guardian_sessions_require_managed_secondary_environments() {
     for (secondary_profile, expected_tools) in [
         (
-            codex_protocol::models::PermissionProfile::workspace_write(),
+            ava_protocol::models::PermissionProfile::workspace_write(),
             vec!["exec_command", "write_stdin", "view_image"],
         ),
         (
-            codex_protocol::models::PermissionProfile::Disabled,
+            ava_protocol::models::PermissionProfile::Disabled,
             Vec::new(),
         ),
     ] {
         let (mut session, mut turn) = make_session_and_context().await;
         turn.session_source = SessionSource::Internal(InternalSessionSource::Guardian);
-        session.allowed_tools = Some(Arc::new(codex_guardian_reviewer::reviewer_allowed_tools()));
+        session.allowed_tools = Some(Arc::new(ava_guardian_reviewer::reviewer_allowed_tools()));
         set_feature(&mut turn, Feature::ViewImage, /*enabled*/ true);
         let TurnEnvironmentState::Ready(primary) = turn
             .initial_environments
@@ -748,12 +748,12 @@ async fn internal_guardian_sessions_require_managed_secondary_environments() {
             panic!("primary environment should be ready");
         };
         primary.config_mut().permission_profile =
-            codex_protocol::models::PermissionProfileSnapshot::legacy(
-                codex_protocol::models::PermissionProfile::workspace_write(),
+            ava_protocol::models::PermissionProfileSnapshot::legacy(
+                ava_protocol::models::PermissionProfile::workspace_write(),
             );
         duplicate_primary_environment(&mut turn);
         let secondary_workspace_root =
-            codex_utils_path_uri::PathUri::from_abs_path(&turn.config.cwd.join("secondary"));
+            ava_utils_path_uri::PathUri::from_abs_path(&turn.config.cwd.join("secondary"));
         let TurnEnvironmentState::Ready(secondary) = turn
             .initial_environments
             .environments
@@ -764,7 +764,7 @@ async fn internal_guardian_sessions_require_managed_secondary_environments() {
         };
         secondary.config_mut().workspace_roots = vec![secondary_workspace_root];
         secondary.config_mut().permission_profile =
-            codex_protocol::models::PermissionProfileSnapshot::legacy(secondary_profile);
+            ava_protocol::models::PermissionProfileSnapshot::legacy(secondary_profile);
         let turn = Arc::new(turn);
         let step_context = StepContext::for_test(Arc::clone(&turn));
 
@@ -784,7 +784,7 @@ async fn internal_guardian_sessions_require_managed_secondary_environments() {
             router
                 .model_visible_specs()
                 .iter()
-                .map(codex_tools::ToolSpec::name)
+                .map(ava_tools::ToolSpec::name)
                 .collect::<Vec<_>>(),
             expected_tools
         );
@@ -959,8 +959,8 @@ async fn request_user_input_stays_direct_in_code_mode_only() {
 
     plan.assert_visible_contains(&[
         "request_user_input",
-        codex_code_mode::PUBLIC_TOOL_NAME,
-        codex_code_mode::WAIT_TOOL_NAME,
+        ava_code_mode::PUBLIC_TOOL_NAME,
+        ava_code_mode::WAIT_TOOL_NAME,
     ]);
     plan.assert_registered_contains(&["request_user_input"]);
     assert_eq!(
@@ -968,7 +968,7 @@ async fn request_user_input_stays_direct_in_code_mode_only() {
         ToolExposure::DirectModelOnly
     );
 
-    let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+    let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
         panic!("expected code mode exec tool");
     };
     assert!(!exec.description.contains("request_user_input"));
@@ -1054,8 +1054,8 @@ async fn login_shell_parameter_follows_selected_environment() {
                 };
                 environment.config_mut().allow_login_shell = allow_login_shell;
                 if guardian {
-                    turn.session_source = codex_protocol::protocol::SessionSource::SubAgent(
-                        codex_protocol::protocol::SubAgentSource::Other(
+                    turn.session_source = ava_protocol::protocol::SessionSource::SubAgent(
+                        ava_protocol::protocol::SubAgentSource::Other(
                             crate::guardian::GUARDIAN_REVIEWER_NAME.to_string(),
                         ),
                     );
@@ -1116,7 +1116,7 @@ async fn disabling_shell_tools_disables_command_tools_for_all_environments() {
         };
         environment.selection.environment_id = "remote".to_string();
         environment.environment = Arc::new(
-            codex_exec_server::Environment::create_for_tests(Some(
+            ava_exec_server::Environment::create_for_tests(Some(
                 "ws://127.0.0.1:1/remote-exec-server".to_string(),
             ))
             .expect("remote test environment"),
@@ -1203,7 +1203,7 @@ async fn shell_zsh_fork_keeps_unified_exec_available() {
 
 #[tokio::test]
 async fn zsh_fork_unified_exec_hides_shell_parameter() {
-    if !codex_utils_pty::conpty_supported() {
+    if !ava_utils_pty::conpty_supported() {
         return;
     }
 
@@ -1217,7 +1217,7 @@ async fn zsh_fork_unified_exec_hides_shell_parameter() {
             ],
         );
         turn.unified_exec_shell_mode =
-            codex_tools::UnifiedExecShellMode::ZshFork(zsh_fork_config_for_spec_plan_tests());
+            ava_tools::UnifiedExecShellMode::ZshFork(zsh_fork_config_for_spec_plan_tests());
     })
     .await;
 
@@ -1227,7 +1227,7 @@ async fn zsh_fork_unified_exec_hides_shell_parameter() {
 
 #[tokio::test]
 async fn zsh_fork_unified_exec_keeps_shell_parameter_when_remote_environment_available() {
-    if !codex_utils_pty::conpty_supported() {
+    if !ava_utils_pty::conpty_supported() {
         return;
     }
 
@@ -1241,7 +1241,7 @@ async fn zsh_fork_unified_exec_keeps_shell_parameter_when_remote_environment_ava
             ],
         );
         turn.unified_exec_shell_mode =
-            codex_tools::UnifiedExecShellMode::ZshFork(zsh_fork_config_for_spec_plan_tests());
+            ava_tools::UnifiedExecShellMode::ZshFork(zsh_fork_config_for_spec_plan_tests());
         let remote_cwd = turn
             .initial_environments
             .primary()
@@ -1257,7 +1257,7 @@ async fn zsh_fork_unified_exec_keeps_shell_parameter_when_remote_environment_ava
                         cwd: remote_cwd,
                         workspace_roots: Vec::new(),
                         config: EnvironmentConfigState::Ready(
-                            codex_protocol::protocol::EnvironmentConfig {
+                            ava_protocol::protocol::EnvironmentConfig {
                                 allow_login_shell: true,
                                 workspace_roots: Vec::new(),
                                 windows_sandbox_level: turn.windows_sandbox_level,
@@ -1278,7 +1278,7 @@ async fn zsh_fork_unified_exec_keeps_shell_parameter_when_remote_environment_ava
                     },
                     crate::environment_selection::EnvironmentConfigOrigin::Thread,
                     Arc::new(
-                        codex_exec_server::Environment::create_for_tests(Some(
+                        ava_exec_server::Environment::create_for_tests(Some(
                             "ws://127.0.0.1:1/remote-exec-server".to_string(),
                         ))
                         .expect("remote test environment"),
@@ -1366,7 +1366,7 @@ async fn environment_tools_follow_the_step_context() {
     let environments = turn.initial_environments.clone();
     turn.initial_environments.environments.clear();
     let turn = Arc::new(turn);
-    let mcp = Arc::new(codex_mcp::McpBinding::empty(mcp_config_for_test(
+    let mcp = Arc::new(ava_mcp::McpBinding::empty(mcp_config_for_test(
         &turn.config,
     )));
 
@@ -1451,7 +1451,7 @@ async fn sleep_tool_stays_direct_and_outside_code_mode() {
         );
         plan.assert_registered_lacks(&[wait_agent_tool_name.as_str()]);
 
-        let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+        let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
             panic!("expected code mode exec tool");
         };
         if code_mode_only {
@@ -1778,7 +1778,7 @@ async fn strict_namespace_ownership_requires_tool_namespace_inventory_opt_in() {
             let error = result.err().expect("mixed namespace ownership should fail");
             assert!(matches!(
                 error.details(),
-                CodexErrorDetails::ToolCollision(name) if name == "shared"
+                AvaErrorDetails::ToolCollision(name) if name == "shared"
             ));
         } else {
             assert!(result.is_ok(), "existing strict behavior should not change");
@@ -1900,7 +1900,7 @@ async fn strict_tool_collisions_reject_external_and_synthetic_duplicates() {
             ToolPlanInputs {
                 dynamic_tools: vec![dynamic_tool(
                     /*namespace*/ None,
-                    codex_code_mode::PUBLIC_TOOL_NAME,
+                    ava_code_mode::PUBLIC_TOOL_NAME,
                     /*defer_loading*/ false,
                 )],
                 ..ToolPlanInputs::default()
@@ -1919,7 +1919,7 @@ async fn strict_tool_collisions_reject_external_and_synthetic_duplicates() {
                 )],
                 dynamic_tools: vec![dynamic_tool(
                     /*namespace*/ None,
-                    codex_tools::TOOL_SEARCH_TOOL_NAME,
+                    ava_tools::TOOL_SEARCH_TOOL_NAME,
                     /*defer_loading*/ false,
                 )],
                 ..ToolPlanInputs::default()
@@ -2025,7 +2025,7 @@ async fn strict_tool_collisions_reject_external_and_synthetic_duplicates() {
         .expect("strict tool collision should fail tool planning");
         assert!(matches!(
             error.details(),
-            CodexErrorDetails::ToolCollision(name) if name == expected_name
+            AvaErrorDetails::ToolCollision(name) if name == expected_name
         ));
         assert_eq!(
             error.to_string(),
@@ -2221,7 +2221,7 @@ async fn code_mode_uses_the_first_normalized_tool_identity() {
             assert_eq!(shadow.description, "lookup dynamic tool");
         }
 
-        let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+        let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
             panic!("expected code mode exec tool");
         };
         assert!(!exec.description.contains("lookup dynamic tool"));
@@ -2531,7 +2531,7 @@ async fn request_plugin_install_description_requires_exhausting_tool_search() {
 async fn code_mode_only_exposes_code_executor_and_hides_nested_tools() {
     let input = ToolPlanInputs {
         dynamic_tools: vec![dynamic_tool(
-            Some("codex_app"),
+            Some("ava_app"),
             "lookup",
             /*defer_loading*/ false,
         )],
@@ -2539,12 +2539,12 @@ async fn code_mode_only_exposes_code_executor_and_hides_nested_tools() {
     };
     let plain = probe_with(|_| {}, input).await;
     assert_eq!(
-        plain.namespace_function_names("codex_app"),
+        plain.namespace_function_names("ava_app"),
         &["lookup".to_string()]
     );
     plain.assert_visible_lacks(&[
-        codex_code_mode::PUBLIC_TOOL_NAME,
-        codex_code_mode::WAIT_TOOL_NAME,
+        ava_code_mode::PUBLIC_TOOL_NAME,
+        ava_code_mode::WAIT_TOOL_NAME,
     ]);
     assert_eq!(
         (plain.tool_mode, plain.requires_code_mode_worker),
@@ -2557,7 +2557,7 @@ async fn code_mode_only_exposes_code_executor_and_hides_nested_tools() {
         },
         ToolPlanInputs {
             dynamic_tools: vec![dynamic_tool(
-                Some("codex_app"),
+                Some("ava_app"),
                 "lookup",
                 /*defer_loading*/ false,
             )],
@@ -2566,8 +2566,8 @@ async fn code_mode_only_exposes_code_executor_and_hides_nested_tools() {
     )
     .await;
     code_mode_only.assert_visible_contains(&[
-        codex_code_mode::PUBLIC_TOOL_NAME,
-        codex_code_mode::WAIT_TOOL_NAME,
+        ava_code_mode::PUBLIC_TOOL_NAME,
+        ava_code_mode::WAIT_TOOL_NAME,
     ]);
     assert_eq!(
         (
@@ -2577,7 +2577,7 @@ async fn code_mode_only_exposes_code_executor_and_hides_nested_tools() {
         (ToolMode::CodeModeOnly, true),
     );
     assert_eq!(
-        code_mode_only.namespace_function_names("codex_app"),
+        code_mode_only.namespace_function_names("ava_app"),
         Vec::<String>::new().as_slice()
     );
 }
@@ -2597,7 +2597,7 @@ async fn code_mode_config_updates_exec_description() {
         })
         .await;
 
-        let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+        let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
             panic!("expected code mode exec tool");
         };
         assert!(
@@ -2631,8 +2631,8 @@ async fn code_mode_only_exposes_configured_dynamic_namespace_directly() {
     .await;
 
     plan.assert_visible_contains(&[
-        codex_code_mode::PUBLIC_TOOL_NAME,
-        codex_code_mode::WAIT_TOOL_NAME,
+        ava_code_mode::PUBLIC_TOOL_NAME,
+        ava_code_mode::WAIT_TOOL_NAME,
         "direct_only",
     ]);
     plan.assert_visible_lacks(&["tool_search"]);
@@ -2647,7 +2647,7 @@ async fn code_mode_only_exposes_configured_dynamic_namespace_directly() {
         panic!("expected direct-only namespace function tool");
     };
     assert_eq!(tool.defer_loading, None);
-    let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+    let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
         panic!("expected code mode exec tool");
     };
     assert!(!exec.description.contains("direct_only_lookup(args:"));
@@ -2667,7 +2667,7 @@ async fn code_mode_only_exposes_default_namespace_tools_directly() {
     plan.assert_visible_contains(&["update_plan"]);
     assert_eq!(plan.exposure("update_plan"), ToolExposure::DirectModelOnly);
 
-    let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+    let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
         panic!("expected code mode exec tool");
     };
     assert!(!exec.description.contains("update_plan(args:"));
@@ -2697,7 +2697,7 @@ async fn excluded_deferred_namespaces_do_not_enable_nested_tool_guidance() {
     )
     .await;
 
-    let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+    let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
         panic!("expected code mode exec tool");
     };
     assert!(
@@ -2726,7 +2726,7 @@ async fn code_mode_excludes_default_namespace_tools() {
     plan.assert_registered_contains(&["update_plan"]);
     assert_eq!(plan.exposure("update_plan"), ToolExposure::Direct);
 
-    let ToolSpec::Freeform(exec) = plan.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME) else {
+    let ToolSpec::Freeform(exec) = plan.visible_spec(ava_code_mode::PUBLIC_TOOL_NAME) else {
         panic!("expected code mode exec tool");
     };
     assert!(!exec.description.contains("update_plan(args:"));
@@ -2945,8 +2945,8 @@ async fn tool_mode_selector_overrides_feature_flags() {
     })
     .await;
     direct.assert_visible_lacks(&[
-        codex_code_mode::PUBLIC_TOOL_NAME,
-        codex_code_mode::WAIT_TOOL_NAME,
+        ava_code_mode::PUBLIC_TOOL_NAME,
+        ava_code_mode::WAIT_TOOL_NAME,
     ]);
 }
 
@@ -3312,8 +3312,8 @@ async fn hosted_web_search_and_standalone_image_generation_follow_runtime_gates(
         code_mode_only.visible_names,
         vec![
             // Code-mode entrypoints.
-            codex_code_mode::PUBLIC_TOOL_NAME,
-            codex_code_mode::WAIT_TOOL_NAME,
+            ava_code_mode::PUBLIC_TOOL_NAME,
+            ava_code_mode::WAIT_TOOL_NAME,
             "request_user_input",
             // Multi-agent v2 tools.
             MULTI_AGENT_V2_NAMESPACE,

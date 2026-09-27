@@ -7,25 +7,25 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use anyhow::Context;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecutorCapabilityDiscoveryCache;
-use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-use codex_exec_server::SelectedCapabilityRootsStatus;
-use codex_exec_server_protocol::CAPABILITY_ROOTS_DISCOVER_METHOD;
-use codex_exec_server_protocol::CapabilityRootDiscoverRequest;
-use codex_exec_server_protocol::CapabilityRootsDiscoverParams;
-use codex_file_system::FileSystemSandboxContext;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::cache_system_proxy_route_for_test;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecutorCapabilityDiscoveryCache;
+use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+use ava_exec_server::SelectedCapabilityRootsStatus;
+use ava_exec_server_protocol::CAPABILITY_ROOTS_DISCOVER_METHOD;
+use ava_exec_server_protocol::CapabilityRootDiscoverRequest;
+use ava_exec_server_protocol::CapabilityRootsDiscoverParams;
+use ava_file_system::FileSystemSandboxContext;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::cache_system_proxy_route_for_test;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_path_uri::PathUri;
 use common::exec_server::exec_server;
 use futures::SinkExt;
 use futures::StreamExt;
@@ -83,15 +83,15 @@ async fn prepared_remote_environment_uses_configured_system_proxy() -> anyhow::R
         Ok::<(), anyhow::Error>(())
     }));
 
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     std::fs::write(
-        codex_home.path().join("environments.toml"),
+        ava_home.path().join("environments.toml"),
         format!(
             "default = \"{REMOTE_ENVIRONMENT_ID}\"\ninclude_local = false\n\n[[environments]]\nid = \"{REMOTE_ENVIRONMENT_ID}\"\nurl = \"{websocket_url}\"\n"
         ),
     )?;
 
-    let prepared = EnvironmentManager::prepare_from_codex_home(codex_home.path()).await?;
+    let prepared = EnvironmentManager::prepare_from_ava_home(ava_home.path()).await?;
     assert!(prepared.default_environment_is_remote());
     let manager = prepared.build(
         /*local_runtime_paths*/ None,

@@ -1,7 +1,7 @@
 use super::*;
 use crate::collaboration_modes;
-use codex_app_server_client::AppServerClient;
-use codex_config::LoaderOverrides;
+use ava_app_server_client::AppServerClient;
+use ava_config::LoaderOverrides;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -11,7 +11,7 @@ async fn session_model_selection_preserves_defaults_and_updates_active_thread() 
         app.config.model = Some("gpt-5.5".into());
         app.config.model_reasoning_effort = Some(ReasoningEffortConfig::Medium);
         app.config.plan_mode_reasoning_effort = Some(ReasoningEffortConfig::Low);
-        let config_path = app.config.codex_home.join("config.toml");
+        let config_path = app.config.ava_home.join("config.toml");
         let original = "# My defaults\nmodel = 'gpt-5.5'\nmodel_reasoning_effort = 'medium'\nplan_mode_reasoning_effort = 'low'\n";
         std::fs::write(&config_path, original)?;
         let mut server = Box::pin(crate::start_embedded_app_server_for_picker(&app.config)).await?;
@@ -88,7 +88,7 @@ async fn model_default_saves_report_server_outcomes_and_target_server_profile() 
     for outcome in ["saved", "overridden", "rejected"] {
         let (mut app, mut events, _ops) = make_test_app_with_channels().await;
         app.config.model_reasoning_effort = Some(ReasoningEffortConfig::Medium);
-        let local_config_path = app.config.codex_home.join("config.toml");
+        let local_config_path = app.config.ava_home.join("config.toml");
         let local_config_before = std::fs::read(&local_config_path).ok();
         let server_home = tempfile::tempdir()?;
         let base_path = server_home.path().join("config.toml");
@@ -116,7 +116,7 @@ async fn model_default_saves_report_server_outcomes_and_target_server_profile() 
             Vec::new()
         };
         let config = ConfigBuilder::default()
-            .codex_home(server_home.path().to_path_buf())
+            .ava_home(server_home.path().to_path_buf())
             .cli_overrides(overrides.clone())
             .loader_overrides(loader_overrides.clone())
             .harness_overrides(ConfigOverrides {
@@ -126,16 +126,16 @@ async fn model_default_saves_report_server_outcomes_and_target_server_profile() 
             .build()
             .await?;
         let client = crate::start_embedded_app_server(
-            codex_arg0::Arg0DispatchPaths::default(),
+            ava_arg0::Arg0DispatchPaths::default(),
             config,
             overrides,
             loader_overrides,
             /*strict_config*/ false,
-            codex_config::CloudConfigBundleLoader::default(),
-            codex_feedback::CodexFeedback::new(),
+            ava_config::CloudConfigBundleLoader::default(),
+            ava_feedback::AvaFeedback::new(),
             /*log_db*/ None,
             /*state_db*/ None,
-            Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+            Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         )
         .await?;
         let mut server = AppServerSession::new(

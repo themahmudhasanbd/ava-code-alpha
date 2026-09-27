@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 use ratatui::text::Line;
 
 use super::status_line_from_segments;
@@ -25,7 +25,7 @@ pub(crate) enum StatusSurfacePreviewItem {
     ContextUsed,
     FiveHourLimit,
     WeeklyLimit,
-    CodexVersion,
+    AvaVersion,
     ContextWindowSize,
     UsedTokens,
     TotalInputTokens,
@@ -45,7 +45,7 @@ pub(crate) enum StatusSurfacePreviewItem {
 impl StatusSurfacePreviewItem {
     fn placeholder(self) -> &'static str {
         match self {
-            StatusSurfacePreviewItem::AppName => "codex",
+            StatusSurfacePreviewItem::AppName => "ava",
             StatusSurfacePreviewItem::ProjectName => "my-project",
             StatusSurfacePreviewItem::ProjectRoot => "my-project",
             StatusSurfacePreviewItem::CurrentDir => "~/my-project/subdir",
@@ -62,7 +62,7 @@ impl StatusSurfacePreviewItem {
             StatusSurfacePreviewItem::ContextUsed => "Context 0% used",
             StatusSurfacePreviewItem::FiveHourLimit => "primary 0%",
             StatusSurfacePreviewItem::WeeklyLimit => "secondary 0%",
-            StatusSurfacePreviewItem::CodexVersion => "0.0.0",
+            StatusSurfacePreviewItem::AvaVersion => "0.0.0",
             StatusSurfacePreviewItem::ContextWindowSize => "0 window",
             StatusSurfacePreviewItem::UsedTokens => "0 used",
             StatusSurfacePreviewItem::TotalInputTokens => "0 in",
@@ -73,8 +73,8 @@ impl StatusSurfacePreviewItem {
             StatusSurfacePreviewItem::FastMode => "Fast on",
             StatusSurfacePreviewItem::RawOutput => "raw output",
             StatusSurfacePreviewItem::WorkspaceHeadline => "Workspace headline",
-            StatusSurfacePreviewItem::Model => "gpt-5.2-codex",
-            StatusSurfacePreviewItem::ModelWithReasoning => "gpt-5.2-codex medium",
+            StatusSurfacePreviewItem::Model => "gpt-5.2-ava",
+            StatusSurfacePreviewItem::ModelWithReasoning => "gpt-5.2-ava medium",
             StatusSurfacePreviewItem::Reasoning => "medium",
             StatusSurfacePreviewItem::TaskProgress => "Tasks 0/0",
         }
@@ -99,7 +99,7 @@ impl StatusSurfacePreviewItem {
             Self::ContextUsed,
             Self::FiveHourLimit,
             Self::WeeklyLimit,
-            Self::CodexVersion,
+            Self::AvaVersion,
             Self::ContextWindowSize,
             Self::UsedTokens,
             Self::TotalInputTokens,

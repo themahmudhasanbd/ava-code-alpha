@@ -1,39 +1,39 @@
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_core::TurnInputRequest;
-use codex_core::compact::SUMMARIZATION_PROMPT;
-use codex_core::compact::SUMMARY_PREFIX;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::built_in_model_providers;
-use codex_models_manager::bundled_models_response;
-use codex_protocol::config_types::AutoCompactTokenLimitScope;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::Settings;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelServiceTier;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ItemStartedEvent;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::WarningEvent;
-use codex_protocol::user_input::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_core::TurnInputRequest;
+use ava_core::compact::SUMMARIZATION_PROMPT;
+use ava_core::compact::SUMMARY_PREFIX;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::built_in_model_providers;
+use ava_models_manager::bundled_models_response;
+use ava_protocol::config_types::AutoCompactTokenLimitScope;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::Settings;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelServiceTier;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ItemStartedEvent;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::WarningEvent;
+use ava_protocol::user_input::UserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::PathBufExt;
 use core_test_support::context_snapshot;
 use core_test_support::context_snapshot::ContextSnapshotOptions;
@@ -43,9 +43,9 @@ use core_test_support::responses::ev_reasoning_item;
 use core_test_support::responses::mount_models_once;
 use core_test_support::responses::strip_response_item_ids_from_json;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::test_path_buf;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
@@ -364,7 +364,7 @@ fn replacement_history_from_rollout(path: &Path) -> Result<Vec<Value>> {
         .map(str::trim)
         .filter(|line| !line.is_empty())
     {
-        let entry = codex_rollout::parse_rollout_line(line)?;
+        let entry = ava_rollout::parse_rollout_line(line)?;
         if let RolloutItem::Compacted(compacted) = entry.item
             && let Some(items) = compacted.replacement_history
         {
@@ -447,14 +447,14 @@ fn assert_pre_sampling_switch_compaction_requests(
     );
 }
 
-async fn assert_compaction_uses_turn_lifecycle_id(codex: &std::sync::Arc<codex_core::CodexThread>) {
+async fn assert_compaction_uses_turn_lifecycle_id(ava: &std::sync::Arc<ava_core::AvaThread>) {
     let mut turn_started_id = None;
     let mut turn_completed_id = None;
     let mut compact_started_id = None;
     let mut compact_completed_id = None;
 
     while turn_completed_id.is_none() {
-        let event = codex.next_event().await.expect("next event");
+        let event = ava.next_event().await.expect("next event");
         match event.msg {
             EventMsg::TurnStarted(_) => turn_started_id = Some(event.id.clone()),
             EventMsg::ItemStarted(ItemStartedEvent {
@@ -549,9 +549,9 @@ async fn summarize_context_three_requests_and_instructions(
     // inspect them without relying on specific prompt markers.
     let request_log = mount_sse_sequence(&server, vec![sse1, sse2, sse3]).await;
 
-    // Build config pointing to the mock server and spawn Codex.
+    // Build config pointing to the mock server and spawn Ava.
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model = Some("gpt-5.2".to_string());
         config.update_plan_enabled = enable_plan;
         if custom_instructions {
@@ -562,11 +562,11 @@ async fn summarize_context_three_requests_and_instructions(
         config.model_auto_compact_token_limit = Some(200_000);
     });
     let test = builder.build(&server).await?;
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let rollout_path = test.session_configured.rollout_path.expect("rollout path");
 
     // 1) Normal user input – should hit server once.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Text {
                 text: "hello world".into(),
@@ -578,25 +578,25 @@ async fn summarize_context_three_requests_and_instructions(
             },
         ]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // 2) Summarize – second hit should include the summarization prompt.
-    codex.submit(Op::Compact).await?;
-    let warning_event = wait_for_event(&codex, |ev| matches!(ev, EventMsg::Warning(_))).await;
+    ava.submit(Op::Compact).await?;
+    let warning_event = wait_for_event(&ava, |ev| matches!(ev, EventMsg::Warning(_))).await;
     let EventMsg::Warning(WarningEvent { message }) = warning_event else {
         panic!("expected warning event after compact");
     };
     assert_eq!(message, COMPACT_WARNING_MESSAGE);
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // 3) Next user input – third hit; history should include only the summary.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: THIRD_USER_MSG.into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Inspect the three captured requests.
     let requests = request_log.requests();
@@ -696,9 +696,9 @@ async fn summarize_context_three_requests_and_instructions(
         "third request should not include the summarize trigger"
     );
 
-    // Shut down Codex to flush rollout entries before inspecting the file.
-    codex.submit(Op::Shutdown).await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+    // Shut down Ava to flush rollout entries before inspecting the file.
+    ava.submit(Op::Shutdown).await?;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
 
     let replacement_history = replacement_history_from_rollout(&rollout_path)
         .expect("local compaction should persist replacement history");
@@ -732,7 +732,7 @@ async fn summarize_context_three_requests_and_instructions(
         if trimmed.is_empty() {
             continue;
         }
-        let Ok(entry) = codex_rollout::parse_rollout_line(trimmed) else {
+        let Ok(entry) = ava_rollout::parse_rollout_line(trimmed) else {
             continue;
         };
         match entry.item {
@@ -796,7 +796,7 @@ async fn manual_pre_compact_block_decision_does_not_block_compaction() {
     let request_log = mount_sse_sequence(&server, vec![first_turn, compact_turn]).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_pre_build_hook(write_unsupported_blocking_pre_compact_hook)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -804,20 +804,20 @@ async fn manual_pre_compact_block_decision_does_not_block_compaction() {
             set_test_compact_prompt(config);
         });
     let test = builder.build(&server).await.expect("create conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello before blocked compact".to_string(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit first user turn");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.expect("trigger compact");
+    ava.submit(Op::Compact).await.expect("trigger compact");
 
-    let completed = wait_for_event_match(&codex, |ev| match ev {
+    let completed = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::HookCompleted(completed)
             if completed.run.event_name == HookEventName::PreCompact =>
         {
@@ -827,8 +827,8 @@ async fn manual_pre_compact_block_decision_does_not_block_compaction() {
     })
     .await;
     assert_eq!(completed.run.status, HookRunStatus::Failed);
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::Warning(_))).await;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::Warning(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert_eq!(
@@ -837,7 +837,7 @@ async fn manual_pre_compact_block_decision_does_not_block_compaction() {
         "unsupported PreCompact block output should not prevent the compact request"
     );
 
-    let hook_inputs = read_hook_inputs(&test.codex_home_path().join("pre_compact_block_log.jsonl"));
+    let hook_inputs = read_hook_inputs(&test.ava_home_path().join("pre_compact_block_log.jsonl"));
     assert_eq!(hook_inputs.len(), 1);
     let input = &hook_inputs[0];
     assert_eq!(input["hook_event_name"], "PreCompact");
@@ -863,7 +863,7 @@ async fn compact_hooks_respect_matchers_and_post_runs_after_compaction() {
     let request_log = mount_sse_sequence(&server, vec![first_turn, compact_turn]).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_pre_build_hook(write_matching_compact_hooks)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -871,32 +871,32 @@ async fn compact_hooks_respect_matchers_and_post_runs_after_compaction() {
             set_test_compact_prompt(config);
         });
     let test = builder.build(&server).await.expect("create conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello before matched compact".to_string(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit first user turn");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.expect("trigger compact");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::Warning(_))).await;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    ava.submit(Op::Compact).await.expect("trigger compact");
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::Warning(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     assert_eq!(request_log.requests().len(), 2);
     assert!(
         !test
-            .codex_home_path()
+            .ava_home_path()
             .join("pre_compact_auto_log.jsonl")
             .exists(),
         "auto matcher should not run for manual compaction"
     );
 
     let hook_inputs =
-        read_hook_inputs(&test.codex_home_path().join("post_compact_manual_log.jsonl"));
+        read_hook_inputs(&test.ava_home_path().join("post_compact_manual_log.jsonl"));
     assert_eq!(hook_inputs.len(), 1);
     let input = &hook_inputs[0];
     assert_eq!(input["hook_event_name"], "PostCompact");
@@ -927,32 +927,32 @@ async fn manual_compact_uses_custom_prompt() {
     let custom_prompt = "Use this compact prompt instead";
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         config.compact_prompt = Some(custom_prompt.to_string());
     });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "USER_ONE".to_string(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit first user turn");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.expect("trigger compact");
-    let warning_event = wait_for_event(&codex, |ev| matches!(ev, EventMsg::Warning(_))).await;
+    ava.submit(Op::Compact).await.expect("trigger compact");
+    let warning_event = wait_for_event(&ava, |ev| matches!(ev, EventMsg::Warning(_))).await;
     let EventMsg::Warning(WarningEvent { message }) = warning_event else {
         panic!("expected warning event after compact");
     };
     assert_eq!(message, COMPACT_WARNING_MESSAGE);
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert_eq!(
@@ -1003,7 +1003,7 @@ async fn manual_compact_uses_custom_prompt() {
 async fn reasoning_effort_override_remote_v2_compaction_resets_pinned_effort(
     fail_compaction: bool,
 ) -> Result<()> {
-    use codex_protocol::openai_models::ReasoningEffort;
+    use ava_protocol::openai_models::ReasoningEffort;
 
     skip_if_no_network!(Ok(()));
 
@@ -1034,8 +1034,8 @@ async fn reasoning_effort_override_remote_v2_compaction_resets_pinned_effort(
     )
     .await;
 
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model_info_override("gpt-5.4", |model| {
             model.use_responses_lite = true;
             model.supports_reasoning_effort_updates = true;
@@ -1054,7 +1054,7 @@ async fn reasoning_effort_override_remote_v2_compaction_resets_pinned_effort(
 
     test.submit_text_turn("first message").await?;
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -1062,18 +1062,18 @@ async fn reasoning_effort_override_remote_v2_compaction_resets_pinned_effort(
     )
     .await?;
     test.submit_text_turn("second message").await?;
-    test.codex.submit(Op::Compact).await?;
+    test.ava-code.submit(Op::Compact).await?;
     if fail_compaction {
-        wait_for_event(&test.codex, |event| matches!(event, EventMsg::Error(_))).await;
+        wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await;
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     test.submit_text_turn("after compaction").await?;
     test.submit_text_turn("unchanged effort").await?;
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::Low)),
             ..Default::default()
@@ -1157,19 +1157,19 @@ async fn manual_compact_records_durable_and_local_token_usage() {
     mount_sse_once(&server, sse_compact).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
     });
     let test = builder.build(&server).await.unwrap();
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
-    let codex = test.codex;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let ava = test.ava-code;
 
     // Trigger manual compact and collect TokenCount events for the compact turn.
-    codex.submit(Op::Compact).await.unwrap();
+    ava.submit(Op::Compact).await.unwrap();
 
     // First TokenCount: from the compact API call (usage.total_tokens = 0).
-    let first = wait_for_event_match(&codex, |ev| match ev {
+    let first = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::TokenCount(tc) => tc
             .info
             .as_ref()
@@ -1179,7 +1179,7 @@ async fn manual_compact_records_durable_and_local_token_usage() {
     .await;
 
     // Second TokenCount: from the local post-compaction estimate.
-    let last = wait_for_event_match(&codex, |ev| match ev {
+    let last = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::TokenCount(tc) => tc
             .info
             .as_ref()
@@ -1189,7 +1189,7 @@ async fn manual_compact_records_durable_and_local_token_usage() {
     .await;
 
     // Ensure the compact task itself completes.
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     assert_eq!(
         first, 0,
@@ -1202,7 +1202,7 @@ async fn manual_compact_records_durable_and_local_token_usage() {
     let rollout_items = fs::read_to_string(rollout_path)
         .expect("read rollout")
         .lines()
-        .filter_map(|line| codex_rollout::parse_rollout_line(line).ok())
+        .filter_map(|line| ava_rollout::parse_rollout_line(line).ok())
         .map(|line| line.item)
         .collect::<Vec<_>>();
     let records = rollout_items
@@ -1248,22 +1248,22 @@ async fn manual_compact_emits_context_compaction_items() {
     mount_sse_sequence(&server, vec![sse1, sse2]).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "manual compact".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.unwrap();
+    ava.submit(Op::Compact).await.unwrap();
 
     let mut started_item = None;
     let mut completed_item = None;
@@ -1272,7 +1272,7 @@ async fn manual_compact_emits_context_compaction_items() {
 
     while !saw_turn_complete || started_item.is_none() || completed_item.is_none() || !legacy_event
     {
-        let event = codex.next_event().await.unwrap();
+        let event = ava.next_event().await.unwrap();
         match event.msg {
             EventMsg::ItemStarted(ItemStartedEvent {
                 item: TurnItem::ContextCompaction(item),
@@ -1309,14 +1309,14 @@ async fn multiple_auto_compact_per_task_runs_after_token_limit_hit() {
     let server = start_mock_server().await;
 
     let non_openai_provider_name = non_openai_model_provider(&server).name;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(allow_echo_commands)
         .with_config(move |config| {
             config.model_provider.name = non_openai_provider_name;
         })
         .build(&server)
         .await
-        .expect("build codex");
+        .expect("build ava");
 
     // user message
     let user_message = "create an app";
@@ -1414,7 +1414,7 @@ async fn multiple_auto_compact_per_task_runs_after_token_limit_hit() {
     let request_log = mount_sse_sequence(&server, bodies).await;
 
     // Start the conversation with the user message
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             user_message,
             test.cwd.path().to_path_buf(),
@@ -1422,7 +1422,7 @@ async fn multiple_auto_compact_per_task_runs_after_token_limit_hit() {
         ))
         .await
         .expect("submit user input");
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // collect the requests payloads from the model
     let requests_payloads = request_log.requests();
@@ -1877,14 +1877,14 @@ async fn auto_compact_runs_after_token_limit_hit() {
 
     let model_provider = non_openai_model_provider(&server);
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: FIRST_AUTO_MSG.into(),
             text_elements: Vec::new(),
@@ -1892,9 +1892,9 @@ async fn auto_compact_runs_after_token_limit_hit() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: SECOND_AUTO_MSG.into(),
             text_elements: Vec::new(),
@@ -1902,9 +1902,9 @@ async fn auto_compact_runs_after_token_limit_hit() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: POST_AUTO_USER_MSG.into(),
             text_elements: Vec::new(),
@@ -1912,7 +1912,7 @@ async fn auto_compact_runs_after_token_limit_hit() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     let request_bodies: Vec<String> = requests
@@ -2057,19 +2057,19 @@ async fn auto_compact_emits_context_compaction_items() {
     mount_sse_sequence(&server, vec![sse1, sse2, sse3, sse4]).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
     let mut started_item = None;
     let mut completed_item = None;
     let mut legacy_event = false;
 
     for user in [FIRST_AUTO_MSG, SECOND_AUTO_MSG, POST_AUTO_USER_MSG] {
-        codex
+        ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: user.into(),
                 text_elements: Vec::new(),
@@ -2078,7 +2078,7 @@ async fn auto_compact_emits_context_compaction_items() {
             .unwrap();
 
         loop {
-            let event = codex.next_event().await.unwrap();
+            let event = ava.next_event().await.unwrap();
             match event.msg {
                 EventMsg::ItemStarted(ItemStartedEvent {
                     item: TurnItem::ContextCompaction(item),
@@ -2137,32 +2137,32 @@ async fn auto_compact_starts_after_turn_started() {
     mount_sse_sequence(&server, vec![sse1, sse2, sse3, sse4]).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: FIRST_AUTO_MSG.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: SECOND_AUTO_MSG.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: POST_AUTO_USER_MSG.into(),
             text_elements: Vec::new(),
@@ -2170,7 +2170,7 @@ async fn auto_compact_starts_after_turn_started() {
         .await
         .unwrap();
 
-    let first = wait_for_event_match(&codex, |ev| match ev {
+    let first = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::TurnStarted(_) => Some("turn"),
         EventMsg::ItemStarted(ItemStartedEvent {
             item: TurnItem::ContextCompaction(_),
@@ -2181,7 +2181,7 @@ async fn auto_compact_starts_after_turn_started() {
     .await;
     assert_eq!(first, "turn", "compaction started before turn started");
 
-    wait_for_event(&codex, |ev| {
+    wait_for_event(&ava, |ev| {
         matches!(
             ev,
             EventMsg::ItemStarted(ItemStartedEvent {
@@ -2192,7 +2192,7 @@ async fn auto_compact_starts_after_turn_started() {
     })
     .await;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -2205,7 +2205,7 @@ async fn auto_compact_runs_after_resume_when_token_usage_is_over_limit() {
     let over_limit_tokens = 250_000;
     let remote_summary = REMOTE_V2_SUMMARY;
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(limit);
     });
@@ -2231,7 +2231,7 @@ async fn auto_compact_runs_after_resume_when_token_usage_is_over_limit() {
         "remote compaction should not run before the next user message"
     );
 
-    let mut resume_builder = test_codex().with_config(move |config| {
+    let mut resume_builder = test_ava().with_config(move |config| {
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(limit);
     });
@@ -2246,7 +2246,7 @@ async fn auto_compact_runs_after_resume_when_token_usage_is_over_limit() {
     let response_mock = mount_sse_sequence(&server, vec![compact_turn, sse_follow_up]).await;
 
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             follow_up_user,
             resumed.cwd.path().to_path_buf(),
@@ -2255,11 +2255,11 @@ async fn auto_compact_runs_after_resume_when_token_usage_is_over_limit() {
         .await
         .unwrap();
 
-    wait_for_event(&resumed.codex, |event| {
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::ContextCompacted(_))
     })
     .await;
-    wait_for_event(&resumed.codex, |event| {
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2320,17 +2320,17 @@ async fn pre_sampling_compact_runs_on_switch_to_smaller_context_model() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.update_plan_enabled = true;
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
         });
-    let test = builder.build(&server).await.expect("build test codex");
+    let test = builder.build(&server).await.expect("build test ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -2338,12 +2338,12 @@ async fn pre_sampling_compact_runs_on_switch_to_smaller_context_model() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -2351,7 +2351,7 @@ async fn pre_sampling_compact_runs_on_switch_to_smaller_context_model() {
         ))
         .await
         .expect("submit second user turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2423,16 +2423,16 @@ async fn pre_sampling_compact_runs_when_comp_hash_changes() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
         });
-    let test = builder.build(&server).await.expect("build test codex");
+    let test = builder.build(&server).await.expect("build test ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -2440,12 +2440,12 @@ async fn pre_sampling_compact_runs_when_comp_hash_changes() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -2453,7 +2453,7 @@ async fn pre_sampling_compact_runs_when_comp_hash_changes() {
         ))
         .await
         .expect("submit second user turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2491,7 +2491,7 @@ async fn previous_model_compaction_resolves_selected_settings() -> Result<()> {
     )
     .await;
     let model_provider = non_openai_model_provider(&server);
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.comp_hash = Some("hash-a".to_string());
             model.default_reasoning_summary = ReasoningSummary::Detailed;
@@ -2520,7 +2520,7 @@ async fn previous_model_compaction_resolves_selected_settings() -> Result<()> {
         .build_with_auto_env(&server)
         .await?;
     test.submit_text_turn("before switch").await?;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "after switch".to_string(),
@@ -2532,7 +2532,7 @@ async fn previous_model_compaction_resolves_selected_settings() -> Result<()> {
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2591,7 +2591,7 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
                 ev_completed_with_tokens("r1", /*total_tokens*/ 100),
             ])),
             invalid_request_response(format!(
-                "The '{retired_model}' model is not supported when using Codex with a ChatGPT account."
+                "The '{retired_model}' model is not supported when using Ava with a ChatGPT account."
             )),
             sse_response(sse(vec![
                 json!({
@@ -2612,8 +2612,8 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
     .await;
 
     let model_provider = openai_model_provider(&server);
-    let mut initial_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut initial_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(retired_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -2622,7 +2622,7 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
     let initial = initial_builder
         .build(&server)
         .await
-        .expect("build initial test codex");
+        .expect("build initial test ava");
     let home = initial.home.clone();
     let rollout_path = initial
         .session_configured
@@ -2631,7 +2631,7 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         .expect("rollout path");
 
     initial
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             initial.cwd.path().to_path_buf(),
@@ -2639,24 +2639,24 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     initial
-        .codex
+        .ava-code
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
 
     let model_provider = openai_model_provider(&server);
-    let mut resumed_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut resumed_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(retired_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -2665,10 +2665,10 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
     let resumed = resumed_builder
         .resume(&server, home, rollout_path)
         .await
-        .expect("resume codex");
+        .expect("resume ava");
 
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             resumed.cwd.path().to_path_buf(),
@@ -2676,7 +2676,7 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         ))
         .await
         .expect("submit renamed-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2751,8 +2751,8 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
     .await;
 
     let model_provider = openai_model_provider(&server);
-    let mut initial_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut initial_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(retired_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -2761,7 +2761,7 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
     let initial = initial_builder
         .build(&server)
         .await
-        .expect("build initial test codex");
+        .expect("build initial test ava");
     let home = initial.home.clone();
     let rollout_path = initial
         .session_configured
@@ -2770,7 +2770,7 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         .expect("rollout path");
 
     initial
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             initial.cwd.path().to_path_buf(),
@@ -2778,25 +2778,25 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     initial
-        .codex
+        .ava-code
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
 
     let mut model_provider = openai_model_provider(&server);
     model_provider.stream_max_retries = Some(0);
-    let mut resumed_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut resumed_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(retired_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -2805,10 +2805,10 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
     let resumed = resumed_builder
         .resume(&server, home, rollout_path)
         .await
-        .expect("resume codex");
+        .expect("resume ava");
 
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             resumed.cwd.path().to_path_buf(),
@@ -2816,7 +2816,7 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         ))
         .await
         .expect("submit renamed-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2895,17 +2895,17 @@ async fn pre_sampling_compact_falls_back_after_previous_model_invalid_request_on
     .await;
 
     let model_provider = openai_model_provider(&server);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(retired_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
             config.tool_registry.turn_metadata_includes_tool_info = true;
             set_test_compact_prompt(config);
         });
-    let test = builder.build(&server).await.expect("build test codex");
+    let test = builder.build(&server).await.expect("build test ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -2913,12 +2913,12 @@ async fn pre_sampling_compact_falls_back_after_previous_model_invalid_request_on
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -2926,7 +2926,7 @@ async fn pre_sampling_compact_falls_back_after_previous_model_invalid_request_on
         ))
         .await
         .expect("submit smaller-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2950,7 +2950,7 @@ async fn pre_sampling_compact_falls_back_after_previous_model_invalid_request_on
     // before its compaction attempt is sent.
     let [first_metadata, compact_metadata] = [&requests[0], &requests[1]].map(|request| {
         serde_json::from_str::<Value>(
-            request.body_json()["client_metadata"]["x-codex-turn-metadata"]
+            request.body_json()["client_metadata"]["x-ava-turn-metadata"]
                 .as_str()
                 .expect("request should include turn metadata"),
         )
@@ -3010,16 +3010,16 @@ async fn pre_sampling_compact_falls_back_after_previous_model_stream_retries_are
 
     let mut model_provider = openai_model_provider(&server);
     model_provider.stream_max_retries = Some(2);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
         });
-    let test = builder.build(&server).await.expect("build test codex");
+    let test = builder.build(&server).await.expect("build test ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -3027,12 +3027,12 @@ async fn pre_sampling_compact_falls_back_after_previous_model_stream_retries_are
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -3040,7 +3040,7 @@ async fn pre_sampling_compact_falls_back_after_previous_model_stream_retries_are
         ))
         .await
         .expect("submit selected-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
 
     let actual_models = request_log
         .requests()
@@ -3102,17 +3102,17 @@ async fn pre_sampling_compact_keeps_unknown_previous_model_for_api_key_auth_and_
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::from_api_key("Test API Key"))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::from_api_key("Test API Key"))
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
             config.model_catalog = Some(model_catalog);
             set_test_compact_prompt(config);
         });
-    let test = builder.build(&server).await.expect("build test codex");
+    let test = builder.build(&server).await.expect("build test ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -3120,12 +3120,12 @@ async fn pre_sampling_compact_keeps_unknown_previous_model_for_api_key_auth_and_
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -3133,7 +3133,7 @@ async fn pre_sampling_compact_keeps_unknown_previous_model_for_api_key_auth_and_
         ))
         .await
         .expect("submit next-model turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3193,16 +3193,16 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(model_without_hash)
         .with_config(move |config| {
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
         });
-    let test = builder.build(&server).await.expect("build test codex");
+    let test = builder.build(&server).await.expect("build test ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before hash",
             test.cwd.path().to_path_buf(),
@@ -3210,12 +3210,12 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "hash introduced",
             test.cwd.path().to_path_buf(),
@@ -3223,12 +3223,12 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
         ))
         .await
         .expect("submit second user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "hash removed",
             test.cwd.path().to_path_buf(),
@@ -3236,7 +3236,7 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
         ))
         .await
         .expect("submit third user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3298,8 +3298,8 @@ async fn body_after_prefix_model_switch_budget_compacts_with_next_model() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -3309,9 +3309,9 @@ async fn body_after_prefix_model_switch_budget_compacts_with_next_model() {
             config.model_auto_compact_token_limit_scope =
                 AutoCompactTokenLimitScope::BodyAfterPrefix;
         });
-    let test = builder.build(&server).await.expect("build test codex");
+    let test = builder.build(&server).await.expect("build test ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -3319,12 +3319,12 @@ async fn body_after_prefix_model_switch_budget_compacts_with_next_model() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -3332,7 +3332,7 @@ async fn body_after_prefix_model_switch_budget_compacts_with_next_model() {
         ))
         .await
         .expect("submit second user turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -3392,8 +3392,8 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut initial_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut initial_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -3402,7 +3402,7 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
     let initial = initial_builder
         .build(&server)
         .await
-        .expect("build initial test codex");
+        .expect("build initial test ava");
     let home = initial.home.clone();
     let rollout_path = initial
         .session_configured
@@ -3411,7 +3411,7 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         .expect("rollout path");
 
     initial
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before resume",
             initial.cwd.path().to_path_buf(),
@@ -3419,24 +3419,24 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         ))
         .await
         .expect("submit pre-resume turn");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     initial
-        .codex
+        .ava-code
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut resumed_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut resumed_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -3445,10 +3445,10 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
     let resumed = resumed_builder
         .resume(&server, home, rollout_path)
         .await
-        .expect("resume codex");
+        .expect("resume ava");
 
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after resume",
             resumed.cwd.path().to_path_buf(),
@@ -3456,7 +3456,7 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         ))
         .await
         .expect("submit resumed user turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -3513,8 +3513,8 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut initial_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut initial_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -3523,7 +3523,7 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
     let initial = initial_builder
         .build(&server)
         .await
-        .expect("build initial test codex");
+        .expect("build initial test ava");
     let home = initial.home.clone();
     let rollout_path = initial
         .session_configured
@@ -3532,7 +3532,7 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         .expect("rollout path");
 
     initial
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before resume",
             initial.cwd.path().to_path_buf(),
@@ -3540,17 +3540,17 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         ))
         .await
         .expect("submit pre-resume turn");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     initial
-        .codex
+        .ava-code
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -3558,7 +3558,7 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
     let rollout = fs::read_to_string(&rollout_path).expect("read rollout");
     let persisted_comp_hash = rollout
         .lines()
-        .filter_map(|line| codex_rollout::parse_rollout_line(line).ok())
+        .filter_map(|line| ava_rollout::parse_rollout_line(line).ok())
         .find_map(|line| match line.item {
             RolloutItem::TurnContext(context) => context.comp_hash,
             _ => None,
@@ -3566,8 +3566,8 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
     assert_eq!(persisted_comp_hash.as_deref(), Some("hash-a"));
 
     let model_provider = non_openai_model_provider(&server);
-    let mut resumed_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut resumed_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -3576,10 +3576,10 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
     let resumed = resumed_builder
         .resume(&server, home, rollout_path)
         .await
-        .expect("resume codex");
+        .expect("resume ava");
 
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after resume",
             resumed.cwd.path().to_path_buf(),
@@ -3587,7 +3587,7 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         ))
         .await
         .expect("submit resumed user turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.codex).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -3640,8 +3640,8 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut initial_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut initial_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -3650,7 +3650,7 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
     let initial = initial_builder
         .build(&server)
         .await
-        .expect("build initial test codex");
+        .expect("build initial test ava");
     let home = initial.home.clone();
     let rollout_path = initial
         .session_configured
@@ -3659,7 +3659,7 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         .expect("rollout path");
 
     initial
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "before resume",
             initial.cwd.path().to_path_buf(),
@@ -3667,17 +3667,17 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         ))
         .await
         .expect("submit pre-resume turn");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     initial
-        .codex
+        .ava-code
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.codex, |event| {
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -3691,8 +3691,8 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
     assert!(persisted_turn_context["payload"].get("comp_hash").is_none());
 
     let model_provider = non_openai_model_provider(&server);
-    let mut resumed_builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut resumed_builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.model_provider = model_provider;
@@ -3701,10 +3701,10 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
     let resumed = resumed_builder
         .resume(&server, home, rollout_path)
         .await
-        .expect("resume codex");
+        .expect("resume ava");
 
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "after resume",
             resumed.cwd.path().to_path_buf(),
@@ -3712,7 +3712,7 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         ))
         .await
         .expect("submit resumed user turn");
-    wait_for_event(&resumed.codex, |event| {
+    wait_for_event(&resumed.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3790,45 +3790,45 @@ async fn auto_compact_persists_rollout_entries() {
 
     let model_provider = non_openai_model_provider(&server);
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
     let test = builder.build(&server).await.unwrap();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let session_configured = test.session_configured;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: FIRST_AUTO_MSG.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: SECOND_AUTO_MSG.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: POST_AUTO_USER_MSG.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    let expected_settings = codex.thread_settings_snapshot().await;
-    codex.submit(Op::Shutdown).await.unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+    let expected_settings = ava.thread_settings_snapshot().await;
+    ava.submit(Op::Shutdown).await.unwrap();
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
 
     let rollout_path = session_configured.rollout_path.expect("rollout path");
     let text = std::fs::read_to_string(&rollout_path).expect("failed to read rollout file");
@@ -3841,7 +3841,7 @@ async fn auto_compact_persists_rollout_entries() {
         if trimmed.is_empty() {
             continue;
         }
-        let Ok(entry) = codex_rollout::parse_rollout_line(trimmed) else {
+        let Ok(entry) = ava_rollout::parse_rollout_line(trimmed) else {
             continue;
         };
         match entry.item {
@@ -3900,29 +3900,29 @@ async fn manual_compact_retries_after_context_window_error() {
 
     let model_provider = non_openai_model_provider(&server);
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "first turn".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.unwrap();
-    let warning_event = wait_for_event(&codex, |ev| matches!(ev, EventMsg::Warning(_))).await;
+    ava.submit(Op::Compact).await.unwrap();
+    let warning_event = wait_for_event(&ava, |ev| matches!(ev, EventMsg::Warning(_))).await;
     let EventMsg::Warning(WarningEvent { message }) = warning_event else {
         panic!("expected warning event after compact retry");
     };
     assert_eq!(message, COMPACT_WARNING_MESSAGE);
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert_eq!(
@@ -3994,7 +3994,7 @@ async fn manual_compact_non_context_failure_retries_then_emits_task_error() {
     let mut model_provider = non_openai_model_provider(&server);
     model_provider.stream_max_retries = Some(1);
 
-    let codex = test_codex()
+    let ava = test_ava()
         .with_config(move |config| {
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
@@ -4002,21 +4002,21 @@ async fn manual_compact_non_context_failure_retries_then_emits_task_error() {
         })
         .build(&server)
         .await
-        .expect("build codex")
-        .codex;
+        .expect("build ava")
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "first turn".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit user input");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.expect("trigger compact");
+    ava.submit(Op::Compact).await.expect("trigger compact");
 
-    let reconnect_message = wait_for_event_match(&codex, |event| match event {
+    let reconnect_message = wait_for_event_match(&ava, |event| match event {
         EventMsg::StreamError(stream_error) => Some(stream_error.message.clone()),
         _ => None,
     })
@@ -4026,7 +4026,7 @@ async fn manual_compact_non_context_failure_retries_then_emits_task_error() {
         "expected reconnect stream error message, got {reconnect_message}"
     );
 
-    let task_error_message = wait_for_event_match(&codex, |event| match event {
+    let task_error_message = wait_for_event_match(&ava, |event| match event {
         EventMsg::Error(err) => Some(err.message.clone()),
         _ => None,
     })
@@ -4035,7 +4035,7 @@ async fn manual_compact_non_context_failure_retries_then_emits_task_error() {
         task_error_message.contains("Error running local compact task"),
         "expected local compact task error prefix, got {task_error_message}"
     );
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -4088,45 +4088,45 @@ async fn manual_compact_twice_preserves_latest_user_messages() {
 
     let model_provider = non_openai_model_provider(&server);
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.update_plan_enabled = true;
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: first_user_message.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    ava.submit(Op::Compact).await.unwrap();
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: second_user_message.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex.submit(Op::Compact).await.unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    ava.submit(Op::Compact).await.unwrap();
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: final_user_message.into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = responses_mock.requests();
     assert_eq!(
@@ -4157,7 +4157,7 @@ async fn manual_compact_twice_preserves_latest_user_messages() {
     );
     let compact_metadata: Value = serde_json::from_str(
         &requests[1]
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("local compact request should include turn metadata"),
     )
     .expect("local compact turn metadata should be valid json");
@@ -4167,7 +4167,7 @@ async fn manual_compact_twice_preserves_latest_user_messages() {
     );
     assert_eq!(
         compact_metadata["window_id"].as_str(),
-        requests[1].header("x-codex-window-id").as_deref()
+        requests[1].header("x-ava-window-id").as_deref()
     );
     assert_eq!(
         compact_metadata["compaction"],
@@ -4186,7 +4186,7 @@ async fn manual_compact_twice_preserves_latest_user_messages() {
     );
     let next_turn_metadata: Value = serde_json::from_str(
         &requests[2]
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("next regular request should include turn metadata"),
     )
     .expect("next regular turn metadata should be valid json");
@@ -4197,7 +4197,7 @@ async fn manual_compact_twice_preserves_latest_user_messages() {
     );
     assert_eq!(
         next_turn_metadata["window_id"].as_str(),
-        requests[2].header("x-codex-window-id").as_deref()
+        requests[2].header("x-ava-window-id").as_deref()
     );
     assert_ne!(
         compact_metadata["window_id"], next_turn_metadata["window_id"],
@@ -4308,17 +4308,17 @@ async fn auto_compact_allows_multiple_attempts_when_interleaved_with_other_turn_
 
     let model_provider = non_openai_model_provider(&server);
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         // Leave enough headroom for per-item request metadata before the second compaction.
         config.model_auto_compact_token_limit = Some(300);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
     let mut auto_compact_lifecycle_events = Vec::new();
     for user in [MULTI_AUTO_MSG, follow_up_user, final_user] {
-        codex
+        ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: user.into(),
                 text_elements: Vec::new(),
@@ -4327,7 +4327,7 @@ async fn auto_compact_allows_multiple_attempts_when_interleaved_with_other_turn_
             .unwrap();
 
         loop {
-            let event = codex.next_event().await.unwrap();
+            let event = ava.next_event().await.unwrap();
             if event.id.starts_with("auto-compact-")
                 && matches!(
                     event.msg,
@@ -4409,16 +4409,16 @@ async fn snapshot_request_shape_mid_turn_continuation_compaction() {
 
     let model_provider = non_openai_model_provider(&server);
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.update_plan_enabled = true;
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         config.model_context_window = Some(context_window);
         config.model_auto_compact_token_limit = Some(limit);
     });
-    let codex = builder.build(&server).await.unwrap().codex;
+    let ava = builder.build(&server).await.unwrap().ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: FUNCTION_CALL_LIMIT_MSG.into(),
             text_elements: Vec::new(),
@@ -4426,7 +4426,7 @@ async fn snapshot_request_shape_mid_turn_continuation_compaction() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |msg| matches!(msg, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |msg| matches!(msg, EventMsg::TurnComplete(_))).await;
 
     // Assert first request captured expected user message that triggers function call.
     let first_request = first_turn_mock.single_request().input();
@@ -4503,16 +4503,16 @@ async fn auto_compact_clamps_config_limit_to_context_window() {
     mount_sse_once(&server, post_auto_compact_turn).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
         config.model_context_window = Some(context_window);
         config.model_auto_compact_token_limit = Some(config_limit);
     });
-    let codex = builder.build(&server).await.unwrap();
+    let ava = builder.build(&server).await.unwrap();
 
-    codex.submit_turn("OVER_LIMIT_TURN").await.unwrap();
-    codex.submit_turn("FOLLOW_UP_AFTER_CLAMP").await.unwrap();
+    ava.submit_turn("OVER_LIMIT_TURN").await.unwrap();
+    ava.submit_turn("FOLLOW_UP_AFTER_CLAMP").await.unwrap();
 
     assert!(
         first_turn_mock.single_request().input().iter().any(|item| {
@@ -4564,7 +4564,7 @@ async fn auto_compact_body_after_prefix_ignores_starting_window_prefix() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
@@ -4575,7 +4575,7 @@ async fn auto_compact_body_after_prefix_ignores_starting_window_prefix() {
         })
         .build(&server)
         .await
-        .expect("build codex");
+        .expect("build ava");
 
     for user in ["PREFIX_FREE_ONE", "PREFIX_FREE_TWO"] {
         test.submit_turn(user).await.expect("submit turn");
@@ -4652,7 +4652,7 @@ async fn auto_compact_body_after_prefix_counts_growth_after_compaction() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
@@ -4663,7 +4663,7 @@ async fn auto_compact_body_after_prefix_counts_growth_after_compaction() {
         })
         .build(&server)
         .await
-        .expect("build codex");
+        .expect("build ava");
 
     test.submit_turn("WINDOW_PREFIX")
         .await
@@ -4736,7 +4736,7 @@ async fn auto_compact_body_after_prefix_still_caps_at_context_window() {
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let test = test_codex()
+    let test = test_ava()
         .with_config(move |config| {
             config.model_provider = model_provider;
             set_test_compact_prompt(config);
@@ -4747,7 +4747,7 @@ async fn auto_compact_body_after_prefix_still_caps_at_context_window() {
         })
         .build(&server)
         .await
-        .expect("build codex");
+        .expect("build ava");
 
     for user in ["CONTEXT_CAP_ONE", "CONTEXT_CAP_TWO", "CONTEXT_CAP_THREE"] {
         test.submit_turn(user).await.expect("submit turn");
@@ -4814,29 +4814,29 @@ async fn auto_compact_accounts_for_encrypted_reasoning(first_response_includes_r
     )
     .await;
 
-    let codex = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let ava = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             set_test_compact_prompt(config);
             config.model_auto_compact_token_limit = Some(300);
         })
         .build(&server)
         .await
-        .expect("build codex")
-        .codex;
+        .expect("build ava")
+        .ava-code;
 
     for (idx, user) in [first_user, second_user, third_user]
         .into_iter()
         .enumerate()
     {
-        codex
+        ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: user.into(),
                 text_elements: Vec::new(),
             }]))
             .await
             .expect("start user turn");
-        wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+        wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
         if idx < 2 {
             assert!(
@@ -4896,7 +4896,7 @@ async fn snapshot_request_shape_pre_turn_compaction_including_incoming_user_mess
     let request_log = mount_sse_sequence(&server, vec![sse1, sse2, sse3, sse4]).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let codex = test_codex()
+    let ava = test_ava()
         .with_config(move |config| {
             config.update_plan_enabled = true;
             config.model_provider = model_provider;
@@ -4905,21 +4905,21 @@ async fn snapshot_request_shape_pre_turn_compaction_including_incoming_user_mess
         })
         .build(&server)
         .await
-        .expect("build codex")
-        .codex;
+        .expect("build ava")
+        .ava-code;
 
     for user in ["USER_ONE", "USER_TWO"] {
-        codex
+        ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: user.to_string(),
                 text_elements: Vec::new(),
             }]))
             .await
             .expect("submit user input");
-        wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+        wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     }
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             environments: Some(local_selections(
                 test_path_buf(PRETURN_CONTEXT_DIFF_CWD).abs(),
@@ -4931,7 +4931,7 @@ async fn snapshot_request_shape_pre_turn_compaction_including_incoming_user_mess
     .expect("override thread settings");
     let image_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=="
         .to_string();
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Image {
                 image: ImageReference::Inline {
@@ -4946,7 +4946,7 @@ async fn snapshot_request_shape_pre_turn_compaction_including_incoming_user_mess
         ]))
         .await
         .expect("submit user input");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert_eq!(requests.len(), 4, "expected user, user, compact, follow-up");
@@ -5015,8 +5015,8 @@ async fn snapshot_request_shape_pre_turn_compaction_strips_incoming_model_switch
     .await;
 
     let model_provider = non_openai_model_provider(&server);
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(previous_model)
         .with_config(move |config| {
             config.update_plan_enabled = true;
@@ -5027,9 +5027,9 @@ async fn snapshot_request_shape_pre_turn_compaction_strips_incoming_model_switch
         })
         .build(&server)
         .await
-        .expect("build codex");
+        .expect("build ava");
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "BEFORE_SWITCH_USER",
             test.cwd.path().to_path_buf(),
@@ -5037,12 +5037,12 @@ async fn snapshot_request_shape_pre_turn_compaction_strips_incoming_model_switch
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(disabled_permission_user_turn(
             "AFTER_SWITCH_USER",
             test.cwd.path().to_path_buf(),
@@ -5050,7 +5050,7 @@ async fn snapshot_request_shape_pre_turn_compaction_strips_incoming_model_switch
         ))
         .await
         .expect("submit second user turn");
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5115,7 +5115,7 @@ async fn snapshot_request_shape_pre_turn_compaction_context_window_exceeded() {
 
     let mut model_provider = non_openai_model_provider(&server);
     model_provider.stream_max_retries = Some(0);
-    let codex = test_codex()
+    let ava = test_ava()
         .with_config(move |config| {
             config.update_plan_enabled = true;
             config.model_provider = model_provider;
@@ -5124,31 +5124,31 @@ async fn snapshot_request_shape_pre_turn_compaction_context_window_exceeded() {
         })
         .build(&server)
         .await
-        .expect("build codex")
-        .codex;
+        .expect("build ava")
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "USER_ONE".to_string(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit first user");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "USER_TWO".to_string(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit second user");
-    let error_message = wait_for_event_match(&codex, |event| match event {
+    let error_message = wait_for_event_match(&ava, |event| match event {
         EventMsg::Error(err) => Some(err.message.clone()),
         _ => None,
     })
     .await;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert!(
@@ -5190,7 +5190,7 @@ async fn snapshot_request_shape_manual_compact_without_previous_user_messages() 
     let request_log = mount_sse_sequence(&server, vec![compact_turn, follow_up_turn]).await;
 
     let model_provider = non_openai_model_provider(&server);
-    let codex = test_codex()
+    let ava = test_ava()
         .with_config(move |config| {
             config.update_plan_enabled = true;
             config.model_provider = model_provider;
@@ -5198,20 +5198,20 @@ async fn snapshot_request_shape_manual_compact_without_previous_user_messages() 
         })
         .build(&server)
         .await
-        .expect("build codex")
-        .codex;
+        .expect("build ava")
+        .ava-code;
 
-    codex.submit(Op::Compact).await.expect("run /compact");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    ava.submit(Op::Compact).await.expect("run /compact");
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "AFTER_MANUAL_EMPTY_COMPACT".to_string(),
             text_elements: Vec::new(),
         }]))
         .await
         .expect("submit follow-up user input");
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert_eq!(
@@ -5264,7 +5264,7 @@ async fn manual_compaction_refreshes_global_instructions_for_next_turn() -> Resu
     let provider = local_compaction_provider(&server);
 
     // Create the thread with the old global source loaded into its instruction snapshot.
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_config(move |config| {
             config.model_provider = provider;
@@ -5273,7 +5273,7 @@ async fn manual_compaction_refreshes_global_instructions_for_next_turn() -> Resu
 
     // Assert the pre-compaction source list points at the creation-time file.
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "thread reports the creation-time global source before compaction"
     );
@@ -5287,8 +5287,8 @@ async fn manual_compaction_refreshes_global_instructions_for_next_turn() -> Resu
     )?;
     assert_eq!(source, rewritten_source);
 
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5303,7 +5303,7 @@ async fn manual_compaction_refreshes_global_instructions_for_next_turn() -> Resu
     assert_single_instruction_fragment(&requests[1], &old_fragment);
     assert_single_instruction_fragment(&requests[2], &new_fragment);
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "refreshing same-path instructions preserves their source"
     );
@@ -5342,7 +5342,7 @@ async fn mid_turn_compaction_uses_refreshed_global_instructions() -> Result<()> 
     let provider = local_compaction_provider(&server);
 
     // Create the thread with the old global source loaded into its instruction snapshot.
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
         .with_config(move |config| {
             config.model_provider = provider;
@@ -5353,7 +5353,7 @@ async fn mid_turn_compaction_uses_refreshed_global_instructions() -> Result<()> 
 
     // Assert the pre-compaction source list points at the creation-time file.
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "thread reports the creation-time global source before mid-turn compaction"
     );
@@ -5375,7 +5375,7 @@ async fn mid_turn_compaction_uses_refreshed_global_instructions() -> Result<()> 
     assert_single_instruction_fragment(&requests[1], &expected_fragment);
     assert_single_instruction_fragment(&requests[2], &expected_fragment);
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&new_source)],
         "thread reports the refreshed global override after mid-turn compaction"
     );
@@ -5415,9 +5415,9 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         GLOBAL_AGENTS_FILENAME,
         OLD_GLOBAL_INSTRUCTIONS,
     )?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(Arc::clone(&home))
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let test = builder.build(&server).await?;
 
     // Materialize the old snapshot, rewrite the selected file in place, and compact remotely.
@@ -5428,13 +5428,13 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         NEW_GLOBAL_INSTRUCTIONS,
     )?;
     assert_eq!(source, rewritten_source);
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     test.submit_turn("after remote v2 compaction").await?;
-    test.codex.flush_rollout().await?;
+    test.ava-code.flush_rollout().await?;
 
     // Compaction summarizes the existing history; the follow-up injects the refreshed instructions.
     let requests = response_mock.requests();
@@ -5449,7 +5449,7 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         Some(&json!({"type": "compaction_trigger"})),
         "remote-v2 compact request should append exactly one compaction trigger"
     );
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     let replacement_history = replacement_history_from_rollout(&rollout_path)?;
     assert_eq!(
         instruction_fragments_in_items(&replacement_history),
@@ -5457,7 +5457,7 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         "remote-v2 replacement history currently omits the global-instruction fragment"
     );
     assert_eq!(
-        test.codex.instruction_sources().await,
+        test.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "running thread retains the selected same-path source"
     );
@@ -5468,15 +5468,15 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
     );
 
     // Cold-resume the persisted replacement history with freshly loaded same-path configuration.
-    test.codex.submit(Op::Shutdown).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Shutdown).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
     let resumed_cwd = test.config.cwd.clone();
-    let mut resume_builder = test_codex()
+    let mut resume_builder = test_ava()
         .with_home(Arc::clone(&home))
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| config.cwd = resumed_cwd);
     let resumed = resume_builder
         .resume(&server, Arc::clone(&home), rollout_path)
@@ -5502,7 +5502,7 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         "remote-v2 cold resume should replay the complete post-compaction structured prefix"
     );
     assert_eq!(
-        resumed.codex.instruction_sources().await,
+        resumed.ava-code.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "cold-resumed thread reports the same rewritten source path"
     );

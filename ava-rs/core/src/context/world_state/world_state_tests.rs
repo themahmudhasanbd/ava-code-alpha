@@ -1,6 +1,6 @@
 use super::*;
-use codex_context_fragments::AnnotatedContent;
-use codex_protocol::models::ContentItemKind;
+use ava_context_fragments::AnnotatedContent;
+use ava_protocol::models::ContentItemKind;
 use pretty_assertions::assert_eq;
 use serde::Deserialize;
 use serde::Serialize;

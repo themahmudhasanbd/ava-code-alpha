@@ -14,7 +14,7 @@ pub(super) struct ThreadEventSnapshot {
     pub(super) delegated_turns: Vec<String>,
     pub(super) turns: Vec<Turn>,
     pub(super) events: Vec<ThreadBufferedEvent>,
-    pub(super) active_reasoning_item: Option<codex_app_server_protocol::ItemStartedNotification>,
+    pub(super) active_reasoning_item: Option<ava_app_server_protocol::ItemStartedNotification>,
     pub(super) input_state: Option<ThreadInputState>,
 }
 
@@ -67,7 +67,7 @@ pub(super) struct ThreadEventStore {
     pub(super) pending_interactive_replay: PendingInteractiveReplayState,
     pub(super) active_turn_id: Option<String>,
     // Retain the active item even if its start falls out of the bounded replay buffer.
-    pub(super) active_reasoning_item: Option<codex_app_server_protocol::ItemStartedNotification>,
+    pub(super) active_reasoning_item: Option<ava_app_server_protocol::ItemStartedNotification>,
     // Lifecycle identity must survive bounded replay-buffer eviction.
     pub(super) latest_turn_id: Option<String>,
     pub(super) pending_interrupt_turn_id: Option<String>,
@@ -229,8 +229,8 @@ impl ThreadEventStore {
             ServerNotification::Error(n)
                 if self.active_turn_id.is_none()
                     && !n.will_retry
-                    && n.error.codex_error_info
-                        == Some(AppServerCodexErrorInfo::MisalignmentPolicyViolation) =>
+                    && n.error.ava_error_info
+                        == Some(AppServerAvaErrorInfo::MisalignmentPolicyViolation) =>
             {
                 self.latest_turn_id = Some(n.turn_id.clone());
             }
@@ -240,7 +240,7 @@ impl ThreadEventStore {
                 self.pending_interrupt_turn_id = None;
             }
             ServerNotification::ItemStarted(
-                started @ codex_app_server_protocol::ItemStartedNotification {
+                started @ ava_app_server_protocol::ItemStartedNotification {
                     item: ThreadItem::Reasoning { id, .. },
                     ..
                 },
@@ -250,7 +250,7 @@ impl ThreadEventStore {
                 }) =>
             {
                 self.active_reasoning_item =
-                    Some(codex_app_server_protocol::ItemStartedNotification {
+                    Some(ava_app_server_protocol::ItemStartedNotification {
                         thread_id: started.thread_id.clone(),
                         turn_id: started.turn_id.clone(),
                         item: ThreadItem::Reasoning {
@@ -348,7 +348,7 @@ impl ThreadEventStore {
         &self,
         turn_id: &str,
         item_id: &str,
-    ) -> Option<Vec<codex_app_server_protocol::FileUpdateChange>> {
+    ) -> Option<Vec<ava_app_server_protocol::FileUpdateChange>> {
         file_change_changes(self.buffer.iter(), &self.turns, turn_id, item_id)
     }
 
@@ -539,7 +539,7 @@ pub(super) fn file_change_changes<'a>(
     turns: &'a [Turn],
     turn_id: &str,
     item_id: &str,
-) -> Option<Vec<codex_app_server_protocol::FileUpdateChange>> {
+) -> Option<Vec<ava_app_server_protocol::FileUpdateChange>> {
     let event_items = events.rev().filter_map(|event| {
         let ThreadBufferedEvent::Notification(notification) = event else {
             return None;
@@ -569,7 +569,7 @@ pub(super) fn file_change_changes<'a>(
 fn file_change_item_changes(
     item: &ThreadItem,
     item_id: &str,
-) -> Option<Vec<codex_app_server_protocol::FileUpdateChange>> {
+) -> Option<Vec<ava_app_server_protocol::FileUpdateChange>> {
     match item {
         ThreadItem::FileChange { id, changes, .. } if id == item_id => Some(changes.clone()),
         _ => None,
@@ -630,32 +630,32 @@ mod tests {
     use super::*;
     use crate::test_support::PathBufExt;
     use crate::test_support::test_path_buf;
-    use codex_app_server_protocol::AskForApproval;
-    use codex_app_server_protocol::CommandExecutionRequestApprovalParams;
-    use codex_app_server_protocol::HookCompletedNotification;
-    use codex_app_server_protocol::HookEventName as AppServerHookEventName;
-    use codex_app_server_protocol::HookExecutionMode as AppServerHookExecutionMode;
-    use codex_app_server_protocol::HookHandlerType as AppServerHookHandlerType;
-    use codex_app_server_protocol::HookOutputEntry as AppServerHookOutputEntry;
-    use codex_app_server_protocol::HookOutputEntryKind as AppServerHookOutputEntryKind;
-    use codex_app_server_protocol::HookRunStatus as AppServerHookRunStatus;
-    use codex_app_server_protocol::HookRunSummary as AppServerHookRunSummary;
-    use codex_app_server_protocol::HookScope as AppServerHookScope;
-    use codex_app_server_protocol::HookStartedNotification;
-    use codex_app_server_protocol::ItemCompletedNotification;
-    use codex_app_server_protocol::ItemStartedNotification;
-    use codex_app_server_protocol::McpToolCallProgressNotification;
-    use codex_app_server_protocol::ReasoningSummaryTextDeltaNotification;
-    use codex_app_server_protocol::RequestId as AppServerRequestId;
-    use codex_app_server_protocol::ThreadAttachmentOperation;
-    use codex_app_server_protocol::ThreadAttachmentUpdatedNotification;
-    use codex_app_server_protocol::ThreadRealtimeAudioChunk;
-    use codex_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
-    use codex_app_server_protocol::TurnCompletedNotification;
-    use codex_app_server_protocol::TurnStartedNotification;
-    use codex_app_server_protocol::UserInput;
-    use codex_config::types::ApprovalsReviewer;
-    use codex_protocol::models::PermissionProfile;
+    use ava_app_server_protocol::AskForApproval;
+    use ava_app_server_protocol::CommandExecutionRequestApprovalParams;
+    use ava_app_server_protocol::HookCompletedNotification;
+    use ava_app_server_protocol::HookEventName as AppServerHookEventName;
+    use ava_app_server_protocol::HookExecutionMode as AppServerHookExecutionMode;
+    use ava_app_server_protocol::HookHandlerType as AppServerHookHandlerType;
+    use ava_app_server_protocol::HookOutputEntry as AppServerHookOutputEntry;
+    use ava_app_server_protocol::HookOutputEntryKind as AppServerHookOutputEntryKind;
+    use ava_app_server_protocol::HookRunStatus as AppServerHookRunStatus;
+    use ava_app_server_protocol::HookRunSummary as AppServerHookRunSummary;
+    use ava_app_server_protocol::HookScope as AppServerHookScope;
+    use ava_app_server_protocol::HookStartedNotification;
+    use ava_app_server_protocol::ItemCompletedNotification;
+    use ava_app_server_protocol::ItemStartedNotification;
+    use ava_app_server_protocol::McpToolCallProgressNotification;
+    use ava_app_server_protocol::ReasoningSummaryTextDeltaNotification;
+    use ava_app_server_protocol::RequestId as AppServerRequestId;
+    use ava_app_server_protocol::ThreadAttachmentOperation;
+    use ava_app_server_protocol::ThreadAttachmentUpdatedNotification;
+    use ava_app_server_protocol::ThreadRealtimeAudioChunk;
+    use ava_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
+    use ava_app_server_protocol::TurnCompletedNotification;
+    use ava_app_server_protocol::TurnStartedNotification;
+    use ava_app_server_protocol::UserInput;
+    use ava_config::types::ApprovalsReviewer;
+    use ava_protocol::models::PermissionProfile;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 
@@ -688,7 +688,7 @@ mod tests {
     fn test_turn(turn_id: &str, status: TurnStatus, items: Vec<ThreadItem>) -> Turn {
         Turn {
             id: turn_id.to_string(),
-            items_view: codex_app_server_protocol::TurnItemsView::Full,
+            items_view: ava_app_server_protocol::TurnItemsView::Full,
             items,
             status,
             error: None,
@@ -734,7 +734,7 @@ mod tests {
                 execution_mode: AppServerHookExecutionMode::Sync,
                 scope: AppServerHookScope::Turn,
                 source_path: test_path_buf("/tmp/hooks.json").abs(),
-                source: codex_app_server_protocol::HookSource::User,
+                source: ava_app_server_protocol::HookSource::User,
                 display_order: 0,
                 status: AppServerHookRunStatus::Running,
                 status_message: Some("checking go-workflow input policy".to_string()),
@@ -757,7 +757,7 @@ mod tests {
                 execution_mode: AppServerHookExecutionMode::Sync,
                 scope: AppServerHookScope::Turn,
                 source_path: test_path_buf("/tmp/hooks.json").abs(),
-                source: codex_app_server_protocol::HookSource::User,
+                source: ava_app_server_protocol::HookSource::User,
                 display_order: 0,
                 status: AppServerHookRunStatus::Stopped,
                 status_message: Some("checking go-workflow input policy".to_string()),
@@ -910,7 +910,7 @@ mod tests {
                 ThreadAttachmentUpdatedNotification {
                     thread_id: thread_id.to_string(),
                     attachment_type: "pullRequest".to_string(),
-                    identity_key: "openai/codex#1".to_string(),
+                    identity_key: "openai/ava#1".to_string(),
                     attachment_id: "attachment-1".to_string(),
                     operation: ThreadAttachmentOperation::Created,
                 },
@@ -953,7 +953,7 @@ mod tests {
             /*approval_id*/ None,
         ));
         store.push_notification(ServerNotification::ServerRequestResolved(
-            codex_app_server_protocol::ServerRequestResolvedNotification {
+            ava_app_server_protocol::ServerRequestResolvedNotification {
                 request_id: AppServerRequestId::Integer(1),
                 thread_id: thread_id.to_string(),
             },
@@ -1023,10 +1023,10 @@ mod tests {
     fn thread_event_store_rebase_preserves_mcp_startup_notifications() {
         let thread_id = ThreadId::new();
         let notification = ServerNotification::McpServerStatusUpdated(
-            codex_app_server_protocol::McpServerStatusUpdatedNotification {
+            ava_app_server_protocol::McpServerStatusUpdatedNotification {
                 thread_id: Some(thread_id.to_string()),
                 name: "sentry".to_string(),
-                status: codex_app_server_protocol::McpServerStartupState::Failed,
+                status: ava_app_server_protocol::McpServerStartupState::Failed,
                 error: Some("sentry is not logged in".to_string()),
                 failure_reason: None,
             },

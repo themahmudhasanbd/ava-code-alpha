@@ -107,7 +107,7 @@ async fn drain_managed_worktree_start(app: &mut App, server: &mut AppServerSessi
         app.start_managed_worktree(server, mode, name).await;
     }
 }
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_utils_absolute_path::test_support::PathExt;
 
 use crate::chatwidget::ChatWidgetInit;
 use crate::chatwidget::create_initial_user_message;
@@ -134,80 +134,80 @@ use crate::diff_model::FileChange;
 use crate::legacy_core::config::ConfigBuilder;
 use crate::legacy_core::config::ConfigOverrides;
 use crate::legacy_core::config::PermissionProfileSnapshot;
-use codex_app_server_client::AppServerPath;
-use codex_app_server_protocol::AdditionalFileSystemPermissions;
-use codex_app_server_protocol::AdditionalNetworkPermissions;
-use codex_app_server_protocol::AdditionalPermissionProfile;
-use codex_app_server_protocol::AgentMessageDeltaNotification;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::CommandExecutionRequestApprovalParams;
-use codex_app_server_protocol::FileChangeRequestApprovalParams;
-use codex_app_server_protocol::FileUpdateChange;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::McpServerElicitationRequest;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::McpServerStartupState;
-use codex_app_server_protocol::McpServerStatusUpdatedNotification;
-use codex_app_server_protocol::NetworkApprovalContext as AppServerNetworkApprovalContext;
-use codex_app_server_protocol::NetworkApprovalProtocol as AppServerNetworkApprovalProtocol;
-use codex_app_server_protocol::NetworkPolicyAmendment as AppServerNetworkPolicyAmendment;
-use codex_app_server_protocol::NetworkPolicyRuleAction as AppServerNetworkPolicyRuleAction;
-use codex_app_server_protocol::NonSteerableTurnKind as AppServerNonSteerableTurnKind;
-use codex_app_server_protocol::PatchChangeKind;
-use codex_app_server_protocol::PermissionsRequestApprovalParams;
-use codex_app_server_protocol::RequestId as AppServerRequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadArchivedNotification;
-use codex_app_server_protocol::ThreadAttachmentOperation;
-use codex_app_server_protocol::ThreadAttachmentUpdatedNotification;
-use codex_app_server_protocol::ThreadClosedNotification;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadSettings;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-use codex_app_server_protocol::ThreadStartedNotification;
-use codex_app_server_protocol::ThreadTokenUsage;
-use codex_app_server_protocol::ThreadTokenUsageUpdatedNotification;
-use codex_app_server_protocol::TokenUsageBreakdown;
-use codex_app_server_protocol::ToolRequestUserInputParams;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnError as AppServerTurnError;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::UserInput as AppServerUserInput;
-use codex_app_server_protocol::WarningNotification;
-use codex_history::RolloutItem;
-use codex_models_manager::test_support::construct_model_info_offline_for_tests;
-use codex_models_manager::test_support::get_model_offline_for_tests;
-use codex_otel::SessionTelemetry;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::SandboxMode;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::models::NetworkPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::MODEL_SPECIALTY_CYBER;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MAX_THREAD_GOAL_OBJECTIVE_CHARS;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionSource as RolloutSessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::user_input::TextElement;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_client::AppServerPath;
+use ava_app_server_protocol::AdditionalFileSystemPermissions;
+use ava_app_server_protocol::AdditionalNetworkPermissions;
+use ava_app_server_protocol::AdditionalPermissionProfile;
+use ava_app_server_protocol::AgentMessageDeltaNotification;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::CommandExecutionRequestApprovalParams;
+use ava_app_server_protocol::FileChangeRequestApprovalParams;
+use ava_app_server_protocol::FileUpdateChange;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::McpServerElicitationRequest;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::McpServerStartupState;
+use ava_app_server_protocol::McpServerStatusUpdatedNotification;
+use ava_app_server_protocol::NetworkApprovalContext as AppServerNetworkApprovalContext;
+use ava_app_server_protocol::NetworkApprovalProtocol as AppServerNetworkApprovalProtocol;
+use ava_app_server_protocol::NetworkPolicyAmendment as AppServerNetworkPolicyAmendment;
+use ava_app_server_protocol::NetworkPolicyRuleAction as AppServerNetworkPolicyRuleAction;
+use ava_app_server_protocol::NonSteerableTurnKind as AppServerNonSteerableTurnKind;
+use ava_app_server_protocol::PatchChangeKind;
+use ava_app_server_protocol::PermissionsRequestApprovalParams;
+use ava_app_server_protocol::RequestId as AppServerRequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::Thread;
+use ava_app_server_protocol::ThreadArchivedNotification;
+use ava_app_server_protocol::ThreadAttachmentOperation;
+use ava_app_server_protocol::ThreadAttachmentUpdatedNotification;
+use ava_app_server_protocol::ThreadClosedNotification;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadSettings;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+use ava_app_server_protocol::ThreadStartedNotification;
+use ava_app_server_protocol::ThreadTokenUsage;
+use ava_app_server_protocol::ThreadTokenUsageUpdatedNotification;
+use ava_app_server_protocol::TokenUsageBreakdown;
+use ava_app_server_protocol::ToolRequestUserInputParams;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnError as AppServerTurnError;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_app_server_protocol::UserInput as AppServerUserInput;
+use ava_app_server_protocol::WarningNotification;
+use ava_history::RolloutItem;
+use ava_models_manager::test_support::construct_model_info_offline_for_tests;
+use ava_models_manager::test_support::get_model_offline_for_tests;
+use ava_otel::SessionTelemetry;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::SandboxMode;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::models::NetworkPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::MODEL_SPECIALTY_CYBER;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MAX_THREAD_GOAL_OBJECTIVE_CHARS;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionSource as RolloutSessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::user_input::TextElement;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use crossterm::event::KeyModifiers;
 use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
@@ -261,7 +261,7 @@ async fn pasted_text_normalizes_mixed_line_endings_at_app_boundary() -> Result<(
 async fn duplicate_named_resume_renders_error_without_replacing_current_session() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
     let label = format!("duplicate-{}", ThreadId::new());
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         app.config.sqlite.clone(),
         app.config.model_provider_id.clone(),
     )
@@ -276,7 +276,7 @@ async fn duplicate_named_resume_renders_error_without_replacing_current_session(
         let filename_ts = "2025-02-01T10-00-00";
         let timestamp = "2025-02-01T10:00:00Z";
         let thread_id = app_test_support::create_fake_rollout(
-            app.config.codex_home.as_path(),
+            app.config.ava_home.as_path(),
             filename_ts,
             timestamp,
             &label,
@@ -285,7 +285,7 @@ async fn duplicate_named_resume_renders_error_without_replacing_current_session(
         )
         .expect("materialized rollout should be created");
         let path = app_test_support::rollout_path(
-            app.config.codex_home.as_path(),
+            app.config.ava_home.as_path(),
             filename_ts,
             &thread_id,
         );
@@ -293,7 +293,7 @@ async fn duplicate_named_resume_renders_error_without_replacing_current_session(
         thread_ids.push(thread_id);
         let created_at =
             chrono::DateTime::parse_from_rfc3339(timestamp)?.with_timezone(&chrono::Utc);
-        let mut metadata = codex_state::ThreadMetadataBuilder::new(
+        let mut metadata = ava_state::ThreadMetadataBuilder::new(
             thread_id,
             path.to_path_buf(),
             created_at,
@@ -403,7 +403,7 @@ async fn next_thread_settings_updated(
         .await
         .expect("app-server should emit an event")
         .expect("app-server event stream should remain open");
-        if let codex_app_server_client::AppServerEvent::ServerNotification(notification) = event
+        if let ava_app_server_client::AppServerEvent::ServerNotification(notification) = event
             && let ServerNotification::ThreadSettingsUpdated(notification) = *notification
             && notification.thread_id == thread_id.to_string()
         {
@@ -432,7 +432,7 @@ async fn handle_mcp_inventory_result_respects_origin_thread() {
             tools: HashMap::new(),
             resources: Vec::new(),
             resource_templates: Vec::new(),
-            auth_status: codex_app_server_protocol::McpAuthStatus::Unsupported,
+            auth_status: ava_app_server_protocol::McpAuthStatus::Unsupported,
         }]),
         McpServerStatusDetail::ToolsAndAuthOnly,
         /*thread_id*/ None,
@@ -506,15 +506,15 @@ async fn external_editor_writable_directory_rejected_snapshot() -> Result<()> {
     }
 
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = app.chat_widget.config_ref().codex_home.clone();
+    let ava_home = app.chat_widget.config_ref().ava_home.clone();
     let fallback_home = dirs::home_dir()
         .expect("home directory")
-        .join(".codex")
+        .join(".ava-code")
         .abs();
-    let workspace_codex_home = app.chat_widget.config_ref().cwd.join(".codex");
+    let workspace_ava_home = app.chat_widget.config_ref().cwd.join(".ava-code");
     let permission_profile = PermissionProfile::workspace_write_with(
-        &[codex_home, fallback_home, workspace_codex_home],
-        codex_protocol::permissions::NetworkSandboxPolicy::Restricted,
+        &[ava_home, fallback_home, workspace_ava_home],
+        ava_protocol::permissions::NetworkSandboxPolicy::Restricted,
         /*exclude_tmpdir_env_var*/ true,
         /*exclude_slash_tmp*/ true,
     );
@@ -563,9 +563,9 @@ async fn enqueue_primary_thread_session_replays_buffered_approval_after_attach()
     .await?;
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::ServerRequestResolved(
-                codex_app_server_protocol::ServerRequestResolvedNotification {
+                ava_app_server_protocol::ServerRequestResolvedNotification {
                     thread_id: ThreadId::new().to_string(),
                     request_id: AppServerRequestId::Integer(1),
                 },
@@ -724,9 +724,9 @@ fn set_test_initial_prompt(app: &mut App, initial_prompt: String) {
         ),
         enhanced_keys_supported: false,
         has_chatgpt_account: false,
-        has_codex_backend_auth: false,
+        has_ava_backend_auth: false,
         model_catalog: app.model_catalog.clone(),
-        feedback: codex_feedback::CodexFeedback::new(),
+        feedback: ava_feedback::AvaFeedback::new(),
         is_first_run: false,
         status_account_display: None,
         initial_plan_type: None,
@@ -779,7 +779,7 @@ async fn enqueue_primary_thread_session_replays_turns_before_initial_prompt_subm
                 assert_eq!(op_thread_id, thread_id);
                 submitted_items = Some(items);
             }
-            AppEvent::CodexOp(Op::UserTurn { items, .. }) => {
+            AppEvent::AvaOp(Op::UserTurn { items, .. }) => {
                 assert!(
                     saw_optimistic_prompt,
                     "expected optimistic prompt before turn submission"
@@ -855,13 +855,13 @@ async fn history_lookup_response_is_routed_to_requesting_thread() -> Result<()> 
     let thread_id = ThreadId::new();
 
     let local_home = tempfile::tempdir()?;
-    app.local_settings.codex_home = AbsolutePathBuf::from_absolute_path(local_home.path())?;
-    let history_config = codex_message_history::HistoryConfig::new(
-        app.local_settings.codex_home.clone(),
+    app.local_settings.ava_home = AbsolutePathBuf::from_absolute_path(local_home.path())?;
+    let history_config = ava_message_history::HistoryConfig::new(
+        app.local_settings.ava_home.clone(),
         &app.local_settings.history,
     );
-    codex_message_history::append_entry("local prompt", thread_id, &history_config).await?;
-    let (log_id, _) = codex_message_history::history_metadata(&history_config).await;
+    ava_message_history::append_entry("local prompt", thread_id, &history_config).await?;
+    let (log_id, _) = ava_message_history::history_metadata(&history_config).await;
 
     app.lookup_message_history_entry(thread_id, /*offset*/ 0, log_id)
         .await?;
@@ -888,7 +888,7 @@ async fn history_lookup_response_is_routed_to_requesting_thread() -> Result<()> 
         }
     );
 
-    let cursor = codex_message_history::HistoryBatchCursor::new(/*end_offset*/ 1);
+    let cursor = ava_message_history::HistoryBatchCursor::new(/*end_offset*/ 1);
     app.lookup_message_history_batch(thread_id, cursor, log_id)
         .await?;
     let app_event = tokio::time::timeout(Duration::from_secs(1), app_event_rx.recv())
@@ -1077,7 +1077,7 @@ async fn active_history_batch_is_delivered_without_replay_buffering() -> Result<
         .insert(thread_id, ThreadEventChannel::new(/*capacity*/ 4));
     app.set_thread_active(thread_id, /*active*/ true).await;
 
-    let cursor = codex_message_history::HistoryBatchCursor::new(/*end_offset*/ 1);
+    let cursor = ava_message_history::HistoryBatchCursor::new(/*end_offset*/ 1);
     let event = HistoryLookupResponse::Batch {
         cursor,
         log_id: 1,
@@ -1085,7 +1085,7 @@ async fn active_history_batch_is_delivered_without_replay_buffering() -> Result<
             offset: 1,
             entry: Some("history entry".to_string()),
         }],
-        next_older_cursor: Some(codex_message_history::HistoryBatchCursor::new(
+        next_older_cursor: Some(ava_message_history::HistoryBatchCursor::new(
             /*end_offset*/ 0,
         )),
     };
@@ -1951,8 +1951,8 @@ async fn collab_receiver_notification_caches_thread_without_app_server_read() {
             started_at_ms: 0,
             item: ThreadItem::CollabAgentToolCall {
                 id: "wait-1".to_string(),
-                tool: codex_app_server_protocol::CollabAgentTool::Wait,
-                status: codex_app_server_protocol::CollabAgentToolCallStatus::InProgress,
+                tool: ava_app_server_protocol::CollabAgentTool::Wait,
+                status: ava_app_server_protocol::CollabAgentToolCallStatus::InProgress,
                 sender_thread_id: ThreadId::new().to_string(),
                 receiver_thread_ids: vec![receiver_thread_id.to_string()],
                 prompt: None,
@@ -1982,14 +1982,14 @@ async fn collab_receiver_notification_does_not_cache_not_found_thread() {
         ThreadId::from_string("00000000-0000-0000-0000-000000000124").expect("valid thread id");
 
     app.handle_thread_event_now(ThreadBufferedEvent::Notification(Box::new(
-        ServerNotification::ItemCompleted(codex_app_server_protocol::ItemCompletedNotification {
+        ServerNotification::ItemCompleted(ava_app_server_protocol::ItemCompletedNotification {
             thread_id: ThreadId::new().to_string(),
             turn_id: "turn-1".to_string(),
             completed_at_ms: 0,
             item: ThreadItem::CollabAgentToolCall {
                 id: "send-1".to_string(),
-                tool: codex_app_server_protocol::CollabAgentTool::SendInput,
-                status: codex_app_server_protocol::CollabAgentToolCallStatus::Failed,
+                tool: ava_app_server_protocol::CollabAgentTool::SendInput,
+                status: ava_app_server_protocol::CollabAgentToolCallStatus::Failed,
                 sender_thread_id: ThreadId::new().to_string(),
                 receiver_thread_ids: vec![receiver_thread_id.to_string()],
                 prompt: Some("hello".to_string()),
@@ -1997,8 +1997,8 @@ async fn collab_receiver_notification_does_not_cache_not_found_thread() {
                 reasoning_effort: None,
                 agents_states: HashMap::from([(
                     receiver_thread_id.to_string(),
-                    codex_app_server_protocol::CollabAgentState {
-                        status: codex_app_server_protocol::CollabAgentStatus::NotFound,
+                    ava_app_server_protocol::CollabAgentState {
+                        status: ava_app_server_protocol::CollabAgentStatus::NotFound,
                         message: None,
                     },
                 )]),
@@ -2027,7 +2027,7 @@ async fn archived_untracked_threads_do_not_appear_in_agent_picker() -> Result<()
     let archived_thread_id = ThreadId::new();
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::ThreadArchived(ThreadArchivedNotification {
                 thread_id: archived_thread_id.to_string(),
             }),
@@ -2040,11 +2040,11 @@ async fn archived_untracked_threads_do_not_appear_in_agent_picker() -> Result<()
     let attachment_thread_id = ThreadId::new();
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::ThreadAttachmentUpdated(ThreadAttachmentUpdatedNotification {
                 thread_id: attachment_thread_id.to_string(),
                 attachment_type: "pull_request".to_string(),
-                identity_key: r#"["github.com","openai","codex",123]"#.to_string(),
+                identity_key: r#"["github.com","openai","ava",123]"#.to_string(),
                 attachment_id: "attachment-1".to_string(),
                 operation: ThreadAttachmentOperation::Deleted,
             }),
@@ -2448,7 +2448,7 @@ fn selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children() -
         let root_thread_id = ThreadId::new();
         let rollout_dir = app
             .config
-            .codex_home
+            .ava_home
             .join("sessions")
             .join("2026")
             .join("01")
@@ -2459,7 +2459,7 @@ fn selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children() -
             id: root_thread_id,
             timestamp: "2026-01-01T00:00:00Z".to_string(),
             cwd: app.config.cwd.to_path_buf(),
-            originator: "codex-tui-test".to_string(),
+            originator: "ava-tui-test".to_string(),
             cli_version: "0.0.0".to_string(),
             source: RolloutSessionSource::Cli,
             model_provider: Some(app.config.model_provider_id.clone()),
@@ -2490,7 +2490,7 @@ fn selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children() -
                 parent_thread_id: Some(root_thread_id),
                 timestamp: timestamp.clone(),
                 cwd: app.config.cwd.to_path_buf(),
-                originator: "codex-tui-test".to_string(),
+                originator: "ava-tui-test".to_string(),
                 cli_version: "0.0.0".to_string(),
                 source: RolloutSessionSource::SubAgent(SubAgentSource::ThreadSpawn {
                     parent_thread_id: root_thread_id,
@@ -2580,7 +2580,7 @@ fn selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children() -
             .handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         assert!(
             std::iter::from_fn(|| app_event_rx.try_recv().ok())
-                .any(|event| matches!(event, AppEvent::CodexOp(Op::UserTurn { .. })))
+                .any(|event| matches!(event, AppEvent::AvaOp(Op::UserTurn { .. })))
         );
 
         app.select_agent_thread(&mut tui, &mut app_server, child_thread_ids[1])
@@ -2595,7 +2595,7 @@ fn selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children() -
         assert_eq!(app.chat_widget.composer_text_with_pending(), draft);
         assert!(
             !std::iter::from_fn(|| app_event_rx.try_recv().ok())
-                .any(|event| matches!(event, AppEvent::CodexOp(Op::UserTurn { .. })))
+                .any(|event| matches!(event, AppEvent::AvaOp(Op::UserTurn { .. })))
         );
 
         let resumed = Box::pin(app_server.resume_thread(
@@ -2623,7 +2623,7 @@ fn selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children() -
         assert_eq!(app.chat_widget.composer_text_with_pending(), draft);
         assert!(
             !std::iter::from_fn(|| app_event_rx.try_recv().ok())
-                .any(|event| matches!(event, AppEvent::CodexOp(Op::UserTurn { .. })))
+                .any(|event| matches!(event, AppEvent::AvaOp(Op::UserTurn { .. })))
         );
         Ok(())
     }))
@@ -2769,7 +2769,7 @@ async fn handle_start_side_seeds_navigation_before_thread_started() -> Result<()
     let config = app.chat_widget.config_ref().clone();
     let parent_thread_id = ThreadId::from_string(
         &app_test_support::create_fake_rollout(
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
             "2025-01-05T12-00-00",
             "2025-01-05T12:00:00Z",
             "Saved user message",
@@ -2823,7 +2823,7 @@ async fn handle_start_side_seeds_navigation_before_thread_started() -> Result<()
         .await
         .expect("app-server should emit an event")
         .expect("app-server event stream should remain open");
-        if let codex_app_server_client::AppServerEvent::ServerNotification(notification) = event
+        if let ava_app_server_client::AppServerEvent::ServerNotification(notification) = event
             && let ServerNotification::ThreadStarted(notification) = notification.as_ref()
             && notification.thread.id == side_thread_id.to_string()
         {
@@ -2880,8 +2880,8 @@ async fn open_agent_picker_prompts_when_subagents_disabled() -> Result<()> {
 #[tokio::test]
 async fn update_memory_settings_persists_and_updates_widget_config() -> Result<()> {
     let (mut app, _app_event_rx, _op_rx) = Box::pin(make_test_app_with_channels()).await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
     let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(&app.config)).await?;
 
     Box::pin(app.update_memory_settings_with_app_server(
@@ -2896,7 +2896,7 @@ async fn update_memory_settings_persists_and_updates_widget_config() -> Result<(
     assert!(!app.chat_widget.config_ref().memories.use_memories);
     assert!(!app.chat_widget.config_ref().memories.generate_memories);
 
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     let config_value = toml::from_str::<TomlValue>(&config)?;
     let memories = config_value
         .as_table()
@@ -2933,9 +2933,9 @@ fn update_memory_settings_updates_current_thread_memory_mode() -> Result<()> {
 
     runtime.block_on(async {
         let (mut app, _app_event_rx, _op_rx) = Box::pin(make_test_app_with_channels()).await;
-        let codex_home = tempdir()?;
-        app.config.codex_home = codex_home.path().to_path_buf().abs();
-        app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+        let ava_home = tempdir()?;
+        app.config.ava_home = ava_home.path().to_path_buf().abs();
+        app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
         // Seed the previous setting so this test exercises the thread-mode update path.
         app.config.memories.generate_memories = true;
 
@@ -2952,8 +2952,8 @@ fn update_memory_settings_updates_current_thread_memory_mode() -> Result<()> {
         ))
         .await;
 
-        let state_db = codex_state::StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        let state_db = ava_state::StateRuntime::init(
+            ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
             app.config.model_provider_id.clone(),
         )
         .await
@@ -2973,11 +2973,11 @@ fn update_memory_settings_updates_current_thread_memory_mode() -> Result<()> {
 async fn reset_memories_clears_local_memory_directories() -> Result<()> {
     Box::pin(async {
         let (mut app, _app_event_rx, _op_rx) = Box::pin(make_test_app_with_channels()).await;
-        let codex_home = tempdir()?;
-        app.config.codex_home = codex_home.path().to_path_buf().abs();
-        app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+        let ava_home = tempdir()?;
+        app.config.ava_home = ava_home.path().to_path_buf().abs();
+        app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
 
-        let memory_root = codex_home.path().join("memories");
+        let memory_root = ava_home.path().join("memories");
         let extensions_root = memory_root.join("extensions");
         std::fs::create_dir_all(memory_root.join("rollout_summaries"))?;
         std::fs::create_dir_all(&extensions_root)?;
@@ -3011,7 +3011,7 @@ async fn server_only_profile_selection_keeps_turns_on_the_selected_profile() -> 
         "default_permissions = \":workspace\"\n[permissions.server-only]\nextends = \":read-only\"\n",
     )?;
     let server_config = ConfigBuilder::default()
-        .codex_home(home.path().into())
+        .ava_home(home.path().into())
         .build()
         .await?;
     let mut server = crate::start_embedded_app_server_for_picker(&server_config).await?;
@@ -3136,11 +3136,11 @@ async fn resume_rejects_selected_config_profile_permission_definitions() -> Resu
         &selected,
         "default_permissions = \":workspace\"\n[permissions.unused]\nextends = \":read-only\"\n",
     )?;
-    let mut loader = codex_config::LoaderOverrides::without_managed_config_for_tests();
+    let mut loader = ava_config::LoaderOverrides::without_managed_config_for_tests();
     loader.user_config_path = Some(selected.abs());
     loader.user_config_profile = Some("work".parse()?);
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(loader)
         .build()
         .await?;
@@ -3161,7 +3161,7 @@ async fn remote_resume_rejects_explicit_permission_override() -> Result<()> {
         home.path().join("config.toml"),
         "default_permissions = \":workspace\"\n",
     )?;
-    app.config.codex_home = home.path().to_path_buf().abs();
+    app.config.ava_home = home.path().to_path_buf().abs();
     let mut server = crate::start_embedded_app_server_for_picker(&app.config).await?;
     let selected = home.path().join("work.config.toml");
     std::fs::write(
@@ -3213,8 +3213,8 @@ async fn remote_resume_rejects_explicit_permission_override() -> Result<()> {
 #[tokio::test]
 async fn apply_permission_profile_selection_preserves_loader_overrides() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    let selected_config = codex_home.path().join("work.config.toml");
+    let ava_home = tempdir()?;
+    let selected_config = ava_home.path().join("work.config.toml");
     std::fs::write(
         &selected_config,
         r#"
@@ -3224,7 +3224,7 @@ default_permissions = "locked-down"
 ":minimal" = "read"
 "#,
     )?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
     app.loader_overrides.user_config_path = Some(selected_config.abs());
     app.harness_overrides.sandbox_mode = Some(SandboxMode::WorkspaceWrite);
     app.harness_overrides.permission_profile = Some(PermissionProfile::workspace_write());
@@ -3261,8 +3261,8 @@ default_permissions = "locked-down"
         Some(RuntimePermissionProfileOverride::from_config(&app.config))
     );
     let op = match app_event_rx.try_recv() {
-        Ok(AppEvent::CodexOp(op)) => op,
-        other => panic!("expected CodexOp event, got {other:?}"),
+        Ok(AppEvent::AvaOp(op)) => op,
+        other => panic!("expected AvaOp event, got {other:?}"),
     };
     assert_eq!(
         op,
@@ -3297,8 +3297,8 @@ default_permissions = "locked-down"
 #[tokio::test]
 async fn update_feature_flags_enabling_guardian_selects_auto_review() -> Result<()> {
     let (mut app, mut app_event_rx, mut op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
     let auto_review = auto_review_mode();
     let mut app_server = start_config_write_test_app_server(&app).await?;
 
@@ -3385,7 +3385,7 @@ async fn update_feature_flags_enabling_guardian_selects_auto_review() -> Result<
         .join("\n");
     assert!(rendered.contains("Permissions updated to Approve for me"));
 
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(config.contains("guardian_approval = true"));
     assert!(config.contains("approvals_reviewer = \"auto_review\""));
     assert!(config.contains("approval_policy = \"on-request\""));
@@ -3398,9 +3398,9 @@ async fn update_feature_flags_enabling_guardian_selects_auto_review() -> Result<
 async fn update_feature_flags_disabling_guardian_clears_review_policy_and_restores_default()
 -> Result<()> {
     let (mut app, mut app_event_rx, mut op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    let config_toml_path = codex_home.path().join("config.toml").abs();
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    let config_toml_path = ava_home.path().join("config.toml").abs();
     let config_toml = "approvals_reviewer = \"guardian_subagent\"\napproval_policy = \"on-request\"\nsandbox_mode = \"workspace-write\"\n\n[features]\nguardian_approval = true\n";
     std::fs::write(config_toml_path.as_path(), config_toml)?;
     let user_config = toml::from_str::<TomlValue>(config_toml)?;
@@ -3479,7 +3479,7 @@ async fn update_feature_flags_disabling_guardian_clears_review_policy_and_restor
         .join("\n");
     assert!(rendered.contains("Permissions updated to Ask for approval"));
 
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(!config.contains("guardian_approval = true"));
     assert!(!config.contains("approvals_reviewer ="));
     assert!(config.contains("approval_policy = \"on-request\""));
@@ -3492,10 +3492,10 @@ async fn update_feature_flags_disabling_guardian_clears_review_policy_and_restor
 async fn update_feature_flags_enabling_guardian_overrides_explicit_manual_review_policy()
 -> Result<()> {
     let (mut app, _app_event_rx, mut op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
     let auto_review = auto_review_mode();
-    let config_toml_path = codex_home.path().join("config.toml").abs();
+    let config_toml_path = ava_home.path().join("config.toml").abs();
     let config_toml = "approvals_reviewer = \"user\"\n";
     std::fs::write(config_toml_path.as_path(), config_toml)?;
     let user_config = toml::from_str::<TomlValue>(config_toml)?;
@@ -3548,7 +3548,7 @@ async fn update_feature_flags_enabling_guardian_overrides_explicit_manual_review
         })
     );
 
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(config.contains("approvals_reviewer = \"auto_review\""));
     assert!(config.contains("guardian_approval = true"));
     assert!(config.contains("approval_policy = \"on-request\""));
@@ -3561,9 +3561,9 @@ async fn update_feature_flags_enabling_guardian_overrides_explicit_manual_review
 async fn update_feature_flags_disabling_guardian_clears_manual_review_policy_without_history()
 -> Result<()> {
     let (mut app, mut app_event_rx, mut op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    let config_toml_path = codex_home.path().join("config.toml").abs();
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    let config_toml_path = ava_home.path().join("config.toml").abs();
     let config_toml = "approvals_reviewer = \"user\"\napproval_policy = \"on-request\"\nsandbox_mode = \"workspace-write\"\n\n[features]\nguardian_approval = true\n";
     std::fs::write(config_toml_path.as_path(), config_toml)?;
     let user_config = toml::from_str::<TomlValue>(config_toml)?;
@@ -3611,7 +3611,7 @@ async fn update_feature_flags_disabling_guardian_clears_manual_review_policy_wit
         "manual review should not emit a permissions history update when the effective state stays default"
     );
 
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(!config.contains("guardian_approval = true"));
     assert!(!config.contains("approvals_reviewer ="));
     app_server.shutdown().await?;
@@ -3896,7 +3896,7 @@ async fn side_defers_subagent_approval_overlay_until_side_exits() -> Result<()> 
         quiet_thread_id,
         ServerRequest::DynamicToolCall {
             request_id: AppServerRequestId::Integer(99),
-            params: codex_app_server_protocol::DynamicToolCallParams {
+            params: ava_app_server_protocol::DynamicToolCallParams {
                 thread_id: quiet_thread_id.to_string(),
                 turn_id: "turn-quiet".to_string(),
                 call_id: "call-quiet".to_string(),
@@ -3993,15 +3993,15 @@ async fn inactive_thread_exec_approval_preserves_context() {
     assert_eq!(
         approval.available_decisions,
         vec![
-            codex_app_server_protocol::CommandExecutionApprovalDecision::Accept,
-            codex_app_server_protocol::CommandExecutionApprovalDecision::AcceptForSession,
-            codex_app_server_protocol::CommandExecutionApprovalDecision::ApplyNetworkPolicyAmendment {
+            ava_app_server_protocol::CommandExecutionApprovalDecision::Accept,
+            ava_app_server_protocol::CommandExecutionApprovalDecision::AcceptForSession,
+            ava_app_server_protocol::CommandExecutionApprovalDecision::ApplyNetworkPolicyAmendment {
                 network_policy_amendment: AppServerNetworkPolicyAmendment {
                     host: "example.com".to_string(),
                     action: AppServerNetworkPolicyRuleAction::Allow,
                 },
             },
-            codex_app_server_protocol::CommandExecutionApprovalDecision::Cancel,
+            ava_app_server_protocol::CommandExecutionApprovalDecision::Cancel,
         ]
     );
 }
@@ -4058,7 +4058,7 @@ async fn inactive_thread_file_change_approval_recovers_buffered_changes() {
                     kind: PatchChangeKind::Add,
                     diff: "hello\n".to_string(),
                 }],
-                status: codex_app_server_protocol::PatchApplyStatus::InProgress,
+                status: ava_app_server_protocol::PatchApplyStatus::InProgress,
             },
         }),
     )
@@ -4129,7 +4129,7 @@ async fn active_thread_file_change_approval_recovers_buffered_changes() {
                     kind: PatchChangeKind::Add,
                     diff: "hello\n".to_string(),
                 }],
-                status: codex_app_server_protocol::PatchApplyStatus::InProgress,
+                status: ava_app_server_protocol::PatchApplyStatus::InProgress,
             },
         }),
     )
@@ -4163,7 +4163,7 @@ async fn active_thread_file_change_approval_recovers_buffered_changes() {
     assert!(!app.chat_widget.has_active_view());
     assert!(app.startup_pending_protected_request);
     app.chat_widget.handle_server_notification(
-        ServerNotification::ItemCompleted(codex_app_server_protocol::ItemCompletedNotification {
+        ServerNotification::ItemCompleted(ava_app_server_protocol::ItemCompletedNotification {
             thread_id: thread_id.to_string(),
             turn_id: "turn-active-approval".to_string(),
             completed_at_ms: 0,
@@ -4204,7 +4204,7 @@ async fn replayed_file_change_approval_recovers_snapshot_changes() {
                         kind: PatchChangeKind::Add,
                         diff: "hello\n".to_string(),
                     }],
-                    status: codex_app_server_protocol::PatchApplyStatus::InProgress,
+                    status: ava_app_server_protocol::PatchApplyStatus::InProgress,
                 }],
             )],
             events: vec![ThreadBufferedEvent::Request(Box::new(
@@ -4247,7 +4247,7 @@ async fn inactive_thread_permissions_approval_preserves_file_system_permissions(
             started_at_ms: 0,
             cwd: test_absolute_path("/tmp").into(),
             reason: Some("Need access to .git".to_string()),
-            permissions: codex_app_server_protocol::RequestPermissionProfile {
+            permissions: ava_app_server_protocol::RequestPermissionProfile {
                 network: Some(AdditionalNetworkPermissions {
                     enabled: Some(true),
                 }),
@@ -4356,7 +4356,7 @@ async fn inactive_thread_invalid_url_elicitation_is_declined() {
             op: Op::ResolveElicitation {
                 server_name,
                 request_id: AppServerRequestId::Integer(10),
-                decision: codex_app_server_protocol::McpServerElicitationAction::Decline,
+                decision: ava_app_server_protocol::McpServerElicitationAction::Decline,
                 content: None,
                 meta: None,
             },
@@ -4461,7 +4461,7 @@ async fn inactive_thread_started_notification_initializes_replay_session() -> Re
         ServerNotification::ThreadStarted(ThreadStartedNotification {
             thread: Thread {
                 originator: None,
-                environments: Some(vec![codex_app_server_protocol::ThreadEnvironment {
+                environments: Some(vec![ava_app_server_protocol::ThreadEnvironment {
                     environment_id: "remote".to_string(),
                     cwd: test_path_buf("/tmp/agent").abs().into(),
                     runtime_workspace_roots: Vec::new(),
@@ -4484,11 +4484,11 @@ async fn inactive_thread_started_notification_initializes_replay_session() -> Re
                 created_at: 1,
                 updated_at: 2,
                 recency_at: Some(2),
-                status: codex_app_server_protocol::ThreadStatus::Idle,
+                status: ava_app_server_protocol::ThreadStatus::Idle,
                 path: Some(rollout_path.clone()),
                 cwd: test_path_buf("/tmp/agent").abs(),
                 cli_version: "0.0.0".to_string(),
-                source: codex_app_server_protocol::SessionSource::Unknown,
+                source: ava_app_server_protocol::SessionSource::Unknown,
                 can_accept_direct_input: None,
                 thread_source: None,
                 agent_nickname: Some("Robie".to_string()),
@@ -4589,11 +4589,11 @@ async fn inactive_thread_started_notification_preserves_primary_model_when_path_
                 created_at: 1,
                 updated_at: 2,
                 recency_at: Some(2),
-                status: codex_app_server_protocol::ThreadStatus::Idle,
+                status: ava_app_server_protocol::ThreadStatus::Idle,
                 path: None,
                 cwd: test_path_buf("/tmp/agent").abs(),
                 cli_version: "0.0.0".to_string(),
-                source: codex_app_server_protocol::SessionSource::Unknown,
+                source: ava_app_server_protocol::SessionSource::Unknown,
                 can_accept_direct_input: None,
                 thread_source: None,
                 agent_nickname: Some("Robie".to_string()),
@@ -4660,11 +4660,11 @@ async fn thread_read_session_state_does_not_reuse_primary_permission_profile() {
         created_at: 1,
         updated_at: 2,
         recency_at: Some(2),
-        status: codex_app_server_protocol::ThreadStatus::Idle,
+        status: ava_app_server_protocol::ThreadStatus::Idle,
         path: None,
         cwd: test_path_buf("/tmp/read").abs(),
         cli_version: "0.0.0".to_string(),
-        source: codex_app_server_protocol::SessionSource::Unknown,
+        source: ava_app_server_protocol::SessionSource::Unknown,
         can_accept_direct_input: None,
         thread_source: None,
         agent_nickname: None,
@@ -4974,7 +4974,7 @@ async fn side_parent_status_prioritizes_input_over_approval() -> Result<()> {
     app.enqueue_thread_notification(
         parent_thread_id,
         ServerNotification::ServerRequestResolved(
-            codex_app_server_protocol::ServerRequestResolvedNotification {
+            ava_app_server_protocol::ServerRequestResolvedNotification {
                 thread_id: parent_thread_id.to_string(),
                 request_id: AppServerRequestId::Integer(2),
             },
@@ -4991,7 +4991,7 @@ async fn side_parent_status_prioritizes_input_over_approval() -> Result<()> {
     app.enqueue_thread_notification(
         parent_thread_id,
         ServerNotification::ServerRequestResolved(
-            codex_app_server_protocol::ServerRequestResolvedNotification {
+            ava_app_server_protocol::ServerRequestResolvedNotification {
                 thread_id: parent_thread_id.to_string(),
                 request_id: AppServerRequestId::Integer(1),
             },
@@ -5242,7 +5242,7 @@ async fn primary_thread_ignores_child_mcp_startup_notifications() {
 
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::McpServerStatusUpdated(McpServerStatusUpdatedNotification {
                 thread_id: Some(child_thread_id.to_string()),
                 name: "sentry".to_string(),
@@ -5320,7 +5320,7 @@ async fn app_scoped_mcp_startup_notifications_do_not_render_in_active_thread() {
 
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+        ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
             ServerNotification::McpServerStatusUpdated(McpServerStatusUpdatedNotification {
                 thread_id: None,
                 name: "sentry".to_string(),
@@ -5386,7 +5386,7 @@ async fn active_side_thread_renders_live_mcp_startup_notifications() {
     ] {
         app.handle_app_server_event(
             &app_server,
-            codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+            ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
                 ServerNotification::McpServerStatusUpdated(McpServerStatusUpdatedNotification {
                     thread_id: Some(side_thread_id.to_string()),
                     name: "sentry".to_string(),
@@ -5591,7 +5591,7 @@ async fn background_side_cleanup_removes_local_state_and_ignores_late_events() -
 
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerRequest(Box::new(exec_approval_request(
+        ava_app_server_client::AppServerEvent::ServerRequest(Box::new(exec_approval_request(
             side_thread_id,
             "turn-1",
             "item-1",
@@ -5606,7 +5606,7 @@ async fn background_side_cleanup_removes_local_state_and_ignores_late_events() -
             Op::ExecApproval {
                 id: "approval-1".to_string(),
                 turn_id: None,
-                decision: codex_app_server_protocol::CommandExecutionApprovalDecision::Accept,
+                decision: ava_app_server_protocol::CommandExecutionApprovalDecision::Accept,
             },
         )
         .expect("approval resolution should serialize");
@@ -5647,7 +5647,7 @@ async fn active_non_primary_shutdown_target_returns_none_for_non_shutdown_event(
 
     assert_eq!(
         app.active_non_primary_shutdown_target(&ServerNotification::SkillsChanged(
-            codex_app_server_protocol::SkillsChangedNotification {},
+            ava_app_server_protocol::SkillsChangedNotification {},
         )),
         None
     );
@@ -5850,7 +5850,7 @@ async fn clear_ui_after_long_transcript_snapshots_fresh_header_only() {
 
 #[tokio::test]
 async fn ctrl_l_clears_owned_history_and_preserves_the_draft() -> Result<()> {
-    let (mut app, _codex_home, thread_id) =
+    let (mut app, _ava_home, thread_id) =
         pagination_completion_tests::completed_history_app(&["Oldest", "Newest"]).await?;
     let mut tui = crate::tui::test_support::make_test_tui()?;
     let mut app_server = crate::start_embedded_app_server_for_picker(&app.config).await?;
@@ -5929,7 +5929,7 @@ async fn clear_ui_header_shows_fast_status_for_fast_capable_models() {
     app.chat_widget
         .set_reasoning_effort(Some(ReasoningEffortConfig::XHigh));
     app.chat_widget.set_service_tier(Some(
-        codex_protocol::config_types::ServiceTier::Fast
+        ava_protocol::config_types::ServiceTier::Fast
             .request_value()
             .to_string(),
     ));
@@ -6000,7 +6000,7 @@ async fn make_test_app() -> App {
         skill_load_warnings: SkillLoadWarningState::default(),
         backtrack: BacktrackState::default(),
         backtrack_render_pending: false,
-        feedback: codex_feedback::CodexFeedback::new(),
+        feedback: ava_feedback::AvaFeedback::new(),
         feedback_audience: FeedbackAudience::External,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         app_server_target: crate::AppServerTarget::Embedded,
@@ -6103,7 +6103,7 @@ pub(super) async fn make_test_app_with_channels() -> (
             skill_load_warnings: SkillLoadWarningState::default(),
             backtrack: BacktrackState::default(),
             backtrack_render_pending: false,
-            feedback: codex_feedback::CodexFeedback::new(),
+            feedback: ava_feedback::AvaFeedback::new(),
             feedback_audience: FeedbackAudience::External,
             environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
             app_server_target: crate::AppServerTarget::Embedded,
@@ -6183,12 +6183,12 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
     let response = app_server.thread_goal_get(thread_id).await?;
     let goal = response.goal.expect("goal should be set");
     let saved_objective = goal.objective.clone();
-    let codex_home = app_server
-        .codex_home_path(&app.chat_widget.config_ref().codex_home)
-        .expect("codex home");
-    assert!(goal_files::objective_file_path(&goal.objective, Some(&codex_home)).is_some());
+    let ava_home = app_server
+        .ava_home_path(&app.chat_widget.config_ref().ava_home)
+        .expect("ava home");
+    assert!(goal_files::objective_file_path(&goal.objective, Some(&ava_home)).is_some());
     assert_eq!(
-        goal_files::objective_text_for_edit(&mut app_server, Some(&codex_home), &goal.objective)
+        goal_files::objective_text_for_edit(&mut app_server, Some(&ava_home), &goal.objective)
             .await
             .expect("managed goal file should be readable"),
         objective
@@ -6201,18 +6201,18 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
     let suffix = "attachments/00000000-0000-4000-8000-000000000000/goal-objective.md";
     for path in [
         format!("/tmp/{suffix}"),
-        format!("{codex_home}/../other/{suffix}"),
-        format!("{codex_home}/other/{suffix}"),
+        format!("{ava_home}/../other/{suffix}"),
+        format!("{ava_home}/other/{suffix}"),
     ] {
-        assert!(!is_managed(&codex_home, &path));
+        assert!(!is_managed(&ava_home, &path));
     }
     assert!(!is_managed(
-        &AppServerPath::from_app_server("/tmp/codex\\home"),
-        &format!("/tmp/codex/home/{suffix}")
+        &AppServerPath::from_app_server("/tmp/ava\\home"),
+        &format!("/tmp/ava/home/{suffix}")
     ));
-    let unix_path = AppServerPath::from_app_server("/tmp/codex\\").join("a");
-    assert_eq!(unix_path.as_str(), "/tmp/codex\\/a");
-    let attachments_dir = app.chat_widget.config_ref().codex_home.join("attachments");
+    let unix_path = AppServerPath::from_app_server("/tmp/ava\\").join("a");
+    assert_eq!(unix_path.as_str(), "/tmp/ava\\/a");
+    let attachments_dir = app.chat_widget.config_ref().ava_home.join("attachments");
     let attachment_count = std::fs::read_dir(&attachments_dir)?.count();
     let placeholder = "[Pasted Content 5 chars]";
     let paste_draft = crate::goal_files::GoalDraft {
@@ -6675,7 +6675,7 @@ async fn copy_picker_opening_preserves_terminal_scrollback_without_reflow() {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
     let response = "Existing response\n\n```rust\nkeep_scrollback();\n```";
     app.chat_widget.handle_server_notification(
-        ServerNotification::ItemCompleted(codex_app_server_protocol::ItemCompletedNotification {
+        ServerNotification::ItemCompleted(ava_app_server_protocol::ItemCompletedNotification {
             thread_id: String::new(),
             turn_id: "turn-1".to_string(),
             completed_at_ms: 0,
@@ -7020,7 +7020,7 @@ async fn resizing_empty_transcript_schedules_settled_size_recheck() {
 fn test_turn(turn_id: &str, status: TurnStatus, items: Vec<ThreadItem>) -> Turn {
     Turn {
         id: turn_id.to_string(),
-        items_view: codex_app_server_protocol::TurnItemsView::Full,
+        items_view: ava_app_server_protocol::TurnItemsView::Full,
         items,
         status,
         error: None,
@@ -7293,7 +7293,7 @@ fn active_turn_not_steerable_turn_error_extracts_structured_server_error() {
     let turn_error = AppServerTurnError {
         misalignment: None,
         message: "cannot steer a review turn".to_string(),
-        codex_error_info: Some(AppServerCodexErrorInfo::ActiveTurnNotSteerable {
+        ava_error_info: Some(AppServerAvaErrorInfo::ActiveTurnNotSteerable {
             turn_kind: AppServerNonSteerableTurnKind::Review,
         }),
         additional_details: None,
@@ -7564,7 +7564,7 @@ async fn backtrack_branch_failure_restores_selected_prompt_snapshot() {
 async fn remote_resume_current_cwd_rejection_snapshot() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
     std::fs::write(
-        app.config.codex_home.join("config.toml"),
+        app.config.ava_home.join("config.toml"),
         "[tui]\nresume_cwd = \"current\"\n",
     )?;
     app.app_server_target = crate::AppServerTarget::Remote {
@@ -7604,15 +7604,15 @@ async fn remote_resume_current_cwd_rejection_snapshot() -> Result<()> {
 async fn remote_exec_resume_current_cwd_is_rejected() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
     std::fs::write(
-        app.config.codex_home.join("config.toml"),
+        app.config.ava_home.join("config.toml"),
         "[tui]\nresume_cwd = \"current\"\n",
     )?;
     app.environment_manager = Arc::new(
         EnvironmentManager::create_for_tests(
             Some("ws://127.0.0.1:8765".to_string()),
-            Some(codex_exec_server::ExecServerRuntimePaths::new(
+            Some(ava_exec_server::ExecServerRuntimePaths::new(
                 std::env::current_exe()?,
-                /*codex_linux_sandbox_exe*/ None,
+                /*ava_linux_sandbox_exe*/ None,
             )?),
         )
         .await,
@@ -7651,7 +7651,7 @@ async fn remote_exec_resume_current_cwd_is_rejected() -> Result<()> {
 async fn in_app_resume_session_cwd_without_metadata_is_non_fatal() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
     std::fs::write(
-        app.config.codex_home.join("config.toml"),
+        app.config.ava_home.join("config.toml"),
         "[tui]\nresume_cwd = \"session\"\n",
     )?;
     app.state_db = None;
@@ -7699,7 +7699,7 @@ async fn remote_resume_keeps_server_only_cwd_out_of_local_config() -> Result<()>
     };
     let filename_timestamp = "2025-01-05T12-00-00";
     let thread_id = app_test_support::create_fake_rollout(
-        app.config.codex_home.as_path(),
+        app.config.ava_home.as_path(),
         filename_timestamp,
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -7708,7 +7708,7 @@ async fn remote_resume_keeps_server_only_cwd_out_of_local_config() -> Result<()>
     )
     .expect("materialized rollout should be created");
     let rollout_path = app_test_support::rollout_path(
-        app.config.codex_home.as_path(),
+        app.config.ava_home.as_path(),
         filename_timestamp,
         &thread_id,
     );
@@ -7767,14 +7767,14 @@ async fn remote_resume_keeps_server_only_cwd_out_of_local_config() -> Result<()>
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn in_app_resume_uses_configured_or_explicit_cwd() -> Result<()> {
     let temp_dir = tempdir()?;
-    let codex_home = temp_dir.path().join("codex-home");
+    let ava_home = temp_dir.path().join("ava-home");
     let launch_cwd = temp_dir.path().join("launch");
     let active_cwd = temp_dir.path().join("active");
     let session_cwd = temp_dir.path().join("session");
     let explicit_cwd = temp_dir.path().join("explicit");
     let runtime_cwd = temp_dir.path().join("runtime");
     for directory in [
-        &codex_home,
+        &ava_home,
         &launch_cwd,
         &active_cwd,
         &session_cwd,
@@ -7798,7 +7798,7 @@ async fn in_app_resume_uses_configured_or_explicit_cwd() -> Result<()> {
         ("session", true, false, true, "runtime"),
     ] {
         std::fs::write(
-            codex_home.join("config.toml"),
+            ava_home.join("config.toml"),
             format!("[tui]\nresume_cwd = \"{configured_mode}\"\n"),
         )?;
         for cwd in [
@@ -7809,14 +7809,14 @@ async fn in_app_resume_uses_configured_or_explicit_cwd() -> Result<()> {
             &runtime_cwd,
         ] {
             crate::legacy_core::config::set_project_trust_level(
-                &codex_home,
+                &ava_home,
                 cwd,
-                codex_protocol::config_types::TrustLevel::Trusted,
+                ava_protocol::config_types::TrustLevel::Trusted,
             )
             .map_err(std::io::Error::other)?;
         }
         let config = ConfigBuilder::default()
-            .codex_home(codex_home.clone())
+            .ava_home(ava_home.clone())
             .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
             .harness_overrides(ConfigOverrides {
                 cwd: Some(active_cwd.clone()),
@@ -7826,7 +7826,7 @@ async fn in_app_resume_uses_configured_or_explicit_cwd() -> Result<()> {
             .await?;
         let filename_timestamp = "2025-01-05T12-00-00";
         let thread_id = app_test_support::create_fake_rollout(
-            &codex_home,
+            &ava_home,
             filename_timestamp,
             "2025-01-05T12:00:00Z",
             "Saved user message",
@@ -7835,7 +7835,7 @@ async fn in_app_resume_uses_configured_or_explicit_cwd() -> Result<()> {
         )
         .expect("materialized rollout should be created");
         let rollout_path =
-            app_test_support::rollout_path(&codex_home, filename_timestamp, &thread_id);
+            app_test_support::rollout_path(&ava_home, filename_timestamp, &thread_id);
         let mut rollout_lines = std::fs::read_to_string(&rollout_path)?
             .lines()
             .map(serde_json::from_str::<serde_json::Value>)
@@ -7857,9 +7857,9 @@ async fn in_app_resume_uses_configured_or_explicit_cwd() -> Result<()> {
             Arc::new(
                 EnvironmentManager::create_for_tests(
                     Some("ws://127.0.0.1:8765".to_string()),
-                    Some(codex_exec_server::ExecServerRuntimePaths::new(
+                    Some(ava_exec_server::ExecServerRuntimePaths::new(
                         std::env::current_exe()?,
-                        /*codex_linux_sandbox_exe*/ None,
+                        /*ava_linux_sandbox_exe*/ None,
                     )?),
                 )
                 .await,
@@ -7933,24 +7933,24 @@ async fn in_app_resume_uses_configured_or_explicit_cwd() -> Result<()> {
 #[tokio::test]
 async fn remembered_current_cwd_stays_at_launch_across_in_app_resumes() -> Result<()> {
     let temp_dir = tempdir()?;
-    let codex_home = temp_dir.path().join("codex-home");
+    let ava_home = temp_dir.path().join("ava-home");
     let launch_cwd = temp_dir.path().join("launch");
     let active_cwd = temp_dir.path().join("active");
     let first_session_cwd = temp_dir.path().join("first-session");
     let second_session_cwd = temp_dir.path().join("second-session");
-    std::fs::create_dir_all(&codex_home)?;
+    std::fs::create_dir_all(&ava_home)?;
     std::fs::create_dir_all(&launch_cwd)?;
     std::fs::create_dir_all(&active_cwd)?;
     std::fs::create_dir_all(&first_session_cwd)?;
     std::fs::create_dir_all(&second_session_cwd)?;
     crate::legacy_core::config::set_project_trust_level(
-        &codex_home,
+        &ava_home,
         &launch_cwd,
-        codex_protocol::config_types::TrustLevel::Trusted,
+        ava_protocol::config_types::TrustLevel::Trusted,
     )
     .map_err(std::io::Error::other)?;
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.clone())
+        .ava_home(ava_home.clone())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .harness_overrides(ConfigOverrides {
             cwd: Some(active_cwd.clone()),
@@ -7965,7 +7965,7 @@ async fn remembered_current_cwd_stays_at_launch_across_in_app_resumes() -> Resul
         &launch_cwd,
     ));
     crate::legacy_core::config::edit::ConfigEditsBuilder::for_config(&config)
-        .set_resume_cwd(codex_config::types::ResumeCwdMode::Current)
+        .set_resume_cwd(ava_config::types::ResumeCwdMode::Current)
         .apply()
         .await
         .map_err(std::io::Error::other)?;
@@ -7984,7 +7984,7 @@ async fn remembered_current_cwd_stays_at_launch_across_in_app_resumes() -> Resul
         ),
     ] {
         let thread_id = app_test_support::create_fake_rollout(
-            &codex_home,
+            &ava_home,
             filename_timestamp,
             metadata_timestamp,
             "Saved user message",
@@ -7993,7 +7993,7 @@ async fn remembered_current_cwd_stays_at_launch_across_in_app_resumes() -> Resul
         )
         .expect("materialized rollout should be created");
         let rollout_path =
-            app_test_support::rollout_path(&codex_home, filename_timestamp, &thread_id);
+            app_test_support::rollout_path(&ava_home, filename_timestamp, &thread_id);
         let mut rollout_lines = std::fs::read_to_string(&rollout_path)?
             .lines()
             .map(serde_json::from_str::<serde_json::Value>)
@@ -8055,16 +8055,16 @@ async fn remembered_current_cwd_stays_at_launch_across_in_app_resumes() -> Resul
 
 #[tokio::test]
 async fn prompt_edit_reverts_earlier_and_first_visible_prompts_in_place() -> Result<()> {
-    use codex_protocol::items::TurnItem;
-    use codex_protocol::items::UserMessageItem;
-    use codex_protocol::models::ImageReference;
-    use codex_protocol::protocol::ItemCompletedEvent;
-    use codex_protocol::user_input::UserInput;
+    use ava_protocol::items::TurnItem;
+    use ava_protocol::items::UserMessageItem;
+    use ava_protocol::models::ImageReference;
+    use ava_protocol::protocol::ItemCompletedEvent;
+    use ava_protocol::user_input::UserInput;
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
     let config = app.chat_widget.config_ref().clone();
     let filename_ts = "2025-01-05T12-00-00";
     let source_thread_id = app_test_support::create_fake_paginated_rollout(
-        config.codex_home.as_path(),
+        config.ava_home.as_path(),
         filename_ts,
         "2025-01-05T12:00:00Z",
         "unused preview",
@@ -8073,7 +8073,7 @@ async fn prompt_edit_reverts_earlier_and_first_visible_prompts_in_place() -> Res
     )
     .expect("materialized rollout should be created");
     let source_path =
-        app_test_support::rollout_path(config.codex_home.as_path(), filename_ts, &source_thread_id);
+        app_test_support::rollout_path(config.ava_home.as_path(), filename_ts, &source_thread_id);
     let session_meta = std::fs::read_to_string(&source_path)?
         .lines()
         .next()
@@ -8144,7 +8144,7 @@ async fn prompt_edit_reverts_earlier_and_first_visible_prompts_in_place() -> Res
                 time_to_first_token_ms: None,
             })),
         ] {
-            codex_rollout::append_rollout_item_to_path(&source_path, &item).await?;
+            ava_rollout::append_rollout_item_to_path(&source_path, &item).await?;
         }
     }
 
@@ -8154,7 +8154,7 @@ async fn prompt_edit_reverts_earlier_and_first_visible_prompts_in_place() -> Res
     // Inline hydration's row cap leaves the oldest prompt on an unloaded page.
     let mut local_settings = crate::local_settings::LocalSettings::from(&config);
     local_settings.transcript_mode = crate::transcript_mode::TranscriptMode::Terminal;
-    local_settings.tui.alternate_screen = codex_config::types::AltScreenMode::Never;
+    local_settings.tui.alternate_screen = ava_config::types::AltScreenMode::Never;
     local_settings.tui.terminal_resize_reflow_max_rows = Some(2);
     let started = app_server
         .resume_thread(
@@ -8185,7 +8185,7 @@ async fn prompt_edit_reverts_earlier_and_first_visible_prompts_in_place() -> Res
         ));
         for item in selected_turn.items {
             store.push_notification(ServerNotification::ItemCompleted(
-                codex_app_server_protocol::ItemCompletedNotification {
+                ava_app_server_protocol::ItemCompletedNotification {
                     thread_id: source_thread_id.to_string(),
                     turn_id: selected_turn.id.clone(),
                     completed_at_ms: 0,
@@ -8211,7 +8211,7 @@ async fn prompt_edit_reverts_earlier_and_first_visible_prompts_in_place() -> Res
         .thread_goal_set(
             source_thread_id,
             Some("Keep this goal".into()),
-            Some(codex_app_server_protocol::ThreadGoalStatus::Paused),
+            Some(ava_app_server_protocol::ThreadGoalStatus::Paused),
             /*token_budget*/ None,
         )
         .await?
@@ -8521,7 +8521,7 @@ async fn replay_thread_snapshot_replays_turn_history_in_order() {
             turns: vec![
                 Turn {
                     id: "turn-1".to_string(),
-                    items_view: codex_app_server_protocol::TurnItemsView::Full,
+                    items_view: ava_app_server_protocol::TurnItemsView::Full,
                     items: vec![ThreadItem::UserMessage {
                         id: "user-1".to_string(),
                         client_id: None,
@@ -8538,7 +8538,7 @@ async fn replay_thread_snapshot_replays_turn_history_in_order() {
                 },
                 Turn {
                     id: "turn-2".to_string(),
-                    items_view: codex_app_server_protocol::TurnItemsView::Full,
+                    items_view: ava_app_server_protocol::TurnItemsView::Full,
                     items: vec![
                         ThreadItem::UserMessage {
                             id: "user-2".to_string(),
@@ -8615,7 +8615,7 @@ async fn replace_chat_widget_reseeds_collab_agent_metadata_for_replay() {
         initial_user_message: None,
         enhanced_keys_supported: app.enhanced_keys_supported,
         has_chatgpt_account: app.chat_widget.has_chatgpt_account(),
-        has_codex_backend_auth: app.chat_widget.has_codex_backend_auth(),
+        has_ava_backend_auth: app.chat_widget.has_ava_backend_auth(),
         model_catalog: app.model_catalog.clone(),
         feedback: app.feedback.clone(),
         is_first_run: false,
@@ -8636,15 +8636,15 @@ async fn replace_chat_widget_reseeds_collab_agent_metadata_for_replay() {
             turns: Vec::new(),
             events: vec![ThreadBufferedEvent::Notification(Box::new(
                 ServerNotification::ItemStarted(
-                    codex_app_server_protocol::ItemStartedNotification {
+                    ava_app_server_protocol::ItemStartedNotification {
                         thread_id: "thread-1".to_string(),
                         turn_id: "turn-1".to_string(),
                         started_at_ms: 0,
                         item: ThreadItem::CollabAgentToolCall {
                             id: "wait-1".to_string(),
-                            tool: codex_app_server_protocol::CollabAgentTool::Wait,
+                            tool: ava_app_server_protocol::CollabAgentTool::Wait,
                             status:
-                                codex_app_server_protocol::CollabAgentToolCallStatus::InProgress,
+                                ava_app_server_protocol::CollabAgentToolCallStatus::InProgress,
                             sender_thread_id: ThreadId::new().to_string(),
                             receiver_thread_ids: vec![receiver_thread_id.to_string()],
                             prompt: None,
@@ -8913,7 +8913,7 @@ async fn override_turn_context_sends_thread_settings_update() {
             Some(ApprovalsReviewer::AutoReview),
             /*permission_profile*/ None,
             Some(ActivePermissionProfile::new(
-                codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE,
+                ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE,
             )),
             Some("gpt-5.4".to_string()),
             Some(Some(ReasoningEffortConfig::High)),
@@ -8973,7 +8973,7 @@ async fn override_turn_context_sends_thread_settings_update() {
 
         app.handle_app_server_event(
             &app_server,
-            codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+            ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
                 ServerNotification::ThreadSettingsUpdated(notification),
             )),
         )
@@ -9010,7 +9010,7 @@ async fn override_turn_context_sends_thread_settings_update() {
                 .as_ref()
                 .expect("active profile")
                 .id,
-            codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE
+            ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE
         );
     })
     .await;
@@ -9103,7 +9103,7 @@ async fn selecting_cyber_model_defaults_active_thread_to_auto_review() {
                 .as_ref()
                 .expect("active permission profile")
                 .id,
-            codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE
+            ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE
         );
         app.enqueue_thread_notification(
             thread_id,
@@ -9133,7 +9133,7 @@ async fn changing_cyber_model_reasoning_preserves_selected_permissions() {
 
         assert!(
             app.apply_permission_profile_selection(PermissionProfileSelection {
-                profile_id: codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY
+                profile_id: ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY
                     .to_string(),
                 approval_policy: Some(AskForApproval::OnRequest),
                 approvals_reviewer: Some(ApprovalsReviewer::User),
@@ -9226,7 +9226,7 @@ async fn changing_cyber_model_reasoning_preserves_selected_permissions() {
                     .active_permission_profile
                     .expect("active permission profile")
                     .id,
-                codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY
+                ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY
             );
             assert_eq!(
                 settings.collaboration_mode.mode,
@@ -9261,11 +9261,11 @@ async fn selecting_cyber_model_falls_back_to_user_when_auto_review_is_unavailabl
 
     assert_eq!(
         params.approval_policy,
-        Some(codex_app_server_protocol::AskForApproval::OnRequest)
+        Some(ava_app_server_protocol::AskForApproval::OnRequest)
     );
     assert_eq!(
         params.approvals_reviewer,
-        Some(codex_app_server_protocol::ApprovalsReviewer::User)
+        Some(ava_app_server_protocol::ApprovalsReviewer::User)
     );
 }
 
@@ -9273,19 +9273,19 @@ async fn selecting_cyber_model_falls_back_to_user_when_auto_review_is_unavailabl
 async fn selecting_cyber_model_respects_auto_review_requirements() {
     Box::pin(async {
         let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-        let requirements_toml = codex_config::ConfigRequirementsToml {
+        let requirements_toml = ava_config::ConfigRequirementsToml {
             allowed_approval_policies: Some(vec![AskForApproval::UnlessTrusted.to_core()]),
             ..Default::default()
         };
-        let mut requirements_with_sources = codex_config::ConfigRequirementsWithSources::default();
+        let mut requirements_with_sources = ava_config::ConfigRequirementsWithSources::default();
         requirements_with_sources.merge_unset_fields(
-            codex_config::RequirementSource::Unknown,
+            ava_config::RequirementSource::Unknown,
             requirements_toml.clone(),
         );
-        let requirements = codex_config::ConfigRequirements::try_from(requirements_with_sources)
+        let requirements = ava_config::ConfigRequirements::try_from(requirements_with_sources)
             .expect("reviewer requirements");
         app.config.config_layer_stack =
-            codex_config::ConfigLayerStack::new(Vec::new(), requirements, requirements_toml)
+            ava_config::ConfigLayerStack::new(Vec::new(), requirements, requirements_toml)
                 .expect("auto-review requirements stack");
         app.config
             .permissions
@@ -9442,12 +9442,12 @@ async fn inactive_thread_settings_notification_updates_cached_collaboration_mode
             disabled_plugin_ids: Vec::new(),
             cwd: test_absolute_path("/tmp/thread-settings"),
             approval_policy: AskForApproval::OnRequest,
-            approvals_reviewer: codex_app_server_protocol::ApprovalsReviewer::AutoReview,
-            sandbox_policy: codex_app_server_protocol::SandboxPolicy::ReadOnly {
+            approvals_reviewer: ava_app_server_protocol::ApprovalsReviewer::AutoReview,
+            sandbox_policy: ava_app_server_protocol::SandboxPolicy::ReadOnly {
                 network_access: false,
             },
             active_permission_profile: Some(
-                codex_app_server_protocol::ActivePermissionProfile::read_only(),
+                ava_app_server_protocol::ActivePermissionProfile::read_only(),
             ),
             model: "gpt-plan".to_string(),
             model_provider: "openai".to_string(),
@@ -9568,7 +9568,7 @@ async fn clear_only_ui_reset_preserves_chat_session_state() {
 async fn clear_only_ui_reset_allows_active_skill_warning_to_render_again() {
     let mut app = make_test_app().await;
     let error = SkillErrorInfo {
-        path: test_path_buf("/tmp/project/.codex/skills/abc/SKILL.md"),
+        path: test_path_buf("/tmp/project/.ava-code/skills/abc/SKILL.md"),
         message: "invalid description".to_string(),
     };
 

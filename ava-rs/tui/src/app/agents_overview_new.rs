@@ -10,8 +10,8 @@ use crate::startup_draft::StartupDraftSessionAction;
 /// Dropping a cancelled worker or undelivered event removes only a clean checkout.
 #[derive(Debug)]
 pub(crate) struct PendingWorktree {
-    pub(in crate::app) manager: codex_worktree::WorktreeManager,
-    pub(in crate::app) checkout: Option<codex_worktree::ManagedWorktree>,
+    pub(in crate::app) manager: ava_worktree::WorktreeManager,
+    pub(in crate::app) checkout: Option<ava_worktree::ManagedWorktree>,
 }
 
 impl Drop for PendingWorktree {
@@ -30,7 +30,7 @@ impl Drop for PendingWorktree {
 impl App {
     fn agents_overview_retained_worktree_error(
         &mut self,
-        checkout: &codex_worktree::ManagedWorktree,
+        checkout: &ava_worktree::ManagedWorktree,
         reason: impl std::fmt::Display,
     ) {
         self.add_agents_overview_error(format!("{reason} A checkout was retained at {}; remove it with `git worktree remove <checkout-path>` from the source repository if it is no longer needed.", checkout.root.display()));
@@ -90,8 +90,8 @@ impl App {
         app_server: &mut AppServerSession,
         cwd: Option<AbsolutePathBuf>,
         managed_worktree: Option<(
-            codex_worktree::WorktreeManager,
-            codex_worktree::ManagedWorktree,
+            ava_worktree::WorktreeManager,
+            ava_worktree::ManagedWorktree,
         )>,
         mut startup_draft: Option<&mut StartupDraftPump>,
     ) -> Result<AppRunControl> {
@@ -244,17 +244,17 @@ impl App {
                 "The source project is not trusted."
             );
             let host = crate::legacy_core::config::load_config_toml_with_layer_stack(
-                &self.config.codex_home,
+                &self.config.ava_home,
                 /*cwd*/ None,
                 Vec::new(),
-                codex_config::ConfigLoadOptions::default(),
+                ava_config::ConfigLoadOptions::default(),
             )
             .await?;
-            let settings = codex_worktree::WorktreeSettings::for_cli(
-                &self.config.codex_home,
+            let settings = ava_worktree::WorktreeSettings::for_cli(
+                &self.config.ava_home,
                 host.config_toml.desktop.as_ref(),
             )?;
-            anyhow::Ok(codex_worktree::WorktreeManager::new(settings))
+            anyhow::Ok(ava_worktree::WorktreeManager::new(settings))
         }
         .await;
         let manager = match setup {
@@ -270,9 +270,9 @@ impl App {
         let sender = self.app_event_tx.clone();
         tokio::spawn(async move {
             let result = tokio::task::spawn_blocking(move || {
-                codex_worktree::default_worktree_base(config.cwd.as_path())
+                ava_worktree::default_worktree_base(config.cwd.as_path())
                     .and_then(|base| {
-                        manager.create(&codex_worktree::CreateWorktree {
+                        manager.create(&ava_worktree::CreateWorktree {
                             source_cwd: config.cwd.to_path_buf(),
                             base: Some(base),
                         })

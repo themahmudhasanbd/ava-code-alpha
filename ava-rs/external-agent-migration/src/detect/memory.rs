@@ -8,11 +8,11 @@ use std::io;
 use std::path::Path;
 
 pub(super) fn detect(
-    codex_home: &Path,
+    ava_home: &Path,
     external_agent_home: &Path,
 ) -> io::Result<Option<ExternalAgentConfigMigrationItem>> {
     let memory_files = discover_external_memory_files(external_agent_home)?;
-    let memory = projects_needing_import(codex_home, &memory_files)?;
+    let memory = projects_needing_import(ava_home, &memory_files)?;
     if memory.is_empty() {
         return Ok(None);
     }
@@ -22,7 +22,7 @@ pub(super) fn detect(
         description: format!(
             "Import memory files from {} to {}",
             external_agent_home.join("projects").display(),
-            resources_root(codex_home).display()
+            resources_root(ava_home).display()
         ),
         cwd: None,
         details: Some(MigrationDetails {

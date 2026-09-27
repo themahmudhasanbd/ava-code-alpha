@@ -1,17 +1,17 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::MultiAgentMessages;
-use codex_protocol::openai_models::MultiAgentModeMessages;
-use codex_protocol::openai_models::MultiAgentRoleMessages;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::MultiAgentMessages;
+use ava_protocol::openai_models::MultiAgentModeMessages;
+use ava_protocol::openai_models::MultiAgentRoleMessages;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_sse_once;
@@ -19,7 +19,7 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -108,11 +108,11 @@ fn count_containing(texts: &[&str], target: &str) -> usize {
 }
 
 async fn submit_turn(
-    codex: &codex_core::CodexThread,
+    ava: &ava_core::AvaThread,
     prompt: &str,
     effort: Option<ReasoningEffort>,
 ) -> Result<()> {
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.to_string(),
@@ -124,7 +124,7 @@ async fn submit_turn(
             }),
         )
         .await?;
-    wait_for_event(codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     Ok(())
 }
 
@@ -138,13 +138,13 @@ async fn ultra_reasoning_uses_highest_non_ultra_and_proactive_mode() -> Result<(
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", add_ultra_reasoning)
         .with_config(configure_ultra)
         .build(&server)
         .await?;
 
-    submit_turn(&test.codex, "hello", /*effort*/ None).await?;
+    submit_turn(&test.ava-code, "hello", /*effort*/ None).await?;
 
     let request = response.single_request();
     assert_eq!(
@@ -183,7 +183,7 @@ async fn mode_hints_override_reasoning_effort(source: ModeHintSource) -> Result<
             .collect(),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", |model_info| {
             add_ultra_reasoning(model_info);
             set_multi_agent_mode(
@@ -200,8 +200,8 @@ async fn mode_hints_override_reasoning_effort(source: ModeHintSource) -> Result<
         })
         .build(&server)
         .await?;
-    submit_turn(&test.codex, "explicit", Some(ReasoningEffort::High)).await?;
-    submit_turn(&test.codex, "proactive", Some(ReasoningEffort::Ultra)).await?;
+    submit_turn(&test.ava-code, "explicit", Some(ReasoningEffort::High)).await?;
+    submit_turn(&test.ava-code, "proactive", Some(ReasoningEffort::Ultra)).await?;
 
     let requests = responses.requests();
     let first_input = requests[0].input();
@@ -247,7 +247,7 @@ async fn catalog_proactive_mode_is_ultra_only(
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", move |model_info| {
             add_ultra_reasoning(model_info);
             set_multi_agent_mode(
@@ -262,7 +262,7 @@ async fn catalog_proactive_mode_is_ultra_only(
         .build_with_auto_env(&server)
         .await?;
 
-    submit_turn(&test.codex, "hello", Some(effort)).await?;
+    submit_turn(&test.ava-code, "hello", Some(effort)).await?;
 
     let input = response.single_request().input();
     let texts = developer_texts(&input);
@@ -303,7 +303,7 @@ async fn model_switch_refreshes_catalog_role_and_mode(
             .collect(),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.2", |model_info| {
             add_ultra_reasoning(model_info);
             set_multi_agent_mode(
@@ -327,16 +327,16 @@ async fn model_switch_refreshes_catalog_role_and_mode(
         .with_config(configure_multi_agent_v2)
         .build_with_auto_env(&server)
         .await?;
-    submit_turn(&test.codex, "first model", Some(effort.clone())).await?;
+    submit_turn(&test.ava-code, "first model", Some(effort.clone())).await?;
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some("gpt-5.2".to_string()),
             ..Default::default()
         },
     )
     .await?;
-    submit_turn(&test.codex, "second model", Some(effort)).await?;
+    submit_turn(&test.ava-code, "second model", Some(effort)).await?;
 
     let requests = responses.requests();
     for (index, request) in requests.iter().enumerate() {
@@ -396,7 +396,7 @@ async fn empty_configured_mode_hint_emits_no_mode_message(effort: ReasoningEffor
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", |model_info| {
             add_ultra_reasoning(model_info);
             set_multi_agent_mode(
@@ -414,7 +414,7 @@ async fn empty_configured_mode_hint_emits_no_mode_message(effort: ReasoningEffor
         .build_with_auto_env(&server)
         .await?;
 
-    submit_turn(&test.codex, "hello", Some(effort)).await?;
+    submit_turn(&test.ava-code, "hello", Some(effort)).await?;
 
     let input = response.single_request().input();
     let texts = developer_texts(&input);
@@ -447,20 +447,20 @@ async fn changing_configured_mode_hint_to_empty_emits_no_update() -> Result<()> 
             .collect(),
     )
     .await;
-    let initial = test_codex()
+    let initial = test_ava()
         .with_config(configure_custom_mode_hint)
         .build(&server)
         .await?;
 
-    submit_turn(&initial.codex, "before resume", /*effort*/ None).await?;
+    submit_turn(&initial.ava-code, "before resume", /*effort*/ None).await?;
 
-    let mut resume_builder = test_codex().with_config(|config| {
+    let mut resume_builder = test_ava().with_config(|config| {
         configure_multi_agent_v2(config);
         config.multi_agent_v2.multi_agent_mode_hint_text = Some(String::new());
     });
     let resumed = resume_builder.restart(&server, &initial).await?;
     drop(initial);
-    submit_turn(&resumed.codex, "after resume", /*effort*/ None).await?;
+    submit_turn(&resumed.ava-code, "after resume", /*effort*/ None).await?;
 
     let requests = responses.requests();
     let first_input = requests[0].input();
@@ -496,7 +496,7 @@ async fn live_mode_change_appends_mode_without_reappending_usage_hint() -> Resul
             .collect(),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", add_ultra_reasoning)
         .with_config(|config| {
             configure_ultra(config);
@@ -511,8 +511,8 @@ async fn live_mode_change_appends_mode_without_reappending_usage_hint() -> Resul
         .clone()
         .expect("rollout path");
 
-    submit_turn(&test.codex, "proactive", /*effort*/ None).await?;
-    submit_turn(&test.codex, "explicit", Some(ReasoningEffort::High)).await?;
+    submit_turn(&test.ava-code, "proactive", /*effort*/ None).await?;
+    submit_turn(&test.ava-code, "explicit", Some(ReasoningEffort::High)).await?;
 
     let requests = responses.requests();
     let first_input = requests[0].input();
@@ -537,8 +537,8 @@ async fn live_mode_change_appends_mode_without_reappending_usage_hint() -> Resul
         ),
         (1, 1, 1),
     );
-    test.codex.ensure_rollout_materialized().await;
-    test.codex.flush_rollout().await?;
+    test.ava-code.ensure_rollout_materialized().await;
+    test.ava-code.flush_rollout().await?;
     let rollout_values = std::fs::read_to_string(rollout_path)?
         .lines()
         .map(serde_json::from_str::<Value>)
@@ -577,20 +577,20 @@ async fn leaving_ultra_after_cold_resume_emits_explicit_mode() -> Result<()> {
             .collect(),
     )
     .await;
-    let initial = test_codex()
+    let initial = test_ava()
         .with_model_info_override("gpt-5.4", add_ultra_reasoning)
         .with_config(configure_ultra)
         .build(&server)
         .await?;
 
-    submit_turn(&initial.codex, "before resume", /*effort*/ None).await?;
+    submit_turn(&initial.ava-code, "before resume", /*effort*/ None).await?;
 
-    let mut resume_builder = test_codex()
+    let mut resume_builder = test_ava()
         .with_model_info_override("gpt-5.4", add_ultra_reasoning)
         .with_config(configure_ultra);
     let resumed = resume_builder.restart(&server, &initial).await?;
     drop(initial);
-    submit_turn(&resumed.codex, "after resume", Some(ReasoningEffort::High)).await?;
+    submit_turn(&resumed.ava-code, "after resume", Some(ReasoningEffort::High)).await?;
 
     let requests = responses.requests();
     assert_eq!(
@@ -628,7 +628,7 @@ async fn ultra_on_multi_agent_v1_uses_highest_non_ultra_without_mode_instruction
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model_info_override("gpt-5.4", add_ultra_reasoning)
         .with_config(|config| {
             config.model_reasoning_effort = Some(ReasoningEffort::Ultra);
@@ -636,7 +636,7 @@ async fn ultra_on_multi_agent_v1_uses_highest_non_ultra_without_mode_instruction
         .build(&server)
         .await?;
 
-    submit_turn(&test.codex, "hello", /*effort*/ None).await?;
+    submit_turn(&test.ava-code, "hello", /*effort*/ None).await?;
 
     let request = response.single_request();
     assert_eq!(

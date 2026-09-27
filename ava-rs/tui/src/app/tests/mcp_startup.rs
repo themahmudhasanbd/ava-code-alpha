@@ -2,7 +2,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 
 fn configure_mcp_servers(app: &mut App) {
-    let config: codex_config::types::McpServerConfig =
+    let config: ava_config::types::McpServerConfig =
         toml::from_str::<toml::Value>("command = 'true'")
             .expect("test MCP config should parse")
             .try_into()
@@ -58,7 +58,7 @@ async fn subagent_mcp_startup_settles_while_cached_servers_remain_deferred() {
     ] {
         app.handle_app_server_event(
             &app_server,
-            codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+            ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
                 ServerNotification::McpServerStatusUpdated(McpServerStatusUpdatedNotification {
                     thread_id: Some(subagent_thread_id.to_string()),
                     name: name.to_string(),

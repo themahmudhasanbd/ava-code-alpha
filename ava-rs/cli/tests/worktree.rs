@@ -79,13 +79,13 @@ async fn rejected_start(
     env: &HashMap<String, String>,
     expected: &str,
 ) -> anyhow::Result<String> {
-    let spawned = codex_utils_pty::spawn_pty_process(
+    let spawned = ava_utils_pty::spawn_pty_process(
         &program.to_string_lossy(),
         args,
         cwd,
         env,
         /*arg0*/ &None,
-        codex_utils_pty::TerminalSize {
+        ava_utils_pty::TerminalSize {
             rows: 40,
             cols: 120,
         },
@@ -152,7 +152,7 @@ async fn worktree_start_and_fork(backend: &str) -> anyhow::Result<()> {
     let root = tempfile::Builder::new().tempdir_in("/tmp")?;
     #[cfg(not(unix))]
     let root = TempDir::new()?;
-    let root = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(root.path())?
+    let root = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(root.path())?
         .canonicalize()?
         .into_path_buf();
     let home = root.join("home");
@@ -162,9 +162,9 @@ async fn worktree_start_and_fork(backend: &str) -> anyhow::Result<()> {
         fs::create_dir(path)?;
     }
     // Forking without --cd must select the daemon using the resolved project, not this launcher.
-    fs::create_dir(launcher.join(".codex"))?;
+    fs::create_dir(launcher.join(".ava-code"))?;
     fs::write(
-        launcher.join(".codex/config.toml"),
+        launcher.join(".ava-code/config.toml"),
         "features.auth_elicitation = false\n",
     )?;
     fs::write(
@@ -172,9 +172,9 @@ async fn worktree_start_and_fork(backend: &str) -> anyhow::Result<()> {
         "committed destination instructions",
     )?;
     let server = MockServer::start().await;
-    fs::create_dir(source.join(".codex"))?;
+    fs::create_dir(source.join(".ava-code"))?;
     fs::write(
-        source.join(".codex/config.toml"),
+        source.join(".ava-code/config.toml"),
         "model = \"destination-model\"\nanalytics.enabled = false\ncli_auth_credentials_store = \"file\"\n",
     )?;
     git(&source, &["init", "--quiet"])?;
@@ -221,7 +221,7 @@ trust_level = "trusted"
         "uncommitted launcher instructions",
     )?;
     fs::write(
-        source.join(".codex/config.toml"),
+        source.join(".ava-code/config.toml"),
         "model = \"source-model\"\nanalytics.enabled = true\n",
     )?;
     app_test_support::write_chatgpt_auth(
@@ -231,22 +231,22 @@ trust_level = "trusted"
             .chatgpt_account_id("workspace-123")
             .chatgpt_user_id("user-123")
             .plan_type("enterprise"),
-        codex_config::types::AuthCredentialsStoreMode::File,
+        ava_config::types::AuthCredentialsStoreMode::File,
     )?;
-    let program = codex_utils_cargo_bin::cargo_bin("codex")?;
+    let program = ava_utils_cargo_bin::cargo_bin("ava")?;
     let mut env: HashMap<String, String> = std::env::vars().collect();
-    env.insert("CODEX_HOME".into(), home.display().to_string());
-    env.insert("CODEX_SQLITE_HOME".into(), home.display().to_string());
+    env.insert("AVA_HOME".into(), home.display().to_string());
+    env.insert("AVA_SQLITE_HOME".into(), home.display().to_string());
     env.insert("NO_PROXY".into(), "127.0.0.1,localhost".into());
     env.insert("no_proxy".into(), "127.0.0.1,localhost".into());
     env.insert("TERM".into(), "xterm-256color".into());
     env.insert("TERM_PROGRAM".into(), "unrecognized-terminal".into());
     env.insert("OTEL_METRIC_EXPORT_INTERVAL".into(), "100".into());
     for key in [
-        "CODEX_EXEC_SERVER_URL",
-        "CODEX_ACCESS_TOKEN",
+        "AVA_EXEC_SERVER_URL",
+        "AVA_ACCESS_TOKEN",
         "OPENAI_API_KEY",
-        "CODEX_API_KEY",
+        "AVA_API_KEY",
         "TMUX",
         "TMUX_PANE",
         "ZELLIJ",
@@ -265,7 +265,7 @@ trust_level = "trusted"
     let _daemon = if backend == "daemon" {
         let bin = home.join("packages/app-server-daemon/current/bin");
         fs::create_dir_all(&bin)?;
-        let managed = bin.join(if cfg!(windows) { "codex.exe" } else { "codex" });
+        let managed = bin.join(if cfg!(windows) { "ava.exe" } else { "ava" });
         fs::hard_link(&program, &managed).or_else(|_| fs::copy(&program, &managed).map(|_| ()))?;
         fs::create_dir(home.join("app-server-daemon"))?;
         fs::write(
@@ -302,7 +302,7 @@ trust_level = "trusted"
     ] {
         if auth_failure {
             fs::write(
-                source.join(".codex/config.toml"),
+                source.join(".ava-code/config.toml"),
                 "forced_login_method = \"api\"\n",
             )?;
             git(
@@ -315,7 +315,7 @@ trust_level = "trusted"
                     "require API login",
                 ],
             )?;
-            fs::write(source.join(".codex/config.toml"), "")?;
+            fs::write(source.join(".ava-code/config.toml"), "")?;
         }
         let (metric_tx, mut metric_rx) = tokio::sync::mpsc::unbounded_channel();
         Mock::given(wiremock::matchers::path("/metrics"))
@@ -356,7 +356,7 @@ trust_level = "trusted"
                         .to_owned();
                     let metadata = git(
                         Path::new(&checkout),
-                        &["rev-parse", "--git-path", "codex-thread.json"],
+                        &["rev-parse", "--git-path", "ava-thread.json"],
                     )?;
                     let metadata: Value =
                         serde_json::from_slice(&fs::read(Path::new(&checkout).join(metadata))?)?;
@@ -388,7 +388,7 @@ trust_level = "trusted"
             args.extend(["--cd".into(), source.display().to_string()]);
         }
         if explicit_cd {
-            args.extend(["--cd".into(), source.join(".codex").display().to_string()]);
+            args.extend(["--cd".into(), source.join(".ava-code").display().to_string()]);
         }
         if analytics {
             args.extend(["-c".into(), "analytics.enabled=true".into()]);
@@ -413,13 +413,13 @@ trust_level = "trusted"
             .await?;
             assert!(!home.join("worktrees").exists());
         }
-        let spawned = codex_utils_pty::spawn_pty_process(
+        let spawned = ava_utils_pty::spawn_pty_process(
             &program.to_string_lossy(),
             &args,
             &launcher,
             &env,
             /*arg0*/ &None,
-            codex_utils_pty::TerminalSize {
+            ava_utils_pty::TerminalSize {
                 rows: 40,
                 cols: 120,
             },
@@ -467,11 +467,11 @@ trust_level = "trusted"
                     .writer_sender()
                     .send(b"/rename managed-source\r".to_vec())
                     .await?;
-                let thread_id = codex_protocol::ThreadId::from_string(
+                let thread_id = ava_protocol::ThreadId::from_string(
                     metadata["ownerThreadId"].as_str().context("owner id")?,
                 )?;
                 loop {
-                    if codex_rollout::find_thread_name_by_id(&home, &thread_id)
+                    if ava_rollout::find_thread_name_by_id(&home, &thread_id)
                         .await?
                         .as_deref()
                         == Some("managed-source")
@@ -590,20 +590,20 @@ trust_level = "trusted"
             if backend == "embedded" {
                 let update = exported
                     .iter()
-                    .find(|metric| metric["name"] == "codex.daemon.update")
+                    .find(|metric| metric["name"] == "ava.daemon.update")
                     .context("handoff metric")?;
                 let update_point = &update["sum"]["dataPoints"][0];
                 assert_eq!(update_point["asInt"], 1);
             }
             let point = exported
                 .iter()
-                .filter(|metric| metric["name"] == "codex.tui.start")
+                .filter(|metric| metric["name"] == "ava.tui.start")
                 .flat_map(|metric| metric["sum"]["dataPoints"].as_array().into_iter().flatten())
                 .next()
-                .context("codex.tui.start data point")?;
+                .context("ava.tui.start data point")?;
             let tags = point["attributes"]
                 .as_array()
-                .context("codex.tui.start attributes")?
+                .context("ava.tui.start attributes")?
                 .iter()
                 .map(|attribute| {
                     Ok((
@@ -681,7 +681,7 @@ trust_level = "trusted"
             .collect::<Vec<_>>()
             .join("\n");
         if explicit_cd {
-            let expected = format!("{checkout}/.codex").replace('\\', "/");
+            let expected = format!("{checkout}/.ava-code").replace('\\', "/");
             assert!(context.replace('\\', "/").contains(&expected), "{context}");
         }
         assert!(
@@ -702,8 +702,8 @@ trust_level = "trusted"
         assert!(context.contains("managed cloud instructions"), "{context}");
         if previous.is_empty() {
             // A legacy summary still says launcher A, but persisted turns use checkout B.
-            let sqlite = codex_state::SqliteConfig::from_sqlite_home(
-                codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(&home)?,
+            let sqlite = ava_state::SqliteConfig::from_sqlite_home(
+                ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(&home)?,
             );
             let db = sqlite.open_read_write_pool(&sqlite.state_db_path()).await?;
             sqlx::query("UPDATE threads SET cwd = ? WHERE id = ?")
@@ -730,7 +730,7 @@ trust_level = "trusted"
             Mock::given(wiremock::matchers::path("/source/backend-api/wham/config/bundle"))
                 .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                     "config_toml": {"enterprise_managed": [{"id":"distrust", "name":"distrust",
-                        "contents": format!("[projects.{}]\ntrust_level = \"untrusted\"\n", serde_json::to_string(&codex_config::loader::project_trust_key(Path::new(&checkout)))?)}]}
+                        "contents": format!("[projects.{}]\ntrust_level = \"untrusted\"\n", serde_json::to_string(&ava_config::loader::project_trust_key(Path::new(&checkout)))?)}]}
                 }))).with_priority(/*priority*/ 1).mount(&server).await;
             let before = git(&source, &["worktree", "list", "--porcelain"])?;
             rejected_start(
@@ -766,7 +766,7 @@ trust_level = "trusted"
             Mock::given(wiremock::matchers::path("/source/backend-api/wham/config/bundle"))
                 .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                     "config_toml": {"enterprise_managed": [{"id":"distrust-source", "name":"distrust-source",
-                        "contents": format!("[projects.{}]\ntrust_level = \"untrusted\"\n", serde_json::to_string(&codex_config::loader::project_trust_key(&source.join(".codex")))?)}]}
+                        "contents": format!("[projects.{}]\ntrust_level = \"untrusted\"\n", serde_json::to_string(&ava_config::loader::project_trust_key(&source.join(".ava-code")))?)}]}
                 }))).mount(&server).await;
             let output = rejected_start(
                 &program,
@@ -776,7 +776,7 @@ trust_level = "trusted"
                     "worktrees".into(),
                     "--no-alt-screen".into(),
                     "--cd".into(),
-                    source.join(".codex").display().to_string(),
+                    source.join(".ava-code").display().to_string(),
                 ],
                 &launcher,
                 &env,
@@ -804,7 +804,7 @@ trust_level = "trusted"
             assert!(output.contains("The checkout was kept"), "{output}");
             let metadata = git(
                 Path::new(retained),
-                &["rev-parse", "--git-path", "codex-thread.json"],
+                &["rev-parse", "--git-path", "ava-thread.json"],
             )?;
             assert!(!Path::new(retained).join(metadata).exists());
             previous.push(retained.to_owned());
@@ -818,7 +818,7 @@ trust_level = "trusted"
         server.reset().await;
     }
     // Source loads its healthy uncommitted config, but the new checkout loads malformed HEAD.
-    fs::write(source.join(".codex/config.toml"), "not = [valid toml")?;
+    fs::write(source.join(".ava-code/config.toml"), "not = [valid toml")?;
     git(
         &source,
         &[
@@ -829,7 +829,7 @@ trust_level = "trusted"
             "invalid destination",
         ],
     )?;
-    fs::write(source.join(".codex/config.toml"), "")?;
+    fs::write(source.join(".ava-code/config.toml"), "")?;
     let before = git(&source, &["worktree", "list", "--porcelain"])?;
     let output = rejected_start(
         &program,

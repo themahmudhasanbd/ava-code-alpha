@@ -38,15 +38,15 @@ pub const PIPE_ACCESS_INBOUND: u32 = 0x0000_0001;
 pub const PIPE_ACCESS_OUTBOUND: u32 = 0x0000_0002;
 
 /// Resolve the installed runner for registered Core; otherwise use the legacy copy path.
-pub fn find_runner_exe(codex_home: &Path, log_dir: Option<&Path>) -> anyhow::Result<PathBuf> {
-    resolve_command_runner(codex_home, log_dir)
+pub fn find_runner_exe(ava_home: &Path, log_dir: Option<&Path>) -> anyhow::Result<PathBuf> {
+    resolve_command_runner(ava_home, log_dir)
 }
 
 /// Generates a unique named-pipe path used to communicate with the runner process.
 pub fn pipe_pair() -> (String, String) {
     let mut rng = SmallRng::from_entropy();
     let nonce: u128 = rng.r#gen();
-    let base = format!(r"\\.\pipe\codex-runner-{nonce:x}");
+    let base = format!(r"\\.\pipe\ava-runner-{nonce:x}");
     (format!("{base}-in"), format!("{base}-out"))
 }
 

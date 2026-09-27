@@ -2,10 +2,10 @@
 //! Keep configured mode distinct from the effective level unless policy pins it.
 
 use super::apply_requirement_constrained_value;
-use codex_config::ConstrainedWithSource;
-use codex_config::types::WindowsSandboxModeToml;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_sandboxing::SandboxType;
+use ava_config::ConstrainedWithSource;
+use ava_config::types::WindowsSandboxModeToml;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_sandboxing::SandboxType;
 
 #[derive(Debug, PartialEq)]
 pub struct PreparedWindowsSandboxConfig {

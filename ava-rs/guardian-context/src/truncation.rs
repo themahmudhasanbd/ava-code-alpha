@@ -3,7 +3,7 @@
 //! The existing XML omission marker is preserved, including returning the whole
 //! marker when a token budget is too small to contain it.
 
-use codex_protocol::protocol::TruncationPolicy;
+use ava_protocol::protocol::TruncationPolicy;
 
 /// Truncates text using Guardian's approximate token budget and omission marker.
 ///

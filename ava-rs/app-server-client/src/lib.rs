@@ -1,6 +1,6 @@
 //! Shared in-process app-server client facade for CLI surfaces.
 //!
-//! This crate wraps [`codex_app_server::in_process`] behind a single async API
+//! This crate wraps [`ava_app_server::in_process`] behind a single async API
 //! used by surfaces like TUI and exec. It centralizes:
 //!
 //! - Runtime startup and initialize-capabilities handshake.
@@ -11,7 +11,7 @@
 //! - Bounded graceful shutdown with abort fallback.
 //!
 //! The facade interposes a worker task between the caller and the underlying
-//! [`InProcessClientHandle`](codex_app_server::in_process::InProcessClientHandle),
+//! [`InProcessClientHandle`](ava_app_server::in_process::InProcessClientHandle),
 //! bridging async `mpsc` channels on both sides. Commands and the underlying
 //! runtime remain bounded; the local consumer event queue is unbounded so
 //! unread notifications cannot prevent request responses from being delivered.
@@ -27,34 +27,34 @@ use std::io::Result as IoResult;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub use codex_app_server::app_server_control_socket_path;
-pub use codex_app_server::in_process::DEFAULT_IN_PROCESS_CHANNEL_CAPACITY;
-pub use codex_app_server::in_process::InProcessServerEvent;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server::in_process::LogDbLayer;
-pub use codex_app_server::in_process::StateDbHandle;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientNotification;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::Result as JsonRpcResult;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::NoopThreadConfigLoader;
-use codex_core::config::Config;
-pub use codex_core::otel_init::build_provider as build_otel_provider;
-pub use codex_exec_server::EnvironmentManager;
-pub use codex_exec_server::ExecServerRuntimePaths;
-use codex_feedback::CodexFeedback;
-use codex_protocol::protocol::SessionSource;
-use codex_utils_absolute_path::AbsolutePathBuf;
+pub use ava_app_server::app_server_control_socket_path;
+pub use ava_app_server::in_process::DEFAULT_IN_PROCESS_CHANNEL_CAPACITY;
+pub use ava_app_server::in_process::InProcessServerEvent;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server::in_process::LogDbLayer;
+pub use ava_app_server::in_process::StateDbHandle;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientNotification;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::Result as JsonRpcResult;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::NoopThreadConfigLoader;
+use ava_core::config::Config;
+pub use ava_core::otel_init::build_provider as build_otel_provider;
+pub use ava_exec_server::EnvironmentManager;
+pub use ava_exec_server::ExecServerRuntimePaths;
+use ava_feedback::AvaFeedback;
+use ava_protocol::protocol::SessionSource;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::de::DeserializeOwned;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
@@ -70,14 +70,14 @@ pub use crate::remote::RemoteAppServerEndpoint;
 /// Transitional access to core-only embedded app-server types.
 ///
 /// New TUI behavior should prefer the app-server protocol methods. This
-/// module exists so clients can remove a direct `codex-core` dependency
+/// module exists so clients can remove a direct `ava-core` dependency
 /// while legacy startup/config paths are migrated to RPCs.
 pub mod legacy_core {
     pub mod config {
-        pub use codex_core::config::*;
+        pub use ava_core::config::*;
 
         pub mod edit {
-            pub use codex_core::config::edit::*;
+            pub use ava_core::config::edit::*;
         }
     }
 }
@@ -183,7 +183,7 @@ pub struct InProcessClientStartArgs {
     /// Preloaded cloud config bundle provider.
     pub cloud_config_bundle: CloudConfigBundleLoader,
     /// Feedback sink used by app-server/core telemetry and logs.
-    pub feedback: CodexFeedback,
+    pub feedback: AvaFeedback,
     /// SQLite tracing layer used to flush recently emitted logs before feedback upload.
     pub log_db: Option<LogDbLayer>,
     /// Process-wide SQLite state handle shared with the embedded app-server.
@@ -194,8 +194,8 @@ pub struct InProcessClientStartArgs {
     pub config_warnings: Vec<ConfigWarningNotification>,
     /// Session source recorded in app-server thread metadata.
     pub session_source: SessionSource,
-    /// Whether auth loading should honor the `CODEX_API_KEY` environment variable.
-    pub enable_codex_api_key_env: bool,
+    /// Whether auth loading should honor the `AVA_API_KEY` environment variable.
+    pub enable_ava_api_key_env: bool,
     /// Client name reported during initialize.
     pub client_name: String,
     /// Client version reported during initialize.
@@ -251,7 +251,7 @@ impl InProcessClientStartArgs {
             environment_manager: self.environment_manager,
             config_warnings: self.config_warnings,
             session_source: self.session_source,
-            enable_codex_api_key_env: self.enable_codex_api_key_env,
+            enable_ava_api_key_env: self.enable_ava_api_key_env,
             initialize,
             channel_capacity: self.channel_capacity,
         }
@@ -290,7 +290,7 @@ enum ClientCommand {
 ///
 /// This type owns a worker task that bridges between:
 /// - caller-facing async `mpsc` channels used by TUI/exec
-/// - [`codex_app_server::in_process::InProcessClientHandle`], which speaks to
+/// - [`ava_app_server::in_process::InProcessClientHandle`], which speaks to
 ///   the embedded `MessageProcessor`
 ///
 /// The facade intentionally preserves the server's request/notification/event
@@ -327,7 +327,7 @@ impl InProcessAppServerClient {
     pub async fn start(args: InProcessClientStartArgs) -> IoResult<Self> {
         let channel_capacity = args.channel_capacity.max(1);
         let mut handle =
-            codex_app_server::in_process::start(args.into_runtime_start_args()).await?;
+            ava_app_server::in_process::start(args.into_runtime_start_args()).await?;
         let request_sender = handle.sender();
         let (command_tx, mut command_rx) = mpsc::channel::<ClientCommand>(channel_capacity);
         // e9996ec62a preserved transcript events by awaiting a bounded queue, but that can
@@ -706,12 +706,12 @@ impl AppServerClient {
         }
     }
 
-    pub fn codex_home(&self, local_codex_home: &AbsolutePathBuf) -> Option<AppServerPath> {
+    pub fn ava_home(&self, local_ava_home: &AbsolutePathBuf) -> Option<AppServerPath> {
         match self {
             Self::InProcess(_) => Some(AppServerPath::from_app_server(
-                local_codex_home.display().to_string(),
+                local_ava_home.display().to_string(),
             )),
-            Self::Remote(client) => client.codex_home().map(AppServerPath::from_app_server),
+            Self::Remote(client) => client.ava_home().map(AppServerPath::from_app_server),
         }
     }
 
@@ -786,25 +786,25 @@ impl AppServerClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_app_server_protocol::AccountUpdatedNotification;
-    use codex_app_server_protocol::ConfigRequirementsReadResponse;
-    use codex_app_server_protocol::GetAccountResponse;
-    use codex_app_server_protocol::JSONRPCMessage;
-    use codex_app_server_protocol::JSONRPCRequest;
-    use codex_app_server_protocol::JSONRPCResponse;
-    use codex_app_server_protocol::ServerNotification;
-    use codex_app_server_protocol::SessionSource as ApiSessionSource;
-    use codex_app_server_protocol::ThreadSettingsUpdateParams;
-    use codex_app_server_protocol::ThreadSettingsUpdateResponse;
-    use codex_app_server_protocol::ThreadStartParams;
-    use codex_app_server_protocol::ThreadStartResponse;
-    use codex_app_server_protocol::ToolRequestUserInputParams;
-    use codex_app_server_protocol::ToolRequestUserInputQuestion;
-    use codex_core::config::ConfigBuilder;
-    use codex_core::init_state_db;
-    use codex_protocol::config_types::Personality;
-    use codex_uds::UnixListener;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_app_server_protocol::AccountUpdatedNotification;
+    use ava_app_server_protocol::ConfigRequirementsReadResponse;
+    use ava_app_server_protocol::GetAccountResponse;
+    use ava_app_server_protocol::JSONRPCMessage;
+    use ava_app_server_protocol::JSONRPCRequest;
+    use ava_app_server_protocol::JSONRPCResponse;
+    use ava_app_server_protocol::ServerNotification;
+    use ava_app_server_protocol::SessionSource as ApiSessionSource;
+    use ava_app_server_protocol::ThreadSettingsUpdateParams;
+    use ava_app_server_protocol::ThreadSettingsUpdateResponse;
+    use ava_app_server_protocol::ThreadStartParams;
+    use ava_app_server_protocol::ThreadStartResponse;
+    use ava_app_server_protocol::ToolRequestUserInputParams;
+    use ava_app_server_protocol::ToolRequestUserInputQuestion;
+    use ava_core::config::ConfigBuilder;
+    use ava_core::init_state_db;
+    use ava_protocol::config_types::Personality;
+    use ava_uds::UnixListener;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use futures::SinkExt;
     use futures::StreamExt;
     use pretty_assertions::assert_eq;
@@ -830,15 +830,15 @@ mod tests {
         }
     }
 
-    async fn build_test_config_for_codex_home(codex_home: &Path) -> Config {
+    async fn build_test_config_for_ava_home(ava_home: &Path) -> Config {
         match ConfigBuilder::default()
-            .codex_home(codex_home.to_path_buf())
+            .ava_home(ava_home.to_path_buf())
             .build()
             .await
         {
             Ok(config) => config,
-            Err(_) => Config::load_default_with_cli_overrides_for_codex_home(
-                codex_home.to_path_buf(),
+            Err(_) => Config::load_default_with_cli_overrides_for_ava_home(
+                ava_home.to_path_buf(),
                 Vec::new(),
             )
             .await
@@ -847,7 +847,7 @@ mod tests {
     }
 
     struct TestClient {
-        _codex_home: TempDir,
+        _ava_home: TempDir,
         client: InProcessAppServerClient,
     }
 
@@ -869,8 +869,8 @@ mod tests {
         session_source: SessionSource,
         channel_capacity: usize,
     ) -> TestClient {
-        let codex_home = TempDir::new().expect("temp dir");
-        let config = Arc::new(build_test_config_for_codex_home(codex_home.path()).await);
+        let ava_home = TempDir::new().expect("temp dir");
+        let config = Arc::new(build_test_config_for_ava_home(ava_home.path()).await);
         let state_db = init_state_db(config.as_ref())
             .await
             .expect("state db should initialize for in-process test");
@@ -881,14 +881,14 @@ mod tests {
             loader_overrides: LoaderOverrides::default(),
             strict_config: false,
             cloud_config_bundle: CloudConfigBundleLoader::default(),
-            feedback: CodexFeedback::new(),
+            feedback: AvaFeedback::new(),
             log_db: None,
             state_db: Some(state_db),
             environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
             config_warnings: Vec::new(),
             session_source,
-            enable_codex_api_key_env: false,
-            client_name: "codex-app-server-client-test".to_string(),
+            enable_ava_api_key_env: false,
+            client_name: "ava-app-server-client-test".to_string(),
             client_version: "0.0.0-test".to_string(),
             experimental_api: true,
             mcp_server_openai_form_elicitation: false,
@@ -899,7 +899,7 @@ mod tests {
         .expect("in-process app-server client should start");
 
         TestClient {
-            _codex_home: codex_home,
+            _ava_home: ava_home,
             client,
         }
     }
@@ -963,8 +963,8 @@ mod tests {
         expect_remote_initialize_with_metadata(
             websocket,
             serde_json::json!({
-                "userAgent": "codex_cli_rs/9.8.7-test (Test OS; x86_64) rust",
-                "codexHome": "/server/.codex",
+                "userAgent": "ava_cli_rs/9.8.7-test (Test OS; x86_64) rust",
+                "avaHome": "/server/.ava-code",
             }),
         )
         .await;
@@ -1039,7 +1039,7 @@ mod tests {
 
     fn command_execution_output_delta_notification(delta: &str) -> ServerNotification {
         ServerNotification::CommandExecutionOutputDelta(
-            codex_app_server_protocol::CommandExecutionOutputDeltaNotification {
+            ava_app_server_protocol::CommandExecutionOutputDeltaNotification {
                 thread_id: "thread".to_string(),
                 turn_id: "turn".to_string(),
                 item_id: "item".to_string(),
@@ -1050,7 +1050,7 @@ mod tests {
 
     fn agent_message_delta_notification(delta: &str) -> ServerNotification {
         ServerNotification::AgentMessageDelta(
-            codex_app_server_protocol::AgentMessageDeltaNotification {
+            ava_app_server_protocol::AgentMessageDeltaNotification {
                 thread_id: "thread".to_string(),
                 turn_id: "turn".to_string(),
                 item_id: "item".to_string(),
@@ -1060,11 +1060,11 @@ mod tests {
     }
 
     fn item_completed_notification(text: &str) -> ServerNotification {
-        ServerNotification::ItemCompleted(codex_app_server_protocol::ItemCompletedNotification {
+        ServerNotification::ItemCompleted(ava_app_server_protocol::ItemCompletedNotification {
             thread_id: "thread".to_string(),
             turn_id: "turn".to_string(),
             completed_at_ms: 0,
-            item: codex_app_server_protocol::ThreadItem::AgentMessage {
+            item: ava_app_server_protocol::ThreadItem::AgentMessage {
                 id: "item".to_string(),
                 text: text.to_string(),
                 phase: None,
@@ -1076,13 +1076,13 @@ mod tests {
     }
 
     fn turn_completed_notification() -> ServerNotification {
-        ServerNotification::TurnCompleted(codex_app_server_protocol::TurnCompletedNotification {
+        ServerNotification::TurnCompleted(ava_app_server_protocol::TurnCompletedNotification {
             thread_id: "thread".to_string(),
-            turn: codex_app_server_protocol::Turn {
+            turn: ava_app_server_protocol::Turn {
                 id: "turn".to_string(),
-                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                items_view: ava_app_server_protocol::TurnItemsView::Full,
                 items: Vec::new(),
-                status: codex_app_server_protocol::TurnStatus::Completed,
+                status: ava_app_server_protocol::TurnStatus::Completed,
                 error: None,
                 started_at: None,
                 completed_at: Some(0),
@@ -1097,7 +1097,7 @@ mod tests {
                 websocket_url,
                 auth_token: None,
             },
-            client_name: "codex-app-server-client-test".to_string(),
+            client_name: "ava-app-server-client-test".to_string(),
             client_version: "0.0.0-test".to_string(),
             experimental_api: true,
             mcp_server_openai_form_elicitation: false,
@@ -1122,7 +1122,7 @@ mod tests {
     #[tokio::test]
     async fn typed_request_roundtrip_works() {
         let TestClient {
-            _codex_home,
+            _ava_home,
             client,
         } = start_test_client(SessionSource::Exec).await;
         let client = AppServerClient::InProcess(client);
@@ -1146,7 +1146,7 @@ mod tests {
         let err = client
             .request_typed::<ConfigRequirementsReadResponse>(ClientRequest::ThreadRead {
                 request_id: RequestId::Integer(99),
-                params: codex_app_server_protocol::ThreadReadParams {
+                params: ava_app_server_protocol::ThreadReadParams {
                     thread_id: "missing-thread".to_string(),
                     include_turns: false,
                 },
@@ -1197,10 +1197,10 @@ mod tests {
             .await
             .expect("thread/start should succeed");
         let read = client
-            .request_typed::<codex_app_server_protocol::ThreadReadResponse>(
+            .request_typed::<ava_app_server_protocol::ThreadReadResponse>(
                 ClientRequest::ThreadRead {
                     request_id: RequestId::Integer(4),
-                    params: codex_app_server_protocol::ThreadReadParams {
+                    params: ava_app_server_protocol::ThreadReadParams {
                         thread_id: response.thread.id.clone(),
                         include_turns: false,
                     },
@@ -1370,11 +1370,11 @@ mod tests {
             .expect("remote client should connect");
 
         assert_eq!(client.server_version(), Some("9.8.7-test"));
-        assert_eq!(client.codex_home(), Some("/server/.codex"));
+        assert_eq!(client.ava_home(), Some("/server/.ava-code"));
         let response: GetAccountResponse = client
             .request_typed(ClientRequest::GetAccount {
                 request_id: RequestId::Integer(1),
-                params: codex_app_server_protocol::GetAccountParams {
+                params: ava_app_server_protocol::GetAccountParams {
                     refresh_token: false,
                 },
             })
@@ -1388,7 +1388,7 @@ mod tests {
     #[tokio::test]
     async fn remote_unix_socket_typed_request_roundtrip_works() {
         let socket_dir = TempDir::new().expect("socket dir");
-        let socket_path = AbsolutePathBuf::from_absolute_path(socket_dir.path().join("codex.sock"))
+        let socket_path = AbsolutePathBuf::from_absolute_path(socket_dir.path().join("ava.sock"))
             .expect("socket path should resolve");
         let mut listener = UnixListener::bind(socket_path.as_path())
             .await
@@ -1421,7 +1421,7 @@ mod tests {
         });
         let client = RemoteAppServerClient::connect(RemoteAppServerConnectArgs {
             endpoint: RemoteAppServerEndpoint::UnixSocket { socket_path },
-            client_name: "codex-app-server-client-test".to_string(),
+            client_name: "ava-app-server-client-test".to_string(),
             client_version: "0.0.0-test".to_string(),
             experimental_api: true,
             mcp_server_openai_form_elicitation: false,
@@ -1434,7 +1434,7 @@ mod tests {
         let response: GetAccountResponse = client
             .request_typed(ClientRequest::GetAccount {
                 request_id: RequestId::Integer(1),
-                params: codex_app_server_protocol::GetAccountParams {
+                params: ava_app_server_protocol::GetAccountParams {
                     refresh_token: false,
                 },
             })
@@ -1477,7 +1477,7 @@ mod tests {
         let response: GetAccountResponse = client
             .request_typed(ClientRequest::GetAccount {
                 request_id: RequestId::Integer(1),
-                params: codex_app_server_protocol::GetAccountParams {
+                params: ava_app_server_protocol::GetAccountParams {
                     refresh_token: false,
                 },
             })
@@ -1511,7 +1511,7 @@ mod tests {
                 websocket_url,
                 auth_token: Some(auth_token),
             },
-            client_name: "codex-app-server-client-test".to_string(),
+            client_name: "ava-app-server-client-test".to_string(),
             client_version: "0.0.0-test".to_string(),
             experimental_api: true,
             mcp_server_openai_form_elicitation: false,
@@ -1531,7 +1531,7 @@ mod tests {
                 websocket_url: "ws://example.com:4500".to_string(),
                 auth_token: Some("remote-bearer-token".to_string()),
             },
-            client_name: "codex-app-server-client-test".to_string(),
+            client_name: "ava-app-server-client-test".to_string(),
             client_version: "0.0.0-test".to_string(),
             experimental_api: true,
             mcp_server_openai_form_elicitation: false,
@@ -1611,7 +1611,7 @@ mod tests {
             first_request_handle
                 .request_typed::<GetAccountResponse>(ClientRequest::GetAccount {
                     request_id: RequestId::Integer(1),
-                    params: codex_app_server_protocol::GetAccountParams {
+                    params: ava_app_server_protocol::GetAccountParams {
                         refresh_token: false,
                     },
                 })
@@ -1626,7 +1626,7 @@ mod tests {
         let second_err = second_request_handle
             .request_typed::<GetAccountResponse>(ClientRequest::GetAccount {
                 request_id: RequestId::Integer(1),
-                params: codex_app_server_protocol::GetAccountParams {
+                params: ava_app_server_protocol::GetAccountParams {
                     refresh_token: false,
                 },
             })
@@ -1762,7 +1762,7 @@ mod tests {
                     ServerNotification::ItemCompleted(notification)
                         if matches!(
                             &notification.item,
-                            codex_app_server_protocol::ThreadItem::AgentMessage { text, .. }
+                            ava_app_server_protocol::ThreadItem::AgentMessage { text, .. }
                                 if text == "hello"
                         ) =>
                     {
@@ -1770,7 +1770,7 @@ mod tests {
                     }
                     ServerNotification::TurnCompleted(notification)
                         if notification.turn.status
-                            == codex_app_server_protocol::TurnStatus::Completed =>
+                            == ava_app_server_protocol::TurnStatus::Completed =>
                     {
                         transcript_event_names.push("turn_completed");
                     }
@@ -2044,7 +2044,7 @@ mod tests {
                 Some(
                     ExecServerRuntimePaths::new(
                         std::env::current_exe().expect("current exe"),
-                        /*codex_linux_sandbox_exe*/ None,
+                        /*ava_linux_sandbox_exe*/ None,
                     )
                     .expect("runtime paths"),
                 ),
@@ -2059,14 +2059,14 @@ mod tests {
             loader_overrides: LoaderOverrides::default(),
             strict_config: false,
             cloud_config_bundle: CloudConfigBundleLoader::default(),
-            feedback: CodexFeedback::new(),
+            feedback: AvaFeedback::new(),
             log_db: None,
             state_db: None,
             environment_manager: environment_manager.clone(),
             config_warnings: Vec::new(),
             session_source: SessionSource::Exec,
-            enable_codex_api_key_env: false,
-            client_name: "codex-app-server-client-test".to_string(),
+            enable_ava_api_key_env: false,
+            client_name: "ava-app-server-client-test".to_string(),
             client_version: "0.0.0-test".to_string(),
             experimental_api: true,
             mcp_server_openai_form_elicitation: true,

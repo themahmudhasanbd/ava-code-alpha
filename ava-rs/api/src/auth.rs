@@ -1,5 +1,5 @@
-use codex_client::Request;
-use codex_client::TransportError;
+use ava_client::Request;
+use ava_client::TransportError;
 use http::HeaderMap;
 use std::future::Future;
 use std::pin::Pin;

@@ -1,14 +1,14 @@
 //! Explicit Unix-socket grants preserve managed-proxy network isolation.
 
 use super::*;
-use codex_network_proxy::ConfigReloader;
-use codex_network_proxy::ConfigReloaderFuture;
-use codex_network_proxy::ConfigState;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::NetworkProxyConfig;
-use codex_network_proxy::NetworkProxyConstraints;
-use codex_network_proxy::NetworkProxyState;
-use codex_network_proxy::build_config_state;
+use ava_network_proxy::ConfigReloader;
+use ava_network_proxy::ConfigReloaderFuture;
+use ava_network_proxy::ConfigState;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::NetworkProxyConstraints;
+use ava_network_proxy::NetworkProxyState;
+use ava_network_proxy::build_config_state;
 use pretty_assertions::assert_eq;
 use std::os::unix::net::UnixListener;
 use std::os::unix::net::UnixStream;
@@ -143,7 +143,7 @@ for family in (socket.AF_NETLINK, getattr(socket, 'AF_VSOCK', 40)):
         let state = build_config_state(
             config,
             NetworkProxyConstraints::default(),
-            codex_network_proxy::Platform::native(),
+            ava_network_proxy::Platform::native(),
         )
         .expect("valid managed network configuration");
         let network = NetworkProxy::builder()
@@ -151,14 +151,14 @@ for family in (socket.AF_NETLINK, getattr(socket, 'AF_VSOCK', 40)):
                 state.clone(),
                 Arc::new(TestConfigReloader(state)),
             )))
-            .managed_by_codex(/*managed_by_codex*/ false)
+            .managed_by_ava(/*managed_by_ava*/ false)
             .build()
             .await
             .expect("build managed network proxy");
         let prepared = network
             .prepare_for_optional_environment(env, /*environment_id*/ None)
             .expect("prepare managed network policy");
-        let mut command = Command::new(env!("CARGO_BIN_EXE_codex-linux-sandbox"));
+        let mut command = Command::new(env!("CARGO_BIN_EXE_ava-linux-sandbox"));
         command
             .arg("--sandbox-policy-cwd")
             .arg(&cwd)

@@ -11,42 +11,42 @@ use crate::tools::sandboxing::SandboxAttempt;
 use crate::tools::sandboxing::ToolCtx;
 use crate::tools::sandboxing::ToolError;
 use crate::tools::sandboxing::unsandboxed_execution_allowed;
-use codex_execpolicy::Decision;
-use codex_execpolicy::Evaluation;
-use codex_execpolicy::MatchOptions;
-use codex_execpolicy::Policy;
-use codex_execpolicy::RuleMatch;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::error::CodexErr;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::GuardianCommandSource;
-use codex_protocol::protocol::NetworkPolicyRuleAction;
-use codex_protocol::protocol::ReviewDecision;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxTransformRequest;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::SandboxablePreference;
-use codex_shell_command::bash::parse_shell_lc_plain_commands;
-use codex_shell_escalation::EscalateServer;
-use codex_shell_escalation::EscalationDecision;
-use codex_shell_escalation::EscalationExecution;
-use codex_shell_escalation::EscalationPermissions;
-use codex_shell_escalation::EscalationPolicy;
-use codex_shell_escalation::EscalationPolicyFuture;
-use codex_shell_escalation::EscalationSession;
-use codex_shell_escalation::ExecResult;
-use codex_shell_escalation::PreparedExec;
-use codex_shell_escalation::ResolvedPermissionProfile;
-use codex_shell_escalation::ShellCommandExecutor;
-use codex_shell_escalation::ShellCommandExecutorFuture;
-use codex_shell_escalation::Stopwatch;
-use codex_tools::ToolName;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_execpolicy::Decision;
+use ava_execpolicy::Evaluation;
+use ava_execpolicy::MatchOptions;
+use ava_execpolicy::Policy;
+use ava_execpolicy::RuleMatch;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::error::AvaErr;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::GuardianCommandSource;
+use ava_protocol::protocol::NetworkPolicyRuleAction;
+use ava_protocol::protocol::ReviewDecision;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxTransformRequest;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::SandboxablePreference;
+use ava_shell_command::bash::parse_shell_lc_plain_commands;
+use ava_shell_escalation::EscalateServer;
+use ava_shell_escalation::EscalationDecision;
+use ava_shell_escalation::EscalationExecution;
+use ava_shell_escalation::EscalationPermissions;
+use ava_shell_escalation::EscalationPolicy;
+use ava_shell_escalation::EscalationPolicyFuture;
+use ava_shell_escalation::EscalationSession;
+use ava_shell_escalation::ExecResult;
+use ava_shell_escalation::PreparedExec;
+use ava_shell_escalation::ResolvedPermissionProfile;
+use ava_shell_escalation::ShellCommandExecutor;
+use ava_shell_escalation::ShellCommandExecutorFuture;
+use ava_shell_escalation::Stopwatch;
+use ava_tools::ToolName;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::io;
 use std::path::PathBuf;
@@ -141,7 +141,7 @@ pub(crate) async fn prepare_unified_exec_zsh_fork(
         arg0: exec_request.arg0.clone(),
         sandbox_policy_cwd,
         windows_sandbox_workspace_roots: exec_request.windows_sandbox_workspace_roots.clone(),
-        codex_linux_sandbox_exe: ctx.step_context.turn.config.codex_linux_sandbox_exe.clone(),
+        ava_linux_sandbox_exe: ctx.step_context.turn.config.ava_linux_sandbox_exe.clone(),
         use_legacy_landlock: req.turn_environment.config().use_legacy_landlock,
     };
     let escalation_policy = CoreShellActionProvider {
@@ -313,7 +313,7 @@ impl CoreShellActionProvider {
         {
             Ok(decision) => Ok(decision),
             Err(ToolError::Rejected(rejection)) => Ok(ReviewDecision::denied(rejection)),
-            Err(ToolError::Codex(err)) => Err(err.into()),
+            Err(ToolError::Ava(err)) => Err(err.into()),
         }
     }
 
@@ -577,13 +577,13 @@ struct CoreShellCommandExecutor {
     permission_profile: PermissionProfile,
     sandbox: SandboxType,
     env: HashMap<String, String>,
-    network: Option<codex_network_proxy::NetworkProxy>,
+    network: Option<ava_network_proxy::NetworkProxy>,
     network_environment_id: Option<String>,
     windows_sandbox_level: WindowsSandboxLevel,
     arg0: Option<String>,
     sandbox_policy_cwd: AbsolutePathBuf,
     windows_sandbox_workspace_roots: Vec<AbsolutePathBuf>,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     use_legacy_landlock: bool,
 }
 
@@ -636,7 +636,7 @@ impl CoreShellCommandExecutor {
         let mut exec_env = self.env.clone();
         // `env_overlay` comes from `EscalationSession::env()`, so merge only the
         // wrapper/socket variables into the base shell environment.
-        for var in ["CODEX_ESCALATE_SOCKET", "EXEC_WRAPPER"] {
+        for var in ["AVA_ESCALATE_SOCKET", "EXEC_WRAPPER"] {
             if let Some(value) = env_overlay.get(var) {
                 exec_env.insert(var.to_string(), value.clone());
             }
@@ -792,7 +792,7 @@ impl CoreShellCommandExecutor {
             environment_id: self.network_environment_id.as_deref(),
             network: self.network.as_ref(),
             sandbox_policy_cwd: &sandbox_policy_cwd,
-            sandbox_exe: self.codex_linux_sandbox_exe.as_deref(),
+            sandbox_exe: self.ava_linux_sandbox_exe.as_deref(),
             use_legacy_landlock: self.use_legacy_landlock,
             windows_sandbox_level: self.windows_sandbox_level,
         })?;
@@ -810,7 +810,7 @@ impl CoreShellCommandExecutor {
                 .map_err(|err| {
                     let environment_id =
                         self.network_environment_id.as_deref().unwrap_or("default");
-                    CodexErr::Io(io::Error::other(format!(
+                    AvaErr::Io(io::Error::other(format!(
                         "failed to prepare network proxy for environment `{environment_id}`: {err}"
                     )))
                 })?;

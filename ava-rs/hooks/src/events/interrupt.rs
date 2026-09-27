@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::HookCompletedEvent;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookOutputEntry;
-use codex_protocol::protocol::HookOutputEntryKind;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookRunSummary;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::HookCompletedEvent;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookOutputEntry;
+use ava_protocol::protocol::HookOutputEntryKind;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookRunSummary;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde_json::Map;
 use serde_json::Value;
 

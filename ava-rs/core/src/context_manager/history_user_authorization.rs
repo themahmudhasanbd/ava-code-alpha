@@ -9,11 +9,11 @@ use super::ContextManager;
 use crate::context::GuardianContextMode;
 use crate::guardian::GUARDIAN_MAX_ROOT_MESSAGE_TOKENS;
 use crate::guardian::guardian_truncate_text;
-use codex_history::CodexHarnessMetadata;
-use codex_history::RetainedContext;
-use codex_history::RetainedUserMessage;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
+use ava_history::AvaHarnessMetadata;
+use ava_history::RetainedContext;
+use ava_history::RetainedUserMessage;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
 
 /// Checkpoint items may have been shortened while preserving their original metadata.
 pub(super) enum UserMessageSource {
@@ -48,7 +48,7 @@ impl ContextManager {
     pub(super) fn record_user_authorization(
         &mut self,
         item: &ResponseItem,
-        metadata: Option<&CodexHarnessMetadata>,
+        metadata: Option<&AvaHarnessMetadata>,
         source: UserMessageSource,
     ) {
         if !crate::context::is_user_authorization_message(item) {

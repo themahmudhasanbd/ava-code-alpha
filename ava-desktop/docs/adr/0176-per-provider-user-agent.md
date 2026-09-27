@@ -9,7 +9,7 @@
 
 Some gateways and vendor subscriptions inspect `User-Agent`. pi-ai stamps
 `pi (<platform> …)`, Anthropic OAuth inference sends `claude-cli/<version>`,
-OpenCode Go sends `pi-desktop/<APP_VERSION>`, and Codex overwrites User-Agent
+OpenCode Go sends `pi-desktop/<APP_VERSION>`, and Ava overwrites User-Agent
 after extra headers. Settings had no way to set a per-row value. The provider
 schema listed a `headers` map that was never implemented.
 
@@ -23,7 +23,7 @@ an optional `userAgent` in `config_json.userAgent`.
   HTTP: session turns, builtin subagents, prompt enhancement, plugin
   one-shots, `/models` discovery (including an unsaved form value), connection
   tests, and OAuth token refresh.
-- A fetch wrapper is the last writer so Codex and the Anthropic SDK cannot
+- A fetch wrapper is the last writer so Ava and the Anthropic SDK cannot
   overwrite it. The same value is also placed on pi-ai stream-option headers
   so OpenCode's caller-wins rule stays true.
 - Update with `""` clears the override. Max 256 bytes; CR/LF are rejected.

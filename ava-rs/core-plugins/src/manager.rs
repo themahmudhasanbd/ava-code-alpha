@@ -20,7 +20,7 @@ use crate::loaded_cache_metrics;
 use crate::loaded_cache_metrics::RequestOutcome;
 use crate::loader::PluginHookLoadOutcome;
 use crate::loader::TargetCuratedMarketplace;
-use crate::loader::configured_curated_plugin_ids_from_codex_home;
+use crate::loader::configured_curated_plugin_ids_from_ava_home;
 use crate::loader::curated_plugin_cache_version;
 use crate::loader::load_plugin_apps_from_manifest;
 use crate::loader::load_plugin_hooks;
@@ -87,41 +87,41 @@ use crate::store::PluginStore;
 use crate::store::PluginStoreError;
 use crate::store::error_context_sub_error_type;
 use crate::tool_suggest_metadata::ToolSuggestMetadataCache;
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::PluginInstallSource;
-use codex_config::ConfigLayerStack;
-use codex_config::SkillConfigRules;
-use codex_config::clear_user_plugin;
-use codex_config::set_user_plugin_enabled;
-use codex_config::skill_config_rules_from_stack;
-use codex_config::types::PluginConfig;
-use codex_config::types::ToolSuggestDisabledTool;
-use codex_config::types::ToolSuggestDiscoverableType;
-use codex_connectors::ConnectorSnapshot;
-use codex_connectors::PluginConnectorSource;
-use codex_hooks::plugin_hook_declarations;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_plugin::AppConnectorId;
-use codex_plugin::PluginCapabilitySummary;
-use codex_plugin::PluginId;
-use codex_plugin::PluginIdError;
-use codex_plugin::PluginTelemetryMetadata;
-use codex_plugin::app_connector_ids_from_declarations;
-use codex_plugin::prompt_safe_plugin_description;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::Product;
-use codex_skills::SkillMetadata;
-use codex_skills::SkillRootLoader;
-use codex_skills::SkillRootSnapshots;
-use codex_tools::DiscoverablePluginInfo;
-use codex_tools::DiscoverableTool;
-use codex_tools::filter_request_plugin_install_discoverable_tools_for_client;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::PluginInstallSource;
+use ava_config::ConfigLayerStack;
+use ava_config::SkillConfigRules;
+use ava_config::clear_user_plugin;
+use ava_config::set_user_plugin_enabled;
+use ava_config::skill_config_rules_from_stack;
+use ava_config::types::PluginConfig;
+use ava_config::types::ToolSuggestDisabledTool;
+use ava_config::types::ToolSuggestDiscoverableType;
+use ava_connectors::ConnectorSnapshot;
+use ava_connectors::PluginConnectorSource;
+use ava_hooks::plugin_hook_declarations;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_plugin::AppConnectorId;
+use ava_plugin::PluginCapabilitySummary;
+use ava_plugin::PluginId;
+use ava_plugin::PluginIdError;
+use ava_plugin::PluginTelemetryMetadata;
+use ava_plugin::app_connector_ids_from_declarations;
+use ava_plugin::prompt_safe_plugin_description;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::Product;
+use ava_skills::SkillMetadata;
+use ava_skills::SkillRootLoader;
+use ava_skills::SkillRootSnapshots;
+use ava_tools::DiscoverablePluginInfo;
+use ava_tools::DiscoverableTool;
+use ava_tools::filter_request_plugin_install_discoverable_tools_for_client;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -199,7 +199,7 @@ pub struct EffectivePluginsChange {
 pub struct RecommendedPluginCandidatesInput<'a> {
     pub plugins_config: &'a PluginsConfigInput,
     pub loaded_plugins: &'a PluginLoadOutcome,
-    pub auth: Option<&'a CodexAuth>,
+    pub auth: Option<&'a AvaAuth>,
     pub disabled_tools: &'a [ToolSuggestDisabledTool],
     pub app_server_client_name: Option<&'a str>,
 }
@@ -233,12 +233,12 @@ pub(crate) struct RemoteInstalledPluginsAuthIdentity {
 }
 
 impl RemoteInstalledPluginsAuthIdentity {
-    pub(crate) fn from_auth(auth: Option<&CodexAuth>) -> Self {
+    pub(crate) fn from_auth(auth: Option<&AvaAuth>) -> Self {
         Self {
-            auth_mode: auth.map(CodexAuth::api_auth_mode),
-            account_id: auth.and_then(CodexAuth::get_account_id),
-            chatgpt_user_id: auth.and_then(CodexAuth::get_chatgpt_user_id),
-            is_workspace_account: auth.map(CodexAuth::is_workspace_account),
+            auth_mode: auth.map(AvaAuth::api_auth_mode),
+            account_id: auth.and_then(AvaAuth::get_account_id),
+            chatgpt_user_id: auth.and_then(AvaAuth::get_chatgpt_user_id),
+            is_workspace_account: auth.map(AvaAuth::is_workspace_account),
         }
     }
 }
@@ -285,7 +285,7 @@ impl Drop for RemoteInstalledPluginsReconciliationGuard<'_> {
 struct RemoteInstalledPluginsCacheRefreshRequest {
     generation: u64,
     service_config: RemotePluginServiceConfig,
-    auth: Option<CodexAuth>,
+    auth: Option<AvaAuth>,
     notify: RemoteInstalledPluginsCacheRefreshNotify,
     // App-server attaches side effects such as skills metadata invalidation and MCP refreshes when
     // remote installed state changes.
@@ -310,7 +310,7 @@ struct RemoteInstalledPluginsCacheRefreshState {
 
 struct RemoteCatalogCacheRefreshRequest {
     service_config: RemotePluginServiceConfig,
-    auth: Option<CodexAuth>,
+    auth: Option<AvaAuth>,
     scopes: BTreeSet<RemotePluginScope>,
     mode: RemoteCatalogCacheRefreshMode,
 }
@@ -318,12 +318,12 @@ struct RemoteCatalogCacheRefreshRequest {
 impl RemoteCatalogCacheRefreshRequest {
     fn has_same_cache_identity(&self, other: &Self) -> bool {
         self.service_config == other.service_config
-            && self.auth.as_ref().and_then(CodexAuth::get_account_id)
-                == other.auth.as_ref().and_then(CodexAuth::get_account_id)
-            && self.auth.as_ref().and_then(CodexAuth::get_chatgpt_user_id)
-                == other.auth.as_ref().and_then(CodexAuth::get_chatgpt_user_id)
-            && self.auth.as_ref().map(CodexAuth::is_workspace_account)
-                == other.auth.as_ref().map(CodexAuth::is_workspace_account)
+            && self.auth.as_ref().and_then(AvaAuth::get_account_id)
+                == other.auth.as_ref().and_then(AvaAuth::get_account_id)
+            && self.auth.as_ref().and_then(AvaAuth::get_chatgpt_user_id)
+                == other.auth.as_ref().and_then(AvaAuth::get_chatgpt_user_id)
+            && self.auth.as_ref().map(AvaAuth::is_workspace_account)
+                == other.auth.as_ref().map(AvaAuth::is_workspace_account)
     }
 }
 
@@ -392,13 +392,13 @@ fn remote_plugin_service_config(config: &PluginsConfigInput) -> RemotePluginServ
 
 fn featured_plugin_ids_cache_key(
     config: &PluginsConfigInput,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> FeaturedPluginIdsCacheKey {
     FeaturedPluginIdsCacheKey {
         chatgpt_base_url: config.chatgpt_base_url.clone(),
-        account_id: auth.and_then(CodexAuth::get_account_id),
-        chatgpt_user_id: auth.and_then(CodexAuth::get_chatgpt_user_id),
-        is_workspace_account: auth.is_some_and(CodexAuth::is_workspace_account),
+        account_id: auth.and_then(AvaAuth::get_account_id),
+        chatgpt_user_id: auth.and_then(AvaAuth::get_chatgpt_user_id),
+        is_workspace_account: auth.is_some_and(AvaAuth::is_workspace_account),
     }
 }
 
@@ -524,7 +524,7 @@ impl From<PluginDetail> for PluginCapabilitySummary {
 }
 
 pub struct PluginsManager {
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     store: PluginStore,
     featured_plugin_ids_cache: RwLock<Option<CachedFeaturedPluginIds>>,
     recommended_plugins_cache: RwLock<HashMap<RecommendedPluginsCacheKey, RecommendedPluginsMode>>,
@@ -600,14 +600,14 @@ struct PluginLoadCacheKey {
 impl PluginLoadCacheKey {
     fn from_config(
         config: &PluginsConfigInput,
-        codex_home: &Path,
+        ava_home: &Path,
         remote_global_catalog_active: bool,
         auth_identity: RemoteInstalledPluginsAuthIdentity,
     ) -> Self {
         Self {
             configured_plugins: configured_plugins_from_stack(
                 &config.config_layer_stack,
-                codex_home,
+                ava_home,
             ),
             skill_config_rules: skill_config_rules_from_stack(&config.config_layer_stack),
             remote_global_catalog_active,
@@ -618,7 +618,7 @@ impl PluginLoadCacheKey {
 }
 
 fn target_curated_marketplace(auth_mode: Option<AuthMode>) -> TargetCuratedMarketplace {
-    if auth_mode.is_some_and(AuthMode::uses_codex_backend) {
+    if auth_mode.is_some_and(AuthMode::uses_ava_backend) {
         TargetCuratedMarketplace::OpenAiWithRemote
     } else {
         TargetCuratedMarketplace::OpenAiApi
@@ -627,36 +627,36 @@ fn target_curated_marketplace(auth_mode: Option<AuthMode>) -> TargetCuratedMarke
 
 impl PluginsManager {
     pub fn new(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         auth_manager: Arc<AuthManager>,
         skill_root_loader: Arc<dyn SkillRootLoader<PluginSkillRoot>>,
     ) -> Self {
         Self::new_with_options(
-            codex_home,
-            Some(Product::Codex),
+            ava_home,
+            Some(Product::Ava),
             auth_manager,
             skill_root_loader,
         )
     }
 
     pub fn new_with_options(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         restriction_product: Option<Product>,
         auth_manager: Arc<AuthManager>,
         skill_root_loader: Arc<dyn SkillRootLoader<PluginSkillRoot>>,
     ) -> Self {
-        // Product restrictions are enforced at marketplace admission time for a given CODEX_HOME:
+        // Product restrictions are enforced at marketplace admission time for a given AVA_HOME:
         // listing, install, and curated refresh all consult this restriction context before new
         // plugins enter local config or cache. After admission, runtime plugin loading trusts the
-        // contents of that CODEX_HOME and does not re-filter configured plugins by product, so
+        // contents of that AVA_HOME and does not re-filter configured plugins by product, so
         // already-admitted plugins may continue exposing MCP servers/tools from shared local state.
         //
-        // This assumes a single CODEX_HOME is only used by one product.
+        // This assumes a single AVA_HOME is only used by one product.
         let remote_installed_plugin_bundle_sync_gate =
-            crate::remote::remote_installed_plugin_bundle_sync_gate(&codex_home);
+            crate::remote::remote_installed_plugin_bundle_sync_gate(&ava_home);
         Self {
-            codex_home: codex_home.clone(),
-            store: PluginStore::new(codex_home),
+            ava_home: ava_home.clone(),
+            store: PluginStore::new(ava_home),
             featured_plugin_ids_cache: RwLock::new(None),
             recommended_plugins_cache: RwLock::new(HashMap::new()),
             recommended_plugins_refreshes: RwLock::new(HashMap::new()),
@@ -698,7 +698,7 @@ impl PluginsManager {
     }
 
     fn remote_global_catalog_active(&self, config: &PluginsConfigInput) -> bool {
-        config.remote_plugin_enabled && self.auth_mode().is_some_and(AuthMode::uses_codex_backend)
+        config.remote_plugin_enabled && self.auth_mode().is_some_and(AuthMode::uses_ava_backend)
     }
 
     /// Starts the local curated marketplace sync when the remote catalog is unavailable.
@@ -749,7 +749,7 @@ impl PluginsManager {
         let auth = self.auth_manager.auth_cached();
         let key = PluginLoadCacheKey::from_config(
             config,
-            self.codex_home.as_path(),
+            self.ava_home.as_path(),
             self.remote_global_catalog_active(config),
             RemoteInstalledPluginsAuthIdentity::from_auth(auth.as_ref()),
         );
@@ -785,11 +785,11 @@ impl PluginsManager {
             let auth_revision = *auth_change_receiver.borrow();
             let remote_global_catalog_active = self.remote_global_catalog_active(config);
             let auth = self.auth_manager.auth_cached();
-            let auth_mode = auth.as_ref().map(CodexAuth::api_auth_mode);
+            let auth_mode = auth.as_ref().map(AvaAuth::api_auth_mode);
             let auth_identity = RemoteInstalledPluginsAuthIdentity::from_auth(auth.as_ref());
             let cache_key = PluginLoadCacheKey::from_config(
                 config,
-                self.codex_home.as_path(),
+                self.ava_home.as_path(),
                 remote_global_catalog_active,
                 auth_identity.clone(),
             );
@@ -1206,7 +1206,7 @@ impl PluginsManager {
 
     fn build_remote_installed_plugin_marketplaces_from_cache_for_auth(
         &self,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         visible_marketplaces: &[&str],
     ) -> Option<Vec<crate::remote::RemoteMarketplace>> {
         let cache = match self.remote_installed_plugins_cache.read() {
@@ -1230,12 +1230,12 @@ impl PluginsManager {
     pub fn cached_global_remote_discoverable_plugins_for_config(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> Vec<crate::remote::RemoteDiscoverablePlugin> {
         if !config.plugins_enabled || !config.remote_plugin_enabled {
             return Vec::new();
         }
-        let Some(auth) = auth.filter(|auth| auth.uses_codex_backend()) else {
+        let Some(auth) = auth.filter(|auth| auth.uses_ava_backend()) else {
             return Vec::new();
         };
         let Some(account_id) = auth.get_account_id() else {
@@ -1246,7 +1246,7 @@ impl PluginsManager {
         }
 
         crate::remote::cached_global_remote_discoverable_plugins(
-            self.codex_home.as_path(),
+            self.ava_home.as_path(),
             &remote_plugin_service_config(config),
             auth,
         )
@@ -1255,7 +1255,7 @@ impl PluginsManager {
     pub async fn build_and_cache_remote_installed_plugin_marketplaces(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         visible_marketplaces: &[&str],
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
     ) -> Result<Vec<crate::remote::RemoteMarketplace>, RemotePluginCatalogError> {
@@ -1301,7 +1301,7 @@ impl PluginsManager {
 
     fn prepare_remote_installed_plugins_cache_generation(
         &self,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> Option<u64> {
         let auth_identity = RemoteInstalledPluginsAuthIdentity::from_auth(auth);
         if !self.remote_installed_plugins_auth_is_current(&auth_identity) {
@@ -1328,7 +1328,7 @@ impl PluginsManager {
         Some(generation)
     }
 
-    fn begin_remote_installed_plugins_reconcile(&self, auth: Option<&CodexAuth>) -> Option<u64> {
+    fn begin_remote_installed_plugins_reconcile(&self, auth: Option<&AvaAuth>) -> Option<u64> {
         let generation = self.prepare_remote_installed_plugins_cache_generation(auth)?;
         let auth_identity = RemoteInstalledPluginsAuthIdentity::from_auth(auth);
         let mut cache = match self.remote_installed_plugins_cache.write() {
@@ -1360,7 +1360,7 @@ impl PluginsManager {
 
     fn remote_installed_plugins_cache_generation_if_current(
         &self,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> Option<u64> {
         let auth_identity = RemoteInstalledPluginsAuthIdentity::from_auth(auth);
         if !self.remote_installed_plugins_auth_is_current(&auth_identity) {
@@ -1377,7 +1377,7 @@ impl PluginsManager {
         &self,
         generation: u64,
         plugins: Vec<RemoteInstalledPlugin>,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         publication: RemoteInstalledPluginsCachePublication,
     ) -> Option<bool> {
         let auth_identity = RemoteInstalledPluginsAuthIdentity::from_auth(auth);
@@ -1486,7 +1486,7 @@ impl PluginsManager {
     pub fn maybe_start_remote_plugin_caches_refresh(
         self: &Arc<Self>,
         config: &PluginsConfigInput,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
     ) {
         self.maybe_start_remote_installed_plugins_cache_refresh_with_notify(
@@ -1509,7 +1509,7 @@ impl PluginsManager {
     fn maybe_start_remote_installed_plugins_cache_refresh_after_mutation(
         self: &Arc<Self>,
         config: &PluginsConfigInput,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
     ) {
         self.maybe_start_remote_installed_plugins_cache_refresh_with_notify(
@@ -1524,7 +1524,7 @@ impl PluginsManager {
     fn maybe_start_remote_installed_plugins_cache_refresh_with_notify(
         self: &Arc<Self>,
         config: &PluginsConfigInput,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         notify: RemoteInstalledPluginsCacheRefreshNotify,
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
         change: EffectivePluginsChange,
@@ -1553,7 +1553,7 @@ impl PluginsManager {
     pub fn maybe_start_remote_installed_plugin_bundle_sync(
         self: &Arc<Self>,
         config: &PluginsConfigInput,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
     ) {
         if !config.plugins_enabled {
@@ -1632,7 +1632,7 @@ impl PluginsManager {
     pub async fn reconcile_remote_installed_plugins(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> Result<RemoteInstalledPluginBundleSyncOutcome, RemoteInstalledPluginBundleSyncError> {
         let _guard = self.acquire_remote_installed_plugin_sync_guard().await?;
         let (outcome, _) = self
@@ -1644,7 +1644,7 @@ impl PluginsManager {
     async fn reconcile_remote_installed_plugins_after_acquiring_gate(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> Result<(RemoteInstalledPluginBundleSyncOutcome, bool), RemoteInstalledPluginBundleSyncError>
     {
         let generation = self
@@ -1677,7 +1677,7 @@ impl PluginsManager {
             .cloned()
             .collect::<Vec<_>>();
         let result = crate::remote::sync_remote_installed_plugin_bundles_once_with_snapshot(
-            self.codex_home.clone(),
+            self.ava_home.clone(),
             &remote_plugin_service_config(config),
             auth,
             &previous_plugin_ids,
@@ -1739,7 +1739,7 @@ impl PluginsManager {
     fn maybe_start_remote_catalog_cache_refresh(
         self: &Arc<Self>,
         config: &PluginsConfigInput,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         scopes: BTreeSet<RemotePluginScope>,
         mode: RemoteCatalogCacheRefreshMode,
     ) {
@@ -1758,7 +1758,7 @@ impl PluginsManager {
     pub fn maybe_start_plugin_list_background_tasks(
         self: &Arc<Self>,
         context: &PluginMarketplaceContext,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
         options: PluginListBackgroundTaskOptions,
         on_effective_plugins_changed: Option<EffectivePluginsChangedCallback>,
     ) {
@@ -1832,7 +1832,7 @@ impl PluginsManager {
     pub async fn featured_plugin_ids_for_config(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> Result<Vec<String>, RemotePluginFetchError> {
         if !config.plugins_enabled {
             return Ok(Vec::new());
@@ -1863,11 +1863,11 @@ impl PluginsManager {
     pub async fn recommended_plugins_mode_for_config(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> RecommendedPluginsMode {
         if !config.plugins_enabled
             || !config.remote_plugin_enabled
-            || !auth.is_some_and(CodexAuth::uses_codex_backend)
+            || !auth.is_some_and(AvaAuth::uses_ava_backend)
         {
             return RecommendedPluginsMode::Legacy;
         }
@@ -2064,7 +2064,7 @@ impl PluginsManager {
             MarketplacePolicy::from_requirements(config_layer_stack.requirements())
                 .validate_install(
                     config_layer_stack,
-                    self.codex_home.as_path(),
+                    self.ava_home.as_path(),
                     &request.marketplace_path,
                     &resolved.plugin_id.marketplace_name,
                 )
@@ -2082,7 +2082,7 @@ impl PluginsManager {
     pub async fn install_plugin_with_remote_sync(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         request: PluginInstallRequest,
     ) -> Result<PluginInstallOutcome, PluginInstallError> {
         let resolved = self.resolve_installable_plugin(&config.config_layer_stack, &request)?;
@@ -2210,7 +2210,7 @@ impl PluginsManager {
         let auth_policy = resolved.policy.authentication;
         let plugin_version =
             if is_openai_curated_marketplace_name(&resolved.plugin_id.marketplace_name) {
-                let curated_plugin_version = read_curated_plugins_sha(self.codex_home.as_path())
+                let curated_plugin_version = read_curated_plugins_sha(self.ava_home.as_path())
                     .ok_or_else(|| {
                         PluginStoreError::Invalid(
                             "local curated marketplace sha is not available".to_string(),
@@ -2221,14 +2221,14 @@ impl PluginsManager {
                 None
             };
         let store = self.store.clone();
-        let codex_home = self.codex_home.clone();
+        let ava_home = self.ava_home.clone();
         let manifest_fallback_contents = resolved
             .manifest_fallback
             .contents_if_has_metadata()
             .map(str::to_string);
         let result: StorePluginInstallResult = tokio::task::spawn_blocking(move || {
             let materialized =
-                materialize_marketplace_plugin_source(codex_home.as_path(), &resolved.source)
+                materialize_marketplace_plugin_source(ava_home.as_path(), &resolved.source)
                     .map_err(PluginStoreError::Invalid)?;
             let source_path = materialized.path;
             match (plugin_version, manifest_fallback_contents.as_deref()) {
@@ -2254,7 +2254,7 @@ impl PluginsManager {
         .map_err(PluginInstallError::join)??;
 
         set_user_plugin_enabled(
-            &self.codex_home,
+            &self.ava_home,
             result.plugin_id.as_key(),
             /*enabled*/ true,
         )
@@ -2288,7 +2288,7 @@ impl PluginsManager {
     pub async fn uninstall_plugin_with_remote_sync(
         &self,
         config: &PluginsConfigInput,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
         plugin_id: String,
     ) -> Result<(), PluginUninstallError> {
         // TODO: Remove this legacy remote-sync path once remote plugins have
@@ -2321,7 +2321,7 @@ impl PluginsManager {
             .await
             .map_err(PluginUninstallError::join)??;
 
-        clear_user_plugin(&self.codex_home, plugin_id.as_key())
+        clear_user_plugin(&self.ava_home, plugin_id.as_key())
             .await
             .map_err(anyhow::Error::from)?;
 
@@ -2502,7 +2502,7 @@ impl PluginsManager {
         MarketplacePolicy::from_requirements(config.config_layer_stack.requirements())
             .validate_install(
                 &config.config_layer_stack,
-                self.codex_home.as_path(),
+                self.ava_home.as_path(),
                 &request.marketplace_path,
                 &plugin.plugin_id.marketplace_name,
             )
@@ -2618,10 +2618,10 @@ impl PluginsManager {
                 ))
             })?
         } else {
-            let codex_home = self.codex_home.clone();
+            let ava_home = self.ava_home.clone();
             let source = plugin.source.clone();
             let materialized = tokio::task::spawn_blocking(move || {
-                materialize_marketplace_plugin_source(codex_home.as_path(), &source)
+                materialize_marketplace_plugin_source(ava_home.as_path(), &source)
             })
             .await
             .map_err(|err| {
@@ -2638,7 +2638,7 @@ impl PluginsManager {
             ));
         }
         let loaded_manifest =
-            if codex_utils_plugins::find_plugin_manifest_path(source_path.as_path()).is_some() {
+            if ava_utils_plugins::find_plugin_manifest_path(source_path.as_path()).is_some() {
                 load_plugin_manifest_with_format(source_path.as_path())
             } else {
                 plugin
@@ -2859,7 +2859,7 @@ impl PluginsManager {
                     on_effective_plugins_changed,
                 );
                 let mut scopes = crate::remote::cached_remote_plugin_catalog_scopes(
-                    manager.codex_home.as_path(),
+                    manager.ava_home.as_path(),
                     &remote_plugin_service_config(&config_for_remote_sync),
                     auth.as_ref(),
                 );
@@ -2916,7 +2916,7 @@ impl PluginsManager {
         reload_config: &ConfigLayerReload,
     ) -> Result<ConfiguredMarketplaceUpgradeOutcome, String> {
         let mut outcome = upgrade_configured_git_marketplaces_with_mode(
-            self.codex_home.as_path(),
+            self.ava_home.as_path(),
             &config.config_layer_stack,
             marketplace_name,
             mode,
@@ -2932,13 +2932,13 @@ impl PluginsManager {
         if !outcome.upgraded_roots.is_empty() {
             let mut configured_plugin_keys = configured_plugins_from_stack(
                 &config.config_layer_stack,
-                self.codex_home.as_path(),
+                self.ava_home.as_path(),
             )
             .into_keys()
             .collect::<Vec<_>>();
             configured_plugin_keys.sort_unstable();
             match refresh_non_curated_plugin_cache_force_reinstall_detailed(
-                self.codex_home.as_path(),
+                self.ava_home.as_path(),
                 &outcome.upgraded_roots,
                 &configured_plugin_keys,
                 mode,
@@ -3263,16 +3263,16 @@ impl PluginsManager {
                 callback
             });
         let manager = Arc::clone(self);
-        let codex_home = self.codex_home.clone();
+        let ava_home = self.ava_home.clone();
         if let Err(err) = std::thread::Builder::new()
             .name("plugins-curated-repo-sync".to_string())
             .spawn(move || {
-                match sync_openai_plugins_repo(codex_home.as_path(), http_client_factory) {
+                match sync_openai_plugins_repo(ava_home.as_path(), http_client_factory) {
                     Ok(curated_plugin_version) => {
                         let configured_curated_plugin_ids =
-                            configured_curated_plugin_ids_from_codex_home(codex_home.as_path());
+                            configured_curated_plugin_ids_from_ava_home(ava_home.as_path());
                         match refresh_curated_plugin_cache(
-                            codex_home.as_path(),
+                            ava_home.as_path(),
                             &curated_plugin_version,
                             &configured_curated_plugin_ids,
                         ) {
@@ -3394,7 +3394,7 @@ impl PluginsManager {
             for scope in request.scopes {
                 if request.mode == RemoteCatalogCacheRefreshMode::OnlyIfStale
                     && crate::remote::has_fresh_cached_remote_plugin_catalog(
-                        self.codex_home.as_path(),
+                        self.ava_home.as_path(),
                         &request.service_config,
                         request.auth.as_ref(),
                         scope,
@@ -3404,7 +3404,7 @@ impl PluginsManager {
                 }
 
                 match crate::remote::fetch_and_cache_remote_plugin_catalog(
-                    self.codex_home.as_path(),
+                    self.ava_home.as_path(),
                     &request.service_config,
                     request.auth.as_ref(),
                     scope,
@@ -3454,7 +3454,7 @@ impl PluginsManager {
             let refresh_result = match request.mode {
                 NonCuratedCacheRefreshMode::IfVersionChanged => {
                     refresh_non_curated_plugin_cache_detailed(
-                        self.codex_home.as_path(),
+                        self.ava_home.as_path(),
                         &request.roots,
                         &request.configured_plugin_keys,
                         request.git_mode,
@@ -3462,7 +3462,7 @@ impl PluginsManager {
                 }
                 NonCuratedCacheRefreshMode::ForceReinstall => {
                     refresh_non_curated_plugin_cache_force_reinstall_detailed(
-                        self.codex_home.as_path(),
+                        self.ava_home.as_path(),
                         &request.roots,
                         &request.configured_plugin_keys,
                         request.git_mode,
@@ -3520,7 +3520,7 @@ impl PluginsManager {
 
     fn configured_plugin_states(&self, config: &PluginsConfigInput) -> ConfiguredPluginStates {
         let configured_plugins =
-            configured_plugins_from_stack(&config.config_layer_stack, self.codex_home.as_path());
+            configured_plugins_from_stack(&config.config_layer_stack, self.ava_home.as_path());
         let installed = configured_plugins
             .keys()
             .filter(|plugin_key| {
@@ -3548,17 +3548,17 @@ impl PluginsManager {
         let mut roots = additional_roots.to_vec();
         roots.extend(installed_marketplace_roots_from_layer_stack(
             &config.config_layer_stack,
-            self.codex_home.as_path(),
+            self.ava_home.as_path(),
         ));
         let curated_marketplace_path = if include_openai_curated {
             match target_curated_marketplace(self.auth_mode()) {
                 TargetCuratedMarketplace::OpenAi | TargetCuratedMarketplace::OpenAiWithRemote => {
-                    let curated_repo_root = curated_plugins_repo_path(self.codex_home.as_path());
+                    let curated_repo_root = curated_plugins_repo_path(self.ava_home.as_path());
                     curated_repo_root.is_dir().then_some(curated_repo_root)
                 }
                 TargetCuratedMarketplace::OpenAiApi => {
                     let api_marketplace_path =
-                        curated_plugins_api_marketplace_path(self.codex_home.as_path());
+                        curated_plugins_api_marketplace_path(self.ava_home.as_path());
                     api_marketplace_path
                         .is_file()
                         .then_some(api_marketplace_path)
@@ -3589,7 +3589,7 @@ impl PluginsManager {
             policy
                 .validate_install(
                     &config.config_layer_stack,
-                    self.codex_home.as_path(),
+                    self.ava_home.as_path(),
                     &marketplace.path,
                     &marketplace.name,
                 )

@@ -1,7 +1,7 @@
 /**
  * Per-provider outbound HTTP headers.
  *
- * Adapters (pi-ai, Anthropic SDK, Codex) stamp User-Agent after extra headers.
+ * Adapters (pi-ai, Anthropic SDK, Ava) stamp User-Agent after extra headers.
  * A fetch wrapper is therefore the last writer for the whole map, and the same
  * values are also placed on stream-option headers so OpenCode's "caller header
  * wins" rule stays true.

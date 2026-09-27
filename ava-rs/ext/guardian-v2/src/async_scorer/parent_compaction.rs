@@ -1,10 +1,10 @@
 //! Selects the Luna checkpoint once under the session's context mode.
 //! Sampling and fast approval share eligibility; legacy omission stays distinct from rejection.
 
-use codex_core::context::GuardianContextMode;
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_extension_api::ResponseItem;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_core::context::GuardianContextMode;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_extension_api::ResponseItem;
+use ava_protocol::protocol::TruncationPolicy;
 
 use super::config::GuardianV2Config;
 use super::sampler::LunaSampler;
@@ -63,7 +63,7 @@ pub(super) fn select_parent_compaction(
 // An unusable latest compaction must never fall back to an older one. Missing
 // encrypted content is rejected here; only legacy callers may omit that checkpoint.
 fn encrypted_parent_compaction(
-    checkpoint: Option<codex_history::CompactionCheckpoint<'_>>,
+    checkpoint: Option<ava_history::CompactionCheckpoint<'_>>,
     max_parent_compaction_tokens: usize,
 ) -> Result<Option<ResponseItem>, ParentCompactionError> {
     let max_compaction_bytes = TruncationPolicy::Tokens(max_parent_compaction_tokens).byte_budget();

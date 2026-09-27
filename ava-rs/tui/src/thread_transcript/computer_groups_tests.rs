@@ -4,10 +4,10 @@ use super::*;
 use crate::thread_transcript::RawReasoningVisibility;
 use crate::thread_transcript::TranscriptCells;
 use crate::thread_transcript::thread_items_to_transcript_cells;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStatus;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStatus;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 
 fn computer(id: &str) -> ThreadItem {
@@ -130,7 +130,7 @@ fn joins_respect_actual_turns_and_intervening_items() {
     assert!(join_computer_groups(&older[0], &newer[0], &turns).is_none());
     let grouped = project(&[
         first.clone(),
-        ThreadItem::Sleep(codex_app_server_protocol::SleepItem {
+        ThreadItem::Sleep(ava_app_server_protocol::SleepItem {
             id: "sleep".into(),
             duration_ms: 10,
         }),

@@ -2,7 +2,7 @@ use std::io;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
-use codex_exec_server_protocol::JSONRPCErrorError;
+use ava_exec_server_protocol::JSONRPCErrorError;
 
 use crate::CapabilityRootsDiscoverParams;
 use crate::CapabilityRootsDiscoverResponse;
@@ -356,9 +356,9 @@ fn map_fs_error(err: io::Error) -> JSONRPCErrorError {
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::protocol::NetworkAccess;
-    use codex_protocol::protocol::SandboxPolicy;
-    use codex_utils_path_uri::PathUri;
+    use ava_protocol::protocol::NetworkAccess;
+    use ava_protocol::protocol::SandboxPolicy;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -371,7 +371,7 @@ mod tests {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let runtime_paths = ExecServerRuntimePaths::new(
             std::env::current_exe().expect("current exe"),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )
         .expect("runtime paths");
         let handler = FileSystemHandler::new(runtime_paths);

@@ -1,8 +1,8 @@
-use codex_config::types::BrowserConfig;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ToolName;
+use ava_config::types::BrowserConfig;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ToolName;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 

@@ -7,9 +7,9 @@
 3. Map all design decisions to **Tailwind CSS tokens** so that spec → implementation is unambiguous
 4. Enable **future shadcn-like primitive extraction** without re-specifying foundations
 
-## Visual baseline (Codex-aligned)
+## Visual baseline (Ava-aligned)
 
-The desktop shell targets a 1:1 visual match with the local Codex desktop client (ChatGPT.app electron-dark): charcoal surfaces (`#181818`), neutral gray scale (not blue-slate), ~275px sidebar, 46px toolbar rhythm, and a floating pill composer. Semantic token names remain stable; values follow the Codex gray system with a **neutral gray accent** (no blue brand accent).
+The desktop shell targets a 1:1 visual match with the local Ava desktop client (ChatGPT.app electron-dark): charcoal surfaces (`#181818`), neutral gray scale (not blue-slate), ~275px sidebar, 46px toolbar rhythm, and a floating pill composer. Semantic token names remain stable; values follow the Ava gray system with a **neutral gray accent** (no blue brand accent).
 
 ## 2. Non-goals
 
@@ -104,10 +104,10 @@ empty rail outside the panel surface.
 ### 3.4 Product identity and marks
 
 The visible product identity is **PI-Desktop**, even where the shell borrows
-Codex as a visual reference. The identity contract is deliberately small:
+Ava as a visual reference. The identity contract is deliberately small:
 
 - The sidebar shell name, settings copy, and composer placeholder use
-  `PI-Desktop`; `Codex` is reserved for the external session-import source or
+  `PI-Desktop`; `Ava` is reserved for the external session-import source or
   historical design-reference text.
 - `build/icon_1024.png` is the canonical shell logo master; the renderer
   imports the 192x192 marks derived from it under `src/assets/brand/`
@@ -174,17 +174,17 @@ All color references in components use **semantic token names**, never raw hex v
 
 | Token | Hex | Tailwind mapping | Usage |
 |---|---|---|---|
-| `--color-bg-primary` | `#181818` | Codex `gray-900` | Main surface |
-| `--color-bg-sidebar` / under | `#000000` (dark) / `#f3f3f3` (light) | Codex `surface-under` / gray-75 | Sidebar rail |
+| `--color-bg-primary` | `#181818` | Ava `gray-900` | Main surface |
+| `--color-bg-sidebar` / under | `#000000` (dark) / `#f3f3f3` (light) | Ava `surface-under` / gray-75 | Sidebar rail |
 | `--ds-bg-sidebar-image` | `none` (optional `<image>`) | — | Sidebar `background-image` only (gradients / pictures). `--ds-bg-sidebar` stays a color for glass tint, borders, and `color-mix` |
-| `--color-bg-secondary` | `#212121` | Codex `gray-800` | Elevated surfaces, composer |
-| `--color-bg-tertiary` | `#282828` | Codex `gray-750` | Hover / opaque elevated |
-| `--color-bg-inset` | `#0d0d0d` | Codex `gray-1000` | Code blocks, deepest inset |
-| `--color-text-primary` | `#FFFFFF` | Codex `gray-0` | Body text |
-| `--color-text-secondary` | `rgba(255,255,255,0.70)` | Codex secondary | Labels, secondary |
-| `--color-text-muted` | `#5d5d5d` | Codex `gray-500` | Disabled, hints |
-| `--color-border-default` | `rgba(255,255,255,0.08)` | Codex border | Default borders |
-| `--color-border-subtle` | `rgba(255,255,255,0.05)` | Codex border subtle | Subtle separators |
+| `--color-bg-secondary` | `#212121` | Ava `gray-800` | Elevated surfaces, composer |
+| `--color-bg-tertiary` | `#282828` | Ava `gray-750` | Hover / opaque elevated |
+| `--color-bg-inset` | `#0d0d0d` | Ava `gray-1000` | Code blocks, deepest inset |
+| `--color-text-primary` | `#FFFFFF` | Ava `gray-0` | Body text |
+| `--color-text-secondary` | `rgba(255,255,255,0.70)` | Ava secondary | Labels, secondary |
+| `--color-text-muted` | `#5d5d5d` | Ava `gray-500` | Disabled, hints |
+| `--color-border-default` | `rgba(255,255,255,0.08)` | Ava border | Default borders |
+| `--color-border-subtle` | `rgba(255,255,255,0.05)` | Ava border subtle | Subtle separators |
 | `--color-accent` | `#FFFFFF` (dark) / `#1a1c1f` (light) | inverted gray ink | Primary accent, CTA |
 | `--color-accent-hover` | `#EDEDED` (dark) / `#303030` (light) | gray-100 / gray-700 | Accent hover |
 | `--color-accent-soft` | `#AFAFAF` (dark) / `#5d5d5d` (light) | gray-300 / gray-500 | Soft accent, links |
@@ -193,7 +193,7 @@ All color references in components use **semantic token names**, never raw hex v
 | `--color-error` | `#EF4444` | `text-red-500` | Error, denied |
 | `--color-info` | `#6366F1` | `text-indigo-500` | Informational |
 
-### 4.3 Light theme (Codex electron-light)
+### 4.3 Light theme (Ava electron-light)
 
 Neutral gray scale only — no blue-slate surfaces. Chrome components must consume semantic `--ds-*` tokens so light ink stays dark on `#f3f3f3` / `#ffffff`.
 
@@ -362,7 +362,7 @@ zoom remains independent. The UI never asks for a px value.
 
 ### 5.2 Type scale
 
-All font sizes come from the `--text-*` ramp defined in the `@theme` block of `styles/tokens.css` (imported first by `styles/globals.css`, which is now only an import sequence — see D170). Raw px literals for `font-size`, `font-weight`, `line-height`, and `letter-spacing` are **forbidden** in component CSS and TSX arbitrary utilities (`text-[13px]` etc.) — enforced by `scripts/check-style-tokens.mjs` (runs in `pnpm lint`). `-plus` suffixed tokens are the Codex half-steps between named sizes.
+All font sizes come from the `--text-*` ramp defined in the `@theme` block of `styles/tokens.css` (imported first by `styles/globals.css`, which is now only an import sequence — see D170). Raw px literals for `font-size`, `font-weight`, `line-height`, and `letter-spacing` are **forbidden** in component CSS and TSX arbitrary utilities (`text-[13px]` etc.) — enforced by `scripts/check-style-tokens.mjs` (runs in `pnpm lint`). `-plus` suffixed tokens are the Ava half-steps between named sizes.
 
 | Token | Size | Usage |
 |---|---|---|
@@ -402,12 +402,12 @@ Letter-spacing tokens: `--tracking-tighter` −0.03em, `--tracking-tight` −0.0
 
 ### 5.4 Weight rules
 
-Weights use `--font-weight-*` tokens only (Codex uses variable-font intermediate weights):
+Weights use `--font-weight-*` tokens only (Ava uses variable-font intermediate weights):
 
 - `--font-weight-normal` 400: default body/label text
 - `--font-weight-medium` 500: emphasis, chips, row titles
-- `--font-weight-medium-plus` 520: select Codex chrome labels
-- `--font-weight-strong` 560: destination page titles (Codex electron metric)
+- `--font-weight-medium-plus` 520: select Ava chrome labels
+- `--font-weight-strong` 560: destination page titles (Ava electron metric)
 - `--font-weight-semibold` 600: brand, CTA buttons
 - Never use 700+
 
@@ -548,9 +548,9 @@ new page or selects another tab.
 Native `<select>` popups remain OS-owned and are outside this renderer
 contract.
 
-Composer elevation (Codex `elevation-prominent`):
+Composer elevation (Ava `elevation-prominent`):
 
-- soft: `0 3px 7.5px rgba(0,0,0,0.039)` + `0 0 20px rgba(0,0,0,0.051)` (Codex `#0000000a` / `#0000000d`, both themes)
+- soft: `0 3px 7.5px rgba(0,0,0,0.039)` + `0 0 20px rgba(0,0,0,0.051)` (Ava `#0000000a` / `#0000000d`, both themes)
 - no stroke (D297): the composer lifts by shadow alone; `--ds-elevation-stroke` remains a token for floating layers only
 
 Shadow token values (light theme only):
@@ -841,7 +841,7 @@ model):
 - The home composer is a bottom-reserved sibling of the scroller. Thread mode
   keeps its absolute bottom dock and reserves its measured height without a
   full-width fade veil
-- Composer radius uses Codex `radius-3xl-base` (**20px** / `1.25rem`)
+- Composer radius uses Ava `radius-3xl-base` (**20px** / `1.25rem`)
 - Empty-home composer height is content-driven: a one-line draft renders the
   compact shell, grows with the draft through seven visible rows, and then
   keeps the shell stable while the textarea scrolls internally
@@ -1040,11 +1040,11 @@ Rules:
 ## 10. Layout shell metrics
 
 These metrics define the AppShell frame. See [08-component-spec.md](08-component-spec.md) for component detail.
-Codex parity decisions (D034/D070) supersede any older value here.
+Ava parity decisions (D034/D070) supersede any older value here.
 
 | Metric | Value | Notes |
 |---|---|---|
-| Titlebar row height | 46px | Codex toolbar rhythm (D034); traffic lights {x:16,y:16} |
+| Titlebar row height | 46px | Ava toolbar rhythm (D034); traffic lights {x:16,y:16} |
 | Sidebar width (collapsed) | 48px | Icon-only rail |
 | Sidebar width (expanded) | 240–520px (default 275px) | Right-edge handle; drag below 160px collapses (ADR 0141 / ADR 0290) |
 | Main pane minimum readable width | 450px | The MainChat hard floor; the sidebar yields before it is breached (ADR 0238) |
@@ -1299,18 +1299,18 @@ Full component contract and usage rules: [08-component-spec.md §17](08-componen
 14. Expanded sidebar session titles, project/group titles, and empty-state copy
     use the 13px compact token without changing the 28–32px row pitch
 
-## Dark floating surfaces (Codex parity)
+## Dark floating surfaces (Ava parity)
 
 - Main surface: `#181818` (`gray-900`)
 - Sidebar / surface-under: `#000000`
-- Floating composer plate: Codex elevated-primary (`#212121f5` / `color-mix(gray-800 96%, transparent)`) with standard elevation-prominent (`0 0 0 .5px` stroke + `0 3px 7.5px #0000000a` + `0 0 20px #0000000d`); no heavier night-only lift
+- Floating composer plate: Ava elevated-primary (`#212121f5` / `color-mix(gray-800 96%, transparent)`) with standard elevation-prominent (`0 0 0 .5px` stroke + `0 3px 7.5px #0000000a` + `0 0 20px #0000000d`); no heavier night-only lift
 - Light workspace chips capsule: elevated gray `#f4f4f4` (not pure white-on-white)
 - Combined workspace chips: elevated translucent plate over main, not flat main gray
 - Stage Manager (macOS only): host re-asserts min bounds while collapsed (permanent watchdog). The watchdog does not run on Windows/Linux, so no platform re-layers its own window unprompted (D447)
 
 ## Destination pages
 
-- **Project archive**: the D066 Codex index table (search / expand / actions)
+- **Project archive**: the D066 Ava index table (search / expand / actions)
   is embedded in Settings with no duplicate page title or outer page padding;
   the earlier standalone Projects destination and card grid (D042) are
   superseded by D133. Per D267 the destination is composed exactly like the
@@ -1325,7 +1325,7 @@ Full component contract and usage rules: [08-component-spec.md §17](08-componen
   row is the header of the card that opens under it — so the detail repeats no
   name, path, or tag. It has no hero block, no decorative gradient, and no
   page-level counter run
-- **Settings**: full-page Codex shell per D063/D090/D133/D166 (275px compact
+- **Settings**: full-page Ava shell per D063/D090/D133/D166 (275px compact
   navigation rail sharing the main sidebar material, elevated content cards, Back to app);
   per D092, the content cards fill the pane width available from the current
   window instead of retaining D070's fixed 720px cap — the earlier in-shell

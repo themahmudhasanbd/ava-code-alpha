@@ -1,23 +1,23 @@
 #![cfg(target_os = "linux")]
 #![allow(clippy::unwrap_used)]
-use codex_core::exec::ExecCapturePolicy;
-use codex_core::exec::ExecParams;
-use codex_core::exec::process_exec_tool_call;
-use codex_core::exec_env::create_env;
-use codex_core::sandboxing::SandboxPermissions;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_core::exec::ExecCapturePolicy;
+use ava_core::exec::ExecParams;
+use ava_core::exec::process_exec_tool_call;
+use ava_core::exec_env::create_env;
+use ava_core::sandboxing::SandboxPermissions;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -52,8 +52,8 @@ fn create_env_from_core_vars() -> HashMap<String, String> {
     create_env(&policy, /*thread_id*/ None)
 }
 
-fn codex_linux_sandbox_exe() -> PathBuf {
-    let sandbox_program = PathBuf::from(env!("CARGO_BIN_EXE_codex-linux-sandbox"));
+fn ava_linux_sandbox_exe() -> PathBuf {
+    let sandbox_program = PathBuf::from(env!("CARGO_BIN_EXE_ava-linux-sandbox"));
     match sandbox_program.canonicalize() {
         Ok(path) => path,
         Err(_) => sandbox_program,
@@ -74,7 +74,7 @@ async fn run_cmd_output(
     cmd: &[&str],
     writable_roots: &[PathBuf],
     timeout_ms: u64,
-) -> codex_protocol::exec_output::ExecToolCallOutput {
+) -> ava_protocol::exec_output::ExecToolCallOutput {
     run_cmd_result_with_writable_roots(
         cmd,
         writable_roots,
@@ -92,7 +92,7 @@ async fn run_cmd_result_with_writable_roots(
     timeout_ms: u64,
     use_legacy_landlock: bool,
     network_access: bool,
-) -> Result<codex_protocol::exec_output::ExecToolCallOutput> {
+) -> Result<ava_protocol::exec_output::ExecToolCallOutput> {
     let writable_roots = writable_roots
         .iter()
         .map(|path| AbsolutePathBuf::try_from(path.as_path()).unwrap())
@@ -120,7 +120,7 @@ async fn run_cmd_result_with_permission_profile(
     permission_profile: PermissionProfile,
     timeout_ms: u64,
     use_legacy_landlock: bool,
-) -> Result<codex_protocol::exec_output::ExecToolCallOutput> {
+) -> Result<ava_protocol::exec_output::ExecToolCallOutput> {
     let cwd = AbsolutePathBuf::current_dir().expect("cwd should exist");
     run_cmd_result_with_permission_profile_for_cwd(
         cmd,
@@ -140,7 +140,7 @@ async fn run_cmd_result_with_cwd_and_writable_roots(
     timeout_ms: u64,
     use_legacy_landlock: bool,
     network_access: bool,
-) -> Result<codex_protocol::exec_output::ExecToolCallOutput> {
+) -> Result<ava_protocol::exec_output::ExecToolCallOutput> {
     let writable_roots = writable_roots
         .iter()
         .map(|path| AbsolutePathBuf::try_from(path.as_path()).unwrap())
@@ -174,7 +174,7 @@ async fn run_cmd_result_with_permission_profile_for_cwd(
     env: HashMap<String, String>,
     timeout_ms: u64,
     use_legacy_landlock: bool,
-) -> Result<codex_protocol::exec_output::ExecToolCallOutput> {
+) -> Result<ava_protocol::exec_output::ExecToolCallOutput> {
     let sandbox_cwd = cwd.clone();
     let params = ExecParams {
         command: cmd.iter().copied().map(str::to_owned).collect(),
@@ -189,22 +189,22 @@ async fn run_cmd_result_with_permission_profile_for_cwd(
         justification: None,
         arg0: None,
     };
-    let codex_linux_sandbox_exe = Some(codex_linux_sandbox_exe());
+    let ava_linux_sandbox_exe = Some(ava_linux_sandbox_exe());
 
     process_exec_tool_call(
         params,
         &permission_profile,
         &sandbox_cwd,
         std::slice::from_ref(&sandbox_cwd),
-        &codex_linux_sandbox_exe,
-        /*codex_self_exe*/ &None,
+        &ava_linux_sandbox_exe,
+        /*ava_self_exe*/ &None,
         use_legacy_landlock,
         /*stdout_stream*/ None,
     )
     .await
 }
 
-fn is_bwrap_unavailable_output(output: &codex_protocol::exec_output::ExecToolCallOutput) -> bool {
+fn is_bwrap_unavailable_output(output: &ava_protocol::exec_output::ExecToolCallOutput) -> bool {
     output.stderr.text.contains(BWRAP_UNAVAILABLE_ERR)
         || (output
             .stderr
@@ -227,28 +227,28 @@ async fn should_skip_bwrap_tests() -> bool {
     {
         Ok(output) => is_bwrap_unavailable_output(&output),
         Err(err) => match err.details() {
-            CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
+            AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
                 is_bwrap_unavailable_output(output)
             }
             // Probe timeouts are not actionable for the bwrap-specific assertions below;
             // skip rather than fail the whole suite.
-            CodexErrorDetails::Sandbox(SandboxErr::Timeout { .. }) => true,
+            AvaErrorDetails::Sandbox(SandboxErr::Timeout { .. }) => true,
             details => panic!("bwrap availability probe failed unexpectedly: {details:?}"),
         },
     }
 }
 
 fn expect_denied(
-    result: Result<codex_protocol::exec_output::ExecToolCallOutput>,
+    result: Result<ava_protocol::exec_output::ExecToolCallOutput>,
     context: &str,
-) -> codex_protocol::exec_output::ExecToolCallOutput {
+) -> ava_protocol::exec_output::ExecToolCallOutput {
     match result {
         Ok(output) => {
             assert_ne!(output.exit_code, 0, "{context}: expected nonzero exit code");
             output
         }
         Err(err) => match err.details() {
-            CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
+            AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
                 output.as_ref().clone()
             }
             details => panic!("{context}: {details:?}"),
@@ -427,7 +427,7 @@ async fn wsl_interop_bind_alias_cannot_run_windows_program() {
             .args(["/bin/sh", "-c", script, "sh"])
             .arg(&alias)
             .arg(&powershell)
-            .arg(codex_linux_sandbox_exe())
+            .arg(ava_linux_sandbox_exe())
             .arg(&cwd)
             .arg(profile)
             .kill_on_drop(true)
@@ -477,7 +477,7 @@ async fn wsl_no_proc_masks_inherited_procfs_and_windows_interop() {
     let cwd = std::env::current_dir().expect("current directory");
     let proc_check = tokio::time::timeout(
         Duration::from_millis(NETWORK_TIMEOUT_MS),
-        tokio::process::Command::new(codex_linux_sandbox_exe())
+        tokio::process::Command::new(ava_linux_sandbox_exe())
             .arg("--sandbox-policy-cwd")
             .arg(&cwd)
             .args([
@@ -503,7 +503,7 @@ async fn wsl_no_proc_masks_inherited_procfs_and_windows_interop() {
 
     let output = tokio::time::timeout(
         Duration::from_millis(NETWORK_TIMEOUT_MS),
-        tokio::process::Command::new(codex_linux_sandbox_exe())
+        tokio::process::Command::new(ava_linux_sandbox_exe())
             .arg("--sandbox-policy-cwd")
             .arg(&cwd)
             .args([
@@ -776,7 +776,7 @@ async fn sandbox_inner_stage_rejects_retained_capabilities() {
         .expect("read-only permission profile should serialize");
     let output = std::process::Command::new("unshare")
         .args(["--user", "--map-root-user", "--"])
-        .arg(codex_linux_sandbox_exe())
+        .arg(ava_linux_sandbox_exe())
         .args(["--sandbox-policy-cwd", "/", "--permission-profile"])
         .arg(permission_profile)
         .args([
@@ -828,15 +828,15 @@ async fn assert_network_blocked(cmd: &[&str]) {
         arg0: None,
     };
 
-    let codex_linux_sandbox_exe: Option<PathBuf> = Some(codex_linux_sandbox_exe());
+    let ava_linux_sandbox_exe: Option<PathBuf> = Some(ava_linux_sandbox_exe());
     let permission_profile = PermissionProfile::read_only();
     let result = process_exec_tool_call(
         params,
         &permission_profile,
         &sandbox_cwd,
         std::slice::from_ref(&sandbox_cwd),
-        &codex_linux_sandbox_exe,
-        /*codex_self_exe*/ &None,
+        &ava_linux_sandbox_exe,
+        /*ava_self_exe*/ &None,
         /*use_legacy_landlock*/ false,
         /*stdout_stream*/ None,
     )
@@ -845,7 +845,7 @@ async fn assert_network_blocked(cmd: &[&str]) {
     let output = match result {
         Ok(output) => output,
         Err(err) => match err.details() {
-            CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
+            AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
                 output.as_ref().clone()
             }
             details => panic!("expected sandbox denied error, got: {details:?}"),
@@ -891,7 +891,7 @@ async fn sandbox_blocks_nc() {
 }
 
 #[tokio::test]
-async fn sandbox_blocks_git_and_codex_writes_inside_writable_root() {
+async fn sandbox_blocks_git_and_ava_writes_inside_writable_root() {
     if should_skip_bwrap_tests().await {
         eprintln!("skipping bwrap test: bwrap sandbox prerequisites are unavailable");
         return;
@@ -899,12 +899,12 @@ async fn sandbox_blocks_git_and_codex_writes_inside_writable_root() {
 
     let tmpdir = tempfile::tempdir().expect("tempdir");
     let dot_git = tmpdir.path().join(".git");
-    let dot_codex = tmpdir.path().join(".codex");
+    let dot_ava = tmpdir.path().join(".ava-code");
     std::fs::create_dir_all(&dot_git).expect("create .git");
-    std::fs::create_dir_all(&dot_codex).expect("create .codex");
+    std::fs::create_dir_all(&dot_ava).expect("create .ava-code");
 
     let git_target = dot_git.join("config");
-    let codex_target = dot_codex.join("config.toml");
+    let ava_target = dot_ava.join("config.toml");
 
     let git_output = expect_denied(
         run_cmd_result_with_writable_roots(
@@ -922,12 +922,12 @@ async fn sandbox_blocks_git_and_codex_writes_inside_writable_root() {
         ".git write should be denied under bubblewrap",
     );
 
-    let codex_output = expect_denied(
+    let ava_output = expect_denied(
         run_cmd_result_with_writable_roots(
             &[
                 "bash",
                 "-lc",
-                &format!("echo denied > {}", codex_target.to_string_lossy()),
+                &format!("echo denied > {}", ava_target.to_string_lossy()),
             ],
             &[tmpdir.path().to_path_buf()],
             LONG_TIMEOUT_MS,
@@ -935,14 +935,14 @@ async fn sandbox_blocks_git_and_codex_writes_inside_writable_root() {
             /*network_access*/ true,
         )
         .await,
-        ".codex write should be denied under bubblewrap",
+        ".ava-code write should be denied under bubblewrap",
     );
     assert_ne!(git_output.exit_code, 0);
-    assert_ne!(codex_output.exit_code, 0);
+    assert_ne!(ava_output.exit_code, 0);
 }
 
 #[tokio::test]
-async fn sandbox_blocks_codex_symlink_replacement_attack() {
+async fn sandbox_blocks_ava_symlink_replacement_attack() {
     if should_skip_bwrap_tests().await {
         eprintln!("skipping bwrap test: bwrap sandbox prerequisites are unavailable");
         return;
@@ -951,20 +951,20 @@ async fn sandbox_blocks_codex_symlink_replacement_attack() {
     use std::os::unix::fs::symlink;
 
     let tmpdir = tempfile::tempdir().expect("tempdir");
-    let decoy = tmpdir.path().join("decoy-codex");
+    let decoy = tmpdir.path().join("decoy-ava");
     std::fs::create_dir_all(&decoy).expect("create decoy dir");
 
-    let dot_codex = tmpdir.path().join(".codex");
-    symlink(&decoy, &dot_codex).expect("create .codex symlink");
+    let dot_ava = tmpdir.path().join(".ava-code");
+    symlink(&decoy, &dot_ava).expect("create .ava-code symlink");
 
-    let codex_target = dot_codex.join("config.toml");
+    let ava_target = dot_ava.join("config.toml");
 
-    let codex_output = expect_denied(
+    let ava_output = expect_denied(
         run_cmd_result_with_writable_roots(
             &[
                 "bash",
                 "-lc",
-                &format!("echo denied > {}", codex_target.to_string_lossy()),
+                &format!("echo denied > {}", ava_target.to_string_lossy()),
             ],
             &[tmpdir.path().to_path_buf()],
             LONG_TIMEOUT_MS,
@@ -972,13 +972,13 @@ async fn sandbox_blocks_codex_symlink_replacement_attack() {
             /*network_access*/ true,
         )
         .await,
-        ".codex symlink replacement should be denied",
+        ".ava-code symlink replacement should be denied",
     );
-    assert_ne!(codex_output.exit_code, 0);
+    assert_ne!(ava_output.exit_code, 0);
 }
 
 #[tokio::test]
-async fn sandbox_reports_codex_symlink_build_failure_without_panicking() {
+async fn sandbox_reports_ava_symlink_build_failure_without_panicking() {
     if should_skip_bwrap_tests().await {
         eprintln!("skipping bwrap test: bwrap sandbox prerequisites are unavailable");
         return;
@@ -987,11 +987,11 @@ async fn sandbox_reports_codex_symlink_build_failure_without_panicking() {
     use std::os::unix::fs::symlink;
 
     let tmpdir = tempfile::tempdir().expect("tempdir");
-    let decoy = tmpdir.path().join("decoy-codex");
+    let decoy = tmpdir.path().join("decoy-ava");
     std::fs::create_dir_all(&decoy).expect("create decoy dir");
 
-    let dot_codex = tmpdir.path().join(".codex");
-    symlink(&decoy, &dot_codex).expect("create .codex symlink");
+    let dot_ava = tmpdir.path().join(".ava-code");
+    symlink(&decoy, &dot_ava).expect("create .ava-code symlink");
 
     let output = match run_cmd_result_with_writable_roots(
         &["bash", "-lc", "true"],
@@ -1003,12 +1003,12 @@ async fn sandbox_reports_codex_symlink_build_failure_without_panicking() {
     .await
     {
         Err(err) => match err.details() {
-            CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
+            AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => {
                 output.as_ref().clone()
             }
-            details => panic!(".codex symlink build failure should deny: {details:?}"),
+            details => panic!(".ava-code symlink build failure should deny: {details:?}"),
         },
-        Ok(output) => panic!(".codex symlink build failure should deny: {output:?}"),
+        Ok(output) => panic!(".ava-code symlink build failure should deny: {output:?}"),
     };
 
     assert_eq!(output.exit_code, 1);
@@ -1048,7 +1048,7 @@ async fn sandbox_rejects_symlinked_synthetic_mount_registry() {
     std::fs::create_dir_all(&registry_target).expect("create registry target");
     let effective_uid = unsafe { libc::geteuid() };
     let registry = temp.path().join(format!(
-        "codex-bwrap-synthetic-mount-targets-{effective_uid}"
+        "ava-bwrap-synthetic-mount-targets-{effective_uid}"
     ));
     std::os::unix::fs::symlink(&registry_target, &registry).expect("symlink registry");
 
@@ -1137,11 +1137,11 @@ async fn sandbox_keeps_parent_repo_discovery_while_blocking_child_metadata() {
         r#"set -e
 test "$(git rev-parse --show-toplevel)" = '{repo}'
 touch "$TMPDIR/writable-sibling"
-registry="${{TMPDIR:-/tmp}}/codex-bwrap-synthetic-mount-targets-$(id -u)"
+registry="${{TMPDIR:-/tmp}}/ava-bwrap-synthetic-mount-targets-$(id -u)"
 if touch "$registry/forged-marker" 2>/dev/null; then
   exit 22
 fi
-redirected_registry='{redirected_tmp}'/codex-bwrap-synthetic-mount-targets-$(id -u)
+redirected_registry='{redirected_tmp}'/ava-bwrap-synthetic-mount-targets-$(id -u)
 for marker_dir in "$registry"/*; do
   [ -d "$marker_dir" ] || continue
   mkdir -p "$redirected_registry/${{marker_dir##*/}}"
@@ -1149,7 +1149,7 @@ for marker_dir in "$registry"/*; do
 done
 ln -sfn '{redirected_tmp}' "$TMPDIR"
 git status --short > status.before
-if grep -E '(^|[[:space:]])\.(git|codex|agents)(/|$)' status.before; then
+if grep -E '(^|[[:space:]])\.(git|ava|agents)(/|$)' status.before; then
   cat status.before
   exit 21
 fi
@@ -1198,9 +1198,9 @@ fi
     assert_ne!(git_init_output.exit_code, 0);
     assert!(!subdir.join(".git").exists());
 
-    let mkdir_codex_output = expect_denied(
+    let mkdir_ava_output = expect_denied(
         run_cmd_result_with_cwd_and_writable_roots(
-            &["mkdir", ".codex"],
+            &["mkdir", ".ava-code"],
             &subdir,
             std::slice::from_ref(&subdir),
             LONG_TIMEOUT_MS,
@@ -1208,10 +1208,10 @@ fi
             /*network_access*/ true,
         )
         .await,
-        "child .codex directory creation should be denied",
+        "child .ava-code directory creation should be denied",
     );
-    assert_ne!(mkdir_codex_output.exit_code, 0);
-    assert!(!subdir.join(".codex").exists());
+    assert_ne!(mkdir_ava_output.exit_code, 0);
+    assert!(!subdir.join(".ava-code").exists());
 
     let script = format!(
         r#"set -e
@@ -1238,7 +1238,7 @@ printf '%s\n' '{{"message":"ok"}}' | python3 jsonl_viewer.py | grep -q ok
 
     assert!(subdir.join("jsonl_viewer.py").is_file());
     assert!(!subdir.join(".git").exists());
-    assert!(!subdir.join(".codex").exists());
+    assert!(!subdir.join(".ava-code").exists());
     assert!(!subdir.join(".agents").exists());
 }
 
@@ -1255,7 +1255,7 @@ async fn sandbox_blocks_explicit_split_policy_carveouts_under_bwrap() {
     let blocked_target = blocked.join("secret.txt");
     // These tests bypass the usual legacy-policy bridge, so explicitly keep
     // the sandbox helper binary and minimal runtime paths readable.
-    let sandbox_helper_dir = codex_linux_sandbox_exe()
+    let sandbox_helper_dir = ava_linux_sandbox_exe()
         .parent()
         .expect("sandbox helper should have a parent")
         .to_path_buf();
@@ -1329,7 +1329,7 @@ async fn sandbox_starts_with_denied_tmp_without_exposing_registry() {
     std::fs::write(temp.path().join("AGENTS.md"), "project instructions\n")
         .expect("write instructions");
     let cwd = AbsolutePathBuf::try_from(temp.path()).expect("absolute workspace");
-    let sandbox_helper = codex_linux_sandbox_exe();
+    let sandbox_helper = ava_linux_sandbox_exe();
     let helper_dir = AbsolutePathBuf::try_from(sandbox_helper.parent().expect("helper parent"))
         .expect("absolute helper directory");
 
@@ -1370,7 +1370,7 @@ async fn sandbox_starts_with_denied_tmp_without_exposing_registry() {
 cat AGENTS.md
 test ! -r "$DENIED_SECRET"
 if printf modified > "$DENIED_SECRET" 2>/dev/null; then exit 1; fi
-registry="$TMPDIR/codex-bwrap-synthetic-mount-targets-$(id -u)"
+registry="$TMPDIR/ava-bwrap-synthetic-mount-targets-$(id -u)"
 test ! -e "$registry"
 "#,
                 ],
@@ -1408,7 +1408,7 @@ async fn sandbox_reenables_writable_subpaths_under_unreadable_parents() {
     let allowed_target = allowed.join("note.txt");
     // These tests bypass the usual legacy-policy bridge, so explicitly keep
     // the sandbox helper binary and minimal runtime paths readable.
-    let sandbox_helper_dir = codex_linux_sandbox_exe()
+    let sandbox_helper_dir = ava_linux_sandbox_exe()
         .parent()
         .expect("sandbox helper should have a parent")
         .to_path_buf();

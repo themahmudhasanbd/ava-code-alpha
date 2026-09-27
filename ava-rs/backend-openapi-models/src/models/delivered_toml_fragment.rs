@@ -1,7 +1,7 @@
 /*
- * codex-backend
+ * ava-backend
  *
- * codex-backend
+ * ava-backend
  *
  * The version of the OpenAPI document: 0.0.1
  *

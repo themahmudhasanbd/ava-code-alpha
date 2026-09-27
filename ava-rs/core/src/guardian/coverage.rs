@@ -2,7 +2,7 @@
 
 use super::GuardianApprovalRequest;
 use crate::tools::sandboxing::ApprovalAction;
-use codex_protocol::openai_models::GuardianScope;
+use ava_protocol::openai_models::GuardianScope;
 
 impl GuardianApprovalRequest {
     pub(crate) fn guardian_scope(&self) -> GuardianScope {

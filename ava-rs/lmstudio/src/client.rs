@@ -1,7 +1,7 @@
-use codex_core::config::Config;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::RouteAwareClientPool;
-use codex_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
+use ava_core::config::Config;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::RouteAwareClientPool;
+use ava_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
 use std::io;
 use std::path::Path;
 use std::time::Duration;
@@ -205,8 +205,8 @@ mod tests {
         connection_timeout: Duration,
     ) -> LMStudioClient {
         let client = RouteAwareClientPool::with_connect_timeout(
-            codex_http_client::HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::HttpClientFactory::new(
+                ava_http_client::OutboundProxyPolicy::ReqwestDefault,
             ),
             ClientRouteClass::Other,
             connection_timeout,
@@ -219,10 +219,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_fetch_models_happy_path() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_fetch_models_happy_path",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -251,10 +251,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_fetch_models_no_data_array() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_fetch_models_no_data_array",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -282,10 +282,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_fetch_models_server_error() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_fetch_models_server_error",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -310,10 +310,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_server_happy_path() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_check_server_happy_path",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -334,10 +334,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_server_allows_slow_response_after_connect() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_check_server_allows_slow_response_after_connect",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }
@@ -361,10 +361,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_server_error() {
-        if std::env::var(codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
+        if std::env::var(ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR).is_ok() {
             tracing::info!(
                 "{} is set; skipping test_check_server_error",
-                codex_core::spawn::CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR
+                ava_core::spawn::AVA_SANDBOX_NETWORK_DISABLED_ENV_VAR
             );
             return;
         }

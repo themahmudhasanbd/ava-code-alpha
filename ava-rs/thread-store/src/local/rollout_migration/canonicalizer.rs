@@ -10,18 +10,18 @@
 //! module.
 
 use chrono::DateTime;
-use codex_protocol::ThreadId;
-use codex_protocol::items::ReasoningItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::parse_hook_prompt_message;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_protocol::ThreadId;
+use ava_protocol::items::ReasoningItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::parse_hook_prompt_message;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 use std::collections::HashSet;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -278,7 +278,7 @@ impl LegacyRolloutCanonicalizer {
                     }
                 } else {
                     let item = RolloutItem::EventMsg(event);
-                    if codex_rollout::is_persisted_rollout_item(&item, ThreadHistoryMode::Paginated)
+                    if ava_rollout::is_persisted_rollout_item(&item, ThreadHistoryMode::Paginated)
                     {
                         self.write_item(writer, &timestamp, item).await?;
                     }

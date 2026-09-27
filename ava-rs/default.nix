@@ -14,7 +14,7 @@ rustPlatform.buildRustPackage (_: {
   env.PKG_CONFIG_PATH = lib.makeSearchPathOutput "dev" "lib/pkgconfig" (
     [ openssl ] ++ lib.optionals stdenv.isLinux [ libcap ]
   );
-  pname = "codex-rs";
+  pname = "ava-rs";
   inherit version;
   cargoLock.lockFile = ./Cargo.lock;
   doCheck = false;
@@ -47,9 +47,9 @@ rustPlatform.buildRustPackage (_: {
   };
 
   meta = with lib; {
-    description = "OpenAI Codex command‑line interface rust implementation";
+    description = "OpenAI Ava command‑line interface rust implementation";
     license = licenses.asl20;
     homepage = "https://github.com/openai/codex";
-    mainProgram = "codex";
+    mainProgram = "ava";
   };
 })

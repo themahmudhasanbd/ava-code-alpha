@@ -5,8 +5,8 @@
 //! both answers because removing rollback markers must not change what the next resume sends to
 //! the model.
 
-use codex_protocol::protocol::EventMsg;
-use codex_rollout::RolloutItem;
+use ava_protocol::protocol::EventMsg;
+use ava_rollout::RolloutItem;
 
 use super::rollback;
 

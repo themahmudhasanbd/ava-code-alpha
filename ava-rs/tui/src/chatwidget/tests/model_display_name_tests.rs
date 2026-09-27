@@ -24,7 +24,7 @@ async fn custom_model_display_name_in_pickers_preserves_selection_slug() {
         },
     ];
     let mut auto = preset.clone();
-    auto.id = "codex-auto-fast".to_string();
+    auto.id = "ava-auto-fast".to_string();
     auto.model = auto.id.clone();
     auto.display_name = "Auto Fast".to_string();
     chat.model_catalog = Arc::new(ModelCatalog::new(vec![auto, preset.clone()]));

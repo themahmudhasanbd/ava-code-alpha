@@ -38,25 +38,25 @@ use crate::keymap::ListKeymap;
 use crate::render::highlight::highlight_bash_to_lines;
 use crate::render::renderable::ColumnRenderable;
 use crate::render::renderable::Renderable;
-use codex_app_server_protocol::AdditionalPermissionProfile;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionApprovalKind;
-use codex_app_server_protocol::FileChangeApprovalDecision;
-use codex_app_server_protocol::FileSystemAccessMode;
-use codex_app_server_protocol::FileSystemPath;
-use codex_app_server_protocol::FileSystemSandboxEntry;
-use codex_app_server_protocol::FileSystemSpecialPath;
-use codex_app_server_protocol::McpServerElicitationAction;
-use codex_app_server_protocol::NetworkApprovalContext;
-use codex_app_server_protocol::NetworkApprovalProtocol;
-use codex_app_server_protocol::NetworkPolicyRuleAction;
-use codex_app_server_protocol::RequestId;
-use codex_features::Features;
-use codex_protocol::ThreadId;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_app_server_protocol::AdditionalPermissionProfile;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionApprovalKind;
+use ava_app_server_protocol::FileChangeApprovalDecision;
+use ava_app_server_protocol::FileSystemAccessMode;
+use ava_app_server_protocol::FileSystemPath;
+use ava_app_server_protocol::FileSystemSandboxEntry;
+use ava_app_server_protocol::FileSystemSpecialPath;
+use ava_app_server_protocol::McpServerElicitationAction;
+use ava_app_server_protocol::NetworkApprovalContext;
+use ava_app_server_protocol::NetworkApprovalProtocol;
+use ava_app_server_protocol::NetworkPolicyRuleAction;
+use ava_app_server_protocol::RequestId;
+use ava_features::Features;
+use ava_protocol::ThreadId;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::LegacyAppPathString;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -449,7 +449,7 @@ impl ApprovalOverlay {
         self.app_event_tx.request_permissions_response(
             thread_id,
             call_id.to_string(),
-            codex_protocol::request_permissions::RequestPermissionsResponse {
+            ava_protocol::request_permissions::RequestPermissionsResponse {
                 permissions: granted_permissions,
                 scope,
                 strict_auto_review,
@@ -909,7 +909,7 @@ fn exec_options(
                 shortcuts: keymap.deny.clone(),
             }),
             CommandExecutionApprovalDecision::Cancel => Some(ApprovalOption {
-                label: "No, and tell Codex what to do differently".to_string(),
+                label: "No, and tell Ava what to do differently".to_string(),
                 decision: ApprovalDecision::Command(CommandExecutionApprovalDecision::Cancel),
                 shortcuts: keymap.decline.clone(),
             }),
@@ -1025,7 +1025,7 @@ fn patch_options(keymap: &ApprovalKeymap) -> Vec<ApprovalOption> {
             shortcuts: keymap.approve_for_session.clone(),
         },
         ApprovalOption {
-            label: "No, and tell Codex what to do differently".to_string(),
+            label: "No, and tell Ava what to do differently".to_string(),
             decision: ApprovalDecision::FileChange(FileChangeApprovalDecision::Cancel),
             shortcuts: keymap.decline.clone(),
         },
@@ -1112,19 +1112,19 @@ mod tests {
     use super::*;
     use crate::app_event::AppEvent;
     use crate::keymap::RuntimeKeymap;
-    use codex_app_server_protocol::AdditionalFileSystemPermissions;
-    use codex_app_server_protocol::AdditionalNetworkPermissions;
-    use codex_app_server_protocol::ExecPolicyAmendment;
-    use codex_app_server_protocol::NetworkApprovalProtocol;
-    use codex_app_server_protocol::NetworkPolicyAmendment;
-    use codex_config::types::KeybindingSpec;
-    use codex_config::types::KeybindingsSpec;
-    use codex_config::types::TuiKeymap;
-    use codex_protocol::models::FileSystemPermissions;
-    use codex_protocol::models::NetworkPermissions;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_absolute_path::test_support::PathExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_app_server_protocol::AdditionalFileSystemPermissions;
+    use ava_app_server_protocol::AdditionalNetworkPermissions;
+    use ava_app_server_protocol::ExecPolicyAmendment;
+    use ava_app_server_protocol::NetworkApprovalProtocol;
+    use ava_app_server_protocol::NetworkPolicyAmendment;
+    use ava_config::types::KeybindingSpec;
+    use ava_config::types::KeybindingsSpec;
+    use ava_config::types::TuiKeymap;
+    use ava_protocol::models::FileSystemPermissions;
+    use ava_protocol::models::NetworkPermissions;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::test_support::PathExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use crossterm::event::KeyModifiers;
     use insta::assert_snapshot;
     use pretty_assertions::assert_eq;
@@ -1803,7 +1803,7 @@ mod tests {
                 "Yes, just this once".to_string(),
                 "Yes, and allow this host for this conversation".to_string(),
                 "Yes, and allow this host in the future".to_string(),
-                "No, and tell Codex what to do differently".to_string(),
+                "No, and tell Ava what to do differently".to_string(),
             ]
         );
     }
@@ -1828,7 +1828,7 @@ mod tests {
             vec![
                 "Yes, proceed".to_string(),
                 "Yes, and don't ask again for this command in this session".to_string(),
-                "No, and tell Codex what to do differently".to_string(),
+                "No, and tell Ava what to do differently".to_string(),
             ]
         );
     }
@@ -1861,7 +1861,7 @@ mod tests {
             labels,
             vec![
                 "Yes, proceed".to_string(),
-                "No, and tell Codex what to do differently".to_string(),
+                "No, and tell Ava what to do differently".to_string(),
             ]
         );
     }
@@ -2322,7 +2322,7 @@ mod tests {
             })
             .collect();
         let expected = vec![
-            "✔ You approved codex to run".to_string(),
+            "✔ You approved ava to run".to_string(),
             "  git add tui/src/render/".to_string(),
             "  mod.rs tui/src/render/".to_string(),
             "  renderable.rs this time".to_string(),
@@ -2393,7 +2393,7 @@ mod tests {
         assert_eq!(
             render_history_cell_lines(decision.as_ref(), /*width*/ 80),
             vec![
-                "✔ You approved codex network access to https://example.com:8443 this time"
+                "✔ You approved ava network access to https://example.com:8443 this time"
                     .to_string(),
             ]
         );

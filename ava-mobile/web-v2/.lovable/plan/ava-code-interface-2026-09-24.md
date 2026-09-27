@@ -1,7 +1,7 @@
 # AvA Code interface
 
 ## Build
-- Replace the empty page with a mobile-first coding-agent workspace inspired by Lovable, Codex, and Claude.
+- Replace the empty page with a mobile-first coding-agent workspace inspired by Lovable, Ava, and Claude.
 - Create a clean top header with the AvA Code identity, drawer control, current workspace label, and compact action controls.
 - Create a slide-out drawer with two tabs: **Menu** and **Sessions**.
 - In **Menu**, show primary navigation and workspace actions.

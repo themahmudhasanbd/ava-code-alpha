@@ -1,12 +1,12 @@
-use codex_core::test_support::all_model_presets;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelMessages;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::openai_models::default_input_modalities;
+use ava_core::test_support::all_model_presets;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelMessages;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::openai_models::default_input_modalities;
 use std::path::Path;
 
 /// Convert a ModelPreset to ModelInfo for cache storage.
@@ -79,11 +79,11 @@ fn preset_to_info(preset: &ModelPreset, priority: i32) -> ModelInfo {
     }
 }
 
-/// Write a models_cache.json file to the codex home directory.
+/// Write a models_cache.json file to the ava home directory.
 /// This prevents ModelsManager from making network requests to refresh models.
 /// The cache will be treated as fresh (within TTL) and used instead of fetching from the network.
 /// Uses bundled-catalog-derived presets, converted to ModelInfo format.
-pub async fn write_models_cache(codex_home: &Path) -> std::io::Result<()> {
+pub async fn write_models_cache(ava_home: &Path) -> std::io::Result<()> {
     // Get a stable bundled-catalog-derived preset list and filter for picker-visible entries.
     let presets: Vec<&ModelPreset> = all_model_presets()
         .iter()
@@ -101,33 +101,33 @@ pub async fn write_models_cache(codex_home: &Path) -> std::io::Result<()> {
         })
         .collect();
 
-    write_models_cache_with_models(codex_home, models).await
+    write_models_cache_with_models(ava_home, models).await
 }
 
 /// Write a models_cache.json file with specific models.
 /// Useful when tests need specific models to be available.
 pub async fn write_models_cache_with_models(
-    codex_home: &Path,
+    ava_home: &Path,
     models: Vec<ModelInfo>,
 ) -> std::io::Result<()> {
-    let config = codex_core::config::ConfigBuilder::default()
-        .loader_overrides(codex_config::LoaderOverrides::without_managed_config_for_tests())
-        .codex_home(codex_home.to_path_buf())
+    let config = ava_core::config::ConfigBuilder::default()
+        .loader_overrides(ava_config::LoaderOverrides::without_managed_config_for_tests())
+        .ava_home(ava_home.to_path_buf())
         .build()
         .await?;
-    let auth = codex_login::CodexAuth::from_auth_storage(
-        codex_home,
+    let auth = ava_login::AvaAuth::from_auth_storage(
+        ava_home,
         config.cli_auth_credentials_store_mode,
         Some(&config.chatgpt_base_url),
         config.auth_keyring_backend_kind(),
-        &codex_login::test_support::transport_default_auth_route_config(),
+        &ava_login::test_support::transport_default_auth_route_config(),
     )
     .await?;
-    let cache = codex_model_provider::test_support::models_cache_entry(
+    let cache = ava_model_provider::test_support::models_cache_entry(
         &config.model_provider,
         auth.as_ref(),
         models,
     );
-    let cache_path = codex_home.join("models_cache.json");
+    let cache_path = ava_home.join("models_cache.json");
     std::fs::write(cache_path, serde_json::to_string_pretty(&cache)?)
 }

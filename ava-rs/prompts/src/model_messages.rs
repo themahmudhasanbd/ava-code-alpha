@@ -3,10 +3,10 @@
 //! Prompt composition and runtime settings remain with consumers; each accessor
 //! selects and resolves only the requested message family.
 
-use codex_protocol::openai_models::ConfirmationPolicies;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelMessages;
-use codex_protocol::openai_models::ToolMessage;
+use ava_protocol::openai_models::ConfirmationPolicies;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelMessages;
+use ava_protocol::openai_models::ToolMessage;
 use permissions::ResolvedApprovalMessages;
 use permissions::ResolvedPermissionMessages;
 

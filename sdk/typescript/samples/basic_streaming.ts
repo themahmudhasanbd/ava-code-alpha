@@ -3,12 +3,12 @@
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
-import { Codex } from "@openai/codex-sdk";
+import { Ava } from "@openai/codex-sdk";
 import type { ThreadEvent, ThreadItem } from "@openai/codex-sdk";
-import { codexPathOverride } from "./helpers.ts";
+import { avaPathOverride } from "./helpers.ts";
 
-const codex = new Codex({ codexPathOverride: codexPathOverride() });
-const thread = codex.startThread();
+const ava = new Ava({ avaPathOverride: avaPathOverride() });
+const thread = ava.startThread();
 const rl = createInterface({ input, output });
 
 const handleItemCompleted = (item: ThreadItem): void => {

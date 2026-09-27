@@ -1,14 +1,14 @@
-use codex_otel::EXEC_SERVER_CLIENT_REQUEST_COUNT_METRIC;
-use codex_otel::MetricsClient;
-use codex_otel::MetricsConfig;
-use codex_otel::OtelExporter;
-use codex_otel::OtelHttpProtocol;
-use codex_otel::OtelProvider;
-use codex_otel::OtelSettings;
-use codex_otel::Result;
-use codex_otel::current_span_w3c_trace_context;
-use codex_otel::set_parent_from_w3c_trace_context;
-use codex_protocol::protocol::W3cTraceContext;
+use ava_otel::EXEC_SERVER_CLIENT_REQUEST_COUNT_METRIC;
+use ava_otel::MetricsClient;
+use ava_otel::MetricsConfig;
+use ava_otel::OtelExporter;
+use ava_otel::OtelHttpProtocol;
+use ava_otel::OtelProvider;
+use ava_otel::OtelSettings;
+use ava_otel::Result;
+use ava_otel::current_span_w3c_trace_context;
+use ava_otel::set_parent_from_w3c_trace_context;
+use ava_protocol::protocol::W3cTraceContext;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::io::Read as _;
@@ -176,7 +176,7 @@ fn otlp_http_exporter_sends_metrics_to_collector() -> Result<()> {
 
     let metrics = MetricsClient::new(MetricsConfig::otlp(
         "test",
-        "codex-cli",
+        "ava-cli",
         env!("CARGO_PKG_VERSION"),
         OtelExporter::OtlpHttp {
             endpoint: format!("http://{addr}/v1/metrics"),
@@ -186,8 +186,8 @@ fn otlp_http_exporter_sends_metrics_to_collector() -> Result<()> {
         },
     ))?;
 
-    metrics.counter("codex.turns", /*inc*/ 1, &[("source", "test")])?;
-    metrics.counter("codex.api_request", /*inc*/ 1, &[("status", "200")])?;
+    metrics.counter("ava.turns", /*inc*/ 1, &[("source", "test")])?;
+    metrics.counter("ava.api_request", /*inc*/ 1, &[("status", "200")])?;
     metrics.counter_with_description(
         EXEC_SERVER_CLIENT_REQUEST_COUNT_METRIC,
         "Client-side exec-server RPC attempts.",
@@ -195,40 +195,40 @@ fn otlp_http_exporter_sends_metrics_to_collector() -> Result<()> {
         &[("method", "fs/readFile")],
     )?;
     metrics.record_duration(
-        "codex.api_request.duration_ms",
+        "ava.api_request.duration_ms",
         Duration::from_millis(100),
         &[("status", "200")],
     )?;
-    metrics.counter("codex.conversation.turn.count", /*inc*/ 1, &[])?;
+    metrics.counter("ava.conversation.turn.count", /*inc*/ 1, &[])?;
     metrics.record_duration(
-        "codex.responses_api_engine_iapi_ttft.duration_ms",
+        "ava.responses_api_engine_iapi_ttft.duration_ms",
         Duration::from_millis(100),
         &[],
     )?;
     metrics.record_duration(
-        "codex.responses_api_engine_service_tbt.duration_ms",
+        "ava.responses_api_engine_service_tbt.duration_ms",
         Duration::from_millis(100),
         &[],
     )?;
     metrics.record_duration(
-        "codex.responses_api_engine_service_ttft.duration_ms",
+        "ava.responses_api_engine_service_ttft.duration_ms",
         Duration::from_millis(100),
         &[],
     )?;
-    metrics.counter("codex.tool.call", /*inc*/ 1, &[("tool", "test")])?;
+    metrics.counter("ava.tool.call", /*inc*/ 1, &[("tool", "test")])?;
     metrics.record_duration(
-        "codex.tool.call.duration_ms",
+        "ava.tool.call.duration_ms",
         Duration::from_millis(42),
         &[("tool", "test")],
     )?;
     metrics.histogram(
-        "codex.turn.token_usage",
+        "ava.turn.token_usage",
         /*value*/ 100,
         &[("token_type", "total")],
     )?;
     metrics.gauge_with_description(
-        "codex.active",
-        "Number of active Codex operations.",
+        "ava.active",
+        "Number of active Ava operations.",
         /*value*/ 1,
         &[("component", "test")],
     )?;
@@ -252,17 +252,17 @@ fn otlp_http_exporter_sends_metrics_to_collector() -> Result<()> {
 
     let body = String::from_utf8_lossy(&request.body);
     assert!(
-        body.contains("codex.turns"),
+        body.contains("ava.turns"),
         "expected metric name not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("codex.active"),
+        body.contains("ava.active"),
         "expected gauge not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.api_request\""),
+        body.contains("\"ava.api_request\""),
         "expected API-request counter not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
@@ -271,42 +271,42 @@ fn otlp_http_exporter_sends_metrics_to_collector() -> Result<()> {
         "custom OTLP must retain the exec-server client counter excluded from built-in Statsig"
     );
     assert!(
-        body.contains("\"codex.api_request.duration_ms\""),
+        body.contains("\"ava.api_request.duration_ms\""),
         "expected API-request duration not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.conversation.turn.count\""),
+        body.contains("\"ava.conversation.turn.count\""),
         "expected conversation turn count not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.responses_api_engine_iapi_ttft.duration_ms\""),
+        body.contains("\"ava.responses_api_engine_iapi_ttft.duration_ms\""),
         "expected engine IAPI TTFT duration not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.responses_api_engine_service_tbt.duration_ms\""),
+        body.contains("\"ava.responses_api_engine_service_tbt.duration_ms\""),
         "expected engine service TBT duration not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.responses_api_engine_service_ttft.duration_ms\""),
+        body.contains("\"ava.responses_api_engine_service_ttft.duration_ms\""),
         "expected engine service TTFT duration not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.tool.call\""),
+        body.contains("\"ava.tool.call\""),
         "expected tool-call counter not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.turn.token_usage\""),
+        body.contains("\"ava.turn.token_usage\""),
         "expected turn-token histogram not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("\"codex.tool.call.duration_ms\""),
+        body.contains("\"ava.tool.call.duration_ms\""),
         "expected tool-call duration not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
@@ -356,9 +356,9 @@ fn otlp_http_exporter_sends_logs_to_collector()
 
     let otel = OtelProvider::try_new(&OtelSettings {
         environment: "test".to_string(),
-        service_name: "codex-cli".to_string(),
+        service_name: "ava-cli".to_string(),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
-        codex_home: PathBuf::from("."),
+        ava_home: PathBuf::from("."),
         exporter: OtelExporter::OtlpHttp {
             endpoint: format!("http://{addr}/v1/logs"),
             headers: HashMap::new(),
@@ -378,9 +378,9 @@ fn otlp_http_exporter_sends_logs_to_collector()
     tracing::subscriber::with_default(subscriber, || {
         tracing::callsite::rebuild_interest_cache();
         tracing::event!(
-            target: "codex_otel.log_only",
+            target: "ava_otel.log_only",
             tracing::Level::INFO,
-            event.name = "codex.test.log_exported",
+            event.name = "ava.test.log_exported",
             "test OTEL log export"
         );
     });
@@ -404,7 +404,7 @@ fn otlp_http_exporter_sends_logs_to_collector()
 
     let body = String::from_utf8_lossy(&request.body);
     assert!(
-        body.contains("codex.test.log_exported"),
+        body.contains("ava.test.log_exported"),
         "expected exported log event not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
@@ -415,9 +415,9 @@ fn otlp_http_exporter_sends_logs_to_collector()
 fn otel_provider_rejects_header_unsafe_configured_tracestate() {
     let result = OtelProvider::try_new(&OtelSettings {
         environment: "test".to_string(),
-        service_name: "codex-cli".to_string(),
+        service_name: "ava-cli".to_string(),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
-        codex_home: PathBuf::from("."),
+        ava_home: PathBuf::from("."),
         exporter: OtelExporter::None,
         trace_exporter: OtelExporter::OtlpHttp {
             endpoint: "http://127.0.0.1:1/v1/traces".to_string(),
@@ -480,9 +480,9 @@ fn otlp_http_exporter_sends_traces_to_collector()
 
     let otel = OtelProvider::try_new(&OtelSettings {
         environment: "test".to_string(),
-        service_name: "codex-cli".to_string(),
+        service_name: "ava-cli".to_string(),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
-        codex_home: PathBuf::from("."),
+        ava_home: PathBuf::from("."),
         exporter: OtelExporter::None,
         trace_exporter: OtelExporter::OtlpHttp {
             endpoint: format!("http://{addr}/v1/traces"),
@@ -529,9 +529,9 @@ fn otlp_http_exporter_sends_traces_to_collector()
         let propagated_trace =
             current_span_w3c_trace_context().expect("current span should have trace context");
         tracing::event!(
-            target: "codex_otel.trace_safe",
+            target: "ava_otel.trace_safe",
             tracing::Level::INFO,
-            event.name = "codex.test.trace_event",
+            event.name = "ava.test.trace_event",
             "test OTEL trace event"
         );
         tracing::info!("trace loopback event");
@@ -567,7 +567,7 @@ fn otlp_http_exporter_sends_traces_to_collector()
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("codex-cli"),
+        body.contains("ava-cli"),
         "expected service name not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
@@ -577,7 +577,7 @@ fn otlp_http_exporter_sends_traces_to_collector()
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("codex.test.trace_event"),
+        body.contains("ava.test.trace_event"),
         "expected trace event not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
@@ -625,9 +625,9 @@ async fn otlp_http_exporter_sends_traces_to_collector_with_bounded_shutdown_in_t
 
     let otel = OtelProvider::try_new(&OtelSettings {
         environment: "test".to_string(),
-        service_name: "codex-cli".to_string(),
+        service_name: "ava-cli".to_string(),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
-        codex_home: PathBuf::from("."),
+        ava_home: PathBuf::from("."),
         exporter: OtelExporter::None,
         trace_exporter: OtelExporter::OtlpHttp {
             endpoint: format!("http://{addr}/v1/traces"),
@@ -683,7 +683,7 @@ async fn otlp_http_exporter_sends_traces_to_collector_with_bounded_shutdown_in_t
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("codex-cli"),
+        body.contains("ava-cli"),
         "expected service name not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );
@@ -718,9 +718,9 @@ fn otlp_http_exporter_times_out_when_collector_stalls_during_bounded_shutdown() 
     let (result, elapsed) = runtime.block_on(async move {
         let otel = OtelProvider::try_new(&OtelSettings {
             environment: "test".to_string(),
-            service_name: "codex-cli".to_string(),
+            service_name: "ava-cli".to_string(),
             service_version: env!("CARGO_PKG_VERSION").to_string(),
-            codex_home: PathBuf::from("."),
+            ava_home: PathBuf::from("."),
             exporter: OtelExporter::None,
             trace_exporter: OtelExporter::OtlpHttp {
                 endpoint: format!("http://{addr}/v1/traces"),
@@ -817,9 +817,9 @@ fn otlp_http_exporter_sends_traces_to_collector_in_current_thread_tokio_runtime(
         let result = runtime.block_on(async move {
             let otel = OtelProvider::try_new(&OtelSettings {
                 environment: "test".to_string(),
-                service_name: "codex-cli".to_string(),
+                service_name: "ava-cli".to_string(),
                 service_version: env!("CARGO_PKG_VERSION").to_string(),
-                codex_home: PathBuf::from("."),
+                ava_home: PathBuf::from("."),
                 exporter: OtelExporter::None,
                 trace_exporter: OtelExporter::OtlpHttp {
                     endpoint: format!("http://{addr}/v1/traces"),
@@ -883,7 +883,7 @@ fn otlp_http_exporter_sends_traces_to_collector_in_current_thread_tokio_runtime(
         &body.chars().take(2000).collect::<String>()
     );
     assert!(
-        body.contains("codex-cli"),
+        body.contains("ava-cli"),
         "expected service name not found; body prefix: {}",
         &body.chars().take(2000).collect::<String>()
     );

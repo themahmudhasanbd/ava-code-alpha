@@ -1,5 +1,5 @@
-use codex_arg0::Arg0DispatchPaths;
-use codex_core::config::ConfigBuilder;
+use ava_arg0::Arg0DispatchPaths;
+use ava_core::config::ConfigBuilder;
 use pretty_assertions::assert_eq;
 
 use super::CheckStatus;
@@ -7,14 +7,14 @@ use super::sandbox_check;
 
 #[tokio::test]
 async fn reports_missing_linux_sandbox_helper() {
-    let home = tempfile::tempdir().expect("create Codex home");
+    let home = tempfile::tempdir().expect("create Ava home");
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await
         .expect("load sandbox config");
     let arg0_paths = Arg0DispatchPaths {
-        codex_linux_sandbox_exe: Some(home.path().join("missing-linux-helper")),
+        ava_linux_sandbox_exe: Some(home.path().join("missing-linux-helper")),
         ..Default::default()
     };
 
@@ -27,15 +27,15 @@ async fn reports_missing_linux_sandbox_helper() {
 #[cfg(target_os = "windows")]
 #[tokio::test]
 async fn reports_refresh_failure_after_setup_completed() {
-    let home = tempfile::tempdir().expect("create Codex home");
-    let version = codex_windows_sandbox::SETUP_VERSION;
+    let home = tempfile::tempdir().expect("create Ava home");
+    let version = ava_windows_sandbox::SETUP_VERSION;
     for (path, contents) in [
         (
             ".sandbox/setup_marker.json",
             serde_json::json!({
                 "version": version,
-                "offline_username": codex_windows_sandbox::OFFLINE_USERNAME,
-                "online_username": codex_windows_sandbox::ONLINE_USERNAME,
+                "offline_username": ava_windows_sandbox::OFFLINE_USERNAME,
+                "online_username": ava_windows_sandbox::ONLINE_USERNAME,
             }),
         ),
         (
@@ -43,11 +43,11 @@ async fn reports_refresh_failure_after_setup_completed() {
             serde_json::json!({
                 "version": version,
                 "offline": {
-                    "username": codex_windows_sandbox::OFFLINE_USERNAME,
+                    "username": ava_windows_sandbox::OFFLINE_USERNAME,
                     "password": "",
                 },
                 "online": {
-                    "username": codex_windows_sandbox::ONLINE_USERNAME,
+                    "username": ava_windows_sandbox::ONLINE_USERNAME,
                     "password": "",
                 },
             }),
@@ -58,13 +58,13 @@ async fn reports_refresh_failure_after_setup_completed() {
             .expect("create fixture directory");
         std::fs::write(path, contents.to_string()).expect("write sandbox fixture");
     }
-    assert!(codex_windows_sandbox::sandbox_setup_is_complete(
+    assert!(ava_windows_sandbox::sandbox_setup_is_complete(
         home.path()
     ));
-    codex_windows_sandbox::write_setup_error_report(
+    ava_windows_sandbox::write_setup_error_report(
         home.path(),
-        &codex_windows_sandbox::SetupErrorReport {
-            code: codex_windows_sandbox::SetupErrorCode::HelperFirewallPolicyIneffective,
+        &ava_windows_sandbox::SetupErrorReport {
+            code: ava_windows_sandbox::SetupErrorCode::HelperFirewallPolicyIneffective,
             message: "firewall policy rejected the refresh".to_string(),
         },
     )
@@ -75,7 +75,7 @@ async fn reports_refresh_failure_after_setup_completed() {
     )
     .expect("write elevated sandbox config");
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await
         .expect("load sandbox config");
@@ -92,11 +92,11 @@ async fn reports_refresh_failure_after_setup_completed() {
 #[cfg(target_os = "windows")]
 #[tokio::test]
 async fn rejects_oversized_setup_failure_reports() {
-    let home = tempfile::tempdir().expect("create Codex home");
-    codex_windows_sandbox::write_setup_error_report(
+    let home = tempfile::tempdir().expect("create Ava home");
+    ava_windows_sandbox::write_setup_error_report(
         home.path(),
-        &codex_windows_sandbox::SetupErrorReport {
-            code: codex_windows_sandbox::SetupErrorCode::HelperFirewallPolicyIneffective,
+        &ava_windows_sandbox::SetupErrorReport {
+            code: ava_windows_sandbox::SetupErrorCode::HelperFirewallPolicyIneffective,
             message: "x".repeat(64 * 1024),
         },
     )
@@ -107,7 +107,7 @@ async fn rejects_oversized_setup_failure_reports() {
     )
     .expect("write elevated sandbox config");
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await
         .expect("load sandbox config");
@@ -133,8 +133,8 @@ async fn rejects_oversized_setup_failure_reports() {
 #[cfg(target_os = "windows")]
 #[tokio::test]
 async fn reports_malformed_setup_failure_reports() {
-    let home = tempfile::tempdir().expect("create Codex home");
-    let path = codex_windows_sandbox::setup_error_path(home.path());
+    let home = tempfile::tempdir().expect("create Ava home");
+    let path = ava_windows_sandbox::setup_error_path(home.path());
     std::fs::create_dir_all(path.parent().expect("setup failure report parent"))
         .expect("create sandbox directory");
     std::fs::write(path, "{").expect("write malformed setup failure report");
@@ -144,7 +144,7 @@ async fn reports_malformed_setup_failure_reports() {
     )
     .expect("write elevated sandbox config");
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .build()
         .await
         .expect("load sandbox config");

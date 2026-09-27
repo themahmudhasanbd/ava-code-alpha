@@ -1,13 +1,13 @@
-pub use codex_api::ResponseEvent;
-use codex_protocol::error::Result;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelInfo;
-use codex_tools::ToolSpec;
+pub use ava_api::ResponseEvent;
+use ava_protocol::error::Result;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelInfo;
+use ava_tools::ToolSpec;
 use futures::Stream;
 use serde_json::Value;
 use std::pin::Pin;
@@ -38,7 +38,7 @@ pub struct Prompt {
     /// Whether the Responses API should strictly validate `output_schema`.
     pub output_schema_strict: bool,
 
-    pub(crate) cyber_access_program: Option<codex_protocol::turn_input::CyberAccessProgram>,
+    pub(crate) cyber_access_program: Option<ava_protocol::turn_input::CyberAccessProgram>,
 }
 
 impl Default for Prompt {

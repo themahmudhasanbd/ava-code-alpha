@@ -12,15 +12,15 @@ use std::time::Duration;
 
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_exec_server::ExecServerError;
-use codex_exec_server::HttpClient;
-use codex_exec_server::HttpHeader;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestParams;
-use codex_exec_server::HttpRequestResponse;
-use codex_exec_server::HttpResponseBodyStream;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::HttpClient;
+use ava_exec_server::HttpHeader;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestParams;
+use ava_exec_server::HttpRequestResponse;
+use ava_exec_server::HttpResponseBodyStream;
 #[cfg(unix)]
-use codex_utils_pty::process_group::kill_process_group;
+use ava_utils_pty::process_group::kill_process_group;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use futures::future::Shared;
@@ -74,7 +74,7 @@ struct HelperProcess {
     #[cfg(unix)]
     process_group_id: u32,
     #[cfg(windows)]
-    job: codex_utils_pty::JobObject,
+    job: ava_utils_pty::JobObject,
 }
 
 struct RawHeaderEntries {
@@ -459,7 +459,7 @@ async fn run_helper(command: &str, cwd: &Path) -> Result<HeaderMap> {
 
     #[cfg(windows)]
     let (child, job) = {
-        let job = codex_utils_pty::JobObject::create_without_breakaway()
+        let job = ava_utils_pty::JobObject::create_without_breakaway()
             .map_err(|error| anyhow!("MCP HTTP headers helper containment failed: {error}"))?;
         let child = job
             .spawn_contained(&mut process)

@@ -1,11 +1,11 @@
 use super::*;
-use codex_app_server_protocol::PluginSearchParams;
-use codex_app_server_protocol::PluginSearchResponse;
-use codex_app_server_protocol::PluginSearchResult;
-use codex_app_server_protocol::PluginSearchScope;
-use codex_core_plugins::OPENAI_BUNDLED_MARKETPLACE_NAME;
-use codex_core_plugins::remote::RemotePluginSearchRequest;
-use codex_core_plugins::remote::search_remote_plugins;
+use ava_app_server_protocol::PluginSearchParams;
+use ava_app_server_protocol::PluginSearchResponse;
+use ava_app_server_protocol::PluginSearchResult;
+use ava_app_server_protocol::PluginSearchScope;
+use ava_core_plugins::OPENAI_BUNDLED_MARKETPLACE_NAME;
+use ava_core_plugins::remote::RemotePluginSearchRequest;
+use ava_core_plugins::remote::search_remote_plugins;
 
 const DEFAULT_PLUGIN_SEARCH_LIMIT: u32 = 16;
 const MAX_PLUGIN_SEARCH_LIMIT: u32 = 1_000;
@@ -51,10 +51,10 @@ impl PluginRequestProcessor {
         let plugin_sharing_enabled = config.features.enabled(Feature::PluginSharing);
 
         let auth = self.auth_manager.auth().await;
-        let auth_mode = auth.as_ref().map(CodexAuth::api_auth_mode);
+        let auth_mode = auth.as_ref().map(AvaAuth::api_auth_mode);
         let remote_plugin_enabled = config.features.enabled(Feature::RemotePlugin);
         let use_remote_global_catalog =
-            remote_plugin_enabled && auth_mode.is_some_and(DomainAuthMode::uses_codex_backend);
+            remote_plugin_enabled && auth_mode.is_some_and(DomainAuthMode::uses_ava_backend);
         let remote_scope = if remote_plugin_enabled {
             Some(scope.map(|scope| match scope {
                 PluginSearchScope::Global => RemotePluginScope::Global,
@@ -74,7 +74,7 @@ impl PluginRequestProcessor {
             .clamp(1, MAX_PLUGIN_SEARCH_LIMIT);
         let mut next_cursor = None;
         let mut remote_results = Vec::new();
-        if auth_mode.is_some_and(DomainAuthMode::uses_codex_backend)
+        if auth_mode.is_some_and(DomainAuthMode::uses_ava_backend)
             && let Some(remote_scope) = remote_scope
         {
             let page = search_remote_plugins(
@@ -281,7 +281,7 @@ fn marketplace_matches_search_scope(
             marketplace_name,
             OPENAI_BUNDLED_MARKETPLACE_NAME
                 | "openai-bundled-alpha"
-                | "codex-official"
+                | "ava-official"
                 | "openai-curated-remote"
                 | "openai-primary-runtime"
         );

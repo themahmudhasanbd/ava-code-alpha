@@ -6,33 +6,33 @@ use crate::runtime::MemoryStartupContext;
 use crate::start_memories_startup_task;
 use crate::storage::rebuild_raw_memories_file_from_memories;
 use crate::storage::sync_rollout_summaries_from_memories;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_config::types::MemoriesConfig;
-use codex_features::Feature;
-use codex_git_utils::diff_since_latest_init;
-use codex_git_utils::reset_git_repository;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_model_provider::ModelProvider;
-use codex_model_provider::ModelProviderFuture;
-use codex_model_provider::ProviderAccountResult;
-use codex_model_provider::SharedModelProvider;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::ResponseItemId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
-use codex_state::Phase2JobClaimOutcome;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_config::types::MemoriesConfig;
+use ava_features::Feature;
+use ava_git_utils::diff_since_latest_init;
+use ava_git_utils::reset_git_repository;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_model_provider::ModelProvider;
+use ava_model_provider::ModelProviderFuture;
+use ava_model_provider::ProviderAccountResult;
+use ava_model_provider::SharedModelProvider;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::ResponseItemId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
+use ava_state::Phase2JobClaimOutcome;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::fs_wait;
 use core_test_support::hooks::trust_discovered_hooks;
 use core_test_support::responses::ResponseMock;
@@ -47,8 +47,8 @@ use core_test_support::responses::sse;
 #[cfg(unix)]
 use core_test_support::responses::sse_failed;
 use core_test_support::responses::start_mock_server;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -67,13 +67,13 @@ async fn memories_startup_creates_memory_root() -> anyhow::Result<()> {
     let server = start_mock_server().await;
     let home = Arc::new(TempDir::new()?);
     let memory_root = home.path().join("memories");
-    let test = build_test_codex(&server, home).await?;
+    let test = build_test_ava(&server, home).await?;
 
     assert!(!memory_root.exists());
     trigger_memories_startup(&test).await;
     wait_for_dir(&memory_root).await?;
 
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -86,7 +86,7 @@ async fn dual_write_prepares_both_roots_without_importing_old_notes() -> anyhow:
     tokio::fs::write(old_notes.join("old.md"), "old memory").await?;
     let mut memories = startup_test_memories_config();
     memories.dual_write = true;
-    let test = build_test_codex_with_memories_config(&server, Arc::clone(&home), memories).await?;
+    let test = build_test_ava_with_memories_config(&server, Arc::clone(&home), memories).await?;
     trigger_memories_startup(&test).await;
     wait_for_dir(&home.path().join("memories/extensions/ad_hoc")).await?;
     wait_for_dir(&home.path().join("memories_v2/extensions/ad_hoc")).await?;
@@ -100,7 +100,7 @@ async fn dual_write_prepares_both_roots_without_importing_old_notes() -> anyhow:
             .join("memories_v2/extensions/ad_hoc/notes/old.md")
             .exists()
     );
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -115,7 +115,7 @@ async fn memories_startup_removes_symlinked_extensions_before_seeding() -> anyho
     tokio::fs::create_dir_all(&outside).await?;
     std::os::unix::fs::symlink(&outside, memory_root.join("extensions"))?;
 
-    let test = build_test_codex(&server, home).await?;
+    let test = build_test_ava(&server, home).await?;
     trigger_memories_startup(&test).await;
     wait_for_dir(&memory_root.join("extensions/ad_hoc")).await?;
 
@@ -129,7 +129,7 @@ async fn memories_startup_removes_symlinked_extensions_before_seeding() -> anyho
         "extension seeding must not create directories through the removed symbolic link"
     );
 
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -180,7 +180,7 @@ async fn memories_startup_fails_consolidation_when_worker_creates_extension_syml
             response,
         )
         .await;
-        let test = build_test_codex(&server, home).await?;
+        let test = build_test_ava(&server, home).await?;
 
         trigger_memories_startup(&test).await;
         wait_for_single_request(&phase2).await;
@@ -202,7 +202,7 @@ async fn memories_startup_fails_consolidation_when_worker_creates_extension_syml
             "a rejected consolidation result must not reset the trusted baseline"
         );
 
-        shutdown_test_codex(&test).await?;
+        shutdown_test_ava(&test).await?;
     }
 
     Ok(())
@@ -277,7 +277,7 @@ elif kind == "stop" and Path(json.load(sys.stdin)["cwd"]).name == "memories":
                 "\n[[hooks.Stop]]\n[[hooks.Stop.hooks]]\ntype = \"command\"\ncommand = {command}\n"
             ));
         }
-        let test = test_codex()
+        let test = test_ava()
             .with_home(home)
             .with_cloud_config_bundle(
                 CloudConfigBundleFixture::loader_with_enterprise_requirement(requirements),
@@ -347,7 +347,7 @@ elif kind == "stop" and Path(json.load(sys.stdin)["cwd"]).name == "memories":
             assert_eq!(tokio::fs::read_to_string(hook_log).await?, "hook invoked\n");
             fs_wait::wait_for_path_exists(notify_log, Duration::from_secs(10)).await?;
         }
-        shutdown_test_codex(&test).await?;
+        shutdown_test_ava(&test).await?;
     }
     Ok(())
 }
@@ -405,7 +405,7 @@ async fn memories_startup_phase2_tracks_workspace_diff_across_runs() -> anyhow::
     )
     .await;
 
-    let test = build_test_codex(&server, home.clone()).await?;
+    let test = build_test_ava(&server, home.clone()).await?;
     trigger_memories_startup(&test).await;
 
     let request = wait_for_single_request(&phase2).await;
@@ -437,7 +437,7 @@ async fn memories_startup_phase2_tracks_workspace_diff_across_runs() -> anyhow::
             .all(|summary| !summary.contains("rollout summary A"))
     );
 
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -474,7 +474,7 @@ async fn phase2_retries_when_clean_workspace_is_missing_artifacts() -> anyhow::R
         ]),
     )
     .await;
-    let test = build_test_codex(&server, home.clone()).await?;
+    let test = build_test_ava(&server, home.clone()).await?;
 
     trigger_memories_startup(&test).await;
     wait_for_single_request(&phase2).await;
@@ -487,10 +487,10 @@ async fn phase2_retries_when_clean_workspace_is_missing_artifacts() -> anyhow::R
     assert!(!memory_root.join("memory_summary.md").exists());
     assert_eq!(
         tokio::fs::read_to_string(memory_root.join("phase2_workspace_diff.md")).await?,
-        "# Memory Workspace Diff\n\nGenerated by Codex before Phase 2 memory consolidation. Read this file first and do not edit it.\n\n## Status\n- none\n"
+        "# Memory Workspace Diff\n\nGenerated by Ava before Phase 2 memory consolidation. Read this file first and do not edit it.\n\n## Status\n- none\n"
     );
 
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -540,7 +540,7 @@ async fn memories_startup_phase2_prunes_old_extension_resources() -> anyhow::Res
     )
     .await;
 
-    let test = build_test_codex(&server, home.clone()).await?;
+    let test = build_test_ava(&server, home.clone()).await?;
     trigger_memories_startup(&test).await;
 
     let request = wait_for_single_request(&phase2).await;
@@ -561,7 +561,7 @@ async fn memories_startup_phase2_prunes_old_extension_resources() -> anyhow::Res
         "recent extension resource should be retained"
     );
 
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -601,7 +601,7 @@ async fn memories_startup_phase2_prunes_old_extension_resources_without_stage1_i
     )
     .await;
 
-    let test = build_test_codex(&server, home.clone()).await?;
+    let test = build_test_ava(&server, home.clone()).await?;
     trigger_memories_startup(&test).await;
 
     let request = wait_for_single_request(&phase2).await;
@@ -614,7 +614,7 @@ async fn memories_startup_phase2_prunes_old_extension_resources_without_stage1_i
     wait_for_phase2_workspace_reset(db.memories(), &home.path().join("memories")).await?;
     wait_for_file_removed(&old_file).await?;
 
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -623,15 +623,15 @@ async fn memories_startup_phase1_uses_live_thread_service_tier_and_detached_meta
 -> anyhow::Result<()> {
     let server = start_mock_server().await;
     let home = Arc::new(TempDir::new()?);
-    let test = build_test_codex(&server, home).await?;
+    let test = build_test_ava(&server, home).await?;
     assert_eq!(test.config.service_tier, None);
     reset_git_repository(&test.config.cwd).await?;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
-        codex_protocol::protocol::ThreadSettingsOverrides {
+        &test.ava-code,
+        ava_protocol::protocol::ThreadSettingsOverrides {
             service_tier: Some(Some(ServiceTier::Fast.request_value().to_string())),
-            permission_profile: Some(codex_protocol::models::PermissionProfile::workspace_write()),
+            permission_profile: Some(ava_protocol::models::PermissionProfile::workspace_write()),
             ..Default::default()
         },
     )
@@ -648,7 +648,7 @@ async fn memories_startup_phase1_uses_live_thread_service_tier_and_detached_meta
         Arc::clone(&test.thread_manager),
         test.thread_manager.auth_manager(),
         test.session_configured.thread_id,
-        Arc::clone(&test.codex),
+        Arc::clone(&test.ava-code),
         &test.config,
         config_snapshot.session_source.clone(),
     );
@@ -676,18 +676,18 @@ async fn memories_startup_phase1_uses_live_thread_service_tier_and_detached_meta
     context
         .stream_stage_one_prompt(
             &test.config,
-            &codex_core::Prompt::default(),
+            &ava_core::Prompt::default(),
             &request_context,
         )
         .await?;
     let request = wait_for_single_request(&stage_one).await;
     let metadata_header = request
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .expect("detached memory request should include workspace metadata");
     let metadata: serde_json::Value =
         serde_json::from_str(&metadata_header).expect("turn metadata json");
     let client_metadata: serde_json::Value = serde_json::from_str(
-        request.body_json()["client_metadata"]["x-codex-turn-metadata"]
+        request.body_json()["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("detached memory request should include client metadata"),
     )
@@ -720,7 +720,7 @@ async fn memories_startup_phase1_uses_live_thread_service_tier_and_detached_meta
     assert!(metadata.get("window_id").is_none());
     assert!(metadata.get("workspaces").is_some());
 
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(())
 }
 
@@ -802,13 +802,13 @@ async fn run_memory_phase_one_model_request_test(
     memories: MemoriesConfig,
 ) -> anyhow::Result<ResponsesRequest> {
     let version = memories.version;
-    let test = build_test_codex_with_memories_config(server, Arc::clone(&home), memories).await?;
+    let test = build_test_ava_with_memories_config(server, Arc::clone(&home), memories).await?;
     let provider = Arc::new(MockMemoryModelProvider::new(
         test.config.model_provider.clone(),
         Some(test.thread_manager.auth_manager()),
     ));
     let db = test
-        .codex
+        .ava-code
         .state_db()
         .ok_or_else(|| anyhow::anyhow!("state db should be enabled for memory startup test"))?;
     let source_id = seed_stage1_candidate(
@@ -818,7 +818,7 @@ async fn run_memory_phase_one_model_request_test(
         "startup-models",
     )
     .await?;
-    if version == codex_protocol::MemoryVersion::V2 {
+    if version == ava_protocol::MemoryVersion::V2 {
         let path = home.path().join(format!("rollout-{source_id}.jsonl"));
         let mut contents = tokio::fs::read_to_string(&path).await?;
         let mut items = vec![
@@ -906,10 +906,10 @@ async fn run_memory_phase_one_model_request_test(
         "y".repeat(4_500 - secret.len() - 1),
     );
     let output = match version {
-        codex_protocol::MemoryVersion::V1 => json!({
+        ava_protocol::MemoryVersion::V1 => json!({
             "raw_memory":"raw memory", "rollout_summary":summary, "rollout_slug":"startup-models",
         }),
-        codex_protocol::MemoryVersion::V2 => json!({
+        ava_protocol::MemoryVersion::V2 => json!({
             "rollout_summary":summary, "rollout_slug":"startup-models",
         }),
     };
@@ -926,7 +926,7 @@ async fn run_memory_phase_one_model_request_test(
     let (context, config) = memory_startup_context_with_provider(&test, provider).await;
     phase1::run(context, config).await;
     let request = wait_for_single_request(&response).await;
-    if version == codex_protocol::MemoryVersion::V2 {
+    if version == ava_protocol::MemoryVersion::V2 {
         let outputs = db
             .memories_for_version(version)
             .await?
@@ -951,7 +951,7 @@ async fn run_memory_phase_one_model_request_test(
             serde_json::json!(["rollout_summary", "rollout_slug"])
         );
     }
-    shutdown_test_codex(&test).await?;
+    shutdown_test_ava(&test).await?;
     Ok(request)
 }
 
@@ -961,13 +961,13 @@ async fn run_memory_phase_two_model_request_test(
     memories: MemoriesConfig,
 ) -> anyhow::Result<ResponsesRequest> {
     let version = memories.version;
-    let test = build_test_codex_with_memories_config(server, home.clone(), memories).await?;
+    let test = build_test_ava_with_memories_config(server, home.clone(), memories).await?;
     let provider = Arc::new(MockMemoryModelProvider::new(
         test.config.model_provider.clone(),
         Some(test.thread_manager.auth_manager()),
     ));
     let db = test
-        .codex
+        .ava-code
         .state_db()
         .ok_or_else(|| anyhow::anyhow!("state db should be enabled for memory startup test"))?;
     let source_id = seed_stage1_output(
@@ -981,7 +981,7 @@ async fn run_memory_phase_two_model_request_test(
     .await?;
 
     let store = db.memories_for_version(version).await?;
-    if version == codex_protocol::MemoryVersion::V2 {
+    if version == ava_protocol::MemoryVersion::V2 {
         let metadata = db.get_thread(source_id).await?.expect("source metadata");
         let phase1_claim = store
             .try_claim_stage1_job(
@@ -992,7 +992,7 @@ async fn run_memory_phase_two_model_request_test(
                 /*max_running_jobs*/ 1,
             )
             .await?;
-        let codex_state::Stage1JobClaimOutcome::Claimed { ownership_token } = phase1_claim else {
+        let ava_state::Stage1JobClaimOutcome::Claimed { ownership_token } = phase1_claim else {
             panic!("claim v2 source")
         };
         store
@@ -1017,12 +1017,12 @@ async fn run_memory_phase_two_model_request_test(
     .await;
 
     let (context, config) = memory_startup_context_with_provider(&test, provider).await;
-    let root = config.codex_home.join(version.directory_name());
+    let root = config.ava_home.join(version.directory_name());
     tokio::fs::create_dir_all(&root).await?;
     seed_extension_instructions(&root).await?;
     match version {
-        codex_protocol::MemoryVersion::V1 => seed_required_memory_artifacts(&root).await?,
-        codex_protocol::MemoryVersion::V2 => {
+        ava_protocol::MemoryVersion::V1 => seed_required_memory_artifacts(&root).await?,
+        ava_protocol::MemoryVersion::V2 => {
             tokio::fs::write(root.join("memory_summary.md"), "v1\n\n## User Profile\nTest user\n\n## User preferences\nTest preference\n\n## General Tips\nTest tip\n\n## What's in Memory\nTest source\n").await?
         }
     }
@@ -1030,7 +1030,7 @@ async fn run_memory_phase_two_model_request_test(
     phase2::run(context, config, parent_permission_profile).await;
     let request = wait_for_single_request(&response).await;
     let turn_metadata: serde_json::Value = serde_json::from_str(
-        request.body_json()["client_metadata"]["x-codex-turn-metadata"]
+        request.body_json()["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("consolidation turn metadata"),
     )?;
@@ -1048,14 +1048,14 @@ async fn run_memory_phase_two_model_request_test(
             .is_none(),
         "phase-2 consolidation agent should be removed after shutdown"
     );
-    if version == codex_protocol::MemoryVersion::V2 {
+    if version == ava_protocol::MemoryVersion::V2 {
         assert!(!root.join("raw_memories.md").exists());
         assert!(!root.join("MEMORY.md").exists());
         assert!(!root.join("skills").exists());
         assert_eq!(read_rollout_summary_bodies(&root).await?.len(), 1);
         assert!(request.body_contains_text("Consolidate the supplied rollout summaries"));
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(request)
 }
 
@@ -1067,19 +1067,19 @@ fn startup_test_memories_config() -> MemoriesConfig {
     }
 }
 
-async fn build_test_codex(
+async fn build_test_ava(
     server: &wiremock::MockServer,
     home: Arc<TempDir>,
-) -> anyhow::Result<TestCodex> {
-    build_test_codex_with_memories_config(server, home, startup_test_memories_config()).await
+) -> anyhow::Result<TestAva> {
+    build_test_ava_with_memories_config(server, home, startup_test_memories_config()).await
 }
 
-async fn build_test_codex_with_memories_config(
+async fn build_test_ava_with_memories_config(
     server: &wiremock::MockServer,
     home: Arc<TempDir>,
     memories: MemoriesConfig,
-) -> anyhow::Result<TestCodex> {
-    test_codex()
+) -> anyhow::Result<TestAva> {
+    test_ava()
         .with_home(home)
         .with_config(move |config| {
             config
@@ -1092,9 +1092,9 @@ async fn build_test_codex_with_memories_config(
         .await
 }
 
-async fn init_state_db(home: &Arc<TempDir>) -> anyhow::Result<Arc<codex_state::StateRuntime>> {
-    let db = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+async fn init_state_db(home: &Arc<TempDir>) -> anyhow::Result<Arc<ava_state::StateRuntime>> {
+    let db = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         "test-provider".into(),
     )
     .await?;
@@ -1102,8 +1102,8 @@ async fn init_state_db(home: &Arc<TempDir>) -> anyhow::Result<Arc<codex_state::S
     Ok(db)
 }
 
-async fn trigger_memories_startup(test: &TestCodex) {
-    let config_snapshot = test.codex.config_snapshot().await;
+async fn trigger_memories_startup(test: &TestAva) {
+    let config_snapshot = test.ava-code.config_snapshot().await;
     let mut config = test.config.clone();
     config
         .features
@@ -1114,7 +1114,7 @@ async fn trigger_memories_startup(test: &TestCodex) {
         Arc::clone(&test.thread_manager),
         test.thread_manager.auth_manager(),
         test.session_configured.thread_id,
-        Arc::clone(&test.codex),
+        Arc::clone(&test.ava-code),
         Arc::new(config),
         parent_permission_profile,
         &config_snapshot.session_source,
@@ -1122,10 +1122,10 @@ async fn trigger_memories_startup(test: &TestCodex) {
 }
 
 async fn memory_startup_context_with_provider(
-    test: &TestCodex,
+    test: &TestAva,
     provider: SharedModelProvider,
-) -> (Arc<MemoryStartupContext>, Arc<codex_core::config::Config>) {
-    let config_snapshot = test.codex.config_snapshot().await;
+) -> (Arc<MemoryStartupContext>, Arc<ava_core::config::Config>) {
+    let config_snapshot = test.ava-code.config_snapshot().await;
     let mut config = test.config.clone();
     config
         .features
@@ -1136,7 +1136,7 @@ async fn memory_startup_context_with_provider(
         Arc::clone(&test.thread_manager),
         test.thread_manager.auth_manager(),
         test.session_configured.thread_id,
-        Arc::clone(&test.codex),
+        Arc::clone(&test.ava-code),
         config.as_ref(),
         config_snapshot.session_source,
         provider,
@@ -1178,7 +1178,7 @@ impl ModelProvider for MockMemoryModelProvider {
         self.delegate.auth_manager()
     }
 
-    fn auth(&self) -> ModelProviderFuture<'_, Option<CodexAuth>> {
+    fn auth(&self) -> ModelProviderFuture<'_, Option<AvaAuth>> {
         let delegate = Arc::clone(&self.delegate);
         Box::pin(async move { delegate.auth().await })
     }
@@ -1189,30 +1189,30 @@ impl ModelProvider for MockMemoryModelProvider {
 
     fn models_manager(
         &self,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         config_model_catalog: Option<ModelsResponse>,
-    ) -> codex_models_manager::manager::SharedModelsManager {
+    ) -> ava_models_manager::manager::SharedModelsManager {
         self.delegate
-            .models_manager(codex_home, config_model_catalog)
+            .models_manager(ava_home, config_model_catalog)
     }
 }
 
 async fn seed_stage1_output(
-    db: &codex_state::StateRuntime,
-    codex_home: &Path,
+    db: &ava_state::StateRuntime,
+    ava_home: &Path,
     updated_at: chrono::DateTime<chrono::Utc>,
     raw_memory: &str,
     rollout_summary: &str,
     rollout_slug: &str,
 ) -> anyhow::Result<ThreadId> {
     let thread_id = ThreadId::new();
-    let mut metadata_builder = codex_state::ThreadMetadataBuilder::new(
+    let mut metadata_builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
-        codex_home.join(format!("rollout-{thread_id}.jsonl")),
+        ava_home.join(format!("rollout-{thread_id}.jsonl")),
         updated_at,
         SessionSource::Cli,
     );
-    metadata_builder.cwd = codex_home.join(format!("workspace-{rollout_slug}"));
+    metadata_builder.cwd = ava_home.join(format!("workspace-{rollout_slug}"));
     metadata_builder.model_provider = Some("test-provider".to_string());
     metadata_builder.git_branch = Some(format!("branch-{rollout_slug}"));
     let metadata = metadata_builder.build("test-provider");
@@ -1232,13 +1232,13 @@ async fn seed_stage1_output(
 }
 
 async fn seed_stage1_candidate(
-    db: &codex_state::StateRuntime,
-    codex_home: &Path,
+    db: &ava_state::StateRuntime,
+    ava_home: &Path,
     updated_at: chrono::DateTime<chrono::Utc>,
     rollout_slug: &str,
 ) -> anyhow::Result<ThreadId> {
     let thread_id = ThreadId::new();
-    let rollout_path = codex_home.join(format!("rollout-{thread_id}.jsonl"));
+    let rollout_path = ava_home.join(format!("rollout-{thread_id}.jsonl"));
     let line = RolloutLine {
         timestamp: updated_at.to_rfc3339(),
         ordinal: None,
@@ -1258,13 +1258,13 @@ async fn seed_stage1_candidate(
     let jsonl = serde_json::to_string(&line)?;
     tokio::fs::write(&rollout_path, format!("{jsonl}\n")).await?;
 
-    let mut metadata_builder = codex_state::ThreadMetadataBuilder::new(
+    let mut metadata_builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         rollout_path,
         updated_at,
         SessionSource::Cli,
     );
-    metadata_builder.cwd = codex_home.join(format!("workspace-{rollout_slug}"));
+    metadata_builder.cwd = ava_home.join(format!("workspace-{rollout_slug}"));
     metadata_builder.model_provider = Some("test-provider".to_string());
     metadata_builder.git_branch = Some(format!("branch-{rollout_slug}"));
     let mut metadata = metadata_builder.build("test-provider");
@@ -1327,12 +1327,12 @@ async fn wait_for_request(mock: &ResponseMock, expected_count: usize) -> Vec<Res
 }
 
 async fn wait_for_service_tier(
-    test: &TestCodex,
+    test: &TestAva,
     expected_service_tier: Option<String>,
-) -> anyhow::Result<codex_core::ThreadConfigSnapshot> {
+) -> anyhow::Result<ava_core::ThreadConfigSnapshot> {
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
-        let config_snapshot = test.codex.config_snapshot().await;
+        let config_snapshot = test.ava-code.config_snapshot().await;
         if config_snapshot.service_tier == expected_service_tier {
             return Ok(config_snapshot);
         }
@@ -1354,7 +1354,7 @@ fn phase2_prompt_text(request: &ResponsesRequest) -> String {
 }
 
 async fn wait_for_phase2_workspace_reset(
-    db: &codex_state::MemoryStore,
+    db: &ava_state::MemoryStore,
     memory_root: &Path,
 ) -> anyhow::Result<()> {
     assert_eq!(
@@ -1367,7 +1367,7 @@ async fn wait_for_phase2_workspace_reset(
 }
 
 async fn wait_for_phase2_job_to_finish(
-    db: &codex_state::MemoryStore,
+    db: &ava_state::MemoryStore,
 ) -> anyhow::Result<Phase2JobClaimOutcome> {
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
@@ -1393,7 +1393,7 @@ async fn seed_required_memory_artifacts(root: &Path) -> anyhow::Result<()> {
 }
 
 async fn seed_stage1_output_for_existing_thread(
-    db: &codex_state::StateRuntime,
+    db: &ava_state::StateRuntime,
     thread_id: ThreadId,
     updated_at: i64,
     raw_memory: &str,
@@ -1409,7 +1409,7 @@ async fn seed_stage1_output_for_existing_thread(
         )
         .await?;
     let ownership_token = match claim {
-        codex_state::Stage1JobClaimOutcome::Claimed { ownership_token } => ownership_token,
+        ava_state::Stage1JobClaimOutcome::Claimed { ownership_token } => ownership_token,
         other => panic!("unexpected stage-1 claim outcome: {other:?}"),
     };
 
@@ -1440,9 +1440,9 @@ async fn read_rollout_summary_bodies(memory_root: &Path) -> anyhow::Result<Vec<S
     Ok(summaries)
 }
 
-async fn shutdown_test_codex(test: &TestCodex) -> anyhow::Result<()> {
-    test.codex.submit(Op::Shutdown {}).await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+async fn shutdown_test_ava(test: &TestAva) -> anyhow::Result<()> {
+    test.ava-code.submit(Op::Shutdown {}).await?;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
     Ok(())
 }
 
@@ -1452,7 +1452,7 @@ async fn memories_startup_phase1_v2_preserves_human_evidence_and_redacts_storage
     let server = start_mock_server().await;
     let home = Arc::new(TempDir::new()?);
     let mut memories = startup_test_memories_config();
-    memories.version = codex_protocol::MemoryVersion::V2;
+    memories.version = ava_protocol::MemoryVersion::V2;
     let request = run_memory_phase_one_model_request_test(&server, home, memories).await?;
     let input = request.message_input_texts("user").join("");
     for marker in [
@@ -1505,7 +1505,7 @@ async fn memories_startup_phase2_v2_consolidates_without_a_handbook() -> anyhow:
     let server = start_mock_server().await;
     let home = Arc::new(TempDir::new()?);
     let mut memories = startup_test_memories_config();
-    memories.version = codex_protocol::MemoryVersion::V2;
+    memories.version = ava_protocol::MemoryVersion::V2;
     run_memory_phase_two_model_request_test(&server, home, memories).await?;
     Ok(())
 }

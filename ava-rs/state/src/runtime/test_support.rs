@@ -3,15 +3,15 @@ use chrono::DateTime;
 #[cfg(test)]
 use chrono::Utc;
 #[cfg(test)]
-use codex_protocol::ThreadId;
+use ava_protocol::ThreadId;
 #[cfg(test)]
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffort;
 #[cfg(test)]
-use codex_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::AskForApproval;
 #[cfg(test)]
-use codex_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SandboxPolicy;
 #[cfg(test)]
-use codex_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadHistoryMode;
 #[cfg(test)]
 use std::path::Path;
 #[cfg(test)]
@@ -32,14 +32,14 @@ pub(crate) fn unique_temp_dir() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .map_or(0, |duration| duration.as_nanos());
     std::env::temp_dir().join(format!(
-        "codex-state-runtime-test-{nanos}-{}",
+        "ava-state-runtime-test-{nanos}-{}",
         Uuid::new_v4()
     ))
 }
 
 #[cfg(test)]
 pub(super) fn test_thread_metadata(
-    codex_home: &Path,
+    ava_home: &Path,
     thread_id: ThreadId,
     cwd: PathBuf,
 ) -> ThreadMetadata {
@@ -47,7 +47,7 @@ pub(super) fn test_thread_metadata(
     ThreadMetadata {
         originator: None,
         id: thread_id,
-        rollout_path: codex_home.join(format!("rollout-{thread_id}.jsonl")),
+        rollout_path: ava_home.join(format!("rollout-{thread_id}.jsonl")),
         created_at: now,
         updated_at: now,
         recency_at: now,

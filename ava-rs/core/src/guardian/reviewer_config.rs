@@ -3,10 +3,10 @@
 
 use std::sync::Arc;
 
-use codex_guardian_reviewer::guardian_output_contract_prompt;
-use codex_prompts::GuardianPolicyInstructions;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::models::BaseInstructionsProvenance;
+use ava_guardian_reviewer::guardian_output_contract_prompt;
+use ava_prompts::GuardianPolicyInstructions;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::models::BaseInstructionsProvenance;
 
 use crate::config::Config;
 use crate::config::NetworkProxySpec;
@@ -15,11 +15,11 @@ use crate::context::ContextualUserFragment;
 /// Adds the captured model, policy prompt and live network rules before reuse selection.
 pub fn build_guardian_review_session_config(
     mut guardian_config: Config,
-    live_network_config: Option<codex_network_proxy::NetworkProxyConfig>,
+    live_network_config: Option<ava_network_proxy::NetworkProxyConfig>,
     active_model: &str,
-    reasoning_effort: Option<codex_protocol::openai_models::ReasoningEffort>,
-    reasoning_summary: codex_protocol::config_types::ReasoningSummary,
-    personality: Option<codex_protocol::config_types::Personality>,
+    reasoning_effort: Option<ava_protocol::openai_models::ReasoningEffort>,
+    reasoning_summary: ava_protocol::config_types::ReasoningSummary,
+    personality: Option<ava_protocol::config_types::Personality>,
     model_messages: ResolvedModelMessages<'_>,
 ) -> anyhow::Result<Config> {
     guardian_config.model = Some(active_model.to_owned());
@@ -64,20 +64,20 @@ pub(crate) async fn resolve_review_model(
     session: &crate::session::session::Session,
     context: &super::GuardianReviewContext,
 ) -> (
-    codex_guardian_reviewer::ReviewModel,
-    Arc<codex_protocol::openai_models::ModelInfo>,
+    ava_guardian_reviewer::ReviewModel,
+    Arc<ava_protocol::openai_models::ModelInfo>,
 ) {
     let turn = context.turn();
     let available_models = session
         .services
         .models_manager
         .list_models(
-            codex_models_manager::manager::RefreshStrategy::Offline,
+            ava_models_manager::manager::RefreshStrategy::Offline,
             turn.config.http_client_factory(),
         )
         .await;
     let default_review_model_id = turn.provider.approval_review_preferred_model();
-    let review_model = codex_guardian_reviewer::select_review_model(
+    let review_model = ava_guardian_reviewer::select_review_model(
         &context.model_info,
         context.reasoning_effort.as_ref(),
         default_review_model_id,

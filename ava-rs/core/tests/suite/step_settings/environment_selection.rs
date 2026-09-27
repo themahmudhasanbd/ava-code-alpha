@@ -1,8 +1,8 @@
 //! Active model updates preserve the captured environment until the next turn.
 
 use super::*;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_protocol::protocol::TurnEnvironmentSelections;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_protocol::protocol::TurnEnvironmentSelections;
 use core_test_support::submit_thread_settings;
 use pretty_assertions::assert_eq;
 
@@ -60,9 +60,9 @@ async fn model_update_preserves_active_environment_and_next_turn_uses_new_select
         .await?;
     let next_marker = next_environment.cwd.join("marker.txt")?;
 
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.join("future-environment"),
@@ -73,7 +73,7 @@ async fn model_update_preserves_active_environment_and_next_turn_uses_new_select
     )
     .await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -81,8 +81,8 @@ async fn model_update_preserves_active_environment_and_next_turn_uses_new_select
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

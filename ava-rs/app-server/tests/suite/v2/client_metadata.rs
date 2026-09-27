@@ -3,26 +3,26 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_fake_parented_rollout_with_source;
 use app_test_support::create_fake_rollout;
-use codex_app_server_protocol::ReviewDelivery;
-use codex_app_server_protocol::ReviewStartParams;
-use codex_app_server_protocol::ReviewStartResponse;
-use codex_app_server_protocol::ReviewTarget;
-use codex_app_server_protocol::SessionSource as ApiSessionSource;
-use codex_app_server_protocol::ThreadForkParams;
-use codex_app_server_protocol::ThreadForkResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSource;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::TurnSteerResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_protocol::ThreadId as CoreThreadId;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_protocol::ReviewDelivery;
+use ava_app_server_protocol::ReviewStartParams;
+use ava_app_server_protocol::ReviewStartResponse;
+use ava_app_server_protocol::ReviewTarget;
+use ava_app_server_protocol::SessionSource as ApiSessionSource;
+use ava_app_server_protocol::ThreadForkParams;
+use ava_app_server_protocol::ThreadForkResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSource;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_protocol::ThreadId as CoreThreadId;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -53,13 +53,13 @@ async fn turn_start_forwards_client_metadata_to_responses_request_v2() -> Result
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -109,13 +109,13 @@ async fn turn_start_forwards_client_metadata_to_responses_request_v2() -> Result
 
     let request = response_mock.single_request();
     let metadata = request
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .as_deref()
         .map(parse_json_header)
-        .expect("x-codex-turn-metadata header should be present");
+        .expect("x-ava-turn-metadata header should be present");
     let body = request.body_json();
     let body_turn_metadata = parse_json_header(
-        body["client_metadata"]["x-codex-turn-metadata"]
+        body["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("turn metadata"),
     );
@@ -136,7 +136,7 @@ async fn turn_start_forwards_client_metadata_to_responses_request_v2() -> Result
     assert!(metadata.get("session_id").is_some());
     assert_eq!(
         metadata["window_id"].as_str(),
-        request.header("x-codex-window-id").as_deref()
+        request.header("x-ava-window-id").as_deref()
     );
     assert_eq!(metadata["window_number"].as_u64(), Some(0));
     assert!(
@@ -163,13 +163,13 @@ async fn turn_start_sends_fork_lineage_in_turn_metadata_for_thread_fork_v2() -> 
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let source_thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -178,7 +178,7 @@ async fn turn_start_sends_fork_lineage_in_turn_metadata_for_thread_fork_v2() -> 
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -208,10 +208,10 @@ async fn turn_start_sends_fork_lineage_in_turn_metadata_for_thread_fork_v2() -> 
 
     let request = response_mock.single_request();
     let metadata = request
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .as_deref()
         .map(parse_json_header)
-        .expect("x-codex-turn-metadata header should be present");
+        .expect("x-ava-turn-metadata header should be present");
     assert_eq!(
         metadata["forked_from_thread_id"].as_str(),
         Some(source_thread_id.as_str())
@@ -245,13 +245,13 @@ async fn review_start_sends_parent_lineage_in_turn_metadata_for_thread_fork_v2()
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let source_thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -260,7 +260,7 @@ async fn review_start_sends_parent_lineage_in_turn_metadata_for_thread_fork_v2()
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -290,10 +290,10 @@ async fn review_start_sends_parent_lineage_in_turn_metadata_for_thread_fork_v2()
 
     let request = response_mock.single_request();
     let metadata = request
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .as_deref()
         .map(parse_json_header)
-        .expect("x-codex-turn-metadata header should be present");
+        .expect("x-ava-turn-metadata header should be present");
     assert_eq!(
         request.header("x-openai-subagent").as_deref(),
         Some("review")
@@ -309,7 +309,7 @@ async fn review_start_sends_parent_lineage_in_turn_metadata_for_thread_fork_v2()
     assert!(review_request_thread_id != review_thread_id.as_str());
     assert_eq!(
         request
-            .header("x-codex-window-id")
+            .header("x-ava-window-id")
             .as_deref()
             .and_then(|window_id| window_id.split_once(':').map(|(thread_id, _)| thread_id)),
         Some(review_request_thread_id)
@@ -336,19 +336,19 @@ async fn turn_start_sends_nested_subagent_lineage_after_cold_thread_resume_v2() 
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let root_thread_id = CoreThreadId::new();
     let root_thread_id_str = root_thread_id.to_string();
     let parent_thread_id = CoreThreadId::new();
     let parent_thread_id_str = parent_thread_id.to_string();
     let subagent_thread_id = create_fake_parented_rollout_with_source(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved subagent message",
@@ -360,7 +360,7 @@ async fn turn_start_sends_nested_subagent_lineage_after_cold_thread_resume_v2() 
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -402,10 +402,10 @@ async fn turn_start_sends_nested_subagent_lineage_after_cold_thread_resume_v2() 
 
     let request = response_mock.single_request();
     let metadata = request
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .as_deref()
         .map(parse_json_header)
-        .expect("x-codex-turn-metadata header should be present");
+        .expect("x-ava-turn-metadata header should be present");
     assert_eq!(
         metadata["parent_thread_id"].as_str(),
         Some(parent_thread_id_str.as_str())
@@ -420,7 +420,7 @@ async fn turn_start_sends_nested_subagent_lineage_after_cold_thread_resume_v2() 
     assert!(metadata.get("forked_from_thread_id").is_none());
 
     let turn_event =
-        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "codex_turn_event").await?;
+        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_turn_event").await?;
     let params = &turn_event["event_params"];
     assert_eq!(
         (
@@ -442,7 +442,7 @@ async fn turn_start_sends_nested_subagent_lineage_after_cold_thread_resume_v2() 
             .count()
     };
     assert_eq!(
-        (count("codex_turn_event"), count("codex_web_search_event")),
+        (count("ava_turn_event"), count("ava_web_search_event")),
         (1, 1)
     );
 
@@ -453,7 +453,7 @@ async fn turn_start_sends_nested_subagent_lineage_after_cold_thread_resume_v2() 
 async fn turn_steer_updates_client_metadata_on_follow_up_responses_request_v2() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let server = responses::start_mock_server().await;
     let first_response = responses::sse_response(responses::sse(vec![
@@ -473,11 +473,11 @@ async fn turn_steer_updates_client_metadata_on_follow_up_responses_request_v2() 
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -545,10 +545,10 @@ async fn turn_steer_updates_client_metadata_on_follow_up_responses_request_v2() 
     let requests = request_log.requests();
     assert_eq!(requests.len(), 2);
     let first_metadata = requests[0]
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .as_deref()
         .map(parse_json_header)
-        .expect("first x-codex-turn-metadata header should be present");
+        .expect("first x-ava-turn-metadata header should be present");
     assert_eq!(
         first_metadata["fiber_run_id"].as_str(),
         Some("fiber-start-123")
@@ -558,10 +558,10 @@ async fn turn_steer_updates_client_metadata_on_follow_up_responses_request_v2() 
     assert_eq!(first_metadata["source"].as_str(), Some("initial-source"));
 
     let second_metadata = requests[1]
-        .header("x-codex-turn-metadata")
+        .header("x-ava-turn-metadata")
         .as_deref()
         .map(parse_json_header)
-        .expect("second x-codex-turn-metadata header should be present");
+        .expect("second x-ava-turn-metadata header should be present");
     assert_eq!(
         second_metadata["fiber_run_id"].as_str(),
         Some("fiber-steer-456")
@@ -571,11 +571,11 @@ async fn turn_steer_updates_client_metadata_on_follow_up_responses_request_v2() 
     assert_eq!(second_metadata["turn_trigger"].as_str(), Some("user"));
     assert_eq!(second_metadata["source"].as_str(), Some("steer-source"));
 
-    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "codex_turn_event").await?;
+    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_turn_event").await?;
     assert_eq!(
         (
             event["event_params"]["turn_trigger"].as_str(),
-            event["event_params"]["codex_turn_source"].as_str(),
+            event["event_params"]["ava_turn_source"].as_str(),
         ),
         (Some("user"), Some("steer-source"))
     );
@@ -601,13 +601,13 @@ async fn turn_start_forwards_client_metadata_to_responses_websocket_request_body
     ]])
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&websocket_server.uri().replacen("ws://", "http://", 1))
         .with_provider_config("supports_websockets = true")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -664,10 +664,10 @@ async fn turn_start_forwards_client_metadata_to_responses_websocket_request_body
     assert_eq!(request["type"].as_str(), Some("response.create"));
     assert_eq!(request["previous_response_id"].as_str(), Some("warm-1"));
 
-    let metadata = request["client_metadata"]["x-codex-turn-metadata"]
+    let metadata = request["client_metadata"]["x-ava-turn-metadata"]
         .as_str()
         .map(parse_json_header)
-        .expect("websocket x-codex-turn-metadata client metadata should be present");
+        .expect("websocket x-ava-turn-metadata client metadata should be present");
     assert_eq!(
         (
             metadata["parent_response_id"].as_str(),
@@ -683,7 +683,7 @@ async fn turn_start_forwards_client_metadata_to_responses_websocket_request_body
     assert!(metadata.get("session_id").is_some());
     assert_eq!(
         metadata["window_id"].as_str(),
-        request["client_metadata"]["x-codex-window-id"].as_str()
+        request["client_metadata"]["x-ava-window-id"].as_str()
     );
     assert!(
         metadata["context_window_id"]

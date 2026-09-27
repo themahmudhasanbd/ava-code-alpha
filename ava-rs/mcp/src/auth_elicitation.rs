@@ -1,12 +1,12 @@
 //! Auth elicitation helpers.
 //!
 //! This module owns protocol-neutral auth elicitation parsing and payload shaping.
-//! Session orchestration stays in `codex-core`.
+//! Session orchestration stays in `ava-core`.
 
-use codex_protocol::mcp::CallToolResult;
+use ava_protocol::mcp::CallToolResult;
 use serde::Serialize;
 
-pub const MCP_TOOL_CODEX_APPS_META_KEY: &str = "_codex_apps";
+pub const MCP_TOOL_AVA_APPS_META_KEY: &str = "_ava_apps";
 pub const CONNECTOR_AUTH_FAILURE_META_KEY: &str = "connector_auth_failure";
 pub const CONNECTOR_AUTH_FAILURE_IS_AUTH_FAILURE_KEY: &str = "is_auth_failure";
 pub const CONNECTOR_AUTH_FAILURE_AUTH_REASON_KEY: &str = "auth_reason";
@@ -17,7 +17,7 @@ pub const CONNECTOR_AUTH_FAILURE_ERROR_HTTP_STATUS_CODE_KEY: &str = "error_http_
 pub const CONNECTOR_AUTH_FAILURE_ERROR_ACTION_KEY: &str = "error_action";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CodexAppsConnectorAuthFailure {
+pub struct AvaAppsConnectorAuthFailure {
     pub connector_id: String,
     pub connector_name: String,
     pub install_url: String,
@@ -29,7 +29,7 @@ pub struct CodexAppsConnectorAuthFailure {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CodexAppsAuthElicitation {
+pub struct AvaAppsAuthElicitation {
     pub meta: serde_json::Value,
     pub message: String,
     pub url: String,
@@ -37,13 +37,13 @@ pub struct CodexAppsAuthElicitation {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CodexAppsAuthElicitationPlan {
-    pub auth_failure: CodexAppsConnectorAuthFailure,
-    pub elicitation: CodexAppsAuthElicitation,
+pub struct AvaAppsAuthElicitationPlan {
+    pub auth_failure: AvaAppsConnectorAuthFailure,
+    pub elicitation: AvaAppsAuthElicitation,
 }
 
 #[derive(Serialize)]
-struct CodexAppsConnectorAuthFailureMeta<'a> {
+struct AvaAppsConnectorAuthFailureMeta<'a> {
     is_auth_failure: bool,
     connector_id: &'a str,
     connector_name: &'a str,
@@ -65,7 +65,7 @@ pub fn connector_auth_failure_from_tool_result(
     connector_id: Option<&str>,
     connector_name: Option<&str>,
     install_url: Option<String>,
-) -> Option<CodexAppsConnectorAuthFailure> {
+) -> Option<AvaAppsConnectorAuthFailure> {
     let connector_id = connector_id
         .map(str::trim)
         .filter(|connector_id| !connector_id.is_empty())?;
@@ -76,7 +76,7 @@ pub fn connector_auth_failure_from_tool_result(
         .unwrap_or(connector_id)
         .to_string();
 
-    Some(CodexAppsConnectorAuthFailure {
+    Some(AvaAppsConnectorAuthFailure {
         connector_id: connector_id.to_string(),
         connector_name,
         install_url: install_url?,
@@ -118,7 +118,7 @@ fn connector_auth_failure_metadata<'a>(
         .meta
         .as_ref()?
         .as_object()?
-        .get(MCP_TOOL_CODEX_APPS_META_KEY)?
+        .get(MCP_TOOL_AVA_APPS_META_KEY)?
         .as_object()?
         .get(CONNECTOR_AUTH_FAILURE_META_KEY)?
         .as_object()?;
@@ -145,11 +145,11 @@ pub fn build_auth_elicitation_plan(
     connector_id: Option<&str>,
     connector_name: Option<&str>,
     install_url: Option<String>,
-) -> Option<CodexAppsAuthElicitationPlan> {
+) -> Option<AvaAppsAuthElicitationPlan> {
     let auth_failure =
         connector_auth_failure_from_tool_result(result, connector_id, connector_name, install_url)?;
     let elicitation = build_auth_elicitation(call_id, &auth_failure);
-    Some(CodexAppsAuthElicitationPlan {
+    Some(AvaAppsAuthElicitationPlan {
         auth_failure,
         elicitation,
     })
@@ -157,12 +157,12 @@ pub fn build_auth_elicitation_plan(
 
 pub fn build_auth_elicitation(
     call_id: &str,
-    auth_failure: &CodexAppsConnectorAuthFailure,
-) -> CodexAppsAuthElicitation {
-    CodexAppsAuthElicitation {
+    auth_failure: &AvaAppsConnectorAuthFailure,
+) -> AvaAppsAuthElicitation {
+    AvaAppsAuthElicitation {
         meta: serde_json::json!({
-            MCP_TOOL_CODEX_APPS_META_KEY: {
-                CONNECTOR_AUTH_FAILURE_META_KEY: CodexAppsConnectorAuthFailureMeta {
+            MCP_TOOL_AVA_APPS_META_KEY: {
+                CONNECTOR_AUTH_FAILURE_META_KEY: AvaAppsConnectorAuthFailureMeta {
                     is_auth_failure: true,
                     connector_id: &auth_failure.connector_id,
                     connector_name: &auth_failure.connector_name,
@@ -182,7 +182,7 @@ pub fn build_auth_elicitation(
 }
 
 pub fn auth_elicitation_completed_result(
-    auth_failure: &CodexAppsConnectorAuthFailure,
+    auth_failure: &AvaAppsConnectorAuthFailure,
     meta: Option<serde_json::Value>,
 ) -> CallToolResult {
     CallToolResult {
@@ -200,7 +200,7 @@ pub fn auth_elicitation_completed_result(
 }
 
 pub fn auth_elicitation_id(call_id: &str) -> String {
-    format!("codex_apps_auth_{call_id}")
+    format!("ava_apps_auth_{call_id}")
 }
 
 fn string_auth_failure_field(
@@ -215,7 +215,7 @@ fn string_auth_failure_field(
         .map(ToString::to_string)
 }
 
-fn auth_elicitation_message(auth_failure: &CodexAppsConnectorAuthFailure) -> String {
+fn auth_elicitation_message(auth_failure: &AvaAppsConnectorAuthFailure) -> String {
     match auth_failure.auth_reason.as_deref() {
         Some("oauth_upgrade_required") => format!(
             "Reconnect {} on ChatGPT to grant the permissions needed for this request.",
@@ -226,7 +226,7 @@ fn auth_elicitation_message(auth_failure: &CodexAppsConnectorAuthFailure) -> Str
             auth_failure.connector_name
         ),
         Some("missing_link") => format!(
-            "Sign in to {} on ChatGPT to use it in Codex.",
+            "Sign in to {} on ChatGPT to use it in Ava.",
             auth_failure.connector_name
         ),
         _ => format!(
@@ -250,7 +250,7 @@ mod tests {
             structured_content: None,
             is_error: Some(true),
             meta: Some(serde_json::json!({
-                MCP_TOOL_CODEX_APPS_META_KEY: {
+                MCP_TOOL_AVA_APPS_META_KEY: {
                     CONNECTOR_AUTH_FAILURE_META_KEY: {
                         CONNECTOR_AUTH_FAILURE_IS_AUTH_FAILURE_KEY: true,
                         CONNECTOR_AUTH_FAILURE_AUTH_REASON_KEY: "reauthentication_required",
@@ -275,7 +275,7 @@ mod tests {
                 Some("Google Calendar"),
                 Some("https://chatgpt.com/apps/google-calendar/connector_calendar".to_string()),
             ),
-            Some(CodexAppsConnectorAuthFailure {
+            Some(AvaAppsConnectorAuthFailure {
                 connector_id: "connector_calendar".to_string(),
                 connector_name: "Google Calendar".to_string(),
                 install_url: "https://chatgpt.com/apps/google-calendar/connector_calendar"
@@ -343,7 +343,7 @@ mod tests {
         );
 
         let mut ordinary_error = result.clone();
-        ordinary_error.meta.as_mut().expect("auth metadata")[MCP_TOOL_CODEX_APPS_META_KEY]
+        ordinary_error.meta.as_mut().expect("auth metadata")[MCP_TOOL_AVA_APPS_META_KEY]
             [CONNECTOR_AUTH_FAILURE_META_KEY][CONNECTOR_AUTH_FAILURE_IS_AUTH_FAILURE_KEY] =
             serde_json::Value::Bool(false);
         assert_eq!(
@@ -370,7 +370,7 @@ mod tests {
             "reauthentication_required",
         ] {
             let mut result = auth_failure_result();
-            result.meta.as_mut().expect("auth metadata")[MCP_TOOL_CODEX_APPS_META_KEY]
+            result.meta.as_mut().expect("auth metadata")[MCP_TOOL_AVA_APPS_META_KEY]
                 [CONNECTOR_AUTH_FAILURE_META_KEY][CONNECTOR_AUTH_FAILURE_AUTH_REASON_KEY] =
                 serde_json::Value::String(auth_reason.to_string());
 
@@ -393,9 +393,9 @@ mod tests {
 
         assert_eq!(
             build_auth_elicitation("call_123", &auth_failure),
-            CodexAppsAuthElicitation {
+            AvaAppsAuthElicitation {
                 meta: serde_json::json!({
-                    MCP_TOOL_CODEX_APPS_META_KEY: {
+                    MCP_TOOL_AVA_APPS_META_KEY: {
                         CONNECTOR_AUTH_FAILURE_META_KEY: {
                             CONNECTOR_AUTH_FAILURE_IS_AUTH_FAILURE_KEY: true,
                             CONNECTOR_AUTH_FAILURE_CONNECTOR_ID_KEY: "connector_calendar",
@@ -413,7 +413,7 @@ mod tests {
                 message: "Reconnect Google Calendar on ChatGPT to restore access for this request."
                     .to_string(),
                 url: "https://chatgpt.com/apps/google-calendar/connector_calendar".to_string(),
-                elicitation_id: "codex_apps_auth_call_123".to_string(),
+                elicitation_id: "ava_apps_auth_call_123".to_string(),
             }
         );
     }
@@ -430,6 +430,6 @@ mod tests {
         .expect("auth elicitation plan");
 
         assert_eq!(plan.auth_failure.connector_name, "Google Calendar");
-        assert_eq!(plan.elicitation.elicitation_id, "codex_apps_auth_call_123");
+        assert_eq!(plan.elicitation.elicitation_id, "ava_apps_auth_call_123");
     }
 }

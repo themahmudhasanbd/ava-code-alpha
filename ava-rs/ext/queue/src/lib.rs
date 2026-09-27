@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use codex_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ExtensionRegistryBuilder;
 
 mod service;
 

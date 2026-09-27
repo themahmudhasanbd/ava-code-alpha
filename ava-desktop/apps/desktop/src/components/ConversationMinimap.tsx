@@ -17,7 +17,7 @@ import {
 } from "../lib/conversation-minimap";
 import { TooltipButton } from "./ui";
 
-/* Codex-style conversation minimap: a packed stack of dashes on the left edge
+/* Ava-style conversation minimap: a packed stack of dashes on the left edge
  * of the thread, one per user turn or assistant response. Moving the cursor
  * along the rail magnifies nearby dashes with a macOS-Dock cosine falloff, the
  * nearest turn shows a preview popover, and clicking jumps to that turn. Dashes

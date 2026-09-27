@@ -1,6 +1,6 @@
 //! Observe the latest startup attempt without polling it or initiating a retry.
 
-use codex_protocol::mcp::McpServerConnectionStatus as Status;
+use ava_protocol::mcp::McpServerConnectionStatus as Status;
 
 use super::AsyncManagedClient;
 use super::StartupOutcomeError;

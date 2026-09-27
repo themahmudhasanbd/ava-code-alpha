@@ -34,8 +34,8 @@ fn credits_preserve_precision_and_order_signed_decimal_strings() {
 
 #[tokio::test]
 async fn task_queries_validate_request_groups_and_response_ownership() {
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
     use wiremock::Mock;
     use wiremock::MockServer;
     use wiremock::ResponseTemplate;
@@ -54,7 +54,7 @@ async fn task_queries_validate_request_groups_and_response_ownership() {
     let task = json!({"thread_id":"root", "data_status":"available", "usage_source":"plan_and_credits",
     "five_hour_limit_percent":150.0, "weekly_limit_percent":0.0,
     "balance_usage_credits":"-0.000000000000000001", "groups":[{
-        "product_experience":"codex", "model":"gpt-5.5", "reasoning_effort":"high", "speed":"standard",
+        "product_experience":"ava", "model":"gpt-5.5", "reasoning_effort":"high", "speed":"standard",
         "five_hour_limit_percent":150.25, "weekly_limit_percent":0.125, "balance_usage_credits":"0"
     }]});
     for ids in [vec!["root"], vec!["other"], vec!["root", "root"]] {
@@ -63,7 +63,7 @@ async fn task_queries_validate_request_groups_and_response_ownership() {
             let mut task=task.clone();task["thread_id"]=json!(id);task
         }).collect::<Vec<_>>()});
         Mock::given(method("POST"))
-            .and(path("/api/codex/usage/thread_usage/query_v2"))
+            .and(path("/api/ava/usage/thread_usage/query_v2"))
             .respond_with(move |request: &wiremock::Request| {
                 assert_eq!(
                     request.body_json::<serde_json::Value>().unwrap(),

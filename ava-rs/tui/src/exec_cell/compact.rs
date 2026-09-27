@@ -10,7 +10,7 @@ use crate::motion::ReducedMotionIndicator;
 use crate::motion::activity_indicator;
 use crate::render::highlight::highlight_bash_to_lines;
 use crate::terminal_hyperlinks::HyperlinkLine;
-use codex_ansi_escape::ansi_escape_line;
+use ava_ansi_escape::ansi_escape_line;
 use ratatui::style::Modifier;
 use ratatui::style::Stylize;
 use ratatui::text::Line;

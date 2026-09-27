@@ -6,10 +6,10 @@
 
 use std::path::PathBuf;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::find_archived_thread_path_by_id_str;
-use codex_rollout::find_thread_path_by_id_str;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::find_archived_thread_path_by_id_str;
+use ava_rollout::find_thread_path_by_id_str;
 
 use super::LocalThreadStore;
 use super::helpers::rollout_path_is_archived;
@@ -76,7 +76,7 @@ async fn resolve(
     scope: LookupScope,
 ) -> ThreadStoreResult<Option<ResolvedThreadRollout>> {
     if let Ok(path) = live_writer::rollout_path(store, thread_id).await
-        && codex_rollout::existing_rollout_path(path.as_path())
+        && ava_rollout::existing_rollout_path(path.as_path())
             .await
             .is_some()
         && let Some(resolved) = resolve_path_in_scope(store, thread_id, path, scope).await?
@@ -93,10 +93,10 @@ async fn resolve(
                 // rollout for the same thread. Filesystem fallback remains available when SQLite
                 // has no row or identifies the thread as legacy.
                 if let Some(path) =
-                    codex_rollout::existing_rollout_path(metadata.rollout_path.as_path()).await
+                    ava_rollout::existing_rollout_path(metadata.rollout_path.as_path()).await
                 {
                     let belongs_to_thread =
-                        match codex_rollout::read_session_meta_line(path.as_path()).await {
+                        match ava_rollout::read_session_meta_line(path.as_path()).await {
                             Ok(session_meta) => session_meta.meta.id == thread_id,
                             Err(_) => true,
                         };
@@ -117,7 +117,7 @@ async fn resolve(
         }
     }
     if let Some(path) = find_thread_path_by_id_str(
-        store.config.codex_home.as_path(),
+        store.config.ava_home.as_path(),
         &thread_id.to_string(),
         state_db_ctx.as_deref(),
     )
@@ -132,7 +132,7 @@ async fn resolve(
         return Ok(None);
     }
     let path = find_archived_thread_path_by_id_str(
-        store.config.codex_home.as_path(),
+        store.config.ava_home.as_path(),
         &thread_id.to_string(),
         state_db_ctx.as_deref(),
     )
@@ -160,7 +160,7 @@ async fn resolve_path_in_scope(
 }
 
 fn location_for_path(store: &LocalThreadStore, path: &std::path::Path) -> RolloutLocation {
-    if rollout_path_is_archived(store.config.codex_home.as_path(), path) {
+    if rollout_path_is_archived(store.config.ava_home.as_path(), path) {
         RolloutLocation::Archived
     } else {
         RolloutLocation::Unarchived
@@ -172,10 +172,10 @@ async fn resolve_path(
     path: PathBuf,
     location: RolloutLocation,
 ) -> ThreadStoreResult<ResolvedThreadRollout> {
-    let rollout_id = match codex_rollout::rollout_id_from_path(path.as_path()) {
+    let rollout_id = match ava_rollout::rollout_id_from_path(path.as_path()) {
         Some(rollout_id) => rollout_id,
         None => {
-            let history_mode = codex_rollout::read_session_meta_line(path.as_path())
+            let history_mode = ava_rollout::read_session_meta_line(path.as_path())
                 .await
                 .map_err(|err| ThreadStoreError::Internal {
                     message: format!("failed to read session metadata {}: {err}", path.display()),
@@ -199,7 +199,7 @@ pub(super) fn rollout_id_from_path_or_legacy_thread_id(
     thread_id: ThreadId,
     history_mode: ThreadHistoryMode,
 ) -> ThreadStoreResult<ThreadId> {
-    Ok(match codex_rollout::rollout_id_from_path(path) {
+    Ok(match ava_rollout::rollout_id_from_path(path) {
         Some(rollout_id) => rollout_id,
         None => {
             if history_mode == ThreadHistoryMode::Paginated {

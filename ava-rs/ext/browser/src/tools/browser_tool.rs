@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use codex_extension_api::FunctionCallError;
-use codex_extension_api::JsonToolOutput;
-use codex_extension_api::ResponsesApiTool;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolSpec;
-use codex_extension_api::parse_tool_input_schema;
-use codex_otel::MetricsClient;
+use ava_extension_api::FunctionCallError;
+use ava_extension_api::JsonToolOutput;
+use ava_extension_api::ResponsesApiTool;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolSpec;
+use ava_extension_api::parse_tool_input_schema;
+use ava_otel::MetricsClient;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -175,7 +175,7 @@ Supported Actions:
         ToolSpec::Function(tool)
     }
 
-    fn handle<'a>(&'a self, call: ToolCall<'call>) -> codex_extension_api::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, call: ToolCall<'call>) -> ava_extension_api::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -187,7 +187,7 @@ impl BrowserTool {
     async fn handle_call(
         &self,
         call: ToolCall<'_>,
-    ) -> Result<Box<dyn codex_extension_api::ToolOutput>, FunctionCallError> {
+    ) -> Result<Box<dyn ava_extension_api::ToolOutput>, FunctionCallError> {
         let args_str = call.function_arguments()?;
         let args_val: Value = serde_json::from_str(args_str).map_err(|e| {
             FunctionCallError::RespondToModel(format!("Invalid arguments JSON: {e}"))

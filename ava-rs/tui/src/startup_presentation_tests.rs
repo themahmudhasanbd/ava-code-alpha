@@ -13,7 +13,7 @@ async fn selected_profile_controls_submit_before_the_first_frame() -> anyhow::Re
         "disable_paste_burst = false\n",
     )?;
     let selected = AbsolutePathBuf::from_absolute_path(home.path().join("work.config.toml"))?;
-    let cli = Cli::try_parse_from(["codex"])?;
+    let cli = Cli::try_parse_from(["ava"])?;
     for (submit, expected_bindings) in [
         ("[]", Vec::new()),
         ("\"f12\"", vec![crate::key_hint::plain(KeyCode::F(12))]),
@@ -52,22 +52,22 @@ async fn first_frame_respects_screen_and_status_line_overrides() -> anyhow::Resu
     for (config, args, expected) in [
         (
             "[features]\ntranscript_v2 = true\n",
-            vec!["codex"],
+            vec!["ava"],
             (true, true, true),
         ),
         (
             "[features]\ntranscript_v2 = true\n",
-            vec!["codex", "--no-alt-screen"],
+            vec!["ava", "--no-alt-screen"],
             (false, false, true),
         ),
         (
             "[features]\ntranscript_v2 = false\n",
-            vec!["codex"],
+            vec!["ava"],
             (true, false, true),
         ),
         (
             "[tui]\nalternate_screen = \"never\"\nstatus_line = []\n",
-            vec!["codex"],
+            vec!["ava"],
             (false, false, false),
         ),
     ] {

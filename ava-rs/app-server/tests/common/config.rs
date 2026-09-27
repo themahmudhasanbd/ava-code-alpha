@@ -1,5 +1,5 @@
-use codex_features::FEATURES;
-use codex_features::Feature;
+use ava_features::FEATURES;
+use ava_features::Feature;
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -97,7 +97,7 @@ impl MockResponsesConfig {
         self
     }
 
-    pub fn write(self, codex_home: &Path) -> std::io::Result<()> {
+    pub fn write(self, ava_home: &Path) -> std::io::Result<()> {
         let Self {
             provider_id,
             provider_name,
@@ -132,7 +132,7 @@ impl MockResponsesConfig {
         };
 
         std::fs::write(
-            codex_home.join("config.toml"),
+            ava_home.join("config.toml"),
             format!(
                 r#"
 model = "{model}"
@@ -157,7 +157,7 @@ stream_max_retries = 0
 }
 
 pub fn write_mock_responses_config_toml(
-    codex_home: &Path,
+    ava_home: &Path,
     server_uri: &str,
     feature_flags: &BTreeMap<Feature, bool>,
     auto_compact_limit: i64,
@@ -182,17 +182,17 @@ pub fn write_mock_responses_config_toml(
             .with_provider_config("requires_openai_auth = true");
     }
 
-    config.write(codex_home)
+    config.write(ava_home)
 }
 
 pub fn write_mock_responses_config_toml_with_chatgpt_base_url(
-    codex_home: &Path,
+    ava_home: &Path,
     server_uri: &str,
     chatgpt_base_url: &str,
 ) -> std::io::Result<()> {
     MockResponsesConfig::new(server_uri)
         .with_root_config(&format!("chatgpt_base_url = \"{chatgpt_base_url}\""))
-        .write(codex_home)
+        .write(ava_home)
 }
 
 #[cfg(test)]

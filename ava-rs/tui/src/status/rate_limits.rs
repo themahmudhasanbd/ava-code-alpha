@@ -14,11 +14,11 @@ use chrono::DateTime;
 use chrono::Duration as ChronoDuration;
 use chrono::Local;
 use chrono::Utc;
-use codex_app_server_protocol::CreditsSnapshot as CoreCreditsSnapshot;
-use codex_app_server_protocol::RateLimitSnapshot;
-use codex_app_server_protocol::RateLimitWindow;
-use codex_app_server_protocol::SpendControlLimitSnapshot as CoreSpendControlLimitSnapshot;
-use codex_protocol::num_format::format_with_separators;
+use ava_app_server_protocol::CreditsSnapshot as CoreCreditsSnapshot;
+use ava_app_server_protocol::RateLimitSnapshot;
+use ava_app_server_protocol::RateLimitWindow;
+use ava_app_server_protocol::SpendControlLimitSnapshot as CoreSpendControlLimitSnapshot;
+use ava_protocol::num_format::format_with_separators;
 
 const STATUS_LIMIT_BAR_SEGMENTS: usize = 20;
 const STATUS_LIMIT_BAR_FILLED: &str = "█";
@@ -93,7 +93,7 @@ impl RateLimitWindowDisplay {
 
 #[derive(Debug, Clone)]
 pub(crate) struct RateLimitSnapshotDisplay {
-    /// Canonical limit identifier (for example: `codex` or `codex_other`).
+    /// Canonical limit identifier (for example: `ava` or `ava_other`).
     pub limit_name: String,
     /// Optional normal model associated with this account-read quota alias.
     pub normal_model_slug: Option<String>,
@@ -140,7 +140,7 @@ pub(crate) fn rate_limit_snapshot_display(
     snapshot: &RateLimitSnapshot,
     captured_at: DateTime<Local>,
 ) -> RateLimitSnapshotDisplay {
-    rate_limit_snapshot_display_for_limit(snapshot, "codex".to_string(), captured_at)
+    rate_limit_snapshot_display_for_limit(snapshot, "ava".to_string(), captured_at)
 }
 
 pub(crate) fn rate_limit_snapshot_display_for_limit(
@@ -221,7 +221,7 @@ pub(crate) fn compose_rate_limit_data_many(
 
     // Show ordinary plan usage before model-specific quotas, regardless of backend bucket IDs.
     let mut ordered_snapshots = snapshots.iter().collect::<Vec<_>>();
-    ordered_snapshots.sort_by_key(|snapshot| !snapshot.limit_name.eq_ignore_ascii_case("codex"));
+    ordered_snapshots.sort_by_key(|snapshot| !snapshot.limit_name.eq_ignore_ascii_case("ava"));
     for snapshot in ordered_snapshots {
         let credit_row = snapshot.credits.as_ref().and_then(credit_status_row);
         // Metadata-only buckets have no visible values and should not leave an empty heading.
@@ -244,7 +244,7 @@ pub(crate) fn compose_rate_limit_data_many(
             .unwrap_or(false);
 
         let limit_bucket_label = crate::model_catalog::model_display_name(&snapshot.limit_name);
-        let show_limit_prefix = !limit_bucket_label.eq_ignore_ascii_case("codex");
+        let show_limit_prefix = !limit_bucket_label.eq_ignore_ascii_case("ava");
         let primary_label = snapshot
             .primary
             .as_ref()
@@ -259,9 +259,9 @@ pub(crate) fn compose_rate_limit_data_many(
             .map(|label| capitalize_first(&label));
         let window_count =
             usize::from(snapshot.primary.is_some()) + usize::from(snapshot.secondary.is_some());
-        let combine_non_codex_single_limit = show_limit_prefix && window_count == 1;
+        let combine_non_ava_single_limit = show_limit_prefix && window_count == 1;
 
-        if show_limit_prefix && !combine_non_codex_single_limit {
+        if show_limit_prefix && !combine_non_ava_single_limit {
             rows.push(StatusRateLimitRow {
                 label: format!("{limit_bucket_label} limit"),
                 value: StatusRateLimitValue::Text(String::new()),
@@ -269,7 +269,7 @@ pub(crate) fn compose_rate_limit_data_many(
         }
 
         if let Some(primary) = snapshot.primary.as_ref() {
-            let label = if combine_non_codex_single_limit {
+            let label = if combine_non_ava_single_limit {
                 format!(
                     "{} {} limit",
                     limit_bucket_label,
@@ -296,7 +296,7 @@ pub(crate) fn compose_rate_limit_data_many(
         }
 
         if let Some(secondary) = snapshot.secondary.as_ref() {
-            let label = if combine_non_codex_single_limit {
+            let label = if combine_non_ava_single_limit {
                 format!(
                     "{} {} limit",
                     limit_bucket_label,
@@ -452,10 +452,10 @@ mod tests {
     }
 
     #[test]
-    fn non_codex_single_limit_renders_combined_row() {
+    fn non_ava_single_limit_renders_combined_row() {
         let now = Local::now();
-        let codex = RateLimitSnapshotDisplay {
-            limit_name: "codex".to_string(),
+        let ava = RateLimitSnapshotDisplay {
+            limit_name: "ava".to_string(),
             normal_model_slug: None,
             captured_at: now,
             primary: Some(window(/*used_percent*/ 10.0)),
@@ -468,7 +468,7 @@ mod tests {
             individual_limit: None,
         };
         let other = RateLimitSnapshotDisplay {
-            limit_name: "codex-other".to_string(),
+            limit_name: "ava-other".to_string(),
             normal_model_slug: None,
             captured_at: now,
             primary: Some(window(/*used_percent*/ 20.0)),
@@ -481,7 +481,7 @@ mod tests {
             individual_limit: None,
         };
 
-        let rows = match compose_rate_limit_data_many(&[codex, other], now) {
+        let rows = match compose_rate_limit_data_many(&[ava, other], now) {
             StatusRateLimitData::Available(rows) => rows,
             other => panic!("unexpected status: {other:?}"),
         };
@@ -492,7 +492,7 @@ mod tests {
             vec![
                 "5h limit".to_string(),
                 "Credits".to_string(),
-                "codex-other 5h limit".to_string(),
+                "ava-other 5h limit".to_string(),
                 "Credits".to_string(),
             ]
         );
@@ -500,10 +500,10 @@ mod tests {
     }
 
     #[test]
-    fn non_codex_multi_limit_keeps_group_row() {
+    fn non_ava_multi_limit_keeps_group_row() {
         let now = Local::now();
         let other = RateLimitSnapshotDisplay {
-            limit_name: "codex-other".to_string(),
+            limit_name: "ava-other".to_string(),
             normal_model_slug: None,
             captured_at: now,
             primary: Some(RateLimitWindowDisplay {
@@ -528,7 +528,7 @@ mod tests {
         assert_eq!(
             labels,
             vec![
-                "codex-other limit".to_string(),
+                "ava-other limit".to_string(),
                 "Usage limit".to_string(),
                 "Secondary usage limit".to_string(),
             ]

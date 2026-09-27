@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use codex_connectors::metadata::connector_mention_slug;
-use codex_protocol::user_input::UserInput;
-use codex_skills::ToolMentionKind;
-use codex_skills::app_id_from_path;
-use codex_skills::extract_tool_mentions_with_sigil;
-use codex_skills::plugin_config_name_from_path;
-use codex_skills::tool_kind_for_path;
+use ava_connectors::metadata::connector_mention_slug;
+use ava_protocol::user_input::UserInput;
+use ava_skills::ToolMentionKind;
+use ava_skills::app_id_from_path;
+use ava_skills::extract_tool_mentions_with_sigil;
+use ava_skills::plugin_config_name_from_path;
+use ava_skills::tool_kind_for_path;
 
 use crate::connectors;
 use crate::mention_syntax::PLUGIN_TEXT_MENTION_SIGIL;

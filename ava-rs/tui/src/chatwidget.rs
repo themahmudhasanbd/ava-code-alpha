@@ -1,4 +1,4 @@
-//! The main Codex TUI chat surface.
+//! The main Ava TUI chat surface.
 //!
 //! `ChatWidget` consumes protocol events, builds and updates history cells, and drives rendering
 //! for both the main viewport and overlay UIs.
@@ -77,85 +77,85 @@ use crate::terminal_title::set_terminal_title;
 use crate::text_formatting::proper_join;
 use crate::token_usage::TokenUsage;
 use crate::token_usage::TokenUsageInfo;
-use crate::version::CODEX_CLI_VERSION;
-use codex_app_server_protocol::AddCreditsNudgeCreditType;
-use codex_app_server_protocol::AddCreditsNudgeEmailStatus;
-use codex_app_server_protocol::AppSummary;
-use codex_app_server_protocol::CodexErrorInfo as AppServerCodexErrorInfo;
-use codex_app_server_protocol::CollabAgentTool;
-use codex_app_server_protocol::CollabAgentToolCallStatus;
-use codex_app_server_protocol::CommandExecutionRequestApprovalParams;
-use codex_app_server_protocol::CommandExecutionSource as ExecCommandSource;
-use codex_app_server_protocol::CreditsSnapshot;
-use codex_app_server_protocol::ErrorNotification;
-use codex_app_server_protocol::FileChangeRequestApprovalParams;
-use codex_app_server_protocol::GuardianApprovalReviewAction;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::McpServerElicitationRequest;
-use codex_app_server_protocol::McpServerElicitationRequestParams;
-use codex_app_server_protocol::McpServerStatusDetail;
-use codex_app_server_protocol::ModelVerification as AppServerModelVerification;
-use codex_app_server_protocol::RateLimitReachedType;
-use codex_app_server_protocol::RateLimitSnapshot;
-use codex_app_server_protocol::RequestId as AppServerRequestId;
-use codex_app_server_protocol::ReviewTarget;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::SkillMetadata;
-use codex_app_server_protocol::SkillsListResponse;
-use codex_app_server_protocol::ThreadGoal as AppThreadGoal;
-use codex_app_server_protocol::ThreadGoalStatus as AppThreadGoalStatus;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadSettings;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-use codex_app_server_protocol::ThreadTokenUsage;
-use codex_app_server_protocol::ToolRequestUserInputParams;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnPlanStepStatus;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::WindowsSandboxSetupMode;
-use codex_config::Constrained;
-use codex_config::ConstraintResult;
-use codex_config::types::ApprovalsReviewer;
-use codex_config::types::Notifications;
-use codex_connectors::AppInfo;
-use codex_features::Feature;
-use codex_git_utils::current_branch_name;
-use codex_git_utils::get_git_repo_root;
-use codex_git_utils::local_git_branches;
-use codex_git_utils::recent_commits;
-use codex_otel::RuntimeMetricsSummary;
-use codex_otel::SessionTelemetry;
-use codex_plugin::PluginCapabilitySummary;
-use codex_protocol::ThreadId;
-use codex_protocol::account::PlanType;
-use codex_protocol::approvals::GuardianAssessmentAction;
-use codex_protocol::approvals::GuardianAssessmentDecisionSource;
-use codex_protocol::approvals::GuardianAssessmentEvent;
-use codex_protocol::approvals::GuardianAssessmentStatus;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
+use crate::version::AVA_CLI_VERSION;
+use ava_app_server_protocol::AddCreditsNudgeCreditType;
+use ava_app_server_protocol::AddCreditsNudgeEmailStatus;
+use ava_app_server_protocol::AppSummary;
+use ava_app_server_protocol::AvaErrorInfo as AppServerAvaErrorInfo;
+use ava_app_server_protocol::CollabAgentTool;
+use ava_app_server_protocol::CollabAgentToolCallStatus;
+use ava_app_server_protocol::CommandExecutionRequestApprovalParams;
+use ava_app_server_protocol::CommandExecutionSource as ExecCommandSource;
+use ava_app_server_protocol::CreditsSnapshot;
+use ava_app_server_protocol::ErrorNotification;
+use ava_app_server_protocol::FileChangeRequestApprovalParams;
+use ava_app_server_protocol::GuardianApprovalReviewAction;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::McpServerElicitationRequest;
+use ava_app_server_protocol::McpServerElicitationRequestParams;
+use ava_app_server_protocol::McpServerStatusDetail;
+use ava_app_server_protocol::ModelVerification as AppServerModelVerification;
+use ava_app_server_protocol::RateLimitReachedType;
+use ava_app_server_protocol::RateLimitSnapshot;
+use ava_app_server_protocol::RequestId as AppServerRequestId;
+use ava_app_server_protocol::ReviewTarget;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::SkillMetadata;
+use ava_app_server_protocol::SkillsListResponse;
+use ava_app_server_protocol::ThreadGoal as AppThreadGoal;
+use ava_app_server_protocol::ThreadGoalStatus as AppThreadGoalStatus;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadSettings;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+use ava_app_server_protocol::ThreadTokenUsage;
+use ava_app_server_protocol::ToolRequestUserInputParams;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnPlanStepStatus;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_app_server_protocol::WindowsSandboxSetupMode;
+use ava_config::Constrained;
+use ava_config::ConstraintResult;
+use ava_config::types::ApprovalsReviewer;
+use ava_config::types::Notifications;
+use ava_connectors::AppInfo;
+use ava_features::Feature;
+use ava_git_utils::current_branch_name;
+use ava_git_utils::get_git_repo_root;
+use ava_git_utils::local_git_branches;
+use ava_git_utils::recent_commits;
+use ava_otel::RuntimeMetricsSummary;
+use ava_otel::SessionTelemetry;
+use ava_plugin::PluginCapabilitySummary;
+use ava_protocol::ThreadId;
+use ava_protocol::account::PlanType;
+use ava_protocol::approvals::GuardianAssessmentAction;
+use ava_protocol::approvals::GuardianAssessmentDecisionSource;
+use ava_protocol::approvals::GuardianAssessmentEvent;
+use ava_protocol::approvals::GuardianAssessmentStatus;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
 #[cfg(target_os = "windows")]
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::plan_tool::PlanItemArg as UpdatePlanItemArg;
-use codex_protocol::plan_tool::StepStatus as UpdatePlanItemStatus;
-use codex_protocol::request_permissions::RequestPermissionsEvent;
-use codex_protocol::user_input::ByteRange;
-use codex_protocol::user_input::TextElement;
-use codex_terminal_detection::Multiplexer;
-use codex_terminal_detection::TerminalInfo;
-use codex_terminal_detection::TerminalName;
-use codex_terminal_detection::terminal_info;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::plan_tool::PlanItemArg as UpdatePlanItemArg;
+use ava_protocol::plan_tool::StepStatus as UpdatePlanItemStatus;
+use ava_protocol::request_permissions::RequestPermissionsEvent;
+use ava_protocol::user_input::ByteRange;
+use ava_protocol::user_input::TextElement;
+use ava_terminal_detection::Multiplexer;
+use ava_terminal_detection::TerminalInfo;
+use ava_terminal_detection::TerminalName;
+use ava_terminal_detection::terminal_info;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -495,17 +495,17 @@ use crate::streaming::controller::StreamController;
 use crate::workspace_command::WorkspaceCommandRunner;
 
 use chrono::Local;
-use codex_app_server_protocol::AskForApproval;
-use codex_file_search::FileMatch;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::plan_tool::StepStatus;
-use codex_protocol::plan_tool::UpdatePlanArgs;
-use codex_utils_approval_presets::ApprovalPreset;
-use codex_utils_approval_presets::builtin_approval_presets;
+use ava_app_server_protocol::AskForApproval;
+use ava_file_search::FileMatch;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::plan_tool::StepStatus;
+use ava_protocol::plan_tool::UpdatePlanArgs;
+use ava_utils_approval_presets::ApprovalPreset;
+use ava_utils_approval_presets::builtin_approval_presets;
 use strum::IntoEnumIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -532,9 +532,9 @@ pub(crate) struct ChatWidgetInit {
     pub(crate) enhanced_keys_supported: bool,
     pub(crate) has_chatgpt_account: bool,
     pub(crate) requires_openai_auth: bool,
-    pub(crate) has_codex_backend_auth: bool,
+    pub(crate) has_ava_backend_auth: bool,
     pub(crate) model_catalog: Arc<ModelCatalog>,
-    pub(crate) feedback: codex_feedback::CodexFeedback,
+    pub(crate) feedback: ava_feedback::AvaFeedback,
     pub(crate) is_first_run: bool,
     pub(crate) status_account_display: Option<StatusAccountDisplay>,
     pub(crate) initial_plan_type: Option<PlanType>,
@@ -562,7 +562,7 @@ pub(crate) enum ExternalEditorState {
 /// intent (`Op` submissions and `AppEvent` requests).
 ///
 /// It is not responsible for running the agent itself; it reflects progress by updating UI state
-/// and by sending requests back to codex-core.
+/// and by sending requests back to ava-core.
 ///
 /// Quit/interrupt behavior intentionally spans layers: the bottom pane owns local input routing
 /// (which view gets Ctrl+C), while `ChatWidget` owns process-level decisions such as interrupting
@@ -572,7 +572,7 @@ pub(crate) struct ChatWidget {
         std::cell::RefCell<crate::empty_state_animation::EmptyStateAnimation>,
     pub(crate) cyber_policy_notice: crate::daybreak::NoticeCache,
     app_event_tx: AppEventSender,
-    codex_op_target: CodexOpTarget,
+    ava_op_target: AvaOpTarget,
     bottom_pane: BottomPane,
     transcript: TranscriptState,
     config: Config,
@@ -588,7 +588,7 @@ pub(crate) struct ChatWidget {
     active_collaboration_mask: Option<CollaborationModeMask>,
     has_chatgpt_account: bool,
     pub(crate) requires_openai_auth: bool,
-    has_codex_backend_auth: bool,
+    has_ava_backend_auth: bool,
     model_catalog: Arc<ModelCatalog>,
     model_popup_request_id: Option<uuid::Uuid>,
     permission_popup_request_id: Option<uuid::Uuid>,
@@ -624,8 +624,8 @@ pub(crate) struct ChatWidget {
     available_rate_limit_reset_credits: Option<i64>,
     next_rate_limit_reset_request_id: u64,
     plan_type: Option<PlanType>,
-    codex_rate_limit_reached_type: Option<RateLimitReachedType>,
-    codex_spend_control_reached: Option<bool>,
+    ava_rate_limit_reached_type: Option<RateLimitReachedType>,
+    ava_spend_control_reached: Option<bool>,
     rate_limit_warnings: RateLimitWarningState,
     backend_banner_state: backend_banners::BackendBannerState,
     automatic_model_switch_state: backend_banners::AutomaticModelSwitchState,
@@ -699,7 +699,7 @@ pub(crate) struct ChatWidget {
     // Active hook runs render in a dedicated live cell so they can run alongside tools.
     active_hook_cell: Option<HookCell>,
     // Reused for built-in pet CDN requests so redirects remain route-aware.
-    pub(crate) pet_http_client: codex_http_client::RouteAwareClientPool,
+    pub(crate) pet_http_client: ava_http_client::RouteAwareClientPool,
     // Ambient companion rendered over the transcript area, never inside the footer rows.
     ambient_pet: Option<crate::pets::AmbientPet>,
     pet_picker_preview_state: crate::pets::PetPickerPreviewState,
@@ -756,7 +756,7 @@ pub(crate) struct ChatWidget {
     turn_runtime_metrics: RuntimeMetricsSummary,
     last_rendered_width: std::cell::Cell<Option<u16>>,
     // Feedback sink for /feedback
-    feedback: codex_feedback::CodexFeedback,
+    feedback: ava_feedback::AvaFeedback,
     // Current session rollout path (if known)
     current_rollout_path: Option<PathBuf>,
     // Current working directory (if known)
@@ -827,7 +827,7 @@ pub(crate) struct ChatWidget {
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
-enum CodexOpTarget {
+enum AvaOpTarget {
     Direct(UnboundedSender<AppCommand>),
     AppEvent,
 }
@@ -949,7 +949,7 @@ fn patch_approval_request_from_params(
 }
 
 fn request_permissions_from_params(
-    params: codex_app_server_protocol::PermissionsRequestApprovalParams,
+    params: ava_app_server_protocol::PermissionsRequestApprovalParams,
 ) -> std::io::Result<RequestPermissionsEvent> {
     Ok(RequestPermissionsEvent {
         turn_id: params.turn_id,
@@ -1071,8 +1071,8 @@ impl ChatWidget {
         let snapshot = self.feedback.snapshot(self.thread_id);
         #[cfg(target_os = "windows")]
         let include_windows_sandbox_log =
-            codex_windows_sandbox::current_log_file_path_for_codex_home(
-                &self.local_settings.codex_home,
+            ava_windows_sandbox::current_log_file_path_for_ava_home(
+                &self.local_settings.ava_home,
             )
             .is_file();
         #[cfg(not(target_os = "windows"))]
@@ -1542,7 +1542,7 @@ impl ChatWidget {
                 /*reasoning_effort*/ None,
                 /*show_fast_status*/ false,
                 config.cwd.to_path_buf(),
-                CODEX_CLI_VERSION,
+                AVA_CLI_VERSION,
             )
             .with_yolo_mode(history_cell::is_yolo_mode(config)),
         )
@@ -1853,7 +1853,7 @@ impl ChatWidget {
         ));
     }
 
-    /// Forward a command directly to codex.
+    /// Forward a command directly to ava.
     pub(crate) fn submit_op<T>(&mut self, op: T) -> bool
     where
         T: Into<AppCommand>,
@@ -1880,11 +1880,11 @@ impl ChatWidget {
         if op.is_review() && !self.bottom_pane.is_task_running() {
             self.bottom_pane.set_task_running(/*running*/ true);
         }
-        match &self.codex_op_target {
-            CodexOpTarget::Direct(codex_op_tx) => {
+        match &self.ava_op_target {
+            AvaOpTarget::Direct(ava_op_tx) => {
                 crate::session_log::log_outbound_op(&op);
                 let is_review = op.is_review();
-                if let Err(e) = codex_op_tx.send(op) {
+                if let Err(e) = ava_op_tx.send(op) {
                     tracing::error!("failed to submit op: {e}");
                     return false;
                 }
@@ -1892,8 +1892,8 @@ impl ChatWidget {
                     self.on_review_started();
                 }
             }
-            CodexOpTarget::AppEvent => {
-                self.app_event_tx.send(AppEvent::CodexOp(op));
+            AvaOpTarget::AppEvent => {
+                self.app_event_tx.send(AppEvent::AvaOp(op));
             }
         }
         true

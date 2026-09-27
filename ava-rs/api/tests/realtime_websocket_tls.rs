@@ -8,19 +8,19 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_api::Provider;
-use codex_api::RealtimeEventParser;
-use codex_api::RealtimeOutputModality;
-use codex_api::RealtimeSessionConfig;
-use codex_api::RealtimeSessionMode;
-use codex_api::RealtimeWebsocketClient;
-use codex_api::RetryConfig;
-use codex_protocol::protocol::RealtimeVoice;
+use ava_api::Provider;
+use ava_api::RealtimeEventParser;
+use ava_api::RealtimeOutputModality;
+use ava_api::RealtimeSessionConfig;
+use ava_api::RealtimeSessionMode;
+use ava_api::RealtimeWebsocketClient;
+use ava_api::RetryConfig;
+use ava_protocol::protocol::RealtimeVoice;
 use http::HeaderMap;
 use pretty_assertions::assert_eq;
 
-const ADDRESS_ENV: &str = "CODEX_TEST_REALTIME_TLS_ADDRESS";
-const TRUST_ENV: &str = "CODEX_TEST_REALTIME_TLS_TRUST";
+const ADDRESS_ENV: &str = "AVA_TEST_REALTIME_TLS_ADDRESS";
+const TRUST_ENV: &str = "AVA_TEST_REALTIME_TLS_TRUST";
 
 #[test]
 fn realtime_tls_selects_system_and_custom_trust() {
@@ -33,7 +33,7 @@ fn realtime_tls_selects_system_and_custom_trust() {
         return;
     }
 
-    codex_utils_rustls_provider::ensure_rustls_crypto_provider();
+    ava_utils_rustls_provider::ensure_rustls_crypto_provider();
     let certificate = rcgen::generate_simple_self_signed(vec!["localhost".to_string()]).unwrap();
     let temp = tempfile::TempDir::new().unwrap();
     let ca = temp.path().join("ca.pem");
@@ -94,10 +94,10 @@ fn realtime_tls_selects_system_and_custom_trust() {
             ])
             .env(ADDRESS_ENV, format!("localhost:{}", address.port()))
             .env(TRUST_ENV, trust)
-            .env_remove("CODEX_CA_CERTIFICATE")
+            .env_remove("AVA_CA_CERTIFICATE")
             .env_remove("SSL_CERT_FILE");
         if trust == "custom" {
-            child.env("CODEX_CA_CERTIFICATE", &ca).env(
+            child.env("AVA_CA_CERTIFICATE", &ca).env(
                 "SSL_CERT_FILE",
                 temp.path().join("missing-lower-priority-ca.pem"),
             );

@@ -8,20 +8,20 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
-use codex_network_proxy::NetworkProxy;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxTransformRequest;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::policy_transforms::merge_permission_profiles;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::NetworkProxy;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxTransformRequest;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::policy_transforms::merge_permission_profiles;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -204,11 +204,11 @@ impl ShellSnapshotSandbox {
             .context("shell snapshot execution task failed")?
             .map_err(|err| match err.details() {
                 // Startup output can contain credentials, even when execution fails.
-                CodexErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => anyhow!(
+                AvaErrorDetails::Sandbox(SandboxErr::Denied { output, .. }) => anyhow!(
                     "Snapshot command was denied by sandbox with status {}",
                     output.exit_code
                 ),
-                CodexErrorDetails::Sandbox(SandboxErr::Timeout { .. }) => {
+                AvaErrorDetails::Sandbox(SandboxErr::Timeout { .. }) => {
                     anyhow!("Snapshot command timed out")
                 }
                 _ => anyhow::Error::new(err)

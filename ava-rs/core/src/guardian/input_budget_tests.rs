@@ -1,12 +1,12 @@
 //! Exercises reviewer history safety at cancellation and budget boundaries.
 
 use super::*;
-use codex_guardian_context::ContextPresentation;
-use codex_guardian_context::ContextProfile;
-use codex_guardian_context::PlannedAction;
-use codex_guardian_context::PlannedActionKind;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::TurnAbortReason;
+use ava_guardian_context::ContextPresentation;
+use ava_guardian_context::ContextProfile;
+use ava_guardian_context::PlannedAction;
+use ava_guardian_context::PlannedActionKind;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::TurnAbortReason;
 use std::sync::Arc;
 
 fn required_context(text: String) -> ComposedContext {
@@ -95,7 +95,7 @@ async fn feasibility_rejects_required_evidence_inside_the_reserved_margin() {
     let (session, mut turn) = crate::session::tests::make_session_and_context().await;
     let context = required_context("required action".to_owned());
     let base = session.get_prompt_base_instructions().await;
-    let prefix = codex_protocol::protocol::TruncationPolicy::Bytes(base.text.len()).token_budget();
+    let prefix = ava_protocol::protocol::TruncationPolicy::Bytes(base.text.len()).token_budget();
     let model = Arc::make_mut(&mut Arc::make_mut(&mut turn.initial_settings).model_info);
     model.effective_context_window_percent = 100;
     Arc::make_mut(&mut turn.config).model_context_window =

@@ -13,18 +13,18 @@ use crate::outgoing_message::OutgoingMessage;
 use crate::outgoing_message::OutgoingResponse;
 use base64::Engine;
 #[cfg(unix)]
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::ConfigWarningNotification;
 #[cfg(unix)]
-use codex_app_server_protocol::InitializeResponse;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::InitializeResponse;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
 #[cfg(unix)]
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerNotificationEnvelope;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerNotificationEnvelope;
 #[cfg(unix)]
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 #[cfg(unix)]
 use serde_json::json;
@@ -127,7 +127,7 @@ fn invalid_response_becomes_remote_control_jsonrpc_error() {
     use std::os::unix::ffi::OsStringExt;
     use std::path::PathBuf;
 
-    let codex_home = AbsolutePathBuf::from_absolute_path(PathBuf::from(OsString::from_vec(vec![
+    let ava_home = AbsolutePathBuf::from_absolute_path(PathBuf::from(OsString::from_vec(vec![
         b'/', b'b', b'a', b'd', 0xff,
     ])))
     .expect("non-UTF-8 Unix paths are valid absolute paths");
@@ -136,8 +136,8 @@ fn invalid_response_becomes_remote_control_jsonrpc_error() {
             message: Box::new(OutgoingMessage::Response(OutgoingResponse {
                 id: RequestId::Integer(7),
                 result: Box::new(ClientResponsePayload::Initialize(InitializeResponse {
-                    user_agent: "codex-test-agent".to_string(),
-                    codex_home,
+                    user_agent: "ava-test-agent".to_string(),
+                    ava_home,
                     platform_family: "unix".to_string(),
                     platform_os: "linux".to_string(),
                 })),

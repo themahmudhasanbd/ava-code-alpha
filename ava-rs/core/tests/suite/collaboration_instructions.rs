@@ -1,20 +1,20 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::openai_models::CollaborationModeMessages;
-use codex_protocol::openai_models::ModelMessages;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::protocol::COLLABORATION_MODE_CLOSE_TAG;
-use codex_protocol::protocol::COLLABORATION_MODE_OPEN_TAG;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::openai_models::CollaborationModeMessages;
+use ava_protocol::openai_models::ModelMessages;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::protocol::COLLABORATION_MODE_CLOSE_TAG;
+use ava_protocol::protocol::COLLABORATION_MODE_OPEN_TAG;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
@@ -25,8 +25,8 @@ use core_test_support::responses::sse;
 use core_test_support::responses::sse_response;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -71,7 +71,7 @@ fn model_with_collaboration_messages(
     slug: &str,
     default: Option<&str>,
     plan: Option<&str>,
-) -> codex_protocol::openai_models::ModelInfo {
+) -> ava_protocol::openai_models::ModelInfo {
     let mut model = model_info_from_slug(slug);
     let model_messages = model.model_messages.get_or_insert(ModelMessages {
         persistent_instructions: None,
@@ -126,15 +126,15 @@ async fn no_collaboration_instructions_by_default() -> Result<()> {
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -172,7 +172,7 @@ async fn catalog_collaboration_messages_track_mode_changes() -> Result<()> {
     let default_text = "## Plan tool\nPreserve the custom default policy.\n";
     let plan_text = "## `update_plan`\nPreserve the custom Plan Mode policy.\n";
     let model = model_with_collaboration_messages(model_slug, Some(default_text), Some(plan_text));
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model_slug)
         .with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
@@ -182,7 +182,7 @@ async fn catalog_collaboration_messages_track_mode_changes() -> Result<()> {
     let test = builder.build(&server).await?;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_for_model(
                 ModeKind::Default,
@@ -206,7 +206,7 @@ async fn catalog_collaboration_messages_track_mode_changes() -> Result<()> {
     );
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_for_model(
                 ModeKind::Plan,
@@ -265,8 +265,8 @@ async fn catalog_collaboration_messages_refresh_without_mode_or_model_change(
     let server = MockServer::start().await;
     let mut models_mocks =
         vec![mount_models_once_with_etag(&server, catalog(ORIGINAL), ETAG_1).await];
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model(MODEL)
         .with_config(|config| {
             config.model_provider.request_max_retries = Some(0);
@@ -280,7 +280,7 @@ async fn catalog_collaboration_messages_refresh_without_mode_or_model_change(
         .await?;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_for_model(
                 mode,
@@ -365,7 +365,7 @@ async fn empty_collaboration_guidance_clears_prior_instructions_once(
         model_with_collaboration_messages(model_slug, Some(default_text), empty_instructions);
     let empty_model =
         model_with_collaboration_messages(empty_model_slug, empty_instructions, empty_instructions);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(model_slug)
         .with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
@@ -387,7 +387,7 @@ async fn empty_collaboration_guidance_clears_prior_instructions_once(
         )
         .await;
         core_test_support::submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 collaboration_mode: Some(collab_mode_for_model(mode, model, fallback)),
                 ..Default::default()
@@ -434,7 +434,7 @@ async fn model_change_appends_new_catalog_collaboration_message() -> Result<()> 
     let first = model_with_collaboration_messages(first_slug, Some(first_text), /*plan*/ None);
     let second =
         model_with_collaboration_messages(second_slug, Some(second_text), /*plan*/ None);
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model(first_slug)
         .with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
@@ -444,7 +444,7 @@ async fn model_change_appends_new_catalog_collaboration_message() -> Result<()> 
     let test = builder.build(&server).await?;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_for_model(
                 ModeKind::Default,
@@ -458,7 +458,7 @@ async fn model_change_appends_new_catalog_collaboration_message() -> Result<()> 
     test.submit_text_turn("first").await?;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(second_slug.to_string()),
             ..Default::default()
@@ -491,12 +491,12 @@ async fn user_input_includes_collaboration_instructions_after_override() -> Resu
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
 
     let collab_text = "collab instructions";
     let collaboration_mode = collab_mode_with_instructions(Some(collab_text));
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collaboration_mode),
             ..Default::default()
@@ -504,13 +504,13 @@ async fn user_input_includes_collaboration_instructions_after_override() -> Resu
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -531,11 +531,11 @@ async fn collaboration_instructions_added_on_user_turn() -> Result<()> {
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let collab_text = "turn instructions";
     let collaboration_mode = collab_mode_with_instructions(Some(collab_text));
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".into(),
@@ -548,14 +548,14 @@ async fn collaboration_instructions_added_on_user_turn() -> Result<()> {
                 summary: Some(
                     test.config
                         .model_reasoning_summary
-                        .unwrap_or(codex_protocol::config_types::ReasoningSummary::Auto),
+                        .unwrap_or(ava_protocol::config_types::ReasoningSummary::Auto),
                 ),
                 collaboration_mode: Some(collaboration_mode),
                 ..Default::default()
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -576,13 +576,13 @@ async fn collaboration_instructions_omitted_when_disabled() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.include_collaboration_mode_instructions = false;
     });
     let test = builder.build(&server).await?;
     let collaboration_mode = collab_mode_with_instructions(Some("turn instructions"));
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".into(),
@@ -595,14 +595,14 @@ async fn collaboration_instructions_omitted_when_disabled() -> Result<()> {
                 summary: Some(
                     test.config
                         .model_reasoning_summary
-                        .unwrap_or(codex_protocol::config_types::ReasoningSummary::Auto),
+                        .unwrap_or(ava_protocol::config_types::ReasoningSummary::Auto),
                 ),
                 collaboration_mode: Some(collaboration_mode),
                 ..Default::default()
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -625,14 +625,14 @@ async fn user_turn_overrides_collaboration_instructions_after_override() -> Resu
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let base_text = "base instructions";
     let base_mode = collab_mode_with_instructions(Some(base_text));
     let turn_text = "turn override";
     let turn_mode = collab_mode_with_instructions(Some(turn_text));
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(base_mode),
             ..Default::default()
@@ -640,7 +640,7 @@ async fn user_turn_overrides_collaboration_instructions_after_override() -> Resu
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".into(),
@@ -653,14 +653,14 @@ async fn user_turn_overrides_collaboration_instructions_after_override() -> Resu
                 summary: Some(
                     test.config
                         .model_reasoning_summary
-                        .unwrap_or(codex_protocol::config_types::ReasoningSummary::Auto),
+                        .unwrap_or(ava_protocol::config_types::ReasoningSummary::Auto),
                 ),
                 collaboration_mode: Some(turn_mode),
                 ..Default::default()
             }),
         )
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -688,12 +688,12 @@ async fn collaboration_mode_update_appends_instruction_changes_within_same_mode(
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let first_text = "first instructions";
     let second_text = "second instructions";
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_instructions(Some(first_text))),
             ..Default::default()
@@ -701,16 +701,16 @@ async fn collaboration_mode_update_appends_instruction_changes_within_same_mode(
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_instructions(Some(second_text))),
             ..Default::default()
@@ -718,13 +718,13 @@ async fn collaboration_mode_update_appends_instruction_changes_within_same_mode(
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req2.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -752,11 +752,11 @@ async fn collaboration_mode_update_noop_does_not_append() -> Result<()> {
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let collab_text = "same instructions";
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_instructions(Some(collab_text))),
             ..Default::default()
@@ -764,16 +764,16 @@ async fn collaboration_mode_update_noop_does_not_append() -> Result<()> {
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_instructions(Some(collab_text))),
             ..Default::default()
@@ -781,13 +781,13 @@ async fn collaboration_mode_update_noop_does_not_append() -> Result<()> {
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req2.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -813,12 +813,12 @@ async fn collaboration_mode_update_emits_new_instruction_message_when_mode_chang
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let default_text = "default mode instructions";
     let plan_text = "plan mode instructions";
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_mode_and_instructions(
                 ModeKind::Default,
@@ -829,16 +829,16 @@ async fn collaboration_mode_update_emits_new_instruction_message_when_mode_chang
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_mode_and_instructions(
                 ModeKind::Plan,
@@ -849,13 +849,13 @@ async fn collaboration_mode_update_emits_new_instruction_message_when_mode_chang
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req2.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -883,11 +883,11 @@ async fn collaboration_mode_update_noop_does_not_append_when_mode_is_unchanged()
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let collab_text = "mode-stable instructions";
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_mode_and_instructions(
                 ModeKind::Default,
@@ -898,16 +898,16 @@ async fn collaboration_mode_update_noop_does_not_append_when_mode_is_unchanged()
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(collab_mode_with_mode_and_instructions(
                 ModeKind::Default,
@@ -918,13 +918,13 @@ async fn collaboration_mode_update_noop_does_not_append_when_mode_is_unchanged()
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req2.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -950,13 +950,13 @@ async fn resume_replays_collaboration_instructions() -> Result<()> {
     )
     .await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let initial = builder.build_with_auto_env(&server).await?;
 
     let collab_text = "resume instructions";
     let mode = collab_mode_for_model(ModeKind::Plan, "gpt-5.5", Some(collab_text));
     core_test_support::submit_thread_settings(
-        &initial.codex,
+        &initial.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(mode),
             ..Default::default()
@@ -965,18 +965,18 @@ async fn resume_replays_collaboration_instructions() -> Result<()> {
     .await?;
 
     initial
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&initial.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&initial.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let resumed = builder.restart(&server, &initial).await?;
     assert_eq!(
         resumed
-            .codex
+            .ava-code
             .config_snapshot()
             .await
             .collaboration_mode
@@ -984,13 +984,13 @@ async fn resume_replays_collaboration_instructions() -> Result<()> {
         ModeKind::Plan
     );
     resumed
-        .codex
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "after resume".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&resumed.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&resumed.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req2.single_request().input();
     let dev_texts = developer_texts(&input);
@@ -1014,7 +1014,7 @@ async fn cold_resume_refreshes_legacy_collaboration_snapshot_once(
     let builder_with_instructions = |instructions: &str| {
         let model =
             model_with_collaboration_messages(MODEL, Some(instructions), /*plan*/ None);
-        test_codex().with_model(MODEL).with_config(move |config| {
+        test_ava().with_model(MODEL).with_config(move |config| {
             config.model_catalog = Some(ModelsResponse {
                 models: vec![model],
             });
@@ -1041,12 +1041,12 @@ async fn cold_resume_refreshes_legacy_collaboration_snapshot_once(
         .rollout_path
         .clone()
         .expect("initial session should have a rollout path");
-    initial.codex.shutdown_and_wait().await?;
+    initial.ava-code.shutdown_and_wait().await?;
     let mut rewrote_snapshot = false;
     let legacy_rollout = std::fs::read_to_string(&rollout_path)?
         .lines()
         .map(|original_line| {
-            let mut line = codex_rollout::parse_rollout_line(original_line)?;
+            let mut line = ava_rollout::parse_rollout_line(original_line)?;
             if let RolloutItem::WorldState(world_state) = &mut line.item
                 && let Some(snapshot) = world_state.state.get_mut("collaboration_mode")
             {
@@ -1109,11 +1109,11 @@ async fn empty_collaboration_instructions_are_ignored() -> Result<()> {
     )
     .await;
 
-    let test = test_codex().build(&server).await?;
+    let test = test_ava().build(&server).await?;
     let current_model = test.session_configured.model.clone();
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             collaboration_mode: Some(CollaborationMode {
                 mode: ModeKind::Default,
@@ -1128,13 +1128,13 @@ async fn empty_collaboration_instructions_are_ignored() -> Result<()> {
     )
     .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req.single_request().input();
     let dev_texts = developer_texts(&input);

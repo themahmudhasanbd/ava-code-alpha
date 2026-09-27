@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_core::config::Config;
+use ava_core::config::Config;
 use dirs::home_dir;
 
 const MAX_TRUSTED_SKILLS: usize = 16;
@@ -17,7 +17,7 @@ pub(crate) struct TrustedSkillRoots {
 
 impl TrustedSkillRoots {
     pub(crate) fn from_config(config: &Config) -> Self {
-        let mut roots = vec![config.codex_home.join("skills").to_path_buf()];
+        let mut roots = vec![config.ava_home.join("skills").to_path_buf()];
         if let Some(user_home) = home_dir() {
             roots.push(user_home.join(".ava-code").join("skills"));
             roots.push(user_home.join(".agents").join("skills"));

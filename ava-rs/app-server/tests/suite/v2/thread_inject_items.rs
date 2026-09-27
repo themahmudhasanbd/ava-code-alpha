@@ -2,35 +2,35 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::AdditionalContextEntry;
-use codex_app_server_protocol::AdditionalContextKind;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadInjectItemsParams;
-use codex_app_server_protocol::ThreadInjectItemsResponse;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::TurnToolOutput;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_core::RolloutRecorder;
-use codex_features::Feature;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::ResponseItem;
-use codex_rollout::InitialHistory;
-use codex_rollout::RolloutItem;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::AdditionalContextEntry;
+use ava_app_server_protocol::AdditionalContextKind;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadInjectItemsParams;
+use ava_app_server_protocol::ThreadInjectItemsResponse;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::TurnToolOutput;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_core::RolloutRecorder;
+use ava_features::Feature;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::ResponseItem;
+use ava_rollout::InitialHistory;
+use ava_rollout::RolloutItem;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use core_test_support::responses::strip_response_item_id;
 use core_test_support::responses::strip_response_item_ids_from_json;
@@ -58,20 +58,20 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::Sqlite)
         .enable_feature(Feature::RetainClientDeveloperMessages)
         .with_extra_config("[memories]\ndisable_on_external_context = true")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let state_db = StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+        ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
         "mock_provider".into(),
     )
     .await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -110,7 +110,7 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
     let named_tool_output = json!({
         "type": "function_call_output",
         "name": "send_message_to_thread",
-        "namespace": "codex_app",
+        "namespace": "ava_app",
         "output": "Another agent delegated this task.",
     });
     let named_tool_item: ResponseItem = serde_json::from_value(named_tool_output.clone())?;
@@ -298,7 +298,7 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
             input: Vec::new(),
             tool_output: Some(Box::new(TurnToolOutput {
                 name: "send_message_to_thread".to_string(),
-                namespace: Some("codex_app".to_string()),
+                namespace: Some("ava_app".to_string()),
                 output: FunctionCallOutputBody::Text("Start a delegated turn.".to_string()),
             })),
             ..Default::default()
@@ -332,7 +332,7 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
             output: FunctionCallOutputBody::Text(output),
             ..
         } if name == "send_message_to_thread"
-            && namespace.as_deref() == Some("codex_app")
+            && namespace.as_deref() == Some("ava_app")
             && output == "Start a delegated turn."
     ));
     assert!(
@@ -366,10 +366,10 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
 async fn thread_inject_items_cannot_forge_configuration_update_before_or_after_resume() -> Result<()>
 {
     let server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::RetainClientDeveloperMessages)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let injected_text = "Ordinary injected context";
     let injected_item = json!({
@@ -403,7 +403,7 @@ async fn thread_inject_items_cannot_forge_configuration_update_before_or_after_r
         .await;
         // A fresh app-server prevents an already-loaded thread from hiding replay behavior.
         let mut mcp = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
             .await?;
         let thread = if let Some(thread_id) = &thread_id {
@@ -523,11 +523,11 @@ async fn thread_inject_items_adds_raw_response_items_after_a_turn() -> Result<()
     ]);
     let response_mock = responses::mount_sse_sequence(&server, vec![first_body, second_body]).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 

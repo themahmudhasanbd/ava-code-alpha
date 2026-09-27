@@ -1,6 +1,6 @@
-use codex_features::Feature;
-use codex_features::Features;
-use codex_protocol::config_types::ModeKind;
+use ava_features::Feature;
+use ava_features::Features;
+use ava_protocol::config_types::ModeKind;
 use pretty_assertions::assert_eq;
 
 use super::*;

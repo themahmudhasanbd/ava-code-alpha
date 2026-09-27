@@ -1,6 +1,6 @@
 //! Storage-neutral thread persistence interfaces.
 //!
-//! Application code should treat [`codex_protocol::ThreadId`] as the only durable thread handle.
+//! Application code should treat [`ava_protocol::ThreadId`] as the only durable thread handle.
 //! Implementations are responsible for resolving that id to local rollout files, RPC requests, or
 //! any other backing store.
 
@@ -16,14 +16,14 @@ mod thread_metadata_sync;
 mod thread_sections;
 mod types;
 
-pub use codex_state::AddThreadAttachmentOutcome;
-pub use codex_state::MAX_QUEUE_ITEMS;
-pub use codex_state::MAX_THREAD_ATTACHMENT_PAYLOAD_BYTES;
-pub use codex_state::ProjectSortKey;
-pub use codex_state::QueuedUserSubmissionRecord;
-pub use codex_state::RemoveThreadAttachmentOutcome;
-pub use codex_state::ThreadAttachment;
-pub use codex_state::ThreadAttachmentPage;
+pub use ava_state::AddThreadAttachmentOutcome;
+pub use ava_state::MAX_QUEUE_ITEMS;
+pub use ava_state::MAX_THREAD_ATTACHMENT_PAYLOAD_BYTES;
+pub use ava_state::ProjectSortKey;
+pub use ava_state::QueuedUserSubmissionRecord;
+pub use ava_state::RemoveThreadAttachmentOutcome;
+pub use ava_state::ThreadAttachment;
+pub use ava_state::ThreadAttachmentPage;
 pub use error::ThreadStoreError;
 pub use error::ThreadStoreResult;
 pub use in_memory::InMemoryThreadStore;

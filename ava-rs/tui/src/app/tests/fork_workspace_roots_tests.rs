@@ -23,10 +23,10 @@ async fn remote_fork_dispatch_preserves_server_workspace_roots() -> Result<()> {
             ),
         )?;
     }
-    app.config.codex_home = client_home.path().to_path_buf().abs();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(client_home.path().abs());
+    app.config.ava_home = client_home.path().to_path_buf().abs();
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(client_home.path().abs());
     let server_config = ConfigBuilder::default()
-        .codex_home(server_home.path().to_path_buf())
+        .ava_home(server_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(remote_cwd.to_path_buf()),
             ..Default::default()

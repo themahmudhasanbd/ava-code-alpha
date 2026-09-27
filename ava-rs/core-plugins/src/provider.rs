@@ -2,7 +2,7 @@
 
 use crate::ExecutorPluginProviderError;
 use crate::PluginCatalog;
-use codex_mcp::McpResourceClient;
+use ava_mcp::McpResourceClient;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;

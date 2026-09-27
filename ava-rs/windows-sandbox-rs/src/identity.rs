@@ -60,25 +60,25 @@ pub struct SandboxCreds {
 ///
 /// This is a coarse readiness check; `require_logon_sandbox_creds` performs the
 /// additional runtime validation for offline firewall settings.
-pub fn sandbox_setup_is_complete(codex_home: &Path) -> bool {
-    let marker_ok = matches!(load_marker(codex_home), Ok(Some(marker)) if marker.version_matches());
+pub fn sandbox_setup_is_complete(ava_home: &Path) -> bool {
+    let marker_ok = matches!(load_marker(ava_home), Ok(Some(marker)) if marker.version_matches());
     if !marker_ok {
         return false;
     }
     if crate::registered_core_requested()
-        && !crate::app_package::registered_setup_is_ready(codex_home).unwrap_or(false)
+        && !crate::app_package::registered_setup_is_ready(ava_home).unwrap_or(false)
     {
         return false;
     }
-    matches!(load_users(codex_home), Ok(Some(users)) if users.version_matches())
+    matches!(load_users(ava_home), Ok(Some(users)) if users.version_matches())
 }
 
 /// Returns true when setup artifacts and provisioned network settings match.
 pub fn sandbox_setup_is_complete_with_settings(
-    codex_home: &Path,
+    ava_home: &Path,
     settings: &crate::WindowsSandboxProvisioningSettings,
 ) -> bool {
-    let Ok(Some(mut marker)) = load_marker(codex_home) else {
+    let Ok(Some(mut marker)) = load_marker(ava_home) else {
         return false;
     };
 
@@ -88,18 +88,18 @@ pub fn sandbox_setup_is_complete_with_settings(
     marker.version_matches()
         && marker.proxy_ports == proxy_ports
         && marker.allow_local_binding == settings.allow_local_binding
-        && matches!(load_users(codex_home), Ok(Some(users)) if users.version_matches())
+        && matches!(load_users(ava_home), Ok(Some(users)) if users.version_matches())
 }
 
-fn load_marker(codex_home: &Path) -> Result<Option<SetupMarker>> {
-    let path = setup_marker_path(codex_home);
+fn load_marker(ava_home: &Path) -> Result<Option<SetupMarker>> {
+    let path = setup_marker_path(ava_home);
     let marker = match fs::read_to_string(&path) {
         Ok(contents) => match serde_json::from_str::<SetupMarker>(&contents) {
             Ok(m) => Some(m),
             Err(err) => {
                 debug_log(
                     &format!("sandbox setup marker parse failed: {err}"),
-                    Some(codex_home),
+                    Some(ava_home),
                 );
                 None
             }
@@ -108,7 +108,7 @@ fn load_marker(codex_home: &Path) -> Result<Option<SetupMarker>> {
         Err(err) => {
             debug_log(
                 &format!("sandbox setup marker read failed: {err}"),
-                Some(codex_home),
+                Some(ava_home),
             );
             None
         }
@@ -116,15 +116,15 @@ fn load_marker(codex_home: &Path) -> Result<Option<SetupMarker>> {
     Ok(marker)
 }
 
-fn load_users(codex_home: &Path) -> Result<Option<SandboxUsersFile>> {
-    let path = sandbox_users_path(codex_home);
+fn load_users(ava_home: &Path) -> Result<Option<SandboxUsersFile>> {
+    let path = sandbox_users_path(ava_home);
     let file = match fs::read_to_string(&path) {
         Ok(contents) => contents,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(err) => {
             debug_log(
                 &format!("sandbox users read failed: {err}"),
-                Some(codex_home),
+                Some(ava_home),
             );
             return Ok(None);
         }
@@ -134,18 +134,18 @@ fn load_users(codex_home: &Path) -> Result<Option<SandboxUsersFile>> {
         Err(err) => {
             debug_log(
                 &format!("sandbox users parse failed: {err}"),
-                Some(codex_home),
+                Some(ava_home),
             );
             Ok(None)
         }
     }
 }
 
-fn remove_sandbox_users_file(codex_home: &Path, reason: &str) -> Result<()> {
-    let path = sandbox_users_path(codex_home);
+fn remove_sandbox_users_file(ava_home: &Path, reason: &str) -> Result<()> {
+    let path = sandbox_users_path(ava_home);
     debug_log(
         &format!("{reason}; deleting {}", path.display()),
-        Some(codex_home),
+        Some(ava_home),
     );
     match fs::remove_file(&path) {
         Ok(()) => Ok(()),
@@ -167,13 +167,13 @@ fn decode_password(record: &SandboxUserRecord) -> Result<String> {
 /// The caller must keep the authenticated credential directory pinned and verify
 /// the token's recorded SID, group membership, and non-administrator status.
 pub fn logon_existing_sandbox_account(
-    codex_home: &Path,
+    ava_home: &Path,
     account: SandboxRuntimeAccount,
 ) -> Result<OwnedHandle> {
     // Unlike the ordinary app-side readers, this service recovery path must
     // never create diagnostic files beneath an owner-controlled directory.
     let marker: SetupMarker = serde_json::from_slice(
-        &fs::read(setup_marker_path(codex_home)).context("read sandbox setup marker")?,
+        &fs::read(setup_marker_path(ava_home)).context("read sandbox setup marker")?,
     )
     .context("parse sandbox setup marker")?;
     ensure!(
@@ -181,7 +181,7 @@ pub fn logon_existing_sandbox_account(
         "sandbox setup marker is missing or incompatible"
     );
     let users: SandboxUsersFile = serde_json::from_slice(
-        &fs::read(sandbox_users_path(codex_home)).context("read sandbox accounts")?,
+        &fs::read(sandbox_users_path(ava_home)).context("read sandbox accounts")?,
     )
     .context("parse sandbox accounts")?;
     ensure!(users.version_matches(), "sandbox accounts are incompatible");
@@ -213,13 +213,13 @@ pub fn logon_existing_sandbox_account(
 
 fn select_identity(
     network_identity: SandboxNetworkIdentity,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> Result<Option<SandboxIdentity>> {
-    let _marker = match load_marker(codex_home)? {
+    let _marker = match load_marker(ava_home)? {
         Some(m) if m.version_matches() => m,
         _ => return Ok(None),
     };
-    let users = match load_users(codex_home)? {
+    let users = match load_users(ava_home)? {
         Some(u) if u.version_matches() => u,
         _ => return Ok(None),
     };
@@ -239,7 +239,7 @@ pub fn require_logon_sandbox_creds(
     permissions: &ResolvedWindowsSandboxPermissions,
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     read_roots_override: Option<&[PathBuf]>,
     read_roots_include_platform_defaults: bool,
     write_roots_override: Option<&[PathBuf]>,
@@ -252,18 +252,18 @@ pub fn require_logon_sandbox_creds(
     let needed_read = read_roots_override
         .map(<[PathBuf]>::to_vec)
         .unwrap_or_else(|| {
-            gather_read_roots(command_cwd, permissions, env_map, codex_home, runtime)
+            gather_read_roots(command_cwd, permissions, env_map, ava_home, runtime)
         });
     let needed_write = write_roots_override
         .map(<[PathBuf]>::to_vec)
         .unwrap_or_else(|| gather_write_roots_for_permissions(permissions, command_cwd, env_map));
-    // Do not grant the capability token write access to CODEX_HOME/.sandbox; the setup helper
+    // Do not grant the capability token write access to AVA_HOME/.sandbox; the setup helper
     // grants the sandbox group access separately through lock_sandbox_dir.
     let request = SandboxSetupRequest {
         permissions,
         command_cwd,
         env_map,
-        codex_home,
+        ava_home,
         proxy_enforced,
     };
     let (creds, offline_proxy_settings) = require_sandbox_account(&request, proxy_settings_mode)?;
@@ -304,12 +304,12 @@ fn require_sandbox_account_with_setup(
         permissions,
         command_cwd,
         env_map,
-        codex_home,
+        ava_home,
         proxy_enforced,
     } = request;
-    let sandbox_dir = crate::setup::sandbox_dir(codex_home);
+    let sandbox_dir = crate::setup::sandbox_dir(ava_home);
     let network_identity = SandboxNetworkIdentity::from_permissions(permissions, proxy_enforced);
-    let marker = load_marker(codex_home)?;
+    let marker = load_marker(ava_home)?;
     let desired_offline_proxy_settings = desired_offline_proxy_settings(
         marker.as_ref(),
         proxy_settings_mode,
@@ -326,7 +326,7 @@ fn require_sandbox_account_with_setup(
                 setup_reason = Some(reason);
                 None
             } else {
-                let selected = select_identity(network_identity, codex_home)?;
+                let selected = select_identity(network_identity, ava_home)?;
                 if selected.is_none() {
                     setup_reason = Some(
                         "sandbox users missing or incompatible with marker version".to_string(),
@@ -354,7 +354,7 @@ fn require_sandbox_account_with_setup(
             if needs_repair {
                 let reason = "sandbox account is missing, disabled, or password expired";
                 // Older services trust these credentials as proof of completed setup.
-                remove_sandbox_users_file(codex_home, reason)?;
+                remove_sandbox_users_file(ava_home, reason)?;
                 setup_reason = Some(reason.to_string());
                 identity = None;
                 break;
@@ -376,7 +376,7 @@ fn require_sandbox_account_with_setup(
                 permissions,
                 command_cwd,
                 env_map,
-                codex_home,
+                ava_home,
                 proxy_enforced,
             },
             &desired_offline_proxy_settings,
@@ -389,7 +389,7 @@ fn require_sandbox_account_with_setup(
                 );
             }
         }
-        identity = select_identity(network_identity, codex_home)?;
+        identity = select_identity(network_identity, ava_home)?;
     }
     let identity = identity.ok_or_else(|| {
         anyhow!(
@@ -420,7 +420,7 @@ fn run_automatic_setup(
         .socks_ports
         .retain(|port| settings.proxy_ports.contains(port));
     match crate::provision_windows_sandbox_via_service(
-        request.codex_home,
+        request.ava_home,
         WindowsSandboxProvisioningSettings {
             proxy_ports: settings.proxy_ports.clone(),
             allow_local_binding: settings.allow_local_binding,
@@ -455,7 +455,7 @@ pub(crate) fn refresh_logon_sandbox_creds(
     permissions: &ResolvedWindowsSandboxPermissions,
     command_cwd: &Path,
     env_map: &HashMap<String, String>,
-    codex_home: &Path,
+    ava_home: &Path,
     read_roots_override: Option<&[PathBuf]>,
     read_roots_include_platform_defaults: bool,
     write_roots_override: Option<&[PathBuf]>,
@@ -464,12 +464,12 @@ pub(crate) fn refresh_logon_sandbox_creds(
     proxy_enforced: bool,
     proxy_settings_mode: crate::WindowsSandboxProxySettingsMode,
 ) -> Result<SandboxCreds> {
-    remove_sandbox_users_file(codex_home, "sandbox user login failed")?;
+    remove_sandbox_users_file(ava_home, "sandbox user login failed")?;
     require_logon_sandbox_creds(
         permissions,
         command_cwd,
         env_map,
-        codex_home,
+        ava_home,
         read_roots_override,
         read_roots_include_platform_defaults,
         write_roots_override,
@@ -495,22 +495,22 @@ mod tests {
 
     #[test]
     fn remove_sandbox_users_file_deletes_existing_file() {
-        let codex_home = TempDir::new().expect("tempdir");
-        let users_path = sandbox_users_path(codex_home.path());
+        let ava_home = TempDir::new().expect("tempdir");
+        let users_path = sandbox_users_path(ava_home.path());
         fs::create_dir_all(users_path.parent().expect("sandbox secrets dir"))
             .expect("create sandbox secrets dir");
         fs::write(&users_path, "users").expect("write users");
 
-        remove_sandbox_users_file(codex_home.path(), "stale creds").expect("remove users");
+        remove_sandbox_users_file(ava_home.path(), "stale creds").expect("remove users");
         assert!(!users_path.exists());
     }
 
     #[test]
     fn remove_sandbox_users_file_ignores_missing_file() {
-        let codex_home = TempDir::new().expect("tempdir");
-        let users_path = sandbox_users_path(codex_home.path());
+        let ava_home = TempDir::new().expect("tempdir");
+        let users_path = sandbox_users_path(ava_home.path());
 
-        remove_sandbox_users_file(codex_home.path(), "stale creds").expect("remove users");
+        remove_sandbox_users_file(ava_home.path(), "stale creds").expect("remove users");
         assert!(!users_path.exists());
     }
 

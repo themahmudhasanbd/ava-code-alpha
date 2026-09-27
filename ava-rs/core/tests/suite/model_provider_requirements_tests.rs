@@ -1,27 +1,27 @@
 //! Exercises managed provider routing and conflict diagnostics through real turns.
 
 use anyhow::Result;
-use codex_config::LoaderOverrides;
-use codex_config::config_toml::ConfigToml;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::ConfigOverrides;
-use codex_login::CodexAuth;
-use codex_models_manager::bundled_models_response;
+use ava_config::LoaderOverrides;
+use ava_config::config_toml::ConfigToml;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::ConfigOverrides;
+use ava_login::AvaAuth;
+use ava_models_manager::bundled_models_response;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_models_once;
 use core_test_support::responses::mount_sse_once;
 use core_test_support::responses::sse;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 use test_case::test_case;
 use wiremock::MockServer;
 
 #[tokio::test]
-async fn cloud_provider_auth_merges_before_parsing_and_resolves_cwd_from_codex_home() -> Result<()>
+async fn cloud_provider_auth_merges_before_parsing_and_resolves_cwd_from_ava_home() -> Result<()>
 {
     let home = tempdir()?;
     std::fs::write(
@@ -46,7 +46,7 @@ refresh_interval_ms = 12345
     )
     .into_loader();
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .cloud_config_bundle(managed)
         .build()
@@ -87,7 +87,7 @@ model_provider = "{local_selection}"
 [model_providers.gateway]
 name = "Local gateway"
 base_url = "{local_url}"
-env_key = "CODEX_TEST_LOCAL_GATEWAY_KEY_MUST_NOT_BE_USED"
+env_key = "AVA_TEST_LOCAL_GATEWAY_KEY_MUST_NOT_BE_USED"
 experimental_bearer_token = "local-token"
 [model_providers.gateway.http_headers]
 X-Local = "local"
@@ -122,9 +122,9 @@ X-Managed = "required"
         ]),
     )
     .await;
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let expected_authorization = format!("Bearer {}", auth.get_token()?);
-    let test = test_codex()
+    let test = test_ava()
         .with_auth(auth)
         .with_pre_build_hook(move |home| {
             std::fs::write(home.join("config.toml"), local_config).expect("write local config");
@@ -153,7 +153,7 @@ X-Managed = "required"
     if !required_selection.is_empty() {
         for cli_provider in ["openai", "gateway"] {
             let overridden = ConfigBuilder::default()
-                .codex_home(test.config.codex_home.to_path_buf())
+                .ava_home(test.config.ava_home.to_path_buf())
                 .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
                 .cloud_config_bundle(managed.clone())
                 .cli_overrides(vec![(
@@ -182,11 +182,11 @@ X-Managed = "required"
                 &overridden.config_layer_stack,
                 overridden.cwd.to_path_buf(),
                 &overridden.config_layer_stack,
-                overridden.codex_home.clone(),
+                overridden.ava_home.clone(),
                 overridden
                     .zsh_path
                     .clone()
-                    .map(codex_utils_absolute_path::AbsolutePathBuf::try_from)
+                    .map(ava_utils_absolute_path::AbsolutePathBuf::try_from)
                     .transpose()?,
             )
             .await?;

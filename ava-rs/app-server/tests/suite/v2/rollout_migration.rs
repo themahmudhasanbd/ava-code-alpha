@@ -3,17 +3,17 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetParams;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetParams;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -40,11 +40,11 @@ async fn runtime_enabled_legacy_migration_preserves_cold_resume_model_context() 
         ],
     )
     .await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut primary = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let start_id = primary
@@ -70,7 +70,7 @@ async fn runtime_enabled_legacy_migration_preserves_cold_resume_model_context() 
     timeout(DEFAULT_READ_TIMEOUT, primary.shutdown_gracefully()).await??;
 
     let mut secondary = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let enablement_id = secondary

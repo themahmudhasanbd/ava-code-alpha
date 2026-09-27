@@ -1,7 +1,7 @@
 use super::*;
-use crate::CodexHarnessMetadata;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
+use crate::AvaHarnessMetadata;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 
 fn publish_answer() -> RetainedContextEvent {
@@ -236,7 +236,7 @@ fn restored_input_order_accounts_for_surviving_local_sources() {
                 phase: None,
                 internal_chat_message_metadata_passthrough: None,
             },
-            metadata: Some(CodexHarnessMetadata {
+            metadata: Some(AvaHarnessMetadata {
                 user_input_order,
                 inherited_user_message,
                 ..Default::default()

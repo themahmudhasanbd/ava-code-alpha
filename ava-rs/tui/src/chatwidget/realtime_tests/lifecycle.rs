@@ -7,7 +7,7 @@ use pretty_assertions::assert_eq;
 async fn enabling_voice_on_an_open_thread_snapshots_the_new_thread_notice() {
     let (mut chat, _sender, mut events, _ops) = make_chatwidget_manual_with_sender().await;
     chat.set_feature_enabled(
-        codex_features::Feature::RealtimeConversation,
+        ava_features::Feature::RealtimeConversation,
         /*enabled*/ true,
     );
     commit_realtime_history_events(&mut chat, &mut events);
@@ -279,7 +279,7 @@ async fn startup_retry_waits_for_closed_then_uses_a_fresh_attempt_and_preserves_
     chat.realtime_conversation.microphone_muted = true;
     chat.on_realtime_webrtc_connected(
         /*attempt_id*/ 0,
-        Err(codex_realtime_webrtc::ConnectionError::NegotiationTimedOut),
+        Err(ava_realtime_webrtc::ConnectionError::NegotiationTimedOut),
     );
     assert!(
         matches!(ops.try_recv().unwrap(), AppCommand::RealtimeConversationStop { thread_id: id } if id == thread_id)
@@ -331,7 +331,7 @@ async fn startup_retry_waits_for_closed_then_uses_a_fresh_attempt_and_preserves_
     // A completion from the first attempt cannot finish or fail the retry.
     chat.on_realtime_webrtc_connected(
         /*attempt_id*/ 0,
-        Err(codex_realtime_webrtc::ConnectionError::NegotiationTimedOut),
+        Err(ava_realtime_webrtc::ConnectionError::NegotiationTimedOut),
     );
     assert_eq!(
         chat.realtime_conversation.phase,
@@ -353,7 +353,7 @@ async fn startup_retry_is_cancelled_while_waiting_for_backend_close() {
     chat.realtime_conversation.phase = RealtimeConversationPhase::Starting;
     chat.on_realtime_webrtc_connected(
         /*attempt_id*/ 0,
-        Err(codex_realtime_webrtc::ConnectionError::NegotiationTimedOut),
+        Err(ava_realtime_webrtc::ConnectionError::NegotiationTimedOut),
     );
     chat.toggle_realtime_conversation();
     chat.on_realtime_conversation_closed(Some("transport_closed".into()));
@@ -418,7 +418,7 @@ async fn startup_transport_close_before_peer_timeout_retries_once_and_ignores_ol
 
     chat.on_realtime_webrtc_connected(
         /*attempt_id*/ 0,
-        Err(codex_realtime_webrtc::ConnectionError::NegotiationTimedOut),
+        Err(ava_realtime_webrtc::ConnectionError::NegotiationTimedOut),
     );
     assert_eq!(
         (
@@ -447,17 +447,17 @@ async fn startup_retry_never_retries_twice_or_retries_other_errors_or_active_ses
         (
             RealtimeConversationPhase::Starting,
             super::super::StartupRetry::Used,
-            codex_realtime_webrtc::ConnectionError::NegotiationTimedOut,
+            ava_realtime_webrtc::ConnectionError::NegotiationTimedOut,
         ),
         (
             RealtimeConversationPhase::Starting,
             super::super::StartupRetry::Available,
-            codex_realtime_webrtc::ConnectionError::Failed,
+            ava_realtime_webrtc::ConnectionError::Failed,
         ),
         (
             RealtimeConversationPhase::Active,
             super::super::StartupRetry::Available,
-            codex_realtime_webrtc::ConnectionError::NegotiationTimedOut,
+            ava_realtime_webrtc::ConnectionError::NegotiationTimedOut,
         ),
     ] {
         let (mut chat, _sender, _events, mut ops) = make_chatwidget_manual_with_sender().await;
@@ -487,7 +487,7 @@ async fn failure_cleanup_does_not_attribute_stop_to_the_user() {
     chat.realtime_conversation.failure_recorded = true;
     chat.on_realtime_error(format!(
         "Failed to connect voice mode: {}",
-        codex_realtime_webrtc::ConnectionError::AudioDevices
+        ava_realtime_webrtc::ConnectionError::AudioDevices
     ));
     chat.on_realtime_conversation_closed(Some("requested".into()));
     assert_eq!(

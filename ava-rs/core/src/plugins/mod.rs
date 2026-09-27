@@ -10,12 +10,12 @@ mod skill_snapshot_tests;
 pub(crate) mod test_support;
 
 use crate::config::Config;
-use codex_core_plugins::PluginsManager;
-use codex_login::AuthManager;
-use codex_skills_extension::HostSkillsService;
+use ava_core_plugins::PluginsManager;
+use ava_login::AuthManager;
+use ava_skills_extension::HostSkillsService;
 use std::sync::Arc;
 
-pub(crate) use codex_plugin::PluginCapabilitySummary;
+pub(crate) use ava_plugin::PluginCapabilitySummary;
 
 pub(crate) use discoverable::list_tool_suggest_discoverable_plugins;
 pub(crate) use injection::build_plugin_injections;
@@ -35,11 +35,11 @@ pub fn plugins_manager_for_config(
     auth_manager: Arc<AuthManager>,
 ) -> PluginsManager {
     let skill_root_loader = Arc::new(HostSkillsService::new(
-        config.codex_home.clone(),
+        config.ava_home.clone(),
         /*bundled_skills_enabled*/ false,
     ));
     PluginsManager::new(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         auth_manager,
         skill_root_loader,
     )

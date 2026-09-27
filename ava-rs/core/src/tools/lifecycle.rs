@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
-use codex_extension_api::CommandStartInput;
-use codex_extension_api::McpToolContext;
-use codex_extension_api::McpToolResultInput;
-use codex_extension_api::ToolCallOutcome;
-use codex_extension_api::ToolCallSource as ExtensionToolCallSource;
-use codex_extension_api::ToolFinishInput;
-use codex_extension_api::ToolStartInput;
-use codex_file_system::ExecutorFileSystem;
-use codex_protocol::mcp::CallToolResult;
-use codex_tools::ToolName;
-use codex_utils_path_uri::PathUri;
+use ava_extension_api::CommandStartInput;
+use ava_extension_api::McpToolContext;
+use ava_extension_api::McpToolResultInput;
+use ava_extension_api::ToolCallOutcome;
+use ava_extension_api::ToolCallSource as ExtensionToolCallSource;
+use ava_extension_api::ToolFinishInput;
+use ava_extension_api::ToolStartInput;
+use ava_file_system::ExecutorFileSystem;
+use ava_protocol::mcp::CallToolResult;
+use ava_tools::ToolName;
+use ava_utils_path_uri::PathUri;
 
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;

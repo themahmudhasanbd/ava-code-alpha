@@ -1,19 +1,19 @@
 [package]
-name = "codex-lmstudio"
+name = "ava-lmstudio"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "codex_lmstudio"
+name = "ava_lmstudio"
 path = "src/lib.rs"
 doctest = false
 
 
 [dependencies]
-codex-core = { path = "../core" }
-codex-http-client = { workspace = true }
-codex-model-provider-info = { path = "../model-provider-info" }
+ava-core = { path = "../core" }
+ava-http-client = { workspace = true }
+ava-model-provider-info = { path = "../model-provider-info" }
 serde_json = "1"
 tokio = { version = "1", features = ["rt"] }
 tracing = { version = "0.1.44", features = ["log"] }

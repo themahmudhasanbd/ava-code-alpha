@@ -1,9 +1,9 @@
 //! Reports v2 readiness without exposing memory contents or persistence details to clients.
 
 use super::*;
-use codex_app_server_protocol::MemoryStatusParams;
-use codex_app_server_protocol::MemoryStatusResponse;
-use codex_protocol::MemoryVersion;
+use ava_app_server_protocol::MemoryStatusParams;
+use ava_app_server_protocol::MemoryStatusResponse;
+use ava_protocol::MemoryVersion;
 
 impl ThreadRequestProcessor {
     pub(crate) async fn memory_status(
@@ -30,7 +30,7 @@ impl ThreadRequestProcessor {
             .map_err(|error| internal_error(format!("failed to read memory progress: {error}")))?;
         let root = self
             .config
-            .codex_home
+            .ava_home
             .join(MemoryVersion::V2.directory_name());
         let summary = tokio::fs::read_to_string(root.join("memory_summary.md"))
             .await
@@ -38,7 +38,7 @@ impl ThreadRequestProcessor {
         let ready = count >= minimum
             && summary
                 .as_deref()
-                .is_some_and(codex_memories_write::workspace::is_valid_v2_summary);
+                .is_some_and(ava_memories_write::workspace::is_valid_v2_summary);
         Ok(Some(
             MemoryStatusResponse {
                 v2_consolidated_threads: count,

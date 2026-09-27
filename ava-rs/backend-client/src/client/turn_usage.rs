@@ -59,7 +59,7 @@ impl Client {
             url.set_host(Some(host))
                 .map_err(|error| RequestError::Other(error.into()))?;
         }
-        url.set_path("/v1/analytics/codex/turn-costs");
+        url.set_path("/v1/analytics/ava/turn-costs");
         url.set_query(None);
         url.set_fragment(None);
         let provider_scope_headers = provider_headers
@@ -104,9 +104,9 @@ mod tests {
     use super::ApiKeyTurnCost;
     use super::ApiKeyTurnCostStatus;
     use super::Client;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
-    use codex_login::CodexAuth;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
+    use ava_login::AvaAuth;
     use http::HeaderMap;
     use http::HeaderValue;
     use pretty_assertions::assert_eq;
@@ -122,7 +122,7 @@ mod tests {
     async fn api_key_turn_cost_queries_use_api_key_auth_and_provider_scope() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/analytics/codex/turn-costs"))
+            .and(path("/v1/analytics/ava/turn-costs"))
             .and(header("authorization", "Bearer sk-test"))
             .and(header("openai-organization", "org-test"))
             .and(header("openai-project", "project-test"))
@@ -155,7 +155,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let auth = CodexAuth::from_api_key("sk-test");
+        let auth = AvaAuth::from_api_key("sk-test");
         let client = Client::from_auth(
             format!("{}/backend-api", server.uri()),
             &auth,
@@ -206,7 +206,7 @@ mod tests {
     async fn custom_turn_cost_queries_apply_client_auth_after_provider_headers() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/analytics/codex/turn-costs"))
+            .and(path("/analytics/ava/turn-costs"))
             .and(header("authorization", "Bearer sk-test"))
             .and(header("chatgpt-account-id", "account-test"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
@@ -216,7 +216,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let auth = CodexAuth::from_api_key("sk-test");
+        let auth = AvaAuth::from_api_key("sk-test");
         let client = Client::from_auth(
             server.uri(),
             &auth,
@@ -234,7 +234,7 @@ mod tests {
         );
         let costs = client
             .query_api_key_turn_costs_at(
-                &format!("{}/analytics/codex/turn-costs", server.uri()),
+                &format!("{}/analytics/ava/turn-costs", server.uri()),
                 &["turn-one".to_string()],
                 &provider_headers,
             )

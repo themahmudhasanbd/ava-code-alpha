@@ -10,27 +10,27 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::RawResponseCompletedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ResponseUsageMetadata;
-use codex_app_server_protocol::ThreadCompactStartParams;
-use codex_app_server_protocol::ThreadCompactStartResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TokenUsageBreakdown;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::RawResponseCompletedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ResponseUsageMetadata;
+use ava_app_server_protocol::ThreadCompactStartParams;
+use ava_app_server_protocol::ThreadCompactStartResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TokenUsageBreakdown;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -89,22 +89,22 @@ async fn auto_compaction_emits_started_and_completed_items(route: CompactionRout
     ]);
     let requests = responses::mount_sse_sequence(&server, vec![sse1, sse2, sse3, sse4]).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = compaction_config(&server.uri(), /*auto_compact_limit*/ 200_000);
     if let CompactionRoute::Remote = route {
         config = config
             .with_provider_name("OpenAI")
             .with_provider_config("requires_openai_auth = true");
         write_chatgpt_auth(
-            codex_home.path(),
+            ava_home.path(),
             ChatGptAuthFixture::new("access-chatgpt").plan_type("pro"),
             AuthCredentialsStoreMode::File,
         )?;
     }
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -179,16 +179,16 @@ async fn thread_compact_start_triggers_compaction_and_returns_empty_response() -
     ]);
     let _responses = responses::mount_sse_sequence(&server, vec![seed, sse, followup]).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let initial_cwd = TempDir::new()?;
     let updated_cwd = TempDir::new()?;
     let extra_root = TempDir::new()?;
     let updated_roots = vec![updated_cwd.path().abs(), extra_root.path().abs()];
-    compaction_config(&server.uri(), /*auto_compact_limit*/ 1_000_000).write(codex_home.path())?;
+    compaction_config(&server.uri(), /*auto_compact_limit*/ 1_000_000).write(ava_home.path())?;
 
     // Top-level cwd restoration uses host-native paths, not a foreign executor's paths.
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -276,7 +276,7 @@ async fn thread_compact_start_triggers_compaction_and_returns_empty_response() -
     timeout(DEFAULT_READ_TIMEOUT, mcp.shutdown_gracefully()).await??;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -305,11 +305,11 @@ async fn thread_compact_start_rejects_invalid_thread_id() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
-    compaction_config(&server.uri(), AUTO_COMPACT_LIMIT).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    compaction_config(&server.uri(), AUTO_COMPACT_LIMIT).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -335,11 +335,11 @@ async fn thread_compact_start_rejects_unknown_thread_id() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
-    compaction_config(&server.uri(), AUTO_COMPACT_LIMIT).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    compaction_config(&server.uri(), AUTO_COMPACT_LIMIT).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 

@@ -12,6 +12,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|value| value.parse())
         .transpose()?
         .unwrap_or(120);
-    println!("{}", codex_mermaid::render(&source, max_width)?);
+    println!("{}", ava_mermaid::render(&source, max_width)?);
     Ok(())
 }

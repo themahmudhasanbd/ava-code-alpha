@@ -16,21 +16,21 @@ use std::time::Duration;
 #[test]
 fn real_decoder_renders_current_rtp_and_rejects_pre_epoch_arrivals() {
     gst::init().unwrap();
-    let root = if codex_utils_cargo_bin::runfiles_available() {
+    let root = if ava_utils_cargo_bin::runfiles_available() {
         let resource = format!(
             "../../third_party/voice/native_link_{}_{}/runtime.json",
             std::env::consts::OS,
             std::env::consts::ARCH
         );
         Some(
-            codex_utils_cargo_bin::find_resource!(resource)
+            ava_utils_cargo_bin::find_resource!(resource)
                 .unwrap()
                 .parent()
                 .unwrap()
                 .to_path_buf(),
         )
     } else {
-        std::env::var_os("CODEX_TEST_VOICE_RUNTIME").map(std::path::PathBuf::from)
+        std::env::var_os("AVA_TEST_VOICE_RUNTIME").map(std::path::PathBuf::from)
     };
     // Ordinary Cargo builds use installed plugins; explicit fixtures must load exactly.
     if let Some(root) = root {

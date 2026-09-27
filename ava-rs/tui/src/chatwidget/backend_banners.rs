@@ -18,11 +18,11 @@ use crate::bottom_pane::SelectionViewParams;
 use crate::bottom_pane::popup_consts::accept_cancel_hint_line;
 use crate::keymap::ListAction;
 use crate::model_catalog::LUNA_RESERVE_MODEL;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ReasoningEffort;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -88,12 +88,12 @@ impl ChatWidget {
         {
             self.automatic_model_switch_state.reserve_return =
                 self.thread_id().and_then(|thread_id| {
-                    ReserveReturnModel::load(self.config.codex_home.as_path(), thread_id).or_else(
+                    ReserveReturnModel::load(self.config.ava_home.as_path(), thread_id).or_else(
                         || {
                             // Forks inherit Reserve settings, but need their own return target:
                             // the parent's recovery will delete the parent's saved target.
                             let previous = ReserveReturnModel::load(
-                                self.config.codex_home.as_path(),
+                                self.config.ava_home.as_path(),
                                 self.forked_from?,
                             )?;
                             if self.backend_banner_state.account_id.as_deref()
@@ -102,7 +102,7 @@ impl ChatWidget {
                                 return None;
                             }
                             previous
-                                .save(self.config.codex_home.as_path(), thread_id)
+                                .save(self.config.ava_home.as_path(), thread_id)
                                 .ok()?;
                             Some(previous)
                         },
@@ -190,13 +190,13 @@ impl ChatWidget {
             effort: self.current_reasoning_effort(),
         };
         previous
-            .save(self.config.codex_home.as_path(), thread_id)
+            .save(self.config.ava_home.as_path(), thread_id)
             .is_ok()
     }
 
     pub(super) fn clear_reserve_return(&mut self) {
         if let Some(thread_id) = self.thread_id() {
-            ReserveReturnModel::clear(self.config.codex_home.as_path(), thread_id);
+            ReserveReturnModel::clear(self.config.ava_home.as_path(), thread_id);
         }
         self.automatic_model_switch_state = AutomaticModelSwitchState::default();
     }
@@ -302,8 +302,8 @@ impl ChatWidget {
         // or discard the already-known limits shown by /status.
         self.rate_limit_snapshots_by_limit_id =
             std::mem::take(&mut previous.rate_limit_snapshots_by_limit_id);
-        self.codex_rate_limit_reached_type = previous.codex_rate_limit_reached_type;
-        self.codex_spend_control_reached = previous.codex_spend_control_reached;
+        self.ava_rate_limit_reached_type = previous.ava_rate_limit_reached_type;
+        self.ava_spend_control_reached = previous.ava_spend_control_reached;
         self.backend_banner_state.presented = None;
         self.refresh_backend_banner_visibility();
     }

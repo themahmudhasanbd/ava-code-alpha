@@ -7,7 +7,7 @@ use super::authenticated_request;
 use super::build_remote_plugin_summary;
 use super::ensure_chatgpt_auth;
 use super::send_and_decode;
-use codex_login::CodexAuth;
+use ava_login::AvaAuth;
 use http::Method;
 use tracing::instrument;
 use url::Url;
@@ -36,7 +36,7 @@ pub struct RemotePluginSearchPage {
 )]
 pub async fn search_remote_plugins(
     config: &RemotePluginServiceConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     search: RemotePluginSearchRequest<'_>,
 ) -> Result<RemotePluginSearchPage, RemotePluginCatalogError> {
     let auth = ensure_chatgpt_auth(auth)?;

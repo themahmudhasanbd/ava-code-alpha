@@ -13,7 +13,7 @@ The word `batch` in a user request is not CLI opt-in by itself.
 Real API calls require **network access** + `OPENAI_API_KEY`. `--dry-run` does not.
 
 ## Quick start (works from any repo)
-Set a stable path to the skill CLI (default `CODEX_HOME` is `~/.ava-code`):
+Set a stable path to the skill CLI (default `AVA_HOME` is `~/.ava-code`):
 
 ```
 export AVA_CODE_HOME="${AVA_CODE_HOME:-$HOME/.ava-code}"
@@ -238,5 +238,5 @@ Notes:
 ## See also
 - API parameter quick reference for fallback CLI mode: `references/image-api.md`
 - Prompt examples shared across both top-level modes: `references/sample-prompts.md`
-- Network/sandbox notes for fallback CLI mode: `references/codex-network.md`
+- Network/sandbox notes for fallback CLI mode: `references/ava-network.md`
 - Built-in-first transparent image workflow: `SKILL.md`

@@ -5,33 +5,33 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use anyhow::Context;
-use codex_config::Constrained;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::NewThread;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::RemoveOptions;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_protocol::mcp::McpServerConnectionStatus;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::McpInvocation;
-use codex_protocol::protocol::McpStartupStatus;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_config::Constrained;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::NewThread;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::RemoveOptions;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_protocol::mcp::McpServerConnectionStatus;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::McpInvocation;
+use ava_protocol::protocol::McpStartupStatus;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_CREATE_TOOL;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_NAMESPACE;
@@ -42,8 +42,8 @@ use core_test_support::responses::ResponseMock;
 use core_test_support::responses::mount_sse_once;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::test_env;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::test_env;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -68,7 +68,7 @@ struct McpBindingCaptureCounter(Arc<AtomicUsize>);
 
 impl<S: Subscriber> Layer<S> for McpBindingCaptureCounter {
     fn on_new_span(&self, attributes: &Attributes<'_>, _id: &Id, _context: LayerContext<'_, S>) {
-        if attributes.metadata().target() == "codex_mcp::connection_manager::tool_catalog"
+        if attributes.metadata().target() == "ava_mcp::connection_manager::tool_catalog"
             && attributes.metadata().name() == "capture_binding_with_metadata"
         {
             self.0.fetch_add(1, Ordering::SeqCst);
@@ -165,7 +165,7 @@ async fn mcp_calls_stay_bound_to_each_thread() -> anyhow::Result<()> {
     };
     let first_server = make_server("first-runtime")?;
     let second_server = make_server("second-runtime")?;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::Never);
@@ -195,13 +195,13 @@ async fn mcp_calls_stay_bound_to_each_thread() -> anyhow::Result<()> {
         .start_thread(StartThreadOptions::new(second_config))
         .await?;
 
-    wait_for_mcp_server(&fixture.codex, SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava-code, SERVER_NAME).await?;
     wait_for_mcp_server(&second_thread, SERVER_NAME).await?;
 
     let calls = [
-        (&fixture.codex, "first-call", "first-runtime"),
+        (&fixture.ava-code, "first-call", "first-runtime"),
         (&second_thread, "second-call", "second-runtime"),
-        (&fixture.codex, "first-again", "first-runtime"),
+        (&fixture.ava-code, "first-again", "first-runtime"),
     ];
     let mut processes = Vec::new();
     for (thread, call_id, marker) in calls {
@@ -279,7 +279,7 @@ async fn mcp_calls_stay_bound_to_each_thread() -> anyhow::Result<()> {
     assert_ne!(processes[0], processes[1]);
     assert_eq!(processes[0], processes[2]);
 
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     second_thread.shutdown_and_wait().await?;
     responses_server.verify().await;
     Ok(())
@@ -330,7 +330,7 @@ async fn apps_cache_filled_during_binding_capture_reaches_the_model() -> anyhow:
         // Gate only the child's MCP endpoint, leaving backend directory requests unblocked.
         let mut extensions = ExtensionRegistryBuilder::new();
         extensions.mcp_server_contributor(Arc::new(ChildAppsEndpoint(format!(
-            "{}/api/codex/ps/mcp",
+            "{}/api/ava/ps/mcp",
             pending_apps.chatgpt_base_url
         ))));
         let test = apps_enabled_builder(apps.chatgpt_base_url)
@@ -344,7 +344,7 @@ async fn apps_cache_filled_during_binding_capture_reaches_the_model() -> anyhow:
                     .set(std::collections::HashMap::from([(
                         SERVER_NAME.to_string(),
                         serde_json::from_value(json!({
-                            "url": format!("{}/api/codex/ps/mcp", waiting.chatgpt_base_url),
+                            "url": format!("{}/api/ava/ps/mcp", waiting.chatgpt_base_url),
                             "http_headers": { "Authorization": "Bearer cache-test-token" },
                             "enabled_tools": ["calendar_list_events"],
                         }))
@@ -355,7 +355,7 @@ async fn apps_cache_filled_during_binding_capture_reaches_the_model() -> anyhow:
             .build_with_auto_env(&server)
             .await?;
         // Startup emits one summary for both servers, not one event per server.
-        let EventMsg::McpStartupComplete(startup) = wait_for_event(&test.codex, |event| {
+        let EventMsg::McpStartupComplete(startup) = wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::McpStartupComplete(_))
         })
         .await
@@ -368,7 +368,7 @@ async fn apps_cache_filled_during_binding_capture_reaches_the_model() -> anyhow:
                 .into_iter()
                 .collect::<std::collections::BTreeSet<_>>(),
             std::collections::BTreeSet::from([
-                CODEX_APPS_MCP_SERVER_NAME.to_string(),
+                AVA_APPS_MCP_SERVER_NAME.to_string(),
                 SERVER_NAME.to_string(),
             ])
         );
@@ -420,7 +420,7 @@ async fn apps_cache_filled_during_binding_capture_reaches_the_model() -> anyhow:
             .thread_manager
             .start_thread(StartThreadOptions::new(peer_config))
             .await?;
-        wait_for_mcp_server(&peer, CODEX_APPS_MCP_SERVER_NAME).await?;
+        wait_for_mcp_server(&peer, AVA_APPS_MCP_SERVER_NAME).await?;
         release_waiting.send(())?;
         wait_for_event(&child, |event| matches!(event, EventMsg::TurnComplete(_))).await;
         // The child's own Apps client must still be pending when its request reaches inference.
@@ -461,8 +461,8 @@ async fn cached_http_mcp_starts_lazily_for_subagents(
     let responses_server = responses::start_mock_server().await;
     let (http_server, startup_control) =
         AppsTestServer::mount_with_startup_control(&responses_server).await?;
-    let server_url = format!("{}/api/codex/ps/mcp", http_server.chatgpt_base_url);
-    let fixture = test_codex()
+    let server_url = format!("{}/api/ava/ps/mcp", http_server.chatgpt_base_url);
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             config.permissions.approval_policy = Constrained::allow_any(AskForApproval::Never);
@@ -489,7 +489,7 @@ async fn cached_http_mcp_starts_lazily_for_subagents(
         })
         .build_with_auto_env(&responses_server)
         .await?;
-    wait_for_mcp_server(&fixture.codex, SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava-code, SERVER_NAME).await?;
     assert_eq!(startup_control.initialize_attempts(), 1);
 
     let mut subagent_config = fixture.config.clone();
@@ -573,7 +573,7 @@ async fn cached_http_mcp_starts_lazily_for_subagents(
     assert!(output.is_some());
     assert_eq!(startup_control.initialize_attempts(), 2);
 
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     subagent.shutdown_and_wait().await?;
     responses_server.verify().await;
     Ok(())
@@ -596,7 +596,7 @@ async fn cached_mcp_startup_is_eager_for_root_and_lazy_for_subagents() -> anyhow
     let responses_server = responses::start_mock_server().await;
     let command = remote_aware_stdio_server_bin()?;
     let environment_id = remote_aware_environment_id();
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .with_config(move |config| {
             config.update_plan_enabled = true;
@@ -649,7 +649,7 @@ async fn cached_mcp_startup_is_eager_for_root_and_lazy_for_subagents() -> anyhow
     )
     .await;
     fixture
-        .codex
+        .ava-code
         .start_or_steer_turn(user_turn("use the echo tool"))
         .await?;
     let first_pid = wait_for_new_pid(fs.as_ref(), &pid_file, /*previous_pid*/ None).await?;
@@ -660,7 +660,7 @@ async fn cached_mcp_startup_is_eager_for_root_and_lazy_for_subagents() -> anyhow
         /*sandbox*/ None,
     )
     .await?;
-    wait_for_event(&fixture.codex, |event| {
+    wait_for_event(&fixture.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -885,7 +885,7 @@ async fn cached_mcp_startup_is_eager_for_root_and_lazy_for_subagents() -> anyhow
         .context("an unrelated tool should complete while cached MCP startup is pending")?
         .context("the unrelated tool should emit its plan update")?;
 
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     fs.write_file(
         &barrier_file,
         b"ready".to_vec(),

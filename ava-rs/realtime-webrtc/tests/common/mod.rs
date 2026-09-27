@@ -4,10 +4,10 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_realtime_webrtc::AudioState;
-use codex_realtime_webrtc::Message;
-use codex_realtime_webrtc::encode_frame;
-use codex_realtime_webrtc::read_message;
+use ava_realtime_webrtc::AudioState;
+use ava_realtime_webrtc::Message;
+use ava_realtime_webrtc::encode_frame;
+use ava_realtime_webrtc::read_message;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
@@ -21,11 +21,11 @@ use std::time::UNIX_EPOCH;
 
 pub const BUILD_COMMIT: &str = "0123456789abcdef0123456789abcdef01234567";
 pub const WAIT: Duration = Duration::from_secs(/*secs*/ 10);
-const APP: &str = if cfg!(windows) { "codex.exe" } else { "codex" };
+const APP: &str = if cfg!(windows) { "ava.exe" } else { "ava" };
 const HELPER: &str = if cfg!(windows) {
-    "codex-voice-host.exe"
+    "ava-voice-host.exe"
 } else {
-    "codex-voice-host"
+    "ava-voice-host"
 };
 
 pub fn wait_for(mut ready: impl FnMut() -> bool) -> Result<()> {
@@ -60,7 +60,7 @@ impl Drop for Package {
 pub fn package(test: &str) -> Result<Option<PathBuf>> {
     let source = std::env::current_exe()?;
     if source.file_name().is_some_and(|name| name == APP) {
-        codex_build_info::BuildInfo::initialize(BUILD_COMMIT);
+        ava_build_info::BuildInfo::initialize(BUILD_COMMIT);
         return Ok(Some(
             source
                 .parent()
@@ -75,10 +75,10 @@ pub fn package(test: &str) -> Result<Option<PathBuf>> {
         Package(std::env::temp_dir().join(format!("voice-actor-{}-{nonce}", std::process::id())));
     let root = &package.0;
     fs::create_dir_all(root.join("bin"))?;
-    fs::create_dir_all(root.join("codex-resources/voice/bin"))?;
-    fs::write(root.join("codex-package.json"), "{}")?;
+    fs::create_dir_all(root.join("ava-resources/voice/bin"))?;
+    fs::write(root.join("ava-package.json"), "{}")?;
     fs::copy(&source, root.join("bin").join(APP))?;
-    fs::copy(&source, root.join("codex-resources/voice/bin").join(HELPER))?;
+    fs::copy(&source, root.join("ava-resources/voice/bin").join(HELPER))?;
     let mut child = Command::new(root.join("bin").join(APP))
         .args(["--exact", test, "--nocapture"])
         .current_dir(root)

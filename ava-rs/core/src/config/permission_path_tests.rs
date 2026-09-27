@@ -4,27 +4,27 @@ use super::super::permissions::CompiledPermissionProfile;
 use super::super::permissions::WorkspaceWriteSettings;
 use super::super::permissions::compile_permission_profile;
 use super::relative_subpath;
-use codex_config::ConfigPathContext;
-use codex_config::permissions_toml::FilesystemPermissionToml;
-use codex_config::permissions_toml::FilesystemPermissionToml::Access;
-use codex_config::permissions_toml::FilesystemPermissionsToml;
-use codex_config::permissions_toml::PermissionProfileToml;
-use codex_config::permissions_toml::PermissionsToml;
-use codex_config::permissions_toml::WorkspaceRootsToml;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemAccessMode::Deny;
-use codex_protocol::permissions::FileSystemAccessMode::Read;
-use codex_protocol::permissions::FileSystemAccessMode::Write;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::permissions::ReadDenyMatcher;
-use codex_protocol::permissions::project_roots_glob_pattern;
-use codex_utils_absolute_path::AbsolutePathBufGuard;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigPathContext;
+use ava_config::permissions_toml::FilesystemPermissionToml;
+use ava_config::permissions_toml::FilesystemPermissionToml::Access;
+use ava_config::permissions_toml::FilesystemPermissionsToml;
+use ava_config::permissions_toml::PermissionProfileToml;
+use ava_config::permissions_toml::PermissionsToml;
+use ava_config::permissions_toml::WorkspaceRootsToml;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemAccessMode::Deny;
+use ava_protocol::permissions::FileSystemAccessMode::Read;
+use ava_protocol::permissions::FileSystemAccessMode::Write;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::permissions::ReadDenyMatcher;
+use ava_protocol::permissions::project_roots_glob_pattern;
+use ava_utils_absolute_path::AbsolutePathBufGuard;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -318,13 +318,13 @@ fn interior_dot_workspace_glob_fails_closed_for_every_path_convention() {
         FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry::new(
                 FileSystemPath::Special {
-                    value: codex_protocol::permissions::FileSystemSpecialPath::project_roots(
+                    value: ava_protocol::permissions::FileSystemSpecialPath::project_roots(
                         /*subpath*/ None,
                     ),
                 },
                 Write,
             ),
-            deny_glob_entry("codex-project-roots://private/./*.env"),
+            deny_glob_entry("ava-project-roots://private/./*.env"),
         ]),
         NetworkSandboxPolicy::Restricted,
     );

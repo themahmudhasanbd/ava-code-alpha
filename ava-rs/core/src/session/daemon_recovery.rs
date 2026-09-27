@@ -2,8 +2,8 @@
 //! Callers must flush the rollout after capture before persisting the snapshot.
 
 use super::Session;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::TurnEnvironmentSelection;
 
 /// Turn input and turn-start injections have entered the rollout writer.
 pub(super) struct RecordedTurnInput;
@@ -35,7 +35,7 @@ impl Session {
             crate::TurnStartOptions {
                 final_output_json_schema: context.final_output_json_schema.clone(),
                 service_tier: Some(inputs.settings.service_tier.clone().unwrap_or_else(|| {
-                    codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE.to_string()
+                    ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE.to_string()
                 })),
                 cyber_access_program: context.cyber_access_program,
                 ..Default::default()

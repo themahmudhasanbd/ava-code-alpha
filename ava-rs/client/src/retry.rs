@@ -1,5 +1,5 @@
-use codex_http_client::Request;
-use codex_http_client::TransportError;
+use ava_http_client::Request;
+use ava_http_client::TransportError;
 use rand::Rng;
 use std::future::Future;
 use std::time::Duration;
@@ -68,9 +68,9 @@ macro_rules! record_retry {
         };
 
         ::tracing::event!(
-            target: "codex_otel.trace_safe",
+            target: "ava_otel.trace_safe",
             ::tracing::Level::TRACE,
-            event.name = "codex.retry",
+            event.name = "ava.retry",
             retry.attempt = $attempt,
             retry.delay_ms = ($delay).as_millis() as u64,
             retry.layer = layer,

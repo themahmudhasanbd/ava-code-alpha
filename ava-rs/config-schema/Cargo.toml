@@ -1,11 +1,11 @@
 [package]
-name = "codex-config-schema"
+name = "ava-config-schema"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "codex-write-config-schema"
+name = "ava-write-config-schema"
 path = "src/main.rs"
 
 [lints]
@@ -14,4 +14,4 @@ workspace = true
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
-codex-config = { workspace = true }
+ava-config = { workspace = true }

@@ -1,8 +1,8 @@
 use super::*;
-use codex_core::exec_env::inject_apply_patch_env;
-use codex_core::windows_sandbox::local_binding_policy_for_sandbox;
-use codex_core::windows_sandbox::managed_proxy_routing_for_windows_sandbox;
-use codex_protocol::shell_environment::is_non_inheritable_env_var;
+use ava_core::exec_env::inject_apply_patch_env;
+use ava_core::windows_sandbox::local_binding_policy_for_sandbox;
+use ava_core::windows_sandbox::managed_proxy_routing_for_windows_sandbox;
+use ava_protocol::shell_environment::is_non_inheritable_env_var;
 
 #[derive(Clone)]
 pub(crate) struct CommandExecRequestProcessor {
@@ -295,7 +295,7 @@ impl CommandExecRequestProcessor {
             env,
             network: started_network_proxy
                 .as_ref()
-                .map(codex_core::config::StartedNetworkProxy::proxy),
+                .map(ava_core::config::StartedNetworkProxy::proxy),
             network_environment_id: None,
             sandbox_permissions: SandboxPermissions::UseDefault,
             windows_sandbox_level,
@@ -303,7 +303,7 @@ impl CommandExecRequestProcessor {
             arg0: None,
         };
 
-        let codex_linux_sandbox_exe = self.arg0_paths.codex_linux_sandbox_exe.clone();
+        let ava_linux_sandbox_exe = self.arg0_paths.ava_linux_sandbox_exe.clone();
         let outgoing = self.outgoing.clone();
         let request_for_task = request.clone();
         let started_network_proxy_for_task = started_network_proxy;
@@ -314,13 +314,13 @@ impl CommandExecRequestProcessor {
             None => None,
         };
 
-        let exec_request = codex_core::exec::build_exec_request(
+        let exec_request = ava_core::exec::build_exec_request(
             exec_params,
             &effective_permission_profile,
             &sandbox_cwd,
             windows_sandbox_workspace_roots.as_slice(),
-            &codex_linux_sandbox_exe,
-            &self.arg0_paths.codex_self_exe,
+            &ava_linux_sandbox_exe,
+            &self.arg0_paths.ava_self_exe,
             self.config.permissions.windows_sandbox_type,
             use_legacy_landlock,
         )

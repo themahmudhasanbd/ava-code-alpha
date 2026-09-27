@@ -1,8 +1,8 @@
 use crate::remote::RemoteInstalledPlugin;
 use crate::remote::RemotePluginScope;
 use crate::store::ActivePluginInstallation;
-use codex_config::types::PluginConfig;
-use codex_plugin::PluginId;
+use ava_config::types::PluginConfig;
+use ava_plugin::PluginId;
 use std::collections::HashMap;
 use tracing::warn;
 

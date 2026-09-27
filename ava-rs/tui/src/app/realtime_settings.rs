@@ -1,18 +1,18 @@
 //! Resolve and persist voice preferences through the owning server before updating the UI.
 
 use super::*;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadRealtimeListVoicesParams;
-use codex_app_server_protocol::ThreadRealtimeListVoicesResponse;
-use codex_protocol::protocol::RealtimeVoice;
-use codex_protocol::protocol::RealtimeVoicesList;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadRealtimeListVoicesParams;
+use ava_app_server_protocol::ThreadRealtimeListVoicesResponse;
+use ava_protocol::protocol::RealtimeVoice;
+use ava_protocol::protocol::RealtimeVoicesList;
 use uuid::Uuid;
 
 /// Unknown voices belong to newer servers; omit the override instead of blocking audio.
 /// An unset preference explicitly selects the V1/V3 server default, not a stale thread preference.
 fn configured_voice(
-    config: &codex_app_server_protocol::Config,
+    config: &ava_app_server_protocol::Config,
     default_voice: RealtimeVoice,
 ) -> Result<Option<RealtimeVoice>> {
     let value = config
@@ -96,7 +96,7 @@ impl App {
                     app_server.request_handle(), &self.chat_widget.config_ref().cwd,
                 ).await.and_then(|config| match config.as_ref() {
                     Some(config) => configured_voice(config, voices.default_v1),
-                    None if response.status == codex_app_server_protocol::WriteStatus::OkOverridden => Err(color_eyre::eyre::eyre!("the saved voice is overridden, but this server cannot read effective settings")),
+                    None if response.status == ava_app_server_protocol::WriteStatus::OkOverridden => Err(color_eyre::eyre::eyre!("the saved voice is overridden, but this server cannot read effective settings")),
                     None => Ok(Some(voice)),
                 });
                 match effective {

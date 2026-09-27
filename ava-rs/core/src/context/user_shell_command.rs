@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct UserShellCommand {

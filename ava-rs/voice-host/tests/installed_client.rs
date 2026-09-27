@@ -9,11 +9,11 @@ use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_install_context::CodexPackageLayout;
-use codex_install_context::InstallContext;
-use codex_realtime_webrtc::SessionDescription;
-use codex_realtime_webrtc::VoiceHost;
-use codex_utils_cargo_bin::cargo_bin;
+use ava_install_context::AvaPackageLayout;
+use ava_install_context::InstallContext;
+use ava_realtime_webrtc::SessionDescription;
+use ava_realtime_webrtc::VoiceHost;
+use ava_utils_cargo_bin::cargo_bin;
 use futures::future::BoxFuture;
 use pretty_assertions::assert_eq;
 use tokio::process::Command;
@@ -36,7 +36,7 @@ const DEADLINE: Duration = Duration::from_secs(/*secs*/ 10);
 async fn build_commit() -> Result<String> {
     let output = timeout(
         DEADLINE,
-        Command::new(cargo_bin("codex-voice-host")?)
+        Command::new(cargo_bin("ava-voice-host")?)
             .arg("--build-commit")
             .kill_on_drop(true)
             .output(),
@@ -54,18 +54,18 @@ fn install_startup_libraries(runtime: &Path) -> Result<()> {
     )) {
         return Ok(());
     }
-    let source = if codex_utils_cargo_bin::runfiles_available() {
+    let source = if ava_utils_cargo_bin::runfiles_available() {
         let resource = format!(
             "../../third_party/voice/native_link_{}_{}/runtime.json",
             std::env::consts::OS,
             std::env::consts::ARCH
         );
-        codex_utils_cargo_bin::find_resource!(resource)?
+        ava_utils_cargo_bin::find_resource!(resource)?
             .parent()
             .context("runtime parent")?
             .to_owned()
     } else {
-        std::env::var_os("CODEX_TEST_VOICE_RUNTIME")
+        std::env::var_os("AVA_TEST_VOICE_RUNTIME")
             .map(PathBuf::from)
             .context("prepared runtime required for installed helper tests")?
     };
@@ -81,15 +81,15 @@ fn install_startup_libraries(runtime: &Path) -> Result<()> {
     Ok(())
 }
 
-fn install_helper(root: &Path) -> Result<CodexPackageLayout> {
+fn install_helper(root: &Path) -> Result<AvaPackageLayout> {
     let bin = root.join("bin");
-    let helper_dir = root.join("codex-resources/voice/bin");
+    let helper_dir = root.join("ava-resources/voice/bin");
     fs::create_dir_all(&bin)?;
     fs::create_dir_all(&helper_dir)?;
-    fs::write(root.join("codex-package.json"), "{}")?;
-    let app = bin.join(if cfg!(windows) { "codex.exe" } else { "codex" });
+    fs::write(root.join("ava-package.json"), "{}")?;
+    let app = bin.join(if cfg!(windows) { "ava.exe" } else { "ava" });
     fs::write(&app, [])?;
-    let source = cargo_bin("codex-voice-host")?;
+    let source = cargo_bin("ava-voice-host")?;
     let helper = helper_dir.join(source.file_name().context("helper binary file name")?);
     fs::copy(&source, &helper)?;
     install_startup_libraries(helper_dir.parent().context("helper runtime directory")?)?;
@@ -109,10 +109,10 @@ async fn installed_client_rejects_mixed_builds_and_missing_helper() -> Result<()
         .tempdir()?;
     let package = install_helper(directory.path())?;
     let bin = directory.path().join("bin");
-    let source = cargo_bin("codex-voice-host")?;
+    let source = cargo_bin("ava-voice-host")?;
     let helper = directory
         .path()
-        .join("codex-resources/voice/bin")
+        .join("ava-resources/voice/bin")
         .join(source.file_name().context("helper binary file name")?);
     VoiceHost::connect(&package, &build_commit().await?)
         .await?
@@ -153,13 +153,13 @@ async fn installed_client_accepts_non_utf8_package_path() -> Result<()> {
         .path()
         .join(OsString::from_vec(b"voice-\xff".to_vec()));
     let bin = root.join("bin");
-    let helper_dir = root.join("codex-resources/voice/bin");
+    let helper_dir = root.join("ava-resources/voice/bin");
     fs::create_dir_all(&bin)?;
     fs::create_dir_all(&helper_dir)?;
-    fs::write(root.join("codex-package.json"), "{}")?;
-    let app = bin.join("codex");
+    fs::write(root.join("ava-package.json"), "{}")?;
+    let app = bin.join("ava");
     fs::write(&app, [])?;
-    let source = cargo_bin("codex-voice-host")?;
+    let source = cargo_bin("ava-voice-host")?;
     fs::copy(&source, helper_dir.join(source.file_name().unwrap()))?;
     install_startup_libraries(helper_dir.parent().unwrap())?;
     let package = InstallContext::from_exe(

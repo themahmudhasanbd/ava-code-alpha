@@ -1,10 +1,10 @@
 //! Owns sync reviewer checkpoint and invalidation policy for both context modes.
 //! Legacy may keep its existing transcript; thread-owned mode requires current parent context.
 
-use codex_features::Feature;
-use codex_protocol::models::ResponseItem;
+use ava_features::Feature;
+use ava_protocol::models::ResponseItem;
 
-use crate::codex_thread::GuardianAuthorizationVersion;
+use crate::ava_thread::GuardianAuthorizationVersion;
 use crate::config::ManagedFeatures;
 use crate::context::GuardianContextMode;
 use crate::context_manager::ContextManager;
@@ -55,7 +55,7 @@ impl ReviewContextPolicy {
             return Ok(None);
         }
         let Some(checkpoint) =
-            codex_history::CompactionCheckpoint::latest(history.annotated_items())
+            ava_history::CompactionCheckpoint::latest(history.annotated_items())
         else {
             return Ok(None);
         };

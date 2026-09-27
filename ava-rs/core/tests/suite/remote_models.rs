@@ -1,32 +1,32 @@
 #![cfg(not(target_os = "windows"))]
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::built_in_model_providers;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_models_manager::model_info::BASE_INSTRUCTIONS;
-use codex_prompts::render_model_instructions;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelMessages;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ModelVisibility;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::openai_models::default_input_modalities;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::built_in_model_providers;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_models_manager::model_info::BASE_INSTRUCTIONS;
+use ava_prompts::render_model_instructions;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelMessages;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ModelVisibility;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::openai_models::default_input_modalities;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::TempDirExt;
 use core_test_support::load_default_config_for_test;
 use core_test_support::responses::ev_assistant_message;
@@ -41,10 +41,10 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use pretty_assertions::assert_eq;
@@ -62,7 +62,7 @@ use wiremock::ResponseTemplate;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-const REMOTE_MODEL_SLUG: &str = "codex-test";
+const REMOTE_MODEL_SLUG: &str = "ava-test";
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn disabled_update_plan_preserves_custom_catalog_instructions() -> Result<()> {
@@ -86,7 +86,7 @@ async fn disabled_update_plan_preserves_custom_catalog_instructions() -> Result<
         .expect("model prompt templates");
     messages.instructions_template = Some(INSTRUCTIONS.to_string());
     messages.instructions_variables = None;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-5.5")
         .with_config(move |config| {
             config.update_plan_enabled = false;
@@ -111,7 +111,7 @@ async fn unknown_model_sends_builtin_instructions() -> Result<()> {
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("future-custom-model")
         .with_config(|config| config.update_plan_enabled = true);
     let test = builder.build_with_auto_env(&server).await?;
@@ -148,13 +148,13 @@ async fn remote_models_get_model_info_uses_longest_matching_prefix() -> Result<(
         TruncationPolicyConfig::bytes(/*limit*/ 10_000),
     );
     let specific = test_remote_model_with_policy(
-        "gpt-5.3-codex",
+        "gpt-5.3-ava",
         ModelVisibility::List,
         /*priority*/ 1_000,
         TruncationPolicyConfig::bytes(/*limit*/ 10_000),
     );
     let specific = ModelInfo {
-        display_name: "GPT 5.3 Codex".to_string(),
+        display_name: "GPT 5.3 Ava".to_string(),
         model_messages: Some(ModelMessages {
             instructions_template: Some("use specific prefix".to_string()),
             ..Default::default()
@@ -177,32 +177,32 @@ async fn remote_models_get_model_info_uses_longest_matching_prefix() -> Result<(
     )
     .await;
 
-    let codex_home = TempDir::new()?;
-    let config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new()?;
+    let config = load_default_config_for_test(&ava_home).await;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let provider = ModelProviderInfo {
         base_url: Some(format!("{}/v1", server.uri())),
         ..built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone()
     };
-    let manager = codex_core::test_support::models_manager_with_provider(
-        codex_home.path().to_path_buf(),
-        codex_core::test_support::auth_manager_from_auth(auth),
+    let manager = ava_core::test_support::models_manager_with_provider(
+        ava_home.path().to_path_buf(),
+        ava_core::test_support::auth_manager_from_auth(auth),
         provider,
     );
 
     manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
 
     let model_info = manager
-        .get_model_info("gpt-5.3-codex-test", &config.to_models_manager_config())
+        .get_model_info("gpt-5.3-ava-test", &config.to_models_manager_config())
         .await;
 
-    assert_eq!(model_info.slug, "gpt-5.3-codex-test");
+    assert_eq!(model_info.slug, "gpt-5.3-ava-test");
     assert_eq!(
         render_model_instructions(&model_info),
         render_model_instructions(&specific)
@@ -239,8 +239,8 @@ async fn remote_models_config_context_window_override_clamps_to_max_context_wind
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let TestAva { ava, .. } = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some(requested_model.to_string());
             config.model_context_window = Some(1_000_000);
@@ -248,14 +248,14 @@ async fn remote_models_config_context_window_override_clamps_to_max_context_wind
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "check context window".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let turn_started_event = wait_for_event(&codex, |event| {
+    let turn_started_event = wait_for_event(&ava, |event| {
         matches!(
             event,
             EventMsg::TurnStarted(started)
@@ -300,8 +300,8 @@ async fn remote_models_config_override_above_max_uses_max_context_window() -> Re
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let TestAva { ava, .. } = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some(requested_model.to_string());
             config.model_context_window = Some(500_000);
@@ -309,14 +309,14 @@ async fn remote_models_config_override_above_max_uses_max_context_window() -> Re
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "check context window".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let turn_started_event = wait_for_event(&codex, |event| {
+    let turn_started_event = wait_for_event(&ava, |event| {
         matches!(
             event,
             EventMsg::TurnStarted(started)
@@ -361,22 +361,22 @@ async fn remote_models_use_context_window_when_config_override_is_absent() -> Re
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let TestAva { ava, .. } = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some(requested_model.to_string());
         })
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "check context window".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let turn_started_event = wait_for_event(&codex, |event| {
+    let turn_started_event = wait_for_event(&ava, |event| {
         matches!(
             event,
             EventMsg::TurnStarted(started)
@@ -407,8 +407,8 @@ async fn remote_models_long_model_slug_is_sent_with_supported_reasoning(
     skip_if_sandbox!(Ok(()));
 
     let server = MockServer::start().await;
-    let requested_model = "gpt-5.3-codex-test";
-    let prefix_model = "gpt-5.3-codex";
+    let requested_model = "gpt-5.3-ava-test";
+    let prefix_model = "gpt-5.3-ava";
     let base_instructions = "Keep the catalog base instructions.";
     let developer_instructions = "Keep the configured developer instructions.";
     let mut remote_model = test_remote_model_with_policy(
@@ -448,8 +448,8 @@ async fn remote_models_long_model_slug_is_sent_with_supported_reasoning(
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let TestAva { ava, .. } = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some(requested_model.to_string());
             config.developer_instructions = Some(developer_instructions.to_string());
@@ -457,14 +457,14 @@ async fn remote_models_long_model_slug_is_sent_with_supported_reasoning(
         .build_with_auto_env(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "check model slug".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let request = response_mock.single_request();
     let body = request.body_json();
@@ -517,19 +517,19 @@ async fn namespaced_model_slug_uses_catalog_metadata_without_fallback_warning() 
     skip_if_sandbox!(Ok(()));
 
     let server = MockServer::start().await;
-    let requested_model = "custom/gpt-5.5-codex";
+    let requested_model = "custom/gpt-5.5-ava";
     let response_mock = mount_sse_once(
         &server,
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_model(requested_model)
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "check namespaced model metadata".into(),
             text_elements: Vec::new(),
@@ -538,7 +538,7 @@ async fn namespaced_model_slug_uses_catalog_metadata_without_fallback_warning() 
 
     let mut fallback_warning_count = 0;
     loop {
-        let event = wait_for_event(&codex, |_| true).await;
+        let event = wait_for_event(&ava, |_| true).await;
         match event {
             EventMsg::Warning(warning)
                 if warning.message.contains("Defaulting to fallback metadata") =>
@@ -632,13 +632,13 @@ async fn remote_models_remote_model_uses_unified_exec() -> Result<()> {
         .mount(&server)
         .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some("gpt-5.4".to_string());
         });
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         cwd,
         config,
         thread_manager,
@@ -656,7 +656,7 @@ async fn remote_models_remote_model_uses_unified_exec() -> Result<()> {
     assert_eq!(model_info.shell_type, ConfigShellToolType::UnifiedExec);
 
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             model: Some(REMOTE_MODEL_SLUG.to_string()),
             ..Default::default()
@@ -686,7 +686,7 @@ async fn remote_models_remote_model_uses_unified_exec() -> Result<()> {
     let cwd_path = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd_path.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run call".into(),
@@ -703,7 +703,7 @@ async fn remote_models_remote_model_uses_unified_exec() -> Result<()> {
         )
         .await?;
 
-    let begin_event = wait_for_event_match(&codex, |msg| match msg {
+    let begin_event = wait_for_event_match(&ava, |msg| match msg {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
@@ -711,7 +711,7 @@ async fn remote_models_remote_model_uses_unified_exec() -> Result<()> {
 
     assert_eq!(begin_event.source, ExecCommandSource::UnifiedExecStartup);
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let request = response_mock
         .requests()
@@ -744,7 +744,7 @@ async fn remote_models_truncation_policy_without_override_preserves_remote() -> 
         .start()
         .await;
 
-    let slug = "codex-test-truncation-policy";
+    let slug = "ava-test-truncation-policy";
     let remote_model = test_remote_model_with_policy(
         slug,
         ModelVisibility::List,
@@ -759,8 +759,8 @@ async fn remote_models_truncation_policy_without_override_preserves_remote() -> 
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some("gpt-5.4".to_string());
         });
@@ -790,7 +790,7 @@ async fn remote_models_truncation_policy_with_tool_output_override() -> Result<(
         .start()
         .await;
 
-    let slug = "codex-test-truncation-override";
+    let slug = "ava-test-truncation-override";
     let remote_model = test_remote_model_with_policy(
         slug,
         ModelVisibility::List,
@@ -805,8 +805,8 @@ async fn remote_models_truncation_policy_with_tool_output_override() -> Result<(
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model = Some("gpt-5.4".to_string());
             config.tool_output_token_limit = Some(50);
@@ -827,10 +827,10 @@ async fn remote_models_truncation_policy_with_tool_output_override() -> Result<(
     Ok(())
 }
 
-#[test_case(CodexAuth::create_dummy_chatgpt_auth_for_testing(); "chatgpt")]
-#[test_case(CodexAuth::from_api_key("test-api-key"); "api key")]
+#[test_case(AvaAuth::create_dummy_chatgpt_auth_for_testing(); "chatgpt")]
+#[test_case(AvaAuth::from_api_key("test-api-key"); "api key")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn remote_models_apply_legacy_instructions(auth: CodexAuth) -> Result<()> {
+async fn remote_models_apply_legacy_instructions(auth: AvaAuth) -> Result<()> {
     skip_if_no_network!(Ok(()));
     skip_if_sandbox!(Ok(()));
 
@@ -928,7 +928,7 @@ async fn remote_models_apply_legacy_instructions(auth: CodexAuth) -> Result<()> 
     )
     .await;
 
-    let mut builder = test_codex().with_auth(auth).with_config(|config| {
+    let mut builder = test_ava().with_auth(auth).with_config(|config| {
         config
             .features
             .enable(Feature::ApiKeyModelDiscovery)
@@ -941,8 +941,8 @@ async fn remote_models_apply_legacy_instructions(auth: CodexAuth) -> Result<()> 
         config.update_plan_enabled = true;
         config.model = Some("gpt-5.2".to_string());
     });
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         cwd,
         config,
         thread_manager,
@@ -955,7 +955,7 @@ async fn remote_models_apply_legacy_instructions(auth: CodexAuth) -> Result<()> 
     let cwd_path = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd_path.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello base".into(),
@@ -972,10 +972,10 @@ async fn remote_models_apply_legacy_instructions(auth: CodexAuth) -> Result<()> 
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             model: Some(model.to_string()),
             ..Default::default()
@@ -985,7 +985,7 @@ async fn remote_models_apply_legacy_instructions(auth: CodexAuth) -> Result<()> 
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd_path.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello remote".into(),
@@ -1002,7 +1002,7 @@ async fn remote_models_apply_legacy_instructions(auth: CodexAuth) -> Result<()> 
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let base_model_info = models_manager
         .get_model_info("gpt-5.2", &config.to_models_manager_config())
@@ -1041,23 +1041,23 @@ async fn remote_models_do_not_append_removed_builtin_presets() -> Result<()> {
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let provider = ModelProviderInfo {
         base_url: Some(format!("{}/v1", server.uri())),
         ..built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone()
     };
-    let manager = codex_core::test_support::models_manager_with_provider(
-        codex_home.path().to_path_buf(),
-        codex_core::test_support::auth_manager_from_auth(auth),
+    let manager = ava_core::test_support::models_manager_with_provider(
+        ava_home.path().to_path_buf(),
+        ava_core::test_support::auth_manager_from_auth(auth),
         provider,
     );
 
     let available = manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     let remote = available
@@ -1107,23 +1107,23 @@ async fn remote_models_merge_adds_new_high_priority_first() -> Result<()> {
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let provider = ModelProviderInfo {
         base_url: Some(format!("{}/v1", server.uri())),
         ..built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone()
     };
-    let manager = codex_core::test_support::models_manager_with_provider(
-        codex_home.path().to_path_buf(),
-        codex_core::test_support::auth_manager_from_auth(auth),
+    let manager = ava_core::test_support::models_manager_with_provider(
+        ava_home.path().to_path_buf(),
+        ava_core::test_support::auth_manager_from_auth(auth),
         provider,
     );
 
     let available = manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(
@@ -1159,23 +1159,23 @@ async fn remote_models_merge_replaces_overlapping_model() -> Result<()> {
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let provider = ModelProviderInfo {
         base_url: Some(format!("{}/v1", server.uri())),
         ..built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone()
     };
-    let manager = codex_core::test_support::models_manager_with_provider(
-        codex_home.path().to_path_buf(),
-        codex_core::test_support::auth_manager_from_auth(auth),
+    let manager = ava_core::test_support::models_manager_with_provider(
+        ava_home.path().to_path_buf(),
+        ava_core::test_support::auth_manager_from_auth(auth),
         provider,
     );
 
     let available = manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     let overridden = available
@@ -1208,23 +1208,23 @@ async fn remote_models_merge_preserves_bundled_models_on_empty_response() -> Res
     let server = MockServer::start().await;
     let _models_mock = mount_models_once(&server, ModelsResponse { models: Vec::new() }).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let provider = ModelProviderInfo {
         base_url: Some(format!("{}/v1", server.uri())),
         ..built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone()
     };
-    let manager = codex_core::test_support::models_manager_with_provider(
-        codex_home.path().to_path_buf(),
-        codex_core::test_support::auth_manager_from_auth(auth),
+    let manager = ava_core::test_support::models_manager_with_provider(
+        ava_home.path().to_path_buf(),
+        ava_core::test_support::auth_manager_from_auth(auth),
         provider,
     );
 
     let available = manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     let bundled_slug = bundled_model_slug();
@@ -1255,16 +1255,16 @@ async fn remote_models_request_times_out_after_5s() -> Result<()> {
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let provider = ModelProviderInfo {
         base_url: Some(format!("{}/v1", server.uri())),
         ..built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone()
     };
-    let manager = codex_core::test_support::models_manager_with_provider(
-        codex_home.path().to_path_buf(),
-        codex_core::test_support::auth_manager_from_auth(auth),
+    let manager = ava_core::test_support::models_manager_with_provider(
+        ava_home.path().to_path_buf(),
+        ava_core::test_support::auth_manager_from_auth(auth),
         provider,
     );
 
@@ -1275,7 +1275,7 @@ async fn remote_models_request_times_out_after_5s() -> Result<()> {
             &None,
             /*allow_provider_model_fallback*/ false,
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         ),
     )
     .await;
@@ -1318,7 +1318,7 @@ async fn remote_models_hide_picker_only_models() -> Result<()> {
 
     let server = MockServer::start().await;
     let remote_model = test_remote_model(
-        "codex-auto-balanced",
+        "ava-auto-balanced",
         ModelVisibility::Hide,
         /*priority*/ 0,
     );
@@ -1330,16 +1330,16 @@ async fn remote_models_hide_picker_only_models() -> Result<()> {
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let provider = ModelProviderInfo {
         base_url: Some(format!("{}/v1", server.uri())),
         ..built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone()
     };
-    let manager = codex_core::test_support::models_manager_with_provider(
-        codex_home.path().to_path_buf(),
-        codex_core::test_support::auth_manager_from_auth(auth),
+    let manager = ava_core::test_support::models_manager_with_provider(
+        ava_home.path().to_path_buf(),
+        ava_core::test_support::auth_manager_from_auth(auth),
         provider,
     );
 
@@ -1348,7 +1348,7 @@ async fn remote_models_hide_picker_only_models() -> Result<()> {
             &None,
             /*allow_provider_model_fallback*/ false,
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(selected, bundled_default_model_slug());
@@ -1356,12 +1356,12 @@ async fn remote_models_hide_picker_only_models() -> Result<()> {
     let available = manager
         .list_models(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     let hidden = available
         .iter()
-        .find(|model| model.model == "codex-auto-balanced")
+        .find(|model| model.model == "ava-auto-balanced")
         .expect("hidden remote model should be listed");
     assert!(!hidden.show_in_picker, "hidden models should remain hidden");
     assert_eq!(
@@ -1382,7 +1382,7 @@ async fn wait_for_model_available(manager: &SharedModelsManager, slug: &str) -> 
             let guard = manager
                 .list_models(
                     RefreshStrategy::OnlineIfUncached,
-                    codex_core::test_support::default_http_client_factory(),
+                    ava_core::test_support::default_http_client_factory(),
                 )
                 .await;
             guard.iter().find(|model| model.model == slug).cloned()
@@ -1407,7 +1407,7 @@ fn bundled_model_slug() -> String {
 }
 
 fn bundled_default_model_slug() -> String {
-    codex_core::test_support::all_model_presets()
+    ava_core::test_support::all_model_presets()
         .iter()
         .find(|preset| preset.is_default)
         .expect("bundled models should include a default")
@@ -1489,7 +1489,7 @@ async fn model_catalog_url_supplies_conversation_model_and_instructions() -> Res
     skip_if_no_network!(Ok(()));
     let server = MockServer::start().await;
     let instructions = "Use the gateway's reviewed conversation instructions.";
-    let mut model = codex_models_manager::model_info::model_info_from_slug("gateway-conversation");
+    let mut model = ava_models_manager::model_info::model_info_from_slug("gateway-conversation");
     model.visibility = ModelVisibility::List;
     model.supported_in_api = true;
     model.support_verbosity = false;
@@ -1503,7 +1503,7 @@ async fn model_catalog_url_supplies_conversation_model_and_instructions() -> Res
         models: vec![model],
     };
     Mock::given(method("GET"))
-        .and(path("/codex/models"))
+        .and(path("/ava/models"))
         .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_json(&catalog))
         .expect(1)
         .mount(&server)
@@ -1513,9 +1513,9 @@ async fn model_catalog_url_supplies_conversation_model_and_instructions() -> Res
         sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let catalog_url = format!("{}/codex/models", server.uri());
-    let test = test_codex()
-        .with_auth(CodexAuth::from_api_key("gateway-api-key"))
+    let catalog_url = format!("{}/ava/models", server.uri());
+    let test = test_ava()
+        .with_auth(AvaAuth::from_api_key("gateway-api-key"))
         .with_model("gateway-conversation")
         .with_config(move |config| {
             config.model_provider.name = "Gateway".to_string();
@@ -1524,7 +1524,7 @@ async fn model_catalog_url_supplies_conversation_model_and_instructions() -> Res
                 .features
                 .enable(Feature::ApiKeyModelDiscovery)
                 .expect("enable API-key discovery");
-            config.model_verbosity = Some(codex_protocol::config_types::Verbosity::High);
+            config.model_verbosity = Some(ava_protocol::config_types::Verbosity::High);
         })
         .build_with_auto_env(&server)
         .await?;
@@ -1533,7 +1533,7 @@ async fn model_catalog_url_supplies_conversation_model_and_instructions() -> Res
         .get_models_manager()
         .raw_model_catalog(
             RefreshStrategy::OnlineIfUncached,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(received.models, catalog.models);

@@ -8,9 +8,9 @@ use crate::setup::SetupRootOverrides;
 use crate::spawn_prep::legacy_session_capability_roots;
 use crate::spawn_prep::prepare_legacy_session_security;
 use anyhow::Result;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use rand::Rng;
 use rand::SeedableRng;
@@ -30,10 +30,10 @@ fn private_desktop_rejects_interactive_and_injected_names() {
     for name in [
         "Default",
         r"Winsta0\Default",
-        "CodexSandboxDesktop-",
-        r"CodexSandboxDesktop-abcd\Default",
-        "CodexSandboxDesktop-abcd\0Default",
-        "CodexSandboxDesktop-0123456789abcdef0123456789abcdef0",
+        "AvaSandboxDesktop-",
+        r"AvaSandboxDesktop-abcd\Default",
+        "AvaSandboxDesktop-abcd\0Default",
+        "AvaSandboxDesktop-0123456789abcdef0123456789abcdef0",
     ] {
         assert!(LaunchDesktop::open_private(name).is_err(), "{name:?}");
     }
@@ -98,7 +98,7 @@ fn shared_desktop_reuses_only_equivalent_permissions() -> Result<()> {
     for path in [&workspace, &readable, &writable] {
         std::fs::create_dir(path)?;
     }
-    let codex_home = temp.path().join("codex-home");
+    let ava_home = temp.path().join("ava-home");
     let permissions = workspace_permissions(&workspace)?;
     let env = HashMap::new();
     let account = current_account_name()?;
@@ -115,7 +115,7 @@ fn shared_desktop_reuses_only_equivalent_permissions() -> Result<()> {
                 permissions: &permissions,
                 command_cwd: &workspace,
                 env_map: &env,
-                codex_home: &codex_home,
+                ava_home: &ava_home,
                 proxy_enforced: true,
             },
             overrides,
@@ -186,14 +186,14 @@ fn legacy_desktop_reuses_only_equivalent_permissions() -> Result<()> {
     let temp = TempDir::new()?;
     let workspace = temp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
-    let codex_home = temp.path().join("codex-home");
+    let ava_home = temp.path().join("ava-home");
     let permissions = workspace_permissions(&workspace)?;
     let env = HashMap::new();
     let security = prepare_legacy_session_security(
         /*uses_write_capabilities*/ true,
-        &codex_home,
+        &ava_home,
         &workspace,
-        legacy_session_capability_roots(&permissions, &workspace, &env, &codex_home),
+        legacy_session_capability_roots(&permissions, &workspace, &env, &ava_home),
     )?;
     let _token = unsafe { OwnedHandle::from_raw_handle(security.h_token as *mut _) };
     let desktop = |deny_write_paths| {

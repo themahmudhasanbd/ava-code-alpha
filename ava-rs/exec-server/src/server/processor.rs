@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use codex_build_info::BuildInfo;
-use codex_exec_server_protocol::JSONRPCMessage;
+use ava_build_info::BuildInfo;
+use ava_exec_server_protocol::JSONRPCMessage;
 use tokio::sync::mpsc;
 use tracing::debug;
 use tracing::warn;
@@ -25,7 +25,7 @@ use crate::server::session_registry::SessionRegistry;
 use crate::telemetry::ConnectionTransport;
 use crate::telemetry::ExecServerTelemetry;
 use crate::telemetry::ExecutorRegistration;
-use codex_http_client::HttpClientFactory;
+use ava_http_client::HttpClientFactory;
 
 #[derive(Clone)]
 pub(crate) struct ConnectionProcessor {
@@ -42,8 +42,8 @@ impl ConnectionProcessor {
         Self::new_with_telemetry(
             runtime_paths,
             ExecServerTelemetry::default(),
-            codex_http_client::HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::HttpClientFactory::new(
+                ava_http_client::OutboundProxyPolicy::ReqwestDefault,
             ),
             RequestDispatchMode::Inline,
         )
@@ -268,12 +268,12 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use codex_exec_server_protocol::JSONRPCMessage;
-    use codex_exec_server_protocol::JSONRPCNotification;
-    use codex_exec_server_protocol::JSONRPCRequest;
-    use codex_exec_server_protocol::JSONRPCResponse;
-    use codex_exec_server_protocol::RequestId;
-    use codex_utils_path_uri::PathUri;
+    use ava_exec_server_protocol::JSONRPCMessage;
+    use ava_exec_server_protocol::JSONRPCNotification;
+    use ava_exec_server_protocol::JSONRPCRequest;
+    use ava_exec_server_protocol::JSONRPCResponse;
+    use ava_exec_server_protocol::RequestId;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
     use serde::Serialize;
     use serde::de::DeserializeOwned;
@@ -524,7 +524,7 @@ mod tests {
     fn test_runtime_paths() -> ExecServerRuntimePaths {
         ExecServerRuntimePaths::new(
             std::env::current_exe().expect("current exe"),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )
         .expect("runtime paths")
     }

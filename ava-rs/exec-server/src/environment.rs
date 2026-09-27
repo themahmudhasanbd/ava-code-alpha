@@ -7,11 +7,11 @@ use std::sync::Mutex;
 use std::sync::RwLock;
 
 use arc_swap::ArcSwapOption;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::shell_environment::CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::shell_environment::AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
 
 use crate::CapabilityRootsDiscoverParams;
 use crate::CapabilityRootsDiscoverResponse;
@@ -35,7 +35,7 @@ use crate::environment_provider::EnvironmentDefault;
 use crate::environment_provider::EnvironmentProvider;
 use crate::environment_provider::EnvironmentProviderSnapshot;
 use crate::environment_provider::normalize_exec_server_url;
-use crate::environment_toml::environment_provider_from_codex_home;
+use crate::environment_toml::environment_provider_from_ava_home;
 use crate::local_file_system::LocalFileSystem;
 use crate::local_process::LocalProcess;
 use crate::process::ExecBackend;
@@ -53,13 +53,13 @@ mod accepted;
 
 pub use connect_options::RemoteEnvironmentOptions;
 
-pub const CODEX_EXEC_SERVER_URL_ENV_VAR: &str = "CODEX_EXEC_SERVER_URL";
-pub const CODEX_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR: &str =
-    "CODEX_EXEC_SERVER_NOISE_REGISTRY_URL";
-pub const CODEX_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR: &str =
-    "CODEX_EXEC_SERVER_NOISE_ENVIRONMENT_ID";
-pub const CODEX_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR: &str =
-    "CODEX_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID";
+pub const AVA_EXEC_SERVER_URL_ENV_VAR: &str = "AVA_EXEC_SERVER_URL";
+pub const AVA_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR: &str =
+    "AVA_EXEC_SERVER_NOISE_REGISTRY_URL";
+pub const AVA_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR: &str =
+    "AVA_EXEC_SERVER_NOISE_ENVIRONMENT_ID";
+pub const AVA_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR: &str =
+    "AVA_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID";
 
 /// The current connection state for one concrete environment.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -70,13 +70,13 @@ pub enum EnvironmentConnectionState {
     Disconnected,
 }
 
-/// Owns the execution/filesystem environments available to the Codex runtime.
+/// Owns the execution/filesystem environments available to the Ava runtime.
 ///
 /// `EnvironmentManager` is a shared registry for concrete environments. Its
-/// default constructor preserves the legacy `CODEX_EXEC_SERVER_URL` behavior
+/// default constructor preserves the legacy `AVA_EXEC_SERVER_URL` behavior
 /// while configured construction accepts a provider-supplied snapshot.
 ///
-/// Setting `CODEX_EXEC_SERVER_URL=none` disables environment access by leaving
+/// Setting `AVA_EXEC_SERVER_URL=none` disables environment access by leaving
 /// the default environment unset and omitting the local environment. Callers
 /// use `default_environment().is_some()` as the signal for model-facing
 /// shell/filesystem tool availability.
@@ -177,28 +177,28 @@ impl EnvironmentManager {
 
     /// Discovers configured environments without starting remote connections.
     ///
-    /// If `CODEX_HOME/environments.toml` is present, it defines the configured
+    /// If `AVA_HOME/environments.toml` is present, it defines the configured
     /// environments. Otherwise this preserves the legacy
-    /// `CODEX_EXEC_SERVER_URL` behavior.
-    pub async fn prepare_from_codex_home(
-        codex_home: impl AsRef<std::path::Path>,
+    /// `AVA_EXEC_SERVER_URL` behavior.
+    pub async fn prepare_from_ava_home(
+        ava_home: impl AsRef<std::path::Path>,
     ) -> Result<PreparedEnvironmentManager, ExecServerError> {
         let source = if let Some(config) = noise_environment_config_from_env()? {
             PreparedEnvironmentSource::Noise(config)
         } else {
-            let provider = environment_provider_from_codex_home(codex_home.as_ref())?;
+            let provider = environment_provider_from_ava_home(ava_home.as_ref())?;
             PreparedEnvironmentSource::Snapshot(provider.snapshot().await?)
         };
         Ok(PreparedEnvironmentManager { source })
     }
 
-    /// Builds a manager from `CODEX_HOME` with an explicit outbound HTTP policy.
-    pub async fn from_codex_home(
-        codex_home: impl AsRef<std::path::Path>,
+    /// Builds a manager from `AVA_HOME` with an explicit outbound HTTP policy.
+    pub async fn from_ava_home(
+        ava_home: impl AsRef<std::path::Path>,
         local_runtime_paths: Option<ExecServerRuntimePaths>,
         http_client_factory: HttpClientFactory,
     ) -> Result<Self, ExecServerError> {
-        Self::prepare_from_codex_home(codex_home)
+        Self::prepare_from_ava_home(ava_home)
             .await?
             .build(local_runtime_paths, http_client_factory)
     }
@@ -615,10 +615,10 @@ fn validate_environment_id(environment_id: &str) -> Result<(), ExecServerError> 
 fn noise_environment_config_from_env()
 -> Result<Option<NoiseRendezvousEnvironmentConfig>, ExecServerError> {
     noise_environment_config_from_values(
-        optional_environment_value(CODEX_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR),
-        optional_environment_value(CODEX_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR),
-        optional_environment_value(CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR),
-        optional_environment_value(CODEX_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR),
+        optional_environment_value(AVA_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR),
+        optional_environment_value(AVA_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR),
+        optional_environment_value(AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR),
+        optional_environment_value(AVA_EXEC_SERVER_NOISE_CHATGPT_ACCOUNT_ID_ENV_VAR),
     )
 }
 
@@ -636,9 +636,9 @@ fn noise_environment_config_from_values(
             }
             _ => {
                 return Err(ExecServerError::EnvironmentRegistryConfig(format!(
-                    "Noise environment requires {CODEX_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR}, \
-{CODEX_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR}, and \
-{CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR}"
+                    "Noise environment requires {AVA_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR}, \
+{AVA_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR}, and \
+{AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR}"
                 )));
             }
         };
@@ -726,7 +726,7 @@ impl Environment {
         )
     }
 
-    /// Builds an environment from the raw `CODEX_EXEC_SERVER_URL` value and
+    /// Builds an environment from the raw `AVA_EXEC_SERVER_URL` value and
     /// local runtime paths used when creating local filesystem helpers.
     fn create_inner(
         exec_server_url: Option<String>,
@@ -1169,9 +1169,9 @@ mod tests {
     use crate::client_api::StdioExecServerCommand;
     use crate::environment_provider::EnvironmentDefault;
     use crate::environment_provider::EnvironmentProviderSnapshot;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
-    use codex_utils_path_uri::PathUri;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
     use tokio::net::TcpListener;
     use tokio::time::timeout;
@@ -1190,7 +1190,7 @@ mod tests {
     fn test_runtime_paths() -> ExecServerRuntimePaths {
         ExecServerRuntimePaths::new(
             std::env::current_exe().expect("current exe"),
-            /*codex_linux_sandbox_exe*/ None,
+            /*ava_linux_sandbox_exe*/ None,
         )
         .expect("runtime paths")
     }
@@ -1632,7 +1632,7 @@ mod tests {
         let environment = Environment::remote_with_transport(
             ExecServerTransportParams::StdioCommand {
                 command: StdioExecServerCommand {
-                    program: "codex-missing-exec-server-for-test".to_string(),
+                    program: "ava-missing-exec-server-for-test".to_string(),
                     args: Vec::new(),
                     env: HashMap::new(),
                     cwd: None,
@@ -1654,7 +1654,7 @@ mod tests {
     async fn environment_manager_leaves_stdio_environment_lazy() {
         let transport = ExecServerTransportParams::StdioCommand {
             command: StdioExecServerCommand {
-                program: "codex-missing-exec-server-for-test".to_string(),
+                program: "ava-missing-exec-server-for-test".to_string(),
                 args: Vec::new(),
                 env: HashMap::new(),
                 cwd: None,
@@ -1680,12 +1680,12 @@ mod tests {
 
     #[tokio::test]
     async fn selected_capability_inspection_keeps_stdio_environment_lazy() {
-        use codex_protocol::capabilities::CapabilityRootLocation;
-        use codex_protocol::capabilities::SelectedCapabilityRoot;
+        use ava_protocol::capabilities::CapabilityRootLocation;
+        use ava_protocol::capabilities::SelectedCapabilityRoot;
 
         let transport = ExecServerTransportParams::StdioCommand {
             command: StdioExecServerCommand {
-                program: "codex-missing-exec-server-for-test".to_string(),
+                program: "ava-missing-exec-server-for-test".to_string(),
                 args: Vec::new(),
                 env: HashMap::new(),
                 cwd: None,
@@ -1857,7 +1857,7 @@ mod tests {
             .to_abs_path()
             .expect_err("sandbox cwd should not be native to this host");
         let sandbox = crate::FileSystemSandboxContext::from_permission_profile(
-            codex_protocol::models::PermissionProfile::workspace_write(),
+            ava_protocol::models::PermissionProfile::workspace_write(),
             sandbox_cwd.clone(),
         );
 
@@ -1898,15 +1898,15 @@ mod tests {
     #[tokio::test]
     async fn test_environment_rejects_sandboxed_filesystem_without_runtime_paths() {
         let environment = Environment::default_for_tests();
-        let path = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
+        let path = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
             std::env::current_exe().expect("current exe").as_path(),
         )
         .expect("absolute current exe");
-        let path = codex_utils_path_uri::PathUri::from_abs_path(&path);
+        let path = ava_utils_path_uri::PathUri::from_abs_path(&path);
         let sandbox = crate::FileSystemSandboxContext::from_permission_profile(
-            codex_protocol::models::PermissionProfile::from_runtime_permissions(
-                &codex_protocol::permissions::FileSystemSandboxPolicy::restricted(Vec::new()),
-                codex_protocol::permissions::NetworkSandboxPolicy::Restricted,
+            ava_protocol::models::PermissionProfile::from_runtime_permissions(
+                &ava_protocol::permissions::FileSystemSandboxPolicy::restricted(Vec::new()),
+                ava_protocol::permissions::NetworkSandboxPolicy::Restricted,
             ),
             PathUri::from_host_native_path(std::env::current_dir().expect("read current dir"))
                 .expect("cwd URI"),

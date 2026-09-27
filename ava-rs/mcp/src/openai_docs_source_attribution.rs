@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use codex_exec_server::ExecServerError;
-use codex_exec_server::HttpClient;
-use codex_exec_server::HttpRequestParams;
-use codex_exec_server::HttpRequestResponse;
-use codex_exec_server::HttpResponseBodyStream;
+use ava_exec_server::ExecServerError;
+use ava_exec_server::HttpClient;
+use ava_exec_server::HttpRequestParams;
+use ava_exec_server::HttpRequestResponse;
+use ava_exec_server::HttpResponseBodyStream;
 use futures::future::BoxFuture;
 
 const OPENAI_DEVELOPER_DOCS_MCP_URL: &str = "https://developers.openai.com/mcp";
-const OPENAI_DEVELOPER_DOCS_MCP_CODEX_URL: &str = "https://developers.openai.com/mcp?source=codex";
+const OPENAI_DEVELOPER_DOCS_MCP_AVA_URL: &str = "https://developers.openai.com/mcp?source=codex";
 
 pub(crate) fn maybe_with_openai_docs_source_attribution(
     mcp_server_url: &str,
@@ -28,7 +28,7 @@ struct OpenAiDocsHttpClient {
 impl OpenAiDocsHttpClient {
     fn attribute_mcp_request(&self, params: &mut HttpRequestParams) {
         if params.url == OPENAI_DEVELOPER_DOCS_MCP_URL {
-            params.url = OPENAI_DEVELOPER_DOCS_MCP_CODEX_URL.to_string();
+            params.url = OPENAI_DEVELOPER_DOCS_MCP_AVA_URL.to_string();
         }
     }
 }

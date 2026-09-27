@@ -10,11 +10,11 @@ use crate::legacy_core::config::Config;
 use crate::legacy_core::config::TerminalResizeReflowConfig;
 use crate::legacy_core::config::TerminalResizeReflowMaxRows;
 use crate::transcript_mode::TranscriptMode;
-use codex_config::types::History;
-use codex_config::types::Notice;
-use codex_config::types::Tui;
-use codex_features::Feature;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::types::History;
+use ava_config::types::Notice;
+use ava_config::types::Tui;
+use ava_features::Feature;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct LocalSettings {
@@ -22,7 +22,7 @@ pub(crate) struct LocalSettings {
     pub(crate) transcript_mode: TranscriptMode,
     pub(crate) history: History,
     pub(crate) notices: Notice,
-    pub(crate) codex_home: AbsolutePathBuf,
+    pub(crate) ava_home: AbsolutePathBuf,
     pub(crate) user_config_path: AbsolutePathBuf,
 }
 
@@ -57,7 +57,7 @@ impl LocalSettings {
         Self {
             transcript_mode: TranscriptMode::resolve(
                 config.features.enabled(Feature::TranscriptV2),
-                config.tui_alternate_screen != codex_config::types::AltScreenMode::Never,
+                config.tui_alternate_screen != ava_config::types::AltScreenMode::Never,
             ),
             tui: Tui {
                 notification_settings: config.tui_notifications.clone(),
@@ -90,12 +90,12 @@ impl LocalSettings {
             },
             history: config.history.clone(),
             notices: config.notices.clone(),
-            codex_home: config.codex_home.clone(),
+            ava_home: config.ava_home.clone(),
             user_config_path: config
                 .config_layer_stack
                 .get_user_config_file()
                 .cloned()
-                .unwrap_or_else(|| config.codex_home.join("config.toml")),
+                .unwrap_or_else(|| config.ava_home.join("config.toml")),
         }
     }
 }
@@ -106,9 +106,9 @@ impl LocalSettings {
         let mut settings = Self::from(config);
         settings.transcript_mode = tui.transcript_mode();
         if !tui.is_alt_screen_enabled() {
-            settings.tui.alternate_screen = codex_config::types::AltScreenMode::Never;
-        } else if settings.tui.alternate_screen == codex_config::types::AltScreenMode::Never {
-            settings.tui.alternate_screen = codex_config::types::AltScreenMode::Auto;
+            settings.tui.alternate_screen = ava_config::types::AltScreenMode::Never;
+        } else if settings.tui.alternate_screen == ava_config::types::AltScreenMode::Never {
+            settings.tui.alternate_screen = ava_config::types::AltScreenMode::Auto;
         }
         settings
     }

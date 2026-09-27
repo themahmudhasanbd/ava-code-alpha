@@ -1,13 +1,13 @@
 use crate::config::Config;
-use codex_config::types::OtelExporterKind as Kind;
-use codex_config::types::OtelHttpProtocol as Protocol;
-use codex_features::Feature;
-use codex_login::default_client::originator;
-use codex_otel::OtelExporter;
-use codex_otel::OtelHttpProtocol;
-use codex_otel::OtelProvider;
-use codex_otel::OtelSettings;
-use codex_otel::OtelTlsConfig as OtelTlsSettings;
+use ava_config::types::OtelExporterKind as Kind;
+use ava_config::types::OtelHttpProtocol as Protocol;
+use ava_features::Feature;
+use ava_login::default_client::originator;
+use ava_otel::OtelExporter;
+use ava_otel::OtelHttpProtocol;
+use ava_otel::OtelProvider;
+use ava_otel::OtelSettings;
+use ava_otel::OtelTlsConfig as OtelTlsSettings;
 use std::error::Error;
 
 /// Build an OpenTelemetry provider from the app Config.
@@ -83,7 +83,7 @@ pub fn build_provider(
     OtelProvider::try_new(&OtelSettings {
         service_name: service_name.to_string(),
         service_version: service_version.to_string(),
-        codex_home: config.codex_home.to_path_buf(),
+        ava_home: config.ava_home.to_path_buf(),
         environment: config.otel.environment.to_string(),
         exporter,
         trace_exporter,
@@ -98,13 +98,13 @@ pub fn record_process_start(otel: Option<&OtelProvider>, originator: &str) {
     let Some(metrics) = otel.and_then(OtelProvider::metrics) else {
         return;
     };
-    let _ = codex_otel::record_process_start_once(metrics, originator);
+    let _ = ava_otel::record_process_start_once(metrics, originator);
 }
 
 pub fn install_sqlite_telemetry(otel: Option<&OtelProvider>, originator: &str) {
     let Some(metrics) = otel.and_then(OtelProvider::metrics) else {
         return;
     };
-    let telemetry = codex_rollout::sqlite_telemetry_recorder(metrics.clone(), originator);
-    let _ = codex_state::install_process_db_telemetry(telemetry);
+    let telemetry = ava_rollout::sqlite_telemetry_recorder(metrics.clone(), originator);
+    let _ = ava_state::install_process_db_telemetry(telemetry);
 }

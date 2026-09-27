@@ -1,15 +1,15 @@
-use codex_core::CodexThread;
-use codex_core::NewThread;
-use codex_core::StartIfIdleSubmission;
-use codex_core::StartThreadOptions;
-use codex_core::ThreadManager;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_protocol::ThreadId;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_protocol::user_input::UserInput;
+use ava_core::AvaThread;
+use ava_core::NewThread;
+use ava_core::StartIfIdleSubmission;
+use ava_core::StartThreadOptions;
+use ava_core::ThreadManager;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_protocol::ThreadId;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_protocol::user_input::UserInput;
 use std::sync::Arc;
 use std::sync::Weak;
 
@@ -27,7 +27,7 @@ pub struct AgentInvocation {
 pub struct AgentRun {
     pub thread_id: ThreadId,
     pub turn_id: String,
-    pub thread: Arc<CodexThread>,
+    pub thread: Arc<AvaThread>,
 }
 
 /// Runs resolved agents in threads forked by the owning [`ThreadManager`].
@@ -46,14 +46,14 @@ impl AgentRunner {
         &self,
         parent_thread_id: ThreadId,
         invocation: AgentInvocation,
-    ) -> CodexResult<AgentRun> {
+    ) -> AvaResult<AgentRun> {
         let AgentInvocation {
             config,
             prompt,
             parent_trace,
         } = invocation;
         if prompt.trim().is_empty() {
-            return Err(CodexErr::InvalidRequest(
+            return Err(AvaErr::InvalidRequest(
                 "agent prompt must not be empty".to_string(),
             ));
         }
@@ -61,7 +61,7 @@ impl AgentRunner {
         let thread_manager = self
             .thread_manager
             .upgrade()
-            .ok_or_else(|| CodexErr::UnsupportedOperation("thread manager dropped".to_string()))?;
+            .ok_or_else(|| AvaErr::UnsupportedOperation("thread manager dropped".to_string()))?;
         let NewThread {
             thread_id, thread, ..
         } = thread_manager
@@ -85,7 +85,7 @@ impl AgentRunner {
         {
             StartIfIdleSubmission::Started { turn_id } => turn_id,
             StartIfIdleSubmission::NotSubmitted { reason } => {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "agent prompt was not submitted: {reason:?}"
                 )));
             }

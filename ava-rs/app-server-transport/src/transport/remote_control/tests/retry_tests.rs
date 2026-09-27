@@ -29,10 +29,10 @@ async fn assert_overload_retry_after(status: &str, reject_enrollment: bool) {
     let listener = TcpListener::bind("127.0.0.1:0")
         .await
         .expect("listener should bind");
-    let codex_home = TempDir::new().expect("temp dir should create");
+    let ava_home = TempDir::new().expect("temp dir should create");
     let (transport_event_tx, _transport_event_rx) = mpsc::channel(CHANNEL_CAPACITY);
     let shutdown_token = CancellationToken::new();
-    let auth_manager = remote_control_auth_manager_with_home(&codex_home);
+    let auth_manager = remote_control_auth_manager_with_home(&ava_home);
     let mut initial_auth = remote_control_auth_dot_json(Some("account_id"));
     initial_auth
         .tokens
@@ -40,7 +40,7 @@ async fn assert_overload_retry_after(status: &str, reject_enrollment: bool) {
         .expect("fixture should contain tokens")
         .access_token = "Initial Access Token".to_string();
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &initial_auth,
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
@@ -53,7 +53,7 @@ async fn assert_overload_retry_after(status: &str, reject_enrollment: bool) {
             installation_id: TEST_INSTALLATION_ID.to_string(),
             policy: RemoteControlPolicy::Allowed,
         },
-        Some(remote_control_state_runtime(&codex_home).await),
+        Some(remote_control_state_runtime(&ava_home).await),
         auth_manager.clone(),
         transport_event_tx,
         shutdown_token.clone(),
@@ -102,7 +102,7 @@ async fn assert_overload_retry_after(status: &str, reject_enrollment: bool) {
 
     let auth_changes = auth_manager.auth_change_receiver();
     save_auth(
-        codex_home.path(),
+        ava_home.path(),
         &remote_control_auth_dot_json(Some("account_id")),
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),

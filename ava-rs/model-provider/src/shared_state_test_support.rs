@@ -5,17 +5,17 @@
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use codex_keyring_store::CredentialStoreError;
-use codex_keyring_store::KeyringStore;
-use codex_login::AuthManager;
-use codex_login::GatewayAuthConfig;
-use codex_login::GatewayAuthManager;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_secrets::LocalSecretsNamespace;
-use codex_secrets::SecretName;
-use codex_secrets::SecretScope;
-use codex_secrets::SecretsBackendKind;
-use codex_secrets::SecretsManager;
+use ava_keyring_store::CredentialStoreError;
+use ava_keyring_store::KeyringStore;
+use ava_login::AuthManager;
+use ava_login::GatewayAuthConfig;
+use ava_login::GatewayAuthManager;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_secrets::LocalSecretsNamespace;
+use ava_secrets::SecretName;
+use ava_secrets::SecretScope;
+use ava_secrets::SecretsBackendKind;
+use ava_secrets::SecretsManager;
 use sha2::Digest;
 use sha2::Sha256;
 
@@ -79,19 +79,19 @@ pub fn seed_gateway_auth(
         scopes: config.scopes,
         redirect_port: config.redirect_port,
     };
-    // Repeated fixtures sharing a Codex home must use the same encryption key.
+    // Repeated fixtures sharing a Ava home must use the same encryption key.
     let keyring = Arc::new(TestKeyring(Mutex::new(Some(
         "gateway-test-passphrase".to_string(),
     ))));
     let secrets = SecretsManager::new_with_keyring_store_and_namespace(
-        runtime.codex_home.clone(),
+        runtime.ava_home.clone(),
         SecretsBackendKind::Local,
         keyring.clone(),
         LocalSecretsNamespace::GatewayOAuth,
     );
     // Match the credential identity used by GatewayAuthManager's encrypted store.
     let mut digest = Sha256::new();
-    digest.update(runtime.codex_home.to_string_lossy().as_bytes());
+    digest.update(runtime.ava_home.to_string_lossy().as_bytes());
     digest.update([0]);
     for value in [
         oauth.authorization_url.as_str(),
@@ -114,7 +114,7 @@ pub fn seed_gateway_auth(
     let manager = Arc::new(
         GatewayAuthManager::new(
             oauth.clone(),
-            runtime.codex_home.clone(),
+            runtime.ava_home.clone(),
             runtime.auth_route_config.http_client_factory(),
             keyring,
         )

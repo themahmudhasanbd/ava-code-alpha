@@ -1,7 +1,7 @@
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::request_permissions::RequestPermissionsArgs;
-use codex_sandboxing::policy_transforms::normalize_additional_permissions_with_context;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::request_permissions::RequestPermissionsArgs;
+use ava_sandboxing::policy_transforms::normalize_additional_permissions_with_context;
+use ava_utils_path_uri::LegacyAppPathString;
 use serde_json::Value;
 
 use crate::function_tool::FunctionCallError;
@@ -15,8 +15,8 @@ use crate::tools::handlers::shell_spec::create_request_permissions_tool;
 use crate::tools::handlers::shell_spec::request_permissions_tool_description;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 use serde::Deserialize;
 
 pub struct RequestPermissionsHandler;
@@ -36,7 +36,7 @@ impl ToolExecutor<ToolInvocation> for RequestPermissionsHandler {
         create_request_permissions_tool(request_permissions_tool_description())
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -90,7 +90,7 @@ impl RequestPermissionsHandler {
             })?;
         args.permissions =
             normalize_additional_permissions_with_context(args.permissions.into(), &context)
-                .map(codex_protocol::request_permissions::RequestPermissionProfile::from)
+                .map(ava_protocol::request_permissions::RequestPermissionProfile::from)
                 .map_err(FunctionCallError::RespondToModel)?;
         if args.permissions.is_empty() {
             return Err(FunctionCallError::RespondToModel(

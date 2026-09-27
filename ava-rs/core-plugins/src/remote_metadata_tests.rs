@@ -3,9 +3,9 @@
 use super::*;
 use crate::remote::REMOTE_GLOBAL_MARKETPLACE_NAME;
 use crate::remote::group_remote_installed_plugins_by_marketplaces;
-use codex_app_server_protocol::PluginAuthPolicy;
-use codex_app_server_protocol::PluginAvailability;
-use codex_app_server_protocol::PluginInstallPolicy;
+use ava_app_server_protocol::PluginAuthPolicy;
+use ava_app_server_protocol::PluginAvailability;
+use ava_app_server_protocol::PluginInstallPolicy;
 use serde_json::json;
 
 fn image_url(renewal: &str) -> String {
@@ -58,7 +58,7 @@ fn behavioral_metadata_changes_still_invalidate() {
         |plugin| plugin.install_policy = PluginInstallPolicy::NotAvailable,
         |plugin| {
             plugin.install_policy_source =
-                Some(codex_app_server_protocol::PluginInstallPolicySource::WorkspaceSetting)
+                Some(ava_app_server_protocol::PluginInstallPolicySource::WorkspaceSetting)
         },
         |plugin| plugin.must_show_installation_interstitial = Some(true),
         |plugin| plugin.auth_policy = PluginAuthPolicy::OnInstall,

@@ -18,20 +18,20 @@ use crate::runtime_ownership::RuntimeRegistration;
 use crate::winutil::to_wide;
 
 // Package updates can replace the service key, so keep this record outside it.
-pub const INSTALLATION_KEY: &str = r"SOFTWARE\OpenAI\Codex\WindowsSandboxService";
+pub const INSTALLATION_KEY: &str = r"SOFTWARE\OpenAI\Ava\WindowsSandboxService";
 pub const INSTALLATION_VALUE: &str = "ProvisionedInstallation";
 const MAX_VALUE_UNITS: usize = 4096;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct DesktopInstallation {
-    pub created_codex_home: bool,
+    pub created_ava_home: bool,
     pub cache_home: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct InstallationRecord {
     pub user_sid: String,
-    pub codex_home: PathBuf,
+    pub ava_home: PathBuf,
     pub session_id: u32,
     #[serde(default)]
     pub desktop_installation: Option<DesktopInstallation>,

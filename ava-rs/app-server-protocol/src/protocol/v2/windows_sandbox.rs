@@ -1,6 +1,6 @@
 use crate::JsonSchema;
 use crate::TS;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 

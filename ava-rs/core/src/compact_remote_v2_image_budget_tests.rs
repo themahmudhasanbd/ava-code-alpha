@@ -1,9 +1,9 @@
 use super::*;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::image_close_tag_text;
-use codex_protocol::models::local_image_open_tag_text_with_path;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::image_close_tag_text;
+use ava_protocol::models::local_image_open_tag_text_with_path;
 use pretty_assertions::assert_eq;
 
 fn message(content: Vec<ContentItem>) -> ResponseItem {
@@ -30,7 +30,7 @@ fn file_image() -> ContentItem {
         image: ImageReference::File {
             file_id: "file_123".to_string(),
         },
-        detail: Some(codex_protocol::models::ImageDetail::Original),
+        detail: Some(ava_protocol::models::ImageDetail::Original),
     }
 }
 
@@ -159,7 +159,7 @@ fn image_treatment_preserves_client_developer_boundary_behavior() {
     *role = "developer".to_string();
     let source = ResponseItemEnvelope {
         item,
-        metadata: Some(CodexHarnessMetadata {
+        metadata: Some(AvaHarnessMetadata {
             client_authored: true,
             ..Default::default()
         }),

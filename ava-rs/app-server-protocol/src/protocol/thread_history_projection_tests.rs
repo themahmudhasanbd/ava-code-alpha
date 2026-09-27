@@ -1,20 +1,20 @@
-use codex_protocol::ThreadId;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_protocol::protocol::TurnCompleteEvent;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::security_risk::SecurityRiskScore;
-use codex_protocol::user_input::UserInput;
-use codex_rollout::CompactedItem;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_protocol::ThreadId;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::protocol::TurnCompleteEvent;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::security_risk::SecurityRiskScore;
+use ava_protocol::user_input::UserInput;
+use ava_rollout::CompactedItem;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 
@@ -76,7 +76,7 @@ fn projects_failed_turn_completion_as_snapshot() {
     let error = ErrorEvent {
         misalignment: None,
         message: "request failed".to_string(),
-        codex_error_info: None,
+        ava_error_info: None,
     };
 
     let changes = project(RolloutItem::EventMsg(EventMsg::TurnComplete(
@@ -101,7 +101,7 @@ fn projects_failed_turn_completion_as_snapshot() {
                 error: Some(TurnError {
                     misalignment: None,
                     message: "request failed".to_string(),
-                    codex_error_info: None,
+                    ava_error_info: None,
                     additional_details: None,
                 }),
                 started_at: Some(10),

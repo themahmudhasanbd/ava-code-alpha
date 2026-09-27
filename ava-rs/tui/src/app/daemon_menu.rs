@@ -40,7 +40,7 @@ impl App {
                 "Manage this server on its host. Local daemon updates are unavailable for remote connections.",
             )
         } else if self.daemon_cli_executable.is_none() {
-            Some("Run the Codex CLI to manage the daemon from this menu.")
+            Some("Run the Ava CLI to manage the daemon from this menu.")
         } else {
             None
         };
@@ -48,7 +48,7 @@ impl App {
             header.push(Line::from(guidance.dim()));
         }
         let has_package = self.daemon_cli_executable.as_ref().is_some_and(|path| {
-            codex_install_context::InstallContext::from_exe(
+            ava_install_context::InstallContext::from_exe(
                 cfg!(target_os = "macos"),
                 Some(path.as_path()),
                 /*method_override*/ None,
@@ -95,14 +95,14 @@ impl App {
         let mut explanation = match source {
             DaemonUpdateSource::PublicStable => "Install the latest public stable release. Restore production updates; keep your automatic-update setting.".to_string(),
             DaemonUpdateSource::ThisCli => {
-                let version = codex_install_context::InstallContext::current()
+                let version = ava_install_context::InstallContext::current()
                     .package_manifest()
-                    .map_or_else(|| CODEX_CLI_VERSION.to_string(), |manifest| manifest.version.to_string());
+                    .map_or_else(|| AVA_CLI_VERSION.to_string(), |manifest| manifest.version.to_string());
                 format!("Use this CLI package v{version} from {}. Copy the complete package and pin it against automatic updates.", executable.display())
             }
         };
-        explanation.push_str("\nThis may restart the daemon and interrupt active or queued work.\nCodex exits to update in this terminal. Relaunch it afterward.");
-        let mut header = vec![Line::from("Update daemon and exit Codex?".bold())];
+        explanation.push_str("\nThis may restart the daemon and interrupt active or queued work.\nAva exits to update in this terminal. Relaunch it afterward.");
+        let mut header = vec![Line::from("Update daemon and exit Ava?".bold())];
         header.extend(explanation.lines().map(|line| Line::from(line.to_owned())));
         self.chat_widget.show_selection_view(SelectionViewParams {
             header: Box::new(DaemonMenuHeader(header)),

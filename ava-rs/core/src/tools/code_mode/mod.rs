@@ -12,14 +12,14 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_code_mode::CellId;
-use codex_code_mode::CodeModeNestedToolCall;
-use codex_code_mode::CodeModeSession;
-use codex_code_mode::CodeModeSessionProvider;
-use codex_code_mode::CodeModeToolKind;
-use codex_code_mode::RuntimeResponse;
-use codex_protocol::ThreadId;
-use codex_protocol::models::FunctionCallOutputContentItem;
+use ava_code_mode::CellId;
+use ava_code_mode::CodeModeNestedToolCall;
+use ava_code_mode::CodeModeSession;
+use ava_code_mode::CodeModeSessionProvider;
+use ava_code_mode::CodeModeToolKind;
+use ava_code_mode::RuntimeResponse;
+use ava_protocol::ThreadId;
+use ava_protocol::models::FunctionCallOutputContentItem;
 use futures::future::join_all;
 use serde_json::Value as JsonValue;
 use tokio::sync::OnceCell;
@@ -41,12 +41,12 @@ use crate::tools::parallel::ToolCallRuntime;
 use crate::tools::router::ToolCall;
 use crate::tools::router::ToolCallSource;
 use crate::unified_exec::resolve_max_tokens;
-use codex_protocol::openai_models::ToolMode;
-use codex_tools::ToolName;
-use codex_utils_audio::estimate_audio_token_count;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::formatted_truncate_text_content_items_with_policy;
-use codex_utils_output_truncation::truncate_function_output_items_with_policy;
+use ava_protocol::openai_models::ToolMode;
+use ava_tools::ToolName;
+use ava_utils_audio::estimate_audio_token_count;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::formatted_truncate_text_content_items_with_policy;
+use ava_utils_output_truncation::truncate_function_output_items_with_policy;
 
 use delegate::CodeModeCellDelegate;
 use delegate::CodeModeDispatchBroker;
@@ -56,9 +56,9 @@ use output::CodeModeToolOutput;
 use response_adapter::into_function_call_output_content_items;
 pub(crate) use wait_handler::CodeModeWaitHandler;
 
-pub(crate) const PUBLIC_TOOL_NAME: &str = codex_code_mode::PUBLIC_TOOL_NAME;
-pub(crate) const WAIT_TOOL_NAME: &str = codex_code_mode::WAIT_TOOL_NAME;
-pub(crate) const DEFAULT_WAIT_YIELD_TIME_MS: u64 = codex_code_mode::DEFAULT_WAIT_YIELD_TIME_MS;
+pub(crate) const PUBLIC_TOOL_NAME: &str = ava_code_mode::PUBLIC_TOOL_NAME;
+pub(crate) const WAIT_TOOL_NAME: &str = ava_code_mode::WAIT_TOOL_NAME;
+pub(crate) const DEFAULT_WAIT_YIELD_TIME_MS: u64 = ava_code_mode::DEFAULT_WAIT_YIELD_TIME_MS;
 
 /// Returns true for the code-mode `exec` tool in the default namespace.
 pub(crate) fn is_exec_tool_name(tool_name: &ToolName) -> bool {
@@ -116,7 +116,7 @@ impl CodeModeService {
             .swap(true, Ordering::Relaxed))
         .then(|| {
             format!(
-                "Code Mode is unavailable because {error}. {behavior}; enable `features.code_mode_host` and install `codex-code-mode-host`."
+                "Code Mode is unavailable because {error}. {behavior}; enable `features.code_mode_host` and install `ava-code-mode-host`."
             )
         })
     }
@@ -127,9 +127,9 @@ impl CodeModeService {
 
     pub(crate) async fn execute(
         &self,
-        mut request: codex_code_mode::ExecuteRequest,
+        mut request: ava_code_mode::ExecuteRequest,
         step_context: Arc<StepContext>,
-    ) -> Result<codex_code_mode::StartedCell, String> {
+    ) -> Result<ava_code_mode::StartedCell, String> {
         request
             .yield_time_ms
             .get_or_insert(self.default_exec_yield_time_ms);
@@ -142,15 +142,15 @@ impl CodeModeService {
 
     pub(crate) async fn wait(
         &self,
-        request: codex_code_mode::WaitRequest,
-    ) -> Result<codex_code_mode::WaitOutcome, String> {
+        request: ava_code_mode::WaitRequest,
+    ) -> Result<ava_code_mode::WaitOutcome, String> {
         self.session().await?.wait(request).await
     }
 
     pub(crate) async fn terminate(
         &self,
         cell_id: CellId,
-    ) -> Result<codex_code_mode::WaitOutcome, String> {
+    ) -> Result<ava_code_mode::WaitOutcome, String> {
         self.session().await?.terminate(cell_id).await
     }
 
@@ -190,7 +190,7 @@ impl CodeModeService {
 
     pub(crate) fn mark_cell_ready_for_dispatch(
         &self,
-        cell_id: &codex_code_mode::CellId,
+        cell_id: &ava_code_mode::CellId,
         originating_call: Option<crate::tools::context::ToolCallOrigin>,
     ) {
         self.dispatch_broker
@@ -199,7 +199,7 @@ impl CodeModeService {
 
     pub(crate) fn cell_originating_call(
         &self,
-        cell_id: &codex_code_mode::CellId,
+        cell_id: &ava_code_mode::CellId,
     ) -> Option<crate::tools::context::ToolCallOrigin> {
         self.dispatch_broker.cell_originating_call(cell_id)
     }
@@ -254,7 +254,7 @@ impl CodeModeService {
 }
 
 fn handle_runtime_response(
-    model_info: &codex_protocol::openai_models::ModelInfo,
+    model_info: &ava_protocol::openai_models::ModelInfo,
     response: RuntimeResponse,
     max_output_tokens: Option<usize>,
     wall_time: Duration,
@@ -350,10 +350,10 @@ fn submit_nested_tool(
     let tool_name = tool_name.with_default_namespace();
     // A cell can outlive a turn; the broker records arrival before a dispatching turn is known.
     tracing::event!(
-        name: "codex.code_mode.nested_tool_dispatched",
-        target: "codex_otel.trace_safe",
+        name: "ava.code_mode.nested_tool_dispatched",
+        target: "ava_otel.trace_safe",
         tracing::Level::INFO,
-        event.name = "codex.code_mode.nested_tool_dispatched",
+        event.name = "ava.code_mode.nested_tool_dispatched",
         conversation.id = %thread_id,
         turn_id = turn_id.as_str(),
         cell.id = telemetry::trace_id(cell_id.as_str()),
@@ -388,7 +388,7 @@ fn submit_nested_tool(
     session
         .services
         .analytics_events_client
-        .track_code_mode_tool_call(codex_analytics::CodeModeToolCallFact::ChildStarted {
+        .track_code_mode_tool_call(ava_analytics::CodeModeToolCallFact::ChildStarted {
             thread_id: session.thread_id.to_string(),
             turn_id: step_context.turn.sub_id.clone(),
             call_id: call.call_id.clone(),
@@ -462,10 +462,10 @@ mod tests {
     use crate::tools::registry::ToolRegistry;
     use crate::tools::router::ToolRouter;
     use crate::turn_diff_tracker::TurnDiffTracker;
-    use codex_code_mode::CodeModeToolKind;
-    use codex_protocol::models::FunctionCallOutputContentItem;
-    use codex_protocol::openai_models::ToolMode;
-    use codex_tools::ToolName;
+    use ava_code_mode::CodeModeToolKind;
+    use ava_protocol::models::FunctionCallOutputContentItem;
+    use ava_protocol::openai_models::ToolMode;
+    use ava_tools::ToolName;
     use serde_json::json;
 
     #[tokio::test]

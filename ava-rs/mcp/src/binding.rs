@@ -8,9 +8,9 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::AppToolApproval;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::models::PermissionProfile;
+use ava_config::AppToolApproval;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::models::PermissionProfile;
 use rmcp::model::ListResourceTemplatesResult;
 use rmcp::model::ListResourcesResult;
 use rmcp::model::PaginatedRequestParams;
@@ -233,7 +233,7 @@ impl PreparedMcpCall {
         &self.server_name
     }
 
-    /// Returns whether this call is bound to the host-owned Codex Apps server.
+    /// Returns whether this call is bound to the host-owned Ava Apps server.
     pub fn is_host_owned_apps(&self) -> bool {
         self.config
             .mcp_server_catalog
@@ -300,7 +300,7 @@ impl PreparedMcpCall {
     }
 
     /// Runs irreversible call preparation and execution under the authority of
-    /// this call's captured catalog and the extensions owned by the Codex session.
+    /// this call's captured catalog and the extensions owned by the Ava session.
     /// A caller-supplied timeout can further restrict the server's configured timeout.
     pub async fn call_with_preparation<F, Fut>(
         &self,

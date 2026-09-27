@@ -1,7 +1,7 @@
 use anyhow::Result;
-use codex_protocol::models::ConfigurationReasoning;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
+use ava_protocol::models::ConfigurationReasoning;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -13,7 +13,7 @@ fn thread_settings_snapshot(disabled_plugin_ids: Vec<String>) -> Result<ThreadSe
         "model_provider_id": "openai",
         "approval_policy": "never",
         "approvals_reviewer": "user",
-        "permission_profile": codex_protocol::models::PermissionProfile::read_only(),
+        "permission_profile": ava_protocol::models::PermissionProfile::read_only(),
         "cwd": std::env::current_dir()?,
         "collaboration_mode": {
             "mode": "default",
@@ -35,7 +35,7 @@ fn latest_disabled_plugin_ids_preserves_owned_updates_and_clears() -> Result<()>
     let cleared = thread_settings_snapshot(Vec::new())?;
     let item = |thread_id, thread_settings| {
         RolloutItem::EventMsg(EventMsg::ThreadSettingsApplied(
-            codex_protocol::protocol::ThreadSettingsAppliedEvent {
+            ava_protocol::protocol::ThreadSettingsAppliedEvent {
                 thread_id,
                 thread_settings,
             },
@@ -91,7 +91,7 @@ fn latest_disabled_plugin_ids_falls_back_only_to_latest_turn_context() -> Result
     );
 
     history.push(RolloutItem::EventMsg(EventMsg::ThreadSettingsApplied(
-        codex_protocol::protocol::ThreadSettingsAppliedEvent {
+        ava_protocol::protocol::ThreadSettingsAppliedEvent {
             thread_id: Some(ThreadId::new()),
             thread_settings: thread_settings_snapshot(Vec::new())?,
         },
@@ -201,7 +201,7 @@ fn response_item_envelope_stores_metadata_beside_rollout_payload() -> Result<()>
         ordinal: Some(7),
         item: RolloutItem::ResponseItem(ResponseItemEnvelope {
             item: response_item.clone(),
-            metadata: Some(CodexHarnessMetadata {
+            metadata: Some(AvaHarnessMetadata {
                 client_authored: true,
                 history_truncation_token_limit: Some(20_000),
                 inherited_user_message: true,
@@ -233,7 +233,7 @@ fn response_item_envelope_stores_metadata_beside_rollout_payload() -> Result<()>
     };
     assert_eq!(
         envelope.metadata,
-        Some(CodexHarnessMetadata {
+        Some(AvaHarnessMetadata {
             client_authored: true,
             history_truncation_token_limit: Some(20_000),
             inherited_user_message: true,
@@ -250,7 +250,7 @@ fn response_item_envelope_preserves_harness_authored_configuration_provenance() 
             effort: ReasoningEffort::High,
         },
     };
-    let metadata = CodexHarnessMetadata {
+    let metadata = AvaHarnessMetadata {
         harness_authored_configuration: true,
         ..Default::default()
     };
@@ -312,7 +312,7 @@ fn response_item_envelope_ignores_unknown_harness_metadata_fields() -> Result<()
     let RolloutItem::ResponseItem(envelope) = line else {
         panic!("expected response item");
     };
-    assert_eq!(envelope.metadata, Some(CodexHarnessMetadata::default()));
+    assert_eq!(envelope.metadata, Some(AvaHarnessMetadata::default()));
 
     let compacted = serde_json::from_value::<CompactedItem>(json!({
         "message": "summary",
@@ -321,7 +321,7 @@ fn response_item_envelope_ignores_unknown_harness_metadata_fields() -> Result<()
     }))?;
     assert_eq!(
         compacted.replacement_history.expect("replacement history")[0].metadata,
-        Some(CodexHarnessMetadata::default())
+        Some(AvaHarnessMetadata::default())
     );
     Ok(())
 }
@@ -372,7 +372,7 @@ fn compacted_replacement_history_stores_metadata_in_an_aligned_sidecar() -> Resu
         replacement_history: Some(vec![
             ResponseItemEnvelope {
                 item: developer_message.clone(),
-                metadata: Some(CodexHarnessMetadata {
+                metadata: Some(AvaHarnessMetadata {
                     client_authored: true,
                     ..Default::default()
                 }),
@@ -411,14 +411,14 @@ fn compacted_replacement_history_stores_metadata_in_an_aligned_sidecar() -> Resu
         Some(vec![
             ResponseItemEnvelope {
                 item: developer_message,
-                metadata: Some(CodexHarnessMetadata {
+                metadata: Some(AvaHarnessMetadata {
                     client_authored: true,
                     ..Default::default()
                 }),
             },
             ResponseItemEnvelope {
                 item: compaction_item,
-                metadata: Some(CodexHarnessMetadata::default()),
+                metadata: Some(AvaHarnessMetadata::default()),
             },
         ])
     );
@@ -473,7 +473,7 @@ fn compacted_metadata_remains_compatible_with_legacy_response_item_readers() -> 
     let response_item = response_message("developer");
     let envelope = ResponseItemEnvelope {
         item: response_item.clone(),
-        metadata: Some(CodexHarnessMetadata {
+        metadata: Some(AvaHarnessMetadata {
             client_authored: true,
             ..Default::default()
         }),
@@ -672,7 +672,7 @@ fn rollout_item_schema_matches_tagged_payload_and_sibling_metadata() -> Result<(
     );
     assert_eq!(
         compacted["properties"]["replacement_history_metadata"]["items"]["$ref"],
-        json!("#/definitions/CodexHarnessMetadata")
+        json!("#/definitions/AvaHarnessMetadata")
     );
     let required = compacted["required"].as_array().expect("required fields");
     assert!(!required.contains(&json!("replacement_history")));

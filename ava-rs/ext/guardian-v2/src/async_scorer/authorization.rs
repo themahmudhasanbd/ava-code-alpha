@@ -1,19 +1,19 @@
 //! Binds cached classifier results to the user authorization and model policy they evaluated.
 
-use codex_core::CodexThread;
-use codex_core::GuardianAuthorizationVersion;
+use ava_core::AvaThread;
+use ava_core::GuardianAuthorizationVersion;
 
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct ScoreAuthorization {
-    pub(super) settings: codex_protocol::protocol::ThreadSettingsSnapshot,
-    pub(super) environments: Vec<codex_protocol::protocol::TurnEnvironmentSelection>,
+    pub(super) settings: ava_protocol::protocol::ThreadSettingsSnapshot,
+    pub(super) environments: Vec<ava_protocol::protocol::TurnEnvironmentSelection>,
     pub(super) local: GuardianAuthorizationVersion,
     pub(super) root: Option<GuardianAuthorizationVersion>,
-    pub(super) model: Option<std::sync::Arc<codex_protocol::openai_models::ModelInfo>>,
+    pub(super) model: Option<std::sync::Arc<ava_protocol::openai_models::ModelInfo>>,
 }
 
 impl ScoreAuthorization {
-    pub(super) async fn current(thread: &CodexThread) -> Self {
+    pub(super) async fn current(thread: &AvaThread) -> Self {
         let root = thread
             .guardian_root_snapshot()
             .await
@@ -29,7 +29,7 @@ impl ScoreAuthorization {
             root,
             model: thread
                 .thread_extension_data()
-                .get::<codex_protocol::openai_models::ModelInfo>(),
+                .get::<ava_protocol::openai_models::ModelInfo>(),
         }
     }
 }

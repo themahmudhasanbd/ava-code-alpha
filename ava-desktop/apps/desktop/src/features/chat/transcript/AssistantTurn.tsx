@@ -417,7 +417,7 @@ export const AssistantTurn = memo(function AssistantTurn({
 }, assistantTurnPropsEqual);
 
 /**
- * The transcript trace of one compaction, matching Codex's `ContextCompaction`
+ * The transcript trace of one compaction, matching Ava's `ContextCompaction`
  * turn item: a divider that says the earlier turns above it are now a summary.
  * It carries no actions — nothing about a persisted checkpoint is undoable.
  */

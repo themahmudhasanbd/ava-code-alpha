@@ -1,18 +1,18 @@
 use std::fs;
 use std::sync::Arc;
 
-use codex_exec_server::LOCAL_FS;
-use codex_protocol::protocol::Product;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::SkillDependencies;
-use codex_skills::SkillInterface;
-use codex_skills::SkillMetadata;
-use codex_skills::SkillPolicy;
-use codex_skills::SkillToolDependency;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
-use codex_utils_plugins::SkillDiscoveryMode;
+use ava_exec_server::LOCAL_FS;
+use ava_protocol::protocol::Product;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::SkillDependencies;
+use ava_skills::SkillInterface;
+use ava_skills::SkillMetadata;
+use ava_skills::SkillPolicy;
+use ava_skills::SkillToolDependency;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
+use ava_utils_plugins::SkillDiscoveryMode;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -121,7 +121,7 @@ async fn loads_host_frontmatter_dependencies_and_policy() {
         callbackPort: 3118
 policy:
   allow_implicit_invocation: false
-  products: [codex, CHATGPT, atlas]
+  products: [ava, CHATGPT, atlas]
 "##,
     );
 
@@ -148,7 +148,7 @@ policy:
             }),
             policy: Some(SkillPolicy {
                 allow_implicit_invocation: Some(false),
-                products: vec![Product::Codex, Product::Chatgpt, Product::Atlas],
+                products: vec![Product::Ava, Product::Chatgpt, Product::Atlas],
             }),
             path_to_skills_md: skill_path,
             scope: SkillScope::User,
@@ -361,7 +361,7 @@ async fn skips_hidden_host_skills() {
 #[tokio::test]
 async fn discovers_nested_plugin_namespace_without_plugin_identity() {
     let root = TempDir::new().expect("temp dir");
-    let plugin_manifest = root.path().join("nested/.codex-plugin/plugin.json");
+    let plugin_manifest = root.path().join("nested/.ava-plugin/plugin.json");
     fs::create_dir_all(plugin_manifest.parent().expect("plugin manifest parent"))
         .expect("create plugin manifest directory");
     fs::write(&plugin_manifest, r#"{"name":"plugin-name"}"#).expect("write plugin manifest");
@@ -479,7 +479,7 @@ async fn recursive_plugin_root_preserves_owner_namespace_and_shared_asset_policy
         "skills/group/demo",
         "name: demo\ndescription: Demo skill",
     );
-    let nested_manifest = root.path().join("skills/group/.codex-plugin/plugin.json");
+    let nested_manifest = root.path().join("skills/group/.ava-plugin/plugin.json");
     fs::create_dir_all(nested_manifest.parent().expect("nested manifest parent"))
         .expect("create nested plugin manifest directory");
     fs::write(nested_manifest, r#"{"name":"conflicting-plugin"}"#)

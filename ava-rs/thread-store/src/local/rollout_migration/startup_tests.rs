@@ -4,17 +4,17 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_rollout::RolloutConfig;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
-use codex_rollout::RolloutRecorder;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_rollout::RolloutConfig;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
+use ava_rollout::RolloutRecorder;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -96,13 +96,13 @@ fn move_to_timestamp(
 async fn indexed_store(home: &Path) -> LocalThreadStore {
     let config = test_config(home);
     let rollout_config = RolloutConfig {
-        codex_home: config.codex_home.clone(),
+        ava_home: config.ava_home.clone(),
         sqlite: config.sqlite.clone(),
         cwd: home.to_path_buf(),
         model_provider_id: config.default_model_provider_id.clone(),
         generate_memories: false,
     };
-    let state_db = codex_rollout::state_db::try_init(&rollout_config)
+    let state_db = ava_rollout::state_db::try_init(&rollout_config)
         .await
         .expect("backfill legacy thread metadata");
     LocalThreadStore::new(config, Some(state_db))
@@ -110,7 +110,7 @@ async fn indexed_store(home: &Path) -> LocalThreadStore {
 
 #[tokio::test]
 async fn records_and_advances_checked_thread() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let legacy_thread_id = ThreadId::new();
     let legacy_path = write_rollout(home.path(), legacy_thread_id, ThreadHistoryMode::Legacy);
     let store = indexed_store(home.path()).await;
@@ -120,7 +120,7 @@ async fn records_and_advances_checked_thread() {
         .await
         .expect("migrate startup rollouts");
     assert_eq!(
-        codex_rollout::read_session_meta_line(&legacy_path)
+        ava_rollout::read_session_meta_line(&legacy_path)
             .await
             .expect("read migrated metadata")
             .meta
@@ -159,7 +159,7 @@ async fn records_and_advances_checked_thread() {
 
 #[tokio::test]
 async fn checks_rollouts_within_the_cursor_lookback() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let older_thread_id = ThreadId::new();
     let older_path = move_to_timestamp(
         home.path(),
@@ -189,7 +189,7 @@ async fn checks_rollouts_within_the_cursor_lookback() {
         .expect("check rollout behind cursor");
 
     assert_eq!(
-        codex_rollout::read_session_meta_line(&older_path)
+        ava_rollout::read_session_meta_line(&older_path)
             .await
             .expect("read migrated metadata")
             .meta
@@ -200,7 +200,7 @@ async fn checks_rollouts_within_the_cursor_lookback() {
 
 #[tokio::test]
 async fn recovers_pending_migrations_after_retrying_busy_rollouts() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let pending_thread_id = ThreadId::new();
     write_rollout(home.path(), pending_thread_id, ThreadHistoryMode::Legacy);
     let busy_thread_id = ThreadId::new();
@@ -235,7 +235,7 @@ async fn recovers_pending_migrations_after_retrying_busy_rollouts() {
         .expect("retry busy rollout before recovery");
 
     assert_eq!(
-        codex_rollout::read_session_meta_line(&busy_path)
+        ava_rollout::read_session_meta_line(&busy_path)
             .await
             .expect("read migrated metadata")
             .meta
@@ -260,7 +260,7 @@ async fn recovers_pending_migrations_after_retrying_busy_rollouts() {
 
 #[tokio::test]
 async fn waits_for_a_live_writer_before_migrating() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(home.path(), thread_id, ThreadHistoryMode::Legacy);
     let store = indexed_store(home.path()).await;
@@ -283,7 +283,7 @@ async fn waits_for_a_live_writer_before_migrating() {
     migration.await.expect("join startup migration");
 
     assert_eq!(
-        codex_rollout::read_session_meta_line(&path)
+        ava_rollout::read_session_meta_line(&path)
             .await
             .expect("read migrated metadata")
             .meta
@@ -294,11 +294,11 @@ async fn waits_for_a_live_writer_before_migrating() {
 
 #[tokio::test]
 async fn waits_for_rollout_maintenance_before_migrating() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = write_rollout(home.path(), thread_id, ThreadHistoryMode::Legacy);
     let store = indexed_store(home.path()).await;
-    let maintenance_guard = codex_rollout::try_acquire_rollout_maintenance_lock(home.path())
+    let maintenance_guard = ava_rollout::try_acquire_rollout_maintenance_lock(home.path())
         .expect("acquire rollout maintenance lock")
         .expect("claim rollout maintenance lock");
     let migration_store = store.clone();
@@ -322,7 +322,7 @@ async fn waits_for_rollout_maintenance_before_migrating() {
         .expect("join startup migration");
 
     assert_eq!(
-        codex_rollout::read_session_meta_line(&path)
+        ava_rollout::read_session_meta_line(&path)
             .await
             .expect("read migrated metadata")
             .meta
@@ -333,7 +333,7 @@ async fn waits_for_rollout_maintenance_before_migrating() {
 
 #[tokio::test]
 async fn permanently_skips_failed_rollouts_without_blocking_the_cursor() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let failed_thread_id = ThreadId::new();
     let failed_path = write_rollout(home.path(), failed_thread_id, ThreadHistoryMode::Legacy);
     let store = indexed_store(home.path()).await;
@@ -378,7 +378,7 @@ async fn permanently_skips_failed_rollouts_without_blocking_the_cursor() {
         .insert_thread_if_absent(&metadata)
         .await
         .expect("restore thread metadata");
-    let archived_directory = home.path().join(codex_rollout::ARCHIVED_SESSIONS_SUBDIR);
+    let archived_directory = home.path().join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR);
     fs::create_dir_all(&archived_directory).expect("create archived directory");
     let archived_path = archived_directory.join(failed_path.file_name().expect("rollout filename"));
     fs::rename(&failed_path, &archived_path).expect("archive failed rollout");
@@ -389,7 +389,7 @@ async fn permanently_skips_failed_rollouts_without_blocking_the_cursor() {
         .expect("skip failed rollout again");
 
     assert_eq!(
-        codex_rollout::read_session_meta_line(&archived_path)
+        ava_rollout::read_session_meta_line(&archived_path)
             .await
             .expect("read failed rollout metadata")
             .meta
@@ -400,7 +400,7 @@ async fn permanently_skips_failed_rollouts_without_blocking_the_cursor() {
 
 #[tokio::test]
 async fn retries_busy_rollouts_after_archive_and_compression_move() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     let thread_id = ThreadId::new();
     let path = move_to_timestamp(
         home.path(),
@@ -448,7 +448,7 @@ async fn retries_busy_rollouts_after_archive_and_compression_move() {
     );
 
     drop(writer_guard);
-    let archived_directory = home.path().join(codex_rollout::ARCHIVED_SESSIONS_SUBDIR);
+    let archived_directory = home.path().join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR);
     fs::create_dir_all(&archived_directory).expect("create archived directory");
     let archived_path = archived_directory.join(path.file_name().expect("rollout filename"));
     fs::rename(&path, &archived_path).expect("archive busy rollout");
@@ -465,7 +465,7 @@ async fn retries_busy_rollouts_after_archive_and_compression_move() {
         .expect("retry no-longer-busy rollout");
 
     assert_eq!(
-        codex_rollout::read_session_meta_line(&compressed_path)
+        ava_rollout::read_session_meta_line(&compressed_path)
             .await
             .expect("read migrated metadata")
             .meta
@@ -483,7 +483,7 @@ async fn retries_busy_rollouts_after_archive_and_compression_move() {
 
 #[tokio::test]
 async fn treats_writer_owned_empty_rollouts_as_busy() {
-    let home = TempDir::new().expect("create Codex home");
+    let home = TempDir::new().expect("create Ava home");
     write_rollout(home.path(), ThreadId::new(), ThreadHistoryMode::Paginated);
     let store = indexed_store(home.path()).await;
     store
@@ -501,7 +501,7 @@ async fn treats_writer_owned_empty_rollouts_as_busy() {
     let (items, _, _) = RolloutRecorder::load_rollout_items(&path)
         .await
         .expect("load rollout items");
-    let metadata = codex_rollout::builder_from_items(items.as_slice(), &path)
+    let metadata = ava_rollout::builder_from_items(items.as_slice(), &path)
         .expect("build thread metadata")
         .build("test-provider");
     let contents = fs::read(&path).expect("read rollout before emptying");
@@ -538,7 +538,7 @@ async fn treats_writer_owned_empty_rollouts_as_busy() {
         .expect("retry no-longer-empty rollout");
 
     assert_eq!(
-        codex_rollout::read_session_meta_line(&path)
+        ava_rollout::read_session_meta_line(&path)
             .await
             .expect("read migrated metadata")
             .meta

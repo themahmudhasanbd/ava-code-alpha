@@ -2,8 +2,8 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 use std::sync::PoisonError;
 
-use codex_protocol::user_input::UserInput;
-use codex_utils_string::take_bytes_at_char_boundary;
+use ava_protocol::user_input::UserInput;
+use ava_utils_string::take_bytes_at_char_boundary;
 
 use super::ShadowQuery;
 

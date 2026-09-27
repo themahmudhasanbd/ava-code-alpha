@@ -7,24 +7,24 @@ use crate::session::turn_context::TurnContext;
 use crate::state::TaskKind;
 use crate::tasks::SessionTask;
 use crate::tasks::SessionTaskResult;
-use codex_protocol::AgentPath;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::Settings;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::turn_input::TurnInput as SubmittedTurnInput;
-use codex_protocol::user_input::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use core_test_support::test_codex::local_selections;
+use ava_protocol::AgentPath;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::Settings;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::turn_input::TurnInput as SubmittedTurnInput;
+use ava_protocol::user_input::UserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use core_test_support::test_ava::local_selections;
 use pretty_assertions::assert_eq;
 use test_case::test_case;
 use tokio::time::sleep;
@@ -180,7 +180,7 @@ async fn accepted_input_applies_thread_settings() {
         .with_thread_settings(ThreadSettingsOverrides {
             environments: Some(local_selections(config.cwd.clone())),
             approval_policy: Some(config.permissions.approval_policy.value()),
-            approvals_reviewer: Some(codex_config::types::ApprovalsReviewer::AutoReview),
+            approvals_reviewer: Some(ava_config::types::ApprovalsReviewer::AutoReview),
             sandbox_policy: Some(config.legacy_sandbox_policy()),
             summary: config.model_reasoning_summary,
             personality: config.personality,
@@ -203,7 +203,7 @@ async fn accepted_input_applies_thread_settings() {
     let state = session.state.lock().await;
     assert_eq!(
         state.session_configuration.step_settings.approvals_reviewer,
-        codex_config::types::ApprovalsReviewer::AutoReview
+        ava_config::types::ApprovalsReviewer::AutoReview
     );
     assert!(
         session.mcp_refresh.is_pending(),
@@ -368,7 +368,7 @@ async fn start_only_rejects_current_plan_before_validating_settings() {
     let error = result.expect_err("invalid automatic settings must be rejected");
     assert!(matches!(
         error.details(),
-        CodexErrorDetails::InvalidRequest(_)
+        AvaErrorDetails::InvalidRequest(_)
     ));
     assert_eq!(session.thread_settings_snapshot().await, desired_settings);
     assert!(session.active_turn.lock().await.is_none());
@@ -515,11 +515,11 @@ async fn automatic_admission_uses_current_candidate_after_plan_preview() {
 async fn automatic_admission_rechecks_plan_mode_without_committing_sparse_settings() {
     struct ConfigRecorder(Arc<std::sync::Mutex<Vec<(AskForApproval, ApprovalsReviewer)>>>);
 
-    impl codex_extension_api::ConfigContributor<crate::config::Config> for ConfigRecorder {
+    impl ava_extension_api::ConfigContributor<crate::config::Config> for ConfigRecorder {
         fn on_config_changed(
             &self,
-            _session_store: &codex_extension_api::ExtensionData,
-            _thread_store: &codex_extension_api::ExtensionData,
+            _session_store: &ava_extension_api::ExtensionData,
+            _thread_store: &ava_extension_api::ExtensionData,
             _previous_config: &crate::config::Config,
             new_config: &crate::config::Config,
         ) {
@@ -533,7 +533,7 @@ async fn automatic_admission_rechecks_plan_mode_without_committing_sparse_settin
     let (mut session, _turn_context, rx) = make_session_and_context_with_rx().await;
     let records = Arc::new(std::sync::Mutex::new(Vec::new()));
     let mut extensions =
-        codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+        ava_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
     extensions.config_contributor(Arc::new(ConfigRecorder(Arc::clone(&records))));
     Arc::get_mut(&mut session)
         .expect("unique test session")
@@ -678,7 +678,7 @@ async fn admission_revalidates_constraints_before_committing(kind: TurnStartKind
     .expect("approval-policy edit should initially be valid");
 
     let approval_policy = Constrained::allow_only(AskForApproval::OnRequest);
-    let expected_message = CodexErr::InvalidRequest(
+    let expected_message = AvaErr::InvalidRequest(
         approval_policy
             .can_set(&AskForApproval::Never)
             .expect_err("new constraint must reject the prepared edit")
@@ -698,7 +698,7 @@ async fn admission_revalidates_constraints_before_committing(kind: TurnStartKind
     let Err(error) = result else {
         panic!("commit-time constraint failure must return InvalidRequest");
     };
-    let CodexErrorDetails::InvalidRequest(message) = error.details() else {
+    let AvaErrorDetails::InvalidRequest(message) = error.details() else {
         panic!("unexpected commit-time error: {error}");
     };
     assert_eq!(message, &expected_message);
@@ -714,7 +714,7 @@ async fn admission_revalidates_constraints_before_committing(kind: TurnStartKind
         vec![ErrorEvent {
             misalignment: None,
             message: expected_message,
-            codex_error_info: Some(CodexErrorInfo::BadRequest),
+            ava_error_info: Some(AvaErrorInfo::BadRequest),
         }]
     );
     assert_eq!(session.thread_settings_snapshot().await, desired_settings);

@@ -5,8 +5,8 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_api::AuthProvider;
-use codex_http_client::RouteAwareRequestError;
+use ava_api::AuthProvider;
+use ava_http_client::RouteAwareRequestError;
 use http::HeaderMap;
 use pretty_assertions::assert_eq;
 use tokio::io::AsyncBufReadExt;
@@ -41,7 +41,7 @@ struct RegistrationAuthProvider {
 impl AuthProvider for RegistrationAuthProvider {
     fn add_auth_headers(&self, _headers: &mut HeaderMap) {}
 
-    fn resolve_auth_headers(&self) -> codex_api::AuthHeadersFuture<'_> {
+    fn resolve_auth_headers(&self) -> ava_api::AuthHeadersFuture<'_> {
         self.calls.fetch_add(1, Ordering::Relaxed);
         Box::pin(async { Ok(HeaderMap::new()) })
     }
@@ -51,7 +51,7 @@ struct RetryObserved(Arc<Notify>);
 
 impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for RetryObserved {
     fn on_event(&self, event: &tracing::Event<'_>, _: tracing_subscriber::layer::Context<'_, S>) {
-        if event.metadata().target() == "codex_exec_server::remote::registration_retry"
+        if event.metadata().target() == "ava_exec_server::remote::registration_retry"
             && event.metadata().fields().field("retry_attempt").is_some()
         {
             self.0.notify_one();

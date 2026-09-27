@@ -7,16 +7,16 @@ use crate::GuardianReviewSessionLimits;
 use crate::ReviewDenials;
 use crate::ReviewReport;
 use crate::ReviewRequest;
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::SynchronousApprovalReviewer;
-use codex_protocol::approvals::GuardianReviewReason;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::GuardianAssessmentEvent;
-use codex_protocol::protocol::GuardianAssessmentOutcome;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::WarningEvent;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::SynchronousApprovalReviewer;
+use ava_protocol::approvals::GuardianReviewReason;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::GuardianAssessmentEvent;
+use ava_protocol::protocol::GuardianAssessmentOutcome;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::WarningEvent;
 use std::future::Future;
 use std::sync::Arc;
 use tokio::time::Instant;
@@ -85,7 +85,7 @@ impl<H: ReviewHost> SynchronousApprovalReviewer for ReviewRequest<'_, H> {
                 ))
                 .await
             };
-            let completed_at_ms = codex_analytics::now_unix_millis();
+            let completed_at_ms = ava_analytics::now_unix_millis();
             let completed = report.complete(
                 outcome,
                 self.model,

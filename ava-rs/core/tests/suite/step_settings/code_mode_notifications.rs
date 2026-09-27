@@ -94,7 +94,7 @@ async fn yielded_notifications_keep_originating_budgets_after_model_switch() -> 
     )
     .await;
     // B's cell releases the barrier, so A cannot notify while A is still active.
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run B and release A".to_string(),
@@ -107,7 +107,7 @@ async fn yielded_notifications_keep_originating_budgets_after_model_switch() -> 
         )
         .await?;
     let mut raw_notifications = Vec::new();
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         if let EventMsg::RawResponseItem(event) = event {
             let item = serde_json::to_value(&event.item).expect("raw item");
             if is_notification(&item) {
@@ -157,9 +157,9 @@ async fn yielded_notifications_keep_originating_budgets_after_model_switch() -> 
         std::collections::BTreeSet::from(["call-a", "call-b"])
     );
 
-    test.codex.shutdown_and_wait().await?;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
-    let history = codex_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
+    test.ava-code.shutdown_and_wait().await?;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let history = ava_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
     let saved = history
         .get_rollout_items()
         .iter()

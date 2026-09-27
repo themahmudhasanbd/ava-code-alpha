@@ -21,8 +21,8 @@ mixin AgentCoreModelsMixin on AgentCoreBase {
       contextLimit: 1048576,
     ),
     AvaModelItem(
-      id: "omni-codex-combo",
-      name: "Omni Codex Combo",
+      id: "omni-ava-combo",
+      name: "Omni Ava Combo",
       provider: "omniroute",
       reasoning: true,
       supportsImages: true,

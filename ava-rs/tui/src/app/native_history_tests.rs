@@ -1,8 +1,8 @@
 //! Native tool completion is emitted once, before output queued behind it.
 
 use super::*;
-use codex_app_server_protocol::DynamicToolCallOutputContentItem;
-use codex_app_server_protocol::DynamicToolCallStatus;
+use ava_app_server_protocol::DynamicToolCallOutputContentItem;
+use ava_app_server_protocol::DynamicToolCallStatus;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]

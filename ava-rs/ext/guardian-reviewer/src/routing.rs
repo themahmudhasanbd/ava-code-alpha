@@ -3,22 +3,22 @@
 
 use crate::ReviewDenials;
 use crate::ReviewHost;
-use codex_analytics::AnalyticsEventsClient;
-use codex_extension_api::ApprovalDecision;
-use codex_extension_api::ApprovalDecisionInput;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::GuardianV2Enabled;
-use codex_extension_api::SynchronousApprovalReviewer;
-use codex_otel::SessionTelemetry;
-use codex_protocol::ThreadId;
-use codex_protocol::approvals::GuardianReviewReason;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::openai_models::GuardianScope;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ReviewDecision;
+use ava_analytics::AnalyticsEventsClient;
+use ava_extension_api::ApprovalDecision;
+use ava_extension_api::ApprovalDecisionInput;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::GuardianV2Enabled;
+use ava_extension_api::SynchronousApprovalReviewer;
+use ava_otel::SessionTelemetry;
+use ava_protocol::ThreadId;
+use ava_protocol::approvals::GuardianReviewReason;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::openai_models::GuardianScope;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ReviewDecision;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
@@ -164,13 +164,13 @@ impl<H: ReviewHost> ReviewRequest<'_, H> {
         }
         if self.thread_store.get::<GuardianV2Enabled>().is_some() {
             self.analytics
-                .track_guardian_v2_event(codex_analytics::GuardianV2Event {
+                .track_guardian_v2_event(ava_analytics::GuardianV2Event {
                     thread_id: self.thread_id.to_string(),
                     turn_id: turn_id.to_owned(),
                     item_id: item_id.map(str::to_owned),
                     model: Some(self.model.slug.clone()),
-                    occurred_at_ms: codex_analytics::now_unix_millis(),
-                    kind: codex_analytics::GuardianV2EventKind::FastDecision {
+                    occurred_at_ms: ava_analytics::now_unix_millis(),
+                    kind: ava_analytics::GuardianV2EventKind::FastDecision {
                         decision: "approved",
                     },
                 });

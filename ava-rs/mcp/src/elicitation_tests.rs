@@ -1,8 +1,8 @@
 use super::*;
 use crate::mcp::tests::test_elicitation_config;
 use async_channel::Receiver;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::GranularApprovalConfig;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::GranularApprovalConfig;
 use pretty_assertions::assert_eq;
 use rmcp::model::ElicitRequestParams;
 use rmcp::model::ElicitationSchema;
@@ -168,19 +168,19 @@ async fn assert_subagent_elicitation_blocked(sender: &SendElicitation, elicitati
 async fn subagent_human_input_is_rejected_before_automatic_approval() {
     let mut requests = Vec::new();
     for meta in [
-        json!({"codex_approval_kind": "browser_auth"}),
-        json!({"codex_approval_kind": "browser_auth", "codex_requires_user_input": true}),
-        json!({"codex_requires_user_input": true}),
+        json!({"ava_approval_kind": "browser_auth"}),
+        json!({"ava_approval_kind": "browser_auth", "ava_requires_user_input": true}),
+        json!({"ava_requires_user_input": true}),
         json!({
-            "codex_approval_kind": "mcp_tool_call",
-            "codex_request_type": "approval_request",
-            "codex_strict_auto_review": true,
-            "codex_requires_user_input": true,
+            "ava_approval_kind": "mcp_tool_call",
+            "ava_request_type": "approval_request",
+            "ava_strict_auto_review": true,
+            "ava_requires_user_input": true,
         }),
     ] {
         requests.extend(form_elicitations(Some(meta), json!({})));
     }
-    for meta in [None, Some(json!({"codex_strict_auto_review": true}))] {
+    for meta in [None, Some(json!({"ava_strict_auto_review": true}))] {
         requests.extend(form_elicitations(
             meta.clone(),
             json!({"answer": {"type": "string"}}),
@@ -255,9 +255,9 @@ async fn subagent_permission_preserves_automatic_review_decisions() {
             disable_user_interaction(&manager);
             let [request, _, _] = form_elicitations(
                 Some(json!({
-                    "codex_request_type": "approval_request",
-                    "codex_approval_kind": "mcp_tool_call",
-                    "codex_strict_auto_review": strict_auto_review,
+                    "ava_request_type": "approval_request",
+                    "ava_approval_kind": "mcp_tool_call",
+                    "ava_strict_auto_review": strict_auto_review,
                     "tool_name": "access_browser_origin",
                     "tool_params": {"origin": "https://example.com"},
                 })),
@@ -325,7 +325,7 @@ fn final_prompt_guard_rejects_subagents_before_registration() {
             .request_user_interaction(
                 sender,
                 &authority,
-                crate::CODEX_APPS_MCP_SERVER_NAME.into(),
+                crate::AVA_APPS_MCP_SERVER_NAME.into(),
                 ElicitationRequest::Form {
                     meta: None,
                     message: "Confirm the action".into(),
@@ -341,7 +341,7 @@ fn final_prompt_guard_rejects_subagents_before_registration() {
         manager.router.clone(),
         Some(tx),
         Some(authority),
-        crate::CODEX_APPS_MCP_SERVER_NAME.into(),
+        crate::AVA_APPS_MCP_SERVER_NAME.into(),
         ElicitationRequest::UserVerification {
             title: "Approve purchase".into(),
             description: "Pay $200".into(),
@@ -552,12 +552,12 @@ async fn strict_auto_review_fails_closed_without_a_canonical_decision() {
 #[tokio::test]
 async fn reused_elicitation_senders_follow_each_servers_latest_permission_authority() {
     let mut config = crate::mcp::tests::test_mcp_config(std::env::temp_dir());
-    config.approval_policy = codex_config::Constrained::allow_any(AskForApproval::Never);
+    config.approval_policy = ava_config::Constrained::allow_any(AskForApproval::Never);
     config.permission_profile = PermissionProfile::Disabled;
     config.apps_enabled = true;
-    let auth = codex_login::CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = ava_login::AvaAuth::create_dummy_chatgpt_auth_for_testing();
 
-    let hosted_server = crate::codex_apps_mcp_server_config(
+    let hosted_server = crate::ava_apps_mcp_server_config(
         "https://example.com",
         /*apps_mcp_product_sku*/ None,
         /*originator*/ None,
@@ -594,7 +594,7 @@ async fn reused_elicitation_senders_follow_each_servers_latest_permission_author
         &ClientMcpExtensions::default(),
     );
     let hosted = manager.make_sender(
-        crate::CODEX_APPS_MCP_SERVER_NAME.to_string(),
+        crate::AVA_APPS_MCP_SERVER_NAME.to_string(),
         /*tx_event*/ None,
         &ClientMcpExtensions::default(),
     );
@@ -666,7 +666,7 @@ fn verification_fixture(
     reviewer: Option<Arc<RecordingReviewer>>,
 ) -> (ElicitationRequestManager, Receiver<Event>, SendElicitation) {
     let mut config = test_elicitation_config(
-        crate::CODEX_APPS_MCP_SERVER_NAME,
+        crate::AVA_APPS_MCP_SERVER_NAME,
         approval_policy,
         PermissionProfile::Disabled,
     );
@@ -674,7 +674,7 @@ fn verification_fixture(
     catalog.register(crate::catalog::McpServerRegistration::from_hosted_apps(
         "verification-test",
         /*contribution_order*/ 0,
-        crate::mcp::codex_apps_mcp_server_config(
+        crate::mcp::ava_apps_mcp_server_config(
             "https://example.com",
             /*apps_mcp_product_sku*/ None,
             /*originator*/ None,
@@ -690,7 +690,7 @@ fn verification_fixture(
     );
     let (tx, events) = async_channel::bounded(1);
     let sender = manager.make_sender(
-        crate::CODEX_APPS_MCP_SERVER_NAME.into(),
+        crate::AVA_APPS_MCP_SERVER_NAME.into(),
         Some(tx),
         &ClientMcpExtensions::new([(
             OPENAI_ELICITATION_EXTENSION_ID.to_string(),
@@ -759,7 +759,7 @@ async fn user_verification_requires_the_app_even_when_policy_would_approve_or_de
 async fn user_verification_cancels_when_no_app_can_receive_the_request() {
     let (manager, _, _) = verification_fixture(AskForApproval::OnRequest, /*reviewer*/ None);
     let sender = manager.make_sender(
-        crate::CODEX_APPS_MCP_SERVER_NAME.into(),
+        crate::AVA_APPS_MCP_SERVER_NAME.into(),
         /*tx_event*/ None,
         &ClientMcpExtensions::new([(
             OPENAI_ELICITATION_EXTENSION_ID.to_string(),
@@ -790,7 +790,7 @@ async fn user_verification_cancels_for_an_event_receiver_without_host_activation
     let (manager, _, _) = verification_fixture(AskForApproval::OnRequest, /*reviewer*/ None);
     let (tx, events) = async_channel::bounded(1);
     let sender = manager.make_sender(
-        crate::CODEX_APPS_MCP_SERVER_NAME.into(),
+        crate::AVA_APPS_MCP_SERVER_NAME.into(),
         Some(tx),
         &ClientMcpExtensions::default(),
     );
@@ -854,7 +854,7 @@ async fn user_verification_drops_pending_response_when_the_request_is_cancelled(
 
 #[tokio::test]
 async fn user_verification_rejects_attached_servers_even_if_they_use_the_plugin_service_name() {
-    for name in ["attached", crate::CODEX_APPS_MCP_SERVER_NAME] {
+    for name in ["attached", crate::AVA_APPS_MCP_SERVER_NAME] {
         let (manager, _, _) =
             verification_fixture(AskForApproval::OnRequest, /*reviewer*/ None);
         {
@@ -863,7 +863,7 @@ async fn user_verification_rejects_attached_servers_even_if_they_use_the_plugin_
             let mut catalog = crate::catalog::ResolvedMcpCatalog::builder();
             catalog.register(crate::catalog::McpServerRegistration::from_config(
                 name.into(),
-                crate::mcp::codex_apps_mcp_server_config(
+                crate::mcp::ava_apps_mcp_server_config(
                     "https://example.com",
                     /*apps_mcp_product_sku*/ None,
                     /*originator*/ None,

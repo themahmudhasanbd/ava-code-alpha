@@ -4,13 +4,13 @@ use super::plugin_mcp_config_paths;
 use crate::manifest::PluginManifestFormat;
 use crate::manifest::PluginManifestMcpServers;
 use crate::manifest::parse_plugin_manifest;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::warn;
 
-pub(super) async fn apply_codex_env_overlay(
+pub(super) async fn apply_ava_env_overlay(
     plugin_root: &Path,
     agent_servers: &mut HashMap<String, McpServerConfig>,
 ) {
@@ -18,7 +18,7 @@ pub(super) async fn apply_codex_env_overlay(
         return;
     }
 
-    let overlay_path = plugin_root.join(".codex-plugin/plugin.json");
+    let overlay_path = plugin_root.join(".ava-plugin/plugin.json");
     let Ok(contents) = tokio::fs::read_to_string(&overlay_path).await else {
         return;
     };
@@ -27,7 +27,7 @@ pub(super) async fn apply_codex_env_overlay(
         Err(err) => {
             warn!(
                 path = %overlay_path.display(),
-                "failed to parse Codex Agent Plugin MCP overlay: {err}"
+                "failed to parse Ava Agent Plugin MCP overlay: {err}"
             );
             return;
         }

@@ -1,19 +1,19 @@
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::ErrorNotification;
-use codex_app_server_protocol::MisalignmentErrorDetails;
-use codex_app_server_protocol::MisalignmentSteer;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnError;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::ErrorNotification;
+use ava_app_server_protocol::MisalignmentErrorDetails;
+use ava_app_server_protocol::MisalignmentSteer;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnError;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -179,11 +179,11 @@ async fn assert_policy_violation_completes_turn_with_typed_terminal_error(
     let server = responses::start_mock_server().await;
     let response_mock = responses::mount_response_once(&server, response).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = app_server
@@ -218,7 +218,7 @@ async fn assert_policy_violation_completes_turn_with_typed_terminal_error(
             error: TurnError {
                 misalignment: expected_misalignment.clone(),
                 message: MESSAGE.to_string(),
-                codex_error_info: Some(CodexErrorInfo::MisalignmentPolicyViolation),
+                ava_error_info: Some(AvaErrorInfo::MisalignmentPolicyViolation),
                 additional_details: None,
             },
             will_retry: false,
@@ -240,7 +240,7 @@ async fn assert_policy_violation_completes_turn_with_typed_terminal_error(
         Some(TurnError {
             misalignment: expected_misalignment,
             message: MESSAGE.to_string(),
-            codex_error_info: Some(CodexErrorInfo::MisalignmentPolicyViolation),
+            ava_error_info: Some(AvaErrorInfo::MisalignmentPolicyViolation),
             additional_details: None,
         })
     );

@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use codex_analytics::InvocationType;
-use codex_extension_api::FunctionCallError;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolExecutorFuture;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolSpec;
+use ava_analytics::InvocationType;
+use ava_extension_api::FunctionCallError;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolExecutorFuture;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolSpec;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;

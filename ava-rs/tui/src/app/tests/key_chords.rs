@@ -14,12 +14,12 @@ use crate::keymap::KeymapContext;
 use crate::pager_overlay::TranscriptHistoryState;
 use crate::test_support::test_path_display;
 use crate::tui::Tui;
-use codex_app_server_protocol::ToolRequestUserInputOption;
-use codex_app_server_protocol::ToolRequestUserInputParams;
-use codex_app_server_protocol::ToolRequestUserInputQuestion;
-use codex_config::types::KeybindingSpec;
-use codex_config::types::KeybindingsSpec;
-use codex_config::types::TuiKeymap;
+use ava_app_server_protocol::ToolRequestUserInputOption;
+use ava_app_server_protocol::ToolRequestUserInputParams;
+use ava_app_server_protocol::ToolRequestUserInputQuestion;
+use ava_config::types::KeybindingSpec;
+use ava_config::types::KeybindingsSpec;
+use ava_config::types::TuiKeymap;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
@@ -111,7 +111,7 @@ async fn global_chord_keeps_hints_and_completes_before_deadline() -> Result<()> 
         render_bottom_popup(&app.chat_widget, /*width*/ 80)
             .replace(&test_path_display("/tmp/project"), "/tmp/project"),
         @r"
-        › Ask Codex to do anything
+        › Ask Ava to do anything
 
           ctrl+x then · ctrl+t open transcript · ctrl+u interrupt turn · esc cancel
         "

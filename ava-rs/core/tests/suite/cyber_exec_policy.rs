@@ -1,17 +1,17 @@
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_core::sandboxing::SandboxPermissions;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::openai_models::MODEL_SPECIALTY_CYBER;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_core::sandboxing::SandboxPermissions;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::openai_models::MODEL_SPECIALTY_CYBER;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -25,8 +25,8 @@ use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_wine_exec;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::zsh_fork::zsh_fork_runtime;
 use core_test_support::zsh_fork::zsh_fork_test_builder;
@@ -51,7 +51,7 @@ enum ShellBackend {
 }
 
 fn configure_saved_prefix_and_guardian(config: &mut Config) {
-    let policy_path = config.codex_home.join("rules/default.rules");
+    let policy_path = config.ava_home.join("rules/default.rules");
     fs::create_dir_all(policy_path.parent().expect("rules directory"))
         .expect("create rules directory");
     fs::write(
@@ -94,9 +94,9 @@ fn guardian_allow_response(response_id: &str) -> String {
     ])
 }
 
-async fn submit_model_turn(test: &TestCodex, model: &str, prompt: &str) -> Result<()> {
+async fn submit_model_turn(test: &TestAva, model: &str, prompt: &str) -> Result<()> {
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(model.to_string()),
             approval_policy: Some(AskForApproval::OnRequest),
@@ -122,7 +122,7 @@ async fn saved_prefix_only_bypasses_guardian_for_general_models(
 
     let server = start_mock_server().await;
     let builder = match shell_backend {
-        ShellBackend::Standard => test_codex(),
+        ShellBackend::Standard => test_ava(),
         ShellBackend::ZshFork => {
             skip_if_host_windows!(Ok(()));
             let Some(runtime) = zsh_fork_runtime("cyber model zsh-fork saved prefix")? else {
@@ -193,7 +193,7 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
     skip_if_wine_exec!(Ok(()), "command approval requires host-native paths");
 
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.model_specialty = Some(MODEL_SPECIALTY_CYBER.to_string());
         })
@@ -202,7 +202,7 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
             config.approvals_reviewer = ApprovalsReviewer::User;
         });
     let test = builder.build_with_auto_env(&server).await?;
-    let policy_path = test.codex_home_path().join("rules/default.rules");
+    let policy_path = test.ava_home_path().join("rules/default.rules");
     let initial_policy = fs::read_to_string(&policy_path)?;
     let responses = mount_sse_sequence(
         &server,
@@ -213,7 +213,7 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
     )
     .await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command with one-time approval".to_string(),
@@ -227,7 +227,7 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
         )
         .await?;
 
-    let EventMsg::ExecApprovalRequest(approval) = wait_for_event(&test.codex, |event| {
+    let EventMsg::ExecApprovalRequest(approval) = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -242,14 +242,14 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
         approval.effective_available_decisions(),
         vec![ReviewDecision::Approved, ReviewDecision::Abort],
     );
-    test.codex
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
             decision: ReviewDecision::Approved,
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -272,7 +272,7 @@ async fn switching_models_suppresses_and_restores_saved_prefix_approvals() -> Re
     skip_if_wine_exec!(Ok(()), "Guardian command reviews require host-native paths");
 
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.4", |model| {
             model.model_specialty = Some(MODEL_SPECIALTY_CYBER.to_string());
         })

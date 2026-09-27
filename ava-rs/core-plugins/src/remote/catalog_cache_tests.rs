@@ -1,6 +1,6 @@
 use super::*;
 use chrono::TimeDelta;
-use codex_login::AuthHeaders;
+use ava_login::AuthHeaders;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -19,7 +19,7 @@ fn catalog_cache_freshness_honors_ttl() {
 
 #[test]
 fn catalog_cache_paths_are_isolated_by_scope_and_collection() {
-    let codex_home = Path::new("/tmp/codex-home");
+    let ava_home = Path::new("/tmp/ava-home");
     let cache_key_for_scope = |scope| RemotePluginCatalogCacheKey {
         chatgpt_base_url: "https://chatgpt.com/backend-api".to_string(),
         account_id: Some("account-id".to_string()),
@@ -34,7 +34,7 @@ fn catalog_cache_paths_are_isolated_by_scope_and_collection() {
         RemotePluginScope::User,
         RemotePluginScope::Workspace,
     ]
-    .map(|scope| cache_path(codex_home, &cache_key_for_scope(scope)));
+    .map(|scope| cache_path(ava_home, &cache_key_for_scope(scope)));
 
     assert_ne!(paths[0], paths[1]);
     assert_ne!(paths[0], paths[2]);
@@ -42,18 +42,18 @@ fn catalog_cache_paths_are_isolated_by_scope_and_collection() {
 
     let mut collection_key = cache_key_for_scope(RemotePluginScope::Global);
     collection_key.collection = Some("vertical".to_string());
-    assert!(!paths.contains(&cache_path(codex_home, &collection_key)));
+    assert!(!paths.contains(&cache_path(ava_home, &collection_key)));
 }
 
 #[test]
 fn global_catalog_cache_reuses_legacy_cache_file() {
-    let codex_home = tempfile::tempdir().expect("create codex home");
+    let ava_home = tempfile::tempdir().expect("create ava home");
     let config = RemotePluginServiceConfig::new(
         "https://chatgpt.com/backend-api".to_string(),
         crate::test_support::test_http_client_factory(),
     );
-    let auth = CodexAuth::Headers(AuthHeaders::new(http::HeaderMap::new()));
-    let legacy_cache_path = codex_home
+    let auth = AvaAuth::Headers(AuthHeaders::new(http::HeaderMap::new()));
+    let legacy_cache_path = ava_home
         .path()
         .join(REMOTE_PLUGIN_CATALOG_DISK_CACHE_DIR)
         .join("f22564d6f8ca89f6.json");
@@ -62,10 +62,10 @@ fn global_catalog_cache_reuses_legacy_cache_file() {
         "plugins": [],
     });
     let contents = serde_json::to_string_pretty(&legacy_cache).expect("serialize legacy cache");
-    codex_utils_path::write_atomically(&legacy_cache_path, &contents).expect("write legacy cache");
+    ava_utils_path::write_atomically(&legacy_cache_path, &contents).expect("write legacy cache");
 
     let cached = load_cached_directory_plugins(
-        codex_home.path(),
+        ava_home.path(),
         &config,
         &auth,
         RemotePluginScope::Global,
@@ -76,7 +76,7 @@ fn global_catalog_cache_reuses_legacy_cache_file() {
     assert_eq!(cached.freshness, RemotePluginCatalogCacheFreshness::Stale);
 
     write_cached_directory_plugins(
-        codex_home.path(),
+        ava_home.path(),
         &config,
         &auth,
         RemotePluginScope::Global,
@@ -92,15 +92,15 @@ fn global_catalog_cache_reuses_legacy_cache_file() {
 
 #[test]
 fn header_auth_does_not_cache_private_catalogs_without_a_stable_identity() {
-    let codex_home = tempfile::tempdir().expect("create codex home");
+    let ava_home = tempfile::tempdir().expect("create ava home");
     let config = RemotePluginServiceConfig::new(
         "https://chatgpt.com/backend-api".to_string(),
         crate::test_support::test_http_client_factory(),
     );
-    let auth = CodexAuth::Headers(AuthHeaders::new(http::HeaderMap::new()));
+    let auth = AvaAuth::Headers(AuthHeaders::new(http::HeaderMap::new()));
 
     write_cached_directory_plugins(
-        codex_home.path(),
+        ava_home.path(),
         &config,
         &auth,
         RemotePluginScope::Global,
@@ -109,7 +109,7 @@ fn header_auth_does_not_cache_private_catalogs_without_a_stable_identity() {
     );
     assert!(
         load_cached_directory_plugins(
-            codex_home.path(),
+            ava_home.path(),
             &config,
             &auth,
             RemotePluginScope::Global,
@@ -127,10 +127,10 @@ fn header_auth_does_not_cache_private_catalogs_without_a_stable_identity() {
             scope: Some(scope),
             collection: None,
         };
-        let insecure_cache_path = cache_path(codex_home.path(), &insecure_cache_key);
+        let insecure_cache_path = cache_path(ava_home.path(), &insecure_cache_key);
 
         write_cached_directory_plugins(
-            codex_home.path(),
+            ava_home.path(),
             &config,
             &auth,
             scope,
@@ -145,12 +145,12 @@ fn header_auth_does_not_cache_private_catalogs_without_a_stable_identity() {
             plugins: Vec::new(),
         };
         let contents = serde_json::to_string_pretty(&insecure_cache).expect("serialize cache");
-        codex_utils_path::write_atomically(&insecure_cache_path, &contents)
+        ava_utils_path::write_atomically(&insecure_cache_path, &contents)
             .expect("write insecure cache");
 
         assert!(
             load_cached_directory_plugins(
-                codex_home.path(),
+                ava_home.path(),
                 &config,
                 &auth,
                 scope,

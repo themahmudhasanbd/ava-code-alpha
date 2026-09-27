@@ -418,8 +418,8 @@ test("matches vendor-prefixed models when the catalog provider key is a gateway"
   }
 });
 
-test("maps the OpenAI Codex account to OpenAI models.dev metadata", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pi-models-dev-openai-codex-"));
+test("maps the OpenAI Ava account to OpenAI models.dev metadata", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "pi-models-dev-openai-ava-"));
   const catalogPath = join(dir, "api.json");
   await writeFile(
     catalogPath,
@@ -448,7 +448,7 @@ test("maps the OpenAI Codex account to OpenAI models.dev metadata", async () => 
     assert.equal(await catalog.ensureLoaded(), true);
 
     const input = {
-      vendorKey: "openai-codex",
+      vendorKey: "openai-ava",
       baseUrl: "https://chatgpt.com/backend-api",
       modelId: "gpt-5.6-sol",
     };

@@ -23,7 +23,7 @@ pub(super) struct CaptureWorker {
 impl CaptureWorker {
     pub(super) fn set_controls(
         &mut self,
-        controls: codex_realtime_webrtc::AudioControls,
+        controls: ava_realtime_webrtc::AudioControls,
     ) -> io::Result<()> {
         // Retire the old sink before rebuilding microphone processing.
         self.buffers

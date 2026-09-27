@@ -5,30 +5,30 @@ use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_parented_rollout_with_source;
 use app_test_support::create_fake_rollout;
 use app_test_support::rollout_path;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::ClientNotification;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCRequest;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadItemsListParams;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_protocol::AgentPath;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::EnteredReviewModeItem;
-use codex_protocol::items::ExitedReviewModeItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ReviewTarget;
-use codex_protocol::user_input::UserInput as CoreUserInput;
-use codex_state::SqliteConfig;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::ClientNotification;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCRequest;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadItemsListParams;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_protocol::AgentPath;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::EnteredReviewModeItem;
+use ava_protocol::items::ExitedReviewModeItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ReviewTarget;
+use ava_protocol::user_input::UserInput as CoreUserInput;
+use ava_state::SqliteConfig;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -81,10 +81,10 @@ async fn complete_managed_worktree_creation(
 
 #[tokio::test]
 async fn same_thread_retry_keeps_subscription_and_restores_draft() -> Result<()> {
-    let (mut app, codex_home) = make_history_test_app().await?;
+    let (mut app, ava_home) = make_history_test_app().await?;
     let thread_id = ThreadId::from_string(
         &create_fake_rollout(
-            codex_home.path(),
+            ava_home.path(),
             "2026-01-01T00-00-00",
             "2026-01-01T00:00:00Z",
             "Saved user message",
@@ -94,7 +94,7 @@ async fn same_thread_retry_keeps_subscription_and_restores_draft() -> Result<()>
         .expect("create rollout"),
     )?;
     let path = Some(rollout_path(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-01T00-00-00",
         &thread_id.to_string(),
     ));
@@ -113,9 +113,9 @@ async fn same_thread_retry_keeps_subscription_and_restores_draft() -> Result<()>
     app.chat_widget.insert_str("Retained draft");
     app.chat_widget.show_external_writer_thread();
     crate::legacy_core::config::set_project_trust_level(
-        app.config.codex_home.as_path(),
+        app.config.ava_home.as_path(),
         app.config.cwd.as_path(),
-        codex_protocol::config_types::TrustLevel::Trusted,
+        ava_protocol::config_types::TrustLevel::Trusted,
     )
     .map_err(std::io::Error::other)?;
     app.harness_overrides.cwd = Some(app.config.cwd.to_path_buf());
@@ -266,19 +266,19 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
         crate::init_state_db_for_app_server_target(config, &crate::AppServerTarget::Embedded)
             .await?;
     let mut embedded = crate::start_embedded_app_server(
-        codex_arg0::Arg0DispatchPaths::default(),
+        ava_arg0::Arg0DispatchPaths::default(),
         config.clone(),
         Vec::new(),
         loader_overrides,
         /*strict_config*/ false,
-        codex_config::CloudConfigBundleLoader::default(),
-        codex_feedback::CodexFeedback::new(),
+        ava_config::CloudConfigBundleLoader::default(),
+        ava_feedback::AvaFeedback::new(),
         /*log_db*/ None,
         state_db,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
     )
     .await?;
-    let codex_home = config.codex_home.display().to_string();
+    let ava_home = config.ava_home.display().to_string();
     let requests = Arc::new(Mutex::new(Vec::new()));
     let request_sink = Arc::clone(&requests);
     let listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -294,7 +294,7 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
                 frame = websocket.next() => frame,
                 event = embedded.next_event() => {
                     let Some(event) = event else { break };
-                    if let codex_app_server_client::InProcessServerEvent::ServerNotification(notification) = event
+                    if let ava_app_server_client::InProcessServerEvent::ServerNotification(notification) = event
                         && matches!(*notification, ServerNotification::ThreadSettingsUpdated(_))
                     {
                         websocket.send(Message::Text(serde_json::to_string(&notification)?.into())).await?;
@@ -323,8 +323,8 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
                             serde_json::to_string(&JSONRPCMessage::Response(JSONRPCResponse {
                                 id: request.id,
                                 result: serde_json::json!({
-                                    "userAgent": "codex-tui-test",
-                                    "codexHome": codex_home,
+                                    "userAgent": "ava-tui-test",
+                                    "avaHome": ava_home,
                                 }),
                             }))?
                             .into(),
@@ -627,7 +627,7 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
 
     Ok((
         AppServerSession::new(app_server, thread_params_mode)
-            .with_local_codex_home(&config.codex_home),
+            .with_local_ava_home(&config.ava_home),
         requests,
         proxy,
     ))
@@ -643,7 +643,7 @@ fn create_history_rollout(
         ThreadHistoryMode::Paginated => create_fake_paginated_rollout,
     };
     let thread_id = create_rollout(
-        config.codex_home.as_path(),
+        config.ava_home.as_path(),
         "2026-01-02T00-00-00",
         "2026-01-02T00:00:00Z",
         preview,
@@ -666,10 +666,10 @@ pub(super) fn recorded_params(requests: &RecordedRequests, method: &str) -> Vec<
 
 async fn make_history_test_app() -> Result<(App, tempfile::TempDir)> {
     let mut app = make_test_app().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
-    Ok((app, codex_home))
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
+    Ok((app, ava_home))
 }
 
 #[tokio::test]
@@ -683,7 +683,7 @@ async fn delete_current_thread_navigates_only_after_success() -> Result<()> {
         },
         AppServerTarget::Remote { endpoint },
     ] {
-        let (mut app, _codex_home) = make_history_test_app().await?;
+        let (mut app, _ava_home) = make_history_test_app().await?;
         let thread_id =
             create_history_rollout(&app.config, ThreadHistoryMode::Legacy, "delete me")?;
         let (mut server, requests, proxy) = start_recording_app_server(
@@ -805,7 +805,7 @@ fn spawn_approved_task_tool_call(
     app: &App,
     app_server: &AppServerSession,
     request_id: AppServerRequestId,
-    params: codex_app_server_protocol::DynamicToolCallParams,
+    params: ava_app_server_protocol::DynamicToolCallParams,
 ) {
     let request_handle = app_server.request_handle();
     let app_event_tx = app.app_event_tx.clone();
@@ -837,7 +837,7 @@ fn spawn_approved_task_tool_call(
 
 #[tokio::test]
 async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (app, _ava_home) = make_history_test_app().await?;
     let (mut app_server, requests, proxy) = Box::pin(start_recording_app_server(
         &app.config,
         /*blocked_thread_list*/ None,
@@ -863,7 +863,7 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
     assert_eq!(starts.len(), 2);
     for params in starts {
         assert_eq!(params["dynamicTools"][0]["type"], "namespace");
-        assert_eq!(params["dynamicTools"][0]["name"], "codex_tui");
+        assert_eq!(params["dynamicTools"][0]["name"], "ava_tui");
         assert_eq!(
             params["dynamicTools"][0]["tools"].as_array().map(Vec::len),
             Some(6)
@@ -948,10 +948,10 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
 
 #[tokio::test]
 async fn archive_current_thread_reports_success_only_after_archiving() -> Result<()> {
-    let (mut app, _codex_home) = make_history_test_app().await?;
+    let (mut app, _ava_home) = make_history_test_app().await?;
     let thread_id = ThreadId::from_string(
         &create_fake_rollout(
-            &app.config.codex_home,
+            &app.config.ava_home,
             "2026-08-25T01-00-00",
             "2026-08-25T01:00:00Z",
             "archive me",
@@ -990,7 +990,7 @@ async fn archive_current_thread_returns_shared_servers_to_agents() -> Result<()>
         },
         AppServerTarget::Remote { endpoint },
     ] {
-        let (mut app, _codex_home) = make_history_test_app().await?;
+        let (mut app, _ava_home) = make_history_test_app().await?;
         let thread_id =
             create_history_rollout(&app.config, ThreadHistoryMode::Legacy, "archive me")?;
         let (mut server, requests, proxy) = start_recording_app_server(
@@ -1081,14 +1081,14 @@ async fn archive_current_thread_returns_shared_servers_to_agents() -> Result<()>
 #[tokio::test]
 async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() -> Result<()> {
     let (mut app, events, _ops) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     app.config
         .web_search_mode
-        .set(codex_protocol::config_types::WebSearchMode::Live)?;
+        .set(ava_protocol::config_types::WebSearchMode::Live)?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "web_search = \"disabled\"\n",
     )?;
     // Keep the large lifecycle futures off the Windows test thread's stack.
@@ -1121,14 +1121,14 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
     .await?;
     assert!(startup.task_tools_available);
 
-    let inventory: codex_app_server_protocol::ListMcpServerStatusResponse = app_server
+    let inventory: ava_app_server_protocol::ListMcpServerStatusResponse = app_server
         .request_handle()
         .request_typed(ClientRequest::McpServerStatusList {
             request_id: AppServerRequestId::String("tui-tool-inventory".to_string()),
-            params: codex_app_server_protocol::ListMcpServerStatusParams {
+            params: ava_app_server_protocol::ListMcpServerStatusParams {
                 cursor: None,
                 limit: None,
-                detail: Some(codex_app_server_protocol::McpServerStatusDetail::ToolsAndAuthOnly),
+                detail: Some(ava_app_server_protocol::McpServerStatusDetail::ToolsAndAuthOnly),
                 thread_id: Some(thread_id.to_string()),
             },
         })
@@ -1136,7 +1136,7 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
     let tools = &inventory
         .data
         .iter()
-        .find(|server| server.name == "codex_tui")
+        .find(|server| server.name == "ava_tui")
         .expect("local daemon must connect to the TUI MCP server")
         .tools;
     assert_eq!(tools.len(), 9);
@@ -1156,7 +1156,7 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
     for params in &starts {
         assert_eq!(params["dynamicTools"], serde_json::Value::Null);
         assert_eq!(params["config"]["web_search"], "live");
-        let server = &params["config"]["mcp_servers.codex_tui"];
+        let server = &params["config"]["mcp_servers.ava_tui"];
         assert!(
             server["url"]
                 .as_str()
@@ -1173,10 +1173,10 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
         }
     }
 
-    let mcp_url = starts[0]["config"]["mcp_servers.codex_tui"]["url"]
+    let mcp_url = starts[0]["config"]["mcp_servers.ava_tui"]["url"]
         .as_str()
         .expect("MCP server URL");
-    let unauthorized = codex_http_client::HttpClientBuilder::new()
+    let unauthorized = ava_http_client::HttpClientBuilder::new()
         .build_direct()?
         .post(mcp_url)
         .send()
@@ -1185,7 +1185,7 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
 
     app.config
         .web_search_mode
-        .set(codex_protocol::config_types::WebSearchMode::Disabled)?;
+        .set(ava_protocol::config_types::WebSearchMode::Disabled)?;
     let delegation_source = create_history_rollout(
         &app.config,
         ThreadHistoryMode::Legacy,
@@ -1202,8 +1202,8 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
         .pop()
         .expect("resumed task request");
     assert_eq!(
-        resumed["config"]["mcp_servers.codex_tui"],
-        starts[0]["config"]["mcp_servers.codex_tui"]
+        resumed["config"]["mcp_servers.ava_tui"],
+        starts[0]["config"]["mcp_servers.ava_tui"]
     );
     Box::pin(app_server.resume_thread(
         &app.local_settings,
@@ -1216,8 +1216,8 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
         .pop()
         .expect("reattached task request");
     assert_eq!(
-        reattached["config"]["mcp_servers.codex_tui"],
-        starts[0]["config"]["mcp_servers.codex_tui"]
+        reattached["config"]["mcp_servers.ava_tui"],
+        starts[0]["config"]["mcp_servers.ava_tui"]
     );
     Box::pin(app_server.fork_thread(&app.local_settings, app.config.clone(), delegation_source))
         .await?;
@@ -1225,14 +1225,14 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
         .pop()
         .expect("forked task request");
     assert_eq!(
-        forked["config"]["mcp_servers.codex_tui"],
-        starts[0]["config"]["mcp_servers.codex_tui"]
+        forked["config"]["mcp_servers.ava_tui"],
+        starts[0]["config"]["mcp_servers.ava_tui"]
     );
     let authorization =
-        starts[0]["config"]["mcp_servers.codex_tui"]["http_headers"]["Authorization"]
+        starts[0]["config"]["mcp_servers.ava_tui"]["http_headers"]["Authorization"]
             .as_str()
             .expect("MCP bearer token");
-    let client = codex_http_client::HttpClientBuilder::new().build_direct()?;
+    let client = ava_http_client::HttpClientBuilder::new().build_direct()?;
     let call_tool = |id: u32, tool: &'static str, arguments: serde_json::Value| {
         client
             .post(mcp_url)
@@ -1337,8 +1337,8 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
     assert_eq!(child["dynamicTools"], serde_json::Value::Null);
     assert!(child["config"]["web_search"].is_null());
     assert_eq!(
-        child["config"]["mcp_servers.codex_tui"],
-        starts[0]["config"]["mcp_servers.codex_tui"]
+        child["config"]["mcp_servers.ava_tui"],
+        starts[0]["config"]["mcp_servers.ava_tui"]
     );
     let forked = call_tool(
         3,
@@ -1352,8 +1352,8 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
         .pop()
         .expect("MCP-created fork request");
     assert_eq!(
-        forked["config"]["mcp_servers.codex_tui"],
-        starts[0]["config"]["mcp_servers.codex_tui"]
+        forked["config"]["mcp_servers.ava_tui"],
+        starts[0]["config"]["mcp_servers.ava_tui"]
     );
 
     app_server.shutdown().await?;
@@ -1364,15 +1364,15 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
 #[tokio::test]
 async fn local_mcp_respects_configured_servers_and_managed_requirements() -> Result<()> {
     for scenario in ["conflicting", "blocked", "mismatched", "allowed"] {
-        let (mut app, _codex_home) = make_history_test_app().await?;
+        let (mut app, _ava_home) = make_history_test_app().await?;
         if scenario == "conflicting" {
-            let raw = serde_json::from_value::<codex_config::RawMcpServerConfig>(
+            let raw = serde_json::from_value::<ava_config::RawMcpServerConfig>(
                 serde_json::json!({"url": "http://127.0.0.1:1/mcp", "enabled": false}),
             )?;
             let mut servers = app.config.mcp_servers.get().clone();
             servers.insert(
                 crate::dynamic_tools::NAMESPACE.to_string(),
-                codex_config::McpServerConfig::try_from(raw)
+                ava_config::McpServerConfig::try_from(raw)
                     .map_err(color_eyre::eyre::Report::msg)?,
             );
             app.config.mcp_servers.set(servers)?;
@@ -1380,31 +1380,31 @@ async fn local_mcp_respects_configured_servers_and_managed_requirements() -> Res
             let mut allowed_servers = std::collections::BTreeMap::new();
             if matches!(scenario, "mismatched" | "allowed") {
                 let requirement = if scenario == "allowed" {
-                    codex_config::McpServerRequirement::Url(
-                        codex_protocol::mcp_policy::McpServerValueMatcher::Prefix {
+                    ava_config::McpServerRequirement::Url(
+                        ava_protocol::mcp_policy::McpServerValueMatcher::Prefix {
                             value: "http://127.0.0.1:".to_string(),
                         },
                     )
                 } else {
-                    codex_config::McpServerRequirement::Identity {
-                        identity: codex_config::McpServerIdentity::Url {
+                    ava_config::McpServerRequirement::Identity {
+                        identity: ava_config::McpServerIdentity::Url {
                             url: "http://127.0.0.1:1/mcp".to_string(),
                         },
                     }
                 };
                 allowed_servers.insert(crate::dynamic_tools::NAMESPACE.to_string(), requirement);
             }
-            let requirements = codex_config::ConfigRequirements {
-                mcp_servers: Some(codex_config::Sourced::new(
+            let requirements = ava_config::ConfigRequirements {
+                mcp_servers: Some(ava_config::Sourced::new(
                     allowed_servers,
-                    codex_config::RequirementSource::Unknown,
+                    ava_config::RequirementSource::Unknown,
                 )),
                 ..Default::default()
             };
-            app.config.config_layer_stack = codex_config::ConfigLayerStack::new(
+            app.config.config_layer_stack = ava_config::ConfigLayerStack::new(
                 Vec::new(),
                 requirements,
-                codex_config::ConfigRequirementsToml::default(),
+                ava_config::ConfigRequirementsToml::default(),
             )?;
         }
         let (mut app_server, requests, proxy) = start_recording_app_server(
@@ -1439,13 +1439,13 @@ async fn local_mcp_respects_configured_servers_and_managed_requirements() -> Res
             .expect("fallback task start");
         if scenario == "allowed" {
             assert!(start["dynamicTools"].is_null());
-            assert!(start["config"]["mcp_servers.codex_tui"].is_object());
+            assert!(start["config"]["mcp_servers.ava_tui"].is_object());
         } else {
             assert_eq!(
                 start["dynamicTools"][0]["tools"].as_array().map(Vec::len),
                 Some(6)
             );
-            assert!(start["config"]["mcp_servers.codex_tui"].is_null());
+            assert!(start["config"]["mcp_servers.ava_tui"].is_null());
         }
         app_server.shutdown().await?;
         proxy.await??;
@@ -1455,7 +1455,7 @@ async fn local_mcp_respects_configured_servers_and_managed_requirements() -> Res
 
 #[tokio::test]
 async fn older_external_server_starts_without_unsupported_dynamic_tools_or_history() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (app, _ava_home) = make_history_test_app().await?;
     let (mut app_server, requests, proxy) = start_recording_app_server_with_history(
         &app.config,
         HistoryCapabilities::LegacyDynamicToolsAndHistory,
@@ -1499,20 +1499,20 @@ async fn older_external_server_starts_without_unsupported_dynamic_tools_or_histo
 #[tokio::test]
 async fn embedded_server_rejects_unowned_dynamic_tool_calls() -> Result<()> {
     let (mut app, mut events, _ops) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     let app_server = crate::start_embedded_app_server_for_picker(&app.config).await?;
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerRequest(Box::new(
+        ava_app_server_client::AppServerEvent::ServerRequest(Box::new(
             ServerRequest::DynamicToolCall {
                 request_id: AppServerRequestId::Integer(100),
-                params: codex_app_server_protocol::DynamicToolCallParams {
+                params: ava_app_server_protocol::DynamicToolCallParams {
                     thread_id: "thread-1".to_string(),
                     turn_id: "turn-1".to_string(),
                     call_id: "call-1".to_string(),
-                    namespace: Some("codex_app".to_string()),
+                    namespace: Some("ava_app".to_string()),
                     tool: "list_threads".to_string(),
                     arguments: serde_json::json!({}),
                 },
@@ -1534,14 +1534,14 @@ async fn embedded_server_rejects_unowned_dynamic_tool_calls() -> Result<()> {
 #[tokio::test]
 async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespace() -> Result<()> {
     let (mut app, mut events, _ops) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     app.config
         .permissions
         .set_permission_profile(PermissionProfile::workspace_write_with(
             &[app.config.cwd.clone()],
-            codex_protocol::permissions::NetworkSandboxPolicy::Restricted,
+            ava_protocol::permissions::NetworkSandboxPolicy::Restricted,
             /*exclude_tmpdir_env_var*/ true,
             /*exclude_slash_tmp*/ true,
         ))?;
@@ -1558,13 +1558,13 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
         .thread_id
         .to_string();
 
-    for namespace in [Some("codex_app"), None] {
+    for namespace in [Some("ava_app"), None] {
         app.handle_app_server_event(
             &app_server,
-            codex_app_server_client::AppServerEvent::ServerRequest(Box::new(
+            ava_app_server_client::AppServerEvent::ServerRequest(Box::new(
                 ServerRequest::DynamicToolCall {
                     request_id: AppServerRequestId::Integer(100),
-                    params: codex_app_server_protocol::DynamicToolCallParams {
+                    params: ava_app_server_protocol::DynamicToolCallParams {
                         thread_id: thread_id.clone(),
                         turn_id: "turn-1".to_string(),
                         call_id: "call-1".to_string(),
@@ -1581,14 +1581,14 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
 
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerRequest(Box::new(
+        ava_app_server_client::AppServerEvent::ServerRequest(Box::new(
             ServerRequest::DynamicToolCall {
                 request_id: AppServerRequestId::Integer(101),
-                params: codex_app_server_protocol::DynamicToolCallParams {
+                params: ava_app_server_protocol::DynamicToolCallParams {
                     thread_id: thread_id.clone(),
                     turn_id: "turn-1".to_string(),
                     call_id: "call-2".to_string(),
-                    namespace: Some("codex_tui".to_string()),
+                    namespace: Some("ava_tui".to_string()),
                     tool: "list_threads".to_string(),
                     arguments: serde_json::json!({}),
                 },
@@ -1638,14 +1638,14 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
 
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerRequest(Box::new(
+        ava_app_server_client::AppServerEvent::ServerRequest(Box::new(
             ServerRequest::DynamicToolCall {
                 request_id: AppServerRequestId::Integer(102),
-                params: codex_app_server_protocol::DynamicToolCallParams {
+                params: ava_app_server_protocol::DynamicToolCallParams {
                     thread_id: thread_id.clone(),
                     turn_id: "turn-1".to_string(),
                     call_id: "call-3".to_string(),
-                    namespace: Some("codex_tui".to_string()),
+                    namespace: Some("ava_tui".to_string()),
                     tool: "set_thread_title".to_string(),
                     arguments: serde_json::json!({"threadId": thread_id, "title": "Renamed"}),
                 },
@@ -1672,14 +1672,14 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
     {
         app.handle_app_server_event(
             &app_server,
-            codex_app_server_client::AppServerEvent::ServerRequest(Box::new(
+            ava_app_server_client::AppServerEvent::ServerRequest(Box::new(
                 ServerRequest::DynamicToolCall {
                     request_id: AppServerRequestId::String(format!("rejected-{index}")),
-                    params: codex_app_server_protocol::DynamicToolCallParams {
+                    params: ava_app_server_protocol::DynamicToolCallParams {
                         thread_id: thread_id.clone(),
                         turn_id: "turn-1".to_string(),
                         call_id: format!("rejected-{index}"),
-                        namespace: Some("codex_tui".to_string()),
+                        namespace: Some("ava_tui".to_string()),
                         tool: tool.to_string(),
                         arguments: serde_json::json!({}),
                     },
@@ -1709,13 +1709,13 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
             crate::app_server_session::ResumeModelSettings::RestoreFromThread,
         )
         .await?;
-    let project: codex_app_server_protocol::ProjectCreateResponse = app_server
+    let project: ava_app_server_protocol::ProjectCreateResponse = app_server
         .request_handle()
         .request_typed(ClientRequest::ProjectCreate {
             request_id: AppServerRequestId::String("create-source-project".to_string()),
-            params: codex_app_server_protocol::ProjectCreateParams {
+            params: ava_app_server_protocol::ProjectCreateParams {
                 name: "Source project".to_string(),
-                roots: vec![codex_app_server_protocol::ProjectRoot {
+                roots: vec![ava_app_server_protocol::ProjectRoot {
                     path: app.config.cwd.clone(),
                 }],
                 metadata: None,
@@ -1723,11 +1723,11 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
             },
         })
         .await?;
-    let _: codex_app_server_protocol::ThreadMetadataUpdateResponse = app_server
+    let _: ava_app_server_protocol::ThreadMetadataUpdateResponse = app_server
         .request_handle()
         .request_typed(ClientRequest::ThreadMetadataUpdate {
             request_id: AppServerRequestId::String("assign-source-project".to_string()),
-            params: codex_app_server_protocol::ThreadMetadataUpdateParams {
+            params: ava_app_server_protocol::ThreadMetadataUpdateParams {
                 thread_id: creation_source.to_string(),
                 project_id: Some(project.project.id.clone()),
                 daybreak_enabled: None,
@@ -1735,13 +1735,13 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
             },
         })
         .await?;
-    let source_settings: codex_app_server_protocol::ThreadResumeResponse = app_server
+    let source_settings: ava_app_server_protocol::ThreadResumeResponse = app_server
         .request_handle()
         .request_typed(ClientRequest::ThreadResume {
             request_id: AppServerRequestId::String("read-source-sandbox".to_string()),
-            params: codex_app_server_protocol::ThreadResumeParams {
+            params: ava_app_server_protocol::ThreadResumeParams {
                 thread_id: creation_source.to_string(),
-                ..codex_app_server_protocol::ThreadResumeParams::default()
+                ..ava_app_server_protocol::ThreadResumeParams::default()
             },
         })
         .await?;
@@ -1751,11 +1751,11 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
         &app,
         &app_server,
         AppServerRequestId::Integer(103),
-        codex_app_server_protocol::DynamicToolCallParams {
+        ava_app_server_protocol::DynamicToolCallParams {
             thread_id: creation_source.to_string(),
             turn_id: "turn-1".to_string(),
             call_id: "call-4".to_string(),
-            namespace: Some("codex_tui".to_string()),
+            namespace: Some("ava_tui".to_string()),
             tool: "create_thread".to_string(),
             arguments: serde_json::json!({
                 "prompt": "Check <main> & report",
@@ -1814,16 +1814,16 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
         turn["toolOutput"],
         serde_json::json!({
             "name": "create_thread",
-            "namespace": "codex_tui",
+            "namespace": "ava_tui",
             "output": format!(
-                "<codex_delegation>\n  <source_thread_id>{creation_source}</source_thread_id>\n  <input>Check &lt;main&gt; &amp; report</input>\n</codex_delegation>"
+                "<ava_delegation>\n  <source_thread_id>{creation_source}</source_thread_id>\n  <input>Check &lt;main&gt; &amp; report</input>\n</ava_delegation>"
             )
         })
     );
     assert_eq!(turn["sandboxPolicy"], source_sandbox);
     app.handle_app_server_event(
         &app_server,
-        codex_app_server_client::AppServerEvent::ServerRequest(Box::new(exec_approval_request(
+        ava_app_server_client::AppServerEvent::ServerRequest(Box::new(exec_approval_request(
             created_thread_id,
             "turn-2",
             "item-1",
@@ -1840,11 +1840,11 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
         &app,
         &app_server,
         AppServerRequestId::Integer(104),
-        codex_app_server_protocol::DynamicToolCallParams {
+        ava_app_server_protocol::DynamicToolCallParams {
             thread_id: thread_id.clone(),
             turn_id: "turn-1".to_string(),
             call_id: "call-5".to_string(),
-            namespace: Some("codex_tui".to_string()),
+            namespace: Some("ava_tui".to_string()),
             tool: "send_message_to_thread".to_string(),
             arguments: serde_json::json!({
                 "threadId": creation_source,
@@ -1888,9 +1888,9 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
         turn["toolOutput"],
         serde_json::json!({
             "name": "send_message_to_thread",
-            "namespace": "codex_tui",
+            "namespace": "ava_tui",
             "output": format!(
-                "<codex_delegation>\n  <source_thread_id>{thread_id}</source_thread_id>\n  <input>Follow &lt;up&gt; &amp; report</input>\n</codex_delegation>"
+                "<ava_delegation>\n  <source_thread_id>{thread_id}</source_thread_id>\n  <input>Follow &lt;up&gt; &amp; report</input>\n</ava_delegation>"
             )
         })
     );
@@ -1926,13 +1926,13 @@ async fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespac
 
 #[tokio::test]
 async fn older_pagination_reconciles_review_prompts_across_page_boundaries() -> Result<()> {
-    let (mut app, codex_home) = make_history_test_app().await?;
+    let (mut app, ava_home) = make_history_test_app().await?;
     // The inline scrollback row cap fixes the page boundary around the review marker.
     app.local_settings.transcript_mode = crate::transcript_mode::TranscriptMode::Terminal;
-    app.local_settings.tui.alternate_screen = codex_config::types::AltScreenMode::Never;
+    app.local_settings.tui.alternate_screen = ava_config::types::AltScreenMode::Never;
     app.local_settings.tui.terminal_resize_reflow_max_rows = Some(100);
     let thread_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-02T00-00-00",
         "2026-01-02T00:00:00Z",
         "older visible prompt",
@@ -1942,7 +1942,7 @@ async fn older_pagination_reconciles_review_prompts_across_page_boundaries() -> 
     .map_err(|error| color_eyre::eyre::eyre!("failed to create paginated rollout: {error}"))?;
     let thread_id = ThreadId::from_string(&thread_id)?;
     let path = rollout_path(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-02T00-00-00",
         &thread_id.to_string(),
     );
@@ -2128,12 +2128,12 @@ async fn older_pagination_reconciles_review_prompts_across_page_boundaries() -> 
 #[tokio::test]
 async fn transcript_alt_beginning_loads_every_older_history_page() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     app.local_settings.tui.terminal_resize_reflow_max_rows = Some(2);
     let thread_id = create_fake_paginated_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-02T00-00-00",
         "2026-01-02T00:00:00Z",
         "multi-page transcript",
@@ -2143,7 +2143,7 @@ async fn transcript_alt_beginning_loads_every_older_history_page() -> Result<()>
     .map_err(|error| color_eyre::eyre::eyre!("failed to create paginated rollout: {error}"))?;
     let thread_id = ThreadId::from_string(&thread_id)?;
     let path = rollout_path(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-02T00-00-00",
         &thread_id.to_string(),
     );
@@ -2219,7 +2219,7 @@ async fn transcript_alt_beginning_loads_every_older_history_page() -> Result<()>
     while app_event_rx.try_recv().is_ok() {}
     let initial_turn_requests = recorded_params(&requests, "thread/turns/list").len();
     let initial_item_requests = recorded_params(&requests, "thread/items/list").len();
-    let export_path = codex_home.path().join("complete-export.md");
+    let export_path = ava_home.path().join("complete-export.md");
     app.chat_widget
         .set_queue_autosend_suppressed(/*suppressed*/ true);
     app.chat_widget.insert_str("queued after export");
@@ -2306,7 +2306,7 @@ async fn transcript_alt_beginning_loads_every_older_history_page() -> Result<()>
 
 #[tokio::test]
 async fn remote_legacy_history_start_negotiates_once_for_resume_and_fork() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (app, _ava_home) = make_history_test_app().await?;
     let legacy_thread_id =
         create_history_rollout(&app.config, ThreadHistoryMode::Legacy, "legacy history")?;
     let paginated_thread_id = create_history_rollout(
@@ -2374,7 +2374,7 @@ async fn remote_legacy_history_start_negotiates_once_for_resume_and_fork() -> Re
     let (_status_sender, status_updates) = tokio::sync::broadcast::channel(/*capacity*/ 1);
     let response = crate::dynamic_tools::execute(
         app_server.request_handle(),
-        codex_app_server_protocol::DynamicToolCallParams {
+        ava_app_server_protocol::DynamicToolCallParams {
             thread_id: started.session.thread_id.to_string(),
             turn_id: "source-turn".to_string(),
             call_id: "legacy-wait".to_string(),
@@ -2385,7 +2385,7 @@ async fn remote_legacy_history_start_negotiates_once_for_resume_and_fork() -> Re
                 "timeoutMs": 0
             }),
         },
-        codex_app_server_protocol::ThreadStartParams::default(),
+        ava_app_server_protocol::ThreadStartParams::default(),
         status_updates,
         /*app_event_tx*/ None,
     )
@@ -2406,7 +2406,7 @@ async fn remote_legacy_history_start_negotiates_once_for_resume_and_fork() -> Re
 
 #[tokio::test]
 async fn remote_legacy_history_start_retries_unsupported_paginated_variant() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (app, _ava_home) = make_history_test_app().await?;
     let (mut app_server, requests, proxy) = start_recording_app_server_with_history(
         &app.config,
         HistoryCapabilities::LegacyOnlyUnsupportedVariant,
@@ -2436,7 +2436,7 @@ enum LegacyHistoryRequest {
 }
 
 async fn assert_remote_legacy_history_retry(request: LegacyHistoryRequest) -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (app, _ava_home) = make_history_test_app().await?;
     let legacy_thread_id =
         create_history_rollout(&app.config, ThreadHistoryMode::Legacy, "legacy history")?;
     let (mut app_server, requests, proxy) = start_recording_app_server_with_history(
@@ -2501,7 +2501,7 @@ async fn remote_legacy_history_fork_avoids_unsupported_fields() -> Result<()> {
 
 #[tokio::test]
 async fn paginated_fork_survives_post_response_hydration_failure() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (app, _ava_home) = make_history_test_app().await?;
     let parent_thread_id = create_history_rollout(
         &app.config,
         ThreadHistoryMode::Paginated,
@@ -2542,12 +2542,12 @@ async fn paginated_fork_survives_post_response_hydration_failure() -> Result<()>
 #[tokio::test]
 async fn underfilled_scrollback_fetches_older_pages_without_opening_the_transcript() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     // Keep initial hydration within the inline scrollback budget so refill has work to do.
     app.local_settings.transcript_mode = crate::transcript_mode::TranscriptMode::Terminal;
-    app.local_settings.tui.alternate_screen = codex_config::types::AltScreenMode::Never;
+    app.local_settings.tui.alternate_screen = ava_config::types::AltScreenMode::Never;
     app.local_settings.tui.terminal_resize_reflow_max_rows = Some(8);
     let thread_id = create_history_rollout(
         &app.config,
@@ -2555,7 +2555,7 @@ async fn underfilled_scrollback_fetches_older_pages_without_opening_the_transcri
         "scrollback pagination",
     )?;
     let path = rollout_path(
-        codex_home.path(),
+        ava_home.path(),
         "2026-01-02T00-00-00",
         &thread_id.to_string(),
     );
@@ -2677,7 +2677,7 @@ async fn underfilled_scrollback_fetches_older_pages_without_opening_the_transcri
         overlay.set_highlight_cell(Some(0));
         let partial = render_overlay(overlay);
         assert!(partial.contains("Earlier messages available."));
-        assert!(!partial.contains("OpenAI Codex"));
+        assert!(!partial.contains("OpenAI Ava"));
         assert!(!partial.contains("This is a test announcement"));
         assert!(!partial.contains('%'));
 
@@ -2687,7 +2687,7 @@ async fn underfilled_scrollback_fetches_older_pages_without_opening_the_transcri
         )?;
         let loading = render_overlay(overlay);
         assert!(loading.contains("Loading earlier messages…"));
-        assert!(!loading.contains("OpenAI Codex"));
+        assert!(!loading.contains("OpenAI Ava"));
         assert!(!loading.contains('%'));
     } else {
         panic!("expected transcript overlay");
@@ -2734,7 +2734,7 @@ async fn underfilled_scrollback_fetches_older_pages_without_opening_the_transcri
 
 #[tokio::test]
 async fn paginated_workflows_never_request_full_thread_history() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (app, _ava_home) = make_history_test_app().await?;
     let paginated_thread_id = create_history_rollout(
         &app.config,
         ThreadHistoryMode::Paginated,
@@ -2832,7 +2832,7 @@ async fn paginated_workflows_never_request_full_thread_history() -> Result<()> {
 
 #[tokio::test]
 async fn agents_overview_stop_uses_history_mode_for_turn_lookup() -> Result<()> {
-    let (mut app, _codex_home) = make_history_test_app().await?;
+    let (mut app, _ava_home) = make_history_test_app().await?;
     let paginated_thread_id = create_history_rollout(
         &app.config,
         ThreadHistoryMode::Paginated,
@@ -2896,7 +2896,7 @@ async fn agents_overview_seeds_loaded_threads_when_recent_listing_is_unavailable
             vec!["recency_at", "recency_at", "recency_at", "recency_at"],
         ),
     ] {
-        let (mut app, _codex_home) = make_history_test_app().await?;
+        let (mut app, _ava_home) = make_history_test_app().await?;
         let (mut app_server, requests, proxy) = start_recording_app_server_with_history(
             &app.config,
             capabilities,
@@ -2944,9 +2944,9 @@ async fn agents_overview_seeds_loaded_threads_when_recent_listing_is_unavailable
                     &app_server,
                     AppServerEvent::ServerNotification(Box::new(
                         ServerNotification::ThreadStatusChanged(
-                            codex_app_server_protocol::ThreadStatusChangedNotification {
+                            ava_app_server_protocol::ThreadStatusChangedNotification {
                                 thread_id: started.session.thread_id.to_string(),
-                                status: codex_app_server_protocol::ThreadStatus::Idle,
+                                status: ava_app_server_protocol::ThreadStatus::Idle,
                             },
                         ),
                     )),
@@ -2970,7 +2970,7 @@ async fn agents_overview_seeds_loaded_threads_when_recent_listing_is_unavailable
 
 #[tokio::test]
 async fn agents_overview_stop_uses_full_history_after_legacy_negotiation() -> Result<()> {
-    let (mut app, _codex_home) = make_history_test_app().await?;
+    let (mut app, _ava_home) = make_history_test_app().await?;
     let thread_id = create_history_rollout(
         &app.config,
         ThreadHistoryMode::Paginated,
@@ -3004,7 +3004,7 @@ async fn agents_overview_stop_uses_full_history_after_legacy_negotiation() -> Re
 
 #[tokio::test]
 async fn cold_paginated_subagent_transcript_excludes_inherited_parent_history() -> Result<()> {
-    let (app, codex_home) = make_history_test_app().await?;
+    let (app, ava_home) = make_history_test_app().await?;
     let parent_thread_id = create_history_rollout(
         &app.config,
         ThreadHistoryMode::Paginated,
@@ -3013,7 +3013,7 @@ async fn cold_paginated_subagent_transcript_excludes_inherited_parent_history() 
     let child_timestamp = "2026-01-02T00-00-01";
     let child_thread_id = ThreadId::from_string(
         &create_fake_parented_rollout_with_source(
-            codex_home.path(),
+            ava_home.path(),
             child_timestamp,
             "2026-01-02T00:00:01Z",
             "child-only paginated history",
@@ -3034,7 +3034,7 @@ async fn cold_paginated_subagent_transcript_excludes_inherited_parent_history() 
         .map_err(|err| color_eyre::eyre::eyre!("failed to create subagent rollout: {err}"))?,
     )?;
     let child_rollout_path = rollout_path(
-        codex_home.path(),
+        ava_home.path(),
         child_timestamp,
         &child_thread_id.to_string(),
     );
@@ -3207,12 +3207,12 @@ async fn managed_worktree_transitions_bind_owner_and_preserve_only_fork_history(
     let source = dunce::canonicalize(root.path())?.join("source");
     let project_pool = dunce::canonicalize(root.path())?.join("project-pool");
     fs::create_dir_all(&home)?;
-    fs::create_dir_all(source.join(".codex"))?;
+    fs::create_dir_all(source.join(".ava-code"))?;
     fs::write(home.join("config.toml"), "[features]\nworktrees = true\n")?;
     crate::legacy_core::config::set_project_trust_level(
         &home,
         &source,
-        codex_protocol::config_types::TrustLevel::Trusted,
+        ava_protocol::config_types::TrustLevel::Trusted,
     )
     .map_err(|error| color_eyre::eyre::eyre!(error.to_string()))?;
     let destination = format!(
@@ -3224,7 +3224,7 @@ git-worktree-root = {}
 "#,
         toml::Value::String(project_pool.display().to_string()),
     );
-    fs::write(source.join(".codex/config.toml"), destination)?;
+    fs::write(source.join(".ava-code/config.toml"), destination)?;
     fs::write(source.join("AGENTS.md"), "committed worktree instructions")?;
     for args in [
         vec!["init", "--quiet"],
@@ -3248,14 +3248,14 @@ git-worktree-root = {}
         );
     }
     fs::write(
-        source.join(".codex/config.toml"),
+        source.join(".ava-code/config.toml"),
         r#"developer_instructions = "dirty policy"
 model = "gpt-5.4"
 model_reasoning_effort = "low"
 "#,
     )?;
     fs::write(source.join("AGENTS.md"), "dirty source instructions")?;
-    app.config.codex_home = home.clone().abs();
+    app.config.ava_home = home.clone().abs();
     app.config.sqlite = SqliteConfig::new_for_testing(home.clone().abs());
     app.config.cwd = source.clone().abs();
     app.harness_overrides.permission_profile = Some(PermissionProfile::workspace_write());
@@ -3296,8 +3296,8 @@ model_reasoning_effort = "low"
     server.thread_inject_items(original, vec![serde_json::from_value(serde_json::json!({
         "type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "managed fork history"}]
     }))?]).await?;
-    let manager = codex_worktree::WorktreeManager::new(
-        codex_worktree::WorktreeSettings::for_cli(&home, /*desktop*/ None)
+    let manager = ava_worktree::WorktreeManager::new(
+        ava_worktree::WorktreeSettings::for_cli(&home, /*desktop*/ None)
             .map_err(|error| color_eyre::eyre::eyre!(error.to_string()))?,
     );
     let mut browser_entries = Vec::new();
@@ -3367,7 +3367,7 @@ model_reasoning_effort = "low"
     );
     assert!(retained.contains("git worktree remove <checkout-path>"));
     fs::write(
-        source.join(".codex/config.toml"),
+        source.join(".ava-code/config.toml"),
         r#"developer_instructions = "committed policy"
 [features]
 terminal_visualization_instructions = true
@@ -3537,7 +3537,7 @@ terminal_visualization_instructions = true
         }))?]).await?;
         let rollout = app.chat_widget.rollout_path().expect("replacement rollout");
         let mut history = fs::read(&rollout)?;
-        let metadata = codex_rollout::read_session_meta_line(&rollout).await?;
+        let metadata = ava_rollout::read_session_meta_line(&rollout).await?;
         assert_eq!(metadata.meta.history_base.is_some(), fork);
         if let Some(base) = metadata.meta.history_base {
             assert!(fork, "New must not inherit history");
@@ -3569,7 +3569,7 @@ terminal_visualization_instructions = true
         browser_entries
     );
     let unowned = manager
-        .create(&codex_worktree::CreateWorktree {
+        .create(&ava_worktree::CreateWorktree {
             source_cwd: source.clone(),
             base: None,
         })
@@ -3595,7 +3595,7 @@ terminal_visualization_instructions = true
     }
     let missing_owner = ThreadId::new();
     let missing_checkout = manager
-        .create(&codex_worktree::CreateWorktree {
+        .create(&ava_worktree::CreateWorktree {
             source_cwd: source.clone(),
             base: None,
         })
@@ -3686,9 +3686,9 @@ terminal_visualization_instructions = true
         .set_times(std::fs::FileTimes::new().set_modified(
             std::time::SystemTime::now() - std::time::Duration::from_secs(8 * 24 * 60 * 60),
         ))?;
-    codex_rollout::spawn_rollout_compression_worker(
+    ava_rollout::spawn_rollout_compression_worker(
         home.clone(),
-        codex_rollout::RolloutCompressionTrigger::Startup,
+        ava_rollout::RolloutCompressionTrigger::Startup,
     );
     tokio::time::timeout(std::time::Duration::from_secs(10), async {
         while saved_path.exists() || !saved_path.with_extension("jsonl.zst").is_file() {
@@ -3752,38 +3752,38 @@ terminal_visualization_instructions = true
 
 #[tokio::test]
 async fn changing_directory_preserves_project_trust_permissions_history_and_hooks() -> Result<()> {
-    use codex_protocol::config_types::TrustLevel as T;
+    use ava_protocol::config_types::TrustLevel as T;
     use serde_json::json;
     use std::fs;
 
     let (mut app, mut events, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+    let ava_home = tempdir()?;
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
     app.harness_overrides.permission_profile = Some(PermissionProfile::workspace_write());
     let names = ["root", "trusted", "unknown", "untrusted", "p", "failure"];
     let [current, trusted, unknown, untrusted, mismatch, failed] =
-        names.map(|name| codex_home.path().join(name));
+        names.map(|name| ava_home.path().join(name));
     fs::create_dir_all(&current)?;
     for directory in [&trusted, &unknown, &untrusted, &mismatch, &failed] {
-        fs::create_dir_all(directory.join(".codex"))?;
-        fs::write(directory.join(".codex/config.toml"), "")?;
+        fs::create_dir_all(directory.join(".ava-code"))?;
+        fs::write(directory.join(".ava-code/config.toml"), "")?;
     }
     let contents = "developer_instructions = \"destination policy\"\nmodel_reasoning_effort = \"high\"\napproval_policy = \"on-request\"\n[tui]\ntheme = \"dracula\"\n[tui.keymap.global]\nopen_transcript = \"f12\"";
-    fs::write(trusted.join(".codex/config.toml"), contents)?;
+    fs::write(trusted.join(".ava-code/config.toml"), contents)?;
     let agents = trusted.join("AGENTS.md");
     fs::write(&agents, "Follow destination project instructions.")?;
     let hooks = r#"{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"x"}]}]}}"#;
-    fs::write(trusted.join(".codex/hooks.json"), hooks)?;
+    fs::write(trusted.join(".ava-code/hooks.json"), hooks)?;
     let contents = "default_permissions = \"dev\"\n[permissions.dev.filesystem]\n\":root\" = \"write\"\n[tui.keymap.global]\nopen_transcript = \"ctrl-l\"";
-    fs::write(mismatch.join(".codex/config.toml"), contents)?;
-    let requirements = codex_home.path().join("requirements.toml");
+    fs::write(mismatch.join(".ava-code/config.toml"), contents)?;
+    let requirements = ava_home.path().join("requirements.toml");
     let rules = "allowed_approval_policies=[\"untrusted\"]\nallowed_sandbox_modes=[\"read-only\"]";
     fs::write(&requirements, rules)?;
     fs::create_dir_all(unknown.join(".git"))?;
     for dir in [&trusted, &untrusted, &mismatch, &failed] {
         let trust = [T::Trusted, T::Untrusted][usize::from(dir == &untrusted)];
-        crate::legacy_core::config::set_project_trust_level(codex_home.path(), dir, trust)
+        crate::legacy_core::config::set_project_trust_level(ava_home.path(), dir, trust)
             .map_err(|error| color_eyre::eyre::eyre!(error.to_string()))?;
     }
     app.config.cwd = current.clone().abs();
@@ -3809,7 +3809,7 @@ async fn changing_directory_preserves_project_trust_permissions_history_and_hook
     app.agent_navigation
         .upsert(child, nick, role, /*is_closed*/ false);
     let store = app.thread_event_channels[&child].store.clone();
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let original_user_config = fs::read_to_string(&config_path).ok();
     let (local, url) = (app.environment_manager.clone(), Some("ws://[::1]".into()));
     let remote = Arc::new(EnvironmentManager::create_for_tests(url, runtime).await);
@@ -3869,7 +3869,7 @@ async fn changing_directory_preserves_project_trust_permissions_history_and_hook
         if kind == "restored" {
             profile.permission_profile = PermissionProfile::workspace_write_with(
                 &[failed.clone().abs()],
-                codex_protocol::permissions::NetworkSandboxPolicy::Restricted,
+                ava_protocol::permissions::NetworkSandboxPolicy::Restricted,
                 /*exclude_tmpdir_env_var*/ false,
                 /*exclude_slash_tmp*/ false,
             );
@@ -3989,12 +3989,12 @@ async fn changing_directory_preserves_project_trust_permissions_history_and_hook
     let forked_rollout = app.chat_widget.rollout_path().expect("forked rollout");
     assert!(fs::read_to_string(&rollout)?.contains("saved history"));
     let copied = fs::read_to_string(&forked_rollout)?;
-    let meta = codex_rollout::read_session_meta_line(&forked_rollout).await?;
+    let meta = ava_rollout::read_session_meta_line(&forked_rollout).await?;
     let base = meta.meta.history_base;
     assert!(copied.contains("saved history") || base.is_some_and(|h| h.thread_id == original));
     assert_eq!(app.config.cwd, trusted.clone().abs());
     let configured = app.primary_session_configured.as_ref().expect("session");
-    let source = codex_utils_path_uri::PathUri::from_abs_path(&agents.abs());
+    let source = ava_utils_path_uri::PathUri::from_abs_path(&agents.abs());
     assert!(configured.instruction_source_paths.contains(&source));
     let (cwd, result) = (current.clone(), Err("stale skills".into()));
     let skills = AppEvent::SkillsListLoaded { cwd, result };
@@ -4080,9 +4080,9 @@ fn fresh_session_applies_requested_name() -> Result<()> {
                 .build()?;
             runtime.block_on(async {
                 let mut app = make_test_app().await;
-                let codex_home = tempdir()?;
-                app.config.codex_home = codex_home.path().to_path_buf().abs();
-                app.config.sqlite = SqliteConfig::new_for_testing(codex_home.path().abs());
+                let ava_home = tempdir()?;
+                app.config.ava_home = ava_home.path().to_path_buf().abs();
+                app.config.sqlite = SqliteConfig::new_for_testing(ava_home.path().abs());
                 let (mut app_server, requests, proxy) = start_recording_app_server(
                     &app.config,
                     /*blocked_thread_list*/ None,
@@ -4140,14 +4140,14 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
                 .build()?;
             runtime.block_on(async {
                 let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-                let codex_home = tempdir()?;
-                app.config.codex_home = codex_home.path().to_path_buf().abs();
+                let ava_home = tempdir()?;
+                app.config.ava_home = ava_home.path().to_path_buf().abs();
                 app.config.sqlite =
-                    codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+                    ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
                 let root_timestamp = "2026-01-01T00-00-00";
                 let root_thread_id = ThreadId::from_string(
                     &create_fake_rollout(
-                        codex_home.path(),
+                        ava_home.path(),
                         root_timestamp,
                         "2026-01-01T00:00:00Z",
                         "Saved user message",
@@ -4158,7 +4158,7 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
                 )?;
                 let child_thread_id = ThreadId::from_string(
                     &create_fake_parented_rollout_with_source(
-                        codex_home.path(),
+                        ava_home.path(),
                         "2026-01-01T00-00-01",
                         "2026-01-01T00:00:01Z",
                         "Saved child message",
@@ -4179,7 +4179,7 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
                     .expect("create child rollout"),
                 )?;
                 let root_rollout_path = rollout_path(
-                    codex_home.path(),
+                    ava_home.path(),
                     root_timestamp,
                     &root_thread_id.to_string(),
                 );
@@ -4295,9 +4295,9 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
                 assert!(loaded_threads.contains(&child_thread_id.to_string()));
                 take_backfill_counts(&requests);
                 crate::legacy_core::config::set_project_trust_level(
-                    app.config.codex_home.as_path(),
+                    app.config.ava_home.as_path(),
                     app.config.cwd.as_path(),
-                    codex_protocol::config_types::TrustLevel::Trusted,
+                    ava_protocol::config_types::TrustLevel::Trusted,
                 )
                 .map_err(std::io::Error::other)?;
                 app.harness_overrides.cwd = Some(app.config.cwd.to_path_buf());
@@ -4454,7 +4454,7 @@ async fn external_writer_escape_preserves_snapshot_and_explicit_quits() -> Resul
         },
         AppServerTarget::Remote { endpoint },
     ] {
-        let (mut app, _codex_home) = make_history_test_app().await?;
+        let (mut app, _ava_home) = make_history_test_app().await?;
         let thread_id =
             create_history_rollout(&app.config, ThreadHistoryMode::Legacy, "owned elsewhere")?;
         let (mut server, requests, proxy) = start_recording_app_server(
@@ -4536,16 +4536,16 @@ async fn command_center_read_only_open_requests_and_failure_preservation() -> Re
         (HistoryCapabilities::ItemsListFails, 101),
         (HistoryCapabilities::ItemsAndSummaryTurnsFail, 6),
     ] {
-        let (mut app, _codex_home) = Box::pin(make_history_test_app()).await?;
+        let (mut app, _ava_home) = Box::pin(make_history_test_app()).await?;
         std::fs::write(
-            app.config.codex_home.join("config.toml"),
+            app.config.ava_home.join("config.toml"),
             "[tui]\nresume_cwd = \"current\"\n",
         )?;
         for cwd in [test_path_buf("/"), app.config.cwd.to_path_buf()] {
             crate::legacy_core::config::set_project_trust_level(
-                app.config.codex_home.as_path(),
+                app.config.ava_home.as_path(),
                 &cwd,
-                codex_protocol::config_types::TrustLevel::Trusted,
+                ava_protocol::config_types::TrustLevel::Trusted,
             )
             .map_err(std::io::Error::other)?;
         }
@@ -4560,7 +4560,7 @@ async fn command_center_read_only_open_requests_and_failure_preservation() -> Re
         let thread_id = create_history_rollout(&app.config, history_mode, "Locked task")?;
         if history_mode == ThreadHistoryMode::Paginated {
             let path = rollout_path(
-                app.config.codex_home.as_path(),
+                app.config.ava_home.as_path(),
                 "2026-01-02T00-00-00",
                 &thread_id.to_string(),
             );
@@ -4594,7 +4594,7 @@ async fn command_center_read_only_open_requests_and_failure_preservation() -> Re
                             content: vec![AgentMessageContent::Text {
                                 text: "Saved final answer".to_string(),
                             }],
-                            phase: Some(codex_protocol::models::MessagePhase::FinalAnswer),
+                            phase: Some(ava_protocol::models::MessagePhase::FinalAnswer),
                             memory_citation: None,
                             delivery: None,
                             questions: None,

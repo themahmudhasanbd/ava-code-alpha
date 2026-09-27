@@ -1,6 +1,6 @@
 //! Both reviewers consume the same host-rendered, delivery-bound sender evidence.
 
-use codex_history::RetainedContext;
+use ava_history::RetainedContext;
 
 use crate::ContextSection;
 use crate::SectionContributor;

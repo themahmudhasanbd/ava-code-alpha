@@ -2,36 +2,36 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::write_models_cache;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SandboxMode;
-use codex_app_server_protocol::SandboxPolicy;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadTokenUsageUpdatedNotification;
-use codex_app_server_protocol::ThreadUnsubscribeParams;
-use codex_app_server_protocol::ThreadUnsubscribeResponse;
-use codex_app_server_protocol::ThreadUnsubscribeStatus;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_protocol::ThreadId;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_state::StateRuntime;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SandboxMode;
+use ava_app_server_protocol::SandboxPolicy;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadTokenUsageUpdatedNotification;
+use ava_app_server_protocol::ThreadUnsubscribeParams;
+use ava_app_server_protocol::ThreadUnsubscribeResponse;
+use ava_app_server_protocol::ThreadUnsubscribeStatus;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_protocol::ThreadId;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_state::StateRuntime;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -184,7 +184,7 @@ async fn spawned_subagents_apply_configured_developer_instruction_precedence(
                 "\n\n[agents.custom]\ndescription = \"configured role\"\nconfig_file = \"./config.toml\"\n\n[agents.default]\ndescription = \"configured default role\"\nconfig_file = \"./config.toml\"",
             );
     }
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let configured_model = if case == "full history configured role" {
         "gpt-5.5"
     } else {
@@ -197,10 +197,10 @@ async fn spawned_subagents_apply_configured_developer_instruction_precedence(
     }
     config
         .with_extra_config(&feature_config)
-        .write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = app_server
@@ -369,7 +369,7 @@ async fn compacted_full_history_fork_replaces_parent_developer_instructions() ->
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_model("gpt-5.4")
         .with_root_config(&format!(
@@ -378,11 +378,11 @@ async fn compacted_full_history_fork_replaces_parent_developer_instructions() ->
         .with_extra_config(&format!(
             "[features.multi_agent_v2]\nenabled = true\nsubagent_developer_instructions = {CHILD_INSTRUCTIONS:?}"
         ))
-        .write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = app_server
@@ -621,8 +621,8 @@ async fn cold_resume_preserves_effective_developer_instructions_for_worker(
         ),
         None => "[features.multi_agent_v2]\nenabled = true".to_string(),
     };
-    let codex_home = TempDir::new()?;
-    let role_path = codex_home.path().join("worker.toml");
+    let ava_home = TempDir::new()?;
+    let role_path = ava_home.path().join("worker.toml");
     if let Some(agent_type) = agent_type {
         std::fs::write(
             &role_path,
@@ -640,12 +640,12 @@ async fn cold_resume_preserves_effective_developer_instructions_for_worker(
             "developer_instructions = {PARENT_INSTRUCTIONS:?}\nmodel_reasoning_effort = \"high\""
         ))
         .with_extra_config(&feature_config)
-        .write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
+        .write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
 
     let (thread_id, child_resume_params, baseline) = {
         let mut app_server = TestAppServer::builder()
-            .with_codex_home(codex_home.path())
+            .with_ava_home(ava_home.path())
             .build_initialized()
             .await?;
         let ThreadStartResponse { thread, .. } = app_server
@@ -809,7 +809,7 @@ features.shell_tool = false
     .await;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let child_thread_id = child_resume_params.thread_id.clone();
@@ -866,7 +866,7 @@ features.shell_tool = false
     let expected = baseline;
     if history_mode == ThreadHistoryMode::Paginated {
         let state_db = StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+            ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
             "mock_provider".into(),
         )
         .await?;

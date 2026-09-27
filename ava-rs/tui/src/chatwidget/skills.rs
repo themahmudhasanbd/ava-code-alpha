@@ -13,13 +13,13 @@ use crate::mention_codec::is_mention_name_char;
 use crate::mention_codec::parse_linked_tool_mention;
 use crate::skills_helpers::skill_description;
 use crate::skills_helpers::skill_display_name;
-use codex_app_server_protocol::SkillMetadata;
-use codex_app_server_protocol::SkillsListEntry;
-use codex_app_server_protocol::SkillsListResponse;
-use codex_connectors::AppInfo;
-use codex_protocol::parse_command::ParsedCommand;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_plugins::mention_syntax::TOOL_MENTION_SIGIL;
+use ava_app_server_protocol::SkillMetadata;
+use ava_app_server_protocol::SkillsListEntry;
+use ava_app_server_protocol::SkillsListResponse;
+use ava_connectors::AppInfo;
+use ava_protocol::parse_command::ParsedCommand;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_plugins::mention_syntax::TOOL_MENTION_SIGIL;
 
 impl ChatWidget {
     pub(crate) fn open_skills_list(&mut self) {
@@ -256,12 +256,12 @@ pub(crate) fn find_app_mentions(
 
     let mut slug_counts: HashMap<String, usize> = HashMap::new();
     for app in apps.iter().filter(|app| is_app_mentionable(app)) {
-        let slug = codex_connectors::metadata::connector_mention_slug(app);
+        let slug = ava_connectors::metadata::connector_mention_slug(app);
         *slug_counts.entry(slug).or_insert(0) += 1;
     }
 
     for app in apps.iter().filter(|app| is_app_mentionable(app)) {
-        let slug = codex_connectors::metadata::connector_mention_slug(app);
+        let slug = ava_connectors::metadata::connector_mention_slug(app);
         let slug_count = slug_counts.get(&slug).copied().unwrap_or(0);
         if mentions.names.contains(&slug)
             && !explicit_names.contains(&slug)

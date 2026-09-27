@@ -198,9 +198,9 @@ GPT-6 Astra also supports the existing API capabilities available with GPT-5.6, 
 
 ## Migration quickstart
 
-### Migrate with Codex
+### Migrate with Ava
 
-Codex can apply the recommended changes in this guide with the <a href="https://github.com/openai/skills/tree/main/skills/.curated/openai-docs" target="_blank" rel="noopener noreferrer">OpenAI Docs skill</a>.
+Ava can apply the recommended changes in this guide with the <a href="https://github.com/openai/skills/tree/main/skills/.curated/openai-docs" target="_blank" rel="noopener noreferrer">OpenAI Docs skill</a>.
 
 ```text
 $openai-docs migrate this project to GPT-6 Astra

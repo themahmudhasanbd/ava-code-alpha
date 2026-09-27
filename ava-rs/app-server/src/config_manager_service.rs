@@ -1,37 +1,37 @@
 use crate::config_layer::config_layer_metadata_to_api;
 use crate::config_layer::config_layer_to_api;
 use crate::config_manager::ConfigManager;
-use codex_app_server_protocol::Config as ApiConfig;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigReadParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ConfigValueWriteParams;
-use codex_app_server_protocol::ConfigWriteErrorCode;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::OverriddenMetadata;
-use codex_app_server_protocol::WriteStatus;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerMetadata;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirementsToml;
-use codex_config::ShellEnvironmentPolicyFilterRepresentation;
-use codex_config::config_toml::ConfigToml;
-use codex_config::is_structured_feature_path;
-use codex_config::merge_toml_values;
-use codex_config::shell_environment_filter_entry;
-use codex_config::validate_shell_environment_policy_filter_config;
-use codex_core::config::deserialize_config_toml_with_base;
-use codex_core::config::edit::ConfigEditsBuilder;
-use codex_core::config::validate_feature_requirements_for_config_toml;
-use codex_core::path_utils;
-use codex_core::path_utils::SymlinkWritePaths;
-use codex_core::path_utils::resolve_symlink_write_paths;
-use codex_core::path_utils::write_atomically;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::Config as ApiConfig;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigReadParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConfigWriteErrorCode;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::OverriddenMetadata;
+use ava_app_server_protocol::WriteStatus;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerMetadata;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirementsToml;
+use ava_config::ShellEnvironmentPolicyFilterRepresentation;
+use ava_config::config_toml::ConfigToml;
+use ava_config::is_structured_feature_path;
+use ava_config::merge_toml_values;
+use ava_config::shell_environment_filter_entry;
+use ava_config::validate_shell_environment_policy_filter_config;
+use ava_core::config::deserialize_config_toml_with_base;
+use ava_core::config::edit::ConfigEditsBuilder;
+use ava_core::config::validate_feature_requirements_for_config_toml;
+use ava_core::path_utils;
+use ava_core::path_utils::SymlinkWritePaths;
+use ava_core::path_utils::resolve_symlink_write_paths;
+use ava_core::path_utils::write_atomically;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::path::Path;
@@ -367,7 +367,7 @@ impl ConfigManager {
             )
         })?;
         let user_config_toml =
-            deserialize_config_toml_with_base(user_config.clone(), self.codex_home()).map_err(
+            deserialize_config_toml_with_base(user_config.clone(), self.ava_home()).map_err(
                 |err| {
                     ConfigManagerError::write(
                         ConfigWriteErrorCode::ConfigValidationError,
@@ -441,7 +441,7 @@ impl ConfigManager {
     }
 
     /// Loads a "thread-agnostic" config, which means the config layers do not
-    /// include any in-repo .codex/ folders because there is no cwd/project root
+    /// include any in-repo .ava-code/ folders because there is no cwd/project root
     /// associated with this query.
     async fn load_thread_agnostic_config(&self) -> std::io::Result<ConfigLayerStack> {
         self.load_config_layers(/*cwd*/ None).await
@@ -799,9 +799,9 @@ fn override_message(layer: &ConfigLayerSource) -> String {
         ConfigLayerSource::EnterpriseManaged { id: _, name } => {
             format!("Overridden by enterprise-managed config: {name}")
         }
-        ConfigLayerSource::Project { dot_codex_folder } => format!(
+        ConfigLayerSource::Project { dot_ava_folder } => format!(
             "Overridden by project config: {}/{CONFIG_TOML_FILE}",
-            dot_codex_folder.display(),
+            dot_ava_folder.display(),
         ),
         ConfigLayerSource::SessionFlags => "Overridden by session flags".to_string(),
         ConfigLayerSource::User { file, .. } => {

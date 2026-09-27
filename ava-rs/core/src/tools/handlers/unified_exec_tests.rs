@@ -2,11 +2,11 @@ use super::*;
 use crate::shell::ShellType;
 use crate::shell::default_user_shell;
 use crate::shell::get_shell;
-use codex_exec_server::Environment;
-use codex_tools::UnifiedExecShellMode;
-use codex_tools::ZshForkConfig;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_output_truncation::TruncationPolicy;
+use ava_exec_server::Environment;
+use ava_tools::UnifiedExecShellMode;
+use ava_tools::ZshForkConfig;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_output_truncation::TruncationPolicy;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 
@@ -40,7 +40,7 @@ async fn invocation_for_payload(
         cancellation_token: tokio_util::sync::CancellationToken::new(),
         tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
         call_id: call_id.to_string(),
-        tool_name: codex_tools::ToolName::plain(tool_name),
+        tool_name: ava_tools::ToolName::plain(tool_name),
         source: ToolCallSource::Direct,
         payload,
     }
@@ -125,7 +125,7 @@ fn test_get_command_resolves_powershell_by_type() -> anyhow::Result<()> {
     )
     .map_err(anyhow::Error::msg)?;
     let expected_shell = get_shell(ShellType::PowerShell)
-        .unwrap_or_else(|| codex_shell_command::shell_detect::ultimate_fallback_shell().into());
+        .unwrap_or_else(|| ava_shell_command::shell_detect::ultimate_fallback_shell().into());
     assert_eq!(
         resolved.command,
         expected_shell.derive_exec_args("echo hello", /*use_login_shell*/ true)
@@ -197,7 +197,7 @@ async fn exec_command_rejects_login_when_selected_environment_disallows_it() {
         cancellation_token: tokio_util::sync::CancellationToken::new(),
         tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
         call_id: "login-disallowed".to_string(),
-        tool_name: codex_tools::ToolName::plain("exec_command"),
+        tool_name: ava_tools::ToolName::plain("exec_command"),
         source: ToolCallSource::Direct,
         payload: ToolPayload::Function {
             arguments: serde_json::json!({ "cmd": "echo hello", "login": true }).to_string(),
@@ -220,16 +220,16 @@ fn test_get_command_rejects_explicit_shell_in_zsh_fork_mode() -> anyhow::Result<
     let json = r#"{"cmd": "echo hello", "shell": "/bin/bash"}"#;
     let args: ExecCommandArgs = parse_arguments(json)?;
     let shell_zsh_path = AbsolutePathBuf::from_absolute_path(if cfg!(windows) {
-        r"C:\opt\codex\zsh"
+        r"C:\opt\ava\zsh"
     } else {
-        "/opt/codex/zsh"
+        "/opt/ava/zsh"
     })?;
     let shell_mode = UnifiedExecShellMode::ZshFork(ZshForkConfig {
         shell_zsh_path,
         main_execve_wrapper_exe: AbsolutePathBuf::from_absolute_path(if cfg!(windows) {
-            r"C:\opt\codex\codex-execve-wrapper"
+            r"C:\opt\ava\ava-execve-wrapper"
         } else {
-            "/opt/codex/codex-execve-wrapper"
+            "/opt/ava/ava-execve-wrapper"
         })?,
     });
 
@@ -252,16 +252,16 @@ fn test_get_command_rejects_explicit_shell_in_zsh_fork_mode() -> anyhow::Result<
 async fn shell_mode_for_environment_uses_direct_mode_for_remote_environments() -> anyhow::Result<()>
 {
     let shell_zsh_path = AbsolutePathBuf::from_absolute_path(if cfg!(windows) {
-        r"C:\opt\codex\zsh"
+        r"C:\opt\ava\zsh"
     } else {
-        "/opt/codex/zsh"
+        "/opt/ava/zsh"
     })?;
     let shell_mode = UnifiedExecShellMode::ZshFork(ZshForkConfig {
         shell_zsh_path,
         main_execve_wrapper_exe: AbsolutePathBuf::from_absolute_path(if cfg!(windows) {
-            r"C:\opt\codex\codex-execve-wrapper"
+            r"C:\opt\ava\ava-execve-wrapper"
         } else {
-            "/opt/codex/codex-execve-wrapper"
+            "/opt/ava/ava-execve-wrapper"
         })?,
     });
     let local_environment = Environment::default_for_tests();
@@ -284,13 +284,13 @@ async fn shell_mode_for_environment_uses_direct_mode_for_remote_environments() -
 #[cfg(not(windows))]
 async fn exec_command_reuses_foreign_windows_grant() {
     use crate::session::tests::make_session_and_context_with_auth_and_config_and_rx;
-    use codex_features::Feature;
-    use codex_protocol::models::AdditionalPermissionProfile;
-    use codex_protocol::models::FileSystemPermissions;
-    use codex_utils_path_uri::PathUri;
+    use ava_features::Feature;
+    use ava_protocol::models::AdditionalPermissionProfile;
+    use ava_protocol::models::FileSystemPermissions;
+    use ava_utils_path_uri::PathUri;
 
     let (session, mut turn, _events) = make_session_and_context_with_auth_and_config_and_rx(
-        codex_login::CodexAuth::from_api_key("Test API Key"),
+        ava_login::AvaAuth::from_api_key("Test API Key"),
         Vec::new(),
         |config| {
             config
@@ -318,7 +318,7 @@ async fn exec_command_reuses_foreign_windows_grant() {
         Arc::clone(&active_turn.as_ref().expect("active turn").turn_state)
     };
     turn_state.lock().await.record_granted_permissions(
-        codex_exec_server::REMOTE_ENVIRONMENT_ID,
+        ava_exec_server::REMOTE_ENVIRONMENT_ID,
         granted_permissions.clone(),
     );
 
@@ -332,7 +332,7 @@ async fn exec_command_reuses_foreign_windows_grant() {
         else {
             panic!("primary environment should be ready");
         };
-        environment.selection.environment_id = codex_exec_server::REMOTE_ENVIRONMENT_ID.to_string();
+        environment.selection.environment_id = ava_exec_server::REMOTE_ENVIRONMENT_ID.to_string();
         environment.selection.cwd = cwd.clone();
         environment.selection.workspace_roots = vec![cwd.clone()];
         environment.config_mut().workspace_roots = vec![cwd];
@@ -350,7 +350,7 @@ async fn exec_command_reuses_foreign_windows_grant() {
             cancellation_token: tokio_util::sync::CancellationToken::new(),
             tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
             call_id: "foreign-windows-grant".to_string(),
-            tool_name: codex_tools::ToolName::plain("exec_command"),
+            tool_name: ava_tools::ToolName::plain("exec_command"),
             source: ToolCallSource::Direct,
             payload: ToolPayload::Function {
                 arguments: serde_json::json!({
@@ -390,7 +390,7 @@ async fn exec_command_pre_tool_use_payload_uses_raw_command() {
             cancellation_token: tokio_util::sync::CancellationToken::new(),
             tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
             call_id: "call-43".to_string(),
-            tool_name: codex_tools::ToolName::plain("exec_command"),
+            tool_name: ava_tools::ToolName::plain("exec_command"),
             source: crate::tools::context::ToolCallSource::Direct,
             payload,
         }),
@@ -418,7 +418,7 @@ async fn exec_command_pre_tool_use_payload_skips_write_stdin() {
             cancellation_token: tokio_util::sync::CancellationToken::new(),
             tracker: Arc::new(Mutex::new(TurnDiffTracker::new())),
             call_id: "call-44".to_string(),
-            tool_name: codex_tools::ToolName::plain("write_stdin"),
+            tool_name: ava_tools::ToolName::plain("write_stdin"),
             source: crate::tools::context::ToolCallSource::Direct,
             payload,
         }),

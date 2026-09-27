@@ -2,44 +2,44 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_image_generation_extension::install as install_image_generation_extension;
-use codex_login::CodexAuth;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::models::FileSystemPermissions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::user_input::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_image_generation_extension::install as install_image_generation_extension;
+use ava_login::AvaAuth;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::models::FileSystemPermissions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::user_input::UserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_target_windows;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -58,10 +58,10 @@ const TINY_PNG_BASE64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAD
 const TINY_PNG_DATA_URL: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==";
 
 fn image_generation_extensions(
-    auth: &CodexAuth,
+    auth: &AvaAuth,
     resolve_save_root: impl Fn(&Config) -> Option<AbsolutePathBuf> + Send + Sync + 'static,
 ) -> Arc<ExtensionRegistry<Config>> {
-    let auth_manager = codex_core::test_support::auth_manager_from_auth(auth.clone());
+    let auth_manager = ava_core::test_support::auth_manager_from_auth(auth.clone());
     let mut extension_builder = ExtensionRegistryBuilder::<Config>::new();
     install_image_generation_extension(&mut extension_builder, auth_manager, resolve_save_root);
     Arc::new(extension_builder.build())
@@ -72,9 +72,9 @@ async fn extension_tool_receives_turn_environment_sandbox() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
-    let extensions = image_generation_extensions(&auth, |config| Some(config.codex_home.clone()));
-    let mut builder = test_codex()
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
+    let extensions = image_generation_extensions(&auth, |config| Some(config.ava_home.clone()));
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", |model_info| {
@@ -168,7 +168,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
         .mount(&server)
         .await;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let extensions = image_generation_extensions(&auth, |_config| None);
     let base_permission_profile = PermissionProfile::workspace_write_with(
         &[],
@@ -177,7 +177,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
         /*exclude_slash_tmp*/ true,
     );
     let permission_profile_for_config = base_permission_profile.clone();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", |model_info| {
@@ -254,7 +254,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(base_permission_profile, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "request access and edit the image".to_string(),
@@ -278,7 +278,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
             }),
         )
         .await?;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -289,7 +289,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
         panic!("expected request_permissions before turn completion");
     };
     assert_eq!(request.call_id, permissions_call_id);
-    test.codex
+    test.ava-code
         .submit(Op::RequestPermissionsResponse {
             id: permissions_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -299,7 +299,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -327,7 +327,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
             .is_some_and(|hint| hint.contains(&expected_path.display().to_string()))
     );
     assert_eq!(std::fs::read(expected_path.as_path())?, TINY_PNG_BYTES);
-    assert!(!test.config.codex_home.join("generated_images").exists());
+    assert!(!test.config.ava_home.join("generated_images").exists());
 
     Ok(())
 }
@@ -360,7 +360,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
         .mount(&server)
         .await;
 
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let extensions = image_generation_extensions(&auth, |_config| None);
     let base_permission_profile = PermissionProfile::from_runtime_permissions(
         &FileSystemSandboxPolicy::restricted(vec![
@@ -380,7 +380,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
         NetworkSandboxPolicy::Restricted,
     );
     let permission_profile_for_config = base_permission_profile.clone();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_auth(auth)
         .with_extensions(extensions)
         .with_model_info_override("gpt-5.4", |model_info| {
@@ -477,7 +477,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(base_permission_profile, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "request access and edit the image".to_string(),
@@ -501,7 +501,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
             }),
         )
         .await?;
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -512,7 +512,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
         panic!("expected request_permissions before turn completion");
     };
     assert_eq!(request.call_id, permissions_call_id);
-    test.codex
+    test.ava-code
         .submit(Op::RequestPermissionsResponse {
             id: permissions_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -522,7 +522,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

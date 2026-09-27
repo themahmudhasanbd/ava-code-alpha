@@ -1,66 +1,66 @@
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::ModelClient;
-use codex_core::NewThread;
-use codex_core::Prompt;
-use codex_core::ResponseEvent;
-use codex_core::StartThreadOptions;
-use codex_core::ThreadManager;
-use codex_core::TurnInputRequest;
-use codex_core::X_CODEX_ROUTING_HINT_HEADER;
-use codex_core::resolve_installation_id;
-use codex_core::thread_store_from_config;
-use codex_extension_api::empty_extension_registry;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_history::RolloutLine;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_login::auth::BedrockApiKeyAuth;
-use codex_login::default_client::originator;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_model_provider_info::built_in_model_providers;
-use codex_models_manager::bundled_models_response;
-use codex_otel::SessionTelemetry;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::ResponseItemId;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ModelProviderAuthInfo;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::Verbosity;
-use codex_protocol::error::CodexErr;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::LocalShellAction;
-use codex_protocol::models::LocalShellExecAction;
-use codex_protocol::models::LocalShellStatus;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ReasoningItemContent;
-use codex_protocol::models::ReasoningItemReasoningSummary;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::WebSearchAction;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use core_test_support::TestCodexResponsesRequestKind;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::ModelClient;
+use ava_core::NewThread;
+use ava_core::Prompt;
+use ava_core::ResponseEvent;
+use ava_core::StartThreadOptions;
+use ava_core::ThreadManager;
+use ava_core::TurnInputRequest;
+use ava_core::X_AVA_ROUTING_HINT_HEADER;
+use ava_core::resolve_installation_id;
+use ava_core::thread_store_from_config;
+use ava_extension_api::empty_extension_registry;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_history::RolloutLine;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_login::auth::BedrockApiKeyAuth;
+use ava_login::default_client::originator;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_model_provider_info::built_in_model_providers;
+use ava_models_manager::bundled_models_response;
+use ava_otel::SessionTelemetry;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::ResponseItemId;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ModelProviderAuthInfo;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::Verbosity;
+use ava_protocol::error::AvaErr;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::LocalShellAction;
+use ava_protocol::models::LocalShellExecAction;
+use ava_protocol::models::LocalShellStatus;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ReasoningItemContent;
+use ava_protocol::models::ReasoningItemReasoningSummary;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::WebSearchAction;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use core_test_support::TestAvaResponsesRequestKind;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::load_default_config_for_test;
 use core_test_support::responses::ResponsesRequest;
@@ -81,9 +81,9 @@ use core_test_support::responses::strip_metadata_from_json;
 use core_test_support::responses::strip_response_item_ids_from_json;
 use core_test_support::responses_metadata as test_responses_metadata;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -114,7 +114,7 @@ async fn responses_request_preserves_flex_without_catalog_support_or_fast_mode()
     for configure_at_start in [false, true] {
         let server = start_mock_server().await;
         let response_mock = mount_sse_once(&server, sse(vec![ev_completed("done")])).await;
-        let test = test_codex()
+        let test = test_ava()
             .with_model("gpt-5.4")
             .with_model_info_override("gpt-5.4", |model| model.service_tiers.clear())
             .with_config(move |config| {
@@ -128,7 +128,7 @@ async fn responses_request_preserves_flex_without_catalog_support_or_fast_mode()
             .await?;
         if !configure_at_start {
             core_test_support::submit_thread_settings(
-                &test.codex,
+                &test.ava-code,
                 ThreadSettingsOverrides {
                     service_tier: Some(Some("flex".to_string())),
                     ..Default::default()
@@ -136,13 +136,13 @@ async fn responses_request_preserves_flex_without_catalog_support_or_fast_mode()
             )
             .await?;
         }
-        test.codex
+        test.ava-code
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -165,8 +165,8 @@ async fn responses_request_uses_implicit_default_tier_for_bedrock() -> anyhow::R
     ] {
         let server = start_mock_server().await;
         let response_mock = mount_sse_once(&server, sse(vec![ev_completed("done")])).await;
-        let test = test_codex()
-            .with_auth(CodexAuth::BedrockApiKey(BedrockApiKeyAuth {
+        let test = test_ava()
+            .with_auth(AvaAuth::BedrockApiKey(BedrockApiKeyAuth {
                 api_key: "dummy".to_string(),
                 region: "us-east-1".to_string(),
             }))
@@ -204,7 +204,7 @@ fn rollout_response_item(item: ResponseItem) -> RolloutItem {
 fn test_turn_responses_metadata(
     _client: &ModelClient,
     thread_id: ThreadId,
-) -> codex_core::CodexResponsesMetadata {
+) -> ava_core::AvaResponsesMetadata {
     let thread_id = thread_id.to_string();
     test_responses_metadata(
         TEST_INSTALLATION_ID,
@@ -214,7 +214,7 @@ fn test_turn_responses_metadata(
         TEST_WINDOW_ID.to_string(),
         &SessionSource::Exec,
         /*parent_thread_id*/ None,
-        TestCodexResponsesRequestKind::Turn,
+        TestAvaResponsesRequestKind::Turn,
     )
 }
 
@@ -256,7 +256,7 @@ fn response_message_item_id(request: &ResponsesRequest, role: &str, text: &str) 
         .unwrap_or_else(|| panic!("missing item ID for {role} message {text:?}"))
 }
 
-fn assert_codex_client_metadata(
+fn assert_ava_client_metadata(
     request_body: &serde_json::Value,
     installation_id: &str,
     session_id: &str,
@@ -264,16 +264,16 @@ fn assert_codex_client_metadata(
 ) {
     let client_metadata = &request_body["client_metadata"];
     assert_eq!(
-        client_metadata["x-codex-installation-id"].as_str(),
+        client_metadata["x-ava-installation-id"].as_str(),
         Some(installation_id)
     );
     assert_eq!(client_metadata["session_id"].as_str(), Some(session_id));
     assert_eq!(client_metadata["thread_id"].as_str(), Some(thread_id));
-    let turn_metadata_str = client_metadata["x-codex-turn-metadata"]
+    let turn_metadata_str = client_metadata["x-ava-turn-metadata"]
         .as_str()
-        .expect("missing x-codex-turn-metadata client metadata");
+        .expect("missing x-ava-turn-metadata client metadata");
     let turn_metadata = serde_json::from_str::<serde_json::Value>(turn_metadata_str)
-        .expect("invalid x-codex-turn-metadata json");
+        .expect("invalid x-ava-turn-metadata json");
     assert_eq!(
         turn_metadata["installation_id"].as_str(),
         Some(installation_id)
@@ -285,7 +285,7 @@ fn assert_codex_client_metadata(
         turn_metadata["turn_id"].as_str()
     );
     assert_eq!(
-        client_metadata["x-codex-window-id"].as_str(),
+        client_metadata["x-ava-window-id"].as_str(),
         turn_metadata["window_id"].as_str()
     );
 }
@@ -310,7 +310,7 @@ async fn openai_stateless_responses_requests_preserve_item_turn_metadata_across_
         ],
     )
     .await;
-    let test = test_codex().build(&server).await.unwrap();
+    let test = test_ava().build(&server).await.unwrap();
 
     test.submit_turn("turn one").await.unwrap();
     test.submit_turn("turn two").await.unwrap();
@@ -404,7 +404,7 @@ async fn non_openai_responses_requests_include_item_ids_without_passthrough_meta
     provider.name = "Test Responses".to_string();
     provider.base_url = Some(format!("{}/v1", server.uri()));
     provider.supports_websockets = false;
-    let codex = test_codex()
+    let ava = test_ava()
         .with_config(move |config| {
             config.model_provider_id = provider.name.clone();
             config.model_provider = provider;
@@ -412,16 +412,16 @@ async fn non_openai_responses_requests_include_item_ids_without_passthrough_meta
         .build(&server)
         .await
         .unwrap()
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let body = response_mock
         .requests()
@@ -459,23 +459,23 @@ async fn sends_audio_urls_to_responses() {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let codex = test_codex()
+    let ava = test_ava()
         .with_model_info_override("gpt-5.5", |model_info| {
             model_info.input_modalities.push(InputModality::Audio);
         })
         .build(&server)
         .await
         .unwrap()
-        .codex;
+        .ava-code;
     let audio_url = "data:audio/wav;base64,AAAA";
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Audio {
             audio_url: audio_url.to_string(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let request = response_mock.single_request();
     assert!(request.has_content_kinds(&["user.audio"]));
@@ -504,23 +504,23 @@ async fn sends_local_audio_to_responses() -> anyhow::Result<()> {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let codex = test_codex()
+    let ava = test_ava()
         .with_model_info_override("gpt-5.5", |model_info| {
             model_info.input_modalities.push(InputModality::Audio);
         })
         .build(&server)
         .await?
-        .codex;
+        .ava-code;
     let temp_dir = tempfile::tempdir()?;
     let audio_path = temp_dir.path().join("recording.wav");
     std::fs::write(&audio_path, b"audio")?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::LocalAudio {
             path: audio_path.clone(),
         }]))
         .await?;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let request = response_mock.single_request();
     assert!(request.has_content_kinds(&["user.text", "user.audio", "user.text"]));
@@ -567,7 +567,7 @@ async fn response_item_ids_persist_across_resume_and_preserve_server_ids() -> an
         ],
     )
     .await;
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let initial = builder.build(&server).await?;
     let home = Arc::clone(&initial.home);
     let rollout_path = initial
@@ -577,8 +577,8 @@ async fn response_item_ids_persist_across_resume_and_preserve_server_ids() -> an
         .expect("rollout path");
 
     initial.submit_turn("before resume").await?;
-    initial.codex.submit(Op::Shutdown).await?;
-    wait_for_event(&initial.codex, |event| {
+    initial.ava-code.submit(Op::Shutdown).await?;
+    wait_for_event(&initial.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -661,15 +661,15 @@ async fn synthetic_call_output_id_is_stable_across_resumes() -> anyhow::Result<(
         ],
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let mut builder = test_codex();
+    let ava_home = Arc::new(TempDir::new()?);
+    let mut builder = test_ava();
     let first = builder
-        .resume(&server, Arc::clone(&codex_home), session_path.clone())
+        .resume(&server, Arc::clone(&ava_home), session_path.clone())
         .await?;
 
     first.submit_turn("first resume").await?;
-    first.codex.submit(Op::Shutdown).await?;
-    wait_for_event(&first.codex, |event| {
+    first.ava-code.submit(Op::Shutdown).await?;
+    wait_for_event(&first.ava-code, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -678,7 +678,7 @@ async fn synthetic_call_output_id_is_stable_across_resumes() -> anyhow::Result<(
         "prompt-only repair should not be persisted to the rollout"
     );
 
-    let second = builder.resume(&server, codex_home, session_path).await?;
+    let second = builder.resume(&server, ava_home, session_path).await?;
     second.submit_turn("second resume").await?;
 
     let requests = response_mock.requests();
@@ -728,14 +728,14 @@ async fn response_item_ids_are_sent_for_all_remote_v2_compaction_requests() -> a
         ],
     )
     .await;
-    let test = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let test = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .build(&server)
         .await?;
 
     test.submit_turn("before compaction").await?;
-    test.codex.submit(Op::Compact).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Compact).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -760,11 +760,11 @@ async fn response_item_ids_are_sent_for_all_remote_v2_compaction_requests() -> a
     Ok(())
 }
 
-/// Writes an `auth.json` into the provided `codex_home` with the specified parameters.
+/// Writes an `auth.json` into the provided `ava_home` with the specified parameters.
 /// Returns the fake JWT string written to `tokens.id_token`.
 #[expect(clippy::unwrap_used)]
 fn write_auth_json(
-    codex_home: &TempDir,
+    ava_home: &TempDir,
     openai_api_key: Option<&str>,
     chatgpt_plan_type: &str,
     access_token: &str,
@@ -804,7 +804,7 @@ fn write_auth_json(
     });
 
     std::fs::write(
-        codex_home.path().join("auth.json"),
+        ava_home.path().join("auth.json"),
         serde_json::to_string_pretty(&auth_json).unwrap(),
     )
     .unwrap();
@@ -896,7 +896,7 @@ move /y tokens.next tokens.txt >nul
             // Match the model-provider default to avoid brittle shell-startup timing in CI.
             timeout_ms: non_zero_u64(/*value*/ 5_000),
             refresh_interval_ms: 60_000,
-            cwd: codex_utils_absolute_path::AbsolutePathBuf::try_from(self.tempdir.path())
+            cwd: ava_utils_absolute_path::AbsolutePathBuf::try_from(self.tempdir.path())
                 .expect("tempdir should be absolute"),
         }
     }
@@ -936,10 +936,10 @@ async fn resume_includes_initial_messages_and_sends_prior_items() {
     .unwrap();
 
     // Prior item: user message (should be delivered)
-    let prior_user = codex_protocol::models::ResponseItem::Message {
+    let prior_user = ava_protocol::models::ResponseItem::Message {
         id: None,
         role: "user".to_string(),
-        content: vec![codex_protocol::models::ContentItem::InputText {
+        content: vec![ava_protocol::models::ContentItem::InputText {
             text: "resumed user message".to_string(),
         }],
         phase: None,
@@ -958,10 +958,10 @@ async fn resume_includes_initial_messages_and_sends_prior_items() {
     .unwrap();
 
     // Prior item: system message (excluded from API history)
-    let prior_system = codex_protocol::models::ResponseItem::Message {
+    let prior_system = ava_protocol::models::ResponseItem::Message {
         id: None,
         role: "system".to_string(),
-        content: vec![codex_protocol::models::ContentItem::OutputText {
+        content: vec![ava_protocol::models::ContentItem::OutputText {
             text: "resumed system instruction".to_string(),
         }],
         phase: None,
@@ -980,10 +980,10 @@ async fn resume_includes_initial_messages_and_sends_prior_items() {
     .unwrap();
 
     // Prior item: assistant message
-    let prior_item = codex_protocol::models::ResponseItem::Message {
+    let prior_item = ava_protocol::models::ResponseItem::Message {
         id: None,
         role: "assistant".to_string(),
-        content: vec![codex_protocol::models::ContentItem::OutputText {
+        content: vec![ava_protocol::models::ContentItem::OutputText {
             text: "resumed assistant message".to_string(),
         }],
         phase: Some(MessagePhase::Commentary),
@@ -1010,18 +1010,18 @@ async fn resume_includes_initial_messages_and_sends_prior_items() {
     )
     .await;
 
-    // Configure Codex to resume from our file
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let mut builder = test_codex()
-        .with_home(codex_home.clone())
+    // Configure Ava to resume from our file
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let mut builder = test_ava()
+        .with_home(ava_home.clone())
         .with_pre_build_hook(|home| {
             std::fs::write(home.join("AGENTS.md"), "be nice").expect("write global instructions");
         });
     let test = builder
-        .resume(&server, codex_home, session_path.clone())
+        .resume(&server, ava_home, session_path.clone())
         .await
         .expect("resume conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let session_configured = test.session_configured;
 
     // 1) Assert initial_messages only includes existing EventMsg entries; response items are not converted
@@ -1034,14 +1034,14 @@ async fn resume_includes_initial_messages_and_sends_prior_items() {
     assert_eq!(initial_json, expected_initial_json);
 
     // 2) Submit new input; the request body must include the prior items, then initial context, then new user input.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -1198,10 +1198,10 @@ async fn resume_replays_legacy_js_repl_image_rollout_shapes() {
     )
     .await;
 
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let mut builder = test_ava().with_model("gpt-5.4");
     let test = builder
-        .resume(&server, codex_home, session_path.clone())
+        .resume(&server, ava_home, session_path.clone())
         .await
         .expect("resume conversation");
     test.submit_turn("after resume").await.unwrap();
@@ -1371,10 +1371,10 @@ async fn resume_replays_image_tool_outputs_with_detail() {
     )
     .await;
 
-    let codex_home = Arc::new(TempDir::new().unwrap());
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let ava_home = Arc::new(TempDir::new().unwrap());
+    let mut builder = test_ava().with_model("gpt-5.4");
     let test = builder
-        .resume(&server, codex_home, session_path.clone())
+        .resume(&server, ava_home, session_path.clone())
         .await
         .expect("resume conversation");
     test.submit_turn("after resume").await.unwrap();
@@ -1421,16 +1421,16 @@ async fn includes_session_id_thread_id_and_model_headers_in_request() {
     )
     .await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::from_api_key("Test API Key"));
+    let mut builder = test_ava().with_auth(AvaAuth::from_api_key("Test API Key"));
     let test = builder
         .build(&server)
         .await
         .expect("create new conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let expected_session_id = test.session_configured.session_id;
     let expected_thread_id = test.session_configured.thread_id;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -1438,11 +1438,11 @@ async fn includes_session_id_thread_id_and_model_headers_in_request() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     assert_eq!(request.path(), "/v1/responses");
-    assert_eq!(request.header(X_CODEX_ROUTING_HINT_HEADER), None);
+    assert_eq!(request.header(X_AVA_ROUTING_HINT_HEADER), None);
     let request_session_id = request.header("session-id").expect("session-id header");
     let request_thread_id = request.header("thread-id").expect("thread-id header");
     let request_authorization = request
@@ -1451,7 +1451,7 @@ async fn includes_session_id_thread_id_and_model_headers_in_request() {
     let request_originator = request.header("originator").expect("originator header");
     let request_body = request.body_json();
     let installation_id =
-        std::fs::read_to_string(test.codex_home_path().join(INSTALLATION_ID_FILENAME))
+        std::fs::read_to_string(test.ava_home_path().join(INSTALLATION_ID_FILENAME))
             .expect("read installation id");
     let session_id_string = expected_session_id.to_string();
     let thread_id_string = expected_thread_id.to_string();
@@ -1464,7 +1464,7 @@ async fn includes_session_id_thread_id_and_model_headers_in_request() {
         request_body["prompt_cache_key"].as_str(),
         Some(session_id_string.as_str())
     );
-    assert_codex_client_metadata(
+    assert_ava_client_metadata(
         &request_body,
         installation_id.as_str(),
         session_id_string.as_str(),
@@ -1591,7 +1591,7 @@ async fn amazon_bedrock_proxy_uses_command_auth_and_custom_headers() {
     assert_eq!(request.header("x-some-header"), Some("foo".to_string()));
     assert_eq!(
         request.header("x-amzn-mantle-client-agent"),
-        Some("codex".to_string())
+        Some("ava".to_string())
     );
     assert_eq!(request.body_json()["store"], false);
 }
@@ -1629,17 +1629,17 @@ async fn send_provider_auth_request(server: &MockServer, auth: ModelProviderAuth
 
 #[expect(clippy::unwrap_used)]
 async fn send_request_with_provider(provider: ModelProviderInfo) {
-    let codex_home = TempDir::new().unwrap();
-    let mut config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new().unwrap();
+    let mut config = load_default_config_for_test(&ava_home).await;
     config.model_provider_id = provider.name.clone();
     config.model_provider = provider.clone();
     let effort = config.model_reasoning_effort.clone();
     let summary = config.model_reasoning_summary;
-    let model = codex_core::test_support::get_model_offline(config.model.as_deref());
+    let model = ava_core::test_support::get_model_offline(config.model.as_deref());
     config.model = Some(model.clone());
     let config = Arc::new(config);
     let model_info =
-        codex_core::test_support::construct_model_info_offline(model.as_str(), &config);
+        ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
     let thread_id = ThreadId::new();
     let session_telemetry = SessionTelemetry::new(
         thread_id,
@@ -1654,7 +1654,7 @@ async fn send_request_with_provider(provider: ModelProviderInfo) {
         SessionSource::Exec,
     );
     let client = ModelClient::new(
-        Some(AuthManager::from_auth_for_testing(CodexAuth::from_api_key(
+        Some(AuthManager::from_auth_for_testing(AvaAuth::from_api_key(
             "unused-api-key",
         ))),
         AgentIdentityAuthPolicy::JwtOnly,
@@ -1698,7 +1698,7 @@ async fn send_request_with_provider(provider: ModelProviderInfo) {
             summary.unwrap_or(ReasoningSummary::Auto),
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("responses stream to start");
@@ -1721,18 +1721,18 @@ async fn includes_base_instructions_override_in_request() {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::from_api_key("Test API Key"))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::from_api_key("Test API Key"))
         .with_config(|config| {
             config.base_instructions = Some("test instructions".to_string());
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -1740,7 +1740,7 @@ async fn includes_base_instructions_override_in_request() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -1768,10 +1768,10 @@ async fn chatgpt_auth_sends_correct_request() {
 
     let mut model_provider =
         built_in_model_providers(/* openai_base_url */ /*openai_base_url*/ None)["openai"].clone();
-    model_provider.base_url = Some(format!("{}/api/codex", server.uri()));
+    model_provider.base_url = Some(format!("{}/api/ava", server.uri()));
     model_provider.supports_websockets = false;
-    let mut builder = test_codex()
-        .with_auth(create_dummy_codex_auth())
+    let mut builder = test_ava()
+        .with_auth(create_dummy_ava_auth())
         .with_config(move |config| {
             config.model_provider = model_provider;
         });
@@ -1779,11 +1779,11 @@ async fn chatgpt_auth_sends_correct_request() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let expected_session_id = test.session_configured.session_id;
     let expected_thread_id = test.session_configured.thread_id;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -1791,10 +1791,10 @@ async fn chatgpt_auth_sends_correct_request() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
-    assert_eq!(request.path(), "/api/codex/responses");
+    assert_eq!(request.path(), "/api/ava/responses");
     let request_authorization = request
         .header("authorization")
         .expect("authorization header");
@@ -1807,14 +1807,14 @@ async fn chatgpt_auth_sends_correct_request() {
         .as_str()
         .expect("missing request model");
     assert_eq!(
-        request.header(X_CODEX_ROUTING_HINT_HEADER),
+        request.header(X_AVA_ROUTING_HINT_HEADER),
         Some(format!("model={model}"))
     );
 
     let request_session_id = request.header("session-id").expect("session-id header");
     let request_thread_id = request.header("thread-id").expect("thread-id header");
     let installation_id =
-        std::fs::read_to_string(test.codex_home_path().join(INSTALLATION_ID_FILENAME))
+        std::fs::read_to_string(test.ava_home_path().join(INSTALLATION_ID_FILENAME))
             .expect("read installation id");
     let session_id_string = expected_session_id.to_string();
     let thread_id_string = expected_thread_id.to_string();
@@ -1824,7 +1824,7 @@ async fn chatgpt_auth_sends_correct_request() {
     assert_eq!(request_originator, originator().value);
     assert_eq!(request_authorization, "Bearer Access Token");
     assert_eq!(request_chatgpt_account_id, "account_id");
-    assert_codex_client_metadata(
+    assert_ava_client_metadata(
         &request_body,
         installation_id.as_str(),
         session_id_string.as_str(),
@@ -1867,57 +1867,57 @@ async fn prefers_apikey_when_config_prefers_apikey_even_with_chatgpt_tokens() {
     };
 
     // Init session
-    let codex_home = TempDir::new().unwrap();
+    let ava_home = TempDir::new().unwrap();
     // Write auth.json that contains both API key and ChatGPT tokens for a plan that should prefer ChatGPT,
     // but config will force API key preference.
     let _jwt = write_auth_json(
-        &codex_home,
+        &ava_home,
         Some("sk-test-key"),
         "pro",
         "Access-123",
         Some("acc-123"),
     );
 
-    let mut config = load_default_config_for_test(&codex_home).await;
+    let mut config = load_default_config_for_test(&ava_home).await;
     config.model_provider = model_provider;
 
-    let auth = CodexAuth::from_auth_storage(
-        codex_home.path(),
+    let auth = AvaAuth::from_auth_storage(
+        ava_home.path(),
         AuthCredentialsStoreMode::File,
         /*chatgpt_base_url*/ None,
         AuthKeyringBackendKind::default(),
-        &codex_login::test_support::transport_default_auth_route_config(),
+        &ava_login::test_support::transport_default_auth_route_config(),
     )
     .await
-    .expect("Failed to load CodexAuth")
-    .expect("No CodexAuth found in codex_home");
-    let auth_manager = codex_core::test_support::auth_manager_from_auth(auth);
-    let installation_id = resolve_installation_id(&config.codex_home)
+    .expect("Failed to load AvaAuth")
+    .expect("No AvaAuth found in ava_home");
+    let auth_manager = ava_core::test_support::auth_manager_from_auth(auth);
+    let installation_id = resolve_installation_id(&config.ava_home)
         .await
         .expect("resolve installation id");
     let thread_manager = ThreadManager::new(
         &config,
         auth_manager.clone(),
-        codex_core::build_models_manager(&config, auth_manager),
-        codex_core::CodexAppsToolsCache::default(),
+        ava_core::build_models_manager(&config, auth_manager),
+        ava_core::AvaAppsToolsCache::default(),
         SessionSource::Exec,
-        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+        Arc::new(ava_exec_server::EnvironmentManager::default_for_tests()),
         empty_extension_registry(),
-        Arc::new(codex_core::test_support::EmptyUserInstructionsProvider),
+        Arc::new(ava_core::test_support::EmptyUserInstructionsProvider),
         /*analytics_events_client*/ None,
-        codex_core::passthrough_image_store(),
+        ava_core::passthrough_image_store(),
         thread_store_from_config(&config, /*state_db*/ None),
         /*agent_graph_store*/ None,
         installation_id,
         /*attestation_provider*/ None,
         /*external_time_provider*/ None,
     );
-    let NewThread { thread: codex, .. } = thread_manager
+    let NewThread { thread: ava, .. } = thread_manager
         .start_thread(StartThreadOptions::new(config.clone()))
         .await
         .expect("create new conversation");
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -1925,7 +1925,7 @@ async fn prefers_apikey_when_config_prefers_apikey_even_with_chatgpt_tokens() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1939,8 +1939,8 @@ async fn includes_user_instructions_message_in_request() {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::from_api_key("Test API Key"))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::from_api_key("Test API Key"))
         .with_pre_build_hook(|home| {
             std::fs::write(home.join("AGENTS.md"), "be nice").expect("write global instructions");
         });
@@ -1948,9 +1948,9 @@ async fn includes_user_instructions_message_in_request() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -1958,7 +1958,7 @@ async fn includes_user_instructions_message_in_request() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2023,8 +2023,8 @@ async fn includes_apps_guidance_as_developer_message_for_chatgpt_auth() {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(create_dummy_codex_auth())
+    let mut builder = test_ava()
+        .with_auth(create_dummy_ava_auth())
         .with_config(move |config| {
             config
                 .features
@@ -2032,13 +2032,13 @@ async fn includes_apps_guidance_as_developer_message_for_chatgpt_auth() {
                 .expect("test config should allow feature update");
             config.chatgpt_base_url = apps_base_url;
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2046,7 +2046,7 @@ async fn includes_apps_guidance_as_developer_message_for_chatgpt_auth() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let apps_snippet =
@@ -2080,8 +2080,8 @@ async fn omits_apps_guidance_for_api_key_auth_even_when_feature_enabled() {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::from_api_key("Test API Key"))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::from_api_key("Test API Key"))
         .with_config(move |config| {
             config
                 .features
@@ -2089,13 +2089,13 @@ async fn omits_apps_guidance_for_api_key_auth_even_when_feature_enabled() {
                 .expect("test config should allow feature update");
             config.chatgpt_base_url = apps_base_url;
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2103,7 +2103,7 @@ async fn omits_apps_guidance_for_api_key_auth_even_when_feature_enabled() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let apps_snippet =
@@ -2132,8 +2132,8 @@ async fn omits_apps_guidance_when_configured_off() {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(create_dummy_codex_auth())
+    let mut builder = test_ava()
+        .with_auth(create_dummy_ava_auth())
         .with_config(move |config| {
             config
                 .features
@@ -2142,13 +2142,13 @@ async fn omits_apps_guidance_when_configured_off() {
             config.chatgpt_base_url = apps_base_url;
             config.include_apps_instructions = false;
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2156,7 +2156,7 @@ async fn omits_apps_guidance_when_configured_off() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     assert!(
@@ -2191,7 +2191,7 @@ async fn omits_apps_guidance_when_orchestrator_mcp_is_disabled() {
                     read_call_id,
                     "read_mcp_resource",
                     &json!({
-                        "server": "codex_apps",
+                        "server": "ava_apps",
                         "uri": "skill://demo/SKILL.md",
                     })
                     .to_string(),
@@ -2203,8 +2203,8 @@ async fn omits_apps_guidance_when_orchestrator_mcp_is_disabled() {
     )
     .await;
 
-    let mut builder = test_codex()
-        .with_auth(create_dummy_codex_auth())
+    let mut builder = test_ava()
+        .with_auth(create_dummy_ava_auth())
         .with_config(move |config| {
             config
                 .features
@@ -2213,13 +2213,13 @@ async fn omits_apps_guidance_when_orchestrator_mcp_is_disabled() {
             config.chatgpt_base_url = apps_base_url;
             config.orchestrator_mcp_enabled = false;
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2227,7 +2227,7 @@ async fn omits_apps_guidance_when_orchestrator_mcp_is_disabled() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = resp_mock.requests();
     assert_eq!(requests.len(), 3);
@@ -2238,8 +2238,8 @@ async fn omits_apps_guidance_when_orchestrator_mcp_is_disabled() {
         request.body_json()["input"]
     );
     assert!(
-        !request.body_contains_text("mcp__codex_apps"),
-        "did not expect codex_apps MCP tools when orchestrator MCP is disabled, got {:?}",
+        !request.body_contains_text("mcp__ava_apps"),
+        "did not expect ava_apps MCP tools when orchestrator MCP is disabled, got {:?}",
         request.body_json()["tools"]
     );
     let list_output = requests[1]
@@ -2273,7 +2273,7 @@ async fn omits_apps_guidance_when_orchestrator_mcp_is_disabled() {
         .collect::<Vec<_>>();
     assert!(
         resource_methods.is_empty(),
-        "did not expect codex_apps resource calls: {resource_methods:?}"
+        "did not expect ava_apps resource calls: {resource_methods:?}"
     );
 }
 
@@ -2286,16 +2286,16 @@ async fn omits_environment_context_when_configured_off() {
     )
     .await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.include_environment_context = false;
     });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2303,7 +2303,7 @@ async fn omits_environment_context_when_configured_off() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     assert!(
@@ -2318,18 +2318,18 @@ async fn omits_environment_context_when_configured_off() {
 async fn powershell_shell_version_is_model_visible_only_when_enabled() -> anyhow::Result<()> {
     core_test_support::skip_if_remote!(Ok(()), "requires local Windows PowerShell execution");
 
-    let shell_path = codex_shell_command::powershell::try_find_powershell_executable_blocking()
+    let shell_path = ava_shell_command::powershell::try_find_powershell_executable_blocking()
         .ok_or_else(|| anyhow::anyhow!("Windows PowerShell is unavailable"))?
         .to_path_buf();
     for enabled in [false, true] {
         let server = MockServer::start().await;
         let response = mount_sse_once(&server, sse(vec![ev_completed("done")])).await;
-        let user_shell = codex_shell_command::shell_detect::DetectedShell {
-            shell_type: codex_shell_command::shell_detect::ShellType::PowerShell,
+        let user_shell = ava_shell_command::shell_detect::DetectedShell {
+            shell_type: ava_shell_command::shell_detect::ShellType::PowerShell,
             shell_path: shell_path.clone(),
         }
         .into();
-        let mut builder = test_codex()
+        let mut builder = test_ava()
             .with_user_shell(user_shell)
             .with_config(move |config| {
                 config
@@ -2366,7 +2366,7 @@ async fn includes_configured_max_effort_in_request() -> anyhow::Result<()> {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_model("gpt-5.4")
         .with_config(|config| {
             config.model_reasoning_effort = Some(ReasoningEffort::Max);
@@ -2374,7 +2374,7 @@ async fn includes_configured_max_effort_in_request() -> anyhow::Result<()> {
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2382,7 +2382,7 @@ async fn includes_configured_max_effort_in_request() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2409,9 +2409,9 @@ async fn includes_default_reasoning_effort_in_request_when_defined_by_model_info
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex().with_model("gpt-5.5").build(&server).await?;
+    let TestAva { ava, .. } = test_ava().with_model("gpt-5.5").build(&server).await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2419,7 +2419,7 @@ async fn includes_default_reasoning_effort_in_request_when_defined_by_model_info
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2445,7 +2445,7 @@ async fn user_turn_collaboration_mode_overrides_model_and_effort() -> anyhow::Re
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, config, .. } = test_codex().with_model("gpt-5.4").build(&server).await?;
+    let TestAva { ava, config, .. } = test_ava().with_model("gpt-5.4").build(&server).await?;
 
     let collaboration_mode = CollaborationMode {
         mode: ModeKind::Default,
@@ -2456,7 +2456,7 @@ async fn user_turn_collaboration_mode_overrides_model_and_effort() -> anyhow::Re
         },
     };
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".into(),
@@ -2477,7 +2477,7 @@ async fn user_turn_collaboration_mode_overrides_model_and_effort() -> anyhow::Re
         )
         .await?;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request_body = resp_mock.single_request().body_json();
     assert_eq!(request_body["model"].as_str(), Some("gpt-5.4"));
@@ -2502,7 +2502,7 @@ async fn configured_reasoning_summary_is_sent() -> anyhow::Result<()> {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_config(|config| {
             config.model_reasoning_summary = Some(ReasoningSummary::Concise);
             let _ = config
@@ -2512,7 +2512,7 @@ async fn configured_reasoning_summary_is_sent() -> anyhow::Result<()> {
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2520,7 +2520,7 @@ async fn configured_reasoning_summary_is_sent() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2567,7 +2567,7 @@ async fn model_without_summary_parameter_support_omits_configured_summary() -> a
         .expect("gpt-5.5 exists in bundled models.json");
     model.supports_reasoning_summary_parameter = false;
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_model("gpt-5.5")
         .with_config(move |config| {
             config.model_catalog = Some(model_catalog);
@@ -2581,14 +2581,14 @@ async fn model_without_summary_parameter_support_omits_configured_summary() -> a
         .build_with_auto_env(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request_body = resp_mock.single_request().body_json();
     pretty_assertions::assert_eq!(request_body["reasoning"], json!({"effort": "high"}));
@@ -2611,8 +2611,8 @@ async fn sequential_cutoff_is_omitted_for_non_openai_provider() -> anyhow::Resul
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let TestAva { ava, .. } = test_ava()
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             config.model_provider.name = "mock".to_string();
             let _ = config
@@ -2622,7 +2622,7 @@ async fn sequential_cutoff_is_omitted_for_non_openai_provider() -> anyhow::Resul
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2630,10 +2630,10 @@ async fn sequential_cutoff_is_omitted_for_non_openai_provider() -> anyhow::Resul
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
-    assert_eq!(request.header(X_CODEX_ROUTING_HINT_HEADER), None);
+    assert_eq!(request.header(X_AVA_ROUTING_HINT_HEADER), None);
     let request_body = request.body_json();
     pretty_assertions::assert_eq!(request_body.get("stream_options"), None);
 
@@ -2652,21 +2652,21 @@ async fn responses_lite_sets_all_turns_context_and_disables_parallel_tool_calls(
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_model_info_override("gpt-5.4", |model_info| {
             model_info.use_responses_lite = true;
         })
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request_body = resp_mock.single_request().body_json();
     pretty_assertions::assert_eq!(
@@ -2701,12 +2701,12 @@ async fn user_turn_explicit_reasoning_summary_overrides_model_catalog_default() 
         .expect("gpt-5.5 exists in bundled models.json");
     model.default_reasoning_summary = ReasoningSummary::Detailed;
 
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         config,
         session_configured,
         ..
-    } = test_codex()
+    } = test_ava()
         .with_model("gpt-5.5")
         .with_config(move |config| {
             config.model_catalog = Some(model_catalog);
@@ -2714,7 +2714,7 @@ async fn user_turn_explicit_reasoning_summary_overrides_model_catalog_default() 
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".into(),
@@ -2739,7 +2739,7 @@ async fn user_turn_explicit_reasoning_summary_overrides_model_catalog_default() 
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request_body = resp_mock.single_request().body_json();
 
@@ -2764,14 +2764,14 @@ async fn reasoning_summary_is_omitted_when_disabled() -> anyhow::Result<()> {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_config(|config| {
             config.model_reasoning_summary = Some(ReasoningSummary::None);
         })
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2779,7 +2779,7 @@ async fn reasoning_summary_is_omitted_when_disabled() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2814,7 +2814,7 @@ async fn reasoning_summary_none_overrides_model_catalog_default() -> anyhow::Res
         .expect("gpt-5.5 exists in bundled models.json");
     model.default_reasoning_summary = ReasoningSummary::Detailed;
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_model("gpt-5.5")
         .with_config(move |config| {
             config.model_reasoning_summary = Some(ReasoningSummary::None);
@@ -2823,7 +2823,7 @@ async fn reasoning_summary_none_overrides_model_catalog_default() -> anyhow::Res
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2831,7 +2831,7 @@ async fn reasoning_summary_none_overrides_model_catalog_default() -> anyhow::Res
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request_body = resp_mock.single_request().body_json();
     pretty_assertions::assert_eq!(
@@ -2854,9 +2854,9 @@ async fn includes_default_verbosity_in_request() -> anyhow::Result<()> {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex().with_model("gpt-5.5").build(&server).await?;
+    let TestAva { ava, .. } = test_ava().with_model("gpt-5.5").build(&server).await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2864,7 +2864,7 @@ async fn includes_default_verbosity_in_request() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2890,7 +2890,7 @@ async fn configured_verbosity_not_sent_for_models_without_support() -> anyhow::R
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_model("test-no-verbosity")
         .with_config(|config| {
             config.model_verbosity = Some(Verbosity::High);
@@ -2898,7 +2898,7 @@ async fn configured_verbosity_not_sent_for_models_without_support() -> anyhow::R
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2906,7 +2906,7 @@ async fn configured_verbosity_not_sent_for_models_without_support() -> anyhow::R
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2931,7 +2931,7 @@ async fn configured_verbosity_is_sent() -> anyhow::Result<()> {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_model("gpt-5.5")
         .with_config(|config| {
             config.model_verbosity = Some(Verbosity::High);
@@ -2939,7 +2939,7 @@ async fn configured_verbosity_is_sent() -> anyhow::Result<()> {
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2947,7 +2947,7 @@ async fn configured_verbosity_is_sent() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -2973,8 +2973,8 @@ async fn includes_developer_instructions_message_in_request() {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::from_api_key("Test API Key"))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::from_api_key("Test API Key"))
         .with_pre_build_hook(|home| {
             std::fs::write(home.join("AGENTS.md"), "be nice").expect("write global instructions");
         })
@@ -2985,9 +2985,9 @@ async fn includes_developer_instructions_message_in_request() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -2995,7 +2995,7 @@ async fn includes_developer_instructions_message_in_request() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let request_body = request.body_json();
@@ -3055,7 +3055,7 @@ async fn includes_managed_developer_instructions_once_per_request() -> anyhow::R
     const MANAGED_INSTRUCTIONS: &str = "managed requirements instructions";
 
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_cloud_config_bundle(
             CloudConfigBundleFixture::loader_with_enterprise_requirement(format!(
                 "additional_developer_instructions = {MANAGED_INSTRUCTIONS:?}"
@@ -3126,20 +3126,20 @@ async fn azure_responses_request_does_not_store_and_preserves_prefixed_item_ids(
         supports_standalone_web_search: false,
     };
 
-    let codex_home = TempDir::new().unwrap();
-    let mut config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new().unwrap();
+    let mut config = load_default_config_for_test(&ava_home).await;
     config.model_provider_id = provider.name.clone();
     config.model_provider = provider.clone();
     let effort = config.model_reasoning_effort.clone();
     let summary = config.model_reasoning_summary;
-    let model = codex_core::test_support::get_model_offline(config.model.as_deref());
+    let model = ava_core::test_support::get_model_offline(config.model.as_deref());
     config.model = Some(model.clone());
     let config = Arc::new(config);
     let model_info =
-        codex_core::test_support::construct_model_info_offline(model.as_str(), &config);
+        ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
     let thread_id = ThreadId::new();
     let auth_manager =
-        codex_core::test_support::auth_manager_from_auth(CodexAuth::from_api_key("Test API Key"));
+        ava_core::test_support::auth_manager_from_auth(AvaAuth::from_api_key("Test API Key"));
     let session_telemetry = SessionTelemetry::new(
         thread_id,
         model.as_str(),
@@ -3278,7 +3278,7 @@ async fn azure_responses_request_does_not_store_and_preserves_prefixed_item_ids(
             summary.unwrap_or(ReasoningSummary::Auto),
             /*service_tier*/ None,
             &responses_metadata,
-            &codex_rollout_trace::InferenceTraceContext::disabled(),
+            &ava_rollout_trace::InferenceTraceContext::disabled(),
         )
         .await
         .expect("responses stream to start");
@@ -3326,12 +3326,12 @@ async fn token_count_includes_rate_limits_snapshot() {
 
     let response = ResponseTemplate::new(200)
         .insert_header("content-type", "text/event-stream")
-        .insert_header("x-codex-primary-used-percent", "12.5")
-        .insert_header("x-codex-secondary-used-percent", "40.0")
-        .insert_header("x-codex-primary-window-minutes", "10")
-        .insert_header("x-codex-secondary-window-minutes", "60")
-        .insert_header("x-codex-primary-reset-at", "1704069000")
-        .insert_header("x-codex-secondary-reset-at", "1704074400")
+        .insert_header("x-ava-primary-used-percent", "12.5")
+        .insert_header("x-ava-secondary-used-percent", "40.0")
+        .insert_header("x-ava-primary-window-minutes", "10")
+        .insert_header("x-ava-secondary-window-minutes", "60")
+        .insert_header("x-ava-primary-reset-at", "1704069000")
+        .insert_header("x-ava-secondary-reset-at", "1704074400")
         .set_body_raw(sse_body, "text/event-stream");
 
     Mock::given(method("POST"))
@@ -3346,18 +3346,18 @@ async fn token_count_includes_rate_limits_snapshot() {
     provider.base_url = Some(format!("{}/v1", server.uri()));
     provider.supports_websockets = false;
 
-    let mut builder = test_codex()
-        .with_auth(CodexAuth::from_api_key("test"))
+    let mut builder = test_ava()
+        .with_auth(AvaAuth::from_api_key("test"))
         .with_config(move |config| {
             config.model_provider = provider;
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -3366,7 +3366,7 @@ async fn token_count_includes_rate_limits_snapshot() {
         .unwrap();
 
     let token_event = wait_for_event(
-        &codex,
+        &ava,
         |msg| matches!(msg, EventMsg::TokenCount(ev) if ev.info.is_some()),
     )
     .await;
@@ -3400,7 +3400,7 @@ async fn token_count_includes_rate_limits_snapshot() {
                 "model_context_window": 258400
             },
             "rate_limits": {
-                "limit_id": "codex",
+                "limit_id": "ava",
                 "limit_name": null,
                 "primary": {
                     "used_percent": 12.5,
@@ -3442,7 +3442,7 @@ async fn token_count_includes_rate_limits_snapshot() {
         Some(1704069000)
     );
 
-    wait_for_event(&codex, |msg| matches!(msg, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |msg| matches!(msg, EventMsg::TurnComplete(_))).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -3451,16 +3451,16 @@ async fn usage_limit_error_emits_rate_limit_event() -> anyhow::Result<()> {
     let server = MockServer::start().await;
 
     let response = ResponseTemplate::new(429)
-        .insert_header("x-codex-primary-used-percent", "100.0")
-        .insert_header("x-codex-secondary-used-percent", "87.5")
-        .insert_header("x-codex-primary-over-secondary-limit-percent", "95.0")
-        .insert_header("x-codex-primary-window-minutes", "15")
-        .insert_header("x-codex-secondary-window-minutes", "60")
-        .insert_header("x-codex-credits-has-credits", "true")
-        .insert_header("x-codex-credits-unlimited", "false")
-        .insert_header("x-codex-credits-balance", "")
+        .insert_header("x-ava-primary-used-percent", "100.0")
+        .insert_header("x-ava-secondary-used-percent", "87.5")
+        .insert_header("x-ava-primary-over-secondary-limit-percent", "95.0")
+        .insert_header("x-ava-primary-window-minutes", "15")
+        .insert_header("x-ava-secondary-window-minutes", "60")
+        .insert_header("x-ava-credits-has-credits", "true")
+        .insert_header("x-ava-credits-unlimited", "false")
+        .insert_header("x-ava-credits-balance", "")
         .insert_header(
-            "x-codex-rate-limit-reached-type",
+            "x-ava-rate-limit-reached-type",
             "workspace_member_usage_limit_reached",
         )
         .set_body_json(json!({
@@ -3479,12 +3479,12 @@ async fn usage_limit_error_emits_rate_limit_event() -> anyhow::Result<()> {
         .mount(&server)
         .await;
 
-    let mut builder = test_codex();
-    let codex_fixture = builder.build(&server).await?;
-    let codex = codex_fixture.codex.clone();
+    let mut builder = test_ava();
+    let ava_fixture = builder.build(&server).await?;
+    let ava = ava_fixture.ava-code.clone();
 
     let expected_limits = json!({
-        "limit_id": "codex",
+        "limit_id": "ava",
         "limit_name": null,
         "primary": {
             "used_percent": 100.0,
@@ -3507,7 +3507,7 @@ async fn usage_limit_error_emits_rate_limit_event() -> anyhow::Result<()> {
         "rate_limit_reached_type": "workspace_member_usage_limit_reached"
     });
 
-    let submission = codex
+    let submission = ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -3515,7 +3515,7 @@ async fn usage_limit_error_emits_rate_limit_event() -> anyhow::Result<()> {
         .await
         .expect("submission should succeed while emitting usage limit error events");
 
-    let token_event = wait_for_event(&codex, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
+    let token_event = wait_for_event(&ava, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
     let EventMsg::TokenCount(event) = token_event else {
         unreachable!();
     };
@@ -3529,7 +3529,7 @@ async fn usage_limit_error_emits_rate_limit_event() -> anyhow::Result<()> {
         })
     );
 
-    let error_event = wait_for_event(&codex, |msg| matches!(msg, EventMsg::Error(_))).await;
+    let error_event = wait_for_event(&ava, |msg| matches!(msg, EventMsg::Error(_))).await;
     let EventMsg::Error(error_event) = error_event else {
         unreachable!();
     };
@@ -3570,7 +3570,7 @@ async fn context_window_error_sets_total_tokens_to_model_window() -> anyhow::Res
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_config(|config| {
             config.model = Some("gpt-5.4".to_string());
             config.model_context_window = Some(272_000);
@@ -3578,23 +3578,23 @@ async fn context_window_error_sets_total_tokens_to_model_window() -> anyhow::Res
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "seed turn".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "trigger context window".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let token_event = wait_for_event(&codex, |event| {
+    let token_event = wait_for_event(&ava, |event| {
         matches!(
             event,
             EventMsg::TokenCount(payload)
@@ -3620,8 +3620,8 @@ async fn context_window_error_sets_total_tokens_to_model_window() -> anyhow::Res
         EFFECTIVE_CONTEXT_WINDOW
     );
 
-    let error_event = wait_for_event(&codex, |ev| matches!(ev, EventMsg::Error(_))).await;
-    let expected_context_window_message = CodexErr::ContextWindowExceeded.to_string();
+    let error_event = wait_for_event(&ava, |ev| matches!(ev, EventMsg::Error(_))).await;
+    let expected_context_window_message = AvaErr::ContextWindowExceeded.to_string();
     assert!(
         matches!(
             error_event,
@@ -3630,7 +3630,7 @@ async fn context_window_error_sets_total_tokens_to_model_window() -> anyhow::Res
         "expected context window error; got {error_event:?}"
     );
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     Ok(())
 }
@@ -3660,20 +3660,20 @@ async fn incomplete_response_emits_content_filter_error_message() -> anyhow::Res
 
     let responses_mock = mount_sse_once(&server, incomplete_response).await;
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_config(|config| {
             config.model_provider.stream_max_retries = Some(0);
         })
         .build(&server)
         .await?;
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "trigger incomplete".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let error_event = wait_for_event(&codex, |ev| matches!(ev, EventMsg::Error(_))).await;
+    let error_event = wait_for_event(&ava, |ev| matches!(ev, EventMsg::Error(_))).await;
     assert!(
         matches!(
             error_event,
@@ -3686,7 +3686,7 @@ async fn incomplete_response_emits_content_filter_error_message() -> anyhow::Res
 
     assert_eq!(responses_mock.requests().len(), 1);
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     Ok(())
 }
 
@@ -3763,18 +3763,18 @@ async fn azure_overrides_assign_properties_used_for_responses_url() {
     };
 
     // Init session
-    let mut builder = test_codex()
-        .with_auth(create_dummy_codex_auth())
+    let mut builder = test_ava()
+        .with_auth(create_dummy_ava_auth())
         .with_config(move |config| {
             config.model_provider = provider;
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -3782,7 +3782,7 @@ async fn azure_overrides_assign_properties_used_for_responses_url() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -3849,18 +3849,18 @@ async fn env_var_overrides_loaded_auth() {
     };
 
     // Init session
-    let mut builder = test_codex()
-        .with_auth(create_dummy_codex_auth())
+    let mut builder = test_ava()
+        .with_auth(create_dummy_ava_auth())
         .with_config(move |config| {
             config.model_provider = provider;
         });
-    let codex = builder
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -3868,7 +3868,7 @@ async fn env_var_overrides_loaded_auth() {
         .await
         .unwrap();
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = server
         .received_requests()
@@ -3877,11 +3877,11 @@ async fn env_var_overrides_loaded_auth() {
         .into_iter()
         .find(|request| request.url.path() == "/openai/responses")
         .expect("missing provider request");
-    assert_eq!(request.headers.get(X_CODEX_ROUTING_HINT_HEADER), None);
+    assert_eq!(request.headers.get(X_AVA_ROUTING_HINT_HEADER), None);
 }
 
-fn create_dummy_codex_auth() -> CodexAuth {
-    CodexAuth::create_dummy_chatgpt_auth_for_testing()
+fn create_dummy_ava_auth() -> AvaAuth {
+    AvaAuth::create_dummy_chatgpt_auth_for_testing()
 }
 
 /// Scenario:
@@ -3892,7 +3892,7 @@ fn create_dummy_codex_auth() -> CodexAuth {
 /// We assert that the `input` sent on each turn contains the expected conversation history
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn history_dedupes_streamed_and_final_messages_across_turns() {
-    // Skip under Codex sandbox network restrictions (mirrors other tests).
+    // Skip under Ava sandbox network restrictions (mirrors other tests).
     skip_if_no_network!();
 
     // Mock server that will receive three sequential requests and return the same SSE stream
@@ -3912,42 +3912,42 @@ async fn history_dedupes_streamed_and_final_messages_across_turns() {
 
     let request_log = mount_sse_sequence(&server, vec![sse1.clone(), sse1.clone(), sse1]).await;
 
-    let mut builder = test_codex().with_auth(CodexAuth::from_api_key("Test API Key"));
-    let codex = builder
+    let mut builder = test_ava().with_auth(AvaAuth::from_api_key("Test API Key"));
+    let ava = builder
         .build(&server)
         .await
         .expect("create new conversation")
-        .codex;
+        .ava-code;
 
     // Turn 1: user sends U1; wait for completion.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "U1".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Turn 2: user sends U2; wait for completion.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "U2".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Turn 3: user sends U3; wait for completion.
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "U3".into(),
             text_elements: Vec::new(),
         }]))
         .await
         .unwrap();
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Inspect the three captured requests.
     let requests = request_log.requests();

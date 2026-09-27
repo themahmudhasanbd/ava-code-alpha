@@ -5,7 +5,7 @@ use crate::app::session_lifecycle::ThreadAttachPresentation;
 use crate::chatwidget::AstraModelPickerAction;
 use crate::terminal_palette::with_test_default_colors;
 use crate::terminal_probe::DefaultColors;
-use codex_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::ReasoningEffortPreset;
 use pretty_assertions::assert_eq;
 
 fn started(model: &str) -> AppServerStartedThread {
@@ -560,7 +560,7 @@ async fn astra_picker_confirms_the_model_at_application_after_an_automatic_updat
             let lines = rendered.lines().collect::<Vec<_>>();
             let prompt = lines
                 .iter()
-                .position(|line| line.contains("Ask Codex to do anything"))
+                .position(|line| line.contains("Ask Ava to do anything"))
                 .expect("empty composer shows its placeholder");
             let composer = lines[prompt.saturating_sub(1)..=prompt + 1].join("\n");
             snapshots.push(format!("{picker}:\n{composer}"));
@@ -579,7 +579,7 @@ async fn session_only_astra_picker_shows_stars_only_on_an_untouched_task() -> Re
     app.local_settings.tui.animations = true;
     app.local_settings.tui.whimsy = true;
     app.local_settings.tui.disable_paste_burst = Some(true);
-    let config_path = app.config.codex_home.join("config.toml");
+    let config_path = app.config.ava_home.join("config.toml");
     let defaults = "model = 'gpt-5.5'\nmodel_reasoning_effort = 'medium'\n";
     std::fs::write(&config_path, defaults)?;
     let mut server = start_config_write_test_app_server(&app).await?;
@@ -622,7 +622,7 @@ async fn session_only_astra_picker_shows_stars_only_on_an_untouched_task() -> Re
         let lines = rendered.lines().collect::<Vec<_>>();
         let prompt = lines
             .iter()
-            .position(|line| line.contains("Ask Codex to do anything"))
+            .position(|line| line.contains("Ask Ava to do anything"))
             .expect("empty composer shows its placeholder");
         let composer = lines[prompt.saturating_sub(1)..=prompt + 1].join("\n");
         assert_eq!(
@@ -715,7 +715,7 @@ async fn early_input_and_real_work_consume_the_sparkle() -> Result<()> {
         if scenario == "turn" {
             app.handle_app_server_event(
                 &server,
-                codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
+                ava_app_server_client::AppServerEvent::ServerNotification(Box::new(
                     turn_started_notification(thread_id, "work"),
                 )),
             )

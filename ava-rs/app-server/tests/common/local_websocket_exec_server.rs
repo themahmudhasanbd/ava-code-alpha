@@ -12,7 +12,7 @@ use tokio::process::Command;
 
 const START_TIMEOUT: Duration = Duration::from_secs(10);
 #[cfg(target_os = "linux")]
-const CODEX_LINUX_SANDBOX_EXE_ENV_VAR: &str = "CODEX_TEST_LINUX_SANDBOX_EXE";
+const AVA_LINUX_SANDBOX_EXE_ENV_VAR: &str = "AVA_TEST_LINUX_SANDBOX_EXE";
 
 /// Host-local exec-server fixture that exposes a WebSocket URL.
 ///
@@ -24,17 +24,17 @@ pub(crate) struct LocalWebsocketExecServer {
 }
 
 impl LocalWebsocketExecServer {
-    pub(crate) async fn start(codex_home: &Path, exec_server_program: &Path) -> Result<Self> {
+    pub(crate) async fn start(ava_home: &Path, exec_server_program: &Path) -> Result<Self> {
         let mut command = Command::new(exec_server_program);
         command.stdin(Stdio::null());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::inherit());
-        command.current_dir(codex_home);
-        command.env("CODEX_HOME", codex_home);
+        command.current_dir(ava_home);
+        command.env("AVA_HOME", ava_home);
         #[cfg(target_os = "linux")]
         command.env(
-            CODEX_LINUX_SANDBOX_EXE_ENV_VAR,
-            core_test_support::find_codex_linux_sandbox_exe()
+            AVA_LINUX_SANDBOX_EXE_ENV_VAR,
+            core_test_support::find_ava_linux_sandbox_exe()
                 .context("should find binary for delayed exec-server Linux sandbox helper")?,
         );
         command.kill_on_drop(true);

@@ -1,26 +1,26 @@
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-use codex_protocol::dynamic_tools::DynamicToolResponse;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::user_input::UserInput;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+use ava_protocol::dynamic_tools::DynamicToolResponse;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 
@@ -61,7 +61,7 @@ async fn dynamic_tool_audio_exceeding_the_output_budget_is_omitted() -> Result<(
         vec![
             sse(vec![
                 responses::ev_response_created("resp-1"),
-                responses::ev_function_call_with_namespace(call_id, "codex_app", tool_name, "{}"),
+                responses::ev_function_call_with_namespace(call_id, "ava_app", tool_name, "{}"),
                 responses::ev_completed("resp-1"),
             ]),
             sse(vec![
@@ -73,13 +73,13 @@ async fn dynamic_tool_audio_exceeding_the_output_budget_is_omitted() -> Result<(
     )
     .await;
 
-    let mut builder = test_codex().with_model_info_override("gpt-5.5", |model_info| {
+    let mut builder = test_ava().with_model_info_override("gpt-5.5", |model_info| {
         model_info.input_modalities.push(InputModality::Audio);
         model_info.truncation_policy = TruncationPolicyConfig::tokens(/*limit*/ 50);
     });
     let base_test = builder.build_with_auto_env(&server).await?;
     let dynamic_tool = DynamicToolSpec::Namespace(DynamicToolNamespaceSpec {
-        name: "codex_app".to_string(),
+        name: "ava_app".to_string(),
         description: "Audio tools.".to_string(),
         tools: vec![DynamicToolNamespaceTool::Function(
             DynamicToolFunctionSpec {
@@ -102,23 +102,23 @@ async fn dynamic_tool_audio_exceeding_the_output_budget_is_omitted() -> Result<(
         })
         .await?;
     let mut test = base_test;
-    test.codex = new_thread.thread;
+    test.ava-code = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Return a recording".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let EventMsg::DynamicToolCallRequest(request) = wait_for_event(&test.codex, |event| {
+    let EventMsg::DynamicToolCallRequest(request) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::DynamicToolCallRequest(_))
     })
     .await
     else {
         unreachable!("event guard guarantees DynamicToolCallRequest");
     };
-    test.codex
+    test.ava-code
         .submit(Op::DynamicToolResponse {
             id: request.call_id,
             response: DynamicToolResponse {
@@ -129,7 +129,7 @@ async fn dynamic_tool_audio_exceeding_the_output_budget_is_omitted() -> Result<(
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

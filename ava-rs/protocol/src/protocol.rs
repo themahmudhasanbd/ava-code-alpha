@@ -1,4 +1,4 @@
-//! Defines the protocol for a Codex session between a client and an agent.
+//! Defines the protocol for a Ava session between a client and an agent.
 //!
 //! Uses a SQ (Submission Queue) / EQ (Event Queue) pattern to asynchronously communicate
 //! between user and agent.
@@ -32,7 +32,7 @@ use crate::dynamic_tools::DynamicToolCallOutputContentItem;
 use crate::dynamic_tools::DynamicToolCallRequest;
 use crate::dynamic_tools::DynamicToolResponse;
 use crate::dynamic_tools::DynamicToolSpec;
-use crate::error::Result as CodexResult;
+use crate::error::Result as AvaResult;
 use crate::items::AgentMessageDelivery;
 use crate::items::AsyncUserInputQuestion;
 use crate::items::TurnItem;
@@ -65,9 +65,9 @@ use crate::turn_input::TurnInputMode;
 use crate::turn_input::TurnInputRequest;
 use crate::turn_input::TurnInputSubmission;
 use crate::turn_input::TurnStartOptions;
-use codex_extension_items::image_generation::ImageGenerationFailure;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_extension_items::image_generation::ImageGenerationFailure;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -139,7 +139,7 @@ pub const CONTEXT_WINDOW_OPEN_TAG: &str = "<context_window>";
 pub const CONTEXT_WINDOW_CLOSE_TAG: &str = "</context_window>";
 pub const CONTEXT_WINDOW_GUIDANCE_OPEN_TAG: &str = "<context_window_guidance>";
 pub const CONTEXT_WINDOW_GUIDANCE_CLOSE_TAG: &str = "</context_window_guidance>";
-pub const USER_MESSAGE_BEGIN: &str = "## My request for Codex:";
+pub const USER_MESSAGE_BEGIN: &str = "## My request for Ava:";
 
 /// Removes the model-context prefix from a user message before displaying it.
 pub fn strip_user_message_prefix(text: &str) -> &str {
@@ -217,34 +217,34 @@ pub struct W3cTraceContext {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConversationStartParams {
-    /// Whether Codex response handoffs are managed through explicit client append calls.
+    /// Whether Ava response handoffs are managed through explicit client append calls.
     pub client_managed_handoffs: bool,
     /// Whether a realtime V3 delegation produces an acknowledgement filler.
     /// `None` preserves the Realtime API's default behavior.
     pub delegation_ack_filler: Option<bool>,
-    /// Whether to route any remaining transcript tail through Codex when the session ends.
+    /// Whether to route any remaining transcript tail through Ava when the session ends.
     /// TODO: Remove this rollout knob once transcript-tail flushing is always enabled.
     pub flush_transcript_tail_on_session_end: bool,
-    /// Sends automatic Codex responses as realtime conversation items instead of handoff appends.
-    pub codex_responses_as_items: bool,
-    /// Optional prefix added to automatic Codex response items when `codex_responses_as_items` is set.
-    pub codex_response_item_prefix: Option<String>,
-    /// Selects how automatic Codex handoffs are routed in Frameless Bidi sessions.
+    /// Sends automatic Ava responses as realtime conversation items instead of handoff appends.
+    pub ava_responses_as_items: bool,
+    /// Optional prefix added to automatic Ava response items when `ava_responses_as_items` is set.
+    pub ava_response_item_prefix: Option<String>,
+    /// Selects how automatic Ava handoffs are routed in Frameless Bidi sessions.
     /// Realtime V1 and V2 ignore this setting.
-    pub codex_response_handoff_mode: CodexResponseHandoffMode,
+    pub ava_response_handoff_mode: AvaResponseHandoffMode,
     /// Optional client-selected BEM prefixes keyed by `analysis`, `commentary`, and `final`.
-    pub codex_response_handoff_channel_prefixes: Option<BTreeMap<String, Vec<String>>>,
+    pub ava_response_handoff_channel_prefixes: Option<BTreeMap<String, Vec<String>>>,
     /// Overrides the configured realtime model for this session only.
     pub model: Option<String>,
     /// Selects whether the realtime session should produce text or audio output.
     pub output_modality: RealtimeOutputModality,
-    /// Whether to append Codex's startup context to the realtime backend prompt.
+    /// Whether to append Ava's startup context to the realtime backend prompt.
     pub include_startup_context: bool,
     /// Complete role-bearing text items to include in the initial realtime session history.
     pub initial_items: Vec<ConversationTextParams>,
-    /// Developer instructions given to Codex when this realtime session starts.
+    /// Developer instructions given to Ava when this realtime session starts.
     pub realtime_start_instructions: Option<String>,
-    /// Developer instructions given to Codex when this realtime session ends.
+    /// Developer instructions given to Ava when this realtime session ends.
     pub realtime_end_instructions: Option<String>,
     pub prompt: Option<Option<String>>,
     pub realtime_session_id: Option<String>,
@@ -629,19 +629,19 @@ pub enum Op {
     TurnInput {
         request: Box<TurnInputRequest>,
         mode: TurnInputMode,
-        reply: oneshot::Sender<CodexResult<TurnInputSubmission>>,
+        reply: oneshot::Sender<AvaResult<TurnInputSubmission>>,
     },
 
     /// Resume an interrupted regular turn.
     RecoverTurn {
         thread_settings: ThreadSettingsOverrides,
         start_options: TurnStartOptions,
-        reply: oneshot::Sender<CodexResult<TurnInputSubmission>>,
+        reply: oneshot::Sender<AvaResult<TurnInputSubmission>>,
     },
 
     /// Stop the active root turn without recording a terminal turn event.
     SuspendTurnAndShutdown {
-        reply: oneshot::Sender<CodexResult<SuspendTurnOutcome>>,
+        reply: oneshot::Sender<AvaResult<SuspendTurnOutcome>>,
     },
 
     /// Apply thread-settings overrides without starting a turn.
@@ -750,7 +750,7 @@ pub enum Op {
     /// Record that the user approved one retry of a concrete Guardian-denied action.
     ApproveGuardianDeniedAction { event: GuardianAssessmentEvent },
 
-    /// Request to shut down codex instance.
+    /// Request to shut down ava instance.
     Shutdown,
 
     /// Execute a user-initiated one-off shell command (triggered by "!cmd").
@@ -966,7 +966,7 @@ impl Op {
 }
 
 /// Determines the conditions under which the user is consulted to approve
-/// running the command proposed by Codex.
+/// running the command proposed by Ava.
 #[derive(
     Debug,
     Clone,
@@ -1122,7 +1122,7 @@ pub enum SandboxPolicy {
 /// A writable root path accompanied by a list of subpaths that should remain
 /// read‑only even when the root is writable. This is primarily used to ensure
 /// that folders containing files that could be modified to escalate the
-/// privileges of the agent (e.g. `.codex`, `.git`, notably `.git/hooks`) under
+/// privileges of the agent (e.g. `.ava-code`, `.git`, notably `.git/hooks`) under
 /// a writable root are not modified by the agent.
 #[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub struct WritableRoot {
@@ -1317,13 +1317,13 @@ impl SandboxPolicy {
                 roots
                     .into_iter()
                     .map(|writable_root| {
-                        let protect_missing_dot_codex = cwd_root
+                        let protect_missing_dot_ava = cwd_root
                             .as_ref()
                             .is_some_and(|cwd_root| cwd_root == &writable_root);
                         WritableRoot {
                             read_only_subpaths: default_read_only_subpaths_for_writable_root(
                                 &writable_root,
-                                protect_missing_dot_codex,
+                                protect_missing_dot_ava,
                             ),
                             protected_metadata_names: Vec::new(),
                             root: writable_root,
@@ -1721,7 +1721,7 @@ pub enum RealtimeConversationVersion {
 #[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(rename_all = "camelCase")]
-pub enum CodexResponseHandoffMode {
+pub enum AvaResponseHandoffMode {
     #[default]
     Thinking,
     Commentary,
@@ -1847,11 +1847,11 @@ pub enum NonSteerableTurnKind {
     Compact,
 }
 
-/// Codex errors that we expose to clients.
+/// Ava errors that we expose to clients.
 #[derive(Clone, Debug, PartialEq, Eq, JsonSchema, TS)]
 #[schemars(rename_all = "snake_case")]
 #[ts(rename_all = "snake_case")]
-pub enum CodexErrorInfo {
+pub enum AvaErrorInfo {
     ContextWindowExceeded,
     SessionBudgetExceeded,
     UsageLimitExceeded,
@@ -1889,7 +1889,7 @@ pub enum CodexErrorInfo {
     Other,
 }
 
-impl CodexErrorInfo {
+impl AvaErrorInfo {
     /// Whether this error should mark the current turn as failed when replaying history.
     pub fn affects_turn_status(&self) -> bool {
         match self {
@@ -2069,7 +2069,7 @@ impl fmt::Debug for MisalignmentSteer {
 pub struct ErrorEvent {
     pub message: String,
     #[serde(default)]
-    pub codex_error_info: Option<CodexErrorInfo>,
+    pub ava_error_info: Option<AvaErrorInfo>,
     /// Sensitive explanation and steering are delivered live but never enter rollout storage.
     #[serde(skip)]
     #[schemars(skip)]
@@ -2080,9 +2080,9 @@ pub struct ErrorEvent {
 impl ErrorEvent {
     /// Whether this error should mark the current turn as failed when replaying history.
     pub fn affects_turn_status(&self) -> bool {
-        self.codex_error_info
+        self.ava_error_info
             .as_ref()
-            .is_none_or(CodexErrorInfo::affects_turn_status)
+            .is_none_or(AvaErrorInfo::affects_turn_status)
     }
 }
 
@@ -2250,7 +2250,7 @@ pub struct TokenUsage {
     #[serde(default, skip_serializing)]
     #[schemars(skip)]
     #[ts(skip)]
-    pub codex_rollout_budget_units: Option<serde_json::Number>,
+    pub ava_rollout_budget_units: Option<serde_json::Number>,
 }
 
 /// Best-effort Responses API usage observed for one completed response.
@@ -2994,7 +2994,7 @@ impl SessionSource {
             | SessionSource::VSCode
             | SessionSource::Exec
             | SessionSource::Mcp
-            | SessionSource::Unknown => Some(Product::Codex),
+            | SessionSource::Unknown => Some(Product::Ava),
             SessionSource::Internal(_) | SessionSource::SubAgent(_) => None,
         }
     }
@@ -3336,7 +3336,7 @@ pub struct TurnContextItem {
     pub cyber_access_program: Option<CyberAccessProgram>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub effort: Option<ReasoningEffortConfig>,
-    // Compatibility-only field written with a default value so older Codex
+    // Compatibility-only field written with a default value so older Ava
     // versions can deserialize turn-context rollout items. It is no longer
     // read by context reconstruction and should be removed in a future schema
     // cleanup.
@@ -3387,7 +3387,7 @@ impl TruncationPolicy {
     pub fn token_budget(&self) -> usize {
         match self {
             TruncationPolicy::Bytes(bytes) => {
-                usize::try_from(codex_utils_string::approx_tokens_from_byte_count(*bytes))
+                usize::try_from(ava_utils_string::approx_tokens_from_byte_count(*bytes))
                     .unwrap_or(usize::MAX)
             }
             TruncationPolicy::Tokens(tokens) => *tokens,
@@ -3398,7 +3398,7 @@ impl TruncationPolicy {
         match self {
             TruncationPolicy::Bytes(bytes) => *bytes,
             TruncationPolicy::Tokens(tokens) => {
-                codex_utils_string::approx_bytes_for_tokens(*tokens)
+                ava_utils_string::approx_bytes_for_tokens(*tokens)
             }
         }
     }
@@ -3691,7 +3691,7 @@ pub struct ThreadRolledBackEvent {
 pub struct StreamErrorEvent {
     pub message: String,
     #[serde(default)]
-    pub codex_error_info: Option<CodexErrorInfo>,
+    pub ava_error_info: Option<AvaErrorInfo>,
     /// Optional details about the underlying stream failure (often the same
     /// human-readable message that is surfaced as the terminal error if retries
     /// are exhausted).
@@ -3838,8 +3838,8 @@ pub struct RealtimeConversationListVoicesResponseEvent {
 pub enum Product {
     #[serde(alias = "CHATGPT")]
     Chatgpt,
-    #[serde(alias = "CODEX")]
-    Codex,
+    #[serde(alias = "AVA")]
+    Ava,
     #[serde(alias = "ATLAS")]
     Atlas,
 }
@@ -3847,7 +3847,7 @@ impl Product {
     pub fn to_app_platform(self) -> &'static str {
         match self {
             Self::Chatgpt => "chat",
-            Self::Codex => "codex",
+            Self::Ava => "ava",
             Self::Atlas => "atlas",
         }
     }
@@ -3856,7 +3856,7 @@ impl Product {
         let normalized = value.trim().to_ascii_lowercase();
         match normalized.as_str() {
             "chatgpt" => Some(Self::Chatgpt),
-            "codex" => Some(Self::Codex),
+            "ava" => Some(Self::Ava),
             "atlas" => Some(Self::Atlas),
             _ => None,
         }
@@ -4519,9 +4519,9 @@ mod tests {
     use crate::permissions::FileSystemSpecialPath;
     use crate::permissions::NetworkSandboxPolicy;
     use anyhow::Result;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use std::path::PathBuf;
@@ -4769,26 +4769,26 @@ mod tests {
     }
 
     #[test]
-    fn session_source_restriction_product_defaults_non_subagent_sources_to_codex() {
+    fn session_source_restriction_product_defaults_non_subagent_sources_to_ava() {
         assert_eq!(
             SessionSource::Cli.restriction_product(),
-            Some(Product::Codex)
+            Some(Product::Ava)
         );
         assert_eq!(
             SessionSource::VSCode.restriction_product(),
-            Some(Product::Codex)
+            Some(Product::Ava)
         );
         assert_eq!(
             SessionSource::Exec.restriction_product(),
-            Some(Product::Codex)
+            Some(Product::Ava)
         );
         assert_eq!(
             SessionSource::Mcp.restriction_product(),
-            Some(Product::Codex)
+            Some(Product::Ava)
         );
         assert_eq!(
             SessionSource::Unknown.restriction_product(),
-            Some(Product::Codex)
+            Some(Product::Ava)
         );
     }
 
@@ -4816,8 +4816,8 @@ mod tests {
             Some(Product::Atlas)
         );
         assert_eq!(
-            SessionSource::Custom("codex".to_string()).restriction_product(),
-            Some(Product::Codex)
+            SessionSource::Custom("ava".to_string()).restriction_product(),
+            Some(Product::Ava)
         );
         assert_eq!(
             SessionSource::Custom("atlas-dev".to_string()).restriction_product(),
@@ -4833,9 +4833,9 @@ mod tests {
         );
         assert!(
             !SessionSource::Custom("chatgpt".to_string())
-                .matches_product_restriction(&[Product::Codex])
+                .matches_product_restriction(&[Product::Ava])
         );
-        assert!(SessionSource::VSCode.matches_product_restriction(&[Product::Codex]));
+        assert!(SessionSource::VSCode.matches_product_restriction(&[Product::Ava]));
         assert!(
             !SessionSource::Custom("atlas-dev".to_string())
                 .matches_product_restriction(&[Product::Atlas])
@@ -5042,7 +5042,7 @@ mod tests {
     #[test]
     fn restricted_file_system_policy_treats_root_with_carveouts_as_scoped_access() {
         let cwd = TempDir::new().expect("tempdir");
-        let canonical_cwd = codex_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
+        let canonical_cwd = ava_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
             .expect("canonicalize cwd");
         let root = AbsolutePathBuf::from_absolute_path(&canonical_cwd)
             .expect("absolute canonical tempdir")
@@ -5053,7 +5053,7 @@ mod tests {
             .expect("filesystem root");
         let blocked = AbsolutePathBuf::resolve_path_against_base("blocked", cwd.path());
         let expected_blocked = AbsolutePathBuf::from_absolute_path(
-            codex_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
+            ava_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
                 .expect("canonicalize cwd")
                 .join("blocked"),
         )
@@ -5099,8 +5099,8 @@ mod tests {
     fn restricted_file_system_policy_derives_effective_paths() {
         let cwd = TempDir::new().expect("tempdir");
         std::fs::create_dir_all(cwd.path().join(".agents")).expect("create .agents");
-        std::fs::create_dir_all(cwd.path().join(".codex")).expect("create .codex");
-        let canonical_cwd = codex_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
+        std::fs::create_dir_all(cwd.path().join(".ava-code")).expect("create .ava-code");
+        let canonical_cwd = ava_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
             .expect("canonicalize cwd");
         let cwd_absolute =
             AbsolutePathBuf::from_absolute_path(&canonical_cwd).expect("absolute tempdir");
@@ -5109,8 +5109,8 @@ mod tests {
             .expect("canonical secret");
         let expected_agents = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".agents"))
             .expect("canonical .agents");
-        let expected_codex = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codex"))
-            .expect("canonical .codex");
+        let expected_ava = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".ava-code"))
+            .expect("canonical .ava-code");
         let policy = FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
@@ -5164,14 +5164,14 @@ mod tests {
             writable_roots[0]
                 .read_only_subpaths
                 .iter()
-                .any(|path| path.as_path() == expected_codex.as_path())
+                .any(|path| path.as_path() == expected_ava.as_path())
         );
     }
 
     #[test]
     fn restricted_file_system_policy_treats_read_entries_as_read_only_subpaths() {
         let cwd = TempDir::new().expect("tempdir");
-        let canonical_cwd = codex_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
+        let canonical_cwd = ava_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
             .expect("canonicalize cwd");
         let docs = AbsolutePathBuf::resolve_path_against_base("docs", cwd.path());
         let docs_public = AbsolutePathBuf::resolve_path_against_base("docs/public", cwd.path());
@@ -5180,8 +5180,8 @@ mod tests {
         let expected_docs_public =
             AbsolutePathBuf::from_absolute_path(canonical_cwd.join("docs/public"))
                 .expect("canonical docs/public");
-        let expected_dot_codex = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codex"))
-            .expect("canonical .codex");
+        let expected_dot_ava = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".ava-code"))
+            .expect("canonical .ava-code");
         let policy = FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
@@ -5209,7 +5209,7 @@ mod tests {
                 (
                     canonical_cwd,
                     vec![
-                        expected_dot_codex.to_path_buf(),
+                        expected_dot_ava.to_path_buf(),
                         expected_docs.to_path_buf()
                     ],
                 ),
@@ -5833,7 +5833,7 @@ mod tests {
         let event = ErrorEvent {
             misalignment: None,
             message: "rollback failed".into(),
-            codex_error_info: Some(CodexErrorInfo::ThreadRollbackFailed),
+            ava_error_info: Some(AvaErrorInfo::ThreadRollbackFailed),
         };
         assert!(!event.affects_turn_status());
     }
@@ -5843,7 +5843,7 @@ mod tests {
         let event = ErrorEvent {
             misalignment: None,
             message: "cannot steer a review turn".into(),
-            codex_error_info: Some(CodexErrorInfo::ActiveTurnNotSteerable {
+            ava_error_info: Some(AvaErrorInfo::ActiveTurnNotSteerable {
                 turn_kind: NonSteerableTurnKind::Review,
             }),
         };
@@ -5855,7 +5855,7 @@ mod tests {
         let event = ErrorEvent {
             misalignment: None,
             message: "generic".into(),
-            codex_error_info: Some(CodexErrorInfo::Other),
+            ava_error_info: Some(AvaErrorInfo::Other),
         };
         assert!(event.affects_turn_status());
     }
@@ -5864,7 +5864,7 @@ mod tests {
     fn misalignment_explanation_and_steer_are_never_serialized_into_error_events() {
         let event = ErrorEvent {
             message: "This request violated the misalignment policy.".to_string(),
-            codex_error_info: Some(CodexErrorInfo::MisalignmentPolicyViolation),
+            ava_error_info: Some(AvaErrorInfo::MisalignmentPolicyViolation),
             misalignment: Some(MisalignmentErrorDetails {
                 error_type: Some("unauthorized_data_transfer".to_string()),
                 detailed_explanation: Some("Sensitive customer explanation".to_string()),
@@ -5879,7 +5879,7 @@ mod tests {
             serialized,
             json!({
                 "message": "This request violated the misalignment policy.",
-                "codex_error_info": "misalignment_policy_violation"
+                "ava_error_info": "misalignment_policy_violation"
             })
         );
         let restored: ErrorEvent =
@@ -6135,7 +6135,7 @@ mod tests {
             "id": "00000000-0000-0000-0000-000000000001",
             "timestamp": "2026-01-01T00:00:00Z",
             "cwd": "/tmp",
-            "originator": "codex",
+            "originator": "ava",
             "cli_version": "0.0.0",
             "model_provider": null,
             "base_instructions": null
@@ -6267,7 +6267,7 @@ mod tests {
                 parent_thread_id: None,
                 thread_source: None,
                 thread_name: None,
-                model: "codex-mini-latest".to_string(),
+                model: "ava-mini-latest".to_string(),
                 model_provider_id: "openai".to_string(),
                 service_tier: None,
                 approval_policy: AskForApproval::Never,
@@ -6288,7 +6288,7 @@ mod tests {
                 "type": "session_configured",
                 "session_id": "67e55044-10b1-426f-9247-bb680e5fe0c7",
                 "thread_id": "67e55044-10b1-426f-9247-bb680e5fe0c8",
-                "model": "codex-mini-latest",
+                "model": "ava-mini-latest",
                 "model_provider_id": "openai",
                 "approval_policy": "never",
                 "approvals_reviewer": "user",
@@ -6307,7 +6307,7 @@ mod tests {
         let cwd = test_path_buf("/home/user/project");
         let value = json!({
             "session_id": "67e55044-10b1-426f-9247-bb680e5fe0c8",
-            "model": "codex-mini-latest",
+            "model": "ava-mini-latest",
             "model_provider_id": "openai",
             "approval_policy": "never",
             "approvals_reviewer": "user",
@@ -6402,7 +6402,7 @@ mod tests {
             output_tokens: 0,
             reasoning_output_tokens: 0,
             total_tokens: 10,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         });
 
         let info = TokenUsageInfo::new_or_append(&initial, &last, Some(128_000))
@@ -6425,7 +6425,7 @@ mod tests {
             output_tokens: 0,
             reasoning_output_tokens: 0,
             total_tokens: 10,
-            codex_rollout_budget_units: None,
+            ava_rollout_budget_units: None,
         });
 
         let info =

@@ -1,9 +1,9 @@
 use super::*;
 use crate::PluginGitMode;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::LoaderOverrides;
-use codex_config::loader::load_config_layers_state;
-use codex_exec_server::LOCAL_FS;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::LoaderOverrides;
+use ava_config::loader::load_config_layers_state;
+use ava_exec_server::LOCAL_FS;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use std::path::PathBuf;
@@ -12,9 +12,9 @@ use tempfile::TempDir;
 
 #[test]
 fn readback_ignores_unrelated_malformed_marketplace() {
-    let codex_home = TempDir::new().expect("create Codex home");
+    let ava_home = TempDir::new().expect("create Ava home");
     std::fs::write(
-        codex_home.path().join(CONFIG_TOML_FILE),
+        ava_home.path().join(CONFIG_TOML_FILE),
         r#"
 [marketplaces.bad]
 source_type = "git"
@@ -31,7 +31,7 @@ last_revision = "abc123"
     .expect("write config");
 
     assert_eq!(
-        read_configured_git_marketplace(&config_reloader(codex_home.path()), "good")
+        read_configured_git_marketplace(&config_reloader(ava_home.path()), "good")
             .expect("read configured marketplace"),
         Some(ConfiguredGitMarketplace {
             name: "good".to_string(),
@@ -44,13 +44,13 @@ last_revision = "abc123"
 
 #[test]
 fn one_upgrade_failure_does_not_block_another_marketplace() {
-    let codex_home = TempDir::new().expect("create Codex home");
+    let ava_home = TempDir::new().expect("create Ava home");
     let remote_repo = TempDir::new().expect("create remote repository");
     init_marketplace_repo(remote_repo.path(), "good");
     let good_url = url::Url::from_directory_path(remote_repo.path())
         .expect("remote repository URL")
         .to_string();
-    let missing_url = url::Url::from_directory_path(codex_home.path().join("missing-repository"))
+    let missing_url = url::Url::from_directory_path(ava_home.path().join("missing-repository"))
         .expect("missing repository URL")
         .to_string();
     let config = format!(
@@ -64,12 +64,12 @@ source_type = "git"
 source = {good_url:?}
 "#
     );
-    std::fs::write(codex_home.path().join(CONFIG_TOML_FILE), &config).expect("write config");
-    let reload_config = config_reloader(codex_home.path());
+    std::fs::write(ava_home.path().join(CONFIG_TOML_FILE), &config).expect("write config");
+    let reload_config = config_reloader(ava_home.path());
     let stack = reload_config().expect("load config");
 
     let outcome = upgrade_configured_git_marketplaces(
-        codex_home.path(),
+        ava_home.path(),
         &stack,
         /*marketplace_name*/ None,
         &reload_config,
@@ -84,31 +84,31 @@ source = {good_url:?}
     assert_eq!(
         outcome.upgraded_roots,
         vec![
-            AbsolutePathBuf::try_from(marketplace_install_root(codex_home.path()).join("good"))
+            AbsolutePathBuf::try_from(marketplace_install_root(ava_home.path()).join("good"))
                 .expect("installed marketplace root")
         ]
     );
     assert_eq!(
-        std::fs::read_to_string(codex_home.path().join(CONFIG_TOML_FILE)).unwrap(),
+        std::fs::read_to_string(ava_home.path().join(CONFIG_TOML_FILE)).unwrap(),
         config
     );
 }
 
 #[test]
 fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
-    const CHILD_HOME: &str = "CODEX_MARKETPLACE_GIT_ISOLATION_CHILD_HOME";
-    const CHILD_SOURCE: &str = "CODEX_MARKETPLACE_GIT_ISOLATION_CHILD_SOURCE";
+    const CHILD_HOME: &str = "AVA_MARKETPLACE_GIT_ISOLATION_CHILD_HOME";
+    const CHILD_SOURCE: &str = "AVA_MARKETPLACE_GIT_ISOLATION_CHILD_SOURCE";
 
-    if let Some(codex_home) = std::env::var_os(CHILD_HOME) {
-        let codex_home = PathBuf::from(codex_home);
+    if let Some(ava_home) = std::env::var_os(CHILD_HOME) {
+        let ava_home = PathBuf::from(ava_home);
         let source = std::env::var(CHILD_SOURCE).expect("read configured marketplace source");
         let config =
             format!("[marketplaces.trusted]\nsource_type = \"git\"\nsource = {source:?}\n");
-        std::fs::write(codex_home.join(CONFIG_TOML_FILE), &config).expect("write config");
-        let reload_config = config_reloader(&codex_home);
+        std::fs::write(ava_home.join(CONFIG_TOML_FILE), &config).expect("write config");
+        let reload_config = config_reloader(&ava_home);
         let stack = reload_config().expect("load config");
         let outcome = upgrade_configured_git_marketplaces_with_mode(
-            &codex_home,
+            &ava_home,
             &stack,
             /*marketplace_name*/ None,
             PluginGitMode::Automatic,
@@ -120,7 +120,7 @@ fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
                 selected_marketplaces: vec!["trusted".to_string()],
                 upgraded_roots: vec![
                     AbsolutePathBuf::try_from(
-                        marketplace_install_root(&codex_home).join("trusted")
+                        marketplace_install_root(&ava_home).join("trusted")
                     )
                     .expect("installed marketplace root"),
                 ],
@@ -132,7 +132,7 @@ fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
             ("manual:marketplace", PluginGitMode::Manual),
         ] {
             let materialized = crate::loader::materialize_marketplace_plugin_source_with_mode(
-                &codex_home,
+                &ava_home,
                 &crate::marketplace::MarketplacePluginSource::Git {
                     url: url.to_string(),
                     path: None,
@@ -156,15 +156,15 @@ fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
 
     let root = TempDir::new().expect("create temporary directory");
     let project = root.path().join("project");
-    let codex_home = project.join("codex-home");
+    let ava_home = project.join("ava-home");
     let remote = root.path().join("remote");
-    std::fs::create_dir_all(&codex_home).expect("create Codex home");
+    std::fs::create_dir_all(&ava_home).expect("create Ava home");
     std::fs::create_dir_all(&remote).expect("create remote marketplace");
     init_marketplace_repo(&remote, "trusted");
     run_git(&remote, &["switch", "--create", "manual-filter"]);
     std::fs::write(
         remote.join(".gitattributes"),
-        "manual.txt filter=codex-required\n",
+        "manual.txt filter=ava-required\n",
     )
     .expect("write required manual checkout filter");
     std::fs::write(remote.join("manual.txt"), "manual checkout")
@@ -202,7 +202,7 @@ fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
             "--nocapture",
         ])
         .current_dir(&project)
-        .env(CHILD_HOME, &codex_home)
+        .env(CHILD_HOME, &ava_home)
         .env(CHILD_SOURCE, &source)
         .env("GIT_CONFIG_GLOBAL", "../global.conf")
         .env("GIT_CONFIG_SYSTEM", "../system.conf")
@@ -212,7 +212,7 @@ fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
         .env("GIT_CONFIG_VALUE_0", &source)
         .env("GIT_CONFIG_KEY_1", "url.../remote.insteadOf")
         .env("GIT_CONFIG_VALUE_1", "manual:marketplace")
-        .env("GIT_CONFIG_KEY_2", "filter.codex-required.smudge")
+        .env("GIT_CONFIG_KEY_2", "filter.ava-required.smudge")
         .env("GIT_CONFIG_VALUE_2", "git version")
         .output()
         .expect("run marketplace Git isolation regression");
@@ -226,13 +226,13 @@ fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
 
 #[test]
 fn upgrade_uses_validated_source_for_git_operations() {
-    let codex_home = TempDir::new().expect("create Codex home");
+    let ava_home = TempDir::new().expect("create Ava home");
     let remote_repo = TempDir::new().expect("create remote repository");
     init_marketplace_repo(remote_repo.path(), "good");
     let normalized_url = url::Url::from_directory_path(remote_repo.path())
         .expect("remote repository URL")
         .to_string();
-    let raw_source = codex_home.path().join("missing-raw-source");
+    let raw_source = ava_home.path().join("missing-raw-source");
     let raw_source = raw_source.to_string_lossy().into_owned();
     let config = format!(
         r#"
@@ -242,7 +242,7 @@ source = {raw_source:?}
 ref = "missing-ref"
 "#
     );
-    std::fs::write(codex_home.path().join(CONFIG_TOML_FILE), config).expect("write config");
+    std::fs::write(ava_home.path().join(CONFIG_TOML_FILE), config).expect("write config");
     let marketplace = ConfiguredGitMarketplace {
         name: "good".to_string(),
         source: raw_source,
@@ -253,13 +253,13 @@ ref = "missing-ref"
         url: normalized_url,
         ref_name: Some("HEAD".to_string()),
     };
-    let install_root = marketplace_install_root(codex_home.path());
+    let install_root = marketplace_install_root(ava_home.path());
 
     let upgraded_root = upgrade_configured_git_marketplace(
-        codex_home.path(),
+        ava_home.path(),
         &install_root,
         &marketplace,
-        &config_reloader(codex_home.path()),
+        &config_reloader(ava_home.path()),
         Some(&normalized_source),
         PluginGitMode::Manual,
     )
@@ -275,8 +275,8 @@ ref = "missing-ref"
 #[test]
 fn up_to_date_fast_path_validates_marketplace_name() {
     const REVISION: &str = "0123456789abcdef0123456789abcdef01234567";
-    let codex_home = TempDir::new().expect("create Codex home");
-    let install_root = marketplace_install_root(codex_home.path());
+    let ava_home = TempDir::new().expect("create Ava home");
+    let install_root = marketplace_install_root(ava_home.path());
     let destination = install_root.join("good");
     let manifest_dir = destination.join(".agents/plugins");
     std::fs::create_dir_all(&manifest_dir).expect("create marketplace manifest directory");
@@ -285,7 +285,7 @@ fn up_to_date_fast_path_validates_marketplace_name() {
         r#"{"name":"wrong","plugins":[]}"#,
     )
     .expect("write mismatched marketplace manifest");
-    let missing_source = codex_home.path().join("missing-source");
+    let missing_source = ava_home.path().join("missing-source");
     let missing_source = missing_source.to_string_lossy().into_owned();
     let marketplace = ConfiguredGitMarketplace {
         name: "good".to_string(),
@@ -301,10 +301,10 @@ fn up_to_date_fast_path_validates_marketplace_name() {
     };
 
     let err = upgrade_configured_git_marketplace(
-        codex_home.path(),
+        ava_home.path(),
         &install_root,
         &marketplace,
-        &config_reloader(codex_home.path()),
+        &config_reloader(ava_home.path()),
         Some(&normalized_source),
         PluginGitMode::Manual,
     )
@@ -319,8 +319,8 @@ fn stale_activation_restores_newer_concurrently_installed_marketplace() {
     const STALE_REVISION: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     const NEWER_REVISION: &str = "cccccccccccccccccccccccccccccccccccccccc";
 
-    let codex_home = TempDir::new().expect("create Codex home");
-    let install_root = marketplace_install_root(codex_home.path());
+    let ava_home = TempDir::new().expect("create Ava home");
+    let install_root = marketplace_install_root(ava_home.path());
     let destination = install_root.join("good");
     std::fs::create_dir_all(&destination).expect("create installed marketplace root");
     let marketplace = ConfiguredGitMarketplace {
@@ -386,12 +386,12 @@ fn stale_activation_restores_newer_concurrently_installed_marketplace() {
     ));
 }
 
-fn config_reloader(codex_home: &Path) -> ConfigLayerReload {
-    let codex_home = codex_home.to_path_buf();
+fn config_reloader(ava_home: &Path) -> ConfigLayerReload {
+    let ava_home = ava_home.to_path_buf();
     let options = LoaderOverrides {
-        system_config_path: Some(codex_home.join("system.toml")),
-        managed_config_path: Some(codex_home.join("managed.toml")),
-        system_requirements_path: Some(codex_home.join("requirements.toml")),
+        system_config_path: Some(ava_home.join("system.toml")),
+        managed_config_path: Some(ava_home.join("managed.toml")),
+        system_requirements_path: Some(ava_home.join("requirements.toml")),
         ..LoaderOverrides::without_managed_config_for_tests()
     };
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -401,28 +401,28 @@ fn config_reloader(codex_home: &Path) -> ConfigLayerReload {
     Arc::new(move || {
         runtime.block_on(load_config_layers_state(
             LOCAL_FS.as_ref(),
-            &codex_home,
-            Some(AbsolutePathBuf::try_from(codex_home.join("project"))?),
+            &ava_home,
+            Some(AbsolutePathBuf::try_from(ava_home.join("project"))?),
             &[],
             options.clone(),
-            &codex_config::NoopThreadConfigLoader,
+            &ava_config::NoopThreadConfigLoader,
         ))
     })
 }
 
-fn system_marketplace_stack(codex_home: &Path, system: &str, user: &str) -> ConfigLayerStack {
-    let system_file = AbsolutePathBuf::try_from(codex_home.join("system.toml")).unwrap();
+fn system_marketplace_stack(ava_home: &Path, system: &str, user: &str) -> ConfigLayerStack {
+    let system_file = AbsolutePathBuf::try_from(ava_home.join("system.toml")).unwrap();
     std::fs::write(&system_file, system).unwrap();
     if !user.is_empty() {
-        std::fs::write(codex_home.join(CONFIG_TOML_FILE), user).unwrap();
+        std::fs::write(ava_home.join(CONFIG_TOML_FILE), user).unwrap();
     }
-    config_reloader(codex_home)().expect("load system and user config")
+    config_reloader(ava_home)().expect("load system and user config")
 }
 
 #[test]
 fn system_marketplace_downloads_and_updates_without_writing_user_config() {
     for user_config in ["", "[marketplaces.good]\nsparse_paths = []\n"] {
-        let codex_home = TempDir::new().unwrap();
+        let ava_home = TempDir::new().unwrap();
         let remote = TempDir::new().unwrap();
         init_marketplace_repo(remote.path(), "good");
         run_git(remote.path(), &["checkout", "-b", "release"]);
@@ -438,10 +438,10 @@ fn system_marketplace_downloads_and_updates_without_writing_user_config() {
         let system = format!(
             "[marketplaces.good]\nsource_type = \"git\"\nsource = {source:?}\nref = \"release\"\n"
         );
-        let stack = system_marketplace_stack(codex_home.path(), &system, user_config);
-        let reload_config = config_reloader(codex_home.path());
+        let stack = system_marketplace_stack(ava_home.path(), &system, user_config);
+        let reload_config = config_reloader(ava_home.path());
         let root =
-            AbsolutePathBuf::try_from(marketplace_install_root(codex_home.path()).join("good"))
+            AbsolutePathBuf::try_from(marketplace_install_root(ava_home.path()).join("good"))
                 .unwrap();
         for marker in ["release", "updated"] {
             if marker == "updated" {
@@ -451,7 +451,7 @@ fn system_marketplace_downloads_and_updates_without_writing_user_config() {
             }
             assert_eq!(
                 upgrade_configured_git_marketplaces_with_mode(
-                    codex_home.path(),
+                    ava_home.path(),
                     &stack,
                     Some("good"),
                     PluginGitMode::Automatic,
@@ -469,10 +469,10 @@ fn system_marketplace_downloads_and_updates_without_writing_user_config() {
             );
         }
         assert_eq!(
-            std::fs::read_to_string(codex_home.path().join("system.toml")).unwrap(),
+            std::fs::read_to_string(ava_home.path().join("system.toml")).unwrap(),
             system
         );
-        let user_file = codex_home.path().join(CONFIG_TOML_FILE);
+        let user_file = ava_home.path().join(CONFIG_TOML_FILE);
         if user_config.is_empty() {
             assert!(!user_file.exists());
         } else {
@@ -483,24 +483,24 @@ fn system_marketplace_downloads_and_updates_without_writing_user_config() {
 
 #[test]
 fn changed_config_rolls_back_marketplace_activation() {
-    let codex_home = TempDir::new().unwrap();
+    let ava_home = TempDir::new().unwrap();
     let remote = TempDir::new().unwrap();
     init_marketplace_repo(remote.path(), "good");
     let source = url::Url::from_directory_path(remote.path())
         .unwrap()
         .to_string();
     let system = format!("[marketplaces.good]\nsource_type = \"git\"\nsource = {source:?}\n");
-    let stack = system_marketplace_stack(codex_home.path(), &system, "");
-    let reload_config = config_reloader(codex_home.path());
+    let stack = system_marketplace_stack(ava_home.path(), &system, "");
+    let reload_config = config_reloader(ava_home.path());
     let initial = upgrade_configured_git_marketplaces(
-        codex_home.path(),
+        ava_home.path(),
         &stack,
         Some("good"),
         &reload_config,
     );
     assert!(initial.all_succeeded());
     let root = &initial.upgraded_roots[0];
-    let original_metadata = std::fs::read(root.join(".codex-marketplace-install.json")).unwrap();
+    let original_metadata = std::fs::read(root.join(".ava-marketplace-install.json")).unwrap();
     std::fs::write(remote.path().join("new-file"), "new revision").unwrap();
     run_git(remote.path(), &["add", "."]);
     run_git(remote.path(), &["commit", "-m", "update"]);
@@ -513,10 +513,10 @@ fn changed_config_rolls_back_marketplace_activation() {
         ),
         (CONFIG_TOML_FILE, "invalid = [".to_string()),
     ] {
-        std::fs::write(codex_home.path().join("system.toml"), &system).unwrap();
-        std::fs::write(codex_home.path().join(file), changed_config).unwrap();
+        std::fs::write(ava_home.path().join("system.toml"), &system).unwrap();
+        std::fs::write(ava_home.path().join(file), changed_config).unwrap();
         let outcome = upgrade_configured_git_marketplaces(
-            codex_home.path(),
+            ava_home.path(),
             &stack,
             Some("good"),
             &reload_config,
@@ -525,7 +525,7 @@ fn changed_config_rolls_back_marketplace_activation() {
         assert_eq!(outcome.errors.len(), 1);
         assert!(!root.join("new-file").exists());
         assert_eq!(
-            std::fs::read(root.join(".codex-marketplace-install.json")).unwrap(),
+            std::fs::read(root.join(".ava-marketplace-install.json")).unwrap(),
             original_metadata
         );
     }
@@ -540,8 +540,8 @@ fn init_marketplace_repo(repo: &Path, marketplace_name: &str) {
     )
     .expect("write marketplace manifest");
     run_git(repo, &["init"]);
-    run_git(repo, &["config", "user.email", "codex-test@example.com"]);
-    run_git(repo, &["config", "user.name", "Codex Test"]);
+    run_git(repo, &["config", "user.email", "ava-test@example.com"]);
+    run_git(repo, &["config", "user.name", "Ava Test"]);
     run_git(repo, &["add", "."]);
     run_git(repo, &["commit", "-m", "initial"]);
 }

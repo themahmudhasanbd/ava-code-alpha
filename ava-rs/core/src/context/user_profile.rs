@@ -1,8 +1,8 @@
 //! Dynamic User Profile & Persona Context Fragment.
 
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::user_profile::UserProfileConfig;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::user_profile::UserProfileConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct UserProfileContextFragment {

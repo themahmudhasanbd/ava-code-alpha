@@ -2,35 +2,35 @@ use std::collections::HashMap;
 #[cfg(any(windows, test))]
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_sandboxing::SandboxCommand;
-use codex_sandboxing::SandboxDirectSpawnTransformRequest;
-use codex_sandboxing::SandboxExecRequest;
-use codex_sandboxing::SandboxManager;
-use codex_sandboxing::SandboxTransformRequest;
-use codex_sandboxing::SandboxType;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_sandboxing::SandboxCommand;
+use ava_sandboxing::SandboxDirectSpawnTransformRequest;
+use ava_sandboxing::SandboxExecRequest;
+use ava_sandboxing::SandboxManager;
+use ava_sandboxing::SandboxTransformRequest;
+use ava_sandboxing::SandboxType;
+use ava_utils_absolute_path::AbsolutePathBuf;
 #[cfg(not(target_os = "linux"))]
-use codex_utils_absolute_path::canonicalize_preserving_symlinks;
+use ava_utils_absolute_path::canonicalize_preserving_symlinks;
 #[cfg(any(windows, test))]
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::LegacyAppPathString;
 #[cfg(any(windows, test))]
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
-use codex_utils_pty::Child;
-use codex_utils_pty::ChildStdin;
-use codex_utils_pty::Command;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
+use ava_utils_pty::Child;
+use ava_utils_pty::ChildStdin;
+use ava_utils_pty::Command;
 #[cfg(target_os = "macos")]
-use codex_utils_pty::DescriptorPolicy;
-use codex_utils_pty::SpawnFallback;
+use ava_utils_pty::DescriptorPolicy;
+use ava_utils_pty::SpawnFallback;
 #[cfg(any(windows, test))]
 use tokio::io::AsyncBufReadExt;
 #[cfg(any(windows, test))]
@@ -39,7 +39,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::ExecServerRuntimePaths;
 use crate::FileSystemSandboxContext;
-use crate::fs_helper::CODEX_FS_HELPER_ARG1;
+use crate::fs_helper::AVA_FS_HELPER_ARG1;
 use crate::fs_helper::FsHelperPayload;
 use crate::fs_helper::FsHelperRequest;
 use crate::fs_helper::FsHelperResponse;
@@ -149,11 +149,11 @@ impl FileSystemSandboxRunner {
         workspace_roots: &[AbsolutePathBuf],
         sandbox_context: &FileSystemSandboxContext,
     ) -> Result<SandboxExecRequest, JSONRPCErrorError> {
-        let helper = &self.runtime_paths.codex_self_exe;
+        let helper = &self.runtime_paths.ava_self_exe;
         let sandbox_manager = SandboxManager::for_file_system_helpers();
         #[cfg(target_os = "macos")]
-        let sandbox_manager = sandbox_manager.with_allowed_symlinked_codex_home(
-            self.runtime_paths.allowed_symlinked_codex_home.clone(),
+        let sandbox_manager = sandbox_manager.with_allowed_symlinked_ava_home(
+            self.runtime_paths.allowed_symlinked_ava_home.clone(),
         );
         let (sandbox, windows_sandbox_level) = crate::sandbox_selection::select_sandbox(
             &sandbox_manager,
@@ -175,7 +175,7 @@ impl FileSystemSandboxRunner {
             .ok_or_else(|| invalid_request("filesystem sandbox cwd has no root".to_string()))?;
         let command = SandboxCommand {
             program: helper.as_path().as_os_str().to_owned(),
-            args: vec![CODEX_FS_HELPER_ARG1.to_string()],
+            args: vec![AVA_FS_HELPER_ARG1.to_string()],
             cwd: PathUri::from_abs_path(&helper_cwd),
             env: self.helper_env.clone(),
             managed_network: None,
@@ -185,7 +185,7 @@ impl FileSystemSandboxRunner {
             .transform_for_direct_spawn(SandboxDirectSpawnTransformRequest {
                 workspace_roots,
                 windows_sandbox_proxy_settings_mode:
-                    codex_sandboxing::WindowsSandboxProxySettingsMode::Preserve,
+                    ava_sandboxing::WindowsSandboxProxySettingsMode::Preserve,
                 transform: SandboxTransformRequest {
                     command,
                     permissions: permission_profile,
@@ -195,9 +195,9 @@ impl FileSystemSandboxRunner {
                     network: None,
                     sandbox_policy_cwd: &cwd.uri,
                     sandbox_exe: if cfg!(windows) {
-                        Some(self.runtime_paths.codex_self_exe.as_path())
+                        Some(self.runtime_paths.ava_self_exe.as_path())
                     } else {
-                        self.runtime_paths.codex_linux_sandbox_exe.as_deref()
+                        self.runtime_paths.ava_linux_sandbox_exe.as_deref()
                     },
                     use_legacy_landlock: sandbox_context.use_legacy_landlock,
                     windows_sandbox_level: windows_sandbox_level
@@ -229,8 +229,8 @@ fn native_workspace_root(root: &PathUri) -> Result<AbsolutePathBuf, JSONRPCError
 }
 
 fn helper_read_roots(runtime_paths: &ExecServerRuntimePaths) -> Vec<AbsolutePathBuf> {
-    let mut roots = vec![runtime_paths.codex_self_exe.clone()];
-    if let Some(path) = &runtime_paths.codex_linux_sandbox_exe
+    let mut roots = vec![runtime_paths.ava_self_exe.clone()];
+    if let Some(path) = &runtime_paths.ava_linux_sandbox_exe
         && !roots.contains(path)
     {
         roots.push(path.clone());
@@ -519,7 +519,7 @@ pub(crate) fn spawn_command(
     // TODO(anp): Keep PathUri through the filesystem helper launch boundary.
     let cwd = cwd.to_abs_path().map_err(io_error)?;
     command.current_dir(cwd.as_path());
-    env.retain(|name, _| !codex_protocol::shell_environment::is_non_inheritable_env_var(name));
+    env.retain(|name, _| !ava_protocol::shell_environment::is_non_inheritable_env_var(name));
     command.envs(env);
     command.stdin(stdin);
     // A helper is a known executable: native launch errors must not retry through fork.
@@ -549,15 +549,15 @@ mod tests {
     use std::collections::HashMap;
     use std::ffi::OsString;
 
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemPath;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_protocol::permissions::FileSystemSpecialPath;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_path_uri::PathUri;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemPath;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_protocol::permissions::FileSystemSpecialPath;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
 
     use crate::ExecServerRuntimePaths;
@@ -599,9 +599,9 @@ mod tests {
 
     #[test]
     fn helper_permissions_preserve_existing_writes() {
-        let codex_self_exe = std::env::current_exe().expect("current exe");
+        let ava_self_exe = std::env::current_exe().expect("current exe");
         let runtime_paths =
-            ExecServerRuntimePaths::new(codex_self_exe, /*codex_linux_sandbox_exe*/ None)
+            ExecServerRuntimePaths::new(ava_self_exe, /*ava_linux_sandbox_exe*/ None)
                 .expect("runtime paths");
         let cwd = AbsolutePathBuf::from_absolute_path(std::env::temp_dir().as_path())
             .expect("absolute cwd");
@@ -610,7 +610,7 @@ mod tests {
             writable.clone(),
             FileSystemAccessMode::Write,
         )]);
-        let readable = runtime_paths.codex_self_exe.clone();
+        let readable = runtime_paths.ava_self_exe.clone();
 
         add_helper_runtime_permissions(
             &mut policy,
@@ -642,7 +642,7 @@ mod tests {
         let env = helper_env_from_vars(
             [
                 ("PATH", "/usr/bin:/bin"),
-                ("TMPDIR", "/tmp/codex"),
+                ("TMPDIR", "/tmp/ava"),
                 ("TMP", "/tmp"),
                 ("TEMP", "/tmp"),
                 ("HOME", "/home/user"),
@@ -656,7 +656,7 @@ mod tests {
             env,
             HashMap::from([
                 ("PATH".to_string(), "/usr/bin:/bin".to_string()),
-                ("TMPDIR".to_string(), "/tmp/codex".to_string()),
+                ("TMPDIR".to_string(), "/tmp/ava".to_string()),
                 ("TMP".to_string(), "/tmp".to_string()),
                 ("TEMP".to_string(), "/tmp".to_string()),
             ])
@@ -711,9 +711,9 @@ mod tests {
         };
         let path_key = path_key.to_string_lossy().into_owned();
         let path = path.to_string_lossy().into_owned();
-        let codex_self_exe = std::env::current_exe().expect("current exe");
+        let ava_self_exe = std::env::current_exe().expect("current exe");
         let runtime_paths =
-            ExecServerRuntimePaths::new(codex_self_exe.clone(), Some(codex_self_exe))
+            ExecServerRuntimePaths::new(ava_self_exe.clone(), Some(ava_self_exe))
                 .expect("runtime paths");
         let runner = FileSystemSandboxRunner::new(runtime_paths);
         let native_cwd = AbsolutePathBuf::current_dir().expect("cwd");
@@ -747,7 +747,7 @@ mod tests {
             );
             crate::FileSystemSandboxContext {
                 windows_sandbox_selection:
-                    codex_file_system::WindowsSandboxSelection::RestrictedToken,
+                    ava_file_system::WindowsSandboxSelection::RestrictedToken,
                 ..sandbox_context
             }
         };
@@ -767,9 +767,9 @@ mod tests {
     /// Removing the selected directory must not change permission anchoring or prevent launch.
     #[test]
     fn sandbox_exec_request_uses_filesystem_root_and_preserves_policy_cwd() {
-        let codex_self_exe = std::env::current_exe().expect("current exe");
+        let ava_self_exe = std::env::current_exe().expect("current exe");
         let runtime_paths =
-            ExecServerRuntimePaths::new(codex_self_exe.clone(), Some(codex_self_exe))
+            ExecServerRuntimePaths::new(ava_self_exe.clone(), Some(ava_self_exe))
                 .expect("runtime paths");
         let runner = FileSystemSandboxRunner::new(runtime_paths);
         let selected = tempfile::tempdir().expect("selected directory");
@@ -783,7 +783,7 @@ mod tests {
             sandbox_context_with_cwd(&policy, PathUri::from_abs_path(&selected_cwd));
         #[cfg(windows)]
         let sandbox_context = crate::FileSystemSandboxContext {
-            windows_sandbox_selection: codex_file_system::WindowsSandboxSelection::RestrictedToken,
+            windows_sandbox_selection: ava_file_system::WindowsSandboxSelection::RestrictedToken,
             ..sandbox_context
         };
         selected.close().expect("remove selected directory");
@@ -857,9 +857,9 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn sandbox_exec_request_binds_windows_relative_globs_to_policy_cwd() {
-        let codex_self_exe = std::env::current_exe().expect("current exe");
+        let ava_self_exe = std::env::current_exe().expect("current exe");
         let runtime_paths =
-            ExecServerRuntimePaths::new(codex_self_exe, /*codex_linux_sandbox_exe*/ None)
+            ExecServerRuntimePaths::new(ava_self_exe, /*ava_linux_sandbox_exe*/ None)
                 .expect("runtime paths");
         let runner = FileSystemSandboxRunner::new(runtime_paths);
         let selected = tempfile::tempdir().expect("selected directory");
@@ -880,7 +880,7 @@ mod tests {
             ),
         ]);
         let sandbox_context = crate::FileSystemSandboxContext {
-            windows_sandbox_selection: codex_file_system::WindowsSandboxSelection::RestrictedToken,
+            windows_sandbox_selection: ava_file_system::WindowsSandboxSelection::RestrictedToken,
             ..sandbox_context_with_cwd(&policy, cwd_uri)
         };
         selected.close().expect("remove selected directory");
@@ -947,15 +947,15 @@ mod tests {
 
     #[test]
     fn helper_permissions_include_only_the_helper_executable() {
-        let codex_self_exe = std::env::current_exe().expect("current exe");
+        let ava_self_exe = std::env::current_exe().expect("current exe");
         let runtime_paths =
-            ExecServerRuntimePaths::new(codex_self_exe, /*codex_linux_sandbox_exe*/ None)
+            ExecServerRuntimePaths::new(ava_self_exe, /*ava_linux_sandbox_exe*/ None)
                 .expect("runtime paths");
         let cwd = AbsolutePathBuf::from_absolute_path(std::env::temp_dir().as_path())
             .expect("absolute cwd");
         let mut policy = restricted_policy(Vec::new());
         let parent = runtime_paths
-            .codex_self_exe
+            .ava_self_exe
             .parent()
             .expect("current exe parent");
         let sibling = parent.join("credentials.json");
@@ -968,7 +968,7 @@ mod tests {
 
         assert!(
             policy.can_read_local_path_with_cwd(
-                runtime_paths.codex_self_exe.as_path(),
+                runtime_paths.ava_self_exe.as_path(),
                 cwd.as_path(),
             )
         );
@@ -979,17 +979,17 @@ mod tests {
     #[test]
     fn helper_permissions_include_only_linux_sandbox_alias_executable() {
         let root = tempfile::tempdir().expect("temp dir");
-        let codex_self_exe = root.path().join("bin").join("codex");
-        let codex_linux_sandbox_exe = root.path().join("aliases").join("codex-linux-sandbox");
+        let ava_self_exe = root.path().join("bin").join("ava");
+        let ava_linux_sandbox_exe = root.path().join("aliases").join("ava-linux-sandbox");
         let runtime_paths =
-            ExecServerRuntimePaths::new(codex_self_exe, Some(codex_linux_sandbox_exe))
+            ExecServerRuntimePaths::new(ava_self_exe, Some(ava_linux_sandbox_exe))
                 .expect("runtime paths");
         let cwd = AbsolutePathBuf::from_absolute_path(std::env::temp_dir().as_path())
             .expect("absolute cwd");
         let mut policy = restricted_policy(Vec::new());
-        let codex_parent = runtime_paths.codex_self_exe.parent().expect("codex parent");
+        let ava_parent = runtime_paths.ava_self_exe.parent().expect("ava parent");
         let alias = runtime_paths
-            .codex_linux_sandbox_exe
+            .ava_linux_sandbox_exe
             .as_ref()
             .expect("linux sandbox alias");
         let alias_parent = alias.parent().expect("alias parent");
@@ -1002,12 +1002,12 @@ mod tests {
 
         assert!(
             policy.can_read_local_path_with_cwd(
-                runtime_paths.codex_self_exe.as_path(),
+                runtime_paths.ava_self_exe.as_path(),
                 cwd.as_path(),
             )
         );
         assert!(policy.can_read_local_path_with_cwd(alias.as_path(), cwd.as_path()));
-        assert!(!policy.can_read_local_path_with_cwd(codex_parent.as_path(), cwd.as_path()));
+        assert!(!policy.can_read_local_path_with_cwd(ava_parent.as_path(), cwd.as_path()));
         assert!(!policy.can_read_local_path_with_cwd(alias_parent.as_path(), cwd.as_path()));
     }
 
@@ -1019,7 +1019,7 @@ mod tests {
         policy: &FileSystemSandboxPolicy,
         cwd: PathUri,
     ) -> crate::FileSystemSandboxContext {
-        codex_file_system::FileSystemSandboxContext::from_permission_profile(
+        ava_file_system::FileSystemSandboxContext::from_permission_profile(
             PermissionProfile::from_runtime_permissions(policy, NetworkSandboxPolicy::Restricted),
             cwd,
         )

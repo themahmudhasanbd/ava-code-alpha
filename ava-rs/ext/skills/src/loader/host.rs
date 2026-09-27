@@ -1,20 +1,20 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::FileSystemEnvironmentAccessor;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_protocol::protocol::SkillScope;
-use codex_skills::ParsedSkillFrontmatter;
-use codex_skills::SkillError;
-use codex_skills::SkillMetadata;
-use codex_skills::parse_skill_frontmatter_metadata;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::PluginIdentity;
-use codex_utils_plugins::PluginSkillRoot;
-use codex_utils_plugins::SkillDiscoveryMode;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::FileSystemEnvironmentAccessor;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_protocol::protocol::SkillScope;
+use ava_skills::ParsedSkillFrontmatter;
+use ava_skills::SkillError;
+use ava_skills::SkillMetadata;
+use ava_skills::parse_skill_frontmatter_metadata;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::PluginIdentity;
+use ava_utils_plugins::PluginSkillRoot;
+use ava_utils_plugins::SkillDiscoveryMode;
 use futures::StreamExt;
 use tracing::error;
 

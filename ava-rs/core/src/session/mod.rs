@@ -55,129 +55,129 @@ use async_channel::Receiver;
 use async_channel::Sender;
 use chrono::Local;
 use chrono::Utc;
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::ImagePreparationFact;
-use codex_analytics::ImagePreparationMetadata;
-use codex_analytics::SubAgentThreadStartedInput;
-use codex_analytics::TurnCodexErrorFact;
-use codex_async_utils::OrCancelExt;
-use codex_attachment_store::AttachmentStore;
-use codex_attachment_store::InlineAttachmentStore;
-use codex_connectors::connector_runtime_context_key;
-use codex_context_fragments::RenderedFragment;
-use codex_exec_server::Environment;
-use codex_exec_server::EnvironmentManager;
-use codex_execpolicy::prefix_rule_migration;
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::PromptSlot;
-use codex_extension_api::TurnContextContributionInput;
-use codex_features::FEATURES;
-use codex_features::Feature;
-use codex_features::unstable_features_warning_event;
-use codex_history::RolloutItem;
-use codex_hooks::Hooks;
-use codex_hooks::HooksConfig;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_login::auth_env_telemetry::collect_auth_env_telemetry;
-use codex_mcp::McpResourceClient;
-use codex_mcp::McpRuntime;
-use codex_mcp::McpRuntimeContext;
-use codex_mcp::McpRuntimeInput;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_models_manager::manager::SharedModelsManager;
-use codex_network_proxy::NetworkProxy;
-use codex_network_proxy::NetworkProxyAuditMetadata;
-use codex_network_proxy::normalize_host;
-use codex_otel::current_span_trace_id;
-use codex_otel::current_span_w3c_trace_context;
-use codex_otel::set_parent_from_w3c_trace_context;
-use codex_prompts::render_model_instructions;
-use codex_protocol::ResponseUsageMetadata;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::approvals::ElicitationRequest;
-use codex_protocol::approvals::ElicitationRequestEvent;
-use codex_protocol::approvals::ExecPolicyAmendment;
-use codex_protocol::approvals::NetworkPolicyAmendment;
-use codex_protocol::approvals::NetworkPolicyRuleAction;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::AutoCompactTokenLimitScope;
-use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::dynamic_tools::DynamicToolResponse;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::items::EnteredReviewModeItem;
-use codex_protocol::items::ModelInvocationContext;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::SandboxEnforcement;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSandboxPolicyContext;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::FileChange;
-use codex_protocol::protocol::HasLegacyEvent;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::InterAgentCommunication;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ItemStartedEvent;
-use codex_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::RawResponseItemEvent;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnContextItem;
-use codex_protocol::protocol::TurnContextNetworkItem;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_protocol::protocol::W3cTraceContext;
-use codex_protocol::protocol::WorldStateItem;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionProfile;
-use codex_protocol::request_permissions::RequestPermissionsArgs;
-use codex_protocol::request_permissions::RequestPermissionsEvent;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::request_user_input::RequestUserInputArgs;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rollout::state_db;
-use codex_rollout_trace::ThreadStartedTraceMetadata;
-use codex_rollout_trace::ThreadTraceContext;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::policy_transforms::intersect_permission_profiles_with_context;
-use codex_shell_command::parse_command::parse_command;
-use codex_terminal_detection::user_agent;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::LiveThread;
-use codex_thread_store::LiveThreadInitGuard;
-use codex_thread_store::LocalThreadStore;
-use codex_thread_store::PersistContext;
-use codex_thread_store::ReadThreadParams;
-use codex_thread_store::ResumeThreadParams;
-use codex_thread_store::ThreadPersistenceMetadata;
-use codex_thread_store::ThreadStore;
-use codex_utils_audio::prepare_response_items as prepare_audio_response_items;
-use codex_utils_git_discovery::GitRootDiscovery;
-use codex_utils_output_truncation::with_serialization_allowance;
-use codex_utils_path_uri::PathUri;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::ImagePreparationFact;
+use ava_analytics::ImagePreparationMetadata;
+use ava_analytics::SubAgentThreadStartedInput;
+use ava_analytics::TurnAvaErrorFact;
+use ava_async_utils::OrCancelExt;
+use ava_attachment_store::AttachmentStore;
+use ava_attachment_store::InlineAttachmentStore;
+use ava_connectors::connector_runtime_context_key;
+use ava_context_fragments::RenderedFragment;
+use ava_exec_server::Environment;
+use ava_exec_server::EnvironmentManager;
+use ava_execpolicy::prefix_rule_migration;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::PromptSlot;
+use ava_extension_api::TurnContextContributionInput;
+use ava_features::FEATURES;
+use ava_features::Feature;
+use ava_features::unstable_features_warning_event;
+use ava_history::RolloutItem;
+use ava_hooks::Hooks;
+use ava_hooks::HooksConfig;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_login::auth_env_telemetry::collect_auth_env_telemetry;
+use ava_mcp::McpResourceClient;
+use ava_mcp::McpRuntime;
+use ava_mcp::McpRuntimeContext;
+use ava_mcp::McpRuntimeInput;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_models_manager::manager::SharedModelsManager;
+use ava_network_proxy::NetworkProxy;
+use ava_network_proxy::NetworkProxyAuditMetadata;
+use ava_network_proxy::normalize_host;
+use ava_otel::current_span_trace_id;
+use ava_otel::current_span_w3c_trace_context;
+use ava_otel::set_parent_from_w3c_trace_context;
+use ava_prompts::render_model_instructions;
+use ava_protocol::ResponseUsageMetadata;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::approvals::ElicitationRequest;
+use ava_protocol::approvals::ElicitationRequestEvent;
+use ava_protocol::approvals::ExecPolicyAmendment;
+use ava_protocol::approvals::NetworkPolicyAmendment;
+use ava_protocol::approvals::NetworkPolicyRuleAction;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::AutoCompactTokenLimitScope;
+use ava_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::dynamic_tools::DynamicToolResponse;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::items::EnteredReviewModeItem;
+use ava_protocol::items::ModelInvocationContext;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::SandboxEnforcement;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicyContext;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::FileChange;
+use ava_protocol::protocol::HasLegacyEvent;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::InterAgentCommunication;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ItemStartedEvent;
+use ava_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::RawResponseItemEvent;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnContextItem;
+use ava_protocol::protocol::TurnContextNetworkItem;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_protocol::protocol::W3cTraceContext;
+use ava_protocol::protocol::WorldStateItem;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionProfile;
+use ava_protocol::request_permissions::RequestPermissionsArgs;
+use ava_protocol::request_permissions::RequestPermissionsEvent;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::request_user_input::RequestUserInputArgs;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rollout::state_db;
+use ava_rollout_trace::ThreadStartedTraceMetadata;
+use ava_rollout_trace::ThreadTraceContext;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::policy_transforms::intersect_permission_profiles_with_context;
+use ava_shell_command::parse_command::parse_command;
+use ava_terminal_detection::user_agent;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::LiveThread;
+use ava_thread_store::LiveThreadInitGuard;
+use ava_thread_store::LocalThreadStore;
+use ava_thread_store::PersistContext;
+use ava_thread_store::ReadThreadParams;
+use ava_thread_store::ResumeThreadParams;
+use ava_thread_store::ThreadPersistenceMetadata;
+use ava_thread_store::ThreadStore;
+use ava_utils_audio::prepare_response_items as prepare_audio_response_items;
+use ava_utils_git_discovery::GitRootDiscovery;
+use ava_utils_output_truncation::with_serialization_allowance;
+use ava_utils_path_uri::PathUri;
 use futures::future::BoxFuture;
 use futures::future::Shared;
 use futures::prelude::*;
@@ -200,8 +200,8 @@ use tracing::warn;
 use uuid::Uuid;
 
 use crate::client::ModelClient;
-use crate::codex_thread::CodexThreadSettingsOverrides;
-use crate::codex_thread::ThreadConfigSnapshot;
+use crate::ava_thread::AvaThreadSettingsOverrides;
+use crate::ava_thread::ThreadConfigSnapshot;
 #[cfg(test)]
 use crate::compact::collect_user_messages;
 use crate::config::Config;
@@ -213,16 +213,16 @@ use crate::config::resolve_web_search_mode_for_turn;
 use crate::context_manager::ContextManager;
 use crate::context_manager::HistoryReplacement;
 use crate::thread_rollout_truncation::initial_history_has_prior_user_turns;
-use codex_config::CONFIG_TOML_FILE;
-use codex_config::ConfigLayerSource;
-use codex_config::types::McpServerConfig;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::error::Result as CodexResult;
+use ava_config::CONFIG_TOML_FILE;
+use ava_config::ConfigLayerSource;
+use ava_config::types::McpServerConfig;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::error::Result as AvaResult;
 #[cfg(test)]
-use codex_protocol::exec_output::StreamOutput;
+use ava_protocol::exec_output::StreamOutput;
 
 mod code_mode_warning;
 pub(crate) mod context_window;
@@ -332,72 +332,72 @@ use crate::unified_exec::UnifiedExecProcessManager;
 use crate::windows_sandbox::WindowsSandboxLevelExt;
 use crate::windows_sandbox::local_binding_policy_for_sandbox;
 use crate::windows_sandbox::managed_proxy_routing_for_windows_sandbox;
-use codex_core_plugins::PluginCommandAttribution;
-use codex_core_plugins::PluginsManager;
-use codex_core_plugins::RecommendedPluginCandidatesInput;
-use codex_git_utils::get_git_repo_root;
-use codex_history::CodexHarnessMetadata;
-use codex_history::CompactedItem;
-use codex_history::InitialHistory;
-use codex_history::ResponseItemEnvelope;
-use codex_mcp::McpConfig;
-use codex_mcp::effective_mcp_servers;
-use codex_otel::SessionTelemetry;
-use codex_otel::THREAD_STARTED_METRIC;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::ResponseItemId;
-use codex_protocol::approvals::ExecApprovalKind;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::LocalImagePreparation;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::protocol::ApplyPatchApprovalRequestEvent;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::DeprecationNoticeEvent;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecApprovalRequestEvent;
-use codex_protocol::protocol::ModelRerouteEvent;
-use codex_protocol::protocol::ModelRerouteReason;
-use codex_protocol::protocol::ModelVerification;
-use codex_protocol::protocol::ModelVerificationEvent;
-use codex_protocol::protocol::NetworkApprovalContext;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::RateLimitSnapshot;
-use codex_protocol::protocol::RawResponseCompletedEvent;
-use codex_protocol::protocol::RequestUserInputEvent;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionConfiguredEvent;
-use codex_protocol::protocol::SessionNetworkProxyRuntime;
-use codex_protocol::protocol::StreamErrorEvent;
-use codex_protocol::protocol::Submission;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_protocol::protocol::TokenCountEvent;
-use codex_protocol::protocol::TokenUsage;
-use codex_protocol::protocol::TokenUsageInfo;
-use codex_protocol::protocol::TokenUsageRecord;
-use codex_protocol::protocol::TurnModerationMetadataEvent;
-use codex_protocol::protocol::WarningEvent;
-use codex_protocol::turn_input::TurnInputMode;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnInputSubmission;
-use codex_protocol::turn_input::TurnStartOptions;
-use codex_protocol::user_input::UserInput;
-use codex_skills_extension::HostSkillsService;
-use codex_tools::ToolName;
-use codex_tools::UnifiedExecShellMode;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_core_plugins::PluginCommandAttribution;
+use ava_core_plugins::PluginsManager;
+use ava_core_plugins::RecommendedPluginCandidatesInput;
+use ava_git_utils::get_git_repo_root;
+use ava_history::AvaHarnessMetadata;
+use ava_history::CompactedItem;
+use ava_history::InitialHistory;
+use ava_history::ResponseItemEnvelope;
+use ava_mcp::McpConfig;
+use ava_mcp::effective_mcp_servers;
+use ava_otel::SessionTelemetry;
+use ava_otel::THREAD_STARTED_METRIC;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::ResponseItemId;
+use ava_protocol::approvals::ExecApprovalKind;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::LocalImagePreparation;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::protocol::ApplyPatchApprovalRequestEvent;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::DeprecationNoticeEvent;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecApprovalRequestEvent;
+use ava_protocol::protocol::ModelRerouteEvent;
+use ava_protocol::protocol::ModelRerouteReason;
+use ava_protocol::protocol::ModelVerification;
+use ava_protocol::protocol::ModelVerificationEvent;
+use ava_protocol::protocol::NetworkApprovalContext;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::RawResponseCompletedEvent;
+use ava_protocol::protocol::RequestUserInputEvent;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionConfiguredEvent;
+use ava_protocol::protocol::SessionNetworkProxyRuntime;
+use ava_protocol::protocol::StreamErrorEvent;
+use ava_protocol::protocol::Submission;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_protocol::protocol::TokenCountEvent;
+use ava_protocol::protocol::TokenUsage;
+use ava_protocol::protocol::TokenUsageInfo;
+use ava_protocol::protocol::TokenUsageRecord;
+use ava_protocol::protocol::TurnModerationMetadataEvent;
+use ava_protocol::protocol::WarningEvent;
+use ava_protocol::turn_input::TurnInputMode;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnInputSubmission;
+use ava_protocol::turn_input::TurnStartOptions;
+use ava_protocol::user_input::UserInput;
+use ava_skills_extension::HostSkillsService;
+use ava_tools::ToolName;
+use ava_tools::UnifiedExecShellMode;
+use ava_utils_absolute_path::AbsolutePathBuf;
 #[cfg(test)]
-use codex_utils_stream_parser::ProposedPlanSegment;
+use ava_utils_stream_parser::ProposedPlanSegment;
 
 /// Queue and lifecycle endpoints for a running [`Session`].
 ///
@@ -445,8 +445,8 @@ pub(crate) struct SessionSpawnArgs {
     pub(crate) skills_service: Arc<HostSkillsService>,
     pub(crate) plugins_manager: Arc<PluginsManager>,
     pub(crate) mcp_manager: Arc<McpManager>,
-    pub(crate) code_mode_session_provider: Arc<dyn codex_code_mode::CodeModeSessionProvider>,
-    pub(crate) extensions: Arc<codex_extension_api::ExtensionRegistry<crate::config::Config>>,
+    pub(crate) code_mode_session_provider: Arc<dyn ava_code_mode::CodeModeSessionProvider>,
+    pub(crate) extensions: Arc<ava_extension_api::ExtensionRegistry<crate::config::Config>>,
     pub(crate) conversation_history: InitialHistory,
     pub(crate) disabled_plugin_ids: Option<Vec<String>>,
     pub(crate) requested_history_mode: Option<ThreadHistoryMode>,
@@ -480,7 +480,7 @@ pub(crate) struct SessionSpawnArgs {
     pub(crate) inherited_multi_agent_version: Option<MultiAgentVersion>,
     pub(crate) git_enrichment_policy: GitEnrichmentPolicy,
     pub(crate) windows_sandbox_proxy_settings_mode:
-        codex_sandboxing::WindowsSandboxProxySettingsMode,
+        ava_sandboxing::WindowsSandboxProxySettingsMode,
 }
 
 pub(crate) fn resolve_multi_agent_version(
@@ -512,11 +512,11 @@ impl Session {
     #[inline(never)]
     pub(crate) fn spawn(
         args: SessionSpawnArgs,
-    ) -> BoxFuture<'static, CodexResult<(Arc<Self>, SessionIo)>> {
+    ) -> BoxFuture<'static, AvaResult<(Arc<Self>, SessionIo)>> {
         Box::pin(async move {
             let parent_trace = match args.parent_trace {
                 Some(trace) => {
-                    if codex_otel::context_from_w3c_trace_context(&trace).is_some() {
+                    if ava_otel::context_from_w3c_trace_context(&trace).is_some() {
                         Some(trace)
                     } else {
                         warn!("ignoring invalid thread spawn trace carrier");
@@ -538,7 +538,7 @@ impl Session {
         })
     }
 
-    async fn spawn_internal(args: SessionSpawnArgs) -> CodexResult<(Arc<Self>, SessionIo)> {
+    async fn spawn_internal(args: SessionSpawnArgs) -> AvaResult<(Arc<Self>, SessionIo)> {
         let SessionSpawnArgs {
             startup,
             config,
@@ -588,11 +588,11 @@ impl Session {
         let (tx_event, rx_event) = async_channel::unbounded();
 
         let isolation = thread_extension_init
-            .get::<codex_extension_api::SessionIsolation>()
+            .get::<ava_extension_api::SessionIsolation>()
             .map(|policy| *policy)
             .unwrap_or_default();
         // Enforce snapshot-only instructions for both managed and inline isolated sessions.
-        let instructions = if isolation == codex_extension_api::SessionIsolation::Isolated {
+        let instructions = if isolation == ava_extension_api::SessionIsolation::Isolated {
             SessionInstructions {
                 user: instructions.user,
                 thread: instructions.thread,
@@ -601,13 +601,13 @@ impl Session {
         } else {
             instructions
         };
-        let exec_policy = if isolation == codex_extension_api::SessionIsolation::Isolated {
+        let exec_policy = if isolation == ava_extension_api::SessionIsolation::Isolated {
             let managed_policy = config
                 .config_layer_stack
                 .requirements()
                 .exec_policy
                 .as_deref()
-                .map_or_else(codex_execpolicy::Policy::empty, |policy| {
+                .map_or_else(ava_execpolicy::Policy::empty, |policy| {
                     policy.as_ref().clone()
                 });
             Arc::new(ExecPolicyManager::new(Arc::new(managed_policy)))
@@ -618,10 +618,10 @@ impl Session {
                 .config_layer_stack
                 .ignore_user_and_project_exec_policy_rules()
             {
-                let codex_home = config.codex_home.clone();
-                let policy_path = default_policy_path(codex_home.as_path());
+                let ava_home = config.ava_home.clone();
+                let policy_path = default_policy_path(ava_home.as_path());
                 if let Err(err) = prefix_rule_migration(
-                    codex_home.as_path(),
+                    ava_home.as_path(),
                     policy_path.as_path(),
                     BANNED_PREFIX_SUGGESTIONS,
                 )
@@ -633,20 +633,20 @@ impl Session {
             Arc::new(
                 ExecPolicyManager::load(&config.config_layer_stack)
                     .await
-                    .map_err(|err| CodexErr::Fatal(format!("failed to load rules: {err}")))?,
+                    .map_err(|err| AvaErr::Fatal(format!("failed to load rules: {err}")))?,
             )
         };
 
         let mut config = Arc::new(config);
         let refresh_strategy = if session_source.is_non_root_agent() {
-            codex_models_manager::manager::RefreshStrategy::Offline
+            ava_models_manager::manager::RefreshStrategy::Offline
         } else {
-            codex_models_manager::manager::RefreshStrategy::OnlineIfUncached
+            ava_models_manager::manager::RefreshStrategy::OnlineIfUncached
         };
         if config.model.is_none()
             || !matches!(
                 refresh_strategy,
-                codex_models_manager::manager::RefreshStrategy::Offline
+                ava_models_manager::manager::RefreshStrategy::Offline
             )
         {
             let _ = models_manager
@@ -678,12 +678,12 @@ impl Session {
                 config
                     .permissions
                     .set_permission_profile(permission_profile.clone())
-                    .map_err(|err| CodexErr::InvalidRequest(err.to_string()))?;
+                    .map_err(|err| AvaErr::InvalidRequest(err.to_string()))?;
                 if let Some(network) = config.permissions.network.as_ref() {
                     config.permissions.network = Some(
                         network
                             .recompute_for_permission_profile(&permission_profile)
-                            .map_err(|err| CodexErr::InvalidRequest(err.to_string()))?,
+                            .map_err(|err| AvaErr::InvalidRequest(err.to_string()))?,
                     );
                 }
             }
@@ -692,7 +692,7 @@ impl Session {
                 .requirements()
                 .approvals_reviewer
                 .can_set(&ApprovalsReviewer::AutoReview)
-                .map_err(|err| CodexErr::InvalidRequest(err.to_string()))?;
+                .map_err(|err| AvaErr::InvalidRequest(err.to_string()))?;
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
         }
         if allow_provider_model_fallback
@@ -722,7 +722,7 @@ impl Session {
         if !inherits_token_budget {
             Arc::make_mut(&mut config)
                 .prepare_token_budget_for_startup()
-                .map_err(|err| CodexErr::InvalidRequest(err.to_string()))?;
+                .map_err(|err| AvaErr::InvalidRequest(err.to_string()))?;
             // Resolve activation for this runtime, including when resuming saved history.
             token_budget::apply_experimental_context(
                 Arc::make_mut(&mut config),
@@ -736,7 +736,7 @@ impl Session {
                 .is_some_and(|token_budget| token_budget.use_history_notes_extension)
                 && !model_info.supports_experimental_context
             {
-                return Err(CodexErr::InvalidRequest(format!(
+                return Err(AvaErr::InvalidRequest(format!(
                     "features.token_budget.use_history_notes_extension is not supported by model `{model}`; disable it or select a model that supports experimental context"
                 )));
             }
@@ -768,7 +768,7 @@ impl Session {
             };
             settings_owner
                 .and_then(|thread_id| {
-                    codex_history::latest_disabled_plugin_ids(
+                    ava_history::latest_disabled_plugin_ids(
                         conversation_history.get_rollout_items(),
                         thread_id,
                     )
@@ -854,7 +854,7 @@ impl Session {
             use_legacy_landlock: config.features.use_legacy_landlock(),
             legacy_fallback_cwd: config.cwd.clone(),
             runtime_workspace_roots: config.workspace_roots.clone(),
-            codex_home: config.codex_home.clone(),
+            ava_home: config.ava_home.clone(),
             thread_name: None,
             disabled_plugin_ids,
             original_config_do_not_use: Arc::clone(&config),
@@ -873,7 +873,7 @@ impl Session {
         };
         session_configuration
             .validate(&environment_selections)
-            .map_err(|err| CodexErr::InvalidRequest(err.to_string()))?;
+            .map_err(|err| AvaErr::InvalidRequest(err.to_string()))?;
 
         // Generate a unique ID for the lifetime of this session.
         let session_source_clone = session_configuration.session_source.clone();
@@ -920,9 +920,9 @@ impl Session {
         .await
         .map_err(|e| {
             error!("Failed to create session: {e:#}");
-            match e.downcast::<CodexErr>() {
+            match e.downcast::<AvaErr>() {
                 Ok(error) => error,
-                Err(error) => map_session_init_error(&error, &config.codex_home),
+                Err(error) => map_session_init_error(&error, &config.ava_home),
             }
         })?;
         if let Some(message) = initial_service_tier_warning {
@@ -958,7 +958,7 @@ impl Session {
 
 impl SessionIo {
     /// Submit the `op` wrapped in a `Submission` with a unique ID.
-    pub(crate) async fn submit(&self, op: Op) -> CodexResult<String> {
+    pub(crate) async fn submit(&self, op: Op) -> AvaResult<String> {
         self.submit_with_trace(
             op, /*trace*/ None, /*parent_turn_id*/ None, /*root_turn_id*/ None,
         )
@@ -971,7 +971,7 @@ impl SessionIo {
         trace: Option<W3cTraceContext>,
         parent_turn_id: Option<String>,
         root_turn_id: Option<String>,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         let id = new_submission_id();
         let sub = Submission {
             id: id.clone(),
@@ -985,14 +985,14 @@ impl SessionIo {
     }
 
     /// Use sparingly: prefer `submit()` so submission IDs are generated consistently.
-    pub(crate) async fn submit_with_id(&self, mut sub: Submission) -> CodexResult<()> {
+    pub(crate) async fn submit_with_id(&self, mut sub: Submission) -> AvaResult<()> {
         if sub.trace.is_none() {
             sub.trace = current_span_w3c_trace_context();
         }
         self.tx_sub
             .send(sub)
             .await
-            .map_err(|_| CodexErr::InternalAgentDied)?;
+            .map_err(|_| AvaErr::InternalAgentDied)?;
         Ok(())
     }
 
@@ -1004,7 +1004,7 @@ impl SessionIo {
         &self,
         mut request: TurnInputRequest,
         mode: TurnInputMode,
-    ) -> CodexResult<TurnInputSubmission> {
+    ) -> AvaResult<TurnInputSubmission> {
         let id = new_submission_id();
         let (reply_tx, reply_rx) = oneshot::channel();
         let trace = request.trace.take();
@@ -1020,7 +1020,7 @@ impl SessionIo {
             root_turn_id: None,
         })
         .await?;
-        reply_rx.await.unwrap_or(Err(CodexErr::InternalAgentDied))
+        reply_rx.await.unwrap_or(Err(AvaErr::InternalAgentDied))
     }
 
     pub(crate) async fn submit_recover_turn(
@@ -1029,7 +1029,7 @@ impl SessionIo {
         start_options: TurnStartOptions,
         trace: Option<W3cTraceContext>,
         turn_id: String,
-    ) -> CodexResult<TurnInputSubmission> {
+    ) -> AvaResult<TurnInputSubmission> {
         let (reply_tx, reply_rx) = oneshot::channel();
         self.submit_with_id(Submission {
             id: turn_id,
@@ -1043,26 +1043,26 @@ impl SessionIo {
             root_turn_id: None,
         })
         .await?;
-        reply_rx.await.unwrap_or(Err(CodexErr::InternalAgentDied))
+        reply_rx.await.unwrap_or(Err(AvaErr::InternalAgentDied))
     }
 
-    pub(crate) async fn shutdown_and_wait(&self) -> CodexResult<()> {
+    pub(crate) async fn shutdown_and_wait(&self) -> AvaResult<()> {
         let session_loop_termination = self.session_loop_termination.clone();
         match self.submit(Op::Shutdown).await {
             Ok(_) => {}
-            Err(err) if matches!(err.details(), CodexErrorDetails::InternalAgentDied) => {}
+            Err(err) if matches!(err.details(), AvaErrorDetails::InternalAgentDied) => {}
             Err(err) => return Err(err),
         }
         session_loop_termination.await;
         Ok(())
     }
 
-    pub(crate) async fn next_event(&self) -> CodexResult<Event> {
+    pub(crate) async fn next_event(&self) -> AvaResult<Event> {
         let event = self
             .rx_event
             .recv()
             .await
-            .map_err(|_| CodexErr::InternalAgentDied)?;
+            .map_err(|_| AvaErr::InternalAgentDied)?;
         Ok(event)
     }
 
@@ -1116,7 +1116,7 @@ fn unsupported_service_tier_warning(
 
 fn session_permission_profile_state_from_config(
     config: &Config,
-) -> CodexResult<PermissionProfileState> {
+) -> AvaResult<PermissionProfileState> {
     Ok(config.permissions.permission_profile_state().clone())
 }
 
@@ -1182,7 +1182,7 @@ impl Session {
         !matches!(permission_profile, PermissionProfile::Disabled)
     }
 
-    /// Builds the `x-codex-beta-features` header value for this session.
+    /// Builds the `x-ava-beta-features` header value for this session.
     ///
     /// `ModelClient` is session-scoped and intentionally does not depend on the full `Config`, so
     /// we precompute the comma-separated list of enabled experimental feature keys at session
@@ -1205,11 +1205,11 @@ impl Session {
     #[allow(clippy::too_many_arguments)]
     async fn start_managed_network_proxy(
         spec: &crate::config::NetworkProxySpec,
-        exec_policy: &codex_execpolicy::Policy,
+        exec_policy: &ava_execpolicy::Policy,
         permission_profile: &PermissionProfile,
         windows_sandbox_type: SandboxType,
-        network_policy_decider: Option<Arc<dyn codex_network_proxy::NetworkPolicyDecider>>,
-        blocked_request_observer: Option<Arc<dyn codex_network_proxy::BlockedRequestObserver>>,
+        network_policy_decider: Option<Arc<dyn ava_network_proxy::NetworkPolicyDecider>>,
+        blocked_request_observer: Option<Arc<dyn ava_network_proxy::BlockedRequestObserver>>,
         managed_network_requirements_enabled: bool,
         audit_metadata: NetworkProxyAuditMetadata,
     ) -> anyhow::Result<(StartedNetworkProxy, SessionNetworkProxyRuntime)> {
@@ -1358,9 +1358,9 @@ impl Session {
     }
 
     #[cfg(test)]
-    pub(crate) async fn codex_home(&self) -> AbsolutePathBuf {
+    pub(crate) async fn ava_home(&self) -> AbsolutePathBuf {
         let state = self.state.lock().await;
-        state.session_configuration.codex_home().clone()
+        state.session_configuration.ava_home().clone()
     }
 
     pub(crate) fn subscribe_elicitation_pause_state(&self) -> watch::Receiver<bool> {
@@ -1499,7 +1499,7 @@ impl Session {
             )
         {
             BaseInstructions {
-                text: codex_prompts::without_update_plan_instructions(&instructions.text),
+                text: ava_prompts::without_update_plan_instructions(&instructions.text),
                 ..instructions
             }
         } else {
@@ -1533,14 +1533,14 @@ impl Session {
         state.clear_connector_selection();
     }
 
-    pub(crate) async fn set_active_plan(&self, plan: codex_protocol::plan_tool::UpdatePlanArgs) {
+    pub(crate) async fn set_active_plan(&self, plan: ava_protocol::plan_tool::UpdatePlanArgs) {
         let mut state = self.state.lock().await;
         state.active_plan = Some(plan);
     }
 
     pub(crate) async fn get_active_plan(
         &self,
-    ) -> Option<codex_protocol::plan_tool::UpdatePlanArgs> {
+    ) -> Option<ava_protocol::plan_tool::UpdatePlanArgs> {
         let state = self.state.lock().await;
         state.active_plan.clone()
     }
@@ -1617,7 +1617,7 @@ impl Session {
                         EventMsg::Warning(WarningEvent {
                             message: format!(
                                 "This session was recorded with model `{prev}` but is resuming with `{curr}`. \
-                         Consider switching back to `{prev}` as it may affect Codex performance."
+                         Consider switching back to `{prev}` as it may affect Ava performance."
                             ),
                         }),
                     )
@@ -1995,7 +1995,7 @@ impl Session {
             .thread_settings_snapshot(&state.session_configuration.environments)
     }
 
-    pub(crate) async fn restorable_thread_settings(&self) -> CodexThreadSettingsOverrides {
+    pub(crate) async fn restorable_thread_settings(&self) -> AvaThreadSettingsOverrides {
         let state = self.state.lock().await;
         state
             .session_configuration
@@ -2110,10 +2110,10 @@ impl Session {
                 warn!("failed to refresh MCP protocol config: {err}");
             }
             if let Err(err) = config.features.set_enabled(
-                Feature::CodexAppsMcp20260728,
-                next_config.features.enabled(Feature::CodexAppsMcp20260728),
+                Feature::AvaAppsMcp20260728,
+                next_config.features.enabled(Feature::AvaAppsMcp20260728),
             ) {
-                warn!("failed to refresh Codex Apps MCP protocol config: {err}");
+                warn!("failed to refresh Ava Apps MCP protocol config: {err}");
             }
             if let Err(err) = config.features.set_enabled(
                 Feature::SecretAuthStorage,
@@ -2181,10 +2181,10 @@ impl Session {
             warn!("failed to refresh MCP protocol config: {err}");
         }
         if let Err(err) = config.features.set_enabled(
-            Feature::CodexAppsMcp20260728,
-            next_config.features.enabled(Feature::CodexAppsMcp20260728),
+            Feature::AvaAppsMcp20260728,
+            next_config.features.enabled(Feature::AvaAppsMcp20260728),
         ) {
-            warn!("failed to refresh Codex Apps MCP protocol config: {err}");
+            warn!("failed to refresh Ava Apps MCP protocol config: {err}");
         }
         if let Err(err) = config.features.set_enabled(
             Feature::SecretAuthStorage,
@@ -2250,7 +2250,7 @@ impl Session {
                 vec![
                     state
                         .session_configuration
-                        .codex_home
+                        .ava_home
                         .join(CONFIG_TOML_FILE),
                 ]
             } else {
@@ -2307,11 +2307,11 @@ impl Session {
             .await;
     }
 
-    /// Record a terminal CodexErr before the app-server completion notification is reduced.
-    pub(crate) fn track_turn_codex_error(&self, turn_context: &TurnContext, error: &CodexErr) {
+    /// Record a terminal AvaErr before the app-server completion notification is reduced.
+    pub(crate) fn track_turn_ava_error(&self, turn_context: &TurnContext, error: &AvaErr) {
         self.services
             .analytics_events_client
-            .track_turn_codex_error(TurnCodexErrorFact::from_codex_err(
+            .track_turn_ava_error(TurnAvaErrorFact::from_ava_err(
                 self.thread_id.to_string(),
                 turn_context.sub_id.clone(),
                 error,
@@ -2356,9 +2356,9 @@ impl Session {
         let legacy_source = msg.clone();
         if let EventMsg::Error(error) = &legacy_source
             && error
-                .codex_error_info
+                .ava_error_info
                 .as_ref()
-                .is_some_and(CodexErrorInfo::affects_turn_status)
+                .is_some_and(AvaErrorInfo::affects_turn_status)
         {
             turn_context
                 .terminal_error
@@ -2368,7 +2368,7 @@ impl Session {
         }
         self.services
             .rollout_thread_trace
-            .record_codex_turn_event(&turn_context.sub_id, &legacy_source);
+            .record_ava_turn_event(&turn_context.sub_id, &legacy_source);
         self.services
             .rollout_thread_trace
             .record_tool_call_event(turn_context.sub_id.clone(), &legacy_source);
@@ -2535,7 +2535,7 @@ impl Session {
     /// Delivers an event without creating a local rollout for a thread that has not materialized.
     pub(crate) async fn send_event_raw_without_materializing_rollout(&self, event: Event) {
         let persist = match self.current_rollout_path().await {
-            Ok(Some(path)) => codex_rollout::existing_rollout_path(&path).await.is_some(),
+            Ok(Some(path)) => ava_rollout::existing_rollout_path(&path).await.is_some(),
             Ok(None) => true,
             Err(err) => {
                 warn!("failed to check whether thread persistence is materialized: {err}");
@@ -2672,17 +2672,17 @@ impl Session {
         &self,
         amendment: &ExecPolicyAmendment,
     ) -> Result<(), ExecPolicyUpdateError> {
-        let codex_home = self
+        let ava_home = self
             .state
             .lock()
             .await
             .session_configuration
-            .codex_home()
+            .ava_home()
             .clone();
 
         self.services
             .exec_policy
-            .append_amendment_and_update(&codex_home, amendment)
+            .append_amendment_and_update(&ava_home, amendment)
             .await?;
 
         Ok(())
@@ -2721,12 +2721,12 @@ impl Session {
             .map_err(|_| anyhow::anyhow!("managed network proxy refresh semaphore closed"))?;
         let host =
             Self::validated_network_policy_amendment_host(amendment, network_approval_context)?;
-        let codex_home = self
+        let ava_home = self
             .state
             .lock()
             .await
             .session_configuration
-            .codex_home()
+            .ava_home()
             .clone();
         let execpolicy_amendment =
             execpolicy_network_rule_amendment(amendment, network_approval_context, &host);
@@ -2754,7 +2754,7 @@ impl Session {
         self.services
             .exec_policy
             .append_network_rule_and_update(
-                &codex_home,
+                &ava_home,
                 &host,
                 execpolicy_amendment.protocol,
                 execpolicy_amendment.decision,
@@ -3567,7 +3567,7 @@ impl Session {
     ) {
         // Save the originating history budget for replay.
         // Preserve any existing tool-specific override.
-        let policy: codex_utils_output_truncation::TruncationPolicy =
+        let policy: ava_utils_output_truncation::TruncationPolicy =
             model_info.truncation_policy.into();
         for envelope in &mut items {
             if matches!(
@@ -3620,7 +3620,7 @@ impl Session {
         &self,
         previous_world_state: &Arc<WorldState>,
         step_context: &step_context::StepContext,
-    ) -> CodexResult<Arc<WorldState>> {
+    ) -> AvaResult<Arc<WorldState>> {
         let turn_context = step_context.turn.as_ref();
         // Render model-visible state from the same step used to build and run tools.
         let world_state = Arc::new(self.build_world_state_for_step(step_context).await?);
@@ -3678,7 +3678,7 @@ impl Session {
         self: &Arc<Self>,
         turn_context: Arc<TurnContext>,
         cancellation_token: &CancellationToken,
-    ) -> CodexResult<Arc<StepContext>> {
+    ) -> AvaResult<Arc<StepContext>> {
         self.capture_step_context_with_required_mcp_servers(
             turn_context,
             cancellation_token,
@@ -3695,7 +3695,7 @@ impl Session {
         cancellation_token: &CancellationToken,
         required_servers: &[String],
         required_plugins: &HashSet<String>,
-    ) -> CodexResult<Arc<StepContext>> {
+    ) -> AvaResult<Arc<StepContext>> {
         let step_context = self
             .capture_step_context_inner(
                 turn_context,
@@ -3714,7 +3714,7 @@ impl Session {
         self: &Arc<Self>,
         turn_context: Arc<TurnContext>,
         cancellation_token: &CancellationToken,
-    ) -> CodexResult<Arc<StepContext>> {
+    ) -> AvaResult<Arc<StepContext>> {
         self.capture_step_context_inner(
             turn_context,
             cancellation_token,
@@ -3731,7 +3731,7 @@ impl Session {
         cancellation_token: &CancellationToken,
         required_servers: &[String],
         required_plugins: &HashSet<String>,
-    ) -> CodexResult<Arc<StepContext>> {
+    ) -> AvaResult<Arc<StepContext>> {
         // Capture settings and selection together before asynchronous planning.
         // Existing steps retain this version even if the turn is updated.
         let inputs = turn_context.next_step_input.load_full();
@@ -3783,7 +3783,7 @@ impl Session {
             )
             .or_cancel(cancellation_token)
             .await?;
-        let extension_data = codex_extension_api::ExtensionData::new(turn_context.sub_id.clone());
+        let extension_data = ava_extension_api::ExtensionData::new(turn_context.sub_id.clone());
         extension_data.insert(selected_capability_roots.clone());
         if let Some(discovery) = &executor_capability_discovery {
             extension_data.insert(discovery.as_ref().clone());
@@ -3823,7 +3823,7 @@ impl Session {
         let mut selected_plugins = self
             .services
             .thread_extension_data
-            .get::<codex_extension_api::SelectedPluginSnapshot>()
+            .get::<ava_extension_api::SelectedPluginSnapshot>()
             .map(|snapshot| snapshot.as_ref().clone())
             .unwrap_or_default();
         selected_plugins.plugins.retain(|plugin| {
@@ -3906,7 +3906,7 @@ impl Session {
         warn!("server reported model {server_model} while requested model was {requested_model}");
 
         let warning_message = format!(
-            "Your account was flagged for potentially high-risk cyber activity and this request was routed to gpt-5.2 as a fallback. To regain access to gpt-5.3-codex, apply for trusted access: {CYBER_VERIFY_URL} or learn more: {CYBER_SAFETY_URL}"
+            "Your account was flagged for potentially high-risk cyber activity and this request was routed to gpt-5.2 as a fallback. To regain access to gpt-5.3-ava, apply for trusted access: {CYBER_VERIFY_URL} or learn more: {CYBER_SAFETY_URL}"
         );
 
         self.send_event(
@@ -4036,7 +4036,7 @@ impl Session {
         self.persist_rollout_items(&rollout_items).await;
         {
             let mut state = self.state.lock().await;
-            state.queue_pending_session_start_source(codex_hooks::SessionStartSource::Compact);
+            state.queue_pending_session_start_source(ava_hooks::SessionStartSource::Compact);
         }
     }
 
@@ -4269,7 +4269,7 @@ impl Session {
                 crate::context::TokenBudgetContext::new(
                     session_source
                         .get_agent_path()
-                        .unwrap_or_else(codex_protocol::AgentPath::root),
+                        .unwrap_or_else(ava_protocol::AgentPath::root),
                     auto_compact_window_ids.first_window_id,
                     auto_compact_window_ids.previous_window_id,
                     auto_compact_window_ids.window_id,
@@ -4501,7 +4501,7 @@ impl Session {
     pub(crate) async fn record_context_updates_and_set_reference_context_item(
         &self,
         step_context: &StepContext,
-    ) -> CodexResult<Arc<WorldState>> {
+    ) -> AvaResult<Arc<WorldState>> {
         let turn_context = step_context.turn.as_ref();
         let reference_context_item = {
             let state = self.state.lock().await;
@@ -4582,7 +4582,7 @@ impl Session {
         &self,
         turn_context: &TurnContext,
         token_usage: Option<&TokenUsage>,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         let result = self
             .record_token_usage_info(turn_context, &turn_context.initial_settings, token_usage)
             .await;
@@ -4629,7 +4629,7 @@ impl Session {
         turn_context: &TurnContext,
         settings: &ResolvedStepSettings,
         token_usage: Option<&TokenUsage>,
-    ) -> CodexResult<()> {
+    ) -> AvaResult<()> {
         if let Some(token_usage) = token_usage {
             let token_info = {
                 let mut state = self.state.lock().await;
@@ -4695,7 +4695,7 @@ impl Session {
                 output_tokens: 0,
                 reasoning_output_tokens: 0,
                 total_tokens: estimated_total_tokens.max(0),
-                codex_rollout_budget_units: None,
+                ava_rollout_budget_units: None,
             };
 
             if let Some(model_context_window) = turn_context.model_context_window() {
@@ -4807,7 +4807,7 @@ impl Session {
                 model_info,
                 vec![ResponseItemEnvelope {
                     item: response_item,
-                    metadata: acceptance_order.map(|order| CodexHarnessMetadata {
+                    metadata: acceptance_order.map(|order| AvaHarnessMetadata {
                         user_input_order: Some(order),
                         ..Default::default()
                     }),
@@ -4838,15 +4838,15 @@ impl Session {
         &self,
         turn_context: &TurnContext,
         message: impl Into<String>,
-        codex_error: CodexErr,
+        ava_error: AvaErr,
     ) {
-        let additional_details = codex_error.to_string();
-        let codex_error_info = CodexErrorInfo::ResponseStreamDisconnected {
-            http_status_code: codex_error.http_status_code_value(),
+        let additional_details = ava_error.to_string();
+        let ava_error_info = AvaErrorInfo::ResponseStreamDisconnected {
+            http_status_code: ava_error.http_status_code_value(),
         };
         let event = EventMsg::StreamError(StreamErrorEvent {
             message: message.into(),
-            codex_error_info: Some(codex_error_info),
+            ava_error_info: Some(ava_error_info),
             additional_details: Some(additional_details),
         });
         self.send_event(turn_context, event).await;
@@ -4903,7 +4903,7 @@ impl Session {
 
     pub(crate) async fn take_pending_session_start_source(
         &self,
-    ) -> Option<codex_hooks::SessionStartSource> {
+    ) -> Option<ava_hooks::SessionStartSource> {
         let mut state = self.state.lock().await;
         state.take_pending_session_start_source()
     }
@@ -5010,7 +5010,7 @@ async fn build_hooks_config(
     let plugin_hook_load_warnings = plugin_outcome.effective_plugin_hook_warnings();
     HooksConfig {
         legacy_notify_argv: config.notify.clone(),
-        feature_enabled: config.features.enabled(Feature::CodexHooks),
+        feature_enabled: config.features.enabled(Feature::AvaHooks),
         bypass_hook_trust: config.bypass_hook_trust,
         config_layer_stack: Some(config.config_layer_stack.clone()),
         plugin_hook_sources,

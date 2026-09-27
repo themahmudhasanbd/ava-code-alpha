@@ -7,9 +7,9 @@
 use std::future::Future;
 use std::sync::Arc;
 
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_analytics::GuardianReviewSessionKind;
-use codex_extension_api::ExtensionFuture;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_analytics::GuardianReviewSessionKind;
+use ava_extension_api::ExtensionFuture;
 use tokio::sync::Mutex;
 use tokio::sync::Semaphore;
 use tokio::time::Instant;

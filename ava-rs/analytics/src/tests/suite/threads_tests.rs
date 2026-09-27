@@ -1,8 +1,8 @@
 //! Thread lifecycle, lineage, originator, and metadata event tests.
 
 use crate::events::AppServerRpcTransport;
-use crate::events::CodexAppServerClientMetadata;
-use crate::events::CodexRuntimeMetadata;
+use crate::events::AvaAppServerClientMetadata;
+use crate::events::AvaRuntimeMetadata;
 use crate::events::ThreadInitializedEvent;
 use crate::events::ThreadInitializedEventParams;
 use crate::events::TrackEventRequest;
@@ -10,7 +10,7 @@ use crate::events::subagent_thread_started_event_request;
 use crate::facts::AnalyticsFact;
 use crate::facts::CodeModeToolCallFact;
 use crate::facts::CodeModeToolCallStatus;
-use crate::facts::CodexCompactionEvent;
+use crate::facts::AvaCompactionEvent;
 use crate::facts::CompactionImplementation;
 use crate::facts::CompactionPhase;
 use crate::facts::CompactionReason;
@@ -38,41 +38,41 @@ use crate::tests::support::sample_turn_start_request;
 use crate::tests::support::sample_turn_start_response;
 use crate::tests::support::sample_turn_started_notification;
 use crate::tests::support::test_turn_metadata;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SessionSource as AppServerSessionSource;
-use codex_app_server_protocol::ThreadArchivedNotification;
-use codex_app_server_protocol::ThreadSource as AppServerThreadSource;
-use codex_app_server_protocol::ThreadUnarchivedNotification;
-use codex_login::default_client::DEFAULT_ORIGINATOR;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadSource;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SessionSource as AppServerSessionSource;
+use ava_app_server_protocol::ThreadArchivedNotification;
+use ava_app_server_protocol::ThreadSource as AppServerThreadSource;
+use ava_app_server_protocol::ThreadUnarchivedNotification;
+use ava_login::default_client::DEFAULT_ORIGINATOR;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadSource;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
 #[test]
 fn thread_initialized_event_serializes_expected_shape() {
     let event = TrackEventRequest::ThreadInitialized(ThreadInitializedEvent {
-        event_type: "codex_thread_initialized",
+        event_type: "ava_thread_initialized",
         event_params: ThreadInitializedEventParams {
             thread_id: "thread-0".to_string(),
             session_id: "session-thread-0".to_string(),
-            app_server_client: CodexAppServerClientMetadata {
+            app_server_client: AvaAppServerClientMetadata {
                 product_client_id: DEFAULT_ORIGINATOR.to_string(),
-                client_name: Some("codex-tui".to_string()),
+                client_name: Some("ava-tui".to_string()),
                 client_version: Some("1.0.0".to_string()),
                 rpc_transport: AppServerRpcTransport::Stdio,
                 experimental_api_enabled: Some(true),
             },
-            runtime: CodexRuntimeMetadata {
-                codex_rs_version: "0.1.0".to_string(),
+            runtime: AvaRuntimeMetadata {
+                ava_rs_version: "0.1.0".to_string(),
                 runtime_os: "macos".to_string(),
                 runtime_os_version: "15.3.1".to_string(),
                 runtime_arch: "aarch64".to_string(),
@@ -94,19 +94,19 @@ fn thread_initialized_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_thread_initialized",
+            "event_type": "ava_thread_initialized",
             "event_params": {
                 "thread_id": "thread-0",
                 "session_id": "session-thread-0",
                 "app_server_client": {
                     "product_client_id": DEFAULT_ORIGINATOR,
-                    "client_name": "codex-tui",
+                    "client_name": "ava-tui",
                     "client_version": "1.0.0",
                     "rpc_transport": "stdio",
                     "experimental_api_enabled": true
                 },
                 "runtime": {
-                    "codex_rs_version": "0.1.0",
+                    "ava_rs_version": "0.1.0",
                     "runtime_os": "macos",
                     "runtime_os_version": "15.3.1",
                     "runtime_arch": "aarch64"
@@ -128,8 +128,8 @@ fn thread_initialized_event_serializes_expected_shape() {
 #[tokio::test]
 async fn thread_initialized_classifies_validated_linked_worktrees() {
     let root = std::env::temp_dir().join(format!(
-        "codex-analytics-worktree-{}",
-        codex_protocol::ThreadId::new()
+        "ava-analytics-worktree-{}",
+        ava_protocol::ThreadId::new()
     ));
     let primary = root.join("primary");
     let linked = root.join("linked");
@@ -164,7 +164,7 @@ async fn thread_initialized_classifies_validated_linked_worktrees() {
         let ClientResponsePayload::ThreadStart(start) = &mut response else {
             panic!("expected thread/start response");
         };
-        start.thread.cwd = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(cwd)
+        start.thread.cwd = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(cwd)
             .expect("absolute checkout path");
         reducer
             .ingest(
@@ -212,7 +212,7 @@ async fn initialize_caches_client_and_thread_lifecycle_publishes_once_initialize
                 connection_id: 7,
                 params: InitializeParams {
                     client_info: ClientInfo {
-                        name: "codex-tui".to_string(),
+                        name: "ava-tui".to_string(),
                         title: None,
                         version: "1.0.0".to_string(),
                     },
@@ -225,8 +225,8 @@ async fn initialize_caches_client_and_thread_lifecycle_publishes_once_initialize
                     }),
                 },
                 product_client_id: DEFAULT_ORIGINATOR.to_string(),
-                runtime: CodexRuntimeMetadata {
-                    codex_rs_version: "0.99.0".to_string(),
+                runtime: AvaRuntimeMetadata {
+                    ava_rs_version: "0.99.0".to_string(),
                     runtime_os: "linux".to_string(),
                     runtime_os_version: "24.04".to_string(),
                     runtime_arch: "x86_64".to_string(),
@@ -254,7 +254,7 @@ async fn initialize_caches_client_and_thread_lifecycle_publishes_once_initialize
 
     let payload = serde_json::to_value(&events).expect("serialize events");
     assert_eq!(payload.as_array().expect("events array").len(), 1);
-    assert_eq!(payload[0]["event_type"], "codex_thread_initialized");
+    assert_eq!(payload[0]["event_type"], "ava_thread_initialized");
     assert_eq!(payload[0]["event_params"]["session_id"], "session-thread-1");
     assert_eq!(
         payload[0]["event_params"]["app_server_client"]["product_client_id"],
@@ -262,7 +262,7 @@ async fn initialize_caches_client_and_thread_lifecycle_publishes_once_initialize
     );
     assert_eq!(
         payload[0]["event_params"]["app_server_client"]["client_name"],
-        "codex-tui"
+        "ava-tui"
     );
     assert_eq!(
         payload[0]["event_params"]["app_server_client"]["client_version"],
@@ -277,7 +277,7 @@ async fn initialize_caches_client_and_thread_lifecycle_publishes_once_initialize
         false
     );
     assert_eq!(
-        payload[0]["event_params"]["runtime"]["codex_rs_version"],
+        payload[0]["event_params"]["runtime"]["ava_rs_version"],
         "0.99.0"
     );
     assert_eq!(payload[0]["event_params"]["runtime"]["runtime_os"], "linux");
@@ -336,7 +336,7 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
                 "thread_id": "thread-work",
                 "app_server_client": {
                     "product_client_id": TEST_PRODUCT_CLIENT_ID,
-                    "client_name": "codex-tui",
+                    "client_name": "ava-tui",
                     "client_version": "1.0.0",
                     "rpc_transport": "websocket",
                     "experimental_api_enabled": false,
@@ -346,7 +346,7 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
                 "thread_id": "thread-default",
                 "app_server_client": {
                     "product_client_id": DEFAULT_ORIGINATOR,
-                    "client_name": "codex-tui",
+                    "client_name": "ava-tui",
                     "client_version": "1.0.0",
                     "rpc_transport": "websocket",
                     "experimental_api_enabled": false,
@@ -386,7 +386,7 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
     reducer
         .ingest(
             AnalyticsFact::Custom(CustomAnalyticsFact::Compaction(Box::new(
-                CodexCompactionEvent {
+                AvaCompactionEvent {
                     thread_id: "thread-work".to_string(),
                     turn_id: "turn-compact".to_string(),
                     trigger: CompactionTrigger::Manual,
@@ -395,8 +395,8 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
                     phase: CompactionPhase::StandaloneTurn,
                     strategy: CompactionStrategy::Memento,
                     status: CompactionStatus::Completed,
-                    codex_error_kind: None,
-                    codex_error_http_status_code: None,
+                    ava_error_kind: None,
+                    ava_error_http_status_code: None,
                     active_context_tokens_before: 131_000,
                     active_context_tokens_after: 64_000,
                     retained_image_count: None,
@@ -428,15 +428,15 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
             .collect::<Vec<_>>(),
         vec![
             json!({
-                "event_type": "codex_command_execution_event",
+                "event_type": "ava_command_execution_event",
                 "product_client_id": TEST_PRODUCT_CLIENT_ID,
             }),
             json!({
-                "event_type": "codex_turn_event",
+                "event_type": "ava_turn_event",
                 "product_client_id": TEST_PRODUCT_CLIENT_ID,
             }),
             json!({
-                "event_type": "codex_compaction_event",
+                "event_type": "ava_compaction_event",
                 "product_client_id": TEST_PRODUCT_CLIENT_ID,
             }),
         ]
@@ -498,7 +498,7 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
         archives,
         json!([
             {
-                "event_type": "codex_thread_archive_event",
+                "event_type": "ava_thread_archive_event",
                 "event_params": {
                     "thread_id": "thread-work",
                     "action": "archived",
@@ -508,7 +508,7 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
                 },
             },
             {
-                "event_type": "codex_thread_archive_event",
+                "event_type": "ava_thread_archive_event",
                 "event_params": {
                     "thread_id": "thread-default",
                     "action": "unarchived",
@@ -518,7 +518,7 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
                 },
             },
             {
-                "event_type": "codex_thread_archive_event",
+                "event_type": "ava_thread_archive_event",
                 "event_params": {
                     "thread_id": "thread-private-source",
                     "action": "archived",
@@ -528,7 +528,7 @@ async fn thread_originator_overrides_shared_connection_across_thread_events() {
                 },
             },
             {
-                "event_type": "codex_thread_archive_event",
+                "event_type": "ava_thread_archive_event",
                 "event_params": {
                     "thread_id": "thread-without-context",
                     "action": "unarchived",
@@ -546,8 +546,8 @@ fn subagent_thread_started_review_serializes_expected_shape() {
             thread_id: "thread-review".to_string(),
             parent_thread_id: None,
             forked_from_thread_id: None,
-            product_client_id: "codex-tui".to_string(),
-            client_name: Some("codex-tui".to_string()),
+            product_client_id: "ava-tui".to_string(),
+            client_name: Some("ava-tui".to_string()),
             client_version: Some("1.0.0".to_string()),
             model: "gpt-5".to_string(),
             ephemeral: false,
@@ -561,11 +561,11 @@ fn subagent_thread_started_review_serializes_expected_shape() {
     assert_eq!(payload["event_params"]["thread_source"], "subagent");
     assert_eq!(
         payload["event_params"]["app_server_client"]["product_client_id"],
-        "codex-tui"
+        "ava-tui"
     );
     assert_eq!(
         payload["event_params"]["app_server_client"]["client_name"],
-        "codex-tui"
+        "ava-tui"
     );
     assert_eq!(
         payload["event_params"]["app_server_client"]["client_version"],
@@ -588,10 +588,10 @@ fn subagent_thread_started_review_serializes_expected_shape() {
 #[test]
 fn subagent_thread_started_thread_spawn_serializes_thread_lineage() {
     let parent_thread_id =
-        codex_protocol::ThreadId::from_string("11111111-1111-1111-1111-111111111111")
+        ava_protocol::ThreadId::from_string("11111111-1111-1111-1111-111111111111")
             .expect("valid thread id");
     let forked_from_thread_id =
-        codex_protocol::ThreadId::from_string("22222222-2222-4222-8222-222222222222")
+        ava_protocol::ThreadId::from_string("22222222-2222-4222-8222-222222222222")
             .expect("valid thread id");
     let event = TrackEventRequest::ThreadInitialized(subagent_thread_started_event_request(
         SubAgentThreadStartedInput {
@@ -599,8 +599,8 @@ fn subagent_thread_started_thread_spawn_serializes_thread_lineage() {
             thread_id: "thread-spawn".to_string(),
             parent_thread_id: Some(parent_thread_id.to_string()),
             forked_from_thread_id: Some(forked_from_thread_id.to_string()),
-            product_client_id: "codex-tui".to_string(),
-            client_name: Some("codex-tui".to_string()),
+            product_client_id: "ava-tui".to_string(),
+            client_name: Some("ava-tui".to_string()),
             client_version: Some("1.0.0".to_string()),
             model: "gpt-5".to_string(),
             ephemeral: true,
@@ -639,8 +639,8 @@ fn subagent_thread_started_memory_consolidation_serializes_expected_shape() {
             thread_id: "thread-memory".to_string(),
             parent_thread_id: None,
             forked_from_thread_id: None,
-            product_client_id: "codex-tui".to_string(),
-            client_name: Some("codex-tui".to_string()),
+            product_client_id: "ava-tui".to_string(),
+            client_name: Some("ava-tui".to_string()),
             client_version: Some("1.0.0".to_string()),
             model: "gpt-5".to_string(),
             ephemeral: false,
@@ -667,8 +667,8 @@ fn subagent_thread_started_other_serializes_expected_shape() {
             thread_id: "thread-guardian".to_string(),
             parent_thread_id: None,
             forked_from_thread_id: None,
-            product_client_id: "codex-tui".to_string(),
-            client_name: Some("codex-tui".to_string()),
+            product_client_id: "ava-tui".to_string(),
+            client_name: Some("ava-tui".to_string()),
             client_version: Some("1.0.0".to_string()),
             model: "gpt-5".to_string(),
             ephemeral: false,
@@ -687,7 +687,7 @@ fn subagent_thread_started_other_serializes_expected_shape() {
 #[test]
 fn subagent_thread_started_other_serializes_explicit_parent_thread_id() {
     let parent_thread_id =
-        codex_protocol::ThreadId::from_string("33333333-3333-4333-8333-333333333333")
+        ava_protocol::ThreadId::from_string("33333333-3333-4333-8333-333333333333")
             .expect("valid thread id");
     let event = TrackEventRequest::ThreadInitialized(subagent_thread_started_event_request(
         SubAgentThreadStartedInput {
@@ -695,8 +695,8 @@ fn subagent_thread_started_other_serializes_explicit_parent_thread_id() {
             thread_id: "thread-guardian".to_string(),
             parent_thread_id: Some(parent_thread_id.to_string()),
             forked_from_thread_id: None,
-            product_client_id: "codex-tui".to_string(),
-            client_name: Some("codex-tui".to_string()),
+            product_client_id: "ava-tui".to_string(),
+            client_name: Some("ava-tui".to_string()),
             client_version: Some("1.0.0".to_string()),
             model: "gpt-5".to_string(),
             ephemeral: false,
@@ -727,8 +727,8 @@ async fn subagent_thread_started_publishes_without_initialize() {
                     thread_id: "thread-review".to_string(),
                     parent_thread_id: None,
                     forked_from_thread_id: None,
-                    product_client_id: "codex-tui".to_string(),
-                    client_name: Some("codex-tui".to_string()),
+                    product_client_id: "ava-tui".to_string(),
+                    client_name: Some("ava-tui".to_string()),
                     client_version: Some("1.0.0".to_string()),
                     model: "gpt-5".to_string(),
                     ephemeral: false,
@@ -743,10 +743,10 @@ async fn subagent_thread_started_publishes_without_initialize() {
 
     let payload = serde_json::to_value(&events).expect("serialize events");
     assert_eq!(payload.as_array().expect("events array").len(), 1);
-    assert_eq!(payload[0]["event_type"], "codex_thread_initialized");
+    assert_eq!(payload[0]["event_type"], "ava_thread_initialized");
     assert_eq!(
         payload[0]["event_params"]["app_server_client"]["product_client_id"],
-        "codex-tui"
+        "ava-tui"
     );
     assert_eq!(payload[0]["event_params"]["thread_source"], "subagent");
     assert_eq!(payload[0]["event_params"]["subagent_source"], "review");
@@ -765,8 +765,8 @@ async fn subagent_tool_items_inherit_parent_connection_metadata() {
                     thread_id: "thread-subagent".to_string(),
                     parent_thread_id: Some("thread-1".to_string()),
                     forked_from_thread_id: None,
-                    product_client_id: "codex-tui".to_string(),
-                    client_name: Some("codex-tui".to_string()),
+                    product_client_id: "ava-tui".to_string(),
+                    client_name: Some("ava-tui".to_string()),
                     client_version: Some("1.0.0".to_string()),
                     model: "gpt-5".to_string(),
                     ephemeral: false,
@@ -887,7 +887,7 @@ async fn subagent_tool_items_inherit_parent_connection_metadata() {
             json!({"turn_id": "turn-subagent", "root_turn_id": "child-causal-root", "tool_event_type": "model_tool_call"}),
         ]
     );
-    assert_eq!(payload[0]["event_type"], "codex_command_execution_event");
+    assert_eq!(payload[0]["event_type"], "ava_command_execution_event");
     assert_eq!(payload[0]["event_params"]["thread_id"], "thread-subagent");
     assert_eq!(payload[0]["event_params"]["session_id"], "session-thread-1");
     assert_eq!(payload[0]["event_params"]["thread_source"], "subagent");
@@ -895,8 +895,8 @@ async fn subagent_tool_items_inherit_parent_connection_metadata() {
     assert_eq!(payload[0]["event_params"]["parent_thread_id"], "thread-1");
     assert_eq!(
         payload[0]["event_params"]["app_server_client"]["client_name"],
-        "codex-tui"
+        "ava-tui"
     );
-    assert_eq!(payload[1]["event_type"], "codex_dynamic_tool_call_event");
+    assert_eq!(payload[1]["event_type"], "ava_dynamic_tool_call_event");
     assert_eq!(payload[1]["event_params"]["parent_thread_id"], "thread-1");
 }

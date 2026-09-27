@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use codex_exec_server::EnvironmentAccess;
-use codex_utils_path_uri::PathUri;
-use codex_utils_plugins::plugin_namespace_for_root_uri;
+use ava_exec_server::EnvironmentAccess;
+use ava_utils_path_uri::PathUri;
+use ava_utils_plugins::plugin_namespace_for_root_uri;
 use futures::StreamExt;
 
 use super::discovery::MAX_CONCURRENT_SKILL_LOADS;

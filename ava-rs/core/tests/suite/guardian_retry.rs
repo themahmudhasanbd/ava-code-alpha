@@ -1,16 +1,16 @@
 //! Exercises recovery through the parent tool call, reviewer, and executor boundary.
 
 use anyhow::Result;
-use codex_core::config::Constrained;
-use codex_protocol::approvals::GuardianAssessmentStatus;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SandboxPolicy;
+use ava_core::config::Constrained;
+use ava_protocol::approvals::GuardianAssessmentStatus;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SandboxPolicy;
 use core_test_support::responses::*;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -22,7 +22,7 @@ async fn guardian_retry_executes_only_after_a_completed_approval() -> Result<()>
         "Guardian approval actions require host-native paths"
     );
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::OnRequest);
         config.approvals_reviewer = ApprovalsReviewer::AutoReview;
         config
@@ -64,9 +64,9 @@ async fn guardian_retry_executes_only_after_a_completed_approval() -> Result<()>
         sse(vec![ev_completed("parent-done")]),
     ];
     let requests = mount_sse_sequence(&server, responses).await;
-    test.codex
-        .start_or_steer_turn(codex_core::TurnInputRequest::user_input(vec![
-            codex_protocol::user_input::UserInput::Text {
+    test.ava-code
+        .start_or_steer_turn(ava_core::TurnInputRequest::user_input(vec![
+            ava_protocol::user_input::UserInput::Text {
                 text: "Write the marker once".into(),
                 text_elements: vec![],
             },
@@ -75,7 +75,7 @@ async fn guardian_retry_executes_only_after_a_completed_approval() -> Result<()>
     let mut reviews = Vec::new();
     let mut warnings = Vec::new();
     loop {
-        match test.codex.next_event().await?.msg {
+        match test.ava-code.next_event().await?.msg {
             EventMsg::GuardianAssessment(review) => reviews.push(review.status),
             EventMsg::GuardianWarning(warning) => warnings.push(warning.message),
             EventMsg::TurnComplete(_) => break,

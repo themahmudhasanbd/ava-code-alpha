@@ -15,8 +15,8 @@ use crate::ThreadStoreError;
 use crate::local::test_support::test_config;
 use crate::local::test_support::write_session_file;
 use chrono::Utc;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::path::Path;
@@ -33,7 +33,7 @@ async fn thread_attachments_require_a_supported_sqlite_store() {
             .add_thread_attachment(AddThreadAttachmentParams {
                 thread_id,
                 attachment_type: "pull_request".to_string(),
-                identity_key: "openai/codex#1".to_string(),
+                identity_key: "openai/ava#1".to_string(),
                 payload: json!({"url": "https://github.com/openai/codex/pull/1"}),
             })
             .await,
@@ -62,7 +62,7 @@ async fn thread_attachments_require_a_supported_sqlite_store() {
             .remove_thread_attachment(RemoveThreadAttachmentParams {
                 thread_id,
                 attachment_type: "pull_request".to_string(),
-                identity_key: "openai/codex#1".to_string(),
+                identity_key: "openai/ava#1".to_string(),
             })
             .await,
         Err(ThreadStoreError::Unsupported {
@@ -75,7 +75,7 @@ async fn thread_attachments_require_a_supported_sqlite_store() {
 async fn unloaded_thread_attachments_support_listing_and_removal() {
     let home = tempfile::TempDir::new().expect("temp dir");
     let config = test_config(home.path());
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -87,7 +87,7 @@ async fn unloaded_thread_attachments_support_listing_and_removal() {
     let first_thread_id = ThreadId::new();
     let second_thread_id = ThreadId::new();
     for thread_id in [first_thread_id, second_thread_id] {
-        let metadata = codex_state::ThreadMetadataBuilder::new(
+        let metadata = ava_state::ThreadMetadataBuilder::new(
             thread_id,
             home.path().join(format!("{thread_id}.jsonl")),
             Utc::now(),
@@ -103,7 +103,7 @@ async fn unloaded_thread_attachments_support_listing_and_removal() {
     let params = AddThreadAttachmentParams {
         thread_id: first_thread_id,
         attachment_type: "pull_request".to_string(),
-        identity_key: "openai/codex#1".to_string(),
+        identity_key: "openai/ava#1".to_string(),
         payload: json!({"url": "https://github.com/openai/codex/pull/1"}),
     };
     let AddThreadAttachmentOutcome::Created(first_attachment) = store
@@ -123,7 +123,7 @@ async fn unloaded_thread_attachments_support_listing_and_removal() {
 
     let second_params = AddThreadAttachmentParams {
         thread_id: first_thread_id,
-        identity_key: "openai/codex#2".to_string(),
+        identity_key: "openai/ava#2".to_string(),
         payload: json!({"url": "https://github.com/openai/codex/pull/2"}),
         ..params.clone()
     };
@@ -193,7 +193,7 @@ async fn unloaded_thread_attachments_support_listing_and_removal() {
 async fn attachment_state_errors_preserve_missing_thread_and_invalid_request_categories() {
     let home = tempfile::TempDir::new().expect("temp dir");
     let config = test_config(home.path());
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -207,7 +207,7 @@ async fn attachment_state_errors_preserve_missing_thread_and_invalid_request_cat
             .add_thread_attachment(AddThreadAttachmentParams {
                 thread_id,
                 attachment_type: "pull_request".to_string(),
-                identity_key: "openai/codex#1".to_string(),
+                identity_key: "openai/ava#1".to_string(),
                 payload: json!({}),
             })
             .await,
@@ -218,7 +218,7 @@ async fn attachment_state_errors_preserve_missing_thread_and_invalid_request_cat
             .add_thread_attachment(AddThreadAttachmentParams {
                 thread_id,
                 attachment_type: " ".to_string(),
-                identity_key: "openai/codex#1".to_string(),
+                identity_key: "openai/ava#1".to_string(),
                 payload: json!({}),
             })
             .await,
@@ -242,7 +242,7 @@ async fn attachment_state_errors_preserve_missing_thread_and_invalid_request_cat
 async fn attachment_mutations_wait_for_exclusive_thread_lifecycle_operations() {
     let home = tempfile::TempDir::new().expect("temp dir");
     let config = test_config(home.path());
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -250,7 +250,7 @@ async fn attachment_mutations_wait_for_exclusive_thread_lifecycle_operations() {
     .expect("state db should initialize");
     let store = LocalThreadStore::new(config.clone(), Some(runtime.clone()));
     let thread_id = ThreadId::new();
-    let metadata = codex_state::ThreadMetadataBuilder::new(
+    let metadata = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         home.path().join(format!("{thread_id}.jsonl")),
         Utc::now(),
@@ -266,7 +266,7 @@ async fn attachment_mutations_wait_for_exclusive_thread_lifecycle_operations() {
     let mut attachment = Box::pin(store.add_thread_attachment(AddThreadAttachmentParams {
         thread_id,
         attachment_type: "pull_request".to_string(),
-        identity_key: "openai/codex#1".to_string(),
+        identity_key: "openai/ava#1".to_string(),
         payload: json!({"url": "https://github.com/openai/codex/pull/1"}),
     }));
     tokio::select! {
@@ -285,7 +285,7 @@ async fn attachment_mutations_wait_for_exclusive_thread_lifecycle_operations() {
         store.remove_thread_attachment(RemoveThreadAttachmentParams {
             thread_id,
             attachment_type: "pull_request".to_string(),
-            identity_key: "openai/codex#1".to_string(),
+            identity_key: "openai/ava#1".to_string(),
         }),
     );
     tokio::select! {
@@ -330,13 +330,13 @@ async fn attachment_mutations_queued_behind_deletion_reject_deleted_threads() {
         let mut attachment = store.add_thread_attachment(AddThreadAttachmentParams {
             thread_id,
             attachment_type: "pull_request".to_string(),
-            identity_key: "openai/codex#2".to_string(),
+            identity_key: "openai/ava#2".to_string(),
             payload: json!({"url": "https://github.com/openai/codex/pull/2"}),
         });
         let mut removal = store.remove_thread_attachment(RemoveThreadAttachmentParams {
             thread_id,
             attachment_type: "pull_request".to_string(),
-            identity_key: "openai/codex#1".to_string(),
+            identity_key: "openai/ava#1".to_string(),
         });
         assert!(futures::poll!(&mut attachment).is_pending());
         assert!(futures::poll!(&mut removal).is_pending());
@@ -392,7 +392,7 @@ async fn attachment_owner_deletion_can_retry_after_state_cleanup_fails() {
         .upsert_thread_spawn_edge(
             parent_id,
             child_id,
-            codex_state::DirectionalThreadSpawnEdgeStatus::Closed,
+            ava_state::DirectionalThreadSpawnEdgeStatus::Closed,
         )
         .await
         .expect("persist child relation for deletion retry");
@@ -468,7 +468,7 @@ async fn store_with_attachment_owners(
     thread_ids: &[ThreadId],
 ) -> (LocalThreadStore, Vec<PathBuf>) {
     let config = test_config(home);
-    let runtime = codex_state::StateRuntime::init(
+    let runtime = ava_state::StateRuntime::init(
         config.sqlite.clone(),
         config.default_model_provider_id.clone(),
     )
@@ -483,7 +483,7 @@ async fn store_with_attachment_owners(
             Uuid::parse_str(&thread_id.to_string()).expect("thread UUID"),
         )
         .expect("session file");
-        let metadata = codex_state::ThreadMetadataBuilder::new(
+        let metadata = ava_state::ThreadMetadataBuilder::new(
             thread_id,
             rollout_path.clone(),
             Utc::now(),
@@ -498,7 +498,7 @@ async fn store_with_attachment_owners(
             .add_thread_attachment(AddThreadAttachmentParams {
                 thread_id,
                 attachment_type: "pull_request".to_string(),
-                identity_key: "openai/codex#1".to_string(),
+                identity_key: "openai/ava#1".to_string(),
                 payload: json!({"url": "https://github.com/openai/codex/pull/1"}),
             })
             .await

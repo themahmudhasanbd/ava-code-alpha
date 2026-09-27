@@ -1,11 +1,11 @@
-use codex_core::config::Config;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::hosted_plugin_runtime_mcp_server_config;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::hosted_plugin_runtime_mcp_server_config;
 
 mod cloud_plugin;
 #[cfg(test)]
@@ -17,11 +17,11 @@ mod plugin_contributor_state;
 mod plugin_providers;
 mod stream_manager;
 
-pub use codex_core_plugins::PluginListQuery;
-pub use codex_core_plugins::PluginProvider;
-pub use codex_core_plugins::PluginProviderError;
-pub use codex_core_plugins::PluginProviderFuture;
-pub use codex_core_plugins::PluginProviderResult;
+pub use ava_core_plugins::PluginListQuery;
+pub use ava_core_plugins::PluginProvider;
+pub use ava_core_plugins::PluginProviderError;
+pub use ava_core_plugins::PluginProviderFuture;
+pub use ava_core_plugins::PluginProviderResult;
 pub use plugin_contributor::install_plugin_providers;
 pub use plugin_contributor::install_plugins;
 pub use plugin_contributor_state::PluginsThreadState;
@@ -46,8 +46,8 @@ impl McpServerContributor<Config> for HostedPluginRuntimeExtension {
     ) -> ExtensionFuture<'a, Vec<McpServerContribution>> {
         Box::pin(async move {
             let config = context.config();
-            let name = CODEX_APPS_MCP_SERVER_NAME.to_string();
-            if !config.features.enabled(codex_features::Feature::Apps) {
+            let name = AVA_APPS_MCP_SERVER_NAME.to_string();
+            if !config.features.enabled(ava_features::Feature::Apps) {
                 return vec![McpServerContribution::Remove { name }];
             }
 

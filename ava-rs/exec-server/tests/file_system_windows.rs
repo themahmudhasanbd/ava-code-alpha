@@ -16,23 +16,23 @@ use std::time::Duration;
 
 use anyhow::Context as _;
 use anyhow::Result;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadFileOptions;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WindowsSandboxSelection;
-use codex_exec_server::WriteFileOptions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_sandboxing::SandboxType;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadFileOptions;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WindowsSandboxSelection;
+use ava_exec_server::WriteFileOptions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_sandboxing::SandboxType;
+use ava_utils_path_uri::PathUri;
 use futures::TryStreamExt;
 use pretty_assertions::assert_eq;
 use test_case::test_case;
@@ -320,7 +320,7 @@ async fn file_system_no_follow_operations_reject_named_pipes(
     implementation: FileSystemImplementation,
 ) -> Result<()> {
     let context = create_file_system_context(implementation).await?;
-    let pipe_name = format!("codex-fs-no-follow-{}", Uuid::new_v4());
+    let pipe_name = format!("ava-fs-no-follow-{}", Uuid::new_v4());
     let server_path = format!(r"\\.\pipe\{pipe_name}");
     let client_path = format!(r"\\localhost\pipe\{pipe_name}");
     let _pipe = ServerOptions::new()
@@ -342,7 +342,7 @@ async fn file_system_no_follow_operations_reject_named_pipes(
     .expect_err("strict named-pipe read must be rejected");
     assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
 
-    let pipe_name = format!("codex-fs-no-follow-write-{}", Uuid::new_v4());
+    let pipe_name = format!("ava-fs-no-follow-write-{}", Uuid::new_v4());
     let server_path = format!(r"\\.\pipe\{pipe_name}");
     let client_path = format!(r"\\localhost\pipe\{pipe_name}");
     let _pipe = ServerOptions::new()
@@ -402,7 +402,7 @@ async fn file_system_remote_fs_helper_respects_windows_sandbox_write_policy(
     assert_eq!(read_result?, b"readable");
 
     let blocked_file = readonly_dir.join("blocked.txt");
-    if sandbox_type == SandboxType::WindowsMxc && !codex_sandboxing::windows_mxc_available() {
+    if sandbox_type == SandboxType::WindowsMxc && !ava_sandboxing::windows_mxc_available() {
         let error = file_system
             .write_file(
                 &PathUri::from_host_native_path(&blocked_file)?,
@@ -462,14 +462,14 @@ async fn file_system_elevated_relative_read_denial_uses_policy_cwd(
     let resources = test_exe
         .parent()
         .context("Windows test executable should have a parent directory")?
-        .join("codex-resources");
+        .join("ava-resources");
     if let Err(error) = std::fs::create_dir_all(&resources)
         && !(error.kind() == std::io::ErrorKind::PermissionDenied && resources.is_dir())
     {
         return Err(error).context("create Windows sandbox test resources");
     }
-    for name in ["codex-windows-sandbox-setup", "codex-command-runner"] {
-        let source = codex_utils_cargo_bin::cargo_bin(name)?;
+    for name in ["ava-windows-sandbox-setup", "ava-command-runner"] {
+        let source = ava_utils_cargo_bin::cargo_bin(name)?;
         let destination = resources.join(Path::new(name).with_extension("exe"));
         if let Err(error) = std::fs::copy(&source, &destination)
             && !(error.kind() == std::io::ErrorKind::PermissionDenied && destination.is_file())
@@ -718,7 +718,7 @@ fn process_private_desktops() -> Result<BTreeSet<String>> {
                 .position(|&unit| unit == 0)
                 .unwrap_or(name.len());
             let name = String::from_utf16(&name[..end])?;
-            if name.starts_with("CodexSandboxDesktop-") {
+            if name.starts_with("AvaSandboxDesktop-") {
                 desktops.insert(name);
             }
         }

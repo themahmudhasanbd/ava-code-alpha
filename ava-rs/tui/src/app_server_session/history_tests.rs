@@ -4,8 +4,8 @@ use super::advancing_cursor;
 use crate::legacy_core::config::ConfigBuilder;
 use crate::legacy_core::config::TerminalResizeReflowMaxRows;
 use crate::local_settings::LocalSettings;
-use codex_config::types::AltScreenMode;
-use codex_features::Feature;
+use ava_config::types::AltScreenMode;
+use ava_features::Feature;
 use pretty_assertions::assert_eq;
 use std::collections::HashSet;
 
@@ -36,9 +36,9 @@ fn advancing_cursor_rejects_repeated_cursors() {
 
 #[tokio::test]
 async fn owned_initial_history_stops_after_viewport_or_scan_budget() {
-    let codex_home = tempfile::tempdir().expect("temporary codex home");
+    let ava_home = tempfile::tempdir().expect("temporary ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("config");

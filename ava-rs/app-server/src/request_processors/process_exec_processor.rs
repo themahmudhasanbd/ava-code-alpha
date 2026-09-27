@@ -5,32 +5,32 @@ use std::time::Duration;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::ProcessExitedNotification;
-use codex_app_server_protocol::ProcessKillParams;
-use codex_app_server_protocol::ProcessKillResponse;
-use codex_app_server_protocol::ProcessOutputDeltaNotification;
-use codex_app_server_protocol::ProcessOutputStream;
-use codex_app_server_protocol::ProcessResizePtyParams;
-use codex_app_server_protocol::ProcessResizePtyResponse;
-use codex_app_server_protocol::ProcessSpawnParams;
-use codex_app_server_protocol::ProcessSpawnResponse;
-use codex_app_server_protocol::ProcessTerminalSize;
-use codex_app_server_protocol::ProcessWriteStdinParams;
-use codex_app_server_protocol::ProcessWriteStdinResponse;
-use codex_app_server_protocol::ServerNotification;
-use codex_core::exec::ExecExpiration;
-use codex_core::exec::ExecExpirationOutcome;
-use codex_core::exec::IO_DRAIN_TIMEOUT_MS;
-use codex_exec_server::EnvironmentManager;
-use codex_protocol::exec_output::bytes_to_string_smart;
-use codex_protocol::shell_environment::is_non_inheritable_env_var;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
-use codex_utils_pty::ProcessHandle;
-use codex_utils_pty::SpawnedProcess;
-use codex_utils_pty::TerminalSize;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::ProcessExitedNotification;
+use ava_app_server_protocol::ProcessKillParams;
+use ava_app_server_protocol::ProcessKillResponse;
+use ava_app_server_protocol::ProcessOutputDeltaNotification;
+use ava_app_server_protocol::ProcessOutputStream;
+use ava_app_server_protocol::ProcessResizePtyParams;
+use ava_app_server_protocol::ProcessResizePtyResponse;
+use ava_app_server_protocol::ProcessSpawnParams;
+use ava_app_server_protocol::ProcessSpawnResponse;
+use ava_app_server_protocol::ProcessTerminalSize;
+use ava_app_server_protocol::ProcessWriteStdinParams;
+use ava_app_server_protocol::ProcessWriteStdinResponse;
+use ava_app_server_protocol::ServerNotification;
+use ava_core::exec::ExecExpiration;
+use ava_core::exec::ExecExpirationOutcome;
+use ava_core::exec::IO_DRAIN_TIMEOUT_MS;
+use ava_exec_server::EnvironmentManager;
+use ava_protocol::exec_output::bytes_to_string_smart;
+use ava_protocol::shell_environment::is_non_inheritable_env_var;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_pty::DEFAULT_OUTPUT_BYTES_CAP;
+use ava_utils_pty::ProcessHandle;
+use ava_utils_pty::SpawnedProcess;
+use ava_utils_pty::TerminalSize;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
@@ -307,7 +307,7 @@ impl ProcessExecManager {
         }
 
         let spawned = if tty {
-            codex_utils_pty::spawn_pty_process(
+            ava_utils_pty::spawn_pty_process(
                 program,
                 args,
                 cwd.as_path(),
@@ -318,10 +318,10 @@ impl ProcessExecManager {
             )
             .await
         } else if stream_stdin {
-            codex_utils_pty::spawn_pipe_process(program, args, cwd.as_path(), &env, &arg0, &[])
+            ava_utils_pty::spawn_pipe_process(program, args, cwd.as_path(), &env, &arg0, &[])
                 .await
         } else {
-            codex_utils_pty::spawn_pipe_process_no_stdin(
+            ava_utils_pty::spawn_pipe_process_no_stdin(
                 program,
                 args,
                 cwd.as_path(),

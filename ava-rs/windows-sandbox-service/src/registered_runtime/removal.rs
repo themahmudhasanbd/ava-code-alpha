@@ -57,7 +57,7 @@ impl PreparedRemoval {
 
 /// Restore durable temporary-enable intent before owner restoration or IPC admission.
 pub(crate) fn restore_disabled_accounts() -> Result<()> {
-    let _lock = codex_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
+    let _lock = ava_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
     let Some(mut record) = crate::installation_record::load_runtime()? else {
         return Ok(());
     };
@@ -71,9 +71,9 @@ pub(crate) fn restore_disabled_accounts() -> Result<()> {
             continue;
         }
         super::validate_account_sid(account)?;
-        let flags = codex_windows_sandbox::local_user_flags(account.account.username())?
+        let flags = ava_windows_sandbox::local_user_flags(account.account.username())?
             .context("cleanup account disappeared before flag restoration")?;
-        codex_windows_sandbox::set_local_user_flags(
+        ava_windows_sandbox::set_local_user_flags(
             account.account.username(),
             flags | UF_ACCOUNTDISABLE,
         )?;
@@ -97,7 +97,7 @@ pub(crate) fn prepare(
     let mut targets = Vec::new();
     for index in 0..record.runtime()?.accounts.len() {
         let account = record.runtime()?.accounts[index].clone();
-        let Some(flags) = codex_windows_sandbox::local_user_flags(account.account.username())?
+        let Some(flags) = ava_windows_sandbox::local_user_flags(account.account.username())?
         else {
             ensure!(
                 super::registered_packages(&account.user_sid, &record.runtime()?.package_family)?
@@ -112,7 +112,7 @@ pub(crate) fn prepare(
             // Older bundled clients also fail closed while account recovery is pending.
             record.runtime_mut()?.ready_package = None;
             crate::installation_record::save_runtime(record)?;
-            codex_windows_sandbox::set_local_user_flags(
+            ava_windows_sandbox::set_local_user_flags(
                 account.account.username(),
                 flags & !UF_ACCOUNTDISABLE,
             )?;
@@ -120,20 +120,20 @@ pub(crate) fn prepare(
         let token = with_owner_impersonation(owner_token, || {
             let mut pins = Vec::new();
             crate::ipc::pin_existing_ancestors(
-                &codex_windows_sandbox::sandbox_secrets_dir(&record.codex_home),
+                &ava_windows_sandbox::sandbox_secrets_dir(&record.ava_home),
                 &mut pins,
             )?;
-            codex_windows_sandbox::logon_existing_sandbox_account(
-                &record.codex_home,
+            ava_windows_sandbox::logon_existing_sandbox_account(
+                &record.ava_home,
                 account.account,
             )
         });
         if flags & UF_ACCOUNTDISABLE != 0 {
             super::validate_account_sid(&account)?;
             let current_flags =
-                codex_windows_sandbox::local_user_flags(account.account.username())?
+                ava_windows_sandbox::local_user_flags(account.account.username())?
                     .context("cleanup account disappeared before flag restoration")?;
-            codex_windows_sandbox::set_local_user_flags(
+            ava_windows_sandbox::set_local_user_flags(
                 account.account.username(),
                 current_flags | UF_ACCOUNTDISABLE,
             )
@@ -160,8 +160,8 @@ pub(crate) fn prepare(
         None
     } else {
         Some(
-            codex_windows_sandbox::string_from_sid_bytes(&codex_windows_sandbox::resolve_sid(
-                codex_windows_sandbox::SANDBOX_USERS_GROUP,
+            ava_windows_sandbox::string_from_sid_bytes(&ava_windows_sandbox::resolve_sid(
+                ava_windows_sandbox::SANDBOX_USERS_GROUP,
             )?)
             .map_err(anyhow::Error::msg)?,
         )
@@ -232,7 +232,7 @@ pub(crate) fn prepare(
         "value": crate::installation_record::INSTALLATION_VALUE,
         "record": record,
         "targets": targets,
-        "service_name": codex_windows_sandbox::windows_sandbox_service_name()?,
+        "service_name": ava_windows_sandbox::windows_sandbox_service_name()?,
         "group_sid": group_sid,
     });
     let input = child.stdin.as_mut().context("capture cleanup input")?;

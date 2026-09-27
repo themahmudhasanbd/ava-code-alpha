@@ -52,7 +52,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { isDark, colors } = useTheme();
+  const { isDark, colors, resolvedTheme } = useTheme();
 
   const navTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -72,7 +72,7 @@ function AppContent() {
   }, [isDark, colors]);
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} key={resolvedTheme}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <RootNavigator />
     </NavigationContainer>

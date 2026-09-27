@@ -1,7 +1,7 @@
 //! Borrows the latest opaque checkpoint and its recorded producer as one history item.
 //! Malformed checkpoints remain visible so consumers cannot fall back to an older grant.
 
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ResponseItem;
 
 use crate::ResponseItemEnvelope;
 

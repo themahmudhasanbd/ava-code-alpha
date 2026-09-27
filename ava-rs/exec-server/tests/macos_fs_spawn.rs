@@ -17,7 +17,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_utils_path_uri::PathUri;
+use ava_utils_path_uri::PathUri;
 use futures::TryStreamExt;
 use pretty_assertions::assert_eq;
 use tokio::process::Command;
@@ -27,7 +27,7 @@ use crate::support::FileSystemImplementation;
 use crate::support::create_file_system_context;
 use crate::support::workspace_write_sandbox;
 
-const CHILD_FLAG: &str = "CODEX_EXEC_SERVER_MACOS_FS_SPAWN_TEST_CHILD";
+const CHILD_FLAG: &str = "AVA_EXEC_SERVER_MACOS_FS_SPAWN_TEST_CHILD";
 const CHILD_COMPLETED: &str = "filesystem spawn assertions completed";
 static PARENT_FORKS: AtomicUsize = AtomicUsize::new(0);
 

@@ -707,7 +707,7 @@ export const useAppStore = create<AppState>((set, get) => {
           branch: currentWorkspace.branch,
         });
       }
-      // Codex opens an empty draft home ("What can I help you build?") rather than
+      // Ava opens an empty draft home ("What can I help you build?") rather than
       // restoring a prior transcript as the first paint. A live host plan is
       // the exception: its owning session must be visible so approval can be
       // restored after a renderer reload.

@@ -5,33 +5,33 @@ use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Result;
-use codex_config::LoaderOverrides;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::set_project_trust_level;
-use codex_core_plugins::store::PluginStore;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::OPENAI_PROVIDER_ID;
-use codex_plugin::PluginId;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_skills_extension::HostSkillsLoadInput;
-use codex_skills_extension::SkillsExtensionConfig;
-use codex_skills_extension::install;
+use ava_config::LoaderOverrides;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::set_project_trust_level;
+use ava_core_plugins::store::PluginStore;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::OPENAI_PROVIDER_ID;
+use ava_plugin::PluginId;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_skills_extension::HostSkillsLoadInput;
+use ava_skills_extension::SkillsExtensionConfig;
+use ava_skills_extension::install;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_CREATE_TOOL;
 use core_test_support::apps_test_server::recorded_apps_tool_calls;
@@ -53,10 +53,10 @@ use core_test_support::skip_if_remote;
 use core_test_support::skip_if_target_windows;
 use core_test_support::stdio_server_bin;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_mcp_server;
@@ -76,7 +76,7 @@ const SAMPLE_REMOTE_PLUGIN_CONFIG_NAME: &str = "sample@openai-curated-remote";
 const SAMPLE_PLUGIN_DISPLAY_NAME: &str = "sample";
 const SAMPLE_PLUGIN_DESCRIPTION: &str = "inspect sample data";
 const SAMPLE_REMOTE_PLUGIN_ID: &str = "plugins~Plugin_sample";
-const SAMPLE_PLUGIN_APP_NAMESPACE: &str = "mcp__codex_apps__google_calendar";
+const SAMPLE_PLUGIN_APP_NAMESPACE: &str = "mcp__ava_apps__google_calendar";
 const SAMPLE_PLUGIN_MCP_NAMESPACE: &str = "mcp__sample";
 const PLUGIN_APP_SEARCH_CALL_ID: &str = "plugin-app-search";
 const PLUGIN_MCP_SEARCH_CALL_ID: &str = "plugin-mcp-search";
@@ -111,9 +111,9 @@ fn write_sample_plugin_manifest_and_config_at_root(
     plugin_root: std::path::PathBuf,
     plugin_config_name: &str,
 ) -> std::path::PathBuf {
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin")).expect("create plugin manifest dir");
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin")).expect("create plugin manifest dir");
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         format!(
             r#"{{"name":"{SAMPLE_PLUGIN_DISPLAY_NAME}","description":"{SAMPLE_PLUGIN_DESCRIPTION}"}}"#
         ),
@@ -134,12 +134,12 @@ fn write_remote_plugin_script_and_config(home: &TempDir) -> std::path::PathBuf {
     let store = PluginStore::new(home.path().to_path_buf());
     let plugin_root = store.plugin_root(&plugin_id, "1.2.3");
     let script_path = plugin_root.join("scripts/run.sh");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))
         .expect("create remote plugin manifest dir");
     std::fs::create_dir_all(script_path.parent().expect("script parent"))
         .expect("create remote plugin scripts dir");
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"sample","version":"1.2.3"}"#,
     )
     .expect("write remote plugin manifest");
@@ -276,14 +276,14 @@ fn write_plugin_app_plugin_with_name(home: &TempDir, app_name: &str) {
     .expect("write plugin app config");
 }
 
-async fn build_analytics_plugin_test_codex(
+async fn build_analytics_plugin_test_ava(
     server: &MockServer,
-    codex_home: Arc<TempDir>,
-) -> Result<TestCodex> {
+    ava_home: Arc<TempDir>,
+) -> Result<TestAva> {
     let chatgpt_base_url = server.uri();
-    let mut builder = test_codex()
-        .with_home(codex_home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+    let mut builder = test_ava()
+        .with_home(ava_home)
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("gpt-5.2")
         .with_config(move |config| {
             config.chatgpt_base_url = chatgpt_base_url;
@@ -291,14 +291,14 @@ async fn build_analytics_plugin_test_codex(
     builder.build_with_auto_env(server).await
 }
 
-async fn build_apps_enabled_plugin_test_codex(
+async fn build_apps_enabled_plugin_test_ava(
     server: &MockServer,
-    codex_home: Arc<TempDir>,
+    ava_home: Arc<TempDir>,
     chatgpt_base_url: String,
-) -> Result<TestCodex> {
-    let mut builder = test_codex()
-        .with_home(codex_home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+) -> Result<TestAva> {
+    let mut builder = test_ava()
+        .with_home(ava_home)
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config
                 .features
@@ -368,15 +368,15 @@ async fn persisted_remote_plugin_command_attribution_flows_through_turn_context(
     skip_if_no_network!(Ok(()));
     skip_if_remote!(
         Ok(()),
-        "remote plugin attribution fixture uses a local Codex home cache"
+        "remote plugin attribution fixture uses a local Ava home cache"
     );
 
     let server = start_mock_server().await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let script_path = write_remote_plugin_script_and_config(codex_home.as_ref());
+    let ava_home = Arc::new(TempDir::new()?);
+    let script_path = write_remote_plugin_script_and_config(ava_home.as_ref());
     std::fs::write(
         &script_path,
-        r#"printf '%s' '{"version":1,"measurements":[{"name":"files_scanned","value":7}]}' > "$CODEX_PLUGIN_METRICS_OUTPUT"
+        r#"printf '%s' '{"version":1,"measurements":[{"name":"files_scanned","value":7}]}' > "$AVA_PLUGIN_METRICS_OUTPUT"
 "#,
     )?;
     let plugin_root = script_path
@@ -393,7 +393,7 @@ async fn persisted_remote_plugin_command_attribution_flows_through_turn_context(
         };
         zsh_fork_test_builder(runtime, AskForApproval::Never)
     } else {
-        test_codex()
+        test_ava()
     };
     let command = shlex::try_join(["/bin/sh", script_path.to_string_lossy().as_ref()])?;
     let call_id = "remote-plugin-command";
@@ -420,19 +420,19 @@ async fn persisted_remote_plugin_command_attribution_flows_through_turn_context(
 
     let chatgpt_base_url = server.uri();
     let mut builder = builder
-        .with_home(Arc::clone(&codex_home))
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_home(Arc::clone(&ava_home))
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("gpt-5.2")
         .with_config(move |config| config.chatgpt_base_url = chatgpt_base_url);
-    let test_codex = builder.build_with_auto_env(&server).await?;
-    let codex = Arc::clone(&test_codex.codex);
-    let cwd = test_codex.config.cwd.clone();
-    let session_model = test_codex.session_configured.model.clone();
+    let test_ava = builder.build_with_auto_env(&server).await?;
+    let ava = Arc::clone(&test_ava.ava-code);
+    let cwd = test_ava.config.cwd.clone();
+    let session_model = test_ava.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), cwd.as_path());
-    codex
+    ava
         .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![codex_protocol::user_input::UserInput::Text {
+            TurnInputRequest::user_input(vec![ava_protocol::user_input::UserInput::Text {
                 text: "run the remote plugin script".into(),
                 text_elements: Vec::new(),
             }])
@@ -454,12 +454,12 @@ async fn persisted_remote_plugin_command_attribution_flows_through_turn_context(
         )
         .await?;
 
-    let begin = wait_for_event_match(&codex, |event| match event {
+    let begin = wait_for_event_match(&ava, |event| match event {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
     .await;
-    let end = wait_for_event_match(&codex, |event| match event {
+    let end = wait_for_event_match(&ava, |event| match event {
         EventMsg::ExecCommandEnd(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
@@ -469,7 +469,7 @@ async fn persisted_remote_plugin_command_attribution_flows_through_turn_context(
         "sandboxed plugin command failed: {}",
         end.aggregated_output
     );
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     for (plugin_id, script_path) in [
         (begin.plugin_id.as_deref(), begin.script_path.as_deref()),
@@ -479,7 +479,7 @@ async fn persisted_remote_plugin_command_attribution_flows_through_turn_context(
         assert_eq!(script_path, Some("scripts/run.sh"));
     }
 
-    let measurement = wait_for_analytics_event(&server, "codex_plugin_measurement_event").await;
+    let measurement = wait_for_analytics_event(&server, "ava_plugin_measurement_event").await;
     assert_eq!(
         serde_json::json!({
             "plugin_id": measurement["event_params"]["plugin_id"],
@@ -508,8 +508,8 @@ async fn remote_plugin_measurements_require_the_frontend_version() -> Result<()>
     let server = start_mock_server().await;
     let home = Arc::new(TempDir::new()?);
     let frontend_script = write_remote_plugin_script_and_config(home.as_ref());
-    let script = r#"if [ -n "${CODEX_PLUGIN_METRICS_OUTPUT:-}" ]; then
-  printf '%s' '{"version":1,"measurements":[{"name":"duration_ms","value":7,"dimensions":{"release":"v1"}}]}' > "$CODEX_PLUGIN_METRICS_OUTPUT"
+    let script = r#"if [ -n "${AVA_PLUGIN_METRICS_OUTPUT:-}" ]; then
+  printf '%s' '{"version":1,"measurements":[{"name":"duration_ms","value":7,"dimensions":{"release":"v1"}}]}' > "$AVA_PLUGIN_METRICS_OUTPUT"
 else
   printf 'no metrics sidecar\n'
 fi
@@ -554,7 +554,7 @@ fi
                 &serde_json::json!({
                     "cmd": command,
                     "login": false,
-                    "environment_id": codex_exec_server::REMOTE_ENVIRONMENT_ID,
+                    "environment_id": ava_exec_server::REMOTE_ENVIRONMENT_ID,
                     "yield_time_ms": 1000,
                 })
                 .to_string(),
@@ -569,10 +569,10 @@ fi
     ]));
     let response_mock = mount_sse_sequence(&server, responses).await;
     let base_url = server.uri();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_exec_server_url(executor.websocket_url.clone())
         .with_home(home)
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_model("gpt-5.2")
         .with_config(move |config| {
             config.chatgpt_base_url = base_url;
@@ -589,7 +589,7 @@ fi
     assert!(remote.is_remote());
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run both plugin versions".into(),
@@ -605,12 +605,12 @@ fi
         .await?;
     for call_id in ["wrong-version", "matching-version"] {
         let expected = (Some(REMOTE_PLUGIN_CONFIG_NAME), Some("scripts/run.sh"));
-        let begin = wait_for_event_match(&test.codex, |event| match event {
+        let begin = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
             _ => None,
         })
         .await;
-        let end = wait_for_event_match(&test.codex, |event| match event {
+        let end = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::ExecCommandEnd(event) if event.call_id == call_id => Some(event.clone()),
             _ => None,
         })
@@ -625,7 +625,7 @@ fi
             expected
         );
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -635,7 +635,7 @@ fi
             .unwrap()
             .contains("no metrics sidecar")
     );
-    let event = wait_for_analytics_event(&server, "codex_plugin_measurement_event").await;
+    let event = wait_for_analytics_event(&server, "ava_plugin_measurement_event").await;
     assert_eq!(
         serde_json::json!({
             "plugin_id": event["event_params"]["plugin_id"],
@@ -673,10 +673,10 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
     )?;
     write_plugin_mcp_plugin(home.as_ref(), &stdio_server_bin()?);
     write_plugin_app_plugin_with_name(home.as_ref(), "sample_app");
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_extensions(skills_extensions())
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| {
             config.features.enable(Feature::Apps).unwrap();
             config.chatgpt_base_url = apps.chatgpt_base_url;
@@ -691,13 +691,13 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
             "echo",
             Some(serde_json::json!({"message": "plugin check"})),
         ),
-        (CODEX_APPS_MCP_SERVER_NAME, "calendar_list_events", None),
+        (AVA_APPS_MCP_SERVER_NAME, "calendar_list_events", None),
     ];
 
     for (phase, enabled, injection_count) in [(0, true, 1), (1, false, 1), (2, true, 2)] {
         if !enabled {
             submit_thread_settings(
-                &test.codex,
+                &test.ava-code,
                 ThreadSettingsOverrides {
                     disabled_plugin_ids: Some(vec![SAMPLE_PLUGIN_CONFIG_NAME.to_string()]),
                     ..Default::default()
@@ -706,7 +706,7 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
             .await?;
             // Saving pending settings must not change the admitted runtime.
             for (server_name, tool, arguments) in &tool_calls {
-                test.codex
+                test.ava-code
                     .call_mcp_tool(server_name, tool, arguments.clone(), /*meta*/ None)
                     .await?;
             }
@@ -729,7 +729,7 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
             ],
         )
         .await;
-        test.codex
+        test.ava-code
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![
                     UserInput::Skill {
@@ -747,7 +747,7 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
                 }),
             )
             .await?;
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -784,12 +784,12 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
         // Direct Apps RPC calls keep their existing behavior outside model tool filtering.
         for (server_name, tool, arguments) in &tool_calls {
             let result = test
-                .codex
+                .ava-code
                 .call_mcp_tool(server_name, tool, arguments.clone(), /*meta*/ None)
                 .await;
             assert_eq!(
                 result.is_ok(),
-                enabled || *server_name == CODEX_APPS_MCP_SERVER_NAME,
+                enabled || *server_name == AVA_APPS_MCP_SERVER_NAME,
                 "unexpected {server_name}/{tool} result: {result:?}"
             );
         }
@@ -814,21 +814,21 @@ async fn agent_plugin_skills_use_shared_catalog_and_direct_child_discovery() -> 
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let skill_path = dunce::canonicalize(write_agent_plugin_skill_plugin(codex_home.as_ref()))?;
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let ava_home = Arc::new(TempDir::new()?);
+    let skill_path = dunce::canonicalize(write_agent_plugin_skill_plugin(ava_home.as_ref()))?;
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(skills_extensions());
-    let test_codex = builder.build_with_auto_env(&server).await?;
+    let test_ava = builder.build_with_auto_env(&server).await?;
 
-    test_codex
-        .codex
+    test_ava
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Skill {
             name: "acme.tools:review".into(),
             path: skill_path,
         }]))
         .await?;
-    let warning = wait_for_event(&test_codex.codex, |ev| {
+    let warning = wait_for_event(&test_ava.ava-code, |ev| {
         matches!(
             ev,
             EventMsg::Warning(warning)
@@ -836,7 +836,7 @@ async fn agent_plugin_skills_use_shared_catalog_and_direct_child_discovery() -> 
         )
     })
     .await;
-    wait_for_event(&test_codex.codex, |ev| {
+    wait_for_event(&test_ava.ava-code, |ev| {
         matches!(ev, EventMsg::TurnComplete(_))
     })
     .await;
@@ -861,7 +861,7 @@ async fn agent_plugin_skills_use_shared_catalog_and_direct_child_discovery() -> 
 }
 
 #[test_case("CHATGPT", false, None; "product restricted skill is unavailable")]
-#[test_case("CODEX", true, Some("native review skill"); "native skill wins over migrated command")]
+#[test_case("AVA", true, Some("native review skill"); "native skill wins over migrated command")]
 #[test_case("CHATGPT", true, Some("migrated review command"); "migrated command replaces filtered native skill")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn plugin_skill_product_policy_and_migrated_command_precedence_reach_agent_turns(
@@ -877,8 +877,8 @@ async fn plugin_skill_product_policy_and_migrated_command_precedence_reach_agent
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let plugin_root = write_sample_plugin_manifest_and_config(codex_home.as_ref());
+    let ava_home = Arc::new(TempDir::new()?);
+    let plugin_root = write_sample_plugin_manifest_and_config(ava_home.as_ref());
     let native_skill_dir = plugin_root.join("skills/review");
     std::fs::create_dir_all(native_skill_dir.join("agents"))?;
     std::fs::write(
@@ -891,7 +891,7 @@ async fn plugin_skill_product_policy_and_migrated_command_precedence_reach_agent
     )?;
     if include_migrated_command {
         let migrated_skill_dir =
-            plugin_root.join(".codex-plugin/migrated-command-skills/source-command-review");
+            plugin_root.join(".ava-plugin/migrated-command-skills/source-command-review");
         std::fs::create_dir_all(&migrated_skill_dir)?;
         std::fs::write(
             migrated_skill_dir.join("SKILL.md"),
@@ -899,8 +899,8 @@ async fn plugin_skill_product_policy_and_migrated_command_precedence_reach_agent
         )?;
     }
 
-    let mut builder = test_codex()
-        .with_home(Arc::clone(&codex_home))
+    let mut builder = test_ava()
+        .with_home(Arc::clone(&ava_home))
         .with_extensions(skills_extensions());
     let test = builder.build_with_auto_env(&server).await?;
     let plugin_outcome = test
@@ -931,13 +931,13 @@ async fn plugin_skill_product_policy_and_migrated_command_precedence_reach_agent
             .collect::<Vec<_>>()
     );
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the available plugin skills.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -966,27 +966,27 @@ async fn legacy_plugin_skill_prompt_remains_complete() -> Result<()> {
         sse(vec![ev_response_created("resp1"), ev_completed("resp1")]),
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let skill_path = write_plugin_skill_plugin(codex_home.as_ref());
+    let ava_home = Arc::new(TempDir::new()?);
+    let skill_path = write_plugin_skill_plugin(ava_home.as_ref());
     let skill_contents = format!(
         "---\nname: sample-search\ndescription: inspect sample data\n---\n\n{}\nLEGACY_SKILL_FULL_TAIL\n",
         "x".repeat(9_000)
     );
     std::fs::write(&skill_path, &skill_contents)?;
     let skill_path = dunce::canonicalize(skill_path)?;
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_extensions(skills_extensions());
-    let test_codex = builder.build_with_auto_env(&server).await?;
+    let test_ava = builder.build_with_auto_env(&server).await?;
 
-    test_codex
-        .codex
+    test_ava
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Skill {
             name: "sample:sample-search".into(),
             path: skill_path,
         }]))
         .await?;
-    wait_for_event(&test_codex.codex, |ev| {
+    wait_for_event(&test_ava.ava-code, |ev| {
         matches!(ev, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1038,9 +1038,9 @@ async fn sites_compatibility_guard_in_agent_turn(
         .mount(&server)
         .await;
 
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 remote_plugin = true
@@ -1056,12 +1056,12 @@ enabled = true
         if marketplace == "openai-curated-remote" && !cache_remote_sites {
             continue;
         }
-        let root = codex_home
+        let root = ava_home
             .path()
             .join(format!("plugins/cache/{marketplace}/sites/local"));
-        std::fs::create_dir_all(root.join(".codex-plugin"))?;
+        std::fs::create_dir_all(root.join(".ava-plugin"))?;
         std::fs::write(
-            root.join(".codex-plugin/plugin.json"),
+            root.join(".ava-plugin/plugin.json"),
             r#"{"name":"sites"}"#,
         )?;
         let skill_dir = root.join("skills").join(skill);
@@ -1073,10 +1073,10 @@ enabled = true
     }
 
     let chatgpt_base_url = server.uri();
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_extensions(skills_extensions())
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(move |config| config.chatgpt_base_url = chatgpt_base_url);
     let test = builder.build_with_auto_env(&server).await?;
 
@@ -1086,13 +1086,13 @@ enabled = true
         .reconcile_remote_installed_plugins(&test.config.plugins_config_input(), auth.as_ref())
         .await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the available Sites skills.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1111,7 +1111,7 @@ enabled = true
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn agent_plugin_root_mcp_stdio_tool_round_trip_expands_reserved_paths_and_codex_env_overlay()
+async fn agent_plugin_root_mcp_stdio_tool_round_trip_expands_reserved_paths_and_ava_env_overlay()
 -> Result<()> {
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
@@ -1154,9 +1154,9 @@ async fn agent_plugin_root_mcp_stdio_tool_round_trip_expands_reserved_paths_and_
         ],
     )
     .await;
-    let codex_home = Arc::new(TempDir::new()?);
-    write_agent_plugin_skill_plugin(codex_home.as_ref());
-    let plugin_root = codex_home
+    let ava_home = Arc::new(TempDir::new()?);
+    write_agent_plugin_skill_plugin(ava_home.as_ref());
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache/test/acme.tools/local");
     let stdio_server = match stdio_server_bin() {
@@ -1182,16 +1182,16 @@ async fn agent_plugin_root_mcp_stdio_tool_round_trip_expands_reserved_paths_and_
         plugin_root.join("mcp.json"),
         serde_json::to_vec_pretty(&mcp_config)?,
     )?;
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"acme.tools","mcpServers":{"agent":{"command":"ignored","env_vars":["INSTA_WORKSPACE_ROOT"]}}}"#,
     )?;
-    let mut builder = test_codex().with_home(Arc::clone(&codex_home));
-    let test_codex = builder.build_with_remote_and_local_env(&server).await?;
-    wait_for_mcp_server(&test_codex.codex, "agent").await?;
+    let mut builder = test_ava().with_home(Arc::clone(&ava_home));
+    let test_ava = builder.build_with_remote_and_local_env(&server).await?;
+    wait_for_mcp_server(&test_ava.ava-code, "agent").await?;
     let data_root = dunce::canonicalize(
-        std::fs::read_dir(codex_home.path().join("plugins/data/agent-plugins"))?
+        std::fs::read_dir(ava_home.path().join("plugins/data/agent-plugins"))?
             .next()
             .expect("Agent Plugin data root")?
             .path(),
@@ -1202,22 +1202,22 @@ async fn agent_plugin_root_mcp_stdio_tool_round_trip_expands_reserved_paths_and_
         data_root.display()
     );
 
-    test_codex
-        .codex
+    test_ava
+        .ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "call the Agent Plugin echo tool".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let end = wait_for_event(&test_codex.codex, |event| {
+    let end = wait_for_event(&test_ava.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    let overlay_end = wait_for_event(&test_codex.codex, |event| {
+    let overlay_end = wait_for_event(&test_ava.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    wait_for_event(&test_codex.codex, |event| {
+    wait_for_event(&test_ava.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1273,7 +1273,7 @@ async fn curated_plugin_skills_follow_auth_switch() -> Result<()> {
         Chatgpt,
         ApiKey,
         BedrockApiKey,
-        NoCodexAuth,
+        NoAvaAuth,
     }
 
     #[derive(Clone, Copy)]
@@ -1316,30 +1316,30 @@ async fn curated_plugin_skills_follow_auth_switch() -> Result<()> {
         },
         Fixture {
             name: "ambient Bedrock",
-            target_auth: TargetAuth::NoCodexAuth,
+            target_auth: TargetAuth::NoAvaAuth,
             target_model_provider_id: AMAZON_BEDROCK_PROVIDER_ID,
             expected_target_loaded_plugin_skills: &[API_CURATED_PLUGIN_SKILL],
             expected_target_skill_description: "api description before",
         },
         Fixture {
             name: "unauthenticated OpenAI",
-            target_auth: TargetAuth::NoCodexAuth,
+            target_auth: TargetAuth::NoAvaAuth,
             target_model_provider_id: OPENAI_PROVIDER_ID,
             expected_target_loaded_plugin_skills: &[API_CURATED_PLUGIN_SKILL],
             expected_target_skill_description: "api description before",
         },
         Fixture {
             name: "unauthenticated custom provider",
-            target_auth: TargetAuth::NoCodexAuth,
+            target_auth: TargetAuth::NoAvaAuth,
             target_model_provider_id: "ollama",
             expected_target_loaded_plugin_skills: &[API_CURATED_PLUGIN_SKILL],
             expected_target_skill_description: "api description before",
         },
     ];
 
-    async fn loaded_plugin_skills_for_config(test_codex: &TestCodex, config: &Config) -> String {
+    async fn loaded_plugin_skills_for_config(test_ava: &TestAva, config: &Config) -> String {
         let plugins_input = config.plugins_config_input();
-        let plugins_manager = test_codex.thread_manager.plugins_manager();
+        let plugins_manager = test_ava.thread_manager.plugins_manager();
         let plugin_outcome = plugins_manager.plugins_for_config(&plugins_input).await;
         let skills_input = HostSkillsLoadInput::new(
             config.cwd.clone(),
@@ -1349,7 +1349,7 @@ async fn curated_plugin_skills_follow_auth_switch() -> Result<()> {
         .with_plugin_skill_snapshots(
             plugins_manager.plugin_skill_snapshots_for_config(&plugins_input),
         );
-        let skills_snapshot = test_codex
+        let skills_snapshot = test_ava
             .thread_manager
             .skills_service()
             .snapshot_for_config(&skills_input, /*fs*/ None)
@@ -1390,9 +1390,9 @@ async fn curated_plugin_skills_follow_auth_switch() -> Result<()> {
     for fixture in FIXTURES {
         let server = start_mock_server().await;
 
-        let codex_home = Arc::new(TempDir::new()?);
+        let ava_home = Arc::new(TempDir::new()?);
         std::fs::write(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
             r#"[features]
 plugins = true
 remote_plugin = false
@@ -1418,15 +1418,15 @@ enabled = true
                 "api description before",
             ),
         ] {
-            let plugin_root = codex_home
+            let plugin_root = ava_home
                 .path()
                 .join("plugins/cache")
                 .join(marketplace_name)
                 .join(plugin_name)
                 .join("local");
-            std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+            std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
             std::fs::write(
-                plugin_root.join(".codex-plugin/plugin.json"),
+                plugin_root.join(".ava-plugin/plugin.json"),
                 format!(r#"{{"name":"{plugin_name}","description":"{plugin_name}"}}"#),
             )?;
             let skill_dir = plugin_root.join("skills").join(skill_name);
@@ -1437,12 +1437,12 @@ enabled = true
             )?;
         }
 
-        let mut builder = test_codex()
-            .with_home(Arc::clone(&codex_home))
+        let mut builder = test_ava()
+            .with_home(Arc::clone(&ava_home))
             .with_extensions(skills_extensions())
-            .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing());
-        let test_codex = builder.build_with_auto_env(&server).await?;
-        let initial_skills = loaded_plugin_skills_for_config(&test_codex, &test_codex.config).await;
+            .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+        let test_ava = builder.build_with_auto_env(&server).await?;
+        let initial_skills = loaded_plugin_skills_for_config(&test_ava, &test_ava.config).await;
         assert_loaded_plugin_skills(
             fixture.name,
             "initial ChatGPT config",
@@ -1452,7 +1452,7 @@ enabled = true
         assert!(initial_skills.contains("chatgpt description"));
 
         std::fs::write(
-            codex_home.path().join(
+            ava_home.path().join(
                 "plugins/cache/openai-api-curated/api-plugin/local/skills/api-skill/SKILL.md",
             ),
             "---\ndescription: api description after\n---\n\n# body\n",
@@ -1461,39 +1461,39 @@ enabled = true
         let expected_auth_mode = match fixture.target_auth {
             TargetAuth::Chatgpt => Some(AuthMode::Chatgpt),
             TargetAuth::ApiKey => {
-                codex_login::login_with_api_key(
-                    codex_home.path(),
+                ava_login::login_with_api_key(
+                    ava_home.path(),
                     "test-api-key",
-                    codex_login::AuthCredentialsStoreMode::File,
-                    codex_login::AuthKeyringBackendKind::default(),
+                    ava_login::AuthCredentialsStoreMode::File,
+                    ava_login::AuthKeyringBackendKind::default(),
                 )?;
-                test_codex.thread_manager.auth_manager().reload().await;
+                test_ava.thread_manager.auth_manager().reload().await;
                 Some(AuthMode::ApiKey)
             }
             TargetAuth::BedrockApiKey => {
-                codex_login::login_with_bedrock_api_key(
-                    codex_home.path(),
+                ava_login::login_with_bedrock_api_key(
+                    ava_home.path(),
                     "test-bedrock-api-key",
                     "us-east-1",
-                    codex_login::AuthCredentialsStoreMode::File,
-                    codex_login::AuthKeyringBackendKind::default(),
+                    ava_login::AuthCredentialsStoreMode::File,
+                    ava_login::AuthKeyringBackendKind::default(),
                 )?;
-                test_codex.thread_manager.auth_manager().reload().await;
+                test_ava.thread_manager.auth_manager().reload().await;
                 Some(AuthMode::BedrockApiKey)
             }
-            TargetAuth::NoCodexAuth => {
-                test_codex.thread_manager.auth_manager().logout().await?;
+            TargetAuth::NoAvaAuth => {
+                test_ava.thread_manager.auth_manager().logout().await?;
                 None
             }
         };
         assert_eq!(
-            test_codex.thread_manager.auth_manager().get_api_auth_mode(),
+            test_ava.thread_manager.auth_manager().get_api_auth_mode(),
             expected_auth_mode
         );
-        test_codex.thread_manager.skills_service().clear_cache();
-        let mut target_config = test_codex.config.clone();
+        test_ava.thread_manager.skills_service().clear_cache();
+        let mut target_config = test_ava.config.clone();
         target_config.model_provider_id = fixture.target_model_provider_id.to_string();
-        let target_skills = loaded_plugin_skills_for_config(&test_codex, &target_config).await;
+        let target_skills = loaded_plugin_skills_for_config(&test_ava, &target_config).await;
         assert_loaded_plugin_skills(
             fixture.name,
             "target config",
@@ -1523,7 +1523,7 @@ async fn explicit_plugin_mentions_use_apps_for_chatgpt_dual_surface_plugins(
     let apps_server = AppsTestServer::mount_with_connector_name(&server, "Google Calendar").await?;
     let mock = mount_plugin_tool_search_turn(&server).await;
 
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     let rmcp_test_server_bin = match stdio_server_bin() {
         Ok(bin) => bin,
         Err(err) => {
@@ -1531,31 +1531,31 @@ async fn explicit_plugin_mentions_use_apps_for_chatgpt_dual_surface_plugins(
             return Ok(());
         }
     };
-    write_plugin_skill_plugin(codex_home.as_ref());
-    write_plugin_mcp_plugin(codex_home.as_ref(), &rmcp_test_server_bin);
-    write_plugin_app_plugin(codex_home.as_ref());
-    let config_path = codex_home.path().join("config.toml");
+    write_plugin_skill_plugin(ava_home.as_ref());
+    write_plugin_mcp_plugin(ava_home.as_ref(), &rmcp_test_server_bin);
+    write_plugin_app_plugin(ava_home.as_ref());
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         config_path,
         format!("{config}\n[apps.calendar]\nenabled = {app_enabled}\n"),
     )?;
 
-    let test_codex =
-        build_apps_enabled_plugin_test_codex(&server, codex_home, apps_server.chatgpt_base_url)
+    let test_ava =
+        build_apps_enabled_plugin_test_ava(&server, ava_home, apps_server.chatgpt_base_url)
             .await?;
-    let codex = Arc::clone(&test_codex.codex);
-    wait_for_mcp_server(&codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    let ava = Arc::clone(&test_ava.ava-code);
+    wait_for_mcp_server(&ava, AVA_APPS_MCP_SERVER_NAME).await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
-            codex_protocol::user_input::UserInput::Mention {
+            ava_protocol::user_input::UserInput::Mention {
                 name: "sample".into(),
                 path: format!("plugin://{SAMPLE_PLUGIN_CONFIG_NAME}"),
             },
         ]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = mock.requests();
     let request = &requests[0];
@@ -1616,7 +1616,7 @@ async fn explicit_plugin_mentions_keep_non_conflicting_mcp_for_chatgpt_auth() ->
     let apps_server = AppsTestServer::mount_with_connector_name(&server, "Google Calendar").await?;
     let mock = mount_plugin_tool_search_turn(&server).await;
 
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     let rmcp_test_server_bin = match stdio_server_bin() {
         Ok(bin) => bin,
         Err(err) => {
@@ -1624,25 +1624,25 @@ async fn explicit_plugin_mentions_keep_non_conflicting_mcp_for_chatgpt_auth() ->
             return Ok(());
         }
     };
-    write_plugin_skill_plugin(codex_home.as_ref());
-    write_plugin_mcp_plugin(codex_home.as_ref(), &rmcp_test_server_bin);
-    write_plugin_app_plugin_with_name(codex_home.as_ref(), "sample_app");
+    write_plugin_skill_plugin(ava_home.as_ref());
+    write_plugin_mcp_plugin(ava_home.as_ref(), &rmcp_test_server_bin);
+    write_plugin_app_plugin_with_name(ava_home.as_ref(), "sample_app");
 
-    let test_codex =
-        build_apps_enabled_plugin_test_codex(&server, codex_home, apps_server.chatgpt_base_url)
+    let test_ava =
+        build_apps_enabled_plugin_test_ava(&server, ava_home, apps_server.chatgpt_base_url)
             .await?;
-    let codex = Arc::clone(&test_codex.codex);
-    wait_for_mcp_server(&codex, "sample").await?;
+    let ava = Arc::clone(&test_ava.ava-code);
+    wait_for_mcp_server(&ava, "sample").await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
-            codex_protocol::user_input::UserInput::Mention {
+            ava_protocol::user_input::UserInput::Mention {
                 name: "sample".into(),
                 path: format!("plugin://{SAMPLE_PLUGIN_CONFIG_NAME}"),
             },
         ]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = mock.requests();
     let request = &requests[0];
@@ -1687,10 +1687,10 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
     let mock = mount_plugin_tool_search_turn(&server).await;
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     let project = TempDir::new()?;
-    write_plugin_mcp_plugin(codex_home.as_ref(), &stdio_server_bin()?);
-    let user_config_path = codex_home.path().join("config.toml");
+    write_plugin_mcp_plugin(ava_home.as_ref(), &stdio_server_bin()?);
+    let user_config_path = ava_home.path().join("config.toml");
     let user_config = std::fs::read_to_string(&user_config_path)?;
     std::fs::write(
         &user_config_path,
@@ -1698,7 +1698,7 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
             "{user_config}\n[plugins.\"{SAMPLE_PLUGIN_CONFIG_NAME}\".mcp_servers.sample]\ndisabled_tools = [\"echo\"]\n"
         ),
     )?;
-    let system_config_path = codex_home.path().join("system.toml");
+    let system_config_path = ava_home.path().join("system.toml");
     let marketplace = TempDir::new()?;
     std::fs::create_dir_all(marketplace.path().join(".agents/plugins"))?;
     std::fs::write(
@@ -1714,7 +1714,7 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
     )?;
     // The cached plugin may activate only through this system-defined marketplace.
     // Without the definition, source restrictions exclude it from the real turn.
-    let requirements_path = codex_home.path().join("requirements.toml");
+    let requirements_path = ava_home.path().join("requirements.toml");
     std::fs::write(
         &requirements_path,
         format!(
@@ -1722,18 +1722,18 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
         ),
     )?;
     std::fs::create_dir_all(project.path().join(".git"))?;
-    std::fs::create_dir_all(project.path().join(".codex"))?;
+    std::fs::create_dir_all(project.path().join(".ava-code"))?;
     std::fs::write(
-        project.path().join(".codex/config.toml"),
+        project.path().join(".ava-code/config.toml"),
         format!(
             "[plugins.\"{SAMPLE_PLUGIN_CONFIG_NAME}\"]\nenabled = {plugin_enabled}\n[plugins.\"{SAMPLE_PLUGIN_CONFIG_NAME}\".mcp_servers.sample]\nenabled = {project_enabled}\ndisabled_tools = [\"echo-tool\"]\n"
         ),
     )?;
-    set_project_trust_level(codex_home.path(), project.path(), trust_level)?;
+    set_project_trust_level(ava_home.path(), project.path(), trust_level)?;
     // Exercise the real layer loader and trust checks while keeping the test harness's
     // mock model provider and automatically selected executor environment.
     let layered_config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .fallback_cwd(Some(project.path().to_path_buf()))
         .loader_overrides(LoaderOverrides {
             system_config_path: Some(system_config_path),
@@ -1742,11 +1742,11 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
         })
         .build()
         .await?;
-    let mut builder = test_codex()
-        .with_home(codex_home)
+    let mut builder = test_ava()
+        .with_home(ava_home)
         .with_config(move |config| config.config_layer_stack = layered_config.config_layer_stack);
     let test = builder.build_with_remote_and_local_env(&server).await?;
-    let startup = wait_for_event_match(&test.codex, |event| match event {
+    let startup = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::McpStartupComplete(summary) => Some(summary.clone()),
         _ => None,
     })
@@ -1760,13 +1760,13 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
         serde_json::to_value(startup)?,
         serde_json::json!({"ready": expected_ready, "failed": [], "cancelled": []}),
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Mention {
             name: "sample".into(),
             path: format!("plugin://{SAMPLE_PLUGIN_CONFIG_NAME}"),
         }]))
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1803,7 +1803,7 @@ async fn explicitly_requested_mcp_waits_for_startup(request: ExplicitMcpRequest)
     let server = start_mock_server().await;
     let mock = mount_plugin_tool_search_turn(&server).await;
 
-    let codex_home = Arc::new(TempDir::new()?);
+    let ava_home = Arc::new(TempDir::new()?);
     let rmcp_test_server_bin = match stdio_server_bin() {
         Ok(bin) => bin,
         Err(err) => {
@@ -1811,22 +1811,22 @@ async fn explicitly_requested_mcp_waits_for_startup(request: ExplicitMcpRequest)
             return Ok(());
         }
     };
-    let skill_path = dunce::canonicalize(write_plugin_skill_plugin(codex_home.as_ref()))?;
-    write_plugin_mcp_plugin(codex_home.as_ref(), &rmcp_test_server_bin);
-    write_plugin_app_plugin(codex_home.as_ref());
-    let initialize_barrier = block_plugin_mcp_startup(codex_home.as_ref(), &rmcp_test_server_bin);
+    let skill_path = dunce::canonicalize(write_plugin_skill_plugin(ava_home.as_ref()))?;
+    write_plugin_mcp_plugin(ava_home.as_ref(), &rmcp_test_server_bin);
+    write_plugin_app_plugin(ava_home.as_ref());
+    let initialize_barrier = block_plugin_mcp_startup(ava_home.as_ref(), &rmcp_test_server_bin);
 
-    let mut builder = test_codex()
-        .with_home(codex_home)
-        .with_auth(CodexAuth::from_api_key("Test API Key"))
+    let mut builder = test_ava()
+        .with_home(ava_home)
+        .with_auth(AvaAuth::from_api_key("Test API Key"))
         .with_config(move |config| {
             config
                 .features
                 .enable(Feature::Apps)
                 .expect("test config should allow feature update");
         });
-    let test_codex = builder.build_with_remote_and_local_env(&server).await?;
-    let codex = Arc::clone(&test_codex.codex);
+    let test_ava = builder.build_with_remote_and_local_env(&server).await?;
+    let ava = Arc::clone(&test_ava.ava-code);
 
     let input = match request {
         ExplicitMcpRequest::Plugin => UserInput::Mention {
@@ -1846,7 +1846,7 @@ async fn explicitly_requested_mcp_waits_for_startup(request: ExplicitMcpRequest)
             text_elements: Vec::new(),
         },
     };
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![input]))
         .await?;
     tokio::time::sleep(Duration::from_millis(1200)).await;
@@ -1855,7 +1855,7 @@ async fn explicitly_requested_mcp_waits_for_startup(request: ExplicitMcpRequest)
         "an explicitly requested MCP should finish starting before inference"
     );
     std::fs::write(initialize_barrier, "ready")?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = mock.requests();
     let model_request = &requests[0];
@@ -1916,22 +1916,22 @@ async fn explicit_plugin_mentions_track_plugin_used_analytics() -> Result<()> {
     )
     .await;
 
-    let codex_home = Arc::new(TempDir::new()?);
-    write_plugin_skill_plugin(codex_home.as_ref());
-    let test_codex = build_analytics_plugin_test_codex(&server, codex_home).await?;
-    let codex = Arc::clone(&test_codex.codex);
+    let ava_home = Arc::new(TempDir::new()?);
+    write_plugin_skill_plugin(ava_home.as_ref());
+    let test_ava = build_analytics_plugin_test_ava(&server, ava_home).await?;
+    let ava = Arc::clone(&test_ava.ava-code);
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
-            codex_protocol::user_input::UserInput::Mention {
+            ava_protocol::user_input::UserInput::Mention {
                 name: "sample".into(),
                 path: format!("plugin://{SAMPLE_PLUGIN_CONFIG_NAME}"),
             },
         ]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    let event = wait_for_analytics_event(&server, "codex_plugin_used").await;
+    let event = wait_for_analytics_event(&server, "ava_plugin_used").await;
     assert_eq!(event["event_params"]["plugin_id"], "sample@test");
     assert_eq!(event["event_params"]["plugin_name"], "sample");
     assert_eq!(event["event_params"]["marketplace_name"], "test");
@@ -1947,7 +1947,7 @@ async fn explicit_plugin_mentions_track_plugin_used_analytics() -> Result<()> {
     );
     assert_eq!(
         event["event_params"]["product_client_id"],
-        serde_json::json!(codex_login::default_client::originator().value)
+        serde_json::json!(ava_login::default_client::originator().value)
     );
     assert_eq!(event["event_params"]["model_slug"], "gpt-5.2");
     assert!(event["event_params"]["thread_id"].as_str().is_some());
@@ -1966,19 +1966,19 @@ async fn explicit_plugin_skill_invocation_tracks_remote_plugin_id() -> Result<()
     )
     .await;
 
-    let codex_home = Arc::new(TempDir::new()?);
-    let skill_path = dunce::canonicalize(write_remote_plugin_skill_plugin(codex_home.as_ref()))?;
-    persist_sample_remote_plugin_id(codex_home.as_ref());
-    let test_codex = build_analytics_plugin_test_codex(&server, codex_home).await?;
-    let codex = Arc::clone(&test_codex.codex);
+    let ava_home = Arc::new(TempDir::new()?);
+    let skill_path = dunce::canonicalize(write_remote_plugin_skill_plugin(ava_home.as_ref()))?;
+    persist_sample_remote_plugin_id(ava_home.as_ref());
+    let test_ava = build_analytics_plugin_test_ava(&server, ava_home).await?;
+    let ava = Arc::clone(&test_ava.ava-code);
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Skill {
             name: "sample:sample-search".into(),
             path: skill_path,
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let event = wait_for_analytics_event(&server, "skill_invocation").await;
     assert_eq!(
@@ -2010,9 +2010,9 @@ async fn implicit_plugin_skill_invocation_tracks_remote_plugin_id(
     skip_if_remote!(Ok(()), "shell commands use host plugin-cache paths");
     skip_if_no_network!(Ok(()));
     let server = start_mock_server().await;
-    let codex_home = Arc::new(TempDir::new()?);
-    let skill_path = write_remote_plugin_skill_plugin(codex_home.as_ref());
-    persist_sample_remote_plugin_id(codex_home.as_ref());
+    let ava_home = Arc::new(TempDir::new()?);
+    let skill_path = write_remote_plugin_skill_plugin(ava_home.as_ref());
+    persist_sample_remote_plugin_id(ava_home.as_ref());
     let command = match invocation {
         ImplicitPluginSkillInvocation::SkillDocumentRead => {
             format!("cat {}", skill_path.display())
@@ -2048,16 +2048,16 @@ async fn implicit_plugin_skill_invocation_tracks_remote_plugin_id(
         ],
     )
     .await;
-    let test_codex = build_analytics_plugin_test_codex(&server, codex_home).await?;
-    let codex = Arc::clone(&test_codex.codex);
+    let test_ava = build_analytics_plugin_test_ava(&server, ava_home).await?;
+    let ava = Arc::clone(&test_ava.ava-code);
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "inspect the sample skill".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let event = wait_for_analytics_event(&server, "skill_invocation").await;
     assert_eq!(
@@ -2087,7 +2087,7 @@ async fn wait_for_analytics_event(server: &MockServer, event_type: &str) -> serd
         let requests = server.received_requests().await.unwrap_or_default();
         if let Some(event) = requests
             .into_iter()
-            .filter(|request| request.url.path() == "/codex/analytics-events/events")
+            .filter(|request| request.url.path() == "/ava/analytics-events/events")
             .find_map(|request| {
                 let payload: serde_json::Value = serde_json::from_slice(&request.body).ok()?;
                 payload["events"].as_array().and_then(|events| {

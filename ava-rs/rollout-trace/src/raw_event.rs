@@ -2,7 +2,7 @@
 
 use crate::model::AgentThreadId;
 use crate::model::CodeCellRuntimeStatus;
-use crate::model::CodexTurnId;
+use crate::model::AvaTurnId;
 use crate::model::CompactionId;
 use crate::model::CompactionRequestId;
 use crate::model::EdgeId;
@@ -38,7 +38,7 @@ pub struct RawTraceEvent {
     pub wall_time_unix_ms: i64,
     pub rollout_id: String,
     pub thread_id: Option<AgentThreadId>,
-    pub codex_turn_id: Option<CodexTurnId>,
+    pub ava_turn_id: Option<AvaTurnId>,
     pub payload: RawTraceEventPayload,
 }
 
@@ -46,7 +46,7 @@ pub struct RawTraceEvent {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RawTraceEventContext {
     pub thread_id: Option<AgentThreadId>,
-    pub codex_turn_id: Option<CodexTurnId>,
+    pub ava_turn_id: Option<AvaTurnId>,
 }
 
 /// Runtime requester as observed at the raw tool boundary.
@@ -84,18 +84,18 @@ pub enum RawTraceEventPayload {
         thread_id: AgentThreadId,
         status: RolloutStatus,
     },
-    CodexTurnStarted {
-        codex_turn_id: CodexTurnId,
+    AvaTurnStarted {
+        ava_turn_id: AvaTurnId,
         thread_id: AgentThreadId,
     },
-    CodexTurnEnded {
-        codex_turn_id: CodexTurnId,
+    AvaTurnEnded {
+        ava_turn_id: AvaTurnId,
         status: ExecutionStatus,
     },
     InferenceStarted {
         inference_call_id: InferenceCallId,
         thread_id: AgentThreadId,
-        codex_turn_id: CodexTurnId,
+        ava_turn_id: AvaTurnId,
         model: String,
         provider_name: String,
         request_payload: RawPayloadRef,
@@ -120,9 +120,9 @@ pub enum RawTraceEventPayload {
     InferenceCancelled {
         inference_call_id: InferenceCallId,
         /// Provider transport request id, such as `x-request-id`, when observed
-        /// before Codex stopped consuming the stream.
+        /// before Ava stopped consuming the stream.
         upstream_request_id: Option<String>,
-        /// Why Codex stopped consuming the provider stream before a terminal response event.
+        /// Why Ava stopped consuming the provider stream before a terminal response event.
         reason: String,
         /// Completed output items observed before cancellation, if any.
         partial_response_payload: Option<RawPayloadRef>,
@@ -146,13 +146,13 @@ pub enum RawTraceEventPayload {
     },
     ToolCallRuntimeStarted {
         tool_call_id: ToolCallId,
-        /// Runtime/protocol observation for how Codex began executing the tool.
+        /// Runtime/protocol observation for how Ava began executing the tool.
         runtime_payload: RawPayloadRef,
     },
     ToolCallRuntimeEnded {
         tool_call_id: ToolCallId,
         status: ExecutionStatus,
-        /// Runtime/protocol observation for how Codex finished executing the tool.
+        /// Runtime/protocol observation for how Ava finished executing the tool.
         runtime_payload: RawPayloadRef,
     },
     ToolCallEnded {
@@ -184,7 +184,7 @@ pub enum RawTraceEventPayload {
         compaction_id: CompactionId,
         compaction_request_id: CompactionRequestId,
         thread_id: AgentThreadId,
-        codex_turn_id: CodexTurnId,
+        ava_turn_id: AvaTurnId,
         model: String,
         provider_name: String,
         request_payload: RawPayloadRef,
@@ -209,7 +209,7 @@ pub enum RawTraceEventPayload {
     AgentResultObserved {
         edge_id: EdgeId,
         child_thread_id: AgentThreadId,
-        child_codex_turn_id: CodexTurnId,
+        child_ava_turn_id: AvaTurnId,
         parent_thread_id: AgentThreadId,
         message: String,
         /// Raw notification payload. This is evidence for the runtime delivery,
@@ -238,8 +238,8 @@ impl RawTraceEventPayload {
             RawTraceEventPayload::RolloutStarted { .. }
             | RawTraceEventPayload::RolloutEnded { .. }
             | RawTraceEventPayload::ThreadEnded { .. }
-            | RawTraceEventPayload::CodexTurnStarted { .. }
-            | RawTraceEventPayload::CodexTurnEnded { .. }
+            | RawTraceEventPayload::AvaTurnStarted { .. }
+            | RawTraceEventPayload::AvaTurnEnded { .. }
             | RawTraceEventPayload::CompactionRequestFailed { .. }
             | RawTraceEventPayload::CodeCellStarted { .. }
             | RawTraceEventPayload::McpToolCallCorrelationAssigned { .. }

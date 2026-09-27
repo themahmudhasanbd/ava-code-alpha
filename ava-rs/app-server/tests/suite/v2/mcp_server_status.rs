@@ -17,22 +17,22 @@ use axum::body::Bytes;
 use axum::http::HeaderMap;
 use axum::routing::get;
 use axum::routing::post;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::ListMcpServerStatusParams;
-use codex_app_server_protocol::ListMcpServerStatusResponse;
-use codex_app_server_protocol::McpServerConnectionStatus;
-use codex_app_server_protocol::McpServerOauthLoginCompletedNotification;
-use codex_app_server_protocol::McpServerOauthLoginResponse;
-use codex_app_server_protocol::McpServerStatusDetail;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_core::config::set_project_trust_level;
-use codex_http_client::HttpClientBuilder;
-use codex_protocol::config_types::TrustLevel;
-use codex_rmcp_client::McpOAuthCallbackMode;
-use codex_rmcp_client::resolve_mcp_oauth_callback_url;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::ListMcpServerStatusParams;
+use ava_app_server_protocol::ListMcpServerStatusResponse;
+use ava_app_server_protocol::McpServerConnectionStatus;
+use ava_app_server_protocol::McpServerOauthLoginCompletedNotification;
+use ava_app_server_protocol::McpServerOauthLoginResponse;
+use ava_app_server_protocol::McpServerStatusDetail;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_core::config::set_project_trust_level;
+use ava_http_client::HttpClientBuilder;
+use ava_protocol::config_types::TrustLevel;
+use ava_rmcp_client::McpOAuthCallbackMode;
+use ava_rmcp_client::resolve_mcp_oauth_callback_url;
 use core_test_support::skip_if_remote;
 use core_test_support::stdio_server_bin;
 use pretty_assertions::assert_eq;
@@ -150,7 +150,7 @@ async fn oauth_login_validates_callback_issuer_and_uses_http_headers_helper(
         .mount(&oauth)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let helper_command = if cfg!(windows) {
         r#"echo {"X-Gateway":"gateway-token"}"#
     } else {
@@ -163,7 +163,7 @@ async fn oauth_login_validates_callback_issuer_and_uses_http_headers_helper(
         .map(|callback| format!("mcp_oauth_callback_url = \"{callback}\"\n"))
         .unwrap_or_default();
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "mcp_oauth_credentials_store = \"file\"\n\
              {global_callback_config}\
@@ -178,7 +178,7 @@ async fn oauth_login_validates_callback_issuer_and_uses_http_headers_helper(
         ),
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -249,23 +249,23 @@ async fn oauth_login_validates_callback_issuer_and_uses_http_headers_helper(
 async fn oauth_login_rejects_servers_disabled_by_managed_requirements(
     with_headers_helper: bool,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let marker = codex_home.path().join("helper-ran");
+    let ava_home = TempDir::new()?;
+    let marker = ava_home.path().join("helper-ran");
     let helper = with_headers_helper
         .then(|| toml::Value::String(format!("echo invoked > \"{}\"", marker.display())))
         .map_or_else(String::new, |command| {
             format!("http_headers_helper = {command}\n")
         });
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!("[mcp_servers.blocked]\nurl = \"https://example.com/mcp\"\n{helper}"),
     )?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         "[mcp_servers.blocked.identity]\nurl = \"https://allowed.example.com/mcp\"\n",
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
 
@@ -417,14 +417,14 @@ async fn oauth_login_automatically_selects_callback_specific_cimd_without_metada
         let _ = axum::serve(listener, oauth_server).await;
     });
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mock_responses_config(&responses_server.uri())
         .with_extra_config(&format!(
             "mcp_oauth_credentials_store = \"file\"\n[mcp_servers.cimd]\nurl = \"{base_url}/mcp\""
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -530,23 +530,23 @@ async fn mcp_server_status_list_returns_raw_server_and_tool_names() -> Result<()
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
     let (mcp_server_url, mcp_server_handle) =
         start_mcp_server("look-up.raw", /*tools_error*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mock_responses_config(&server.uri())
         .with_extra_config(&format!(
             "[mcp_servers.some-server]\nurl = \"{mcp_server_url}/mcp\"\n\
              [mcp_servers.broken-server]\ncommand = {}",
             toml::Value::String(
-                codex_home
+                ava_home
                     .path()
                     .join("missing-mcp-server")
                     .display()
                     .to_string()
             )
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -624,9 +624,9 @@ async fn mcp_server_status_list_returns_raw_server_and_tool_names() -> Result<()
 async fn mcp_server_status_list_waits_for_live_stdio_metadata_before_using_cached_tools()
 -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    let barrier_file = codex_home.path().join("allow-initialize");
-    let pid_file = codex_home.path().join("mcp.pid");
+    let ava_home = TempDir::new()?;
+    let barrier_file = ava_home.path().join("allow-initialize");
+    let pid_file = ava_home.path().join("mcp.pid");
     std::fs::write(&barrier_file, "ready")?;
     mock_responses_config(&server.uri())
         .with_extra_config(&format!(
@@ -644,10 +644,10 @@ MCP_TEST_PID_FILE = {}
             toml::Value::String(barrier_file.to_string_lossy().into_owned()),
             toml::Value::String(pid_file.to_string_lossy().into_owned()),
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -698,14 +698,14 @@ async fn mcp_server_status_list_uses_thread_project_local_config() -> Result<()>
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
     let (mcp_server_url, mcp_server_handle) =
         start_mcp_server("project_lookup", /*tools_error*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let workspace = TempDir::new()?;
-    mock_responses_config(&server.uri()).write(codex_home.path())?;
+    mock_responses_config(&server.uri()).write(ava_home.path())?;
     std::fs::create_dir_all(workspace.path().join(".git"))?;
-    set_project_trust_level(codex_home.path(), workspace.path(), TrustLevel::Trusted)?;
+    set_project_trust_level(ava_home.path(), workspace.path(), TrustLevel::Trusted)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
@@ -715,7 +715,7 @@ async fn mcp_server_status_list_uses_thread_project_local_config() -> Result<()>
         })
         .await?;
 
-    let project_config_dir = workspace.path().join(".codex");
+    let project_config_dir = workspace.path().join(".ava-code");
     std::fs::create_dir_all(&project_config_dir)?;
     std::fs::write(
         project_config_dir.join("config.toml"),
@@ -773,15 +773,15 @@ async fn mcp_server_status_list_reports_thread_runtime_connections() -> Result<(
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
     let (mcp_server_url, mcp_server_handle) =
         start_mcp_server("lookup", /*tools_error*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mock_responses_config(&server.uri())
         .with_extra_config(&format!(
             "[mcp_servers.connected]\nurl = \"{mcp_server_url}/mcp\"\n\
              [mcp_servers.disabled]\nurl = \"{mcp_server_url}/mcp\"\nenabled = false\n"
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp.start_thread(ThreadStartParams::default()).await?;
@@ -832,7 +832,7 @@ async fn mcp_server_status_list_reports_thread_runtime_connections() -> Result<(
             "[mcp_servers.connected]\nurl = \"{replacement_url}/mcp\"\n\
              [mcp_servers.disabled]\nurl = \"{mcp_server_url}/mcp\"\nenabled = false\n"
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let response: ListMcpServerStatusResponse = mcp
         .request(|request_id| ClientRequest::McpServerStatusList {
             request_id,
@@ -881,8 +881,8 @@ async fn mcp_server_status_list_reports_disconnected_stdio_transport() -> Result
         "the stdio executable and shutdown marker are host-local"
     );
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    let exit_file = codex_home.path().join("exit-mcp-server");
+    let ava_home = TempDir::new()?;
+    let exit_file = ava_home.path().join("exit-mcp-server");
     mock_responses_config(&server.uri())
         .with_extra_config(&format!(
             "[mcp_servers.stdio]\ncommand = {}\nstartup_timeout_sec = 2\n\
@@ -890,9 +890,9 @@ async fn mcp_server_status_list_reports_disconnected_stdio_transport() -> Result
             toml::Value::String(stdio_server_bin()?),
             toml::Value::String(exit_file.to_string_lossy().into_owned()),
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp.start_thread(ThreadStartParams::default()).await?;
@@ -954,12 +954,12 @@ async fn mcp_server_status_retains_capabilities_when_tool_discovery_fails() -> R
         )),
     )
     .await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mock_responses_config(&server.uri())
         .with_extra_config(&format!("[mcp_servers.degraded]\nurl = \"{url}/mcp\""))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     for detail in [None, Some(McpServerStatusDetail::ToolsAndAuthOnly)] {
@@ -1106,15 +1106,15 @@ impl ServerHandler for SlowInventoryServer {
 async fn mcp_server_status_list_tools_and_auth_only_skips_slow_inventory_calls() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
     let (mcp_server_url, mcp_server_handle) = start_slow_inventory_mcp_server("lookup").await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mock_responses_config(&server.uri())
         .with_extra_config(&format!(
             "[mcp_servers.some-server]\nurl = \"{mcp_server_url}/mcp\""
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -1154,7 +1154,7 @@ async fn mcp_server_status_list_keeps_tools_for_sanitized_name_collisions() -> R
         start_mcp_server("dash_lookup", /*tools_error*/ None).await?;
     let (underscore_server_url, underscore_server_handle) =
         start_mcp_server("underscore_lookup", /*tools_error*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     mock_responses_config(&server.uri())
         .with_extra_config(&format!(
             r#"[mcp_servers.some-server]
@@ -1164,10 +1164,10 @@ url = "{dash_server_url}/mcp"
 url = "{underscore_server_url}/mcp"
 "#
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;

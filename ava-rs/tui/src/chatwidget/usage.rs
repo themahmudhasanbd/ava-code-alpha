@@ -1,6 +1,6 @@
-use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditOutcome;
-use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse;
-use codex_app_server_protocol::RateLimitResetCreditsSummary;
+use ava_app_server_protocol::ConsumeAccountRateLimitResetCreditOutcome;
+use ava_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse;
+use ava_app_server_protocol::RateLimitResetCreditsSummary;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -508,7 +508,7 @@ impl ChatWidget {
         for snapshot in snapshots {
             self.on_rate_limit_snapshot(Some(snapshot));
         }
-        if !self.has_codex_backend_auth {
+        if !self.has_ava_backend_auth {
             return false;
         }
         if let Ok(response) = result {

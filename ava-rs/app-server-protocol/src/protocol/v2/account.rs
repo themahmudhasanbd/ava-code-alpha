@@ -2,14 +2,14 @@ use super::ThreadUsage;
 use crate::JsonSchema;
 use crate::TS;
 use crate::protocol::common::AuthMode;
-use codex_experimental_api_macros::ExperimentalApi;
-use codex_protocol::account::PlanType;
-use codex_protocol::account::ProviderAccount;
-use codex_protocol::protocol::CreditsSnapshot as CoreCreditsSnapshot;
-use codex_protocol::protocol::RateLimitReachedType as CoreRateLimitReachedType;
-use codex_protocol::protocol::RateLimitSnapshot as CoreRateLimitSnapshot;
-use codex_protocol::protocol::RateLimitWindow as CoreRateLimitWindow;
-use codex_protocol::protocol::SpendControlLimitSnapshot as CoreSpendControlLimitSnapshot;
+use ava_experimental_api_macros::ExperimentalApi;
+use ava_protocol::account::PlanType;
+use ava_protocol::account::ProviderAccount;
+use ava_protocol::protocol::CreditsSnapshot as CoreCreditsSnapshot;
+use ava_protocol::protocol::RateLimitReachedType as CoreRateLimitReachedType;
+use ava_protocol::protocol::RateLimitSnapshot as CoreRateLimitSnapshot;
+use ava_protocol::protocol::RateLimitWindow as CoreRateLimitWindow;
+use ava_protocol::protocol::SpendControlLimitSnapshot as CoreSpendControlLimitSnapshot;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -39,7 +39,7 @@ pub enum Account {
     #[ts(rename = "amazonBedrock", rename_all = "camelCase")]
     AmazonBedrock {
         #[serde(default)]
-        uses_codex_managed_credentials: bool,
+        uses_ava_managed_credentials: bool,
     },
 }
 
@@ -49,9 +49,9 @@ impl From<ProviderAccount> for Account {
             ProviderAccount::ApiKey => Self::ApiKey {},
             ProviderAccount::Chatgpt { email, plan_type } => Self::Chatgpt { email, plan_type },
             ProviderAccount::AmazonBedrock {
-                uses_codex_managed_credentials,
+                uses_ava_managed_credentials,
             } => Self::AmazonBedrock {
-                uses_codex_managed_credentials,
+                uses_ava_managed_credentials,
             },
         }
     }
@@ -73,7 +73,7 @@ pub enum LoginAccountParams {
     #[ts(rename = "chatgpt", rename_all = "camelCase")]
     Chatgpt {
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-        codex_streamlined_login: bool,
+        ava_streamlined_login: bool,
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         use_hosted_login_success_page: bool,
         #[serde(default)]
@@ -84,7 +84,7 @@ pub enum LoginAccountParams {
     #[ts(rename = "chatgptDeviceCode")]
     ChatgptDeviceCode,
     /// [UNSTABLE] FOR OPENAI INTERNAL USE ONLY - DO NOT USE.
-    /// The access token must contain the same scopes that Codex-managed ChatGPT auth tokens have.
+    /// The access token must contain the same scopes that Ava-managed ChatGPT auth tokens have.
     #[experimental("account/login/start.chatgptAuthTokens")]
     #[serde(rename = "chatgptAuthTokens", rename_all = "camelCase")]
     #[ts(rename = "chatgptAuthTokens", rename_all = "camelCase")]
@@ -96,7 +96,7 @@ pub enum LoginAccountParams {
         chatgpt_account_id: String,
         /// Optional plan type supplied by the client.
         ///
-        /// When `null`, Codex attempts to derive the plan type from access-token
+        /// When `null`, Ava attempts to derive the plan type from access-token
         /// claims. If unavailable, the plan defaults to `unknown`.
         #[ts(optional = nullable)]
         chatgpt_plan_type: Option<String>,
@@ -125,7 +125,7 @@ pub enum LoginAccountParams {
 #[ts(export_to = "v2/")]
 pub enum LoginAppBrand {
     #[default]
-    Codex,
+    Ava,
     Chatgpt,
 }
 
@@ -269,7 +269,7 @@ pub struct LogoutAccountResponse {}
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]
 pub enum ChatgptAuthTokensRefreshReason {
-    /// Codex attempted a backend request and received `401 Unauthorized`.
+    /// Ava attempted a backend request and received `401 Unauthorized`.
     Unauthorized,
 }
 
@@ -278,7 +278,7 @@ pub enum ChatgptAuthTokensRefreshReason {
 #[ts(export_to = "v2/")]
 pub struct ChatgptAuthTokensRefreshParams {
     pub reason: ChatgptAuthTokensRefreshReason,
-    /// Workspace/account identifier that Codex was previously using.
+    /// Workspace/account identifier that Ava was previously using.
     ///
     /// Clients that manage multiple accounts/workspaces can use this as a hint
     /// to refresh the token for the correct workspace.
@@ -334,7 +334,7 @@ pub struct GetAccountRateLimitsResponse {
     pub ordinary_usage_allowed: Option<bool>,
     /// Backward-compatible single-bucket view; mirrors the historical payload.
     pub rate_limits: RateLimitSnapshot,
-    /// Multi-bucket view keyed by metered `limit_id` (for example, `codex`).
+    /// Multi-bucket view keyed by metered `limit_id` (for example, `ava`).
     pub rate_limits_by_limit_id: Option<HashMap<String, RateLimitSnapshot>>,
     pub rate_limit_reset_credits: Option<RateLimitResetCreditsSummary>,
     /// Account associated with this usage snapshot, when supplied by the backend.
@@ -381,7 +381,7 @@ pub struct RateLimitResetCredit {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/", rename_all = "camelCase")]
 pub enum RateLimitResetType {
-    CodexRateLimits,
+    AvaRateLimits,
     #[serde(other)]
     Unknown,
 }

@@ -5,21 +5,21 @@ use super::mcp_resource::start_resource_apps_mcp_server;
 use super::mcp_resource::start_resource_test_app_server;
 use anyhow::Result;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::McpResourceContent;
-use codex_app_server_protocol::McpResourceReadParams;
-use codex_app_server_protocol::McpResourceReadResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadCompactStartParams;
-use codex_app_server_protocol::ThreadCompactStartResponse;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::McpResourceContent;
+use ava_app_server_protocol::McpResourceReadParams;
+use ava_app_server_protocol::McpResourceReadResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadCompactStartParams;
+use ava_app_server_protocol::ThreadCompactStartResponse;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -32,7 +32,7 @@ async fn widget_reads_survive_history_modes_compaction_restarts_and_app_only_vis
     let responses_server = responses::start_mock_server().await;
     let (apps_server_url, calls, apps_server_handle) = start_resource_apps_mcp_server().await?;
     calls.tools_enabled.store(true, Ordering::Relaxed);
-    let (codex_home, mut app_server) = start_resource_test_app_server(
+    let (ava_home, mut app_server) = start_resource_test_app_server(
         &apps_server_url,
         &responses_server.uri(),
         ResourceTestEnvironment::Auto,
@@ -51,7 +51,7 @@ async fn widget_reads_survive_history_modes_compaction_restarts_and_app_only_vis
         .map(|(call_id, app, query, link_id)| {
             responses::ev_function_call_with_namespace(
                 call_id,
-                &format!("mcp__codex_apps__{app}"),
+                &format!("mcp__ava_apps__{app}"),
                 "_product_search",
                 &json!({ "query": query, "link_id": link_id }).to_string(),
             )
@@ -165,7 +165,7 @@ async fn widget_reads_survive_history_modes_compaction_restarts_and_app_only_vis
                 .send_mcp_resource_read_request(McpResourceReadParams {
                     thread_id,
                     origin_call_id: Some(call_id.to_string()),
-                    server: "codex_apps".to_string(),
+                    server: "ava_apps".to_string(),
                     uri: uri.to_string(),
                     connector_id: None,
                 })
@@ -223,7 +223,7 @@ async fn widget_reads_survive_history_modes_compaction_restarts_and_app_only_vis
     timeout(DEFAULT_READ_TIMEOUT, app_server.shutdown_gracefully()).await??;
     calls.best_buy_app_only.store(true, Ordering::Relaxed);
     let mut restarted = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let model_visibility_thread_id = persistent_thread_ids[0].clone();
@@ -263,12 +263,12 @@ async fn widget_reads_survive_history_modes_compaction_restarts_and_app_only_vis
     let model_request = requests.last().expect("post-resume model request");
     assert!(
         model_request
-            .tool_by_name("mcp__codex_apps__best_buy", "_product_search")
+            .tool_by_name("mcp__ava_apps__best_buy", "_product_search")
             .is_none()
     );
     assert!(
         model_request
-            .tool_by_name("mcp__codex_apps__walmart", "_product_search")
+            .tool_by_name("mcp__ava_apps__walmart", "_product_search")
             .is_some()
     );
 
@@ -288,7 +288,7 @@ async fn read_widget(
             params: McpResourceReadParams {
                 thread_id: Some(thread_id.to_string()),
                 origin_call_id: Some(call_id.to_string()),
-                server: "codex_apps".to_string(),
+                server: "ava_apps".to_string(),
                 uri: TEST_WIDGET_RESOURCE_URI.to_string(),
                 connector_id: None,
             },

@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-guardian-v2"
+name = "ava-guardian-v2"
 version.workspace = true
 
 [lib]
-name = "codex_guardian_v2"
+name = "ava_guardian_v2"
 path = "src/lib.rs"
 doctest = false
 
@@ -14,21 +14,21 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-codex-analytics = { workspace = true }
-codex-api = { workspace = true }
-codex-config = { workspace = true }
-codex-context-fragments = { workspace = true }
-codex-core = { workspace = true }
-codex-extension-api = { workspace = true }
-codex-features = { workspace = true }
-codex-guardian-context = { workspace = true }
-codex-guardian-reviewer = { workspace = true }
-codex-history = { workspace = true }
-codex-http-client = { workspace = true }
-codex-login = { workspace = true }
-codex-model-provider = { workspace = true }
-codex-protocol = { workspace = true }
-codex-prompts = { workspace = true }
+ava-analytics = { workspace = true }
+ava-api = { workspace = true }
+ava-config = { workspace = true }
+ava-context-fragments = { workspace = true }
+ava-core = { workspace = true }
+ava-extension-api = { workspace = true }
+ava-features = { workspace = true }
+ava-guardian-context = { workspace = true }
+ava-guardian-reviewer = { workspace = true }
+ava-history = { workspace = true }
+ava-http-client = { workspace = true }
+ava-login = { workspace = true }
+ava-model-provider = { workspace = true }
+ava-protocol = { workspace = true }
+ava-prompts = { workspace = true }
 dirs = { workspace = true }
 http = { workspace = true }
 serde_json = { workspace = true }
@@ -38,7 +38,7 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
-codex-model-provider-info = { workspace = true }
+ava-model-provider-info = { workspace = true }
 core_test_support = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }

@@ -4,13 +4,13 @@ use std::path::Path;
 #[cfg(unix)]
 use std::sync::Arc;
 
-use codex_exec_server::FileSystemEnvironmentAccessor;
-use codex_exec_server::LOCAL_FS;
+use ava_exec_server::FileSystemEnvironmentAccessor;
+use ava_exec_server::LOCAL_FS;
 #[cfg(unix)]
-use codex_protocol::protocol::SkillScope;
+use ava_protocol::protocol::SkillScope;
 #[cfg(unix)]
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -35,7 +35,7 @@ fn write_skill(root: &Path, directory: &str) -> PathUri {
 }
 
 fn write_manifest(root: &Path, contents: &str) -> PathUri {
-    let path = root.join(".codex-plugin/plugin.json");
+    let path = root.join(".ava-plugin/plugin.json");
     fs::create_dir_all(path.parent().expect("manifest parent"))
         .expect("create plugin manifest directory");
     fs::write(path, contents).expect("write plugin manifest");

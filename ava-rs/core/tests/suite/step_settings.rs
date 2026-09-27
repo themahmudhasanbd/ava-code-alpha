@@ -1,79 +1,79 @@
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_config::McpServerConfig;
-use codex_core::CodexThread;
-use codex_core::ForkSnapshot;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::config::Constrained;
-use codex_core::config::TokenBudgetConfig;
-use codex_extension_api::ContentItemKind;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::PromptFragment;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::TurnContextContributionInput;
-use codex_features::Feature;
-use codex_history::RolloutItem;
-use codex_login::CodexAuth;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::manager::RefreshStrategy;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
-use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-use codex_protocol::dynamic_tools::DynamicToolResponse;
-use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ApplyPatchToolType;
-use codex_protocol::openai_models::ApprovalMessages;
-use codex_protocol::openai_models::CollaborationModeMessages;
-use codex_protocol::openai_models::ConfigShellToolType;
-use codex_protocol::openai_models::ConfirmationPolicies;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelTokenBudgetConfig;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::MultiAgentMessages;
-use codex_protocol::openai_models::MultiAgentModeMessages;
-use codex_protocol::openai_models::MultiAgentRoleMessages;
-use codex_protocol::openai_models::MultiAgentToolMessages;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::openai_models::ReasoningEffortPreset;
-use codex_protocol::openai_models::ToolMessage;
-use codex_protocol::openai_models::ToolMessages;
-use codex_protocol::openai_models::ToolMode;
-use codex_protocol::openai_models::TruncationPolicyConfig;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_CLOSE_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SafetyBufferingEvent;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnSettingsUpdate;
-use codex_protocol::protocol::TurnSettingsUpdateOutcome;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputEvent;
-use codex_protocol::request_user_input::RequestUserInputResponse;
-use codex_protocol::user_input::UserInput;
-use codex_tools::JsonToolOutput;
-use codex_tools::ToolCall;
-use codex_tools::ToolExecutor;
-use codex_tools::ToolExecutorFuture;
-use codex_tools::ToolName;
-use codex_tools::ToolOutput;
-use codex_tools::ToolSpec;
-use codex_utils_image::data_url_from_bytes;
-use codex_utils_output_truncation::TruncationPolicy;
-use codex_utils_output_truncation::truncate_text;
+use ava_config::McpServerConfig;
+use ava_core::AvaThread;
+use ava_core::ForkSnapshot;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::config::Constrained;
+use ava_core::config::TokenBudgetConfig;
+use ava_extension_api::ContentItemKind;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::PromptFragment;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::TurnContextContributionInput;
+use ava_features::Feature;
+use ava_history::RolloutItem;
+use ava_login::AvaAuth;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::manager::RefreshStrategy;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
+use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+use ava_protocol::dynamic_tools::DynamicToolResponse;
+use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ApplyPatchToolType;
+use ava_protocol::openai_models::ApprovalMessages;
+use ava_protocol::openai_models::CollaborationModeMessages;
+use ava_protocol::openai_models::ConfigShellToolType;
+use ava_protocol::openai_models::ConfirmationPolicies;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelTokenBudgetConfig;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::MultiAgentMessages;
+use ava_protocol::openai_models::MultiAgentModeMessages;
+use ava_protocol::openai_models::MultiAgentRoleMessages;
+use ava_protocol::openai_models::MultiAgentToolMessages;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::openai_models::ToolMessage;
+use ava_protocol::openai_models::ToolMessages;
+use ava_protocol::openai_models::ToolMode;
+use ava_protocol::openai_models::TruncationPolicyConfig;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_CLOSE_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SafetyBufferingEvent;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnSettingsUpdate;
+use ava_protocol::protocol::TurnSettingsUpdateOutcome;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputEvent;
+use ava_protocol::request_user_input::RequestUserInputResponse;
+use ava_protocol::user_input::UserInput;
+use ava_tools::JsonToolOutput;
+use ava_tools::ToolCall;
+use ava_tools::ToolExecutor;
+use ava_tools::ToolExecutorFuture;
+use ava_tools::ToolName;
+use ava_tools::ToolOutput;
+use ava_tools::ToolSpec;
+use ava_utils_image::data_url_from_bytes;
+use ava_utils_output_truncation::TruncationPolicy;
+use ava_utils_output_truncation::truncate_text;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::recorded_apps_tool_calls;
 use core_test_support::responses::ResponsesRequest;
@@ -95,8 +95,8 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::TestCodexBuilder;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAvaBuilder;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_mcp_server;
@@ -119,7 +119,7 @@ mod environment_selection;
 const MODEL_A: &str = "step-settings-a";
 const MODEL_B: &str = "step-settings-b";
 const MODEL_C: &str = "step-settings-c";
-const TURN_STATE_HEADER: &str = "x-codex-turn-state";
+const TURN_STATE_HEADER: &str = "x-ava-turn-state";
 
 fn step_settings_models() -> Vec<ModelInfo> {
     let model = bundled_models_response()
@@ -140,8 +140,8 @@ fn step_settings_models() -> Vec<ModelInfo> {
         .collect()
 }
 
-fn step_settings_test() -> TestCodexBuilder {
-    test_codex().with_model(MODEL_A).with_config(move |config| {
+fn step_settings_test() -> TestAvaBuilder {
+    test_ava().with_model(MODEL_A).with_config(move |config| {
         for feature in [
             Feature::StepModelSwitching,
             Feature::DefaultModeRequestUserInput,
@@ -163,7 +163,7 @@ fn step_settings_test() -> TestCodexBuilder {
     })
 }
 
-fn direct_tool_settings_test() -> TestCodexBuilder {
+fn direct_tool_settings_test() -> TestAvaBuilder {
     step_settings_test().with_config(|config| {
         for model in &mut config.model_catalog.as_mut().expect("test models").models {
             model.tool_mode = Some(ToolMode::Direct);
@@ -204,7 +204,7 @@ fn pause_call(call_id: &str) -> Value {
     )
 }
 
-async fn start_paused_turn(thread: &CodexThread) -> Result<RequestUserInputEvent> {
+async fn start_paused_turn(thread: &AvaThread) -> Result<RequestUserInputEvent> {
     thread
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "pause before continuing".into(),
@@ -218,7 +218,7 @@ async fn start_paused_turn(thread: &CodexThread) -> Result<RequestUserInputEvent
     .await)
 }
 
-async fn answer_paused_turn(thread: &CodexThread, turn_id: &str) -> Result<()> {
+async fn answer_paused_turn(thread: &AvaThread, turn_id: &str) -> Result<()> {
     thread
         .submit(Op::UserInputAnswer {
             id: turn_id.to_string(),
@@ -236,7 +236,7 @@ async fn answer_paused_turn(thread: &CodexThread, turn_id: &str) -> Result<()> {
 }
 
 async fn submit_turn_settings(
-    thread: &CodexThread,
+    thread: &AvaThread,
     turn_id: &str,
     update: TurnSettingsUpdate,
 ) -> Result<TurnSettingsUpdateOutcome> {
@@ -252,7 +252,7 @@ async fn submit_turn_settings(
 }
 
 async fn apply_turn_settings(
-    thread: &CodexThread,
+    thread: &AvaThread,
     turn_id: &str,
     update: TurnSettingsUpdate,
 ) -> Result<()> {
@@ -275,7 +275,7 @@ fn request_settings(request: &ResponsesRequest) -> Value {
 fn request_turn_id(request: &ResponsesRequest) -> String {
     let metadata: Value = serde_json::from_str(
         &request
-            .header("x-codex-turn-metadata")
+            .header("x-ava-turn-metadata")
             .expect("request should include turn metadata"),
     )
     .expect("valid turn metadata");
@@ -287,7 +287,7 @@ fn request_turn_id(request: &ResponsesRequest) -> String {
 
 fn request_turn_metadata(request: &ResponsesRequest) -> Value {
     serde_json::from_str(
-        request.body_json()["client_metadata"]["x-codex-turn-metadata"]
+        request.body_json()["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .expect("request should include turn metadata"),
     )
@@ -331,7 +331,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?;
-    test.codex = started.thread;
+    test.ava-code = started.thread;
     let responses = mount_sse_sequence(
         &server,
         vec![
@@ -368,7 +368,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
         content_items,
         success: true,
     };
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "collect diagnostics".to_string(),
             text_elements: Vec::new(),
@@ -376,7 +376,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
         .await?;
     let mut raw_outputs = Vec::new();
     for call_id in ["call-a", "call-b"] {
-        let call = wait_for_event_match(&test.codex, |event| match event {
+        let call = wait_for_event_match(&test.ava-code, |event| match event {
             EventMsg::DynamicToolCallRequest(request) => Some(request.clone()),
             _ => None,
         })
@@ -386,7 +386,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
             // Apply B while A's result is pending in the same turn.
             assert_eq!(
                 submit_turn_settings(
-                    &test.codex,
+                    &test.ava-code,
                     &call.turn_id,
                     TurnSettingsUpdate {
                         model: Some(MODEL_B.to_string()),
@@ -397,14 +397,14 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
                 TurnSettingsUpdateOutcome::Applied
             );
         }
-        test.codex
+        test.ava-code
             .submit(Op::DynamicToolResponse {
                 id: call.call_id,
                 response: response.clone(),
             })
             .await?;
         raw_outputs.push(
-            wait_for_event_match(&test.codex, |event| match event {
+            wait_for_event_match(&test.ava-code, |event| match event {
                 EventMsg::RawResponseItem(event)
                     if matches!(&event.item, ResponseItem::FunctionCallOutput { .. }) =>
                 {
@@ -415,7 +415,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
             .await,
         );
     }
-    let paused_request = wait_for_event_match(&test.codex, |event| match event {
+    let paused_request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -459,7 +459,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
     );
 
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused_request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_A.to_string()),
@@ -467,8 +467,8 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused_request.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &paused_request.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -478,7 +478,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
 
     // Project for each receiving model without rewriting the prepared images.
     for model in [MODEL_B, MODEL_A, MODEL_C, MODEL_B] {
-        test.codex
+        test.ava-code
             .submit(Op::ThreadSettings {
                 thread_settings: ThreadSettingsOverrides {
                     model: Some(model.to_string()),
@@ -527,10 +527,10 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
     assert_ne!(request_turn_id(&requests[5]), request_turn_id(&requests[4]));
 
     // Persistence and raw notifications retain the prepared, untruncated payload in append order.
-    test.codex.shutdown_and_wait().await?;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
+    test.ava-code.shutdown_and_wait().await?;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
     async fn saved_outputs(path: &std::path::Path) -> Result<Vec<(Value, Option<usize>)>> {
-        let history = codex_rollout::RolloutRecorder::get_rollout_history(path).await?;
+        let history = ava_rollout::RolloutRecorder::get_rollout_history(path).await?;
         Ok(history
             .get_rollout_items()
             .iter()
@@ -571,7 +571,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
             .resume_thread_from_rollout(
                 replay_config.clone(),
                 rollout_path.clone(),
-                codex_core::test_support::auth_manager_from_auth(CodexAuth::from_api_key("dummy")),
+                ava_core::test_support::auth_manager_from_auth(AvaAuth::from_api_key("dummy")),
                 /*parent_trace*/ None,
                 ClientMcpExtensions::default(),
             )
@@ -670,9 +670,9 @@ async fn custom_tool_output_replay_preserves_originating_budget() -> Result<()> 
         live_text
     );
 
-    test.codex.shutdown_and_wait().await?;
-    let rollout_path = test.codex.rollout_path().expect("rollout path");
-    let history = codex_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
+    test.ava-code.shutdown_and_wait().await?;
+    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let history = ava_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
     let saved = history
         .get_rollout_items()
         .iter()
@@ -704,7 +704,7 @@ async fn custom_tool_output_replay_preserves_originating_budget() -> Result<()> 
         .resume_thread_from_rollout(
             replay_config.clone(),
             rollout_path.clone(),
-            codex_core::test_support::auth_manager_from_auth(CodexAuth::from_api_key("dummy")),
+            ava_core::test_support::auth_manager_from_auth(AvaAuth::from_api_key("dummy")),
             /*parent_trace*/ None,
             ClientMcpExtensions::default(),
         )
@@ -760,12 +760,12 @@ async fn settings_updates_preserve_turn_identity_and_target(target: SettingsTarg
     )
     .await;
     let test = step_settings_test().build_with_auto_env(&server).await?;
-    let original_settings = test.codex.thread_settings_snapshot().await;
-    let request = start_paused_turn(&test.codex).await?;
+    let original_settings = test.ava-code.thread_settings_snapshot().await;
+    let request = start_paused_turn(&test.ava-code).await?;
 
     match target {
         SettingsTarget::Thread => {
-            test.codex
+            test.ava-code
                 .submit(Op::ThreadSettings {
                     thread_settings: ThreadSettingsOverrides {
                         model: Some(MODEL_B.to_string()),
@@ -786,19 +786,19 @@ async fn settings_updates_preserve_turn_identity_and_target(target: SettingsTarg
                 ..Default::default()
             };
             assert_eq!(
-                submit_turn_settings(&test.codex, "different-turn", update.clone()).await?,
+                submit_turn_settings(&test.ava-code, "different-turn", update.clone()).await?,
                 TurnSettingsUpdateOutcome::TargetUnavailable
             );
             assert_eq!(
-                submit_turn_settings(&test.codex, &request.turn_id, update).await?,
+                submit_turn_settings(&test.ava-code, &request.turn_id, update).await?,
                 TurnSettingsUpdateOutcome::Applied
             );
         }
     }
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
     let mut settings_events = Vec::new();
     let mut new_turns = Vec::new();
-    let completion = wait_for_event(&test.codex, |event| match event {
+    let completion = wait_for_event(&test.ava-code, |event| match event {
         EventMsg::ThreadSettingsApplied(event) => {
             settings_events.push(event.thread_settings.clone());
             false
@@ -839,7 +839,7 @@ async fn settings_updates_preserve_turn_identity_and_target(target: SettingsTarg
         }
     };
     assert_eq!(
-        test.codex.thread_settings_snapshot().await,
+        test.ava-code.thread_settings_snapshot().await,
         expected_future_settings
     );
     test.submit_text_turn("start the next turn").await?;
@@ -956,10 +956,10 @@ async fn new_context_after_model_switch_uses_captured_extension_window() -> Resu
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.codex,
+            &test.ava-code,
             &paused.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -969,8 +969,8 @@ async fn new_context_after_model_switch_uses_captured_extension_window() -> Resu
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1115,18 +1115,18 @@ async fn active_model_switch_updates_core_context_from_captured_settings(
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
 
     if reload_user_config {
         std::fs::write(
-            test.codex_home_path().join("config.toml"),
+            test.ava_home_path().join("config.toml"),
             "[features.token_budget]\nenabled = true\nreminder_message_template = \"Reloaded reminder\"\n",
         )?;
-        test.codex.submit(Op::ReloadUserConfig).await?;
+        test.ava-code.submit(Op::ReloadUserConfig).await?;
     }
 
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1134,14 +1134,14 @@ async fn active_model_switch_updates_core_context_from_captured_settings(
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
-    let request = wait_for_event_match(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    let request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
-    wait_for_event(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::Error(error) => panic!("settings activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -1301,10 +1301,10 @@ async fn active_model_switch_updates_multi_agent_policy_from_captured_effort(
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.codex,
+            &test.ava-code,
             &request.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -1315,8 +1315,8 @@ async fn active_model_switch_updates_multi_agent_policy_from_captured_effort(
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1387,7 +1387,7 @@ async fn mcp_confirmation_policy_follows_step_model_changes() -> Result<()> {
         ],
     )
     .await;
-    let mcp_url = format!("{}/api/codex/ps/mcp", server.uri());
+    let mcp_url = format!("{}/api/ava/ps/mcp", server.uri());
     let test = step_settings_test()
         .with_config(move |config| {
             config
@@ -1442,14 +1442,14 @@ async fn mcp_confirmation_policy_follows_step_model_changes() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, "node_repl").await?;
+    wait_for_mcp_server(&test.ava-code, "node_repl").await?;
     test.submit_text_turn("call the tool with model A").await?;
 
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
     assert_eq!(request.call_id, "policy-a-pending");
     // The pending call must retain model A's policies after this settings update.
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1457,7 +1457,7 @@ async fn mcp_confirmation_policy_follows_step_model_changes() -> Result<()> {
         },
     )
     .await?;
-    test.codex
+    test.ava-code
         .submit(Op::UserInputAnswer {
             id: request.turn_id.clone(),
             response: RequestUserInputResponse {
@@ -1470,14 +1470,14 @@ async fn mcp_confirmation_policy_follows_step_model_changes() -> Result<()> {
             },
         })
         .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     for model in [BROWSER_ONLY_MODEL, COMPUTER_ONLY_MODEL, MODEL_C] {
         core_test_support::submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 model: Some(model.to_string()),
                 ..Default::default()
@@ -1593,9 +1593,9 @@ async fn captured_model_replans_tools_and_retains_the_issuing_request_router() -
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1603,15 +1603,15 @@ async fn captured_model_replans_tools_and_retains_the_issuing_request_router() -
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    let paused = wait_for_event_match(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    let paused = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
     assert_eq!(paused.call_id, "pause-b");
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_A.to_string()),
@@ -1621,8 +1621,8 @@ async fn captured_model_replans_tools_and_retains_the_issuing_request_router() -
     .await?;
     // B's response issues its patch after A is active, so dispatch must retain B's router.
     release_patch.send(()).expect("release B's patch call");
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1658,7 +1658,7 @@ async fn captured_model_replans_tools_and_retains_the_issuing_request_router() -
         .iter()
         .map(|request| {
             serde_json::from_str::<Value>(
-                request["client_metadata"]["x-codex-turn-metadata"]
+                request["client_metadata"]["x-ava-turn-metadata"]
                     .as_str()
                     .expect("request metadata"),
             )
@@ -1746,12 +1746,12 @@ async fn captured_model_enables_and_executes_code_mode() -> Result<()> {
                 .set_permission_profile(PermissionProfile::Disabled)
                 .expect("test permissions");
             for model in &mut config.model_catalog.as_mut().expect("models").models {
-                model.input_modalities = vec![codex_protocol::openai_models::InputModality::Text];
+                model.input_modalities = vec![ava_protocol::openai_models::InputModality::Text];
                 model.supports_image_detail_original = false;
                 if model.slug == MODEL_B {
                     model
                         .input_modalities
-                        .push(codex_protocol::openai_models::InputModality::Image);
+                        .push(ava_protocol::openai_models::InputModality::Image);
                     model.supports_image_detail_original = true;
                     model.tool_mode = Some(ToolMode::CodeModeOnly);
                 }
@@ -1769,9 +1769,9 @@ async fn captured_model_enables_and_executes_code_mode() -> Result<()> {
             /*sandbox*/ None,
         )
         .await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1779,8 +1779,8 @@ async fn captured_model_enables_and_executes_code_mode() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1839,10 +1839,10 @@ async fn response_metadata_uses_the_captured_step_after_a_turn_update() -> Resul
     )
     .await;
     let test = step_settings_test().build_with_auto_env(&server).await?;
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.codex,
+            &test.ava-code,
             &request.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -1853,11 +1853,11 @@ async fn response_metadata_uses_the_captured_step_after_a_turn_update() -> Resul
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
 
     let mut reroutes = Vec::new();
     let mut buffering_events = Vec::new();
-    wait_for_event(&test.codex, |event| match event {
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::ModelReroute(event) => {
             reroutes.push(event.clone());
             false
@@ -1937,10 +1937,10 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
     )
     .await;
     let test = step_settings_test().build_with_auto_env(&server).await?;
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(MODEL_B.to_string()),
             ..Default::default()
@@ -1948,7 +1948,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
     )
     .await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_C.to_string()),
@@ -1957,8 +1957,8 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
-    let second_request = wait_for_event_match(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    let second_request = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -1966,7 +1966,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
     assert_eq!(second_request.turn_id, request.turn_id);
     assert_eq!(second_request.call_id, "pause-second-step");
 
-    test.codex
+    test.ava-code
         .submit(Op::ThreadSettings {
             thread_settings: ThreadSettingsOverrides {
                 service_tier: Some(Some(ServiceTier::Fast.request_value().to_string())),
@@ -1975,7 +1975,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         })
         .await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &request.turn_id,
         TurnSettingsUpdate {
             service_tier: Some(Some(ServiceTier::Fast.request_value().to_string())),
@@ -1983,7 +1983,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         },
     )
     .await?;
-    let durable_settings = wait_for_event_match(&test.codex, |event| match event {
+    let durable_settings = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::ThreadSettingsApplied(event) => Some(event.thread_settings.clone()),
         _ => None,
     })
@@ -1997,8 +1997,8 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         durable_settings.service_tier,
         Some(ServiceTier::Fast.request_value().to_string())
     );
-    answer_paused_turn(&test.codex, &second_request.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &second_request.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2060,10 +2060,10 @@ async fn turn_settings_do_not_target_idle_or_finished_turns() -> Result<()> {
             .last()
             .map(request_turn_id)
             .unwrap_or_else(|| "never-started".to_string());
-        let before = test.codex.thread_settings_snapshot().await;
+        let before = test.ava-code.thread_settings_snapshot().await;
         assert_eq!(
             submit_turn_settings(
-                &test.codex,
+                &test.ava-code,
                 &turn_id,
                 TurnSettingsUpdate {
                     model: Some(discarded_model.to_string()),
@@ -2073,9 +2073,9 @@ async fn turn_settings_do_not_target_idle_or_finished_turns() -> Result<()> {
             .await?,
             TurnSettingsUpdateOutcome::TargetUnavailable
         );
-        assert_eq!(test.codex.thread_settings_snapshot().await, before);
+        assert_eq!(test.ava-code.thread_settings_snapshot().await, before);
         core_test_support::submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 model: Some(model.to_string()),
                 ..Default::default()
@@ -2161,10 +2161,10 @@ async fn model_activation_uses_destination_metadata_defaults(
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
 
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2172,8 +2172,8 @@ async fn model_activation_uses_destination_metadata_defaults(
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
-    let paused = wait_for_event_match(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    let paused = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -2181,7 +2181,7 @@ async fn model_activation_uses_destination_metadata_defaults(
     // B cannot use the requested tier. Switching back must recover that
     // selection and preserve an unset summary, not reuse B's effective values.
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_A.to_string()),
@@ -2189,8 +2189,8 @@ async fn model_activation_uses_destination_metadata_defaults(
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::Error(error) => panic!("model activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -2303,9 +2303,9 @@ async fn tool_messages_follow_mid_turn_model_changes() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2313,8 +2313,8 @@ async fn tool_messages_follow_mid_turn_model_changes() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::Error(error) => panic!("model activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -2403,9 +2403,9 @@ async fn persistent_instructions_follow_mid_turn_model_changes() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2413,8 +2413,8 @@ async fn persistent_instructions_follow_mid_turn_model_changes() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::Error(error) => panic!("model activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -2474,19 +2474,19 @@ async fn turn_settings_rejection_preserves_independent_future_settings() -> Resu
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             model: Some(MODEL_B.to_string()),
             ..Default::default()
         },
     )
     .await?;
-    let future = test.codex.thread_settings_snapshot().await;
+    let future = test.ava-code.thread_settings_snapshot().await;
     assert_eq!(
         submit_turn_settings(
-            &test.codex,
+            &test.ava-code,
             &request.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -2499,9 +2499,9 @@ async fn turn_settings_rejection_preserves_independent_future_settings() -> Resu
                 .to_string(),
         }
     );
-    assert_eq!(test.codex.thread_settings_snapshot().await, future);
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    assert_eq!(test.ava-code.thread_settings_snapshot().await, future);
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2555,7 +2555,7 @@ async fn request_preference_activation_keeps_admitted_model_metadata() -> Result
     )
     .await;
     let test = step_settings_test()
-        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        .with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
         .with_config(|config| {
             // Use the real refreshable models manager, and retain an unset
             // preference so the selected model's default is observable.
@@ -2564,7 +2564,7 @@ async fn request_preference_activation_keeps_admitted_model_metadata() -> Result
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.codex).await?;
+    let request = start_paused_turn(&test.ava-code).await?;
     assert_eq!(initial_catalog.requests().len(), 1);
 
     for model in &mut models {
@@ -2575,13 +2575,13 @@ async fn request_preference_activation_keeps_admitted_model_metadata() -> Result
         .get_models_manager()
         .list_models(
             RefreshStrategy::Online,
-            codex_core::test_support::default_http_client_factory(),
+            ava_core::test_support::default_http_client_factory(),
         )
         .await;
     assert_eq!(refresh.requests().len(), 1);
 
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &request.turn_id,
         TurnSettingsUpdate {
             effort: Some(Some(ReasoningEffort::High)),
@@ -2589,8 +2589,8 @@ async fn request_preference_activation_keeps_admitted_model_metadata() -> Result
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &request.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2680,8 +2680,8 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
                 .expect("test permissions");
             for model in &mut config.model_catalog.as_mut().expect("models").models {
                 model.shell_type = ConfigShellToolType::UnifiedExec;
-                model.truncation_policy = codex_protocol::openai_models::TruncationPolicyConfig {
-                    mode: codex_protocol::openai_models::TruncationMode::Bytes,
+                model.truncation_policy = ava_protocol::openai_models::TruncationPolicyConfig {
+                    mode: ava_protocol::openai_models::TruncationMode::Bytes,
                     limit: match model.slug.as_str() {
                         MODEL_B => 400,
                         MODEL_C => 800,
@@ -2692,9 +2692,9 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2702,15 +2702,15 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    let paused = wait_for_event_match(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    let paused = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
     assert_eq!(paused.call_id, "pause-b");
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_C.to_string()),
@@ -2718,10 +2718,10 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
     let mut end = None;
     let mut turn_complete = false;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         match event {
             EventMsg::ExecCommandEnd(event) if event.call_id == "exec-b" => {
                 end = Some(event.clone())
@@ -2734,8 +2734,8 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
     .await;
     let end = end.expect("exec completion");
 
-    use codex_utils_output_truncation::TruncationPolicy;
-    use codex_utils_output_truncation::formatted_truncate_text;
+    use ava_utils_output_truncation::TruncationPolicy;
+    use ava_utils_output_truncation::formatted_truncate_text;
     let requests = responses.requests();
     let exec = requests[2]
         .function_call_output_text("exec-b")
@@ -2785,7 +2785,7 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
                         {"type": "text", "text": body["params"]["arguments"]["title"]},
                         {"type": "image", "mimeType": "image/png",
                          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==",
-                         "_meta": {"codex/imageDetail": "original"}},
+                         "_meta": {"ava/imageDetail": "original"}},
                     ], "isError": false,
                 },
             }))
@@ -2811,19 +2811,19 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
         ],
     )
     .await;
-    let mcp_url = format!("{}/api/codex/ps/mcp", server.uri());
+    let mcp_url = format!("{}/api/ava/ps/mcp", server.uri());
     let test = direct_tool_settings_test()
         .with_config(move |config| {
             for model in &mut config.model_catalog.as_mut().expect("models").models {
                 model.supports_image_detail_original = model.slug != MODEL_B;
-                model.input_modalities = vec![codex_protocol::openai_models::InputModality::Text];
+                model.input_modalities = vec![ava_protocol::openai_models::InputModality::Text];
                 if model.slug != MODEL_B || supports_images {
                     model
                         .input_modalities
-                        .push(codex_protocol::openai_models::InputModality::Image);
+                        .push(ava_protocol::openai_models::InputModality::Image);
                 }
-                model.truncation_policy = codex_protocol::openai_models::TruncationPolicyConfig {
-                    mode: codex_protocol::openai_models::TruncationMode::Bytes,
+                model.truncation_policy = ava_protocol::openai_models::TruncationPolicyConfig {
+                    mode: ava_protocol::openai_models::TruncationMode::Bytes,
                     limit: if model.slug == MODEL_B { 80 } else { 8_000 },
                 };
             }
@@ -2845,10 +2845,10 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, "calendar").await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    wait_for_mcp_server(&test.ava-code, "calendar").await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2856,8 +2856,8 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    let recorded_output = wait_for_event_match(&test.codex, |event| match event {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    let recorded_output = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RawResponseItem(item) => {
             let item = serde_json::to_value(&item.item).expect("raw response JSON");
             (item["call_id"] == "mcp-b" && item["type"] == "function_call_output").then_some(item)
@@ -2880,7 +2880,7 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
             vec![]
         }
     );
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2916,11 +2916,11 @@ impl<'call> ToolExecutor<ToolCall<'call>> for SettingsEcho {
     }
 
     fn spec(&self) -> ToolSpec {
-        ToolSpec::Function(codex_tools::ResponsesApiTool {
+        ToolSpec::Function(ava_tools::ResponsesApiTool {
             name: "extension_settings".to_string(),
             description: "Report the settings received by this extension.".to_string(),
             strict: false,
-            parameters: codex_tools::JsonSchema::default(),
+            parameters: ava_tools::JsonSchema::default(),
             output_schema: None,
             defer_loading: None,
         })
@@ -2932,7 +2932,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for SettingsEcho {
     {
         Box::pin(async move {
             let metadata: Value = serde_json::from_str(
-                call.codex_turn_metadata
+                call.ava_turn_metadata
                     .as_deref()
                     .expect("extension metadata"),
             )
@@ -2976,9 +2976,9 @@ async fn captured_step_settings_reach_extension_executor() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2987,8 +2987,8 @@ async fn captured_step_settings_reach_extension_executor() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3022,7 +3022,7 @@ async fn captured_step_controls_mcp_resource_output() -> Result<()> {
                     "resource-b",
                     "read_mcp_resource",
                     &json!({
-                        "server": "resources", "uri": "memo://codex/example-note",
+                        "server": "resources", "uri": "memo://ava/example-note",
                     })
                     .to_string(),
                 ),
@@ -3054,10 +3054,10 @@ async fn captured_step_controls_mcp_resource_output() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, "resources").await?;
-    let paused = start_paused_turn(&test.codex).await?;
+    wait_for_mcp_server(&test.ava-code, "resources").await?;
+    let paused = start_paused_turn(&test.ava-code).await?;
     apply_turn_settings(
-        &test.codex,
+        &test.ava-code,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -3065,8 +3065,8 @@ async fn captured_step_controls_mcp_resource_output() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.codex, &paused.turn_id).await?;
-    wait_for_event(&test.codex, |event| {
+    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

@@ -2,17 +2,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_file_system::FileSystemSandboxContext;
-pub use codex_file_system::WalkOptions;
-pub use codex_file_system::WalkOutcome;
-use codex_file_system::WireFileSystemSandboxContext;
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
-use codex_protocol::ThreadId;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
-use codex_shell_command::shell_detect::DetectedShell;
-use codex_utils_path_uri::PathUri;
+use ava_file_system::FileSystemSandboxContext;
+pub use ava_file_system::WalkOptions;
+pub use ava_file_system::WalkOutcome;
+use ava_file_system::WireFileSystemSandboxContext;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
+use ava_protocol::ThreadId;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
+use ava_shell_command::shell_detect::DetectedShell;
+use ava_utils_path_uri::PathUri;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -47,7 +47,7 @@ pub const FS_COPY_METHOD: &str = "fs/copy";
 pub const CAPABILITY_ROOTS_DISCOVER_METHOD: &str = "capabilityRoots/discoverV1";
 /// Ordered plugin manifest paths recognized beneath a plugin root.
 pub const DISCOVERABLE_PLUGIN_MANIFEST_PATHS: &[&str] = &[
-    ".codex-plugin/plugin.json",
+    ".ava-plugin/plugin.json",
     ".claude-plugin/plugin.json",
     ".cursor-plugin/plugin.json",
 ];
@@ -220,7 +220,7 @@ impl EnvironmentInfo {
     /// Returns information about the current local exec-server process.
     pub fn local() -> Self {
         #[cfg(windows)]
-        let windows_mxc = codex_mxc_sandbox::is_available();
+        let windows_mxc = ava_mxc_sandbox::is_available();
         #[cfg(not(windows))]
         let windows_mxc = false;
         let cwd = std::env::current_dir().ok();
@@ -237,7 +237,7 @@ impl EnvironmentInfo {
         let temp_dir = normalize_temp_path(std::env::temp_dir().into_os_string());
 
         Self {
-            shell: codex_shell_command::shell_detect::default_user_shell().into(),
+            shell: ava_shell_command::shell_detect::default_user_shell().into(),
             executor_version: unknown_executor_version(),
             provider_id: None,
             cwd: cwd.and_then(|cwd| PathUri::from_host_native_path(cwd).ok()),
@@ -310,7 +310,7 @@ pub struct ExecParams {
     /// Keep non-tty stdin writable through `process/write`.
     #[serde(default)]
     pub pipe_stdin: bool,
-    /// Optional process-visible argv0 override. Values such as `codex-linux-sandbox` are command
+    /// Optional process-visible argv0 override. Values such as `ava-linux-sandbox` are command
     /// names rather than paths, so this is not a [`PathUri`].
     pub arg0: Option<String>,
     /// Portable sandbox intent. Concrete wrapper argv is resolved by the exec-server.
@@ -1172,23 +1172,23 @@ mod tests {
     use super::ShellInfo;
     use super::WireFsOpenParams;
     use super::WireFsReadFileParams;
-    use codex_file_system::FileSystemSandboxContext;
-    use codex_file_system::WindowsSandboxSelection;
-    use codex_network_proxy::ManagedNetworkSandboxContext;
-    use codex_network_proxy::NetworkProxyAuditMetadata;
-    use codex_network_proxy::NetworkProxyConfig;
-    use codex_network_proxy::RemoteNetworkProxyConfig;
-    use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
-    use codex_protocol::config_types::WindowsSandboxProxySettingsMode;
-    use codex_protocol::models::ManagedFileSystemPermissions;
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemPath;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_protocol::permissions::FileSystemSpecialPath;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
-    use codex_utils_path_uri::PathUri;
+    use ava_file_system::FileSystemSandboxContext;
+    use ava_file_system::WindowsSandboxSelection;
+    use ava_network_proxy::ManagedNetworkSandboxContext;
+    use ava_network_proxy::NetworkProxyAuditMetadata;
+    use ava_network_proxy::NetworkProxyConfig;
+    use ava_network_proxy::RemoteNetworkProxyConfig;
+    use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
+    use ava_protocol::config_types::WindowsSandboxProxySettingsMode;
+    use ava_protocol::models::ManagedFileSystemPermissions;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemPath;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_protocol::permissions::FileSystemSpecialPath;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
+    use ava_utils_path_uri::PathUri;
     use pretty_assertions::assert_eq;
     use std::collections::HashMap;
 
@@ -1200,7 +1200,7 @@ mod tests {
         let params = ExecParams {
             process_id: ProcessId::from("managed-network"),
             metadata: Some(ExecMetadata {
-                thread_id: Some(codex_protocol::ThreadId::new()),
+                thread_id: Some(ava_protocol::ThreadId::new()),
                 tool_call_id: Some("call-1".to_string()),
             }),
             argv: vec!["true".to_string()],
@@ -1437,13 +1437,13 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn local_environment_info_resolves_relative_temporary_directory() {
-        if std::env::var_os("CODEX_TEST_RELATIVE_TMPDIR").is_none() {
+        if std::env::var_os("AVA_TEST_RELATIVE_TMPDIR").is_none() {
             let status = std::process::Command::new(std::env::current_exe().expect("test binary"))
                 .arg("--exact")
                 .arg(
                     "protocol::tests::local_environment_info_resolves_relative_temporary_directory",
                 )
-                .env("CODEX_TEST_RELATIVE_TMPDIR", "1")
+                .env("AVA_TEST_RELATIVE_TMPDIR", "1")
                 .env("TMPDIR", "relative-temp")
                 .status()
                 .expect("run relative TMPDIR subprocess");
@@ -1513,7 +1513,7 @@ mod tests {
                 FileSystemSandboxEntry::skip_missing_path(
                     FileSystemPath::Special {
                         value: FileSystemSpecialPath::ProjectRoots {
-                            subpath: Some(".codex".into()),
+                            subpath: Some(".ava-code".into()),
                         },
                     },
                     FileSystemAccessMode::Read,

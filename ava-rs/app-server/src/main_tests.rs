@@ -1,6 +1,6 @@
 use super::AppServerArgs;
 use clap::Parser;
-use codex_app_server::AppServerTransport;
+use ava_app_server::AppServerTransport;
 use pretty_assertions::assert_eq;
 use toml::Value as TomlValue;
 use url::Url;
@@ -8,9 +8,9 @@ use url::Url;
 #[test]
 fn app_server_accepts_cli_config_overrides() {
     let args = AppServerArgs::try_parse_from([
-        "codex-app-server",
+        "ava-app-server",
         "-c",
-        "model=\"gpt-5-codex\"",
+        "model=\"gpt-5-ava\"",
         "--config",
         "sandbox_mode=\"read-only\"",
         "--listen",
@@ -28,7 +28,7 @@ fn app_server_accepts_cli_config_overrides() {
         vec![
             (
                 "model".to_string(),
-                TomlValue::String("gpt-5-codex".to_string()),
+                TomlValue::String("gpt-5-ava".to_string()),
             ),
             (
                 "sandbox_mode".to_string(),
@@ -41,7 +41,7 @@ fn app_server_accepts_cli_config_overrides() {
 #[test]
 fn app_server_accepts_process_scoped_grpc_code_mode_host() {
     let args = AppServerArgs::try_parse_from([
-        "codex-app-server",
+        "ava-app-server",
         "--code-mode-host",
         "https://example.test",
         "--listen",
@@ -74,7 +74,7 @@ fn app_server_rejects_invalid_code_mode_host() {
         "http://example.test/?token=secret",
     ] {
         let error =
-            AppServerArgs::try_parse_from(["codex-app-server", "--code-mode-host", endpoint])
+            AppServerArgs::try_parse_from(["ava-app-server", "--code-mode-host", endpoint])
                 .expect_err("invalid code-mode host endpoint should fail startup argument parsing");
 
         assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);

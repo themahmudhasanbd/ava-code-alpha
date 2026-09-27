@@ -3,7 +3,7 @@ use pretty_assertions::assert_eq;
 
 fn computer_item(
     id: &str,
-    status: codex_app_server_protocol::McpToolCallStatus,
+    status: ava_app_server_protocol::McpToolCallStatus,
 ) -> AppServerThreadItem {
     AppServerThreadItem::McpToolCall {
         id: id.to_string(),
@@ -16,7 +16,7 @@ fn computer_item(
         mcp_app_ui: None,
         plugin_id: None,
         read_only_hint: None,
-        result: Some(Box::new(codex_app_server_protocol::McpToolCallResult {
+        result: Some(Box::new(ava_app_server_protocol::McpToolCallResult {
             content: vec![json!({"type": "text", "text": format!("Full output for {id}")})],
             structured_content: None,
             meta: None,
@@ -28,7 +28,7 @@ fn computer_item(
 
 #[tokio::test]
 async fn computer_activity_live_and_replay_group_identically() {
-    use codex_app_server_protocol::McpToolCallStatus;
+    use ava_app_server_protocol::McpToolCallStatus;
     let mut outputs = Vec::new();
     for replay in [false, true] {
         let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
@@ -61,7 +61,7 @@ async fn computer_activity_live_and_replay_group_identically() {
 
 #[tokio::test]
 async fn computer_activity_keeps_reasoning_in_order_live_and_replayed() {
-    use codex_app_server_protocol::McpToolCallStatus;
+    use ava_app_server_protocol::McpToolCallStatus;
     let mut outputs = Vec::new();
     for replay in [false, true] {
         let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
@@ -125,7 +125,7 @@ async fn computer_activity_keeps_reasoning_in_order_live_and_replayed() {
 
 #[tokio::test]
 async fn computer_activity_preserves_boundaries_and_expanded_output() {
-    use codex_app_server_protocol::McpToolCallStatus;
+    use ava_app_server_protocol::McpToolCallStatus;
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.on_mcp_tool_call_completed(computer_item("1", McpToolCallStatus::Completed));
     chat.prepare_assistant_message();
@@ -149,7 +149,7 @@ async fn computer_activity_preserves_boundaries_and_expanded_output() {
 
 #[tokio::test]
 async fn computer_activity_out_of_order_completion_and_interruption() {
-    use codex_app_server_protocol::McpToolCallStatus;
+    use ava_app_server_protocol::McpToolCallStatus;
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.on_mcp_tool_call_started(computer_item("1", McpToolCallStatus::InProgress));
     chat.on_mcp_tool_call_started(computer_item("2", McpToolCallStatus::InProgress));

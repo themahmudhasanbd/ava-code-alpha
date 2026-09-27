@@ -1,16 +1,16 @@
 use crate::ResolvedPluginMetricsOperation;
-use codex_analytics::PluginMeasurementRow;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::Environment;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::FileSystemReadStream;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WriteFileOptions;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::FileSystemPermissions;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_analytics::PluginMeasurementRow;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::Environment;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::FileSystemReadStream;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WriteFileOptions;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::FileSystemPermissions;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use futures::StreamExt;
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -23,7 +23,7 @@ use std::sync::Arc;
 use tempfile::NamedTempFile;
 use uuid::Uuid;
 
-pub const PLUGIN_METRICS_OUTPUT_ENV_VAR: &str = "CODEX_PLUGIN_METRICS_OUTPUT";
+pub const PLUGIN_METRICS_OUTPUT_ENV_VAR: &str = "AVA_PLUGIN_METRICS_OUTPUT";
 const MAX_OUTPUT_BYTES: u64 = 64 * 1024;
 const MAX_OUTPUT_ROWS: usize = 100;
 
@@ -101,7 +101,7 @@ struct OutputMeasurement {
 impl PluginMetricsSidecar {
     pub fn create(resolved: ResolvedPluginMetricsOperation) -> Option<Self> {
         let sidecar_dir = tempfile::Builder::new()
-            .prefix("codex-plugin-metrics-")
+            .prefix("ava-plugin-metrics-")
             .tempdir()
             .ok()?;
         let output_file = tempfile::Builder::new()
@@ -140,7 +140,7 @@ impl PluginMetricsSidecar {
         }
         let execution_id = Uuid::new_v4().to_string();
         let directory_path = temp_dir
-            .join(&format!("codex-plugin-metrics-{execution_id}"))
+            .join(&format!("ava-plugin-metrics-{execution_id}"))
             .ok()?;
         let absolute_output_dir = directory_path.to_abs_path().ok()?;
         let filesystem = environment.get_filesystem();

@@ -23,7 +23,7 @@ Exposing the existing IPC, `host.proxy`, or host-core JSON-RPC would bypass the
 current authority boundaries and make the Electron process a public backend.
 
 The GitHub implementations reviewed for this decision converge on a layered
-model: OpenAI Codex and Microsoft VS Code use JSON-RPC-shaped interactive host
+model: OpenAI Ava and Microsoft VS Code use JSON-RPC-shaped interactive host
 protocols; MCP separates local stdio from remote HTTP streaming; Google A2A
 separates a canonical operation model from JSON-RPC, gRPC, and HTTP/JSON
 bindings.

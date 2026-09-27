@@ -1,10 +1,10 @@
 use std::fmt::Display;
 use std::future::Future;
 
-use codex_protocol::ThreadId;
-use codex_rollout::StateDbHandle;
-use codex_state::QueuedUserSubmissionRecord;
-use codex_state::SqliteQueueStore;
+use ava_protocol::ThreadId;
+use ava_rollout::StateDbHandle;
+use ava_state::QueuedUserSubmissionRecord;
+use ava_state::SqliteQueueStore;
 
 use crate::MAX_QUEUE_ITEMS;
 use crate::ThreadStoreError;

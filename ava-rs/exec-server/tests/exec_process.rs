@@ -9,51 +9,51 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::Environment;
-use codex_exec_server::ExecBackend;
+use ava_exec_server::Environment;
+use ava_exec_server::ExecBackend;
 #[cfg(unix)]
-use codex_exec_server::ExecEnvPolicy;
-use codex_exec_server::ExecOutputStream;
-use codex_exec_server::ExecParams;
-use codex_exec_server::ExecProcess;
-use codex_exec_server::ExecProcessEvent;
+use ava_exec_server::ExecEnvPolicy;
+use ava_exec_server::ExecOutputStream;
+use ava_exec_server::ExecParams;
+use ava_exec_server::ExecProcess;
+use ava_exec_server::ExecProcessEvent;
 #[cfg(any(unix, windows))]
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::ProcessId;
-use codex_exec_server::ProcessSignal;
-use codex_exec_server::ReadResponse;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::ProcessId;
+use ava_exec_server::ProcessSignal;
+use ava_exec_server::ReadResponse;
 #[cfg(unix)]
-use codex_exec_server::ShellInfo;
+use ava_exec_server::ShellInfo;
 #[cfg(unix)]
-use codex_exec_server::ShellSnapshotRequest;
-use codex_exec_server::StartedExecProcess;
+use ava_exec_server::ShellSnapshotRequest;
+use ava_exec_server::StartedExecProcess;
 #[cfg(any(unix, windows))]
-use codex_exec_server::WindowsSandboxSelection;
-use codex_exec_server::WriteStatus;
+use ava_exec_server::WindowsSandboxSelection;
+use ava_exec_server::WriteStatus;
 #[cfg(unix)]
-use codex_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::NetworkProxyConfig;
 #[cfg(unix)]
-use codex_network_proxy::RemoteNetworkProxyConfig;
+use ava_network_proxy::RemoteNetworkProxyConfig;
 #[cfg(unix)]
-use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
+use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
 #[cfg(unix)]
-use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
+use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
 #[cfg(unix)]
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfile;
 #[cfg(unix)]
-use codex_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemAccessMode;
 #[cfg(unix)]
-use codex_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemPath;
 #[cfg(unix)]
-use codex_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxEntry;
 #[cfg(unix)]
-use codex_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
 #[cfg(unix)]
-use codex_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::FileSystemSpecialPath;
 #[cfg(unix)]
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use test_case::test_case;
@@ -107,8 +107,8 @@ async fn create_process_context(use_remote: bool) -> Result<ProcessContext> {
 
 #[cfg(target_os = "macos")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn codex_home_symlink_opt_out_respects_host_config_and_scope() -> Result<()> {
-    use codex_exec_server::WriteFileOptions;
+async fn ava_home_symlink_opt_out_respects_host_config_and_scope() -> Result<()> {
+    use ava_exec_server::WriteFileOptions;
     use common::exec_server::exec_server_with_env;
     use std::os::unix::fs::symlink;
 
@@ -116,23 +116,23 @@ async fn codex_home_symlink_opt_out_respects_host_config_and_scope() -> Result<(
     let home = TempDir::new()?;
     let target = TempDir::new()?;
     let alias = home.path().join("visualizations");
-    let other_alias = workspace.path().join(".codex/visualizations");
-    std::fs::create_dir(workspace.path().join(".codex"))?;
+    let other_alias = workspace.path().join(".ava-code/visualizations");
+    std::fs::create_dir(workspace.path().join(".ava-code"))?;
     symlink(target.path(), &alias)?;
     symlink(target.path(), &other_alias)?;
     std::fs::write(
-        workspace.path().join(".codex/config.toml"),
-        "allow_symlinked_codex_home = true\n",
+        workspace.path().join(".ava-code/config.toml"),
+        "allow_symlinked_ava_home = true\n",
     )?;
 
     for enabled in [None, Some(false), Some(true)] {
         std::fs::write(
             home.path().join("config.toml"),
             enabled.map_or_else(String::new, |enabled| {
-                format!("allow_symlinked_codex_home = {enabled}\n")
+                format!("allow_symlinked_ava_home = {enabled}\n")
             }),
         )?;
-        let mut server = exec_server_with_env([("CODEX_HOME", home.path())], &[]).await?;
+        let mut server = exec_server_with_env([("AVA_HOME", home.path())], &[]).await?;
         let environment = Environment::create_for_tests(Some(server.websocket_url().to_string()))?;
         for root in [alias.as_path(), other_alias.as_path(), workspace.path()] {
             let mut policy = FileSystemSandboxPolicy::read_only();
@@ -211,7 +211,7 @@ async fn shell_snapshot_v2_filters_profile_exports_and_stays_in_memory(
 ) -> Result<()> {
     if use_sandbox
         && let Some(warning) =
-            codex_sandboxing::system_bwrap_warning(&PermissionProfile::read_only())
+            ava_sandboxing::system_bwrap_warning(&PermissionProfile::read_only())
     {
         eprintln!("skipping sandbox test: {warning}");
         return Ok(());
@@ -315,7 +315,7 @@ async fn shell_snapshot_v2_filters_profile_exports_and_stays_in_memory(
         ""
     };
     let command = format!(
-        "case $- in *u*) ;; *) exit 42 ;; esac; {entry_check}export PATH='{}':\"$PATH\"; {command_prefix}printf '|%s|%s|%s|%s|%s|%s' \"$PROFILE_ALLOWED\" \"${{PROFILE_SECRET-missing}}\" \"${{PROFILE_DENIED-missing}}\" \"$PATH\" \"${{__CODEX_SHELL_SNAPSHOT_STATE_0-missing}}\" \"${{__CODEX_SHELL_SNAPSHOT_STATE_1-missing}}\"",
+        "case $- in *u*) ;; *) exit 42 ;; esac; {entry_check}export PATH='{}':\"$PATH\"; {command_prefix}printf '|%s|%s|%s|%s|%s|%s' \"$PROFILE_ALLOWED\" \"${{PROFILE_SECRET-missing}}\" \"${{PROFILE_DENIED-missing}}\" \"$PATH\" \"${{__AVA_SHELL_SNAPSHOT_STATE_0-missing}}\" \"${{__AVA_SHELL_SNAPSHOT_STATE_1-missing}}\"",
         runtime_path_entry.display(),
     );
     let expected_stdout = format!(
@@ -366,7 +366,7 @@ async fn shell_snapshot_v2_filters_profile_exports_and_stays_in_memory(
     assert_eq!(std::fs::read_to_string(home.path().join("captures"))?, "x");
     assert!(!std::fs::read(home.path().join("tool-captures"))?.is_empty());
     if let Some(server) = context._server {
-        assert!(!server.codex_home().join("shell_snapshots").exists());
+        assert!(!server.ava_home().join("shell_snapshots").exists());
     }
     Ok(())
 }
@@ -380,7 +380,7 @@ async fn shell_snapshot_v2_remote_managed_proxy_uses_prepared_execution_context(
     let cwd = PathUri::from_host_native_path(home.path())?;
     std::fs::write(
         home.path().join(".bashrc"),
-        "printf '%s\\n' \"$HTTP_PROXY\" >> \"$HOME/captures\"\ntest \"$CODEX_NETWORK_PROXY_ACTIVE\" = 1 || exit 41\nexport PROFILE_ALLOWED=profile\nprofile_helper() { printf helper; }\n",
+        "printf '%s\\n' \"$HTTP_PROXY\" >> \"$HOME/captures\"\ntest \"$AVA_NETWORK_PROXY_ACTIVE\" = 1 || exit 41\nexport PROFILE_ALLOWED=profile\nprofile_helper() { printf helper; }\n",
     )?;
     let policy = ExecEnvPolicy {
         inherit: ShellEnvironmentPolicyInherit::All,
@@ -411,7 +411,7 @@ async fn shell_snapshot_v2_remote_managed_proxy_uses_prepared_execution_context(
                 argv: vec![
                     "/bin/bash".to_string(),
                     "-lc".to_string(),
-                    "profile_helper; printf '|%s|%s|%s' \"$PROFILE_ALLOWED\" \"$CODEX_NETWORK_PROXY_ACTIVE\" \"$HTTP_PROXY\"".to_string(),
+                    "profile_helper; printf '|%s|%s|%s' \"$PROFILE_ALLOWED\" \"$AVA_NETWORK_PROXY_ACTIVE\" \"$HTTP_PROXY\"".to_string(),
                 ],
                 cwd: cwd.clone(),
                 env_policy: Some(policy.clone()),
@@ -473,7 +473,7 @@ async fn shell_snapshot_v2_capture_failure_falls_back_and_retries(
 ) -> Result<()> {
     if use_remote
         && let Some(warning) =
-            codex_sandboxing::system_bwrap_warning(&PermissionProfile::workspace_write())
+            ava_sandboxing::system_bwrap_warning(&PermissionProfile::workspace_write())
     {
         eprintln!("skipping sandbox test: {warning}");
         return Ok(());
@@ -576,7 +576,7 @@ async fn shell_snapshot_v2_capture_failure_falls_back_and_retries(
 #[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn remote_sandboxed_process_preserves_custom_arg0() -> Result<()> {
-    if let Some(warning) = codex_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
+    if let Some(warning) = ava_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
         eprintln!("skipping bwrap test: {warning}");
         return Ok(());
     }
@@ -615,7 +615,7 @@ async fn remote_sandboxed_process_preserves_custom_arg0() -> Result<()> {
             argv: vec![
                 "/bin/sh".to_string(),
                 "-c".to_string(),
-                "printf '%s' \"$0\"; if /bin/cat \"$CODEX_TEST_DENIED_FILE\" >/dev/null 2>&1; then exit 42; fi"
+                "printf '%s' \"$0\"; if /bin/cat \"$AVA_TEST_DENIED_FILE\" >/dev/null 2>&1; then exit 42; fi"
                     .to_string(),
             ],
             cwd,
@@ -624,7 +624,7 @@ async fn remote_sandboxed_process_preserves_custom_arg0() -> Result<()> {
             env: HashMap::from([
                 ("PATH".to_string(), std::env::var("PATH")?),
                 (
-                    "CODEX_TEST_DENIED_FILE".to_string(),
+                    "AVA_TEST_DENIED_FILE".to_string(),
                     denied_file.to_string_lossy().into_owned(),
                 ),
             ]),
@@ -680,7 +680,7 @@ async fn assert_exec_process_starts_and_exits(use_remote: bool) -> Result<()> {
 #[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn remote_process_keeps_sandbox_helper_visible_with_restricted_reads() -> Result<()> {
-    if let Some(warning) = codex_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
+    if let Some(warning) = ava_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
         eprintln!("skipping bwrap test: {warning}");
         return Ok(());
     }
@@ -742,7 +742,7 @@ async fn remote_process_keeps_sandbox_helper_visible_with_restricted_reads() -> 
 #[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn remote_tty_process_uses_configured_sandbox_helper_with_hostile_path() -> Result<()> {
-    if let Some(warning) = codex_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
+    if let Some(warning) = ava_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
         eprintln!("skipping bwrap test: {warning}");
         return Ok(());
     }
@@ -751,7 +751,7 @@ async fn remote_tty_process_uses_configured_sandbox_helper_with_hostile_path() -
     let workspace = TempDir::new()?;
     let file = workspace.path().join("allowed.txt");
     std::fs::write(&file, b"allowed")?;
-    let hostile_helper = workspace.path().join("codex-linux-sandbox");
+    let hostile_helper = workspace.path().join("ava-linux-sandbox");
     std::fs::write(&hostile_helper, b"#!/bin/sh\nprintf hostile")?;
     let mut permissions = std::fs::metadata(&hostile_helper)?.permissions();
     permissions.set_mode(0o755);
@@ -816,7 +816,7 @@ async fn remote_tty_process_uses_configured_sandbox_helper_with_hostile_path() -
 #[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn remote_process_preserves_empty_workspace_roots() -> Result<()> {
-    if let Some(warning) = codex_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
+    if let Some(warning) = ava_sandboxing::system_bwrap_warning(&PermissionProfile::read_only()) {
         eprintln!("skipping bwrap test: {warning}");
         return Ok(());
     }
@@ -1292,10 +1292,10 @@ async fn assert_exec_process_write_then_read_without_tty(use_remote: bool) -> Re
 }
 
 async fn assert_remote_windows_sandbox_process_write(
-    expected_sandbox_type: codex_sandboxing::SandboxType,
+    expected_sandbox_type: ava_sandboxing::SandboxType,
     tty: bool,
 ) -> Result<()> {
-    if expected_sandbox_type == codex_sandboxing::SandboxType::WindowsMxc {
+    if expected_sandbox_type == ava_sandboxing::SandboxType::WindowsMxc {
         crate::skip_if_mxc_unavailable!(Ok(()));
     }
     let context = create_process_context(/*use_remote*/ true).await?;
@@ -1307,15 +1307,15 @@ async fn assert_remote_windows_sandbox_process_write(
         cwd.clone(),
     )?;
     match expected_sandbox_type {
-        codex_sandboxing::SandboxType::WindowsRestrictedToken => {
+        ava_sandboxing::SandboxType::WindowsRestrictedToken => {
             sandbox.windows_sandbox_selection = WindowsSandboxSelection::RestrictedToken;
         }
-        codex_sandboxing::SandboxType::WindowsMxc => {
+        ava_sandboxing::SandboxType::WindowsMxc => {
             sandbox.windows_sandbox_selection = WindowsSandboxSelection::Mxc;
         }
-        codex_sandboxing::SandboxType::None
-        | codex_sandboxing::SandboxType::MacosSeatbelt
-        | codex_sandboxing::SandboxType::LinuxSeccomp => {
+        ava_sandboxing::SandboxType::None
+        | ava_sandboxing::SandboxType::MacosSeatbelt
+        | ava_sandboxing::SandboxType::LinuxSeccomp => {
             anyhow::bail!("expected a Windows sandbox type")
         }
     }
@@ -1774,17 +1774,17 @@ async fn exec_process_write_then_read_without_tty(use_remote: bool) -> Result<()
 }
 
 #[test_case(
-    codex_sandboxing::SandboxType::WindowsRestrictedToken,
+    ava_sandboxing::SandboxType::WindowsRestrictedToken,
     false;
     "restricted_token"
 )]
 #[test_case(
-    codex_sandboxing::SandboxType::WindowsMxc,
+    ava_sandboxing::SandboxType::WindowsMxc,
     false;
     "mxc_pipe"
 )]
 #[test_case(
-    codex_sandboxing::SandboxType::WindowsMxc,
+    ava_sandboxing::SandboxType::WindowsMxc,
     true;
     "mxc_conpty"
 )]
@@ -1792,7 +1792,7 @@ async fn exec_process_write_then_read_without_tty(use_remote: bool) -> Result<()
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[serial_test::serial(remote_exec_server)]
 async fn remote_windows_sandbox_process_accepts_process_write(
-    expected_sandbox_type: codex_sandboxing::SandboxType,
+    expected_sandbox_type: ava_sandboxing::SandboxType,
     tty: bool,
 ) -> Result<()> {
     assert_remote_windows_sandbox_process_write(expected_sandbox_type, tty).await

@@ -8,8 +8,8 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use codex_config::McpServerConfig;
-use codex_protocol::ToolName;
+use ava_config::McpServerConfig;
+use ava_protocol::ToolName;
 use rmcp::model::Tool;
 use serde::Deserialize;
 use serde::Serialize;

@@ -88,81 +88,81 @@ use crate::transcript_reflow::TranscriptReflowState;
 use crate::tui;
 use crate::tui::TuiEvent;
 use crate::update_action::UpdateAction;
-use crate::version::CODEX_CLI_VERSION;
+use crate::version::AVA_CLI_VERSION;
 use crate::workspace_command::AppServerWorkspaceCommandRunner;
 use crate::workspace_command::WorkspaceCommandRunner;
-use codex_ansi_escape::ansi_escape_line;
-use codex_app_server_client::AppServerRequestHandle;
-use codex_app_server_client::TypedRequestError;
-use codex_app_server_protocol::AddCreditsNudgeCreditType;
-use codex_app_server_protocol::AskForApproval;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CodexErrorInfo as AppServerCodexErrorInfo;
-use codex_app_server_protocol::ConfigBatchWriteParams;
-use codex_app_server_protocol::ConfigReadResponse;
-use codex_app_server_protocol::ConfigValueWriteParams;
-use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::FeedbackUploadParams;
-use codex_app_server_protocol::FeedbackUploadResponse;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::HooksListEntry;
-use codex_app_server_protocol::ListMcpServerStatusParams;
-use codex_app_server_protocol::ListMcpServerStatusResponse;
+use ava_ansi_escape::ansi_escape_line;
+use ava_app_server_client::AppServerRequestHandle;
+use ava_app_server_client::TypedRequestError;
+use ava_app_server_protocol::AddCreditsNudgeCreditType;
+use ava_app_server_protocol::AskForApproval;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::AvaErrorInfo as AppServerAvaErrorInfo;
+use ava_app_server_protocol::ConfigBatchWriteParams;
+use ava_app_server_protocol::ConfigReadResponse;
+use ava_app_server_protocol::ConfigValueWriteParams;
+use ava_app_server_protocol::ConfigWriteResponse;
+use ava_app_server_protocol::FeedbackUploadParams;
+use ava_app_server_protocol::FeedbackUploadResponse;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::HooksListEntry;
+use ava_app_server_protocol::ListMcpServerStatusParams;
+use ava_app_server_protocol::ListMcpServerStatusResponse;
 #[cfg(test)]
-use codex_app_server_protocol::McpAuthStatus;
-use codex_app_server_protocol::McpServerStatus;
-use codex_app_server_protocol::McpServerStatusDetail;
-use codex_app_server_protocol::MergeStrategy;
-use codex_app_server_protocol::PluginInstallParams;
-use codex_app_server_protocol::PluginInstallResponse;
-use codex_app_server_protocol::PluginListMarketplaceKind;
-use codex_app_server_protocol::PluginListParams;
-use codex_app_server_protocol::PluginListResponse;
-use codex_app_server_protocol::PluginMarketplaceEntry;
-use codex_app_server_protocol::PluginReadParams;
-use codex_app_server_protocol::PluginReadResponse;
-use codex_app_server_protocol::PluginUninstallParams;
-use codex_app_server_protocol::PluginUninstallResponse;
-use codex_app_server_protocol::SandboxMode as AppServerSandboxMode;
-use codex_app_server_protocol::SendAddCreditsNudgeEmailParams;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::SkillErrorInfo;
-use codex_app_server_protocol::SkillsListParams;
-use codex_app_server_protocol::SkillsListResponse;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadMemoryMode;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_app_server_protocol::ThreadStartSource;
-use codex_app_server_protocol::Turn;
-use codex_app_server_protocol::TurnError as AppServerTurnError;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::WriteStatus;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::types::ApprovalsReviewer;
-use codex_config::types::MemoriesToml;
-use codex_config::types::ModelAvailabilityNuxConfig;
-use codex_exec_server::EnvironmentManager;
-use codex_features::Feature;
-use codex_features::FeaturesToml;
-use codex_models_manager::model_presets::HIDE_GPT_5_1_CODEX_MAX_MIGRATION_PROMPT_CONFIG;
-use codex_models_manager::model_presets::HIDE_GPT5_1_MIGRATION_PROMPT_CONFIG;
-use codex_otel::SessionTelemetry;
-use codex_otel::TelemetryAuthMode;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ModelAvailabilityNux;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ModelUpgrade;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_rollout::StateDbHandle;
-use codex_terminal_detection::user_agent;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_approval_presets::builtin_permission_profile_for_active_permission_profile;
+use ava_app_server_protocol::McpAuthStatus;
+use ava_app_server_protocol::McpServerStatus;
+use ava_app_server_protocol::McpServerStatusDetail;
+use ava_app_server_protocol::MergeStrategy;
+use ava_app_server_protocol::PluginInstallParams;
+use ava_app_server_protocol::PluginInstallResponse;
+use ava_app_server_protocol::PluginListMarketplaceKind;
+use ava_app_server_protocol::PluginListParams;
+use ava_app_server_protocol::PluginListResponse;
+use ava_app_server_protocol::PluginMarketplaceEntry;
+use ava_app_server_protocol::PluginReadParams;
+use ava_app_server_protocol::PluginReadResponse;
+use ava_app_server_protocol::PluginUninstallParams;
+use ava_app_server_protocol::PluginUninstallResponse;
+use ava_app_server_protocol::SandboxMode as AppServerSandboxMode;
+use ava_app_server_protocol::SendAddCreditsNudgeEmailParams;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::SkillErrorInfo;
+use ava_app_server_protocol::SkillsListParams;
+use ava_app_server_protocol::SkillsListResponse;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadMemoryMode;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::ThreadStartSource;
+use ava_app_server_protocol::Turn;
+use ava_app_server_protocol::TurnError as AppServerTurnError;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::WriteStatus;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::types::ApprovalsReviewer;
+use ava_config::types::MemoriesToml;
+use ava_config::types::ModelAvailabilityNuxConfig;
+use ava_exec_server::EnvironmentManager;
+use ava_features::Feature;
+use ava_features::FeaturesToml;
+use ava_models_manager::model_presets::HIDE_GPT_5_1_AVA_MAX_MIGRATION_PROMPT_CONFIG;
+use ava_models_manager::model_presets::HIDE_GPT5_1_MIGRATION_PROMPT_CONFIG;
+use ava_otel::SessionTelemetry;
+use ava_otel::TelemetryAuthMode;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ModelAvailabilityNux;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ModelUpgrade;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_rollout::StateDbHandle;
+use ava_terminal_detection::user_agent;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_approval_presets::builtin_permission_profile_for_active_permission_profile;
 use color_eyre::eyre::Result;
 use color_eyre::eyre::WrapErr;
 use crossterm::event::KeyCode;
@@ -347,7 +347,7 @@ fn collab_receiver_is_not_found(
                 agents_states.get(receiver_thread_id).is_some_and(|state| {
                     matches!(
                         &state.status,
-                        codex_app_server_protocol::CollabAgentStatus::NotFound
+                        ava_app_server_protocol::CollabAgentStatus::NotFound
                     )
                 })
             }
@@ -358,15 +358,15 @@ fn collab_receiver_is_not_found(
 }
 
 fn default_exec_approval_decisions(
-    network_approval_context: Option<&codex_app_server_protocol::NetworkApprovalContext>,
-    proposed_execpolicy_amendment: Option<&codex_app_server_protocol::ExecPolicyAmendment>,
+    network_approval_context: Option<&ava_app_server_protocol::NetworkApprovalContext>,
+    proposed_execpolicy_amendment: Option<&ava_app_server_protocol::ExecPolicyAmendment>,
     proposed_network_policy_amendments: Option<
-        &[codex_app_server_protocol::NetworkPolicyAmendment],
+        &[ava_app_server_protocol::NetworkPolicyAmendment],
     >,
-    additional_permissions: Option<&codex_app_server_protocol::AdditionalPermissionProfile>,
-) -> Vec<codex_app_server_protocol::CommandExecutionApprovalDecision> {
-    use codex_app_server_protocol::CommandExecutionApprovalDecision;
-    use codex_app_server_protocol::NetworkPolicyRuleAction;
+    additional_permissions: Option<&ava_app_server_protocol::AdditionalPermissionProfile>,
+) -> Vec<ava_app_server_protocol::CommandExecutionApprovalDecision> {
+    use ava_app_server_protocol::CommandExecutionApprovalDecision;
+    use ava_app_server_protocol::NetworkPolicyRuleAction;
 
     if network_approval_context.is_some() {
         let mut decisions = vec![
@@ -522,7 +522,7 @@ fn resume_hint_for_resumable_thread(
     rollout_path: Option<&Path>,
 ) -> Option<String> {
     let thread = resumable_thread(thread_id, thread_name, rollout_path)?;
-    codex_utils_cli::resume_hint(thread.thread_name.as_deref(), Some(thread.thread_id))
+    ava_utils_cli::resume_hint(thread.thread_name.as_deref(), Some(thread.thread_id))
 }
 
 fn rollout_path_is_resumable(rollout_path: &Path) -> bool {
@@ -612,7 +612,7 @@ pub(crate) struct App {
     ///
     /// This keeps scrollback consistent with the retained transcript after backtracking.
     pub(crate) backtrack_render_pending: bool,
-    pub(crate) feedback: codex_feedback::CodexFeedback,
+    pub(crate) feedback: ava_feedback::AvaFeedback,
     feedback_audience: FeedbackAudience,
     environment_manager: Arc<EnvironmentManager>,
     app_server_target: AppServerTarget,
@@ -654,8 +654,8 @@ pub(crate) struct App {
     pending_primary_events: VecDeque<ThreadBufferedEvent>,
     pending_app_server_requests: PendingAppServerRequests,
     dynamic_tool_status_updates:
-        tokio::sync::broadcast::Sender<codex_app_server_protocol::ThreadStatusChangedNotification>,
-    dynamic_tool_tasks: HashMap<codex_app_server_protocol::RequestId, (String, JoinHandle<()>)>,
+        tokio::sync::broadcast::Sender<ava_app_server_protocol::ThreadStatusChangedNotification>,
+    dynamic_tool_tasks: HashMap<ava_app_server_protocol::RequestId, (String, JoinHandle<()>)>,
     pending_startup_thread_start: bool,
     pending_server_version_notice: Option<crate::status::remote_connection::ServerVersionNotice>,
     /// Opens the session picker after event dispatch returns, with a fresh stack.
@@ -764,8 +764,8 @@ fn active_turn_not_steerable_turn_error(error: &TypedRequestError) -> Option<App
     };
     let turn_error: AppServerTurnError = serde_json::from_value(source.data.clone()?).ok()?;
     matches!(
-        turn_error.codex_error_info,
-        Some(AppServerCodexErrorInfo::ActiveTurnNotSteerable { .. })
+        turn_error.ava_error_info,
+        Some(AppServerAvaErrorInfo::ActiveTurnNotSteerable { .. })
     )
     .then_some(turn_error)
 }
@@ -837,7 +837,7 @@ impl App {
             enhanced_keys_supported: self.enhanced_keys_supported,
             has_chatgpt_account: self.chat_widget.has_chatgpt_account(),
             requires_openai_auth: self.chat_widget.requires_openai_auth,
-            has_codex_backend_auth: self.chat_widget.has_codex_backend_auth(),
+            has_ava_backend_auth: self.chat_widget.has_ava_backend_auth(),
             model_catalog: self.model_catalog.clone(),
             feedback: self.feedback.clone(),
             is_first_run: false,

@@ -1,12 +1,12 @@
-use codex_api::OpenAiVerbosity;
-use codex_api::ResponsesApiRequest;
-use codex_api::TextControls;
-use codex_api::create_text_param_for_request;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
+use ava_api::OpenAiVerbosity;
+use ava_api::ResponsesApiRequest;
+use ava_api::TextControls;
+use ava_api::create_text_param_for_request;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
 use pretty_assertions::assert_eq;
 use serde_json::value::RawValue;
 use std::sync::Arc;
@@ -184,7 +184,7 @@ fn serializes_text_schema_with_strict_format() {
 
     assert_eq!(
         format.get("name"),
-        Some(&serde_json::Value::String("codex_output_schema".into()))
+        Some(&serde_json::Value::String("ava_output_schema".into()))
     );
     assert_eq!(
         format.get("type"),

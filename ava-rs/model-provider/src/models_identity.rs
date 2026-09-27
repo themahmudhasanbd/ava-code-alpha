@@ -2,9 +2,9 @@
 //! Only a digest is persisted; access tokens for ChatGPT are excluded so token
 //! rotation does not discard a catalog for the same account, user, and plan.
 
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::error::Result as CoreResult;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::error::Result as CoreResult;
 use sha2::Digest;
 use sha2::Sha256;
 
@@ -12,9 +12,9 @@ use crate::auth::resolve_provider_auth;
 
 pub(crate) fn identity(
     provider_info: &ModelProviderInfo,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> CoreResult<String> {
-    let mut api_provider = provider_info.to_api_provider(auth.map(CodexAuth::auth_mode))?;
+    let mut api_provider = provider_info.to_api_provider(auth.map(AvaAuth::auth_mode))?;
     let mut digest = Sha256::new();
     // Length-prefix every field to avoid ambiguity between adjacent values.
     let mut field = |value: &[u8]| {
@@ -39,7 +39,7 @@ pub(crate) fn identity(
     }
     field(&[u8::from(provider_info.requires_openai_auth)]);
     field(&[u8::from(provider_info.has_command_auth())]);
-    field(format!("{:?}", auth.map(CodexAuth::api_auth_mode)).as_bytes());
+    field(format!("{:?}", auth.map(AvaAuth::api_auth_mode)).as_bytes());
     if let Some(auth) = auth {
         field(format!("{:?}", auth.get_account_id()).as_bytes());
         field(format!("{:?}", auth.get_chatgpt_user_id()).as_bytes());
@@ -59,7 +59,7 @@ pub(crate) fn identity(
     let has_stable_account = auth.is_some_and(|auth| {
         matches!(
             auth,
-            CodexAuth::Chatgpt(_) | CodexAuth::ChatgptAuthTokens(_) | CodexAuth::AgentIdentity(_)
+            AvaAuth::Chatgpt(_) | AvaAuth::ChatgptAuthTokens(_) | AvaAuth::AgentIdentity(_)
         ) && auth.get_account_id().is_some()
             && (auth.get_chatgpt_user_id().is_some() || auth.get_account_email().is_some())
     });

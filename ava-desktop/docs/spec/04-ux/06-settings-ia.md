@@ -1,8 +1,8 @@
 # 06. Settings Information Architecture
 
-## 1. Settings root (Codex full-page shell)
+## 1. Settings root (Ava full-page shell)
 
-Settings is a **full-window page** that replaces the app sidebar + main chrome (Codex electron behavior):
+Settings is a **full-window page** that replaces the app sidebar + main chrome (Ava electron behavior):
 
 - Settings remains usable when an unrelated startup read fails: a successfully
   loaded settings snapshot is retained independently from the remaining
@@ -596,10 +596,10 @@ system while preserving their different data ownership:
   project-path grouping behavior follows
   [08-component-spec §18](08-component-spec.md#18-import-destination).
   The Group-by control is the same in-app menu select as the Appearance and
-  Permissions pickers, not a platform-drawn `<select>`. A Codex archive larger
-  than `CODEX_SCAN_MAX_FILES` (250) is truncated to the newest session files by
+  Permissions pickers, not a platform-drawn `<select>`. A Ava archive larger
+  than `AVA_SCAN_MAX_FILES` (250) is truncated to the newest session files by
   `YYYY/MM/DD` path date; the workbench shows a localized cap note, and omitted
-  Codex files are not in that candidate list.
+  Ava files are not in that candidate list.
 
 - Model configuration: review provider drafts through
   `ModelConfigImportPanel`
@@ -823,7 +823,7 @@ system while preserving their different data ownership:
 
 ## 5. General chrome metrics
 
-The shell retains the Codex gold chrome while allowing the content pane to use
+The shell retains the Ava gold chrome while allowing the content pane to use
 the current window width:
 
 | Token | Value |

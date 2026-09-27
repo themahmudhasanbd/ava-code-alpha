@@ -1,34 +1,34 @@
-use codex_config::types::Personality;
-use codex_core::TurnInputRequest;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_config::types::Personality;
+use ava_core::TurnInputRequest;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::mount_sse_once;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse_completed;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use test_case::test_case;
 
 const LOCAL_FRIENDLY_TEMPLATE: &str =
     "You optimize for team morale and being a supportive teammate as much as code quality.";
-const BUNDLED_FRIENDLY_TEMPLATE: &str = "You have a vivid inner life as Codex:";
+const BUNDLED_FRIENDLY_TEMPLATE: &str = "You have a vivid inner life as Ava:";
 const CUSTOM_INSTRUCTIONS: &str = "Custom instructions\n# Personality\nThis must remain\n## Writing Style\nThis must also remain\n# General\nGeneral instructions";
 
 fn read_only_text_turn(
-    test: &TestCodex,
+    test: &TestAva,
     text: &str,
     model: String,
     approval_policy: AskForApproval,
@@ -62,12 +62,12 @@ async fn config_personality_none_sends_no_personality() -> anyhow::Result<()> {
 
     let server = start_mock_server().await;
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
-    let mut builder = test_codex().with_model("gpt-5.5").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.5").with_config(|config| {
         config.personality = Some(Personality::None);
     });
     let test = builder.build(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -76,7 +76,7 @@ async fn config_personality_none_sends_no_personality() -> anyhow::Result<()> {
         ))
         .await?;
 
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let instructions_text = request.instructions_text();
@@ -112,7 +112,7 @@ async fn config_personality_none_strips_baked_personality_section(
 
     let server = start_mock_server().await;
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model_info_override("gpt-5.5", |model_info| {
             if let Some(model_messages) = model_info.model_messages.as_mut() {
                 model_messages.instructions_template = Some("Base instructions\n# Personality\nBaked personality\n## Writing Style\nNested writing style\n# General\nGeneral instructions".to_string());
@@ -128,7 +128,7 @@ async fn config_personality_none_strips_baked_personality_section(
         });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -137,7 +137,7 @@ async fn config_personality_none_strips_baked_personality_section(
         ))
         .await?;
 
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     assert_eq!(
         resp_mock.single_request().instructions_text(),
@@ -158,7 +158,7 @@ async fn config_personality_none_preserves_explicit_base_instructions(
 
     let server = start_mock_server().await;
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.5")
         .with_pre_build_hook(move |home| {
             let config = format!(
@@ -171,7 +171,7 @@ async fn config_personality_none_preserves_explicit_base_instructions(
         });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -180,7 +180,7 @@ async fn config_personality_none_preserves_explicit_base_instructions(
         ))
         .await?;
 
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let body = request.body_json();
@@ -199,11 +199,11 @@ async fn default_instructions_are_friendly_without_config_toml() -> anyhow::Resu
 
     let server = start_mock_server().await;
     let resp_mock = mount_sse_once(&server, sse_completed("resp-1")).await;
-    let mut builder = test_codex().with_model("gpt-5.5");
+    let mut builder = test_ava().with_model("gpt-5.5");
     let test = builder.build(&server).await?;
     assert_eq!(test.config.personality, None);
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -212,7 +212,7 @@ async fn default_instructions_are_friendly_without_config_toml() -> anyhow::Resu
         ))
         .await?;
 
-    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let instructions_text = request.instructions_text();
@@ -240,14 +240,14 @@ async fn fixed_friendly_personality_ignores_pragmatic_update(
         vec![sse_completed("resp-1"), sse_completed("resp-2")],
     )
     .await;
-    let mut builder = test_codex().with_model(model).with_config(|config| {
+    let mut builder = test_ava().with_model(model).with_config(|config| {
         config.personality = Some(Personality::Friendly);
     });
     let test = builder.build_with_auto_env(&server).await?;
     test.submit_turn("first turn").await?;
 
     core_test_support::submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             personality: Some(Personality::Pragmatic),
             ..Default::default()
@@ -283,7 +283,7 @@ async fn legacy_personality_session_resumes_and_completes() -> anyhow::Result<()
     )
     .await;
     let legacy_instructions = "Legacy model instructions\n# Personality\nBe pragmatic.";
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.5")
         .with_config(move |config| {
             config.personality = Some(Personality::Pragmatic);
@@ -295,7 +295,7 @@ async fn legacy_personality_session_resumes_and_completes() -> anyhow::Result<()
     let original = builder.build_with_auto_env(&server).await?;
     original.submit_turn("first turn").await?;
 
-    let mut builder = test_codex().with_model("gpt-5.5").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.5").with_config(|config| {
         config.personality = Some(Personality::None);
     });
     let resumed = builder.restart(&server, &original).await?;

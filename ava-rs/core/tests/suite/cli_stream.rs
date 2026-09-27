@@ -1,8 +1,8 @@
-use codex_git_utils::SanitizedGitUrl;
-use codex_git_utils::collect_git_info;
-use codex_login::CODEX_ACCESS_TOKEN_ENV_VAR;
-use codex_login::CODEX_API_KEY_ENV_VAR;
-use codex_protocol::protocol::GitInfo;
+use ava_git_utils::SanitizedGitUrl;
+use ava_git_utils::collect_git_info;
+use ava_login::AVA_ACCESS_TOKEN_ENV_VAR;
+use ava_login::AVA_API_KEY_ENV_VAR;
+use ava_protocol::protocol::GitInfo;
 use core_test_support::fs_wait;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
@@ -33,7 +33,7 @@ const CLOUD_CONFIG_BUNDLE_PATH: &str = "/backend-api/wham/config/bundle";
 const CLI_TIMEOUT: Duration = Duration::from_secs(30);
 
 fn repo_root() -> std::path::PathBuf {
-    codex_utils_cargo_bin::repo_root().expect("failed to resolve repo root")
+    ava_utils_cargo_bin::repo_root().expect("failed to resolve repo root")
 }
 
 fn cli_sse_response() -> String {
@@ -69,21 +69,21 @@ async fn mount_personal_access_token_startup(server: &MockServer) {
 
 #[expect(clippy::unwrap_used)]
 fn personal_access_token_exec_command(server: &MockServer, home: &TempDir) -> Command {
-    let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    let bin = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd = Command::new(bin);
     cmd.arg("exec")
         .arg("--skip-git-repo-check")
         .arg("-c")
-        .arg(format!("openai_base_url=\"{}/api/codex\"", server.uri()))
+        .arg(format!("openai_base_url=\"{}/api/ava\"", server.uri()))
         .arg("-c")
         .arg(format!("chatgpt_base_url=\"{}/backend-api\"", server.uri()))
         .arg("-C")
         .arg(repo_root())
         .arg("hello?");
-    cmd.env("CODEX_HOME", home.path())
-        .env(CODEX_ACCESS_TOKEN_ENV_VAR, PERSONAL_ACCESS_TOKEN)
-        .env("CODEX_AUTHAPI_BASE_URL", server.uri())
-        .env_remove(CODEX_API_KEY_ENV_VAR)
+    cmd.env("AVA_HOME", home.path())
+        .env(AVA_ACCESS_TOKEN_ENV_VAR, PERSONAL_ACCESS_TOKEN)
+        .env("AVA_AUTHAPI_BASE_URL", server.uri())
+        .env_remove(AVA_API_KEY_ENV_VAR)
         .env_remove("OPENAI_API_KEY");
     cmd
 }
@@ -94,7 +94,7 @@ impl Drop for ChildProcessCleanupGuard {
     fn drop(&mut self) {
         #[cfg(unix)]
         {
-            let _ = codex_utils_pty::process_group::kill_process_group(self.0);
+            let _ = ava_utils_pty::process_group::kill_process_group(self.0);
         }
 
         #[cfg(windows)]
@@ -114,7 +114,7 @@ impl Drop for ChildProcessCleanupGuard {
     }
 }
 
-// Use this for new `codex exec` subprocess tests in this file. These commands
+// Use this for new `ava exec` subprocess tests in this file. These commands
 // can spawn shell/Python grandchildren, so the timeout path must reap the whole
 // process group instead of only the direct CLI child.
 fn run_cli_command(command: &mut Command) -> io::Result<Output> {
@@ -158,11 +158,11 @@ async fn responses_mode_stream_cli_supports_personal_access_tokens() {
 
     assert!(
         output.status.success(),
-        "codex-cli exec failed: {}",
+        "ava-cli exec failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
     let request = resp_mock.single_request();
-    assert_eq!(request.path(), "/api/codex/responses");
+    assert_eq!(request.path(), "/api/ava/responses");
     assert_eq!(
         request.header("authorization").as_deref(),
         Some("Bearer at-cli-test")
@@ -183,7 +183,7 @@ async fn responses_mode_stream_cli_does_not_attempt_oauth_refresh_for_personal_a
     let server = MockServer::start().await;
     mount_personal_access_token_startup(&server).await;
     Mock::given(method("POST"))
-        .and(path("/api/codex/responses"))
+        .and(path("/api/ava/responses"))
         .and(header("authorization", PERSONAL_ACCESS_TOKEN_AUTHORIZATION))
         .and(header(
             "chatgpt-account-id",
@@ -228,7 +228,7 @@ async fn responses_mode_stream_cli() {
         "model_providers.mock={{ name = \"mock\", base_url = \"{}/v1\", env_key = \"PATH\", wire_api = \"responses\" }}",
         server.uri()
     );
-    let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    let bin = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd = Command::new(bin);
     cmd.arg("exec")
         .arg("--skip-git-repo-check")
@@ -239,7 +239,7 @@ async fn responses_mode_stream_cli() {
         .arg("-C")
         .arg(&repo_root)
         .arg("hello?");
-    cmd.env("CODEX_HOME", home.path())
+    cmd.env("AVA_HOME", home.path())
         .env("OPENAI_API_KEY", "dummy");
 
     let output = run_cli_command(&mut cmd).unwrap();
@@ -270,7 +270,7 @@ async fn responses_mode_stream_cli_supports_openai_base_url_config_override() {
     let resp_mock = responses::mount_sse_once(&server, sse).await;
 
     let home = TempDir::new().unwrap();
-    let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    let bin = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd = Command::new(bin);
     cmd.arg("exec")
         .arg("--skip-git-repo-check")
@@ -279,7 +279,7 @@ async fn responses_mode_stream_cli_supports_openai_base_url_config_override() {
         .arg("-C")
         .arg(&repo_root)
         .arg("hello?");
-    cmd.env("CODEX_HOME", home.path())
+    cmd.env("AVA_HOME", home.path())
         .env("OPENAI_API_KEY", "dummy");
 
     let output = run_cli_command(&mut cmd).unwrap();
@@ -314,7 +314,7 @@ async fn exec_cli_applies_model_instructions_file() {
     let custom_path_str = custom_path.to_string_lossy().replace('\\', "/");
 
     // Build a provider override that points at the mock server and instructs
-    // Codex to use the Responses API with the dummy env var.
+    // Ava to use the Responses API with the dummy env var.
     let provider_override = format!(
         "model_providers.mock={{ name = \"mock\", base_url = \"{}/v1\", env_key = \"PATH\", wire_api = \"responses\" }}",
         server.uri()
@@ -322,7 +322,7 @@ async fn exec_cli_applies_model_instructions_file() {
 
     let home = TempDir::new().unwrap();
     let repo_root = repo_root();
-    let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    let bin = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd = Command::new(bin);
     cmd.arg("exec")
         .arg("--skip-git-repo-check")
@@ -337,7 +337,7 @@ async fn exec_cli_applies_model_instructions_file() {
         .arg("-C")
         .arg(&repo_root)
         .arg("hello?\n");
-    cmd.env("CODEX_HOME", home.path())
+    cmd.env("AVA_HOME", home.path())
         .env("OPENAI_API_KEY", "dummy");
 
     let output = run_cli_command(&mut cmd).unwrap();
@@ -361,7 +361,7 @@ async fn exec_cli_applies_model_instructions_file() {
     );
 }
 
-/// Verify that `codex exec --profile ...` preserves the active user config
+/// Verify that `ava exec --profile ...` preserves the active user config
 /// profile when it starts the in-process app-server thread, so the selected
 /// profile's `model_instructions_file` reaches the outbound request.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -394,7 +394,7 @@ async fn exec_cli_profile_applies_model_instructions_file() {
     .unwrap();
 
     let repo_root = repo_root();
-    let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    let bin = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd = Command::new(bin);
     cmd.arg("exec")
         .arg("--skip-git-repo-check")
@@ -409,7 +409,7 @@ async fn exec_cli_profile_applies_model_instructions_file() {
         .arg("-C")
         .arg(&repo_root)
         .arg("hello?\n");
-    cmd.env("CODEX_HOME", home.path())
+    cmd.env("AVA_HOME", home.path())
         .env("OPENAI_API_KEY", "dummy");
 
     let output = run_cli_command(&mut cmd).unwrap();
@@ -441,7 +441,7 @@ async fn responses_api_stream_cli() {
     let repo_root = repo_root();
 
     let home = TempDir::new().unwrap();
-    let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    let bin = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd = Command::new(bin);
     cmd.arg("exec")
         .arg("--skip-git-repo-check")
@@ -450,7 +450,7 @@ async fn responses_api_stream_cli() {
         .arg("-C")
         .arg(&repo_root)
         .arg("hello?");
-    cmd.env("CODEX_HOME", home.path())
+    cmd.env("AVA_HOME", home.path())
         .env("OPENAI_API_KEY", "dummy");
 
     let output = run_cli_command(&mut cmd).unwrap();
@@ -481,8 +481,8 @@ async fn integration_creates_and_checks_session_file() -> anyhow::Result<()> {
         responses::mount_sse_sequence(&server, vec![cli_sse_response(), cli_sse_response()]).await;
     let repo_root = repo_root();
 
-    // 4. Run the codex CLI and invoke `exec`, which is what records a session.
-    let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    // 4. Run the ava CLI and invoke `exec`, which is what records a session.
+    let bin = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd = Command::new(bin);
     cmd.arg("exec")
         .arg("--skip-git-repo-check")
@@ -491,13 +491,13 @@ async fn integration_creates_and_checks_session_file() -> anyhow::Result<()> {
         .arg("-C")
         .arg(&repo_root)
         .arg(&prompt);
-    cmd.env("CODEX_HOME", home.path())
-        .env(CODEX_API_KEY_ENV_VAR, "dummy");
+    cmd.env("AVA_HOME", home.path())
+        .env(AVA_API_KEY_ENV_VAR, "dummy");
 
     let output = run_cli_command(&mut cmd).unwrap();
     assert!(
         output.status.success(),
-        "codex-cli exec failed: {}",
+        "ava-cli exec failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
 
@@ -598,7 +598,7 @@ async fn integration_creates_and_checks_session_file() -> anyhow::Result<()> {
     // Second run: resume should update the existing file.
     let marker2 = format!("integration-resume-{}", Uuid::new_v4());
     let prompt2 = format!("echo {marker2}");
-    let bin2 = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
+    let bin2 = ava_utils_cargo_bin::cargo_bin("ava").unwrap();
     let mut cmd2 = Command::new(bin2);
     cmd2.arg("exec")
         .arg("--skip-git-repo-check")
@@ -609,11 +609,11 @@ async fn integration_creates_and_checks_session_file() -> anyhow::Result<()> {
         .arg(&prompt2)
         .arg("resume")
         .arg("--last");
-    cmd2.env("CODEX_HOME", home.path())
+    cmd2.env("AVA_HOME", home.path())
         .env("OPENAI_API_KEY", "dummy");
 
     let output2 = run_cli_command(&mut cmd2).unwrap();
-    assert!(output2.status.success(), "resume codex-cli run failed");
+    assert!(output2.status.success(), "resume ava-cli run failed");
     assert_eq!(resp_mock.requests().len(), 2);
 
     // Find the new session file containing the resumed marker.

@@ -7,17 +7,17 @@ pub(super) async fn fork_source(
     args: &mut crate::cli::ForkArgs,
     config: &Config,
     arg0_paths: &Arg0DispatchPaths,
-    cli_overrides: &[(String, codex_config::TomlValue)],
+    cli_overrides: &[(String, ava_config::TomlValue)],
     loader_overrides: &LoaderOverrides,
     cloud_config_bundle: CloudConfigBundleLoader,
     strict_config: bool,
 ) -> anyhow::Result<std::path::PathBuf> {
-    let state_db = codex_core::init_state_db(config).await;
-    let environment_manager = EnvironmentManager::from_codex_home(
-        config.codex_home.clone(),
+    let state_db = ava_core::init_state_db(config).await;
+    let environment_manager = EnvironmentManager::from_ava_home(
+        config.ava_home.clone(),
         Some(ExecServerRuntimePaths::from_optional_paths(
-            arg0_paths.codex_self_exe.clone(),
-            arg0_paths.codex_linux_sandbox_exe.clone(),
+            arg0_paths.ava_self_exe.clone(),
+            arg0_paths.ava_linux_sandbox_exe.clone(),
         )?),
         config.http_client_factory(),
     )
@@ -32,14 +32,14 @@ pub(super) async fn fork_source(
         },
         strict_config,
         cloud_config_bundle,
-        feedback: CodexFeedback::new(),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: state_db.clone(),
         environment_manager: std::sync::Arc::new(environment_manager),
         config_warnings: Vec::new(),
         session_source: SessionSource::Exec,
-        enable_codex_api_key_env: true,
-        client_name: "codex_exec".to_string(),
+        enable_ava_api_key_env: true,
+        client_name: "ava_exec".to_string(),
         client_version: env!("CARGO_PKG_VERSION").to_string(),
         experimental_api: true,
         mcp_server_openai_form_elicitation: false,

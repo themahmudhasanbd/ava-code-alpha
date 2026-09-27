@@ -1,27 +1,27 @@
 use std::sync::Arc;
 
-use codex_api::AllowedCaller;
-use codex_api::ApproximateLocation;
-use codex_api::ExternalWebAccess;
-use codex_api::ExternalWebAccessMode;
-use codex_api::LocationType;
-use codex_api::SearchContextSize;
-use codex_api::SearchFilters;
-use codex_api::SearchSettings;
-use codex_core::config::Config;
-use codex_extension_api::ConfigContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadOriginator;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolContributor;
-use codex_login::AuthManager;
-use codex_model_provider::create_model_provider;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::config_types::WebSearchContextSize;
-use codex_protocol::config_types::WebSearchMode;
+use ava_api::AllowedCaller;
+use ava_api::ApproximateLocation;
+use ava_api::ExternalWebAccess;
+use ava_api::ExternalWebAccessMode;
+use ava_api::LocationType;
+use ava_api::SearchContextSize;
+use ava_api::SearchFilters;
+use ava_api::SearchSettings;
+use ava_core::config::Config;
+use ava_extension_api::ConfigContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadOriginator;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolContributor;
+use ava_login::AuthManager;
+use ava_model_provider::create_model_provider;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::config_types::WebSearchContextSize;
+use ava_protocol::config_types::WebSearchMode;
 
 use crate::tool::WebSearchTool;
 
@@ -122,7 +122,7 @@ impl ToolContributor for WebSearchExtension {
         session_store: &ExtensionData,
         thread_store: &ExtensionData,
     ) -> Vec<
-        Arc<dyn for<'call> codex_extension_api::ToolExecutor<codex_extension_api::ToolCall<'call>>>,
+        Arc<dyn for<'call> ava_extension_api::ToolExecutor<ava_extension_api::ToolCall<'call>>>,
     > {
         let Some(config) = thread_store.get::<WebSearchExtensionConfig>() else {
             return Vec::new();
@@ -154,11 +154,11 @@ pub fn install(registry: &mut ExtensionRegistryBuilder<Config>, auth_manager: Ar
 
 #[cfg(test)]
 mod tests {
-    use codex_extension_api::ExtensionData;
-    use codex_extension_api::ExtensionRegistryBuilder;
-    use codex_extension_api::ToolName;
-    use codex_login::CodexAuth;
-    use codex_model_provider_info::ModelProviderInfo;
+    use ava_extension_api::ExtensionData;
+    use ava_extension_api::ExtensionRegistryBuilder;
+    use ava_extension_api::ToolName;
+    use ava_login::AvaAuth;
+    use ava_model_provider_info::ModelProviderInfo;
     use pretty_assertions::assert_eq;
 
     use super::AuthManager;
@@ -168,9 +168,9 @@ mod tests {
     use super::install;
     use crate::tool::RUN_TOOL_NAME;
     use crate::tool::WEB_NAMESPACE;
-    use codex_api::ExternalWebAccess;
-    use codex_api::ExternalWebAccessMode;
-    use codex_protocol::config_types::WebSearchMode;
+    use ava_api::ExternalWebAccess;
+    use ava_api::ExternalWebAccessMode;
+    use ava_protocol::config_types::WebSearchMode;
 
     #[test]
     fn external_web_access_preserves_legacy_values_until_indexed() {
@@ -196,7 +196,7 @@ mod tests {
         let mut builder = ExtensionRegistryBuilder::<Config>::new();
         install(
             &mut builder,
-            AuthManager::from_auth_for_testing(CodexAuth::from_api_key("dummy")),
+            AuthManager::from_auth_for_testing(AvaAuth::from_api_key("dummy")),
         );
         let registry = builder.build();
         let session_store = ExtensionData::new("session");

@@ -23,20 +23,20 @@ use std::time::Instant;
 use std::time::SystemTime;
 
 use arc_swap::ArcSwapOption;
-use codex_login::CodexAuth;
-use codex_protocol::mcp::McpServerInfo;
+use ava_login::AvaAuth;
+use ava_protocol::mcp::McpServerInfo;
 use serde::Deserialize;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use tokio::sync::watch;
 
-use self::persistence::load_cached_codex_apps_server_info;
+use self::persistence::load_cached_ava_apps_server_info;
 use self::persistence::load_cached_connector_runtime_for_identity;
-use self::persistence::persist_codex_apps_cache;
+use self::persistence::persist_ava_apps_cache;
 use self::persistence::server_info_cache_path;
 use self::persistence::tools_cache_path;
 
-const MCP_TOOLS_CACHE_PUBLISH_DURATION_METRIC: &str = "codex.mcp.tools.cache_publish.duration_ms";
+const MCP_TOOLS_CACHE_PUBLISH_DURATION_METRIC: &str = "ava.mcp.tools.cache_publish.duration_ms";
 
 /// The current immutable tools for matching discovery inputs.
 struct CatalogProvider<T> {
@@ -46,7 +46,7 @@ struct CatalogProvider<T> {
 
 /// Values stored in the connector runtime's persisted tool snapshot.
 ///
-/// The runtime uses the connector-owned Codex Apps cache layout for every
+/// The runtime uses the connector-owned Ava Apps cache layout for every
 /// serializable, cloneable payload. Equality determines whether fresh results can
 /// retain the previous storage and tool version, so it must include all metadata
 /// that affects readers or prepared calls.
@@ -80,11 +80,11 @@ impl ConnectorRuntimeContextKey {
     }
 }
 
-/// Builds the connector runtime context key for the active Codex auth.
-pub fn connector_runtime_context_key(auth: Option<&CodexAuth>) -> ConnectorRuntimeContextKey {
-    let account_id = auth.and_then(CodexAuth::get_account_id);
-    let chatgpt_user_id = auth.and_then(CodexAuth::get_chatgpt_user_id);
-    if auth.is_some_and(CodexAuth::is_workspace_account) {
+/// Builds the connector runtime context key for the active Ava auth.
+pub fn connector_runtime_context_key(auth: Option<&AvaAuth>) -> ConnectorRuntimeContextKey {
+    let account_id = auth.and_then(AvaAuth::get_account_id);
+    let chatgpt_user_id = auth.and_then(AvaAuth::get_chatgpt_user_id);
+    if auth.is_some_and(AvaAuth::is_workspace_account) {
         ConnectorRuntimeContextKey::workspace(account_id, chatgpt_user_id)
     } else {
         ConnectorRuntimeContextKey::personal(account_id, chatgpt_user_id)
@@ -92,9 +92,9 @@ pub fn connector_runtime_context_key(auth: Option<&CodexAuth>) -> ConnectorRunti
 }
 
 /// Returns the persisted connector runtime tools cache path for the active auth identity.
-pub fn connector_runtime_cache_path(codex_home: &Path, auth: Option<&CodexAuth>) -> PathBuf {
+pub fn connector_runtime_cache_path(ava_home: &Path, auth: Option<&AvaAuth>) -> PathBuf {
     let identity = ConnectorRuntimeIdentity {
-        codex_home: codex_home.to_path_buf(),
+        ava_home: ava_home.to_path_buf(),
         key: connector_runtime_context_key(auth),
     };
     tools_cache_path(&identity)
@@ -175,18 +175,18 @@ impl<T: ConnectorRuntimePayload> ConnectorRuntimeManager<T> {
 
     pub fn current_snapshot(
         &self,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         key: ConnectorRuntimeContextKey,
     ) -> Option<Arc<ConnectorRuntimeSnapshot<T>>> {
-        self.context(codex_home, key).current_snapshot()
+        self.context(ava_home, key).current_snapshot()
     }
 
     pub fn context(
         &self,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         key: ConnectorRuntimeContextKey,
     ) -> ConnectorRuntimeContext<T> {
-        let identity = ConnectorRuntimeIdentity { codex_home, key };
+        let identity = ConnectorRuntimeIdentity { ava_home, key };
         let mut entries = lock_unpoisoned(&self.entries);
         let entry = entries
             .entry(identity.clone())
@@ -275,7 +275,7 @@ impl<T: ConnectorRuntimePayload> ConnectorRuntimeContext<T> {
 
     pub fn cached_server_info(&self) -> Option<McpServerInfo> {
         match self.entry.disk_cache {
-            ConnectorRuntimeDiskCache::Enabled => load_cached_codex_apps_server_info(self),
+            ConnectorRuntimeDiskCache::Enabled => load_cached_ava_apps_server_info(self),
             ConnectorRuntimeDiskCache::Disabled => None,
         }
     }
@@ -304,7 +304,7 @@ impl<T: ConnectorRuntimePayload> ConnectorRuntimeContext<T> {
                 ticket,
                 server_info,
                 tools,
-                persist_codex_apps_cache,
+                persist_ava_apps_cache,
             ),
             ConnectorRuntimeDiskCache::Disabled => self.publish_runtime_if_newest_accepted_with(
                 ticket,
@@ -451,16 +451,16 @@ enum ConnectorRuntimeDiskCache {
 
 /// Everything that decides whether two connector runtime clients can share a snapshot.
 ///
-/// The auth key says whose runtime catalog we are reading. `codex_home` keeps
+/// The auth key says whose runtime catalog we are reading. `ava_home` keeps
 /// the persisted cache under the right home directory.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct ConnectorRuntimeIdentity {
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     key: ConnectorRuntimeContextKey,
 }
 
 fn emit_duration(metric: &str, duration: Duration, tags: &[(&str, &str)]) {
-    if let Some(metrics) = codex_otel::global() {
+    if let Some(metrics) = ava_otel::global() {
         let _ = metrics.record_duration(metric, duration, tags);
     }
 }

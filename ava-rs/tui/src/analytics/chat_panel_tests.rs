@@ -68,7 +68,7 @@ fn chats_breakdown_ranks_nonzero_groups_and_reflows() {
         ("Refund model", -4),
     ]
     .map(
-        |(model, credits)| codex_backend_client::ThreadUsageBreakdownGroup {
+        |(model, credits)| ava_backend_client::ThreadUsageBreakdownGroup {
             model: Some(model.into()),
             speed: (credits != 19_134_430_635).then(|| "standard".into()),
             estimated_usage_credits_micros: credits,
@@ -180,7 +180,7 @@ fn refreshing_chats_clears_details_before_replacing_the_ranked_rows() {
         assert_eq!(view.sections[Section::Chats].detail, Some(0));
         press(&mut view, KeyCode::Char('R'));
         assert_eq!(view.sections[Section::Chats].detail, None);
-        view.account = Load::Ready(codex_protocol::account::PlanType::EnterpriseCbpUsageBased);
+        view.account = Load::Ready(ava_protocol::account::PlanType::EnterpriseCbpUsageBased);
         view.chats = if unavailable {
             Load::Error("Temporarily unavailable".into())
         } else {

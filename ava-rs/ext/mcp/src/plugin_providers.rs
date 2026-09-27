@@ -1,7 +1,7 @@
 //! Host-assembled plugin sources; discovery results belong to the active thread, not this registry.
 
-use codex_core_plugins::ExecutorPluginProvider;
-use codex_core_plugins::PluginProvider;
+use ava_core_plugins::ExecutorPluginProvider;
+use ava_core_plugins::PluginProvider;
 use std::sync::Arc;
 
 /// Cloud discovery is optional and never replaces executor plugin support.

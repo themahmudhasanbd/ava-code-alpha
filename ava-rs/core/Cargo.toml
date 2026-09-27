@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-core"
+name = "ava-core"
 version.workspace = true
 
 [lib]
-name = "codex_core"
+name = "ava_core"
 path = "src/lib.rs"
 
 [lints]
@@ -18,72 +18,72 @@ async-channel = { workspace = true }
 base64 = { workspace = true }
 bm25 = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-codex-analytics = { workspace = true }
-codex-agent-graph-store = { workspace = true }
-codex-agent-roles = { workspace = true }
-codex-api = { workspace = true }
-codex-app-server-protocol = { workspace = true }
-codex-apply-patch = { workspace = true }
-codex-async-utils = { workspace = true }
-codex-attachment-store = { workspace = true }
-codex-client = { workspace = true }
-codex-code-mode = { workspace = true }
-codex-connectors = { workspace = true }
-codex-context-fragments = { workspace = true }
-codex-config = { workspace = true }
-codex-core-plugins = { workspace = true }
-codex-diagnostics = { workspace = true }
-codex-exec-server = { workspace = true }
-codex-extension-api = { workspace = true }
-codex-extension-items = { workspace = true }
-codex-features = { workspace = true }
-codex-feedback = { workspace = true }
-codex-file-system = { workspace = true }
-codex-login = { workspace = true }
-codex-memories-read = { workspace = true }
-codex-mcp = { workspace = true }
-codex-model-provider-info = { workspace = true }
-codex-models-manager = { workspace = true }
-codex-shell-command = { workspace = true }
-codex-execpolicy = { workspace = true }
-codex-git-utils = { workspace = true }
-codex-guardian-context = { workspace = true }
-codex-guardian-reviewer = { workspace = true }
-codex-history = { workspace = true }
-codex-hooks = { workspace = true }
-codex-http-client = { workspace = true }
-codex-install-context = { workspace = true }
-codex-network-proxy = { workspace = true }
-codex-otel = { workspace = true }
-codex-plugin = { workspace = true }
-codex-model-provider = { workspace = true }
-codex-protocol = { workspace = true }
-codex-response-debug-context = { workspace = true }
-codex-prompts = { workspace = true }
-codex-rollout = { workspace = true }
-codex-rollout-trace = { workspace = true }
-codex-rmcp-client = { workspace = true }
-codex-sandboxing = { workspace = true }
-codex-skills = { workspace = true }
-codex-skills-extension = { workspace = true }
-codex-state = { workspace = true }
-codex-terminal-detection = { workspace = true }
-codex-thread-store = { workspace = true }
-codex-tools = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-audio = { workspace = true }
-codex-utils-cache = { workspace = true }
-codex-utils-git-discovery = { workspace = true }
-codex-utils-image = { workspace = true }
-codex-utils-home-dir = { workspace = true }
-codex-utils-output-truncation = { workspace = true }
-codex-utils-path = { workspace = true }
-codex-utils-path-uri = { workspace = true }
-codex-utils-plugins = { workspace = true }
-codex-utils-pty = { workspace = true }
-codex-utils-string = { workspace = true }
-codex-utils-stream-parser = { workspace = true }
-codex-windows-sandbox = { package = "codex-windows-sandbox", path = "../windows-sandbox-rs" }
+ava-analytics = { workspace = true }
+ava-agent-graph-store = { workspace = true }
+ava-agent-roles = { workspace = true }
+ava-api = { workspace = true }
+ava-app-server-protocol = { workspace = true }
+ava-apply-patch = { workspace = true }
+ava-async-utils = { workspace = true }
+ava-attachment-store = { workspace = true }
+ava-client = { workspace = true }
+ava-code-mode = { workspace = true }
+ava-connectors = { workspace = true }
+ava-context-fragments = { workspace = true }
+ava-config = { workspace = true }
+ava-core-plugins = { workspace = true }
+ava-diagnostics = { workspace = true }
+ava-exec-server = { workspace = true }
+ava-extension-api = { workspace = true }
+ava-extension-items = { workspace = true }
+ava-features = { workspace = true }
+ava-feedback = { workspace = true }
+ava-file-system = { workspace = true }
+ava-login = { workspace = true }
+ava-memories-read = { workspace = true }
+ava-mcp = { workspace = true }
+ava-model-provider-info = { workspace = true }
+ava-models-manager = { workspace = true }
+ava-shell-command = { workspace = true }
+ava-execpolicy = { workspace = true }
+ava-git-utils = { workspace = true }
+ava-guardian-context = { workspace = true }
+ava-guardian-reviewer = { workspace = true }
+ava-history = { workspace = true }
+ava-hooks = { workspace = true }
+ava-http-client = { workspace = true }
+ava-install-context = { workspace = true }
+ava-network-proxy = { workspace = true }
+ava-otel = { workspace = true }
+ava-plugin = { workspace = true }
+ava-model-provider = { workspace = true }
+ava-protocol = { workspace = true }
+ava-response-debug-context = { workspace = true }
+ava-prompts = { workspace = true }
+ava-rollout = { workspace = true }
+ava-rollout-trace = { workspace = true }
+ava-rmcp-client = { workspace = true }
+ava-sandboxing = { workspace = true }
+ava-skills = { workspace = true }
+ava-skills-extension = { workspace = true }
+ava-state = { workspace = true }
+ava-terminal-detection = { workspace = true }
+ava-thread-store = { workspace = true }
+ava-tools = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-audio = { workspace = true }
+ava-utils-cache = { workspace = true }
+ava-utils-git-discovery = { workspace = true }
+ava-utils-image = { workspace = true }
+ava-utils-home-dir = { workspace = true }
+ava-utils-output-truncation = { workspace = true }
+ava-utils-path = { workspace = true }
+ava-utils-path-uri = { workspace = true }
+ava-utils-plugins = { workspace = true }
+ava-utils-pty = { workspace = true }
+ava-utils-string = { workspace = true }
+ava-utils-stream-parser = { workspace = true }
+ava-windows-sandbox = { package = "ava-windows-sandbox", path = "../windows-sandbox-rs" }
 dirs = { workspace = true }
 dunce = { workspace = true }
 eventsource-stream = { workspace = true }
@@ -135,19 +135,19 @@ openssl-sys = { workspace = true, features = ["vendored"] }
 openssl-sys = { workspace = true, features = ["vendored"] }
 
 [target.'cfg(unix)'.dependencies]
-codex-shell-escalation = { workspace = true }
+ava-shell-escalation = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }
 assert_matches = { workspace = true }
-codex-exec-server-test-support = { workspace = true }
-codex-image-generation-extension = { workspace = true }
-codex-home = { workspace = true }
-codex-otel = { workspace = true }
-codex-test-binary-support = { workspace = true }
-codex-utils-cargo-bin = { workspace = true }
-codex-utils-redacted-string = { workspace = true }
-codex-web-search-extension = { workspace = true }
+ava-exec-server-test-support = { workspace = true }
+ava-image-generation-extension = { workspace = true }
+ava-home = { workspace = true }
+ava-otel = { workspace = true }
+ava-test-binary-support = { workspace = true }
+ava-utils-cargo-bin = { workspace = true }
+ava-utils-redacted-string = { workspace = true }
+ava-web-search-extension = { workspace = true }
 core_test_support = { workspace = true }
 ctor = { workspace = true }
 insta = { workspace = true }

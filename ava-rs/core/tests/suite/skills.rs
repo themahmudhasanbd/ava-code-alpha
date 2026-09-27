@@ -1,31 +1,31 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
-use codex_core::StartIfIdleSubmission;
-use codex_core::TurnInput;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::ExecutorFileSystem;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::SkillInvocationContributor;
-use codex_extension_api::SkillInvocationInput;
-use codex_extension_api::SkillInvocationKind;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
-use codex_skills_extension::SkillsExtensionConfig;
-use codex_skills_extension::install;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_core::StartIfIdleSubmission;
+use ava_core::TurnInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::ExecutorFileSystem;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::SkillInvocationContributor;
+use ava_extension_api::SkillInvocationInput;
+use ava_extension_api::SkillInvocationKind;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
+use ava_skills_extension::SkillsExtensionConfig;
+use ava_skills_extension::install;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use core_test_support::create_directory_symlink;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -36,9 +36,9 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_remote;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -107,7 +107,7 @@ async fn user_turn_includes_skill_instructions() -> Result<()> {
     let recorder = Arc::new(SkillInvocationRecorder::default());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.skill_invocation_contributor(recorder.clone());
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_workspace_setup(move |cwd, fs| async move {
             write_repo_skill(cwd, fs, "demo", "demo skill", skill_body).await
@@ -135,7 +135,7 @@ async fn user_turn_includes_skill_instructions() -> Result<()> {
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![
                 UserInput::Text {
@@ -165,8 +165,8 @@ async fn user_turn_includes_skill_instructions() -> Result<()> {
         )
         .await?;
 
-    core_test_support::wait_for_event(test.codex.as_ref(), |event| {
-        matches!(event, codex_protocol::protocol::EventMsg::TurnComplete(_))
+    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
+        matches!(event, ava_protocol::protocol::EventMsg::TurnComplete(_))
     })
     .await;
 
@@ -220,7 +220,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
     let take_logs = || String::from_utf8(std::mem::take(&mut *buffer.lock().unwrap()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_workspace_setup(|cwd, fs| async move {
+    let mut builder = test_ava().with_workspace_setup(|cwd, fs| async move {
         write_repo_skill(cwd, fs, "demo", "demo skill", SKILL_BODY).await
     });
     let test = builder.build_with_auto_env(&server).await?;
@@ -236,7 +236,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
 
     // A fresh thread still needs full initial context before its first injected item.
     buffer.lock().unwrap().clear();
-    test.codex
+    test.ava-code
         .inject_response_items_for_turn(vec![developer_message(FIRST_INSTRUCTIONS)])
         .await?;
     let logs = take_logs()?;
@@ -245,7 +245,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
         "initial injection must discover skills: {logs}"
     );
 
-    test.codex
+    test.ava-code
         .inject_response_items_for_turn(vec![developer_message(SECOND_INSTRUCTIONS)])
         .await?;
     let logs = take_logs()?;
@@ -266,7 +266,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
         .canonicalize()
         .unwrap_or_else(|_| test.config.cwd.join(".agents/skills/demo/SKILL.md"))
         .to_path_buf();
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Text {
                 text: "please use $demo".to_string(),
@@ -278,7 +278,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
             },
         ]))
         .await?;
-    core_test_support::wait_for_event(test.codex.as_ref(), |event| {
+    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -328,7 +328,7 @@ async fn user_turn_selects_symlinked_skill_by_advertised_discovery_path() -> Res
         orchestrator_skills_enabled: false,
         shadow_selection_enabled: false,
     });
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_workspace_setup(move |cwd, _fs| async move {
             let source_skill_dir = cwd.join("shared-skills/linked-demo");
@@ -364,7 +364,7 @@ async fn user_turn_selects_symlinked_skill_by_advertised_discovery_path() -> Res
     .await;
 
     let submission = test
-        .codex
+        .ava-code
         .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
             content: vec![
                 UserInput::Text {
@@ -381,8 +381,8 @@ async fn user_turn_selects_symlinked_skill_by_advertised_discovery_path() -> Res
         .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
 
-    core_test_support::wait_for_event(test.codex.as_ref(), |event| {
-        matches!(event, codex_protocol::protocol::EventMsg::TurnComplete(_))
+    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
+        matches!(event, ava_protocol::protocol::EventMsg::TurnComplete(_))
     })
     .await;
 
@@ -429,7 +429,7 @@ async fn idle_user_turn_includes_skill_instructions_in_the_first_request() -> Re
 
     let server = start_mock_server().await;
     let skill_body = "queued skill body";
-    let mut builder = test_codex().with_workspace_setup(move |cwd, fs| async move {
+    let mut builder = test_ava().with_workspace_setup(move |cwd, fs| async move {
         write_repo_skill(cwd, fs, "queued-demo", "queued demo skill", skill_body).await
     });
     let test = builder.build_with_auto_env(&server).await?;
@@ -451,7 +451,7 @@ async fn idle_user_turn_includes_skill_instructions_in_the_first_request() -> Re
     .await;
 
     let submission = test
-        .codex
+        .ava-code
         .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
             content: vec![
                 UserInput::Text {
@@ -468,8 +468,8 @@ async fn idle_user_turn_includes_skill_instructions_in_the_first_request() -> Re
         .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
 
-    core_test_support::wait_for_event(test.codex.as_ref(), |event| {
-        matches!(event, codex_protocol::protocol::EventMsg::TurnComplete(_))
+    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
+        matches!(event, ava_protocol::protocol::EventMsg::TurnComplete(_))
     })
     .await;
 

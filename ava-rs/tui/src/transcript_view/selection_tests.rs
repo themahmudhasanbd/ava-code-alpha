@@ -8,7 +8,7 @@ use crate::history_cell::AgentMarkdownCell;
 use crate::history_cell::AgentMessageCell;
 use crate::history_cell::PlainHistoryCell;
 use crate::history_cell::StreamingAgentTailCell;
-use codex_app_server_protocol::CommandExecutionSource;
+use ava_app_server_protocol::CommandExecutionSource;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
 use crossterm::event::KeyModifiers;

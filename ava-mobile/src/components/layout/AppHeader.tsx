@@ -186,10 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.95)",
-    borderBottomColor: "rgba(0, 0, 0, 0.08)",
-    borderLeftColor: "rgba(255, 255, 255, 0.65)",
-    borderRightColor: "rgba(255, 255, 255, 0.65)",
+    borderColor: COLORS.glassBorder,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -215,10 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.95)",
-    borderBottomColor: "rgba(0, 0, 0, 0.08)",
-    borderLeftColor: "rgba(255, 255, 255, 0.65)",
-    borderRightColor: "rgba(255, 255, 255, 0.65)",
+    borderColor: COLORS.glassBorder,
     gap: 6,
     ...Platform.select({
       ios: {

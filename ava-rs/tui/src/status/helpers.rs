@@ -5,9 +5,9 @@ use crate::text_formatting;
 use crate::width::display_width;
 use chrono::DateTime;
 use chrono::Local;
-use codex_protocol::account::PlanType;
-use codex_utils_path_uri::PathConvention;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::account::PlanType;
+use ava_utils_path_uri::PathConvention;
+use ava_utils_path_uri::PathUri;
 use std::path::Path;
 
 fn normalize_agents_display_path(path: &Path) -> String {
@@ -205,13 +205,13 @@ fn title_case(s: &str) -> String {
 mod tests {
     use super::*;
     use crate::legacy_core::config::ConfigBuilder;
-    use codex_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::PathBufExt;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
-    async fn test_config(codex_home: &TempDir, cwd: &TempDir) -> Config {
+    async fn test_config(ava_home: &TempDir, cwd: &TempDir) -> Config {
         ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .fallback_cwd(Some(cwd.path().to_path_buf()))
             .build()
             .await
@@ -262,10 +262,10 @@ mod tests {
 
     #[tokio::test]
     async fn compose_agents_summary_includes_global_agents_path() {
-        let codex_home = TempDir::new().expect("temp codex home");
+        let ava_home = TempDir::new().expect("temp ava home");
         let cwd = TempDir::new().expect("temp cwd");
-        let global_agents_path = codex_home.path().join("global.md");
-        let config = test_config(&codex_home, &cwd).await;
+        let global_agents_path = ava_home.path().join("global.md");
+        let config = test_config(&ava_home, &cwd).await;
 
         assert_eq!(
             compose_agents_summary(
@@ -281,13 +281,13 @@ mod tests {
         let Some(home) = dirs::home_dir() else {
             return;
         };
-        let codex_home = TempDir::new().expect("temp codex home");
+        let ava_home = TempDir::new().expect("temp ava home");
         let cwd = TempDir::new().expect("temp cwd");
-        let mut config = test_config(&codex_home, &cwd).await;
+        let mut config = test_config(&ava_home, &cwd).await;
         config.cwd = home.join("workspace").join("project").abs();
 
         let paths = [
-            home.join(".codex").join("AGENTS.md"),
+            home.join(".ava-code").join("AGENTS.md"),
             home.join("workspace").join("AGENTS.md"),
             config.cwd.join("AGENTS.md").to_path_buf(),
             config.cwd.join("nested").join("AGENTS.md").to_path_buf(),
@@ -298,16 +298,16 @@ mod tests {
 
         insta::assert_snapshot!(
             summary.replace('\\', "/"),
-            @"~/.codex/AGENTS.md, ../AGENTS.md, AGENTS.md, nested/AGENTS.md"
+            @"~/.ava-code/AGENTS.md, ../AGENTS.md, AGENTS.md, nested/AGENTS.md"
         );
     }
 
     #[tokio::test]
     async fn compose_agents_summary_names_global_agents_override() {
-        let codex_home = TempDir::new().expect("temp codex home");
+        let ava_home = TempDir::new().expect("temp ava home");
         let cwd = TempDir::new().expect("temp cwd");
-        let override_path = codex_home.path().join("override.md");
-        let config = test_config(&codex_home, &cwd).await;
+        let override_path = ava_home.path().join("override.md");
+        let config = test_config(&ava_home, &cwd).await;
 
         assert_eq!(
             compose_agents_summary(&config, &[PathUri::from_abs_path(&override_path.abs())]),
@@ -317,9 +317,9 @@ mod tests {
 
     #[tokio::test]
     async fn compose_agents_summary_shows_relative_native_and_full_foreign_paths() {
-        let codex_home = TempDir::new().expect("temp codex home");
+        let ava_home = TempDir::new().expect("temp ava home");
         let cwd = TempDir::new().expect("temp cwd");
-        let config = test_config(&codex_home, &cwd).await;
+        let config = test_config(&ava_home, &cwd).await;
         let native_source = PathUri::from_abs_path(&config.cwd.join("AGENTS.md"));
         let foreign_source = if cfg!(windows) {
             PathUri::parse("file:///remote%20workspace/AGENTS.md")
@@ -339,11 +339,11 @@ mod tests {
 
     #[tokio::test]
     async fn compose_agents_summary_orders_global_before_project_agents() {
-        let codex_home = TempDir::new().expect("temp codex home");
+        let ava_home = TempDir::new().expect("temp ava home");
         let cwd = TempDir::new().expect("temp cwd");
-        let global_agents_path = codex_home.path().join("global.md");
+        let global_agents_path = ava_home.path().join("global.md");
         let project_agents_path = cwd.path().join("project.md");
-        let config = test_config(&codex_home, &cwd).await;
+        let config = test_config(&ava_home, &cwd).await;
 
         let summary = compose_agents_summary(
             &config,

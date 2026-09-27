@@ -1,17 +1,17 @@
 use super::*;
-use codex_config::McpServerTransportConfig;
-use codex_core::config::ConfigBuilder;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionDataInit;
+use ava_config::McpServerTransportConfig;
+use ava_core::config::ConfigBuilder;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionDataInit;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
 async fn hosted_plugin_runtime_forwards_thread_originator() -> Result<(), Box<dyn std::error::Error>>
 {
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .cli_overrides(vec![
             ("features.apps".to_string(), true.into()),
             ("chatgpt_base_url".to_string(), "https://chatgpt.com".into()),
@@ -26,7 +26,7 @@ async fn hosted_plugin_runtime_forwards_thread_originator() -> Result<(), Box<dy
             &config,
             &thread_init,
             &thread_store,
-            "codex_work_desktop",
+            "ava_work_desktop",
             /*ready_selected_capability_roots*/ &[],
             /*executor_capability_discovery*/ None,
         ))
@@ -48,7 +48,7 @@ async fn hosted_plugin_runtime_forwards_thread_originator() -> Result<(), Box<dy
         http_headers
             .as_ref()
             .and_then(|headers| headers.get("originator")),
-        Some(&"codex_work_desktop".to_string())
+        Some(&"ava_work_desktop".to_string())
     );
 
     Ok(())

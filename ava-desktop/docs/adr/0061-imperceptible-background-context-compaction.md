@@ -24,18 +24,18 @@ itself to the user in five ways:
 - Settings exposed `reserveTokens`, `keepRecentTokens`, and an enable switch,
   making the user responsible for tuning a safety mechanism.
 
-Codex (`codex-rs/core/src/session/context_window.rs`,
+Ava (`ava-rs/core/src/session/context_window.rs`,
 `state/auto_compact_window.rs`) shows two ideas worth adopting: grade the
 trigger instead of using one hard edge, and measure the trigger over the
 *increment* since the current context prefix rather than the total
 (`AutoCompactTokenLimitScope::BodyAfterPrefix`).
 
-> Corrected by ADR 0064: this section originally added "Codex also has no
+> Corrected by ADR 0064: this section originally added "Ava also has no
 > model-side compaction tool at all — the host decides and executes." That is
-> wrong. Codex has `new_context`
+> wrong. Ava has `new_context`
 > (`tools/handlers/new_context_window_spec.rs`), gated by
-> `Feature::TokenBudget`, and neither of the two ideas above is Codex's default:
-> `BodyAfterPrefix` is opt-in and Codex has no pre-computation to grade a
+> `Feature::TokenBudget`, and neither of the two ideas above is Ava's default:
+> `BodyAfterPrefix` is opt-in and Ava has no pre-computation to grade a
 > trigger for.
 
 One property of the existing implementation makes background work cheap:
@@ -179,4 +179,4 @@ thinks to ask it.
 - `docs/spec/04-ux/06-settings-ia.md`
 - `docs/spec/06-delivery/04-e2e-test-plan.md`
 - `docs/spec/08-meta/decisions-log.md` (D158, D200)
-- `codex-rs/core/src/session/context_window.rs` (behavioral reference)
+- `ava-rs/core/src/session/context_window.rs` (behavioral reference)

@@ -6,10 +6,10 @@ use crate::chatwidget::AutomaticModelSwitchReason;
 use crate::model_catalog::LUNA_RESERVE_MODEL;
 use crate::model_catalog::model_display_name;
 use crate::service_tier_resolution;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::openai_models::ReasoningEffort;
 
 impl App {
     pub(super) async fn update_luna_reserve_reasoning(

@@ -10,11 +10,11 @@ use std::time::Duration;
 
 use arc_swap::ArcSwap;
 use arc_swap::ArcSwapOption;
-use codex_exec_server_protocol::JSONRPCNotification;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkProxyAuditMetadata;
-use codex_network_proxy::NetworkRequestCancellation;
-use codex_network_proxy::NetworkRequestCancellationReason;
+use ava_exec_server_protocol::JSONRPCNotification;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkProxyAuditMetadata;
+use ava_network_proxy::NetworkRequestCancellation;
+use ava_network_proxy::NetworkRequestCancellationReason;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use serde_json::Value;
@@ -135,7 +135,7 @@ use crate::protocol::WriteResponse;
 use crate::rpc::RpcCallError;
 use crate::rpc::RpcClient;
 use crate::rpc_server_requests::MAX_IN_FLIGHT_SERVER_CALLS;
-use codex_http_client::HttpClientFactory;
+use ava_http_client::HttpClientFactory;
 
 #[path = "client/accepted.rs"]
 pub(crate) mod accepted;
@@ -167,7 +167,7 @@ const MAX_PENDING_PROCESS_EVENT_BYTES: usize = 1024 * 1024;
 impl Default for ExecServerClientConnectOptions {
     fn default() -> Self {
         Self {
-            client_name: "codex-core".to_string(),
+            client_name: "ava-core".to_string(),
             initialize_timeout: INITIALIZE_TIMEOUT,
             resume_session_id: None,
         }
@@ -695,7 +695,7 @@ pub enum ExecServerError {
     #[error("environment registry authentication error: {0}")]
     EnvironmentRegistryAuth(String),
     #[error("environment registry request failed: {0}")]
-    EnvironmentRegistryRequest(#[from] codex_http_client::RouteAwareRequestError),
+    EnvironmentRegistryRequest(#[from] ava_http_client::RouteAwareRequestError),
     #[error("exec-server connection attempt failed: {0}")]
     ConnectionAttempt(#[source] Arc<ExecServerError>),
 }
@@ -783,9 +783,9 @@ impl ExecServerClient {
                 // parent while measuring only the actual RPC as initialize_rpc.
                 let initialize_rpc_span = tracing::info_span!(
                     parent: &noise_context.span,
-                    "codex.exec_server.remote.initialize_rpc",
+                    "ava.exec_server.remote.initialize_rpc",
                     otel.kind = "client",
-                    otel.name = "codex.exec_server.remote.initialize_rpc",
+                    otel.name = "ava.exec_server.remote.initialize_rpc",
                 );
                 let response = rpc_client
                     .call_untraced(INITIALIZE_METHOD, &params)
@@ -1856,12 +1856,12 @@ async fn handle_server_notification(
 
 #[cfg(test)]
 mod tests {
-    use codex_exec_server_protocol::JSONRPCMessage;
-    use codex_exec_server_protocol::JSONRPCNotification;
-    use codex_exec_server_protocol::JSONRPCResponse;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
-    use codex_utils_path_uri::PathUri;
+    use ava_exec_server_protocol::JSONRPCMessage;
+    use ava_exec_server_protocol::JSONRPCNotification;
+    use ava_exec_server_protocol::JSONRPCResponse;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
+    use ava_utils_path_uri::PathUri;
     use futures::SinkExt;
     use futures::StreamExt;
     use http::HeaderMap;
@@ -2023,12 +2023,12 @@ mod tests {
         let subscriber = tracing_subscriber::registry().with(
             tracing_opentelemetry::layer()
                 .with_tracer(tracer)
-                .with_filter(filter_fn(codex_otel::OtelProvider::trace_export_filter)),
+                .with_filter(filter_fn(ava_otel::OtelProvider::trace_export_filter)),
         );
         let _subscriber_guard = tracing::subscriber::set_default(subscriber);
         tracing::callsite::rebuild_interest_cache();
         let parent_span = tracing::info_span!("process-start-parent");
-        let expected_trace = codex_otel::span_w3c_trace_context(&parent_span)
+        let expected_trace = ava_otel::span_w3c_trace_context(&parent_span)
             .expect("parent span should have trace context");
         let process_id = ProcessId::from("trace-process");
 
@@ -2207,8 +2207,8 @@ mod tests {
                 },
                 initialize_timeout: DEFAULT_REMOTE_EXEC_SERVER_INITIALIZE_TIMEOUT,
             },
-            codex_http_client::HttpClientFactory::new(
-                codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+            ava_http_client::HttpClientFactory::new(
+                ava_http_client::OutboundProxyPolicy::ReqwestDefault,
             ),
         )
         .await
@@ -2899,8 +2899,8 @@ mod tests {
                 connect_timeout: Duration::from_secs(1),
                 initialize_timeout: Duration::from_secs(1),
                 resume_session_id: Some("session-1".to_string()),
-                http_client_factory: codex_http_client::HttpClientFactory::new(
-                    codex_http_client::OutboundProxyPolicy::ReqwestDefault,
+                http_client_factory: ava_http_client::HttpClientFactory::new(
+                    ava_http_client::OutboundProxyPolicy::ReqwestDefault,
                 ),
             }),
         )
@@ -2971,7 +2971,7 @@ mod tests {
         let client = LazyRemoteExecServerClient::new(
             ExecServerTransportParams::StdioCommand {
                 command: StdioExecServerCommand {
-                    program: "codex-missing-exec-server-for-test".to_string(),
+                    program: "ava-missing-exec-server-for-test".to_string(),
                     args: Vec::new(),
                     env: HashMap::new(),
                     cwd: None,

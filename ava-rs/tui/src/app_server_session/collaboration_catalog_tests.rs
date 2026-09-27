@@ -2,10 +2,10 @@
 
 use super::*;
 use crate::legacy_core::config::ConfigBuilder;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_protocol::config_types::CollaborationModeMask;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_protocol::config_types::CollaborationModeMask;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::openai_models::ReasoningEffort;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -23,9 +23,9 @@ async fn collaboration_catalog_is_optional_and_refetched_on_bootstrap() -> Resul
         Some(json!({"result": {"data": "invalid"}})),
         None,
     ] {
-        let codex_home = tempfile::tempdir()?;
+        let ava_home = tempfile::tempdir()?;
         let mut config = ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .build()
             .await?;
         config.model = Some("task-model".into());

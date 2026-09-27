@@ -8,11 +8,11 @@ use super::server_api::RemoteControlServerRequestError;
 use super::server_api::retry_after_with_jitter;
 use axum::http::HeaderMap;
 use axum::http::StatusCode;
-use codex_app_server_protocol::RemoteControlPairingStartResponse;
-use codex_app_server_protocol::RemoteControlPairingStatusResponse;
-use codex_login::default_client::create_client_without_request_logging;
-use codex_state::RemoteControlEnrollmentRecord;
-use codex_state::StateRuntime;
+use ava_app_server_protocol::RemoteControlPairingStartResponse;
+use ava_app_server_protocol::RemoteControlPairingStatusResponse;
+use ava_login::default_client::create_client_without_request_logging;
+use ava_state::RemoteControlEnrollmentRecord;
+use ava_state::StateRuntime;
 use std::io;
 use std::io::ErrorKind;
 use time::OffsetDateTime;
@@ -471,8 +471,8 @@ mod tests {
     use crate::transport::remote_control::auth::RemoteControlConnectionAuth;
     use crate::transport::remote_control::protocol::normalize_remote_control_url;
     use crate::transport::remote_control::server_api::enroll_remote_control_server;
-    use codex_state::StateRuntime;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_state::StateRuntime;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use std::sync::Arc;
@@ -485,9 +485,9 @@ mod tests {
     use tokio::time::Duration;
     use tokio::time::timeout;
 
-    async fn remote_control_state_runtime(codex_home: &TempDir) -> Arc<StateRuntime> {
+    async fn remote_control_state_runtime(ava_home: &TempDir) -> Arc<StateRuntime> {
         StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+            ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -512,8 +512,8 @@ mod tests {
 
     #[tokio::test]
     async fn persisted_remote_control_enrollment_round_trips_by_target_and_account() {
-        let codex_home = TempDir::new().expect("temp dir should create");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let ava_home = TempDir::new().expect("temp dir should create");
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let first_target = normalize_remote_control_url("https://chatgpt.com/remote/control")
             .expect("first target should parse");
         let second_target =
@@ -598,8 +598,8 @@ mod tests {
 
     #[tokio::test]
     async fn clearing_persisted_remote_control_enrollment_removes_only_matching_entry() {
-        let codex_home = TempDir::new().expect("temp dir should create");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let ava_home = TempDir::new().expect("temp dir should create");
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let first_target = normalize_remote_control_url("https://chatgpt.com/remote/control")
             .expect("first target should parse");
         let second_target =
@@ -710,7 +710,7 @@ mod tests {
         let err = enroll_remote_control_server(
             &remote_control_target,
             &RemoteControlConnectionAuth {
-                auth_provider: codex_model_provider::unauthenticated_auth_provider(),
+                auth_provider: ava_model_provider::unauthenticated_auth_provider(),
                 account_id: "account_id".to_string(),
             },
             "11111111-1111-4111-8111-111111111111",

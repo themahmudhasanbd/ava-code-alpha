@@ -2,9 +2,9 @@
 
 use super::*;
 use crate::analytics::models::AccountKind;
-use codex_config::types::KeybindingSpec;
-use codex_config::types::KeybindingsSpec;
-use codex_config::types::TuiKeymap;
+use ava_config::types::KeybindingSpec;
+use ava_config::types::KeybindingsSpec;
+use ava_config::types::TuiKeymap;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 

@@ -1,10 +1,10 @@
 use chrono::DateTime;
 use chrono::Utc;
-use codex_features::CurrentTimeReminderDeliveryMode;
-use codex_features::Feature;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::Result as CodexResult;
-use codex_protocol::models::ResponseItem;
+use ava_features::CurrentTimeReminderDeliveryMode;
+use ava_features::Feature;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::Result as AvaResult;
+use ava_protocol::models::ResponseItem;
 
 use super::session::Session;
 use super::turn_context::TurnContext;
@@ -101,7 +101,7 @@ impl Session {
         &self,
         turn_context: &TurnContext,
         clock_read: &'static str,
-    ) -> CodexResult<Option<DateTime<Utc>>> {
+    ) -> AvaResult<Option<DateTime<Utc>>> {
         let error = match self
             .services
             .time_provider
@@ -120,7 +120,7 @@ impl Session {
             .features
             .enabled(Feature::NonfatalClockReadErrors)
         {
-            return Err(CodexErr::Fatal(format!(
+            return Err(AvaErr::Fatal(format!(
                 "failed to read current time: {error:#}"
             )));
         }
@@ -157,7 +157,7 @@ pub(super) async fn maybe_record_current_time_reminder(
     sess: &Session,
     turn_context: &TurnContext,
     window_id: &str,
-) -> CodexResult<()> {
+) -> AvaResult<()> {
     if !turn_context
         .config
         .features

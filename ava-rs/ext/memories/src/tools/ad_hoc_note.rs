@@ -1,9 +1,9 @@
-use codex_extension_api::JsonToolOutput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolSpec;
-use codex_otel::MetricsClient;
+use ava_extension_api::JsonToolOutput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolSpec;
+use ava_otel::MetricsClient;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::json;
@@ -52,11 +52,11 @@ where
     fn spec(&self) -> ToolSpec {
         memory_function_tool::<AddAdHocNoteArgs, AddAdHocMemoryNoteResponse>(
             ADD_AD_HOC_NOTE_TOOL_NAME,
-            "Create one append-only ad-hoc memory note after the user explicitly asks Codex to remember, forget, or update something.",
+            "Create one append-only ad-hoc memory note after the user explicitly asks Ava to remember, forget, or update something.",
         )
     }
 
-    fn handle<'a>(&'a self, call: ToolCall<'call>) -> codex_extension_api::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, call: ToolCall<'call>) -> ava_extension_api::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -71,7 +71,7 @@ where
     async fn handle_call(
         &self,
         call: ToolCall<'_>,
-    ) -> Result<Box<dyn codex_extension_api::ToolOutput>, codex_extension_api::FunctionCallError>
+    ) -> Result<Box<dyn ava_extension_api::ToolOutput>, ava_extension_api::FunctionCallError>
     {
         let backend = self.backend.clone();
         let args: AddAdHocNoteArgs = parse_args(&call)?;

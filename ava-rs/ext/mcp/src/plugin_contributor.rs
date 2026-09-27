@@ -4,10 +4,10 @@
 //! catalogs and executor metadata live together in thread extension data.
 
 use crate::PluginProviders;
-use codex_core::config::Config;
-use codex_core_plugins::ExecutorPluginProvider;
-use codex_exec_server::EnvironmentManager;
-use codex_extension_api::ExtensionRegistryBuilder;
+use ava_core::config::Config;
+use ava_core_plugins::ExecutorPluginProvider;
+use ava_exec_server::EnvironmentManager;
+use ava_extension_api::ExtensionRegistryBuilder;
 use std::sync::Arc;
 
 pub(crate) struct PluginContributor {

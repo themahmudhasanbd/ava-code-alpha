@@ -14,7 +14,7 @@ use crate::RemoveOptions;
 use crate::WalkOptions;
 use crate::WalkOutcome;
 use crate::WriteFileOptions;
-use codex_utils_path_uri::PathUri;
+use ava_utils_path_uri::PathUri;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
@@ -169,7 +169,7 @@ impl<'environment> FileSystemEnvironmentAccessor<'environment> {
     ///
     /// 1. Tests.
     /// 2. Callers pending migration to sandboxed access.
-    /// 3. Codex-internal operations that should never be sandboxed and that the model cannot trigger.
+    /// 3. Ava-internal operations that should never be sandboxed and that the model cannot trigger.
     ///
     /// Model-turn discovery must use the accessor supplied by its selected environment.
     pub fn unrestricted(file_system: &'environment Arc<dyn ExecutorFileSystem>) -> Self {

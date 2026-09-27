@@ -4,8 +4,8 @@ use std::future::Future;
 use std::pin::Pin;
 
 use crate::ConfigLayerSource;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use thiserror::Error;
 use toml::Value as TomlValue;
 
@@ -210,8 +210,8 @@ fn session_thread_config_to_toml(
 
 #[cfg(test)]
 mod tests {
-    use codex_model_provider_info::ModelProviderInfo;
-    use codex_model_provider_info::WireApi;
+    use ava_model_provider_info::ModelProviderInfo;
+    use ava_model_provider_info::WireApi;
     use pretty_assertions::assert_eq;
 
     use super::*;

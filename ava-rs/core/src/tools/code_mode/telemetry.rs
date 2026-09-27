@@ -1,10 +1,10 @@
 //! Code-mode tool analytics and tracing for handlers and queued nested dispatch.
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::CodeModeToolCallFact;
-use codex_analytics::CodeModeToolCallStatus;
-use codex_analytics::TurnAnalyticsMetadata;
-use codex_protocol::ThreadId;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::CodeModeToolCallFact;
+use ava_analytics::CodeModeToolCallStatus;
+use ava_analytics::TurnAnalyticsMetadata;
+use ava_protocol::ThreadId;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::Span;
@@ -40,7 +40,7 @@ impl CodeModeToolCallGuard {
             call_id,
             cell_id: None,
             tool_name,
-            started_at_ms: codex_analytics::now_unix_millis(),
+            started_at_ms: ava_analytics::now_unix_millis(),
             status: CodeModeToolCallStatus::Interrupted,
             handler_span,
         }
@@ -64,9 +64,9 @@ impl CodeModeToolCallGuard {
         // Bridge joins this record to the outer tool-completion event. Emit it
         // before the handler returns so consumers never need another timeout.
         tracing::info!(
-            target: "codex_code_mode::timing",
+            target: "ava_code_mode::timing",
             {
-                event.name = "codex.code_mode.host_timing",
+                event.name = "ava.code_mode.host_timing",
                 conversation_id = %self.thread_id,
                 turn_id = %self.turn_id,
                 call_id = %self.call_id,
@@ -90,7 +90,7 @@ impl Drop for CodeModeToolCallGuard {
                 cell_id: self.cell_id.clone(),
                 tool_name: self.tool_name.to_string(),
                 started_at_ms: self.started_at_ms,
-                completed_at_ms: codex_analytics::now_unix_millis(),
+                completed_at_ms: ava_analytics::now_unix_millis(),
                 status: self.status,
             });
     }
@@ -125,11 +125,11 @@ impl Drop for NestedToolDispatchTrace {
             DispatchInterruption::Abandoned => "abandoned",
         };
         tracing::event!(
-            name: "codex.code_mode.nested_tool_dispatch_interrupted",
-            target: "codex_otel.trace_safe",
+            name: "ava.code_mode.nested_tool_dispatch_interrupted",
+            target: "ava_otel.trace_safe",
             parent: &self.span,
             tracing::Level::INFO,
-            event.name = "codex.code_mode.nested_tool_dispatch_interrupted",
+            event.name = "ava.code_mode.nested_tool_dispatch_interrupted",
             conversation.id = %self.thread_id,
             call_id = self.call_id.as_str(),
             outcome,

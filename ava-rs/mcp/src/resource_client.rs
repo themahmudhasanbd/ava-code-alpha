@@ -5,10 +5,10 @@ use std::time::Duration;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
-use codex_protocol::mcp::Resource;
-use codex_protocol::mcp::ResourceContent;
-use codex_rmcp_client::CancellableEventStreamRequest;
-use codex_rmcp_client::RmcpClient;
+use ava_protocol::mcp::Resource;
+use ava_protocol::mcp::ResourceContent;
+use ava_rmcp_client::CancellableEventStreamRequest;
+use ava_rmcp_client::RmcpClient;
 use rmcp::model::GetMeta;
 use rmcp::model::PaginatedRequestParams;
 use rmcp::model::ReadResourceRequestParams;
@@ -26,7 +26,7 @@ use crate::McpEventStreamOpener;
 use crate::McpRuntime;
 use crate::connection_manager::McpConnectionSet;
 use crate::connection_manager::McpServerConnection;
-use crate::mcp::CODEX_APPS_MCP_SERVER_NAME;
+use crate::mcp::AVA_APPS_MCP_SERVER_NAME;
 
 /// One page of resources returned by an MCP server.
 #[derive(Clone, Debug, PartialEq)]
@@ -37,13 +37,13 @@ pub struct McpResourcePage {
     pub next_cursor: Option<String>,
 }
 
-/// Parameters for one Codex Apps resource page.
+/// Parameters for one Ava Apps resource page.
 ///
 /// Keep `mime_type` when requesting a continuation page: the server applies
 /// the filter to each request separately.
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CodexAppsResourceListParams {
+pub struct AvaAppsResourceListParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
     pub mime_type: String,
@@ -299,22 +299,22 @@ impl McpResourceClient {
         })
     }
 
-    /// Lists one Codex Apps resource page using plugin-service's top-level `mimeType` parameter.
-    pub async fn list_codex_apps_resources(
+    /// Lists one Ava Apps resource page using plugin-service's top-level `mimeType` parameter.
+    pub async fn list_ava_apps_resources(
         &self,
-        params: CodexAppsResourceListParams,
+        params: AvaAppsResourceListParams,
     ) -> Result<McpResourcePage> {
         let params = serde_json::to_value(params)
-            .context("failed to serialize Codex Apps resource params")?;
-        let connections = self.runtime.latest_host_owned_codex_apps_connections()?;
+            .context("failed to serialize Ava Apps resource params")?;
+        let connections = self.runtime.latest_host_owned_ava_apps_connections()?;
         let (managed, timeout) = connections
-            .client_by_name(CODEX_APPS_MCP_SERVER_NAME)
+            .client_by_name(AVA_APPS_MCP_SERVER_NAME)
             .await?;
         let result = managed
             .client
             .send_custom_request_with_timeout("resources/list", Some(params), timeout)
             .await
-            .context("resources/list failed for `codex_apps`")?;
+            .context("resources/list failed for `ava_apps`")?;
         let result = match result {
             ServerResult::ListResourcesResult(result) => result,
             ServerResult::CustomResult(result) => result
@@ -353,10 +353,10 @@ impl McpResourceClient {
     pub async fn list_events(&self) -> Result<McpEventCatalogSnapshot> {
         let (connections, _) = self
             .runtime
-            .latest_connections_for_event_server(CODEX_APPS_MCP_SERVER_NAME)?;
+            .latest_connections_for_event_server(AVA_APPS_MCP_SERVER_NAME)?;
         let cache_key = McpResourceClientCacheKey(Arc::downgrade(&connections));
         let (managed, request_timeout) = connections
-            .client_by_name(CODEX_APPS_MCP_SERVER_NAME)
+            .client_by_name(AVA_APPS_MCP_SERVER_NAME)
             .await?;
         let result = managed
             .client
@@ -385,9 +385,9 @@ impl McpResourceClient {
     ) -> Result<McpEventStream> {
         let (connections, cancel_event_streams_on_server_removal) = self
             .runtime
-            .latest_connections_for_event_server(CODEX_APPS_MCP_SERVER_NAME)?;
+            .latest_connections_for_event_server(AVA_APPS_MCP_SERVER_NAME)?;
         let (managed, _) = connections
-            .client_by_name(CODEX_APPS_MCP_SERVER_NAME)
+            .client_by_name(AVA_APPS_MCP_SERVER_NAME)
             .await?;
         McpEventStream::open(
             managed.client,

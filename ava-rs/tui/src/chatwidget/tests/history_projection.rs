@@ -3,8 +3,8 @@
 use super::*;
 use crate::thread_transcript::RawReasoningVisibility;
 use crate::thread_transcript::thread_items_to_transcript_cells;
-use codex_app_server_protocol::McpToolCallResult;
-use codex_app_server_protocol::McpToolCallStatus;
+use ava_app_server_protocol::McpToolCallResult;
+use ava_app_server_protocol::McpToolCallStatus;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -247,7 +247,7 @@ async fn snapshot_formatter_reasoning_matches_compact_and_detailed_replay() {
 fn raw_reasoning_keeps_its_own_heading() {
     let projected = thread_items_to_transcript_cells(
         /*thread_id*/ None,
-        &codex_utils_absolute_path::AbsolutePathBuf::current_dir().unwrap(),
+        &ava_utils_absolute_path::AbsolutePathBuf::current_dir().unwrap(),
         [AppServerThreadItem::Reasoning {
             id: "raw".into(),
             summary: Vec::new(),

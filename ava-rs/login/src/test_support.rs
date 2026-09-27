@@ -5,23 +5,23 @@
 
 use crate::AuthManager;
 use crate::AuthRouteConfig;
-use crate::CodexAuth;
+use crate::AvaAuth;
 use crate::auth::AgentIdentityAuth;
 use crate::auth::AgentIdentityAuthRecord;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_protocol::account::PlanType as AccountPlanType;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_protocol::account::PlanType as AccountPlanType;
 use std::sync::Arc;
 
 /// Creates an authentication manager with optional credentials for cross-crate tests.
-pub fn auth_manager_from_optional_auth(auth: Option<CodexAuth>) -> Arc<AuthManager> {
+pub fn auth_manager_from_optional_auth(auth: Option<AvaAuth>) -> Arc<AuthManager> {
     AuthManager::from_optional_auth_for_testing(auth)
 }
 
 /// Creates an authentication manager with initialized Agent Identity credentials for tests.
 pub async fn auth_manager_with_agent_identity() -> std::io::Result<Arc<AuthManager>> {
     let key_material =
-        codex_agent_identity::generate_agent_key_material().map_err(std::io::Error::other)?;
+        ava_agent_identity::generate_agent_key_material().map_err(std::io::Error::other)?;
     let auth = AgentIdentityAuth::from_record(
         AgentIdentityAuthRecord {
             agent_runtime_id: "test-agent-runtime-id".to_string(),
@@ -38,7 +38,7 @@ pub async fn auth_manager_with_agent_identity() -> std::io::Result<Arc<AuthManag
     )
     .await?;
     Ok(auth_manager_from_optional_auth(Some(
-        CodexAuth::AgentIdentity(auth),
+        AvaAuth::AgentIdentity(auth),
     )))
 }
 

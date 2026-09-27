@@ -1,12 +1,12 @@
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::EnvironmentConfig;
-use codex_core::TurnInputRequest;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_features::Feature;
-use codex_protocol::approvals::ExecApprovalKind;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::SandboxPolicy;
-use core_test_support::test_codex::local_selections;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::EnvironmentConfig;
+use ava_core::TurnInputRequest;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_features::Feature;
+use ava_protocol::approvals::ExecApprovalKind;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::SandboxPolicy;
+use core_test_support::test_ava::local_selections;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
@@ -14,28 +14,28 @@ use std::sync::OnceLock;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::EnvironmentVariablePattern;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::config_types::ShellEnvironmentPolicyInherit;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_protocol::protocol::ExecCommandStatus;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::shell_environment::CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
-use codex_protocol::user_input::UserInput;
-use codex_utils_output_truncation::approx_tokens_from_byte_count;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::EnvironmentVariablePattern;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_protocol::protocol::ExecCommandStatus;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::shell_environment::AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR;
+use ava_protocol::user_input::UserInput;
+use ava_utils_output_truncation::approx_tokens_from_byte_count;
+use ava_utils_path_uri::PathUri;
 use core_test_support::TempDirExt;
 use core_test_support::assert_regex_match;
 use core_test_support::managed_network_requirements_loader;
@@ -54,10 +54,10 @@ use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_sandbox;
 use core_test_support::skip_if_target_windows;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::TestCodexHarness;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::TestAvaHarness;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_event_with_timeout;
@@ -185,10 +185,10 @@ fn collect_tool_outputs(bodies: &[Value]) -> Result<HashMap<String, ParsedUnifie
 }
 
 async fn wait_for_raw_unified_exec_output(
-    test: &TestCodex,
+    test: &TestAva,
     call_id: &str,
 ) -> Result<ParsedUnifiedExecOutput> {
-    let content = wait_for_event_match(&test.codex, |event| match event {
+    let content = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::RawResponseItem(raw) => match &raw.item {
             ResponseItem::FunctionCallOutput {
                 call_id: Some(output_call_id),
@@ -206,7 +206,7 @@ async fn wait_for_raw_unified_exec_output(
 }
 
 async fn submit_unified_exec_turn(
-    test: &TestCodex,
+    test: &TestAva,
     prompt: &str,
     permission_profile: PermissionProfile,
 ) -> Result<()> {
@@ -214,7 +214,7 @@ async fn submit_unified_exec_turn(
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -241,7 +241,7 @@ async fn submit_unified_exec_turn(
 }
 
 async fn create_workspace_directory(
-    test: &TestCodex,
+    test: &TestAva,
     rel_path: impl AsRef<std::path::Path>,
 ) -> Result<std::path::PathBuf> {
     let abs_path = test.config.cwd.join(rel_path.as_ref());
@@ -263,10 +263,10 @@ async fn create_workspace_directory(
 async fn exec_command_hides_and_rejects_login_when_disabled() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config.permissions.allow_login_shell = false;
     });
-    let harness = TestCodexHarness::with_builder(builder).await?;
+    let harness = TestAvaHarness::with_builder(builder).await?;
     let call_id = "exec-command-login-disabled";
     let arguments = json!({
         "cmd": "echo should not run",
@@ -310,12 +310,12 @@ async fn exec_command_hides_and_rejects_login_when_disabled() -> Result<()> {
 async fn exec_command_hides_and_rejects_tty_when_disabled() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let builder = test_codex().with_model("gpt-5.4").with_cloud_config_bundle(
+    let builder = test_ava().with_model("gpt-5.4").with_cloud_config_bundle(
         CloudConfigBundleFixture::loader_with_enterprise_requirement(
             "[features]\nunified_exec_tty = false\n",
         ),
     );
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let call_id = "tty-denied";
     let arguments = json!({"cmd": "echo should-not-run > tty-disabled-rejected", "tty": true});
     let request_log = mount_sse_sequence(
@@ -361,12 +361,12 @@ async fn exec_command_runs_without_tty_when_tty_disabled() -> Result<()> {
         "basic PowerShell execution through Wine is unavailable"
     );
 
-    let builder = test_codex().with_model("gpt-5.4").with_cloud_config_bundle(
+    let builder = test_ava().with_model("gpt-5.4").with_cloud_config_bundle(
         CloudConfigBundleFixture::loader_with_enterprise_requirement(
             "[features]\nunified_exec_tty = false\n",
         ),
     );
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let mut responses = Vec::new();
     for (call_id, arguments) in [
         ("tty-false", json!({"cmd": "echo pipe-ok", "tty": false})),
@@ -404,23 +404,23 @@ async fn exec_command_does_not_expose_configured_noise_auth_token() -> Result<()
         "basic PowerShell execution through Wine is unavailable"
     );
 
-    let builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config.permissions.shell_environment_policy.r#set.insert(
-            CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR.to_string(),
+            AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR.to_string(),
             "configured-noise-token".to_string(),
         );
         config.permissions.shell_environment_policy.r#set.insert(
-            CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR.to_ascii_lowercase(),
+            AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR.to_ascii_lowercase(),
             "case-variant-noise-token".to_string(),
         );
     });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let command = match core_test_support::test_target_os() {
         core_test_support::TestTargetOs::Linux | core_test_support::TestTargetOs::MacOs => {
-            "if [ -n \"${CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN:-}\" ] || [ -n \"${codex_exec_server_noise_auth_token:-}\" ]; then echo leaked; else echo unset; fi"
+            "if [ -n \"${AVA_EXEC_SERVER_NOISE_AUTH_TOKEN:-}\" ] || [ -n \"${ava_exec_server_noise_auth_token:-}\" ]; then echo leaked; else echo unset; fi"
         }
         core_test_support::TestTargetOs::Windows => {
-            "if ($env:CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN) { Write-Output leaked } else { Write-Output unset }"
+            "if ($env:AVA_EXEC_SERVER_NOISE_AUTH_TOKEN) { Write-Output leaked } else { Write-Output unset }"
         }
     };
     let call_id = "exec-command-noise-auth-token";
@@ -459,7 +459,7 @@ async fn exec_command_uses_installed_environment_shell_policy_with_explicit_over
     );
     skip_if_no_network!(Ok(()));
 
-    let builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config.permissions.shell_environment_policy = ShellEnvironmentPolicy {
             inherit: ShellEnvironmentPolicyInherit::None,
             include_only: vec![EnvironmentVariablePattern::new_case_insensitive("DROP")],
@@ -467,17 +467,17 @@ async fn exec_command_uses_installed_environment_shell_policy_with_explicit_over
                 ("KEEP".to_string(), "preserved".to_string()),
                 ("DROP".to_string(), "filtered".to_string()),
                 (
-                    "CODEX_VERSION".to_string(),
+                    "AVA_VERSION".to_string(),
                     "configured-version".to_string(),
                 ),
             ]),
             ..Default::default()
         };
     });
-    let harness = TestCodexHarness::with_auto_env_builder(builder).await?;
+    let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let selection = harness
         .test()
-        .codex
+        .ava-code
         .environment_selections()
         .await
         .into_iter()
@@ -485,7 +485,7 @@ async fn exec_command_uses_installed_environment_shell_policy_with_explicit_over
         .context("thread should select its executor environment")?;
     harness
         .test()
-        .codex
+        .ava-code
         .environment_ready(
             &selection,
             EnvironmentConfig {
@@ -518,10 +518,10 @@ async fn exec_command_uses_installed_environment_shell_policy_with_explicit_over
     let call_id = "exec-command-environment-shell-policy";
     let command = match core_test_support::test_target_os() {
         core_test_support::TestTargetOs::Linux | core_test_support::TestTargetOs::MacOs => {
-            r#"printf '%s:%s:%s:%s' "$KEEP" "${DROP:-missing}" "${OWNER_ONLY:-missing}" "$CODEX_VERSION""#
+            r#"printf '%s:%s:%s:%s' "$KEEP" "${DROP:-missing}" "${OWNER_ONLY:-missing}" "$AVA_VERSION""#
         }
         core_test_support::TestTargetOs::Windows => {
-            r#"if (Test-Path Env:DROP) { $drop = $env:DROP } else { $drop = 'missing' }; if (Test-Path Env:OWNER_ONLY) { $owner = $env:OWNER_ONLY } else { $owner = 'missing' }; Write-Output "${env:KEEP}:${drop}:${owner}:${env:CODEX_VERSION}""#
+            r#"if (Test-Path Env:DROP) { $drop = $env:DROP } else { $drop = 'missing' }; if (Test-Path Env:OWNER_ONLY) { $owner = $env:OWNER_ONLY } else { $owner = 'missing' }; Write-Output "${env:KEEP}:${drop}:${owner}:${env:AVA_VERSION}""#
         }
     };
     let arguments = json!({
@@ -565,8 +565,8 @@ async fn unified_exec_intercepts_apply_patch_exec_command() -> Result<()> {
     skip_if_sandbox!(Ok(()));
     skip_if_host_windows!(Ok(()));
 
-    let builder = test_codex();
-    let harness = TestCodexHarness::with_builder(builder).await?;
+    let builder = test_ava();
+    let harness = TestAvaHarness::with_builder(builder).await?;
 
     let patch =
         "*** Begin Patch\n*** Add File: uexec_apply.txt\n+hello from unified exec\n*** End Patch";
@@ -594,13 +594,13 @@ async fn unified_exec_intercepts_apply_patch_exec_command() -> Result<()> {
     mount_sse_sequence(harness.server(), responses).await;
 
     let test = harness.test();
-    let codex = test.codex.clone();
+    let ava = test.ava-code.clone();
     let cwd = test.config.cwd.clone();
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, &cwd);
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "apply patch via unified exec".into(),
@@ -628,7 +628,7 @@ async fn unified_exec_intercepts_apply_patch_exec_command() -> Result<()> {
     let mut patch_end = None;
     let mut saw_exec_begin = false;
     let mut saw_exec_end = false;
-    wait_for_event(&codex, |event| match event {
+    wait_for_event(&ava, |event| match event {
         EventMsg::PatchApplyBegin(begin) if begin.call_id == call_id => {
             saw_patch_begin = true;
             assert!(
@@ -698,7 +698,7 @@ async fn unified_exec_rejects_justification_without_sandbox_permissions() -> Res
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.2");
+    let mut builder = test_ava().with_model("gpt-5.2");
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-missing-sandbox-permissions";
@@ -731,7 +731,7 @@ async fn unified_exec_rejects_justification_without_sandbox_permissions() -> Res
     .await?;
 
     let mut saw_exec_begin = false;
-    wait_for_event(&test.codex, |event| match event {
+    wait_for_event(&test.ava-code, |event| match event {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => {
             saw_exec_begin = true;
             false
@@ -771,7 +771,7 @@ async fn unified_exec_emits_exec_command_begin_event() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_model("gpt-5.2");
+    let mut builder = test_ava().with_model("gpt-5.2");
     let test = builder.build_with_auto_env(&server).await?;
     let cwd = test.config.cwd.to_path_buf();
 
@@ -798,7 +798,7 @@ async fn unified_exec_emits_exec_command_begin_event() -> Result<()> {
 
     submit_unified_exec_turn(&test, "emit begin event", PermissionProfile::Disabled).await?;
 
-    let begin_event = wait_for_event_match(&test.codex, |msg| match msg {
+    let begin_event = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
@@ -808,7 +808,7 @@ async fn unified_exec_emits_exec_command_begin_event() -> Result<()> {
 
     assert_eq!(begin_event.cwd, PathUri::from_host_native_path(&cwd)?);
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -828,7 +828,7 @@ async fn unified_exec_resolves_relative_workdir() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_model("gpt-5.2");
+    let mut builder = test_ava().with_model("gpt-5.2");
     let test = builder.build_with_auto_env(&server).await?;
 
     let workdir_rel = std::path::PathBuf::from("uexec_relative_workdir");
@@ -862,7 +862,7 @@ async fn unified_exec_resolves_relative_workdir() -> Result<()> {
     )
     .await?;
 
-    let begin_event = wait_for_event_match(&test.codex, |msg| match msg {
+    let begin_event = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
@@ -874,7 +874,7 @@ async fn unified_exec_resolves_relative_workdir() -> Result<()> {
         "exec_command cwd should resolve relative workdir against turn cwd",
     );
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -892,7 +892,7 @@ async fn unified_exec_respects_workdir_override() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_model("gpt-5.2");
+    let mut builder = test_ava().with_model("gpt-5.2");
     let test = builder.build_with_auto_env(&server).await?;
 
     let workdir = create_workspace_directory(&test, "uexec_workdir_test").await?;
@@ -920,7 +920,7 @@ async fn unified_exec_respects_workdir_override() -> Result<()> {
 
     submit_unified_exec_turn(&test, "run workdir test", PermissionProfile::Disabled).await?;
 
-    let begin_event = wait_for_event_match(&test.codex, |msg| match msg {
+    let begin_event = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
@@ -932,7 +932,7 @@ async fn unified_exec_respects_workdir_override() -> Result<()> {
         "exec_command cwd should reflect the requested workdir override"
     );
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -952,7 +952,7 @@ async fn unified_exec_emits_exec_command_end_event() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-end-event";
@@ -992,7 +992,7 @@ async fn unified_exec_emits_exec_command_end_event() -> Result<()> {
 
     submit_unified_exec_turn(&test, "emit end event", PermissionProfile::Disabled).await?;
 
-    let end_event = wait_for_event_match(&test.codex, |msg| match msg {
+    let end_event = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::ExecCommandEnd(ev) if ev.call_id == call_id => Some(ev.clone()),
         _ => None,
     })
@@ -1004,7 +1004,7 @@ async fn unified_exec_emits_exec_command_end_event() -> Result<()> {
         "expected aggregated output to contain marker"
     );
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1020,7 +1020,7 @@ async fn unified_exec_emits_output_delta_for_exec_command() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-delta-1";
@@ -1080,7 +1080,7 @@ async fn unified_exec_emits_output_delta_for_exec_command() -> Result<()> {
     let mut end_event = None;
     let mut turn_completed = false;
     while !turn_completed || end_event.is_none() {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::ExecCommandOutputDelta(event) => {
                 if event.call_id != call_id {
                     continue;
@@ -1132,7 +1132,7 @@ async fn unified_exec_full_lifecycle_with_background_end_event() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-full-lifecycle";
@@ -1168,7 +1168,7 @@ async fn unified_exec_full_lifecycle_with_background_end_event() -> Result<()> {
     let mut task_completed = false;
 
     loop {
-        let msg = wait_for_event(&test.codex, |_| true).await;
+        let msg = wait_for_event(&test.ava-code, |_| true).await;
         match msg {
             EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => begin_event = Some(ev),
             EventMsg::ExecCommandEnd(ev) if ev.call_id == call_id => {
@@ -1225,7 +1225,7 @@ async fn unified_exec_network_denial_emits_failed_background_end_event() -> Resu
 
     let call_id = "uexec-network-denied";
     let args = json!({
-        "cmd": "python3 -c \"import os, socket, time, urllib.parse; time.sleep(0.3); proxy = urllib.parse.urlparse(os.environ['HTTP_PROXY']); sock = socket.create_connection((proxy.hostname, proxy.port), timeout=2); sock.sendall(b'GET http://codex-network-denied.invalid/ HTTP/1.1\\r\\nHost: codex-network-denied.invalid\\r\\n\\r\\n'); sock.recv(1024); time.sleep(5)\"",
+        "cmd": "python3 -c \"import os, socket, time, urllib.parse; time.sleep(0.3); proxy = urllib.parse.urlparse(os.environ['HTTP_PROXY']); sock = socket.create_connection((proxy.hostname, proxy.port), timeout=2); sock.sendall(b'GET http://codex-network-denied.invalid/ HTTP/1.1\\r\\nHost: ava-network-denied.invalid\\r\\n\\r\\n'); sock.recv(1024); time.sleep(5)\"",
         "yield_time_ms": 50,
     });
     let response_mock =
@@ -1249,7 +1249,7 @@ async fn unified_exec_network_denial_emits_failed_background_end_event() -> Resu
     );
 
     if !turn_completed {
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -1269,7 +1269,7 @@ async fn unified_exec_short_lived_network_denial_emits_failed_end_event() -> Res
 
     let call_id = "uexec-short-network-denied";
     let args = json!({
-        "cmd": "python3 -c \"import os, socket, urllib.parse; proxy = urllib.parse.urlparse(os.environ['HTTP_PROXY']); sock = socket.create_connection((proxy.hostname, proxy.port), timeout=2); sock.sendall(b'GET http://codex-short-network-denied.invalid/ HTTP/1.1\\r\\nHost: codex-short-network-denied.invalid\\r\\n\\r\\n'); sock.recv(1024)\"",
+        "cmd": "python3 -c \"import os, socket, urllib.parse; proxy = urllib.parse.urlparse(os.environ['HTTP_PROXY']); sock = socket.create_connection((proxy.hostname, proxy.port), timeout=2); sock.sendall(b'GET http://codex-short-network-denied.invalid/ HTTP/1.1\\r\\nHost: ava-short-network-denied.invalid\\r\\n\\r\\n'); sock.recv(1024)\"",
         "yield_time_ms": 1000,
     });
     let response_mock =
@@ -1293,7 +1293,7 @@ async fn unified_exec_short_lived_network_denial_emits_failed_end_event() -> Res
     );
 
     if !turn_completed {
-        wait_for_event(&test.codex, |event| {
+        wait_for_event(&test.ava-code, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -1319,7 +1319,7 @@ async fn unified_exec_rejects_unelevated_windows_sandbox_with_managed_network() 
         permission_profile,
     )
     .await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1340,8 +1340,8 @@ async fn unified_exec_rejects_unelevated_windows_sandbox_with_managed_network() 
 
 async fn unified_exec_network_denial_test(
     server: &wiremock::MockServer,
-) -> Result<(TestCodex, PermissionProfile)> {
-    use codex_config::Constrained;
+) -> Result<(TestAva, PermissionProfile)> {
+    use ava_config::Constrained;
     use std::sync::Arc;
     use tempfile::TempDir;
 
@@ -1366,7 +1366,7 @@ allow_local_binding = true
         /*exclude_slash_tmp*/ false,
     );
     let permission_profile = permission_profile_for_config.clone();
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_home(home)
         .with_cloud_config_bundle(managed_network_requirements_loader())
         .with_config(move |config| {
@@ -1408,10 +1408,10 @@ async fn mount_unified_exec_network_denial_responses(
 }
 
 async fn wait_for_unified_exec_end(
-    test: &TestCodex,
+    test: &TestAva,
     call_id: &str,
     response_mock: &core_test_support::responses::ResponseMock,
-) -> (codex_protocol::protocol::ExecCommandEndEvent, bool) {
+) -> (ava_protocol::protocol::ExecCommandEndEvent, bool) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
     let mut observed_events = Vec::new();
     let mut turn_completed = false;
@@ -1429,7 +1429,7 @@ async fn wait_for_unified_exec_end(
             "timed out waiting for network denial end event; observed {observed_events:?}; response requests: {}",
             response_mock.requests().len()
         );
-        let event = tokio::time::timeout(remaining, test.codex.next_event())
+        let event = tokio::time::timeout(remaining, test.ava-code.next_event())
             .await
             .expect(&timeout_message)
             .expect("event stream ended unexpectedly")
@@ -1458,7 +1458,7 @@ async fn unified_exec_emits_terminal_interaction_for_write_stdin(
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         if stdin_approval {
             config
                 .features
@@ -1514,7 +1514,7 @@ async fn unified_exec_emits_terminal_interaction_for_write_stdin(
 
     if stdin_approval {
         // Start without waiting for completion so the loop below can answer approvals.
-        test.codex
+        test.ava-code
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "stdin delta".to_string(),
@@ -1537,10 +1537,10 @@ async fn unified_exec_emits_terminal_interaction_for_write_stdin(
     let mut approvals = Vec::new();
 
     loop {
-        let msg = wait_for_event(&test.codex, |_| true).await;
+        let msg = wait_for_event(&test.ava-code, |_| true).await;
         match msg {
             EventMsg::ExecApprovalRequest(approval) => {
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: Some(approval.turn_id),
@@ -1591,7 +1591,7 @@ async fn unified_exec_terminal_interaction_captures_delayed_output() -> Result<(
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let open_call_id = "uexec-delayed-open";
@@ -1684,7 +1684,7 @@ async fn unified_exec_terminal_interaction_captures_delayed_output() -> Result<(
 
     // Consume all events for this turn so we can assert on each stage.
     loop {
-        let msg = wait_for_event(&test.codex, |_| true).await;
+        let msg = wait_for_event(&test.ava-code, |_| true).await;
         match msg {
             EventMsg::ExecCommandBegin(ev) if ev.call_id == open_call_id => {
                 begin_event = Some(ev);
@@ -1766,7 +1766,7 @@ async fn unified_exec_emits_one_begin_and_one_end_event() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let open_call_id = "uexec-open-session";
@@ -1822,7 +1822,7 @@ async fn unified_exec_emits_one_begin_and_one_end_event() -> Result<()> {
     let mut terminal_interactions = Vec::new();
     let mut task_completed = false;
     loop {
-        let event_msg = wait_for_event(&test.codex, |_| true).await;
+        let event_msg = wait_for_event(&test.ava-code, |_| true).await;
         match event_msg {
             EventMsg::ExecCommandBegin(event) if event.call_id == open_call_id => {
                 begin_events.push(event);
@@ -1884,7 +1884,7 @@ async fn exec_command_reports_chunk_and_exit_metadata() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-metadata";
@@ -1909,7 +1909,7 @@ async fn exec_command_reports_chunk_and_exit_metadata() -> Result<()> {
 
     submit_unified_exec_turn(&test, "run metadata test", PermissionProfile::Disabled).await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1973,7 +1973,7 @@ async fn exec_command_clamps_model_requested_max_output_tokens_to_policy() -> Re
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config.tool_output_token_limit = Some(50);
     });
     let test = builder.build_with_auto_env(&server).await?;
@@ -2015,7 +2015,7 @@ async fn exec_command_clamps_model_requested_max_output_tokens_to_policy() -> Re
     );
     assert_eq!(output_text.matches("tokens truncated").count(), 1);
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2032,7 +2032,7 @@ async fn write_stdin_clamps_model_requested_max_output_tokens_to_policy() -> Res
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_model("gpt-5.4").with_config(|config| {
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(|config| {
         config.tool_output_token_limit = Some(50);
     });
     let test = builder.build_with_auto_env(&server).await?;
@@ -2101,7 +2101,7 @@ async fn write_stdin_clamps_model_requested_max_output_tokens_to_policy() -> Res
     );
     assert_eq!(stdin_output_text.matches("tokens truncated").count(), 1);
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2118,7 +2118,7 @@ async fn unified_exec_defaults_to_pipe() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-default-pipe";
@@ -2148,7 +2148,7 @@ async fn unified_exec_defaults_to_pipe() -> Result<()> {
     )
     .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2183,7 +2183,7 @@ async fn unified_exec_can_enable_tty() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-tty-enabled";
@@ -2209,7 +2209,7 @@ async fn unified_exec_can_enable_tty() -> Result<()> {
 
     submit_unified_exec_turn(&test, "check tty enabled", PermissionProfile::Disabled).await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2245,7 +2245,7 @@ async fn unified_exec_respects_early_exit_notifications() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec-early-exit";
@@ -2274,7 +2274,7 @@ async fn unified_exec_respects_early_exit_notifications() -> Result<()> {
     )
     .await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2324,7 +2324,7 @@ async fn write_stdin_returns_exit_metadata_and_clears_session() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let start_call_id = "uexec-cat-start";
@@ -2392,7 +2392,7 @@ async fn write_stdin_returns_exit_metadata_and_clears_session() -> Result<()> {
     let mut exit_lifecycle_order = Vec::new();
     let mut turn_completed = false;
     loop {
-        let event = wait_for_event(&test.codex, |_| true).await;
+        let event = wait_for_event(&test.ava-code, |_| true).await;
         match event {
             EventMsg::TerminalInteraction(event)
                 if event.call_id == start_call_id
@@ -2527,7 +2527,7 @@ async fn assert_write_stdin_ctrl_c_interrupts_non_tty_session(
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex().with_config(|config| {
+    let mut builder = test_ava().with_config(|config| {
         config
             .features
             .enable(Feature::WriteStdinApproval)
@@ -2576,7 +2576,7 @@ async fn assert_write_stdin_ctrl_c_interrupts_non_tty_session(
     ];
     let request_log = mount_sse_sequence(&server, responses).await;
 
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "interrupt non-tty unified exec".to_string(),
@@ -2594,10 +2594,10 @@ async fn assert_write_stdin_ctrl_c_interrupts_non_tty_session(
 
     let mut approval_count = 0;
     loop {
-        match wait_for_event(&test.codex, |_| true).await {
+        match wait_for_event(&test.ava-code, |_| true).await {
             EventMsg::ExecApprovalRequest(approval) => {
                 approval_count += 1;
-                test.codex
+                test.ava-code
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: Some(approval.turn_id),
@@ -2677,7 +2677,7 @@ async fn write_stdin_ctrl_c_terminates_non_tty_session_on_windows() -> Result<()
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let start_call_id = "uexec-windows-interrupt-start";
@@ -2729,7 +2729,7 @@ async fn write_stdin_ctrl_c_terminates_non_tty_session_on_windows() -> Result<()
     .await?;
 
     wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         Duration::from_secs(20),
     )
@@ -2766,7 +2766,7 @@ async fn unified_exec_emits_end_event_when_session_dies_via_stdin() -> Result<()
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let start_call_id = "uexec-end-on-exit-start";
@@ -2829,7 +2829,7 @@ async fn unified_exec_emits_end_event_when_session_dies_via_stdin() -> Result<()
     submit_unified_exec_turn(&test, "end on exit", PermissionProfile::Disabled).await?;
 
     // We expect the ExecCommandEnd event to match the initial exec_command call_id.
-    let end_event = wait_for_event_match(&test.codex, |msg| match msg {
+    let end_event = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::ExecCommandEnd(ev) if ev.call_id == start_call_id => Some(ev.clone()),
         _ => None,
     })
@@ -2837,7 +2837,7 @@ async fn unified_exec_emits_end_event_when_session_dies_via_stdin() -> Result<()
 
     assert_eq!(end_event.exit_code, 0);
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2852,9 +2852,9 @@ async fn unified_exec_keeps_long_running_session_after_turn_end() -> Result<()> 
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
-    let TestCodex {
-        codex,
+    let mut builder = test_ava();
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
@@ -2890,7 +2890,7 @@ async fn unified_exec_keeps_long_running_session_after_turn_end() -> Result<()> 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, turn_cwd.as_path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "keep unified exec process after turn end".into(),
@@ -2914,7 +2914,7 @@ async fn unified_exec_keeps_long_running_session_after_turn_end() -> Result<()> 
         )
         .await?;
 
-    let begin_event = wait_for_event_match(&codex, |msg| match msg {
+    let begin_event = wait_for_event_match(&ava, |msg| match msg {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
         _ => None,
     })
@@ -2931,15 +2931,15 @@ async fn unified_exec_keeps_long_running_session_after_turn_end() -> Result<()> 
         "expected numeric pid, got {pid:?}"
     );
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     assert!(
         process_is_alive(&pid)?,
         "expected unified exec process to remain alive after turn completion"
     );
 
-    codex.submit(Op::Shutdown).await?;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::ShutdownComplete)).await;
+    ava.submit(Op::Shutdown).await?;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::ShutdownComplete)).await;
     wait_for_process_exit(&pid).await?;
 
     Ok(())
@@ -2953,9 +2953,9 @@ async fn unified_exec_interrupt_preserves_long_running_session() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
-    let TestCodex {
-        codex,
+    let mut builder = test_ava();
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
@@ -2984,7 +2984,7 @@ async fn unified_exec_interrupt_preserves_long_running_session() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, turn_cwd.as_path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "interrupt long-running unified exec".into(),
@@ -3008,7 +3008,7 @@ async fn unified_exec_interrupt_preserves_long_running_session() -> Result<()> {
         )
         .await?;
 
-    let _begin_event = wait_for_event_match(&codex, |msg| match msg {
+    let _begin_event = wait_for_event_match(&ava, |msg| match msg {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
         _ => None,
     })
@@ -3020,15 +3020,15 @@ async fn unified_exec_interrupt_preserves_long_running_session() -> Result<()> {
         "expected numeric pid, got {pid:?}"
     );
 
-    codex.submit(Op::Interrupt).await?;
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnAborted(_))).await;
+    ava.submit(Op::Interrupt).await?;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
 
     assert!(
         process_is_alive(&pid)?,
         "expected unified exec process to remain alive after interrupt"
     );
 
-    codex.submit(Op::CleanBackgroundTerminals).await?;
+    ava.submit(Op::CleanBackgroundTerminals).await?;
     wait_for_process_exit(&pid).await?;
 
     Ok(())
@@ -3043,7 +3043,7 @@ async fn unified_exec_reuses_session_via_stdin() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let first_call_id = "uexec-start";
@@ -3088,7 +3088,7 @@ async fn unified_exec_reuses_session_via_stdin() -> Result<()> {
 
     submit_unified_exec_turn(&test, "run unified exec", PermissionProfile::Disabled).await?;
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3137,7 +3137,7 @@ async fn unified_exec_streams_after_lagged_output() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let script = r#"python3 - <<'PY'
@@ -3203,7 +3203,7 @@ PY
     // This is a worst case scenario for the truncate logic, and CI can spend a
     // while draining the lagged tail before the follow-up tool call completes.
     wait_for_event_with_timeout(
-        &test.codex,
+        &test.ava-code,
         |event| matches!(event, EventMsg::TurnComplete(_)),
         UNIFIED_EXEC_LAGGED_OUTPUT_TIMEOUT,
     )
@@ -3248,7 +3248,7 @@ async fn unified_exec_timeout_and_followup_poll() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let first_call_id = "uexec-timeout";
@@ -3293,7 +3293,7 @@ async fn unified_exec_timeout_and_followup_poll() -> Result<()> {
     submit_unified_exec_turn(&test, "check timeout", PermissionProfile::Disabled).await?;
 
     loop {
-        let event = test.codex.next_event().await.expect("event");
+        let event = test.ava-code.next_event().await.expect("event");
         if matches!(event.msg, EventMsg::TurnComplete(_)) {
             break;
         }
@@ -3329,7 +3329,7 @@ async fn managed_unified_exec_disable_runs_commands_without_retained_authority()
     skip_if_sandbox!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_cloud_config_bundle(
+    let mut builder = test_ava().with_cloud_config_bundle(
         CloudConfigBundleFixture::loader_with_enterprise_requirement(
             r#"
 [features]
@@ -3362,7 +3362,7 @@ shell_tool = true
     .await;
 
     submit_unified_exec_turn(&test, "run one-shot command", PermissionProfile::Disabled).await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3394,7 +3394,7 @@ async fn managed_one_shot_command_is_terminated_when_the_turn_is_interrupted() -
     skip_if_target_windows!(Ok(()), "uses a POSIX command and process checks");
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_cloud_config_bundle(
+    let mut builder = test_ava().with_cloud_config_bundle(
         CloudConfigBundleFixture::loader_with_enterprise_requirement(
             r#"
 [features]
@@ -3431,15 +3431,15 @@ shell_tool = true
         PermissionProfile::Disabled,
     )
     .await?;
-    wait_for_event_match(&test.codex, |event| match event {
+    wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(()),
         _ => None,
     })
     .await;
     let pid = wait_for_pid_file(&pid_path).await?;
 
-    test.codex.submit(Op::Interrupt).await?;
-    wait_for_event(&test.codex, |event| {
+    test.ava-code.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -3462,7 +3462,7 @@ async fn unified_exec_formats_large_output_summary() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let output_line = "token token \n";
@@ -3503,7 +3503,7 @@ PY
 
     submit_unified_exec_turn(&test, "summarize large output", PermissionProfile::Disabled).await?;
 
-    let end_event = wait_for_event_match(&test.codex, |event| match event {
+    let end_event = wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::ExecCommandEnd(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
@@ -3515,7 +3515,7 @@ PY
         &end_event.aggregated_output,
     );
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3553,9 +3553,9 @@ async fn unified_exec_runs_under_sandbox() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
-    let TestCodex {
-        codex,
+    let mut builder = test_ava();
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
@@ -3585,7 +3585,7 @@ async fn unified_exec_runs_under_sandbox() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), turn_cwd.as_path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "summarize large output".into(),
@@ -3609,7 +3609,7 @@ async fn unified_exec_runs_under_sandbox() -> Result<()> {
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert!(!requests.is_empty(), "expected at least one POST request");
@@ -3629,18 +3629,18 @@ async fn unified_exec_runs_under_sandbox() -> Result<()> {
 #[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn unified_exec_enforces_glob_deny_read_policy() -> Result<()> {
-    use codex_protocol::models::PermissionProfile;
-    use codex_protocol::permissions::FileSystemAccessMode;
-    use codex_protocol::permissions::FileSystemPath;
-    use codex_protocol::permissions::FileSystemSandboxEntry;
-    use codex_protocol::permissions::FileSystemSandboxPolicy;
-    use codex_protocol::permissions::NetworkSandboxPolicy;
+    use ava_protocol::models::PermissionProfile;
+    use ava_protocol::permissions::FileSystemAccessMode;
+    use ava_protocol::permissions::FileSystemPath;
+    use ava_protocol::permissions::FileSystemSandboxEntry;
+    use ava_protocol::permissions::FileSystemSandboxPolicy;
+    use ava_protocol::permissions::NetworkSandboxPolicy;
 
     skip_if_no_network!(Ok(()));
     skip_if_sandbox!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_config(move |config| {
+    let mut builder = test_ava().with_config(move |config| {
         let mut file_system_sandbox_policy = FileSystemSandboxPolicy::default();
         file_system_sandbox_policy
             .entries
@@ -3659,8 +3659,8 @@ async fn unified_exec_enforces_glob_deny_read_policy() -> Result<()> {
             ))
             .expect("set permission profile");
     });
-    let TestCodex {
-        codex,
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
@@ -3701,7 +3701,7 @@ async fn unified_exec_enforces_glob_deny_read_policy() -> Result<()> {
     let turn_cwd = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), turn_cwd.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "read the fixture files".into(),
@@ -3725,7 +3725,7 @@ async fn unified_exec_enforces_glob_deny_read_policy() -> Result<()> {
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert!(!requests.is_empty(), "expected at least one POST request");
@@ -3776,9 +3776,9 @@ async fn unified_exec_python_prompt_under_seatbelt() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
-    let TestCodex {
-        codex,
+    let mut builder = test_ava();
+    let TestAva {
+        ava,
         cwd,
         session_configured,
         ..
@@ -3830,7 +3830,7 @@ async fn unified_exec_python_prompt_under_seatbelt() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), turn_cwd.as_path());
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "start python under seatbelt".into(),
@@ -3854,7 +3854,7 @@ async fn unified_exec_python_prompt_under_seatbelt() -> Result<()> {
         )
         .await?;
 
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
     assert!(!requests.is_empty(), "expected at least one POST request");
@@ -3906,7 +3906,7 @@ async fn unified_exec_runs_on_all_platforms() -> Result<()> {
 
     let server = start_mock_server().await;
 
-    let mut builder = test_codex();
+    let mut builder = test_ava();
     let test = builder.build_with_auto_env(&server).await?;
 
     let call_id = "uexec";
@@ -3929,7 +3929,7 @@ async fn unified_exec_runs_on_all_platforms() -> Result<()> {
 
     submit_unified_exec_turn(&test, "summarize large output", PermissionProfile::Disabled).await?;
 
-    let end_event = wait_for_event_match(&test.codex, |msg| match msg {
+    let end_event = wait_for_event_match(&test.ava-code, |msg| match msg {
         EventMsg::ExecCommandEnd(event) if event.call_id == call_id => Some(event.clone()),
         _ => None,
     })
@@ -3937,7 +3937,7 @@ async fn unified_exec_runs_on_all_platforms() -> Result<()> {
     assert_eq!(end_event.exit_code, 0);
     assert_regex_match(".*hello crossplat.*", &end_event.aggregated_output);
 
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3964,7 +3964,7 @@ async fn write_stdin_calls_run_in_parallel_across_sessions() -> Result<()> {
     skip_if_target_windows!(Ok(()), "uses bash and POSIX file rendezvous commands");
 
     let server = start_mock_server().await;
-    let mut builder = test_codex().with_model("gpt-5.4");
+    let mut builder = test_ava().with_model("gpt-5.4");
     let test = builder.build_with_auto_env(&server).await?;
 
     let start_args = serde_json::to_string(&json!({
@@ -4006,7 +4006,7 @@ async fn write_stdin_calls_run_in_parallel_across_sessions() -> Result<()> {
     .await;
 
     submit_unified_exec_turn(&test, "start terminals", PermissionProfile::Disabled).await?;
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

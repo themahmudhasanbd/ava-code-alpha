@@ -1,12 +1,12 @@
-use codex_protocol::models::ImageReference;
-use codex_protocol::user_input::UserInput;
-use codex_utils_output_truncation::approx_bytes_for_tokens;
+use ava_protocol::models::ImageReference;
+use ava_protocol::user_input::UserInput;
+use ava_utils_output_truncation::approx_bytes_for_tokens;
 use pretty_assertions::assert_eq;
 
 use super::GUARDIAN_MAX_NODE_REPL_TOOL_RESULT_TOKENS;
 use super::NodeReplReviewEvidence;
 use super::NodeReplReviewEvidenceMode;
-use codex_context_fragments::ContextualUserFragment;
+use ava_context_fragments::ContextualUserFragment;
 // Assert the existing rendering contract independently of its implementation constant.
 const MAX_RENDERED_BYTES: usize = 32_000;
 

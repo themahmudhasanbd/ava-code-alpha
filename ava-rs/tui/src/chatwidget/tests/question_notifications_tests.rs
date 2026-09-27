@@ -1,7 +1,7 @@
 //! Async questions notify once on arrival and honor the terminal notification settings.
 
 use super::*;
-use codex_protocol::items::AsyncUserInputQuestion;
+use ava_protocol::items::AsyncUserInputQuestion;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]

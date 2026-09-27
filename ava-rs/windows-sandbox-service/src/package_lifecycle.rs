@@ -12,11 +12,11 @@ use std::sync::atomic::AtomicBool;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_windows_sandbox::DirectoryOpenDisposition;
-use codex_windows_sandbox::PreparedWindowsSandboxCleanup;
-use codex_windows_sandbox::create_directory_guard;
-use codex_windows_sandbox::prepare_packaged_windows_sandbox_cleanup;
-use codex_windows_sandbox::string_from_sid_bytes;
+use ava_windows_sandbox::DirectoryOpenDisposition;
+use ava_windows_sandbox::PreparedWindowsSandboxCleanup;
+use ava_windows_sandbox::create_directory_guard;
+use ava_windows_sandbox::prepare_packaged_windows_sandbox_cleanup;
+use ava_windows_sandbox::string_from_sid_bytes;
 use windows::ApplicationModel::Package;
 use windows::ApplicationModel::PackageCatalog;
 use windows::ApplicationModel::PackageUninstallingEventArgs;
@@ -43,7 +43,7 @@ mod registered;
 pub(crate) use registered::runtime_owner_removed;
 
 struct UserInstallation {
-    codex_home: Option<PathBuf>,
+    ava_home: Option<PathBuf>,
     // Ancestors and home remain pinned until owner-scoped cleanup finishes.
     directory_handles: Vec<OwnedHandle>,
     directory_guard: Option<OwnedHandle>,
@@ -83,7 +83,7 @@ impl PackageLifecycle {
         if let Some(previous) = previous {
             // A missing watcher does not retire its owner; other clients can use elevated setup.
             ensure!(
-                previous.user_sid == record.user_sid && previous.codex_home == record.codex_home,
+                previous.user_sid == record.user_sid && previous.ava_home == record.ava_home,
                 crate::ipc::ServiceUnavailable(
                     "installation is already registered to a different owner or home"
                 )
@@ -94,7 +94,7 @@ impl PackageLifecycle {
         }
         record = crate::installation_record::save(record)?;
         if let Some(installation) = active.as_mut()
-            && installation.codex_home.is_some()
+            && installation.ava_home.is_some()
         {
             // A restored watcher must immediately use newly registered desktop ownership.
             installation.record = record.clone();
@@ -105,8 +105,8 @@ impl PackageLifecycle {
         with_owner_impersonation(user_token.0, || {
             let mut directory_handles = Vec::new();
             let mut directory_guard = None;
-            let codex_home = match crate::ipc::pin_existing_ancestors(
-                &record.codex_home,
+            let ava_home = match crate::ipc::pin_existing_ancestors(
+                &record.ava_home,
                 &mut directory_handles,
             )
             .and_then(|()| {
@@ -117,14 +117,14 @@ impl PackageLifecycle {
                     create_directory_guard(unsafe { BorrowedHandle::borrow_raw(home.0 as _) })?;
                 // Reject a conversion that happened before the handle-relative guard was created.
                 drop(crate::ipc::pin_directory(
-                    &record.codex_home,
+                    &record.ava_home,
                     filesystem::FILE_READ_ATTRIBUTES,
                     DirectoryOpenDisposition::OpenExisting,
                 )?);
                 directory_guard = Some(OwnedHandle(guard.into_raw_handle() as HANDLE));
                 Ok(())
             }) {
-                Ok(()) => Some(record.codex_home.clone()),
+                Ok(()) => Some(record.ava_home.clone()),
                 Err(error) => {
                     directory_handles.clear();
                     crate::service::log_error(
@@ -137,7 +137,7 @@ impl PackageLifecycle {
                 }
             };
             if let Some(installation) = active.as_mut() {
-                installation.codex_home = codex_home;
+                installation.ava_home = ava_home;
                 installation.directory_handles = directory_handles;
                 installation.directory_guard = directory_guard;
                 installation.record = record;
@@ -165,7 +165,7 @@ impl PackageLifecycle {
                     "subscribe to authenticated package uninstall notifications",
                 ))?;
             active.replace(UserInstallation {
-                codex_home,
+                ava_home,
                 directory_handles,
                 directory_guard,
                 record,
@@ -224,7 +224,7 @@ impl PackageLifecycle {
             return Err(io::Error::last_os_error()).context("open the logged-in user's token");
         }
         let token = crate::ipc::OwnedHandle(raw_token);
-        let user = unsafe { codex_windows_sandbox::get_user_sid_bytes(token.0) }?;
+        let user = unsafe { ava_windows_sandbox::get_user_sid_bytes(token.0) }?;
         let user_sid = string_from_sid_bytes(&user).map_err(anyhow::Error::msg)?;
         ensure!(
             user_sid == record.user_sid,
@@ -243,7 +243,7 @@ impl PackageLifecycle {
 
     pub(crate) fn clean_up(&self) -> Result<()> {
         let _setup_lock =
-            codex_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
+            ava_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
         if let Some(record) = crate::installation_record::load_runtime()? {
             return registered::clean_up(self, record);
         }

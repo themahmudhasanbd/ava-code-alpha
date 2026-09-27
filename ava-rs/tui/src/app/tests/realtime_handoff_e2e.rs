@@ -4,11 +4,11 @@ use super::*;
 use crate::chatwidget::UserMessage;
 use app_test_support::MockResponsesConfig;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::ServerNotification;
-use codex_login::AuthCredentialsStoreMode;
-use codex_login::AuthKeyringBackendKind;
-use codex_model_provider_info::ModelProviderInfo;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::ServerNotification;
+use ava_login::AuthCredentialsStoreMode;
+use ava_login::AuthKeyringBackendKind;
+use ava_model_provider_info::ModelProviderInfo;
 use core_test_support::responses;
 use core_test_support::responses::WebSocketConnectionConfig;
 use pretty_assertions::assert_eq;
@@ -88,7 +88,7 @@ async fn delegated_core_events_keep_private_output_hidden_and_deliver_final_spee
         .await;
 
     let (mut app, mut app_events, mut ops) = make_test_app_with_channels().await;
-    let codex_home = tempfile::tempdir()?;
+    let ava_home = tempfile::tempdir()?;
     MockResponsesConfig::new(&model_server.uri())
         .with_root_config(&format!(
             "experimental_realtime_ws_base_url = {:?}\nexperimental_realtime_webrtc_call_base_url = {:?}",
@@ -96,15 +96,15 @@ async fn delegated_core_events_keep_private_output_hidden_and_deliver_final_spee
             format!("{}/v1", model_server.uri()),
         ))
         .with_extra_config("[realtime]\nversion = \"v3\"\ntype = \"conversational\"")
-        .write(codex_home.path())?;
-    codex_login::login_with_api_key(
-        codex_home.path(),
+        .write(ava_home.path())?;
+    ava_login::login_with_api_key(
+        ava_home.path(),
         "sk-test-key",
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     app.config.cli_auth_credentials_store_mode = AuthCredentialsStoreMode::File;
     app.config.model = Some("mock-model".to_string());
     app.config.model_provider_id = "mock_provider".to_string();
@@ -163,7 +163,7 @@ async fn delegated_core_events_keep_private_output_hidden_and_deliver_final_spee
                     if matches!(op, Op::RealtimeConversationSpeech { .. }) {
                         break Ok::<_, color_eyre::Report>(op);
                     }
-                    app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(op)).await?;
+                    app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(op)).await?;
                 }
             }
         }
@@ -173,7 +173,7 @@ async fn delegated_core_events_keep_private_output_hidden_and_deliver_final_spee
         matches!(&speech, Op::RealtimeConversationSpeech { text, .. } if text.as_str() == "[ANALYSIS] is the marker you asked about."),
         "unexpected speech: {speech:?}"
     );
-    app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(speech))
+    app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(speech))
         .await?;
     assert_eq!(
         timeout(
@@ -220,7 +220,7 @@ async fn delegated_core_events_keep_private_output_hidden_and_deliver_final_spee
             crossterm::event::KeyModifiers::NONE,
         ));
     let typed_op = next_user_turn_op(&mut ops);
-    app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(typed_op))
+    app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(typed_op))
         .await?;
     let mut typed_rendered = Vec::new();
     timeout(Duration::from_secs(10), async {
@@ -246,7 +246,7 @@ async fn delegated_core_events_keep_private_output_hidden_and_deliver_final_spee
                 op = ops.recv() => {
                     let op = op.expect("TUI command stream should stay open");
                     assert!(!matches!(op, Op::RealtimeConversationSpeech { .. }), "typed answer must not be spoken");
-                    app.handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(op)).await?;
+                    app.handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(op)).await?;
                 }
             }
         }

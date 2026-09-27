@@ -3,7 +3,7 @@ use crate::app::session_lifecycle::ThreadAttachPresentation;
 use crate::app::tests::session_lifecycle_requests::recorded_params;
 use crate::app::tests::session_lifecycle_requests::start_recording_remote_app_server;
 use crate::app_event::RecapTrigger;
-use codex_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::ModelProviderInfo;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -74,9 +74,9 @@ async fn recap_generation_uses_bounded_structured_request_and_inserts_result() -
     .collect();
     let (model_server, _completions) = start_streaming_sse_server(vec![chunks]).await;
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 model = "{MODEL}"
@@ -92,8 +92,8 @@ stream_max_retries = 0
             model_server.uri()
         ),
     )?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     app.config.model = Some(MODEL.to_string());
     app.config.model_provider_id = MODEL_PROVIDER_ID.to_string();
     app.config.model_provider = ModelProviderInfo {
@@ -382,7 +382,7 @@ async fn auto_recap_opt_out_blocks_requests_and_cleans_up_pending_start() -> Res
 
     // Finish the unsubscribe round trip before shutting down the recording proxy.
     app_server
-        .thread_loaded_list(codex_app_server_protocol::ThreadLoadedListParams {
+        .thread_loaded_list(ava_app_server_protocol::ThreadLoadedListParams {
             cursor: None,
             limit: None,
         })
@@ -442,18 +442,18 @@ async fn recap_generation_uses_remote_workspace_cwd() -> Result<()> {
 #[tokio::test]
 async fn temporary_recap_threads_disable_memories_and_remote_mcp_servers() -> Result<()> {
     let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let codex_home = tempdir()?;
+    let ava_home = tempdir()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         "features.context_management.experimental_mode = true\n[mcp_servers.filesystem]\ncommand = 'true'\n",
     )?;
-    app.config.codex_home = codex_home.path().to_path_buf().abs();
-    app.config.sqlite = codex_state::SqliteConfig::new_for_testing(codex_home.path().abs());
+    app.config.ava_home = ava_home.path().to_path_buf().abs();
+    app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
     let (app_server, requests, proxy) = start_recording_remote_app_server(&app.config).await?;
 
     let config = app.chat_widget.config_ref();
     let options = crate::temporary_structured_request::TemporaryStructuredThreadOptions {
-        thread_source: codex_app_server_protocol::ThreadSource::Feature("system".to_string()),
+        thread_source: ava_app_server_protocol::ThreadSource::Feature("system".to_string()),
         model: app.chat_widget.current_model().to_string(),
         model_provider: config.model_provider_id.clone(),
         cwd: config.cwd.display().to_string(),

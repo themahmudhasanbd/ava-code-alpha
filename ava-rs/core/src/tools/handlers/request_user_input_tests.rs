@@ -10,13 +10,13 @@ use crate::state::ActiveTurn;
 use crate::tools::context::ToolInvocation;
 use crate::tools::context::ToolPayload;
 use crate::turn_diff_tracker::TurnDiffTracker;
-use codex_guardian_context::RenderedVerifiedAnswers;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::request_user_input::RequestUserInputAnswer;
-use codex_protocol::request_user_input::RequestUserInputResponse;
+use ava_guardian_context::RenderedVerifiedAnswers;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::request_user_input::RequestUserInputAnswer;
+use ava_protocol::request_user_input::RequestUserInputResponse;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::HashMap;
@@ -46,7 +46,7 @@ async fn multi_agent_v2_request_user_input_rejects_subagent_threads() {
         cancellation_token: tokio_util::sync::CancellationToken::new(),
         tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
         call_id: "call-1".to_string(),
-        tool_name: codex_tools::ToolName::plain(REQUEST_USER_INPUT_TOOL_NAME),
+        tool_name: ava_tools::ToolName::plain(REQUEST_USER_INPUT_TOOL_NAME),
         source: crate::tools::context::ToolCallSource::Direct,
         payload: ToolPayload::Function {
             arguments: json!({
@@ -104,7 +104,7 @@ async fn request_user_input_sets_non_blocking_outside_plan_mode(
 ) {
     for thread_context_enabled in [false, true] {
         let (session, turn, events) = make_session_and_context_with_auth_and_config_and_rx(
-            codex_login::CodexAuth::from_api_key("Test API Key"),
+            ava_login::AvaAuth::from_api_key("Test API Key"),
             Vec::new(),
             |config| {
                 config
@@ -135,7 +135,7 @@ async fn request_user_input_sets_non_blocking_outside_plan_mode(
                     cancellation_token: tokio_util::sync::CancellationToken::new(),
                     tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
                     call_id: "call-1".to_string(),
-                    tool_name: codex_tools::ToolName::plain(REQUEST_USER_INPUT_TOOL_NAME),
+                    tool_name: ava_tools::ToolName::plain(REQUEST_USER_INPUT_TOOL_NAME),
                     source: crate::tools::context::ToolCallSource::Direct,
                     payload: ToolPayload::Function {
                         arguments: json!({
@@ -198,7 +198,7 @@ async fn request_user_input_sets_non_blocking_outside_plan_mode(
             let RenderedVerifiedAnswers {
                 fragments,
                 complete,
-            } = codex_guardian_context::render_verified_answers(
+            } = ava_guardian_context::render_verified_answers(
                 history.retained_context().expect("host context snapshot"),
             );
             let expected_fragments = expected
@@ -240,7 +240,7 @@ async fn request_user_input_sets_non_blocking_outside_plan_mode(
         match &answer {
             Some(("pick_one", answer)) if !thread_context_enabled && !answer.trim().is_empty() => {
                 let fragment = legacy_answer.expect("legacy answer");
-                assert!(codex_utils_output_truncation::approx_token_count(&fragment) <= 900);
+                assert!(ava_utils_output_truncation::approx_token_count(&fragment) <= 900);
                 assert_eq!(
                     fragment.contains("<truncated omitted_approx_tokens="),
                     !expected.complete,
@@ -285,7 +285,7 @@ async fn request_user_input_sets_blocking_from_turn_mode() {
                 cancellation_token: tokio_util::sync::CancellationToken::new(),
                 tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
                 call_id: "call-1".to_string(),
-                tool_name: codex_tools::ToolName::plain(REQUEST_USER_INPUT_TOOL_NAME),
+                tool_name: ava_tools::ToolName::plain(REQUEST_USER_INPUT_TOOL_NAME),
                 source: crate::tools::context::ToolCallSource::Direct,
                 payload: ToolPayload::Function {
                     arguments: json!({

@@ -96,7 +96,7 @@ test("a configured alias is visible before discovery data is available", () => {
   const models = composerModelsForProvider(
     {
       id: "openai",
-      models: [{ ...binding("gpt-5.3-codex-spark"), alias: "  Spark  " }],
+      models: [{ ...binding("gpt-5.3-ava-spark"), alias: "  Spark  " }],
     },
     undefined,
   );
@@ -109,10 +109,10 @@ test("the selected label keeps its alias across equivalent model ids", () => {
     composerModelDisplayName(
       {
         id: "openai",
-        models: [{ ...binding("openai/gpt-5.3-codex-spark"), alias: "Spark" }],
+        models: [{ ...binding("openai/gpt-5.3-ava-spark"), alias: "Spark" }],
       },
-      "gpt-5.3-codex-spark",
-      "GPT-5.3 Codex Spark",
+      "gpt-5.3-ava-spark",
+      "GPT-5.3 Ava Spark",
     ),
     "Spark",
   );
@@ -124,12 +124,12 @@ test("an exact binding alias wins over a broader equivalent id match", () => {
       {
         id: "openai",
         models: [
-          { ...binding("gpt-5.3-codex-spark"), alias: "Base" },
-          { ...binding("openai/gpt-5.3-codex-spark"), alias: "Namespaced" },
+          { ...binding("gpt-5.3-ava-spark"), alias: "Base" },
+          { ...binding("openai/gpt-5.3-ava-spark"), alias: "Namespaced" },
         ],
       },
-      "openai/gpt-5.3-codex-spark",
-      "GPT-5.3 Codex Spark",
+      "openai/gpt-5.3-ava-spark",
+      "GPT-5.3 Ava Spark",
     ),
     "Namespaced",
   );

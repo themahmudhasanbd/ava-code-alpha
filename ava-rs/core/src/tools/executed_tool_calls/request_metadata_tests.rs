@@ -1,10 +1,10 @@
-use codex_history::RolloutItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ToolResultMetadata;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::ThreadHistoryMode;
+use ava_history::RolloutItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ToolResultMetadata;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::ThreadHistoryMode;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -394,7 +394,7 @@ async fn recorder_refreshes_without_changing_execution_features_or_claiming_miss
         ));
 
         let call = ToolCall {
-            tool_name: codex_tools::ToolName::plain("test_tool"),
+            tool_name: ava_tools::ToolName::plain("test_tool"),
             call_id: format!("call-{index}"),
             payload: ToolPayload::Function {
                 arguments: r#"{"value":7}"#.to_string(),
@@ -461,7 +461,7 @@ fn executed_tool_call_recorder_bounds_pending_calls_and_preserves_overflow() {
     for index in 0..MAX_PENDING_EXECUTED_TOOL_CALLS + 2 {
         recorder.record_call(
             &ToolCall {
-                tool_name: codex_tools::ToolName::plain(crate::tools::code_mode::PUBLIC_TOOL_NAME),
+                tool_name: ava_tools::ToolName::plain(crate::tools::code_mode::PUBLIC_TOOL_NAME),
                 call_id: format!("failed-wrapper-{index}"),
                 payload: ToolPayload::Custom {
                     input: "".to_string(),
@@ -528,7 +528,7 @@ fn executed_tool_call_recorder_bounds_pending_calls_and_preserves_overflow() {
         json!({
             "name": "nested_tool",
             "arguments": {
-                "_codex_executed_tool_call_truncated": {
+                "_ava_executed_tool_call_truncated": {
                     "original_bytes": 2,
                     "max_bytes": 0,
                 },
@@ -588,7 +588,7 @@ fn executed_tool_call_recorder_bounds_retained_history_and_keeps_latest_calls() 
         history.extend([exec_input(&call_id), exec_output(&call_id)]);
         prompt = history.clone();
         assert!(recorder.attach_pending_to_prompt(&mut prompt, &mut HashMap::new()));
-        codex_protocol::models::bound_executed_tool_calls_for_prompt(&mut prompt);
+        ava_protocol::models::bound_executed_tool_calls_for_prompt(&mut prompt);
         let latest_call = prompt
             .last()
             .and_then(ResponseItem::executed_tool_call_metadata)
@@ -625,7 +625,7 @@ fn executed_tool_call_recorder_bounds_retained_history_and_keeps_latest_calls() 
     assert!(metadata.len() < 512);
     // Dropped outputs do not add their omission counts to unrelated surviving calls.
     assert!(metadata.iter().all(|call| {
-        call["arguments"]["_codex_executed_tool_call_truncated"]["omitted_calls"].is_null()
+        call["arguments"]["_ava_executed_tool_call_truncated"]["omitted_calls"].is_null()
     }));
 }
 
@@ -759,7 +759,7 @@ fn tool_call_completeness_survives_waits_without_changing_deltas() {
             if index > 0 {
                 recorder.record_call(
                     &ToolCall {
-                        tool_name: codex_tools::ToolName::plain(
+                        tool_name: ava_tools::ToolName::plain(
                             crate::tools::code_mode::WAIT_TOOL_NAME,
                         ),
                         call_id: call_id.to_string(),
@@ -1086,7 +1086,7 @@ fn completeness_rejects_direct_id_collision_and_late_calls() {
     recorder.start_cell(&cell, "exec-collision");
     recorder.record_call(
         &ToolCall {
-            tool_name: codex_tools::ToolName::plain("direct_tool"),
+            tool_name: ava_tools::ToolName::plain("direct_tool"),
             call_id: "exec-collision".to_string(),
             payload: ToolPayload::Function {
                 arguments: "{}".to_string(),

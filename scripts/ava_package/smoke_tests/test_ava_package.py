@@ -2,20 +2,20 @@
 
 ROOT_OF_EXTRACTED_PACKAGE
 ├── bin
-│   ├── codex[.exe]                       # CLI package only
-│   ├── codex-app-server[.exe]            # app-server package only
-│   └── codex-code-mode-host[.exe]
-├── codex-package.json
-├── codex-path
+│   ├── ava[.exe]                       # CLI package only
+│   ├── ava-app-server[.exe]            # app-server package only
+│   └── ava-code-mode-host[.exe]
+├── ava-package.json
+├── ava-path
 │   └── rg[.exe]
-└── codex-resources
+└── ava-resources
     ├── bwrap                             # Linux only
-    ├── codex-command-runner.exe          # Windows only
-    ├── codex-windows-sandbox-setup.exe   # Windows only
+    ├── ava-command-runner.exe          # Windows only
+    ├── ava-windows-sandbox-setup.exe   # Windows only
     └── zsh/bin/zsh                       # supported Unix targets only
 
 Debug symbols for all shipped binaries arrive in a separate companion archive.
-Each package contains one entrypoint, not both codex and codex-app-server.
+Each package contains one entrypoint, not both ava and ava-app-server.
 """
 
 import json
@@ -31,7 +31,7 @@ from app_server_harness import (
     ev_response_created,
     sse,
 )
-from openai_codex import ApprovalMode, Codex, CodexConfig, Sandbox
+from openai_ava import ApprovalMode, Ava, AvaConfig, Sandbox
 
 from fixtures import SmokePackage
 
@@ -42,7 +42,7 @@ from fixtures import SmokePackage
         pytest.param(("--help",), "Usage:", id="help"),
         pytest.param(("--version",), None, id="version"),
         pytest.param(("features", "list"), "code_mode", id="features"),
-        pytest.param(("completion", "bash"), "codex", id="completion"),
+        pytest.param(("completion", "bash"), "ava", id="completion"),
     ],
 )
 def test_cli_public_commands(
@@ -55,7 +55,7 @@ def test_cli_public_commands(
     assert expected in output if expected is not None else output.strip()
 
 
-@pytest.mark.parametrize("entrypoint", ["codex", "codex-app-server"])
+@pytest.mark.parametrize("entrypoint", ["ava", "ava-app-server"])
 def test_app_server_runs_code_mode_through_python_sdk(
     package: SmokePackage,
     responses_server: MockResponsesServer,
@@ -64,12 +64,12 @@ def test_app_server_runs_code_mode_through_python_sdk(
     """Both packages run their own ripgrep through sandboxed SDK code mode."""
     windows = "windows" in package.target
     sandbox_config = ("--config", 'windows.sandbox="unelevated"') if windows else ()
-    if entrypoint == "codex":
+    if entrypoint == "ava":
         executable = package.cli
         package_root = package.cli_root
         package_path_dir = package.cli_path_dir
-        config = CodexConfig(
-            codex_bin=str(executable),
+        config = AvaConfig(
+            ava_bin=str(executable),
             config_overrides=sandbox_config[1:],
             cwd=str(package.directory),
             env=package.environment,
@@ -78,7 +78,7 @@ def test_app_server_runs_code_mode_through_python_sdk(
         executable = package.app_server
         package_root = package.app_server_root
         package_path_dir = package.app_server_path_dir
-        config = CodexConfig(
+        config = AvaConfig(
             launch_args_override=(str(executable), *sandbox_config),
             cwd=str(package.directory),
             env=package.environment,
@@ -114,7 +114,7 @@ def test_app_server_runs_code_mode_through_python_sdk(
         )
     )
     responses_server.enqueue_assistant_message("Done", response_id="code-mode-done")
-    with Codex(config=config) as client:
+    with Ava(config=config) as client:
         turn = client.thread_start(
             ephemeral=True,
             approval_mode=ApprovalMode.deny_all,
@@ -163,7 +163,7 @@ def _code_mode_host_symbol_address(
         for line in symbol_output.splitlines()
         if len(parts := line.split()) == 3
         and parts[1].lower() == "t"
-        and "codex_code_mode_host" in parts[2]
+        and "ava_code_mode_host" in parts[2]
     )
 
 
@@ -192,7 +192,7 @@ def test_linux_debug_symbols_resolve_packaged_code(
         check=True,
         timeout=45,
     ).stdout
-    assert "codex_code_mode_host" in resolved, resolved
+    assert "ava_code_mode_host" in resolved, resolved
     source = resolved.splitlines()[-1]
     assert source != "??:?" and source.rsplit(":", 1)[-1].isdigit(), source
 
@@ -213,7 +213,7 @@ def test_macos_debug_symbols_resolve_packaged_code(
         check=True,
         timeout=45,
     ).stdout
-    assert "codex_code_mode_host" in resolved, resolved
+    assert "ava_code_mode_host" in resolved, resolved
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="requires Windows debug symbols")
@@ -224,10 +224,10 @@ def test_windows_debug_symbols_resolve_packaged_code(
     """Windows host symbols match the packaged executable's debug signature."""
     # Rust embeds an underscored PDB name, but release archives normalize it.
     symbols = code_mode_host_debug_symbols.rename(
-        code_mode_host_debug_symbols.with_name("codex_code_mode_host.pdb")
+        code_mode_host_debug_symbols.with_name("ava_code_mode_host.pdb")
     )
     host = symbols.with_suffix(".exe")
-    shutil.copy2(package.cli.with_name("codex-code-mode-host.exe"), host)
+    shutil.copy2(package.cli.with_name("ava-code-mode-host.exe"), host)
     result = subprocess.run(
         ["dumpbin", "/PDBPATH", str(host)],
         cwd=package.directory,

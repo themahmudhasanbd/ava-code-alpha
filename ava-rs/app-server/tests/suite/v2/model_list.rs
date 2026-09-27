@@ -6,24 +6,24 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
 use app_test_support::write_models_cache;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetParams;
-use codex_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::Model;
-use codex_app_server_protocol::ModelListParams;
-use codex_app_server_protocol::ModelListResponse;
-use codex_app_server_protocol::ModelServiceTier;
-use codex_app_server_protocol::ModelUpgradeInfo;
-use codex_app_server_protocol::ReasoningEffortOption;
-use codex_app_server_protocol::RequestId;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_login::AuthKeyringBackendKind;
-use codex_login::login_with_api_key;
-use codex_protocol::openai_models::MODEL_SPECIALTY_CYBER;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ModelsResponse;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetParams;
+use ava_app_server_protocol::ExperimentalFeatureEnablementSetResponse;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::Model;
+use ava_app_server_protocol::ModelListParams;
+use ava_app_server_protocol::ModelListResponse;
+use ava_app_server_protocol::ModelServiceTier;
+use ava_app_server_protocol::ModelUpgradeInfo;
+use ava_app_server_protocol::ReasoningEffortOption;
+use ava_app_server_protocol::RequestId;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AuthKeyringBackendKind;
+use ava_login::login_with_api_key;
+use ava_protocol::openai_models::MODEL_SPECIALTY_CYBER;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ModelsResponse;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -51,11 +51,11 @@ async fn api_key_model_discovery_startup_enablement_respects_user_config(
     catalog_opt_in: bool,
 ) -> Result<()> {
     let server = MockServer::start().await;
-    let mut remote_model = codex_models_manager::bundled_models_response()?
+    let mut remote_model = ava_models_manager::bundled_models_response()?
         .models
         .remove(0);
     remote_model.slug = "rollout-model".into();
-    remote_model.visibility = codex_protocol::openai_models::ModelVisibility::List;
+    remote_model.visibility = ava_protocol::openai_models::ModelVisibility::List;
     remote_model.supported_in_api = true;
     Mock::given(method("GET"))
         .and(path("/v1/models"))
@@ -66,7 +66,7 @@ async fn api_key_model_discovery_startup_enablement_respects_user_config(
         )
         .mount(&server)
         .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server_uri = server.uri();
     let feature_config = user_enablement
         .map(|enabled| format!("[features]\napi_key_model_discovery = {enabled}\n"))
@@ -77,7 +77,7 @@ async fn api_key_model_discovery_startup_enablement_respects_user_config(
         String::new()
     };
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 model_provider = "catalog-test"
@@ -91,17 +91,17 @@ requires_openai_auth = true
         ),
     )?;
     login_with_api_key(
-        codex_home.path(),
+        ava_home.path(),
         "test-key",
         AuthCredentialsStoreMode::File,
         AuthKeyringBackendKind::default(),
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
-        .with_env_overrides(&[("OPENAI_API_KEY", None), ("CODEX_API_KEY", None)])
+        .with_ava_home(ava_home.path())
+        .with_env_overrides(&[("OPENAI_API_KEY", None), ("AVA_API_KEY", None)])
         .build_initialized()
         .await?;
-    let mut bundled = codex_models_manager::bundled_models_response()?.models;
+    let mut bundled = ava_models_manager::bundled_models_response()?.models;
     bundled.sort_by_key(|model| model.priority);
     let mut bundled = ModelPreset::filter_by_auth(
         bundled.into_iter().map(Into::into).collect(),
@@ -214,7 +214,7 @@ fn model_from_preset(preset: &ModelPreset) -> Model {
 fn expected_visible_models() -> Vec<Model> {
     // Filter by supported_in_api to support testing with both ChatGPT and non-ChatGPT auth modes.
     let mut presets = ModelPreset::filter_by_auth(
-        codex_core::test_support::all_model_presets().clone(),
+        ava_core::test_support::all_model_presets().clone(),
         /*chatgpt_mode*/ false,
     );
 
@@ -230,10 +230,10 @@ fn expected_visible_models() -> Vec<Model> {
 
 #[tokio::test]
 async fn list_models_returns_all_models_with_large_limit() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    write_models_cache(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -260,10 +260,10 @@ async fn list_models_returns_all_models_with_large_limit() -> Result<()> {
 
 #[tokio::test]
 async fn list_models_includes_hidden_models() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    write_models_cache(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -353,10 +353,10 @@ async fn list_models_uses_remote_catalog_as_source_of_truth(
         .mount_as_scoped(&server)
         .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server_uri = server.uri();
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 model = "mock-model"
@@ -375,23 +375,23 @@ model_catalog_url = "{server_uri}/v1/models"
     )?;
     if let Some(api_key) = api_key {
         login_with_api_key(
-            codex_home.path(),
+            ava_home.path(),
             api_key,
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
         )?;
     } else {
         write_chatgpt_auth(
-            codex_home.path(),
+            ava_home.path(),
             ChatGptAuthFixture::new(bearer_token).plan_type("pro"),
             AuthCredentialsStoreMode::File,
         )?;
     }
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
-        .with_env_overrides(&[("OPENAI_API_KEY", None), ("CODEX_API_KEY", None)])
+        .with_env_overrides(&[("OPENAI_API_KEY", None), ("AVA_API_KEY", None)])
         .build_initialized()
         .await?;
     let request_id = mcp
@@ -459,10 +459,10 @@ model_catalog_url = "{server_uri}/v1/models"
 
 #[tokio::test]
 async fn list_models_pagination_works() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    write_models_cache(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -505,10 +505,10 @@ async fn list_models_pagination_works() -> Result<()> {
 
 #[tokio::test]
 async fn list_models_rejects_invalid_cursor() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    write_models_cache(ava_home.path()).await?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;

@@ -1,19 +1,19 @@
 use super::*;
 
-use codex_connectors::ConnectorRuntimeTool;
-use codex_connectors::connector_runtime_context_key;
-use codex_connectors::connector_tool_is_synthetic;
-use codex_connectors::installed_connector_runtime;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::MCP_TOOL_CODEX_APPS_META_KEY;
-use codex_mcp::McpRuntime;
-use codex_mcp::McpRuntimeInput;
-use codex_mcp::McpStartupPolicy;
-use codex_mcp::ToolInfo;
-use codex_mcp::effective_mcp_servers;
-use codex_mcp::host_owned_codex_apps_enabled;
-use codex_mcp::tool_is_model_visible;
-use codex_protocol::mcp::ClientMcpExtensions;
+use ava_connectors::ConnectorRuntimeTool;
+use ava_connectors::connector_runtime_context_key;
+use ava_connectors::connector_tool_is_synthetic;
+use ava_connectors::installed_connector_runtime;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::MCP_TOOL_AVA_APPS_META_KEY;
+use ava_mcp::McpRuntime;
+use ava_mcp::McpRuntimeInput;
+use ava_mcp::McpStartupPolicy;
+use ava_mcp::ToolInfo;
+use ava_mcp::effective_mcp_servers;
+use ava_mcp::host_owned_ava_apps_enabled;
+use ava_mcp::tool_is_model_visible;
+use ava_protocol::mcp::ClientMcpExtensions;
 
 #[cfg(test)]
 #[path = "installed_tests.rs"]
@@ -21,10 +21,10 @@ mod tests;
 
 const CONNECTOR_RUNTIME_REFRESH_TIMEOUT: Duration = Duration::from_secs(30);
 const APPS_INSTALLED_SUBMIT_ID: &str = "app-installed";
-const APPS_INSTALLED_RESPONSE_BYTES_METRIC: &str = "codex.apps.installed.response_bytes";
-const APPS_INSTALLED_CONNECTOR_COUNT_METRIC: &str = "codex.apps.installed.connector_count";
-const APPS_INSTALLED_TOOL_COUNT_METRIC: &str = "codex.apps.installed.tool_count";
-const APPS_SNAPSHOT_AGE_METRIC: &str = "codex.apps.snapshot.age_ms";
+const APPS_INSTALLED_RESPONSE_BYTES_METRIC: &str = "ava.apps.installed.response_bytes";
+const APPS_INSTALLED_CONNECTOR_COUNT_METRIC: &str = "ava.apps.installed.connector_count";
+const APPS_INSTALLED_TOOL_COUNT_METRIC: &str = "ava.apps.installed.tool_count";
+const APPS_SNAPSHOT_AGE_METRIC: &str = "ava.apps.snapshot.age_ms";
 
 struct AppsInstalledSnapshotMetrics {
     age: Option<Duration>,
@@ -61,32 +61,32 @@ impl AppsRequestProcessor {
             let auth = self.auth_manager.auth().await;
             let runtime_enabled = config
                 .features
-                .apps_enabled_for_auth(auth.as_ref().is_some_and(CodexAuth::uses_codex_backend));
+                .apps_enabled_for_auth(auth.as_ref().is_some_and(AvaAuth::uses_ava_backend));
 
             let mcp_manager = self.thread_manager.mcp_manager();
             let cache_key = connector_runtime_context_key(auth.as_ref());
             let previous_snapshot = mcp_manager
-                .codex_apps_tools_cache()
-                .current_snapshot(config.codex_home.to_path_buf(), cache_key.clone());
+                .ava_apps_tools_cache()
+                .current_snapshot(config.ava_home.to_path_buf(), cache_key.clone());
             let mut model_visible_tool_names = None;
             let tools = if force_refresh && runtime_enabled {
                 let refresh_result = async {
                     if let Some(thread) = thread {
-                        let snapshot = thread.refresh_codex_apps_tools().await?;
+                        let snapshot = thread.refresh_ava_apps_tools().await?;
                         model_visible_tool_names = Some(snapshot.model_visible_tool_names);
                         snapshot_age = Some(Duration::ZERO);
                         return Ok(snapshot.tools);
                     }
                     let mcp_config = mcp_manager.runtime_config(&config).await;
                     let mut mcp_servers = effective_mcp_servers(&mcp_config, auth.as_ref());
-                    mcp_servers.retain(|name, _| name == CODEX_APPS_MCP_SERVER_NAME);
+                    mcp_servers.retain(|name, _| name == AVA_APPS_MCP_SERVER_NAME);
                     let mcp_config = Arc::new(mcp_config.for_threadless_operations(&mcp_servers));
                     anyhow::ensure!(
                         !mcp_servers.is_empty(),
-                        "host-owned MCP server '{CODEX_APPS_MCP_SERVER_NAME}' is not enabled"
+                        "host-owned MCP server '{AVA_APPS_MCP_SERVER_NAME}' is not enabled"
                     );
                     let startup_timeout = mcp_servers
-                        .get(CODEX_APPS_MCP_SERVER_NAME)
+                        .get(AVA_APPS_MCP_SERVER_NAME)
                         .and_then(|server| server.config().startup_timeout_sec)
                         .unwrap_or(CONNECTOR_RUNTIME_REFRESH_TIMEOUT);
                     let runtime_context = McpRuntimeContext::new(
@@ -94,8 +94,8 @@ impl AppsRequestProcessor {
                         config.cwd.to_path_buf(),
                     );
                     let cancellation_token = CancellationToken::new();
-                    let codex_apps_auth_manager =
-                        host_owned_codex_apps_enabled(&mcp_config, auth.as_ref())
+                    let ava_apps_auth_manager =
+                        host_owned_ava_apps_enabled(&mcp_config, auth.as_ref())
                             .then(|| Arc::clone(&self.auth_manager));
                     let runtime = McpRuntime::new(McpRuntimeInput {
                         startup_policy: McpStartupPolicy::Eager,
@@ -107,12 +107,12 @@ impl AppsRequestProcessor {
                         tx_event: None,
                         startup_cancellation_token: cancellation_token.clone(),
                         runtime_context,
-                        codex_apps_tools_cache: mcp_manager.codex_apps_tools_cache(),
+                        ava_apps_tools_cache: mcp_manager.ava_apps_tools_cache(),
                         tool_catalog_cache: mcp_manager.tool_catalog_cache(),
-                        codex_apps_tools_cache_key: cache_key.clone(),
+                        ava_apps_tools_cache_key: cache_key.clone(),
                         client_mcp_extensions: ClientMcpExtensions::default(),
                         auth: auth.clone(),
-                        auth_manager: codex_apps_auth_manager,
+                        auth_manager: ava_apps_auth_manager,
                         allow_user_interaction: true,
                         elicitation_reviewer: None,
                         elicitation_lifecycle: None,
@@ -121,14 +121,14 @@ impl AppsRequestProcessor {
 
                     let result = if runtime
                         .latest_wait_for_server_ready(
-                            CODEX_APPS_MCP_SERVER_NAME,
+                            AVA_APPS_MCP_SERVER_NAME,
                             startup_timeout,
                         )
                         .await
                     {
                         mcp_manager
-                            .codex_apps_tools_cache()
-                            .current_snapshot(config.codex_home.to_path_buf(), cache_key.clone())
+                            .ava_apps_tools_cache()
+                            .current_snapshot(config.ava_home.to_path_buf(), cache_key.clone())
                             .ok_or_else(|| {
                                 anyhow::anyhow!(
                                     "hosted connector refresh completed without publishing a snapshot"
@@ -136,7 +136,7 @@ impl AppsRequestProcessor {
                             })
                     } else {
                         Err(anyhow::anyhow!(
-                            "failed to refresh tools for MCP server '{CODEX_APPS_MCP_SERVER_NAME}'"
+                            "failed to refresh tools for MCP server '{AVA_APPS_MCP_SERVER_NAME}'"
                         ))
                     };
                     cancellation_token.cancel();
@@ -195,7 +195,7 @@ impl AppsRequestProcessor {
         }
         .await;
 
-        if let Some(metrics) = codex_otel::global() {
+        if let Some(metrics) = ava_otel::global() {
             record_apps_installed_metrics(
                 &metrics,
                 started_at,
@@ -226,14 +226,14 @@ fn connector_runtime_tool(tool: &ToolInfo) -> ConnectorRuntimeTool<'_> {
             tool.tool
                 .meta
                 .as_deref()
-                .and_then(|meta| meta.get(MCP_TOOL_CODEX_APPS_META_KEY)),
+                .and_then(|meta| meta.get(MCP_TOOL_AVA_APPS_META_KEY)),
         ),
         model_visible: tool_is_model_visible(tool),
     }
 }
 
 fn record_apps_installed_metrics(
-    metrics: &codex_otel::MetricsClient,
+    metrics: &ava_otel::MetricsClient,
     started_at: Instant,
     force_refresh: bool,
     retained_previous_snapshot: bool,

@@ -3,7 +3,7 @@
 use std::fmt;
 use std::sync::OnceLock;
 
-use codex_install_context::InstallContext;
+use ava_install_context::InstallContext;
 use semver::Version;
 use serde::Deserialize;
 use serde::Serialize;
@@ -34,7 +34,7 @@ pub struct BuildInfo {
 }
 
 impl BuildInfo {
-    /// Return build information for the current Codex runtime.
+    /// Return build information for the current Ava runtime.
     pub fn get() -> Self {
         BUILD_INFO
             .get_or_init(|| Self::resolve(InstallContext::current(), "dev"))
@@ -79,7 +79,7 @@ impl BuildInfo {
         &self.version
     }
 
-    /// Format the version for a user-facing Codex header.
+    /// Format the version for a user-facing Ava header.
     pub fn display_version(&self) -> String {
         if self.build_commit == "dev" {
             "dev".to_string()
@@ -110,14 +110,14 @@ impl BuildInfo {
             return Self {
                 version: manifest.version,
                 build_commit: build_commit.to_owned(),
-                target: Some(env!("CODEX_BUILD_TARGET").to_owned()),
+                target: Some(env!("AVA_BUILD_TARGET").to_owned()),
             };
         }
 
         Self {
             version: Version::new(0, 0, 0),
             build_commit: build_commit.to_owned(),
-            target: Some(env!("CODEX_BUILD_TARGET").to_owned()),
+            target: Some(env!("AVA_BUILD_TARGET").to_owned()),
         }
     }
 }

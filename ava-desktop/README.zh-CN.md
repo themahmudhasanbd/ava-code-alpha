@@ -466,7 +466,7 @@ Private Task → Local Model
 
 PI-Desktop 可以导入本地 Session：
 
-**Claude Code · Codex · OpenCode · Pi**
+**Claude Code · Ava · OpenCode · Pi**
 
 ---
 

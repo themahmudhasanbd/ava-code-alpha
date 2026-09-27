@@ -4,13 +4,13 @@ import path from "node:path";
 
 import { afterEach, beforeEach } from "@jest/globals";
 
-const originalAvaHome = process.env.AVA_HOME || process.env.CODEX_HOME;
+const originalAvaHome = process.env.AVA_HOME || process.env.AVA_HOME;
 let currentAvaHome: string | undefined;
 
 beforeEach(async () => {
   currentAvaHome = await fs.mkdtemp(path.join(os.tmpdir(), "ava-sdk-test-"));
   process.env.AVA_HOME = currentAvaHome;
-  process.env.CODEX_HOME = currentAvaHome;
+  process.env.AVA_HOME = currentAvaHome;
 });
 
 afterEach(async () => {
@@ -19,10 +19,10 @@ afterEach(async () => {
 
   if (originalAvaHome === undefined) {
     delete process.env.AVA_HOME;
-    delete process.env.CODEX_HOME;
+    delete process.env.AVA_HOME;
   } else {
     process.env.AVA_HOME = originalAvaHome;
-    process.env.CODEX_HOME = originalAvaHome;
+    process.env.AVA_HOME = originalAvaHome;
   }
 
   if (homeToDelete) {

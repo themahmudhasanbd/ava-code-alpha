@@ -35,7 +35,7 @@ function endpointPathSuffixes(apiStyle: CatalogApiStyle): string[] {
     case "chat_completions":
       return ["/chat/completions", "/models"];
     case "responses":
-    case "openai_codex_responses":
+    case "openai_ava_responses":
     case "opencode_go":
       return ["/responses", "/models"];
     case "google_generative_ai":

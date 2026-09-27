@@ -3,7 +3,7 @@
 //! Keep the shared picker panel and reserved result viewport on the production
 //! factory so tabs and search stay anchored in the live picker.
 
-use codex_config::types::TuiKeymap;
+use ava_config::types::TuiKeymap;
 use ratatui::style::Styled;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
@@ -322,7 +322,7 @@ fn keymap_debug_tab() -> SelectionTab {
         label: "Debug".to_string(),
         header: keymap_header(
             "Inspect keypresses from your terminal.".to_string(),
-            "See the key Codex detects and any shortcuts assigned to it.".to_string(),
+            "See the key Ava detects and any shortcuts assigned to it.".to_string(),
         ),
         items: vec![SelectionItem {
             name: "Inspect keypresses".to_string(),

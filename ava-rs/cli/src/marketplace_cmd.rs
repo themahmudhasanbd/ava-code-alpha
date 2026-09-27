@@ -2,22 +2,22 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
 use clap::Parser;
-use codex_core::config::Config;
-use codex_core::config::ConfigOverrides;
-use codex_core::config::LoaderOverrides;
-use codex_core::plugins_manager_for_config;
-use codex_core_plugins::PluginMarketplaceUpgradeOutcome;
-use codex_core_plugins::PluginsConfigInput;
-use codex_core_plugins::installed_marketplaces::marketplace_install_root;
-use codex_core_plugins::installed_marketplaces::resolve_configured_marketplace_root;
-use codex_core_plugins::marketplace::marketplace_root_dir;
-use codex_core_plugins::marketplace_add::MarketplaceAddOutcome;
-use codex_core_plugins::marketplace_add::MarketplaceAddRequest;
-use codex_core_plugins::marketplace_add::add_marketplace;
-use codex_core_plugins::marketplace_remove::MarketplaceRemoveOutcome;
-use codex_core_plugins::marketplace_remove::MarketplaceRemoveRequest;
-use codex_core_plugins::marketplace_remove::remove_marketplace;
-use codex_utils_cli::CliConfigOverrides;
+use ava_core::config::Config;
+use ava_core::config::ConfigOverrides;
+use ava_core::config::LoaderOverrides;
+use ava_core::plugins_manager_for_config;
+use ava_core_plugins::PluginMarketplaceUpgradeOutcome;
+use ava_core_plugins::PluginsConfigInput;
+use ava_core_plugins::installed_marketplaces::marketplace_install_root;
+use ava_core_plugins::installed_marketplaces::resolve_configured_marketplace_root;
+use ava_core_plugins::marketplace::marketplace_root_dir;
+use ava_core_plugins::marketplace_add::MarketplaceAddOutcome;
+use ava_core_plugins::marketplace_add::MarketplaceAddRequest;
+use ava_core_plugins::marketplace_add::add_marketplace;
+use ava_core_plugins::marketplace_remove::MarketplaceRemoveOutcome;
+use ava_core_plugins::marketplace_remove::MarketplaceRemoveRequest;
+use ava_core_plugins::marketplace_remove::remove_marketplace;
+use ava_utils_cli::CliConfigOverrides;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -31,7 +31,7 @@ use crate::plugin_cmd::configured_marketplace_sources;
 use crate::plugin_cmd::load_cli_auth_manager;
 
 #[derive(Debug, Parser)]
-#[command(bin_name = "codex plugin marketplace")]
+#[command(bin_name = "ava plugin marketplace")]
 pub struct MarketplaceCli {
     #[clap(flatten)]
     pub config_overrides: CliConfigOverrides,
@@ -45,7 +45,7 @@ enum MarketplaceSubcommand {
     /// Add a local or Git marketplace to the configured marketplace sources.
     Add(AddMarketplaceArgs),
 
-    /// List plugin marketplaces Codex is currently considering and their roots.
+    /// List plugin marketplaces Ava is currently considering and their roots.
     List(ListMarketplaceArgs),
 
     /// Refresh configured Git marketplace snapshots.
@@ -59,8 +59,8 @@ enum MarketplaceSubcommand {
 
 #[derive(Debug, Parser)]
 #[command(
-    bin_name = "codex plugin marketplace add",
-    after_help = "Examples:\n  codex plugin marketplace add ./path/to/marketplace\n  codex plugin marketplace add owner/repo --ref main\n  codex plugin marketplace add https://github.com/owner/repo --sparse plugins/foo"
+    bin_name = "ava plugin marketplace add",
+    after_help = "Examples:\n  ava plugin marketplace add ./path/to/marketplace\n  ava plugin marketplace add owner/repo --ref main\n  ava plugin marketplace add https://github.com/owner/repo --sparse plugins/foo"
 )]
 struct AddMarketplaceArgs {
     /// Marketplace source: a local path, owner/repo[@ref], HTTPS Git URL, or SSH Git URL.
@@ -85,7 +85,7 @@ struct AddMarketplaceArgs {
 }
 
 #[derive(Debug, Parser)]
-#[command(bin_name = "codex plugin marketplace list")]
+#[command(bin_name = "ava plugin marketplace list")]
 struct ListMarketplaceArgs {
     /// Output marketplace list as JSON.
     #[arg(long = "json")]
@@ -94,8 +94,8 @@ struct ListMarketplaceArgs {
 
 #[derive(Debug, Parser)]
 #[command(
-    bin_name = "codex plugin marketplace upgrade",
-    after_help = "Examples:\n  codex plugin marketplace upgrade\n  codex plugin marketplace upgrade debug"
+    bin_name = "ava plugin marketplace upgrade",
+    after_help = "Examples:\n  ava plugin marketplace upgrade\n  ava plugin marketplace upgrade debug"
 )]
 struct UpgradeMarketplaceArgs {
     /// Optional configured marketplace name to upgrade. Omit to upgrade all Git marketplaces.
@@ -109,8 +109,8 @@ struct UpgradeMarketplaceArgs {
 
 #[derive(Debug, Parser)]
 #[command(
-    bin_name = "codex plugin marketplace remove",
-    after_help = "Example:\n  codex plugin marketplace remove debug"
+    bin_name = "ava plugin marketplace remove",
+    after_help = "Example:\n  ava plugin marketplace remove debug"
 )]
 struct RemoveMarketplaceArgs {
     /// Configured marketplace name to remove.
@@ -157,7 +157,7 @@ async fn run_add(config: Config, args: AddMarketplaceArgs) -> Result<()> {
     } = args;
 
     let outcome = add_marketplace(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         config.config_layer_stack.requirements().clone(),
         MarketplaceAddRequest {
             source,
@@ -217,7 +217,7 @@ async fn run_list(config: Config, args: ListMarketplaceArgs) -> Result<()> {
         .discover_marketplaces_for_config(&plugins_input, &[])
         .context("failed to list plugin marketplaces")?;
     let mut load_issues = configured_marketplace_snapshot_issues(
-        config.codex_home.as_path(),
+        config.ava_home.as_path(),
         &plugins_input,
         &marketplace_listing.errors,
         /*marketplace_name*/ None,
@@ -253,7 +253,7 @@ async fn run_list(config: Config, args: ListMarketplaceArgs) -> Result<()> {
     let marketplaces = marketplace_listing.marketplaces;
     if args.json {
         let marketplace_sources =
-            configured_marketplace_sources_by_root(config.codex_home.as_path(), &plugins_input);
+            configured_marketplace_sources_by_root(config.ava_home.as_path(), &plugins_input);
         let output =
             JsonMarketplaceListOutput::from_marketplaces(marketplaces, &marketplace_sources);
         println!("{}", serde_json::to_string_pretty(&output)?);
@@ -304,7 +304,7 @@ struct JsonMarketplaceListOutput {
 
 impl JsonMarketplaceListOutput {
     fn from_marketplaces(
-        marketplaces: Vec<codex_core_plugins::marketplace::Marketplace>,
+        marketplaces: Vec<ava_core_plugins::marketplace::Marketplace>,
         marketplace_sources: &HashMap<PathBuf, JsonMarketplaceSource>,
     ) -> Self {
         let mut seen_roots = HashSet::new();
@@ -337,10 +337,10 @@ struct JsonMarketplaceListEntry {
 }
 
 fn configured_marketplace_sources_by_root(
-    codex_home: &Path,
+    ava_home: &Path,
     plugins_input: &PluginsConfigInput,
 ) -> HashMap<PathBuf, JsonMarketplaceSource> {
-    let marketplace_sources = configured_marketplace_sources(plugins_input, codex_home);
+    let marketplace_sources = configured_marketplace_sources(plugins_input, ava_home);
     let effective_config = plugins_input.config_layer_stack.effective_config();
     let Some(marketplaces) = effective_config
         .get("marketplaces")
@@ -349,7 +349,7 @@ fn configured_marketplace_sources_by_root(
         return HashMap::new();
     };
 
-    let default_install_root = marketplace_install_root(codex_home);
+    let default_install_root = marketplace_install_root(ava_home);
     marketplaces
         .iter()
         .filter_map(|(marketplace_name, marketplace)| {
@@ -367,7 +367,7 @@ fn configured_marketplace_sources_by_root(
 async fn run_upgrade(
     config: Config,
     args: UpgradeMarketplaceArgs,
-    builder: codex_core::config::ConfigBuilder,
+    builder: ava_core::config::ConfigBuilder,
 ) -> Result<()> {
     let UpgradeMarketplaceArgs {
         marketplace_name,
@@ -376,7 +376,7 @@ async fn run_upgrade(
     let manager = plugins_manager_for_config(&config, load_cli_auth_manager(&config).await?);
     let plugins_input = config.plugins_config_input();
     let runtime = tokio::runtime::Handle::current();
-    let reload_config: codex_core_plugins::ConfigLayerReload = std::sync::Arc::new(move || {
+    let reload_config: ava_core_plugins::ConfigLayerReload = std::sync::Arc::new(move || {
         runtime
             .block_on(builder.clone().build())
             .map(|config| config.config_layer_stack)
@@ -404,7 +404,7 @@ async fn run_remove(config: Config, args: RemoveMarketplaceArgs) -> Result<()> {
         json,
     } = args;
     let outcome = remove_marketplace(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         config.config_layer_stack,
         MarketplaceRemoveRequest { marketplace_name },
     )

@@ -1,6 +1,6 @@
 use crate::key_aliases::normalize_key_aliases;
 use crate::key_aliases::normalized_with_key_aliases;
-use codex_network_proxy::normalize_host;
+use ava_network_proxy::normalize_host;
 use toml::Value as TomlValue;
 
 /// The mutually exclusive shell-environment filter representations.

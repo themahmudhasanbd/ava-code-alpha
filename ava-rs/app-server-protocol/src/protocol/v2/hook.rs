@@ -1,17 +1,17 @@
 use super::shared::v2_enum_from_core;
 use crate::JsonSchema;
 use crate::TS;
-use codex_protocol::protocol::HookEventName as CoreHookEventName;
-use codex_protocol::protocol::HookExecutionMode as CoreHookExecutionMode;
-use codex_protocol::protocol::HookHandlerType as CoreHookHandlerType;
-use codex_protocol::protocol::HookOutputEntry as CoreHookOutputEntry;
-use codex_protocol::protocol::HookOutputEntryKind as CoreHookOutputEntryKind;
-use codex_protocol::protocol::HookRunStatus as CoreHookRunStatus;
-use codex_protocol::protocol::HookRunSummary as CoreHookRunSummary;
-use codex_protocol::protocol::HookScope as CoreHookScope;
-use codex_protocol::protocol::HookSource as CoreHookSource;
-use codex_protocol::protocol::HookTrustStatus as CoreHookTrustStatus;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::protocol::HookEventName as CoreHookEventName;
+use ava_protocol::protocol::HookExecutionMode as CoreHookExecutionMode;
+use ava_protocol::protocol::HookHandlerType as CoreHookHandlerType;
+use ava_protocol::protocol::HookOutputEntry as CoreHookOutputEntry;
+use ava_protocol::protocol::HookOutputEntryKind as CoreHookOutputEntryKind;
+use ava_protocol::protocol::HookRunStatus as CoreHookRunStatus;
+use ava_protocol::protocol::HookRunSummary as CoreHookRunSummary;
+use ava_protocol::protocol::HookScope as CoreHookScope;
+use ava_protocol::protocol::HookSource as CoreHookSource;
+use ava_protocol::protocol::HookTrustStatus as CoreHookTrustStatus;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 

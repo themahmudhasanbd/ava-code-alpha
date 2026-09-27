@@ -1,33 +1,33 @@
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::permissions_toml::FilesystemPermissionToml;
-use codex_config::permissions_toml::PermissionProfileToml;
-use codex_config::types::ApprovalsReviewer;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_core::sandboxing::SandboxPermissions;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecApprovalRequestEvent;
-use codex_protocol::protocol::GuardianAssessmentAction;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::GuardianCommandSource;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_config::permissions_toml::FilesystemPermissionToml;
+use ava_config::permissions_toml::PermissionProfileToml;
+use ava_config::types::ApprovalsReviewer;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_core::sandboxing::SandboxPermissions;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecApprovalRequestEvent;
+use ava_protocol::protocol::GuardianAssessmentAction;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::GuardianCommandSource;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -38,9 +38,9 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_with_timeout;
 use core_test_support::zsh_fork::restrictive_workspace_write_profile;
@@ -234,7 +234,7 @@ async fn unified_exec_zsh_fork_parent_approval_keeps_explicit_prompt_rule() -> R
     let mut intercepted_approval_ids = Vec::new();
     for _ in 0..2 {
         let approval_event = wait_for_event_with_timeout(
-            &test.codex,
+            &test.ava-code,
             |event| {
                 matches!(
                     event,
@@ -255,7 +255,7 @@ async fn unified_exec_zsh_fork_parent_approval_keeps_explicit_prompt_rule() -> R
             ),
             (
                 call_id,
-                Some(codex_exec_server::LOCAL_ENVIRONMENT_ID),
+                Some(ava_exec_server::LOCAL_ENVIRONMENT_ID),
                 Some([ReviewDecision::Approved, ReviewDecision::Abort].as_slice()),
             )
         );
@@ -376,7 +376,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_intercepted_execve() -> Result<(
 
     let mut intercepted_assessments = Vec::new();
     loop {
-        let event = tokio::time::timeout(Duration::from_secs(30), test.codex.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(30), test.ava-code.next_event())
             .await
             .context("timed out waiting for intercepted execve Guardian review")??;
         match event.msg {
@@ -548,7 +548,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_persistent_terminal_in_current_t
     )
     .await?;
     approve_expected_exec(&test, open_command).await?;
-    let first_completion = wait_for_event(&test.codex, |event| {
+    let first_completion = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -563,7 +563,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_persistent_terminal_in_current_t
         denied_read_permission_profile(next_denied_path.as_path())?,
         next_cwd.as_path(),
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command in the persistent terminal with Guardian approvals".into(),
@@ -583,7 +583,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_persistent_terminal_in_current_t
     let mut stdin_assessment = None;
     let mut intercepted_assessment = None;
     loop {
-        let event = tokio::time::timeout(Duration::from_secs(30), test.codex.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(30), test.ava-code.next_event())
             .await
             .context("timed out waiting for current-turn intercepted execve Guardian review")??;
         match event.msg {
@@ -668,7 +668,7 @@ async fn build_unified_exec_zsh_fork_test_or_skip<F>(
     approval_policy: AskForApproval,
     permission_profile: PermissionProfile,
     pre_build_hook: F,
-) -> Result<Option<(MockServer, TestCodex)>>
+) -> Result<Option<(MockServer, TestAva)>>
 where
     F: FnOnce(&Path) + Send + 'static,
 {
@@ -678,11 +678,11 @@ where
 
     struct ExecveIdentityCheck;
 
-    impl codex_extension_api::ApprovalReviewContributor for ExecveIdentityCheck {
+    impl ava_extension_api::ApprovalReviewContributor for ExecveIdentityCheck {
         fn decide<'a>(
             &'a self,
-            input: &'a codex_extension_api::ApprovalDecisionInput<'_>,
-        ) -> codex_extension_api::ExtensionFuture<'a, Option<codex_extension_api::ApprovalDecision>>
+            input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
+        ) -> ava_extension_api::ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>>
         {
             if input.action.get("program").is_some() {
                 assert_eq!(input.tool_call_id, None);
@@ -809,7 +809,7 @@ async fn mount_unified_exec_command(
 }
 
 async fn submit_turn_with_session_permissions(
-    test: &TestCodex,
+    test: &TestAva,
     prompt: &str,
     approval_policy: AskForApproval,
     approvals_reviewer: ApprovalsReviewer,
@@ -819,7 +819,7 @@ async fn submit_turn_with_session_permissions(
         test.session_configured.permission_profile.clone(),
         test.cwd.path(),
     );
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -847,13 +847,13 @@ async fn submit_turn_with_session_permissions(
     Ok(())
 }
 
-async fn approve_expected_exec(test: &TestCodex, expected_command: &str) -> Result<()> {
+async fn approve_expected_exec(test: &TestAva, expected_command: &str) -> Result<()> {
     let approval = expect_exec_approval(test, expected_command).await;
     approve_exec(test, approval.effective_approval_id()).await
 }
 
-async fn approve_exec(test: &TestCodex, approval_id: String) -> Result<()> {
-    test.codex
+async fn approve_exec(test: &TestAva, approval_id: String) -> Result<()> {
+    test.ava-code
         .submit(Op::ExecApproval {
             id: approval_id,
             turn_id: None,
@@ -927,10 +927,10 @@ fn parsed_regex_result(pattern: &str, output_str: &str) -> Option<CommandResult>
 }
 
 async fn expect_exec_approval(
-    test: &TestCodex,
+    test: &TestAva,
     expected_command: &str,
 ) -> ExecApprovalRequestEvent {
-    let event = wait_for_event(&test.codex, |event| {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -956,8 +956,8 @@ async fn expect_exec_approval(
     }
 }
 
-async fn wait_for_completion_without_approval(test: &TestCodex) {
-    let event = wait_for_event(&test.codex, |event| {
+async fn wait_for_completion_without_approval(test: &TestAva) {
+    let event = wait_for_event(&test.ava-code, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -974,8 +974,8 @@ async fn wait_for_completion_without_approval(test: &TestCodex) {
     }
 }
 
-async fn wait_for_completion(test: &TestCodex) {
-    wait_for_event(&test.codex, |event| {
+async fn wait_for_completion(test: &TestAva) {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

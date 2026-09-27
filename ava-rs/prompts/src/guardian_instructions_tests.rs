@@ -1,7 +1,7 @@
 //! Covers policy substitution, terminal output contracts, truncation, and rejection-text overrides.
 
-use codex_context_fragments::ContextualUserFragment;
-use codex_guardian_context::truncate_text;
+use ava_context_fragments::ContextualUserFragment;
+use ava_guardian_context::truncate_text;
 use pretty_assertions::assert_eq;
 
 use super::GuardianClassifierInstructions;

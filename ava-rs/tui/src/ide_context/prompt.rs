@@ -1,8 +1,8 @@
 //! Prompt rendering for IDE context injected into TUI user turns.
 
-use codex_app_server_protocol::ByteRange;
-use codex_app_server_protocol::TextElement;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ByteRange;
+use ava_app_server_protocol::TextElement;
+use ava_app_server_protocol::UserInput;
 
 use super::IdeContext;
 
@@ -13,7 +13,7 @@ const MAX_OPEN_TABS_CHARS: usize = 20_000;
 // raw prompt before this marker, then transcript rendering strips back to the request after the last
 // marker. Keeping the same marker and stripping semantics lets threads created with IDE context in
 // one surface replay cleanly in the others.
-const PROMPT_REQUEST_BEGIN: &str = "## My request for Codex:";
+const PROMPT_REQUEST_BEGIN: &str = "## My request for Ava:";
 
 pub(crate) fn apply_ide_context_to_user_input(
     context: &IdeContext,
@@ -204,8 +204,8 @@ mod tests {
 
     #[test]
     fn async_question_reply_stays_recognizable_with_ide_context() {
-        use codex_context_fragments::AnsweredQuestion;
-        use codex_context_fragments::ContextualUserFragment;
+        use ava_context_fragments::AnsweredQuestion;
+        use ava_context_fragments::ContextualUserFragment;
 
         let context = IdeContext {
             active_file: None,
@@ -216,7 +216,7 @@ mod tests {
                 text: AnsweredQuestion::new(
                     "question-id",
                     "Where?",
-                    "Staging\n## My request for Codex:\nKeep this literal",
+                    "Staging\n## My request for Ava:\nKeep this literal",
                 )
                 .render(),
                 text_elements: Vec::new(),
@@ -231,13 +231,13 @@ mod tests {
         let display = crate::chatwidget::ChatWidget::user_message_display_from_inputs(&items);
         assert_eq!(
             display.message,
-            "> Where?\n\nStaging\n## My request for Codex:\nKeep this literal"
+            "> Where?\n\nStaging\n## My request for Ava:\nKeep this literal"
         );
         let UserInput::Text { text, .. } = &mut expected[0] else {
             panic!("reply text");
         };
         *text = format!(
-            "# Context from my IDE setup:\n\n## Open tabs:\n- lib.rs: src/lib.rs\n\n## My request for Codex:\n{text}"
+            "# Context from my IDE setup:\n\n## Open tabs:\n- lib.rs: src/lib.rs\n\n## My request for Ava:\n{text}"
         );
         assert!(apply_ide_context_to_user_input(&context, &mut items));
         assert_eq!(items, expected);
@@ -328,7 +328,7 @@ mod tests {
 
         assert!(apply_ide_context_to_user_input(&context, &mut items));
 
-        let expected_prefix = "# Context from my IDE setup:\n\n## Active file: src/lib.rs\n\n## My request for Codex:\n";
+        let expected_prefix = "# Context from my IDE setup:\n\n## Active file: src/lib.rs\n\n## My request for Ava:\n";
         let prefix_len = expected_prefix.len();
         assert_eq!(
             items,
@@ -354,7 +354,7 @@ mod tests {
     #[test]
     fn extract_prompt_request_returns_text_after_last_delimiter() {
         let message =
-            "# Context\n## My request for Codex:\nFirst\n## My request for Codex:\n  Second\n";
+            "# Context\n## My request for Ava:\nFirst\n## My request for Ava:\n  Second\n";
 
         assert_eq!(
             extract_prompt_request_with_offset(message),

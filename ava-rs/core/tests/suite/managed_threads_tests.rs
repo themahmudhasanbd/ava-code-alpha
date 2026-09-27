@@ -7,18 +7,18 @@ use std::task::Wake;
 use std::time::Duration;
 
 use anyhow::Context;
-use codex_core::StartThreadOptions;
-use codex_core::TurnInputRequest;
-use codex_extension_api::AllowedTools;
-use codex_extension_api::SessionIsolation;
-use codex_extension_api::ToolName;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::UserInput;
-use codex_thread_store::ThreadStoreError;
+use ava_core::StartThreadOptions;
+use ava_core::TurnInputRequest;
+use ava_extension_api::AllowedTools;
+use ava_extension_api::SessionIsolation;
+use ava_extension_api::ToolName;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::UserInput;
+use ava_thread_store::ThreadStoreError;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -31,7 +31,7 @@ async fn dropping_startup_cleans_up_while_required_mcp_is_stalled() -> anyhow::R
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let fixture = test_codex().build_with_auto_env(&server).await?;
+    let fixture = test_ava().build_with_auto_env(&server).await?;
     let mcp_server = responses::start_mock_server().await;
     let (http_server, control) = AppsTestServer::mount_with_startup_control(&mcp_server).await?;
     let release = control.hold_next_successful_initialize();
@@ -40,7 +40,7 @@ async fn dropping_startup_cleans_up_while_required_mcp_is_stalled() -> anyhow::R
     servers.insert(
         "stalled".to_owned(),
         serde_json::from_value(json!({
-            "url": format!("{}/api/codex/ps/mcp", http_server.chatgpt_base_url),
+            "url": format!("{}/api/ava/ps/mcp", http_server.chatgpt_base_url),
             "http_headers": { "Authorization": "Bearer synthetic-test-token" },
             "required": true,
             "startup_timeout_sec": 120,
@@ -50,7 +50,7 @@ async fn dropping_startup_cleans_up_while_required_mcp_is_stalled() -> anyhow::R
     let thread_id = fixture.thread_manager.reserve_thread_id();
     let mut options = StartThreadOptions::new(config);
     options.reserved_thread_id = Some(thread_id);
-    options.environments = Some(fixture.codex.environment_selections().await);
+    options.environments = Some(fixture.ava-code.environment_selections().await);
     options
         .thread_extension_init
         .insert(SessionIsolation::Isolated);
@@ -85,7 +85,7 @@ async fn dropping_startup_cleans_up_while_required_mcp_is_stalled() -> anyhow::R
         Err(ThreadStoreError::ThreadNotFound { .. })
     ));
     drop(release);
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -102,11 +102,11 @@ async fn dropping_startup_before_receiving_the_agent_finishes_cleanup() -> anyho
         }
     }
     let server = responses::start_mock_server().await;
-    let fixture = test_codex().build_with_auto_env(&server).await?;
+    let fixture = test_ava().build_with_auto_env(&server).await?;
     let mut options = StartThreadOptions::new(fixture.config.clone());
     let thread_id = fixture.thread_manager.reserve_thread_id();
     options.reserved_thread_id = Some(thread_id);
-    options.environments = Some(fixture.codex.environment_selections().await);
+    options.environments = Some(fixture.ava-code.environment_selections().await);
     options
         .thread_extension_init
         .insert(SessionIsolation::Isolated);
@@ -139,7 +139,7 @@ async fn dropping_startup_before_receiving_the_agent_finishes_cleanup() -> anyho
         fixture.thread_store.flush_thread(thread_id).await,
         Err(ThreadStoreError::ThreadNotFound { .. })
     ));
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -148,9 +148,9 @@ async fn owner_cancellation_closes_agent_and_preserves_history_and_parent() -> a
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let fixture = test_codex().build_with_auto_env(&server).await?;
+    let fixture = test_ava().build_with_auto_env(&server).await?;
     let mut options = StartThreadOptions::new(fixture.config.clone());
-    options.environments = Some(fixture.codex.environment_selections().await);
+    options.environments = Some(fixture.ava-code.environment_selections().await);
     options
         .thread_extension_init
         .insert(SessionIsolation::Isolated);
@@ -163,7 +163,7 @@ async fn owner_cancellation_closes_agent_and_preserves_history_and_parent() -> a
     // A failed startup with the same ID must leave the original agent's writer intact.
     let mut duplicate = StartThreadOptions::new(fixture.config.clone());
     duplicate.reserved_thread_id = Some(agent.thread_id);
-    duplicate.environments = Some(fixture.codex.environment_selections().await);
+    duplicate.environments = Some(fixture.ava-code.environment_selections().await);
     duplicate
         .thread_extension_init
         .insert(SessionIsolation::Isolated);
@@ -225,7 +225,7 @@ async fn owner_cancellation_closes_agent_and_preserves_history_and_parent() -> a
         .await?;
     assert!(history.items.iter().any(|item| matches!(
         item,
-        codex_history::RolloutItem::EventMsg(EventMsg::TurnComplete(_))
+        ava_history::RolloutItem::EventMsg(EventMsg::TurnComplete(_))
     )));
 
     let parent_response = responses::mount_sse_once(
@@ -242,7 +242,7 @@ async fn owner_cancellation_closes_agent_and_preserves_history_and_parent() -> a
             .single_request()
             .body_contains_text("parent still works")
     );
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -255,18 +255,18 @@ async fn startup_allowlist_controls_advertising_and_execution(
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let fixture = test_codex()
+    let fixture = test_ava()
         .with_config(|config| {
             config.update_plan_enabled = true;
             config
                 .features
-                .disable(codex_features::Feature::CodeMode)
+                .disable(ava_features::Feature::CodeMode)
                 .expect("disable Code Mode for direct-tool assertions");
         })
         .build_with_auto_env(&server)
         .await?;
     let mut options = StartThreadOptions::new(fixture.config.clone());
-    options.environments = Some(fixture.codex.environment_selections().await);
+    options.environments = Some(fixture.ava-code.environment_selections().await);
     options
         .thread_extension_init
         .insert(SessionIsolation::Isolated);
@@ -344,6 +344,6 @@ async fn startup_allowlist_controls_advertising_and_execution(
     cancelled.cancel();
     tasks.close();
     tasks.wait().await;
-    fixture.codex.shutdown_and_wait().await?;
+    fixture.ava-code.shutdown_and_wait().await?;
     Ok(())
 }

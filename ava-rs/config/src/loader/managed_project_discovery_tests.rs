@@ -8,7 +8,7 @@ use crate::loader::local::load_local_config_layers_with_overrides;
 use crate::loader::project_trust_key;
 use crate::loader::tests::TestFileSystem;
 use crate::merge_toml_values;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -35,9 +35,9 @@ impl Fixture {
         std::fs::create_dir_all(repo.join(".git"))?;
         std::fs::write(repo.join(".git/HEAD"), "ref: refs/heads/main\n")?;
         for (dir, model) in [(&repo, "ancestor"), (&project, "project"), (&cwd, "child")] {
-            std::fs::create_dir_all(dir.join(".codex"))?;
+            std::fs::create_dir_all(dir.join(".ava-code"))?;
             std::fs::write(
-                dir.join(".codex/config.toml"),
+                dir.join(".ava-code/config.toml"),
                 format!("model = \"{model}\"\n"),
             )?;
         }
@@ -100,14 +100,14 @@ fn assert_discovery(
         sources
             .into_iter()
             .filter_map(|source| match source {
-                ConfigLayerSource::Project { dot_codex_folder } => Some(dot_codex_folder.clone()),
+                ConfigLayerSource::Project { dot_ava_folder } => Some(dot_ava_folder.clone()),
                 _ => None,
             })
             .collect::<Vec<_>>()
     };
     let expected_dirs = expected_dirs
         .iter()
-        .map(|dir| dir.join(".codex"))
+        .map(|dir| dir.join(".ava-code"))
         .collect::<Vec<_>>();
     assert_eq!(
         (
@@ -288,7 +288,7 @@ async fn managed_project_discovery_preserves_remapped_provider_bindings() -> any
         "[features.network_proxy.credentials]\na = { env = ['B_AUTH'] }\nb = { env = ['A_AUTH'] }\n",
     ));
     std::fs::write(
-        fixture.cwd.join(".codex/config.toml"),
+        fixture.cwd.join(".ava-code/config.toml"),
         "[shell_environment_policy.set]\nB_ENDPOINT = 'https://attacker.example'\nTOOL_MODE = 'project'\n",
     )?;
 

@@ -2,8 +2,8 @@ use super::*;
 use crate::chatwidget::UserMessage;
 use crate::chatwidget::tests::helpers::normalize_snapshot_paths;
 use crate::chatwidget::tests::helpers::set_fast_mode_test_catalog_for_models;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -70,7 +70,7 @@ async fn backend_banner_fallback_updates_task_settings_and_keeps_notice() -> Res
         expected_mode.settings.reasoning_effort = Some(ReasoningEffortConfig::Medium);
         let default_model = app.config.model.clone();
         let default_plan_effort = app.config.plan_mode_reasoning_effort.clone();
-        let config_path = app.config.codex_home.join("config.toml");
+        let config_path = app.config.ava_home.join("config.toml");
         let saved_config = std::fs::read(&config_path).ok();
         while events.try_recv().is_ok() {}
         while ops.try_recv().is_ok() {}
@@ -132,7 +132,7 @@ async fn backend_banner_fallback_updates_task_settings_and_keeps_notice() -> Res
         insta::assert_snapshot!("backend_banner_fallback_notice", notices[0]);
         assert!(!queued.iter().any(|event| matches!(
             event,
-            AppEvent::PersistModelSelection { .. } | AppEvent::CodexOp(_)
+            AppEvent::PersistModelSelection { .. } | AppEvent::AvaOp(_)
         )));
         assert!(ops.try_recv().is_err(), "switch must not replay a turn");
         app.chat_widget
@@ -287,7 +287,7 @@ async fn backend_banner_fallback_handles_settings_failure_and_queued_manual_sele
         }
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
         let websocket_url = format!("ws://{}", listener.local_addr()?);
-        let codex_home = app.config.codex_home.display().to_string();
+        let ava_home = app.config.ava_home.display().to_string();
         let manual_selection_tx = app.app_event_tx.clone();
         let fake = tokio::spawn(async move {
             let (stream, _) = listener.accept().await?;
@@ -302,7 +302,7 @@ async fn backend_banner_fallback_handles_settings_failure_and_queued_manual_sele
                     continue;
                 }
                 let response = if request["method"] == "initialize" {
-                    json!({"id": request["id"], "result": {"userAgent": "test", "codexHome": codex_home}})
+                    json!({"id": request["id"], "result": {"userAgent": "test", "avaHome": ava_home}})
                 } else {
                     assert_eq!(request["method"], "thread/settings/update");
                     settings_requests += 1;
@@ -339,7 +339,7 @@ async fn backend_banner_fallback_handles_settings_failure_and_queued_manual_sele
                 .handle_key_event(KeyEvent::from(KeyCode::Enter));
             Some(
                 std::iter::from_fn(|| events.try_recv().ok())
-                    .find(|event| matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })))
+                    .find(|event| matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })))
                     .expect("turn already queued before the failed switch"),
             )
         } else {
@@ -417,7 +417,7 @@ async fn backend_banner_fallback_handles_settings_failure_and_queued_manual_sele
             );
             assert!(
                 !std::iter::from_fn(|| events.try_recv().ok())
-                    .any(|event| matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })))
+                    .any(|event| matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })))
             );
         }
         server.shutdown().await?;
@@ -432,7 +432,7 @@ async fn backend_banner_fallback_preserves_permissions_for_first_eligible_cyber_
     let mut app = make_test_app().await;
     assert!(
         app.apply_permission_profile_selection(PermissionProfileSelection {
-            profile_id: codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY.into(),
+            profile_id: ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY.into(),
             approval_policy: Some(AskForApproval::UnlessTrusted),
             approvals_reviewer: Some(ApprovalsReviewer::User),
             display_label: "Read Only".into(),
@@ -495,7 +495,7 @@ async fn backend_banner_fallback_preserves_permissions_for_first_eligible_cyber_
             Some(ReasoningEffortConfig::Medium),
             AskForApproval::UnlessTrusted,
             ApprovalsReviewer::User,
-            codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY.to_string()
+            ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY.to_string()
         ),
     );
     server.shutdown().await?;

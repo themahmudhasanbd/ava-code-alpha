@@ -8,7 +8,7 @@
 - Inspected baseline: `aad46adb` (local `main` and cached `origin/main` at intake). Fetching remote `main` failed with SSH `Permission denied (publickey)`; this proposal does not claim verification against the latest remote revision.
 - Deliverable: interaction design, implementation boundaries, and acceptance criteria only. No runtime, UI, settings, or accepted specification changes are included.
 - Validation scope, per the user's explicit instruction: static checks and compilation only. Runtime tests are not required for this proposal or its implementation; section 8 defines the scoped validation commands.
-- Reference: the three screenshots supplied with the request. They demonstrate whole-process and command-group disclosure; they do not establish Codex's live defaults, persistence rules, or internal implementation. Those details below are PI-Desktop design decisions.
+- Reference: the three screenshots supplied with the request. They demonstrate whole-process and command-group disclosure; they do not establish Ava's live defaults, persistence rules, or internal implementation. Those details below are PI-Desktop design decisions.
 
 ## 1. Problem and verified current behavior
 
@@ -108,7 +108,7 @@ The table describes untouched controls. Explicit user choices override these def
 | Reasoning item | Keep existing live reasoning behavior | Closed | No reasoning text or excerpt; active thinking indicator only |
 | Task topology | Retain current live/manual policy | Retain current policy | Retain current policy |
 
-Detailed mode keeps completed progress narration visible by default, preserving its purpose. It gains a whole-process collapse control while completed execution groups become easier to scan. Adopting Codex-like nesting does not require silently changing detailed mode into compact mode.
+Detailed mode keeps completed progress narration visible by default, preserving its purpose. It gains a whole-process collapse control while completed execution groups become easier to scan. Adopting Ava-like nesting does not require silently changing detailed mode into compact mode.
 
 The preserved leaf default applies only when the literal final item of the last activity group is a tool or hosted-search row, with that row's existing failure/denial guards. It does not scan backward past a thinking item to find a tool. Opening an untouched completed group exposes its precomputed leaf defaults; it does not reset them closed. Thus a group ending in an eligible tool can reveal that tool's output immediately, while the screenshot example ending in thinking reveals only headers until an item is explicitly opened.
 

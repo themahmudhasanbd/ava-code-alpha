@@ -1,8 +1,8 @@
 //! Selects the synchronous review model from the parent's metadata and provider catalog.
 
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelPreset;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelPreset;
+use ava_protocol::openai_models::ReasoningEffort;
 
 /// Effective model choice, including the attribution carried by existing review events.
 pub struct ReviewModel {
@@ -23,7 +23,7 @@ pub fn select_review_model(
 ) -> ReviewModel {
     let preferred_reasoning_effort = |supports_low: bool, fallback| {
         if supports_low {
-            Some(codex_protocol::openai_models::ReasoningEffort::Low)
+            Some(ava_protocol::openai_models::ReasoningEffort::Low)
         } else {
             fallback
         }
@@ -43,7 +43,7 @@ pub fn select_review_model(
             preset
                 .supported_reasoning_efforts
                 .iter()
-                .any(|effort| effort.effort == codex_protocol::openai_models::ReasoningEffort::Low),
+                .any(|effort| effort.effort == ava_protocol::openai_models::ReasoningEffort::Low),
             Some(preset.default_reasoning_effort.clone()),
         );
         (review_model_id.to_string(), reasoning_effort)
@@ -52,7 +52,7 @@ pub fn select_review_model(
             parent_model
                 .supported_reasoning_levels
                 .iter()
-                .any(|preset| preset.effort == codex_protocol::openai_models::ReasoningEffort::Low),
+                .any(|preset| preset.effort == ava_protocol::openai_models::ReasoningEffort::Low),
             parent_reasoning_effort
                 .or(parent_model.default_reasoning_level.as_ref())
                 .cloned(),

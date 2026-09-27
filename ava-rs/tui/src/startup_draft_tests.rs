@@ -116,7 +116,7 @@ fn startup_draft_renders_full_empty_and_multiline_composer_frames() {
             })
             .collect::<Vec<_>>()
             .join("\n")
-            .replace(crate::version::CODEX_CLI_VERSION, "<VERSION>");
+            .replace(crate::version::AVA_CLI_VERSION, "<VERSION>");
 
         assert!(
             cursor.1 >= pump.header.desired_height(width),
@@ -153,7 +153,7 @@ async fn startup_draft_clears_loading_status_when_starting_fresh() {
             })
             .collect::<Vec<_>>()
             .join("\n")
-            .replace(crate::version::CODEX_CLI_VERSION, "<VERSION>")
+            .replace(crate::version::AVA_CLI_VERSION, "<VERSION>")
     };
 
     for (label, initial_screen, session_action) in [
@@ -217,9 +217,9 @@ async fn startup_draft_clears_loading_status_when_starting_fresh() {
 
 #[tokio::test]
 async fn startup_draft_hydrates_its_header_without_moving_the_composer() {
-    let codex_home = tempfile::tempdir().expect("create temporary Codex home");
+    let ava_home = tempfile::tempdir().expect("create temporary Ava home");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("build startup configuration");
@@ -564,9 +564,9 @@ fn startup_draft_preserves_windows_altgr_text_input() {
 
 #[tokio::test]
 async fn startup_draft_applies_paste_burst_preferences_without_losing_buffered_input() {
-    let codex_home = tempfile::tempdir().expect("create temporary Codex home");
+    let ava_home = tempfile::tempdir().expect("create temporary Ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("build startup configuration");
@@ -612,15 +612,15 @@ async fn startup_draft_applies_paste_burst_preferences_without_losing_buffered_i
 
 #[tokio::test]
 async fn startup_draft_applies_editor_keymap_without_enabling_vim() {
-    let codex_home = tempfile::tempdir().expect("create temporary Codex home");
+    let ava_home = tempfile::tempdir().expect("create temporary Ava home");
     let mut config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("build startup configuration");
     config.tui_vim_mode_default = true;
-    config.tui_keymap.editor.move_line_start = Some(codex_config::types::KeybindingsSpec::One(
-        codex_config::types::KeybindingSpec("ctrl-z".to_string()),
+    config.tui_keymap.editor.move_line_start = Some(ava_config::types::KeybindingsSpec::One(
+        ava_config::types::KeybindingSpec("ctrl-z".to_string()),
     ));
     let mut pump = startup_test_pump(std::iter::empty());
     pump.bottom_pane.insert_str("draft");
@@ -645,7 +645,7 @@ async fn startup_draft_applies_editor_keymap_without_enabling_vim() {
     pump.apply_config(&config);
     assert!(pump.submission_pending);
     config.tui_keymap.composer.submit =
-        Some(codex_config::types::KeybindingsSpec::Many(Vec::new()));
+        Some(ava_config::types::KeybindingsSpec::Many(Vec::new()));
     pump.apply_config(&config);
     assert!(!pump.submission_pending);
     assert_eq!(pump.bottom_pane.composer_text(), "draftx");
@@ -670,21 +670,21 @@ async fn startup_draft_waits_for_onboarding_before_accepting_input() {
         ]
         .into_iter(),
     );
-    let codex_home = tempfile::tempdir().expect("create an existing custom Codex home");
-    std::fs::write(codex_home.path().join("history.jsonl"), "")
+    let ava_home = tempfile::tempdir().expect("create an existing custom Ava home");
+    std::fs::write(ava_home.path().join("history.jsonl"), "")
         .expect("create existing startup history");
-    let system_config_path = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
-        codex_home.path().join("system.toml"),
+    let system_config_path = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
+        ava_home.path().join("system.toml"),
     )
     .expect("resolve missing system configuration");
     let search_override = [("web_search".to_string(), toml::Value::String("live".into()))];
     pump.initial_screen =
         if crate::startup_preflight::has_only_search_config_override(&search_override)
             && crate::startup_preflight::should_delay_startup_composer_for_first_login(
-                codex_home.path(),
+                ava_home.path(),
                 Ok(system_config_path),
                 || Ok(false),
-                |name| (name == "CODEX_HOME").then(|| codex_home.path().as_os_str().to_os_string()),
+                |name| (name == "AVA_HOME").then(|| ava_home.path().as_os_str().to_os_string()),
             )
         {
             StartupDraftInitialScreen::Onboarding
@@ -723,7 +723,7 @@ async fn startup_draft_waits_for_onboarding_before_accepting_input() {
         })
         .collect::<Vec<_>>()
         .join("\n")
-        .replace(crate::version::CODEX_CLI_VERSION, "<VERSION>");
+        .replace(crate::version::AVA_CLI_VERSION, "<VERSION>");
     drop(renderable);
     frames.push_str(&format!("\n---\nafter onboarding:\n{visible_frame}"));
     insta::assert_snapshot!("startup_draft_onboarding_transition", frames);

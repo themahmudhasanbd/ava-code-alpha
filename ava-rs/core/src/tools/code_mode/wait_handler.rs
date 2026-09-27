@@ -9,8 +9,8 @@ use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::PostToolUsePayload;
 use crate::tools::registry::PreToolUsePayload;
 use crate::tools::registry::ToolExecutor;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 
 use super::DEFAULT_WAIT_YIELD_TIME_MS;
 use super::ExecContext;
@@ -55,7 +55,7 @@ impl ToolExecutor<ToolInvocation> for CodeModeWaitHandler {
         create_wait_tool()
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -113,7 +113,7 @@ impl CodeModeWaitHandler {
                 let exec = ExecContext { session, turn };
                 let started_at = std::time::Instant::now();
                 telemetry.cell_id = Some(args.cell_id.clone());
-                let cell_id = codex_code_mode::CellId::new(args.cell_id);
+                let cell_id = ava_code_mode::CellId::new(args.cell_id);
                 let wait_response = if args.terminate {
                     exec.session
                         .services
@@ -124,7 +124,7 @@ impl CodeModeWaitHandler {
                     exec.session
                         .services
                         .code_mode_service
-                        .wait(codex_code_mode::WaitRequest {
+                        .wait(ava_code_mode::WaitRequest {
                             cell_id,
                             yield_time_ms: args.yield_time_ms,
                         })
@@ -134,11 +134,11 @@ impl CodeModeWaitHandler {
                     telemetry.finish(/*success*/ false);
                     FunctionCallError::RespondToModel(error)
                 })?;
-                if let codex_code_mode::WaitOutcome::LiveCell(response) = &wait_response {
+                if let ava_code_mode::WaitOutcome::LiveCell(response) = &wait_response {
                     let runtime_cell_id = match response {
-                        codex_code_mode::RuntimeResponse::Yielded { cell_id, .. }
-                        | codex_code_mode::RuntimeResponse::Terminated { cell_id, .. }
-                        | codex_code_mode::RuntimeResponse::Result { cell_id, .. } => cell_id,
+                        ava_code_mode::RuntimeResponse::Yielded { cell_id, .. }
+                        | ava_code_mode::RuntimeResponse::Terminated { cell_id, .. }
+                        | ava_code_mode::RuntimeResponse::Result { cell_id, .. } => cell_id,
                     };
                     tracing::Span::current().record("cell.id", trace_id(runtime_cell_id.as_str()));
                     telemetry.cell_id = Some(runtime_cell_id.to_string());
@@ -146,7 +146,7 @@ impl CodeModeWaitHandler {
                         .services
                         .executed_tool_calls
                         .register_cell(runtime_cell_id, &call_id);
-                    if !matches!(response, codex_code_mode::RuntimeResponse::Yielded { .. }) {
+                    if !matches!(response, ava_code_mode::RuntimeResponse::Yielded { .. }) {
                         exec.session
                             .services
                             .rollout_thread_trace
@@ -163,7 +163,7 @@ impl CodeModeWaitHandler {
                             .services
                             .analytics_events_client
                             .track_code_mode_tool_call(
-                                codex_analytics::CodeModeToolCallFact::CellClosed {
+                                ava_analytics::CodeModeToolCallFact::CellClosed {
                                     thread_id: exec.session.thread_id.to_string(),
                                     turn_id: exec.turn.sub_id.clone(),
                                     cell_id: runtime_cell_id.to_string(),
@@ -193,7 +193,7 @@ impl CodeModeWaitHandler {
         telemetry.finish(
             result
                 .as_ref()
-                .is_ok_and(codex_tools::ToolOutput::success_for_logging),
+                .is_ok_and(ava_tools::ToolOutput::success_for_logging),
         );
         result
     }

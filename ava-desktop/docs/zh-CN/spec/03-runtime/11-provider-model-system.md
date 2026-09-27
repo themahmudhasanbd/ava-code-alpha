@@ -77,7 +77,7 @@ OpenCode Go 以一个名为 `opencode_go` 的 API 风格预设暴露。它仍然
 主机为 `opencode.ai` 的自定义 OpenAI 兼容行也会收到同样的标头。系统不依赖
 pi-ai 去发出 `x-opencode-session`。每个提供商行（AI 服务或 OAuth 账户）都可以
 设置可选的 `headers`；留空则保持适配器默认值。一层 fetch 包装是最后的写入方，
-因此 Codex 与 Anthropic 无法覆盖它们。
+因此 Ava 与 Anthropic 无法覆盖它们。
 
 当 OAuth 厂商围绕本地 provider 行 id 重建运行时模型时，运行时仍保留 pi-ai
 原生传输元数据，不会把该行当作普通 OpenAI 端点。GitHub Copilot 请求会保留
@@ -161,7 +161,7 @@ PI-Desktop 不得把用户永久限制在一份简短的固定模型列表上。
    models.dev 的提供商身份，以及带厂商前缀的 id（例如
    `deepseek/deepseek-v4`）；不带目录前缀的提供商模型 id，只有在提供商身份
    明确无歧义时，才会匹配到那个去掉前缀的精确后缀。原生适配器键可以使用目录
-   别名——例如 pi-ai 的 `openai-codex` ChatGPT 订阅适配器通过 `openai` 记录
+   别名——例如 pi-ai 的 `openai-ava` ChatGPT 订阅适配器通过 `openai` 记录
    解析模型元数据——而适配器本身保留自己的传输身份。它们不能凭空发明或替换
    模型元数据。已配置的自由格式 id 在 models.dev 中不存在时，仍可选中，
    并使用通用的纯文本、非推理基线。对于目录尚不认识的端点，设置里依然允许
@@ -259,7 +259,7 @@ type ProviderConfig = {
     | "responses"
     | "anthropic_messages"
     | "google_generative_ai"
-    | "openai_codex_responses" // 仅厂商账户
+    | "openai_ava_responses" // 仅厂商账户
     | "pi_messages"            // 仅厂商账户
     | "auto"
   compatibility?: {
@@ -377,7 +377,7 @@ sidecar 请求
 
 这类行的模型发现读取已认证的目录（`models.getAvailable`，它已应用厂商
 自己的 `filterModels`），而不是探测 `/models`；连接测试通过解析认证来
-证明账户。对 ChatGPT Plus/Pro（`openai-codex`）这类静态 OAuth 厂商，该
+证明账户。对 ChatGPT Plus/Pro（`openai-ava`）这类静态 OAuth 厂商，该
 目录是已固定的 pi-ai 模型列表，而不是实时 `/models` 探测，因此 `gpt-6-astra`
 这类新账户模型只有在 pin 包含它之后才会出现。xAI（Grok/X 订阅）是例外：
 用已解析的账户令牌请求 `GET /v1/models` 成功时，返回的对话模型就是该账户
@@ -460,7 +460,7 @@ type ModelDescriptor = {
 - 模型卡片默认保持紧凑，按需展开 metadata/configuration，并让对话框操作留在
   可独立滚动的内容区域之外
 - 不要暴露原始的目录兼容性内部细节或提供商机密
-- 设置 → 导入可以从 Claude Code、Codex、OpenCode、Pi 和 CC Switch 复制
+- 设置 → 导入可以从 Claude Code、Ava、OpenCode、Pi 和 CC Switch 复制
   provider/model 行。扫描是显式的。已存储的 API key 会被复制进宿主密钥库；
   OAuth/订阅授权则不会。重复导入时只会跳过等价提供商（归一化 URL + API
   风格 + 相同凭据）；同一端点的不同凭据仍保持为独立提供商。

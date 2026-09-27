@@ -1,4 +1,4 @@
-//! Binds provisioning requests to the packaged Codex client and its Windows user.
+//! Binds provisioning requests to the packaged Ava client and its Windows user.
 
 use std::io;
 #[cfg(debug_assertions)]
@@ -57,10 +57,10 @@ pub(crate) fn authorize_client_process(pipe: HANDLE) -> Result<AuthorizedClientP
     }
     let process = OwnedHandle(process);
 
-    let client_family = unsafe { codex_windows_sandbox::process_package_family(process.0) }
+    let client_family = unsafe { ava_windows_sandbox::process_package_family(process.0) }
         .context("read provisioning client package identity")?;
     let service_family =
-        unsafe { codex_windows_sandbox::process_package_family(Threading::GetCurrentProcess()) }
+        unsafe { ava_windows_sandbox::process_package_family(Threading::GetCurrentProcess()) }
             .context("read provisioning service package identity")?;
     match client_family {
         Some(client_family) => match service_family.as_deref() {
@@ -70,17 +70,17 @@ pub(crate) fn authorize_client_process(pipe: HANDLE) -> Result<AuthorizedClientP
             Some(_) => {}
             #[cfg(debug_assertions)]
             None if FOREGROUND_MODE.load(Ordering::Acquire)
-                && is_known_codex_package_family(&client_family) => {}
+                && is_known_ava_package_family(&client_family) => {}
             #[cfg(debug_assertions)]
             None if FOREGROUND_MODE.load(Ordering::Acquire) => {
-                bail!("provisioning client does not belong to a trusted Codex package family")
+                bail!("provisioning client does not belong to a trusted Ava package family")
             }
             None => bail!("provisioning service has no package identity"),
         },
         None if service_family.is_some() => {}
         #[cfg(debug_assertions)]
         None if FOREGROUND_MODE.load(Ordering::Acquire) => {}
-        None => bail!("provisioning clients must run with an installed Codex package identity"),
+        None => bail!("provisioning clients must run with an installed Ava package identity"),
     }
 
     Ok(AuthorizedClientProcess { handle: process })
@@ -99,9 +99,9 @@ pub(crate) fn authorize_client(
             .context("open the provisioning client process token");
     }
     let process_token = OwnedHandle(process_token);
-    let process_user = unsafe { codex_windows_sandbox::get_user_sid_bytes(process_token.0) }
+    let process_user = unsafe { ava_windows_sandbox::get_user_sid_bytes(process_token.0) }
         .context("read the client process user")?;
-    let impersonated_user = unsafe { codex_windows_sandbox::get_user_sid_bytes(client_token) }
+    let impersonated_user = unsafe { ava_windows_sandbox::get_user_sid_bytes(client_token) }
         .context("read the impersonated client user")?;
     if process_user != impersonated_user {
         bail!("provisioning client process does not belong to the impersonated user");
@@ -111,12 +111,12 @@ pub(crate) fn authorize_client(
 }
 
 #[cfg(debug_assertions)]
-fn is_known_codex_package_family(package_family: &str) -> bool {
+fn is_known_ava_package_family(package_family: &str) -> bool {
     matches!(
         package_family,
-        "OpenAI.Codex_3k8sg7r9htsxt"
-            | "OpenAI.CodexAlpha_3k8sg7r9htsxt"
-            | "OpenAI.CodexBeta_3k8sg7r9htsxt"
-            | "OpenAI.CodexNightly_3k8sg7r9htsxt"
+        "OpenAI.Ava_3k8sg7r9htsxt"
+            | "OpenAI.AvaAlpha_3k8sg7r9htsxt"
+            | "OpenAI.AvaBeta_3k8sg7r9htsxt"
+            | "OpenAI.AvaNightly_3k8sg7r9htsxt"
     )
 }

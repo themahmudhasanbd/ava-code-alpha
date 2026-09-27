@@ -3,21 +3,21 @@
 //! Permissions and the saved local executor selection must match the resumed runtime.
 
 use super::ThreadRequestProcessor;
-use codex_app_server_protocol::ThreadEnvironment;
-use codex_app_server_transport::daemon_recovery::InterruptedTurn;
-use codex_core::TurnInput;
-use codex_core::TurnInputRequest;
-use codex_core::TurnInputSubmission;
-use codex_core::TurnStartOptions;
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::InternalContextSource;
-use codex_core::context::InternalModelContextFragment;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
-use codex_rollout::RolloutItem;
+use ava_app_server_protocol::ThreadEnvironment;
+use ava_app_server_transport::daemon_recovery::InterruptedTurn;
+use ava_core::TurnInput;
+use ava_core::TurnInputRequest;
+use ava_core::TurnInputSubmission;
+use ava_core::TurnStartOptions;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::InternalContextSource;
+use ava_core::context::InternalModelContextFragment;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
+use ava_rollout::RolloutItem;
 
 impl ThreadRequestProcessor {
     pub(crate) async fn continue_daemon_turn(&self, thread_id: &str, saved: InterruptedTurn) {
@@ -30,7 +30,7 @@ impl ThreadRequestProcessor {
         let Some(path) = thread.rollout_path() else {
             return;
         };
-        let history = match codex_rollout::RolloutRecorder::load_rollout_items(&path).await {
+        let history = match ava_rollout::RolloutRecorder::load_rollout_items(&path).await {
             Ok((history, _, _)) => history,
             Err(err) => {
                 tracing::warn!(%thread_id, %err, "failed to read interrupted turn history");
@@ -75,7 +75,7 @@ impl ThreadRequestProcessor {
         let [environment] = config.environment_selections() else {
             return;
         };
-        if environment.environment_id != codex_exec_server::LOCAL_ENVIRONMENT_ID
+        if environment.environment_id != ava_exec_server::LOCAL_ENVIRONMENT_ID
             || environment.config != EnvironmentConfigState::FromThread
             || saved.local_environment.as_ref() != Some(&ThreadEnvironment::from(environment))
         {

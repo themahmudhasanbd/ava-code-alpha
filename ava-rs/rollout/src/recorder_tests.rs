@@ -6,26 +6,26 @@ use crate::RolloutItem;
 use crate::RolloutLine;
 use crate::config::RolloutConfig;
 use chrono::TimeZone;
-use codex_protocol::SanitizedGitUrl;
-use codex_protocol::SessionId;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::AgentMessageEvent;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::RateLimitSnapshot;
-use codex_protocol::protocol::RateLimitWindow;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::TokenCountEvent;
-use codex_protocol::protocol::TurnContextItem;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::security_risk::SecurityRiskScore;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_protocol::SanitizedGitUrl;
+use ava_protocol::SessionId;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::AgentMessageEvent;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::RateLimitSnapshot;
+use ava_protocol::protocol::RateLimitWindow;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::TokenCountEvent;
+use ava_protocol::protocol::TurnContextItem;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::security_risk::SecurityRiskScore;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use std::fs;
@@ -37,11 +37,11 @@ use std::time::Duration;
 use tempfile::TempDir;
 use uuid::Uuid;
 
-fn test_config(codex_home: &Path) -> RolloutConfig {
+fn test_config(ava_home: &Path) -> RolloutConfig {
     RolloutConfig {
-        codex_home: codex_home.to_path_buf(),
-        sqlite: codex_state::SqliteConfig::new_for_testing(codex_home.abs()),
-        cwd: codex_home.to_path_buf(),
+        ava_home: ava_home.to_path_buf(),
+        sqlite: ava_state::SqliteConfig::new_for_testing(ava_home.abs()),
+        cwd: ava_home.to_path_buf(),
         model_provider_id: "test-provider".to_string(),
         generate_memories: true,
     }
@@ -254,7 +254,7 @@ async fn state_db_init_backfills_before_returning() -> anyhow::Result<()> {
     assert_eq!(metadata.rollout_path, rollout_path);
     assert_eq!(
         runtime.get_backfill_state().await?.status,
-        codex_state::BackfillStatus::Complete
+        ava_state::BackfillStatus::Complete
     );
 
     Ok(())
@@ -1246,8 +1246,8 @@ async fn list_threads_db_enabled_preserves_metadata_for_missing_rollout_paths()
         "sessions/2099/01/01/rollout-2099-01-01T00-00-00-{uuid}.jsonl"
     ));
 
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         config.model_provider_id.clone(),
     )
     .await
@@ -1260,7 +1260,7 @@ async fn list_threads_db_enabled_preserves_metadata_for_missing_rollout_paths()
         .with_ymd_and_hms(2025, 1, 3, 13, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut builder = codex_state::ThreadMetadataBuilder::new(
+    let mut builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         stale_path,
         created_at,
@@ -1283,7 +1283,7 @@ async fn list_threads_db_enabled_preserves_metadata_for_missing_rollout_paths()
         .with_ymd_and_hms(2025, 1, 2, 13, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut valid_builder = codex_state::ThreadMetadataBuilder::new(
+    let mut valid_builder = ava_state::ThreadMetadataBuilder::new(
         valid_thread_id,
         valid_path.clone(),
         valid_created_at,
@@ -1334,8 +1334,8 @@ async fn list_threads_state_db_only_skips_jsonl_repair_scan() -> std::io::Result
     let home = TempDir::new().expect("temp dir");
     let config = test_config(home.path());
 
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         config.model_provider_id.clone(),
     )
     .await
@@ -1438,8 +1438,8 @@ async fn list_threads_default_filter_returns_filesystem_scan_results() -> std::i
     let real_path = write_session_file(home.path(), "2025-01-03T13-00-00", uuid)?;
     let stale_cwd = home.path().join("stale-cwd");
 
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         config.model_provider_id.clone(),
     )
     .await
@@ -1452,7 +1452,7 @@ async fn list_threads_default_filter_returns_filesystem_scan_results() -> std::i
         .with_ymd_and_hms(2025, 1, 3, 13, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut builder = codex_state::ThreadMetadataBuilder::new(
+    let mut builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         real_path,
         created_at,
@@ -1528,8 +1528,8 @@ async fn list_threads_metadata_filter_overlays_state_db_list_metadata() -> std::
     let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
     let rollout_path = write_session_file(home.path(), "2025-01-03T16-00-00", uuid)?;
 
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         config.model_provider_id.clone(),
     )
     .await
@@ -1542,7 +1542,7 @@ async fn list_threads_metadata_filter_overlays_state_db_list_metadata() -> std::
         .with_ymd_and_hms(2025, 1, 3, 16, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut builder = codex_state::ThreadMetadataBuilder::new(
+    let mut builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         rollout_path,
         created_at,
@@ -1631,9 +1631,9 @@ fn fill_missing_thread_item_metadata_preserves_identity_and_prefers_state_git_fi
         preview: Some("state preview".to_string()),
         project_id: None,
         daybreak_enabled: Some(true),
-        section: Some(codex_state::ThreadSection {
-            id: codex_state::PINNED_THREAD_SECTION_ID.to_string(),
-            name: codex_state::PINNED_THREAD_SECTION_NAME.to_string(),
+        section: Some(ava_state::ThreadSection {
+            id: ava_state::PINNED_THREAD_SECTION_ID.to_string(),
+            name: ava_state::PINNED_THREAD_SECTION_NAME.to_string(),
             appearance: None,
         }),
         cwd: Some(PathBuf::from("/tmp/state-cwd")),
@@ -1664,9 +1664,9 @@ fn fill_missing_thread_item_metadata_preserves_identity_and_prefers_state_git_fi
     assert_eq!(item.daybreak_enabled, Some(true));
     assert_eq!(
         item.section,
-        Some(codex_state::ThreadSection {
-            id: codex_state::PINNED_THREAD_SECTION_ID.to_string(),
-            name: codex_state::PINNED_THREAD_SECTION_NAME.to_string(),
+        Some(ava_state::ThreadSection {
+            id: ava_state::PINNED_THREAD_SECTION_ID.to_string(),
+            name: ava_state::PINNED_THREAD_SECTION_NAME.to_string(),
             appearance: None,
         })
     );
@@ -1701,8 +1701,8 @@ async fn list_threads_search_repairs_stale_state_db_hits_before_returning() -> s
     let thread_id = ThreadId::from_string(&uuid.to_string()).expect("valid thread id");
     let real_path = write_session_file(home.path(), "2025-01-03T15-00-00", uuid)?;
 
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(home.path().abs()),
         config.model_provider_id.clone(),
     )
     .await
@@ -1715,7 +1715,7 @@ async fn list_threads_search_repairs_stale_state_db_hits_before_returning() -> s
         .with_ymd_and_hms(2025, 1, 3, 15, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut builder = codex_state::ThreadMetadataBuilder::new(
+    let mut builder = ava_state::ThreadMetadataBuilder::new(
         thread_id,
         real_path,
         created_at,
@@ -1820,7 +1820,7 @@ async fn resume_candidate_matches_cwd_reads_latest_turn_context() -> std::io::Re
             realtime_active: None,
             cyber_access_program: None,
             effort: None,
-            summary: codex_protocol::config_types::ReasoningSummary::Auto,
+            summary: ava_protocol::config_types::ReasoningSummary::Auto,
         }),
     };
     writeln!(file, "{}", serde_json::to_string(&turn_context)?)?;

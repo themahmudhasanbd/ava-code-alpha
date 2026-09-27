@@ -1,10 +1,10 @@
 use std::time::Instant;
 
-use codex_api::AuthError;
-use codex_api::AuthProvider;
-use codex_http_client::Request;
-use codex_websocket_client::WebSocketConnection;
-use codex_websocket_client::WebSocketConnector;
+use ava_api::AuthError;
+use ava_api::AuthProvider;
+use ava_http_client::Request;
+use ava_websocket_client::WebSocketConnection;
+use ava_websocket_client::WebSocketConnector;
 use http::Method;
 use http::StatusCode;
 use serde::Deserialize;
@@ -44,11 +44,11 @@ struct DirectRegistrationResponse {
 
 impl EnvironmentRegistryClient {
     #[tracing::instrument(
-        name = "codex.exec_server.remote.register",
+        name = "ava.exec_server.remote.register",
         skip_all,
         fields(
             otel.kind = "client",
-            otel.name = "codex.exec_server.remote.register",
+            otel.name = "ava.exec_server.remote.register",
             result = tracing::field::Empty,
         )
     )]
@@ -201,7 +201,7 @@ pub(super) async fn run_direct_environment(
 async fn connect_direct(
     url: &str,
     auth_provider: &dyn AuthProvider,
-    http_client_factory: &codex_http_client::HttpClientFactory,
+    http_client_factory: &ava_http_client::HttpClientFactory,
 ) -> Result<WebSocketConnection, ExecServerError> {
     let mut request =
         url.into_client_request()

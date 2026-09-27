@@ -3,21 +3,21 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::request_permissions::PermissionGrantScope;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::request_permissions::PermissionGrantScope;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::ev_assistant_message;
@@ -27,9 +27,9 @@ use core_test_support::responses::ev_response_created;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_event_match;
 use core_test_support::wait_for_event_with_timeout;
@@ -40,7 +40,7 @@ const TURN_COMPLETE_TIMEOUT: Duration = Duration::from_secs(30);
 
 struct CodeModeElicitationHarness {
     _server: MockServer,
-    test: TestCodex,
+    test: TestAva,
     follow_up: ResponseMock,
     turn_id: String,
 }
@@ -53,8 +53,8 @@ impl CodeModeElicitationHarness {
     ) -> Result<Self> {
         let server = responses::start_mock_server().await;
         let mut builder =
-            test_codex()
-                .with_model("test-gpt-5.1-codex")
+            test_ava()
+                .with_model("test-gpt-5.1-ava")
                 .with_config(move |config| {
                     let _ = config.features.enable(Feature::CodeMode);
                     configure(config);
@@ -80,7 +80,7 @@ impl CodeModeElicitationHarness {
 
     async fn finish(self) {
         wait_for_event_with_timeout(
-            &self.test.codex,
+            &self.test.ava-code,
             |event| match event {
                 EventMsg::TurnComplete(event) => event.turn_id == self.turn_id,
                 _ => false,
@@ -112,10 +112,10 @@ async fn mount_code_mode_responses(server: &MockServer, code: &str) -> ResponseM
     .await
 }
 
-async fn submit_turn(test: &TestCodex, permission_profile: PermissionProfile) -> Result<String> {
+async fn submit_turn(test: &TestAva, permission_profile: PermissionProfile) -> Result<String> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a code-mode tool that needs user input".into(),
@@ -138,7 +138,7 @@ async fn submit_turn(test: &TestCodex, permission_profile: PermissionProfile) ->
         )
         .await?;
 
-    Ok(wait_for_event_match(&test.codex, |event| match event {
+    Ok(wait_for_event_match(&test.ava-code, |event| match event {
         EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
         _ => None,
     })
@@ -165,7 +165,7 @@ await tools.exec_command({
         |_| {},
     )
     .await?;
-    let approval = wait_for_event_match(&harness.test.codex, |event| match event {
+    let approval = wait_for_event_match(&harness.test.ava-code, |event| match event {
         EventMsg::ExecApprovalRequest(approval) => Some(approval.clone()),
         _ => None,
     })
@@ -174,7 +174,7 @@ await tools.exec_command({
     harness.assert_result_held().await;
     harness
         .test
-        .codex
+        .ava-code
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(harness.turn_id.clone()),
@@ -196,7 +196,7 @@ await tools.apply_patch("*** Begin Patch\n*** Add File: code_mode_patch_approval
         |_| {},
     )
     .await?;
-    let approval = wait_for_event_match(&harness.test.codex, |event| match event {
+    let approval = wait_for_event_match(&harness.test.ava-code, |event| match event {
         EventMsg::ApplyPatchApprovalRequest(approval) => Some(approval.clone()),
         _ => None,
     })
@@ -205,7 +205,7 @@ await tools.apply_patch("*** Begin Patch\n*** Add File: code_mode_patch_approval
     harness.assert_result_held().await;
     harness
         .test
-        .codex
+        .ava-code
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::Approved,
@@ -235,7 +235,7 @@ await tools.request_permissions({
         },
     )
     .await?;
-    let request = wait_for_event(&harness.test.codex, |event| {
+    let request = wait_for_event(&harness.test.ava-code, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_) | EventMsg::Error(_)
@@ -249,7 +249,7 @@ await tools.request_permissions({
     harness.assert_result_held().await;
     harness
         .test
-        .codex
+        .ava-code
         .submit(Op::RequestPermissionsResponse {
             id: request.call_id,
             response: RequestPermissionsResponse {

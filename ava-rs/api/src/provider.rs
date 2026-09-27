@@ -1,7 +1,7 @@
-use codex_client::Request;
-use codex_client::RequestCompression;
-use codex_client::RetryOn;
-use codex_client::RetryPolicy;
+use ava_client::Request;
+use ava_client::RequestCompression;
+use ava_client::RetryOn;
+use ava_client::RetryPolicy;
 use http::Method;
 use http::header::HeaderMap;
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ use url::Url;
 
 /// High-level retry configuration for a provider.
 ///
-/// This is converted into a `RetryPolicy` used by `codex-client` to drive
+/// This is converted into a `RetryPolicy` used by `ava-client` to drive
 /// transport-level retries for both unary and streaming calls.
 #[derive(Debug, Clone)]
 pub struct RetryConfig {

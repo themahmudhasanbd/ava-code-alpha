@@ -7,28 +7,28 @@ use super::INITIAL_WEBSOCKET_CONNECTIONS;
 use super::LunaSamplerConfig;
 use super::LunaSamplerError;
 use super::MAX_CONCURRENT_REQUESTS;
-use codex_api::ApiError;
-use codex_api::Provider;
-use codex_api::ReqwestTransport;
-use codex_api::ResponseStream;
-use codex_api::ResponsesApiRequest;
-use codex_api::ResponsesClient;
-use codex_api::ResponsesOptions;
-use codex_api::ResponsesWebsocketClient;
-use codex_api::ResponsesWebsocketConnection;
-use codex_api::ResponsesWsRequest;
-use codex_api::SharedAuthProvider;
-use codex_api::TransportError;
-use codex_api::build_session_headers;
-use codex_http_client::ClientRouteClass;
-use codex_login::CodexAuth;
-use codex_login::default_client::ClientRedirectPolicy;
-use codex_login::default_client::add_originator_header;
-use codex_login::default_client::create_client_for_route_async;
-use codex_login::default_client::default_headers;
-use codex_model_provider::AgentIdentitySessionFallback;
-use codex_model_provider::ProviderAuthScope;
-use codex_protocol::ThreadId;
+use ava_api::ApiError;
+use ava_api::Provider;
+use ava_api::ReqwestTransport;
+use ava_api::ResponseStream;
+use ava_api::ResponsesApiRequest;
+use ava_api::ResponsesClient;
+use ava_api::ResponsesOptions;
+use ava_api::ResponsesWebsocketClient;
+use ava_api::ResponsesWebsocketConnection;
+use ava_api::ResponsesWsRequest;
+use ava_api::SharedAuthProvider;
+use ava_api::TransportError;
+use ava_api::build_session_headers;
+use ava_http_client::ClientRouteClass;
+use ava_login::AvaAuth;
+use ava_login::default_client::ClientRedirectPolicy;
+use ava_login::default_client::add_originator_header;
+use ava_login::default_client::create_client_for_route_async;
+use ava_login::default_client::default_headers;
+use ava_model_provider::AgentIdentitySessionFallback;
+use ava_model_provider::ProviderAuthScope;
+use ava_protocol::ThreadId;
 use http::HeaderMap;
 use http::HeaderValue;
 use std::sync::Arc;
@@ -277,11 +277,11 @@ impl ConnectionPool {
             Some(thread_id.to_owned()),
         );
         if request_kind == RequestMode::GuardianClassifier {
-            headers.insert("x-codex-guardian", HeaderValue::from_static("classifier"));
+            headers.insert("x-ava-guardian", HeaderValue::from_static("classifier"));
         }
         headers.insert("x-openai-subagent", HeaderValue::from_static("guardian"));
         headers.insert(
-            "x-codex-window-id",
+            "x-ava-window-id",
             HeaderValue::from_str(&format!("{thread_id}:0")).map_err(|error| {
                 LunaSamplerError::Api(ApiError::Stream(format!(
                     "invalid classifier window ID: {error}"
@@ -289,7 +289,7 @@ impl ConnectionPool {
             })?,
         );
         headers.insert(
-            "x-openai-internal-codex-responses-lite",
+            "x-openai-internal-ava-responses-lite",
             HeaderValue::from_static("true"),
         );
         if let Some(originator) = self.config.originator.as_deref() {
@@ -308,8 +308,8 @@ impl ConnectionPool {
             .auth()
             .await
             .as_ref()
-            .is_some_and(CodexAuth::uses_codex_backend)
-            && provider.supports_codex_backend_routes()
+            .is_some_and(AvaAuth::uses_ava_backend)
+            && provider.supports_ava_backend_routes()
             && provider.requires_openai_auth
             && provider.env_key.is_none()
             && provider.experimental_bearer_token.is_none()
@@ -358,7 +358,7 @@ impl ConnectionPool {
                 tags.push(("failure_reason", sampler_failure_reason(error)));
             }
             metrics.histogram(
-                "codex.guardian_v2.connection.duration_ms",
+                "ava.guardian_v2.connection.duration_ms",
                 i64::try_from(started_at.elapsed().as_millis()).unwrap_or(i64::MAX),
                 &tags,
             );

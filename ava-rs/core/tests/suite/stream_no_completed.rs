@@ -1,17 +1,17 @@
 //! Verifies that the agent retries when the SSE stream terminates before
 //! delivering a `response.completed` event.
 
-use codex_core::TurnInputRequest;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::WireApi;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::WireApi;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::UserInput;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use std::net::TcpListener;
@@ -72,7 +72,7 @@ async fn retries_on_early_close() {
         supports_standalone_web_search: false,
     };
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_config(move |config| {
             config.model_provider = model_provider;
         })
@@ -80,7 +80,7 @@ async fn retries_on_early_close() {
         .await
         .unwrap();
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
@@ -89,7 +89,7 @@ async fn retries_on_early_close() {
         .unwrap();
 
     // Wait until TurnComplete (should succeed after retry).
-    wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let requests = server.requests().await;
     assert_eq!(
@@ -111,7 +111,7 @@ async fn connection_failure_pauses_retry_budget_until_provider_is_reachable() ->
     let unavailable_address = unavailable_listener.local_addr()?;
     drop(unavailable_listener);
 
-    let TestCodex { codex, .. } = test_codex()
+    let TestAva { ava, .. } = test_ava()
         .with_config(move |config| {
             config.model_provider.base_url = Some(format!("http://{unavailable_address}/v1"));
             config.model_provider.request_max_retries = Some(0);
@@ -121,7 +121,7 @@ async fn connection_failure_pauses_retry_budget_until_provider_is_reachable() ->
         .build_with_auto_env(&bootstrap_server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "recover after the network returns".into(),
             text_elements: Vec::new(),
@@ -129,7 +129,7 @@ async fn connection_failure_pauses_retry_budget_until_provider_is_reachable() ->
         .await?;
 
     let EventMsg::StreamError(connection_error) =
-        wait_for_event(&codex, |event| matches!(event, EventMsg::StreamError(_))).await
+        wait_for_event(&ava, |event| matches!(event, EventMsg::StreamError(_))).await
     else {
         unreachable!("predicate guarantees a stream error event");
     };
@@ -149,14 +149,14 @@ async fn connection_failure_pauses_retry_budget_until_provider_is_reachable() ->
     .await;
 
     let EventMsg::StreamError(stream_error) =
-        wait_for_event(&codex, |event| matches!(event, EventMsg::StreamError(_))).await
+        wait_for_event(&ava, |event| matches!(event, EventMsg::StreamError(_))).await
     else {
         unreachable!("predicate guarantees a stream error event");
     };
     assert_eq!(stream_error.message, "Reconnecting... 1/1");
 
     let EventMsg::TurnComplete(completed) =
-        wait_for_event(&codex, |event| matches!(event, EventMsg::TurnComplete(_))).await
+        wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await
     else {
         unreachable!("predicate guarantees a turn complete event");
     };

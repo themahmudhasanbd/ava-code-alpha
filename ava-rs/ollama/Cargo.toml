@@ -1,11 +1,11 @@
 [package]
-name = "codex-ollama"
+name = "ava-ollama"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "codex_ollama"
+name = "ava_ollama"
 path = "src/lib.rs"
 doctest = false
 
@@ -15,9 +15,9 @@ workspace = true
 [dependencies]
 async-stream = { workspace = true }
 bytes = { workspace = true }
-codex-core = { workspace = true }
-codex-http-client = { workspace = true }
-codex-model-provider-info = { workspace = true }
+ava-core = { workspace = true }
+ava-http-client = { workspace = true }
+ava-model-provider-info = { workspace = true }
 futures = { workspace = true }
 memchr = { workspace = true }
 semver = { workspace = true }

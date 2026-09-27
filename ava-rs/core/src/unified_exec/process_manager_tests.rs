@@ -1,6 +1,6 @@
 use super::*;
 use crate::unified_exec::clamp_yield_time;
-use codex_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::ManagedNetworkSandboxContext;
 use pretty_assertions::assert_eq;
 use tokio::sync::Notify;
 use tokio::time::Duration;
@@ -19,7 +19,7 @@ fn unified_exec_env_injects_defaults() {
         ("PAGER".to_string(), "cat".to_string()),
         ("GIT_PAGER".to_string(), "cat".to_string()),
         ("GH_PAGER".to_string(), "cat".to_string()),
-        ("CODEX_CI".to_string(), "1".to_string()),
+        ("AVA_CI".to_string(), "1".to_string()),
     ]);
 
     assert_eq!(env, expected);
@@ -64,15 +64,15 @@ fn env_overlay_for_exec_server_keeps_runtime_changes_only() {
         ("PATH".to_string(), "/client-path".to_string()),
         ("SHELL_SET".to_string(), "policy".to_string()),
         (
-            CODEX_VERSION_ENV_VAR.to_string(),
+            AVA_VERSION_ENV_VAR.to_string(),
             "client-version".to_string(),
         ),
         (
-            CODEX_PERMISSION_PROFILE_ENV_VAR.to_string(),
+            AVA_PERMISSION_PROFILE_ENV_VAR.to_string(),
             "current-profile".to_string(),
         ),
         (
-            codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
+            ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
             "1".to_string(),
         ),
     ]);
@@ -81,21 +81,21 @@ fn env_overlay_for_exec_server_keeps_runtime_changes_only() {
         ("PATH".to_string(), "/sandbox-path".to_string()),
         ("OpenAI_Federation_Rule_Id".to_string(), "rule".to_string()),
         ("SHELL_SET".to_string(), "policy".to_string()),
-        ("CODEX_THREAD_ID".to_string(), "thread-1".to_string()),
+        ("AVA_THREAD_ID".to_string(), "thread-1".to_string()),
         (
-            CODEX_VERSION_ENV_VAR.to_string(),
+            AVA_VERSION_ENV_VAR.to_string(),
             "client-version".to_string(),
         ),
         (
-            CODEX_PERMISSION_PROFILE_ENV_VAR.to_string(),
+            AVA_PERMISSION_PROFILE_ENV_VAR.to_string(),
             "current-profile".to_string(),
         ),
         (
-            codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
+            ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
             "1".to_string(),
         ),
         (
-            "CODEX_SANDBOX_NETWORK_DISABLED".to_string(),
+            "AVA_SANDBOX_NETWORK_DISABLED".to_string(),
             "1".to_string(),
         ),
     ]);
@@ -104,21 +104,21 @@ fn env_overlay_for_exec_server_keeps_runtime_changes_only() {
         env_overlay_for_exec_server(&request_env, &local_policy_env),
         HashMap::from([
             ("PATH".to_string(), "/sandbox-path".to_string()),
-            ("CODEX_THREAD_ID".to_string(), "thread-1".to_string()),
+            ("AVA_THREAD_ID".to_string(), "thread-1".to_string()),
             (
-                CODEX_VERSION_ENV_VAR.to_string(),
+                AVA_VERSION_ENV_VAR.to_string(),
                 "client-version".to_string()
             ),
             (
-                CODEX_PERMISSION_PROFILE_ENV_VAR.to_string(),
+                AVA_PERMISSION_PROFILE_ENV_VAR.to_string(),
                 "current-profile".to_string(),
             ),
             (
-                codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
+                ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
                 "1".to_string(),
             ),
             (
-                "CODEX_SANDBOX_NETWORK_DISABLED".to_string(),
+                "AVA_SANDBOX_NETWORK_DISABLED".to_string(),
                 "1".to_string()
             ),
         ])
@@ -129,9 +129,9 @@ fn env_overlay_for_exec_server_keeps_runtime_changes_only() {
 fn exec_env_policy_excludes_non_inheritable_and_runtime_variables() {
     let policy = ShellEnvironmentPolicy {
         r#set: HashMap::from([
-            ("codex_version".to_string(), "stale-version".to_string()),
+            ("ava_version".to_string(), "stale-version".to_string()),
             (
-                "codex_permission_profile".to_string(),
+                "ava_permission_profile".to_string(),
                 "stale-profile".to_string(),
             ),
             (
@@ -139,11 +139,11 @@ fn exec_env_policy_excludes_non_inheritable_and_runtime_variables() {
                 "/run/identity-token".to_string(),
             ),
             (
-                "codex_apply_patch_preserve_line_endings".to_string(),
+                "ava_apply_patch_preserve_line_endings".to_string(),
                 "1".to_string(),
             ),
             (
-                "codex_plugin_metrics_output".to_string(),
+                "ava_plugin_metrics_output".to_string(),
                 "/stale/sidecar".to_string(),
             ),
             ("KEEP".to_string(), "value".to_string()),
@@ -153,13 +153,13 @@ fn exec_env_policy_excludes_non_inheritable_and_runtime_variables() {
 
     assert_eq!(
         exec_env_policy_from_shell_policy(&policy),
-        codex_exec_server::ExecEnvPolicy {
+        ava_exec_server::ExecEnvPolicy {
             inherit: policy.inherit,
             ignore_default_excludes: policy.ignore_default_excludes,
             exclude: vec![
-                CODEX_PERMISSION_PROFILE_ENV_VAR.to_string(),
-                CODEX_VERSION_ENV_VAR.to_string(),
-                codex_apply_patch::CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
+                AVA_PERMISSION_PROFILE_ENV_VAR.to_string(),
+                AVA_VERSION_ENV_VAR.to_string(),
+                ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
                 PLUGIN_METRICS_OUTPUT_ENV_VAR.to_string(),
             ],
             r#set: HashMap::from([("KEEP".to_string(), "value".to_string())]),
@@ -170,11 +170,11 @@ fn exec_env_policy_excludes_non_inheritable_and_runtime_variables() {
 
 #[test]
 fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
-    let cwd: codex_utils_absolute_path::AbsolutePathBuf = std::env::current_dir()
+    let cwd: ava_utils_absolute_path::AbsolutePathBuf = std::env::current_dir()
         .expect("current dir")
         .try_into()
         .expect("absolute path");
-    let permission_profile = codex_protocol::models::PermissionProfile::Disabled;
+    let permission_profile = ava_protocol::models::PermissionProfile::Disabled;
     let managed_network = ManagedNetworkSandboxContext {
         loopback_ports: vec![43123],
         allow_local_binding: false,
@@ -186,20 +186,20 @@ fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
         env: HashMap::from([
             ("HOME".to_string(), "/client-home".to_string()),
             ("PATH".to_string(), "/sandbox-path".to_string()),
-            ("CODEX_THREAD_ID".to_string(), "thread-1".to_string()),
+            ("AVA_THREAD_ID".to_string(), "thread-1".to_string()),
             (
                 "HTTP_PROXY".to_string(),
                 "http://127.0.0.1:43123".to_string(),
             ),
-            ("CODEX_NETWORK_PROXY_ACTIVE".to_string(), "1".to_string()),
+            ("AVA_NETWORK_PROXY_ACTIVE".to_string(), "1".to_string()),
             (
                 "SSL_CERT_FILE".to_string(),
                 "/client/custom-ca.pem".to_string(),
             ),
         ]),
         exec_server_env_config: Some(ExecServerEnvConfig {
-            policy: codex_exec_server::ExecEnvPolicy {
-                inherit: codex_protocol::config_types::ShellEnvironmentPolicyInherit::Core,
+            policy: ava_exec_server::ExecEnvPolicy {
+                inherit: ava_protocol::config_types::ShellEnvironmentPolicyInherit::Core,
                 ignore_default_excludes: false,
                 exclude: Vec::new(),
                 r#set: HashMap::new(),
@@ -212,7 +212,7 @@ fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
                     "HTTP_PROXY".to_string(),
                     "http://127.0.0.1:43123".to_string(),
                 ),
-                ("CODEX_NETWORK_PROXY_ACTIVE".to_string(), "1".to_string()),
+                ("AVA_NETWORK_PROXY_ACTIVE".to_string(), "1".to_string()),
                 (
                     "SSL_CERT_FILE".to_string(),
                     "/client/custom-ca.pem".to_string(),
@@ -224,10 +224,10 @@ fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
         network_environment_id: None,
         expiration: crate::exec::ExecExpiration::DefaultTimeout,
         capture_policy: crate::exec::ExecCapturePolicy::ShellTool,
-        sandbox: codex_sandboxing::SandboxType::None,
+        sandbox: ava_sandboxing::SandboxType::None,
         windows_sandbox_policy_cwd: cwd.clone().into(),
         windows_sandbox_workspace_roots: vec![cwd],
-        windows_sandbox_level: codex_protocol::config_types::WindowsSandboxLevel::Disabled,
+        windows_sandbox_level: ava_protocol::config_types::WindowsSandboxLevel::Disabled,
         permission_profile: permission_profile.clone(),
         windows_sandbox_filesystem_overrides: None,
         arg0: None,
@@ -237,7 +237,7 @@ fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
         exec_server_network_proxy: None,
     };
 
-    let proxy_settings_mode = codex_sandboxing::WindowsSandboxProxySettingsMode::Preserve;
+    let proxy_settings_mode = ava_sandboxing::WindowsSandboxProxySettingsMode::Preserve;
     let params_for_request = |request: &ExecRequest| {
         exec_server_params_for_request(
             /*process_id*/ 123,
@@ -259,17 +259,17 @@ fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
         params.env,
         HashMap::from([
             ("PATH".to_string(), "/sandbox-path".to_string()),
-            ("CODEX_THREAD_ID".to_string(), "thread-1".to_string()),
+            ("AVA_THREAD_ID".to_string(), "thread-1".to_string()),
             (
                 "HTTP_PROXY".to_string(),
                 "http://127.0.0.1:43123".to_string(),
             ),
-            ("CODEX_NETWORK_PROXY_ACTIVE".to_string(), "1".to_string(),),
+            ("AVA_NETWORK_PROXY_ACTIVE".to_string(), "1".to_string(),),
         ])
     );
-    request.exec_server_shell_snapshot = Some(codex_exec_server::ShellSnapshotRequest {
+    request.exec_server_shell_snapshot = Some(ava_exec_server::ShellSnapshotRequest {
         scope_id: "attachment-1".to_string(),
-        shell: codex_exec_server::ShellInfo {
+        shell: ava_exec_server::ShellInfo {
             name: "bash".to_string(),
             path: "/bin/bash".to_string(),
         },
@@ -280,7 +280,7 @@ fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
     request.exec_server_shell_snapshot = None;
 
     request.exec_server_sandbox = Some(
-        codex_exec_server::FileSystemSandboxContext::from_permission_profile(
+        ava_exec_server::FileSystemSandboxContext::from_permission_profile(
             permission_profile,
             request.cwd.clone(),
         ),
@@ -292,7 +292,7 @@ fn exec_server_params_use_path_uri_and_env_policy_overlay_contract() {
             .sandbox
             .as_ref()
             .and_then(|sandbox| sandbox.windows_sandbox_proxy_settings_mode),
-        Some(codex_sandboxing::WindowsSandboxProxySettingsMode::Preserve)
+        Some(ava_sandboxing::WindowsSandboxProxySettingsMode::Preserve)
     );
     assert!(first.process_id.as_str().starts_with("123-"));
     assert!(second.process_id.as_str().starts_with("123-"));
@@ -422,7 +422,7 @@ async fn network_denial_fallback_message_names_sandbox_network_proxy() {
 
     assert_eq!(
         message,
-        "Network access was denied by the Codex sandbox network proxy."
+        "Network access was denied by the Ava sandbox network proxy."
     );
 }
 
@@ -467,7 +467,7 @@ async fn failed_initial_end_for_unstored_process_uses_fallback_output() {
             .primary()
             .cloned()
             .expect("primary environment"),
-        shell_mode: codex_tools::UnifiedExecShellMode::Direct,
+        shell_mode: ava_tools::UnifiedExecShellMode::Direct,
         network: None,
         tty: true,
         sandbox_permissions: crate::sandboxing::SandboxPermissions::UseDefault,
@@ -498,16 +498,16 @@ async fn failed_initial_end_for_unstored_process_uses_fallback_output() {
         .await
         .expect("timed out waiting for failed command execution item")
         .expect("event channel closed");
-    let codex_protocol::protocol::EventMsg::ItemCompleted(completed_event) = event.msg else {
+    let ava_protocol::protocol::EventMsg::ItemCompleted(completed_event) = event.msg else {
         panic!("expected ItemCompleted event");
     };
-    let codex_protocol::items::TurnItem::CommandExecution(item) = completed_event.item else {
+    let ava_protocol::items::TurnItem::CommandExecution(item) = completed_event.item else {
         panic!("expected CommandExecution item");
     };
     assert_eq!(item.id, "call-unified-denied");
     assert_eq!(
         item.status,
-        codex_protocol::items::CommandExecutionStatus::Failed
+        ava_protocol::items::CommandExecutionStatus::Failed
     );
     assert_eq!(item.exit_code, Some(-1));
     assert_eq!(item.process_id.as_deref(), Some("123"));
@@ -587,9 +587,9 @@ async fn pruning_does_not_evict_live_process_while_exited_process_is_finalizing(
     let (_, turn) = crate::session::tests::make_session_and_context().await;
     let exited_process = Arc::new(
         crate::unified_exec::process_tests::remote_process(
-            codex_exec_server::WriteStatus::Accepted,
+            ava_exec_server::WriteStatus::Accepted,
             /*terminate_error*/ None,
-            codex_sandboxing::SandboxType::None,
+            ava_sandboxing::SandboxType::None,
         )
         .await,
     );
@@ -599,9 +599,9 @@ async fn pruning_does_not_evict_live_process_while_exited_process_is_finalizing(
         .expect("exited process should terminate");
     let live_process = Arc::new(
         crate::unified_exec::process_tests::remote_process(
-            codex_exec_server::WriteStatus::Accepted,
+            ava_exec_server::WriteStatus::Accepted,
             /*terminate_error*/ None,
-            codex_sandboxing::SandboxType::None,
+            ava_sandboxing::SandboxType::None,
         )
         .await,
     );
@@ -629,7 +629,7 @@ async fn pruning_does_not_evict_live_process_while_exited_process_is_finalizing(
                 initial_exec_command_active: Arc::new(AtomicBool::new(false)),
                 hook_command: format!("command-{process_id}"),
                 tty: false,
-                environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+                environment_id: ava_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
                 permissions: super::super::TerminalPermissions::for_launch(
                     turn.initial_environments
                         .primary()

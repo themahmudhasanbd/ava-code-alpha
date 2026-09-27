@@ -39,7 +39,7 @@ fn payload_runtime_wire_normalization_preserves_opt_in() {
 fn registered_payload_never_creates_or_locks_legacy_bin() {
     let tmp = tempfile::tempdir().expect("tempdir");
     let mut json = payload_json();
-    json["codex_home"] = json!(tmp.path());
+    json["ava_home"] = json!(tmp.path());
     json["runtime"] = json!("registered");
     let payload: Payload = serde_json::from_value(json).expect("registered payload");
     // An empty SID would fail any ACL operation; Registered must not attempt one.
@@ -57,7 +57,7 @@ fn registered_payload_never_creates_or_locks_legacy_bin() {
 fn unverified_payload_cannot_create_legacy_bin() {
     let tmp = tempfile::tempdir().expect("tempdir");
     let mut json = payload_json();
-    json["codex_home"] = json!(tmp.path());
+    json["ava_home"] = json!(tmp.path());
     json["runtime"] = json!("unverified");
     assert!(serde_json::from_value::<Payload>(json).is_err());
     assert!(!super::sandbox_bin_dir(tmp.path()).exists());

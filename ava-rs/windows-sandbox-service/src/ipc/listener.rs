@@ -4,9 +4,9 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_windows_sandbox::ensure_sandbox_users_group;
-use codex_windows_sandbox::string_from_sid_bytes;
-use codex_windows_sandbox::to_wide;
+use ava_windows_sandbox::ensure_sandbox_users_group;
+use ava_windows_sandbox::string_from_sid_bytes;
+use ava_windows_sandbox::to_wide;
 use std::mem::size_of;
 use std::ptr;
 use windows_sys::Win32::Foundation as foundation;
@@ -27,9 +27,9 @@ pub(super) struct ProvisioningListener {
 
 impl ProvisioningListener {
     pub(super) fn open() -> Result<Self> {
-        let pipe_name = codex_windows_sandbox::windows_sandbox_service_pipe_name()?;
+        let pipe_name = ava_windows_sandbox::windows_sandbox_service_pipe_name()?;
         let _setup_lock =
-            codex_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
+            ava_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
         if crate::installation_record::load()?
             .and_then(|record| record.runtime)
             .is_some_and(|runtime| runtime.retiring.is_some())
@@ -48,8 +48,8 @@ impl ProvisioningListener {
     pub(super) fn refresh(self) -> Result<Self> {
         let current_group = {
             let _setup_lock =
-                codex_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
-            codex_windows_sandbox::resolve_sid(codex_windows_sandbox::SANDBOX_USERS_GROUP)
+                ava_windows_sandbox::acquire_sandbox_setup_lock(/*timeout_ms*/ 5_000)?;
+            ava_windows_sandbox::resolve_sid(ava_windows_sandbox::SANDBOX_USERS_GROUP)
         };
         if current_group.is_ok_and(|current| current == self.sandbox_sid) {
             unsafe { pipes::DisconnectNamedPipe(self.pipe.0) };

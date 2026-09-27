@@ -21,12 +21,12 @@ mod tools;
 mod user_profile;
 
 use crate::context::ContextualUserFragment;
-use codex_extension_api::PreviousWorldStateSection;
-use codex_extension_api::RenderedWorldStateFragment;
-use codex_extension_api::WorldStateSectionContribution;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ContentItemKind;
-use codex_protocol::models::ResponseItem;
+use ava_extension_api::PreviousWorldStateSection;
+use ava_extension_api::RenderedWorldStateFragment;
+use ava_extension_api::WorldStateSectionContribution;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ContentItemKind;
+use ava_protocol::models::ResponseItem;
 use indexmap::IndexMap;
 use serde::Deserialize;
 use serde::Serialize;
@@ -273,7 +273,7 @@ pub(crate) struct WorldStateHash(String);
 impl WorldStateHash {
     pub(crate) fn from_fragment(fragment: &(impl ContextualUserFragment + ?Sized)) -> Self {
         let mut hasher = Sha1::new();
-        hasher.update(b"codex-world-state-fragment-v1\0");
+        hasher.update(b"ava-world-state-fragment-v1\0");
         hash_component(&mut hasher, fragment.role());
         hash_component(&mut hasher, &fragment.render());
         Self(format!("{:x}", hasher.finalize()))

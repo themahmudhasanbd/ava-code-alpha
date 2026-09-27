@@ -1,8 +1,8 @@
-# Codex SDK
+# Ava SDK
 
-Embed the Codex agent in your workflows and apps.
+Embed the Ava agent in your workflows and apps.
 
-The TypeScript SDK wraps the `codex` CLI from `@openai/codex`. It spawns the CLI and exchanges JSONL events over stdin/stdout.
+The TypeScript SDK wraps the `ava` CLI from `@openai/codex`. It spawns the CLI and exchanges JSONL events over stdin/stdout.
 
 ## Installation
 
@@ -15,10 +15,10 @@ Requires Node.js 18+.
 ## Quickstart
 
 ```typescript
-import { Codex } from "@openai/codex-sdk";
+import { Ava } from "@openai/codex-sdk";
 
-const codex = new Codex();
-const thread = codex.startThread();
+const ava = new Ava();
+const thread = ava.startThread();
 const turn = await thread.run("Diagnose the test failure and propose a fix");
 
 console.log(turn.finalResponse);
@@ -52,7 +52,7 @@ for await (const event of events) {
 
 ### Structured output
 
-The Codex agent can produce a JSON response that conforms to a specified schema. The schema can be provided for each turn as a plain JSON object.
+The Ava agent can produce a JSON response that conforms to a specified schema. The schema can be provided for each turn as a plain JSON object.
 
 ```typescript
 const schema = {
@@ -85,7 +85,7 @@ console.log(turn.finalResponse);
 
 ### Attaching images
 
-Provide structured input entries when you need to include images alongside text. Text entries are concatenated into the final prompt while image entries are passed to the Codex CLI via `--image`.
+Provide structured input entries when you need to include images alongside text. Text entries are concatenated into the final prompt while image entries are passed to the Ava CLI via `--image`.
 
 ```typescript
 const turn = await thread.run([
@@ -97,48 +97,48 @@ const turn = await thread.run([
 
 ### Resuming an existing thread
 
-Threads are persisted in `~/.codex/sessions`. If you lose the in-memory `Thread` object, reconstruct it with `resumeThread()` and keep going.
+Threads are persisted in `~/.ava-code/sessions`. If you lose the in-memory `Thread` object, reconstruct it with `resumeThread()` and keep going.
 
 ```typescript
-const savedThreadId = process.env.CODEX_THREAD_ID!;
-const thread = codex.resumeThread(savedThreadId);
+const savedThreadId = process.env.AVA_THREAD_ID!;
+const thread = ava.resumeThread(savedThreadId);
 await thread.run("Implement the fix");
 ```
 
 ### Working directory controls
 
-Codex runs in the current working directory by default. To avoid unrecoverable errors, Codex requires the working directory to be a Git repository. You can skip the Git repository check by passing the `skipGitRepoCheck` option when creating a thread.
+Ava runs in the current working directory by default. To avoid unrecoverable errors, Ava requires the working directory to be a Git repository. You can skip the Git repository check by passing the `skipGitRepoCheck` option when creating a thread.
 
 ```typescript
-const thread = codex.startThread({
+const thread = ava.startThread({
   workingDirectory: "/path/to/project",
   skipGitRepoCheck: true,
 });
 ```
 
-### Controlling the Codex CLI environment
+### Controlling the Ava CLI environment
 
-By default, the Codex CLI inherits the Node.js process environment. Provide the optional `env` parameter when instantiating the
-`Codex` client to fully control which variables the CLI receives—useful for sandboxed hosts like Electron apps.
+By default, the Ava CLI inherits the Node.js process environment. Provide the optional `env` parameter when instantiating the
+`Ava` client to fully control which variables the CLI receives—useful for sandboxed hosts like Electron apps.
 
 ```typescript
-const codex = new Codex({
+const ava = new Ava({
   env: {
     PATH: "/usr/local/bin",
   },
 });
 ```
 
-The SDK still injects its required variables (such as `CODEX_API_KEY`) on top of the environment you provide. If you set
+The SDK still injects its required variables (such as `AVA_API_KEY`) on top of the environment you provide. If you set
 `baseUrl`, the SDK passes it as a `--config openai_base_url=...` override.
 
 ### Passing `--config` overrides
 
-Use the `config` option to provide additional Codex CLI configuration overrides. The SDK accepts a JSON object, flattens it
+Use the `config` option to provide additional Ava CLI configuration overrides. The SDK accepts a JSON object, flattens it
 into dotted paths, and serializes values as TOML literals before passing them as repeated `--config key=value` flags.
 
 ```typescript
-const codex = new Codex({
+const ava = new Ava({
   config: {
     show_raw_agent_reasoning: true,
     sandbox_workspace_write: { network_access: true },
@@ -147,10 +147,10 @@ const codex = new Codex({
 ```
 
 For configuration keys that cannot be expressed as dotted paths, pass raw TOML overrides with `configOverrides`. Each entry
-is forwarded unchanged as a separate `--config` argument, without modifying `CODEX_HOME`:
+is forwarded unchanged as a separate `--config` argument, without modifying `AVA_HOME`:
 
 ```typescript
-const codex = new Codex({
+const ava = new Ava({
   config: { default_permissions: "audit" },
   configOverrides: ['permissions.audit.filesystem={":root"="read","/path/to/project/.env"="deny"}'],
 });

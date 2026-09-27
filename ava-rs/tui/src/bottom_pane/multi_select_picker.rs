@@ -41,7 +41,7 @@
 //! .build();
 //! ```
 
-use codex_utils_fuzzy_match::fuzzy_match;
+use ava_utils_fuzzy_match::fuzzy_match;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;

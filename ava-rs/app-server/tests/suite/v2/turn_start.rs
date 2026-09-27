@@ -17,81 +17,81 @@ use app_test_support::write_chatgpt_auth;
 use app_test_support::write_mock_responses_config_toml_with_chatgpt_base_url;
 use app_test_support::write_models_cache;
 use app_test_support::write_models_cache_with_models;
-use codex_app_server::INPUT_TOO_LARGE_ERROR_CODE;
-use codex_app_server::INVALID_PARAMS_ERROR_CODE;
-use codex_app_server_protocol::AdditionalContextEntry;
-use codex_app_server_protocol::AdditionalContextKind;
-use codex_app_server_protocol::ByteRange;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::CollabAgentStatus;
-use codex_app_server_protocol::CollabAgentTool;
-use codex_app_server_protocol::CollabAgentToolCallStatus;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::CommandExecutionRequestApprovalResponse;
-use codex_app_server_protocol::CommandExecutionStatus;
-use codex_app_server_protocol::CyberAccessProgram;
-use codex_app_server_protocol::FileChangeApprovalDecision;
-use codex_app_server_protocol::FileChangePatchUpdatedNotification;
-use codex_app_server_protocol::FileChangeRequestApprovalResponse;
-use codex_app_server_protocol::ImageReference as V2ImageReference;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::PatchApplyStatus;
-use codex_app_server_protocol::PatchChangeKind;
-use codex_app_server_protocol::RawResponseCompletedNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ServerRequestResolvedNotification;
-use codex_app_server_protocol::SubAgentActivityKind;
-use codex_app_server_protocol::TextElement;
-use codex_app_server_protocol::ThreadDeleteParams;
-use codex_app_server_protocol::ThreadDeleteResponse;
-use codex_app_server_protocol::ThreadDeletedNotification;
-use codex_app_server_protocol::ThreadHistoryMode;
-use codex_app_server_protocol::ThreadInjectItemsParams;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadMetadataUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateResponse;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
-use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-use codex_app_server_protocol::ThreadShellCommandParams;
-use codex_app_server_protocol::ThreadSource;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TokenUsageBreakdown;
-use codex_app_server_protocol::TurnCompletedNotification;
-use codex_app_server_protocol::TurnEnvironmentParams;
-use codex_app_server_protocol::TurnItemsView;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStartedNotification;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_app_server_protocol::WarningNotification;
-use codex_core::test_support::all_model_presets;
-use codex_exec_server::LOCAL_ENVIRONMENT_ID;
-use codex_features::Feature;
-use codex_login::AuthCredentialsStoreMode;
-use codex_models_manager::model_info::BASE_INSTRUCTIONS;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
-use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server::INPUT_TOO_LARGE_ERROR_CODE;
+use ava_app_server::INVALID_PARAMS_ERROR_CODE;
+use ava_app_server_protocol::AdditionalContextEntry;
+use ava_app_server_protocol::AdditionalContextKind;
+use ava_app_server_protocol::ByteRange;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::CollabAgentStatus;
+use ava_app_server_protocol::CollabAgentTool;
+use ava_app_server_protocol::CollabAgentToolCallStatus;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::CommandExecutionRequestApprovalResponse;
+use ava_app_server_protocol::CommandExecutionStatus;
+use ava_app_server_protocol::CyberAccessProgram;
+use ava_app_server_protocol::FileChangeApprovalDecision;
+use ava_app_server_protocol::FileChangePatchUpdatedNotification;
+use ava_app_server_protocol::FileChangeRequestApprovalResponse;
+use ava_app_server_protocol::ImageReference as V2ImageReference;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::PatchApplyStatus;
+use ava_app_server_protocol::PatchChangeKind;
+use ava_app_server_protocol::RawResponseCompletedNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ServerRequestResolvedNotification;
+use ava_app_server_protocol::SubAgentActivityKind;
+use ava_app_server_protocol::TextElement;
+use ava_app_server_protocol::ThreadDeleteParams;
+use ava_app_server_protocol::ThreadDeleteResponse;
+use ava_app_server_protocol::ThreadDeletedNotification;
+use ava_app_server_protocol::ThreadHistoryMode;
+use ava_app_server_protocol::ThreadInjectItemsParams;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadMetadataUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateResponse;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+use ava_app_server_protocol::ThreadShellCommandParams;
+use ava_app_server_protocol::ThreadSource;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TokenUsageBreakdown;
+use ava_app_server_protocol::TurnCompletedNotification;
+use ava_app_server_protocol::TurnEnvironmentParams;
+use ava_app_server_protocol::TurnItemsView;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStartedNotification;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_app_server_protocol::WarningNotification;
+use ava_core::test_support::all_model_presets;
+use ava_exec_server::LOCAL_ENVIRONMENT_ID;
+use ava_features::Feature;
+use ava_login::AuthCredentialsStoreMode;
+use ava_models_manager::model_info::BASE_INSTRUCTIONS;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
+use ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
+use ava_utils_absolute_path::test_support::PathExt;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_LIST_TOOL;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_NAMESPACE;
@@ -125,7 +125,7 @@ use super::analytics::wait_for_matching_analytics_event;
 const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(25);
 #[cfg(not(windows))]
 const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
-const TEST_ORIGINATOR: &str = "codex_vscode";
+const TEST_ORIGINATOR: &str = "ava_vscode";
 const MULTI_AGENT_V2_NAMESPACE: &str = "collaboration";
 const INVALID_REQUEST_ERROR_CODE: i64 = -32600;
 const TINY_PNG_BYTES: &[u8] = &[
@@ -142,7 +142,7 @@ fn body_contains(req: &wiremock::Request, text: &str) -> bool {
 }
 
 async fn run_local_image_turn(detail: Option<ImageDetail>) -> Result<Vec<Value>> {
-    // Two Codex turns hit the mock model (session start + turn/start).
+    // Two Ava turns hit the mock model (session start + turn/start).
     let responses = vec![
         create_final_assistant_message_sse_response("Done")?,
         create_final_assistant_message_sse_response("Done")?,
@@ -151,14 +151,14 @@ async fn run_local_image_turn(detail: Option<ImageDetail>) -> Result<Vec<Value>>
     // cover image-bearing request payloads.
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
     let mut model = model_info_from_slug("mock-model");
     model.supports_image_detail_original = true;
-    write_models_cache_with_models(codex_home.path(), vec![model]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![model]).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -169,7 +169,7 @@ async fn run_local_image_turn(detail: Option<ImageDetail>) -> Result<Vec<Value>>
         })
         .await?;
 
-    let image_path = codex_home.path().join("image.png");
+    let image_path = ava_home.path().join("image.png");
     std::fs::write(&image_path, TINY_PNG_BYTES)?;
 
     let TurnStartResponse { turn } = mcp
@@ -239,13 +239,13 @@ async fn turn_start_omits_notification_media_without_changing_model_input() -> R
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::OmitAppServerNotificationMedia)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -391,7 +391,7 @@ async fn tool_call_metadata_stays_out_of_raw_response_item_notifications(
         "isError": false,
     });
     Mock::given(method("POST"))
-        .and(path("/api/codex/ps/mcp"))
+        .and(path("/api/ava/ps/mcp"))
         .and(body_partial_json(json!({
             "method": "tools/call",
             "params": {"name": "calendar_list_events", "arguments": arguments},
@@ -409,7 +409,7 @@ async fn tool_call_metadata_stays_out_of_raw_response_item_notifications(
         .expect(1)
         .mount(&server)
         .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = MockResponsesConfig::new(&server.uri())
         .with_provider_name("OpenAI")
         .with_provider_config("supports_websockets = false")
@@ -422,9 +422,9 @@ async fn tool_call_metadata_stays_out_of_raw_response_item_notifications(
     if let Some(enabled) = analytics_enabled {
         config = config.with_extra_config(&format!("[analytics]\nenabled = {enabled}"));
     }
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-test-token")
             .account_id("account-123")
             .chatgpt_account_id("account-123")
@@ -434,7 +434,7 @@ async fn tool_call_metadata_stays_out_of_raw_response_item_notifications(
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
@@ -499,7 +499,7 @@ async fn tool_call_metadata_stays_out_of_raw_response_item_notifications(
     assert!(serde_json::to_string(&output["output"])?.contains("Calendar result"));
     assert_eq!(
         output["internal_chat_message_metadata_passthrough"]["executed_tool_calls"],
-        json!([{"name": "mcp__codex_apps__calendar_list_events", "arguments": arguments}]),
+        json!([{"name": "mcp__ava_apps__calendar_list_events", "arguments": arguments}]),
     );
     assert_eq!(
         output["internal_chat_message_metadata_passthrough"]["tool_calls_complete"],
@@ -552,14 +552,14 @@ async fn turn_start_with_empty_input_runs_model_request() -> Result<()> {
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -605,7 +605,7 @@ async fn turn_start_with_empty_input_runs_model_request() -> Result<()> {
         [ThreadItem::AgentMessage { text, .. }] if text == "Done"
     ));
 
-    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "codex_turn_event").await?;
+    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_turn_event").await?;
     assert_eq!(
         (
             event["event_params"]["turn_id"].as_str(),
@@ -668,21 +668,21 @@ async fn turn_start_steers_active_turn_and_returns_active_turn_id() -> Result<()
         }],
     ])
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "model = \"gpt-5.5\"\napproval_policy = \"never\"\nopenai_base_url = \"{}/v1\"\ncli_auth_credentials_store = \"file\"\n[features]\nenable_request_compression = false\n",
             server.uri()
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-test-token").plan_type("pro"),
         AuthCredentialsStoreMode::File,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -769,9 +769,9 @@ async fn turn_start_steers_active_turn_and_returns_active_turn_id() -> Result<()
         let body: Value = serde_json::from_slice(&request)?;
         assert_eq!(body["access_programs"], json!({"cyber": "daybreak_blue"}));
         let turn_metadata: Value = serde_json::from_str(
-            body["client_metadata"]["x-codex-turn-metadata"]
+            body["client_metadata"]["x-ava-turn-metadata"]
                 .as_str()
-                .context("expected x-codex-turn-metadata")?,
+                .context("expected x-ava-turn-metadata")?,
         )?;
         assert_eq!(turn_metadata["turn_trigger"].as_str(), Some("goal"));
     }
@@ -783,11 +783,11 @@ async fn turn_start_additional_context_flows_to_model_input() -> Result<()> {
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -849,18 +849,18 @@ async fn turn_start_sends_originator_header() -> Result<()> {
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(
         DEFAULT_READ_TIMEOUT,
         mcp.initialize_with_client_info(ClientInfo {
             name: TEST_ORIGINATOR.to_string(),
-            title: Some("Codex VS Code Extension".to_string()),
+            title: Some("Ava VS Code Extension".to_string()),
             version: "0.1.0".to_string(),
         }),
     )
@@ -916,11 +916,11 @@ async fn turn_start_emits_user_message_item_with_text_elements() -> Result<()> {
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -992,10 +992,10 @@ async fn turn_start_emits_thread_scoped_warning_notification_for_trimmed_skills(
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
-    let cache_path = codex_home.path().join("models_cache.json");
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
+    let cache_path = ava_home.path().join("models_cache.json");
     let mut cache: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&cache_path)?)?;
     let models = cache["models"]
@@ -1010,18 +1010,18 @@ async fn turn_start_emits_thread_scoped_warning_notification_for_trimmed_skills(
         .to_string();
     entry["context_window"] = serde_json::Value::from(100);
     std::fs::write(&cache_path, serde_json::to_string_pretty(&cache)?)?;
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         &config_path,
         config.replace("model = \"mock-model\"", &format!("model = \"{model}\"")),
     )?;
-    write_test_skill(codex_home.path(), "alpha-skill")?;
-    write_test_skill(codex_home.path(), "beta-skill")?;
+    write_test_skill(ava_home.path(), "alpha-skill")?;
+    write_test_skill(ava_home.path(), "beta-skill")?;
 
-    let isolated_home = codex_home.path().to_string_lossy();
+    let isolated_home = ava_home.path().to_string_lossy();
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[
             ("HOME", Some(isolated_home.as_ref())),
             ("USERPROFILE", Some(isolated_home.as_ref())),
@@ -1089,9 +1089,9 @@ async fn turn_start_sends_service_tier_id_to_model_request() -> Result<()> {
     ]);
     let response_mock = responses::mount_sse_once(&server, body.clone()).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
     let service_tier_model = all_model_presets()
         .iter()
         .find(|preset| preset.show_in_picker && !preset.service_tiers.is_empty())
@@ -1099,7 +1099,7 @@ async fn turn_start_sends_service_tier_id_to_model_request() -> Result<()> {
     let service_tier_id = service_tier_model.service_tiers[0].id.clone();
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1213,12 +1213,12 @@ async fn turn_start_emits_raw_response_completed_with_upstream_usage(
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1255,8 +1255,8 @@ async fn turn_start_emits_raw_response_completed_with_upstream_usage(
             .and_then(|params| params.get("usageMetadata")),
         Some(&expected_metadata),
     );
-    let notification: codex_app_server_protocol::ServerNotification = notification.try_into()?;
-    let codex_app_server_protocol::ServerNotification::RawResponseCompleted(notification) =
+    let notification: ava_app_server_protocol::ServerNotification = notification.try_into()?;
+    let ava_app_server_protocol::ServerNotification::RawResponseCompleted(notification) =
         notification
     else {
         anyhow::bail!("expected rawResponse/completed notification");
@@ -1294,11 +1294,11 @@ async fn thread_start_omits_empty_instruction_overrides_from_model_request() -> 
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1381,20 +1381,20 @@ async fn turn_start_tracks_thread_originator_in_analytics() -> Result<()> {
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         &server.uri(),
     )?;
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let config = std::fs::read_to_string(&config_path)?
         .replace("stream_max_retries = 0", "stream_max_retries = 1");
     std::fs::write(config_path, config)?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -1403,7 +1403,7 @@ async fn turn_start_tracks_thread_originator_in_analytics() -> Result<()> {
         .start_thread(ThreadStartParams {
             model: Some("mock-model".to_string()),
             thread_source: Some(ThreadSource::User),
-            service_name: Some("codex_work_desktop".to_string()),
+            service_name: Some("ava_work_desktop".to_string()),
             ..Default::default()
         })
         .await?;
@@ -1436,21 +1436,21 @@ async fn turn_start_tracks_thread_originator_in_analytics() -> Result<()> {
     )
     .await??;
 
-    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "codex_turn_event").await?;
+    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_turn_event").await?;
     assert_eq!(event["event_params"]["thread_id"], thread.id);
     assert_eq!(event["event_params"]["session_id"], thread.session_id);
     assert_eq!(event["event_params"]["turn_id"], turn.id);
     assert_eq!(event["event_params"]["root_turn_id"], turn.id);
     let request = response_mock.requests()[0].body_json();
     let request_metadata: Value = serde_json::from_str(
-        request["client_metadata"]["x-codex-turn-metadata"]
+        request["client_metadata"]["x-ava-turn-metadata"]
             .as_str()
             .context("expected turn metadata")?,
     )?;
     assert_eq!(
         json!({
             "eventTrigger": event["event_params"]["turn_trigger"],
-            "eventSource": event["event_params"]["codex_turn_source"],
+            "eventSource": event["event_params"]["ava_turn_source"],
             "requestTrigger": request_metadata["turn_trigger"],
             "requestSource": request_metadata["source"],
         }),
@@ -1463,7 +1463,7 @@ async fn turn_start_tracks_thread_originator_in_analytics() -> Result<()> {
     );
     assert_eq!(
         event["event_params"]["app_server_client"]["product_client_id"],
-        "codex_work_desktop"
+        "ava_work_desktop"
     );
     assert_eq!(event["event_params"]["model"], "mock-model");
     assert_eq!(event["event_params"]["model_provider"], "mock_provider");
@@ -1547,15 +1547,15 @@ async fn code_mode_exec_emits_correlated_production_analytics() -> Result<()> {
         ],
     )
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::CodeModeOnly)
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -1575,7 +1575,7 @@ async fn code_mode_exec_emits_correlated_production_analytics() -> Result<()> {
     let event = wait_for_analytics_event(
         &server,
         DEFAULT_READ_TIMEOUT,
-        "codex_dynamic_tool_call_event",
+        "ava_dynamic_tool_call_event",
     )
     .await?;
     assert_eq!(
@@ -1641,18 +1641,18 @@ async fn turn_profile_tracks_blocking_tool_and_follow_up_sampling() -> Result<()
     responses.push(create_final_assistant_message_sse_response("Done")?);
     let server = create_mock_responses_server_sequence(responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::Goals)
         .with_root_config(&format!(
             "chatgpt_base_url = \"{}\"\ntools.update_plan.enabled = true",
             server.uri()
         ))
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -1712,7 +1712,7 @@ async fn turn_profile_tracks_blocking_tool_and_follow_up_sampling() -> Result<()
     )
     .await??;
 
-    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "codex_turn_event").await?;
+    let event = wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_turn_event").await?;
     let params = &event["event_params"];
     assert_eq!(
         json!({
@@ -1760,7 +1760,7 @@ async fn turn_profile_tracks_blocking_tool_and_follow_up_sampling() -> Result<()
 
     for (call_id, tool_name, _) in control_tools {
         let event = wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-            event["event_type"] == "codex_control_tool_call_event"
+            event["event_type"] == "ava_control_tool_call_event"
                 && event["event_params"]["item_id"] == call_id
         })
         .await?;
@@ -1806,7 +1806,7 @@ async fn turn_profile_tracks_blocking_tool_and_follow_up_sampling() -> Result<()
 
     let second_turn_event =
         wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-            event["event_type"] == "codex_turn_event"
+            event["event_type"] == "ava_turn_event"
                 && event["event_params"]["turn_id"] == second_turn.turn.id
         })
         .await?;
@@ -1827,11 +1827,11 @@ async fn turn_start_accepts_text_at_limit_with_mention_item() -> Result<()> {
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1875,11 +1875,11 @@ async fn turn_start_accepts_text_at_limit_with_mention_item() -> Result<()> {
 
 #[tokio::test]
 async fn turn_start_rejects_combined_oversized_text_input() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new("http://localhost/unused").write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new("http://localhost/unused").write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -1966,15 +1966,15 @@ async fn turn_start_rejects_combined_oversized_text_input() -> Result<()> {
 
 #[tokio::test]
 async fn turn_start_rejects_invalid_permission_selection_before_starting_turn() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new("http://localhost/unused").write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new("http://localhost/unused").write(ava_home.path())?;
     std::fs::write(
-        codex_home.path().join("managed_config.toml"),
+        ava_home.path().join("managed_config.toml"),
         "sandbox_mode = \"read-only\"\n",
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2035,12 +2035,12 @@ async fn turn_start_accepts_managed_network_profile_from_requirements() -> Resul
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::NetworkProxy)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"
 default_permissions = "managed-network"
 
@@ -2061,7 +2061,7 @@ allow_local_binding = false
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2116,13 +2116,13 @@ async fn turn_start_enforces_managed_network_sandbox() -> Result<()> {
     );
 
     let server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::NetworkProxy)
         .enable_feature(Feature::UnifiedExec)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         r#"
 default_permissions = "managed-network"
 
@@ -2144,7 +2144,7 @@ allow_upstream_proxy = false
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = app_server
@@ -2176,7 +2176,7 @@ allow_upstream_proxy = false
         .split_once("::")
         .context("network sandbox test must be in an integration test module")?;
     let child_test = format!("{test_module}::managed_network_sandbox_probe");
-    let target_env = format!("CODEX_TEST_MANAGED_NETWORK_TARGET={target}");
+    let target_env = format!("AVA_TEST_MANAGED_NETWORK_TARGET={target}");
     let command = shlex::try_join([
         "env",
         &target_env,
@@ -2283,7 +2283,7 @@ fn managed_network_sandbox_probe() -> Result<()> {
     use std::net::TcpStream;
     use std::time::Duration;
 
-    let target: SocketAddr = std::env::var("CODEX_TEST_MANAGED_NETWORK_TARGET")?.parse()?;
+    let target: SocketAddr = std::env::var("AVA_TEST_MANAGED_NETWORK_TARGET")?.parse()?;
     let proxy = url::Url::parse(&std::env::var("HTTP_PROXY")?)?;
     let proxy_address = SocketAddr::new(
         proxy.host_str().context("missing proxy host")?.parse()?,
@@ -2331,11 +2331,11 @@ fn managed_network_sandbox_probe() -> Result<()> {
 #[tokio::test]
 async fn turn_start_rejects_unknown_environment_before_starting_turn() -> Result<()> {
     let server = create_mock_responses_server_repeating_assistant("Done").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2356,8 +2356,8 @@ async fn turn_start_rejects_unknown_environment_before_starting_turn() -> Result
             }],
             environments: Some(vec![TurnEnvironmentParams {
                 environment_id: "missing".to_string(),
-                cwd: codex_utils_absolute_path::AbsolutePathBuf::try_from(
-                    codex_home.path().to_path_buf(),
+                cwd: ava_utils_absolute_path::AbsolutePathBuf::try_from(
+                    ava_home.path().to_path_buf(),
                 )?
                 .into(),
                 runtime_workspace_roots: None,
@@ -2390,7 +2390,7 @@ async fn turn_start_rejects_unknown_environment_before_starting_turn() -> Result
 #[tokio::test]
 async fn turn_start_emits_notifications_and_accepts_model_override() -> Result<()> {
     // Provide a mock server and config so model wiring is valid.
-    // Three Codex turns hit the mock model (session start + two turn/start calls).
+    // Three Ava turns hit the mock model (session start + two turn/start calls).
     let responses = vec![
         create_final_assistant_message_sse_response("Done")?,
         create_final_assistant_message_sse_response("Done")?,
@@ -2398,11 +2398,11 @@ async fn turn_start_emits_notifications_and_accepts_model_override() -> Result<(
     ];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2437,7 +2437,7 @@ async fn turn_start_emits_notifications_and_accepts_model_override() -> Result<(
     assert_eq!(started.thread_id, thread.id);
     assert_eq!(
         started.turn.status,
-        codex_app_server_protocol::TurnStatus::InProgress
+        ava_app_server_protocol::TurnStatus::InProgress
     );
     assert_eq!(started.turn.id, turn.id);
     assert_eq!(started.turn.items_view, TurnItemsView::NotLoaded);
@@ -2504,11 +2504,11 @@ async fn turn_start_accepts_collaboration_mode_override_v2() -> Result<()> {
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2578,11 +2578,11 @@ async fn turn_start_uses_thread_feature_overrides_for_request_user_input_tool_de
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2672,17 +2672,17 @@ async fn turn_start_accepts_deprecated_personality_override_v2() -> Result<()> {
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
     let ThreadStartResponse { thread, .. } = mcp
         .start_thread(ThreadStartParams {
-            model: Some("exp-codex-personality".to_string()),
+            model: Some("exp-ava-personality".to_string()),
             ..Default::default()
         })
         .await?;
@@ -2738,13 +2738,13 @@ async fn turn_start_ignores_deprecated_multi_agent_mode() -> Result<()> {
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::MultiAgentV2)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2805,13 +2805,13 @@ async fn thread_start_ignores_deprecated_multi_agent_mode() -> Result<()> {
     ]);
     let response_mock = responses::mount_sse_once(&server, body).await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::MultiAgentV2)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -2883,17 +2883,17 @@ async fn turn_start_ignores_personality_change_mid_thread_v2() -> Result<()> {
     ]);
     let response_mock = responses::mount_sse_sequence(&server, vec![sse1, sse2]).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
     let ThreadStartResponse { thread, .. } = mcp
         .start_thread(ThreadStartParams {
-            model: Some("exp-codex-personality".to_string()),
+            model: Some("exp-ava-personality".to_string()),
             ..Default::default()
         })
         .await?;
@@ -3002,7 +3002,7 @@ async fn turn_start_exec_approval_toggle_v2() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().to_path_buf();
+    let ava_home = tmp.path().to_path_buf();
     let bearer_token = "example_bearer_token_1234567890";
     let first_shell_command = vec![
         "python3".to_string(),
@@ -3042,10 +3042,10 @@ async fn turn_start_exec_approval_toggle_v2() -> Result<()> {
     // The first tool call explicitly requests escalation to force elicitation.
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
-        .write(codex_home.as_path())?;
+        .write(ava_home.as_path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.as_path())
+        .with_ava_home(ava_home.as_path())
         .build_initialized()
         .await?;
     let expected_environment_id = mcp.auto_env_params()?.environment_id;
@@ -3188,8 +3188,8 @@ async fn turn_start_exec_approval_toggle_v2() -> Result<()> {
                     text: "run python again".to_string(),
                     text_elements: Vec::new(),
                 }],
-                approval_policy: Some(codex_app_server_protocol::AskForApproval::Never),
-                sandbox_policy: Some(codex_app_server_protocol::SandboxPolicy::DangerFullAccess),
+                approval_policy: Some(ava_app_server_protocol::AskForApproval::Never),
+                sandbox_policy: Some(ava_app_server_protocol::SandboxPolicy::DangerFullAccess),
                 model: Some("mock-model".to_string()),
                 effort: Some(ReasoningEffort::Medium),
                 summary: Some(ReasoningSummary::Auto),
@@ -3243,7 +3243,7 @@ async fn run_turn_start_exec_approval_rejection_v2(
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().to_path_buf();
+    let ava_home = tmp.path().to_path_buf();
     let bearer_token = "example_bearer_token_1234567890";
     let shell_command = vec![
         "python3".to_string(),
@@ -3269,10 +3269,10 @@ async fn run_turn_start_exec_approval_rejection_v2(
     let server = create_mock_responses_server_sequence(responses).await;
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
-        .write(codex_home.as_path())?;
+        .write(ava_home.as_path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.as_path())
+        .with_ava_home(ava_home.as_path())
         .build_initialized()
         .await?;
 
@@ -3402,9 +3402,9 @@ async fn turn_start_explicit_local_environment_updates_legacy_cwd_between_turns(
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
-    let rules_dir = codex_home.join("rules");
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
+    let rules_dir = ava_home.join("rules");
     std::fs::create_dir(&rules_dir)?;
     std::fs::write(
         rules_dir.join("default.rules"),
@@ -3436,10 +3436,10 @@ async fn turn_start_explicit_local_environment_updates_legacy_cwd_between_turns(
     let server = create_mock_responses_server_sequence(responses).await;
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -3453,7 +3453,7 @@ async fn turn_start_explicit_local_environment_updates_legacy_cwd_between_turns(
 
     // first turn with workspace-write sandbox and first_cwd
     let first_writable_root =
-        codex_utils_absolute_path::AbsolutePathBuf::try_from(first_cwd.clone())?;
+        ava_utils_absolute_path::AbsolutePathBuf::try_from(first_cwd.clone())?;
     let _: TurnStartResponse = mcp
         .request(|request_id| ClientRequest::TurnStart {
             request_id,
@@ -3472,9 +3472,9 @@ async fn turn_start_explicit_local_environment_updates_legacy_cwd_between_turns(
                 additional_context: None,
                 cwd: Some(first_cwd.clone()),
                 runtime_workspace_roots: None,
-                approval_policy: Some(codex_app_server_protocol::AskForApproval::Never),
+                approval_policy: Some(ava_app_server_protocol::AskForApproval::Never),
                 approvals_reviewer: None,
-                sandbox_policy: Some(codex_app_server_protocol::SandboxPolicy::WorkspaceWrite {
+                sandbox_policy: Some(ava_app_server_protocol::SandboxPolicy::WorkspaceWrite {
                     writable_roots: vec![first_writable_root],
                     network_access: false,
                     exclude_tmpdir_env_var: true,
@@ -3525,7 +3525,7 @@ async fn turn_start_explicit_local_environment_updates_legacy_cwd_between_turns(
                 additional_context: None,
                 cwd: None,
                 runtime_workspace_roots: None,
-                approval_policy: Some(codex_app_server_protocol::AskForApproval::Never),
+                approval_policy: Some(ava_app_server_protocol::AskForApproval::Never),
                 approvals_reviewer: None,
                 sandbox_policy: None,
                 permissions: None,
@@ -3589,16 +3589,16 @@ async fn turn_start_permission_profile_rebinds_runtime_workspace_roots_between_t
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let old_root = tmp.path().join("old-root");
     let new_root = tmp.path().join("new-root");
     std::fs::create_dir(&old_root)?;
     std::fs::create_dir(&new_root)?;
     let old_root_text = old_root.to_string_lossy().into_owned();
     let new_root_text = new_root.to_string_lossy().into_owned();
-    let old_root = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(old_root)?;
-    let new_root = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(new_root)?;
+    let old_root = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(old_root)?;
+    let new_root = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(new_root)?;
 
     let server = responses::start_mock_server().await;
     let response_mock = responses::mount_sse_sequence(
@@ -3619,7 +3619,7 @@ async fn turn_start_permission_profile_rebinds_runtime_workspace_roots_between_t
     .await;
     let server_uri = server.uri();
     std::fs::write(
-        codex_home.join("config.toml"),
+        ava_home.join("config.toml"),
         format!(
             r#"
 model = "mock-model"
@@ -3646,7 +3646,7 @@ stream_max_retries = 0
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -3732,15 +3732,15 @@ stream_max_retries = 0
 #[tokio::test]
 async fn turn_start_resolves_sticky_thread_local_environment_and_turn_overrides() -> Result<()> {
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
     let server = create_mock_responses_server_repeating_assistant("done").await;
-    MockResponsesConfig::new(&server.uri()).write(&codex_home)?;
+    MockResponsesConfig::new(&server.uri()).write(&ava_home)?;
     std::fs::write(
-        codex_home.join("environments.toml"),
+        ava_home.join("environments.toml"),
         r#"
 [[environments]]
 id = "remote"
@@ -3749,7 +3749,7 @@ url = "ws://127.0.0.1:1"
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         // This test owns environments.toml and explicitly compares local selections
         // with a configured remote environment, so auto env would change its subject.
         .without_auto_env()
@@ -3873,8 +3873,8 @@ async fn turn_start_file_change_approval_v2() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
@@ -3893,10 +3893,10 @@ async fn turn_start_file_change_approval_v2() -> Result<()> {
         .with_sandbox_mode("read-only")
         // Snapshot startup is unrelated to the file-approval behavior under test.
         .disable_feature(Feature::ShellSnapshot)
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -3961,7 +3961,7 @@ async fn turn_start_file_change_approval_v2() -> Result<()> {
     let expected_readme_path = expected_readme_path.to_string_lossy().into_owned();
     pretty_assertions::assert_eq!(
         started_changes,
-        vec![codex_app_server_protocol::FileUpdateChange {
+        vec![ava_app_server_protocol::FileUpdateChange {
             path: expected_readme_path.clone(),
             kind: PatchChangeKind::Add,
             diff: "new line\n".to_string(),
@@ -4050,8 +4050,8 @@ async fn turn_start_does_not_stream_apply_patch_change_updates_without_feature_v
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
@@ -4092,10 +4092,10 @@ async fn turn_start_does_not_stream_apply_patch_change_updates_without_feature_v
         create_final_assistant_message_sse_response("patch applied")?,
     ];
     let server = create_mock_responses_server_sequence(responses).await;
-    MockResponsesConfig::new(&server.uri()).write(&codex_home)?;
+    MockResponsesConfig::new(&server.uri()).write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -4147,8 +4147,8 @@ async fn turn_start_streams_apply_patch_change_updates_v2() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
@@ -4210,9 +4210,9 @@ async fn turn_start_streams_apply_patch_change_updates_v2() -> Result<()> {
         .disable_feature(Feature::Plugins)
         .disable_feature(Feature::RemoteModels)
         .disable_feature(Feature::ShellSnapshot)
-        .write(&codex_home)?;
-    write_models_cache(&codex_home).await?;
-    let cache_path = codex_home.join("models_cache.json");
+        .write(&ava_home)?;
+    write_models_cache(&ava_home).await?;
+    let cache_path = ava_home.join("models_cache.json");
     let mut cache: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&cache_path)?)?;
     let models = cache["models"]
@@ -4227,7 +4227,7 @@ async fn turn_start_streams_apply_patch_change_updates_v2() -> Result<()> {
     std::fs::write(&cache_path, serde_json::to_string_pretty(&cache)?)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -4352,18 +4352,18 @@ async fn turn_start_emits_spawn_agent_item_with_model_metadata_v2() -> Result<()
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::Collab)
         .with_root_config(&format!(
             "chatgpt_base_url = \"{}\"\ntools.update_plan.enabled = true",
             server.uri()
         ))
-        .write(codex_home.path())?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -4481,13 +4481,13 @@ async fn turn_start_emits_spawn_agent_item_with_model_metadata_v2() -> Result<()
 
     let child_turn_event =
         wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-            event["event_type"] == "codex_turn_event"
+            event["event_type"] == "ava_turn_event"
                 && event["event_params"]["thread_id"] == receiver_thread_id
         })
         .await?;
     let child_tool_event =
         wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-            event["event_type"] == "codex_control_tool_call_event"
+            event["event_type"] == "ava_control_tool_call_event"
                 && event["event_params"]["item_id"] == CHILD_PLAN_CALL_ID
         })
         .await?;
@@ -4595,17 +4595,17 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
         ]),
     )
     .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::MultiAgentV2)
         .enable_feature(Feature::Goals)
         .with_root_config(&format!("chatgpt_base_url = \"{}\"", server.uri()))
-        .write(codex_home.path())?;
-    write_models_cache(codex_home.path()).await?;
-    mount_analytics_capture(&server, codex_home.path()).await?;
+        .write(ava_home.path())?;
+    write_models_cache(ava_home.path()).await?;
+    mount_analytics_capture(&server, ava_home.path()).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -4653,10 +4653,10 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
     })
     .await??;
 
-    let listed: codex_app_server_protocol::ThreadListResponse = mcp
+    let listed: ava_app_server_protocol::ThreadListResponse = mcp
         .request(|request_id| ClientRequest::ThreadList {
             request_id,
-            params: codex_app_server_protocol::ThreadListParams {
+            params: ava_app_server_protocol::ThreadListParams {
                 originators: None,
                 cursor: None,
                 limit: Some(10),
@@ -4664,7 +4664,7 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
                 sort_direction: None,
                 model_providers: None,
                 source_kinds: Some(vec![
-                    codex_app_server_protocol::ThreadSourceKind::SubAgentThreadSpawn,
+                    ava_app_server_protocol::ThreadSourceKind::SubAgentThreadSpawn,
                 ]),
                 archived: None,
                 section_id: None,
@@ -4684,8 +4684,8 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
         .context("spawned child is missing from thread/list")?;
     assert!(matches!(
         &listed_child.source,
-        codex_app_server_protocol::SessionSource::SubAgent(
-            codex_protocol::protocol::SubAgentSource::ThreadSpawn {
+        ava_app_server_protocol::SessionSource::SubAgent(
+            ava_protocol::protocol::SubAgentSource::ThreadSpawn {
                 agent_path: Some(_),
                 ..
             }
@@ -4766,7 +4766,7 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
                         "type": "command",
                         "source": "shell",
                         "command": "echo blocked",
-                        "cwd": codex_home.path(),
+                        "cwd": ava_home.path(),
                     },
                 },
             })),
@@ -4870,7 +4870,7 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
         .await??;
         assert_eq!(
             error.error,
-            codex_app_server_protocol::JSONRPCErrorError {
+            ava_app_server_protocol::JSONRPCErrorError {
                 code: INVALID_REQUEST_ERROR_CODE,
                 message: ERROR_MESSAGE.to_string(),
                 data: None,
@@ -4880,7 +4880,7 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
     }
 
     let event = wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_collab_agent_tool_call_event"
+        event["event_type"] == "ava_collab_agent_tool_call_event"
             && event["event_params"]["item_id"] == SPAWN_CALL_ID
     })
     .await?;
@@ -4907,7 +4907,7 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
     assert!(!event.to_string().contains(CHILD_PROMPT));
 
     let failed_event = wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_collab_agent_tool_call_event"
+        event["event_type"] == "ava_collab_agent_tool_call_event"
             && event["event_params"]["item_id"] == FAILED_SPAWN_CALL_ID
     })
     .await?;
@@ -4930,7 +4930,7 @@ async fn direct_input_to_multi_agent_v2_subagent_is_rejected(
     assert!(!failed_event.to_string().contains(CHILD_PROMPT));
 
     let turn_event = wait_for_matching_analytics_event(&server, DEFAULT_READ_TIMEOUT, |event| {
-        event["event_type"] == "codex_turn_event" && event["event_params"]["thread_id"] == thread.id
+        event["event_type"] == "ava_turn_event" && event["event_params"]["thread_id"] == thread.id
     })
     .await?;
     assert_eq!(turn_event["event_params"]["subagent_tool_call_count"], 2);
@@ -4996,15 +4996,15 @@ async fn turn_start_emits_spawn_agent_item_with_effective_role_model_metadata_v2
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .enable_feature(Feature::Collab)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     std::fs::write(
-        codex_home.path().join("custom-role.toml"),
+        ava_home.path().join("custom-role.toml"),
         format!("model = \"{ROLE_MODEL}\"\nmodel_reasoning_effort = \"{ROLE_REASONING_EFFORT}\"\n",),
     )?;
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let base_config = std::fs::read_to_string(&config_path)?;
     std::fs::write(
         &config_path,
@@ -5019,7 +5019,7 @@ config_file = "./custom-role.toml"
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -5121,8 +5121,8 @@ async fn turn_start_file_change_approval_accept_for_session_persists_v2() -> Res
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
@@ -5149,10 +5149,10 @@ async fn turn_start_file_change_approval_accept_for_session_persists_v2() -> Res
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
         .with_sandbox_mode("read-only")
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -5360,8 +5360,8 @@ async fn run_turn_start_file_change_approval_rejection_v2(
     skip_if_no_network!(Ok(()));
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let workspace = tmp.path().join("workspace");
     std::fs::create_dir(&workspace)?;
 
@@ -5378,10 +5378,10 @@ async fn run_turn_start_file_change_approval_rejection_v2(
     MockResponsesConfig::new(&server.uri())
         .with_approval_policy("on-request")
         .with_sandbox_mode("read-only")
-        .write(&codex_home)?;
+        .write(&ava_home)?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .build_initialized()
         .await?;
 
@@ -5445,7 +5445,7 @@ async fn run_turn_start_file_change_approval_rejection_v2(
     let expected_readme_path_str = expected_readme_path.to_string_lossy().into_owned();
     pretty_assertions::assert_eq!(
         started_changes,
-        vec![codex_app_server_protocol::FileUpdateChange {
+        vec![ava_app_server_protocol::FileUpdateChange {
             path: expected_readme_path_str.clone(),
             kind: PatchChangeKind::Add,
             diff: "new line\n".to_string(),
@@ -5510,14 +5510,14 @@ async fn command_execution_notifications_include_process_id() -> Result<()> {
         create_final_assistant_message_sse_response("done")?,
     ];
     let server = create_mock_responses_server_sequence(responses).await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&server.uri())
         .with_sandbox_mode("danger-full-access")
         .enable_feature(Feature::UnifiedExec)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -5538,7 +5538,7 @@ async fn command_execution_notifications_include_process_id() -> Result<()> {
                     text: "run a command".to_string(),
                     text_elements: Vec::new(),
                 }],
-                sandbox_policy: Some(codex_app_server_protocol::SandboxPolicy::DangerFullAccess),
+                sandbox_policy: Some(ava_app_server_protocol::SandboxPolicy::DangerFullAccess),
                 ..Default::default()
             },
         })
@@ -5619,15 +5619,15 @@ async fn command_execution_notifications_include_trusted_plugin_id() -> Result<(
     skip_if_no_network!(Ok(()));
     skip_if_wine_exec!(Ok(()), "plugin attribution fixture is Unix-only");
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let curated_sha = "0123456789abcdef0123456789abcdef01234567";
-    let plugin_root = codex_home
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache/openai-api-curated/google-calendar/01234567");
     let script_path = plugin_root.join("scripts/run.sh");
-    let synced_root = codex_home.path().join(".tmp/plugins");
+    let synced_root = ava_home.path().join(".tmp/plugins");
     for path in [
-        plugin_root.join(".codex-plugin"),
+        plugin_root.join(".ava-plugin"),
         script_path
             .parent()
             .expect("script path should have parent")
@@ -5637,12 +5637,12 @@ async fn command_execution_notifications_include_trusted_plugin_id() -> Result<(
         std::fs::create_dir_all(path)?;
     }
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"google-calendar","version":"0.1.0"}"#,
     )?;
     std::fs::write(&script_path, "echo hi\n")?;
     std::fs::write(
-        codex_home.path().join(".tmp/plugins.sha"),
+        ava_home.path().join(".tmp/plugins.sha"),
         format!("{curated_sha}\n"),
     )?;
     std::fs::write(
@@ -5674,10 +5674,10 @@ async fn command_execution_notifications_include_trusted_plugin_id() -> Result<(
         .enable_feature(Feature::Plugins)
         .disable_feature(Feature::RemotePlugin)
         .with_extra_config("[plugins.\"google-calendar@openai-api-curated\"]\nenabled = true")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp
@@ -5695,7 +5695,7 @@ async fn command_execution_notifications_include_trusted_plugin_id() -> Result<(
                     text: "run a plugin command".to_string(),
                     text_elements: Vec::new(),
                 }],
-                sandbox_policy: Some(codex_app_server_protocol::SandboxPolicy::DangerFullAccess),
+                sandbox_policy: Some(ava_app_server_protocol::SandboxPolicy::DangerFullAccess),
                 ..Default::default()
             },
         })
@@ -5751,13 +5751,13 @@ async fn turn_start_with_elevated_override_does_not_persist_project_trust() -> R
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let workspace = TempDir::new()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
 
@@ -5774,7 +5774,7 @@ async fn turn_start_with_elevated_override_does_not_persist_project_trust() -> R
             params: TurnStartParams {
                 thread_id: thread.id,
                 cwd: Some(workspace.path().to_path_buf()),
-                sandbox_policy: Some(codex_app_server_protocol::SandboxPolicy::DangerFullAccess),
+                sandbox_policy: Some(ava_app_server_protocol::SandboxPolicy::DangerFullAccess),
                 input: vec![V2UserInput::Text {
                     text: "Hello".to_string(),
                     text_elements: Vec::new(),
@@ -5789,15 +5789,15 @@ async fn turn_start_with_elevated_override_does_not_persist_project_trust() -> R
     )
     .await??;
 
-    let config_toml = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config_toml = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(!config_toml.contains("trust_level = \"trusted\""));
     assert!(!config_toml.contains(&workspace.path().display().to_string()));
 
     Ok(())
 }
 
-fn write_test_skill(codex_home: &Path, name: &str) -> std::io::Result<()> {
-    let skill_dir = codex_home.join("skills").join(name);
+fn write_test_skill(ava_home: &Path, name: &str) -> std::io::Result<()> {
+    let skill_dir = ava_home.join("skills").join(name);
     std::fs::create_dir_all(&skill_dir)?;
     std::fs::write(
         skill_dir.join("SKILL.md"),

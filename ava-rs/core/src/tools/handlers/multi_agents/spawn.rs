@@ -10,7 +10,7 @@ use crate::agent::types::SpawnAgentForkMode;
 use crate::agent::types::SpawnAgentOptions;
 use crate::tools::handlers::multi_agents_spec::SpawnAgentToolOptions;
 use crate::tools::handlers::multi_agents_spec::create_spawn_agent_tool_v1;
-use codex_tools::ToolSpec;
+use ava_tools::ToolSpec;
 
 #[derive(Default)]
 pub(crate) struct Handler {
@@ -39,7 +39,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
         )
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {
@@ -203,7 +203,7 @@ async fn handle_spawn_agent(
     let new_thread_id = result?.thread_id;
     let role_tag = role_name.unwrap_or(DEFAULT_ROLE_NAME);
     turn.session_telemetry.counter(
-        "codex.multi_agent.spawn",
+        "ava.multi_agent.spawn",
         /*inc*/ 1,
         &[("role", role_tag), ("version", "v1")],
     );

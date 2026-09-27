@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-mcp"
+name = "ava-mcp"
 version.workspace = true
 
 [lib]
-name = "codex_mcp"
+name = "ava_mcp"
 path = "src/lib.rs"
 doctest = false
 
@@ -16,19 +16,19 @@ workspace = true
 anyhow = { workspace = true }
 arc-swap = { workspace = true }
 async-channel = { workspace = true }
-codex-async-utils = { workspace = true }
-codex-api = { workspace = true }
-codex-config = { workspace = true }
-codex-connectors = { workspace = true }
-codex-diagnostics = { workspace = true }
-codex-exec-server = { workspace = true }
-codex-login = { workspace = true }
-codex-model-provider = { workspace = true }
-codex-otel = { workspace = true }
-codex-protocol = { workspace = true }
-codex-rmcp-client = { workspace = true }
-codex-utils-path-uri = { workspace = true }
-codex-utils-plugins = { workspace = true }
+ava-async-utils = { workspace = true }
+ava-api = { workspace = true }
+ava-config = { workspace = true }
+ava-connectors = { workspace = true }
+ava-diagnostics = { workspace = true }
+ava-exec-server = { workspace = true }
+ava-login = { workspace = true }
+ava-model-provider = { workspace = true }
+ava-otel = { workspace = true }
+ava-protocol = { workspace = true }
+ava-rmcp-client = { workspace = true }
+ava-utils-path-uri = { workspace = true }
+ava-utils-plugins = { workspace = true }
 futures = { workspace = true }
 lru = { workspace = true }
 regex-lite = { workspace = true }
@@ -44,8 +44,8 @@ url = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
-codex-exec-server-test-support = { workspace = true }
-codex-plugin = { workspace = true }
+ava-exec-server-test-support = { workspace = true }
+ava-plugin = { workspace = true }
 insta = { workspace = true }
 pretty_assertions = { workspace = true }
 rmcp = { workspace = true, default-features = false, features = ["base64", "macros", "schemars", "server"] }

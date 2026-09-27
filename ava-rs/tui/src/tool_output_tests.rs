@@ -137,7 +137,7 @@ fn command_preview_matches_streamed_and_completed_output() {
     use crate::exec_cell::CommandOutput;
     use crate::exec_cell::new_active_exec_command;
     use crate::history_cell::HistoryCell;
-    use codex_app_server_protocol::CommandExecutionSource;
+    use ava_app_server_protocol::CommandExecutionSource;
     use std::time::Duration;
 
     let mut cell = new_active_exec_command(

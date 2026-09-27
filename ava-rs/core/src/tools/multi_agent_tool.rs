@@ -4,14 +4,14 @@
 use crate::session::session::Session;
 use crate::tools::context::ToolInvocation;
 use crate::tools::registry::CoreToolRuntime;
-use codex_tools::JsonSchema;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ToolExecutor;
-use codex_tools::ToolExposure;
-use codex_tools::ToolName;
-use codex_tools::ToolSearchInfo;
-use codex_tools::ToolSpec;
+use ava_tools::JsonSchema;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ToolExecutor;
+use ava_tools::ToolExposure;
+use ava_tools::ToolName;
+use ava_tools::ToolSearchInfo;
+use ava_tools::ToolSpec;
 use futures::future::BoxFuture;
 use serde_json::Value;
 use std::sync::Arc;
@@ -114,7 +114,7 @@ impl ToolExecutor<ToolInvocation> for MultiAgentV2ToolOverrides {
         self.handler.search_info()
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

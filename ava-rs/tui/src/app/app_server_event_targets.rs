@@ -1,8 +1,8 @@
 //! Thread targeting helpers for app-server requests and notifications.
 
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ServerRequest;
-use codex_protocol::ThreadId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerRequest;
+use ava_protocol::ThreadId;
 
 pub(super) fn server_request_thread_id(request: &ServerRequest) -> Option<ThreadId> {
     match request {
@@ -230,29 +230,29 @@ mod tests {
     use super::server_notification_thread_target;
     use crate::test_support::PathBufExt;
     use crate::test_support::test_path_buf;
-    use codex_app_server_protocol::GuardianWarningNotification;
-    use codex_app_server_protocol::McpServerStartupState;
-    use codex_app_server_protocol::McpServerStatusUpdatedNotification;
-    use codex_app_server_protocol::ServerNotification;
-    use codex_app_server_protocol::ThreadAttachmentOperation;
-    use codex_app_server_protocol::ThreadAttachmentUpdatedNotification;
-    use codex_app_server_protocol::ThreadSettings;
-    use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
-    use codex_app_server_protocol::WarningNotification;
-    use codex_protocol::ThreadId;
-    use codex_protocol::config_types::CollaborationMode;
-    use codex_protocol::config_types::ModeKind;
-    use codex_protocol::config_types::Settings;
-    use codex_protocol::openai_models::ReasoningEffort;
+    use ava_app_server_protocol::GuardianWarningNotification;
+    use ava_app_server_protocol::McpServerStartupState;
+    use ava_app_server_protocol::McpServerStatusUpdatedNotification;
+    use ava_app_server_protocol::ServerNotification;
+    use ava_app_server_protocol::ThreadAttachmentOperation;
+    use ava_app_server_protocol::ThreadAttachmentUpdatedNotification;
+    use ava_app_server_protocol::ThreadSettings;
+    use ava_app_server_protocol::ThreadSettingsUpdatedNotification;
+    use ava_app_server_protocol::WarningNotification;
+    use ava_protocol::ThreadId;
+    use ava_protocol::config_types::CollaborationMode;
+    use ava_protocol::config_types::ModeKind;
+    use ava_protocol::config_types::Settings;
+    use ava_protocol::openai_models::ReasoningEffort;
     use pretty_assertions::assert_eq;
 
     fn test_thread_settings() -> ThreadSettings {
         ThreadSettings {
             disabled_plugin_ids: Vec::new(),
             cwd: test_path_buf("/tmp/thread-settings").abs(),
-            approval_policy: codex_app_server_protocol::AskForApproval::Never,
-            approvals_reviewer: codex_app_server_protocol::ApprovalsReviewer::User,
-            sandbox_policy: codex_app_server_protocol::SandboxPolicy::ReadOnly {
+            approval_policy: ava_app_server_protocol::AskForApproval::Never,
+            approvals_reviewer: ava_app_server_protocol::ApprovalsReviewer::User,
+            sandbox_policy: ava_app_server_protocol::SandboxPolicy::ReadOnly {
                 network_access: false,
             },
             active_permission_profile: None,
@@ -366,7 +366,7 @@ mod tests {
             ServerNotification::ThreadAttachmentUpdated(ThreadAttachmentUpdatedNotification {
                 thread_id: thread_id.to_string(),
                 attachment_type: "pull_request".to_string(),
-                identity_key: r#"["github.com","openai","codex",123]"#.to_string(),
+                identity_key: r#"["github.com","openai","ava",123]"#.to_string(),
                 attachment_id: "attachment-1".to_string(),
                 operation: ThreadAttachmentOperation::Deleted,
             });

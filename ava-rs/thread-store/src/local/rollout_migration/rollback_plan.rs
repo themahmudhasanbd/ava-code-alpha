@@ -10,18 +10,18 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use codex_protocol::ResponseItemId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_protocol::protocol::UserMessageImageKind;
-use codex_rollout::CompactedItem;
-use codex_rollout::RetainedContextEntry;
-use codex_rollout::RetainedInputSource;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_protocol::ResponseItemId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_protocol::protocol::UserMessageImageKind;
+use ava_rollout::CompactedItem;
+use ava_rollout::RetainedContextEntry;
+use ava_rollout::RetainedInputSource;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 
 use super::migration_error;
 use super::rollback;
@@ -258,7 +258,7 @@ impl RollbackPlanner {
                 self.assign_targeted_record(index, Some(record.turn_id.as_str()));
             }
             RolloutItem::WorldState(_) | RolloutItem::RealtimeItem(_) => {}
-            RolloutItem::RetainedContext(codex_rollout::RetainedContextEvent::VerifiedAnswer {
+            RolloutItem::RetainedContext(ava_rollout::RetainedContextEvent::VerifiedAnswer {
                 answer,
                 acceptance_order,
             }) => {

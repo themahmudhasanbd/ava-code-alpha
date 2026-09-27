@@ -82,7 +82,7 @@ hand it to the sidecar at launch" pattern was not acceptable for it.
    config and picks the row's `apiStyle` from the selected model — a vendor may
    span wire APIs. The original one-row-per-vendor assumption is amended by
    ADR 0098: every login now creates an independent row and credential scope.
-   Two styles are added for this: `openai_codex_responses` and `pi_messages`.
+   Two styles are added for this: `openai_ava_responses` and `pi_messages`.
 
 ## Consequences
 
@@ -102,7 +102,7 @@ hand it to the sidecar at launch" pattern was not acceptable for it.
 ## Alternatives
 
 - **Resolve the credential once at launch and put it in the payload.**
-  Rejected: a Codex token expires in about an hour, so long sessions would
+  Rejected: a Ava token expires in about an hour, so long sessions would
   break mid-turn; refreshing would change the payload and make `matches()` miss
   every turn, rebuilding the runtime and discarding warm state; and it would
   put a token the user never typed into a process that runs model-directed

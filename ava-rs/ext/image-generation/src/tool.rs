@@ -2,48 +2,48 @@ use std::io;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_api::ImageBackground;
-use codex_api::ImageEditRequest;
-use codex_api::ImageGenerationRequest;
-use codex_api::ImageQuality;
-use codex_api::ImageUrl;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::LOCAL_FS;
-use codex_extension_api::ExtensionTurnItem;
-use codex_extension_api::FunctionCallError;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolEnvironment;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolOutput;
-use codex_extension_api::ToolPayload;
-use codex_extension_api::ToolSpec;
-use codex_extension_api::parse_tool_input_schema;
-use codex_extension_items::ExtensionItem;
-use codex_extension_items::image_generation::ImageGenerationFailure;
-use codex_extension_items::image_generation::ImageGenerationItem;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ImageGenerationBeginEvent;
-use codex_protocol::protocol::ImageGenerationEndEvent;
-use codex_tools::ResponsesApiNamespace;
-use codex_tools::ResponsesApiNamespaceTool;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolExposure;
-use codex_tools::default_namespace_description;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_image::PromptImageMode;
-use codex_utils_image::load_for_prompt_bytes;
-use codex_utils_path_uri::PathUri;
+use ava_api::ImageBackground;
+use ava_api::ImageEditRequest;
+use ava_api::ImageGenerationRequest;
+use ava_api::ImageQuality;
+use ava_api::ImageUrl;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::LOCAL_FS;
+use ava_extension_api::ExtensionTurnItem;
+use ava_extension_api::FunctionCallError;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolEnvironment;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolOutput;
+use ava_extension_api::ToolPayload;
+use ava_extension_api::ToolSpec;
+use ava_extension_api::parse_tool_input_schema;
+use ava_extension_items::ExtensionItem;
+use ava_extension_items::image_generation::ImageGenerationFailure;
+use ava_extension_items::image_generation::ImageGenerationItem;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ImageGenerationBeginEvent;
+use ava_protocol::protocol::ImageGenerationEndEvent;
+use ava_tools::ResponsesApiNamespace;
+use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolExposure;
+use ava_tools::default_namespace_description;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_image::PromptImageMode;
+use ava_utils_image::load_for_prompt_bytes;
+use ava_utils_path_uri::PathUri;
 use schemars::JsonSchema;
 use schemars::r#gen::SchemaSettings;
 use serde::Deserialize;
@@ -54,7 +54,7 @@ use crate::IMAGE_GEN_NAMESPACE;
 use crate::IMAGEGEN_TOOL_NAME;
 use crate::artifact::image_generation_artifact_path;
 use crate::artifact::image_generation_output_hint;
-use crate::backend::CodexImagesBackend;
+use crate::backend::AvaImagesBackend;
 
 const IMAGE_MODEL: &str = "gpt-image-2";
 const MAX_EDIT_IMAGES: usize = 5;
@@ -65,7 +65,7 @@ const IMAGEGEN_DESCRIPTION: &str = include_str!("../imagegen_description.md");
 
 #[derive(Clone)]
 pub(crate) struct ImageGenerationTool {
-    backend: CodexImagesBackend,
+    backend: AvaImagesBackend,
     save_root: Option<AbsolutePathBuf>,
     thread_id: String,
 }
@@ -73,7 +73,7 @@ pub(crate) struct ImageGenerationTool {
 impl ImageGenerationTool {
     /// Creates an image-generation tool backed by an image API executor.
     pub(crate) fn new(
-        backend: CodexImagesBackend,
+        backend: AvaImagesBackend,
         save_root: Option<AbsolutePathBuf>,
         thread_id: String,
     ) -> Self {
@@ -131,7 +131,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ImageGenerationTool {
     }
 
     /// Executes the selected image operation and returns the completed image result.
-    fn handle<'a>(&'a self, call: ToolCall<'call>) -> codex_extension_api::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, call: ToolCall<'call>) -> ava_extension_api::ToolExecutorFuture<'a>
     where
         'call: 'a,
     {
@@ -173,7 +173,7 @@ impl ImageGenerationTool {
         .map_err(|error| {
             (
                 format!("image generation failed: {}", error.message()),
-                usage_limit_failure(error.codex_error()),
+                usage_limit_failure(error.ava_error()),
             )
         })
         .and_then(|(response, imagegen_request_id)| {
@@ -251,8 +251,8 @@ impl ImageGenerationTool {
     }
 }
 
-fn usage_limit_failure(error: &CodexErr) -> Option<ImageGenerationFailure> {
-    let CodexErrorDetails::UsageLimitReached(usage_limit) = error.details() else {
+fn usage_limit_failure(error: &AvaErr) -> Option<ImageGenerationFailure> {
+    let AvaErrorDetails::UsageLimitReached(usage_limit) = error.details() else {
         return None;
     };
     let rate_limits = usage_limit.rate_limits.as_deref()?;

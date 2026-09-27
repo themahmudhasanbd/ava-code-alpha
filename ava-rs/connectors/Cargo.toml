@@ -1,5 +1,5 @@
 [package]
-name = "codex-connectors"
+name = "ava-connectors"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,11 +10,11 @@ workspace = true
 [dependencies]
 anyhow = { workspace = true }
 arc-swap = { workspace = true }
-codex-config = { workspace = true }
-codex-login = { workspace = true }
-codex-otel = { workspace = true }
-codex-plugin = { workspace = true }
-codex-protocol = { workspace = true }
+ava-config = { workspace = true }
+ava-login = { workspace = true }
+ava-otel = { workspace = true }
+ava-plugin = { workspace = true }
+ava-protocol = { workspace = true }
 indexmap = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

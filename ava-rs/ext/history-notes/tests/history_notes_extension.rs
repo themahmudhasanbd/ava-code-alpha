@@ -1,35 +1,35 @@
 use std::sync::Arc;
 
-use codex_config::LoaderOverrides;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::TokenBudgetConfig;
-use codex_extension_api::ContentItemKind;
-use codex_extension_api::ConversationHistory;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::NoopTurnItemEmitter;
-use codex_extension_api::PromptFragment;
-use codex_extension_api::PromptSlot;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolCallSource;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolName;
-use codex_extension_api::ToolPayload;
-use codex_history_notes_extension::install;
-use codex_login::AuthHeaders;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_config::LoaderOverrides;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::TokenBudgetConfig;
+use ava_extension_api::ContentItemKind;
+use ava_extension_api::ConversationHistory;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::NoopTurnItemEmitter;
+use ava_extension_api::PromptFragment;
+use ava_extension_api::PromptSlot;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolCallSource;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolName;
+use ava_extension_api::ToolPayload;
+use ava_history_notes_extension::install;
+use ava_login::AuthHeaders;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::TruncationPolicy;
 use http::HeaderMap;
 use http::HeaderValue;
 use pretty_assertions::assert_eq;
@@ -49,7 +49,7 @@ const THREAD_HINT: &str = "Recent notes (up to 5, most-recent first):\n- /root/w
 async fn installed_extension_exposes_and_invokes_history_notes_tools() -> TestResult {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
-        .and(path("/backend-api/codex/alpha/notes/v2/read_file"))
+        .and(path("/backend-api/ava/alpha/notes/v2/read_file"))
         .and(header("x-openai-actor-authorization", "actor-biscuit"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "encrypted_output": "enc_payload"
@@ -57,18 +57,18 @@ async fn installed_extension_exposes_and_invokes_history_notes_tools() -> TestRe
         .mount(&server)
         .await;
     Mock::given(method("POST"))
-        .and(path("/backend-api/codex/alpha/notes/v2/thread_hint"))
+        .and(path("/backend-api/ava/alpha/notes/v2/thread_hint"))
         .and(header("x-openai-actor-authorization", "actor-biscuit"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({"text": THREAD_HINT})))
         .mount(&server)
         .await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut config = ConfigBuilder::default()
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await?;
-    config.model_provider.base_url = Some(format!("{}/backend-api/codex", server.uri()));
+    config.model_provider.base_url = Some(format!("{}/backend-api/ava", server.uri()));
     config.token_budget = Some(TokenBudgetConfig {
         use_history_notes_extension: true,
         ..TokenBudgetConfig::default()
@@ -80,7 +80,7 @@ async fn installed_extension_exposes_and_invokes_history_notes_tools() -> TestRe
         HeaderValue::from_static("actor-biscuit"),
     );
     let auth_manager =
-        AuthManager::from_auth_for_testing(CodexAuth::Headers(AuthHeaders::new(headers)));
+        AuthManager::from_auth_for_testing(AvaAuth::Headers(AuthHeaders::new(headers)));
     let mut builder = ExtensionRegistryBuilder::<Config>::new();
     install(&mut builder, auth_manager);
     let registry = builder.build();
@@ -247,7 +247,7 @@ async fn installed_extension_exposes_and_invokes_history_notes_tools() -> TestRe
         }
         Mock::given(method("POST"))
             .and(path(format!(
-                "/backend-api/codex/alpha/{namespace}/v2/{name}"
+                "/backend-api/ava/alpha/{namespace}/v2/{name}"
             )))
             .and(header("x-openai-actor-authorization", "actor-biscuit"))
             .respond_with(ResponseTemplate::new(200).set_body_json(response))
@@ -298,7 +298,7 @@ async fn installed_extension_exposes_and_invokes_history_notes_tools() -> TestRe
         {"data": "cG5n", "mime_type": "image/png", "detail": "original"}
     ]);
     Mock::given(method("POST"))
-        .and(path("/backend-api/codex/alpha/history/v2/read_item"))
+        .and(path("/backend-api/ava/alpha/history/v2/read_item"))
         .and(header("x-openai-actor-authorization", "actor-biscuit"))
         .respond_with(ResponseTemplate::new(200).set_body_json(response))
         .mount(&server)
@@ -330,7 +330,7 @@ async fn installed_extension_exposes_and_invokes_history_notes_tools() -> TestRe
     ] {
         server.reset().await;
         Mock::given(method("POST"))
-            .and(path("/backend-api/codex/alpha/notes/v2/thread_hint"))
+            .and(path("/backend-api/ava/alpha/notes/v2/thread_hint"))
             .respond_with(ResponseTemplate::new(200).set_body_json(result))
             .mount(&server)
             .await;
@@ -359,11 +359,11 @@ async fn installed_extension_exposes_and_invokes_history_notes_tools() -> TestRe
 }
 
 #[tokio::test]
-async fn history_notes_require_an_openai_provider_and_codex_backend_auth() -> TestResult {
-    let codex_home = TempDir::new()?;
+async fn history_notes_require_an_openai_provider_and_ava_backend_auth() -> TestResult {
+    let ava_home = TempDir::new()?;
     let mut config = ConfigBuilder::default()
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await?;
     config.token_budget = Some(TokenBudgetConfig {
@@ -374,11 +374,11 @@ async fn history_notes_require_an_openai_provider_and_codex_backend_auth() -> Te
     for (provider, auth) in [
         (
             config.model_provider.clone(),
-            CodexAuth::from_api_key("test-api-key"),
+            AvaAuth::from_api_key("test-api-key"),
         ),
         (
             ModelProviderInfo::create_amazon_bedrock_provider(/*aws*/ None),
-            CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+            AvaAuth::create_dummy_chatgpt_auth_for_testing(),
         ),
     ] {
         config.model_provider = provider;
@@ -427,7 +427,7 @@ fn tool_call(tool_name: ToolName, arguments: serde_json::Value) -> ToolCall<'sta
         call_id: "call-read-file".to_string(),
         tool_name,
         model: "gpt-test".to_string(),
-        codex_turn_metadata: None,
+        ava_turn_metadata: None,
         truncation_policy: TruncationPolicy::Bytes(1024),
         source: ToolCallSource::Direct,
         conversation_history: ConversationHistory::default(),

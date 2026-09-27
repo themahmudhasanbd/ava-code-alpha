@@ -1,5 +1,5 @@
 [package]
-name = "codex-utils-oss"
+name = "ava-utils-oss"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,10 +8,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-codex-core = { workspace = true }
-codex-lmstudio = { workspace = true }
-codex-model-provider-info = { workspace = true }
-codex-ollama = { workspace = true }
+ava-core = { workspace = true }
+ava-lmstudio = { workspace = true }
+ava-model-provider-info = { workspace = true }
+ava-ollama = { workspace = true }
 
 [lib]
 doctest = false

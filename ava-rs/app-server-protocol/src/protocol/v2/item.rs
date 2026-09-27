@@ -13,45 +13,45 @@ use crate::TS;
 use crate::protocol::item_builders::CommandExecutionPresentation;
 use crate::protocol::item_builders::convert_patch_changes;
 use crate::protocol::item_builders::review_output_text;
-use codex_experimental_api_macros::ExperimentalApi;
-use codex_extension_items::ExtensionItem;
-pub use codex_extension_items::image_generation::ImageGenerationFailure;
-pub use codex_extension_items::image_generation::ImageGenerationItem;
-pub use codex_extension_items::sleep::SleepItem;
-pub use codex_extension_items::web_search::WebSearchAction;
-pub use codex_extension_items::web_search::WebSearchItem;
-use codex_protocol::approvals::ExecApprovalKind as CoreExecApprovalKind;
-use codex_protocol::approvals::GuardianAssessmentAction as CoreGuardianAssessmentAction;
-use codex_protocol::approvals::GuardianAssessmentDecisionSource as CoreGuardianAssessmentDecisionSource;
-use codex_protocol::approvals::GuardianCommandSource as CoreGuardianCommandSource;
-use codex_protocol::items::AgentMessageContent as CoreAgentMessageContent;
-pub use codex_protocol::items::AgentMessageDelivery;
-pub use codex_protocol::items::AsyncUserInputQuestion;
-use codex_protocol::items::CollabAgentTool as CoreCollabAgentTool;
-use codex_protocol::items::CollabAgentToolCallStatus as CoreCollabAgentToolCallStatus;
-use codex_protocol::items::CommandExecutionStatus as CoreCommandExecutionStatus;
-use codex_protocol::items::DynamicToolCallStatus as CoreDynamicToolCallStatus;
-pub use codex_protocol::items::McpAppDisplayMode;
-pub use codex_protocol::items::McpAppUi;
-use codex_protocol::items::McpToolCallStatus as CoreMcpToolCallStatus;
-use codex_protocol::items::TurnItem as CoreTurnItem;
-use codex_protocol::memory_citation::MemoryCitation as CoreMemoryCitation;
-use codex_protocol::memory_citation::MemoryCitationEntry as CoreMemoryCitationEntry;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::parse_command::ParsedCommand as CoreParsedCommand;
-use codex_protocol::protocol::AgentStatus as CoreAgentStatus;
-use codex_protocol::protocol::ExecCommandSource as CoreExecCommandSource;
-use codex_protocol::protocol::ExecCommandStatus as CoreExecCommandStatus;
-use codex_protocol::protocol::GuardianRiskLevel as CoreGuardianRiskLevel;
-use codex_protocol::protocol::GuardianUserAuthorization as CoreGuardianUserAuthorization;
-use codex_protocol::protocol::PatchApplyStatus as CorePatchApplyStatus;
-use codex_protocol::protocol::ReviewDecision as CoreReviewDecision;
-use codex_protocol::protocol::SubAgentActivityKind as CoreSubAgentActivityKind;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_experimental_api_macros::ExperimentalApi;
+use ava_extension_items::ExtensionItem;
+pub use ava_extension_items::image_generation::ImageGenerationFailure;
+pub use ava_extension_items::image_generation::ImageGenerationItem;
+pub use ava_extension_items::sleep::SleepItem;
+pub use ava_extension_items::web_search::WebSearchAction;
+pub use ava_extension_items::web_search::WebSearchItem;
+use ava_protocol::approvals::ExecApprovalKind as CoreExecApprovalKind;
+use ava_protocol::approvals::GuardianAssessmentAction as CoreGuardianAssessmentAction;
+use ava_protocol::approvals::GuardianAssessmentDecisionSource as CoreGuardianAssessmentDecisionSource;
+use ava_protocol::approvals::GuardianCommandSource as CoreGuardianCommandSource;
+use ava_protocol::items::AgentMessageContent as CoreAgentMessageContent;
+pub use ava_protocol::items::AgentMessageDelivery;
+pub use ava_protocol::items::AsyncUserInputQuestion;
+use ava_protocol::items::CollabAgentTool as CoreCollabAgentTool;
+use ava_protocol::items::CollabAgentToolCallStatus as CoreCollabAgentToolCallStatus;
+use ava_protocol::items::CommandExecutionStatus as CoreCommandExecutionStatus;
+use ava_protocol::items::DynamicToolCallStatus as CoreDynamicToolCallStatus;
+pub use ava_protocol::items::McpAppDisplayMode;
+pub use ava_protocol::items::McpAppUi;
+use ava_protocol::items::McpToolCallStatus as CoreMcpToolCallStatus;
+use ava_protocol::items::TurnItem as CoreTurnItem;
+use ava_protocol::memory_citation::MemoryCitation as CoreMemoryCitation;
+use ava_protocol::memory_citation::MemoryCitationEntry as CoreMemoryCitationEntry;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::parse_command::ParsedCommand as CoreParsedCommand;
+use ava_protocol::protocol::AgentStatus as CoreAgentStatus;
+use ava_protocol::protocol::ExecCommandSource as CoreExecCommandSource;
+use ava_protocol::protocol::ExecCommandStatus as CoreExecCommandStatus;
+use ava_protocol::protocol::GuardianRiskLevel as CoreGuardianRiskLevel;
+use ava_protocol::protocol::GuardianUserAuthorization as CoreGuardianUserAuthorization;
+use ava_protocol::protocol::PatchApplyStatus as CorePatchApplyStatus;
+use ava_protocol::protocol::ReviewDecision as CoreReviewDecision;
+use ava_protocol::protocol::SubAgentActivityKind as CoreSubAgentActivityKind;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::LegacyAppPathString;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -292,7 +292,7 @@ pub enum ThreadItem {
         #[serde(skip)]
         #[schemars(skip)]
         #[ts(skip)]
-        model_context: Option<codex_protocol::items::ModelInvocationContext>,
+        model_context: Option<ava_protocol::items::ModelInvocationContext>,
         id: String,
         /// Trusted first-party plugin id when this command resolves to one plugin script.
         #[serde(default)]
@@ -846,19 +846,19 @@ impl TryFrom<GuardianApprovalReviewAction> for CoreGuardianAssessmentAction {
 }
 
 pub(crate) fn web_search_action_from_core(
-    value: codex_protocol::models::WebSearchAction,
+    value: ava_protocol::models::WebSearchAction,
 ) -> WebSearchAction {
     match value {
-        codex_protocol::models::WebSearchAction::Search { query, queries } => {
+        ava_protocol::models::WebSearchAction::Search { query, queries } => {
             WebSearchAction::Search { query, queries }
         }
-        codex_protocol::models::WebSearchAction::OpenPage { url } => {
+        ava_protocol::models::WebSearchAction::OpenPage { url } => {
             WebSearchAction::OpenPage { url }
         }
-        codex_protocol::models::WebSearchAction::FindInPage { url, pattern } => {
+        ava_protocol::models::WebSearchAction::FindInPage { url, pattern } => {
             WebSearchAction::FindInPage { url, pattern }
         }
-        codex_protocol::models::WebSearchAction::Other => WebSearchAction::Other,
+        ava_protocol::models::WebSearchAction::Other => WebSearchAction::Other,
     }
 }
 
@@ -1057,8 +1057,8 @@ impl From<CoreTurnItem> for ThreadItem {
     }
 }
 
-impl From<codex_protocol::items::HookPromptFragment> for HookPromptFragment {
-    fn from(value: codex_protocol::items::HookPromptFragment) -> Self {
+impl From<ava_protocol::items::HookPromptFragment> for HookPromptFragment {
+    fn from(value: ava_protocol::items::HookPromptFragment) -> Self {
         Self {
             text: value.text,
             hook_run_id: value.hook_run_id,
@@ -1679,18 +1679,18 @@ pub enum DynamicToolCallOutputContentItem {
     InputAudio { audio_url: String },
 }
 
-impl From<codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem>
+impl From<ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem>
     for DynamicToolCallOutputContentItem
 {
-    fn from(item: codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem) -> Self {
+    fn from(item: ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem) -> Self {
         match item {
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputText { text } => {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputText { text } => {
                 Self::InputText { text }
             }
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputImage {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputImage {
                 image_url,
             } => Self::InputImage { image_url },
-            codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputAudio {
+            ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem::InputAudio {
                 audio_url,
             } => Self::InputAudio { audio_url },
         }
@@ -1698,7 +1698,7 @@ impl From<codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem>
 }
 
 impl From<DynamicToolCallOutputContentItem>
-    for codex_protocol::dynamic_tools::DynamicToolCallOutputContentItem
+    for ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem
 {
     fn from(item: DynamicToolCallOutputContentItem) -> Self {
         match item {

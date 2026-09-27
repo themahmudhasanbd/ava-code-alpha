@@ -2,7 +2,7 @@
 use crate::bwrap::WSL1_BWRAP_WARNING;
 #[cfg(target_os = "linux")]
 use crate::bwrap::is_wsl1;
-use crate::landlock::CODEX_LINUX_SANDBOX_ARG0;
+use crate::landlock::AVA_LINUX_SANDBOX_ARG0;
 use crate::landlock::create_linux_sandbox_command_args_for_permission_profile;
 use crate::policy_transforms::effective_permission_profile;
 use crate::policy_transforms::should_require_platform_sandbox;
@@ -14,17 +14,17 @@ use crate::resolve_windows_restricted_token_filesystem_overrides;
 use crate::seatbelt::MacosSeatbeltProfile;
 #[cfg(target_os = "windows")]
 use crate::windows_sandbox_uses_elevated_backend;
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_network_proxy::NetworkProxy;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::SandboxPolicy;
-pub use codex_protocol::sandbox::SandboxType;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::NetworkProxy;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::SandboxPolicy;
+pub use ava_protocol::sandbox::SandboxType;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::io;
@@ -140,7 +140,7 @@ pub struct SandboxTransformRequest<'a> {
 pub struct SandboxDirectSpawnTransformRequest<'a> {
     pub transform: SandboxTransformRequest<'a>,
     pub workspace_roots: &'a [AbsolutePathBuf],
-    pub windows_sandbox_proxy_settings_mode: codex_windows_sandbox::WindowsSandboxProxySettingsMode,
+    pub windows_sandbox_proxy_settings_mode: ava_windows_sandbox::WindowsSandboxProxySettingsMode,
 }
 
 // TODO(anp): Revisit this preparation type once this module's PathUri migration is complete.
@@ -220,7 +220,7 @@ impl std::fmt::Display for SandboxTransformError {
                 "sandbox policy cwd URI `{cwd}` is not valid on this host: {source}"
             ),
             Self::MissingLinuxSandboxExecutable => {
-                write!(f, "missing codex-linux-sandbox executable path")
+                write!(f, "missing ava-linux-sandbox executable path")
             }
             Self::WindowsMxcPreparation(err) => {
                 write!(f, "failed to prepare MXC sandbox: {err}")
@@ -269,7 +269,7 @@ pub struct SandboxManager {
     #[cfg(target_os = "macos")]
     seatbelt_profile: MacosSeatbeltProfile,
     #[cfg(target_os = "macos")]
-    allowed_symlinked_codex_home: Option<AbsolutePathBuf>,
+    allowed_symlinked_ava_home: Option<AbsolutePathBuf>,
 }
 
 impl SandboxManager {
@@ -283,18 +283,18 @@ impl SandboxManager {
             #[cfg(target_os = "macos")]
             seatbelt_profile: MacosSeatbeltProfile::FileSystemHelper,
             #[cfg(target_os = "macos")]
-            allowed_symlinked_codex_home: None,
+            allowed_symlinked_ava_home: None,
         }
     }
 
     /// Allows otherwise-authorized writable roots beneath the opted-in user home
     /// to follow symlinks, including targets outside that home.
     #[cfg(target_os = "macos")]
-    pub fn with_allowed_symlinked_codex_home(
+    pub fn with_allowed_symlinked_ava_home(
         mut self,
-        allowed_symlinked_codex_home: Option<AbsolutePathBuf>,
+        allowed_symlinked_ava_home: Option<AbsolutePathBuf>,
     ) -> Self {
-        self.allowed_symlinked_codex_home = allowed_symlinked_codex_home;
+        self.allowed_symlinked_ava_home = allowed_symlinked_ava_home;
         self
     }
 
@@ -376,7 +376,7 @@ impl SandboxManager {
         let (argv, arg0_override, pending_sandboxed_request) = match sandbox {
             SandboxType::None => (argv, None, None),
             SandboxType::WindowsMxc => {
-                if !codex_mxc_sandbox::is_available() {
+                if !ava_mxc_sandbox::is_available() {
                     return Err(SandboxTransformError::WindowsMxcPreparation(
                         "native MXC is unavailable on this executor".to_string(),
                     ));
@@ -402,14 +402,14 @@ impl SandboxManager {
                 let pending = pending_sandboxed_request?;
                 let exe = sandbox_exe.ok_or_else(|| {
                     SandboxTransformError::WindowsMxcPreparation(
-                        "missing Codex executable path".to_string(),
+                        "missing Ava executable path".to_string(),
                     )
                 })?;
                 let mut full_command =
                     vec![os_string_to_command_component(exe.as_os_str().to_owned())];
                 full_command.extend(
-                    codex_mxc_sandbox::create_command_args(
-                        codex_mxc_sandbox::CreateMxcCommandArgsParams {
+                    ava_mxc_sandbox::create_command_args(
+                        ava_mxc_sandbox::CreateMxcCommandArgsParams {
                             command: argv,
                             permission_profile: &pending.effective_permission_profile,
                             sandbox_policy_cwd: pending.native_sandbox_policy_cwd.as_path(),
@@ -445,7 +445,7 @@ impl SandboxManager {
                         extra_allow_unix_sockets: &[],
                     },
                     self.seatbelt_profile,
-                    self.allowed_symlinked_codex_home.as_ref(),
+                    self.allowed_symlinked_ava_home.as_ref(),
                 )
                 .map_err(|err| match err {
                     SeatbeltPreparationError::FileSystem(message) => {
@@ -553,18 +553,18 @@ impl SandboxManager {
     ) -> Result<SandboxExecRequest, SandboxTransformError> {
         #[cfg(target_os = "windows")]
         if request.transform.sandbox == SandboxType::WindowsRestrictedToken {
-            let codex_home = codex_utils_home_dir::find_codex_home()
+            let ava_home = ava_utils_home_dir::find_ava_home()
                 .map_err(|err| SandboxTransformError::WindowsSandboxPreparation(err.to_string()))?;
-            return self.transform_for_direct_spawn_with_codex_home(request, codex_home.as_path());
+            return self.transform_for_direct_spawn_with_ava_home(request, ava_home.as_path());
         }
         self.transform(request.transform)
     }
 
     #[cfg(target_os = "windows")]
-    fn transform_for_direct_spawn_with_codex_home(
+    fn transform_for_direct_spawn_with_ava_home(
         &self,
         request: SandboxDirectSpawnTransformRequest<'_>,
-        codex_home: &Path,
+        ava_home: &Path,
     ) -> Result<SandboxExecRequest, SandboxTransformError> {
         let workspace_roots = request.workspace_roots;
         let proxy_settings_mode = request.windows_sandbox_proxy_settings_mode;
@@ -573,7 +573,7 @@ impl SandboxManager {
             wrap_windows_sandbox_exec_request_for_direct_spawn(
                 &mut request,
                 workspace_roots,
-                codex_home,
+                ava_home,
                 proxy_settings_mode,
             )?;
         }
@@ -585,8 +585,8 @@ impl SandboxManager {
 fn wrap_windows_sandbox_exec_request_for_direct_spawn(
     request: &mut SandboxExecRequest,
     workspace_roots: &[AbsolutePathBuf],
-    codex_home: &Path,
-    proxy_settings_mode: codex_windows_sandbox::WindowsSandboxProxySettingsMode,
+    ava_home: &Path,
+    proxy_settings_mode: ava_windows_sandbox::WindowsSandboxProxySettingsMode,
 ) -> Result<(), SandboxTransformError> {
     // TODO(anp): Keep PathUri through the Windows sandbox wrapper boundary.
     let native_cwd =
@@ -609,7 +609,7 @@ fn wrap_windows_sandbox_exec_request_for_direct_spawn(
         ));
     };
     let source = std::path::PathBuf::from(&program);
-    let helper = codex_windows_sandbox::resolve_exe_for_launch(source.as_path(), codex_home);
+    let helper = ava_windows_sandbox::resolve_exe_for_launch(source.as_path(), ava_home);
     *program = helper.to_string_lossy().into_owned();
 
     let inner_command = std::mem::take(&mut request.command);
@@ -661,7 +661,7 @@ fn wrap_windows_sandbox_exec_request_for_direct_spawn(
         overrides.additional_deny_write_paths.as_slice()
     });
     let mut wrapper_args =
-        codex_windows_sandbox::create_windows_sandbox_command_args_for_permission_profile(
+        ava_windows_sandbox::create_windows_sandbox_command_args_for_permission_profile(
             inner_command,
             &native_cwd,
             workspace_roots,
@@ -676,7 +676,7 @@ fn wrap_windows_sandbox_exec_request_for_direct_spawn(
             write_roots_override,
             deny_read_paths_override,
             deny_write_paths_override,
-            codex_home,
+            ava_home,
         )
         .map_err(|err| SandboxTransformError::WindowsSandboxPreparation(err.to_string()))?;
 
@@ -694,7 +694,7 @@ fn add_windows_sandbox_wrapper_setup_env(env: &mut HashMap<String, String>) {
     add_windows_sandbox_wrapper_setup_env_from_vars(
         env,
         std::env::vars_os(),
-        codex_windows_sandbox::registered_core_requested(),
+        ava_windows_sandbox::registered_core_requested(),
     );
 }
 
@@ -705,9 +705,9 @@ fn add_windows_sandbox_wrapper_setup_env_from_vars(
     registered_core: bool,
 ) {
     // This outer helper must use the parent's runtime selection, not shell-policy overrides.
-    env.retain(|key, _| !key.eq_ignore_ascii_case("CODEX_WINDOWS_REGISTERED_CORE"));
+    env.retain(|key, _| !key.eq_ignore_ascii_case("AVA_WINDOWS_REGISTERED_CORE"));
     if registered_core {
-        env.insert("CODEX_WINDOWS_REGISTERED_CORE".into(), "1".into());
+        env.insert("AVA_WINDOWS_REGISTERED_CORE".into(), "1".into());
     }
     for (key, value) in vars {
         let key = key.to_string_lossy().into_owned();
@@ -790,10 +790,10 @@ fn os_string_to_command_component(value: OsString) -> String {
 }
 
 fn linux_sandbox_arg0_override(exe: &Path) -> String {
-    if exe.file_name().and_then(|name| name.to_str()) == Some(CODEX_LINUX_SANDBOX_ARG0) {
+    if exe.file_name().and_then(|name| name.to_str()) == Some(AVA_LINUX_SANDBOX_ARG0) {
         os_string_to_command_component(exe.as_os_str().to_owned())
     } else {
-        CODEX_LINUX_SANDBOX_ARG0.to_string()
+        AVA_LINUX_SANDBOX_ARG0.to_string()
     }
 }
 

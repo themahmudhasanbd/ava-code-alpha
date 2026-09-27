@@ -1,4 +1,4 @@
-#[path = "../../src/proto/codex.exec_server.relay.v1.rs"]
+#[path = "../../src/proto/ava.exec_server.relay.v1.rs"]
 mod relay_proto;
 
 use std::sync::Arc;
@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::NoiseChannelPublicKey;
+use ava_exec_server::NoiseChannelPublicKey;
 use futures::SinkExt;
 use futures::StreamExt;
 use prost::Message as ProstMessage;

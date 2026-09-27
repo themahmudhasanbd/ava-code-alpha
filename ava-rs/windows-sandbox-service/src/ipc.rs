@@ -13,12 +13,12 @@ use anyhow::Result;
 use anyhow::bail;
 pub(crate) use authentication::ClientIdentity;
 use authentication::authenticate_client;
-use codex_windows_sandbox::FramedProvisioningMessage;
-use codex_windows_sandbox::PROVISIONING_PROTOCOL_VERSION;
-use codex_windows_sandbox::ProvisioningMessage;
-use codex_windows_sandbox::SandboxProvisioningResponse;
-use codex_windows_sandbox::to_wide;
-use codex_windows_sandbox::write_provisioning_frame;
+use ava_windows_sandbox::FramedProvisioningMessage;
+use ava_windows_sandbox::PROVISIONING_PROTOCOL_VERSION;
+use ava_windows_sandbox::ProvisioningMessage;
+use ava_windows_sandbox::SandboxProvisioningResponse;
+use ava_windows_sandbox::to_wide;
+use ava_windows_sandbox::write_provisioning_frame;
 pub(crate) use home::OwnedHandle;
 pub(crate) use home::pin_directory;
 pub(crate) use home::pin_existing_ancestors;
@@ -68,7 +68,7 @@ pub(crate) fn run(
     on_authenticated_user: impl Fn(
         InstallationRecord,
         OwnedHandle,
-        codex_windows_sandbox::SetupRuntime,
+        ava_windows_sandbox::SetupRuntime,
     ) -> Result<InstallationRecord>,
     on_session_change: impl Fn() -> Result<()>,
 ) -> Result<()> {
@@ -261,7 +261,7 @@ fn handle_request(
     on_authenticated_user: &dyn Fn(
         InstallationRecord,
         OwnedHandle,
-        codex_windows_sandbox::SetupRuntime,
+        ava_windows_sandbox::SetupRuntime,
     ) -> Result<InstallationRecord>,
 ) -> Result<SandboxProvisioningResponse> {
     let deadline = Instant::now() + REQUEST_IDLE_TIMEOUT;
@@ -339,7 +339,7 @@ fn handle_request(
         }
         crate::service::log_error(
             crate::service::EVENT_REQUEST_REJECTED,
-            &format!("Codex sandbox provisioning was rejected by administrator policy: {error}"),
+            &format!("Ava sandbox provisioning was rejected by administrator policy: {error}"),
         );
         return Err(error)
             .context("requested sandbox settings violate administrator-controlled machine policy");

@@ -1,12 +1,12 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-prompts"
+name = "ava-prompts"
 version.workspace = true
 
 [lib]
 doctest = false
-name = "codex_prompts"
+name = "ava_prompts"
 path = "src/lib.rs"
 
 [lints]
@@ -14,14 +14,14 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-codex-collaboration-mode-templates = { workspace = true }
-codex-context-fragments = { workspace = true }
-codex-execpolicy = { workspace = true }
-codex-git-utils = { workspace = true }
-codex-guardian-context = { workspace = true }
-codex-protocol = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-template = { workspace = true }
+ava-collaboration-mode-templates = { workspace = true }
+ava-context-fragments = { workspace = true }
+ava-execpolicy = { workspace = true }
+ava-git-utils = { workspace = true }
+ava-guardian-context = { workspace = true }
+ava-protocol = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-template = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]

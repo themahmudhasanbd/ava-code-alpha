@@ -72,7 +72,7 @@ macro_rules! stream {
 }
 
 impl Devices {
-    pub(super) fn take_state(&self) -> io::Result<codex_realtime_webrtc::AudioState> {
+    pub(super) fn take_state(&self) -> io::Result<ava_realtime_webrtc::AudioState> {
         self.worker.buffers.take_state()
     }
 
@@ -148,7 +148,7 @@ impl Devices {
 
     pub(super) fn set_controls(
         &mut self,
-        controls: codex_realtime_webrtc::AudioControls,
+        controls: ava_realtime_webrtc::AudioControls,
     ) -> io::Result<()> {
         let buffers = self.worker.buffers.clone();
         let previous = buffers.speaker.load(Ordering::Acquire);

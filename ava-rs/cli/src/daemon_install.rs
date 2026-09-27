@@ -3,7 +3,7 @@
 use std::io::IsTerminal;
 
 use anyhow::Result;
-use codex_app_server_daemon::InstallRequest;
+use ava_app_server_daemon::InstallRequest;
 
 pub(crate) fn confirm_install(request: &InstallRequest, yes: bool) -> Result<bool> {
     eprintln!("{}", describe_install(request));
@@ -23,7 +23,7 @@ pub(crate) fn confirm_install(request: &InstallRequest, yes: bool) -> Result<boo
 
 fn describe_install(request: &InstallRequest) -> String {
     let mut message = format!(
-        "Replace installed daemon version {} with CLI version {} from {}.\nThe daemon package will be installed in {}.\nThe selected package will be pinned. Run `codex app-server daemon update` to return to production updates.",
+        "Replace installed daemon version {} with CLI version {} from {}.\nThe daemon package will be installed in {}.\nThe selected package will be pinned. Run `ava app-server daemon update` to return to production updates.",
         request.installed_version.as_deref().unwrap_or("unknown"),
         request.version,
         request.source.display(),

@@ -1,12 +1,12 @@
 //! Captures configuration-derived sandbox labels and writes them to diagnostics.
 //! Labels never inspect the filesystem and must not be used for authorization.
 
-use crate::responses_metadata::CodexResponsesMetadata;
-use codex_file_system::WindowsSandboxSelection;
-use codex_protocol::models::PermissionProfile;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::get_platform_sandbox;
-use codex_sandboxing::policy_transforms::should_require_platform_sandbox;
+use crate::responses_metadata::AvaResponsesMetadata;
+use ava_file_system::WindowsSandboxSelection;
+use ava_protocol::models::PermissionProfile;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::get_platform_sandbox;
+use ava_sandboxing::policy_transforms::should_require_platform_sandbox;
 use std::path::Path;
 
 /// Diagnostic labels captured with a turn's permission configuration.
@@ -40,7 +40,7 @@ impl SandboxTags {
     }
 
     /// Records the same captured labels in model and MCP request metadata.
-    pub(crate) fn record_metadata(&self, metadata: &mut CodexResponsesMetadata) {
+    pub(crate) fn record_metadata(&self, metadata: &mut AvaResponsesMetadata) {
         metadata.sandbox = Some(self.sandbox.to_string());
         metadata.sandbox_mode = Some(self.policy.to_string());
     }
@@ -50,7 +50,7 @@ impl SandboxTags {
 pub(crate) fn record_policy_metadata(
     profile: &PermissionProfile,
     cwd: &Path,
-    metadata: &mut CodexResponsesMetadata,
+    metadata: &mut AvaResponsesMetadata,
 ) {
     metadata.sandbox_mode = Some(permission_profile_policy_tag(profile, cwd).to_string());
 }

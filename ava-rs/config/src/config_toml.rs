@@ -1,4 +1,4 @@
-//! Schema-heavy configuration TOML types used by Codex.
+//! Schema-heavy configuration TOML types used by Ava.
 
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -33,32 +33,32 @@ use crate::types::Tui;
 use crate::types::UriBasedFileOpener;
 use crate::types::WindowsToml;
 use crate::user_profile_toml::UserProfileToml;
-use codex_features::FeaturesToml;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
-use codex_model_provider_info::LEGACY_OLLAMA_CHAT_PROVIDER_ID;
-use codex_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_model_provider_info::OLLAMA_CHAT_PROVIDER_REMOVED_ERROR;
-use codex_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
-use codex_model_provider_info::OPENAI_PROVIDER_ID;
-use codex_protocol::config_types::AutoCompactTokenLimitScope;
-use codex_protocol::config_types::ForcedLoginMethod;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::SandboxMode;
-use codex_protocol::config_types::TrustLevel;
-use codex_protocol::config_types::Verbosity;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::config_types::WebSearchToolConfig;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path::normalize_for_path_comparison;
-use codex_utils_path_uri::Platform;
+use ava_features::FeaturesToml;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
+use ava_model_provider_info::LEGACY_OLLAMA_CHAT_PROVIDER_ID;
+use ava_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_model_provider_info::OLLAMA_CHAT_PROVIDER_REMOVED_ERROR;
+use ava_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
+use ava_model_provider_info::OPENAI_PROVIDER_ID;
+use ava_protocol::config_types::AutoCompactTokenLimitScope;
+use ava_protocol::config_types::ForcedLoginMethod;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::SandboxMode;
+use ava_protocol::config_types::TrustLevel;
+use ava_protocol::config_types::Verbosity;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::config_types::WebSearchToolConfig;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path::normalize_for_path_comparison;
+use ava_utils_path_uri::Platform;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -153,7 +153,7 @@ pub struct OrchestratorFeatureToml {
     pub enabled: Option<bool>,
 }
 
-/// Base config deserialized from ~/.codex/config.toml.
+/// Base config deserialized from ~/.ava-code/config.toml.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct ConfigToml {
@@ -214,12 +214,12 @@ pub struct ConfigToml {
     /// Sandbox mode to use.
     pub sandbox_mode: Option<SandboxMode>,
 
-    /// Allow macOS sandbox writable roots at or beneath CODEX_HOME to traverse
+    /// Allow macOS sandbox writable roots at or beneath AVA_HOME to traverse
     /// symlinks. Read only from the host's user config at startup; defaults to false.
     /// This grants no write access by itself, but trusts symlink targets even if
-    /// they change between commands or lie outside CODEX_HOME.
+    /// they change between commands or lie outside AVA_HOME.
     /// This setting has no effect on Linux or Windows.
-    pub allow_symlinked_codex_home: Option<bool>,
+    pub allow_symlinked_ava_home: Option<bool>,
 
     /// Sandbox configuration to apply if `sandbox` is `WorkspaceWrite`.
     pub sandbox_workspace_write: Option<SandboxWorkspaceWrite>,
@@ -259,7 +259,7 @@ pub struct ConfigToml {
     /// Optional path to a file containing model instructions that will override
     /// the built-in instructions for the selected model. Users are STRONGLY
     /// DISCOURAGED from using this field, as deviating from the instructions
-    /// sanctioned by Codex will likely degrade model performance.
+    /// sanctioned by Ava will likely degrade model performance.
     pub model_instructions_file: Option<AbsolutePathBuf>,
 
     /// Compact prompt used for history compaction.
@@ -274,13 +274,13 @@ pub struct ConfigToml {
     pub forced_login_method: Option<ForcedLoginMethod>,
 
     /// Preferred backend for storing CLI auth credentials.
-    /// file (default): Use a file in the Codex home directory.
+    /// file (default): Use a file in the Ava home directory.
     /// keyring: Use an OS-specific keyring service.
     /// auto: Use the keyring if available, otherwise use a file.
     #[serde(default)]
     pub cli_auth_credentials_store: Option<AuthCredentialsStoreMode>,
 
-    /// Definition for MCP servers that Codex can reach out to for tool calls.
+    /// Definition for MCP servers that Ava can reach out to for tool calls.
     #[serde(default)]
     // Uses the raw MCP input shape (custom deserialization) rather than `McpServerConfig`.
     #[schemars(schema_with = "crate::schema::mcp_servers_schema")]
@@ -293,13 +293,13 @@ pub struct ConfigToml {
     /// Preferred backend for storing MCP OAuth credentials.
     /// keyring: Use an OS-specific keyring service.
     ///          https://github.com/openai/codex/blob/main/codex-rs/rmcp-client/src/oauth.rs#L2
-    /// file: Use a file in the Codex home directory.
+    /// file: Use a file in the Ava home directory.
     /// auto (default): Use the OS-specific keyring service if available, otherwise use a file.
     #[serde(default)]
     pub mcp_oauth_credentials_store: Option<OAuthCredentialsStoreMode>,
 
     /// Optional fixed port for the local HTTP callback server used during MCP OAuth login.
-    /// When unset, Codex will bind to an ephemeral port chosen by the OS.
+    /// When unset, Ava will bind to an ephemeral port chosen by the OS.
     pub mcp_oauth_callback_port: Option<u16>,
 
     /// Optional redirect URI to use during MCP OAuth login.
@@ -353,17 +353,17 @@ pub struct ConfigToml {
     #[serde(default)]
     pub profiles: HashMap<String, ConfigProfile>,
 
-    /// Settings that govern if and what will be written to `~/.codex/history.jsonl`.
+    /// Settings that govern if and what will be written to `~/.ava-code/history.jsonl`.
     #[serde(default = "default_history")]
     pub history: Option<History>,
 
-    /// Directory where Codex stores the SQLite state DB.
-    /// Defaults to `$CODEX_SQLITE_HOME` when set. Otherwise uses `$CODEX_HOME`.
+    /// Directory where Ava stores the SQLite state DB.
+    /// Defaults to `$AVA_SQLITE_HOME` when set. Otherwise uses `$AVA_HOME`.
     pub sqlite_home: Option<AbsolutePathBuf>,
 
-    /// Directory where Codex writes log files. Setting this value explicitly
+    /// Directory where Ava writes log files. Setting this value explicitly
     /// also enables the TUI text log in this directory.
-    /// Defaults to `$CODEX_HOME/log`.
+    /// Defaults to `$AVA_HOME/log`.
     pub log_dir: Option<AbsolutePathBuf>,
 
     /// Optional URI-based file opener. If set, citations to files in the model
@@ -402,7 +402,7 @@ pub struct ConfigToml {
     /// Base URL for requests to ChatGPT (as opposed to the OpenAI API).
     pub chatgpt_base_url: Option<String>,
 
-    /// Optional product SKU forwarded on host-owned Codex Apps MCP requests.
+    /// Optional product SKU forwarded on host-owned Ava Apps MCP requests.
     pub apps_mcp_product_sku: Option<String>,
 
     /// Bounded, product-owned metadata attached to every Responses API request.
@@ -519,23 +519,23 @@ pub struct ConfigToml {
     pub ghost_snapshot: Option<GhostSnapshotToml>,
 
     /// Markers used to detect the project root when searching parent
-    /// directories for `.codex` folders. Defaults to [".git"] when unset.
+    /// directories for `.ava-code` folders. Defaults to [".git"] when unset.
     #[serde(default)]
     pub project_root_markers: Option<Vec<String>>,
 
-    /// When `true`, checks for Codex updates on startup and surfaces update prompts.
-    /// Set to `false` only if your Codex updates are centrally managed.
+    /// When `true`, checks for Ava updates on startup and surfaces update prompts.
+    /// Set to `false` only if your Ava updates are centrally managed.
     /// Defaults to `true`.
     pub check_for_update_on_startup: Option<bool>,
 
     /// Legacy fallback for `tui.disable_paste_burst`. Prefer the setting under `[tui]`.
     pub disable_paste_burst: Option<bool>,
 
-    /// When `false`, disables analytics across Codex product surfaces in this machine.
+    /// When `false`, disables analytics across Ava product surfaces in this machine.
     /// Defaults to `true`.
     pub analytics: Option<AnalyticsConfigToml>,
 
-    /// When `false`, disables feedback collection across Codex product surfaces.
+    /// When `false`, disables feedback collection across Ava product surfaces.
     /// Defaults to `true`.
     pub feedback: Option<FeedbackConfigToml>,
 
@@ -621,8 +621,8 @@ pub enum RealtimeTransport {
     Websocket,
 }
 
-pub use codex_protocol::protocol::RealtimeConversationVersion as RealtimeWsVersion;
-pub use codex_protocol::protocol::RealtimeVoice;
+pub use ava_protocol::protocol::RealtimeConversationVersion as RealtimeWsVersion;
+pub use ava_protocol::protocol::RealtimeVoice;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, JsonSchema)]
 #[schemars(deny_unknown_fields)]

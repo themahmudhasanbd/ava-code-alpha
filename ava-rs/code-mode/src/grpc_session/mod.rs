@@ -8,21 +8,21 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_code_mode_protocol::CellId;
-use codex_code_mode_protocol::CodeModeSession;
-use codex_code_mode_protocol::CodeModeSessionCellExecutionLimits;
-use codex_code_mode_protocol::CodeModeSessionDelegate;
-use codex_code_mode_protocol::CodeModeSessionProvider;
-use codex_code_mode_protocol::CodeModeSessionProviderFuture;
-use codex_code_mode_protocol::CodeModeSessionResultFuture;
-use codex_code_mode_protocol::ExecuteRequest;
-use codex_code_mode_protocol::StartedCell;
-use codex_code_mode_protocol::WaitOutcome;
-use codex_code_mode_protocol::WaitRequest;
-use codex_code_mode_protocol::grpc;
-use codex_code_mode_protocol::grpc::code_mode_host_client::CodeModeHostClient;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_code_mode_protocol::CellId;
+use ava_code_mode_protocol::CodeModeSession;
+use ava_code_mode_protocol::CodeModeSessionCellExecutionLimits;
+use ava_code_mode_protocol::CodeModeSessionDelegate;
+use ava_code_mode_protocol::CodeModeSessionProvider;
+use ava_code_mode_protocol::CodeModeSessionProviderFuture;
+use ava_code_mode_protocol::CodeModeSessionResultFuture;
+use ava_code_mode_protocol::ExecuteRequest;
+use ava_code_mode_protocol::StartedCell;
+use ava_code_mode_protocol::WaitOutcome;
+use ava_code_mode_protocol::WaitRequest;
+use ava_code_mode_protocol::grpc;
+use ava_code_mode_protocol::grpc::code_mode_host_client::CodeModeHostClient;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
@@ -53,7 +53,7 @@ const SHUTDOWN_ERROR: &str = "code mode session is shutting down";
 
 fn inject_span_traceparent<T>(request: &mut tonic::Request<T>, span: &tracing::Span) {
     if let Some(traceparent) =
-        codex_otel::span_w3c_trace_context(span).and_then(|trace| trace.traceparent)
+        ava_otel::span_w3c_trace_context(span).and_then(|trace| trace.traceparent)
         && let Ok(traceparent) = traceparent.parse()
     {
         request.metadata_mut().insert("traceparent", traceparent);

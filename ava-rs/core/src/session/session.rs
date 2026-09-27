@@ -14,38 +14,38 @@ use crate::environment_selection::ThreadEnvironments;
 use crate::environment_selection::TurnEnvironmentSnapshot;
 use crate::hook_mcp_executor::CoreHookMcpExecutor;
 use crate::mcp_tool_call::McpToolApprovalMetadata;
-use crate::responses_metadata::CodexResponsesMetadata;
-use crate::responses_metadata::CodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesMetadata;
+use crate::responses_metadata::AvaResponsesRequestKind;
 use crate::responses_metadata::CompactionTurnMetadata;
 use crate::shell_snapshot::ShellSnapshot;
 use crate::shell_snapshot::SnapshotCredentialBrokerState;
 use crate::state::ActiveTurn;
 use crate::turn_metadata::ExecutionMetadata;
-use codex_attachment_store::AttachmentStore;
-use codex_extension_api::ExtensionDataInit;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::RouteAwareClientPool;
-use codex_login::auth::AgentIdentityAuthPolicy;
-use codex_model_provider::SharedModelProvider;
-use codex_prompts::render_model_instructions;
-use codex_protocol::SessionId;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::ShellEnvironmentPolicy;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::ProfileWorkspaceRoot;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::protocol::EnvironmentConfig;
-use codex_protocol::protocol::HookCompletedEvent;
-use codex_protocol::protocol::McpInvocation;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadSource;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_sandboxing::SandboxType;
-use codex_skills::SkillError;
-use codex_utils_git_discovery::GitRootDiscovery;
-use codex_utils_path::replace_path_and_deduplicate;
+use ava_attachment_store::AttachmentStore;
+use ava_extension_api::ExtensionDataInit;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::RouteAwareClientPool;
+use ava_login::auth::AgentIdentityAuthPolicy;
+use ava_model_provider::SharedModelProvider;
+use ava_prompts::render_model_instructions;
+use ava_protocol::SessionId;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::ShellEnvironmentPolicy;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::models::ProfileWorkspaceRoot;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::HookCompletedEvent;
+use ava_protocol::protocol::McpInvocation;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadSource;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_sandboxing::SandboxType;
+use ava_skills::SkillError;
+use ava_utils_git_discovery::GitRootDiscovery;
+use ava_utils_path::replace_path_and_deduplicate;
 use std::sync::OnceLock;
 use tokio::sync::Semaphore;
 
@@ -71,17 +71,17 @@ pub(crate) struct Session {
     /// session.
     pub(super) features: ManagedFeatures,
     pub(crate) guardian_context_mode: GuardianContextMode,
-    pub(super) isolation: codex_extension_api::SessionIsolation,
-    pub(crate) allowed_tools: Option<Arc<codex_extension_api::AllowedTools>>,
+    pub(super) isolation: ava_extension_api::SessionIsolation,
+    pub(crate) allowed_tools: Option<Arc<ava_extension_api::AllowedTools>>,
     pub(crate) windows_sandbox_proxy_settings_mode:
-        codex_sandboxing::WindowsSandboxProxySettingsMode,
+        ava_sandboxing::WindowsSandboxProxySettingsMode,
     pub(super) multi_agent_version: OnceLock<MultiAgentVersion>,
     /// Owns invalidation and serializes refreshes without blocking captured calls.
     pub(super) mcp_refresh: McpRefresh,
     /// Non-owning lookup for approval data retained by running MCP invocations.
     pub(crate) mcp_tool_approval_metadata: std::sync::Mutex<McpToolApprovalMetadataMap>,
-    pub(super) mcp_elicitation_reviewer_handle: OnceLock<codex_mcp::ElicitationReviewerHandle>,
-    pub(super) mcp_elicitation_lifecycle_handle: OnceLock<codex_mcp::ElicitationLifecycle>,
+    pub(super) mcp_elicitation_reviewer_handle: OnceLock<ava_mcp::ElicitationReviewerHandle>,
+    pub(super) mcp_elicitation_lifecycle_handle: OnceLock<ava_mcp::ElicitationLifecycle>,
     pub(super) mcp_prewarm_tx: async_channel::Sender<()>,
     pub(super) mcp_prewarm_shutdown: CancellationToken,
     pub(super) mcp_prewarm_task: std::sync::Mutex<Option<JoinHandle<()>>>,
@@ -131,8 +131,8 @@ pub(crate) struct SessionConfiguration {
     pub(super) legacy_fallback_cwd: AbsolutePathBuf,
     /// Top-level runtime workspace roots, independent of explicit environment selections.
     pub(super) runtime_workspace_roots: Vec<AbsolutePathBuf>,
-    /// Directory containing all Codex state for this session.
-    pub(super) codex_home: AbsolutePathBuf,
+    /// Directory containing all Ava state for this session.
+    pub(super) ava_home: AbsolutePathBuf,
     /// Optional user-facing name for the thread, updated during the session.
     pub(super) thread_name: Option<String>,
     /// Thread-owned plugin selection inherited by future turns.
@@ -167,8 +167,8 @@ impl SessionConfiguration {
         &self.legacy_fallback_cwd
     }
 
-    pub(crate) fn codex_home(&self) -> &AbsolutePathBuf {
-        &self.codex_home
+    pub(crate) fn ava_home(&self) -> &AbsolutePathBuf {
+        &self.ava_home
     }
 
     pub(super) fn inferred_environment_config(&self) -> EnvironmentConfig {
@@ -240,7 +240,7 @@ impl SessionConfiguration {
         environments: &[TurnEnvironmentSelection],
     ) -> SandboxPolicy {
         let permission_profile = self.materialized_permission_profile(environments);
-        codex_sandboxing::compatibility_sandbox_policy_for_permission_profile(
+        ava_sandboxing::compatibility_sandbox_policy_for_permission_profile(
             &permission_profile,
             self.cwd(),
         )
@@ -276,7 +276,7 @@ impl SessionConfiguration {
             approval_policy: self.step_settings.approval_policy.value(),
             approvals_reviewer: self.step_settings.approvals_reviewer,
             permission_profile: self.effective_permission_profile(&environment_selections),
-            full_access: codex_protocol::protocol::has_full_access(
+            full_access: ava_protocol::protocol::has_full_access(
                 self.step_settings.approval_policy.value(),
                 &self.permission_profile(),
                 environment_selections
@@ -332,8 +332,8 @@ impl SessionConfiguration {
     pub(super) fn restorable_thread_settings(
         &self,
         environment_selections: Vec<TurnEnvironmentSelection>,
-    ) -> CodexThreadSettingsOverrides {
-        CodexThreadSettingsOverrides {
+    ) -> AvaThreadSettingsOverrides {
+        AvaThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 self.legacy_fallback_cwd.clone(),
                 environment_selections,
@@ -462,7 +462,7 @@ impl SessionConfiguration {
                         allowed: format!(
                             "configured permission profile with valid network policy ({err})"
                         ),
-                        requirement_source: codex_config::RequirementSource::Unknown,
+                        requirement_source: ava_config::RequirementSource::Unknown,
                     })?;
                 config
                     .permissions
@@ -614,7 +614,7 @@ async fn warm_plugins_and_skills_for_session_init(
     plugins_manager: Arc<PluginsManager>,
     skills_service: Arc<HostSkillsService>,
     turn_environments: &TurnEnvironmentSnapshot,
-    extensions: &codex_extension_api::ExtensionRegistry<Config>,
+    extensions: &ava_extension_api::ExtensionRegistry<Config>,
 ) -> Vec<SkillError> {
     let plugins_input = config.plugins_config_input();
     let plugin_outcome = plugins_manager.plugins_for_config(&plugins_input).await;
@@ -656,8 +656,8 @@ impl Session {
     pub(crate) async fn responses_metadata(
         &self,
         step_context: &StepContext,
-        request_kind: CodexResponsesRequestKind,
-    ) -> CodexResponsesMetadata {
+        request_kind: AvaResponsesRequestKind,
+    ) -> AvaResponsesMetadata {
         let (window_id, window_number, context_window_id) = self.current_window().await;
         let mut responses_metadata = step_context.turn.turn_metadata_state.to_responses_metadata(
             self.installation_id.clone(),
@@ -691,12 +691,12 @@ impl Session {
         &self,
         turn_context: &TurnContext,
         compaction_metadata: CompactionTurnMetadata,
-    ) -> CodexResponsesMetadata {
+    ) -> AvaResponsesMetadata {
         let (window_id, window_number, context_window_id) = self.current_window().await;
         let responses_metadata = turn_context.turn_metadata_state.to_responses_metadata(
             self.installation_id.clone(),
             window_id,
-            CodexResponsesRequestKind::Compaction(compaction_metadata),
+            AvaResponsesRequestKind::Compaction(compaction_metadata),
         );
         self.with_window_and_fork_metadata(
             turn_context,
@@ -709,11 +709,11 @@ impl Session {
     fn with_window_and_fork_metadata(
         &self,
         turn_context: &TurnContext,
-        responses_metadata: CodexResponsesMetadata,
+        responses_metadata: AvaResponsesMetadata,
         window_number: u64,
         context_window_id: uuid::Uuid,
-    ) -> CodexResponsesMetadata {
-        CodexResponsesMetadata {
+    ) -> AvaResponsesMetadata {
+        AvaResponsesMetadata {
             window_number: Some(window_number),
             context_window_id: Some(context_window_id),
             analytics_enabled: Some(self.services.analytics_events_client.is_enabled()),
@@ -752,8 +752,8 @@ impl Session {
         skills_service: Arc<HostSkillsService>,
         plugins_manager: Arc<PluginsManager>,
         mcp_manager: Arc<McpManager>,
-        code_mode_session_provider: Arc<dyn codex_code_mode::CodeModeSessionProvider>,
-        extensions: Arc<codex_extension_api::ExtensionRegistry<crate::config::Config>>,
+        code_mode_session_provider: Arc<dyn ava_code_mode::CodeModeSessionProvider>,
+        extensions: Arc<ava_extension_api::ExtensionRegistry<crate::config::Config>>,
         mut thread_extension_init: ExtensionDataInit,
         client_mcp_extensions: ClientMcpExtensions,
         agent_control: LocalAgentControl,
@@ -768,7 +768,7 @@ impl Session {
         external_time_provider: Option<Arc<dyn TimeProvider>>,
         multi_agent_version: Option<MultiAgentVersion>,
         git_enrichment_policy: GitEnrichmentPolicy,
-        windows_sandbox_proxy_settings_mode: codex_sandboxing::WindowsSandboxProxySettingsMode,
+        windows_sandbox_proxy_settings_mode: ava_sandboxing::WindowsSandboxProxySettingsMode,
     ) -> anyhow::Result<Arc<Self>> {
         debug!(
             "Configuring session: model={}; provider={:?}",
@@ -816,7 +816,7 @@ impl Session {
                         RolloutItem::SessionMeta(meta)
                             if meta.meta.id == resumed.conversation_id =>
                         {
-                            codex_rollout::forked_from_ordinal_exclusive(
+                            ava_rollout::forked_from_ordinal_exclusive(
                                 &meta.meta,
                                 resumed.rollout_path.as_deref(),
                             )
@@ -870,11 +870,11 @@ impl Session {
             }
         };
         let isolation = thread_extension_init
-            .get::<codex_extension_api::SessionIsolation>()
+            .get::<ava_extension_api::SessionIsolation>()
             .map(|policy| *policy)
             .unwrap_or_default();
         if !session_configuration.session_source.is_non_root_agent()
-            && isolation != codex_extension_api::SessionIsolation::Isolated
+            && isolation != ava_extension_api::SessionIsolation::Isolated
         {
             instructions.thread_provider = agent_control
                 .root_thread_instructions_provider(thread_id, instructions.thread_provider);
@@ -953,21 +953,21 @@ impl Session {
                     roots
                 }
             };
-        thread_extension_init.insert(codex_extension_api::ThreadOriginator(
+        thread_extension_init.insert(ava_extension_api::ThreadOriginator(
             session_configuration.originator.clone(),
         ));
         // Publish the already resolved model before extensions make startup decisions.
         // Turn construction refreshes this attachment when the selected model changes.
         thread_extension_init.insert(model_info);
         let allowed_tools = thread_extension_init
-            .get::<codex_extension_api::AllowedTools>()
+            .get::<ava_extension_api::AllowedTools>()
             .or_else(|| {
                 // Older reviewer rollouts predate the explicit startup setting.
                 crate::guardian::is_basic_session_source(&session_configuration.session_source)
-                    .then(|| Arc::new(codex_guardian_reviewer::reviewer_allowed_tools()))
+                    .then(|| Arc::new(ava_guardian_reviewer::reviewer_allowed_tools()))
             });
         let mcp_thread_init = thread_extension_init.clone();
-        let thread_extension_data = codex_extension_api::ExtensionData::new_with_init(
+        let thread_extension_data = ava_extension_api::ExtensionData::new_with_init(
             thread_id.to_string(),
             thread_extension_init,
         );
@@ -1165,7 +1165,7 @@ impl Session {
             let trace_agent_path = session_configuration
                 .session_source
                 .get_agent_path()
-                .unwrap_or_else(codex_protocol::AgentPath::root);
+                .unwrap_or_else(ava_protocol::AgentPath::root);
             let trace_task_name =
                 (!trace_agent_path.is_root()).then(|| trace_agent_path.name().to_string());
             let trace_metadata = ThreadStartedTraceMetadata {
@@ -1217,7 +1217,7 @@ impl Session {
                 });
             }
             let effective_config = config.config_layer_stack.effective_config();
-            let config_path = config.codex_home.join(CONFIG_TOML_FILE);
+            let config_path = config.ava_home.join(CONFIG_TOML_FILE);
             if let Some(event) = unstable_features_warning_event(
                 effective_config.get("features").and_then(TomlValue::as_table),
                 config.suppress_unstable_features_warning,
@@ -1228,16 +1228,16 @@ impl Session {
             }
             let telemetry_auth = auth.as_ref();
             let auth_mode = telemetry_auth
-                .map(CodexAuth::auth_mode)
+                .map(AvaAuth::auth_mode)
                 .map(TelemetryAuthMode::from);
-            let account_id = telemetry_auth.and_then(CodexAuth::get_account_id);
-            let account_email = telemetry_auth.and_then(CodexAuth::get_account_email);
+            let account_id = telemetry_auth.and_then(AvaAuth::get_account_id);
+            let account_email = telemetry_auth.and_then(AvaAuth::get_account_email);
             let originator = session_configuration.originator.clone();
             let terminal_type = user_agent();
             let session_model = session_configuration.step_settings.collaboration_mode.model().to_string();
             let auth_env_telemetry = collect_auth_env_telemetry(
                 session_configuration.provider.info(),
-                auth_manager.codex_api_key_env_enabled(),
+                auth_manager.ava_api_key_env_enabled(),
             );
             let mut session_telemetry = SessionTelemetry::new(
                 thread_id,
@@ -1253,7 +1253,7 @@ impl Session {
             )
             .with_auth_env(auth_env_telemetry.to_otel_metadata())
             .with_tool_result_log_config(config.otel.tool_result);
-            if let Some(metrics) = thread_extension_data.get::<codex_otel::MetricsClient>() {
+            if let Some(metrics) = thread_extension_data.get::<ava_otel::MetricsClient>() {
                 session_telemetry = session_telemetry.with_metrics(metrics.as_ref().clone());
             }
             if let Some(service_name) = session_configuration.metrics_service_name.as_deref() {
@@ -1272,7 +1272,7 @@ impl Session {
             };
             crate::config::emit_session_start_metrics(config.as_ref(), &session_telemetry);
             let is_worktree = session_configuration.cwd().canonicalize().ok().and_then(|cwd| {
-                codex_git_utils::repository_identity(&cwd).and_then(|_| {
+                ava_git_utils::repository_identity(&cwd).and_then(|_| {
                     get_git_repo_root(&cwd).map(|root| root.join(".git").is_file())
                 })
             });
@@ -1293,7 +1293,7 @@ impl Session {
             );
 
             let mcp_server_names =
-                codex_mcp::effective_mcp_servers(
+                ava_mcp::effective_mcp_servers(
                     &mcp_projection.config,
                     auth.as_ref(),
                 )
@@ -1366,13 +1366,13 @@ impl Session {
                 && config.features.enabled(Feature::ShellTool)
                 && config.features.enabled(Feature::UnifiedExec)
                 && matches!(
-                    codex_tools::UnifiedExecShellMode::for_session(
+                    ava_tools::UnifiedExecShellMode::for_session(
                         config.features.get(),
                         crate::tools::tool_user_shell_type(&default_shell),
                         config.zsh_path.as_ref(),
                         config.main_execve_wrapper_exe.as_ref(),
                     ),
-                    codex_tools::UnifiedExecShellMode::Direct
+                    ava_tools::UnifiedExecShellMode::Direct
                 );
             let use_executor_shell_snapshots =
                 prefer_executor_shell_snapshots && !credential_broker_active;
@@ -1388,7 +1388,7 @@ impl Session {
                     watch::channel(state).0
                 });
                 ShellSnapshot::new(
-                    config.codex_home.clone(),
+                    config.ava_home.clone(),
                     thread_id,
                     session_telemetry.clone(),
                     state_db_ctx.clone(),
@@ -1600,13 +1600,13 @@ impl Session {
                 }
             }
             let session_extension_data =
-                codex_extension_api::ExtensionData::new(session_id.to_string());
+                ava_extension_api::ExtensionData::new(session_id.to_string());
             session_extension_data.insert(analytics_events_client.clone());
             let mcp_resource_client = Arc::new(McpResourceClient::new(Arc::clone(&mcp_runtime)));
             let extension_metrics =
                 extension_metrics::from_session_telemetry(session_telemetry.clone());
             for contributor in extensions.thread_lifecycle_contributors() {
-                contributor.on_thread_start(codex_extension_api::ThreadStartInput {
+                contributor.on_thread_start(ava_extension_api::ThreadStartInput {
                     config: config.as_ref(),
                     session_source: &session_configuration.session_source,
                     persistent_thread_state_available: state_db_ctx.is_some(),
@@ -1622,7 +1622,7 @@ impl Session {
                 &config.features,
                 &initial_history,
             );
-            let codex_responses_headers = thread_extension_data.get::<crate::CodexResponsesHeaders>();
+            let ava_responses_headers = thread_extension_data.get::<crate::AvaResponsesHeaders>();
             // Ephemeral title requests use request-level effort even when managed settings
             // enable overrides. The client-supplied tag selects cache behavior, not permissions.
             let title_request = config.ephemeral && matches!(
@@ -1716,7 +1716,7 @@ impl Session {
                     )
                     .or(fork_cache_key),
                     tx_event.clone(),
-                    codex_responses_headers,
+                    ava_responses_headers,
                 ),
                 executed_tool_calls: executed_tool_calls.clone(),
                 code_mode_service: crate::tools::code_mode::CodeModeService::new(
@@ -1854,15 +1854,15 @@ impl Session {
                 .await;
             let session_start_source = match &initial_history {
                 InitialHistory::Forked(_) if forked_from_id.is_some() => {
-                    codex_hooks::SessionStartSource::Fork
+                    ava_hooks::SessionStartSource::Fork
                 }
                 // `thread/resume` with supplied history uses `Forked` internally
                 // without a fork parent, so it should still report `resume`.
                 InitialHistory::Resumed(_) | InitialHistory::Forked(_) => {
-                    codex_hooks::SessionStartSource::Resume
+                    ava_hooks::SessionStartSource::Resume
                 }
-                InitialHistory::New => codex_hooks::SessionStartSource::Startup,
-                InitialHistory::Cleared => codex_hooks::SessionStartSource::Clear,
+                InitialHistory::New => ava_hooks::SessionStartSource::Startup,
+                InitialHistory::Cleared => ava_hooks::SessionStartSource::Clear,
             };
 
             // record_initial_history can emit events. We record only after the SessionConfiguredEvent is emitted.

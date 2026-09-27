@@ -19,11 +19,11 @@ use crate::oauth::build_authorization_url;
 use crate::oauth::generate_pkce;
 use crate::oauth::generate_state;
 use chrono::Utc;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClient;
-use codex_http_client::HttpClientBuilder;
-use codex_http_client::HttpClientFactory;
-use codex_keyring_store::KeyringStore;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClient;
+use ava_http_client::HttpClientBuilder;
+use ava_http_client::HttpClientFactory;
+use ava_keyring_store::KeyringStore;
 use http::StatusCode;
 use sha2::Digest;
 use sha2::Sha256;
@@ -87,7 +87,7 @@ enum RefreshOutcome {
 
 struct GatewayAuthState {
     config: GatewayAuthConfig,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     storage: GatewayAuthStorage,
     http_client: HttpClient,
     cached_token: Arc<Mutex<GatewayAuthCache>>,
@@ -106,7 +106,7 @@ impl GatewayAuthManager {
     /// Token grants never follow redirects or include primary-provider credentials or request logs.
     pub fn new(
         config: GatewayAuthConfig,
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         http_client_factory: &HttpClientFactory,
         keyring: Arc<dyn KeyringStore>,
     ) -> io::Result<Self> {
@@ -122,8 +122,8 @@ impl GatewayAuthManager {
         Ok(Self {
             state: Arc::new(GatewayAuthState {
                 config,
-                storage: GatewayAuthStorage::new(codex_home.clone(), keyring),
-                codex_home,
+                storage: GatewayAuthStorage::new(ava_home.clone(), keyring),
+                ava_home,
                 http_client,
                 cached_token: Arc::new(Mutex::new(GatewayAuthCache::default())),
             }),
@@ -189,7 +189,7 @@ impl GatewayAuthManager {
         cached: &mut GatewayAuthCache,
         policy: &RefreshPolicy,
     ) -> io::Result<RefreshOutcome> {
-        let _credential_lock = storage::lock_credentials(&self.state.codex_home).await?;
+        let _credential_lock = storage::lock_credentials(&self.state.ava_home).await?;
         // Recovery always rereads under the cross-process lock before choosing a token.
         // Even a replacement from storage must differ from the token rejected by this request.
         for _ in 0..2 {
@@ -269,7 +269,7 @@ impl GatewayAuthManager {
     fn credential_id(&self) -> String {
         let config = &self.state.config;
         let mut digest = Sha256::new();
-        digest.update(self.state.codex_home.to_string_lossy().as_bytes());
+        digest.update(self.state.ava_home.to_string_lossy().as_bytes());
         digest.update([0]);
         for value in [
             config.authorization_url.as_str(),
@@ -343,7 +343,7 @@ impl GatewayAuthManager {
 
         // Wait for user interaction without the store lock, then serialize issuance and
         // persistence with refreshes. Use the current stored token as the failed-save baseline.
-        let _credential_lock = storage::lock_credentials(&self.state.codex_home).await?;
+        let _credential_lock = storage::lock_credentials(&self.state.ava_home).await?;
         cached.token = self.load_token()?;
         let response = self
             .oauth()

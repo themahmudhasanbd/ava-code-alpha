@@ -4,7 +4,7 @@ use super::*;
 use crate::Budgeted;
 use crate::composition::SectionOutput;
 use crate::composition::user_message as message;
-use codex_protocol::models::ImageReference;
+use ava_protocol::models::ImageReference;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -82,7 +82,7 @@ fn request_estimate_reserves_images_independently_of_encoded_size() {
         image: ImageReference::File {
             file_id: "file_123".to_owned(),
         },
-        detail: Some(codex_protocol::models::ImageDetail::Original),
+        detail: Some(ava_protocol::models::ImageDetail::Original),
     }]);
     assert!(estimate_input_tokens(&file) >= IMAGE_TOKEN_RESERVATION);
 }

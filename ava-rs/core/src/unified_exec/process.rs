@@ -12,22 +12,22 @@ use tokio::task::JoinHandle;
 use tokio::time::Duration;
 use tokio_util::sync::CancellationToken;
 
-use codex_exec_server::ExecProcess;
-use codex_exec_server::ExecProcessEvent;
-use codex_exec_server::ProcessSignal as ExecServerProcessSignal;
-use codex_exec_server::ReadResponse as ExecReadResponse;
-use codex_exec_server::StartedExecProcess;
-use codex_exec_server::WriteStatus;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::exec_output::StreamOutput;
-use codex_protocol::protocol::TruncationPolicy;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::is_likely_sandbox_denied;
-use codex_sandboxing::record_filesystem_sandbox_violation;
-use codex_utils_output_truncation::formatted_truncate_text;
-use codex_utils_pty::ExecCommandSession;
-use codex_utils_pty::ProcessSignal as PtyProcessSignal;
-use codex_utils_pty::SpawnedPty;
+use ava_exec_server::ExecProcess;
+use ava_exec_server::ExecProcessEvent;
+use ava_exec_server::ProcessSignal as ExecServerProcessSignal;
+use ava_exec_server::ReadResponse as ExecReadResponse;
+use ava_exec_server::StartedExecProcess;
+use ava_exec_server::WriteStatus;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::exec_output::StreamOutput;
+use ava_protocol::protocol::TruncationPolicy;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::is_likely_sandbox_denied;
+use ava_sandboxing::record_filesystem_sandbox_violation;
+use ava_utils_output_truncation::formatted_truncate_text;
+use ava_utils_pty::ExecCommandSession;
+use ava_utils_pty::ProcessSignal as PtyProcessSignal;
+use ava_utils_pty::SpawnedPty;
 
 use super::UNIFIED_EXEC_OUTPUT_MAX_BYTES;
 use super::UNIFIED_EXEC_OUTPUT_MAX_TOKENS;
@@ -351,7 +351,7 @@ impl UnifiedExecProcess {
             stderr_rx,
             mut exit_rx,
         } = spawned;
-        let output_rx = codex_utils_pty::combine_output_receivers(stdout_rx, stderr_rx);
+        let output_rx = ava_utils_pty::combine_output_receivers(stdout_rx, stderr_rx);
         let mut managed = Self::new(
             ProcessHandle::Local(Box::new(process_handle)),
             sandbox_type,

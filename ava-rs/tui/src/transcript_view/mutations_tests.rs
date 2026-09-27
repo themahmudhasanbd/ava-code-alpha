@@ -360,10 +360,10 @@ fn folding_a_reasoning_only_page_retains_its_find_and_copy_revision() {
     use crate::thread_transcript::RawReasoningVisibility;
     use crate::thread_transcript::fold_trailing_activity_details;
     use crate::thread_transcript::thread_items_to_transcript_cells;
-    use codex_app_server_protocol::ThreadItem;
-    use codex_app_server_protocol::Turn;
-    use codex_app_server_protocol::TurnItemsView;
-    use codex_app_server_protocol::TurnStatus;
+    use ava_app_server_protocol::ThreadItem;
+    use ava_app_server_protocol::Turn;
+    use ava_app_server_protocol::TurnItemsView;
+    use ava_app_server_protocol::TurnStatus;
 
     let call = serde_json::from_value(serde_json::json!({
         "type": "mcpToolCall", "id": "call", "server": "cua_repl", "tool": "js",
@@ -389,7 +389,7 @@ fn folding_a_reasoning_only_page_retains_its_find_and_copy_revision() {
     let project = |items: &[ThreadItem]| {
         thread_items_to_transcript_cells(
             /*thread_id*/ None,
-            &codex_utils_absolute_path::AbsolutePathBuf::current_dir().unwrap(),
+            &ava_utils_absolute_path::AbsolutePathBuf::current_dir().unwrap(),
             items.iter().cloned(),
             RawReasoningVisibility::Hidden,
             /*config*/ None,

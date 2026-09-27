@@ -3,10 +3,10 @@ use crate::endpoint::session::EndpointSession;
 use crate::error::ApiError;
 use crate::provider::Provider;
 use bytes::Bytes;
-use codex_client::HttpTransport;
-use codex_client::RequestTelemetry;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ModelsResponse;
+use ava_client::HttpTransport;
+use ava_client::RequestTelemetry;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ModelsResponse;
 use http::HeaderMap;
 use http::Method;
 use http::header::ETAG;
@@ -34,7 +34,7 @@ impl<T: HttpTransport> ModelsClient<T> {
         "models"
     }
 
-    fn append_client_version_query(req: &mut codex_client::Request, client_version: &str) {
+    fn append_client_version_query(req: &mut ava_client::Request, client_version: &str) {
         let separator = if req.url.contains('?') { '&' } else { '?' };
         req.url = format!("{}{}client_version={client_version}", req.url, separator);
     }
@@ -131,10 +131,10 @@ mod tests {
     use crate::auth::AuthProvider;
     use crate::auth::AuthProviderFuture;
     use crate::provider::RetryConfig;
-    use codex_client::Request;
-    use codex_client::Response;
-    use codex_client::StreamResponse;
-    use codex_client::TransportError;
+    use ava_client::Request;
+    use ava_client::Response;
+    use ava_client::StreamResponse;
+    use ava_client::TransportError;
     use http::HeaderMap;
     use http::StatusCode;
     use pretty_assertions::assert_eq;
@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn catalog_request_url_rejects_relative_urls() {
         let provider = provider("https://gateway.example/v1");
-        for catalog_url in ["/codex/models", "codex/models"] {
+        for catalog_url in ["/ava/models", "ava/models"] {
             let error = ModelsClient::<CapturingTransport>::catalog_request_url(
                 &provider,
                 catalog_url,

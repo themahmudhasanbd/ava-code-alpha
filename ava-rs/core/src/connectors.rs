@@ -5,16 +5,16 @@ use std::sync::Mutex as StdMutex;
 use std::time::Duration;
 use std::time::Instant;
 
-pub use codex_connectors::AppBranding;
-pub use codex_connectors::AppInfo;
-pub use codex_connectors::AppMetadata;
-use codex_connectors::ConnectorDirectoryCacheContext;
-use codex_connectors::ConnectorDirectoryCacheKey;
-use codex_connectors::apps_config_from_layer_stack;
-use codex_connectors::connector_runtime_context_key;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecServerRuntimePaths;
-use codex_tools::DiscoverableTool;
+pub use ava_connectors::AppBranding;
+pub use ava_connectors::AppInfo;
+pub use ava_connectors::AppMetadata;
+use ava_connectors::ConnectorDirectoryCacheContext;
+use ava_connectors::ConnectorDirectoryCacheKey;
+use ava_connectors::apps_config_from_layer_stack;
+use ava_connectors::connector_runtime_context_key;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecServerRuntimePaths;
+use ava_tools::DiscoverableTool;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 use tracing::warn;
@@ -24,23 +24,23 @@ use crate::mcp::McpManager;
 use crate::plugins::list_tool_suggest_discoverable_plugins;
 use crate::plugins::plugins_manager_for_config;
 use crate::session::INITIAL_SUBMIT_ID;
-use codex_config::types::ApprovalsReviewer;
-use codex_config::types::ToolSuggestDiscoverableType;
-use codex_core_plugins::PluginsManager;
-use codex_features::Feature;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::MCP_TOOL_CODEX_APPS_META_KEY;
-use codex_mcp::McpRuntime;
-use codex_mcp::McpRuntimeContext;
-use codex_mcp::McpRuntimeInput;
-use codex_mcp::McpStartupPolicy;
-use codex_mcp::ToolInfo;
-use codex_mcp::ToolPluginContext;
-use codex_mcp::effective_mcp_servers;
-use codex_mcp::tool_plugin_context;
-use codex_protocol::mcp::ClientMcpExtensions;
+use ava_config::types::ApprovalsReviewer;
+use ava_config::types::ToolSuggestDiscoverableType;
+use ava_core_plugins::PluginsManager;
+use ava_features::Feature;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::MCP_TOOL_AVA_APPS_META_KEY;
+use ava_mcp::McpRuntime;
+use ava_mcp::McpRuntimeContext;
+use ava_mcp::McpRuntimeInput;
+use ava_mcp::McpStartupPolicy;
+use ava_mcp::ToolInfo;
+use ava_mcp::ToolPluginContext;
+use ava_mcp::effective_mcp_servers;
+use ava_mcp::tool_plugin_context;
+use ava_protocol::mcp::ClientMcpExtensions;
 
 const CONNECTORS_READY_TIMEOUT_ON_EMPTY_TOOLS: Duration = Duration::from_secs(30);
 
@@ -65,7 +65,7 @@ static ACCESSIBLE_CONNECTORS_CACHE: LazyLock<StdMutex<Option<CachedAccessibleCon
 #[derive(Debug, Clone)]
 pub struct AccessibleConnectorsStatus {
     pub connectors: Vec<AppInfo>,
-    pub codex_apps_ready: bool,
+    pub ava_apps_ready: bool,
 }
 
 pub async fn list_accessible_connectors_from_mcp_tools(
@@ -84,17 +84,17 @@ pub async fn list_accessible_connectors_from_mcp_tools(
 pub(crate) async fn list_tool_suggest_discoverable_tools_with_auth(
     config: &Config,
     plugins_manager: &PluginsManager,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     accessible_connectors: &[AppInfo],
     loaded_plugin_app_connector_ids: &[String],
 ) -> anyhow::Result<Vec<DiscoverableTool>> {
     let connector_ids = tool_suggest_connector_ids(config, loaded_plugin_app_connector_ids);
-    let directory_connectors = codex_connectors::merge::merge_plugin_connectors(
+    let directory_connectors = ava_connectors::merge::merge_plugin_connectors(
         cached_directory_connectors_for_tool_suggest_with_auth(config, auth).await,
         connector_ids.iter().cloned(),
     );
     let discoverable_connectors =
-        codex_connectors::filter::filter_tool_suggest_discoverable_connectors(
+        ava_connectors::filter::filter_tool_suggest_discoverable_connectors(
             directory_connectors,
             accessible_connectors,
             &connector_ids,
@@ -119,13 +119,13 @@ pub async fn list_cached_accessible_connectors_from_mcp_tools(
     config: &Config,
 ) -> Option<Vec<AppInfo>> {
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false)
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false)
             .await
             .ok()?;
     let auth = auth_manager.auth().await;
     if !config
         .features
-        .apps_enabled_for_auth(auth.as_ref().is_some_and(CodexAuth::uses_codex_backend))
+        .apps_enabled_for_auth(auth.as_ref().is_some_and(AvaAuth::uses_ava_backend))
     {
         return Some(Vec::new());
     }
@@ -135,7 +135,7 @@ pub async fn list_cached_accessible_connectors_from_mcp_tools(
 
 pub(crate) fn refresh_accessible_connectors_cache_from_mcp_tools(
     config: &Config,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     mcp_tools: &[ToolInfo],
 ) {
     if !config.features.enabled(Feature::Apps) {
@@ -166,11 +166,11 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_options_and_status(
     // list_accessible_connectors_from_mcp_tools_with_environment_manager instead
     // of constructing a temporary manager here.
     let local_runtime_paths = ExecServerRuntimePaths::from_optional_paths(
-        config.codex_self_exe.clone(),
-        config.codex_linux_sandbox_exe.clone(),
+        config.ava_self_exe.clone(),
+        config.ava_linux_sandbox_exe.clone(),
     )?;
-    let environment_manager = EnvironmentManager::from_codex_home(
-        config.codex_home.clone(),
+    let environment_manager = EnvironmentManager::from_ava_home(
+        config.ava_home.clone(),
         Some(local_runtime_paths),
         config.http_client_factory(),
     )
@@ -189,7 +189,7 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_environment_manager(
     environment_manager: Arc<EnvironmentManager>,
 ) -> anyhow::Result<AccessibleConnectorsStatus> {
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false).await?;
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false).await?;
     let plugins_manager = Arc::new(plugins_manager_for_config(
         config,
         Arc::clone(&auth_manager),
@@ -211,15 +211,15 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
     mcp_manager: Arc<McpManager>,
 ) -> anyhow::Result<AccessibleConnectorsStatus> {
     let auth_manager =
-        AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false).await?;
+        AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false).await?;
     let auth = auth_manager.auth().await;
     if !config
         .features
-        .apps_enabled_for_auth(auth.as_ref().is_some_and(CodexAuth::uses_codex_backend))
+        .apps_enabled_for_auth(auth.as_ref().is_some_and(AvaAuth::uses_ava_backend))
     {
         return Ok(AccessibleConnectorsStatus {
             connectors: Vec::new(),
-            codex_apps_ready: true,
+            ava_apps_ready: true,
         });
     }
     let cache_key = accessible_connectors_cache_key(config, auth.as_ref());
@@ -230,17 +230,17 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
         let cached_connectors = with_app_plugin_sources(cached_connectors, &tool_plugin_context);
         return Ok(AccessibleConnectorsStatus {
             connectors: cached_connectors,
-            codex_apps_ready: true,
+            ava_apps_ready: true,
         });
     }
 
     let mut mcp_servers = effective_mcp_servers(&mcp_config, auth.as_ref());
-    mcp_servers.retain(|name, _| name == CODEX_APPS_MCP_SERVER_NAME);
+    mcp_servers.retain(|name, _| name == AVA_APPS_MCP_SERVER_NAME);
     let mcp_config = Arc::new(mcp_config.for_threadless_operations(&mcp_servers));
     if mcp_servers.is_empty() {
         return Ok(AccessibleConnectorsStatus {
             connectors: Vec::new(),
-            codex_apps_ready: true,
+            ava_apps_ready: true,
         });
     }
 
@@ -248,8 +248,8 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
         McpRuntimeContext::new(Arc::clone(&environment_manager), config.cwd.to_path_buf());
 
     let cancel_token = CancellationToken::new();
-    let codex_apps_auth_manager =
-        codex_mcp::host_owned_codex_apps_enabled(&mcp_config, auth.as_ref())
+    let ava_apps_auth_manager =
+        ava_mcp::host_owned_ava_apps_enabled(&mcp_config, auth.as_ref())
             .then(|| Arc::clone(&auth_manager));
     let mcp_runtime = McpRuntime::new(McpRuntimeInput {
         startup_policy: McpStartupPolicy::Eager,
@@ -263,12 +263,12 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
         // Connector discovery is threadless. Use an actually configured env if
         // one exists, but do not reintroduce the old hidden-local fallback.
         runtime_context,
-        codex_apps_tools_cache: mcp_manager.codex_apps_tools_cache(),
+        ava_apps_tools_cache: mcp_manager.ava_apps_tools_cache(),
         tool_catalog_cache: mcp_manager.tool_catalog_cache(),
-        codex_apps_tools_cache_key: connector_runtime_context_key(auth.as_ref()),
+        ava_apps_tools_cache_key: connector_runtime_context_key(auth.as_ref()),
         client_mcp_extensions: ClientMcpExtensions::default(),
         auth: auth.clone(),
-        auth_manager: codex_apps_auth_manager,
+        auth_manager: ava_apps_auth_manager,
         allow_user_interaction: true,
         elicitation_reviewer: None,
         elicitation_lifecycle: None,
@@ -277,13 +277,13 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
 
     let refreshed_tools = if force_refetch {
         match mcp_runtime
-            .latest_hard_refresh_codex_apps_tools_cache()
+            .latest_hard_refresh_ava_apps_tools_cache()
             .await
         {
             Ok(tools) => Some(tools),
             Err(err) => {
                 warn!(
-                    "failed to force-refresh tools for MCP server '{CODEX_APPS_MCP_SERVER_NAME}', using cached/startup tools: {err:#}"
+                    "failed to force-refresh tools for MCP server '{AVA_APPS_MCP_SERVER_NAME}', using cached/startup tools: {err:#}"
                 );
                 None
             }
@@ -299,11 +299,11 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
         mcp_runtime.latest_list_all_tools().await
     };
     let mut should_reload_tools = false;
-    let codex_apps_ready = if refreshed_tools_succeeded {
+    let ava_apps_ready = if refreshed_tools_succeeded {
         true
-    } else if let Some(cfg) = mcp_servers.get(CODEX_APPS_MCP_SERVER_NAME) {
+    } else if let Some(cfg) = mcp_servers.get(AVA_APPS_MCP_SERVER_NAME) {
         let immediate_ready = mcp_runtime
-            .latest_wait_for_server_ready(CODEX_APPS_MCP_SERVER_NAME, Duration::ZERO)
+            .latest_wait_for_server_ready(AVA_APPS_MCP_SERVER_NAME, Duration::ZERO)
             .await;
         if immediate_ready {
             true
@@ -313,7 +313,7 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
                 .startup_timeout_sec
                 .unwrap_or(CONNECTORS_READY_TIMEOUT_ON_EMPTY_TOOLS);
             let ready = mcp_runtime
-                .latest_wait_for_server_ready(CODEX_APPS_MCP_SERVER_NAME, timeout)
+                .latest_wait_for_server_ready(AVA_APPS_MCP_SERVER_NAME, timeout)
                 .await;
             should_reload_tools = ready;
             ready
@@ -326,12 +326,12 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
     if should_reload_tools {
         tools = mcp_runtime.latest_list_all_tools().await;
     }
-    if codex_apps_ready {
+    if ava_apps_ready {
         cancel_token.cancel();
     }
 
     let accessible_connectors = accessible_connectors_for_app_list_from_mcp_tools(&tools);
-    if codex_apps_ready || !accessible_connectors.is_empty() {
+    if ava_apps_ready || !accessible_connectors.is_empty() {
         write_cached_accessible_connectors(cache_key, &accessible_connectors);
     }
     let accessible_connectors =
@@ -339,17 +339,17 @@ pub async fn list_accessible_connectors_from_mcp_tools_with_mcp_manager(
     mcp_runtime.shutdown().await;
     Ok(AccessibleConnectorsStatus {
         connectors: accessible_connectors,
-        codex_apps_ready,
+        ava_apps_ready,
     })
 }
 
 fn accessible_connectors_cache_key(
     config: &Config,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> AccessibleConnectorsCacheKey {
-    let account_id = auth.and_then(CodexAuth::get_account_id);
-    let chatgpt_user_id = auth.and_then(CodexAuth::get_chatgpt_user_id);
-    let is_workspace_account = auth.is_some_and(CodexAuth::is_workspace_account);
+    let account_id = auth.and_then(AvaAuth::get_account_id);
+    let chatgpt_user_id = auth.and_then(AvaAuth::get_chatgpt_user_id);
+    let is_workspace_account = auth.is_some_and(AvaAuth::is_workspace_account);
     AccessibleConnectorsCacheKey {
         chatgpt_base_url: config.chatgpt_base_url.clone(),
         account_id,
@@ -387,7 +387,7 @@ fn write_cached_accessible_connectors(
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     *cache_guard = Some(CachedAccessibleConnectors {
         key: cache_key,
-        expires_at: Instant::now() + codex_connectors::CONNECTORS_CACHE_TTL,
+        expires_at: Instant::now() + ava_connectors::CONNECTORS_CACHE_TTL,
         connectors: connectors.to_vec(),
     });
 }
@@ -422,7 +422,7 @@ fn tool_suggest_connector_ids(
 #[instrument(level = "trace", skip_all)]
 async fn cached_directory_connectors_for_tool_suggest_with_auth(
     config: &Config,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> Vec<AppInfo> {
     if !config.features.enabled(Feature::Apps) {
         return Vec::new();
@@ -433,14 +433,14 @@ async fn cached_directory_connectors_for_tool_suggest_with_auth(
         Some(auth)
     } else {
         let Ok(auth_manager) =
-            AuthManager::shared_from_config(config, /*enable_codex_api_key_env*/ false).await
+            AuthManager::shared_from_config(config, /*enable_ava_api_key_env*/ false).await
         else {
             return Vec::new();
         };
         loaded_auth = auth_manager.auth().await;
         loaded_auth.as_ref()
     };
-    let Some(auth) = auth.filter(|auth| auth.uses_codex_backend()) else {
+    let Some(auth) = auth.filter(|auth| auth.uses_ava_backend()) else {
         return Vec::new();
     };
 
@@ -450,7 +450,7 @@ async fn cached_directory_connectors_for_tool_suggest_with_auth(
     };
     let is_workspace_account = auth.is_workspace_account();
     let cache_context = ConnectorDirectoryCacheContext::new(
-        config.codex_home.to_path_buf(),
+        config.ava_home.to_path_buf(),
         ConnectorDirectoryCacheKey::new(
             config.chatgpt_base_url.clone(),
             Some(account_id),
@@ -459,7 +459,7 @@ async fn cached_directory_connectors_for_tool_suggest_with_auth(
         ),
     );
 
-    codex_connectors::cached_directory_connectors(&cache_context).unwrap_or_default()
+    ava_connectors::cached_directory_connectors(&cache_context).unwrap_or_default()
 }
 
 pub(crate) fn accessible_connectors_from_mcp_tools(mcp_tools: &[ToolInfo]) -> Vec<AppInfo> {
@@ -472,18 +472,18 @@ fn collect_accessible_connectors_from_mcp_tools<'a>(
     // ToolInfo already carries plugin provenance, so app-level plugin sources
     // can be derived here instead of requiring a separate enrichment pass.
     let tools = mcp_tools.filter_map(|tool| {
-        if tool.server_name != CODEX_APPS_MCP_SERVER_NAME {
+        if tool.server_name != AVA_APPS_MCP_SERVER_NAME {
             return None;
         }
         let connector_id = tool.connector_id.as_deref()?;
-        Some(codex_connectors::accessible::AccessibleConnectorTool {
+        Some(ava_connectors::accessible::AccessibleConnectorTool {
             connector_id: connector_id.to_string(),
             connector_name: tool.connector_name.clone(),
             connector_description: tool.namespace_description.clone(),
             plugin_display_names: tool.plugin_display_names.clone(),
         })
     });
-    codex_connectors::accessible::collect_accessible_connectors(tools)
+    ava_connectors::accessible::collect_accessible_connectors(tools)
 }
 
 fn accessible_connectors_for_app_list_from_mcp_tools(mcp_tools: &[ToolInfo]) -> Vec<AppInfo> {
@@ -491,7 +491,7 @@ fn accessible_connectors_for_app_list_from_mcp_tools(mcp_tools: &[ToolInfo]) -> 
         tool.tool
             .meta
             .as_deref()
-            .and_then(|meta| meta.get(MCP_TOOL_CODEX_APPS_META_KEY))
+            .and_then(|meta| meta.get(MCP_TOOL_AVA_APPS_META_KEY))
             .and_then(serde_json::Value::as_object)
             .and_then(|meta| meta.get("synthetic_link"))
             .and_then(serde_json::Value::as_bool)
@@ -513,7 +513,7 @@ pub fn with_app_plugin_sources(
 }
 
 pub(crate) fn mcp_approvals_reviewer_from_layers(
-    config_layer_stack: &codex_config::ConfigLayerStack,
+    config_layer_stack: &ava_config::ConfigLayerStack,
     default_reviewer: ApprovalsReviewer,
     model: Option<&str>,
     server_name: &str,
@@ -525,7 +525,7 @@ pub(crate) fn mcp_approvals_reviewer_from_layers(
         return ApprovalsReviewer::AutoReview;
     }
 
-    let app_reviewer = if server_name == CODEX_APPS_MCP_SERVER_NAME {
+    let app_reviewer = if server_name == AVA_APPS_MCP_SERVER_NAME {
         apps_config_from_layer_stack(config_layer_stack).and_then(|apps_config| {
             let app = connector_id.and_then(|connector_id| apps_config.apps.get(connector_id));
             link_id

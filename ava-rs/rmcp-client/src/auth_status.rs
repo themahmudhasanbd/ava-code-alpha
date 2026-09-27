@@ -3,8 +3,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use codex_exec_server::HttpClient;
-use codex_protocol::protocol::McpAuthStatus;
+use ava_exec_server::HttpClient;
+use ava_protocol::protocol::McpAuthStatus;
 use futures::FutureExt;
 use http::HeaderMap;
 use http::header::AUTHORIZATION;
@@ -19,8 +19,8 @@ use crate::oauth_callback::McpOAuthCallbackMode;
 use crate::oauth_callback::callback_mode;
 use crate::oauth_http_client::OAuthHttpClientAdapter;
 use crate::utils::build_default_headers;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
 
 const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -309,14 +309,14 @@ mod tests {
     use axum::http::StatusCode;
     use axum::http::header::WWW_AUTHENTICATE;
     use axum::routing::get;
-    use codex_exec_server::ExecServerError;
-    use codex_exec_server::HttpRedirectPolicy;
-    use codex_exec_server::HttpRequestParams;
-    use codex_exec_server::HttpRequestResponse;
-    use codex_exec_server::HttpResponseBodyStream;
-    use codex_exec_server::RouteAwareHttpClient;
-    use codex_http_client::HttpClientFactory;
-    use codex_http_client::OutboundProxyPolicy;
+    use ava_exec_server::ExecServerError;
+    use ava_exec_server::HttpRedirectPolicy;
+    use ava_exec_server::HttpRequestParams;
+    use ava_exec_server::HttpRequestResponse;
+    use ava_exec_server::HttpResponseBodyStream;
+    use ava_exec_server::RouteAwareHttpClient;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
     use futures::future::BoxFuture;
     use pretty_assertions::assert_eq;
     use serial_test::serial;
@@ -500,7 +500,7 @@ mod tests {
     #[tokio::test]
     #[serial(auth_status_env)]
     async fn determine_auth_status_uses_bearer_token_when_env_authorization_header_present() {
-        let _guard = EnvVarGuard::set("CODEX_RMCP_CLIENT_AUTH_STATUS_TEST_TOKEN", "Bearer token");
+        let _guard = EnvVarGuard::set("AVA_RMCP_CLIENT_AUTH_STATUS_TEST_TOKEN", "Bearer token");
         let status = determine_streamable_http_auth_status(
             "server",
             "not-a-url",
@@ -508,7 +508,7 @@ mod tests {
             /*http_headers*/ None,
             Some(HashMap::from([(
                 "Authorization".to_string(),
-                "CODEX_RMCP_CLIENT_AUTH_STATUS_TEST_TOKEN".to_string(),
+                "AVA_RMCP_CLIENT_AUTH_STATUS_TEST_TOKEN".to_string(),
             )])),
             OAuthCredentialsStoreMode::Keyring,
             AuthKeyringBackendKind::default(),

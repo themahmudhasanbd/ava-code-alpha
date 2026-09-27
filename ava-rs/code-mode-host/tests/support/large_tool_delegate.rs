@@ -1,9 +1,9 @@
-use codex_code_mode::CellId;
-use codex_code_mode::CodeModeNestedToolCall;
-use codex_code_mode::CodeModeSessionDelegate;
-use codex_code_mode::NotificationFuture;
-use codex_code_mode::ToolInvocationFuture;
-use codex_protocol::ToolName;
+use ava_code_mode::CellId;
+use ava_code_mode::CodeModeNestedToolCall;
+use ava_code_mode::CodeModeSessionDelegate;
+use ava_code_mode::NotificationFuture;
+use ava_code_mode::ToolInvocationFuture;
+use ava_protocol::ToolName;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tokio::sync::Semaphore;

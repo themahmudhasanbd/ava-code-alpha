@@ -8,9 +8,9 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::RouteAwareClientPool;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::RouteAwareClientPool;
 use futures::FutureExt;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
@@ -31,7 +31,7 @@ use crate::RestartIfRunningOutcome;
 use crate::RestartMode;
 use crate::managed_install::ExecutableIdentity;
 use crate::managed_install::executable_identity;
-use crate::managed_install::resolved_managed_codex_bin;
+use crate::managed_install::resolved_managed_ava_bin;
 #[cfg(any(target_os = "linux", target_os = "macos", windows))]
 use crate::settings::DaemonSettings;
 use crate::settings::UpdaterSettings;
@@ -116,7 +116,7 @@ async fn run_with_http(
     #[cfg(windows)]
     let _installer_job = crate::backend::windows::updater_job()?;
     let socket_path = daemon.manual_update_socket_path();
-    codex_uds::prepare_private_socket_directory(
+    ava_uds::prepare_private_socket_directory(
         socket_path
             .parent()
             .context("updater socket has no parent")?,
@@ -125,11 +125,11 @@ async fn run_with_http(
     if socket_path.exists() {
         tokio::fs::remove_file(&socket_path).await?;
     }
-    let mut listener = Some(codex_uds::UnixListener::bind(&socket_path).await?);
+    let mut listener = Some(ava_uds::UnixListener::bind(&socket_path).await?);
     #[cfg(windows)]
     updater.mark_ready().await?;
     let needs_managed_handoff =
-        match resolved_managed_codex_bin(&daemon.current_managed_codex_bin()?).await {
+        match resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?).await {
             Ok(managed_bin) => {
                 executable_identity(&managed_bin).await.ok().as_ref()
                     != Some(running_updater_identity)
@@ -249,9 +249,9 @@ async fn next_update_delay(daemon: &Daemon) -> Option<Duration> {
 async fn adopt_managed_updater(
     daemon: &Daemon,
     running_identity: &ExecutableIdentity,
-    listener: &mut Option<codex_uds::UnixListener>,
+    listener: &mut Option<ava_uds::UnixListener>,
 ) -> Result<UpdateLoopControl> {
-    let managed_bin = resolved_managed_codex_bin(&daemon.current_managed_codex_bin()?).await?;
+    let managed_bin = resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?).await?;
     if executable_identity(&managed_bin).await? == *running_identity {
         return Ok(UpdateLoopControl::Continue);
     }
@@ -277,7 +277,7 @@ async fn adopt_managed_updater(
             if socket_path.exists() {
                 tokio::fs::remove_file(&socket_path).await?;
             }
-            *listener = Some(codex_uds::UnixListener::bind(&socket_path).await?);
+            *listener = Some(ava_uds::UnixListener::bind(&socket_path).await?);
             return Err(err);
         }
         Ok(UpdateLoopControl::Stop)
@@ -323,10 +323,10 @@ async fn update_once(
         return Ok((UpdateLoopControl::Continue, None));
     }
     let (package_root, previous_selection, previous_release) = selected_release(daemon)?;
-    let codex_home = package_root
+    let ava_home = package_root
         .parent()
         .and_then(Path::parent)
-        .context("daemon package root has no Codex home")?;
+        .context("daemon package root has no Ava home")?;
     let (installer_mode, installer_guard) =
         if let UpdateTrigger::RestoreProduction(expected) = trigger {
             anyhow::ensure!(
@@ -335,12 +335,12 @@ async fn update_once(
             );
             (
                 InstallerMode::RestoreProduction(&previous_release),
-                "CODEX_INSTALL_IF_CURRENT",
+                "AVA_INSTALL_IF_CURRENT",
             )
         } else {
             (
                 InstallerMode::Update(&previous_release),
-                "CODEX_INSTALL_IF_LATEST",
+                "AVA_INSTALL_IF_LATEST",
             )
         };
     let script = tokio::select! {
@@ -356,8 +356,8 @@ async fn update_once(
     if package_root.ends_with("app-server-daemon") {
         anyhow::ensure!(
             script
-                .windows(b"CODEX_INSTALL_DAEMON_ONLY".len())
-                .any(|window| window == b"CODEX_INSTALL_DAEMON_ONLY"),
+                .windows(b"AVA_INSTALL_DAEMON_ONLY".len())
+                .any(|window| window == b"AVA_INSTALL_DAEMON_ONLY"),
             "installer does not support daemon-owned packages"
         );
     }
@@ -372,7 +372,7 @@ async fn update_once(
         return Ok((UpdateLoopControl::Continue, None));
     }
     anyhow::ensure!(
-        crate::managed_install::package_root(codex_home) == package_root,
+        crate::managed_install::package_root(ava_home) == package_root,
         "daemon package root changed during the update; retry the command"
     );
     #[cfg(unix)]
@@ -395,8 +395,8 @@ async fn update_once(
         return Ok((UpdateLoopControl::Continue, None));
     }
 
-    let managed_codex_bin =
-        resolved_managed_codex_bin(&daemon.current_managed_codex_bin()?).await?;
+    let managed_ava_bin =
+        resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?).await?;
     let restart_mode = match trigger {
         // The package can contain different resources even when its CLI binary
         // is identical. A release change must also replace the running process.
@@ -409,7 +409,7 @@ async fn update_once(
             RestartMode::IfBinaryOrVersionChanged
         }
         UpdateTrigger::Scheduled
-            if executable_identity(&managed_codex_bin).await? != *running_updater_identity =>
+            if executable_identity(&managed_ava_bin).await? != *running_updater_identity =>
         {
             RestartMode::Always
         }
@@ -421,7 +421,7 @@ async fn update_once(
             return Ok((UpdateLoopControl::Stop, None));
         }
         match daemon
-            .try_restart_if_running(restart_mode, &managed_codex_bin)
+            .try_restart_if_running(restart_mode, &managed_ava_bin)
             .await?
         {
             RestartIfRunningOutcome::Busy => {
@@ -447,8 +447,8 @@ async fn update_once(
             {
                 anyhow::ensure!(
                     daemon.is_stable_standalone_release()?
-                        && resolved_managed_codex_bin(&daemon.current_managed_codex_bin()?).await?
-                            == managed_codex_bin,
+                        && resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?).await?
+                            == managed_ava_bin,
                     "managed daemon changed during the update; retry"
                 );
                 return Ok((
@@ -493,7 +493,7 @@ fn selected_release(daemon: &Daemon) -> Result<(std::path::PathBuf, std::path::P
         .settings_file
         .parent()
         .and_then(Path::parent)
-        .context("daemon settings path has no Codex home")?;
+        .context("daemon settings path has no Ava home")?;
     let root = crate::managed_install::package_root(home);
     let release = std::fs::canonicalize(root.join("current"))?;
     let name = release
@@ -511,14 +511,14 @@ async fn current_updater_identity() -> Result<ExecutableIdentity> {
 }
 
 #[cfg(unix)]
-pub(crate) fn reexec_managed_updater(managed_codex_bin: &std::path::Path) -> Result<()> {
-    let err = StdCommand::new(managed_codex_bin)
+pub(crate) fn reexec_managed_updater(managed_ava_bin: &std::path::Path) -> Result<()> {
+    let err = StdCommand::new(managed_ava_bin)
         .args(["app-server", "daemon", "pid-update-loop"])
         .exec();
     Err(err).with_context(|| {
         format!(
-            "failed to replace updater with managed Codex binary {}",
-            managed_codex_bin.display()
+            "failed to replace updater with managed Ava binary {}",
+            managed_ava_bin.display()
         )
     })
 }
@@ -557,38 +557,38 @@ async fn run_installer_script(
     };
     let mut child = command
         .env(
-            "CODEX_HOME",
+            "AVA_HOME",
             package_root
                 .parent()
                 .and_then(Path::parent)
-                .context("package root has no Codex home")?,
+                .context("package root has no Ava home")?,
         )
-        .env("CODEX_INSTALL_DEFER_SELECTION", defer_selection)
+        .env("AVA_INSTALL_DEFER_SELECTION", defer_selection)
         .env(
-            "CODEX_INSTALL_DAEMON_ONLY",
+            "AVA_INSTALL_DAEMON_ONLY",
             if package_root.ends_with("app-server-daemon") {
                 "1"
             } else {
                 "0"
             },
         )
-        .env("CODEX_RELEASE", "latest")
-        .env("CODEX_NON_INTERACTIVE", "1")
-        .env("CODEX_INSTALL_IF_LATEST", latest_guard)
-        .env("CODEX_INSTALL_IF_CURRENT", current_guard)
-        .env("CODEX_UPDATE_FROM_RELEASE", previous_release)
+        .env("AVA_RELEASE", "latest")
+        .env("AVA_NON_INTERACTIVE", "1")
+        .env("AVA_INSTALL_IF_LATEST", latest_guard)
+        .env("AVA_INSTALL_IF_CURRENT", current_guard)
+        .env("AVA_UPDATE_FROM_RELEASE", previous_release)
         .kill_on_drop(true)
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .context("failed to invoke standalone Codex updater")?;
+        .context("failed to invoke standalone Ava updater")?;
     #[cfg(windows)]
     let _installer_job = crate::backend::windows::installer_job(&child)?;
     let mut stdin = child
         .stdin
         .take()
-        .context("standalone Codex updater stdin was unavailable")?;
+        .context("standalone Ava updater stdin was unavailable")?;
     #[cfg(unix)]
     let mut terminate = std::pin::pin!(terminate);
     #[cfg(unix)]
@@ -606,7 +606,7 @@ async fn run_installer_script(
     }
     write_result
         .context("installer write was cancelled")?
-        .context("failed to pass standalone Codex updater to shell")?;
+        .context("failed to pass standalone Ava updater to shell")?;
     #[cfg(unix)]
     let status = tokio::select! {
         result = child.wait() => result,
@@ -617,12 +617,12 @@ async fn run_installer_script(
     };
     #[cfg(windows)]
     let status = child.wait().await;
-    let status = status.context("failed to wait for standalone Codex updater")?;
+    let status = status.context("failed to wait for standalone Ava updater")?;
 
     if status.success() {
         Ok(UpdateLoopControl::Continue)
     } else {
-        anyhow::bail!("standalone Codex updater exited with status {status}")
+        anyhow::bail!("standalone Ava updater exited with status {status}")
     }
 }
 
@@ -651,7 +651,7 @@ async fn fetch_installer_script(http: &impl InstallerHttp) -> Result<Vec<u8>> {
     match http.get(INSTALL_URL).await? {
         InstallerResponse::Success(body) => Ok(body),
         InstallerResponse::Unsuccessful { status } => {
-            anyhow::bail!("standalone Codex updater request failed with status {status}")
+            anyhow::bail!("standalone Ava updater request failed with status {status}")
         }
     }
 }
@@ -678,7 +678,7 @@ impl InstallerHttp for RouteAwareClientPool {
         let response = RouteAwareClientPool::get(self, url)
             .send()
             .await
-            .context("failed to fetch standalone Codex updater")?;
+            .context("failed to fetch standalone Ava updater")?;
         if !response.status().is_success() {
             return Ok(InstallerResponse::Unsuccessful {
                 status: response.status().as_u16(),
@@ -687,7 +687,7 @@ impl InstallerHttp for RouteAwareClientPool {
         let body = response
             .bytes()
             .await
-            .context("failed to read standalone Codex updater")?
+            .context("failed to read standalone Ava updater")?
             .to_vec();
         Ok(InstallerResponse::Success(body))
     }
@@ -704,7 +704,7 @@ struct Signal;
 impl Signal {
     async fn recv(&mut self) -> Option<()> {
         // An unreadable control path must stop the updater rather than disable shutdown.
-        let _ = codex_app_server_transport::daemon_shutdown_signal().await;
+        let _ = ava_app_server_transport::daemon_shutdown_signal().await;
         Some(())
     }
 }

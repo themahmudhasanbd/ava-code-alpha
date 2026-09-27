@@ -2,15 +2,15 @@
 
 use std::sync::Arc;
 
-use codex_core::config::Config;
-use codex_core::config::TokenBudgetConfig;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_history_notes_extension::install;
-use codex_login::AuthHeaders;
-use codex_login::AuthManager;
-use codex_login::CodexAuth;
+use ava_core::config::Config;
+use ava_core::config::TokenBudgetConfig;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_history_notes_extension::install;
+use ava_login::AuthHeaders;
+use ava_login::AuthManager;
+use ava_login::AvaAuth;
 use core_test_support::responses;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use http::HeaderMap;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -56,13 +56,13 @@ async fn history_images_reach_the_next_model_request() -> Result<(), Box<dyn std
         ],
     )
     .await;
-    let auth = CodexAuth::Headers(AuthHeaders::new(HeaderMap::new()));
+    let auth = AvaAuth::Headers(AuthHeaders::new(HeaderMap::new()));
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     install(
         &mut extensions,
         AuthManager::from_auth_for_testing(auth.clone()),
     );
-    let test = test_codex()
+    let test = test_ava()
         .with_auth(auth)
         .with_model_info_override("gpt-5.5", |model_info| {
             model_info.supports_experimental_context = true;

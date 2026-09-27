@@ -45,9 +45,9 @@ struct TestToolServer {
     supports_openai_form_elicitation: Arc<AtomicBool>,
 }
 
-const MEMO_URI: &str = "memo://codex/example-note";
+const MEMO_URI: &str = "memo://ava/example-note";
 const MEMO_CONTENT: &str = "This is a sample MCP resource served by the rmcp test server.";
-const SANDBOX_STATE_META_CAPABILITY: &str = "codex/sandbox-state-meta";
+const SANDBOX_STATE_META_CAPABILITY: &str = "ava/sandbox-state-meta";
 const SMALL_PNG_BASE64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==";
 const APP_ONLY_CWD_MARKER_FILE_ENV: &str = "MCP_TEST_APP_ONLY_CWD_MARKER_FILE";
 const DYNAMIC_SERVER_METADATA_ENV: &str = "MCP_TEST_DYNAMIC_SERVER_METADATA";
@@ -83,13 +83,13 @@ impl TestToolServer {
             .ok()
             .into_iter()
             .flat_map(|read_only| {
-                ["get_codex_security_daybreak_access", "get_daybreak_access"].map(|name| {
+                ["get_ava_security_daybreak_access", "get_daybreak_access"].map(|name| {
                     let mut tool = sandbox_meta_tool.clone();
                     tool.name = Cow::Borrowed(name);
                     tool.description =
                         Some(Cow::Borrowed("Return requested account access metadata."));
                     tool.annotations = Some(ToolAnnotations::new().read_only(read_only == "true"));
-                    if name == "get_codex_security_daybreak_access" {
+                    if name == "get_ava_security_daybreak_access" {
                         let mut meta = MetaObject::new();
                         meta.insert(
                             "openai/requestedEntitlements".to_string(),
@@ -352,16 +352,16 @@ impl TestToolServer {
         tool
     }
 
-    /// Tool intended for manual testing of Codex TUI rendering for MCP image tool results.
+    /// Tool intended for manual testing of Ava TUI rendering for MCP image tool results.
     ///
     /// This exists to exercise edge cases where a `CallToolResult.content` includes image blocks
     /// that aren't the first item (or includes invalid image blocks before a valid image).
     ///
-    /// Manual testing approach (Codex TUI):
-    /// - Build this binary: `cargo build -p codex-rmcp-client --bin test_stdio_server`
+    /// Manual testing approach (Ava TUI):
+    /// - Build this binary: `cargo build -p ava-rmcp-client --bin test_stdio_server`
     /// - Register it:
-    ///   - `codex mcp add mcpimg -- /abs/path/to/test_stdio_server`
-    /// - Then in Codex TUI, ask it to call:
+    ///   - `ava mcp add mcpimg -- /abs/path/to/test_stdio_server`
+    /// - Then in Ava TUI, ask it to call:
     ///   - `mcpimg.image_scenario({"scenario":"image_only"})`
     ///   - `mcpimg.image_scenario({"scenario":"image_only_original_detail"})`
     ///   - `mcpimg.image_scenario({"scenario":"text_then_image","caption":"Here is the image:"})`
@@ -419,9 +419,9 @@ impl TestToolServer {
     }
 
     fn memo_template() -> ResourceTemplate {
-        ResourceTemplate::new("memo://codex/{slug}", "codex-memo")
-            .with_title("Codex Memo")
-            .with_description("Template for memo://codex/{slug} resources used in tests.")
+        ResourceTemplate::new("memo://ava/{slug}", "ava-memo")
+            .with_title("Ava Memo")
+            .with_description("Template for memo://ava/{slug} resources used in tests.")
             .with_mime_type("text/plain")
     }
 
@@ -479,7 +479,7 @@ fn sync_barrier_map() -> &'static tokio::sync::Mutex<HashMap<String, SyncBarrier
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
-/// Scenarios for `image_scenario`, intended to exercise Codex TUI handling of MCP image outputs.
+/// Scenarios for `image_scenario`, intended to exercise Ava TUI handling of MCP image outputs.
 ///
 /// The key behavior under test is that the TUI should render an image output cell if *any*
 /// decodable image block exists in the tool result content, even if the first block is text or an
@@ -542,7 +542,7 @@ impl ServerHandler for TestToolServer {
         let server_info = match dynamic_server_process_label() {
             Some(process_label) => server_info
                 .with_server_info(
-                    Implementation::new("codex-rmcp-test-server", env!("CARGO_PKG_VERSION"))
+                    Implementation::new("ava-rmcp-test-server", env!("CARGO_PKG_VERSION"))
                         .with_title(process_label.clone()),
                 )
                 .with_instructions(format!("Use the tools from {process_label}.")),
@@ -654,7 +654,7 @@ impl ServerHandler for TestToolServer {
                     ]))
                 } else if args.code == "await nodeRepl.emitImage(await tab.screenshot())" {
                     let mut meta = MetaObject::new();
-                    meta.insert("codex/imageDetail".to_string(), json!("low"));
+                    meta.insert("ava/imageDetail".to_string(), json!("low"));
                     Ok(CallToolResult::success(vec![
                         rmcp::model::ContentBlock::text("guardian-visible-before-image"),
                         rmcp::model::ContentBlock::Image(
@@ -685,7 +685,7 @@ impl ServerHandler for TestToolServer {
                     .supports_openai_form_elicitation
                     .load(Ordering::Relaxed),
             }))),
-            "sandbox_meta" | "get_codex_security_daybreak_access" | "get_daybreak_access" => Ok(
+            "sandbox_meta" | "get_ava_security_daybreak_access" | "get_daybreak_access" => Ok(
                 Self::structured_result(serde_json::Value::Object(context.meta.0.0)),
             ),
             "cwd" => {
@@ -739,7 +739,7 @@ impl ServerHandler for TestToolServer {
             }
             "encrypted_output" => {
                 let mut meta = MetaObject::new();
-                meta.insert("codex/encryptedContent".to_string(), json!(true));
+                meta.insert("ava/encryptedContent".to_string(), json!(true));
                 let mut result = CallToolResult::success(vec![
                     rmcp::model::ContentBlock::text("Lookup completed"),
                     rmcp::model::ContentBlock::Text(
@@ -832,7 +832,7 @@ impl TestToolServer {
             ImageScenario::ImageOnlyOriginalDetail => {
                 let mut meta = MetaObject::new();
                 meta.insert(
-                    "codex/imageDetail".to_string(),
+                    "ava/imageDetail".to_string(),
                     serde_json::json!("original"),
                 );
                 content.push(rmcp::model::ContentBlock::Image(

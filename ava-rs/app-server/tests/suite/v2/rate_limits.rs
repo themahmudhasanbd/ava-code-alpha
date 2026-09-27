@@ -3,24 +3,24 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::ChatGptIdTokenClaims;
 use app_test_support::TestAppServer;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::AddCreditsNudgeCreditType;
-use codex_app_server_protocol::AddCreditsNudgeEmailStatus;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RateLimitReachedType;
-use codex_app_server_protocol::RateLimitResetCredit;
-use codex_app_server_protocol::RateLimitResetCreditStatus;
-use codex_app_server_protocol::RateLimitResetCreditsSummary;
-use codex_app_server_protocol::RateLimitResetType;
-use codex_app_server_protocol::RateLimitSnapshot;
-use codex_app_server_protocol::RateLimitWindow;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SendAddCreditsNudgeEmailParams;
-use codex_app_server_protocol::SendAddCreditsNudgeEmailResponse;
-use codex_app_server_protocol::SpendControlLimitSnapshot;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_protocol::account::PlanType as AccountPlanType;
+use ava_app_server_protocol::AddCreditsNudgeCreditType;
+use ava_app_server_protocol::AddCreditsNudgeEmailStatus;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RateLimitReachedType;
+use ava_app_server_protocol::RateLimitResetCredit;
+use ava_app_server_protocol::RateLimitResetCreditStatus;
+use ava_app_server_protocol::RateLimitResetCreditsSummary;
+use ava_app_server_protocol::RateLimitResetType;
+use ava_app_server_protocol::RateLimitSnapshot;
+use ava_app_server_protocol::RateLimitWindow;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SendAddCreditsNudgeEmailParams;
+use ava_app_server_protocol::SendAddCreditsNudgeEmailResponse;
+use ava_app_server_protocol::SpendControlLimitSnapshot;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_protocol::account::PlanType as AccountPlanType;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::path::Path;
@@ -40,10 +40,10 @@ const INTERNAL_ERROR_CODE: i64 = -32603;
 
 #[tokio::test]
 async fn get_account_rate_limits_requires_auth() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -61,7 +61,7 @@ async fn get_account_rate_limits_requires_auth() -> Result<()> {
     assert_eq!(error.error.code, INVALID_REQUEST_ERROR_CODE);
     assert_eq!(
         error.error.message,
-        "codex account authentication required to read rate limits"
+        "ava account authentication required to read rate limits"
     );
 
     Ok(())
@@ -69,10 +69,10 @@ async fn get_account_rate_limits_requires_auth() -> Result<()> {
 
 #[tokio::test]
 async fn get_account_rate_limits_requires_chatgpt_auth() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -105,9 +105,9 @@ async fn get_account_rate_limits_returns_snapshot(
     plan_type: &str,
     expected_plan: AccountPlanType,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -117,7 +117,7 @@ async fn get_account_rate_limits_returns_snapshot(
 
     let server = MockServer::start().await;
     let server_url = server.uri();
-    write_chatgpt_base_url(codex_home.path(), &server_url)?;
+    write_chatgpt_base_url(ava_home.path(), &server_url)?;
 
     let primary_reset_timestamp = chrono::DateTime::parse_from_rfc3339("2025-01-01T00:02:00Z")
         .expect("parse primary reset timestamp")
@@ -181,8 +181,8 @@ async fn get_account_rate_limits_returns_snapshot(
         },
         "additional_rate_limits": [
             {
-                "limit_name": "codex_other",
-                "metered_feature": "codex_other",
+                "limit_name": "ava_other",
+                "metered_feature": "ava_other",
                 "rate_limit": {
                     "allowed": true,
                     "limit_reached": false,
@@ -199,7 +199,7 @@ async fn get_account_rate_limits_returns_snapshot(
     });
 
     Mock::given(method("GET"))
-        .and(path("/api/codex/usage"))
+        .and(path("/api/ava/usage"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "account-123"))
         .respond_with(ResponseTemplate::new(200).set_body_json(response_body))
@@ -207,14 +207,14 @@ async fn get_account_rate_limits_returns_snapshot(
         .mount(&server)
         .await;
     Mock::given(method("GET"))
-        .and(path("/api/codex/rate-limit-reset-credits"))
+        .and(path("/api/ava/rate-limit-reset-credits"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "account-123"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "credits": [
                 {
                     "id": "credit-1",
-                    "reset_type": "codex_rate_limits",
+                    "reset_type": "ava_rate_limits",
                     "status": "available",
                     "granted_at": "2026-06-17T00:00:00Z",
                     "expires_at": "2026-07-17T00:00:00Z",
@@ -237,7 +237,7 @@ async fn get_account_rate_limits_returns_snapshot(
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -253,7 +253,7 @@ async fn get_account_rate_limits_returns_snapshot(
         account_id: Some("account-123".to_string()),
         rate_limit_upsell: Some(banner),
         rate_limits: RateLimitSnapshot {
-            limit_id: Some("codex".to_string()),
+            limit_id: Some("ava".to_string()),
             limit_name: None,
             normal_model_slug: None,
             primary: Some(RateLimitWindow {
@@ -280,9 +280,9 @@ async fn get_account_rate_limits_returns_snapshot(
         rate_limits_by_limit_id: Some(
             [
                 (
-                    "codex".to_string(),
+                    "ava".to_string(),
                     RateLimitSnapshot {
-                        limit_id: Some("codex".to_string()),
+                        limit_id: Some("ava".to_string()),
                         limit_name: None,
                         normal_model_slug: None,
                         primary: Some(RateLimitWindow {
@@ -310,10 +310,10 @@ async fn get_account_rate_limits_returns_snapshot(
                     },
                 ),
                 (
-                    "codex_other".to_string(),
+                    "ava_other".to_string(),
                     RateLimitSnapshot {
-                        limit_id: Some("codex_other".to_string()),
-                        limit_name: Some("codex_other".to_string()),
+                        limit_id: Some("ava_other".to_string()),
+                        limit_name: Some("ava_other".to_string()),
                         normal_model_slug: None,
                         primary: Some(RateLimitWindow {
                             used_percent: 88,
@@ -337,7 +337,7 @@ async fn get_account_rate_limits_returns_snapshot(
             credits: Some(vec![
                 RateLimitResetCredit {
                     id: "credit-1".to_string(),
-                    reset_type: RateLimitResetType::CodexRateLimits,
+                    reset_type: RateLimitResetType::AvaRateLimits,
                     status: RateLimitResetCreditStatus::Available,
                     granted_at: reset_credit_granted_at,
                     expires_at: Some(reset_credit_expires_at),
@@ -374,13 +374,13 @@ async fn get_account_rate_limits_filters_banner_by_identity(
     restricted: bool,
     permitted: bool,
 ) -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut claims = ChatGptIdTokenClaims::new()
         .plan_type("team")
         .chatgpt_user_id("user-a");
     claims.chatgpt_account_is_fedramp = restricted;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("workspace-a")
             .claims(claims),
@@ -388,7 +388,7 @@ async fn get_account_rate_limits_filters_banner_by_identity(
     )?;
 
     let server = MockServer::start().await;
-    write_chatgpt_base_url(codex_home.path(), &server.uri())?;
+    write_chatgpt_base_url(ava_home.path(), &server.uri())?;
     let banner = json!({
         "banner_type": "selected_model_limit", "model_slug": "test-model-a",
         "presentation": "inline", "title": "Usage limit reached",
@@ -396,7 +396,7 @@ async fn get_account_rate_limits_filters_banner_by_identity(
         "ctas": [{"action": "notify_owner", "label": "Notify owner"}]
     });
     Mock::given(method("GET"))
-        .and(path("/api/codex/usage"))
+        .and(path("/api/ava/usage"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "workspace-a"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
@@ -410,7 +410,7 @@ async fn get_account_rate_limits_filters_banner_by_identity(
         .mount(&server)
         .await;
     Mock::given(method("GET"))
-        .and(path("/api/codex/rate-limit-reset-credits"))
+        .and(path("/api/ava/rate-limit-reset-credits"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "available_count": 0, "credits": []
         })))
@@ -419,7 +419,7 @@ async fn get_account_rate_limits_filters_banner_by_identity(
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -427,13 +427,13 @@ async fn get_account_rate_limits_filters_banner_by_identity(
     let received: GetAccountRateLimitsResponse =
         timeout(DEFAULT_READ_TIMEOUT, mcp.read_response(request_id)).await??;
     let snapshot = json!({
-        "limitId": "codex", "planType": "team",
+        "limitId": "ava", "planType": "team",
         "primary": {"usedPercent": 42, "windowDurationMins": 60, "resetsAt": 2000000000}
     });
     let expected: GetAccountRateLimitsResponse = serde_json::from_value(json!({
         "ordinaryUsageAllowed": if permitted { Some(true) } else { None },
         "accountId": account, "rateLimitUpsell": if permitted { Some(banner) } else { None },
-        "rateLimits": snapshot, "rateLimitsByLimitId": {"codex": snapshot},
+        "rateLimits": snapshot, "rateLimitsByLimitId": {"ava": snapshot},
         "rateLimitResetCredits": {"availableCount": 0, "credits": []}
     }))?;
     assert_eq!(received, expected);
@@ -443,9 +443,9 @@ async fn get_account_rate_limits_filters_banner_by_identity(
 
 #[tokio::test]
 async fn get_account_rate_limits_preserves_count_when_reset_credit_details_fail() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .plan_type("pro"),
@@ -453,10 +453,10 @@ async fn get_account_rate_limits_preserves_count_when_reset_credit_details_fail(
     )?;
 
     let server = MockServer::start().await;
-    write_chatgpt_base_url(codex_home.path(), &server.uri())?;
+    write_chatgpt_base_url(ava_home.path(), &server.uri())?;
 
     Mock::given(method("GET"))
-        .and(path("/api/codex/usage"))
+        .and(path("/api/ava/usage"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "plan_type": "pro",
             "rate_limit": {
@@ -475,14 +475,14 @@ async fn get_account_rate_limits_preserves_count_when_reset_credit_details_fail(
         .mount(&server)
         .await;
     Mock::given(method("GET"))
-        .and(path("/api/codex/rate-limit-reset-credits"))
+        .and(path("/api/ava/rate-limit-reset-credits"))
         .respond_with(ResponseTemplate::new(500).set_body_string("boom"))
         .expect(1)
         .mount(&server)
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -505,10 +505,10 @@ async fn get_account_rate_limits_preserves_count_when_reset_credit_details_fail(
 
 #[tokio::test]
 async fn send_add_credits_nudge_email_requires_auth() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -530,7 +530,7 @@ async fn send_add_credits_nudge_email_requires_auth() -> Result<()> {
     assert_eq!(error.error.code, INVALID_REQUEST_ERROR_CODE);
     assert_eq!(
         error.error.message,
-        "codex account authentication required to notify workspace owner"
+        "ava account authentication required to notify workspace owner"
     );
 
     Ok(())
@@ -538,10 +538,10 @@ async fn send_add_credits_nudge_email_requires_auth() -> Result<()> {
 
 #[tokio::test]
 async fn send_add_credits_nudge_email_requires_chatgpt_auth() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -573,9 +573,9 @@ async fn send_add_credits_nudge_email_requires_chatgpt_auth() -> Result<()> {
 #[cfg_attr(target_os = "windows", ignore = "covered by Linux and macOS CI")]
 #[tokio::test]
 async fn send_add_credits_nudge_email_posts_expected_body() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .plan_type("pro"),
@@ -584,10 +584,10 @@ async fn send_add_credits_nudge_email_posts_expected_body() -> Result<()> {
 
     let server = MockServer::start().await;
     let server_url = server.uri();
-    write_chatgpt_base_url(codex_home.path(), &server_url)?;
+    write_chatgpt_base_url(ava_home.path(), &server_url)?;
 
     Mock::given(method("POST"))
-        .and(path("/api/codex/accounts/send_add_credits_nudge_email"))
+        .and(path("/api/ava/accounts/send_add_credits_nudge_email"))
         .and(header("authorization", "Bearer chatgpt-token"))
         .and(header("chatgpt-account-id", "account-123"))
         .and(wiremock::matchers::body_json(json!({
@@ -598,7 +598,7 @@ async fn send_add_credits_nudge_email_posts_expected_body() -> Result<()> {
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -621,9 +621,9 @@ async fn send_add_credits_nudge_email_posts_expected_body() -> Result<()> {
 #[cfg_attr(target_os = "windows", ignore = "covered by Linux and macOS CI")]
 #[tokio::test]
 async fn send_add_credits_nudge_email_maps_cooldown() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .plan_type("pro"),
@@ -632,16 +632,16 @@ async fn send_add_credits_nudge_email_maps_cooldown() -> Result<()> {
 
     let server = MockServer::start().await;
     let server_url = server.uri();
-    write_chatgpt_base_url(codex_home.path(), &server_url)?;
+    write_chatgpt_base_url(ava_home.path(), &server_url)?;
 
     Mock::given(method("POST"))
-        .and(path("/api/codex/accounts/send_add_credits_nudge_email"))
+        .and(path("/api/ava/accounts/send_add_credits_nudge_email"))
         .respond_with(ResponseTemplate::new(429))
         .mount(&server)
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -664,9 +664,9 @@ async fn send_add_credits_nudge_email_maps_cooldown() -> Result<()> {
 #[cfg_attr(target_os = "windows", ignore = "covered by Linux and macOS CI")]
 #[tokio::test]
 async fn send_add_credits_nudge_email_surfaces_backend_failure() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .plan_type("pro"),
@@ -675,16 +675,16 @@ async fn send_add_credits_nudge_email_surfaces_backend_failure() -> Result<()> {
 
     let server = MockServer::start().await;
     let server_url = server.uri();
-    write_chatgpt_base_url(codex_home.path(), &server_url)?;
+    write_chatgpt_base_url(ava_home.path(), &server_url)?;
 
     Mock::given(method("POST"))
-        .and(path("/api/codex/accounts/send_add_credits_nudge_email"))
+        .and(path("/api/ava/accounts/send_add_credits_nudge_email"))
         .respond_with(ResponseTemplate::new(500).set_body_string("boom"))
         .mount(&server)
         .await;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -726,7 +726,7 @@ async fn login_with_api_key(mcp: &mut TestAppServer, api_key: &str) -> Result<()
     Ok(())
 }
 
-fn write_chatgpt_base_url(codex_home: &Path, base_url: &str) -> std::io::Result<()> {
-    let config_toml = codex_home.join("config.toml");
+fn write_chatgpt_base_url(ava_home: &Path, base_url: &str) -> std::io::Result<()> {
+    let config_toml = ava_home.join("config.toml");
     std::fs::write(config_toml, format!("chatgpt_base_url = \"{base_url}\"\n"))
 }

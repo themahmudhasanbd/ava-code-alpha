@@ -133,7 +133,7 @@ fn file_exists(path: &std::path::Path) -> Option<PathBuf> {
 }
 
 // Store PowerShell can be inaccessible to the elevated sandbox account;
-// WindowsApps also contains valid Codex frameworks.
+// WindowsApps also contains valid Ava frameworks.
 fn is_inaccessible_windows_apps_powershell_path(path: &std::path::Path) -> bool {
     path.as_os_str()
         .to_string_lossy()
@@ -392,11 +392,11 @@ mod tests {
 
         for path in [
             r"C:\Program Files\PowerShell\7\pwsh.exe",
-            r"C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-813-10124-0_26.813.10124.0_x64__3k8sg7r9htsxt\dependencies\native\powershell\pwsh.exe",
-            r"C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-813-10124-0_26.813.10124.0_arm64__3k8sg7r9htsxt\dependencies\native\powershell\pwsh.exe",
-            r"C:\PROGRAM FILES\WINDOWSAPPS\OPENAI.CODEXPRIMARYRUNTIME.V26-813-10124-0\DEPENDENCIES\NATIVE\POWERSHELL\PWSH.EXE",
-            r"\\?\C:\Program Files\WindowsApps\OpenAI.CodexPrimaryRuntime.v26-813-10124-0\dependencies\native\powershell\pwsh.exe",
-            r"C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.exe",
+            r"C:\Program Files\WindowsApps\OpenAI.AvaPrimaryRuntime.v26-813-10124-0_26.813.10124.0_x64__3k8sg7r9htsxt\dependencies\native\powershell\pwsh.exe",
+            r"C:\Program Files\WindowsApps\OpenAI.AvaPrimaryRuntime.v26-813-10124-0_26.813.10124.0_arm64__3k8sg7r9htsxt\dependencies\native\powershell\pwsh.exe",
+            r"C:\PROGRAM FILES\WINDOWSAPPS\OPENAI.AVAPRIMARYRUNTIME.V26-813-10124-0\DEPENDENCIES\NATIVE\POWERSHELL\PWSH.EXE",
+            r"\\?\C:\Program Files\WindowsApps\OpenAI.AvaPrimaryRuntime.v26-813-10124-0\dependencies\native\powershell\pwsh.exe",
+            r"C:\Users\user\.cache\ava-runtimes\ava-primary-runtime\dependencies\native\powershell\pwsh.exe",
             r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
             r"C:\portable\NotWindowsApps\pwsh.EXE",
         ] {
@@ -409,7 +409,7 @@ mod tests {
     #[test]
     fn elevated_sandbox_filter_preserves_ordered_fallback() {
         let portable = PathBuf::from(
-            r"C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.exe",
+            r"C:\Users\user\.cache\ava-runtimes\ava-primary-runtime\dependencies\native\powershell\pwsh.exe",
         );
         let found = [
             PathBuf::from(

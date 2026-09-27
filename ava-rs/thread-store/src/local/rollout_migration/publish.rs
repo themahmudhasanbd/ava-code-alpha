@@ -21,8 +21,8 @@ use std::os::unix::fs::OpenOptionsExt;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-use codex_protocol::ThreadId;
-use codex_rollout::RolloutItem;
+use ava_protocol::ThreadId;
+use ava_rollout::RolloutItem;
 use tokio::fs::File;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncWriteExt;
@@ -34,16 +34,16 @@ use crate::ThreadStoreResult;
 
 const MIGRATION_JOURNAL_DIRECTORY: &str = "rollout-migrations";
 
-pub(super) fn migration_journal_path(codex_home: &Path, thread_id: ThreadId) -> PathBuf {
-    codex_home
+pub(super) fn migration_journal_path(ava_home: &Path, thread_id: ThreadId) -> PathBuf {
+    ava_home
         .join(MIGRATION_JOURNAL_DIRECTORY)
         .join(format!("{thread_id}.pending"))
 }
 
 pub(super) async fn pending_migration_thread_ids(
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> ThreadStoreResult<HashSet<ThreadId>> {
-    let mut entries = match tokio::fs::read_dir(codex_home.join(MIGRATION_JOURNAL_DIRECTORY)).await
+    let mut entries = match tokio::fs::read_dir(ava_home.join(MIGRATION_JOURNAL_DIRECTORY)).await
     {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(HashSet::new()),
@@ -169,7 +169,7 @@ pub(super) async fn rewrite_subagent_history_boundary(
         .read_until(b'\n', &mut head_bytes)
         .await
         .map_err(migration_error)?;
-    let mut head = codex_rollout::parse_rollout_line_bytes(&head_bytes).map_err(migration_error)?;
+    let mut head = ava_rollout::parse_rollout_line_bytes(&head_bytes).map_err(migration_error)?;
     let RolloutItem::SessionMeta(session_meta) = &mut head.item else {
         return Err(migration_error(
             "staged rollout head is not session metadata",

@@ -17,72 +17,72 @@ use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::rollout_path;
 use app_test_support::write_chatgpt_auth;
 use axum::Router;
-use codex_app_server::in_process;
-use codex_app_server::in_process::InProcessServerEvent;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::GitInfo;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::McpResourceContent;
-use codex_app_server_protocol::McpResourceReadParams;
-use codex_app_server_protocol::McpResourceReadResponse;
-use codex_app_server_protocol::McpServerToolCallParams;
-use codex_app_server_protocol::McpServerToolCallResponse;
-use codex_app_server_protocol::ProjectCreateParams;
-use codex_app_server_protocol::ProjectCreateResponse;
-use codex_app_server_protocol::ProjectDeleteParams;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadArchiveParams;
-use codex_app_server_protocol::ThreadDeleteParams;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateParams;
-use codex_app_server_protocol::ThreadMetadataUpdateResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadResumeParams;
-use codex_app_server_protocol::ThreadResumeResponse;
-use codex_app_server_protocol::ThreadSection;
-use codex_app_server_protocol::ThreadSectionMoveParams;
-use codex_app_server_protocol::ThreadSectionMoveResponse;
-use codex_app_server_protocol::ThreadSetNameParams;
-use codex_app_server_protocol::ThreadSetNameResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnStatus;
-use codex_app_server_protocol::UserInput;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::ThreadConfigContext;
-use codex_config::ThreadConfigLoader;
-use codex_config::ThreadConfigLoaderFuture;
-use codex_config::ThreadConfigSource;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::ARCHIVED_SESSIONS_SUBDIR;
-use codex_core::config::ConfigBuilder;
-use codex_exec_server::EnvironmentManager;
-use codex_features::Feature;
-use codex_feedback::CodexFeedback;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutRecorder;
-use codex_rollout::append_rollout_item_to_path;
-use codex_state::PINNED_THREAD_SECTION_ID;
-use codex_state::PINNED_THREAD_SECTION_NAME;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server::in_process;
+use ava_app_server::in_process::InProcessServerEvent;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::GitInfo;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::McpResourceContent;
+use ava_app_server_protocol::McpResourceReadParams;
+use ava_app_server_protocol::McpResourceReadResponse;
+use ava_app_server_protocol::McpServerToolCallParams;
+use ava_app_server_protocol::McpServerToolCallResponse;
+use ava_app_server_protocol::ProjectCreateParams;
+use ava_app_server_protocol::ProjectCreateResponse;
+use ava_app_server_protocol::ProjectDeleteParams;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadArchiveParams;
+use ava_app_server_protocol::ThreadDeleteParams;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateParams;
+use ava_app_server_protocol::ThreadMetadataUpdateResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadResumeParams;
+use ava_app_server_protocol::ThreadResumeResponse;
+use ava_app_server_protocol::ThreadSection;
+use ava_app_server_protocol::ThreadSectionMoveParams;
+use ava_app_server_protocol::ThreadSectionMoveResponse;
+use ava_app_server_protocol::ThreadSetNameParams;
+use ava_app_server_protocol::ThreadSetNameResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnStatus;
+use ava_app_server_protocol::UserInput;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::ThreadConfigContext;
+use ava_config::ThreadConfigLoader;
+use ava_config::ThreadConfigLoaderFuture;
+use ava_config::ThreadConfigSource;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::ARCHIVED_SESSIONS_SUBDIR;
+use ava_core::config::ConfigBuilder;
+use ava_exec_server::EnvironmentManager;
+use ava_features::Feature;
+use ava_feedback::AvaFeedback;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutRecorder;
+use ava_rollout::append_rollout_item_to_path;
+use ava_state::PINNED_THREAD_SECTION_ID;
+use ava_state::PINNED_THREAD_SECTION_NAME;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::responses;
 use futures::poll;
 use pretty_assertions::assert_eq;
@@ -121,13 +121,13 @@ use tokio::time::timeout;
 mod plugin_metadata_refresh;
 
 pub(super) const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(10);
-const TEST_RESOURCE_URI: &str = "test://codex/resource";
+const TEST_RESOURCE_URI: &str = "test://ava/resource";
 pub(super) const TEST_WIDGET_RESOURCE_URI: &str = "ui://widget/checkout-session.html";
-const TEST_BLOB_RESOURCE_URI: &str = "test://codex/resource.bin";
+const TEST_BLOB_RESOURCE_URI: &str = "test://ava/resource.bin";
 const TEST_RESOURCE_BLOB: &str = "YmluYXJ5LXJlc291cmNl";
 const TEST_RESOURCE_TEXT: &str = "Resource body from the MCP server.";
-const TEST_ERROR_RESOURCE_URI: &str = "test://codex/error";
-const TEST_ELICITATION_RESOURCE_URI: &str = "test://codex/elicitation";
+const TEST_ERROR_RESOURCE_URI: &str = "test://ava/error";
+const TEST_ELICITATION_RESOURCE_URI: &str = "test://ava/elicitation";
 const TEST_ELICITATION_RESOURCE_TEXT: &str = "Threadless elicitation was declined.";
 const SKILL_NAME: &str = "demo-plugin:deploy";
 const RAW_SKILL_DESCRIPTION: &str = "Deploy\nthrough the <hosted> orchestrator.";
@@ -158,7 +158,7 @@ async fn mcp_resource_read_returns_resource_contents() -> Result<()> {
     let (apps_server_url, _apps_server_calls, apps_server_handle) =
         start_resource_apps_mcp_server().await?;
     let responses_server_uri = responses_server.uri();
-    let (_codex_home, mut mcp) = start_resource_test_app_server(
+    let (_ava_home, mut mcp) = start_resource_test_app_server(
         &apps_server_url,
         &responses_server_uri,
         ResourceTestEnvironment::Auto,
@@ -177,7 +177,7 @@ async fn mcp_resource_read_returns_resource_contents() -> Result<()> {
             params: McpResourceReadParams {
                 thread_id: Some(thread.id),
                 origin_call_id: None,
-                server: "codex_apps".to_string(),
+                server: "ava_apps".to_string(),
                 uri: TEST_RESOURCE_URI.to_string(),
                 connector_id: None,
             },
@@ -196,18 +196,18 @@ async fn mcp_resource_read_returns_resource_contents() -> Result<()> {
 async fn mcp_resource_read_preserves_protocol_errors(protocol: ProtocolVersion) -> Result<()> {
     let responses_server = responses::start_mock_server().await;
     let (apps_server_url, _calls, apps_server_handle) = start_resource_apps_mcp_server().await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let config = MockResponsesConfig::new(&responses_server.uri()).with_extra_config(&format!(
-        "[mcp_servers.resource_server]\nurl = \"{apps_server_url}/api/codex/ps/mcp\""
+        "[mcp_servers.resource_server]\nurl = \"{apps_server_url}/api/ava/ps/mcp\""
     ));
     let config = if protocol == ProtocolVersion::V_2026_07_28 {
         config.enable_feature(Feature::Mcp20260728)
     } else {
         config.disable_feature(Feature::Mcp20260728)
     };
-    config.write(codex_home.path())?;
+    config.write(ava_home.path())?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized()
         .await?;
     let ThreadStartResponse { thread, .. } = mcp.start_thread(ThreadStartParams::default()).await?;
@@ -221,7 +221,7 @@ async fn mcp_resource_read_preserves_protocol_errors(protocol: ProtocolVersion) 
                 "data": {
                     "uri": TEST_ERROR_RESOURCE_URI,
                     "protocolVersion": protocol,
-                    "_meta": {"_codex_apps": {"connector_auth_failure": {
+                    "_meta": {"_ava_apps": {"connector_auth_failure": {
                         "is_auth_failure": true,
                         "connector_id": "calendar",
                         "requested_scopes": ["calendar.read"],
@@ -267,7 +267,7 @@ async fn orchestrator_skill_can_read_referenced_resource_without_an_executor() -
     let (apps_server_url, apps_server_calls, apps_server_handle) =
         start_resource_apps_mcp_server().await?;
     let responses_server_uri = responses_server.uri();
-    let (_codex_home, mut mcp) = start_resource_test_app_server(
+    let (_ava_home, mut mcp) = start_resource_test_app_server(
         &apps_server_url,
         &responses_server_uri,
         ResourceTestEnvironment::Auto,
@@ -451,7 +451,7 @@ async fn orchestrator_skill_can_read_referenced_resource_without_an_executor() -
                 "description": SKILL_DESCRIPTION,
                 "main_resource": SKILL_MAIN_PROMPT_URI,
             }],
-            "warnings": ["Orchestrator skill discovery stopped after 2 resource pages: failed to list orchestrator skill resources: resources/list failed for `codex_apps`: Mcp error: -32603: simulated later-page failure"],
+            "warnings": ["Orchestrator skill discovery stopped after 2 resource pages: failed to list orchestrator skill resources: resources/list failed for `ava_apps`: Mcp error: -32603: simulated later-page failure"],
             "next_cursor": null,
         })
     );
@@ -542,7 +542,7 @@ async fn local_executor_does_not_expose_orchestrator_skills() -> Result<()> {
     let (apps_server_url, _apps_server_calls, apps_server_handle) =
         start_resource_apps_mcp_server().await?;
     let responses_server_uri = responses_server.uri();
-    let (_codex_home, mut mcp) = start_resource_test_app_server(
+    let (_ava_home, mut mcp) = start_resource_test_app_server(
         &apps_server_url,
         &responses_server_uri,
         // This test exercises the implicit local executor.
@@ -613,7 +613,7 @@ async fn disabled_orchestrator_skills_do_not_expose_skills_namespace() -> Result
     let (apps_server_url, apps_server_calls, apps_server_handle) =
         start_resource_apps_mcp_server().await?;
     let responses_server_uri = responses_server.uri();
-    let (_codex_home, mut mcp) = start_resource_test_app_server_with_extra_config(
+    let (_ava_home, mut mcp) = start_resource_test_app_server_with_extra_config(
         &apps_server_url,
         &responses_server_uri,
         r#"
@@ -693,9 +693,9 @@ async fn mcp_resource_read_returns_contents_and_declines_elicitation_without_thr
     let (apps_server_url, _apps_server_calls, apps_server_handle) =
         start_resource_apps_mcp_server().await?;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 chatgpt_base_url = "{apps_server_url}"
@@ -709,7 +709,7 @@ apps = true
         ),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -718,7 +718,7 @@ apps = true
     )?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -728,7 +728,7 @@ apps = true
             params: McpResourceReadParams {
                 thread_id: None,
                 origin_call_id: None,
-                server: "codex_apps".to_string(),
+                server: "ava_apps".to_string(),
                 uri: TEST_RESOURCE_URI.to_string(),
                 connector_id: None,
             },
@@ -741,7 +741,7 @@ apps = true
             params: McpResourceReadParams {
                 thread_id: None,
                 origin_call_id: None,
-                server: "codex_apps".to_string(),
+                server: "ava_apps".to_string(),
                 uri: TEST_ELICITATION_RESOURCE_URI.to_string(),
                 connector_id: None,
             },
@@ -767,12 +767,12 @@ apps = true
 
 #[tokio::test]
 async fn mcp_resource_read_returns_error_for_unknown_thread() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     // This negative-path test does not need the stdio subprocess; keeping it
     // in-process avoids child-process teardown timing in nextest leak detection.
     let client = start_resource_in_process_client(
-        codex_home.path(),
-        Arc::new(codex_config::NoopThreadConfigLoader),
+        ava_home.path(),
+        Arc::new(ava_config::NoopThreadConfigLoader),
     )
     .await?;
 
@@ -782,7 +782,7 @@ async fn mcp_resource_read_returns_error_for_unknown_thread() -> Result<()> {
             params: McpResourceReadParams {
                 thread_id: Some("00000000-0000-4000-8000-000000000000".to_string()),
                 origin_call_id: None,
-                server: "codex_apps".to_string(),
+                server: "ava_apps".to_string(),
                 uri: TEST_RESOURCE_URI.to_string(),
                 connector_id: None,
             },
@@ -807,14 +807,14 @@ async fn metadata_and_mcp_requests_complete_while_unrelated_resume_loads_config(
     let responses_server = responses::start_mock_server().await;
     let (mcp_server_url, calls, mcp_server_handle) = start_resource_apps_mcp_server().await?;
     calls.tools_enabled.store(/*val*/ true, Ordering::Relaxed);
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_server.uri())
         .with_extra_config(&format!(
-            "[mcp_servers.resource_server]\nurl = \"{mcp_server_url}/api/codex/ps/mcp\""
+            "[mcp_servers.resource_server]\nurl = \"{mcp_server_url}/api/ava/ps/mcp\""
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         "2025-01-05T12-00-00",
         "2025-01-05T12:00:00Z",
         "Saved user message",
@@ -829,7 +829,7 @@ async fn metadata_and_mcp_requests_complete_while_unrelated_resume_loads_config(
         release: Notify::new(),
     });
     let client =
-        start_resource_in_process_client(codex_home.path(), blocked_resume.clone()).await?;
+        start_resource_in_process_client(ava_home.path(), blocked_resume.clone()).await?;
     let sender = client.sender();
     let ThreadResumeResponse { thread, .. } = serde_json::from_value(
         timeout(
@@ -838,7 +838,7 @@ async fn metadata_and_mcp_requests_complete_while_unrelated_resume_loads_config(
                 request_id: RequestId::Integer(1),
                 params: ThreadResumeParams {
                     thread_id,
-                    cwd: Some(codex_home.path().to_string_lossy().into_owned()),
+                    cwd: Some(ava_home.path().to_string_lossy().into_owned()),
                     ..Default::default()
                 },
             }),
@@ -1017,24 +1017,24 @@ async fn resume_revalidates_persisted_thread_after_config_load(
     mutation: ResumeMutation,
 ) -> Result<()> {
     let responses_server = create_mock_responses_server_repeating_assistant("Ready").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&responses_server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&responses_server.uri()).write(ava_home.path())?;
     let filename_timestamp = "2025-01-05T12-00-00";
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         filename_timestamp,
         "2025-01-05T12:00:00Z",
         "Saved user message",
         Some("mock_provider"),
         matches!(mutation, ResumeMutation::GitMetadata).then(|| {
-            codex_protocol::protocol::GitInfo {
+            ava_protocol::protocol::GitInfo {
                 commit_hash: None,
                 branch: Some("feature/before-resume".to_string()),
                 repository_url: None,
             }
         }),
     )?;
-    let path = rollout_path(codex_home.path(), filename_timestamp, &thread_id);
+    let path = rollout_path(ava_home.path(), filename_timestamp, &thread_id);
     let resume_cwd = TempDir::new()?;
     let blocked_resume = Arc::new(BlockedResumeConfig {
         cwd: AbsolutePathBuf::from_absolute_path(resume_cwd.path())?,
@@ -1043,7 +1043,7 @@ async fn resume_revalidates_persisted_thread_after_config_load(
         release: Notify::new(),
     });
     let mut client =
-        start_resource_in_process_client(codex_home.path(), blocked_resume.clone()).await?;
+        start_resource_in_process_client(ava_home.path(), blocked_resume.clone()).await?;
     let sender = client.sender();
     let project_id = if matches!(
         mutation,
@@ -1217,8 +1217,8 @@ async fn resume_revalidates_persisted_thread_after_config_load(
             // Check persisted metadata after the resumed writer appends a turn
             // and shuts down; an in-memory response alone can hide stale writes.
             let reader = start_resource_in_process_client(
-                codex_home.path(),
-                Arc::new(codex_config::NoopThreadConfigLoader),
+                ava_home.path(),
+                Arc::new(ava_config::NoopThreadConfigLoader),
             )
             .await?;
             let read_result = timeout(
@@ -1246,7 +1246,7 @@ async fn resume_revalidates_persisted_thread_after_config_load(
                 !path.exists(),
                 "resume must not recreate the active rollout"
             );
-            let archived_path = codex_home
+            let archived_path = ava_home
                 .path()
                 .join(ARCHIVED_SESSIONS_SUBDIR)
                 .join(path.file_name().expect("rollout filename"));
@@ -1271,18 +1271,18 @@ async fn resume_revalidates_persisted_thread_after_config_load(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn resume_reloads_config_when_saved_workspace_roots_change() -> Result<()> {
     let responses_server = create_mock_responses_server_repeating_assistant("Ready").await;
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&responses_server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&responses_server.uri()).write(ava_home.path())?;
     let filename_timestamp = "2025-01-05T12-00-00";
     let thread_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         filename_timestamp,
         "2025-01-05T12:00:00Z",
         "Saved user message",
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    let path = rollout_path(codex_home.path(), filename_timestamp, &thread_id);
+    let path = rollout_path(ava_home.path(), filename_timestamp, &thread_id);
     let resume_cwd = TempDir::new()?;
     let saved_workspace = TempDir::new()?;
     let cwd = AbsolutePathBuf::from_absolute_path(resume_cwd.path())?;
@@ -1313,7 +1313,7 @@ async fn resume_reloads_config_when_saved_workspace_roots_change() -> Result<()>
         release: Notify::new(),
     });
     let client =
-        start_resource_in_process_client(codex_home.path(), blocked_resume.clone()).await?;
+        start_resource_in_process_client(ava_home.path(), blocked_resume.clone()).await?;
     let sender = client.sender();
     let mut resume = pin!(sender.request(ClientRequest::ThreadResume {
         request_id: RequestId::Integer(1),
@@ -1428,20 +1428,20 @@ impl ThreadConfigLoader for BlockedResumeConfig {
 }
 
 async fn start_resource_in_process_client(
-    codex_home: &Path,
+    ava_home: &Path,
     thread_config_loader: Arc<dyn ThreadConfigLoader>,
 ) -> Result<in_process::InProcessClientHandle> {
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     // Keep unrelated plugin repository syncs out of these in-process RPC tests.
     let cli_overrides = vec![("features.plugins".to_string(), toml::Value::Boolean(false))];
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.to_path_buf())
-        .fallback_cwd(Some(codex_home.to_path_buf()))
+        .ava_home(ava_home.to_path_buf())
+        .fallback_cwd(Some(ava_home.to_path_buf()))
         .cli_overrides(cli_overrides.clone())
         .loader_overrides(loader_overrides.clone())
         .build()
         .await?;
-    let state_db = codex_rollout::state_db::try_init(&config).await?;
+    let state_db = ava_rollout::state_db::try_init(&config).await?;
     // Metadata, persistence, and HTTP MCP do not need local execution or shell startup.
     let environment_manager = Arc::new(EnvironmentManager::without_environments(
         config.http_client_factory(),
@@ -1454,16 +1454,16 @@ async fn start_resource_in_process_client(
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
         thread_config_loader,
-        feedback: CodexFeedback::new(),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: Some(state_db),
         environment_manager,
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli,
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },
@@ -1497,7 +1497,7 @@ async fn start_resource_test_app_server_with_extra_config(
     extra_config: &str,
     environment: ResourceTestEnvironment,
 ) -> Result<(TempDir, TestAppServer)> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     MockResponsesConfig::new(responses_server_uri)
         .with_approval_policy("on-request")
         .with_root_config(&format!(
@@ -1507,9 +1507,9 @@ async fn start_resource_test_app_server_with_extra_config(
         .with_extra_config(&format!(
             "[skills]\ninclude_instructions = true\n{extra_config}"
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("account-123")
             .chatgpt_user_id("user-123")
@@ -1517,14 +1517,14 @@ async fn start_resource_test_app_server_with_extra_config(
         AuthCredentialsStoreMode::File,
     )?;
 
-    let builder = TestAppServer::builder().with_codex_home(codex_home.path());
+    let builder = TestAppServer::builder().with_ava_home(ava_home.path());
     let builder = match environment {
         ResourceTestEnvironment::Auto => builder,
         // The Local caller explicitly exercises the implicit local executor.
         ResourceTestEnvironment::Local => builder.without_auto_env(),
     };
     let mcp = builder.build_initialized().await?;
-    Ok((codex_home, mcp))
+    Ok((ava_home, mcp))
 }
 
 pub(super) enum ResourceTestEnvironment {
@@ -1549,7 +1549,7 @@ pub(super) async fn start_resource_apps_mcp_server()
         Arc::new(LocalSessionManager::default()),
         StreamableHttpServerConfig::default(),
     );
-    let router = Router::new().nest_service("/api/codex/ps/mcp", mcp_service);
+    let router = Router::new().nest_service("/api/ava/ps/mcp", mcp_service);
     let apps_server_handle = tokio::spawn(async move {
         let _ = axum::serve(listener, router).await;
     });
@@ -1643,7 +1643,7 @@ impl ServerHandler for ResourceAppsMcpServer {
                         "link_id": format!("link_{connector_id}"),
                         "ui": ui,
                         "openai/outputTemplate": TEST_WIDGET_RESOURCE_URI,
-                        "_codex_apps": {
+                        "_ava_apps": {
                             "resource_uri": format!(
                                 "/{connector_id}/link_{connector_id}/{connector_id}_product_search"
                             ),
@@ -1733,7 +1733,7 @@ impl ServerHandler for ResourceAppsMcpServer {
                 Some(json!({
                     "uri": uri,
                     "protocolVersion": context.protocol_version(),
-                    "_meta": {"_codex_apps": {"connector_auth_failure": {
+                    "_meta": {"_ava_apps": {"connector_auth_failure": {
                         "is_auth_failure": true,
                         "connector_id": "calendar",
                         "requested_scopes": ["calendar.read"],
@@ -1746,7 +1746,7 @@ impl ServerHandler for ResourceAppsMcpServer {
                 .meta
                 .0
                 .0
-                .get("x-codex-turn-metadata")
+                .get("x-ava-turn-metadata")
                 .and_then(|metadata| metadata.get("mcp_request_meta"));
             let connector_id = request_meta
                 .and_then(|metadata| metadata.pointer("/selected_connector_ids/0"))

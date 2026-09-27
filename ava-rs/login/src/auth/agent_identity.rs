@@ -2,22 +2,22 @@ use std::env;
 use std::future::Future;
 use std::sync::Arc;
 
-use codex_agent_identity::AgentIdentityKey;
-use codex_agent_identity::ChatGptEnvironment;
-use codex_agent_identity::agent_identity_jwks_url;
-use codex_agent_identity::agent_registration_url;
-use codex_agent_identity::agent_task_registration_url;
-use codex_agent_identity::build_abom;
-use codex_agent_identity::decode_agent_identity_jwt;
-use codex_agent_identity::fetch_agent_identity_jwks;
-use codex_agent_identity::generate_agent_key_material;
-use codex_agent_identity::is_retryable_registration_error;
-use codex_agent_identity::public_key_ssh_from_private_key_pkcs8_base64;
-use codex_agent_identity::register_agent_identity;
-use codex_agent_identity::register_agent_task;
-use codex_http_client::HttpClient;
-use codex_protocol::account::PlanType as AccountPlanType;
-use codex_protocol::protocol::SessionSource;
+use ava_agent_identity::AgentIdentityKey;
+use ava_agent_identity::ChatGptEnvironment;
+use ava_agent_identity::agent_identity_jwks_url;
+use ava_agent_identity::agent_registration_url;
+use ava_agent_identity::agent_task_registration_url;
+use ava_agent_identity::build_abom;
+use ava_agent_identity::decode_agent_identity_jwt;
+use ava_agent_identity::fetch_agent_identity_jwks;
+use ava_agent_identity::generate_agent_key_material;
+use ava_agent_identity::is_retryable_registration_error;
+use ava_agent_identity::public_key_ssh_from_private_key_pkcs8_base64;
+use ava_agent_identity::register_agent_identity;
+use ava_agent_identity::register_agent_task;
+use ava_http_client::HttpClient;
+use ava_protocol::account::PlanType as AccountPlanType;
+use ava_protocol::protocol::SessionSource;
 use thiserror::Error;
 
 use crate::default_client::create_default_auth_client;
@@ -26,8 +26,8 @@ use crate::outbound_proxy::AuthRouteConfig;
 use super::storage::AgentIdentityAuthRecord;
 
 pub(super) const MAX_AGENT_IDENTITY_BOOTSTRAP_ATTEMPTS: usize = 3;
-const CODEX_AGENT_IDENTITY_AUTHAPI_BASE_URL_ENV_VAR: &str = "CODEX_AGENT_IDENTITY_AUTHAPI_BASE_URL";
-const CODEX_AGENT_IDENTITY_JWKS_BASE_URL_ENV_VAR: &str = "CODEX_AGENT_IDENTITY_JWKS_BASE_URL";
+const AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL_ENV_VAR: &str = "AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL";
+const AVA_AGENT_IDENTITY_JWKS_BASE_URL_ENV_VAR: &str = "AVA_AGENT_IDENTITY_JWKS_BASE_URL";
 
 fn agent_identity_endpoint_override(environment_variable: &str) -> Option<String> {
     env::var(environment_variable)
@@ -48,9 +48,9 @@ pub(super) fn agent_identity_authapi_base_url(
         None => Ok(ChatGptEnvironment::default()),
     };
     let authapi_base_url =
-        agent_identity_endpoint_override(CODEX_AGENT_IDENTITY_AUTHAPI_BASE_URL_ENV_VAR);
+        agent_identity_endpoint_override(AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL_ENV_VAR);
     let jwks_base_url =
-        agent_identity_endpoint_override(CODEX_AGENT_IDENTITY_JWKS_BASE_URL_ENV_VAR);
+        agent_identity_endpoint_override(AVA_AGENT_IDENTITY_JWKS_BASE_URL_ENV_VAR);
 
     match (environment, authapi_base_url) {
         (Ok(_), Some(base_url)) => Ok(base_url),
@@ -257,7 +257,7 @@ pub(super) async fn verified_record_from_jwt(
 ) -> std::io::Result<AgentIdentityAuthRecord> {
     AgentIdentityAuthRecord::from_agent_identity_jwt(jwt)?;
     let jwks_base_url =
-        match agent_identity_endpoint_override(CODEX_AGENT_IDENTITY_JWKS_BASE_URL_ENV_VAR) {
+        match agent_identity_endpoint_override(AVA_AGENT_IDENTITY_JWKS_BASE_URL_ENV_VAR) {
             Some(base_url) => {
                 if !agent_identity_jwks_base_url_matches(chatgpt_base_url, &base_url) {
                     ChatGptEnvironment::from_chatgpt_base_url(chatgpt_base_url)
@@ -390,7 +390,7 @@ mod tests {
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
 
-    use codex_agent_identity::generate_agent_key_material;
+    use ava_agent_identity::generate_agent_key_material;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use serial_test::serial;
@@ -457,7 +457,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial(codex_auth_env)]
+    #[serial(ava_auth_env)]
     async fn from_jwt_registers_task() -> anyhow::Result<()> {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
@@ -542,7 +542,7 @@ mod tests {
             &header,
             &json!({
                 "iss": "https://chatgpt.com/codex-backend/agent-identity",
-                "aud": "codex-app-server",
+                "aud": "ava-app-server",
                 "iat": 1_700_000_000usize,
                 "exp": 4_000_000_000usize,
                 "agent_runtime_id": record.agent_runtime_id,

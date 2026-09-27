@@ -1,11 +1,11 @@
 use crate::PluginsConfigInput;
 use crate::remote::RemotePluginCatalogError;
-use codex_login::CodexAuth;
-use codex_tools::DiscoverableTool;
+use ava_login::AvaAuth;
+use ava_tools::DiscoverableTool;
 
 pub async fn hydrate_selected_recommended_plugin_install_metadata(
     config: &PluginsConfigInput,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     mut tool: DiscoverableTool,
 ) -> Result<Option<DiscoverableTool>, RemotePluginCatalogError> {
     let DiscoverableTool::Plugin(plugin) = &mut tool else {

@@ -1,15 +1,15 @@
 use anyhow::Result;
-use codex_core::windows_sandbox::WindowsSandboxLevelExt;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_features::Feature;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::protocol::EnvironmentConfig;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelections;
+use ava_core::windows_sandbox::WindowsSandboxLevelExt;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_features::Feature;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::protocol::EnvironmentConfig;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelections;
 use core_test_support::responses::ResponseMock;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -19,7 +19,7 @@ use core_test_support::responses::mount_sse_once_match;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::submit_thread_settings;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -171,7 +171,7 @@ async fn v2_nested_spawn_checks_shared_active_execution_capacity() -> Result<()>
     )
     .await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.6-sol")
         .with_config(|config| {
             config
@@ -219,7 +219,7 @@ async fn child_turn_start_preserves_root_attribution() -> Result<()> {
     )
     .await;
     let worker = mount_completed_worker(&server, FIRST_TASK, "first-call").await;
-    let test = test_codex()
+    let test = test_ava()
         .with_model("gpt-5.6-sol")
         .with_config(|config| {
             config.features.enable(Feature::Collab).unwrap();
@@ -239,7 +239,7 @@ async fn child_turn_start_preserves_root_attribution() -> Result<()> {
         thread.flush_rollout().await?;
         let history = thread.load_history(/*include_archived*/ false).await?;
         for item in history.items {
-            if let codex_history::RolloutItem::EventMsg(EventMsg::TurnStarted(event)) = item {
+            if let ava_history::RolloutItem::EventMsg(EventMsg::TurnStarted(event)) = item {
                 starts.push((thread_id, event));
             }
         }
@@ -313,7 +313,7 @@ async fn v2_residency_reload_preserves_inherited_environment_and_tools(
     let reloaded_worker_request =
         mount_completed_worker(&server, FOLLOWUP_TASK, "followup-call").await;
 
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_model("gpt-5.6-sol")
         .with_exec_server_url("none")
         .with_config(|config| {
@@ -405,7 +405,7 @@ async fn v2_residency_reload_preserves_inherited_environment_and_tools(
     let mut created_threads = test.thread_manager.subscribe_thread_created();
 
     submit_thread_settings(
-        &test.codex,
+        &test.ava-code,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
@@ -434,7 +434,7 @@ async fn v2_residency_reload_preserves_inherited_environment_and_tools(
     }
     if reload == ResidencyReload::Sender {
         submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 environments: Some(TurnEnvironmentSelections::new(
                     test.config.cwd.clone(),
@@ -464,7 +464,7 @@ async fn v2_residency_reload_preserves_inherited_environment_and_tools(
 
     if reload != ResidencyReload::Sender {
         submit_thread_settings(
-            &test.codex,
+            &test.ava-code,
             ThreadSettingsOverrides {
                 environments: Some(TurnEnvironmentSelections::new(
                     test.config.cwd.clone(),
@@ -475,7 +475,7 @@ async fn v2_residency_reload_preserves_inherited_environment_and_tools(
         )
         .await?;
         assert_eq!(
-            test.codex.config_snapshot().await.environments.environments,
+            test.ava-code.config_snapshot().await.environments.environments,
             vec![parent_environment]
         );
         let result = test

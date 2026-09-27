@@ -2,23 +2,23 @@
 
 use super::*;
 use app_test_support::create_final_assistant_message_sse_response as assistant_response;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ReviewDelivery;
-use codex_app_server_protocol::ReviewStartParams;
-use codex_app_server_protocol::ReviewStartResponse;
-use codex_app_server_protocol::ReviewTarget;
-use codex_app_server_protocol::SessionSource;
-use codex_app_server_protocol::ThreadClosedNotification;
-use codex_app_server_protocol::ThreadListResponse;
-use codex_app_server_protocol::ThreadReadParams;
-use codex_app_server_protocol::ThreadReadResponse;
-use codex_app_server_protocol::ThreadSourceKind;
-use codex_app_server_protocol::ThreadUnsubscribeParams;
-use codex_app_server_protocol::ThreadUnsubscribeResponse;
-use codex_app_server_protocol::TurnInterruptParams;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ReviewDelivery;
+use ava_app_server_protocol::ReviewStartParams;
+use ava_app_server_protocol::ReviewStartResponse;
+use ava_app_server_protocol::ReviewTarget;
+use ava_app_server_protocol::SessionSource;
+use ava_app_server_protocol::ThreadClosedNotification;
+use ava_app_server_protocol::ThreadListResponse;
+use ava_app_server_protocol::ThreadReadParams;
+use ava_app_server_protocol::ThreadReadResponse;
+use ava_app_server_protocol::ThreadSourceKind;
+use ava_app_server_protocol::ThreadUnsubscribeParams;
+use ava_app_server_protocol::ThreadUnsubscribeResponse;
+use ava_app_server_protocol::TurnInterruptParams;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_protocol::protocol::SubAgentSource;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
 use pretty_assertions::assert_eq;
@@ -73,15 +73,15 @@ async fn managed_reviewer_refreshes_global_instructions_before_reuse() -> Result
     }
     let (server, _completions) = start_streaming_sse_server(responses).await;
     let (mcp_url, mcp_server) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
-    let instructions_path = codex_home.path().join("AGENTS.md");
+    let ava_home = TempDir::new()?;
+    let instructions_path = ava_home.path().join("AGENTS.md");
     sync_config(server.uri())
         .with_extra_config(&format!(
             "[mcp_servers.{TEST_SERVER_NAME}]\nurl = \"{mcp_url}/mcp\"\ndefault_tools_approval_mode = \"prompt\""
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     let old_instructions = "Keep this project private.";
@@ -170,18 +170,18 @@ async fn managed_reviewers_reuse_fork_and_resume_after_parent_shutdown(
     )
     .await;
     let (mcp_url, mcp_server) = start_mcp_server(/*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("AGENTS.md"),
+        ava_home.path().join("AGENTS.md"),
         "Keep this project private.",
     )?;
     sync_config(server.uri())
         .with_extra_config(&format!(
             "[mcp_servers.{TEST_SERVER_NAME}]\nurl = \"{mcp_url}/mcp\"\ndefault_tools_approval_mode = \"prompt\""
         ))
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     let parent = app.start_thread(ThreadStartParams::default()).await?.thread;
@@ -266,7 +266,7 @@ async fn managed_reviewers_reuse_fork_and_resume_after_parent_shutdown(
             format!("guardian:{}", parent.id)
         );
         let metadata: Value = serde_json::from_str(
-            review["client_metadata"]["x-codex-turn-metadata"]
+            review["client_metadata"]["x-ava-turn-metadata"]
                 .as_str()
                 .expect("turn metadata"),
         )?;
@@ -398,17 +398,17 @@ async fn inline_review_delegate_runs_strict_guardian_assessment() -> Result<()> 
     .await;
     let (mcp_url, mcp_server) =
         start_mcp_server_with_tools(&["js"], /*sensitive_action*/ None).await?;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     sync_config(&server.uri())
         .with_extra_config(&format!("[mcp_servers.node_repl]\nurl = \"{mcp_url}/mcp\"\ndefault_tools_approval_mode = \"auto\""))
-        .write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
-    let mut model = codex_core::test_support::construct_model_info_offline(MODEL, &config);
+        .write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
+    let mut model = ava_core::test_support::construct_model_info_offline(MODEL, &config);
     // Strict MCP approvals must work under the inline delegate's `never` policy.
     model.node_repl_auto_review_required = true;
-    write_models_cache_with_models(codex_home.path(), vec![model]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![model]).await?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(TIMEOUT)
         .await?;
     let parent = app.start_thread(ThreadStartParams::default()).await?.thread;

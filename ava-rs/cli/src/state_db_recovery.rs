@@ -3,8 +3,8 @@
 //! This keeps user-facing backup and lock-contention handling out of the main
 //! CLI dispatch path while preserving the TUI startup error as the boundary type.
 
-use codex_state::RuntimeDbBackup;
-use codex_tui::LocalStateDbStartupError;
+use ava_state::RuntimeDbBackup;
+use ava_tui::LocalStateDbStartupError;
 use std::io::IsTerminal;
 use std::path::Path;
 
@@ -14,11 +14,11 @@ pub(crate) fn startup_error(err: &std::io::Error) -> Option<&LocalStateDbStartup
 }
 
 pub(crate) fn is_locked(detail: &str) -> bool {
-    codex_state::sqlite_error_detail_is_lock(detail)
+    ava_state::sqlite_error_detail_is_lock(detail)
 }
 
 pub(crate) fn is_corruption(detail: &str) -> bool {
-    codex_state::sqlite_error_detail_is_corruption(detail)
+    ava_state::sqlite_error_detail_is_corruption(detail)
 }
 
 pub(crate) fn is_auto_backup_recoverable(startup_error: &LocalStateDbStartupError) -> bool {
@@ -34,24 +34,24 @@ fn sqlite_home_is_blocking_file(startup_error: &LocalStateDbStartupError) -> boo
 }
 
 pub(crate) fn print_auto_backup_start(startup_error: &LocalStateDbStartupError) {
-    eprintln!("Codex couldn't start because its local database appears to be damaged.");
-    eprintln!("Moving the damaged local database aside so Codex can rebuild it from saved data.");
+    eprintln!("Ava couldn't start because its local database appears to be damaged.");
+    eprintln!("Moving the damaged local database aside so Ava can rebuild it from saved data.");
     print_technical_details(startup_error);
 }
 
 pub(crate) async fn backup_files_for_fresh_start(
     startup_error: &LocalStateDbStartupError,
 ) -> std::io::Result<Vec<RuntimeDbBackup>> {
-    codex_state::backup_runtime_db_for_fresh_start(startup_error.database_path()).await
+    ava_state::backup_runtime_db_for_fresh_start(startup_error.database_path()).await
 }
 
 pub(crate) fn confirm_fresh_start_rebuild(
     startup_error: &LocalStateDbStartupError,
     backups: &[RuntimeDbBackup],
 ) -> std::io::Result<()> {
-    eprintln!("Codex rebuilt its local database.");
+    eprintln!("Ava rebuilt its local database.");
     eprintln!(
-        "Codex detected a damaged local database, moved it into a backup folder, and will continue startup with a fresh database."
+        "Ava detected a damaged local database, moved it into a backup folder, and will continue startup with a fresh database."
     );
     eprintln!("Database path: {}", startup_error.database_path().display());
     if let Some(backup_folder) = backup_folder(backups) {
@@ -71,15 +71,15 @@ pub(crate) fn confirm_fresh_start_rebuild(
 }
 
 pub(crate) fn print_diagnostic_guidance(startup_error: &LocalStateDbStartupError) {
-    eprintln!("Codex couldn't start because its local database appears to be damaged.");
-    eprintln!("Run `codex doctor` to check your setup and get next-step guidance.");
+    eprintln!("Ava couldn't start because its local database appears to be damaged.");
+    eprintln!("Run `ava doctor` to check your setup and get next-step guidance.");
     eprintln!("If this keeps happening, share the technical details below when asking for help.");
     print_technical_details(startup_error);
 }
 
 pub(crate) fn print_locked_guidance(startup_error: &LocalStateDbStartupError) {
-    eprintln!("Codex couldn't start because another Codex process is using its local data.");
-    eprintln!("Quit any other copies of Codex that may still be running, then try again.");
+    eprintln!("Ava couldn't start because another Ava process is using its local data.");
+    eprintln!("Quit any other copies of Ava that may still be running, then try again.");
     print_technical_details(startup_error);
 }
 
@@ -96,7 +96,7 @@ fn backup_folder(backups: &[RuntimeDbBackup]) -> Option<&Path> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
     use tempfile::TempDir;
@@ -104,7 +104,7 @@ mod tests {
     #[tokio::test]
     async fn backup_backs_up_only_failed_database_file() -> std::io::Result<()> {
         let temp_dir = TempDir::new()?;
-        let sqlite = codex_state::SqliteConfig::new_for_testing(temp_dir.path().abs());
+        let sqlite = ava_state::SqliteConfig::new_for_testing(temp_dir.path().abs());
         let state_path = sqlite.state_db_path();
         let failed_db_path = sqlite.logs_db_path();
         tokio::fs::write(state_path.as_path(), b"state").await?;
@@ -132,7 +132,7 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let sqlite_home = temp_dir.path().join("sqlite-home");
         tokio::fs::write(sqlite_home.as_path(), b"not-a-directory").await?;
-        let sqlite = codex_state::SqliteConfig::new_for_testing(sqlite_home.as_path().abs());
+        let sqlite = ava_state::SqliteConfig::new_for_testing(sqlite_home.as_path().abs());
         let startup_error =
             LocalStateDbStartupError::new(sqlite.state_db_path(), "File exists".to_string());
 

@@ -1,41 +1,41 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::Project;
-use codex_app_server_protocol::ProjectChangeType;
-use codex_app_server_protocol::ProjectChangedNotification;
-use codex_app_server_protocol::ProjectCreateParams;
-use codex_app_server_protocol::ProjectCreateResponse;
-use codex_app_server_protocol::ProjectDeleteParams;
-use codex_app_server_protocol::ProjectDeleteResponse;
-use codex_app_server_protocol::ProjectImportParams;
-use codex_app_server_protocol::ProjectImportResponse;
-use codex_app_server_protocol::ProjectListParams;
-use codex_app_server_protocol::ProjectListResponse;
-use codex_app_server_protocol::ProjectMoveParams;
-use codex_app_server_protocol::ProjectMoveResponse;
-use codex_app_server_protocol::ProjectReadParams;
-use codex_app_server_protocol::ProjectReadResponse;
-use codex_app_server_protocol::ProjectRoot;
-use codex_app_server_protocol::ProjectSortKey;
-use codex_app_server_protocol::ProjectUpdateParams;
-use codex_app_server_protocol::ProjectUpdateResponse;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadProjectUpdatedNotification;
-use codex_thread_store::CreateProjectParams as StoreCreateProjectParams;
-use codex_thread_store::ListProjectsParams as StoreListProjectsParams;
-use codex_thread_store::MoveProjectParams as StoreMoveProjectParams;
-use codex_thread_store::ProjectMoveOutcome;
-use codex_thread_store::ProjectSortKey as StoreProjectSortKey;
-use codex_thread_store::SortDirection as StoreSortDirection;
-use codex_thread_store::StoredProject;
-use codex_thread_store::StoredProjectRoot;
-use codex_thread_store::ThreadStore;
-use codex_thread_store::ThreadStoreError;
-use codex_thread_store::UpdateProjectParams as StoreUpdateProjectParams;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::Project;
+use ava_app_server_protocol::ProjectChangeType;
+use ava_app_server_protocol::ProjectChangedNotification;
+use ava_app_server_protocol::ProjectCreateParams;
+use ava_app_server_protocol::ProjectCreateResponse;
+use ava_app_server_protocol::ProjectDeleteParams;
+use ava_app_server_protocol::ProjectDeleteResponse;
+use ava_app_server_protocol::ProjectImportParams;
+use ava_app_server_protocol::ProjectImportResponse;
+use ava_app_server_protocol::ProjectListParams;
+use ava_app_server_protocol::ProjectListResponse;
+use ava_app_server_protocol::ProjectMoveParams;
+use ava_app_server_protocol::ProjectMoveResponse;
+use ava_app_server_protocol::ProjectReadParams;
+use ava_app_server_protocol::ProjectReadResponse;
+use ava_app_server_protocol::ProjectRoot;
+use ava_app_server_protocol::ProjectSortKey;
+use ava_app_server_protocol::ProjectUpdateParams;
+use ava_app_server_protocol::ProjectUpdateResponse;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadProjectUpdatedNotification;
+use ava_thread_store::CreateProjectParams as StoreCreateProjectParams;
+use ava_thread_store::ListProjectsParams as StoreListProjectsParams;
+use ava_thread_store::MoveProjectParams as StoreMoveProjectParams;
+use ava_thread_store::ProjectMoveOutcome;
+use ava_thread_store::ProjectSortKey as StoreProjectSortKey;
+use ava_thread_store::SortDirection as StoreSortDirection;
+use ava_thread_store::StoredProject;
+use ava_thread_store::StoredProjectRoot;
+use ava_thread_store::ThreadStore;
+use ava_thread_store::ThreadStoreError;
+use ava_thread_store::UpdateProjectParams as StoreUpdateProjectParams;
 use tokio::sync::Semaphore;
 use tokio::sync::SemaphorePermit;
 
@@ -324,7 +324,7 @@ fn validate_roots(roots: Vec<ProjectRoot>) -> Result<Vec<StoredProjectRoot>, JSO
     roots
         .into_iter()
         .map(|root| {
-            let path = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path_checked(
+            let path = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path_checked(
                 root.path.into_path_buf(),
             )
             .map_err(|error| invalid_params(format!("invalid project root: {error}")))?
@@ -369,7 +369,7 @@ fn api_project(project: StoredProject) -> Result<Project, JSONRPCErrorError> {
             .into_iter()
             .map(|root| {
                 Ok(ProjectRoot {
-                    path: codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(root.path)
+                    path: ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(root.path)
                         .map_err(|error| {
                             internal_error(format!("stored project root is not absolute: {error}"))
                         })?,

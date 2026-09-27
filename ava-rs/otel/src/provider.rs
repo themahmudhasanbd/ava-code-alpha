@@ -113,7 +113,7 @@ impl OtelProvider {
     fn prepare_shutdown_worker(&mut self) -> io::Result<()> {
         self.prepare_shutdown_worker_with_spawner(|startup| {
             std::thread::Builder::new()
-                .name("codex-otel-shutdown".to_string())
+                .name("ava-otel-shutdown".to_string())
                 .spawn(move || {
                     if startup.ready_tx.send(()).is_err() {
                         return;
@@ -319,7 +319,7 @@ impl OtelProvider {
             ))
     }
 
-    pub fn codex_export_filter(meta: &tracing::Metadata<'_>) -> bool {
+    pub fn ava_export_filter(meta: &tracing::Metadata<'_>) -> bool {
         Self::log_export_filter(meta)
     }
 
@@ -667,18 +667,18 @@ mod tests {
 
     #[test]
     fn log_export_target_excludes_trace_safe_events() {
-        assert!(is_log_export_target("codex_otel.log_only"));
-        assert!(is_log_export_target("codex_otel.network_proxy"));
-        assert!(!is_log_export_target("codex_otel.trace_safe"));
-        assert!(!is_log_export_target("codex_otel.trace_safe.debug"));
+        assert!(is_log_export_target("ava_otel.log_only"));
+        assert!(is_log_export_target("ava_otel.network_proxy"));
+        assert!(!is_log_export_target("ava_otel.trace_safe"));
+        assert!(!is_log_export_target("ava_otel.trace_safe.debug"));
     }
 
     #[test]
     fn trace_export_target_only_includes_trace_safe_prefix() {
-        assert!(is_trace_safe_target("codex_otel.trace_safe"));
-        assert!(is_trace_safe_target("codex_otel.trace_safe.summary"));
-        assert!(!is_trace_safe_target("codex_otel.log_only"));
-        assert!(!is_trace_safe_target("codex_otel.network_proxy"));
+        assert!(is_trace_safe_target("ava_otel.trace_safe"));
+        assert!(is_trace_safe_target("ava_otel.trace_safe.summary"));
+        assert!(!is_trace_safe_target("ava_otel.log_only"));
+        assert!(!is_trace_safe_target("ava_otel.network_proxy"));
     }
 
     #[test]
@@ -686,7 +686,7 @@ mod tests {
         let initial =
             crate::metrics::install_global(MetricsClient::new(MetricsConfig::in_memory(
                 "test",
-                "codex-test",
+                "ava-test",
                 env!("CARGO_PKG_VERSION"),
                 InMemoryMetricExporter::default(),
             ))?);
@@ -696,11 +696,11 @@ mod tests {
         let replacement =
             crate::metrics::install_global(MetricsClient::new(MetricsConfig::in_memory(
                 "test",
-                "codex-test",
+                "ava-test",
                 env!("CARGO_PKG_VERSION"),
                 exporter.clone(),
             ))?);
-        cached.counter("codex.after_transition", /*inc*/ 1, &[])?;
+        cached.counter("ava.after_transition", /*inc*/ 1, &[])?;
         initial.shutdown()?;
         replacement.shutdown()?;
 
@@ -713,7 +713,7 @@ mod tests {
             .collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names, vec!["codex.after_transition"]);
+        assert_eq!(names, vec!["ava.after_transition"]);
 
         Ok(())
     }
@@ -723,7 +723,7 @@ mod tests {
         let exporter = InMemoryMetricExporter::default();
         let mut config = MetricsConfig::otlp(
             "test",
-            "codex-cli",
+            "ava-cli",
             env!("CARGO_PKG_VERSION"),
             OtelExporter::Statsig,
         );
@@ -738,7 +738,7 @@ mod tests {
             /*inc*/ 1,
             &[("method", "fs/readFile")],
         )?;
-        metrics.counter("codex.conversation.turn.count", /*inc*/ 1, &[])?;
+        metrics.counter("ava.conversation.turn.count", /*inc*/ 1, &[])?;
         metrics.record_duration(
             RESPONSES_API_ENGINE_IAPI_TTFT_DURATION_METRIC,
             Duration::from_millis(100),
@@ -758,7 +758,7 @@ mod tests {
         metrics.record_duration(TOOL_CALL_DURATION_METRIC, Duration::from_millis(25), &[])?;
         metrics.counter(TURN_COST_MICROUSD_METRIC, /*inc*/ 1, &[])?;
         metrics.histogram(TURN_TOKEN_USAGE_METRIC, /*value*/ 100, &[])?;
-        metrics.counter("codex.turns", /*inc*/ 1, &[])?;
+        metrics.counter("ava.turns", /*inc*/ 1, &[])?;
         metrics.shutdown()?;
 
         let exported_metrics = exporter.get_finished_metrics()?;
@@ -770,7 +770,7 @@ mod tests {
             .collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names, vec!["codex.turns"]);
+        assert_eq!(names, vec!["ava.turns"]);
 
         Ok(())
     }
@@ -778,9 +778,9 @@ mod tests {
     fn test_otel_settings() -> OtelSettings {
         OtelSettings {
             environment: "test".to_string(),
-            service_name: "codex-test".to_string(),
+            service_name: "ava-test".to_string(),
             service_version: "0.0.0".to_string(),
-            codex_home: PathBuf::from("."),
+            ava_home: PathBuf::from("."),
             exporter: OtelExporter::None,
             trace_exporter: OtelExporter::None,
             metrics_exporter: OtelExporter::None,

@@ -4,14 +4,14 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use codex_config::AppToolApproval;
-use codex_config::Constrained;
-use codex_config::types::ApprovalsReviewer;
-use codex_protocol::mcp::McpServerInfo;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_rmcp_client::InProcessTransportFactory;
-use codex_rmcp_client::RmcpClient;
+use ava_config::AppToolApproval;
+use ava_config::Constrained;
+use ava_config::types::ApprovalsReviewer;
+use ava_protocol::mcp::McpServerInfo;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_rmcp_client::InProcessTransportFactory;
+use ava_rmcp_client::RmcpClient;
 use futures::FutureExt;
 use pretty_assertions::assert_eq;
 use rmcp::model::JsonObject;
@@ -96,7 +96,7 @@ async fn test_step(
         tool_timeout: None,
         server_instructions: None,
         server_supports_sandbox_state_meta_capability: supports_sandbox_state_meta,
-        codex_apps_tools_cache_context: None,
+        ava_apps_tools_cache_context: None,
     });
     let clients = Arc::new(McpBindingClients::new(HashMap::from([(
         SERVER_NAME.to_string(),
@@ -275,7 +275,7 @@ async fn prepared_call_does_not_reroute_after_captured_connection_closes() {
 
     let error = old_call
         .call(
-            Some(serde_json::json!({"query": "codex"})),
+            Some(serde_json::json!({"query": "ava"})),
             /*meta*/ None,
             /*timeout*/ None,
         )
@@ -310,7 +310,7 @@ async fn prepared_call_is_rejected_after_catalog_refresh() {
 
     let error = prepared
         .call(
-            Some(serde_json::json!({"query": "codex"})),
+            Some(serde_json::json!({"query": "ava"})),
             /*meta*/ None,
             /*timeout*/ None,
         )

@@ -1,13 +1,13 @@
 //! Authentication recovery preserves actionable status without changing the account scope.
 
 use super::*;
-use codex_http_client::OutboundProxyPolicy;
-use codex_login::ExternalAuth;
-use codex_login::ExternalAuthFuture;
-use codex_login::ExternalAuthRefreshContext;
-use codex_login::RefreshTokenError;
-use codex_protocol::auth::RefreshTokenFailedError;
-use codex_protocol::auth::RefreshTokenFailedReason;
+use ava_http_client::OutboundProxyPolicy;
+use ava_login::ExternalAuth;
+use ava_login::ExternalAuthFuture;
+use ava_login::ExternalAuthRefreshContext;
+use ava_login::RefreshTokenError;
+use ava_protocol::auth::RefreshTokenFailedError;
+use ava_protocol::auth::RefreshTokenFailedReason;
 use pretty_assertions::assert_eq;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
@@ -22,17 +22,17 @@ enum RefreshOutcome {
 }
 
 struct ExternalCredentials {
-    auth: CodexAuth,
+    auth: AvaAuth,
     outcome: RefreshOutcome,
     refreshes: AtomicUsize,
 }
 
 impl ExternalAuth for ExternalCredentials {
-    fn resolve(&self) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn resolve(&self) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async { Ok(self.auth.clone()) })
     }
 
-    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, CodexAuth> {
+    fn refresh(&self, _context: ExternalAuthRefreshContext) -> ExternalAuthFuture<'_, AvaAuth> {
         Box::pin(async {
             self.refreshes.fetch_add(/*val*/ 1, Ordering::SeqCst);
             match self.outcome {
@@ -61,7 +61,7 @@ async fn persistent_unauthorized_stops_after_successful_recovery() {
 }
 
 async fn assert_unauthorized_after_recovery(outcome: RefreshOutcome, expected_requests: u64) {
-    let auth = CodexAuth::from_external_chatgpt_tokens(
+    let auth = AvaAuth::from_external_chatgpt_tokens(
         "e30.eyJleHAiOjQxMDI0NDQ4MDAsImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJjaGF0Z3B0X3VzZXJfaWQiOiJ1c2VyLWEifX0.test", "account-a", Some("plus"),
     ).unwrap();
     let auth_manager = AuthManager::from_auth_for_testing(auth.clone());
@@ -84,7 +84,7 @@ async fn assert_unauthorized_after_recovery(outcome: RefreshOutcome, expected_re
         server.uri(),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
     )
-    .with_auth_provider(codex_model_provider::auth_provider_from_auth_manager(
+    .with_auth_provider(ava_model_provider::auth_provider_from_auth_manager(
         Arc::clone(&auth_manager),
         &auth,
     ));

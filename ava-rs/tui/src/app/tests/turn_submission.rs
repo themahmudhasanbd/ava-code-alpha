@@ -1,14 +1,14 @@
 use super::*;
 use crate::chatwidget::UserMessage;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::ErrorNotification;
-use codex_app_server_protocol::ThreadGoalStatus;
-use codex_protocol::models::ManagedFileSystemPermissions;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::ErrorNotification;
+use ava_app_server_protocol::ThreadGoalStatus;
+use ava_protocol::models::ManagedFileSystemPermissions;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -36,8 +36,8 @@ async fn worktree_creation_event_requires_feature() -> Result<()> {
             _ => None,
         })
         .expect("disabled feature message");
-    insta::assert_snapshot!(message, @"■ Enable worktrees in your Codex configuration to create a worktree.");
-    assert!(!app.config.codex_home.join("worktrees").exists());
+    insta::assert_snapshot!(message, @"■ Enable worktrees in your Ava configuration to create a worktree.");
+    assert!(!app.config.ava_home.join("worktrees").exists());
     app_server.shutdown().await?;
     Ok(())
 }
@@ -49,7 +49,7 @@ async fn worktree_creation_rejects_untrusted_source_before_allocation() -> Resul
     let (mut app, mut events, _op_rx) = make_test_app_with_channels().await;
     app.config.features.enable(Feature::Worktrees)?;
     app.config.active_project.trust_level =
-        Some(codex_protocol::config_types::TrustLevel::Untrusted);
+        Some(ava_protocol::config_types::TrustLevel::Untrusted);
     let thread_id = ThreadId::new();
     app.primary_thread_id = Some(thread_id);
     app.chat_widget
@@ -59,11 +59,11 @@ async fn worktree_creation_rejects_untrusted_source_before_allocation() -> Resul
     for mode in [ManagedWorktreeMode::New, ManagedWorktreeMode::Fork] {
         if mode == ManagedWorktreeMode::Fork {
             app.config.active_project.trust_level =
-                Some(codex_protocol::config_types::TrustLevel::Trusted);
+                Some(ava_protocol::config_types::TrustLevel::Trusted);
             crate::legacy_core::config::set_project_trust_level(
-                &app.config.codex_home,
+                &app.config.ava_home,
                 app.config.cwd.as_path(),
-                codex_protocol::config_types::TrustLevel::Untrusted,
+                ava_protocol::config_types::TrustLevel::Untrusted,
             )
             .map_err(|error| color_eyre::eyre::eyre!(error.to_string()))?;
         }
@@ -86,7 +86,7 @@ async fn worktree_creation_rejects_untrusted_source_before_allocation() -> Resul
         insta::allow_duplicates! {
             insta::assert_snapshot!(message, @"■ Cannot create a worktree from an explicitly untrusted source.");
         }
-        assert!(!app.config.codex_home.join("worktrees").exists());
+        assert!(!app.config.ava_home.join("worktrees").exists());
     }
     app_server.shutdown().await?;
     Ok(())
@@ -96,9 +96,9 @@ async fn worktree_creation_rejects_untrusted_source_before_allocation() -> Resul
 async fn worktree_creation_rejects_running_agent_before_allocation() -> Result<()> {
     let (mut app, mut events, _op_rx) = make_test_app_with_channels().await;
     let home = tempfile::tempdir()?;
-    app.config.codex_home = home.path().to_path_buf().abs();
+    app.config.ava_home = home.path().to_path_buf().abs();
     app.config.features.enable(Feature::Worktrees)?;
-    app.config.active_project.trust_level = Some(codex_protocol::config_types::TrustLevel::Trusted);
+    app.config.active_project.trust_level = Some(ava_protocol::config_types::TrustLevel::Trusted);
     let primary = ThreadId::new();
     app.primary_thread_id = Some(primary);
     app.chat_widget
@@ -160,7 +160,7 @@ async fn turn_start_failure_is_shown_without_exiting() -> Result<()> {
     }
 
     let control = app
-        .handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(op))
+        .handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(op))
         .await?;
 
     assert!(matches!(control, AppRunControl::Continue));
@@ -242,7 +242,7 @@ async fn misalignment_policy_blocks_queued_turns_and_goal_resumption() -> Result
         error: Some(AppServerTurnError {
             misalignment: None,
             message: "misalignment policy violation".to_string(),
-            codex_error_info: Some(CodexErrorInfo::MisalignmentPolicyViolation),
+            ava_error_info: Some(AvaErrorInfo::MisalignmentPolicyViolation),
             additional_details: None,
         }),
         ..test_turn("turn-1", TurnStatus::Failed, Vec::new())
@@ -257,11 +257,11 @@ async fn misalignment_policy_blocks_queued_turns_and_goal_resumption() -> Result
     app.maybe_prompt_resume_paused_goal_after_resume(&mut app_server, thread_id)
         .await;
     for event in [
-        AppEvent::CodexOp(queued_turn),
-        AppEvent::CodexOp(crate::app_command::AppCommand::ExecApproval {
+        AppEvent::AvaOp(queued_turn),
+        AppEvent::AvaOp(crate::app_command::AppCommand::ExecApproval {
             id: "queued-approval".to_string(),
             turn_id: None,
-            decision: codex_app_server_protocol::CommandExecutionApprovalDecision::Accept,
+            decision: ava_app_server_protocol::CommandExecutionApprovalDecision::Accept,
         }),
         AppEvent::SetThreadGoalStatus {
             thread_id,
@@ -290,7 +290,7 @@ async fn misalignment_policy_blocks_queued_turns_and_goal_resumption() -> Result
         app.handle_event(&mut tui, &mut app_server, event).await?;
     }
 
-    assert!(!app.config.codex_home.join("worktrees").exists());
+    assert!(!app.config.ava_home.join("worktrees").exists());
     assert_eq!(
         app_server.next_request_id(),
         AppServerRequestId::Integer(next_request_id + 1)
@@ -338,7 +338,7 @@ async fn misalignment_policy_in_parent_stops_active_side_conversation() -> Resul
             error: AppServerTurnError {
                 misalignment: None,
                 message: "misalignment policy violation".to_string(),
-                codex_error_info: Some(CodexErrorInfo::MisalignmentPolicyViolation),
+                ava_error_info: Some(AvaErrorInfo::MisalignmentPolicyViolation),
                 additional_details: None,
             },
             will_retry: false,
@@ -368,7 +368,7 @@ async fn unsupported_legacy_permissions_are_shown_without_exiting() -> Result<()
     app.chat_widget
         .handle_thread_session(test_thread_session(thread_id, app.config.cwd.to_path_buf()));
 
-    let extra_root = codex_utils_absolute_path::AbsolutePathBuf::resolve_path_against_base(
+    let extra_root = ava_utils_absolute_path::AbsolutePathBuf::resolve_path_against_base(
         "extra",
         app.config.cwd.as_path(),
     );
@@ -420,7 +420,7 @@ async fn unsupported_legacy_permissions_are_shown_without_exiting() -> Result<()
     }
 
     let control = app
-        .handle_event(&mut tui, &mut app_server, AppEvent::CodexOp(op))
+        .handle_event(&mut tui, &mut app_server, AppEvent::AvaOp(op))
         .await?;
 
     assert!(matches!(control, AppRunControl::Continue));

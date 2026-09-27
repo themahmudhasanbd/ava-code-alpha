@@ -68,7 +68,7 @@ async fn voice_mute_keymap_updates_the_active_handler_and_composer_hint() {
     activate_voice(&mut chat);
     let custom = KeyEvent::new(KeyCode::F(8), KeyModifiers::NONE);
     for (binding, hint, handles_key) in [("'f8'", "f8 mute", true), ("[]", "/voice mute", false)] {
-        let config = toml::from_str::<codex_config::types::TuiKeymap>(&format!(
+        let config = toml::from_str::<ava_config::types::TuiKeymap>(&format!(
             "[chat]\ntoggle_voice_mute = {binding}"
         ))
         .unwrap();
@@ -140,7 +140,7 @@ async fn voice_composer_preserves_normal_colors_across_microphone_states() {
             insta::assert_snapshot!(rows, @r"
             0:
             1:  voice ● listening ctrl+x mute     /voice stop
-            2:    mic ▁▁▁▁▁▁  codex ▁▁▁▁▁▁
+            2:    mic ▁▁▁▁▁▁  ava ▁▁▁▁▁▁
             3:
             4: › typed
             ");
@@ -612,7 +612,7 @@ async fn startup_timeout_clears_recording_title_before_backend_closes() {
     chat.realtime_conversation.phase = RealtimeConversationPhase::Starting;
     chat.on_realtime_webrtc_connected(
         /*attempt_id*/ chat.realtime_conversation.attempt_id,
-        Err(codex_realtime_webrtc::ConnectionError::NegotiationTimedOut),
+        Err(ava_realtime_webrtc::ConnectionError::NegotiationTimedOut),
     );
 
     assert!(matches!(
@@ -695,9 +695,9 @@ async fn compact_voice_meters_keep_real_speaker_history_when_the_microphone_is_m
     let live = render_bottom_popup(&chat, /*width*/ 45);
     let meters = live.lines().find(|line| line.contains("mic")).unwrap();
     assert!(meters.contains("mic ▁▃▄▅▇█"));
-    assert!(meters.contains("codex █▇▅▃▂▁"));
+    assert!(meters.contains("ava █▇▅▃▂▁"));
     assert_eq!(
-        live.lines().filter(|line| line.contains("codex")).count(),
+        live.lines().filter(|line| line.contains("ava")).count(),
         1
     );
 
@@ -707,22 +707,22 @@ async fn compact_voice_meters_keep_real_speaker_history_when_the_microphone_is_m
         chat.update_realtime_footer();
         let muted = render_bottom_popup(&chat, /*width*/ 45);
         assert!(muted.contains("mic ▁▁▁▁▁▁"));
-        assert!(muted.contains("codex █▇▅▃▂▁"));
+        assert!(muted.contains("ava █▇▅▃▂▁"));
     }
     chat.thread_id = Some(ThreadId::new());
     chat.update_realtime_footer();
-    assert!(!render_bottom_popup(&chat, /*width*/ 45).contains("codex"));
+    assert!(!render_bottom_popup(&chat, /*width*/ 45).contains("ava"));
     chat.thread_id = Some(thread_id);
     chat.realtime_conversation.phase = RealtimeConversationPhase::Stopping;
     chat.update_realtime_footer();
-    assert!(!render_bottom_popup(&chat, /*width*/ 45).contains("codex"));
+    assert!(!render_bottom_popup(&chat, /*width*/ 45).contains("ava"));
 }
 
 #[tokio::test]
 async fn voice_toggle_shortcut_uses_the_slash_command_start_guard_and_preserves_draft() {
     let (mut chat, _sender, mut events, mut ops) = make_chatwidget_manual_with_sender().await;
     let config =
-        toml::from_str::<codex_config::types::TuiKeymap>("[chat]\ntoggle_voice = 'f8'").unwrap();
+        toml::from_str::<ava_config::types::TuiKeymap>("[chat]\ntoggle_voice = 'f8'").unwrap();
     let runtime = crate::keymap::RuntimeKeymap::from_config(&config).unwrap();
     chat.apply_keymap_update(config, &runtime);
     chat.set_side_conversation_active(/*active*/ true);
@@ -748,7 +748,7 @@ async fn voice_toggle_shortcut_uses_the_slash_command_start_guard_and_preserves_
 async fn voice_toggle_shortcut_stops_only_on_press_outside_popups() {
     let (mut chat, _sender, _events, mut ops) = make_chatwidget_manual_with_sender().await;
     let config =
-        toml::from_str::<codex_config::types::TuiKeymap>("[chat]\ntoggle_voice = 'f8'").unwrap();
+        toml::from_str::<ava_config::types::TuiKeymap>("[chat]\ntoggle_voice = 'f8'").unwrap();
     let runtime = crate::keymap::RuntimeKeymap::from_config(&config).unwrap();
     chat.apply_keymap_update(config, &runtime);
     let thread_id = activate_voice(&mut chat);
@@ -777,7 +777,7 @@ async fn voice_toggle_shortcut_stops_only_on_press_outside_popups() {
 async fn voice_toggle_shortcut_respects_live_remapping_and_unbinding() {
     let (mut chat, _sender, _events, mut ops) = make_chatwidget_manual_with_sender().await;
     for (binding, stops) in [("'f9'", true), ("[]", false)] {
-        let config = toml::from_str::<codex_config::types::TuiKeymap>(&format!(
+        let config = toml::from_str::<ava_config::types::TuiKeymap>(&format!(
             "[chat]\ntoggle_voice = {binding}"
         ))
         .unwrap();

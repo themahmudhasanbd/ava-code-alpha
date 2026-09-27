@@ -15,7 +15,7 @@ async fn misalignment_precaution_retires_voice_and_keeps_late_turn_blocked() {
     handle_error(
         &mut chat,
         ERROR_MESSAGE,
-        Some(CodexErrorInfo::MisalignmentPolicyViolation),
+        Some(AvaErrorInfo::MisalignmentPolicyViolation),
     );
 
     assert!(!chat.realtime_conversation_is_running());
@@ -76,7 +76,7 @@ async fn misalignment_policy_failure_stops_the_thread_and_renders_once() {
     handle_error(
         &mut chat,
         ERROR_MESSAGE,
-        Some(CodexErrorInfo::MisalignmentPolicyViolation),
+        Some(AvaErrorInfo::MisalignmentPolicyViolation),
     );
 
     assert!(!chat.bottom_pane.is_task_running());
@@ -124,7 +124,7 @@ async fn misalignment_policy_failure_stops_the_thread_and_renders_once() {
                 Some(AppServerTurnError {
                     misalignment: None,
                     message: ERROR_MESSAGE.to_string(),
-                    codex_error_info: Some(CodexErrorInfo::MisalignmentPolicyViolation),
+                    ava_error_info: Some(AvaErrorInfo::MisalignmentPolicyViolation),
                     additional_details: None,
                 }),
             ),
@@ -167,13 +167,13 @@ async fn misalignment_policy_failure_stops_the_thread_and_renders_once() {
     assert!(chat.bottom_pane.has_active_view());
 }
 
-fn review_details() -> codex_app_server_protocol::MisalignmentErrorDetails {
-    codex_app_server_protocol::MisalignmentErrorDetails {
+fn review_details() -> ava_app_server_protocol::MisalignmentErrorDetails {
+    ava_app_server_protocol::MisalignmentErrorDetails {
         error_type: Some("new_category".to_string()),
         detailed_explanation: Some(
             "The agent proposed a change outside your instructions.".to_string(),
         ),
-        steer: Some(codex_app_server_protocol::MisalignmentSteer {
+        steer: Some(ava_app_server_protocol::MisalignmentSteer {
             message: "Continue with the requested change only.".to_string(),
         }),
     }
@@ -234,7 +234,7 @@ async fn misalignment_review_requires_current_findings() {
     for steer in [None, Some(" ".to_string()), Some("a".repeat(1025))] {
         let mut details = review_details();
         details.steer =
-            steer.map(|message| codex_app_server_protocol::MisalignmentSteer { message });
+            steer.map(|message| ava_app_server_protocol::MisalignmentSteer { message });
         chat.on_misalignment_error(Some("turn-1".to_string()), Some(details));
         let review = select_review(&mut chat, &mut rx);
         chat.show_misalignment_review_confirmation(Arc::clone(&review));

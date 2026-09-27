@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::num::NonZeroUsize;
 
-use codex_protocol::protocol::SkillScope;
-use codex_utils_string::approx_token_count;
-use codex_utils_string::take_bytes_at_char_boundary;
+use ava_protocol::protocol::SkillScope;
+use ava_utils_string::approx_token_count;
+use ava_utils_string::take_bytes_at_char_boundary;
 
 use crate::aliases::AliasPlan;
 use crate::catalog::SkillCatalog;

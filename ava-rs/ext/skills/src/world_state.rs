@@ -1,8 +1,8 @@
-use codex_extension_api::PreviousWorldStateSection;
-use codex_extension_api::RenderedWorldStateFragment;
-use codex_extension_api::WorldStateSectionContribution;
-use codex_protocol::protocol::SKILLS_INSTRUCTIONS_CLOSE_TAG;
-use codex_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
+use ava_extension_api::PreviousWorldStateSection;
+use ava_extension_api::RenderedWorldStateFragment;
+use ava_extension_api::WorldStateSectionContribution;
+use ava_protocol::protocol::SKILLS_INSTRUCTIONS_CLOSE_TAG;
+use ava_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
 use serde_json::json;
 
 use crate::render::SkillRenderReport;

@@ -14,8 +14,8 @@ use tokio::sync::watch;
 use tokio_util::task::AbortOnDropHandle;
 
 use crate::responses_metadata::AGENT_NAME_KEY;
-use crate::responses_metadata::CodexResponsesMetadata;
-use crate::responses_metadata::CodexResponsesRequestKind;
+use crate::responses_metadata::AvaResponsesMetadata;
+use crate::responses_metadata::AvaResponsesRequestKind;
 use crate::responses_metadata::MAX_EXTRA_METADATA_VALUE_BYTES;
 use crate::responses_metadata::PARENT_TURN_ID_KEY;
 use crate::responses_metadata::ROOT_TURN_ID_KEY;
@@ -26,26 +26,26 @@ use crate::responses_metadata::subagent_metadata_kind;
 use crate::sandbox_tags::SandboxTags;
 use crate::sandbox_tags::record_policy_metadata;
 use crate::session::step_settings::ResolvedStepSettings;
-use codex_file_system::WindowsSandboxSelection;
-use codex_git_utils::SanitizedGitUrl;
-use codex_git_utils::get_git_remote_urls_assume_git_repo;
-use codex_git_utils::get_has_changes_in_repo;
-use codex_git_utils::get_head_commit_hash;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadSource;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_git_discovery::GitRootDiscovery;
+use ava_file_system::WindowsSandboxSelection;
+use ava_git_utils::SanitizedGitUrl;
+use ava_git_utils::get_git_remote_urls_assume_git_repo;
+use ava_git_utils::get_has_changes_in_repo;
+use ava_git_utils::get_head_commit_hash;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadSource;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_git_discovery::GitRootDiscovery;
 
 // Memory requests await this optional metadata before sending their model request.
 const MEMORY_GIT_METADATA_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1);
 
 const MODEL_KEY: &str = "model";
-const CODEX_VERSION_KEY: &str = "codex_version";
+const AVA_VERSION_KEY: &str = "ava_version";
 const REASONING_EFFORT_KEY: &str = "reasoning_effort";
 const USER_INPUT_REQUESTED_DURING_TURN_KEY: &str = "user_input_requested_during_turn";
 const WORKSPACE_KIND_KEY: &str = "workspace_kind";
@@ -73,7 +73,7 @@ impl<'a> ExecutionMetadata<'a> {
         }
     }
 
-    pub(crate) fn apply_to(&self, metadata: &mut CodexResponsesMetadata) {
+    pub(crate) fn apply_to(&self, metadata: &mut AvaResponsesMetadata) {
         metadata.auto_review_enabled = Some(self.auto_review_enabled);
         metadata.node_repl_auto_review_required = Some(self.node_repl_auto_review_required);
         metadata.node_repl_disabled = Some(self.node_repl_disabled);
@@ -130,12 +130,12 @@ pub async fn detached_memory_responses_metadata(
     cwd: &AbsolutePathBuf,
     permission_profile: &PermissionProfile,
     sandbox: Option<&str>,
-) -> CodexResponsesMetadata {
+) -> AvaResponsesMetadata {
     let turn_id = uuid::Uuid::now_v7().to_string();
-    let mut metadata = CodexResponsesMetadata {
+    let mut metadata = AvaResponsesMetadata {
         turn_id: Some(turn_id.clone()),
         root_turn_id: Some(turn_id),
-        request_kind: Some(CodexResponsesRequestKind::Memory),
+        request_kind: Some(AvaResponsesRequestKind::Memory),
         thread_source: Some(ThreadSource::MemoryConsolidation),
         turn_trigger: Some("memory_consolidation".to_owned()),
         subagent_header: subagent_header_value(session_source),
@@ -145,7 +145,7 @@ pub async fn detached_memory_responses_metadata(
             thread_manager.git_root_discovery().discover(cwd.clone()),
         )
         .await,
-        ..CodexResponsesMetadata::new(installation_id, session_id, thread_id, window_id)
+        ..AvaResponsesMetadata::new(installation_id, session_id, thread_id, window_id)
     };
     record_policy_metadata(permission_profile, cwd.as_path(), &mut metadata);
     metadata
@@ -182,7 +182,7 @@ pub(crate) struct TurnMetadataState {
     git_enrichment_complete: watch::Sender<bool>,
 }
 
-impl codex_analytics::TurnAnalyticsMetadata for TurnMetadataState {
+impl ava_analytics::TurnAnalyticsMetadata for TurnMetadataState {
     fn root_turn_id(&self) -> Option<String> {
         TurnMetadataState::root_turn_id(self)
     }
@@ -194,7 +194,7 @@ impl codex_analytics::TurnAnalyticsMetadata for TurnMetadataState {
             .cloned()
     }
 
-    fn codex_turn_source(&self) -> Option<String> {
+    fn ava_turn_source(&self) -> Option<String> {
         // Match Responses metadata precedence without copying oversized client values to analytics.
         let configured_metadata = self
             .responses_api_metadata
@@ -283,7 +283,7 @@ impl TurnMetadataState {
         metadata.remove(PARENT_TURN_ID_KEY);
         metadata.remove(ROOT_TURN_ID_KEY);
         metadata.insert(
-            CODEX_VERSION_KEY.to_string(),
+            AVA_VERSION_KEY.to_string(),
             Value::String(env!("CARGO_PKG_VERSION").to_string()),
         );
         if self
@@ -304,9 +304,9 @@ impl TurnMetadataState {
         &self,
         installation_id: String,
         window_id: String,
-        request_kind: CodexResponsesRequestKind,
-    ) -> CodexResponsesMetadata {
-        CodexResponsesMetadata {
+        request_kind: AvaResponsesRequestKind,
+    ) -> AvaResponsesMetadata {
+        AvaResponsesMetadata {
             installation_id,
             window_id,
             request_kind: Some(request_kind),
@@ -390,7 +390,7 @@ impl TurnMetadataState {
             .cloned()
     }
 
-    fn responses_metadata_template(&self) -> CodexResponsesMetadata {
+    fn responses_metadata_template(&self) -> AvaResponsesMetadata {
         let mut metadata = self.mcp_metadata_template();
         if metadata.parent_thread_id.is_some() {
             metadata.forked_from_thread_id = None;
@@ -404,7 +404,7 @@ impl TurnMetadataState {
         metadata
     }
 
-    fn mcp_metadata_template(&self) -> CodexResponsesMetadata {
+    fn mcp_metadata_template(&self) -> AvaResponsesMetadata {
         let mut extra = self
             .responsesapi_client_metadata
             .read()
@@ -426,7 +426,7 @@ impl TurnMetadataState {
         {
             extra.remove(key);
         }
-        let mut metadata = CodexResponsesMetadata {
+        let mut metadata = AvaResponsesMetadata {
             parent_response_id,
             turn_id: Some(self.turn_id.clone()),
             agent_name: Some(self.agent_name.clone()),
@@ -445,7 +445,7 @@ impl TurnMetadataState {
             tool_namespaces_info: None,
             turn_started_at_unix_ms: self.current_turn_started_at_unix_ms(),
             extra,
-            ..CodexResponsesMetadata::new(
+            ..AvaResponsesMetadata::new(
                 String::new(),
                 self.session_id.clone(),
                 self.thread_id.clone(),

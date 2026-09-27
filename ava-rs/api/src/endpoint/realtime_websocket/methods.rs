@@ -21,12 +21,12 @@ use crate::endpoint::realtime_websocket::protocol::RealtimeVoice;
 use crate::endpoint::realtime_websocket::protocol::parse_realtime_event;
 use crate::error::ApiError;
 use crate::provider::Provider;
-use codex_client::backoff;
-use codex_http_client::maybe_build_rustls_client_config_with_custom_ca;
-use codex_protocol::protocol::ConversationTextParams;
-use codex_protocol::protocol::ConversationTextRole;
-use codex_protocol::protocol::RealtimeTranscriptDelta;
-use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
+use ava_client::backoff;
+use ava_http_client::maybe_build_rustls_client_config_with_custom_ca;
+use ava_protocol::protocol::ConversationTextParams;
+use ava_protocol::protocol::ConversationTextRole;
+use ava_protocol::protocol::RealtimeTranscriptDelta;
+use ava_utils_rustls_provider::ensure_rustls_crypto_provider;
 use futures::SinkExt;
 use futures::StreamExt;
 use http::HeaderMap;
@@ -56,7 +56,7 @@ use tungstenite::protocol::WebSocketConfig;
 use tungstenite::protocol::frame::coding::CloseCode;
 use url::Url;
 
-const REALTIME_WIRE_LOG_TARGET: &str = "codex_api::realtime_websocket::wire";
+const REALTIME_WIRE_LOG_TARGET: &str = "ava_api::realtime_websocket::wire";
 const OPENAI_REALTIME_API_BASE_URL: &str = "https://api.openai.com/v1";
 const MAX_ACTIVE_TRANSCRIPT_BYTES: usize = 8 * 1024;
 const TRUNCATED_TRANSCRIPT_PREFIX: &str = "…";
@@ -960,7 +960,7 @@ impl RealtimeWebsocketClient {
         request.headers_mut().extend(headers);
 
         info!("connecting realtime websocket: {ws_url}");
-        // Realtime websocket TLS should honor the same custom-CA env vars as the rest of Codex's
+        // Realtime websocket TLS should honor the same custom-CA env vars as the rest of Ava's
         // outbound HTTPS and websocket traffic.
         let connector = maybe_build_rustls_client_config_with_custom_ca()
             .map_err(|err| ApiError::Stream(format!("failed to configure websocket TLS: {err}")))?
@@ -971,7 +971,7 @@ impl RealtimeWebsocketClient {
         let connector = match connector {
             Some(connector) => Some(connector),
             None => Some(tokio_tungstenite::Connector::Rustls(
-                codex_http_client::build_windows_platform_tls_config().map_err(|err| {
+                ava_http_client::build_windows_platform_tls_config().map_err(|err| {
                     ApiError::Stream(format!("failed to configure websocket TLS: {err}"))
                 })?,
             )),
@@ -1217,15 +1217,15 @@ mod tests {
     use super::*;
     use crate::endpoint::realtime_websocket::protocol::RealtimeTranscriptEntry;
     use crate::provider::RetryConfig;
-    use codex_protocol::protocol::RealtimeHandoffRequested;
-    use codex_protocol::protocol::RealtimeInputAudioSpeechStarted;
-    use codex_protocol::protocol::RealtimeNoopRequested;
-    use codex_protocol::protocol::RealtimeResponseCancelled;
-    use codex_protocol::protocol::RealtimeResponseCreated;
-    use codex_protocol::protocol::RealtimeResponseDone;
-    use codex_protocol::protocol::RealtimeTranscriptDelta;
-    use codex_protocol::protocol::RealtimeTranscriptDone;
-    use codex_protocol::protocol::RealtimeVoice;
+    use ava_protocol::protocol::RealtimeHandoffRequested;
+    use ava_protocol::protocol::RealtimeInputAudioSpeechStarted;
+    use ava_protocol::protocol::RealtimeNoopRequested;
+    use ava_protocol::protocol::RealtimeResponseCancelled;
+    use ava_protocol::protocol::RealtimeResponseCreated;
+    use ava_protocol::protocol::RealtimeResponseDone;
+    use ava_protocol::protocol::RealtimeTranscriptDelta;
+    use ava_protocol::protocol::RealtimeTranscriptDone;
+    use ava_protocol::protocol::RealtimeVoice;
     use http::HeaderValue;
     use http::StatusCode;
     use pretty_assertions::assert_eq;

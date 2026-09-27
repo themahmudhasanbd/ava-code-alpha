@@ -6,17 +6,17 @@ use std::collections::BTreeMap;
 use std::io::ErrorKind;
 use std::time::Duration;
 
-use codex_exec_server::HttpHeader;
-use codex_exec_server::HttpRedirectPolicy;
-use codex_exec_server::HttpRequestBodyDeltaNotification;
-use codex_exec_server::HttpRequestParams;
-use codex_exec_server::HttpRequestResponse;
-use codex_exec_server::InitializeParams;
-use codex_exec_server_protocol::JSONRPCError;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCNotification;
-use codex_exec_server_protocol::JSONRPCResponse;
-use codex_exec_server_protocol::RequestId;
+use ava_exec_server::HttpHeader;
+use ava_exec_server::HttpRedirectPolicy;
+use ava_exec_server::HttpRequestBodyDeltaNotification;
+use ava_exec_server::HttpRequestParams;
+use ava_exec_server::HttpRequestResponse;
+use ava_exec_server::InitializeParams;
+use ava_exec_server_protocol::JSONRPCError;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCNotification;
+use ava_exec_server_protocol::JSONRPCResponse;
+use ava_exec_server_protocol::RequestId;
 use common::SYSTEM_PROXY_REQUEST_URL_ENV;
 use common::SYSTEM_PROXY_URL_ENV;
 use common::exec_server::ExecServerHarness;
@@ -70,7 +70,7 @@ async fn exec_server_http_request_buffers_response_body() -> anyhow::Result<()> 
                 url,
                 headers: vec![
                     HttpHeader {
-                        name: "x-codex-test".to_string(),
+                        name: "x-ava-test".to_string(),
                         value: "buffered".to_string(),
                         value_env_var: None,
                     },
@@ -100,7 +100,7 @@ async fn exec_server_http_request_buffers_response_body() -> anyhow::Result<()> 
     assert_eq!(
         (
             captured.request_line.as_str(),
-            captured.headers.get("x-codex-test").map(String::as_str),
+            captured.headers.get("x-ava-test").map(String::as_str),
             captured.headers.get("authorization").map(String::as_str),
             captured
                 .headers
@@ -144,7 +144,7 @@ async fn exec_server_http_request_buffers_response_body() -> anyhow::Result<()> 
 async fn exec_server_http_request_rejects_protected_environment_headers() -> anyhow::Result<()> {
     let mut server = exec_server_with_env(
         [(
-            "CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN",
+            "AVA_EXEC_SERVER_NOISE_AUTH_TOKEN",
             "executor-internal-token",
         )],
         &[],
@@ -154,11 +154,11 @@ async fn exec_server_http_request_rejects_protected_environment_headers() -> any
 
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     for (index, env_var) in [
-        "CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN",
-        "codex_exec_server_noise_auth_token",
+        "AVA_EXEC_SERVER_NOISE_AUTH_TOKEN",
+        "ava_exec_server_noise_auth_token",
         "OPENAI_API_KEY",
-        "CODEX_ACCESS_TOKEN",
-        "CODEX_CONNECTORS_TOKEN",
+        "AVA_ACCESS_TOKEN",
+        "AVA_CONNECTORS_TOKEN",
         "AWS_SECRET_ACCESS_KEY",
         "AZURE_FEDERATED_TOKEN_FILE",
         "OPENAI_IDENTITY_TOKEN_FILE",
@@ -777,7 +777,7 @@ where
 async fn wait_for_error_response(
     server: &mut ExecServerHarness,
     request_id: RequestId,
-) -> anyhow::Result<codex_exec_server_protocol::JSONRPCErrorError> {
+) -> anyhow::Result<ava_exec_server_protocol::JSONRPCErrorError> {
     let response = server
         .wait_for_event(|event| {
             matches!(

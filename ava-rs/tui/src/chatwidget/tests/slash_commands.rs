@@ -143,7 +143,7 @@ async fn slash_compact_eagerly_queues_follow_up_before_turn_start() {
 
     assert!(chat.bottom_pane.is_task_running());
     match rx.try_recv() {
-        Ok(AppEvent::CodexOp(Op::Compact)) => {}
+        Ok(AppEvent::AvaOp(Op::Compact)) => {}
         other => panic!("expected compact op to be submitted, got {other:?}"),
     }
 
@@ -205,7 +205,7 @@ async fn queued_slash_compact_dispatches_after_active_turn() {
     assert!(
         events
             .iter()
-            .any(|event| matches!(event, AppEvent::CodexOp(Op::Compact))),
+            .any(|event| matches!(event, AppEvent::AvaOp(Op::Compact))),
         "expected queued /compact to submit compact op; events: {events:?}"
     );
 }
@@ -485,14 +485,14 @@ async fn queued_bare_rename_drains_next_input_after_name_update() {
     assert!(
         events.iter().any(|event| matches!(
             event,
-            AppEvent::CodexOp(Op::SetThreadName { name }) if name == "Queued rename"
+            AppEvent::AvaOp(Op::SetThreadName { name }) if name == "Queued rename"
         )),
         "expected rename prompt to submit thread name; events: {events:?}"
     );
 
     chat.handle_server_notification(
         ServerNotification::ThreadNameUpdated(
-            codex_app_server_protocol::ThreadNameUpdatedNotification {
+            ava_app_server_protocol::ThreadNameUpdatedNotification {
                 thread_id: thread_id.to_string(),
                 thread_name: Some("Queued rename".to_string()),
             },
@@ -530,7 +530,7 @@ async fn queued_inline_rename_does_not_drain_again_before_turn_started() {
     assert!(
         events.iter().any(|event| matches!(
             event,
-            AppEvent::CodexOp(Op::SetThreadName { name }) if name == "Queued rename"
+            AppEvent::AvaOp(Op::SetThreadName { name }) if name == "Queued rename"
         )),
         "expected queued /rename to submit thread name; events: {events:?}"
     );
@@ -576,7 +576,7 @@ async fn queued_inline_rename_does_not_drain_again_before_turn_started() {
 
     chat.handle_server_notification(
         ServerNotification::ThreadNameUpdated(
-            codex_app_server_protocol::ThreadNameUpdatedNotification {
+            ava_app_server_protocol::ThreadNameUpdatedNotification {
                 thread_id: thread_id.to_string(),
                 thread_name: Some("Queued rename".to_string()),
             },
@@ -670,7 +670,7 @@ async fn ctrl_d_with_modal_open_does_not_quit() {
 #[tokio::test]
 async fn slash_init_does_not_depend_on_loaded_instruction_sources() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
-    chat.instruction_source_paths = vec![codex_utils_path_uri::PathUri::from_abs_path(
+    chat.instruction_source_paths = vec![ava_utils_path_uri::PathUri::from_abs_path(
         &chat.config.cwd.join("project-instructions.md"),
     )];
 
@@ -763,7 +763,7 @@ async fn goal_slash_command_emits_attached_images() {
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
     let remote_url = "https://example.com/goal.png".to_string();
-    let local_image = chat.config.codex_home.join("goal-local.png");
+    let local_image = chat.config.ava_home.join("goal-local.png");
     std::fs::write(&local_image, b"png bytes").expect("write local image");
     let placeholder = "[Image #2]";
     let command = format!("/goal literal {placeholder} describe {placeholder}");
@@ -934,7 +934,7 @@ async fn queued_goal_slash_command_preserves_large_paste() {
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
     handle_turn_started(&mut chat, "turn-1");
-    let paste = "x".repeat(codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1);
+    let paste = "x".repeat(ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1);
 
     queue_goal_with_large_paste(&mut chat, paste.clone());
 
@@ -955,7 +955,7 @@ async fn queued_goal_slash_command_restores_large_paste_for_edit() {
     let thread_id = ThreadId::new();
     chat.thread_id = Some(thread_id);
     handle_turn_started(&mut chat, "turn-1");
-    let paste = "x".repeat(codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1);
+    let paste = "x".repeat(ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1);
 
     queue_goal_with_large_paste(&mut chat, paste.clone());
     chat.handle_key_event(KeyEvent::new(KeyCode::Up, KeyModifiers::ALT));
@@ -975,7 +975,7 @@ async fn interrupt_disambiguates_same_sized_goal_pastes() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
     handle_turn_started(&mut chat, "turn-1");
-    let first = "a".repeat(codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1);
+    let first = "a".repeat(ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS + 1);
     let second = "b".repeat(first.len());
 
     queue_goal_with_large_paste(&mut chat, first);
@@ -1245,7 +1245,7 @@ async fn slash_rename_prefills_existing_thread_name() {
 
     assert_matches!(
         rx.try_recv(),
-        Ok(AppEvent::CodexOp(Op::SetThreadName { name })) if name == "Current project title"
+        Ok(AppEvent::AvaOp(Op::SetThreadName { name })) if name == "Current project title"
     );
 }
 
@@ -1282,7 +1282,7 @@ async fn slash_rename_requests_and_prefills_an_editable_title_suggestion() {
 
     assert_matches!(
         rx.try_recv(),
-        Ok(AppEvent::CodexOp(Op::SetThreadName { name })) if name == "Fix login timeout"
+        Ok(AppEvent::AvaOp(Op::SetThreadName { name })) if name == "Fix login timeout"
     );
 }
 
@@ -1317,7 +1317,7 @@ async fn slash_rename_preserves_manual_edits_when_suggestion_arrives() {
 
     assert_matches!(
         rx.try_recv(),
-        Ok(AppEvent::CodexOp(Op::SetThreadName { name })) if name == "My own title"
+        Ok(AppEvent::AvaOp(Op::SetThreadName { name })) if name == "My own title"
     );
 }
 
@@ -1434,7 +1434,7 @@ async fn usage_command_runs_with_backend_auth_without_chatgpt_account_flag() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.update_account_state(
         /*status_account_display*/ None, /*plan_type*/ None,
-        /*has_chatgpt_account*/ false, /*has_codex_backend_auth*/ true,
+        /*has_chatgpt_account*/ false, /*has_ava_backend_auth*/ true,
     );
 
     chat.dispatch_command_with_args(SlashCommand::Usage, "daily".to_string(), Vec::new());
@@ -1453,7 +1453,7 @@ async fn usage_command_runs_with_backend_auth_from_widget_init() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual_with_auth(
         /*model_override*/ None,
         /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ true,
+        /*has_ava_backend_auth*/ true,
         FrameRequester::test_dummy(),
     )
     .await;
@@ -1467,7 +1467,7 @@ async fn usage_command_runs_with_backend_auth_from_widget_init() {
         })
     );
     assert!(!chat.has_chatgpt_account());
-    assert!(chat.has_codex_backend_auth());
+    assert!(chat.has_ava_backend_auth());
 }
 
 #[tokio::test]
@@ -1804,7 +1804,7 @@ async fn slash_copy_picker_copies_status_fields_and_preserves_source_after_copyi
         "slash_copy_picker_status_fields",
         render_bottom_popup(&chat, /*width*/ 100)
             .replace(&directory, "[[workspace]]")
-            .replace(crate::version::CODEX_CLI_VERSION, "VERSION"),
+            .replace(crate::version::AVA_CLI_VERSION, "VERSION"),
     );
     chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     let (whole_status, label) = next_copy_selection(&mut rx);
@@ -1813,7 +1813,7 @@ async fn slash_copy_picker_copies_status_fields_and_preserves_source_after_copyi
         "slash_copy_whole_status",
         whole_status
             .replace(&directory, "[[workspace]]")
-            .replace(crate::version::CODEX_CLI_VERSION, "VERSION"),
+            .replace(crate::version::AVA_CLI_VERSION, "VERSION"),
     );
     let expected = [
         ("Whole status", whole_status.as_str()),
@@ -2354,8 +2354,8 @@ async fn slash_keymap_invalid_args_show_usage() {
 async fn copy_shortcut_can_be_remapped() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let mut keymap_config = chat.config_ref().tui_keymap.clone();
-    keymap_config.global.copy = Some(codex_config::types::KeybindingsSpec::One(
-        codex_config::types::KeybindingSpec("ctrl-x".to_string()),
+    keymap_config.global.copy = Some(ava_config::types::KeybindingsSpec::One(
+        ava_config::types::KeybindingSpec("ctrl-x".to_string()),
     ));
     let runtime_keymap =
         crate::keymap::RuntimeKeymap::from_config(&keymap_config).expect("valid copy remap");
@@ -2512,13 +2512,13 @@ async fn active_goal_without_follow_up_suppresses_agent_turn_complete_notificati
     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
     chat.handle_server_notification(
         ServerNotification::ThreadGoalUpdated(
-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+            ava_app_server_protocol::ThreadGoalUpdatedNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: None,
-                goal: codex_app_server_protocol::ThreadGoal {
+                goal: ava_app_server_protocol::ThreadGoal {
                     thread_id: "thread-1".to_string(),
                     objective: "finish the benchmark".to_string(),
-                    status: codex_app_server_protocol::ThreadGoalStatus::Active,
+                    status: ava_app_server_protocol::ThreadGoalStatus::Active,
                     token_budget: None,
                     tokens_used: 0,
                     time_used_seconds: 0,
@@ -3246,7 +3246,7 @@ async fn slash_cd_rejects_pending_input_and_unsupported_session_ownership() {
 #[tokio::test]
 async fn slash_rollout_displays_current_path() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
-    let rollout_path = PathBuf::from("/tmp/codex-test-rollout.jsonl");
+    let rollout_path = PathBuf::from("/tmp/ava-test-rollout.jsonl");
     chat.current_rollout_path = Some(rollout_path.clone());
 
     chat.dispatch_command(SlashCommand::Rollout);
@@ -3292,7 +3292,7 @@ async fn fast_slash_command_updates_and_persists_local_service_tier() {
     assert!(
         events.iter().any(|event| matches!(
             event,
-            AppEvent::CodexOp(Op::OverrideTurnContext {
+            AppEvent::AvaOp(Op::OverrideTurnContext {
                 service_tier: Some(Some(service_tier)),
                 ..
             }) if service_tier == ServiceTier::Fast.request_value()
@@ -3325,7 +3325,7 @@ async fn fast_keybinding_toggle_uses_same_events_as_fast_slash_command() {
     assert!(
         events.iter().any(|event| matches!(
             event,
-            AppEvent::CodexOp(Op::OverrideTurnContext {
+            AppEvent::AvaOp(Op::OverrideTurnContext {
                 service_tier: Some(Some(service_tier)),
                 ..
             }) if service_tier == ServiceTier::Fast.request_value()
@@ -3478,7 +3478,7 @@ async fn queued_fast_slash_applies_before_next_queued_message() {
     assert!(
         events.iter().any(|event| matches!(
             event,
-            AppEvent::CodexOp(Op::OverrideTurnContext {
+            AppEvent::AvaOp(Op::OverrideTurnContext {
                 service_tier: Some(Some(service_tier)),
                 ..
             }) if service_tier == ServiceTier::Fast.request_value()
@@ -3518,7 +3518,7 @@ async fn user_turn_sends_standard_override_after_fast_is_turned_off() {
     assert!(
         events.iter().any(|event| matches!(
             event,
-            AppEvent::CodexOp(Op::OverrideTurnContext {
+            AppEvent::AvaOp(Op::OverrideTurnContext {
                 service_tier: Some(Some(service_tier)),
                 ..
             }) if service_tier == SERVICE_TIER_DEFAULT_REQUEST_VALUE
@@ -3611,7 +3611,7 @@ async fn compact_queues_user_messages_snapshot() {
     handle_error(
         &mut chat,
         "cannot steer a compact turn",
-        Some(CodexErrorInfo::ActiveTurnNotSteerable {
+        Some(AvaErrorInfo::ActiveTurnNotSteerable {
             turn_kind: NonSteerableTurnKind::Compact,
         }),
     );

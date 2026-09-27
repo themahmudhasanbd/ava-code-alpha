@@ -1,12 +1,12 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("//:defs.bzl", "codex_rust_crate")
+load("//:defs.bzl", "ava_rust_crate")
 
-codex_rust_crate(
+ava_rust_crate(
     name = "bwrap",
     # Bazel wires vendored bubblewrap + libcap via :bwrap-ffi below and sets
     # bwrap_available explicitly, so we skip Cargo's build.rs in Bazel builds.
     build_script_enabled = False,
-    crate_name = "codex_bwrap",
+    crate_name = "ava_bwrap",
     deps_extra = select({
         "@platforms//os:linux": [":bwrap-ffi"],
         "//conditions:default": [],
@@ -28,7 +28,7 @@ genrule(
     cmd = " && ".join([
         '$(execpath @bazel_tools//tools/build_defs/hash:sha256) $(execpath :bwrap) "$@"',
         'digest=$$(<"$@")',
-        'printf "CODEX_BWRAP_SHA256=%s\\n" "$$digest" > "$@"',
+        'printf "AVA_BWRAP_SHA256=%s\\n" "$$digest" > "$@"',
     ]),
     target_compatible_with = ["@platforms//os:linux"],
     tools = ["@bazel_tools//tools/build_defs/hash:sha256"],

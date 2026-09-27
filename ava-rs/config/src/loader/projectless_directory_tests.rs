@@ -7,7 +7,7 @@ use crate::loader::find_project_root;
 use crate::loader::load_config_layers_state;
 use crate::loader::project_trust_key;
 use crate::loader::tests::TestFileSystem;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use toml::Value as TomlValue;
@@ -112,8 +112,8 @@ async fn project_markers_and_local_layers_prevent_projectless_classification() -
         (".git", "", ""),
         (".git", "", "nested"),
         (".git", "project_root_markers = []", "nested"),
-        (".codex", "", ""),
-        (".codex", "project_root_markers = ['.codex']", "nested"),
+        (".ava-code", "", ""),
+        (".ava-code", "project_root_markers = ['.ava-code']", "nested"),
         (
             ".company-root",
             "project_root_markers = ['.company-root']",
@@ -142,9 +142,9 @@ async fn project_markers_and_local_layers_prevent_projectless_classification() -
 }
 
 #[tokio::test]
-async fn user_codex_home_is_not_a_project_layer() -> anyhow::Result<()> {
+async fn user_ava_home_is_not_a_project_layer() -> anyhow::Result<()> {
     let mut fixture = Fixture::new()?;
-    fixture.home = fixture.cwd.join(".codex");
+    fixture.home = fixture.cwd.join(".ava-code");
     std::fs::create_dir(&fixture.home)?;
     std::fs::write(fixture.home.join("config.toml"), "model = 'user-model'\n")?;
     assert!(fixture.load().await?.is_projectless());

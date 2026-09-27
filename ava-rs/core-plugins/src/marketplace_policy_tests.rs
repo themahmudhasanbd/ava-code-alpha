@@ -1,10 +1,10 @@
 use super::*;
 use crate::marketplace_upgrade::upgrade_configured_git_marketplaces;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::RequirementSource;
-use codex_config::RequirementsLayerEntry;
-use codex_config::compose_requirements;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::RequirementSource;
+use ava_config::RequirementsLayerEntry;
+use ava_config::compose_requirements;
 use pretty_assertions::assert_eq;
 use std::fs;
 #[cfg(target_os = "windows")]
@@ -43,7 +43,7 @@ fn config_layer_stack_with_user_config(
     .expect("requirements should be present");
     let requirements_toml = with_sources.clone().into_toml();
     let requirements =
-        codex_config::ConfigRequirements::try_from(with_sources).expect("normalize requirements");
+        ava_config::ConfigRequirements::try_from(with_sources).expect("normalize requirements");
     let layers = user_config
         .map(|(contents, file)| {
             vec![ConfigLayerEntry::new(
@@ -224,7 +224,7 @@ restrict_to_allowed_sources = {restricted}
 
 #[test]
 fn system_marketplace_discovery_and_install_validate_source_and_root() {
-    let codex_home = TempDir::new().expect("create Codex home");
+    let ava_home = TempDir::new().expect("create Ava home");
     let configured_root = TempDir::new().expect("create configured marketplace");
     let other_root = TempDir::new().expect("create other marketplace");
     let configured_root = configured_root
@@ -235,7 +235,7 @@ fn system_marketplace_discovery_and_install_validate_source_and_root() {
         .path()
         .canonicalize()
         .expect("canonical other root");
-    let config_file = AbsolutePathBuf::try_from(codex_home.path().join("config.toml"))
+    let config_file = AbsolutePathBuf::try_from(ava_home.path().join("config.toml"))
         .expect("absolute config path");
     let stack = config_layer_stack_with_user_config(
         &format!(
@@ -263,7 +263,7 @@ source = {configured_root:?}
     let stack = ConfigLayerStack::new(
         vec![ConfigLayerEntry::new(
             ConfigLayerSource::System {
-                file: AbsolutePathBuf::try_from(codex_home.path().join("system.toml")).unwrap(),
+                file: AbsolutePathBuf::try_from(ava_home.path().join("system.toml")).unwrap(),
             },
             layer.config.clone(),
         )],
@@ -283,23 +283,23 @@ source = {configured_root:?}
     assert_eq!(
         crate::installed_marketplaces::installed_marketplace_roots_from_layer_stack(
             &stack,
-            codex_home.path()
+            ava_home.path()
         ),
         vec![AbsolutePathBuf::try_from(configured_root).unwrap()],
     );
     assert_eq!(
-        policy.validate_install(&stack, codex_home.path(), &configured_path, "company"),
+        policy.validate_install(&stack, ava_home.path(), &configured_path, "company"),
         Ok(())
     );
     assert!(
         policy
-            .validate_install(&stack, codex_home.path(), &configured_path, "other")
+            .validate_install(&stack, ava_home.path(), &configured_path, "other")
             .expect_err("unconfigured name should fail")
             .contains("must be added to config")
     );
     assert!(
         policy
-            .validate_install(&stack, codex_home.path(), &other_path, "company")
+            .validate_install(&stack, ava_home.path(), &other_path, "company")
             .expect_err("mismatched root should fail")
             .contains("does not match configured marketplace")
     );
@@ -307,8 +307,8 @@ source = {configured_root:?}
 
 #[test]
 fn blocked_configured_source_is_not_installable() {
-    let codex_home = TempDir::new().expect("create Codex home");
-    let config_file = AbsolutePathBuf::try_from(codex_home.path().join("config.toml"))
+    let ava_home = TempDir::new().expect("create Ava home");
+    let config_file = AbsolutePathBuf::try_from(ava_home.path().join("config.toml"))
         .expect("absolute config path");
     let stack = config_layer_stack_with_user_config(
         r#"
@@ -329,12 +329,12 @@ source = "https://github.com/example/blocked.git"
         )),
     );
     let marketplace_path = AbsolutePathBuf::try_from(
-        marketplace_install_root(codex_home.path()).join("debug/.agents/plugins/marketplace.json"),
+        marketplace_install_root(ava_home.path()).join("debug/.agents/plugins/marketplace.json"),
     )
     .expect("absolute marketplace path");
 
     let err = MarketplacePolicy::from_requirements(stack.requirements())
-        .validate_install(&stack, codex_home.path(), &marketplace_path, "debug")
+        .validate_install(&stack, ava_home.path(), &marketplace_path, "debug")
         .expect_err("blocked marketplace install should fail");
     assert!(err.contains("is not allowed by requirements"));
 }
@@ -359,7 +359,7 @@ source = "marketplaces/company"
 
 #[test]
 fn curated_marketplace_requires_its_expected_name() {
-    let codex_home = TempDir::new().expect("create Codex home");
+    let ava_home = TempDir::new().expect("create Ava home");
     let stack = config_layer_stack(
         r#"
 [marketplaces]
@@ -370,7 +370,7 @@ url = "https://github.com/openai/plugins.git"
 "#,
     );
     let marketplace_path = AbsolutePathBuf::try_from(
-        curated_plugins_repo_path(codex_home.path()).join(".agents/plugins/marketplace.json"),
+        curated_plugins_repo_path(ava_home.path()).join(".agents/plugins/marketplace.json"),
     )
     .expect("absolute marketplace path");
     let policy = MarketplacePolicy::from_requirements(stack.requirements());
@@ -378,7 +378,7 @@ url = "https://github.com/openai/plugins.git"
     assert_eq!(
         policy.validate_install(
             &stack,
-            codex_home.path(),
+            ava_home.path(),
             &marketplace_path,
             crate::OPENAI_CURATED_MARKETPLACE_NAME,
         ),
@@ -388,7 +388,7 @@ url = "https://github.com/openai/plugins.git"
         policy
             .validate_install(
                 &stack,
-                codex_home.path(),
+                ava_home.path(),
                 &marketplace_path,
                 crate::OPENAI_API_CURATED_MARKETPLACE_NAME,
             )
@@ -396,7 +396,7 @@ url = "https://github.com/openai/plugins.git"
     );
 
     let repository_manifest = AbsolutePathBuf::try_from(
-        codex_home
+        ava_home
             .path()
             .join("repository/.agents/plugins/marketplace.json"),
     )
@@ -418,7 +418,7 @@ url = "https://github.com/openai/plugins.git"
         ] {
             assert!(
                 MarketplacePolicy::from_requirements(config.requirements())
-                    .validate_install(config, codex_home.path(), &repository_manifest, marketplace)
+                    .validate_install(config, ava_home.path(), &repository_manifest, marketplace)
                     .is_err()
             );
         }
@@ -428,22 +428,22 @@ url = "https://github.com/openai/plugins.git"
 #[cfg(unix)]
 #[test]
 fn symlinked_marketplaces_cannot_borrow_managed_provenance() {
-    let codex_home = TempDir::new().expect("create Codex home");
-    let official_root = curated_plugins_repo_path(codex_home.path());
+    let ava_home = TempDir::new().expect("create Ava home");
+    let official_root = curated_plugins_repo_path(ava_home.path());
     let manifest = official_root.join(".agents/plugins/marketplace.json");
     fs::create_dir_all(manifest.parent().expect("manifest directory"))
         .expect("create manifest directory");
     fs::write(&manifest, "{}").expect("write official manifest");
 
-    let root_alias = codex_home.path().join("repository");
+    let root_alias = ava_home.path().join("repository");
     std::os::unix::fs::symlink(&official_root, &root_alias).expect("symlink official root");
-    let parent_alias = codex_home.path().join("parent-alias");
+    let parent_alias = ava_home.path().join("parent-alias");
     std::os::unix::fs::symlink(
         official_root.parent().expect("official root parent"),
         &parent_alias,
     )
     .expect("symlink official root parent");
-    let manifest_alias = codex_home
+    let manifest_alias = ava_home
         .path()
         .join("manifest-alias/.agents/plugins/api_marketplace.json");
     fs::create_dir_all(manifest_alias.parent().expect("manifest alias parent"))
@@ -465,7 +465,7 @@ fn symlinked_marketplaces_cannot_borrow_managed_provenance() {
         let manifest = AbsolutePathBuf::try_from(path).expect("absolute repository manifest");
         assert!(
             MarketplacePolicy::from_requirements(stack.requirements())
-                .validate_install(&stack, codex_home.path(), &manifest, marketplace)
+                .validate_install(&stack, ava_home.path(), &manifest, marketplace)
                 .is_err()
         );
     }
@@ -473,8 +473,8 @@ fn symlinked_marketplaces_cannot_borrow_managed_provenance() {
 
 #[test]
 fn managed_bundled_source_is_bound_to_its_expected_name() {
-    let codex_home = TempDir::new().expect("create Codex home");
-    let bundled_root = codex_home
+    let ava_home = TempDir::new().expect("create Ava home");
+    let bundled_root = ava_home
         .path()
         .join(".tmp/bundled-marketplaces")
         .join(crate::OPENAI_BUNDLED_MARKETPLACE_NAME);
@@ -491,7 +491,7 @@ restrict_to_allowed_sources = true
     );
 
     let expected_name =
-        validate_marketplace_source_for_add(codex_home.path(), stack.requirements(), &source)
+        validate_marketplace_source_for_add(ava_home.path(), stack.requirements(), &source)
             .expect("managed marketplace source should bypass restrictions");
     assert_eq!(
         validate_marketplace_name_for_add(expected_name, crate::OPENAI_BUNDLED_MARKETPLACE_NAME,),
@@ -502,8 +502,8 @@ restrict_to_allowed_sources = true
 
 #[test]
 fn projected_user_config_removes_blocked_marketplaces_and_plugins() {
-    let codex_home = TempDir::new().expect("create Codex home");
-    let config_file = AbsolutePathBuf::try_from(codex_home.path().join("config.toml"))
+    let ava_home = TempDir::new().expect("create Ava home");
+    let config_file = AbsolutePathBuf::try_from(ava_home.path().join("config.toml"))
         .expect("absolute config path");
     let stack = config_layer_stack_with_user_config(
         r#"
@@ -535,7 +535,7 @@ enabled = true
     );
 
     let projected =
-        policy_filtered_plugin_config(&stack, codex_home.path()).expect("project plugin config");
+        policy_filtered_plugin_config(&stack, ava_home.path()).expect("project plugin config");
     assert_eq!(
         projected["marketplaces"]
             .as_table()
@@ -546,7 +546,7 @@ enabled = true
         vec!["allowed".to_string()]
     );
     assert_eq!(
-        configured_plugins_from_stack(&stack, codex_home.path())
+        configured_plugins_from_stack(&stack, ava_home.path())
             .into_keys()
             .collect::<Vec<_>>(),
         vec!["sample@allowed".to_string()]
@@ -559,12 +559,12 @@ enabled = true
 
 #[test]
 fn managed_bundled_config_is_retained_only_at_its_owned_path() {
-    let codex_home = TempDir::new().expect("create Codex home");
-    let bundled_root = codex_home
+    let ava_home = TempDir::new().expect("create Ava home");
+    let bundled_root = ava_home
         .path()
         .join(".tmp/bundled-marketplaces")
         .join(crate::OPENAI_BUNDLED_MARKETPLACE_NAME);
-    let config_file = AbsolutePathBuf::try_from(codex_home.path().join("config.toml"))
+    let config_file = AbsolutePathBuf::try_from(ava_home.path().join("config.toml"))
         .expect("absolute config path");
     let stack = config_layer_stack_with_user_config(
         r#"
@@ -601,7 +601,7 @@ enabled = true
     );
 
     let projected =
-        policy_filtered_plugin_config(&stack, codex_home.path()).expect("project plugin config");
+        policy_filtered_plugin_config(&stack, ava_home.path()).expect("project plugin config");
 
     assert_eq!(
         projected["marketplaces"]
@@ -625,13 +625,13 @@ enabled = true
 
 #[test]
 fn allowlisted_sources_cannot_claim_reserved_marketplace_names() {
-    let codex_home = TempDir::new().expect("create Codex home");
+    let ava_home = TempDir::new().expect("create Ava home");
     let source_root = TempDir::new().expect("create marketplace root");
     let source_root = source_root
         .path()
         .canonicalize()
         .expect("canonical marketplace root");
-    let config_file = AbsolutePathBuf::try_from(codex_home.path().join("config.toml"))
+    let config_file = AbsolutePathBuf::try_from(ava_home.path().join("config.toml"))
         .expect("absolute config path");
     let stack = config_layer_stack_with_user_config(
         &format!(
@@ -667,7 +667,7 @@ enabled = true
     );
 
     let projected =
-        policy_filtered_plugin_config(&stack, codex_home.path()).expect("project plugin config");
+        policy_filtered_plugin_config(&stack, ava_home.path()).expect("project plugin config");
     assert_eq!(
         projected["marketplaces"]
             .as_table()
@@ -692,8 +692,8 @@ enabled = true
 fn blocked_or_reserved_upgrade_is_rejected_before_marketplace_installation() {
     let reload_config: crate::ConfigLayerReload =
         std::sync::Arc::new(|| panic!("blocked or reserved marketplace must not reload config"));
-    let codex_home = TempDir::new().expect("create Codex home");
-    let config_file = AbsolutePathBuf::try_from(codex_home.path().join("config.toml"))
+    let ava_home = TempDir::new().expect("create Ava home");
+    let config_file = AbsolutePathBuf::try_from(ava_home.path().join("config.toml"))
         .expect("absolute config path");
     let stack = config_layer_stack_with_user_config(
         r#"
@@ -711,7 +711,7 @@ source = "https://github.com/example/blocked.git"
     );
 
     let outcome = upgrade_configured_git_marketplaces(
-        codex_home.path(),
+        ava_home.path(),
         &stack,
         Some("debug"),
         &reload_config,
@@ -725,7 +725,7 @@ source = "https://github.com/example/blocked.git"
             .message
             .contains("is not allowed by requirements")
     );
-    assert!(!marketplace_install_root(codex_home.path()).exists());
+    assert!(!marketplace_install_root(ava_home.path()).exists());
 
     let stack = config_layer_stack_with_user_config(
         "[marketplaces]\nrestrict_to_allowed_sources = false\n",
@@ -735,13 +735,13 @@ source = "https://github.com/example/blocked.git"
         )),
     );
     let outcome = upgrade_configured_git_marketplaces(
-        codex_home.path(),
+        ava_home.path(),
         &stack,
         Some(crate::OPENAI_BUNDLED_MARKETPLACE_NAME),
         &reload_config,
     );
     assert!(outcome.errors[0].message.contains("is reserved"));
-    assert!(!marketplace_install_root(codex_home.path()).exists());
+    assert!(!marketplace_install_root(ava_home.path()).exists());
 }
 
 #[test]

@@ -2,9 +2,9 @@
 //! Runtime consumers use catalog overrides first, then the selected mode's settings.
 
 use super::ResolvedMessage;
-use codex_collaboration_mode_templates::DEFAULT;
-use codex_collaboration_mode_templates::PLAN;
-use codex_protocol::openai_models::CollaborationModeMessages;
+use ava_collaboration_mode_templates::DEFAULT;
+use ava_collaboration_mode_templates::PLAN;
+use ava_protocol::openai_models::CollaborationModeMessages;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ResolvedCollaborationModeMessages<'a> {

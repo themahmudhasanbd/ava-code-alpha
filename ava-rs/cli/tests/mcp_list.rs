@@ -7,10 +7,10 @@ use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Result;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::config::edit::ConfigEditsBuilder;
-use codex_core::config::load_global_mcp_servers;
-use codex_login::CODEX_API_KEY_ENV_VAR;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::config::edit::ConfigEditsBuilder;
+use ava_core::config::load_global_mcp_servers;
+use ava_login::AVA_API_KEY_ENV_VAR;
 use predicates::prelude::PredicateBooleanExt;
 use predicates::str::contains;
 use pretty_assertions::assert_eq;
@@ -28,19 +28,19 @@ use wiremock::matchers::method;
 #[cfg(target_os = "macos")]
 use wiremock::matchers::path;
 
-fn codex_command(codex_home: &Path) -> Result<assert_cmd::Command> {
-    let mut cmd = assert_cmd::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
-    cmd.env("CODEX_HOME", codex_home);
+fn ava_command(ava_home: &Path) -> Result<assert_cmd::Command> {
+    let mut cmd = assert_cmd::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
+    cmd.env("AVA_HOME", ava_home);
     Ok(cmd)
 }
 
-async fn configure_http_oauth_server(codex_home: &Path, url: &str) -> Result<()> {
-    let mut servers = load_global_mcp_servers(codex_home).await?;
+async fn configure_http_oauth_server(ava_home: &Path, url: &str) -> Result<()> {
+    let mut servers = load_global_mcp_servers(ava_home).await?;
     servers.insert(
         "oauth".to_string(),
         toml::from_str(&format!("url = \"{url}\""))?,
     );
-    ConfigEditsBuilder::new(codex_home)
+    ConfigEditsBuilder::new(ava_home)
         .replace_mcp_servers(&servers)
         .apply_blocking()?;
     Ok(())
@@ -48,9 +48,9 @@ async fn configure_http_oauth_server(codex_home: &Path, url: &str) -> Result<()>
 
 #[test]
 fn list_shows_empty_state() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     let output = cmd.args(["mcp", "list"]).output()?;
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout)?;
@@ -61,9 +61,9 @@ fn list_shows_empty_state() -> Result<()> {
 
 #[test]
 fn api_key_auth_exposes_api_curated_plugin_mcp_servers() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"[features]
 plugins = true
 remote_plugin = false
@@ -72,12 +72,12 @@ remote_plugin = false
 enabled = true
 "#,
     )?;
-    let plugin_root = codex_home
+    let plugin_root = ava_home
         .path()
         .join("plugins/cache/openai-api-curated/api-docs/local");
-    std::fs::create_dir_all(plugin_root.join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
-        plugin_root.join(".codex-plugin/plugin.json"),
+        plugin_root.join(".ava-plugin/plugin.json"),
         r#"{"name":"api-docs","version":"local"}"#,
     )?;
     std::fs::write(
@@ -92,17 +92,17 @@ enabled = true
 }"#,
     )?;
 
-    let mut list_cmd = codex_command(codex_home.path())?;
+    let mut list_cmd = ava_command(ava_home.path())?;
     list_cmd
-        .env(CODEX_API_KEY_ENV_VAR, "sk-test")
+        .env(AVA_API_KEY_ENV_VAR, "sk-test")
         .args(["mcp", "list", "--json"])
         .assert()
         .success()
         .stdout(contains(r#""name": "api-docs""#));
 
-    let mut get_cmd = codex_command(codex_home.path())?;
+    let mut get_cmd = ava_command(ava_home.path())?;
     get_cmd
-        .env(CODEX_API_KEY_ENV_VAR, "sk-test")
+        .env(AVA_API_KEY_ENV_VAR, "sk-test")
         .args(["mcp", "get", "api-docs", "--json"])
         .assert()
         .success()
@@ -113,9 +113,9 @@ enabled = true
 
 #[tokio::test]
 async fn list_discovers_local_oauth_server_through_environment_proxy() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    configure_http_oauth_server(codex_home.path(), "http://mcp-proxy.invalid/mcp").await?;
-    std::fs::write(codex_home.path().join("environments.toml"), "invalid = [")?;
+    let ava_home = TempDir::new()?;
+    configure_http_oauth_server(ava_home.path(), "http://mcp-proxy.invalid/mcp").await?;
+    std::fs::write(ava_home.path().join("environments.toml"), "invalid = [")?;
 
     let listener = TcpListener::bind("127.0.0.1:0")?;
     listener.set_nonblocking(true)?;
@@ -187,7 +187,7 @@ async fn list_discovers_local_oauth_server_through_environment_proxy() -> Result
         Ok(requests)
     });
 
-    let mut command = codex_command(codex_home.path())?;
+    let mut command = ava_command(ava_home.path())?;
     command
         .env("HTTP_PROXY", &proxy_url)
         .env("http_proxy", &proxy_url)
@@ -235,7 +235,7 @@ async fn list_discovers_local_oauth_server_through_environment_proxy() -> Result
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn list_reports_unknown_auth_status_when_oauth_discovery_is_rate_limited() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = wiremock::MockServer::start().await;
     wiremock::Mock::given(wiremock::matchers::method("GET"))
         .and(wiremock::matchers::path("/mcp"))
@@ -243,9 +243,9 @@ async fn list_reports_unknown_auth_status_when_oauth_discovery_is_rate_limited()
         .expect(1)
         .mount(&server)
         .await;
-    configure_http_oauth_server(codex_home.path(), &format!("{}/mcp", server.uri())).await?;
+    configure_http_oauth_server(ava_home.path(), &format!("{}/mcp", server.uri())).await?;
 
-    codex_command(codex_home.path())?
+    ava_command(ava_home.path())?
         .env("NO_PROXY", "127.0.0.1,localhost")
         .env("no_proxy", "127.0.0.1,localhost")
         .args([
@@ -266,7 +266,7 @@ async fn list_reports_unknown_auth_status_when_oauth_discovery_is_rate_limited()
 #[cfg(target_os = "macos")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn list_with_macos_proxy_resolution_does_not_panic() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/.well-known/oauth-authorization-server/mcp"))
@@ -277,11 +277,11 @@ async fn list_with_macos_proxy_resolution_does_not_panic() -> Result<()> {
         .expect(2)
         .mount(&server)
         .await;
-    configure_http_oauth_server(codex_home.path(), &format!("{}/mcp", server.uri())).await?;
+    configure_http_oauth_server(ava_home.path(), &format!("{}/mcp", server.uri())).await?;
 
     for respect_system_proxy in [false, true] {
         let system_proxy_override = format!("features.respect_system_proxy={respect_system_proxy}");
-        let mut command = codex_command(codex_home.path())?;
+        let mut command = ava_command(ava_home.path())?;
         command
             .env_remove("HTTP_PROXY")
             .env_remove("http_proxy")
@@ -314,9 +314,9 @@ async fn list_with_macos_proxy_resolution_does_not_panic() -> Result<()> {
 
 #[tokio::test]
 async fn list_and_get_render_expected_output() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut add = codex_command(codex_home.path())?;
+    let mut add = ava_command(ava_home.path())?;
     add.args([
         "mcp",
         "add",
@@ -331,7 +331,7 @@ async fn list_and_get_render_expected_output() -> Result<()> {
     .assert()
     .success();
 
-    let mut servers = load_global_mcp_servers(codex_home.path()).await?;
+    let mut servers = load_global_mcp_servers(ava_home.path()).await?;
     let docs_entry = servers
         .get_mut("docs")
         .expect("docs server should exist after add");
@@ -341,11 +341,11 @@ async fn list_and_get_render_expected_output() -> Result<()> {
         }
         other => panic!("unexpected transport: {other:?}"),
     }
-    ConfigEditsBuilder::new(codex_home.path())
+    ConfigEditsBuilder::new(ava_home.path())
         .replace_mcp_servers(&servers)
         .apply_blocking()?;
 
-    let mut list_cmd = codex_command(codex_home.path())?;
+    let mut list_cmd = ava_command(ava_home.path())?;
     let list_output = list_cmd.args(["mcp", "list"]).output()?;
     assert!(list_output.status.success());
     let stdout = String::from_utf8(list_output.stdout)?;
@@ -360,7 +360,7 @@ async fn list_and_get_render_expected_output() -> Result<()> {
     assert!(stdout.contains("enabled"));
     assert!(stdout.contains("Unsupported"));
 
-    let mut list_json_cmd = codex_command(codex_home.path())?;
+    let mut list_json_cmd = ava_command(ava_home.path())?;
     let json_output = list_json_cmd.args(["mcp", "list", "--json"]).output()?;
     assert!(json_output.status.success());
     let stdout = String::from_utf8(json_output.stdout)?;
@@ -396,7 +396,7 @@ async fn list_and_get_render_expected_output() -> Result<()> {
         )
     );
 
-    let mut get_cmd = codex_command(codex_home.path())?;
+    let mut get_cmd = ava_command(ava_home.path())?;
     let get_output = get_cmd.args(["mcp", "get", "docs"]).output()?;
     assert!(get_output.status.success());
     let stdout = String::from_utf8(get_output.stdout)?;
@@ -408,9 +408,9 @@ async fn list_and_get_render_expected_output() -> Result<()> {
     assert!(stdout.contains("APP_TOKEN=*****"));
     assert!(stdout.contains("WORKSPACE_ID=*****"));
     assert!(stdout.contains("enabled: true"));
-    assert!(stdout.contains("remove: codex mcp remove docs"));
+    assert!(stdout.contains("remove: ava mcp remove docs"));
 
-    let mut get_json_cmd = codex_command(codex_home.path())?;
+    let mut get_json_cmd = ava_command(ava_home.path())?;
     get_json_cmd
         .args(["mcp", "get", "docs", "--json"])
         .assert()
@@ -422,11 +422,11 @@ async fn list_and_get_render_expected_output() -> Result<()> {
 
 #[test]
 fn list_and_get_redact_http_headers_helper() -> Result<()> {
-    let codex_home = TempDir::new()?;
-    let marker = codex_home.path().join("helper-ran");
+    let ava_home = TempDir::new()?;
+    let marker = ava_home.path().join("helper-ran");
     let helper = toml::Value::String(format!("echo invoked > \"{}\"", marker.display()));
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             "[mcp_servers.docs]\n\
              url = \"https://example.com/mcp\"\n\
@@ -438,7 +438,7 @@ fn list_and_get_redact_http_headers_helper() -> Result<()> {
         ),
     )?;
 
-    let list_output = codex_command(codex_home.path())?
+    let list_output = ava_command(ava_home.path())?
         .args(["mcp", "list", "--json"])
         .output()?;
     assert!(list_output.status.success());
@@ -471,7 +471,7 @@ fn list_and_get_redact_http_headers_helper() -> Result<()> {
         &["mcp", "get", "docs", "--json"][..],
         &["mcp", "get", "docs"][..],
     ] {
-        let output = codex_command(codex_home.path())?.args(args).output()?;
+        let output = ava_command(ava_home.path())?.args(args).output()?;
         assert!(output.status.success());
         let stdout = String::from_utf8(output.stdout)?;
         assert!(stdout.contains("http_headers_helper"));
@@ -485,23 +485,23 @@ fn list_and_get_redact_http_headers_helper() -> Result<()> {
 
 #[tokio::test]
 async fn get_disabled_server_shows_single_line() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut add = codex_command(codex_home.path())?;
+    let mut add = ava_command(ava_home.path())?;
     add.args(["mcp", "add", "docs", "--", "docs-server"])
         .assert()
         .success();
 
-    let mut servers = load_global_mcp_servers(codex_home.path()).await?;
+    let mut servers = load_global_mcp_servers(ava_home.path()).await?;
     let docs = servers
         .get_mut("docs")
         .expect("docs server should exist after add");
     docs.enabled = false;
-    ConfigEditsBuilder::new(codex_home.path())
+    ConfigEditsBuilder::new(ava_home.path())
         .replace_mcp_servers(&servers)
         .apply_blocking()?;
 
-    let mut get_cmd = codex_command(codex_home.path())?;
+    let mut get_cmd = ava_command(ava_home.path())?;
     let get_output = get_cmd.args(["mcp", "get", "docs"]).output()?;
     assert!(get_output.status.success());
     let stdout = String::from_utf8(get_output.stdout)?;

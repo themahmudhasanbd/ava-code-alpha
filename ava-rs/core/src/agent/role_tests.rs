@@ -2,13 +2,13 @@ use super::*;
 use crate::config::ConfigBuilder;
 use crate::plugins::plugins_manager_for_config;
 use crate::skills_load_input_from_config;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_login::test_support::auth_manager_from_optional_auth;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_skills_extension::HostSkillsService;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_login::test_support::auth_manager_from_optional_auth;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_skills_extension::HostSkillsService;
+use ava_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use std::fs;
 use std::path::PathBuf;
@@ -21,7 +21,7 @@ async fn test_config_with_cli_overrides(
     let home = TempDir::new().expect("create temp dir");
     let home_path = home.path().to_path_buf();
     let config = ConfigBuilder::default()
-        .codex_home(home_path.clone())
+        .ava_home(home_path.clone())
         .cli_overrides(cli_overrides)
         .fallback_cwd(Some(home_path))
         .build()
@@ -185,8 +185,8 @@ async fn apply_role_preserves_unspecified_keys() {
         TomlValue::String("base-model".to_string()),
     )])
     .await;
-    config.codex_linux_sandbox_exe = Some(PathBuf::from("/tmp/codex-linux-sandbox"));
-    config.main_execve_wrapper_exe = Some(PathBuf::from("/tmp/codex-execve-wrapper"));
+    config.ava_linux_sandbox_exe = Some(PathBuf::from("/tmp/ava-linux-sandbox"));
+    config.main_execve_wrapper_exe = Some(PathBuf::from("/tmp/ava-execve-wrapper"));
     let role_path = write_role_config(
         &home,
         "instructions-only.toml",
@@ -220,12 +220,12 @@ async fn apply_role_preserves_unspecified_keys() {
         (Some("spawn-model"), Some(ReasoningEffort::Low)),
     );
     assert_eq!(
-        config.codex_linux_sandbox_exe,
-        Some(PathBuf::from("/tmp/codex-linux-sandbox"))
+        config.ava_linux_sandbox_exe,
+        Some(PathBuf::from("/tmp/ava-linux-sandbox"))
     );
     assert_eq!(
         config.main_execve_wrapper_exe,
-        Some(PathBuf::from("/tmp/codex-execve-wrapper"))
+        Some(PathBuf::from("/tmp/ava-execve-wrapper"))
     );
     assert_eq!(config.base_instructions, base_instructions);
     assert_eq!(config.base_instructions_provenance, provenance);
@@ -528,7 +528,7 @@ async fn apply_role_disables_plugins_unless_required_by_managed_policy() {
 
     for (requirements, expected_enabled) in [("", false), ("[features]\nplugins = true", true)] {
         let mut config = ConfigBuilder::without_managed_config_for_tests()
-            .codex_home(home.path().to_path_buf())
+            .ava_home(home.path().to_path_buf())
             .fallback_cwd(Some(home.path().to_path_buf()))
             .cli_overrides(vec![(
                 "features.plugins".to_string(),
@@ -644,7 +644,7 @@ enabled = false
     let snapshot = skills_service
         .snapshot_for_config(
             &skills_input,
-            Some(Arc::clone(&codex_exec_server::LOCAL_FS)),
+            Some(Arc::clone(&ava_exec_server::LOCAL_FS)),
         )
         .await;
     let outcome = snapshot.outcome();

@@ -1,5 +1,5 @@
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::ThreadHistoryMode;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Row;

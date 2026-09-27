@@ -5,20 +5,20 @@ load("//:defs.bzl", "workspace_root_test")
 def exec_server_compat_test(
         name,
         comparison_binary = None,
-        current_binary = "//ava-rs/cli:codex",
+        current_binary = "//ava-rs/cli:ava",
         release = None):
-    """Tests both executor directions against another Codex build or release.
+    """Tests both executor directions against another Ava build or release.
 
     Args:
         name: Name of the generated compatibility test target.
-        comparison_binary: Built Codex executable to compare with the current build.
-        current_binary: Built Codex executable representing the current version.
-        release: External release repository exposing `:codex` and `:package`.
+        comparison_binary: Built Ava executable to compare with the current build.
+        current_binary: Built Ava executable representing the current version.
+        release: External release repository exposing `:ava` and `:package`.
     """
     if (comparison_binary == None) == (release == None):
         fail("exactly one of comparison_binary and release must be set")
 
-    comparison = comparison_binary if release == None else release + "//:codex"
+    comparison = comparison_binary if release == None else release + "//:ava"
     data = [] if release == None else [release + "//:package"]
     comparison_alias = name + "-comparison-binary"
     native.alias(
@@ -34,8 +34,8 @@ def exec_server_compat_test(
         data = data,
         runfile_env = {
             "//ava-rs/bwrap:bwrap": "CARGO_BIN_EXE_bwrap",
-            current_binary: "CODEX_TEST_CURRENT_CODEX",
-            ":" + comparison_alias: "CODEX_TEST_RELEASED_CODEX",
+            current_binary: "AVA_TEST_CURRENT_AVA",
+            ":" + comparison_alias: "AVA_TEST_RELEASED_AVA",
         },
         tags = ["no-sandbox"],
         target_compatible_with = [

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_config::types::BrowserConfig;
+use ava_config::types::BrowserConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tokio::sync::{Mutex, RwLock};

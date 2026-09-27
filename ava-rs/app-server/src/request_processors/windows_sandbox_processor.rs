@@ -1,8 +1,8 @@
 use super::*;
 #[cfg(target_os = "windows")]
 use anyhow::Context as _;
-use codex_protocol::sandbox::SandboxType;
-use codex_utils_path_uri::PathUri;
+use ava_protocol::sandbox::SandboxType;
+use ava_utils_path_uri::PathUri;
 
 #[derive(Clone)]
 pub(crate) struct WindowsSandboxRequestProcessor {
@@ -33,12 +33,12 @@ impl WindowsSandboxRequestProcessor {
         request_id: &ConnectionRequestId,
     ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
         #[cfg(target_os = "windows")]
-        if codex_windows_sandbox::registered_core_requested()
+        if ava_windows_sandbox::registered_core_requested()
             && matches!(
                 WindowsSandboxLevel::from_config(&self.config),
                 WindowsSandboxLevel::Elevated
             )
-            && !codex_login::is_workload_identity_selected()
+            && !ava_login::is_workload_identity_selected()
         {
             let processor = self.clone();
             let request_id = request_id.clone();
@@ -48,7 +48,7 @@ impl WindowsSandboxRequestProcessor {
                 processor.registration_refresh.get_or_init(|| async {
                     let config = Arc::clone(&processor.config);
                     let result = tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
-                        if !codex_windows_sandbox::registered_core_needs_refresh(&config.codex_home)? {
+                        if !ava_windows_sandbox::registered_core_needs_refresh(&config.ava_home)? {
                             return Ok(());
                         }
                         let env_map = std::env::vars().collect();
@@ -56,12 +56,12 @@ impl WindowsSandboxRequestProcessor {
                         let (settings, listeners) = match config.permissions.network.as_ref() {
                             Some(network) => network.windows_sandbox_proxy_listeners()?,
                             None => (
-                                codex_windows_sandbox::WindowsSandboxProvisioningSettings::from_environment(&policy, &env_map),
-                                codex_windows_sandbox::WindowsSandboxProxyListeners::from_environment(&policy, &env_map),
+                                ava_windows_sandbox::WindowsSandboxProvisioningSettings::from_environment(&policy, &env_map),
+                                ava_windows_sandbox::WindowsSandboxProxyListeners::from_environment(&policy, &env_map),
                             ),
                         };
-                        codex_windows_sandbox::refresh_registered_core_via_service(
-                            &config.codex_home, settings, listeners,
+                        ava_windows_sandbox::refresh_registered_core_via_service(
+                            &config.ava_home, settings, listeners,
                         )?;
                         Ok(())
                     }).await.map_err(anyhow::Error::from).and_then(std::convert::identity);
@@ -145,16 +145,16 @@ impl WindowsSandboxRequestProcessor {
                 workspace_roots,
                 command_cwd,
                 env_map: std::env::vars().collect(),
-                codex_home: config.codex_home.to_path_buf(),
+                ava_home: config.ava_home.to_path_buf(),
             };
             let setup_result = async {
                 // Workload identity is process-local, so use the existing helper path with
                 // the caller's resolved configuration instead of loading auth in the service.
                 #[cfg(target_os = "windows")]
                 if setup_mode == CoreWindowsSandboxSetupMode::Elevated
-                    && (codex_windows_sandbox::registered_core_requested()
+                    && (ava_windows_sandbox::registered_core_requested()
                         || config.features.enabled(Feature::WindowsSandboxService))
-                    && !codex_login::is_workload_identity_selected()
+                    && !ava_login::is_workload_identity_selected()
                 {
                     let provisioning = match config
                         .permissions
@@ -163,22 +163,22 @@ impl WindowsSandboxRequestProcessor {
                         .map_or_else(
                             || {
                                 Ok((
-                                    codex_windows_sandbox::WindowsSandboxProvisioningSettings::from_environment(
+                                    ava_windows_sandbox::WindowsSandboxProvisioningSettings::from_environment(
                                         &setup_request.permission_profile,
                                         &setup_request.env_map,
                                     ),
-                                    codex_windows_sandbox::WindowsSandboxProxyListeners::from_environment(
+                                    ava_windows_sandbox::WindowsSandboxProxyListeners::from_environment(
                                         &setup_request.permission_profile,
                                         &setup_request.env_map,
                                     ),
                                 ))
                             },
-                            codex_core::config::NetworkProxySpec::windows_sandbox_proxy_listeners,
+                            ava_core::config::NetworkProxySpec::windows_sandbox_proxy_listeners,
                         )
                     {
                         Ok(provisioning) => Some(provisioning),
                         Err(error) => {
-                            if codex_windows_sandbox::registered_core_requested() {
+                            if ava_windows_sandbox::registered_core_requested() {
                                 return Err(error).context("registered Core requires service-compatible proxy settings");
                             }
                             warn!(
@@ -191,11 +191,11 @@ impl WindowsSandboxRequestProcessor {
                         let service_setup_request = setup_request.clone();
                         let service_setup_start = Instant::now();
                         tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
-                            let Ok(permissions) = codex_windows_sandbox::ResolvedWindowsSandboxPermissions::try_from_permission_profile_for_workspace_roots(
+                            let Ok(permissions) = ava_windows_sandbox::ResolvedWindowsSandboxPermissions::try_from_permission_profile_for_workspace_roots(
                                 &service_setup_request.permission_profile,
                                 &service_setup_request.workspace_roots,
                             ) else {
-                                anyhow::ensure!(!codex_windows_sandbox::registered_core_requested(),
+                                anyhow::ensure!(!ava_windows_sandbox::registered_core_requested(),
                                     "registered Core requires a service-compatible sandbox policy");
                                 // The existing setup path can still succeed for completed
                                 // provisioning without resolving the current profile.
@@ -206,8 +206,8 @@ impl WindowsSandboxRequestProcessor {
                             )?;
                             // The shared setup path below handles helper fallback and
                             // refreshes workspace ACLs after provisioning.
-                            codex_windows_sandbox::provision_windows_sandbox_via_service(
-                                &service_setup_request.codex_home,
+                            ava_windows_sandbox::provision_windows_sandbox_via_service(
+                                &service_setup_request.ava_home,
                                 settings,
                                 listeners,
                             )?;
@@ -221,7 +221,7 @@ impl WindowsSandboxRequestProcessor {
                         })
                         .and_then(std::convert::identity)
                         .inspect_err(|error| {
-                            codex_core::windows_sandbox::emit_windows_sandbox_setup_failure_metrics(
+                            ava_core::windows_sandbox::emit_windows_sandbox_setup_failure_metrics(
                                 setup_mode,
                                 service_setup_start.elapsed(),
                                 error,
@@ -229,7 +229,7 @@ impl WindowsSandboxRequestProcessor {
                         })?;
                     }
                 }
-                codex_core::windows_sandbox::run_windows_sandbox_setup(setup_request).await
+                ava_core::windows_sandbox::run_windows_sandbox_setup(setup_request).await
             }
             .await;
             let notification = WindowsSandboxSetupCompletedNotification {
@@ -279,17 +279,17 @@ mod setup_config_tests;
 
 /// Resolves the requested API mode after checking that managed requirements allow it.
 fn resolve_allowed_windows_sandbox_setup_mode(
-    requirements: &codex_config::ConfigRequirements,
+    requirements: &ava_config::ConfigRequirements,
     requested_mode: WindowsSandboxSetupMode,
 ) -> Result<CoreWindowsSandboxSetupMode, JSONRPCErrorError> {
     let (setup_mode, config_mode) = match requested_mode {
         WindowsSandboxSetupMode::Elevated => (
             CoreWindowsSandboxSetupMode::Elevated,
-            codex_config::types::WindowsSandboxModeToml::Elevated,
+            ava_config::types::WindowsSandboxModeToml::Elevated,
         ),
         WindowsSandboxSetupMode::Unelevated => (
             CoreWindowsSandboxSetupMode::Unelevated,
-            codex_config::types::WindowsSandboxModeToml::Unelevated,
+            ava_config::types::WindowsSandboxModeToml::Unelevated,
         ),
     };
     requirements
@@ -314,7 +314,7 @@ fn determine_windows_sandbox_readiness(config: &Config) -> WindowsSandboxReadine
 
     determine_windows_sandbox_readiness_from_state(
         WindowsSandboxLevel::from_config(config),
-        sandbox_setup_is_complete(config.codex_home.as_path()),
+        sandbox_setup_is_complete(config.ava_home.as_path()),
     )
 }
 
@@ -341,10 +341,10 @@ fn determine_windows_sandbox_readiness_from_state(
 mod tests {
     use super::*;
     use crate::error_code::INVALID_REQUEST_ERROR_CODE;
-    use codex_config::ConfigRequirements;
-    use codex_config::Constrained;
-    use codex_config::ConstrainedWithSource;
-    use codex_config::types::WindowsSandboxModeToml;
+    use ava_config::ConfigRequirements;
+    use ava_config::Constrained;
+    use ava_config::ConstrainedWithSource;
+    use ava_config::types::WindowsSandboxModeToml;
 
     #[test]
     fn resolve_allowed_windows_sandbox_setup_mode_rejects_disallowed_mode() {

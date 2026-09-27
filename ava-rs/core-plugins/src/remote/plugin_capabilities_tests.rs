@@ -6,8 +6,8 @@ use crate::remote::RemotePluginChange;
 use crate::remote::RemotePluginServiceConfig;
 use crate::remote::sync_remote_installed_plugin_bundles_once;
 use crate::test_support::write_file;
-use codex_login::CodexAuth;
-use codex_utils_plugins::AGENT_PLUGIN_SCHEMA_URI;
+use ava_login::AvaAuth;
+use ava_utils_plugins::AGENT_PLUGIN_SCHEMA_URI;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -20,8 +20,8 @@ use wiremock::matchers::query_param;
 
 #[tokio::test]
 async fn agent_plugin_capabilities_do_not_require_runtime_data_directory() {
-    let codex_home = TempDir::new().expect("Codex home");
-    let store = PluginStore::new(codex_home.path().to_path_buf());
+    let ava_home = TempDir::new().expect("Ava home");
+    let store = PluginStore::new(ava_home.path().to_path_buf());
     let plugin_id = PluginId::parse("example@test").expect("plugin id");
     let root = store.plugin_root(&plugin_id, "1.0.0");
     write_file(
@@ -70,12 +70,12 @@ async fn agent_plugin_capabilities_do_not_require_runtime_data_directory() {
 
 #[tokio::test]
 async fn capabilities_union_cached_versions_and_sync_reports_removal() -> anyhow::Result<()> {
-    let codex_home = TempDir::new()?;
-    let store = PluginStore::new(codex_home.path().to_path_buf());
+    let ava_home = TempDir::new()?;
+    let store = PluginStore::new(ava_home.path().to_path_buf());
     let plugin_id = PluginId::parse("example@openai-curated-remote")?;
     let old_root = store.plugin_root(&plugin_id, "1.0.0");
     for (path, contents) in [
-        (".codex-plugin/plugin.json", r#"{"name":"example"}"#),
+        (".ava-plugin/plugin.json", r#"{"name":"example"}"#),
         (
             ".mcp.json",
             r#"{"mcpServers":{"example":{"command":"unused"}}}"#,
@@ -97,7 +97,7 @@ async fn capabilities_union_cached_versions_and_sync_reports_removal() -> anyhow
     // Accumulate the old and new declarations without involving bundle transport.
     let new_root = store.plugin_root(&plugin_id, "2.0.0");
     write_file(
-        new_root.join(".codex-plugin/plugin.json").as_path(),
+        new_root.join(".ava-plugin/plugin.json").as_path(),
         r#"{"name":"example"}"#,
     );
     write_file(
@@ -120,7 +120,7 @@ async fn capabilities_union_cached_versions_and_sync_reports_removal() -> anyhow
         format!("{}/backend-api", server.uri()),
         crate::test_support::test_http_client_factory(),
     );
-    let auth = CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = AvaAuth::create_dummy_chatgpt_auth_for_testing();
     Mock::given(method("GET"))
         .and(path("/backend-api/ps/plugins/installed"))
         .and(query_param("includeDownloadUrls", "true"))
@@ -135,7 +135,7 @@ async fn capabilities_union_cached_versions_and_sync_reports_removal() -> anyhow
     // Removal describes only the active version, not the union accumulated above.
     assert_eq!(
         sync_remote_installed_plugin_bundles_once(
-            codex_home.path().to_path_buf(),
+            ava_home.path().to_path_buf(),
             &config,
             Some(&auth),
         )

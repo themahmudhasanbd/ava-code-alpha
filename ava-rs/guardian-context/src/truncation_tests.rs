@@ -1,6 +1,6 @@
 //! Regression coverage for Guardian's truncation marker and UTF-8 boundaries.
 
-use codex_protocol::protocol::TruncationPolicy;
+use ava_protocol::protocol::TruncationPolicy;
 use pretty_assertions::assert_eq;
 
 use super::truncate_text;

@@ -10,7 +10,7 @@ export type { AutoCompactTokenLimitScope } from "./AutoCompactTokenLimitScope";
 export type { ClientInfo } from "./ClientInfo";
 export type { ClientNotification } from "./ClientNotification";
 export type { ClientRequest } from "./ClientRequest";
-export type { CodexResponseHandoffMode } from "./CodexResponseHandoffMode";
+export type { AvaResponseHandoffMode } from "./AvaResponseHandoffMode";
 export type { CollaborationMode } from "./CollaborationMode";
 export type { ConfigurationReasoning } from "./ConfigurationReasoning";
 export type { ContentItem } from "./ContentItem";

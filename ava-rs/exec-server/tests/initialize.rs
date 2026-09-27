@@ -1,15 +1,15 @@
 mod common;
 
 use anyhow::Context;
-use codex_build_info::BuildInfo;
-use codex_build_info::build_id;
-use codex_exec_server::EnvironmentInfo;
-use codex_exec_server::InitializeParams;
-use codex_exec_server::InitializeResponse;
-use codex_exec_server_protocol::JSONRPCError;
-use codex_exec_server_protocol::JSONRPCErrorError;
-use codex_exec_server_protocol::JSONRPCMessage;
-use codex_exec_server_protocol::JSONRPCResponse;
+use ava_build_info::BuildInfo;
+use ava_build_info::build_id;
+use ava_exec_server::EnvironmentInfo;
+use ava_exec_server::InitializeParams;
+use ava_exec_server::InitializeResponse;
+use ava_exec_server_protocol::JSONRPCError;
+use ava_exec_server_protocol::JSONRPCErrorError;
+use ava_exec_server_protocol::JSONRPCMessage;
+use ava_exec_server_protocol::JSONRPCResponse;
 use common::TEST_BUILD_COMMIT;
 use common::exec_server::ExecServerHarness;
 use common::exec_server::exec_server_with_env;
@@ -25,9 +25,9 @@ async fn exec_server_accepts_initialize(version: Option<&str>) -> anyhow::Result
     let package = TempDir::new()?;
     let bin_dir = package.path().join("bin");
     std::fs::create_dir(&bin_dir)?;
-    let executable = bin_dir.join(format!("codex{}", std::env::consts::EXE_SUFFIX));
+    let executable = bin_dir.join(format!("ava{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(std::env::current_exe()?, &executable)?;
-    let manifest = package.path().join("codex-package.json");
+    let manifest = package.path().join("ava-package.json");
     if let Some(version) = version {
         std::fs::write(
             &manifest,
@@ -44,7 +44,7 @@ async fn exec_server_accepts_initialize(version: Option<&str>) -> anyhow::Result
             "ffffffffffffffffffffffffffffffffffffffff",
         ),
         ("GITHUB_SHA", "ffffffffffffffffffffffffffffffffffffffff"),
-        ("CODEX_BUILD_TARGET", "runtime-override"),
+        ("AVA_BUILD_TARGET", "runtime-override"),
     ]);
     let mut server = ExecServerHarness::start(command).await?;
 

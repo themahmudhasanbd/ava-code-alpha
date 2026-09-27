@@ -1,11 +1,11 @@
 ---
 name: persistent-memory
-description: Use the persistent project memory system across Claude Code, Codex, and Antigravity to store, search, and recall project architecture, decisions, learnings, bugs, preferences, and progress using SQLite FTS5.
+description: Use the persistent project memory system across Claude Code, Ava, and Antigravity to store, search, and recall project architecture, decisions, learnings, bugs, preferences, and progress using SQLite FTS5.
 ---
 
 # Persistent Memory Skill
 
-This skill guides all AI agents (Claude Code, Codex, Antigravity, OpenCode) to continuously utilize the central Persistent Memory MCP server (`/memory` endpoint).
+This skill guides all AI agents (Claude Code, Ava, Antigravity, OpenCode) to continuously utilize the central Persistent Memory MCP server (`/memory` endpoint).
 
 ## Memory System Capabilities
 

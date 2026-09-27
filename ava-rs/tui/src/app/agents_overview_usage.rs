@@ -13,11 +13,11 @@ use crate::status::format_credit_micros;
 use crate::status::format_estimated_usd_micros;
 use crate::status::format_tokens_compact;
 use crate::tui::FrameRequester;
-use codex_app_server_protocol::ThreadUsage;
-use codex_app_server_protocol::ThreadUsageBreakdownGroup;
-use codex_app_server_protocol::TokenUsageBreakdown;
-use codex_protocol::ThreadId;
-use codex_protocol::account::PlanType;
+use ava_app_server_protocol::ThreadUsage;
+use ava_app_server_protocol::ThreadUsageBreakdownGroup;
+use ava_app_server_protocol::TokenUsageBreakdown;
+use ava_protocol::ThreadId;
+use ava_protocol::account::PlanType;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use std::time::Duration;
@@ -42,7 +42,7 @@ impl App {
         if self.reconnect.offline
             || self.agents_overview.usage_disabled
             || self.agents_overview.pending_usage.is_some()
-            || !self.chat_widget.has_codex_backend_auth()
+            || !self.chat_widget.has_ava_backend_auth()
             || !matches!(
                 self.chat_widget.current_plan_type(),
                 Some(

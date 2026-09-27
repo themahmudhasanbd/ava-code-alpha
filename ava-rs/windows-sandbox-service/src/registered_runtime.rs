@@ -11,14 +11,14 @@ use std::time::Duration;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
-use codex_windows_sandbox::APP_CORE_RUNNER_ALIAS;
-use codex_windows_sandbox::SandboxRuntimeAccount;
-use codex_windows_sandbox::logon_existing_sandbox_account;
-use codex_windows_sandbox::resolve_sid as lookup_sid;
-use codex_windows_sandbox::sandbox_secrets_dir;
-use codex_windows_sandbox::string_from_sid_bytes;
-use codex_windows_sandbox::to_wide;
-use codex_windows_sandbox::token_groups;
+use ava_windows_sandbox::APP_CORE_RUNNER_ALIAS;
+use ava_windows_sandbox::SandboxRuntimeAccount;
+use ava_windows_sandbox::logon_existing_sandbox_account;
+use ava_windows_sandbox::resolve_sid as lookup_sid;
+use ava_windows_sandbox::sandbox_secrets_dir;
+use ava_windows_sandbox::string_from_sid_bytes;
+use ava_windows_sandbox::to_wide;
+use ava_windows_sandbox::token_groups;
 use windows::Foundation::AsyncStatus;
 use windows::Management::Deployment::DeploymentOptions;
 use windows::Management::Deployment::PackageManager;
@@ -102,10 +102,10 @@ pub(crate) fn provision(
         let token = with_owner_impersonation(identity.token.0, || {
             let mut pins = Vec::new();
             crate::ipc::pin_existing_ancestors(
-                &sandbox_secrets_dir(&identity.codex_home),
+                &sandbox_secrets_dir(&identity.ava_home),
                 &mut pins,
             )?;
-            logon_existing_sandbox_account(&identity.codex_home, account)
+            logon_existing_sandbox_account(&identity.ava_home, account)
         })?;
         let expected = record
             .runtime()?
@@ -208,7 +208,7 @@ pub(crate) fn provision(
 pub(crate) fn prepare_cleanup(record: InstallationRecord) -> Result<InstallationRecord> {
     validate_record(&record)?;
     for account in &record.runtime()?.accounts {
-        if codex_windows_sandbox::local_user_flags(account.account.username())?.is_some() {
+        if ava_windows_sandbox::local_user_flags(account.account.username())?.is_some() {
             validate_account_sid(account)?;
         }
     }
@@ -304,7 +304,7 @@ fn validate_target(
     account: SandboxRuntimeAccount,
     expected_sid: Option<&str>,
 ) -> Result<String> {
-    let user = unsafe { codex_windows_sandbox::get_user_sid_bytes(token) }?;
+    let user = unsafe { ava_windows_sandbox::get_user_sid_bytes(token) }?;
     let user_sid = string_from_sid_bytes(&user).map_err(anyhow::Error::msg)?;
     ensure!(
         expected_sid.is_none_or(|expected| expected == user_sid),
@@ -319,7 +319,7 @@ fn validate_target(
     }
     .context("read runtime account groups")?;
     ensure!(groups.len() <= 256, "invalid runtime account groups");
-    let sandbox_group = lookup_sid(codex_windows_sandbox::SANDBOX_USERS_GROUP)?;
+    let sandbox_group = lookup_sid(ava_windows_sandbox::SANDBOX_USERS_GROUP)?;
     let mut sandbox_member = false;
     for group in groups {
         ensure!(
@@ -334,7 +334,7 @@ fn validate_target(
     }
     ensure!(
         sandbox_member,
-        "runtime account is not in CodexSandboxUsers"
+        "runtime account is not in AvaSandboxUsers"
     );
     Ok(user_sid)
 }

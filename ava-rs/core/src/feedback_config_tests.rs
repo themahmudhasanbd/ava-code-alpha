@@ -1,8 +1,8 @@
 //! Check configuration changes and feature toggles are represented without stale overrides.
 
 use super::*;
-use codex_models_manager::model_info::model_info_from_slug;
-use codex_models_manager::model_info::with_config_overrides;
+use ava_models_manager::model_info::model_info_from_slug;
+use ava_models_manager::model_info::with_config_overrides;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]

@@ -4,8 +4,8 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use url::Url;
@@ -50,7 +50,7 @@ fn success(access_token: &str, expires_in: u64) -> ResponseTemplate {
         "issued_token_type": ACCESS_TOKEN_TYPE,
         "token_type": "Bearer",
         "expires_in": expires_in,
-        "scope": "openid profile email chatgpt.workspace.feature.allow-codex-local-access.access",
+        "scope": "openid profile email chatgpt.workspace.feature.allow-ava-local-access.access",
         "chatgpt_account_id": "workspace-one",
         "chatgpt_account_user_id": "membership-one",
         "user_id": "user-one",
@@ -76,7 +76,7 @@ async fn exchange_sends_three_field_contract_and_caches_valid_response() {
         chatgpt_account_user_id: "membership-one".to_string(),
         chatgpt_plan_type: Some("enterprise".to_string()),
         expires_in: 600,
-        scope: "openid profile email chatgpt.workspace.feature.allow-codex-local-access.access"
+        scope: "openid profile email chatgpt.workspace.feature.allow-ava-local-access.access"
             .to_string(),
         user_id: "user-one".to_string(),
         version: 1,

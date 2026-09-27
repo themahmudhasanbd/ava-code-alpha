@@ -77,7 +77,7 @@ async fn owned_startup_preserves_loading_until_resume_replay_is_applied() -> Res
         if has_answer {
             assert!(rendered.contains("Retained answer after resume."));
         } else {
-            assert!(rendered.contains("OpenAI Codex"));
+            assert!(rendered.contains("OpenAI Ava"));
         }
         tui.set_owned_screen(/*owned*/ false)?;
         app_server.shutdown().await?;
@@ -96,7 +96,7 @@ async fn owned_startup_renders_visible_decisions_and_overview_before_pending_eve
             let view = app.agents_overview_view(Vec::new(), /*selected_thread_id*/ None);
             app.chat_widget.show_bottom_pane_view(Box::new(view));
         } else {
-            let preset = codex_utils_approval_presets::builtin_approval_presets()
+            let preset = ava_utils_approval_presets::builtin_approval_presets()
                 .into_iter()
                 .find(|preset| preset.id == "auto")
                 .expect("auto preset");

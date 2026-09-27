@@ -3,24 +3,24 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use codex_windows_sandbox::PROVISIONING_PROTOCOL_VERSION;
-use codex_windows_sandbox::ProvisioningMessage;
-use codex_windows_sandbox::WindowsSandboxProvisioningSettings;
-use codex_windows_sandbox::WindowsSandboxProxyListeners;
-use codex_windows_sandbox::read_provisioning_frame;
+use ava_windows_sandbox::PROVISIONING_PROTOCOL_VERSION;
+use ava_windows_sandbox::ProvisioningMessage;
+use ava_windows_sandbox::WindowsSandboxProvisioningSettings;
+use ava_windows_sandbox::WindowsSandboxProxyListeners;
+use ava_windows_sandbox::read_provisioning_frame;
 use std::path::PathBuf;
 
 use super::MAX_REQUEST_BYTES;
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) enum ServiceRequest {
-    RegisterInstallation { codex_home: PathBuf },
+    RegisterInstallation { ava_home: PathBuf },
     ProvisionSandbox(ProvisioningRequest),
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct ProvisioningRequest {
-    pub(crate) codex_home: PathBuf,
+    pub(crate) ava_home: PathBuf,
     pub(crate) registered_core: bool,
     pub(crate) refresh_only: bool,
     pub(crate) listeners: WindowsSandboxProxyListeners,
@@ -46,16 +46,16 @@ pub(super) fn validate_request(request: &[u8]) -> Result<ServiceRequest> {
         );
     }
     let request = match frame.message {
-        ProvisioningMessage::RegisterInstallationRequest { codex_home } => {
-            validate_home(&codex_home)?;
+        ProvisioningMessage::RegisterInstallationRequest { ava_home } => {
+            validate_home(&ava_home)?;
             return Ok(ServiceRequest::RegisterInstallation {
-                codex_home: PathBuf::from(codex_home),
+                ava_home: PathBuf::from(ava_home),
             });
         }
         ProvisioningMessage::ProvisionSandboxRequest { payload } => payload,
         ProvisioningMessage::ProvisionSandboxResponse { .. } => bail!("expected a service request"),
     };
-    validate_home(&request.codex_home)?;
+    validate_home(&request.ava_home)?;
     if request.refresh_only && !request.registered_core {
         bail!("registration refresh requires registered Core");
     }
@@ -81,7 +81,7 @@ pub(super) fn validate_request(request: &[u8]) -> Result<ServiceRequest> {
         bail!("provisioning listener is absent from the proxy settings");
     }
     Ok(ServiceRequest::ProvisionSandbox(ProvisioningRequest {
-        codex_home: PathBuf::from(request.codex_home),
+        ava_home: PathBuf::from(request.ava_home),
         registered_core: request.registered_core,
         refresh_only: request.refresh_only,
         listeners,
@@ -91,7 +91,7 @@ pub(super) fn validate_request(request: &[u8]) -> Result<ServiceRequest> {
 
 fn validate_home(home: &str) -> Result<()> {
     if home.is_empty() || home.contains(['\0', '\r', '\n']) {
-        bail!("Codex home is empty or contains an invalid control character");
+        bail!("Ava home is empty or contains an invalid control character");
     }
     Ok(())
 }

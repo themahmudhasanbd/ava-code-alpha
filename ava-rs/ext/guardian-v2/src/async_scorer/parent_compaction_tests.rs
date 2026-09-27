@@ -3,10 +3,10 @@
 use super::super::config::DEFAULT_PARENT_COMPACTION_TOKENS;
 use super::*;
 use anyhow::Result;
-use codex_history::CompactionCheckpoint;
-use codex_history::ResponseItemEnvelope;
-use codex_protocol::ResponseItemId;
-use codex_protocol::models::InternalChatMessageMetadataPassthrough;
+use ava_history::CompactionCheckpoint;
+use ava_history::ResponseItemEnvelope;
+use ava_protocol::ResponseItemId;
+use ava_protocol::models::InternalChatMessageMetadataPassthrough;
 use pretty_assertions::assert_eq;
 
 #[test]

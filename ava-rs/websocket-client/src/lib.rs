@@ -1,4 +1,4 @@
-//! Proxy-aware WebSocket connection setup shared by Codex API clients, reusing the HTTP factory's
+//! Proxy-aware WebSocket connection setup shared by Ava API clients, reusing the HTTP factory's
 //! ChatGPT cookie store for secure handshakes.
 
 mod dialer;
@@ -10,10 +10,10 @@ use std::sync::Arc;
 use std::task::Context;
 use std::task::Poll;
 
-use codex_http_client::BuildCustomCaTransportError;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyRoute;
-use codex_http_client::build_rustls_client_config_with_custom_ca;
+use ava_http_client::BuildCustomCaTransportError;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyRoute;
+use ava_http_client::build_rustls_client_config_with_custom_ca;
 use futures::FutureExt;
 use futures::Sink;
 use futures::Stream;
@@ -43,11 +43,11 @@ pub struct WebSocketConnector {
     tcp_nodelay: TcpNodelay,
 }
 
-/// Selects whether WebSocket TLS follows Codex custom-CA policy or Tungstenite defaults.
+/// Selects whether WebSocket TLS follows Ava custom-CA policy or Tungstenite defaults.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum WebSocketTlsMode {
-    /// Build an explicit TLS configuration from native roots and configured Codex custom CAs.
-    ExplicitCodexTls,
+    /// Build an explicit TLS configuration from native roots and configured Ava custom CAs.
+    ExplicitAvaTls,
     /// Let Tungstenite build its default TLS configuration when the target requires TLS.
     TungsteniteDefault,
 }
@@ -59,23 +59,23 @@ pub(crate) enum TcpNodelay {
 }
 
 impl WebSocketConnector {
-    /// Creates a connector using native roots and any configured Codex custom CA bundle.
+    /// Creates a connector using native roots and any configured Ava custom CA bundle.
     pub fn new(
         http_client_factory: &HttpClientFactory,
     ) -> Result<Self, BuildCustomCaTransportError> {
-        Self::new_with_tls_mode(http_client_factory, WebSocketTlsMode::ExplicitCodexTls)
+        Self::new_with_tls_mode(http_client_factory, WebSocketTlsMode::ExplicitAvaTls)
     }
 
-    /// Creates a connector with explicit Codex TLS or the transport's existing TLS defaults.
+    /// Creates a connector with explicit Ava TLS or the transport's existing TLS defaults.
     ///
-    /// HTTPS proxy connections still build Codex TLS configuration when they establish their
+    /// HTTPS proxy connections still build Ava TLS configuration when they establish their
     /// proxy tunnel; default-mode target connections otherwise remain entirely with Tungstenite.
     pub fn new_with_tls_mode(
         http_client_factory: &HttpClientFactory,
         tls_mode: WebSocketTlsMode,
     ) -> Result<Self, BuildCustomCaTransportError> {
         let tls_config = match tls_mode {
-            WebSocketTlsMode::ExplicitCodexTls => {
+            WebSocketTlsMode::ExplicitAvaTls => {
                 Some(build_rustls_client_config_with_custom_ca()?)
             }
             WebSocketTlsMode::TungsteniteDefault => None,

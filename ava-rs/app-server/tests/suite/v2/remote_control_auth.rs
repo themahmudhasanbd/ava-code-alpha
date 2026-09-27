@@ -3,8 +3,8 @@
 use super::*;
 use app_test_support::ChatGptIdTokenClaims;
 use app_test_support::encode_id_token;
-use codex_app_server_protocol::ChatgptAuthTokensRefreshResponse;
-use codex_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ChatgptAuthTokensRefreshResponse;
+use ava_app_server_protocol::ServerRequest;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -118,7 +118,7 @@ async fn open_relay(app: &mut TestAppServer, listener: &TcpListener) -> Result<R
         tokio_tungstenite::accept_hdr_async(
             stream,
             |request: &tokio_tungstenite::tungstenite::handshake::server::Request, response| {
-                assert!(!request.headers().contains_key("x-codex-subscribe-cursor"));
+                assert!(!request.headers().contains_key("x-ava-subscribe-cursor"));
                 Ok(response)
             },
         ),
@@ -173,7 +173,7 @@ async fn same_owner_refresh_preserves_live_relay() -> Result<()> {
     let home = TempDir::new()?;
     let listener = configured_remote_control_listener(home.path()).await?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -189,7 +189,7 @@ async fn owner_change_retires_live_relay() -> Result<()> {
         let home = TempDir::new()?;
         let listener = configured_remote_control_listener(home.path()).await?;
         let mut app = TestAppServer::builder()
-            .with_codex_home(home.path())
+            .with_ava_home(home.path())
             .without_auto_env()
             .build_initialized()
             .await?;
@@ -213,7 +213,7 @@ async fn owner_change_discards_pending_and_queued_pairing() -> Result<()> {
     let home = TempDir::new()?;
     let listener = configured_remote_control_listener(home.path()).await?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -274,7 +274,7 @@ async fn client_revoke_retry_stays_with_original_owner() -> Result<()> {
         let home = TempDir::new()?;
         let listener = configured_remote_control_listener(home.path()).await?;
         let mut app = TestAppServer::builder()
-            .with_codex_home(home.path())
+            .with_ava_home(home.path())
             .without_auto_env()
             .build_initialized()
             .await?;
@@ -340,7 +340,7 @@ async fn owner_change_rejects_queued_client_revoke() -> Result<()> {
     let home = TempDir::new()?;
     let listener = configured_remote_control_listener(home.path()).await?;
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
+        .with_ava_home(home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -397,8 +397,8 @@ async fn logout_login_enable_recovers_first_unauthorized_enrollment() -> Result<
         .await;
     let revoke_url = format!("{}/oauth/revoke", oauth.uri());
     let mut app = TestAppServer::builder()
-        .with_codex_home(home.path())
-        .with_env_overrides(&[("CODEX_REVOKE_TOKEN_URL_OVERRIDE", Some(revoke_url.as_str()))])
+        .with_ava_home(home.path())
+        .with_env_overrides(&[("AVA_REVOKE_TOKEN_URL_OVERRIDE", Some(revoke_url.as_str()))])
         .without_auto_env()
         .build_initialized()
         .await?;

@@ -7,14 +7,14 @@ use std::path::PathBuf;
 
 use crate::app_command::AppCommand;
 use crate::app_command::UserVerificationResponse;
-use codex_app_server_protocol::CommandExecutionApprovalDecision;
-use codex_app_server_protocol::FileChangeApprovalDecision;
-use codex_app_server_protocol::McpServerElicitationAction;
-use codex_app_server_protocol::RequestId as AppServerRequestId;
-use codex_app_server_protocol::ReviewTarget;
-use codex_app_server_protocol::ToolRequestUserInputResponse;
-use codex_protocol::ThreadId;
-use codex_protocol::request_permissions::RequestPermissionsResponse;
+use ava_app_server_protocol::CommandExecutionApprovalDecision;
+use ava_app_server_protocol::FileChangeApprovalDecision;
+use ava_app_server_protocol::McpServerElicitationAction;
+use ava_app_server_protocol::RequestId as AppServerRequestId;
+use ava_app_server_protocol::ReviewTarget;
+use ava_app_server_protocol::ToolRequestUserInputResponse;
+use ava_protocol::ThreadId;
+use ava_protocol::request_permissions::RequestPermissionsResponse;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::app_event::AppEvent;
@@ -35,7 +35,7 @@ impl AppEventSender {
     pub(crate) fn send(&self, event: AppEvent) {
         // Record inbound events for high-fidelity session replay.
         // Avoid double-logging Ops; those are logged at the point of submission.
-        if !matches!(event, AppEvent::CodexOp(_)) {
+        if !matches!(event, AppEvent::AvaOp(_)) {
             session_log::log_inbound_app_event(&event);
         }
         if let Err(e) = self.app_event_tx.send(event) {
@@ -44,30 +44,30 @@ impl AppEventSender {
     }
 
     pub(crate) fn interrupt(&self) {
-        self.send(AppEvent::CodexOp(AppCommand::interrupt()));
+        self.send(AppEvent::AvaOp(AppCommand::interrupt()));
     }
 
     pub(crate) fn compact(&self) {
-        self.send(AppEvent::CodexOp(AppCommand::compact()));
+        self.send(AppEvent::AvaOp(AppCommand::compact()));
     }
 
     pub(crate) fn set_thread_name(&self, name: String) {
-        self.send(AppEvent::CodexOp(AppCommand::set_thread_name(name)));
+        self.send(AppEvent::AvaOp(AppCommand::set_thread_name(name)));
     }
 
     pub(crate) fn review(&self, target: ReviewTarget) {
-        self.send(AppEvent::CodexOp(AppCommand::review(target)));
+        self.send(AppEvent::AvaOp(AppCommand::review(target)));
     }
 
     pub(crate) fn list_skills(&self, cwds: Vec<PathBuf>, force_reload: bool) {
-        self.send(AppEvent::CodexOp(AppCommand::list_skills(
+        self.send(AppEvent::AvaOp(AppCommand::list_skills(
             cwds,
             force_reload,
         )));
     }
 
     pub(crate) fn user_input_answer(&self, id: String, response: ToolRequestUserInputResponse) {
-        self.send(AppEvent::CodexOp(AppCommand::user_input_answer(
+        self.send(AppEvent::AvaOp(AppCommand::user_input_answer(
             id, response,
         )));
     }

@@ -9,7 +9,7 @@ use super::StatusLineItem;
 use super::TerminalTitleItem;
 use super::ThreadId;
 use crate::status::StatusHistoryHandle;
-use codex_app_server_protocol::ThreadUsage;
+use ava_app_server_protocol::ThreadUsage;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum ThreadUsageOutcome {
@@ -355,7 +355,7 @@ impl ChatWidget {
     }
 
     pub(super) fn thread_usage_is_available(&self) -> bool {
-        self.has_codex_backend_auth
+        self.has_ava_backend_auth
             && !self.thread_usage.feature_disabled
             && self.thread_id.is_some()
             && matches!(

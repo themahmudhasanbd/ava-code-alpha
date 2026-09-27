@@ -1,12 +1,12 @@
 use std::io;
 use std::path::Path;
 
-use codex_core::config::Config;
+use ava_core::config::Config;
 
 use super::CheckStatus;
 use super::DoctorCheck;
 use super::DoctorIssue;
-use super::find_codex_home;
+use super::find_ava_home;
 
 const GIB: u64 = 1024 * 1024 * 1024;
 const FAIL_THRESHOLD: u64 = GIB;
@@ -14,8 +14,8 @@ const WARNING_THRESHOLD: u64 = 5 * GIB;
 
 pub(super) fn check(config: Option<&Config>, cwd: &Path) -> DoctorCheck {
     let home = config
-        .map(|config| config.codex_home.as_path().to_path_buf())
-        .or_else(|| find_codex_home().ok().map(Into::into))
+        .map(|config| config.ava_home.as_path().to_path_buf())
+        .or_else(|| find_ava_home().ok().map(Into::into))
         .or_else(|| {
             std::env::var_os("AVA_CODE_HOME")
                 .or_else(|| std::env::var_os("AVA_HOME"))
@@ -47,7 +47,7 @@ fn check_with_paths(
     ));
     let mut lowest = None;
 
-    for (label, path) in [("CODEX_HOME", home.as_deref()), ("worktree", Some(cwd))] {
+    for (label, path) in [("AVA_HOME", home.as_deref()), ("worktree", Some(cwd))] {
         let field = format!("{label} available");
         let available = path
             .and_then(|path| path.ancestors().find(|ancestor| ancestor.is_dir()))

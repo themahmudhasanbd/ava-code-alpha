@@ -2,21 +2,21 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
 use axum::http::HeaderValue;
-use codex_analytics::AppServerRpcTransport;
-use codex_login::default_client::SetOriginatorError;
-use codex_login::default_client::USER_AGENT_SUFFIX;
-use codex_login::default_client::get_codex_user_agent;
-use codex_login::default_client::set_default_client_residency_requirement;
-use codex_login::default_client::set_default_originator;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use ava_analytics::AppServerRpcTransport;
+use ava_login::default_client::SetOriginatorError;
+use ava_login::default_client::USER_AGENT_SUFFIX;
+use ava_login::default_client::get_ava_user_agent;
+use ava_login::default_client::set_default_client_residency_requirement;
+use ava_login::default_client::set_default_originator;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
 
 use super::*;
 use crate::message_processor::ConnectionSessionState;
 use crate::message_processor::InitializedConnectionSessionState;
 use crate::transport::ConnectionOrigin;
 
-const NON_ORIGINATING_CLIENT_NAMES: &[&str] = &["codex_app_server_daemon", "codex-backend"];
+const NON_ORIGINATING_CLIENT_NAMES: &[&str] = &["ava_app_server_daemon", "ava-backend"];
 
 #[derive(Clone)]
 pub(crate) struct InitializeRequestProcessor {
@@ -77,7 +77,7 @@ impl InitializeRequestProcessor {
         let experimental_api_enabled = capabilities.experimental_api;
         let request_attestation = capabilities.request_attestation;
         let extensions = capabilities.extensions.as_ref();
-        let mut client_mcp_extensions = codex_mcp::client_mcp_extensions(
+        let mut client_mcp_extensions = ava_mcp::client_mcp_extensions(
             extensions,
             capabilities.mcp_server_openai_form_elicitation,
         );
@@ -101,8 +101,8 @@ impl InitializeRequestProcessor {
         let user_verification_enabled = experimental_api_enabled
             && matches!(
                 (session.origin, name.as_str()),
-                (ConnectionOrigin::InProcess, "codex-tui")
-                    | (ConnectionOrigin::Stdio, "Codex Desktop")
+                (ConnectionOrigin::InProcess, "ava-tui")
+                    | (ConnectionOrigin::Stdio, "Ava Desktop")
             )
             && tokio::task::spawn_blocking(self.user_verification.device_supported)
                 .await
@@ -124,7 +124,7 @@ impl InitializeRequestProcessor {
         let originator = name.clone();
         let user_agent_suffix = format!("{name}; {version}");
         let mutates_global_identity = !NON_ORIGINATING_CLIENT_NAMES.contains(&name.as_str());
-        let codex_home = self.config.codex_home.clone();
+        let ava_home = self.config.ava_home.clone();
         if session
             .initialize(InitializedConnectionSessionState {
                 experimental_api_enabled,
@@ -156,7 +156,7 @@ impl InitializeRequestProcessor {
                     }
                     SetOriginatorError::AlreadyInitialized => {
                         // No-op. This is expected to happen if the originator is already set via env var.
-                        // TODO(owen): Once we remove support for CODEX_INTERNAL_ORIGINATOR_OVERRIDE,
+                        // TODO(owen): Once we remove support for AVA_INTERNAL_ORIGINATOR_OVERRIDE,
                         // this will be an unexpected state and we can return a JSON-RPC error indicating
                         // internal server error.
                     }
@@ -175,13 +175,13 @@ impl InitializeRequestProcessor {
         }
 
         #[cfg(windows)]
-        if matches!(session.origin, ConnectionOrigin::Stdio) && name == "Codex Desktop" {
+        if matches!(session.origin, ConnectionOrigin::Stdio) && name == "Ava Desktop" {
             // Uninstall ownership must not depend on account sign-in or sandbox setup.
             // Keep this bounded attempt ahead of the response; background registration can race uninstall.
-            let home = codex_home.clone();
+            let home = ava_home.clone();
             if !matches!(
                 tokio::task::spawn_blocking(move || {
-                    codex_windows_sandbox::register_desktop_installation(&home)
+                    ava_windows_sandbox::register_desktop_installation(&home)
                 })
                 .await,
                 Ok(Ok(()))
@@ -190,10 +190,10 @@ impl InitializeRequestProcessor {
             }
         }
 
-        let user_agent = get_codex_user_agent();
+        let user_agent = get_ava_user_agent();
         let response = InitializeResponse {
             user_agent,
-            codex_home,
+            ava_home,
             platform_family: std::env::consts::FAMILY.to_string(),
             platform_os: std::env::consts::OS.to_string(),
         };

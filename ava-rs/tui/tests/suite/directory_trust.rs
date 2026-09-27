@@ -1,9 +1,9 @@
 //! Exercises folder consent against a connected server through the real terminal event loop.
 
-use super::focus_palette::PtyCodex;
+use super::focus_palette::PtyAva;
 use super::focus_palette::write_test_config;
 use anyhow::Result;
-use codex_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCMessage;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -19,17 +19,17 @@ use tokio_tungstenite::tungstenite::Message;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn connected_trust_cancellation_and_acceptance_control_task_creation() -> Result<()> {
     for trust_level in [None, Some("untrusted")] {
-        let repo_root = codex_utils_cargo_bin::repo_root()?;
-        let codex_home = tempfile::tempdir_in("/tmp")?;
+        let repo_root = ava_utils_cargo_bin::repo_root()?;
+        let ava_home = tempfile::tempdir_in("/tmp")?;
         // The server's trust decision must win over the client's trusted-folder setting.
-        write_test_config(codex_home.path(), &repo_root)?;
-        let config_path = codex_home.path().join("config.toml");
+        write_test_config(ava_home.path(), &repo_root)?;
+        let config_path = ava_home.path().join("config.toml");
         let config = std::fs::read_to_string(&config_path)?;
         std::fs::write(
             config_path,
             format!("{config}\n[tui]\nresume_cwd = \"current\"\n"),
         )?;
-        let socket = codex_app_server_client::app_server_control_socket_path(codex_home.path())?;
+        let socket = ava_app_server_client::app_server_control_socket_path(ava_home.path())?;
         std::fs::create_dir_all(socket.parent().unwrap())?;
         let listener = UnixListener::bind(socket.as_path())?;
         let cwd = repo_root.clone();
@@ -99,7 +99,7 @@ async fn connected_trust_cancellation_and_acceptance_control_task_creation() -> 
                                     "key": "project:test", "eventName": "sessionStart", "handlerType": "command",
                                     "command": "echo hook", "async": false, "matcher": null, "timeoutSec": 30,
                                     "statusMessage": null, "additionalContextLimit": null,
-                                    "sourcePath": cwd.join(".codex/hooks.json"), "source": "project", "pluginId": null,
+                                    "sourcePath": cwd.join(".ava-code/hooks.json"), "source": "project", "pluginId": null,
                                     "displayOrder": 0, "enabled": false, "isManaged": false,
                                     "currentHash": "sha256:test", "trustStatus": "untrusted"
                                 }], "warnings": [], "errors": []})]
@@ -146,9 +146,9 @@ async fn connected_trust_cancellation_and_acceptance_control_task_creation() -> 
                 });
             }
         });
-        let mut terminal = PtyCodex::start(
+        let mut terminal = PtyAva::start(
             &repo_root,
-            codex_home,
+            ava_home,
             &["do not submit this launch prompt"],
         )?;
         let prompt = if trust_level.is_some() {

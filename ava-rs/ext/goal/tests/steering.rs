@@ -4,15 +4,15 @@
 #[path = "../src/steering.rs"]
 mod steering;
 
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::InternalContextSource;
-use codex_core::context::InternalModelContextFragment;
-use codex_protocol::ThreadId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::ThreadGoal;
-use codex_protocol::protocol::ThreadGoalStatus;
-use codex_utils_template::Template;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::InternalContextSource;
+use ava_core::context::InternalModelContextFragment;
+use ava_protocol::ThreadId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::ThreadGoal;
+use ava_protocol::protocol::ThreadGoalStatus;
+use ava_utils_template::Template;
 use pretty_assertions::assert_eq;
 
 #[test]

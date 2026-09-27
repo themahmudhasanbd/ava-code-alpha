@@ -712,7 +712,7 @@ const enEntries: ChangelogEntry[] = [
     version: "0.2.10",
     date: "2026-07-30",
     highlights: [
-      "Add Codex/WorkBuddy-style conversation top bar with improved controls.",
+      "Add Ava/WorkBuddy-style conversation top bar with improved controls.",
       "Refresh chat transcript and markdown prose styling for better readability.",
       "Unify work panel header with context menu and animate sidebar collapse.",
       "Combine tool launchers into one create dropdown for cleaner interface.",
@@ -1508,7 +1508,7 @@ const zhCNEntries: ChangelogEntry[] = [
     version: "0.2.10",
     date: "2026-07-30",
     highlights: [
-      "添加 Codex/WorkBuddy 风格对话顶栏，改进控制按钮。",
+      "添加 Ava/WorkBuddy 风格对话顶栏，改进控制按钮。",
       "刷新聊天记录和 Markdown 样式，提升可读性。",
       "统一工作面板头部，添加上下文菜单并动画化侧边栏折叠。",
       "合并工具启动器为单个创建下拉菜单，界面更简洁。",
@@ -2305,7 +2305,7 @@ const zhTWEntries: ChangelogEntry[] = [
     version: "0.2.10",
     date: "2026-07-30",
     highlights: [
-      "新增 Codex/WorkBuddy 風格對話頂欄，改進控制按鈕。",
+      "新增 Ava/WorkBuddy 風格對話頂欄，改進控制按鈕。",
       "重新整理聊天記錄和 Markdown 樣式，提升可讀性。",
       "統一工作面板頭部，新增上下文選單並動畫化側邊欄摺疊。",
       "合併工具啟動器為單個建立下拉選單，介面更簡潔。",

@@ -1,14 +1,14 @@
-use codex_config::types::PluginMcpServerConfig;
-use codex_connectors_extension::PluginAppProvider;
-use codex_core::config::Config;
-use codex_core_plugins::loader::apply_configured_plugin_mcp_server_policies;
-use codex_core_plugins::loader::configured_plugin_mcp_server_policies;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_features::Feature;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
+use ava_config::types::PluginMcpServerConfig;
+use ava_connectors_extension::PluginAppProvider;
+use ava_core::config::Config;
+use ava_core_plugins::loader::apply_configured_plugin_mcp_server_policies;
+use ava_core_plugins::loader::configured_plugin_mcp_server_policies;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_features::Feature;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
 use std::collections::HashMap;
 
 use self::provider::PluginMcpProvider;

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -52,7 +52,7 @@ pub struct OtelSettings {
     pub environment: String,
     pub service_name: String,
     pub service_version: String,
-    pub codex_home: PathBuf,
+    pub ava_home: PathBuf,
     pub exporter: OtelExporter,
     pub trace_exporter: OtelExporter,
     pub metrics_exporter: OtelExporter,
@@ -87,7 +87,7 @@ pub struct OtelTlsConfig {
 #[derive(Clone, Debug)]
 pub enum OtelExporter {
     None,
-    /// Statsig metrics ingestion exporter using Codex-internal defaults.
+    /// Statsig metrics ingestion exporter using Ava-internal defaults.
     ///
     /// This is intended for metrics only.
     Statsig,

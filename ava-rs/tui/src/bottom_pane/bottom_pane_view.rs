@@ -3,7 +3,7 @@ use crate::bottom_pane::ApprovalRequest;
 use crate::bottom_pane::McpServerElicitationFormRequest;
 use crate::keymap::KeymapContextSet;
 use crate::render::renderable::Renderable;
-use codex_app_server_protocol::ToolRequestUserInputParams;
+use ava_app_server_protocol::ToolRequestUserInputParams;
 use crossterm::event::KeyEvent;
 use std::time::Instant;
 
@@ -160,7 +160,7 @@ pub(crate) trait BottomPaneView: Renderable {
     ///
     /// Views that return `true` surface an "Action Required" terminal title
     /// instead of the normal working spinner so terminal tabs clearly show that
-    /// Codex needs user input.
+    /// Ava needs user input.
     fn terminal_title_requires_action(&self) -> bool {
         false
     }

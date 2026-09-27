@@ -1,11 +1,11 @@
 use super::session::Session;
 use crate::realtime_history::RealtimeEventEffects;
-use codex_history::RolloutItem;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::RealtimeConversationRealtimeEvent;
-use codex_protocol::protocol::RealtimeEvent;
-use codex_protocol::realtime::RealtimeItemContent;
+use ava_history::RolloutItem;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::RealtimeConversationRealtimeEvent;
+use ava_protocol::protocol::RealtimeEvent;
+use ava_protocol::realtime::RealtimeItemContent;
 
 impl Session {
     pub(super) async fn send_realtime_history_effects(

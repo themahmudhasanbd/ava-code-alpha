@@ -4,10 +4,10 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 
-use codex_http_client::ClientRouteClass;
-use codex_http_client::HttpClient;
-use codex_http_client::HttpClientBuilder;
-use codex_http_client::HttpClientFactory;
+use ava_http_client::ClientRouteClass;
+use ava_http_client::HttpClient;
+use ava_http_client::HttpClientBuilder;
+use ava_http_client::HttpClientFactory;
 use serde::Deserialize;
 use tokio::sync::Mutex;
 use url::Host;

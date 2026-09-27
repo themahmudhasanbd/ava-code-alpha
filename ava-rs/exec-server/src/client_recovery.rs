@@ -5,12 +5,12 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use codex_network_proxy::NetworkDecision;
-use codex_network_proxy::NetworkPolicyDecision;
-use codex_network_proxy::NetworkPolicyRequest;
-use codex_network_proxy::NetworkProtocol;
-use codex_network_proxy::NetworkRequestCancellation;
-use codex_network_proxy::NetworkRequestCancellationReason;
+use ava_network_proxy::NetworkDecision;
+use ava_network_proxy::NetworkPolicyDecision;
+use ava_network_proxy::NetworkPolicyRequest;
+use ava_network_proxy::NetworkProtocol;
+use ava_network_proxy::NetworkRequestCancellation;
+use ava_network_proxy::NetworkRequestCancellationReason;
 use serde_json::Value;
 use tokio::sync::mpsc;
 use tokio::time::Instant;
@@ -877,7 +877,7 @@ pub(crate) fn is_retryable_registry_error(error: &ExecServerError) -> bool {
                 || error.is_body()
                 || matches!(
                     error,
-                    codex_http_client::RouteAwareRequestError::Request(error)
+                    ava_http_client::RouteAwareRequestError::Request(error)
                         if error.is_decode()
                 )
     ) || matches!(

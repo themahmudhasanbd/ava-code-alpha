@@ -19,31 +19,31 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_config::ConfigLayerStack;
-use codex_config::Constrained;
-use codex_config::McpEnterpriseManagedAuthConfig;
-use codex_config::McpServerAuth;
-use codex_config::McpServerConfig;
-use codex_config::McpServerTransportConfig;
-use codex_config::types::AppToolApproval;
-use codex_config::types::ApprovalsReviewer;
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_connectors::ConnectorRuntimeManager;
-use codex_connectors::ConnectorSnapshot;
-use codex_connectors::connector_runtime_context_key;
-use codex_login::CodexAuth;
-use codex_model_provider::CHATGPT_CODEX_BASE_URL;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::mcp::McpServerInfo;
-use codex_protocol::mcp::Resource;
-use codex_protocol::mcp::ResourceTemplate;
-use codex_protocol::mcp::Tool;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::McpAuthStatus;
-use codex_rmcp_client::McpOAuthRefreshMode;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigLayerStack;
+use ava_config::Constrained;
+use ava_config::McpEnterpriseManagedAuthConfig;
+use ava_config::McpServerAuth;
+use ava_config::McpServerConfig;
+use ava_config::McpServerTransportConfig;
+use ava_config::types::AppToolApproval;
+use ava_config::types::ApprovalsReviewer;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_connectors::ConnectorRuntimeManager;
+use ava_connectors::ConnectorSnapshot;
+use ava_connectors::connector_runtime_context_key;
+use ava_login::AvaAuth;
+use ava_model_provider::CHATGPT_AVA_BASE_URL;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::mcp::McpServerInfo;
+use ava_protocol::mcp::Resource;
+use ava_protocol::mcp::ResourceTemplate;
+use ava_protocol::mcp::Tool;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::McpAuthStatus;
+use ava_rmcp_client::McpOAuthRefreshMode;
+use ava_utils_path_uri::PathUri;
 use rmcp::model::ElicitationCapability;
 use rmcp::model::ReadResourceRequestParams;
 use rmcp::model::ReadResourceResult;
@@ -61,11 +61,11 @@ use crate::runtime::McpStartupPolicy;
 use crate::server::EffectiveMcpServer;
 use crate::tools::ToolInfo;
 
-pub const CODEX_APPS_MCP_SERVER_NAME: &str = "codex_apps";
-const DEFAULT_CODEX_APPS_MCP_PRODUCT_SKU: &str = "codex";
+pub const AVA_APPS_MCP_SERVER_NAME: &str = "ava_apps";
+const DEFAULT_AVA_APPS_MCP_PRODUCT_SKU: &str = "ava";
 const MCP_TOOL_NAME_PREFIX: &str = "mcp";
 const MCP_TOOL_NAME_DELIMITER: &str = "__";
-const CODEX_CONNECTORS_TOKEN_ENV_VAR: &str = "CODEX_CONNECTORS_TOKEN";
+const AVA_CONNECTORS_TOKEN_ENV_VAR: &str = "AVA_CONNECTORS_TOKEN";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum McpSnapshotDetail {
@@ -114,7 +114,7 @@ pub struct McpPermissionPromptAutoApproveContext {
     pub tool_approval_mode: Option<AppToolApproval>,
 }
 
-/// MCP runtime settings derived from `codex_core::config::Config`.
+/// MCP runtime settings derived from `ava_core::config::Config`.
 ///
 /// Each published runtime and prepared call owns one immutable copy of these
 /// settings, so its connection, approval policy, and sandbox authority cannot
@@ -128,8 +128,8 @@ pub struct McpConfig {
     pub apps_mcp_product_sku: Option<String>,
     /// Requests server-side read-only filtering and invocation checks for MCP tools.
     pub requires_read_only_mcp_tools: bool,
-    /// Codex home directory used for MCP OAuth state and app-tool cache files.
-    pub codex_home: PathBuf,
+    /// Ava home directory used for MCP OAuth state and app-tool cache files.
+    pub ava_home: PathBuf,
     /// Trusted enterprise IdP inherited after normal catalog and policy resolution.
     pub mcp_enterprise_managed_auth: Option<McpEnterpriseManagedAuthConfig>,
     pub xaa_enabled: bool,
@@ -162,8 +162,8 @@ pub struct McpConfig {
     pub environment_cwds: HashMap<String, PathUri>,
     /// Explicit server permissions; unresolved or unavailable servers have no entry.
     pub server_permission_profiles: HashMap<String, PermissionProfile>,
-    /// Optional path to `codex-linux-sandbox` for sandboxed MCP tool execution.
-    pub codex_linux_sandbox_exe: Option<PathBuf>,
+    /// Optional path to `ava-linux-sandbox` for sandboxed MCP tool execution.
+    pub ava_linux_sandbox_exe: Option<PathBuf>,
     /// Whether to use legacy Landlock behavior in the MCP sandbox state.
     // TODO(anp): Reconcile this runtime-wide copy with TurnEnvironment::sandbox_context
     // for the environment that owns each MCP server.
@@ -178,9 +178,9 @@ pub struct McpConfig {
     pub prefix_mcp_tool_names: bool,
     /// MCP servers whose model-visible tool namespaces omit the `mcp__` prefix.
     pub non_prefixed_mcp_tool_servers: Vec<String>,
-    /// Protocol mode for servers other than the host-owned Codex Apps registration.
+    /// Protocol mode for servers other than the host-owned Ava Apps registration.
     pub protocol_mode: McpProtocolMode,
-    /// Independent protocol mode for the trusted, HTTP Codex Apps registration.
+    /// Independent protocol mode for the trusted, HTTP Ava Apps registration.
     pub host_owned_apps_protocol_mode: McpProtocolMode,
     /// Client-side elicitation capabilities advertised during MCP initialization.
     pub client_elicitation_capability: ElicitationCapability,
@@ -339,8 +339,8 @@ impl ToolPluginContext {
     }
 }
 
-pub fn host_owned_codex_apps_enabled(config: &McpConfig, auth: Option<&CodexAuth>) -> bool {
-    config.apps_enabled && auth.is_some_and(CodexAuth::uses_codex_backend)
+pub fn host_owned_ava_apps_enabled(config: &McpConfig, auth: Option<&AvaAuth>) -> bool {
+    config.apps_enabled && auth.is_some_and(AvaAuth::uses_ava_backend)
 }
 
 pub fn configured_mcp_servers(config: &McpConfig) -> HashMap<String, McpServerConfig> {
@@ -349,7 +349,7 @@ pub fn configured_mcp_servers(config: &McpConfig) -> HashMap<String, McpServerCo
 
 pub fn effective_mcp_servers(
     config: &McpConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> HashMap<String, EffectiveMcpServer> {
     effective_mcp_servers_from_configured(configured_mcp_servers(config), config, auth)
 }
@@ -368,7 +368,7 @@ fn is_trusted_chatgpt_mcp_server(
         return false;
     }
 
-    if url::Url::parse(CHATGPT_CODEX_BASE_URL)
+    if url::Url::parse(CHATGPT_AVA_BASE_URL)
         .ok()
         .is_some_and(|chatgpt_url| server_url.origin() == chatgpt_url.origin())
     {
@@ -393,7 +393,7 @@ fn is_trusted_chatgpt_mcp_server(
 pub fn effective_mcp_servers_from_configured(
     configured_servers: HashMap<String, McpServerConfig>,
     config: &McpConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
 ) -> HashMap<String, EffectiveMcpServer> {
     let mut servers = configured_servers
         .into_iter()
@@ -416,8 +416,8 @@ pub fn effective_mcp_servers_from_configured(
             )
         })
         .collect::<HashMap<_, _>>();
-    if !host_owned_codex_apps_enabled(config, auth) {
-        servers.remove(CODEX_APPS_MCP_SERVER_NAME);
+    if !host_owned_ava_apps_enabled(config, auth) {
+        servers.remove(AVA_APPS_MCP_SERVER_NAME);
     }
     servers
 }
@@ -428,9 +428,9 @@ pub fn tool_plugin_context(config: &McpConfig) -> ToolPluginContext {
 
 pub async fn read_mcp_resource(
     config: &McpConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     runtime_context: McpRuntimeContext,
-    codex_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
+    ava_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
     tool_catalog_cache: crate::McpToolCatalogCache,
     server: &str,
     params: ReadResourceRequestParams,
@@ -452,9 +452,9 @@ pub async fn read_mcp_resource(
             tx_event: None,
             startup_cancellation_token: cancel_token.clone(),
             runtime_context,
-            codex_apps_tools_cache,
+            ava_apps_tools_cache,
             tool_catalog_cache,
-            codex_apps_tools_cache_key: connector_runtime_context_key(auth),
+            ava_apps_tools_cache_key: connector_runtime_context_key(auth),
             client_mcp_extensions: ClientMcpExtensions::default(),
             auth: auth.cloned(),
             auth_manager: None,
@@ -485,10 +485,10 @@ pub struct McpServerStatusSnapshot {
 
 pub async fn collect_mcp_server_status_snapshot_with_detail(
     config: &McpConfig,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     submit_id: String,
     runtime_context: McpRuntimeContext,
-    codex_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
+    ava_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
     tool_catalog_cache: crate::McpToolCatalogCache,
     detail: McpSnapshotDetail,
 ) -> McpServerStatusSnapshot {
@@ -532,9 +532,9 @@ pub async fn collect_mcp_server_status_snapshot_with_detail(
             tx_event: None,
             startup_cancellation_token: cancel_token.clone(),
             runtime_context,
-            codex_apps_tools_cache,
+            ava_apps_tools_cache,
             tool_catalog_cache,
-            codex_apps_tools_cache_key: connector_runtime_context_key(auth),
+            ava_apps_tools_cache_key: connector_runtime_context_key(auth),
             client_mcp_extensions: ClientMcpExtensions::default(),
             auth: auth.cloned(),
             auth_manager: None,
@@ -579,16 +579,16 @@ pub(crate) fn sanitize_responses_api_tool_name(name: &str) -> String {
     }
 }
 
-fn codex_apps_mcp_bearer_token_env_var() -> Option<String> {
-    match env::var(CODEX_CONNECTORS_TOKEN_ENV_VAR) {
-        Ok(value) if !value.trim().is_empty() => Some(CODEX_CONNECTORS_TOKEN_ENV_VAR.to_string()),
+fn ava_apps_mcp_bearer_token_env_var() -> Option<String> {
+    match env::var(AVA_CONNECTORS_TOKEN_ENV_VAR) {
+        Ok(value) if !value.trim().is_empty() => Some(AVA_CONNECTORS_TOKEN_ENV_VAR.to_string()),
         Ok(_) => None,
         Err(env::VarError::NotPresent) => None,
-        Err(env::VarError::NotUnicode(_)) => Some(CODEX_CONNECTORS_TOKEN_ENV_VAR.to_string()),
+        Err(env::VarError::NotUnicode(_)) => Some(AVA_CONNECTORS_TOKEN_ENV_VAR.to_string()),
     }
 }
 
-fn normalize_codex_apps_base_url(base_url: &str) -> String {
+fn normalize_ava_apps_base_url(base_url: &str) -> String {
     let mut base_url = base_url.trim_end_matches('/').to_string();
     if (base_url.starts_with("https://chatgpt.com")
         || base_url.starts_with("https://chat.openai.com"))
@@ -599,23 +599,23 @@ fn normalize_codex_apps_base_url(base_url: &str) -> String {
     base_url
 }
 
-fn codex_apps_mcp_url_for_base_url(base_url: &str) -> String {
-    let base_url = normalize_codex_apps_base_url(base_url);
-    let base_url = if base_url.contains("/backend-api") || base_url.contains("/api/codex") {
+fn ava_apps_mcp_url_for_base_url(base_url: &str) -> String {
+    let base_url = normalize_ava_apps_base_url(base_url);
+    let base_url = if base_url.contains("/backend-api") || base_url.contains("/api/ava") {
         base_url
     } else {
-        format!("{base_url}/api/codex")
+        format!("{base_url}/api/ava")
     };
     format!("{base_url}/ps/mcp")
 }
 
-pub fn codex_apps_mcp_server_config(
+pub fn ava_apps_mcp_server_config(
     chatgpt_base_url: &str,
     apps_mcp_product_sku: Option<&str>,
     originator: Option<&str>,
 ) -> McpServerConfig {
     mcp_server_config_for_url(
-        codex_apps_mcp_url_for_base_url(chatgpt_base_url),
+        ava_apps_mcp_url_for_base_url(chatgpt_base_url),
         apps_mcp_product_sku,
         originator,
         McpServerAuth::ChatGpt,
@@ -628,7 +628,7 @@ pub fn hosted_plugin_runtime_mcp_server_config(
     apps_mcp_product_sku: Option<&str>,
     originator: Option<&str>,
 ) -> McpServerConfig {
-    codex_apps_mcp_server_config(chatgpt_base_url, apps_mcp_product_sku, originator)
+    ava_apps_mcp_server_config(chatgpt_base_url, apps_mcp_product_sku, originator)
 }
 
 fn mcp_server_config_for_url(
@@ -637,7 +637,7 @@ fn mcp_server_config_for_url(
     originator: Option<&str>,
     auth_mode: McpServerAuth,
 ) -> McpServerConfig {
-    let product_sku = apps_mcp_product_sku.unwrap_or(DEFAULT_CODEX_APPS_MCP_PRODUCT_SKU);
+    let product_sku = apps_mcp_product_sku.unwrap_or(DEFAULT_AVA_APPS_MCP_PRODUCT_SKU);
     let mut http_headers =
         HashMap::from([("X-OpenAI-Product-Sku".to_string(), product_sku.to_string())]);
     if let Some(originator) = originator {
@@ -648,13 +648,13 @@ fn mcp_server_config_for_url(
     McpServerConfig {
         transport: McpServerTransportConfig::StreamableHttp {
             url,
-            bearer_token_env_var: codex_apps_mcp_bearer_token_env_var(),
+            bearer_token_env_var: ava_apps_mcp_bearer_token_env_var(),
             http_headers: Some(http_headers),
             env_http_headers,
             http_headers_helper: None,
         },
         auth: auth_mode,
-        environment_id: codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+        environment_id: ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
         enabled: true,
         required: false,
         supports_parallel_tool_calls: false,

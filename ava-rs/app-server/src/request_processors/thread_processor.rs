@@ -12,24 +12,24 @@ use super::thread_input::can_accept_direct_input;
 use super::thread_input::ensure_direct_input_allowed;
 use super::*;
 use crate::error_code::method_not_found;
-use codex_app_server_protocol::SelectedCapabilityRoot;
-use codex_app_server_protocol::ThreadHistoryMode as ApiThreadHistoryMode;
-use codex_app_server_protocol::ThreadRevertParams;
-use codex_app_server_protocol::ThreadRevertResponse;
-use codex_app_server_protocol::ThreadRevertedNotification;
-use codex_app_server_protocol::ThreadSection;
-use codex_app_server_protocol::ThreadSectionAppearance;
-use codex_app_server_protocol::ThreadSectionMoveParams;
-use codex_app_server_protocol::ThreadSectionMoveResponse;
-use codex_config::types::WindowsSandboxModeToml;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ThreadIdleCause;
-use codex_protocol::SanitizedGitUrl;
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::error::CodexErrorDetails;
-use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_thread_store::PersistContext;
+use ava_app_server_protocol::SelectedCapabilityRoot;
+use ava_app_server_protocol::ThreadHistoryMode as ApiThreadHistoryMode;
+use ava_app_server_protocol::ThreadRevertParams;
+use ava_app_server_protocol::ThreadRevertResponse;
+use ava_app_server_protocol::ThreadRevertedNotification;
+use ava_app_server_protocol::ThreadSection;
+use ava_app_server_protocol::ThreadSectionAppearance;
+use ava_app_server_protocol::ThreadSectionMoveParams;
+use ava_app_server_protocol::ThreadSectionMoveResponse;
+use ava_config::types::WindowsSandboxModeToml;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ThreadIdleCause;
+use ava_protocol::SanitizedGitUrl;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::error::AvaErrorDetails;
+use ava_protocol::mcp::ClientMcpExtensions;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_thread_store::PersistContext;
 use std::ops::ControlFlow;
 
 pub(super) const THREAD_LIST_DEFAULT_LIMIT: usize = 25;
@@ -100,7 +100,7 @@ struct PreparedResumeConfig {
 
 struct ThreadRevertRuntimeSnapshot {
     config: Config,
-    settings: CodexThreadSettingsOverrides,
+    settings: AvaThreadSettingsOverrides,
     client_mcp_extensions: ClientMcpExtensions,
 }
 
@@ -162,7 +162,7 @@ fn collect_resume_override_mismatches(
         }
     }
     if let Some(requested_review_policy) = request.approvals_reviewer.as_ref() {
-        let active_review_policy: codex_app_server_protocol::ApprovalsReviewer =
+        let active_review_policy: ava_app_server_protocol::ApprovalsReviewer =
             config_snapshot.approvals_reviewer.into();
         if requested_review_policy != &active_review_policy {
             mismatch_details.push(format!(
@@ -176,16 +176,16 @@ fn collect_resume_override_mismatches(
             (requested_sandbox, &active_sandbox),
             (
                 SandboxMode::ReadOnly,
-                codex_protocol::protocol::SandboxPolicy::ReadOnly { .. }
+                ava_protocol::protocol::SandboxPolicy::ReadOnly { .. }
             ) | (
                 SandboxMode::WorkspaceWrite,
-                codex_protocol::protocol::SandboxPolicy::WorkspaceWrite { .. }
+                ava_protocol::protocol::SandboxPolicy::WorkspaceWrite { .. }
             ) | (
                 SandboxMode::DangerFullAccess,
-                codex_protocol::protocol::SandboxPolicy::DangerFullAccess
+                ava_protocol::protocol::SandboxPolicy::DangerFullAccess
             ) | (
                 SandboxMode::DangerFullAccess,
-                codex_protocol::protocol::SandboxPolicy::ExternalSandbox { .. }
+                ava_protocol::protocol::SandboxPolicy::ExternalSandbox { .. }
             )
         );
         if !sandbox_matches {
@@ -374,7 +374,7 @@ fn validate_dynamic_tools(tools: &[DynamicToolSpec]) -> Result<(), String> {
             ));
         }
 
-        if let Err(err) = codex_tools::parse_tool_input_schema(&tool.input_schema) {
+        if let Err(err) = ava_tools::parse_tool_input_schema(&tool.input_schema) {
             return Err(format!(
                 "dynamic tool input schema is not supported for {name}: {err}"
             ));
@@ -464,7 +464,7 @@ pub(crate) struct ThreadRequestProcessor {
 /// Whether resume attaches a client or restores a cold runtime during daemon startup.
 pub(crate) enum ThreadResumeTarget {
     Client(ConnectionRequestId),
-    DaemonRecovery(Option<codex_app_server_transport::daemon_recovery::InterruptedTurn>),
+    DaemonRecovery(Option<ava_app_server_transport::daemon_recovery::InterruptedTurn>),
 }
 
 /// Outcome of trying to satisfy a resume request from an already loaded thread.
@@ -958,7 +958,7 @@ impl ThreadRequestProcessor {
     async fn load_thread(
         &self,
         thread_id: &str,
-    ) -> Result<(ThreadId, Arc<CodexThread>), JSONRPCErrorError> {
+    ) -> Result<(ThreadId, Arc<AvaThread>), JSONRPCErrorError> {
         // Resolve the core conversation handle from a v2 thread id string.
         let thread_id = ThreadId::from_string(thread_id)
             .map_err(|err| invalid_request(format!("invalid thread id: {err}")))?;
@@ -984,7 +984,7 @@ impl ThreadRequestProcessor {
     }
 
     async fn set_app_server_client_info(
-        thread: &CodexThread,
+        thread: &AvaThread,
         app_server_client_name: Option<String>,
         app_server_client_version: Option<String>,
     ) -> Result<(), JSONRPCErrorError> {
@@ -1085,7 +1085,7 @@ impl ThreadRequestProcessor {
             outgoing: Arc::clone(&self.outgoing),
             pending_thread_unloads: Arc::clone(&self.pending_thread_unloads),
             thread_watch_manager: self.thread_watch_manager.clone(),
-            codex_home: self.config.codex_home.to_path_buf(),
+            ava_home: self.config.ava_home.to_path_buf(),
             thread_unload_delay: self.config.thread_unload_delay,
             skills_watcher: Arc::clone(&self.skills_watcher),
             turn_cost_worker: self.turn_cost_worker.clone(),
@@ -1110,7 +1110,7 @@ impl ThreadRequestProcessor {
     async fn ensure_listener_task_running(
         &self,
         conversation_id: ThreadId,
-        conversation: Arc<CodexThread>,
+        conversation: Arc<AvaThread>,
         thread_state: Arc<Mutex<ThreadState>>,
     ) -> Result<(), JSONRPCErrorError> {
         super::thread_lifecycle::ensure_listener_task_running(
@@ -1162,7 +1162,7 @@ impl ThreadRequestProcessor {
         } = params;
         if matches!(
             history_mode,
-            Some(codex_app_server_protocol::ThreadHistoryMode::Paginated)
+            Some(ava_app_server_protocol::ThreadHistoryMode::Paginated)
         ) && !self.thread_store.supports_paginated_history_lists()
         {
             return Err(invalid_request(
@@ -1216,7 +1216,7 @@ impl ThreadRequestProcessor {
             outgoing: Arc::clone(&self.outgoing),
             pending_thread_unloads: Arc::clone(&self.pending_thread_unloads),
             thread_watch_manager: self.thread_watch_manager.clone(),
-            codex_home: self.config.codex_home.to_path_buf(),
+            ava_home: self.config.ava_home.to_path_buf(),
             thread_unload_delay: self.config.thread_unload_delay,
             skills_watcher: Arc::clone(&self.skills_watcher),
             turn_cost_worker: self.turn_cost_worker.clone(),
@@ -1294,16 +1294,16 @@ impl ThreadRequestProcessor {
     async fn request_trace_context(
         &self,
         request_id: &ConnectionRequestId,
-    ) -> Option<codex_protocol::protocol::W3cTraceContext> {
+    ) -> Option<ava_protocol::protocol::W3cTraceContext> {
         self.outgoing.request_trace_context(request_id).await
     }
 
     async fn submit_core_op(
         &self,
         request_id: &ConnectionRequestId,
-        thread: &CodexThread,
+        thread: &AvaThread,
         op: Op,
-    ) -> CodexResult<String> {
+    ) -> AvaResult<String> {
         thread
             .submit_with_trace(op, self.request_trace_context(request_id).await)
             .await
@@ -1323,8 +1323,8 @@ impl ThreadRequestProcessor {
         dynamic_tools: Option<Vec<DynamicToolSpec>>,
         selected_capability_roots: Vec<SelectedCapabilityRoot>,
         history_mode: Option<ThreadHistoryMode>,
-        session_start_source: Option<codex_app_server_protocol::ThreadStartSource>,
-        thread_source: Option<codex_protocol::protocol::ThreadSource>,
+        session_start_source: Option<ava_app_server_protocol::ThreadStartSource>,
+        thread_source: Option<ava_protocol::protocol::ThreadSource>,
         project_id: Option<String>,
         daybreak_enabled: Option<bool>,
         environment_selections: Option<Vec<TurnEnvironmentSelection>>,
@@ -1349,9 +1349,9 @@ impl ThreadRequestProcessor {
         // permissions after managed constraints can imply project trust.
         let effective_permission_profile = config.permissions.effective_permission_profile();
         let effective_permissions_trust_project = match &effective_permission_profile {
-            codex_protocol::models::PermissionProfile::Disabled
-            | codex_protocol::models::PermissionProfile::External { .. } => true,
-            codex_protocol::models::PermissionProfile::Managed { .. } => {
+            ava_protocol::models::PermissionProfile::Disabled
+            | ava_protocol::models::PermissionProfile::External { .. } => true,
+            ava_protocol::models::PermissionProfile::Managed { .. } => {
                 effective_permission_profile
                     .file_system_sandbox_policy()
                     .can_write_local_path_with_cwd(config.cwd.as_path(), config.cwd.as_path())
@@ -1369,8 +1369,8 @@ impl ThreadRequestProcessor {
             let current_cli_overrides = config_manager.current_cli_overrides();
             let cli_overrides_with_trust;
             let cli_overrides_for_reload = if let Err(err) =
-                codex_core::config::set_project_trust_level(
-                    &listener_task_context.codex_home,
+                ava_core::config::set_project_trust_level(
+                    &listener_task_context.ava_home,
                     trust_target.as_path(),
                     TrustLevel::Trusted,
                 ) {
@@ -1424,7 +1424,7 @@ impl ThreadRequestProcessor {
             })
             .collect::<Vec<_>>();
         if let Ok(Some(err)) =
-            codex_core::check_execpolicy_for_warnings(&config.config_layer_stack).await
+            ava_core::check_execpolicy_for_warnings(&config.config_layer_stack).await
         {
             config_warnings.push(crate::exec_policy_config_warning(&err));
         }
@@ -1488,10 +1488,10 @@ impl ThreadRequestProcessor {
             .start_thread(StartThreadOptions {
                 allow_provider_model_fallback,
                 initial_history: match session_start_source
-                    .unwrap_or(codex_app_server_protocol::ThreadStartSource::Startup)
+                    .unwrap_or(ava_app_server_protocol::ThreadStartSource::Startup)
                 {
-                    codex_app_server_protocol::ThreadStartSource::Startup => InitialHistory::New,
-                    codex_app_server_protocol::ThreadStartSource::Clear => InitialHistory::Cleared,
+                    ava_app_server_protocol::ThreadStartSource::Startup => InitialHistory::New,
+                    ava_app_server_protocol::ThreadStartSource::Clear => InitialHistory::Cleared,
                 },
                 history_mode,
                 thread_source,
@@ -1519,8 +1519,8 @@ impl ThreadRequestProcessor {
             Err(err) => {
                 remove_pending_thread_metadata(thread_store.as_ref(), reserved_thread_id).await;
                 return Err(match err.details() {
-                    CodexErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
-                    CodexErrorDetails::UnsupportedOperation(message) => {
+                    AvaErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
+                    AvaErrorDetails::UnsupportedOperation(message) => {
                         method_not_found(message.clone())
                     }
                     _ => internal_error(format!("error creating thread: {err}")),
@@ -1655,8 +1655,8 @@ impl ThreadRequestProcessor {
         service_tier: Option<Option<String>>,
         cwd: Option<String>,
         runtime_workspace_roots: Option<Vec<AbsolutePathBuf>>,
-        approval_policy: Option<codex_app_server_protocol::AskForApproval>,
-        approvals_reviewer: Option<codex_app_server_protocol::ApprovalsReviewer>,
+        approval_policy: Option<ava_app_server_protocol::AskForApproval>,
+        approvals_reviewer: Option<ava_app_server_protocol::ApprovalsReviewer>,
         sandbox: Option<SandboxMode>,
         permissions: Option<String>,
         base_instructions: Option<String>,
@@ -1671,11 +1671,11 @@ impl ThreadRequestProcessor {
             workspace_roots: runtime_workspace_roots,
             default_permissions: permissions,
             approval_policy: approval_policy
-                .map(codex_app_server_protocol::AskForApproval::to_core),
+                .map(ava_app_server_protocol::AskForApproval::to_core),
             approvals_reviewer: approvals_reviewer
-                .map(codex_app_server_protocol::ApprovalsReviewer::to_core),
+                .map(ava_app_server_protocol::ApprovalsReviewer::to_core),
             sandbox_mode: sandbox.map(SandboxMode::to_core),
-            codex_linux_sandbox_exe: self.arg0_paths.codex_linux_sandbox_exe.clone(),
+            ava_linux_sandbox_exe: self.arg0_paths.ava_linux_sandbox_exe.clone(),
             main_execve_wrapper_exe: self.arg0_paths.main_execve_wrapper_exe.clone(),
             base_instructions,
             developer_instructions,
@@ -1809,7 +1809,7 @@ impl ThreadRequestProcessor {
             .decrement_out_of_band_elicitation_count()
             .await
             .map_err(|err| match err.details() {
-                CodexErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
+                AvaErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
                 _ => internal_error(format!(
                     "failed to decrement out-of-band elicitation counter: {err}"
                 )),
@@ -1828,7 +1828,7 @@ impl ThreadRequestProcessor {
         let ThreadSetNameParams { thread_id, name } = params;
         let thread_id = ThreadId::from_string(&thread_id)
             .map_err(|err| invalid_request(format!("invalid thread id: {err}")))?;
-        let Some(name) = codex_core::util::normalize_thread_name(&name) else {
+        let Some(name) = ava_core::util::normalize_thread_name(&name) else {
             return Err(invalid_request("thread name must not be empty"));
         };
 
@@ -1887,12 +1887,12 @@ impl ThreadRequestProcessor {
             internal_error(format!("failed to clear memory rows in memories db: {err}"))
         })?;
 
-        clear_memory_roots_contents(&self.config.codex_home)
+        clear_memory_roots_contents(&self.config.ava_home)
             .await
             .map_err(|err| {
                 internal_error(format!(
                     "failed to clear memory directories under {}: {err}",
-                    self.config.codex_home.display()
+                    self.config.ava_home.display()
                 ))
             })?;
 
@@ -2204,7 +2204,7 @@ impl ThreadRequestProcessor {
 
         let revert_result = self
             .thread_store
-            .revert_thread(codex_thread_store::RevertThreadParams {
+            .revert_thread(ava_thread_store::RevertThreadParams {
                 thread_id,
                 before_turn_id,
                 multi_agent_version: thread.multi_agent_version(),
@@ -2251,7 +2251,7 @@ impl ThreadRequestProcessor {
         let response_history = thread_history.clone();
         let NewThread {
             thread_id: resumed_thread_id,
-            thread: codex_thread,
+            thread: ava_thread,
             session_configured,
             ..
         } = self
@@ -2270,7 +2270,7 @@ impl ThreadRequestProcessor {
                 "thread {thread_id} reloaded as {resumed_thread_id} after revert"
             )));
         }
-        codex_thread
+        ava_thread
             .restore_thread_settings(settings)
             .await
             .map_err(|err| {
@@ -2279,7 +2279,7 @@ impl ThreadRequestProcessor {
                 ))
             })?;
         // Replace the resume-time checkpoint written from the original config.
-        codex_thread
+        ava_thread
             .checkpoint_thread_settings()
             .await
             .map_err(|err| {
@@ -2288,7 +2288,7 @@ impl ThreadRequestProcessor {
                 ))
             })?;
         Self::set_app_server_client_info(
-            codex_thread.as_ref(),
+            ava_thread.as_ref(),
             app_server_client_name,
             app_server_client_version,
         )
@@ -2303,12 +2303,12 @@ impl ThreadRequestProcessor {
         // Start the replacement listener from that state instead of depending on the requesting
         // connection still being open.
         let thread_state = self.thread_state_manager.thread_state(thread_id).await;
-        self.ensure_listener_task_running(thread_id, Arc::clone(&codex_thread), thread_state)
+        self.ensure_listener_task_running(thread_id, Arc::clone(&ava_thread), thread_state)
             .await?;
         let mut thread = self
             .load_thread_from_resume_source_or_send_internal(
                 thread_id,
-                codex_thread.as_ref(),
+                ava_thread.as_ref(),
                 &response_history,
                 rollout_path.as_path(),
                 Some(resume_source_thread),
@@ -2978,7 +2978,7 @@ impl ThreadRequestProcessor {
         &self,
         thread_id: ThreadId,
         include_turns: bool,
-        loaded_thread: &CodexThread,
+        loaded_thread: &AvaThread,
         persisted_thread: Option<Thread>,
     ) -> Result<Thread, ThreadReadViewError> {
         let config_snapshot = loaded_thread.config_snapshot().await;
@@ -3011,14 +3011,14 @@ impl ThreadRequestProcessor {
         thread_id: ThreadId,
         thread: &mut Thread,
         include_turns: bool,
-        loaded_thread: &CodexThread,
+        loaded_thread: &AvaThread,
     ) -> Result<(), ThreadReadViewError> {
         self.attach_thread_name(thread_id, thread).await;
 
         if include_turns {
             if matches!(
                 thread.history_mode,
-                codex_app_server_protocol::ThreadHistoryMode::Paginated
+                ava_app_server_protocol::ThreadHistoryMode::Paginated
             ) {
                 self.thread_store
                     .persist_thread(thread_id, PersistContext::Standard)
@@ -3330,7 +3330,7 @@ impl ThreadRequestProcessor {
         &self,
         thread_id: ThreadId,
         params: &ThreadResumeInitialTurnsPageParams,
-    ) -> Result<codex_app_server_protocol::TurnsPage, JSONRPCErrorError> {
+    ) -> Result<ava_app_server_protocol::TurnsPage, JSONRPCErrorError> {
         self.paginated_thread_turns_list_response(
             thread_id,
             /*cursor*/ None,
@@ -3346,7 +3346,7 @@ impl ThreadRequestProcessor {
         &self,
         thread_id: ThreadId,
         params: &ThreadResumeInitialTurnsPageParams,
-    ) -> Result<codex_app_server_protocol::TurnsPage, JSONRPCErrorError> {
+    ) -> Result<ava_app_server_protocol::TurnsPage, JSONRPCErrorError> {
         // A running resume overlays the newest live turn on this durable page.
         // Reserve one row so the overlay keeps the requested limit and the
         // durable next cursor still starts after the last returned stored turn.
@@ -3935,7 +3935,7 @@ impl ThreadRequestProcessor {
         {
             Ok(NewThread {
                 thread_id,
-                thread: codex_thread,
+                thread: ava_thread,
                 session_configured,
                 ..
             }) => {
@@ -3945,7 +3945,7 @@ impl ThreadRequestProcessor {
                         .upsert_thread(&thread_id.to_string())
                         .await;
                     // Invoke idle work before arming subscriber-based unloading.
-                    codex_thread
+                    ava_thread
                         .emit_thread_idle_lifecycle_if_idle(ThreadIdleCause::Completed)
                         .await;
                     if let ThreadResumeTarget::DaemonRecovery(Some(saved)) = target {
@@ -3953,13 +3953,13 @@ impl ThreadRequestProcessor {
                             .await;
                     }
                     let state = self.thread_state_manager.thread_state(thread_id).await;
-                    self.ensure_listener_task_running(thread_id, Arc::clone(&codex_thread), state)
+                    self.ensure_listener_task_running(thread_id, Arc::clone(&ava_thread), state)
                         .await?;
                     return Ok(ControlFlow::Break(()));
                 };
                 let request_id = request_id.clone();
                 if let Err(err) = Self::set_app_server_client_info(
-                    codex_thread.as_ref(),
+                    ava_thread.as_ref(),
                     app_server_client_name,
                     app_server_client_version,
                 )
@@ -3968,7 +3968,7 @@ impl ThreadRequestProcessor {
                     self.outgoing.send_error(request_id, err).await;
                     return Ok(ControlFlow::Break(()));
                 }
-                let instruction_sources = codex_thread.legacy_instruction_sources().await;
+                let instruction_sources = ava_thread.legacy_instruction_sources().await;
                 let SessionConfiguredEvent { rollout_path, .. } = session_configured;
                 let Some(rollout_path) = rollout_path else {
                     let error =
@@ -4016,7 +4016,7 @@ impl ThreadRequestProcessor {
                 let mut thread = match self
                     .load_thread_from_resume_source_or_send_internal(
                         thread_id,
-                        codex_thread.as_ref(),
+                        ava_thread.as_ref(),
                         &response_history,
                         rollout_path.as_path(),
                         resume_source_thread,
@@ -4032,7 +4032,7 @@ impl ThreadRequestProcessor {
                         return Ok(ControlFlow::Break(()));
                     }
                 };
-                thread.thread_source = codex_thread
+                thread.thread_source = ava_thread
                     .config_snapshot()
                     .await
                     .thread_source
@@ -4053,7 +4053,7 @@ impl ThreadRequestProcessor {
                     thread_status,
                     /*has_live_in_progress_turn*/ false,
                 );
-                let config_snapshot = codex_thread.config_snapshot().await;
+                let config_snapshot = ava_thread.config_snapshot().await;
                 let (turns_backwards_cursor, items_backwards_cursor) =
                     if matches!(config_snapshot.history_mode, ThreadHistoryMode::Paginated) {
                         match Self::paginated_resume_backwards_cursors(
@@ -4153,7 +4153,7 @@ impl ThreadRequestProcessor {
                         &self.outgoing,
                         connection_id,
                         thread_id,
-                        codex_thread.as_ref(),
+                        ava_thread.as_ref(),
                         token_usage_turn_id,
                     )
                     .await;
@@ -4161,13 +4161,13 @@ impl ThreadRequestProcessor {
                 self.thread_goal_processor
                     .emit_resume_goal_snapshot(thread_id)
                     .await;
-                codex_thread
+                ava_thread
                     .emit_thread_idle_lifecycle_if_idle(ThreadIdleCause::Completed)
                     .await;
             }
             Err(err) => {
                 let error = match err.details() {
-                    CodexErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
+                    AvaErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
                     _ => internal_error(format!("error resuming thread: {err}")),
                 };
                 return Err(error);
@@ -4600,8 +4600,8 @@ impl ThreadRequestProcessor {
                 .map_err(thread_store_resume_read_error)?;
             if let Some(current_path) = current_thread.rollout_path.as_ref()
                 && !path_utils::paths_match_after_normalization(
-                    codex_rollout::plain_rollout_path(requested_path).as_path(),
-                    codex_rollout::plain_rollout_path(current_path).as_path(),
+                    ava_rollout::plain_rollout_path(requested_path).as_path(),
+                    ava_rollout::plain_rollout_path(current_path).as_path(),
                 )
             {
                 return Err(invalid_request(format!(
@@ -4615,7 +4615,7 @@ impl ThreadRequestProcessor {
         if stored_thread.archived_at.is_some() {
             let thread_id = stored_thread.thread_id;
             return Err(invalid_request(format!(
-                "session {thread_id} is archived. Run `codex unarchive {thread_id}` to unarchive it first."
+                "session {thread_id} is archived. Run `ava unarchive {thread_id}` to unarchive it first."
             )));
         }
 
@@ -4680,7 +4680,7 @@ impl ThreadRequestProcessor {
     async fn load_thread_from_resume_source_or_send_internal(
         &self,
         thread_id: ThreadId,
-        thread: &CodexThread,
+        thread: &AvaThread,
         thread_history: &InitialHistory,
         rollout_path: &Path,
         resume_source_thread: Option<StoredThread>,
@@ -4873,21 +4873,21 @@ impl ThreadRequestProcessor {
         let source_thread_name = source_thread
             .name
             .as_deref()
-            .and_then(codex_core::util::normalize_thread_name);
+            .and_then(ava_core::util::normalize_thread_name);
         let mut prepared_fork = if paginated_source {
             let boundary = match (last_turn_id.as_deref(), before_turn_id.as_deref()) {
                 (Some(turn_id), None) => {
-                    codex_thread_store::ForkBoundary::ThroughTurn(turn_id.to_string())
+                    ava_thread_store::ForkBoundary::ThroughTurn(turn_id.to_string())
                 }
                 (None, Some(turn_id)) => {
-                    codex_thread_store::ForkBoundary::BeforeTurn(turn_id.to_string())
+                    ava_thread_store::ForkBoundary::BeforeTurn(turn_id.to_string())
                 }
-                (None, None) => codex_thread_store::ForkBoundary::Latest,
+                (None, None) => ava_thread_store::ForkBoundary::Latest,
                 (Some(_), Some(_)) => unreachable!("fork boundaries are mutually exclusive"),
             };
             Some(
                 self.thread_store
-                    .prepare_fork(codex_thread_store::PrepareForkParams {
+                    .prepare_fork(ava_thread_store::PrepareForkParams {
                         thread_id: source_thread_id,
                         boundary,
                     })
@@ -5157,10 +5157,10 @@ impl ThreadRequestProcessor {
                 remove_pending_thread_metadata(self.thread_store.as_ref(), reserved_thread_id)
                     .await;
                 return Err(match err.details() {
-                    CodexErrorDetails::Io(_) | CodexErrorDetails::Json(_) => {
+                    AvaErrorDetails::Io(_) | AvaErrorDetails::Json(_) => {
                         invalid_request(format!("failed to load thread {source_thread_id}: {err}"))
                     }
-                    CodexErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
+                    AvaErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
                     _ => internal_error(format!("error forking thread: {err}")),
                 });
             }
@@ -5713,7 +5713,7 @@ pub(super) fn build_thread_resume_initial_turns_page(
     has_live_running_thread: bool,
     active_turn: Option<Turn>,
     params: &ThreadResumeInitialTurnsPageParams,
-) -> Result<codex_app_server_protocol::TurnsPage, JSONRPCErrorError> {
+) -> Result<ava_app_server_protocol::TurnsPage, JSONRPCErrorError> {
     build_thread_turns_page_response(
         items,
         loaded_status,
@@ -5804,7 +5804,7 @@ fn paginated_history_list_error(err: ThreadStoreError) -> JSONRPCErrorError {
 }
 
 fn deserialize_stored_thread_item(
-    item: codex_thread_store::StoredThreadItem,
+    item: ava_thread_store::StoredThreadItem,
 ) -> Result<ThreadItem, JSONRPCErrorError> {
     serde_json::from_slice::<ThreadItem>(&item.item_json).map_err(|err| {
         internal_error(format!(
@@ -5827,7 +5827,7 @@ fn stored_turn_to_api_turn(
     let error = turn.error.map(|error| TurnError {
         misalignment: None,
         message: error.message,
-        codex_error_info: error.codex_error_info,
+        ava_error_info: error.ava_error_info,
         additional_details: error.additional_details,
     });
     let items = turn
@@ -5968,13 +5968,13 @@ fn conversation_summary_rollout_path_read_error(
     }
 }
 
-pub(super) fn core_thread_write_error(operation: &str, err: CodexErr) -> JSONRPCErrorError {
+pub(super) fn core_thread_write_error(operation: &str, err: AvaErr) -> JSONRPCErrorError {
     match err.details() {
-        CodexErrorDetails::ThreadNotFound(thread_id) => {
+        AvaErrorDetails::ThreadNotFound(thread_id) => {
             invalid_request(format!("thread not found: {thread_id}"))
         }
-        CodexErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
-        CodexErrorDetails::UnsupportedOperation(message) => method_not_found(message.clone()),
+        AvaErrorDetails::InvalidRequest(message) => invalid_request(message.clone()),
+        AvaErrorDetails::UnsupportedOperation(message) => method_not_found(message.clone()),
         _ => internal_error(format!("failed to {operation}: {err}")),
     }
 }
@@ -6002,7 +6002,7 @@ pub(crate) fn thread_from_stored_thread(
     thread: StoredThread,
     fallback_provider: &str,
     fallback_cwd: &AbsolutePathBuf,
-) -> (Thread, Option<codex_thread_store::StoredThreadHistory>) {
+) -> (Thread, Option<ava_thread_store::StoredThreadHistory>) {
     let path = thread.rollout_path;
     let git_info = thread.git_info.map(|info| ApiGitInfo {
         sha: info.commit_hash.map(|sha| sha.0),
@@ -6131,7 +6131,7 @@ fn summary_from_state_db_metadata(
     cwd: PathBuf,
     cli_version: String,
     source: String,
-    _thread_source: Option<codex_protocol::protocol::ThreadSource>,
+    _thread_source: Option<ava_protocol::protocol::ThreadSource>,
     agent_nickname: Option<String>,
     agent_role: Option<String>,
     git_sha: Option<String>,
@@ -6141,7 +6141,7 @@ fn summary_from_state_db_metadata(
     let preview = preview.or(first_user_message).unwrap_or_default();
     let source = serde_json::from_str(&source)
         .or_else(|_| serde_json::from_value(serde_json::Value::String(source.clone())))
-        .unwrap_or(codex_protocol::protocol::SessionSource::Unknown);
+        .unwrap_or(ava_protocol::protocol::SessionSource::Unknown);
     let source = with_thread_spawn_agent_metadata(source, agent_nickname, agent_role);
     let git_info = if git_sha.is_none() && git_branch.is_none() && git_origin_url.is_none() {
         None
@@ -6196,8 +6196,8 @@ fn preview_from_rollout_items(items: &[RolloutItem]) -> String {
     items
         .iter()
         .find_map(|item| match item {
-            RolloutItem::ResponseItem(item) => match codex_core::parse_turn_item(&item.item) {
-                Some(codex_protocol::items::TurnItem::UserMessage(user)) => Some(user.message()),
+            RolloutItem::ResponseItem(item) => match ava_core::parse_turn_item(&item.item) {
+                Some(ava_protocol::items::TurnItem::UserMessage(user)) => Some(user.message()),
                 _ => None,
             },
             _ => None,
@@ -6209,7 +6209,7 @@ fn preview_from_rollout_items(items: &[RolloutItem]) -> String {
 fn build_thread_from_snapshot(
     thread_id: ThreadId,
     session_id: String,
-    multi_agent_version: Option<codex_protocol::protocol::MultiAgentVersion>,
+    multi_agent_version: Option<ava_protocol::protocol::MultiAgentVersion>,
     config_snapshot: &ThreadConfigSnapshot,
     path: Option<PathBuf>,
 ) -> Thread {
@@ -6291,7 +6291,7 @@ fn paginate_background_terminals(
 fn build_thread_from_loaded_snapshot(
     thread_id: ThreadId,
     config_snapshot: &ThreadConfigSnapshot,
-    loaded_thread: &CodexThread,
+    loaded_thread: &AvaThread,
 ) -> Thread {
     build_thread_from_snapshot(
         thread_id,

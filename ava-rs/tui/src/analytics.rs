@@ -42,7 +42,7 @@ use crate::keymap::ListKeymap;
 use crate::tui;
 use crate::tui::FrameRequester;
 use crate::tui::TuiEvent;
-use codex_app_server_client::AppServerRequestHandle;
+use ava_app_server_client::AppServerRequestHandle;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -57,10 +57,10 @@ pub(crate) struct AnalyticsView {
     chats: Load<chats::Chats>,
     tasks: Load<tasks::Chats>,
     chat_metric: usize,
-    profile: Load<codex_backend_client::AccountProfile>,
+    profile: Load<ava_backend_client::AccountProfile>,
     plan: plan::State,
     show_zero_credit_groups: bool,
-    account: Load<codex_protocol::account::PlanType>,
+    account: Load<ava_protocol::account::PlanType>,
     reports_started: bool,
     connection: Option<(
         std::sync::Arc<crate::legacy_core::config::Config>,
@@ -118,7 +118,7 @@ impl AnalyticsView {
         &mut self,
         handle: AppServerRequestHandle,
         frame: FrameRequester,
-        models: Vec<codex_protocol::openai_models::ModelPreset>,
+        models: Vec<ava_protocol::openai_models::ModelPreset>,
         config: std::sync::Arc<crate::legacy_core::config::Config>,
     ) {
         self.model_names = models
@@ -127,7 +127,7 @@ impl AnalyticsView {
             .collect();
         self.plan.enabled = config
             .features
-            .enabled(codex_features::Feature::AnalyticsPlanHistory);
+            .enabled(ava_features::Feature::AnalyticsPlanHistory);
         self.connection = Some((config, handle, frame));
         self.is_done = false;
         self.refresh();
@@ -161,7 +161,7 @@ impl AnalyticsView {
                                 .backend
                                 .account()
                                 .plan_type
-                                .unwrap_or(codex_protocol::account::PlanType::Unknown),
+                                .unwrap_or(ava_protocol::account::PlanType::Unknown),
                         )
                     })
                 },

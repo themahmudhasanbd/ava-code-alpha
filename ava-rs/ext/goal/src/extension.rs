@@ -1,40 +1,40 @@
 use std::sync::Arc;
 use std::sync::Weak;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_core::ThreadManager;
-use codex_core::TurnStartOptions;
-use codex_extension_api::ConfigContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ThreadIdleInput;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadResumeInput;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ThreadStopInput;
-use codex_extension_api::TokenUsageContributor;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolCallOutcome;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolExecutor;
-use codex_extension_api::ToolFinishInput;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::ToolLifecycleFuture;
-use codex_extension_api::TurnAbortInput;
-use codex_extension_api::TurnErrorInput;
-use codex_extension_api::TurnLifecycleContributor;
-use codex_extension_api::TurnStartInput;
-use codex_extension_api::TurnStopInput;
-use codex_otel::MetricsClient;
-use codex_protocol::ThreadId;
-use codex_protocol::items::TurnItem;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::ThreadGoalStatus;
-use codex_protocol::protocol::TokenUsageInfo;
+use ava_analytics::AnalyticsEventsClient;
+use ava_core::ThreadManager;
+use ava_core::TurnStartOptions;
+use ava_extension_api::ConfigContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ThreadIdleInput;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadResumeInput;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ThreadStopInput;
+use ava_extension_api::TokenUsageContributor;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolCallOutcome;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolExecutor;
+use ava_extension_api::ToolFinishInput;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::ToolLifecycleFuture;
+use ava_extension_api::TurnAbortInput;
+use ava_extension_api::TurnErrorInput;
+use ava_extension_api::TurnLifecycleContributor;
+use ava_extension_api::TurnStartInput;
+use ava_extension_api::TurnStopInput;
+use ava_otel::MetricsClient;
+use ava_protocol::ThreadId;
+use ava_protocol::items::TurnItem;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::ThreadGoalStatus;
+use ava_protocol::protocol::TokenUsageInfo;
 
 use crate::accounting::BudgetLimitedGoalDisposition;
 use crate::accounting::GoalAccountingState;
@@ -58,7 +58,7 @@ pub struct GoalExtensionConfig {
 
 #[derive(Clone)]
 pub struct GoalExtension<C> {
-    state_dbs: Arc<codex_state::StateRuntime>,
+    state_dbs: Arc<ava_state::StateRuntime>,
     analytics: GoalAnalytics,
     event_emitter: GoalEventEmitter,
     metrics: GoalMetrics,
@@ -75,7 +75,7 @@ impl<C> std::fmt::Debug for GoalExtension<C> {
 
 impl<C> GoalExtension<C> {
     pub(crate) fn new_with_host_capabilities(
-        state_dbs: Arc<codex_state::StateRuntime>,
+        state_dbs: Arc<ava_state::StateRuntime>,
         analytics_events_client: AnalyticsEventsClient,
         event_sink: Arc<dyn ExtensionEventSink>,
         metrics_client: Option<MetricsClient>,
@@ -256,7 +256,7 @@ where
             );
             if matches!(
                 input.collaboration_mode.mode,
-                codex_protocol::config_types::ModeKind::Plan
+                ava_protocol::config_types::ModeKind::Plan
             ) {
                 accounting.clear_current_turn_goal();
                 return;
@@ -272,8 +272,8 @@ where
             if let Some(goal) = goal
                 && matches!(
                     goal.status,
-                    codex_state::ThreadGoalStatus::Active
-                        | codex_state::ThreadGoalStatus::BudgetLimited
+                    ava_state::ThreadGoalStatus::Active
+                        | ava_state::ThreadGoalStatus::BudgetLimited
                 )
             {
                 accounting.mark_turn_goal_active(input.turn_id, goal.goal_id);
@@ -335,7 +335,7 @@ where
                 .account_active_goal_progress(
                     turn_id,
                     &format!("{turn_id}:turn-stop"),
-                    codex_state::GoalAccountingMode::ActiveOnly,
+                    ava_state::GoalAccountingMode::ActiveOnly,
                     BudgetLimitedGoalDisposition::ClearActive,
                 )
                 .await
@@ -380,7 +380,7 @@ where
                 .account_active_goal_progress(
                     turn_id,
                     &format!("{turn_id}:turn-abort"),
-                    codex_state::GoalAccountingMode::ActiveOnly,
+                    ava_state::GoalAccountingMode::ActiveOnly,
                     BudgetLimitedGoalDisposition::ClearActive,
                 )
                 .await
@@ -401,7 +401,7 @@ where
             };
 
             let reason = match input.error {
-                CodexErrorInfo::UsageLimitExceeded => ActiveGoalStopReason::UsageLimit,
+                AvaErrorInfo::UsageLimitExceeded => ActiveGoalStopReason::UsageLimit,
                 // The turn has ended because the error was non-retryable or its
                 // retries were exhausted. Block the goal to prevent automatic
                 // continuation from looping and consuming tokens, as can happen
@@ -496,7 +496,7 @@ where
                 .account_active_goal_progress(
                     turn_id,
                     input.call_id,
-                    codex_state::GoalAccountingMode::ActiveOnly,
+                    ava_state::GoalAccountingMode::ActiveOnly,
                     BudgetLimitedGoalDisposition::KeepActive,
                 )
                 .await
@@ -535,7 +535,7 @@ where
         _session_store: &ExtensionData,
         thread_store: &ExtensionData,
     ) -> Vec<
-        Arc<dyn for<'call> codex_extension_api::ToolExecutor<codex_extension_api::ToolCall<'call>>>,
+        Arc<dyn for<'call> ava_extension_api::ToolExecutor<ava_extension_api::ToolCall<'call>>>,
     > {
         let Some(runtime) = goal_runtime_handle(thread_store) else {
             return Vec::new();
@@ -586,7 +586,7 @@ where
 
 pub fn install_with_backend<C>(
     registry: &mut ExtensionRegistryBuilder<C>,
-    state_dbs: Arc<codex_state::StateRuntime>,
+    state_dbs: Arc<ava_state::StateRuntime>,
     analytics_events_client: AnalyticsEventsClient,
     metrics_client: Option<MetricsClient>,
     thread_manager: Weak<ThreadManager>,

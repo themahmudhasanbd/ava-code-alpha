@@ -4,8 +4,8 @@
 //! configuration and app-server initialization remain responsive to safe local editing.
 
 use super::*;
-use codex_terminal_detection::Multiplexer;
-use codex_terminal_detection::TerminalName;
+use ava_terminal_detection::Multiplexer;
+use ava_terminal_detection::TerminalName;
 
 pub(super) async fn run_main_inner(
     mut cli: Cli,
@@ -32,7 +32,7 @@ pub(super) async fn run_main_inner(
         }
         if cli.fork_picker || cli.fork_last {
             return Err(std::io::Error::other(
-                "`codex fork --worktree` requires an explicit session ID",
+                "`ava fork --worktree` requires an explicit session ID",
             ));
         }
     }
@@ -62,7 +62,7 @@ pub(super) async fn run_main_inner(
     // gpt-oss:20b) and ensure it is present locally. Also, force the built‑in
     let raw_overrides = cli.config_overrides.raw_overrides.clone();
     // `oss` model provider.
-    let overrides_cli = codex_utils_cli::CliConfigOverrides { raw_overrides };
+    let overrides_cli = ava_utils_cli::CliConfigOverrides { raw_overrides };
     let cli_kv_overrides = match overrides_cli.parse_overrides() {
         // Parse `-c` overrides from the CLI.
         Ok(v) => v,
@@ -85,17 +85,17 @@ pub(super) async fn run_main_inner(
 
     // we load config.toml here to determine project state.
     #[allow(clippy::print_stderr)]
-    let codex_home = match find_codex_home() {
-        Ok(codex_home) => codex_home.to_path_buf(),
+    let ava_home = match find_ava_home() {
+        Ok(ava_home) => ava_home.to_path_buf(),
         Err(err) => {
-            eprintln!("Error finding codex home: {err}");
+            eprintln!("Error finding ava home: {err}");
             std::process::exit(1);
         }
     };
 
     let mut launch_loader_overrides = loader_overrides.clone();
     if let Some(profile_v2) = cli.config_profile_v2.as_ref() {
-        let user_config_path = resolve_profile_v2_config_path(&codex_home, profile_v2);
+        let user_config_path = resolve_profile_v2_config_path(&ava_home, profile_v2);
         launch_loader_overrides.user_config_path = Some(user_config_path);
         launch_loader_overrides.user_config_profile = Some(profile_v2.clone());
     }
@@ -107,11 +107,11 @@ pub(super) async fn run_main_inner(
             /*default_daemon_socket*/ None,
             /*can_reuse_implicit_local_daemon*/ false,
             workload_identity_selected,
-            std::env::var_os(codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR).as_deref(),
+            std::env::var_os(ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR).as_deref(),
         )?;
         let validation_environment_manager =
             if should_load_configured_environments(&loader_overrides, &validation_target) {
-                EnvironmentManager::prepare_from_codex_home(&codex_home).await
+                EnvironmentManager::prepare_from_ava_home(&ava_home).await
             } else {
                 EnvironmentManager::prepare_from_env().await
             }
@@ -125,7 +125,7 @@ pub(super) async fn run_main_inner(
         validation_loader_overrides.ignore_login_requirements =
             validation_target.uses_remote_workspace();
         let validation_bootstrap = load_bootstrap_config_or_exit(
-            &codex_home,
+            &ava_home,
             validation_cwd.as_ref(),
             cli_kv_overrides.clone(),
             validation_loader_overrides.clone(),
@@ -137,7 +137,7 @@ pub(super) async fn run_main_inner(
             cloud_config_bundle_for_app_server_target(
                 &validation_target,
                 &validation_bootstrap,
-                &codex_home,
+                &ava_home,
             )
             .await?
         } else {
@@ -175,7 +175,7 @@ pub(super) async fn run_main_inner(
         &cli_kv_overrides,
         &launch_loader_overrides,
         workload_identity_selected,
-        std::env::var_os(codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR).as_deref(),
+        std::env::var_os(ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR).as_deref(),
     );
     let reuse_implicit_local_daemon = daemon_exclusion.is_none();
     let search_only_config_override = !workload_identity_selected
@@ -191,9 +191,9 @@ pub(super) async fn run_main_inner(
         && (reuse_implicit_local_daemon || search_only_config_override)
         && launch_loader_overrides.packaged_defaults_path.is_none()
         && startup_preflight::should_delay_startup_composer_for_first_login(
-            &codex_home,
-            codex_config::loader::system_config_toml_file(),
-            || codex_config::loader::has_local_managed_configuration(&codex_home),
+            &ava_home,
+            ava_config::loader::system_config_toml_file(),
+            || ava_config::loader::has_local_managed_configuration(&ava_home),
             |name| std::env::var_os(name),
         )
     {
@@ -215,11 +215,11 @@ pub(super) async fn run_main_inner(
         /*default_daemon_socket*/ None,
         reuse_implicit_local_daemon,
         workload_identity_selected,
-        std::env::var_os(codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR).as_deref(),
+        std::env::var_os(ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR).as_deref(),
     )?;
     let prepared_environment_manager =
         if should_load_configured_environments(&launch_loader_overrides, &presentation_target) {
-            EnvironmentManager::prepare_from_codex_home(&codex_home).await
+            EnvironmentManager::prepare_from_ava_home(&ava_home).await
         } else {
             EnvironmentManager::prepare_from_env().await
         }
@@ -243,7 +243,7 @@ pub(super) async fn run_main_inner(
     loader_overrides.ignore_login_requirements = presentation_target.uses_remote_workspace();
     let presentation = startup_presentation::load(
         &cli,
-        &codex_home,
+        &ava_home,
         loader_overrides.clone(),
         cli_kv_overrides.clone(),
         config_cwd,
@@ -284,7 +284,7 @@ pub(super) async fn run_main_inner(
 
     let default_daemon = if explicit_remote_endpoint.is_none() && reuse_implicit_local_daemon {
         startup_draft
-            .run_until(maybe_probe_default_daemon_socket(&codex_home))
+            .run_until(maybe_probe_default_daemon_socket(&ava_home))
             .await?
     } else {
         None
@@ -294,7 +294,7 @@ pub(super) async fn run_main_inner(
         default_daemon,
         reuse_implicit_local_daemon,
         workload_identity_selected,
-        std::env::var_os(codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR).as_deref(),
+        std::env::var_os(ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR).as_deref(),
     )?;
     let remote_cwd_override = cli
         .cwd
@@ -302,8 +302,8 @@ pub(super) async fn run_main_inner(
         .filter(|_| app_server_target.uses_remote_workspace());
 
     let local_runtime_paths = ExecServerRuntimePaths::from_optional_paths(
-        arg0_paths.codex_self_exe.clone(),
-        arg0_paths.codex_linux_sandbox_exe.clone(),
+        arg0_paths.ava_self_exe.clone(),
+        arg0_paths.ava_linux_sandbox_exe.clone(),
     )?;
     // The pre-paint bootstrap used these same local/remote config inputs. Reuse it here;
     // implicit daemon discovery above changes transport, not the client configuration cwd.
@@ -320,7 +320,7 @@ pub(super) async fn run_main_inner(
         .run_until(cloud_config_bundle_for_app_server_target(
             &app_server_target,
             &bootstrap_config,
-            &codex_home,
+            &ava_home,
         ))
         .await??;
     let bootstrap_config_toml = &bootstrap_config.config_toml;
@@ -340,7 +340,7 @@ pub(super) async fn run_main_inner(
             // needs a default provider from config, reload with the bundle.
             bootstrap_config_with_cloud_config = startup_draft
                 .run_until(load_bootstrap_config_or_exit(
-                    &codex_home,
+                    &ava_home,
                     config_cwd.as_ref(),
                     cli_kv_overrides.clone(),
                     loader_overrides.clone(),
@@ -412,8 +412,8 @@ pub(super) async fn run_main_inner(
         sandbox_mode,
         cwd: cwd_override,
         model_provider: model_provider_override.clone(),
-        codex_self_exe: arg0_paths.codex_self_exe.clone(),
-        codex_linux_sandbox_exe: arg0_paths.codex_linux_sandbox_exe.clone(),
+        ava_self_exe: arg0_paths.ava_self_exe.clone(),
+        ava_linux_sandbox_exe: arg0_paths.ava_linux_sandbox_exe.clone(),
         main_execve_wrapper_exe: arg0_paths.main_execve_wrapper_exe.clone(),
         show_raw_agent_reasoning: cli.oss.then_some(true),
         bypass_hook_trust: cli.bypass_hook_trust.then_some(true),
@@ -438,7 +438,7 @@ pub(super) async fn run_main_inner(
         startup_draft
             .run_until(cloud_config_bundle_loader_for_storage(
                 app_server_target.auth_config_for_cloud_loader(config.auth_config()),
-                /*enable_codex_api_key_env*/ false,
+                /*enable_ava_api_key_env*/ false,
             ))
             .await??
     };
@@ -480,7 +480,7 @@ pub(super) async fn run_main_inner(
             .run_until(
                 config
                     .auth_config()
-                    .load_auth(/*enable_codex_api_key_env*/ false),
+                    .load_auth(/*enable_ava_api_key_env*/ false),
             )
             .await?
             .ok()
@@ -499,7 +499,7 @@ pub(super) async fn run_main_inner(
             .with_restored(|| async {
                 // Package installation may print progress; keep ordinary Ctrl+C handling.
                 crossterm::terminal::disable_raw_mode()?;
-                let result = codex_app_server_daemon::start_with_features(&daemon_features).await;
+                let result = ava_app_server_daemon::start_with_features(&daemon_features).await;
                 daemon_telemetry::record_start(&config, &result).await;
                 result.map_err(|err| {
                     std::io::Error::other(format!("{err:#}\n{}", daemon_startup::FAILURE_HINT))
@@ -538,8 +538,8 @@ pub(super) async fn run_main_inner(
             })
     });
     #[cfg(target_os = "macos")]
-    let local_runtime_paths = local_runtime_paths.with_allowed_symlinked_codex_home(
-        codex_config::allowed_symlinked_codex_home(&config.config_layer_stack, &config.codex_home),
+    let local_runtime_paths = local_runtime_paths.with_allowed_symlinked_ava_home(
+        ava_config::allowed_symlinked_ava_home(&config.config_layer_stack, &config.ava_home),
     );
     let environment_manager = Arc::new(
         prepared_environment_manager
@@ -547,11 +547,11 @@ pub(super) async fn run_main_inner(
             .map_err(std::io::Error::other)?,
     );
 
-    remove_legacy_tui_log_file(config.codex_home.as_path());
+    remove_legacy_tui_log_file(config.ava_home.as_path());
 
     let otel_originator = originator().value;
     let otel = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        codex_app_server_client::build_otel_provider(
+        ava_app_server_client::build_otel_provider(
             &config,
             env!("CARGO_PKG_VERSION"),
             /*service_name_override*/ None,
@@ -583,13 +583,13 @@ pub(super) async fn run_main_inner(
     };
     let metrics = otel
         .as_ref()
-        .and_then(codex_otel::OtelProvider::metrics)
+        .and_then(ava_otel::OtelProvider::metrics)
         .cloned();
     if let Some(metrics) = &metrics {
-        let _ = codex_otel::record_process_start_once(metrics, otel_originator.as_str());
+        let _ = ava_otel::record_process_start_once(metrics, otel_originator.as_str());
         let telemetry =
-            codex_rollout::sqlite_telemetry_recorder(metrics.clone(), otel_originator.as_str());
-        let _ = codex_state::install_process_db_telemetry(telemetry);
+            ava_rollout::sqlite_telemetry_recorder(metrics.clone(), otel_originator.as_str());
+        let _ = ava_state::install_process_db_telemetry(telemetry);
     }
     let selection_reason = match (&app_server_target, daemon_exclusion) {
         (AppServerTarget::Remote { .. }, _) => "explicit_remote",
@@ -601,7 +601,7 @@ pub(super) async fn run_main_inner(
         (AppServerTarget::Embedded, None) => "auto_start_disabled",
     };
     let daemon_settings = if metrics.is_some() {
-        codex_app_server_daemon::telemetry::settings_tags(&config.codex_home)
+        ava_app_server_daemon::telemetry::settings_tags(&config.ava_home)
             .await
             .to_vec()
     } else {
@@ -629,7 +629,7 @@ pub(super) async fn run_main_inner(
             (true, AppServerTarget::Remote { .. }) => "remote",
         };
         // Use a fixed category, not the versioned or user-provided terminal identifier.
-        let terminal_info = codex_terminal_detection::terminal_info();
+        let terminal_info = ava_terminal_detection::terminal_info();
         let terminal_name = match terminal_info.name {
             TerminalName::AppleTerminal => "apple_terminal",
             TerminalName::Ghostty => "ghostty",
@@ -656,7 +656,7 @@ pub(super) async fn run_main_inner(
             ("terminal_name", terminal_name),
             ("multiplexer", multiplexer),
         ]);
-        let _ = metrics.counter("codex.tui.start", /*inc*/ 1, &launch_tags);
+        let _ = metrics.counter("ava.tui.start", /*inc*/ 1, &launch_tags);
     };
     let launch_telemetry = daemon_telemetry::Launch(Some(launch_telemetry));
     let state_db = startup_draft
@@ -740,7 +740,7 @@ pub(super) async fn run_main_inner(
         let (non_blocking, guard) = non_blocking(log_file);
         let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
             EnvFilter::new(
-                "codex_core=info,codex_tui=info,codex_rmcp_client=info,codex_realtime_webrtc=warn",
+                "ava_core=info,ava_tui=info,ava_rmcp_client=info,ava_realtime_webrtc=warn",
             )
         });
         let file_layer = tracing_subscriber::fmt::layer()
@@ -757,7 +757,7 @@ pub(super) async fn run_main_inner(
         (None, None)
     };
 
-    let feedback = codex_feedback::CodexFeedback::new();
+    let feedback = ava_feedback::AvaFeedback::new();
     let feedback_layer = feedback.logger_layer();
     let feedback_metadata_layer = feedback.metadata_layer();
 
@@ -842,7 +842,7 @@ pub(super) async fn run_main_inner(
     // The TUI owns this request's consent. The child is silent; installation remains unconfirmed.
     if let Ok(exit) = &app_result
         && let Some(UpdateAction::Daemon(source)) = exit.update_action
-        && let Some(metrics) = otel.as_ref().and_then(codex_otel::OtelProvider::metrics)
+        && let Some(metrics) = otel.as_ref().and_then(ava_otel::OtelProvider::metrics)
     {
         let mut tags = daemon_settings.to_vec();
         tags.extend([
@@ -856,7 +856,7 @@ pub(super) async fn run_main_inner(
             ),
             ("outcome", "handoff_requested"),
         ]);
-        let _ = metrics.counter("codex.daemon.update", /*inc*/ 1, &tags);
+        let _ = metrics.counter("ava.daemon.update", /*inc*/ 1, &tags);
     }
 
     if let Some(otel) = otel

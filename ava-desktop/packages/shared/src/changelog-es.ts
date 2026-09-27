@@ -686,7 +686,7 @@ export const esEntries: ChangelogEntry[] = [
     "version": "0.2.10",
     "date": "2026-07-30",
     "highlights": [
-      "Agregue una barra superior de conversación estilo Codex/WorkBuddy con controles mejorados.",
+      "Agregue una barra superior de conversación estilo Ava/WorkBuddy con controles mejorados.",
       "Actualice la transcripción del chat y reduzca el estilo de la prosa para mejorar la legibilidad.",
       "Unifique el encabezado del panel de trabajo con el menú contextual y anime el colapso de la barra lateral.",
       "Combine lanzadores de herramientas en un menú desplegable de creación para una interfaz más limpia.",

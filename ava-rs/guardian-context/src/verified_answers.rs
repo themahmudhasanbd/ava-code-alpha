@@ -1,12 +1,12 @@
 //! Stateless selection of original host-verified question/answer records.
 //! Omit a record atomically when it cannot fit; never truncate a restriction out of a grant.
 
-use codex_history::RetainedContext;
-use codex_history::RetainedContextEntry;
-use codex_history::VerifiedAnswer;
+use ava_history::RetainedContext;
+use ava_history::RetainedContextEntry;
+use ava_history::VerifiedAnswer;
 
 use crate::GuardianRootMessage;
-use codex_protocol::protocol::TruncationPolicy;
+use ava_protocol::protocol::TruncationPolicy;
 
 const MAX_ANSWER_TOKENS: usize = 900;
 

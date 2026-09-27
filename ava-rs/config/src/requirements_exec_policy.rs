@@ -1,10 +1,10 @@
-use codex_execpolicy::Decision;
-use codex_execpolicy::Policy;
-use codex_execpolicy::RequirementsExecPolicy;
-use codex_execpolicy::RuleRef;
-use codex_execpolicy::rule::PatternToken;
-use codex_execpolicy::rule::PrefixPattern;
-use codex_execpolicy::rule::PrefixRule;
+use ava_execpolicy::Decision;
+use ava_execpolicy::Policy;
+use ava_execpolicy::RequirementsExecPolicy;
+use ava_execpolicy::RuleRef;
+use ava_execpolicy::rule::PatternToken;
+use ava_execpolicy::rule::PrefixPattern;
+use ava_execpolicy::rule::PrefixRule;
 use multimap::MultiMap;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -79,14 +79,14 @@ pub enum RequirementsExecPolicyParseError {
     MissingDecision { rule_index: usize },
 
     #[error(
-        "rules prefix_rule at index {rule_index} has decision 'allow', which is not permitted in requirements.toml: Codex merges these rules with other config and uses the most restrictive result (use 'prompt' or 'forbidden')"
+        "rules prefix_rule at index {rule_index} has decision 'allow', which is not permitted in requirements.toml: Ava merges these rules with other config and uses the most restrictive result (use 'prompt' or 'forbidden')"
     )]
     AllowDecisionNotAllowed { rule_index: usize },
 }
 
 impl RequirementsExecPolicyToml {
     /// Convert requirements TOML rules into the internal `.rules`
-    /// representation used by `codex-execpolicy`.
+    /// representation used by `ava-execpolicy`.
     pub fn to_policy(&self) -> Result<Policy, RequirementsExecPolicyParseError> {
         if self.prefix_rules.is_empty() {
             return Err(RequirementsExecPolicyParseError::EmptyPrefixRules);

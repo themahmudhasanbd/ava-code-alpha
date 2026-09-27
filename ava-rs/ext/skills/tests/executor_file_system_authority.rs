@@ -5,53 +5,53 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirementsToml;
-use codex_exec_server::CapabilityRootDiscovery;
-use codex_exec_server::CapabilityTextFile;
-use codex_exec_server::CopyOptions;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::DiscoveredSkillFiles;
-use codex_exec_server::EnvironmentManager;
-use codex_exec_server::ExecutorCapabilityDiscoveryCache;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_exec_server::ExecutorFileSystem;
-use codex_exec_server::ExecutorFileSystemFuture;
-use codex_exec_server::FileMetadata;
-use codex_exec_server::FileSystemReadStream;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_exec_server::GetMetadataOptions;
-use codex_exec_server::ReadDirectoryEntry;
-use codex_exec_server::ReadFileOptions;
-use codex_exec_server::RemoveOptions;
-use codex_exec_server::WalkEntry;
-use codex_exec_server::WalkEntryKind;
-use codex_exec_server::WalkOptions;
-use codex_exec_server::WalkOutcome;
-use codex_exec_server::WindowsSandboxSelection;
-use codex_exec_server::WriteFileOptions;
-use codex_protocol::capabilities::CapabilityRootLocation;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::Product;
-use codex_skills_extension::ExecutorSkillProvider;
-use codex_skills_extension::HostSkillsLoadInput;
-use codex_skills_extension::HostSkillsService;
-use codex_skills_extension::catalog::SkillAuthority;
-use codex_skills_extension::catalog::SkillCatalog;
-use codex_skills_extension::catalog::SkillCatalogEntry;
-use codex_skills_extension::catalog::SkillPackageId;
-use codex_skills_extension::catalog::SkillResourceId;
-use codex_skills_extension::catalog::SkillSourceKind;
-use codex_skills_extension::provider::SkillListQuery;
-use codex_skills_extension::provider::SkillProvider;
-use codex_skills_extension::provider::SkillReadRequest;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirementsToml;
+use ava_exec_server::CapabilityRootDiscovery;
+use ava_exec_server::CapabilityTextFile;
+use ava_exec_server::CopyOptions;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::DiscoveredSkillFiles;
+use ava_exec_server::EnvironmentManager;
+use ava_exec_server::ExecutorCapabilityDiscoveryCache;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_exec_server::ExecutorFileSystem;
+use ava_exec_server::ExecutorFileSystemFuture;
+use ava_exec_server::FileMetadata;
+use ava_exec_server::FileSystemReadStream;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_exec_server::GetMetadataOptions;
+use ava_exec_server::ReadDirectoryEntry;
+use ava_exec_server::ReadFileOptions;
+use ava_exec_server::RemoveOptions;
+use ava_exec_server::WalkEntry;
+use ava_exec_server::WalkEntryKind;
+use ava_exec_server::WalkOptions;
+use ava_exec_server::WalkOutcome;
+use ava_exec_server::WindowsSandboxSelection;
+use ava_exec_server::WriteFileOptions;
+use ava_protocol::capabilities::CapabilityRootLocation;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::Product;
+use ava_skills_extension::ExecutorSkillProvider;
+use ava_skills_extension::HostSkillsLoadInput;
+use ava_skills_extension::HostSkillsService;
+use ava_skills_extension::catalog::SkillAuthority;
+use ava_skills_extension::catalog::SkillCatalog;
+use ava_skills_extension::catalog::SkillCatalogEntry;
+use ava_skills_extension::catalog::SkillPackageId;
+use ava_skills_extension::catalog::SkillResourceId;
+use ava_skills_extension::catalog::SkillSourceKind;
+use ava_skills_extension::provider::SkillListQuery;
+use ava_skills_extension::provider::SkillProvider;
+use ava_skills_extension::provider::SkillReadRequest;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 
 const SKILL_CONTENTS: &str =
@@ -248,8 +248,8 @@ impl ExecutorFileSystem for SyntheticFileSystem {
 #[tokio::test]
 async fn skill_loading_and_reads_use_the_supplied_executor_file_system() {
     let test_root =
-        std::env::temp_dir().join(format!("codex-executor-skill-fs-{}", std::process::id()));
-    let project_folder = AbsolutePathBuf::from_absolute_path_checked(test_root.join(".codex"))
+        std::env::temp_dir().join(format!("ava-executor-skill-fs-{}", std::process::id()));
+    let project_folder = AbsolutePathBuf::from_absolute_path_checked(test_root.join(".ava-code"))
         .expect("absolute project folder");
     let alias_root = project_folder.join("skills");
     let canonical_root = AbsolutePathBuf::from_absolute_path_checked(test_root.join("canonical"))
@@ -260,7 +260,7 @@ async fn skill_loading_and_reads_use_the_supplied_executor_file_system() {
     let config_layer_stack = ConfigLayerStack::new(
         vec![ConfigLayerEntry::new(
             ConfigLayerSource::Project {
-                dot_codex_folder: project_folder,
+                dot_ava_folder: project_folder,
             },
             toml::from_str("[skills.bundled]\nenabled = false\n")
                 .expect("valid bundled skills config"),
@@ -521,10 +521,10 @@ async fn executor_discovery_preserves_posix_and_windows_locator_alias_roots() {
 async fn executor_discovery_routes_produce_equivalent_catalog_metadata() {
     let id = NEXT_TEST_ROOT_ID.fetch_add(1, Ordering::Relaxed);
     let test_root = std::env::temp_dir().join(format!(
-        "codex-executor-skill-parity-{}-{id}",
+        "ava-executor-skill-parity-{}-{id}",
         std::process::id()
     ));
-    let plugin_manifest = test_root.join(".codex-plugin/plugin.json");
+    let plugin_manifest = test_root.join(".ava-plugin/plugin.json");
     let deploy_skill = test_root.join("skills/deploy/SKILL.md");
     let deploy_metadata = test_root.join("skills/deploy/agents/openai.yaml");
     let excluded_skill = test_root.join("skills/excluded/SKILL.md");
@@ -555,7 +555,7 @@ async fn executor_discovery_routes_produce_equivalent_catalog_metadata() {
     .expect("write deploy skill");
     std::fs::write(
         &deploy_metadata,
-        "dependencies:\n  tools:\n    - type: mcp\n      value: deployer\n      description: Deployment server.\npolicy:\n  allow_implicit_invocation: false\n  products:\n    - codex\n",
+        "dependencies:\n  tools:\n    - type: mcp\n      value: deployer\n      description: Deployment server.\npolicy:\n  allow_implicit_invocation: false\n  products:\n    - ava\n",
     )
     .expect("write deploy metadata");
     std::fs::write(
@@ -585,7 +585,7 @@ async fn executor_discovery_routes_produce_equivalent_catalog_metadata() {
     let manager = Arc::new(EnvironmentManager::default_for_tests());
     let provider = ExecutorSkillProvider::new_with_restriction_product(
         Arc::clone(&manager),
-        Some(Product::Codex),
+        Some(Product::Ava),
     );
     let executor_roots = vec![SelectedCapabilityRoot {
         id: "parity-root".to_string(),
@@ -619,7 +619,7 @@ async fn executor_discovery_routes_produce_equivalent_catalog_metadata() {
         .expect("list bundled executor skills");
 
     assert_eq!(bundled.warnings, direct.warnings);
-    let comparable_entries = |catalog: &codex_skills_extension::catalog::SkillCatalog| {
+    let comparable_entries = |catalog: &ava_skills_extension::catalog::SkillCatalog| {
         catalog
             .entries
             .iter()
@@ -715,7 +715,7 @@ async fn executor_discovery_routes_produce_equivalent_catalog_metadata() {
 #[tokio::test]
 async fn pre_discovered_executor_catalog_snapshot() {
     let test_root = create_local_skill_root("snapshot").expect("create local skill root");
-    let manifest_dir = test_root.join(".codex-plugin");
+    let manifest_dir = test_root.join(".ava-plugin");
     let metadata_dir = test_root.join("skill/agents");
     std::fs::create_dir_all(&manifest_dir).expect("create plugin manifest directory");
     std::fs::create_dir_all(&metadata_dir).expect("create skill metadata directory");
@@ -789,7 +789,7 @@ async fn pre_discovered_executor_catalog_snapshot() {
             .collect::<Vec<_>>(),
     });
     snapshot.sort_all_objects();
-    let snapshot_file = codex_utils_cargo_bin::find_resource!(
+    let snapshot_file = ava_utils_cargo_bin::find_resource!(
         "tests/snapshots/executor_file_system_authority__pre_discovered_executor_catalog.snap"
     )
     .expect("resolve catalog snapshot");
@@ -812,13 +812,13 @@ async fn pre_discovered_executor_catalog_snapshot() {
 async fn direct_executor_discovery_preserves_hidden_nested_and_probed_metadata() {
     let id = NEXT_TEST_ROOT_ID.fetch_add(1, Ordering::Relaxed);
     let test_root = std::env::temp_dir().join(format!(
-        "codex-executor-skill-discovery-{}-{id}",
+        "ava-executor-skill-discovery-{}-{id}",
         std::process::id()
     ));
-    let outer_manifest = test_root.join(".codex-plugin/plugin.json");
+    let outer_manifest = test_root.join(".ava-plugin/plugin.json");
     let hidden_skill = test_root.join(".hidden/deploy/SKILL.md");
     let hidden_metadata = test_root.join(".hidden/deploy/agents/openai.yaml");
-    let inner_manifest = test_root.join("nested/.codex-plugin/plugin.json");
+    let inner_manifest = test_root.join("nested/.ava-plugin/plugin.json");
     let inner_skill = test_root.join("nested/skills/audit/SKILL.md");
     for (path, contents) in [
         (&outer_manifest, r#"{"name":"outer"}"#),
@@ -1040,7 +1040,7 @@ async fn high_level_discovery_batches_more_than_128_roots() {
 fn create_local_skill_root(label: &str) -> io::Result<std::path::PathBuf> {
     let id = NEXT_TEST_ROOT_ID.fetch_add(1, Ordering::Relaxed);
     let test_root = std::env::temp_dir().join(format!(
-        "codex-executor-skill-{label}-{}-{id}",
+        "ava-executor-skill-{label}-{}-{id}",
         std::process::id()
     ));
     let skill_dir = test_root.join("skill");

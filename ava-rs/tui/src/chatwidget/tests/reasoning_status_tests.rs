@@ -94,7 +94,7 @@ async fn reasoning_status_tracks_items_and_restores_after_tool_activity() {
     capture(&chat, &mut headers);
     chat.handle_server_notification(
         ServerNotification::ReasoningSummaryPartAdded(
-            codex_app_server_protocol::ReasoningSummaryPartAddedNotification {
+            ava_app_server_protocol::ReasoningSummaryPartAddedNotification {
                 thread_id: "thread-1".to_string(),
                 turn_id: "turn-1".to_string(),
                 item_id: "first".to_string(),

@@ -17,12 +17,12 @@ const source = (apiStyle) => ({
 test("custom creation offers general APIs without removing account or named transports", () => {
   assert.deepEqual(CUSTOM_PROVIDER_API_STYLES,
     ["chat_completions", "responses", "anthropic_messages", "google_generative_ai"]);
-  for (const style of ["openai_codex_responses", "pi_messages", "opencode_go"]) {
+  for (const style of ["openai_ava_responses", "pi_messages", "opencode_go"]) {
     assert.ok(API_STYLES.includes(style));
   }
 });
 
-for (const style of ["openai_codex_responses", "pi_messages"]) {
+for (const style of ["openai_ava_responses", "pi_messages"]) {
   test(`${style} cannot be newly chosen, but a saved value can remain unchanged`, () => {
     assert.equal(needsCustomApiStyleChoice(style), true);
     assert.equal(needsCustomApiStyleChoice(style, style), false);

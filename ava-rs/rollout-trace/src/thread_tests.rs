@@ -3,13 +3,13 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::AgentStatus;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::AgentStatus;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 use tempfile::TempDir;
 
 use super::*;
@@ -116,7 +116,7 @@ fn disabled_thread_context_accepts_trace_calls_without_writing() -> anyhow::Resu
 
     thread_trace.record_ended(RolloutStatus::Completed);
     thread_trace.record_protocol_event(&EventMsg::ShutdownComplete);
-    thread_trace.record_codex_turn_event("turn-1", &EventMsg::ShutdownComplete);
+    thread_trace.record_ava_turn_event("turn-1", &EventMsg::ShutdownComplete);
     thread_trace.record_tool_call_event("turn-1", &EventMsg::ShutdownComplete);
     thread_trace.record_agent_result_interaction(
         "turn-1",
@@ -132,7 +132,7 @@ fn disabled_thread_context_accepts_trace_calls_without_writing() -> anyhow::Resu
         thread_trace.inference_trace_context("turn-1", "gpt-test", "test-provider");
     let inference_attempt = inference_trace.start_attempt();
     inference_attempt.record_started(&serde_json::json!({ "kind": "inference" }));
-    let token_usage: Option<codex_protocol::protocol::TokenUsage> = None;
+    let token_usage: Option<ava_protocol::protocol::TokenUsage> = None;
     inference_attempt.record_completed("response-1", Some("req-1"), &token_usage, &[]);
     inference_attempt.record_failed("inference failed", /*upstream_request_id*/ None, &[]);
 
@@ -171,7 +171,7 @@ fn compaction_contexts_share_identity_across_models() -> anyhow::Result<()> {
     let thread_id = ThreadId::new();
     let thread_trace =
         ThreadTraceContext::start_root_in_root_for_test(temp.path(), minimal_metadata(thread_id))?;
-    thread_trace.record_codex_turn_started("turn-1");
+    thread_trace.record_ava_turn_started("turn-1");
 
     for model in ["gpt-previous", "gpt-selected"] {
         let compaction_trace =

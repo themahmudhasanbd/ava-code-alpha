@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../utils/app_toast.dart';
 
-/// Modal bottom sheet to configure Codex sandbox permission mode
+/// Modal bottom sheet to configure Ava sandbox permission mode
 class SandboxModeModal extends StatelessWidget {
   final String selectedMode;
   final List<Map<String, dynamic>> sandboxOptions;

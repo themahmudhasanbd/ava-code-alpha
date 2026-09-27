@@ -1,19 +1,19 @@
 use super::PersistedResumeSettings;
 use super::latest_persisted_resume_settings;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::ActivePermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::SandboxPolicy;
-use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_protocol::protocol::TurnContextItem;
-use codex_rollout::RolloutItem;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::ActivePermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::SandboxPolicy;
+use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_protocol::protocol::TurnContextItem;
+use ava_rollout::RolloutItem;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use pretty_assertions::assert_eq;
 
 fn cwd() -> AbsolutePathBuf {
@@ -86,7 +86,7 @@ fn turn_context_item(
         realtime_active: None,
         cyber_access_program: None,
         effort: None,
-        summary: codex_protocol::config_types::ReasoningSummary::Auto,
+        summary: ava_protocol::config_types::ReasoningSummary::Auto,
     })
 }
 

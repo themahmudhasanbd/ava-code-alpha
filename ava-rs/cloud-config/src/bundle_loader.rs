@@ -2,10 +2,10 @@ use crate::backend::BackendBundleClient;
 use crate::backend::BundleClient;
 use crate::service::CLOUD_CONFIG_BUNDLE_TIMEOUT;
 use crate::service::CloudConfigBundleService;
-use codex_config::CloudConfigBundleLoader;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthConfig;
-use codex_login::AuthManager;
+use ava_config::CloudConfigBundleLoader;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthConfig;
+use ava_login::AuthManager;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -42,7 +42,7 @@ impl<C> Drop for CloudConfigBundleLoaderLifetime<C> {
 pub fn cloud_config_bundle_loader(
     auth_manager: Arc<AuthManager>,
     chatgpt_base_url: String,
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     http_client_factory: HttpClientFactory,
 ) -> CloudConfigBundleLoader {
     let service = CloudConfigBundleService::new(
@@ -51,7 +51,7 @@ pub fn cloud_config_bundle_loader(
             chatgpt_base_url,
             http_client_factory,
         )),
-        codex_home,
+        ava_home,
         CLOUD_CONFIG_BUNDLE_TIMEOUT,
     );
     let (loader, refresh_task) = cloud_config_bundle_loader_for_service(service);
@@ -86,10 +86,10 @@ where
 
 pub async fn cloud_config_bundle_loader_for_storage(
     auth_config: AuthConfig,
-    enable_codex_api_key_env: bool,
+    enable_ava_api_key_env: bool,
 ) -> std::io::Result<CloudConfigBundleLoader> {
     let service =
-        cloud_config_bundle_service_for_storage(auth_config, enable_codex_api_key_env).await?;
+        cloud_config_bundle_service_for_storage(auth_config, enable_ava_api_key_env).await?;
     let (loader, refresh_task) = cloud_config_bundle_loader_for_service(service);
     replace_refresh_task(refresher_task_slot(), refresh_task);
     Ok(loader)
@@ -99,10 +99,10 @@ pub async fn cloud_config_bundle_loader_for_storage(
 /// the disk cache or starting a background refresher.
 pub async fn cloud_config_bundle_loader_for_storage_without_cache(
     auth_config: AuthConfig,
-    enable_codex_api_key_env: bool,
+    enable_ava_api_key_env: bool,
 ) -> std::io::Result<CloudConfigBundleLoader> {
     let service = Arc::new(
-        cloud_config_bundle_service_for_storage(auth_config, enable_codex_api_key_env)
+        cloud_config_bundle_service_for_storage(auth_config, enable_ava_api_key_env)
             .await?
             .without_cache(),
     );
@@ -114,10 +114,10 @@ pub async fn cloud_config_bundle_loader_for_storage_without_cache(
 
 async fn cloud_config_bundle_service_for_storage(
     auth_config: AuthConfig,
-    enable_codex_api_key_env: bool,
+    enable_ava_api_key_env: bool,
 ) -> std::io::Result<CloudConfigBundleService<BackendBundleClient>> {
     let auth_manager =
-        AuthManager::shared_from_auth_config(auth_config.clone(), enable_codex_api_key_env).await?;
+        AuthManager::shared_from_auth_config(auth_config.clone(), enable_ava_api_key_env).await?;
     Ok(CloudConfigBundleService::new(
         auth_manager,
         Arc::new(BackendBundleClient::new(
@@ -126,7 +126,7 @@ async fn cloud_config_bundle_service_for_storage(
                 .unwrap_or_else(|| "https://chatgpt.com/backend-api/".to_string()),
             auth_config.auth_route_config.http_client_factory().clone(),
         )),
-        auth_config.codex_home,
+        auth_config.ava_home,
         CLOUD_CONFIG_BUNDLE_TIMEOUT,
     ))
 }

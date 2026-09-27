@@ -7,24 +7,24 @@ use app_test_support::create_command_execution_sse_response;
 use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
 use app_test_support::write_mock_responses_config_toml_with_chatgpt_base_url;
-use codex_app_server::INPUT_TOO_LARGE_ERROR_CODE;
-use codex_app_server::INVALID_PARAMS_ERROR_CODE;
-use codex_app_server_protocol::AdditionalContextEntry;
-use codex_app_server_protocol::AdditionalContextKind;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::TurnSteerResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
+use ava_app_server::INPUT_TOO_LARGE_ERROR_CODE;
+use ava_app_server::INVALID_PARAMS_ERROR_CODE;
+use ava_app_server_protocol::AdditionalContextEntry;
+use ava_app_server_protocol::AdditionalContextKind;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
 use core_test_support::skip_if_remote;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -39,19 +39,19 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 #[tokio::test]
 async fn turn_steer_requires_active_turn() -> Result<()> {
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
 
     let server = create_mock_responses_server_sequence(vec![]).await;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        &codex_home,
+        &ava_home,
         &server.uri(),
         &server.uri(),
     )?;
-    mount_analytics_capture(&server, &codex_home).await?;
+    mount_analytics_capture(&server, &ava_home).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -84,7 +84,7 @@ async fn turn_steer_requires_active_turn() -> Result<()> {
     assert_eq!(steer_err.error.code, -32600);
 
     let event =
-        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "codex_turn_steer_event").await?;
+        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_turn_steer_event").await?;
     assert_eq!(event["event_params"]["thread_id"], thread.id);
     assert_eq!(event["event_params"]["result"], "rejected");
     assert_eq!(event["event_params"]["num_input_images"], 0);
@@ -119,8 +119,8 @@ async fn turn_steer_rejects_oversized_text_input() -> Result<()> {
     let shell_command = vec!["sleep".to_string(), "10".to_string()];
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let working_directory = tmp.path().join("workdir");
     std::fs::create_dir(&working_directory)?;
 
@@ -134,14 +134,14 @@ async fn turn_steer_rejects_oversized_text_input() -> Result<()> {
     ])
     .await;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        &codex_home,
+        &ava_home,
         &server.uri(),
         &server.uri(),
     )?;
-    mount_analytics_capture(&server, &codex_home).await?;
+    mount_analytics_capture(&server, &ava_home).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -232,8 +232,8 @@ async fn turn_steer_returns_active_turn_id() -> Result<()> {
     let shell_command = vec!["sleep".to_string(), "2".to_string()];
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let working_directory = tmp.path().join("workdir");
     std::fs::create_dir(&working_directory)?;
 
@@ -248,14 +248,14 @@ async fn turn_steer_returns_active_turn_id() -> Result<()> {
     ])
     .await;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        &codex_home,
+        &ava_home,
         &server.uri(),
         &server.uri(),
     )?;
-    mount_analytics_capture(&server, &codex_home).await?;
+    mount_analytics_capture(&server, &ava_home).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_managed_config()
         .build_initialized()
         .await?;
@@ -336,7 +336,7 @@ async fn turn_steer_returns_active_turn_id() -> Result<()> {
     .await??;
 
     let event =
-        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "codex_turn_steer_event").await?;
+        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_turn_steer_event").await?;
     assert_eq!(event["event_params"]["thread_id"], thread.id);
     assert_eq!(event["event_params"]["session_id"], thread.session_id);
     assert_eq!(event["event_params"]["result"], "accepted");
@@ -366,8 +366,8 @@ async fn turn_steer_rejects_context_only_input_without_merging_context() -> Resu
     );
 
     let tmp = TempDir::new()?;
-    let codex_home = tmp.path().join("codex_home");
-    std::fs::create_dir(&codex_home)?;
+    let ava_home = tmp.path().join("ava_home");
+    std::fs::create_dir(&ava_home)?;
     let working_directory = tmp.path().join("workdir");
     std::fs::create_dir(&working_directory)?;
 
@@ -382,14 +382,14 @@ async fn turn_steer_rejects_context_only_input_without_merging_context() -> Resu
     ])
     .await;
     write_mock_responses_config_toml_with_chatgpt_base_url(
-        &codex_home,
+        &ava_home,
         &server.uri(),
         &server.uri(),
     )?;
-    mount_analytics_capture(&server, &codex_home).await?;
+    mount_analytics_capture(&server, &ava_home).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(&codex_home)
+        .with_ava_home(&ava_home)
         .without_managed_config()
         .build_initialized()
         .await?;

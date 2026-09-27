@@ -1,15 +1,15 @@
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::EnvironmentConfig;
-use codex_exec_server::CreateDirectoryOptions;
-use codex_exec_server::RemoveOptions;
-use codex_protocol::config_types::WindowsSandboxLevel;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::sandbox::SandboxType;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_core::EnvironmentConfig;
+use ava_exec_server::CreateDirectoryOptions;
+use ava_exec_server::RemoveOptions;
+use ava_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::sandbox::SandboxType;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 #[cfg(windows)]
 use core_test_support::PathExt;
 use core_test_support::TestTargetOs;
@@ -23,8 +23,8 @@ use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::test_ava;
 use core_test_support::test_target_os;
 use serde_json::json;
 use test_case::test_case;
@@ -42,8 +42,8 @@ fn workspace_roots_profile() -> PermissionProfile {
     )
 }
 
-async fn workspace_roots_test(server: &MockServer) -> Result<TestCodex> {
-    let mut builder = test_codex().with_config(|config| {
+async fn workspace_roots_test(server: &MockServer) -> Result<TestAva> {
+    let mut builder = test_ava().with_config(|config| {
         #[cfg(windows)]
         {
             config.cwd = dunce::canonicalize(config.cwd.as_path())
@@ -56,8 +56,8 @@ async fn workspace_roots_test(server: &MockServer) -> Result<TestCodex> {
     builder.build_with_auto_env(server).await
 }
 
-fn outside_workspace_path(test: &TestCodex, file_name: &str) -> Result<PathUri> {
-    let file_name = format!("codex-workspace-roots-{}-{file_name}", std::process::id());
+fn outside_workspace_path(test: &TestAva, file_name: &str) -> Result<PathUri> {
+    let file_name = format!("ava-workspace-roots-{}-{file_name}", std::process::id());
     PathUri::from_abs_path(&test.config.cwd)
         .parent()
         .context("test workspace should have a parent")?
@@ -117,12 +117,12 @@ async fn mount_patch_and_command_calls(
     .await)
 }
 
-async fn submit_workspace_turn(test: &TestCodex, prompt: &str) -> Result<()> {
+async fn submit_workspace_turn(test: &TestAva, prompt: &str) -> Result<()> {
     test.submit_turn_with_permission_profile(prompt, workspace_roots_profile())
         .await
 }
 
-async fn read_file(test: &TestCodex, path: &PathUri) -> Result<String> {
+async fn read_file(test: &TestAva, path: &PathUri) -> Result<String> {
     Ok(String::from_utf8(
         test.fs()
             .read_file(path, Default::default(), /*sandbox*/ None)
@@ -130,7 +130,7 @@ async fn read_file(test: &TestCodex, path: &PathUri) -> Result<String> {
     )?)
 }
 
-async fn remove_files(test: &TestCodex, paths: &[&PathUri]) -> Result<()> {
+async fn remove_files(test: &TestAva, paths: &[&PathUri]) -> Result<()> {
     for path in paths {
         test.fs()
             .remove(
@@ -214,7 +214,7 @@ async fn workspace_roots_allow_file_and_command_writes_in_secondary_root(
     );
 
     let server = start_mock_server().await;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_config(move |config| {
             #[cfg(windows)]
             {
@@ -261,13 +261,13 @@ async fn workspace_roots_allow_file_and_command_writes_in_secondary_root(
         .join(&secondary_root_name)?;
     if owner_resolved_roots {
         let selection = test
-            .codex
+            .ava-code
             .environment_selections()
             .await
             .into_iter()
             .next()
             .context("thread should select its executor environment")?;
-        test.codex
+        test.ava-code
             .environment_ready(
                 &selection,
                 EnvironmentConfig {
@@ -343,7 +343,7 @@ async fn workspace_roots_allow_file_and_command_writes_in_secondary_root(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn workspace_roots_allow_patches_but_protect_metadata_directories() -> Result<()> {
     const PATCH_CONTENTS: &str = "workspace root patch access";
-    const PROTECTED_METADATA_DIRECTORIES: [&str; 3] = [".git", ".agents", ".codex"];
+    const PROTECTED_METADATA_DIRECTORIES: [&str; 3] = [".git", ".agents", ".ava-code"];
 
     skip_if_wine_exec!(
         Ok(()),

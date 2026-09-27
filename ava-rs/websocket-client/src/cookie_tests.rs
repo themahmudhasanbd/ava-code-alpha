@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
-use codex_http_client::OutboundProxyRoute;
-use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
+use ava_http_client::OutboundProxyRoute;
+use ava_utils_rustls_provider::ensure_rustls_crypto_provider;
 use pretty_assertions::assert_eq;
 use rcgen::CertifiedKey;
 use rcgen::generate_simple_self_signed;
@@ -60,20 +60,20 @@ async fn websocket_handshakes_share_routing_cookies_and_respect_cookie_scope() {
             .with_no_client_auth(),
     );
 
-    let parent_url = format!("wss://{host}/backend-api/codex/responses");
-    let review_url = format!("wss://{host}/backend-api/codex/guardian");
+    let parent_url = format!("wss://{host}/backend-api/ava/responses");
+    let review_url = format!("wss://{host}/backend-api/ava/guardian");
     let requests = [
         (parent_url, None),
         (review_url.clone(), None),
         (review_url.clone(), Some("explicit=keep")),
         (format!("wss://{host}/outside"), None),
         (
-            format!("wss://{other_host}/backend-api/codex/responses"),
+            format!("wss://{other_host}/backend-api/ava/responses"),
             None,
         ),
         ("wss://api.openai.com/v1/responses".to_string(), None),
         ("wss://api.openai.com/v1/responses".to_string(), None),
-        (format!("ws://{host}/backend-api/codex/responses"), None),
+        (format!("ws://{host}/backend-api/ava/responses"), None),
         (review_url.clone(), None),
         (review_url.clone(), None),
         (review_url, None),

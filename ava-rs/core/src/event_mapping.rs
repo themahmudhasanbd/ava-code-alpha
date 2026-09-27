@@ -1,34 +1,34 @@
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::ReasoningItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::items::WebSearchItem;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ReasoningItemContent;
-use codex_protocol::models::ReasoningItemReasoningSummary;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::models::WebSearchAction;
-use codex_protocol::models::is_audio_close_tag_text;
-use codex_protocol::models::is_audio_open_tag_text;
-use codex_protocol::models::is_image_close_tag_text;
-use codex_protocol::models::is_image_open_tag_text;
-use codex_protocol::models::is_local_audio_close_tag_text;
-use codex_protocol::models::is_local_audio_open_tag_text;
-use codex_protocol::models::is_local_image_close_tag_text;
-use codex_protocol::models::is_local_image_open_tag_text;
-use codex_protocol::protocol::APPS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::COLLABORATION_MODE_OPEN_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
-use codex_protocol::protocol::CONTEXT_WINDOW_OPEN_TAG;
-use codex_protocol::protocol::ENVIRONMENTS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
-use codex_protocol::protocol::PLUGINS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::REALTIME_CONVERSATION_OPEN_TAG;
-use codex_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
-use codex_protocol::protocol::TOOLS_OPEN_TAG;
-use codex_protocol::user_input::UserInput;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::ReasoningItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::items::WebSearchItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::MessagePhase;
+use ava_protocol::models::ReasoningItemContent;
+use ava_protocol::models::ReasoningItemReasoningSummary;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::models::WebSearchAction;
+use ava_protocol::models::is_audio_close_tag_text;
+use ava_protocol::models::is_audio_open_tag_text;
+use ava_protocol::models::is_image_close_tag_text;
+use ava_protocol::models::is_image_open_tag_text;
+use ava_protocol::models::is_local_audio_close_tag_text;
+use ava_protocol::models::is_local_audio_open_tag_text;
+use ava_protocol::models::is_local_image_close_tag_text;
+use ava_protocol::models::is_local_image_open_tag_text;
+use ava_protocol::protocol::APPS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::COLLABORATION_MODE_OPEN_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_GUIDANCE_OPEN_TAG;
+use ava_protocol::protocol::CONTEXT_WINDOW_OPEN_TAG;
+use ava_protocol::protocol::ENVIRONMENTS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::MULTI_AGENT_MODE_OPEN_TAG;
+use ava_protocol::protocol::PLUGINS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::REALTIME_CONVERSATION_OPEN_TAG;
+use ava_protocol::protocol::SKILLS_INSTRUCTIONS_OPEN_TAG;
+use ava_protocol::protocol::TOOLS_OPEN_TAG;
+use ava_protocol::user_input::UserInput;
 use tracing::warn;
 use uuid::Uuid;
 
@@ -244,7 +244,7 @@ pub fn parse_turn_item(item: &ResponseItem) -> Option<TurnItem> {
             result,
             ..
         } => Some(TurnItem::ImageGeneration(
-            codex_protocol::items::ImageGenerationItem {
+            ava_protocol::items::ImageGenerationItem {
                 id: id.as_deref()?.to_string(),
                 status: status.clone(),
                 revised_prompt: revised_prompt.clone(),

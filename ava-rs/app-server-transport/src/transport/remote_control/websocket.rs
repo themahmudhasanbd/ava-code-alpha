@@ -37,11 +37,11 @@ use crate::transport::remote_control::server_api::remote_control_retry_delay;
 use crate::transport::remote_control::server_api::retry_after_with_jitter;
 use axum::http::HeaderValue;
 use base64::Engine;
-use codex_app_server_protocol::RemoteControlConnectionStatus;
-use codex_app_server_protocol::RemoteControlStatusChangedNotification;
-use codex_core::util::backoff;
-use codex_state::StateRuntime;
-use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
+use ava_app_server_protocol::RemoteControlConnectionStatus;
+use ava_app_server_protocol::RemoteControlStatusChangedNotification;
+use ava_core::util::backoff;
+use ava_state::StateRuntime;
+use ava_utils_rustls_provider::ensure_rustls_crypto_provider;
 use futures::SinkExt;
 use futures::StreamExt;
 use futures::stream::SplitSink;
@@ -71,8 +71,8 @@ use tracing::info;
 use tracing::warn;
 
 pub(super) const REMOTE_CONTROL_PROTOCOL_VERSION: &str = "3";
-pub(super) const REMOTE_CONTROL_INSTALLATION_ID_HEADER: &str = "x-codex-installation-id";
-const REMOTE_CONTROL_SUBSCRIBE_CURSOR_HEADER: &str = "x-codex-subscribe-cursor";
+pub(super) const REMOTE_CONTROL_INSTALLATION_ID_HEADER: &str = "x-ava-installation-id";
+const REMOTE_CONTROL_SUBSCRIBE_CURSOR_HEADER: &str = "x-ava-subscribe-cursor";
 const REMOTE_CONTROL_WEBSOCKET_PING_INTERVAL: std::time::Duration =
     std::time::Duration::from_secs(10);
 const REMOTE_CONTROL_WEBSOCKET_PONG_TIMEOUT: std::time::Duration =
@@ -1277,15 +1277,15 @@ async fn build_remote_control_websocket_request(
         )
     })?;
     let headers = request.headers_mut();
-    set_remote_control_header(headers, "x-codex-server-id", &enrollment.server_id)?;
+    set_remote_control_header(headers, "x-ava-server-id", &enrollment.server_id)?;
     set_remote_control_header(
         headers,
-        "x-codex-name",
+        "x-ava-name",
         &base64::engine::general_purpose::STANDARD.encode(&enrollment.server_name),
     )?;
     set_remote_control_header(
         headers,
-        "x-codex-protocol-version",
+        "x-ava-protocol-version",
         REMOTE_CONTROL_PROTOCOL_VERSION,
     )?;
     set_remote_control_header(
@@ -1796,23 +1796,23 @@ mod tests {
     use crate::transport::remote_control::protocol::StreamId;
     use crate::transport::remote_control::protocol::normalize_remote_control_url;
     use chrono::Utc;
-    use codex_app_server_protocol::ConfigWarningNotification;
-    use codex_app_server_protocol::JSONRPCMessage;
-    use codex_app_server_protocol::JSONRPCNotification;
-    use codex_app_server_protocol::ServerNotification;
-    use codex_app_server_protocol::ServerNotificationEnvelope;
-    use codex_config::types::AuthCredentialsStoreMode;
-    use codex_core::test_support::auth_manager_from_auth;
-    use codex_login::AuthDotJson;
-    use codex_login::AuthKeyringBackendKind;
-    use codex_login::AuthManager;
-    use codex_login::CodexAuth;
-    use codex_login::save_auth;
-    use codex_login::token_data::TokenData;
-    use codex_login::token_data::parse_chatgpt_jwt_claims;
-    use codex_protocol::auth::AuthMode;
-    use codex_state::StateRuntime;
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_app_server_protocol::ConfigWarningNotification;
+    use ava_app_server_protocol::JSONRPCMessage;
+    use ava_app_server_protocol::JSONRPCNotification;
+    use ava_app_server_protocol::ServerNotification;
+    use ava_app_server_protocol::ServerNotificationEnvelope;
+    use ava_config::types::AuthCredentialsStoreMode;
+    use ava_core::test_support::auth_manager_from_auth;
+    use ava_login::AuthDotJson;
+    use ava_login::AuthKeyringBackendKind;
+    use ava_login::AuthManager;
+    use ava_login::AvaAuth;
+    use ava_login::save_auth;
+    use ava_login::token_data::TokenData;
+    use ava_login::token_data::parse_chatgpt_jwt_claims;
+    use ava_protocol::auth::AuthMode;
+    use ava_state::StateRuntime;
+    use ava_utils_absolute_path::test_support::PathExt;
     use futures::StreamExt;
     use pretty_assertions::assert_eq;
     use std::sync::Arc;
@@ -1990,9 +1990,9 @@ mod tests {
         );
     }
 
-    pub(super) async fn remote_control_state_runtime(codex_home: &TempDir) -> Arc<StateRuntime> {
+    pub(super) async fn remote_control_state_runtime(ava_home: &TempDir) -> Arc<StateRuntime> {
         StateRuntime::init(
-            codex_state::SqliteConfig::new_for_testing(codex_home.path().abs()),
+            ava_state::SqliteConfig::new_for_testing(ava_home.path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -2000,7 +2000,7 @@ mod tests {
     }
 
     pub(super) fn remote_control_auth_manager() -> Arc<AuthManager> {
-        auth_manager_from_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
+        auth_manager_from_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing())
     }
 
     pub(super) fn remote_control_url_for_listener(listener: &TcpListener) -> String {
@@ -2077,8 +2077,8 @@ mod tests {
             )
             .await;
         });
-        let codex_home = TempDir::new().expect("temp dir should create");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let ava_home = TempDir::new().expect("temp dir should create");
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let auth_manager = remote_control_auth_manager();
         let session_auth = RemoteControlAuth::capture(auth_manager.clone()).0;
         let mut auth_recovery = session_auth.unauthorized_recovery();
@@ -2135,8 +2135,8 @@ mod tests {
         let remote_control_url = remote_control_url_for_listener(&listener);
         let remote_control_target =
             normalize_remote_control_url(&remote_control_url).expect("target should parse");
-        let codex_home = TempDir::new().expect("temp dir should create");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let ava_home = TempDir::new().expect("temp dir should create");
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let auth_manager = remote_control_auth_manager();
         let session_auth = RemoteControlAuth::capture(auth_manager.clone()).0;
         let mut auth_recovery = session_auth.unauthorized_recovery();
@@ -2215,23 +2215,23 @@ mod tests {
             );
             respond_with_status_and_headers(stream, "401 Unauthorized", &[], "unauthorized").await;
         });
-        let codex_home = TempDir::new().expect("temp dir should create");
+        let ava_home = TempDir::new().expect("temp dir should create");
         save_auth(
-            codex_home.path(),
+            ava_home.path(),
             &remote_control_auth_dot_json("stale-token"),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
         )
         .expect("stale auth should save");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let auth_manager = AuthManager::shared(
-            codex_home.path().to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path().to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            codex_login::test_support::transport_default_auth_route_config(),
+            ava_login::test_support::transport_default_auth_route_config(),
         )
         .await;
         let session_auth = RemoteControlAuth::capture(auth_manager.clone()).0;
@@ -2240,7 +2240,7 @@ mod tests {
         let current_enrollment = test_current_enrollment(/*enrollment*/ None);
         let (status_publisher, status_rx) = remote_control_status_channel();
         save_auth(
-            codex_home.path(),
+            ava_home.path(),
             &remote_control_auth_dot_json("fresh-token"),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
@@ -2315,23 +2315,23 @@ mod tests {
             );
             respond_with_status_and_headers(stream, "401 Unauthorized", &[], "unauthorized").await;
         });
-        let codex_home = TempDir::new().expect("temp dir should create");
+        let ava_home = TempDir::new().expect("temp dir should create");
         save_auth(
-            codex_home.path(),
+            ava_home.path(),
             &remote_control_auth_dot_json("stale-token"),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
         )
         .expect("stale auth should save");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let auth_manager = AuthManager::shared(
-            codex_home.path().to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path().to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            codex_login::test_support::transport_default_auth_route_config(),
+            ava_login::test_support::transport_default_auth_route_config(),
         )
         .await;
         let session_auth = RemoteControlAuth::capture(auth_manager.clone()).0;
@@ -2345,7 +2345,7 @@ mod tests {
         let current_enrollment = test_current_enrollment(Some(expected_enrollment.clone()));
         let (status_publisher, status_rx) = remote_control_status_channel();
         save_auth(
-            codex_home.path(),
+            ava_home.path(),
             &remote_control_auth_dot_json("fresh-token"),
             AuthCredentialsStoreMode::File,
             AuthKeyringBackendKind::default(),
@@ -2452,16 +2452,16 @@ mod tests {
     async fn connect_remote_control_websocket_requires_chatgpt_auth() {
         let remote_control_target = normalize_remote_control_url("http://127.0.0.1:9/backend-api/")
             .expect("target should parse");
-        let codex_home = TempDir::new().expect("temp dir should create");
-        let state_db = remote_control_state_runtime(&codex_home).await;
+        let ava_home = TempDir::new().expect("temp dir should create");
+        let state_db = remote_control_state_runtime(&ava_home).await;
         let auth_manager = AuthManager::shared(
-            codex_home.path().to_path_buf(),
-            /*enable_codex_api_key_env*/ false,
+            ava_home.path().to_path_buf(),
+            /*enable_ava_api_key_env*/ false,
             AuthCredentialsStoreMode::File,
             /*forced_chatgpt_workspace_id*/ None,
             /*chatgpt_base_url*/ None,
             AuthKeyringBackendKind::default(),
-            codex_login::test_support::transport_default_auth_route_config(),
+            ava_login::test_support::transport_default_auth_route_config(),
         )
         .await;
         let session_auth = RemoteControlAuth::capture(auth_manager.clone()).0;

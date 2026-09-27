@@ -6,32 +6,32 @@ use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
 use app_test_support::to_response;
 use app_test_support::write_models_cache_with_models;
-use codex_app_server_protocol::DynamicToolCallOutputContentItem;
-use codex_app_server_protocol::DynamicToolCallParams;
-use codex_app_server_protocol::DynamicToolCallResponse;
-use codex_app_server_protocol::DynamicToolCallStatus;
-use codex_app_server_protocol::DynamicToolFunctionSpec;
-use codex_app_server_protocol::DynamicToolNamespaceSpec;
-use codex_app_server_protocol::DynamicToolNamespaceTool;
-use codex_app_server_protocol::DynamicToolSpec;
-use codex_app_server_protocol::ItemCompletedNotification;
-use codex_app_server_protocol::ItemStartedNotification;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerRequest;
-use codex_app_server_protocol::ThreadItem;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput as V2UserInput;
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageReference;
-use codex_protocol::openai_models::InputModality;
+use ava_app_server_protocol::DynamicToolCallOutputContentItem;
+use ava_app_server_protocol::DynamicToolCallParams;
+use ava_app_server_protocol::DynamicToolCallResponse;
+use ava_app_server_protocol::DynamicToolCallStatus;
+use ava_app_server_protocol::DynamicToolFunctionSpec;
+use ava_app_server_protocol::DynamicToolNamespaceSpec;
+use ava_app_server_protocol::DynamicToolNamespaceTool;
+use ava_app_server_protocol::DynamicToolSpec;
+use ava_app_server_protocol::ItemCompletedNotification;
+use ava_app_server_protocol::ItemStartedNotification;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerRequest;
+use ava_app_server_protocol::ThreadItem;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput as V2UserInput;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageReference;
+use ava_protocol::openai_models::InputModality;
 use core_test_support::load_default_config_for_test;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
@@ -60,11 +60,11 @@ async fn thread_start_normalizes_legacy_dynamic_tools_into_model_request() -> Re
     let responses = vec![create_final_assistant_message_sse_response("Done")?];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -178,11 +178,11 @@ async fn thread_start_normalizes_legacy_dynamic_tools_into_model_request() -> Re
 async fn thread_start_rejects_hidden_dynamic_tools_without_namespace() -> Result<()> {
     let server = MockServer::start().await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -220,11 +220,11 @@ async fn thread_start_rejects_hidden_dynamic_tools_without_namespace() -> Result
 async fn thread_start_rejects_invalid_dynamic_tool_inputs() -> Result<()> {
     let server = MockServer::start().await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build()
         .await?;
@@ -341,7 +341,7 @@ async fn thread_start_rejects_invalid_dynamic_tool_inputs() -> Result<()> {
 #[tokio::test]
 async fn dynamic_tool_call_round_trip_sends_text_content_items_to_model() -> Result<()> {
     let call_id = "dyn-call-1";
-    let tool_namespace = "codex_app";
+    let tool_namespace = "ava_app";
     let tool_name = "demo_tool";
     let tool_args = json!({ "city": "Paris" });
     let tool_call_arguments = serde_json::to_string(&tool_args)?;
@@ -366,11 +366,11 @@ async fn dynamic_tool_call_round_trip_sends_text_content_items_to_model() -> Res
     ];
     let server = create_mock_responses_server_sequence_unchecked(responses).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;
@@ -596,16 +596,16 @@ async fn start_function_dynamic_tool_call(call_id: &str) -> Result<PendingDynami
     ];
     let server = create_mock_responses_server_sequence_unchecked(response_sequence).await;
 
-    let codex_home = TempDir::new()?;
-    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
-    let config = load_default_config_for_test(&codex_home).await;
+    let ava_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(ava_home.path())?;
+    let config = load_default_config_for_test(&ava_home).await;
     let mut model_info =
-        codex_core::test_support::construct_model_info_offline("mock-model", &config);
+        ava_core::test_support::construct_model_info_offline("mock-model", &config);
     model_info.input_modalities.push(InputModality::Audio);
-    write_models_cache_with_models(codex_home.path(), vec![model_info]).await?;
+    write_models_cache_with_models(ava_home.path(), vec![model_info]).await?;
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(DEFAULT_READ_TIMEOUT, mcp.initialize()).await??;

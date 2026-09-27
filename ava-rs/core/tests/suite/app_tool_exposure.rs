@@ -1,14 +1,14 @@
 //! Verifies connector-scoped exposure, server restrictions, and MCP dispatch.
 
-use codex_core::config::Config;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_features::Feature;
-use codex_protocol::config_types::ToolExposureSurface;
-use codex_protocol::openai_models::ToolMode;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_features::Feature;
+use ava_protocol::config_types::ToolExposureSurface;
+use ava_protocol::openai_models::ToolMode;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::search_capable_apps_builder;
 use core_test_support::responses;
@@ -32,7 +32,7 @@ impl McpServerContributor<Config> for AppsServer {
         context: McpServerContributionContext<'a, Config>,
     ) -> ExtensionFuture<'a, Vec<McpServerContribution>> {
         Box::pin(async move {
-            let mut config = codex_mcp::hosted_plugin_runtime_mcp_server_config(
+            let mut config = ava_mcp::hosted_plugin_runtime_mcp_server_config(
                 &context.config().chatgpt_base_url,
                 /*apps_mcp_product_sku*/ None,
                 context.originator(),
@@ -150,7 +150,7 @@ pub(super) async fn connector_exposure_requests(
             .mount(&server)
             .await;
     }
-    let namespace = "mcp__codex_apps__calendar";
+    let namespace = "mcp__ava_apps__calendar";
     let tool_call = if case.expect_exec {
         responses::ev_custom_tool_call(
             "lookup",
@@ -171,13 +171,13 @@ pub(super) async fn connector_exposure_requests(
         events.push(responses::sse(vec![responses::ev_completed("second")]));
     }
     let response_mock = responses::mount_sse_sequence(&server, events).await;
-    let auth = codex_login::CodexAuth::create_dummy_chatgpt_auth_for_testing();
+    let auth = ava_login::AvaAuth::create_dummy_chatgpt_auth_for_testing();
     let mut extensions = ExtensionRegistryBuilder::new();
     extensions.mcp_server_contributor(Arc::new(AppsServer(serde_json::from_value(json!(
         case.server_omissions
     ))?)));
     let mut builder = search_capable_apps_builder(server.uri())
-        .with_code_mode_host_program(codex_utils_cargo_bin::cargo_bin("codex-code-mode-host")?)
+        .with_code_mode_host_program(ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")?)
         .with_pre_build_hook(move |home| {
             std::fs::write(
                 home.join("config.toml"),
@@ -208,7 +208,7 @@ pub(super) async fn connector_exposure_requests(
     );
     assert!(
         requests[0]
-            .tool_by_name("mcp__codex_apps__notes", "read")
+            .tool_by_name("mcp__ava_apps__notes", "read")
             .is_none()
     );
     let body = requests[0].body_json();
@@ -223,10 +223,10 @@ pub(super) async fn connector_exposure_requests(
         exec_description.contains(&format!("{namespace}__lookup(")),
         case.expect_exec && case.mode == ToolMode::CodeModeOnly
     );
-    assert!(!exec_description.contains("mcp__codex_apps__notes__read("));
+    assert!(!exec_description.contains("mcp__ava_apps__notes__read("));
     if calls_tool {
         assert!(requests[1].body_contains_text("calendar-lookup-ok"));
     }
-    test.codex.shutdown_and_wait().await?;
+    test.ava-code.shutdown_and_wait().await?;
     Ok(requests)
 }

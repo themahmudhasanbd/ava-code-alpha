@@ -79,7 +79,7 @@ pub(super) fn render_human_report(report: &DoctorReport, options: HumanOutputOpt
     let _ = writeln!(
         out,
         "{} {}",
-        bold("Codex Doctor", options),
+        bold("Ava Doctor", options),
         dim(&header_suffix(report), options)
     );
     out.push('\n');
@@ -459,7 +459,7 @@ fn write_footer(out: &mut String, options: HumanOutputOptions) {
             out,
             "{}",
             dim(
-                "Run codex doctor without --summary for detailed diagnostics.",
+                "Run ava doctor without --summary for detailed diagnostics.",
                 options
             )
         );
@@ -482,7 +482,7 @@ fn write_footer(out: &mut String, options: HumanOutputOptions) {
 }
 
 fn header_suffix(report: &DoctorReport) -> String {
-    let version = format!("v{}", report.codex_version);
+    let version = format!("v{}", report.ava_version);
     report
         .checks
         .iter()
@@ -538,7 +538,7 @@ fn update_note(check: &DoctorCheck, report: &DoctorReport) -> Option<DoctorNote>
         .or_else(|| detail::detail_value(check, "cached latest version"))
         .unwrap_or_else(|| "newer version".to_string());
     let dismissed = detail::detail_value(check, "dismissed version");
-    let mut parenthetical = format!("current {}", report.codex_version);
+    let mut parenthetical = format!("current {}", report.ava_version);
     if let Some(dismissed) = dismissed
         && !detail::is_falsy(&dismissed)
     {
@@ -882,8 +882,8 @@ pub(super) fn redact_detail(detail: &str) -> String {
 
     let secret_keys = [
         "openai_api_key",
-        "codex_api_key",
-        "codex_access_token",
+        "ava_api_key",
+        "ava_access_token",
         "authorization",
         "bearer_token",
         "token",
@@ -1252,7 +1252,7 @@ mod tests {
             )
             .detail("terminal title source: default")
             .detail("terminal title items: activity, project-name")
-            .detail("terminal title project value: codex"),
+            .detail("terminal title project value: ava"),
             DoctorCheck::new(
                 "state.paths",
                 "state",
@@ -1266,7 +1266,7 @@ mod tests {
                 "token expired",
             )
             .detail("OPENAI_API_KEY: present")
-            .remediation("Run `codex login`."),
+            .remediation("Run `ava login`."),
             DoctorCheck::new(
                 "updates.status",
                 "updates",
@@ -1302,7 +1302,7 @@ mod tests {
             schema_version: 1,
             generated_at: "0s since unix epoch".to_string(),
             overall_status: CheckStatus::Fail,
-            codex_version: "0.0.0".to_string(),
+            ava_version: "0.0.0".to_string(),
             checks,
         }
     }
@@ -1312,11 +1312,11 @@ mod tests {
         let rendered = render_human_report(&sample_report(), detailed_no_color_unicode_options());
         let expected = format!(
             "\
-Codex Doctor v0.0.0
+Ava Doctor v0.0.0
 
 Notes
    ⚠ terminal     narrow terminal
-   ✗ auth         token expired - Run `codex login`.
+   ✗ auth         token expired - Run `ava login`.
 ─────────────────────────────────────────────────────────────
 
 Environment
@@ -1338,14 +1338,14 @@ Environment
       version                  git version 2.54.0
       repo detected            true
   ⚠ terminal     narrow terminal
-  ✓ title        default · project codex
+  ✓ title        default · project ava
       title source             default
       title items              activity, project-name
-      project value            codex
+      project value            ava
   ✓ state        state paths inspectable
 
 Configuration
-  ✗ auth         token expired — Run `codex login`.
+  ✗ auth         token expired — Run `ava login`.
       OPENAI_API_KEY           present
 
 Updates
@@ -1398,7 +1398,7 @@ Background Server
             .iter_mut()
             .find(|detail| detail.starts_with("exclusion targets: "))
             .expect("endpoint security check should include exclusion targets");
-        *targets = "exclusion targets: verified Codex app and required helpers".into();
+        *targets = "exclusion targets: verified Ava app and required helpers".into();
         report.checks.push(security);
         report.checks.extend([
             DoctorCheck::new(
@@ -1409,7 +1409,7 @@ Background Server
             )
             .detail("version: 1.2.3")
             .detail("running: true")
-            .detail("log directory: $HOME/Library/Logs/com.openai.codex"),
+            .detail("log directory: $HOME/Library/Logs/com.openai.ava-code"),
             DoctorCheck::new(
                 "desktop.app_server.handshake",
                 "desktop",
@@ -1443,11 +1443,11 @@ Background Server
         let rendered = render_human_report(&sample_report(), summary_no_color_unicode_options());
         let expected = format!(
             "\
-Codex Doctor v0.0.0
+Ava Doctor v0.0.0
 
 Notes
    ⚠ terminal     narrow terminal
-   ✗ auth         token expired - Run `codex login`.
+   ✗ auth         token expired - Run `ava login`.
 ─────────────────────────────────────────────────────────────
 
 Environment
@@ -1457,11 +1457,11 @@ Environment
   ✓ search       search is OK (bundled)
   ✓ git          git version 2.54.0
   ⚠ terminal     narrow terminal
-  ✓ title        default · project codex
+  ✓ title        default · project ava
   ✓ state        state paths inspectable
 
 Configuration
-  ✗ auth         token expired — Run `codex login`.
+  ✗ auth         token expired — Run `ava login`.
 
 Updates
   ✓ updates      update configuration is locally consistent
@@ -1477,7 +1477,7 @@ Background Server
 {}
 12 ok · 2 notes · 1 warn · 1 fail failed
 
-Run codex doctor without --summary for detailed diagnostics.
+Run ava doctor without --summary for detailed diagnostics.
 --all expand truncated lists       --json redacted report
 ",
             "─".repeat(SEPARATOR_WIDTH)
@@ -1513,7 +1513,7 @@ Run codex doctor without --summary for detailed diagnostics.
             schema_version: 1,
             generated_at: "0s since unix epoch".to_string(),
             overall_status: CheckStatus::Ok,
-            codex_version: "0.0.0".to_string(),
+            ava_version: "0.0.0".to_string(),
             checks: vec![
                 DoctorCheck::new(
                     "state.paths",
@@ -1551,11 +1551,11 @@ Run codex doctor without --summary for detailed diagnostics.
         );
         let expected = format!(
             "\
-Codex Doctor v0.0.0
+Ava Doctor v0.0.0
 
 Notes
    [!!] terminal     narrow terminal
-   [XX] auth         token expired - Run `codex login`.
+   [XX] auth         token expired - Run `ava login`.
 -------------------------------------------------------------
 
 Environment
@@ -1565,11 +1565,11 @@ Environment
   [ok] search       search is OK (bundled)
   [ok] git          git version 2.54.0
   [!!] terminal     narrow terminal
-  [ok] title        default | project codex
+  [ok] title        default | project ava
   [ok] state        state paths inspectable
 
 Configuration
-  [XX] auth         token expired - Run `codex login`.
+  [XX] auth         token expired - Run `ava login`.
 
 Updates
   [ok] updates      update configuration is locally consistent
@@ -1585,7 +1585,7 @@ Background Server
 {}
 12 ok | 2 notes | 1 warn | 1 fail failed
 
-Run codex doctor without --summary for detailed diagnostics.
+Run ava doctor without --summary for detailed diagnostics.
 --all expand truncated lists       --json redacted report
 ",
             "-".repeat(SEPARATOR_WIDTH)
@@ -1613,7 +1613,7 @@ Run codex doctor without --summary for detailed diagnostics.
             schema_version: 1,
             generated_at: "0s since unix epoch".to_string(),
             overall_status: CheckStatus::Warning,
-            codex_version: "0.0.0".to_string(),
+            ava_version: "0.0.0".to_string(),
             checks: vec![
                 DoctorCheck::new(
                     "terminal.env",
@@ -1652,7 +1652,7 @@ Run codex doctor without --summary for detailed diagnostics.
             schema_version: 1,
             generated_at: "0s since unix epoch".to_string(),
             overall_status: CheckStatus::Warning,
-            codex_version: "0.0.0".to_string(),
+            ava_version: "0.0.0".to_string(),
             checks: vec![
                 DoctorCheck::new(
                     "updates.status",
@@ -1730,7 +1730,7 @@ Run codex doctor without --summary for detailed diagnostics.
             schema_version: 1,
             generated_at: "0s since unix epoch".to_string(),
             overall_status: CheckStatus::Ok,
-            codex_version: "0.0.0".to_string(),
+            ava_version: "0.0.0".to_string(),
             checks: vec![
                 DoctorCheck::new("config.load", "config", CheckStatus::Ok, "config loaded")
                     .detail("model: gpt-5.5")
@@ -1756,14 +1756,14 @@ Run codex doctor without --summary for detailed diagnostics.
     #[test]
     fn detail_value_colors_inline_statuses_and_low_signal_values() {
         let rendered = detail_value(
-            "npm: no · commit unknown · integrity ok · ~/code/codex/target/debug/codex · <redacted>",
+            "npm: no · commit unknown · integrity ok · ~/code/ava/target/debug/ava · <redacted>",
             detailed_color_unicode_options(),
         );
 
         assert!(rendered.contains("npm: \u{1b}[38;5;240mno"));
         assert!(rendered.contains("\u{1b}[38;5;240munknown"));
         assert!(rendered.contains("\u{1b}[38;5;10mok"));
-        assert!(rendered.contains("\u{1b}[38;5;117m~/code/codex/target/debug/codex"));
+        assert!(rendered.contains("\u{1b}[38;5;117m~/code/ava/target/debug/ava"));
         assert!(rendered.contains("\u{1b}[38;5;244m"));
     }
 
@@ -1803,8 +1803,8 @@ Run codex doctor without --summary for detailed diagnostics.
     #[test]
     fn redact_detail_preserves_env_var_names() {
         assert_eq!(
-            redact_detail("auth env vars present: OPENAI_API_KEY, CODEX_API_KEY"),
-            "auth env vars present: OPENAI_API_KEY, CODEX_API_KEY"
+            redact_detail("auth env vars present: OPENAI_API_KEY, AVA_API_KEY"),
+            "auth env vars present: OPENAI_API_KEY, AVA_API_KEY"
         );
     }
 

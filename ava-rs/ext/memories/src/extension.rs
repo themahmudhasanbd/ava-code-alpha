@@ -1,32 +1,32 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codex_config::types::MemoriesConfig;
-use codex_core::config::Config;
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::MemoryContextFragment;
-use codex_extension_api::ConfigContributor;
-use codex_extension_api::ContentItemKind;
-use codex_extension_api::ContextContributor;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::PromptFragment;
-use codex_extension_api::ThreadLifecycleContributor;
-use codex_extension_api::ThreadStartInput;
-use codex_extension_api::ToolCall;
-use codex_extension_api::ToolContributor;
-use codex_extension_api::ToolExecutor;
-use codex_features::Feature;
-use codex_otel::MetricsClient;
-use codex_protocol::MemoryVersion;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::types::MemoriesConfig;
+use ava_core::config::Config;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::MemoryContextFragment;
+use ava_extension_api::ConfigContributor;
+use ava_extension_api::ContentItemKind;
+use ava_extension_api::ContextContributor;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::PromptFragment;
+use ava_extension_api::ThreadLifecycleContributor;
+use ava_extension_api::ThreadStartInput;
+use ava_extension_api::ToolCall;
+use ava_extension_api::ToolContributor;
+use ava_extension_api::ToolExecutor;
+use ava_features::Feature;
+use ava_otel::MetricsClient;
+use ava_protocol::MemoryVersion;
+use ava_utils_absolute_path::AbsolutePathBuf;
 
 use crate::local::LocalMemoriesBackend;
 use crate::prompts::build_memory_tool_developer_instructions;
 use crate::tools;
 
-/// Contributes Codex memory read-path prompt context and unified memory tool.
+/// Contributes Ava memory read-path prompt context and unified memory tool.
 #[derive(Clone, Default)]
 pub(crate) struct MemoriesExtension {
     metrics_client: Option<MetricsClient>,
@@ -42,7 +42,7 @@ impl MemoriesExtension {
 pub(crate) struct MemoriesExtensionConfig {
     pub(crate) enabled: bool,
     pub(crate) dedicated_tools: bool,
-    pub(crate) codex_home: AbsolutePathBuf,
+    pub(crate) ava_home: AbsolutePathBuf,
     pub(crate) cwd: PathBuf,
     pub(crate) version: MemoryVersion,
     pub(crate) memories: MemoriesConfig,
@@ -54,7 +54,7 @@ impl MemoriesExtensionConfig {
             enabled: (config.features.enabled(Feature::MemoryTool) || config.memories.use_memories)
                 && config.memories.use_memories,
             dedicated_tools: config.memories.dedicated_tools,
-            codex_home: config.codex_home.clone(),
+            ava_home: config.ava_home.clone(),
             cwd: config.cwd.to_path_buf(),
             version: config.memories.version,
             memories: config.memories.clone(),
@@ -77,7 +77,7 @@ impl ContextContributor for MemoriesExtension {
             }
 
             let Some(instructions) =
-                build_memory_tool_developer_instructions(&config.codex_home, config.version).await
+                build_memory_tool_developer_instructions(&config.ava_home, config.version).await
             else {
                 return Vec::new();
             };
@@ -147,7 +147,7 @@ impl ToolContributor for MemoriesExtension {
         _session_store: &ExtensionData,
         thread_store: &ExtensionData,
     ) -> Vec<
-        Arc<dyn for<'call> codex_extension_api::ToolExecutor<codex_extension_api::ToolCall<'call>>>,
+        Arc<dyn for<'call> ava_extension_api::ToolExecutor<ava_extension_api::ToolCall<'call>>>,
     > {
         let Some(config) = thread_store.get::<MemoriesExtensionConfig>() else {
             return Vec::new();
@@ -167,7 +167,7 @@ impl ToolContributor for MemoriesExtension {
             tool_list.extend(tools::memory_tools(
                 LocalMemoriesBackend::from_memory_root(
                     config
-                        .codex_home
+                        .ava_home
                         .join(config.version.directory_name())
                         .to_path_buf(),
                 ),

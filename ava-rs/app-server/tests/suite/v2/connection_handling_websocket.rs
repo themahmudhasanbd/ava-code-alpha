@@ -6,24 +6,24 @@ use app_test_support::create_mock_responses_server_sequence_unchecked;
 use app_test_support::to_response;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ConfigWarningNotification;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_app_server_protocol::JSONRPCNotification;
-use codex_app_server_protocol::JSONRPCRequest;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::ThreadLoadedListResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_core::config::set_project_trust_level;
-use codex_http_client::HttpClient;
-use codex_http_client::HttpClientBuilder;
-use codex_http_client::HttpResponse;
-use codex_protocol::config_types::TrustLevel;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ConfigWarningNotification;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::JSONRPCNotification;
+use ava_app_server_protocol::JSONRPCRequest;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::ThreadLoadedListResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_core::config::set_project_trust_level;
+use ava_http_client::HttpClient;
+use ava_http_client::HttpClientBuilder;
+use ava_http_client::HttpResponse;
+use ava_protocol::config_types::TrustLevel;
 use futures::SinkExt;
 use futures::StreamExt;
 use hmac::Hmac;
@@ -68,10 +68,10 @@ type HmacSha256 = Hmac<Sha256>;
 #[tokio::test]
 async fn websocket_transport_routes_per_connection_handshake_and_responses() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
-    let (mut process, bind_addr) = spawn_websocket_server(codex_home.path()).await?;
+    let (mut process, bind_addr) = spawn_websocket_server(ava_home.path()).await?;
 
     let mut ws1 = connect_websocket(bind_addr).await?;
     let mut ws2 = connect_websocket(bind_addr).await?;
@@ -113,18 +113,18 @@ async fn websocket_transport_routes_per_connection_handshake_and_responses() -> 
 #[tokio::test]
 async fn thread_start_routes_project_exec_policy_warning_to_requester() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
     let project = TempDir::new()?;
     std::fs::create_dir(project.path().join(".git"))?;
-    let rules_dir = project.path().join(".codex/rules");
+    let rules_dir = project.path().join(".ava-code/rules");
     std::fs::create_dir_all(&rules_dir)?;
     let rules_path = rules_dir.join("broken.rules");
     std::fs::write(&rules_path, "prefix_rule(")?;
-    set_project_trust_level(codex_home.path(), project.path(), TrustLevel::Trusted)?;
+    set_project_trust_level(ava_home.path(), project.path(), TrustLevel::Trusted)?;
 
-    let (mut process, bind_addr) = spawn_websocket_server(codex_home.path()).await?;
+    let (mut process, bind_addr) = spawn_websocket_server(ava_home.path()).await?;
     let mut requester = connect_websocket(bind_addr).await?;
     let mut other_client = connect_websocket(bind_addr).await?;
 
@@ -213,10 +213,10 @@ async fn thread_start_routes_project_exec_policy_warning_to_requester() -> Resul
 #[tokio::test]
 async fn websocket_transport_serves_health_endpoints_on_same_listener() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
-    let (mut process, bind_addr) = spawn_websocket_server(codex_home.path()).await?;
+    let (mut process, bind_addr) = spawn_websocket_server(ava_home.path()).await?;
     let client = HttpClientBuilder::new().build_direct()?;
 
     let readyz = http_get(&client, bind_addr, "/readyz").await?;
@@ -240,10 +240,10 @@ async fn websocket_transport_serves_health_endpoints_on_same_listener() -> Resul
 #[tokio::test]
 async fn websocket_transport_rejects_browser_origin_without_auth() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
-    let (mut process, bind_addr) = spawn_websocket_server(codex_home.path()).await?;
+    let (mut process, bind_addr) = spawn_websocket_server(ava_home.path()).await?;
 
     let mut ws = connect_websocket(bind_addr).await?;
     send_initialize_request(&mut ws, /*id*/ 1, "ws_loopback_client").await?;
@@ -269,10 +269,10 @@ async fn websocket_transport_rejects_browser_origin_without_auth() -> Result<()>
 #[tokio::test]
 async fn websocket_transport_rejects_missing_and_invalid_capability_tokens() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    let token_file = codex_home.path().join("app-server-token");
+    let ava_home = TempDir::new()?;
+    let token_file = ava_home.path().join("app-server-token");
     std::fs::write(&token_file, "super-secret-token\n")?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let auth_args = vec![
         "--ws-auth".to_string(),
         "capability-token".to_string(),
@@ -281,7 +281,7 @@ async fn websocket_transport_rejects_missing_and_invalid_capability_tokens() -> 
     ];
 
     let (mut process, bind_addr) =
-        spawn_websocket_server_with_args(codex_home.path(), "ws://0.0.0.0:0", &auth_args).await?;
+        spawn_websocket_server_with_args(ava_home.path(), "ws://0.0.0.0:0", &auth_args).await?;
 
     assert_websocket_connect_rejected(bind_addr, /*bearer_token*/ None).await?;
     assert_websocket_connect_rejected(bind_addr, Some("wrong-token")).await?;
@@ -301,32 +301,32 @@ async fn websocket_transport_rejects_missing_and_invalid_capability_tokens() -> 
 #[tokio::test]
 async fn websocket_transport_verifies_signed_short_lived_bearer_tokens() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    let shared_secret_file = codex_home.path().join("app-server-signing-secret");
+    let ava_home = TempDir::new()?;
+    let shared_secret_file = ava_home.path().join("app-server-signing-secret");
     let shared_secret = "0123456789abcdef0123456789abcdef";
     std::fs::write(&shared_secret_file, format!("{shared_secret}\n"))?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
     let auth_args = vec![
         "--ws-auth".to_string(),
         "signed-bearer-token".to_string(),
         "--ws-shared-secret-file".to_string(),
         shared_secret_file.display().to_string(),
         "--ws-issuer".to_string(),
-        "codex-enroller".to_string(),
+        "ava-enroller".to_string(),
         "--ws-audience".to_string(),
-        "codex-app-server".to_string(),
+        "ava-app-server".to_string(),
         "--ws-max-clock-skew-seconds".to_string(),
         "1".to_string(),
     ];
 
     let (mut process, bind_addr) =
-        spawn_websocket_server_with_args(codex_home.path(), "ws://127.0.0.1:0", &auth_args).await?;
+        spawn_websocket_server_with_args(ava_home.path(), "ws://127.0.0.1:0", &auth_args).await?;
     let expired_token = signed_bearer_token(
         shared_secret.as_bytes(),
         json!({
             "exp": OffsetDateTime::now_utc().unix_timestamp() - 30,
-            "iss": "codex-enroller",
-            "aud": "codex-app-server",
+            "iss": "ava-enroller",
+            "aud": "ava-app-server",
         }),
     )?;
     assert_websocket_connect_rejected(bind_addr, Some(expired_token.as_str())).await?;
@@ -339,8 +339,8 @@ async fn websocket_transport_verifies_signed_short_lived_bearer_tokens() -> Resu
         json!({
             "exp": OffsetDateTime::now_utc().unix_timestamp() + 60,
             "nbf": OffsetDateTime::now_utc().unix_timestamp() + 30,
-            "iss": "codex-enroller",
-            "aud": "codex-app-server",
+            "iss": "ava-enroller",
+            "aud": "ava-app-server",
         }),
     )?;
     assert_websocket_connect_rejected(bind_addr, Some(not_yet_valid_token.as_str())).await?;
@@ -350,7 +350,7 @@ async fn websocket_transport_verifies_signed_short_lived_bearer_tokens() -> Resu
         json!({
             "exp": OffsetDateTime::now_utc().unix_timestamp() + 60,
             "iss": "someone-else",
-            "aud": "codex-app-server",
+            "aud": "ava-app-server",
         }),
     )?;
     assert_websocket_connect_rejected(bind_addr, Some(wrong_issuer_token.as_str())).await?;
@@ -359,7 +359,7 @@ async fn websocket_transport_verifies_signed_short_lived_bearer_tokens() -> Resu
         shared_secret.as_bytes(),
         json!({
             "exp": OffsetDateTime::now_utc().unix_timestamp() + 60,
-            "iss": "codex-enroller",
+            "iss": "ava-enroller",
             "aud": "wrong-audience",
         }),
     )?;
@@ -369,8 +369,8 @@ async fn websocket_transport_verifies_signed_short_lived_bearer_tokens() -> Resu
         b"fedcba9876543210fedcba9876543210",
         json!({
             "exp": OffsetDateTime::now_utc().unix_timestamp() + 60,
-            "iss": "codex-enroller",
-            "aud": "codex-app-server",
+            "iss": "ava-enroller",
+            "aud": "ava-app-server",
         }),
     )?;
     assert_websocket_connect_rejected(bind_addr, Some(wrong_signature_token.as_str())).await?;
@@ -379,8 +379,8 @@ async fn websocket_transport_verifies_signed_short_lived_bearer_tokens() -> Resu
         shared_secret.as_bytes(),
         json!({
             "exp": OffsetDateTime::now_utc().unix_timestamp() + 60,
-            "iss": "codex-enroller",
-            "aud": "codex-app-server",
+            "iss": "ava-enroller",
+            "aud": "ava-app-server",
         }),
     )?;
     let mut ws = connect_websocket_with_bearer(bind_addr, Some(valid_token.as_str())).await?;
@@ -398,13 +398,13 @@ async fn websocket_transport_verifies_signed_short_lived_bearer_tokens() -> Resu
 #[tokio::test]
 async fn websocket_transport_rejects_short_signed_bearer_secret_configuration() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    let shared_secret_file = codex_home.path().join("app-server-signing-secret");
+    let ava_home = TempDir::new()?;
+    let shared_secret_file = ava_home.path().join("app-server-signing-secret");
     std::fs::write(&shared_secret_file, "too-short\n")?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
     let output = run_websocket_server_to_completion_with_args(
-        codex_home.path(),
+        ava_home.path(),
         "ws://127.0.0.1:0",
         &[
             "--ws-auth".to_string(),
@@ -430,11 +430,11 @@ async fn websocket_transport_rejects_short_signed_bearer_secret_configuration() 
 #[tokio::test]
 async fn websocket_transport_rejects_unauthenticated_non_loopback_startup() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
     let output =
-        run_websocket_server_to_completion_with_args(codex_home.path(), "ws://0.0.0.0:0", &[])
+        run_websocket_server_to_completion_with_args(ava_home.path(), "ws://0.0.0.0:0", &[])
             .await?;
     assert!(
         !output.status.success(),
@@ -453,11 +453,11 @@ async fn websocket_transport_rejects_unauthenticated_non_loopback_startup() -> R
 async fn websocket_disconnect_keeps_last_subscribed_thread_loaded_until_idle_timeout() -> Result<()>
 {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
-    let codex_home = TempDir::new()?;
-    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+    let ava_home = TempDir::new()?;
+    create_config_toml(ava_home.path(), &server.uri(), "never")?;
 
     let (mut process, bind_addr) = spawn_websocket_server_with_args(
-        codex_home.path(),
+        ava_home.path(),
         "ws://127.0.0.1:0",
         &["-c".to_string(), "thread_unload_delay_secs=2".to_string()],
     )
@@ -487,16 +487,16 @@ async fn websocket_disconnect_keeps_last_subscribed_thread_loaded_until_idle_tim
     Ok(())
 }
 
-pub(super) async fn spawn_websocket_server(codex_home: &Path) -> Result<(Child, SocketAddr)> {
-    spawn_websocket_server_with_args(codex_home, "ws://127.0.0.1:0", &[]).await
+pub(super) async fn spawn_websocket_server(ava_home: &Path) -> Result<(Child, SocketAddr)> {
+    spawn_websocket_server_with_args(ava_home, "ws://127.0.0.1:0", &[]).await
 }
 
 pub(super) async fn spawn_websocket_server_with_args(
-    codex_home: &Path,
+    ava_home: &Path,
     listen_url: &str,
     extra_args: &[String],
 ) -> Result<(Child, SocketAddr)> {
-    let program = codex_utils_cargo_bin::cargo_bin("codex-app-server")
+    let program = ava_utils_cargo_bin::cargo_bin("ava-app-server")
         .context("should find app-server binary")?;
     let mut cmd = Command::new(program);
     cmd.arg("--listen")
@@ -506,7 +506,7 @@ pub(super) async fn spawn_websocket_server_with_args(
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
-        .env("CODEX_HOME", codex_home)
+        .env("AVA_HOME", ava_home)
         .env("RUST_LOG", "warn");
 
     let mut process = cmd
@@ -629,11 +629,11 @@ async fn assert_websocket_connect_rejected_with_headers(
 }
 
 async fn run_websocket_server_to_completion_with_args(
-    codex_home: &Path,
+    ava_home: &Path,
     listen_url: &str,
     extra_args: &[String],
 ) -> Result<std::process::Output> {
-    let program = codex_utils_cargo_bin::cargo_bin("codex-app-server")
+    let program = ava_utils_cargo_bin::cargo_bin("ava-app-server")
         .context("should find app-server binary")?;
     let mut cmd = Command::new(program);
     cmd.arg("--listen")
@@ -643,7 +643,7 @@ async fn run_websocket_server_to_completion_with_args(
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
-        .env("CODEX_HOME", codex_home)
+        .env("AVA_HOME", ava_home)
         .env("RUST_LOG", "warn");
     timeout(DEFAULT_READ_TIMEOUT, cmd.output())
         .await
@@ -936,11 +936,11 @@ pub(super) async fn assert_no_message(stream: &mut WsClient, wait_for: Duration)
 }
 
 pub(super) fn create_config_toml(
-    codex_home: &Path,
+    ava_home: &Path,
     server_uri: &str,
     approval_policy: &str,
 ) -> std::io::Result<()> {
-    let config_toml = codex_home.join("config.toml");
+    let config_toml = ava_home.join("config.toml");
     std::fs::write(
         config_toml,
         format!(

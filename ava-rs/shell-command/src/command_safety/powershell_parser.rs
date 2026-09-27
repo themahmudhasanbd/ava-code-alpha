@@ -125,7 +125,7 @@ impl PowershellParserProcess {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null());
-        codex_protocol::shell_environment::scrub_non_inheritable_env_vars(&mut command);
+        ava_protocol::shell_environment::scrub_non_inheritable_env_vars(&mut command);
         let mut child = command.spawn()?;
         let stdin = match take_child_stdin(&mut child) {
             Ok(stdin) => stdin,
@@ -308,7 +308,7 @@ mod tests {
         let mut parser = PowershellParserProcess::spawn(powershell).unwrap();
 
         let parsed = parser
-            .parse("git log --% HEAD --output=codex_poc.txt")
+            .parse("git log --% HEAD --output=ava_poc.txt")
             .unwrap();
         assert_eq!(parsed, PowershellParseOutcome::Unsupported);
     }
@@ -336,7 +336,7 @@ mod tests {
         let mut parser = PowershellParserProcess::spawn(powershell).unwrap();
 
         let parsed = parser
-            .parse("begin { Set-Content codex_poc.txt pwned } end { Get-Content Cargo.toml }")
+            .parse("begin { Set-Content ava_poc.txt pwned } end { Get-Content Cargo.toml }")
             .unwrap();
         assert_eq!(parsed, PowershellParseOutcome::Unsupported);
     }
@@ -350,7 +350,7 @@ mod tests {
         let mut parser = PowershellParserProcess::spawn(powershell).unwrap();
 
         let parsed = parser
-            .parse("using module ./codex_poc.psm1\nGet-Content Cargo.toml")
+            .parse("using module ./ava_poc.psm1\nGet-Content Cargo.toml")
             .unwrap();
         assert_eq!(parsed, PowershellParseOutcome::Unsupported);
     }
@@ -365,7 +365,7 @@ mod tests {
 
         let parsed = parser
             .parse(
-                "trap { Set-Content codex_poc.txt pwned; continue } Get-Content missing -ErrorAction Stop",
+                "trap { Set-Content ava_poc.txt pwned; continue } Get-Content missing -ErrorAction Stop",
             )
             .unwrap();
         assert_eq!(parsed, PowershellParseOutcome::Unsupported);

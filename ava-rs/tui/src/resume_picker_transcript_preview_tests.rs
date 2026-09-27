@@ -2,24 +2,24 @@ use super::*;
 use crate::legacy_core::config::ConfigBuilder;
 use app_test_support::create_mock_responses_server_sequence;
 use app_test_support::write_mock_responses_config_toml;
-use codex_app_server_client::AppServerEvent;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ImageReference;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::SortDirection;
-use codex_app_server_protocol::ThreadItemsListParams;
-use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_protocol::protocol::AgentMessageEvent;
-use codex_protocol::protocol::ThreadRolledBackEvent;
-use codex_protocol::protocol::UserMessageEvent;
-use codex_rollout::CompactedItem;
-use codex_rollout::RolloutLine;
+use ava_app_server_client::AppServerEvent;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ImageReference;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::SortDirection;
+use ava_app_server_protocol::ThreadItemsListParams;
+use ava_app_server_protocol::ThreadItemsListResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_protocol::protocol::AgentMessageEvent;
+use ava_protocol::protocol::ThreadRolledBackEvent;
+use ava_protocol::protocol::UserMessageEvent;
+use ava_rollout::CompactedItem;
+use ava_rollout::RolloutLine;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
@@ -320,9 +320,9 @@ async fn transcript_preview_for_history_mode(
         }))
         .collect();
     let server = create_mock_responses_server_sequence(model_responses).await;
-    let codex_home = tempdir().expect("tempdir");
+    let ava_home = tempdir().expect("tempdir");
     write_mock_responses_config_toml(
-        codex_home.path(),
+        ava_home.path(),
         &server.uri(),
         &Default::default(),
         /*auto_compact_limit*/ 100_000,
@@ -332,8 +332,8 @@ async fn transcript_preview_for_history_mode(
     )
     .expect("write mock config");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .build()
         .await
         .expect("build config");
@@ -347,7 +347,7 @@ async fn transcript_preview_for_history_mode(
             params: ThreadStartParams {
                 model: Some(String::from("mock-model")),
                 model_provider: Some(String::from("mock_provider")),
-                cwd: Some(codex_home.path().display().to_string()),
+                cwd: Some(ava_home.path().display().to_string()),
                 history_mode: Some(history_mode),
                 ..Default::default()
             },
@@ -419,7 +419,7 @@ async fn transcript_preview_for_history_mode(
         append_transcript_preview_lines(
             &mut first_page_lines,
             first_page.data.iter().map(|entry| &entry.item),
-            codex_home.path(),
+            ava_home.path(),
             /*inline_visualization_context*/ None,
         );
         assert_eq!(first_page_lines, Vec::new());

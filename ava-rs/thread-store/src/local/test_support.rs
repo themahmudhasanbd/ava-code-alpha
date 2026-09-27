@@ -3,17 +3,17 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::ARCHIVED_SESSIONS_SUBDIR;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::ARCHIVED_SESSIONS_SUBDIR;
+use ava_utils_absolute_path::test_support::PathExt;
 use uuid::Uuid;
 
 use super::LocalThreadStoreConfig;
 
-pub(super) fn test_config(codex_home: &Path) -> LocalThreadStoreConfig {
+pub(super) fn test_config(ava_home: &Path) -> LocalThreadStoreConfig {
     LocalThreadStoreConfig {
-        codex_home: codex_home.to_path_buf(),
-        sqlite: codex_state::SqliteConfig::new_for_testing(codex_home.abs()),
+        ava_home: ava_home.to_path_buf(),
+        sqlite: ava_state::SqliteConfig::new_for_testing(ava_home.abs()),
         default_model_provider_id: "test-provider".to_string(),
     }
 }

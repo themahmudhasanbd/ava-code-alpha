@@ -3,7 +3,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
-fn profile() -> codex_backend_client::AccountProfile {
+fn profile() -> ava_backend_client::AccountProfile {
     serde_json::from_value(json!({
         "profile":{"display_name":"Example User","username":"example.user"},
         "metadata":{"stats_as_of":"2026-09-09"},

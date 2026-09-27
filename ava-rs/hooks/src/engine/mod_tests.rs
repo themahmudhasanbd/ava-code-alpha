@@ -5,33 +5,33 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use codex_config::AbsolutePathBuf;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::ConfigRequirements;
-use codex_config::ConfigRequirementsToml;
-use codex_config::Constrained;
-use codex_config::ConstrainedWithSource;
-use codex_config::HookEventsToml;
-use codex_config::HookHandlerConfig;
-use codex_config::ManagedHooksRequirementsToml;
-use codex_config::MatcherGroup;
-use codex_config::RequirementSource;
-use codex_config::Sourced;
-use codex_config::TomlValue;
-use codex_plugin::ExecutorPluginHookSource;
-use codex_plugin::PluginHookSource;
-use codex_plugin::PluginId;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookExecutionMode;
-use codex_protocol::protocol::HookHandlerType;
-use codex_protocol::protocol::HookOutputEntry;
-use codex_protocol::protocol::HookOutputEntryKind;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookSource;
-use codex_protocol::protocol::HookTrustStatus;
+use ava_config::AbsolutePathBuf;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::ConfigRequirements;
+use ava_config::ConfigRequirementsToml;
+use ava_config::Constrained;
+use ava_config::ConstrainedWithSource;
+use ava_config::HookEventsToml;
+use ava_config::HookHandlerConfig;
+use ava_config::ManagedHooksRequirementsToml;
+use ava_config::MatcherGroup;
+use ava_config::RequirementSource;
+use ava_config::Sourced;
+use ava_config::TomlValue;
+use ava_plugin::ExecutorPluginHookSource;
+use ava_plugin::PluginHookSource;
+use ava_plugin::PluginId;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookExecutionMode;
+use ava_protocol::protocol::HookHandlerType;
+use ava_protocol::protocol::HookOutputEntry;
+use ava_protocol::protocol::HookOutputEntryKind;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookSource;
+use ava_protocol::protocol::HookTrustStatus;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use pretty_assertions::assert_eq;
@@ -1392,7 +1392,7 @@ fn allow_managed_hooks_only_keeps_managed_requirement_and_config_layer_hooks() {
         vec![
             ConfigLayerEntry::new(
                 ConfigLayerSource::Mdm {
-                    domain: "com.openai.codex".to_string(),
+                    domain: "com.openai.ava-code".to_string(),
                     key: "config".to_string(),
                 },
                 config_toml_with_pre_tool_use("python3 /tmp/mdm-hook.py"),
@@ -1733,7 +1733,7 @@ fn bundled_cleanup_source(plugin_id: &str, server: &str, event: &str) -> PluginH
     PluginHookSource {
         plugin_id: PluginId::parse(plugin_id).expect("plugin ID"),
         plugin_data_root: plugin_root.join("data"),
-        source_path: plugin_root.join(".codex-plugin/plugin.json"),
+        source_path: plugin_root.join(".ava-plugin/plugin.json"),
         source_relative_path: "plugin.json#hooks[0]".to_string(),
         plugin_root,
         hooks: serde_json::from_value(serde_json::json!({
@@ -1874,9 +1874,9 @@ fn bundled_cleanup_trust_requires_matching_plugin_server_and_event() {
 
 #[test]
 fn local_hosted_app_cleanup_hooks_require_saved_trust() {
-    let mut source = bundled_cleanup_source("browser@openai-curated-remote", "codex_apps", "Stop");
+    let mut source = bundled_cleanup_source("browser@openai-curated-remote", "ava_apps", "Stop");
     source.hooks.stop[0].hooks[0] = HookHandlerConfig::McpTool {
-        server: "codex_apps".to_string(),
+        server: "ava_apps".to_string(),
         tool: "browser.turn_ended".to_string(),
         input: Default::default(),
         timeout_sec: None,
@@ -2287,10 +2287,10 @@ fn executor_stop_hook_fixture() -> (
         plugin_root: "file:///plugins/computer-use"
             .parse()
             .expect("valid plugin root URI"),
-        manifest_path: "file:///plugins/computer-use/.codex-plugin/plugin.json"
+        manifest_path: "file:///plugins/computer-use/.ava-plugin/plugin.json"
             .parse()
             .expect("valid plugin manifest URI"),
-        source_relative_path: ".codex-plugin/plugin.json#hooks[0]".to_string(),
+        source_relative_path: ".ava-plugin/plugin.json#hooks[0]".to_string(),
         hooks: HookEventsToml {
             stop: vec![MatcherGroup {
                 matcher: None,
@@ -2323,10 +2323,10 @@ fn executor_stop_hook_fixture() -> (
                 environment_id: "executor-a".to_string(),
                 mcp_environment_id: None,
                 mcp_metadata: None,
-                manifest_path: "file:///plugins/computer-use/.codex-plugin/plugin.json"
+                manifest_path: "file:///plugins/computer-use/.ava-plugin/plugin.json"
                     .parse()
                     .expect("valid plugin manifest URI"),
-                source_relative_path: ".codex-plugin/plugin.json#hooks[0]".to_string(),
+                source_relative_path: ".ava-plugin/plugin.json#hooks[0]".to_string(),
             },
             source: HookSource::Plugin,
             display_order: 0,
@@ -2346,7 +2346,7 @@ fn executor_stop_hook_fixture() -> (
     );
     assert!(!engine.handlers[0].can_apply_control_effects());
     let request_metadata = Some(serde_json::Map::from_iter([(
-        "x-codex-turn-metadata".to_string(),
+        "x-ava-turn-metadata".to_string(),
         serde_json::json!({ "turn_id": "turn-1" }),
     )]));
     let request = StopRequest {
@@ -2766,7 +2766,7 @@ async fn mcp_tool_hooks_expand_event_input_and_apply_pre_tool_decisions() {
     );
     assert_eq!(
         outcome.hook_events[0].run.execution_mode,
-        codex_protocol::protocol::HookExecutionMode::Sync
+        ava_protocol::protocol::HookExecutionMode::Sync
     );
     assert_eq!(
         *calls.lock().expect("lock MCP calls"),

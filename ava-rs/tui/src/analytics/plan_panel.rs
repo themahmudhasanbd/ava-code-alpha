@@ -8,7 +8,7 @@ use super::sections::Section;
 use super::styles::secondary_style;
 use crate::keymap::ListAction;
 use crate::style::accent_style;
-use codex_backend_client::PlanLimitDimension;
+use ava_backend_client::PlanLimitDimension;
 use ratatui::style::Styled;
 use ratatui::style::Stylize;
 use ratatui::text::Line;

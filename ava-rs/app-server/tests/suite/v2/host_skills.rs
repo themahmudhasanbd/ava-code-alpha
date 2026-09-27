@@ -3,15 +3,15 @@ use std::time::Duration;
 use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::to_response;
-use codex_app_server_protocol::JSONRPCResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SkillsExtraRootsSetParams;
-use codex_app_server_protocol::SkillsExtraRootsSetResponse;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::UserInput;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server_protocol::JSONRPCResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SkillsExtraRootsSetParams;
+use ava_app_server_protocol::SkillsExtraRootsSetResponse;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::UserInput;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::responses;
 use core_test_support::skip_if_remote;
 use pretty_assertions::assert_eq;
@@ -46,7 +46,7 @@ async fn host_skill_catalog_refreshes_once_when_skills_change() -> Result<()> {
     )
     .await;
 
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let extra_root = TempDir::new()?;
     let extra_skills_root = extra_root.path().join("skills");
     write_skill(
@@ -55,7 +55,7 @@ async fn host_skill_catalog_refreshes_once_when_skills_change() -> Result<()> {
         INITIAL_SKILL_DESCRIPTION,
     )?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!(
             r#"
 model = "mock-model"
@@ -81,7 +81,7 @@ stream_max_retries = 0
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build()
         .await?;
     timeout(READ_TIMEOUT, app_server.initialize()).await??;

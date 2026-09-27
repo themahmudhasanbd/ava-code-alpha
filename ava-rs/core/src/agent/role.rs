@@ -7,21 +7,21 @@ use crate::config::AgentRoleConfig;
 use crate::config::Config;
 use crate::config::deserialize_config_toml_with_base;
 use anyhow::anyhow;
-use codex_agent_roles::parse_agent_role_file_contents;
-use codex_config::ConfigLayerEntry;
-use codex_config::ConfigLayerSource;
-use codex_config::ConfigLayerStack;
-use codex_config::SkillsConfig;
-use codex_config::loader::resolve_relative_paths_in_config_toml;
-use codex_exec_server::read_sensitive_file_to_string;
-use codex_features::Feature;
-use codex_features::feature_for_key;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::Verbosity;
-use codex_protocol::models::BaseInstructionsProvenance;
-use codex_protocol::openai_models::ReasoningEffort;
+use ava_agent_roles::parse_agent_role_file_contents;
+use ava_config::ConfigLayerEntry;
+use ava_config::ConfigLayerSource;
+use ava_config::ConfigLayerStack;
+use ava_config::SkillsConfig;
+use ava_config::loader::resolve_relative_paths_in_config_toml;
+use ava_exec_server::read_sensitive_file_to_string;
+use ava_features::Feature;
+use ava_features::feature_for_key;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::Verbosity;
+use ava_protocol::models::BaseInstructionsProvenance;
+use ava_protocol::openai_models::ReasoningEffort;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
@@ -76,7 +76,7 @@ async fn apply_role_to_config_inner(
         return Ok(());
     };
     let role_layer_toml = load_role_layer_toml(config, config_file, is_built_in, role_name).await?;
-    let role_config = deserialize_config_toml_with_base(role_layer_toml, &config.codex_home)?;
+    let role_config = deserialize_config_toml_with_base(role_layer_toml, &config.ava_home)?;
     let mut overrides = AgentRoleOverrides {
         developer_instructions: role_config.developer_instructions,
         model: role_config.model,
@@ -138,7 +138,7 @@ async fn load_role_layer_toml(
             .map(str::to_owned)
             .ok_or(anyhow!("No corresponding config content"))?;
         let role_config_toml: TomlValue = toml::from_str(&role_config_contents)?;
-        (role_config_toml, config.codex_home.as_path())
+        (role_config_toml, config.ava_home.as_path())
     } else {
         let role_config_contents = read_sensitive_file_to_string(config_file).await?;
         let role_config_base = config_file

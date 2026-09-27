@@ -21,7 +21,7 @@ test("namespaces and parses remote session ids", () => {
   assert.equal(id, "remote:hostA:sess_1");
   assert.ok(isRemoteSessionId(id));
   assert.ok(!isRemoteSessionId("sess_1"));
-  assert.ok(!isRemoteSessionId("native-pi:codex:abc"));
+  assert.ok(!isRemoteSessionId("native-pi:ava:abc"));
   assert.deepEqual(parseRemoteSessionId(id), { hostKey: "hostA", hostSessionId: "sess_1" });
   // A host session id may itself contain ':'; only the first separator splits.
   assert.deepEqual(parseRemoteSessionId("remote:hostA:a:b"), {

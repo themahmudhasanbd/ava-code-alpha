@@ -16,16 +16,16 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::AppServerRpcTransport;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::config::ConfigBuilder;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_protocol::protocol::SessionSource;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::AppServerRpcTransport;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::config::ConfigBuilder;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_protocol::protocol::SessionSource;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Mutex;
@@ -121,13 +121,13 @@ impl Harness {
         write_auth(home.path(), "first")?;
         let config = Arc::new(
             ConfigBuilder::default()
-                .codex_home(home.path().into())
+                .ava_home(home.path().into())
                 .build()
                 .await?,
         );
         let auth = AuthManager::shared_from_config(
             config.as_ref(),
-            /*enable_codex_api_key_env*/ false,
+            /*enable_ava_api_key_env*/ false,
         )
         .await?;
         let provider = Arc::new(BlockingProvider::default());
@@ -146,7 +146,7 @@ impl Harness {
             /*strict_config*/ false,
             CloudConfigBundleLoader::default(),
             Arg0DispatchPaths::default(),
-            Arc::new(codex_config::NoopThreadConfigLoader),
+            Arc::new(ava_config::NoopThreadConfigLoader),
         );
         let (sender, messages) = mpsc::channel(/*buffer*/ 16);
         let outgoing = Arc::new(OutgoingMessageSender::new(
@@ -160,7 +160,7 @@ impl Harness {
             config,
             config_manager,
             environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
-            feedback: CodexFeedback::new(),
+            feedback: AvaFeedback::new(),
             log_db: None,
             state_db: None,
             config_warnings: Vec::new(),

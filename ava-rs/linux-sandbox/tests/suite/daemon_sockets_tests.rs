@@ -14,7 +14,7 @@ async fn private_tmp_mount_preserves_daemon_socket_isolation() {
     let test_executable = std::env::current_exe().unwrap();
     // Keep both executables available after the original /tmp is hidden.
     std::fs::copy(&test_executable, private.path().join("test")).unwrap();
-    std::fs::copy(codex_linux_sandbox_exe(), private.path().join("sandbox")).unwrap();
+    std::fs::copy(ava_linux_sandbox_exe(), private.path().join("sandbox")).unwrap();
     let (_, test_module) = module_path!().split_once("::").unwrap();
     let fixture_test = format!("{test_module}::private_tmp_fixture");
     // Mount setup needs capabilities, which bubblewrap only accepts as namespace root.
@@ -35,7 +35,7 @@ async fn private_tmp_mount_preserves_daemon_socket_isolation() {
             "--nocapture",
             "--test-threads=1",
         ])
-        .env("CODEX_TEST_PRIVATE_TMP", private.path())
+        .env("AVA_TEST_PRIVATE_TMP", private.path())
         .kill_on_drop(true)
         .output()
         .await
@@ -53,7 +53,7 @@ async fn private_tmp_mount_preserves_daemon_socket_isolation() {
 #[test]
 #[ignore = "invoked inside a disposable mount namespace"]
 fn private_tmp_fixture() {
-    let Some(private) = std::env::var_os("CODEX_TEST_PRIVATE_TMP") else {
+    let Some(private) = std::env::var_os("AVA_TEST_PRIVATE_TMP") else {
         return;
     };
     let mount = std::process::Command::new("mount")
@@ -74,7 +74,7 @@ fn private_tmp_fixture() {
         .output()
         .unwrap();
     assert!(mount.status.success(), "{mount:?}");
-    let root = codex_uds::prepare_shared_daemon_socket_directory().unwrap();
+    let root = ava_uds::prepare_shared_daemon_socket_directory().unwrap();
     let endpoint = root.join("rpc.sock");
     let _daemon = UnixListener::bind(&endpoint).unwrap();
     let _other = UnixListener::bind("/tmp/other.sock").unwrap();
@@ -102,7 +102,7 @@ fn private_tmp_fixture() {
             "--nocapture",
             "--test-threads=1",
         ])
-        .env("CODEX_TEST_DAEMON_SOCKET", &endpoint);
+        .env("AVA_TEST_DAEMON_SOCKET", &endpoint);
     let output = command.output().unwrap();
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(String::from_utf8_lossy(&output.stdout).contains("private-tmp-isolated"));
@@ -127,7 +127,7 @@ fn private_tmp_fixture() {
 #[test]
 #[ignore = "invoked inside the private tmp sandbox"]
 fn private_tmp_client() {
-    let Some(endpoint) = std::env::var_os("CODEX_TEST_DAEMON_SOCKET") else {
+    let Some(endpoint) = std::env::var_os("AVA_TEST_DAEMON_SOCKET") else {
         return;
     };
     println!("private-tmp-client-started");
@@ -141,7 +141,7 @@ async fn daemon_socket_bind_mount_alias_rejects_sandbox_startup() {
     if should_skip_bwrap_tests().await {
         return;
     }
-    let root = codex_uds::prepare_shared_daemon_socket_directory().unwrap();
+    let root = ava_uds::prepare_shared_daemon_socket_directory().unwrap();
     let private = tempfile::tempdir_in(&root).unwrap();
     let alias = tempfile::tempdir().unwrap();
     let _listener = UnixListener::bind(private.path().join("rpc.sock")).unwrap();
@@ -179,7 +179,7 @@ finally:
         .arg(&root)
         .arg(alias.path())
         .arg(private.path().strip_prefix(&root).unwrap().join("rpc.sock"))
-        .arg(codex_linux_sandbox_exe())
+        .arg(ava_linux_sandbox_exe())
         .arg(serde_json::to_string(&profile).unwrap())
         .kill_on_drop(true)
         .output()
@@ -202,7 +202,7 @@ async fn daemon_sockets_are_hidden_with_network_and_tmp_write_grants() {
     if should_skip_bwrap_tests().await {
         return;
     }
-    let root = codex_uds::prepare_shared_daemon_socket_directory().unwrap();
+    let root = ava_uds::prepare_shared_daemon_socket_directory().unwrap();
     let private = tempfile::tempdir_in(&root).unwrap();
     let workspace = tempfile::tempdir().unwrap();
     let socket = private.path().join("rpc.sock");
@@ -258,14 +258,14 @@ if sys.argv[6] == 'host-proc' and not os.path.isdir('/run/WSL'):
     );
     let mut env = create_env_from_core_vars();
     env.insert(
-        "CODEX_HOME".to_string(),
+        "AVA_HOME".to_string(),
         workspace.path().display().to_string(),
     );
     env.insert("TMPDIR".to_string(), workspace.path().display().to_string());
     // Inherited procfs remains useful in containers that prohibit a fresh mount.
     // Its host-process magic links must still respect the user namespace boundary.
     for proc_mode in ["fresh-proc", "host-proc"] {
-        let mut command = tokio::process::Command::new(codex_linux_sandbox_exe());
+        let mut command = tokio::process::Command::new(ava_linux_sandbox_exe());
         command
             .arg("--sandbox-policy-cwd")
             .arg(workspace.path())

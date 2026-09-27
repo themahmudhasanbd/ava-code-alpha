@@ -1,4 +1,4 @@
-//! Types used to define loaded and effective Codex configuration values.
+//! Types used to define loaded and effective Ava configuration values.
 
 // Note this file should generally be restricted to simple struct/enum
 // definitions that do not contain business logic.
@@ -15,14 +15,14 @@ pub use crate::mcp_types::McpServerToolConfig;
 pub use crate::mcp_types::McpServerTransportConfig;
 pub use crate::mcp_types::RawMcpServerConfig;
 pub use crate::shell_environment_policy::ShellEnvironmentPolicyToml;
-pub use codex_protocol::config_types::AltScreenMode;
-pub use codex_protocol::config_types::ApprovalsReviewer;
-pub use codex_protocol::config_types::ModeKind;
-pub use codex_protocol::config_types::Personality;
-pub use codex_protocol::config_types::ServiceTier;
-use codex_protocol::config_types::ToolExposureSurface;
-pub use codex_protocol::config_types::WebSearchMode;
-use codex_utils_absolute_path::AbsolutePathBuf;
+pub use ava_protocol::config_types::AltScreenMode;
+pub use ava_protocol::config_types::ApprovalsReviewer;
+pub use ava_protocol::config_types::ModeKind;
+pub use ava_protocol::config_types::Personality;
+pub use ava_protocol::config_types::ServiceTier;
+use ava_protocol::config_types::ToolExposureSurface;
+pub use ava_protocol::config_types::WebSearchMode;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt;
@@ -91,7 +91,7 @@ impl fmt::Display for SessionPickerViewMode {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum ResumeCwdMode {
-    /// Use the directory where Codex was launched.
+    /// Use the directory where Ava was launched.
     Current,
     /// Use the latest working directory recorded in the selected session.
     Session,
@@ -106,33 +106,33 @@ impl ResumeCwdMode {
     }
 }
 
-/// Determine where Codex should store CLI auth credentials.
+/// Determine where Ava should store CLI auth credentials.
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum AuthCredentialsStoreMode {
     #[default]
-    /// Persist credentials in CODEX_HOME/auth.json.
+    /// Persist credentials in AVA_HOME/auth.json.
     File,
     /// Persist credentials in the keyring. Fail if unavailable.
     Keyring,
-    /// Use keyring when available; otherwise, fall back to a file in CODEX_HOME.
+    /// Use keyring when available; otherwise, fall back to a file in AVA_HOME.
     Auto,
     /// Store credentials in memory only for the current process.
     Ephemeral,
 }
 
-/// Determine where Codex should store and read MCP credentials.
+/// Determine where Ava should store and read MCP credentials.
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum OAuthCredentialsStoreMode {
     /// Prefer `Keyring` and use `File` when keyring storage is unavailable.
     /// Once an MCP client loads credentials from one store, that client keeps the resolved store
     /// for its lifetime so refreshes cannot switch to a possibly stale credential source.
-    /// Credentials stored in the keyring will only be readable by Codex unless the user explicitly grants access via OS-level keyring access.
+    /// Credentials stored in the keyring will only be readable by Ava unless the user explicitly grants access via OS-level keyring access.
     #[default]
     Auto,
-    /// CODEX_HOME/.credentials.json
-    /// This file will be readable to Codex and other applications running as the same user.
+    /// AVA_HOME/.credentials.json
+    /// This file will be readable to Ava and other applications running as the same user.
     File,
     /// Keyring when available, otherwise fail.
     Keyring,
@@ -191,7 +191,7 @@ pub enum UriBasedFileOpener {
     None,
 }
 
-/// Settings that govern if and what will be written to `~/.codex/history.jsonl`.
+/// Settings that govern if and what will be written to `~/.ava-code/history.jsonl`.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, JsonSchema)]
 #[serde(default)]
 #[schemars(deny_unknown_fields)]
@@ -220,14 +220,14 @@ pub enum HistoryPersistence {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct AnalyticsConfigToml {
-    /// When `false`, disables analytics across Codex product surfaces in this profile.
+    /// When `false`, disables analytics across Ava product surfaces in this profile.
     pub enabled: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct FeedbackConfigToml {
-    /// When `false`, disables the feedback flow across Codex product surfaces.
+    /// When `false`, disables the feedback flow across Ava product surfaces.
     pub enabled: Option<bool>,
 }
 
@@ -287,7 +287,7 @@ pub struct ToolSuggestConfig {
     pub disabled_tools: Vec<ToolSuggestDisabledTool>,
 }
 
-pub use codex_protocol::MemoryVersion;
+pub use ava_protocol::MemoryVersion;
 
 /// Scope for memory retrieval and persistence operations.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Default, JsonSchema)]
@@ -412,7 +412,7 @@ pub struct MemoriesToml {
     pub max_rollouts_per_startup: Option<usize>,
     /// Minimum idle time between last thread activity and memory creation (hours). > 12h recommended.
     pub min_rollout_idle_hours: Option<i64>,
-    /// Minimum remaining percentage required in Codex rate-limit windows before memory startup runs.
+    /// Minimum remaining percentage required in Ava rate-limit windows before memory startup runs.
     #[schemars(range(min = 0, max = 100))]
     pub min_rate_limit_remaining_percent: Option<i64>,
     /// Model used for thread summarisation.
@@ -692,7 +692,7 @@ pub struct AppLinksConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct AppConfig {
-    /// When `false`, Codex does not surface this app.
+    /// When `false`, Ava does not surface this app.
     #[serde(default = "default_enabled")]
     pub enabled: bool,
 
@@ -794,7 +794,7 @@ pub enum OtelExporterKind {
 pub struct OtelConfigToml {
     /// Byte limit for tool-result log output; independent of model-visible output.
     #[serde(default)]
-    pub tool_result: codex_protocol::config_types::ToolResultLogConfig,
+    pub tool_result: ava_protocol::config_types::ToolResultLogConfig,
     /// Log user prompt in traces
     pub log_user_prompt: Option<bool>,
 
@@ -820,7 +820,7 @@ pub struct OtelConfigToml {
 /// Effective OTEL settings after defaults are applied.
 #[derive(Debug, Clone, PartialEq)]
 pub struct OtelConfig {
-    pub tool_result: codex_protocol::config_types::ToolResultLogConfig,
+    pub tool_result: ava_protocol::config_types::ToolResultLogConfig,
     pub log_user_prompt: bool,
     pub environment: String,
     pub exporter: OtelExporterKind,
@@ -933,7 +933,7 @@ pub struct ModelAvailabilityNuxConfig {
     pub shown_count: HashMap<String, u32>,
 }
 
-/// Fallback resize-reflow row cap when Codex cannot identify a terminal-specific scrollback size.
+/// Fallback resize-reflow row cap when Ava cannot identify a terminal-specific scrollback size.
 pub const DEFAULT_TERMINAL_RESIZE_REFLOW_FALLBACK_MAX_ROWS: usize = 1_000;
 
 /// Collection of settings that are specific to the TUI.
@@ -1023,13 +1023,13 @@ pub struct Tui {
     /// Syntax highlighting theme name (kebab-case).
     ///
     /// When set, overrides automatic light/dark theme detection.
-    /// Use `/theme` in the TUI or see `$CODEX_HOME/themes` for custom themes.
+    /// Use `/theme` in the TUI or see `$AVA_HOME/themes` for custom themes.
     #[serde(default)]
     pub theme: Option<String>,
 
     /// Pet id to preselect in the terminal pet picker.
     ///
-    /// Custom pet ids resolve against CODEX_HOME/pets/<pet-id>/pet.json.
+    /// Custom pet ids resolve against AVA_HOME/pets/<pet-id>/pet.json.
     #[serde(default)]
     pub pet: Option<String>,
 
@@ -1060,7 +1060,7 @@ pub struct Tui {
     pub model_availability_nux: ModelAvailabilityNuxConfig,
 
     /// Trim terminal resize-reflow replay to the most recent rendered terminal rows when the
-    /// transcript exceeds this cap. Omit to use Codex's terminal-specific default. Set to `0` to
+    /// transcript exceeds this cap. Omit to use Ava's terminal-specific default. Set to `0` to
     /// keep all rendered rows.
     #[serde(default)]
     #[schemars(range(min = 0))]
@@ -1072,7 +1072,7 @@ const fn default_true() -> bool {
 }
 
 /// Settings for notices we display to users via the tui and app-server clients
-/// (primarily the Codex IDE extension). NOTE: these are different from
+/// (primarily the Ava IDE extension). NOTE: these are different from
 /// notifications - notices are warnings, NUX screens, acknowledgements, etc.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default, JsonSchema)]
 #[schemars(deny_unknown_fields)]
@@ -1096,15 +1096,15 @@ pub struct Notice {
     pub hide_full_access_warning: Option<bool>,
     /// Tracks whether the user has acknowledged the Windows world-writable directories warning.
     pub hide_world_writable_warning: Option<bool>,
-    /// Tracks whether the user opted out of Codex-managed fast defaults.
+    /// Tracks whether the user opted out of Ava-managed fast defaults.
     pub fast_default_opt_out: Option<bool>,
     /// Tracks whether the user opted out of the rate limit model switch reminder.
     pub hide_rate_limit_model_nudge: Option<bool>,
     /// Tracks whether the user has seen the model migration prompt
     pub hide_gpt5_1_migration_prompt: Option<bool>,
-    /// Tracks whether the user has seen the gpt-5.1-codex-max migration prompt
-    #[serde(rename = "hide_gpt-5.1-codex-max_migration_prompt")]
-    pub hide_gpt_5_1_codex_max_migration_prompt: Option<bool>,
+    /// Tracks whether the user has seen the gpt-5.1-ava-max migration prompt
+    #[serde(rename = "hide_gpt-5.1-ava-max_migration_prompt")]
+    pub hide_gpt_5_1_ava_max_migration_prompt: Option<bool>,
     /// Tracks acknowledged model migrations as old->new model slug mappings.
     #[serde(default)]
     pub model_migrations: BTreeMap<String, String>,
@@ -1135,7 +1135,7 @@ pub struct PluginConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct PluginMcpServerConfig {
-    /// When `false`, Codex skips initializing this plugin MCP server.
+    /// When `false`, Ava skips initializing this plugin MCP server.
     #[serde(default = "default_enabled")]
     pub enabled: bool,
 
@@ -1218,10 +1218,10 @@ impl PluginMcpServerEmaAuthConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct MarketplaceConfig {
-    /// Last time Codex successfully added or refreshed this marketplace.
+    /// Last time Ava successfully added or refreshed this marketplace.
     #[serde(default)]
     pub last_updated: Option<String>,
-    /// Git revision Codex last successfully activated for this marketplace.
+    /// Git revision Ava last successfully activated for this marketplace.
     #[serde(default)]
     pub last_revision: Option<String>,
     /// Source kind used to install this marketplace.
@@ -1262,5 +1262,5 @@ pub struct SandboxWorkspaceWrite {
 #[path = "types_tests.rs"]
 mod tests;
 
-pub use codex_protocol::user_profile::PersonalityPreset;
-pub use codex_protocol::user_profile::UserProfileConfig;
+pub use ava_protocol::user_profile::PersonalityPreset;
+pub use ava_protocol::user_profile::UserProfileConfig;

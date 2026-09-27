@@ -1,10 +1,10 @@
-use codex_apply_patch::ApplyPatchOptions;
-use codex_apply_patch::MaybeApplyPatchVerified;
-use codex_apply_patch::apply_patch_with_options;
-use codex_apply_patch::parse_patch;
-use codex_apply_patch::verify_apply_patch_args;
-use codex_exec_server::LOCAL_FS;
-use codex_utils_path_uri::PathUri;
+use ava_apply_patch::ApplyPatchOptions;
+use ava_apply_patch::MaybeApplyPatchVerified;
+use ava_apply_patch::apply_patch_with_options;
+use ava_apply_patch::parse_patch;
+use ava_apply_patch::verify_apply_patch_args;
+use ava_exec_server::LOCAL_FS;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 use std::fs;
 use std::os::unix::fs::symlink;
@@ -136,7 +136,7 @@ async fn no_follow_applies_regular_files_and_default_still_follows_links() -> an
     assert!(!root.join("remove.txt").exists());
 
     symlink(root.join("moved/file.txt"), root.join("link.txt"))?;
-    codex_apply_patch::apply_patch(
+    ava_apply_patch::apply_patch(
         "*** Begin Patch\n*** Update File: link.txt\n@@\n-changed\n+followed\n*** End Patch",
         &cwd,
         &mut Vec::new(),

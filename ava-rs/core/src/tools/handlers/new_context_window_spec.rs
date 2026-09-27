@@ -1,6 +1,6 @@
-use codex_tools::JsonSchema;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolSpec;
+use ava_tools::JsonSchema;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolSpec;
 use std::collections::BTreeMap;
 
 pub(crate) const NEW_CONTEXT_WINDOW_TOOL_NAME: &str = "new_context";

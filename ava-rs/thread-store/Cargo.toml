@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 license.workspace = true
-name = "codex-thread-store"
+name = "ava-thread-store"
 version.workspace = true
 
 [lib]
-name = "codex_thread_store"
+name = "ava_thread_store"
 path = "src/lib.rs"
 doctest = false
 
@@ -14,17 +14,17 @@ workspace = true
 
 [dependencies]
 chrono = { workspace = true, features = ["serde"] }
-codex-app-server-protocol = { workspace = true }
-codex-extension-items = { workspace = true }
-codex-git-utils = { workspace = true }
-codex-install-context = { workspace = true }
-codex-otel = { workspace = true }
-codex-protocol = { workspace = true }
-codex-rollout = { workspace = true }
-codex-state = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-path = { workspace = true }
-codex-utils-path-uri = { workspace = true }
+ava-app-server-protocol = { workspace = true }
+ava-extension-items = { workspace = true }
+ava-git-utils = { workspace = true }
+ava-install-context = { workspace = true }
+ava-otel = { workspace = true }
+ava-protocol = { workspace = true }
+ava-rollout = { workspace = true }
+ava-state = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-path = { workspace = true }
+ava-utils-path-uri = { workspace = true }
 futures = { workspace = true }
 pulldown-cmark = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -36,7 +36,7 @@ tracing = { workspace = true }
 zstd = { workspace = true }
 
 [dev-dependencies]
-codex-utils-absolute-path = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

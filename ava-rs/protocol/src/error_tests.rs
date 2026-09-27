@@ -5,19 +5,19 @@ use chrono::DateTime;
 use chrono::Duration as ChronoDuration;
 use chrono::TimeZone;
 use chrono::Utc;
-use codex_http_client::HttpResponse;
+use ava_http_client::HttpResponse;
 use http::Response as RawHttpResponse;
 use http::StatusCode;
 use pretty_assertions::assert_eq;
 use std::time::Duration;
 
 #[test]
-fn codex_err_debug_preserves_legacy_shape() {
+fn ava_err_debug_preserves_legacy_shape() {
     let actual = [
-        CodexErr::Timeout,
-        CodexErr::Stream("disconnected".to_string()),
-        CodexErr::Stream("retry later".to_string()).with_retry_delay(Duration::from_secs(2)),
-        CodexErr::InternalServerError.with_retry_delay(Duration::from_secs(3)),
+        AvaErr::Timeout,
+        AvaErr::Stream("disconnected".to_string()),
+        AvaErr::Stream("retry later".to_string()).with_retry_delay(Duration::from_secs(2)),
+        AvaErr::InternalServerError.with_retry_delay(Duration::from_secs(3)),
     ]
     .map(|err| format!("{err:?}"));
 
@@ -35,20 +35,20 @@ fn codex_err_debug_preserves_legacy_shape() {
 #[test]
 fn retryability_preserves_error_details_distinctions() {
     let errors = [
-        (CodexErr::ServerOverloaded, false),
+        (AvaErr::ServerOverloaded, false),
         (
-            CodexErr::new(CodexErrorDetails::RateLimitExceeded("retry later".into())),
+            AvaErr::new(AvaErrorDetails::RateLimitExceeded("retry later".into())),
             true,
         ),
         (
-            CodexErr::RetryLimit(RetryLimitReachedError {
+            AvaErr::RetryLimit(RetryLimitReachedError {
                 status: StatusCode::TOO_MANY_REQUESTS,
                 request_id: None,
             }),
             false,
         ),
         (
-            CodexErr::UnexpectedStatus(UnexpectedResponseError {
+            AvaErr::UnexpectedStatus(UnexpectedResponseError {
                 status: StatusCode::TOO_MANY_REQUESTS,
                 body: String::new(),
                 user_message: None,
@@ -61,10 +61,10 @@ fn retryability_preserves_error_details_distinctions() {
             true,
         ),
         (
-            CodexErrorDetails::ToolCollision("functions.update_plan".to_string()).into(),
+            AvaErrorDetails::ToolCollision("functions.update_plan".to_string()).into(),
             false,
         ),
-        (CodexErr::InternalServerError, true),
+        (AvaErr::InternalServerError, true),
     ];
 
     for (err, expected) in errors {
@@ -80,7 +80,7 @@ fn retryability_preserves_error_details_distinctions() {
 /// make a terminal error retryable.
 #[test]
 fn retry_delay_distinguishes_server_advice_backoff_and_terminal_errors() {
-    let error = CodexErr::InternalServerError;
+    let error = AvaErr::InternalServerError;
     for (retry_count, expected_millis) in [(1, 180..220), (3, 720..880)] {
         let delay = error.retry_delay(retry_count).expect("retryable error");
         assert!(expected_millis.contains(&delay.as_millis()));
@@ -98,7 +98,7 @@ fn retry_delay_distinguishes_server_advice_backoff_and_terminal_errors() {
         (Some(advice), Some(advice), Some(advice)),
     );
 
-    let error = CodexErr::QuotaExceeded.with_retry_delay(advice);
+    let error = AvaErr::QuotaExceeded.with_retry_delay(advice);
     assert_eq!(
         (
             error.retry_delay(/*retry_count*/ 1),
@@ -203,10 +203,10 @@ fn usage_limit_reached_error_formats_rate_limit_reached_types() {
 
 #[test]
 fn server_overloaded_maps_to_protocol() {
-    let err = CodexErr::ServerOverloaded;
+    let err = AvaErr::ServerOverloaded;
     assert_eq!(
-        err.to_codex_protocol_error(),
-        CodexErrorInfo::ServerOverloaded
+        err.to_ava_protocol_error(),
+        AvaErrorInfo::ServerOverloaded
     );
 }
 
@@ -220,7 +220,7 @@ fn sandbox_denied_uses_aggregated_output_when_stderr_empty() {
         duration: Duration::from_millis(10),
         timed_out: false,
     };
-    let err = CodexErr::Sandbox(SandboxErr::Denied {
+    let err = AvaErr::Sandbox(SandboxErr::Denied {
         output: Box::new(output),
         network_policy_decision: None,
     });
@@ -237,7 +237,7 @@ fn sandbox_denied_reports_both_streams_when_available() {
         duration: Duration::from_millis(10),
         timed_out: false,
     };
-    let err = CodexErr::Sandbox(SandboxErr::Denied {
+    let err = AvaErr::Sandbox(SandboxErr::Denied {
         output: Box::new(output),
         network_policy_decision: None,
     });
@@ -254,7 +254,7 @@ fn sandbox_denied_reports_stdout_when_no_stderr() {
         duration: Duration::from_millis(8),
         timed_out: false,
     };
-    let err = CodexErr::Sandbox(SandboxErr::Denied {
+    let err = AvaErr::Sandbox(SandboxErr::Denied {
         output: Box::new(output),
         network_policy_decision: None,
     });
@@ -271,7 +271,7 @@ fn to_error_event_handles_response_stream_failed() {
         .error_for_status_ref()
         .unwrap_err()
         .with_url("http://example.com".parse().unwrap());
-    let err = CodexErr::ResponseStreamFailed(ResponseStreamFailed {
+    let err = AvaErr::ResponseStreamFailed(ResponseStreamFailed {
         source,
         request_id: Some("req-123".to_string()),
     });
@@ -283,8 +283,8 @@ fn to_error_event_handles_response_stream_failed() {
         "prefix: Error while reading the server response: HTTP status client error (429 Too Many Requests) for url (http://example.com/), request id: req-123"
     );
     assert_eq!(
-        event.codex_error_info,
-        Some(CodexErrorInfo::ResponseStreamConnectionFailed {
+        event.ava_error_info,
+        Some(AvaErrorInfo::ResponseStreamConnectionFailed {
             http_status_code: Some(429)
         })
     );
@@ -300,7 +300,7 @@ fn sandbox_denied_reports_exit_code_when_no_output_available() {
         duration: Duration::from_millis(5),
         timed_out: false,
     };
-    let err = CodexErr::Sandbox(SandboxErr::Denied {
+    let err = AvaErr::Sandbox(SandboxErr::Denied {
         output: Box::new(output),
         network_policy_decision: None,
     });
@@ -321,7 +321,7 @@ fn usage_limit_reached_error_formats_free_plan() {
     };
     assert_eq!(
         err.to_string(),
-        "You’ve hit your usage limit. Upgrade to Plus to continue using Codex (https://chatgpt.com/explore/plus), or try again later."
+        "You’ve hit your usage limit. Upgrade to Plus to continue using Ava (https://chatgpt.com/explore/plus), or try again later."
     );
 }
 
@@ -336,7 +336,7 @@ fn usage_limit_reached_error_formats_go_plan() {
     };
     assert_eq!(
         err.to_string(),
-        "You’ve hit your usage limit. Upgrade to Plus to continue using Codex (https://chatgpt.com/explore/plus), or try again later."
+        "You’ve hit your usage limit. Upgrade to Plus to continue using Ava (https://chatgpt.com/explore/plus), or try again later."
     );
 }
 
@@ -484,7 +484,7 @@ fn usage_limit_reached_error_formats_pro_plan_with_reset() {
 }
 
 #[test]
-fn usage_limit_reached_error_hides_upsell_for_non_codex_limit_name() {
+fn usage_limit_reached_error_hides_upsell_for_non_ava_limit_name() {
     let base = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
     let resets_at = base + ChronoDuration::hours(1);
     with_now_override(base, move || {
@@ -493,8 +493,8 @@ fn usage_limit_reached_error_hides_upsell_for_non_codex_limit_name() {
             plan_type: Some(PlanType::Known(KnownPlan::Plus)),
             resets_at: Some(resets_at),
             rate_limits: Some(Box::new(RateLimitSnapshot {
-                limit_id: Some("codex_other".to_string()),
-                limit_name: Some("codex_other".to_string()),
+                limit_id: Some("ava_other".to_string()),
+                limit_name: Some("ava_other".to_string()),
                 ..rate_limit_snapshot()
             })),
             promo_message: Some(
@@ -504,7 +504,7 @@ fn usage_limit_reached_error_hides_upsell_for_non_codex_limit_name() {
             rate_limit_reached_type: None,
         };
         let expected = format!(
-            "You’ve hit your usage limit for codex_other. Switch to another model now, or try again at {expected_time}."
+            "You’ve hit your usage limit for ava_other. Switch to another model now, or try again at {expected_time}."
         );
         assert_eq!(err.to_string(), expected);
     });
@@ -722,12 +722,12 @@ fn usage_limit_reached_with_promo_message() {
             resets_at: Some(resets_at),
             rate_limits: Some(Box::new(rate_limit_snapshot())),
             promo_message: Some(
-                "To continue using Codex, start a free trial of <PLAN> today".to_string(),
+                "To continue using Ava, start a free trial of <PLAN> today".to_string(),
             ),
             rate_limit_reached_type: None,
         };
         let expected = format!(
-            "You’ve hit your usage limit. To continue using Codex, start a free trial of <PLAN> today, or try again at {expected_time}."
+            "You’ve hit your usage limit. To continue using Ava, start a free trial of <PLAN> today, or try again at {expected_time}."
         );
         assert_eq!(err.to_string(), expected);
     });

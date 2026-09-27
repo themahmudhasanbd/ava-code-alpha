@@ -1,13 +1,13 @@
 //! Plugin lifecycle, usage, measurements, and event deduplication tests.
 
 use crate::client::AnalyticsEventsQueue;
-use crate::events::CodexPluginEventRequest;
-use crate::events::CodexPluginInstallFailedEventRequest;
-use crate::events::CodexPluginInstallFailedMetadata;
-use crate::events::CodexPluginUsedEventRequest;
+use crate::events::AvaPluginEventRequest;
+use crate::events::AvaPluginInstallFailedEventRequest;
+use crate::events::AvaPluginInstallFailedMetadata;
+use crate::events::AvaPluginUsedEventRequest;
 use crate::events::TrackEventRequest;
-use crate::events::codex_plugin_metadata;
-use crate::events::codex_plugin_used_metadata;
+use crate::events::ava_plugin_metadata;
+use crate::events::ava_plugin_used_metadata;
 use crate::facts::AnalyticsFact;
 use crate::facts::CustomAnalyticsFact;
 use crate::facts::PluginInstallFailedInput;
@@ -25,8 +25,8 @@ use crate::reducer::AnalyticsReducer;
 use crate::tests::support::TEST_PRODUCT_CLIENT_ID;
 use crate::tests::support::sample_plugin_metadata;
 use crate::tests::support::test_tracking_context;
-use codex_login::default_client::originator;
-use codex_plugin::PluginTelemetryMetadata;
+use ava_login::default_client::originator;
+use ava_plugin::PluginTelemetryMetadata;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -40,7 +40,7 @@ fn plugin_measurements(rows: Vec<PluginMeasurementRow>) -> PluginMeasurementsInp
         thread_id: "thread-1".to_string(),
         turn_id: "turn-1".to_string(),
         item_id: "item-1".to_string(),
-        originator: "codex_cli_rs".to_string(),
+        originator: "ava_cli_rs".to_string(),
         model_slug: None,
         reasoning_effort: None,
         plugin_id: "sample@openai-curated".to_string(),
@@ -93,7 +93,7 @@ async fn plugin_measurement_batch_emits_directly_and_filters_invalid_rows() {
         payload,
         json!([
             {
-                "event_type": "codex_plugin_measurement_event",
+                "event_type": "ava_plugin_measurement_event",
                 "event_params": {
                     "thread_id": "thread-1",
                     "turn_id": "turn-1",
@@ -102,7 +102,7 @@ async fn plugin_measurement_batch_emits_directly_and_filters_invalid_rows() {
                     "execution_id": "execution-1",
                     "operation": "security_scan",
                     "measurement_name": "finding_count",
-                    "originator": "codex_cli_rs",
+                    "originator": "ava_cli_rs",
                     "model_slug": "invoking-model",
                     "reasoning_effort": "max",
                     "number_value": 3.0,
@@ -110,7 +110,7 @@ async fn plugin_measurement_batch_emits_directly_and_filters_invalid_rows() {
                 },
             },
             {
-                "event_type": "codex_plugin_measurement_event",
+                "event_type": "ava_plugin_measurement_event",
                 "event_params": {
                     "thread_id": "thread-1",
                     "turn_id": "turn-1",
@@ -119,7 +119,7 @@ async fn plugin_measurement_batch_emits_directly_and_filters_invalid_rows() {
                     "execution_id": "execution-1",
                     "operation": "security_scan",
                     "measurement_name": "files_scanned",
-                    "originator": "codex_cli_rs",
+                    "originator": "ava_cli_rs",
                     "model_slug": "invoking-model",
                     "reasoning_effort": "max",
                     "number_value": 17.0,
@@ -133,9 +133,9 @@ async fn plugin_measurement_batch_emits_directly_and_filters_invalid_rows() {
 #[test]
 fn plugin_used_event_serializes_expected_shape() {
     let tracking = test_tracking_context("thread-3", "turn-3");
-    let event = TrackEventRequest::PluginUsed(CodexPluginUsedEventRequest {
-        event_type: "codex_plugin_used",
-        event_params: codex_plugin_used_metadata(&tracking, sample_plugin_metadata()),
+    let event = TrackEventRequest::PluginUsed(AvaPluginUsedEventRequest {
+        event_type: "ava_plugin_used",
+        event_params: ava_plugin_used_metadata(&tracking, sample_plugin_metadata()),
     });
 
     let payload = serde_json::to_value(&event).expect("serialize plugin used event");
@@ -143,7 +143,7 @@ fn plugin_used_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_plugin_used",
+            "event_type": "ava_plugin_used",
             "event_params": {
                 "plugin_id": "sample@test",
                 "remote_plugin_id": null,
@@ -186,15 +186,15 @@ async fn reducer_ingests_plugin_used_fact() {
             event.event_type,
             event.event_params.plugin.product_client_id.as_deref()
         ),
-        ("codex_plugin_used", Some(TEST_PRODUCT_CLIENT_ID))
+        ("ava_plugin_used", Some(TEST_PRODUCT_CLIENT_ID))
     );
 }
 
 #[test]
 fn plugin_management_event_serializes_expected_shape() {
-    let event = TrackEventRequest::PluginInstalled(CodexPluginEventRequest {
-        event_type: "codex_plugin_installed",
-        event_params: codex_plugin_metadata(sample_plugin_metadata()),
+    let event = TrackEventRequest::PluginInstalled(AvaPluginEventRequest {
+        event_type: "ava_plugin_installed",
+        event_params: ava_plugin_metadata(sample_plugin_metadata()),
     });
 
     let payload = serde_json::to_value(&event).expect("serialize plugin installed event");
@@ -202,7 +202,7 @@ fn plugin_management_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_plugin_installed",
+            "event_type": "ava_plugin_installed",
             "event_params": {
                 "plugin_id": "sample@test",
                 "remote_plugin_id": null,
@@ -219,10 +219,10 @@ fn plugin_management_event_serializes_expected_shape() {
 
 #[test]
 fn plugin_install_failed_event_serializes_expected_shape() {
-    let event = TrackEventRequest::PluginInstallFailed(CodexPluginInstallFailedEventRequest {
-        event_type: "codex_plugin_install_failed",
-        event_params: CodexPluginInstallFailedMetadata {
-            plugin: codex_plugin_metadata(sample_plugin_metadata()),
+    let event = TrackEventRequest::PluginInstallFailed(AvaPluginInstallFailedEventRequest {
+        event_type: "ava_plugin_install_failed",
+        event_params: AvaPluginInstallFailedMetadata {
+            plugin: ava_plugin_metadata(sample_plugin_metadata()),
             source: PluginInstallSource::Manual,
             error_type: "store_io".to_string(),
             sub_error_type: Some("failed_to_copy_plugin_file".to_string()),
@@ -234,7 +234,7 @@ fn plugin_install_failed_event_serializes_expected_shape() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_plugin_install_failed",
+            "event_type": "ava_plugin_install_failed",
             "event_params": {
                 "plugin_id": "sample@test",
                 "remote_plugin_id": null,
@@ -256,9 +256,9 @@ fn plugin_install_failed_event_serializes_expected_shape() {
 fn plugin_management_event_keeps_plugin_id_local_when_remote_id_exists() {
     let mut plugin = sample_plugin_metadata();
     plugin.remote_plugin_id = Some("plugins~Plugin_remote".to_string());
-    let event = TrackEventRequest::PluginInstalled(CodexPluginEventRequest {
-        event_type: "codex_plugin_installed",
-        event_params: codex_plugin_metadata(plugin),
+    let event = TrackEventRequest::PluginInstalled(AvaPluginEventRequest {
+        event_type: "ava_plugin_installed",
+        event_params: ava_plugin_metadata(plugin),
     });
 
     let payload = serde_json::to_value(&event).expect("serialize plugin installed event");
@@ -266,7 +266,7 @@ fn plugin_management_event_keeps_plugin_id_local_when_remote_id_exists() {
     assert_eq!(
         payload,
         json!({
-            "event_type": "codex_plugin_installed",
+            "event_type": "ava_plugin_installed",
             "event_params": {
                 "plugin_id": "sample@test",
                 "remote_plugin_id": "plugins~Plugin_remote",
@@ -320,7 +320,7 @@ async fn reducer_ingests_plugin_state_changed_fact() {
     assert_eq!(
         payload,
         json!([{
-            "event_type": "codex_plugin_disabled",
+            "event_type": "ava_plugin_disabled",
             "event_params": {
                 "plugin_id": "sample@test",
                 "remote_plugin_id": null,
@@ -371,7 +371,7 @@ async fn reducer_ingests_plugin_install_requested_fact() {
     assert_eq!(
         serde_json::to_value(&events).expect("serialize events"),
         json!([{
-            "event_type": "codex_plugin_install_requested",
+            "event_type": "ava_plugin_install_requested",
             "event_params": {
                 "suggestion_id": "request_plugin_install_call-1",
                 "plugins": [{
@@ -418,7 +418,7 @@ async fn reducer_ingests_plugin_install_failed_fact() {
     assert_eq!(
         payload,
         json!([{
-            "event_type": "codex_plugin_install_failed",
+            "event_type": "ava_plugin_install_failed",
             "event_params": {
                 "plugin_id": "sample@test",
                 "remote_plugin_id": null,
@@ -464,7 +464,7 @@ async fn reducer_ingests_plugin_install_failed_fact_without_detail() {
     assert_eq!(
         payload,
         json!([{
-            "event_type": "codex_plugin_install_failed",
+            "event_type": "ava_plugin_install_failed",
             "event_params": {
                 "plugin_id": null,
                 "remote_plugin_id": "plugins~Plugin_00000000000000000000000000000000",

@@ -8,7 +8,7 @@ import { TooltipButton } from "./ui";
  * Renderer-drawn window controls for Windows/Linux (D-frameless chrome).
  *
  * macOS keeps native inset traffic lights; other platforms run a frameless
- * window, so minimize/maximize/close live here — flat Codex-style glyph
+ * window, so minimize/maximize/close live here — flat Ava-style glyph
  * buttons pinned to the top-right of the 46px titlebar band. AppShell owns a
  * single control band outside the conversation and work-panel stacking contexts.
  */

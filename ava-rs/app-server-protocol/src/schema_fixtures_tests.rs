@@ -97,17 +97,17 @@ fn experimental_precomputed_exports_match_generated() -> Result<()> {
 #[test]
 #[ignore = "invoked by `just write-app-server-schema`"]
 fn write_schema_fixtures_from_env() -> Result<()> {
-    let schema_root = std::env::var_os("CODEX_APP_SERVER_SCHEMA_ROOT")
+    let schema_root = std::env::var_os("AVA_APP_SERVER_SCHEMA_ROOT")
         .map(PathBuf::from)
-        .context("CODEX_APP_SERVER_SCHEMA_ROOT must be set")?;
-    let prettier = std::env::var_os("CODEX_APP_SERVER_SCHEMA_PRETTIER").map(PathBuf::from);
-    let experimental = std::env::var("CODEX_APP_SERVER_SCHEMA_EXPERIMENTAL")
-        .context("CODEX_APP_SERVER_SCHEMA_EXPERIMENTAL must be set")?;
+        .context("AVA_APP_SERVER_SCHEMA_ROOT must be set")?;
+    let prettier = std::env::var_os("AVA_APP_SERVER_SCHEMA_PRETTIER").map(PathBuf::from);
+    let experimental = std::env::var("AVA_APP_SERVER_SCHEMA_EXPERIMENTAL")
+        .context("AVA_APP_SERVER_SCHEMA_EXPERIMENTAL must be set")?;
     let experimental_api = match experimental.as_str() {
         "0" => false,
         "1" => true,
         value => {
-            anyhow::bail!("CODEX_APP_SERVER_SCHEMA_EXPERIMENTAL must be 0 or 1, got {value:?}")
+            anyhow::bail!("AVA_APP_SERVER_SCHEMA_EXPERIMENTAL must be 0 or 1, got {value:?}")
         }
     };
 
@@ -210,7 +210,7 @@ Run `just write-app-server-schema` to overwrite with your changes.\n\n{diff}",
 }
 
 fn schema_root() -> Result<PathBuf> {
-    let typescript_index = codex_utils_cargo_bin::find_resource!("schema/typescript/index.ts")
+    let typescript_index = ava_utils_cargo_bin::find_resource!("schema/typescript/index.ts")
         .context("resolve TypeScript schema index.ts")?;
     let schema_root = typescript_index
         .parent()
@@ -219,12 +219,12 @@ fn schema_root() -> Result<PathBuf> {
         .to_path_buf();
 
     let json_bundle =
-        codex_utils_cargo_bin::find_resource!("schema/json/codex_app_server_protocol.schemas.json")
+        ava_utils_cargo_bin::find_resource!("schema/json/ava_app_server_protocol.schemas.json")
             .context("resolve JSON schema bundle")?;
     let json_root = json_bundle
         .parent()
         .and_then(|p| p.parent())
-        .context("derive schema root from schema/json/codex_app_server_protocol.schemas.json")?;
+        .context("derive schema root from schema/json/ava_app_server_protocol.schemas.json")?;
     anyhow::ensure!(
         schema_root == json_root,
         "schema roots disagree: typescript={} json={}",

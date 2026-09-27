@@ -13,7 +13,7 @@ use crate::export::GeneratedSchema;
 use crate::export::write_json_schema;
 use crate::protocol::v1;
 use crate::protocol::v2;
-use codex_experimental_api_macros::ExperimentalApi;
+use ava_experimental_api_macros::ExperimentalApi;
 use serde::Deserialize;
 use serde::Serialize;
 use strum_macros::Display;
@@ -22,9 +22,9 @@ use strum_macros::Display;
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Display, JsonSchema, TS)]
 #[serde(rename_all = "lowercase")]
 pub enum AuthMode {
-    /// OpenAI API key provided by the caller and stored by Codex.
+    /// OpenAI API key provided by the caller and stored by Ava.
     ApiKey,
-    /// ChatGPT OAuth managed by Codex (tokens persisted and refreshed by Codex).
+    /// ChatGPT OAuth managed by Ava (tokens persisted and refreshed by Ava).
     Chatgpt,
     /// [UNSTABLE] FOR OPENAI INTERNAL USE ONLY - DO NOT USE.
     ///
@@ -39,22 +39,22 @@ pub enum AuthMode {
     #[ts(rename = "headers")]
     #[strum(serialize = "headers")]
     Headers,
-    /// Programmatic Codex auth backed by a registered Agent Identity.
+    /// Programmatic Ava auth backed by a registered Agent Identity.
     #[serde(rename = "agentIdentity")]
     #[ts(rename = "agentIdentity")]
     #[strum(serialize = "agentIdentity")]
     AgentIdentity,
-    /// Programmatic Codex auth backed by a personal access token.
+    /// Programmatic Ava auth backed by a personal access token.
     #[serde(rename = "personalAccessToken")]
     #[ts(rename = "personalAccessToken")]
     #[strum(serialize = "personalAccessToken")]
     PersonalAccessToken,
-    /// Amazon Bedrock bearer token managed by Codex.
+    /// Amazon Bedrock bearer token managed by Ava.
     #[serde(rename = "bedrockApiKey")]
     #[ts(rename = "bedrockApiKey")]
     #[strum(serialize = "bedrockApiKey")]
     BedrockApiKey,
-    /// Amazon Bedrock AWS access keys managed by Codex.
+    /// Amazon Bedrock AWS access keys managed by Ava.
     #[serde(rename = "bedrockAccessKeys")]
     #[ts(rename = "bedrockAccessKeys")]
     #[strum(serialize = "bedrockAccessKeys")]
@@ -74,8 +74,8 @@ impl AuthMode {
         }
     }
 
-    /// Returns whether this mode is backed by Codex services rather than a direct model API.
-    pub fn uses_codex_backend(self) -> bool {
+    /// Returns whether this mode is backed by Ava services rather than a direct model API.
+    pub fn uses_ava_backend(self) -> bool {
         match self {
             Self::Chatgpt
             | Self::ChatgptAuthTokens
@@ -1361,7 +1361,7 @@ client_request_definitions! {
         response: v2::CommandExecResizeResponse,
     },
     #[experimental("process/spawn")]
-    /// Spawn a standalone process (argv vector) without a Codex sandbox.
+    /// Spawn a standalone process (argv vector) without a Ava sandbox.
     ProcessSpawn => "process/spawn" {
         params: v2::ProcessSpawnParams,
         serialization: process_handle(params.process_handle),
@@ -1850,7 +1850,7 @@ pub struct FuzzyFileSearchParams {
     pub cancellation_token: Option<String>,
 }
 
-/// Superset of [`codex_file_search::FileMatch`]
+/// Superset of [`ava_file_search::FileMatch`]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
 pub struct FuzzyFileSearchResult {
     pub root: String,
@@ -1962,7 +1962,7 @@ server_notification_definitions! {
     #[experimental("autoApprovalReview/strictReviewRequired")]
     StrictReviewRequired => "autoApprovalReview/strictReviewRequired" (v2::StrictReviewRequiredNotification),
     ItemCompleted => "item/completed" (v2::ItemCompletedNotification),
-    /// This event is internal-only. Used by Codex Cloud.
+    /// This event is internal-only. Used by Ava Cloud.
     RawResponseItemCompleted => "rawResponseItem/completed" (v2::RawResponseItemCompletedNotification),
     /// This event is internal-only. Used by clients that need exact upstream usage.
     RawResponseCompleted => "rawResponse/completed" (v2::RawResponseCompletedNotification),
@@ -2074,19 +2074,19 @@ client_notification_definitions! {
 mod tests {
     use super::*;
     use anyhow::Result;
-    use codex_protocol::ThreadId;
-    use codex_protocol::account::PlanType;
-    use codex_protocol::config_types::MultiAgentMode;
-    use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
-    use codex_protocol::parse_command::ParsedCommand;
-    use codex_protocol::protocol::CodexResponseHandoffMode;
-    use codex_protocol::protocol::ConversationTextRole;
-    use codex_protocol::protocol::RealtimeConversationVersion;
-    use codex_protocol::protocol::RealtimeOutputModality;
-    use codex_protocol::protocol::RealtimeVoice;
-    use codex_utils_absolute_path::AbsolutePathBuf;
-    use codex_utils_absolute_path::test_support::PathBufExt;
-    use codex_utils_absolute_path::test_support::test_path_buf;
+    use ava_protocol::ThreadId;
+    use ava_protocol::account::PlanType;
+    use ava_protocol::config_types::MultiAgentMode;
+    use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
+    use ava_protocol::parse_command::ParsedCommand;
+    use ava_protocol::protocol::AvaResponseHandoffMode;
+    use ava_protocol::protocol::ConversationTextRole;
+    use ava_protocol::protocol::RealtimeConversationVersion;
+    use ava_protocol::protocol::RealtimeOutputModality;
+    use ava_protocol::protocol::RealtimeVoice;
+    use ava_utils_absolute_path::AbsolutePathBuf;
+    use ava_utils_absolute_path::test_support::PathBufExt;
+    use ava_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use std::path::PathBuf;
@@ -2121,7 +2121,7 @@ mod tests {
                 id: RequestId::Integer(1),
                 method: "thread/archive".to_string(),
                 params: Some(json!({"threadId": "thread-1"})),
-                trace: Some(codex_protocol::protocol::W3cTraceContext {
+                trace: Some(ava_protocol::protocol::W3cTraceContext {
                     traceparent: Some("traceparent".to_string()),
                     tracestate: Some("tracestate".to_string()),
                 }),
@@ -2745,8 +2745,8 @@ mod tests {
             request_id: RequestId::Integer(42),
             params: v1::InitializeParams {
                 client_info: v1::ClientInfo {
-                    name: "codex_vscode".to_string(),
-                    title: Some("Codex VS Code Extension".to_string()),
+                    name: "ava_vscode".to_string(),
+                    title: Some("Ava VS Code Extension".to_string()),
                     version: "0.1.0".to_string(),
                 },
                 capabilities: Some(v1::InitializeCapabilities {
@@ -2773,8 +2773,8 @@ mod tests {
                 "id": 42,
                 "params": {
                     "clientInfo": {
-                        "name": "codex_vscode",
-                        "title": "Codex VS Code Extension",
+                        "name": "ava_vscode",
+                        "title": "Ava VS Code Extension",
                         "version": "0.1.0"
                     },
                     "capabilities": {
@@ -2805,8 +2805,8 @@ mod tests {
             "id": 42,
             "params": {
                 "clientInfo": {
-                    "name": "codex_vscode",
-                    "title": "Codex VS Code Extension",
+                    "name": "ava_vscode",
+                    "title": "Ava VS Code Extension",
                     "version": "0.1.0"
                 },
                 "capabilities": {
@@ -2832,8 +2832,8 @@ mod tests {
                 request_id: RequestId::Integer(42),
                 params: v1::InitializeParams {
                     client_info: v1::ClientInfo {
-                        name: "codex_vscode".to_string(),
-                        title: Some("Codex VS Code Extension".to_string()),
+                        name: "ava_vscode".to_string(),
+                        title: Some("Ava VS Code Extension".to_string()),
                         version: "0.1.0".to_string(),
                     },
                     capabilities: Some(v1::InitializeCapabilities {
@@ -3048,7 +3048,7 @@ mod tests {
         let params = v2::McpServerElicitationRequestParams {
             thread_id: "thr_123".to_string(),
             turn_id: Some("turn_123".to_string()),
-            server_name: "codex_apps".to_string(),
+            server_name: "ava_apps".to_string(),
             request: v2::McpServerElicitationRequest::Form {
                 meta: Some(json!({
                     "suggestion_id": "request_plugin_install_install-github"
@@ -3069,7 +3069,7 @@ mod tests {
                 "params": {
                     "threadId": "thr_123",
                     "turnId": "turn_123",
-                    "serverName": "codex_apps",
+                    "serverName": "ava_apps",
                     "mode": "form",
                     "_meta": {
                         "suggestion_id": "request_plugin_install_install-github"
@@ -3243,7 +3243,7 @@ mod tests {
                 cwd,
                 runtime_workspace_roots: Vec::new(),
                 instruction_sources: vec![
-                    codex_utils_path_uri::LegacyAppPathString::from_abs_path(&absolute_path(
+                    ava_utils_path_uri::LegacyAppPathString::from_abs_path(&absolute_path(
                         "/tmp/AGENTS.md",
                     )),
                 ],
@@ -3415,7 +3415,7 @@ mod tests {
             request_id: RequestId::Integer(3),
             params: v2::LoginAccountParams::Chatgpt {
                 app_brand: None,
-                codex_streamlined_login: false,
+                ava_streamlined_login: false,
                 use_hosted_login_success_page: false,
             },
         };
@@ -3439,7 +3439,7 @@ mod tests {
             request_id: RequestId::Integer(3),
             params: v2::LoginAccountParams::Chatgpt {
                 app_brand: None,
-                codex_streamlined_login: true,
+                ava_streamlined_login: true,
                 use_hosted_login_success_page: false,
             },
         };
@@ -3450,7 +3450,7 @@ mod tests {
                 "params": {
                     "type": "chatgpt",
                     "appBrand": null,
-                    "codexStreamlinedLogin": true
+                    "avaStreamlinedLogin": true
                 }
             }),
             serde_json::to_value(&request)?,
@@ -3464,7 +3464,7 @@ mod tests {
             request_id: RequestId::Integer(3),
             params: v2::LoginAccountParams::Chatgpt {
                 app_brand: Some(v2::LoginAppBrand::Chatgpt),
-                codex_streamlined_login: true,
+                ava_streamlined_login: true,
                 use_hosted_login_success_page: true,
             },
         };
@@ -3475,7 +3475,7 @@ mod tests {
                 "params": {
                     "type": "chatgpt",
                     "appBrand": "chatgpt",
-                    "codexStreamlinedLogin": true,
+                    "avaStreamlinedLogin": true,
                     "useHostedLoginSuccessPage": true
                 }
             }),
@@ -3616,24 +3616,24 @@ mod tests {
             serde_json::to_value(&chatgpt_without_email)?,
         );
 
-        let codex_managed_bedrock = v2::Account::AmazonBedrock {
-            uses_codex_managed_credentials: true,
+        let ava_managed_bedrock = v2::Account::AmazonBedrock {
+            uses_ava_managed_credentials: true,
         };
         assert_eq!(
             json!({
                 "type": "amazonBedrock",
-                "usesCodexManagedCredentials": true,
+                "usesAvaManagedCredentials": true,
             }),
-            serde_json::to_value(&codex_managed_bedrock)?,
+            serde_json::to_value(&ava_managed_bedrock)?,
         );
 
         let externally_managed_bedrock = v2::Account::AmazonBedrock {
-            uses_codex_managed_credentials: false,
+            uses_ava_managed_credentials: false,
         };
         assert_eq!(
             json!({
                 "type": "amazonBedrock",
-                "usesCodexManagedCredentials": false,
+                "usesAvaManagedCredentials": false,
             }),
             serde_json::to_value(&externally_managed_bedrock)?,
         );
@@ -3645,7 +3645,7 @@ mod tests {
     fn account_defaults_legacy_bedrock_managed_credentials_flag() -> Result<()> {
         assert_eq!(
             v2::Account::AmazonBedrock {
-                uses_codex_managed_credentials: false,
+                uses_ava_managed_credentials: false,
             },
             serde_json::from_value(json!({
                 "type": "amazonBedrock",
@@ -4010,10 +4010,10 @@ mod tests {
                 client_managed_handoffs: Some(true),
                 delegation_ack_filler: Some(false),
                 flush_transcript_tail_on_session_end: Some(true),
-                codex_responses_as_items: None,
-                codex_response_item_prefix: None,
-                codex_response_handoff_mode: Some(CodexResponseHandoffMode::BemTags),
-                codex_response_handoff_channel_prefixes: Some(std::collections::BTreeMap::from([
+                ava_responses_as_items: None,
+                ava_response_item_prefix: None,
+                ava_response_handoff_mode: Some(AvaResponseHandoffMode::BemTags),
+                ava_response_handoff_channel_prefixes: Some(std::collections::BTreeMap::from([
                     ("analysis".to_string(), vec!["[THINKING]".to_string()]),
                     (
                         "commentary".to_string(),
@@ -4053,10 +4053,10 @@ mod tests {
                     "clientManagedHandoffs": true,
                     "delegationAckFiller": false,
                     "flushTranscriptTailOnSessionEnd": true,
-                    "codexResponsesAsItems": null,
-                    "codexResponseItemPrefix": null,
-                    "codexResponseHandoffMode": "bemTags",
-                    "codexResponseHandoffChannelPrefixes": {
+                    "avaResponsesAsItems": null,
+                    "avaResponseItemPrefix": null,
+                    "avaResponseHandoffMode": "bemTags",
+                    "avaResponseHandoffChannelPrefixes": {
                         "analysis": ["[THINKING]"],
                         "commentary": ["[PROGRESS]", "[UPDATE]"],
                         "final": ["[DONE]"]
@@ -4096,10 +4096,10 @@ mod tests {
                 client_managed_handoffs: None,
                 delegation_ack_filler: None,
                 flush_transcript_tail_on_session_end: None,
-                codex_responses_as_items: None,
-                codex_response_item_prefix: None,
-                codex_response_handoff_mode: None,
-                codex_response_handoff_channel_prefixes: None,
+                ava_responses_as_items: None,
+                ava_response_item_prefix: None,
+                ava_response_handoff_mode: None,
+                ava_response_handoff_channel_prefixes: None,
                 thread_id: "thr_123".to_string(),
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
@@ -4123,10 +4123,10 @@ mod tests {
                     "clientManagedHandoffs": null,
                     "delegationAckFiller": null,
                     "flushTranscriptTailOnSessionEnd": null,
-                    "codexResponsesAsItems": null,
-                    "codexResponseItemPrefix": null,
-                    "codexResponseHandoffMode": null,
-                    "codexResponseHandoffChannelPrefixes": null,
+                    "avaResponsesAsItems": null,
+                    "avaResponseItemPrefix": null,
+                    "avaResponseHandoffMode": null,
+                    "avaResponseHandoffChannelPrefixes": null,
                     "model": null,
                     "outputModality": "audio",
                     "includeStartupContext": null,
@@ -4148,10 +4148,10 @@ mod tests {
                 client_managed_handoffs: None,
                 delegation_ack_filler: None,
                 flush_transcript_tail_on_session_end: None,
-                codex_responses_as_items: None,
-                codex_response_item_prefix: None,
-                codex_response_handoff_mode: None,
-                codex_response_handoff_channel_prefixes: None,
+                ava_responses_as_items: None,
+                ava_response_item_prefix: None,
+                ava_response_handoff_mode: None,
+                ava_response_handoff_channel_prefixes: None,
                 thread_id: "thr_123".to_string(),
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
@@ -4175,10 +4175,10 @@ mod tests {
                     "clientManagedHandoffs": null,
                     "delegationAckFiller": null,
                     "flushTranscriptTailOnSessionEnd": null,
-                    "codexResponsesAsItems": null,
-                    "codexResponseItemPrefix": null,
-                    "codexResponseHandoffMode": null,
-                    "codexResponseHandoffChannelPrefixes": null,
+                    "avaResponsesAsItems": null,
+                    "avaResponseItemPrefix": null,
+                    "avaResponseHandoffMode": null,
+                    "avaResponseHandoffChannelPrefixes": null,
                     "model": null,
                     "outputModality": "audio",
                     "includeStartupContext": null,
@@ -4201,7 +4201,7 @@ mod tests {
             "params": {
                 "threadId": "thr_123",
                 // Retain runtime compatibility with clients that have not yet removed this field.
-                "codexResponseHandoffPrefix": "",
+                "avaResponseHandoffPrefix": "",
                 "outputModality": "audio",
                 "realtimeSessionId": null,
                 "transport": null,
@@ -4400,10 +4400,10 @@ mod tests {
                 client_managed_handoffs: None,
                 delegation_ack_filler: None,
                 flush_transcript_tail_on_session_end: None,
-                codex_responses_as_items: None,
-                codex_response_item_prefix: None,
-                codex_response_handoff_mode: None,
-                codex_response_handoff_channel_prefixes: None,
+                ava_responses_as_items: None,
+                ava_response_item_prefix: None,
+                ava_response_handoff_mode: None,
+                ava_response_handoff_channel_prefixes: None,
                 thread_id: "thr_123".to_string(),
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
@@ -4508,9 +4508,9 @@ mod tests {
                     service_tier: None,
                     effort: None,
                     summary: None,
-                    collaboration_mode: codex_protocol::config_types::CollaborationMode {
-                        mode: codex_protocol::config_types::ModeKind::Default,
-                        settings: codex_protocol::config_types::Settings {
+                    collaboration_mode: ava_protocol::config_types::CollaborationMode {
+                        mode: ava_protocol::config_types::ModeKind::Default,
+                        settings: ava_protocol::config_types::Settings {
                             model: "gpt-5.4".to_string(),
                             reasoning_effort: None,
                             developer_instructions: None,

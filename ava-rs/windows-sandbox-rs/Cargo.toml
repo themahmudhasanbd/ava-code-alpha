@@ -2,24 +2,24 @@
 build = "build.rs"
 edition.workspace = true
 license.workspace = true
-name = "codex-windows-sandbox"
+name = "ava-windows-sandbox"
 version.workspace = true
 
 [lib]
-name = "codex_windows_sandbox"
+name = "ava_windows_sandbox"
 path = "src/lib.rs"
 doctest = false
 
 [[bin]]
-name = "codex-windows-sandbox-setup"
+name = "ava-windows-sandbox-setup"
 path = "src/bin/setup_main/main.rs"
 
 [[bin]]
-name = "codex-command-runner"
+name = "ava-command-runner"
 path = "src/bin/command_runner/main.rs"
 
 [[bin]]
-name = "codex-windows-managed-deny-probe"
+name = "ava-windows-managed-deny-probe"
 path = "src/bin/managed_deny_probe/main.rs"
 
 [lints]
@@ -32,10 +32,10 @@ chrono = { version = "0.4.42", default-features = false, features = [
     "clock",
     "std",
 ] }
-codex-utils-pty = { workspace = true }
-codex-utils-absolute-path = { workspace = true }
-codex-utils-string = { workspace = true }
-codex-otel = { workspace = true }
+ava-utils-pty = { workspace = true }
+ava-utils-absolute-path = { workspace = true }
+ava-utils-string = { workspace = true }
+ava-otel = { workspace = true }
 dunce = "1.0"
 glob = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
@@ -50,8 +50,8 @@ windows = { version = "0.58", features = [
     "Win32_System_Variant",
 ] }
 
-[dependencies.codex-protocol]
-package = "codex-protocol"
+[dependencies.ava-protocol]
+package = "ava-protocol"
 path = "../protocol"
 
 [dependencies.rand]

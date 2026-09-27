@@ -13,13 +13,13 @@ use crate::model_catalog::LUNA_RESERVE_MODEL;
 use crate::status::format_credit_micros;
 use crate::status::format_estimated_usd_micros;
 use crate::status::format_tokens_compact;
-use codex_app_server_protocol::AskForApproval;
-use codex_config::ConfigLayerSource;
-use codex_config::os_host_name;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::models::PermissionProfile;
-use codex_utils_sandbox_summary::summarize_permission_profile;
+use ava_app_server_protocol::AskForApproval;
+use ava_config::ConfigLayerSource;
+use ava_config::os_host_name;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::models::PermissionProfile;
+use ava_utils_sandbox_summary::summarize_permission_profile;
 
 use super::status_state::TerminalTitleStatusKind;
 
@@ -228,7 +228,7 @@ impl ChatWidget {
         self.set_status_line_hyperlink(hyperlink_url);
     }
 
-    /// Clears the terminal title Codex most recently wrote, if any.
+    /// Clears the terminal title Ava most recently wrote, if any.
     ///
     /// This does not attempt to restore the shell or terminal's previous title;
     /// it only clears the managed title and updates the cache after a successful
@@ -506,8 +506,8 @@ impl ChatWidget {
             .config_layer_stack
             .all_layers_low_to_high()
             .find_map(|layer| match &layer.name {
-                ConfigLayerSource::Project { dot_codex_folder } => {
-                    dot_codex_folder.as_path().parent().map(Path::to_path_buf)
+                ConfigLayerSource::Project { dot_ava_folder } => {
+                    dot_ava_folder.as_path().parent().map(Path::to_path_buf)
                 }
                 _ => None,
             })
@@ -639,7 +639,7 @@ impl ChatWidget {
             .status_line_workspace_headline_pending_request_id
             .is_some()
             || self.status_line_workspace_messages_disabled
-            || !self.has_codex_backend_auth
+            || !self.has_ava_backend_auth
         {
             return false;
         }
@@ -755,7 +755,7 @@ impl ChatWidget {
             StatusLineItem::FiveHourLimit => {
                 let (window, is_secondary) = self
                     .rate_limit_snapshots_by_limit_id
-                    .get("codex")
+                    .get("ava")
                     .and_then(five_hour_status_window)?;
                 let label = limit_label_for_window(window.window_minutes, is_secondary);
                 self.status_line_limit_display(Some(window), &label)
@@ -763,12 +763,12 @@ impl ChatWidget {
             StatusLineItem::WeeklyLimit => {
                 let (window, is_secondary) = self
                     .rate_limit_snapshots_by_limit_id
-                    .get("codex")
+                    .get("ava")
                     .and_then(weekly_status_window)?;
                 let label = limit_label_for_window(window.window_minutes, is_secondary);
                 self.status_line_limit_display(Some(window), &label)
             }
-            StatusLineItem::CodexVersion => Some(CODEX_CLI_VERSION.to_string()),
+            StatusLineItem::AvaVersion => Some(AVA_CLI_VERSION.to_string()),
             StatusLineItem::ContextWindowSize => self
                 .status_line_context_window_size()
                 .map(|cws| format!("{} window", format_tokens_compact(cws))),
@@ -836,7 +836,7 @@ impl ChatWidget {
         item: StatusSurfacePreviewItem,
     ) -> Option<String> {
         let status_line_item = match item {
-            StatusSurfacePreviewItem::AppName => return Some("codex".to_string()),
+            StatusSurfacePreviewItem::AppName => return Some("ava".to_string()),
             StatusSurfacePreviewItem::ProjectName => return self.terminal_title_project_name(),
             StatusSurfacePreviewItem::ProjectRoot => StatusLineItem::ProjectRoot,
             StatusSurfacePreviewItem::Status => return Some(self.run_state_status_text()),
@@ -854,7 +854,7 @@ impl ChatWidget {
             StatusSurfacePreviewItem::ContextUsed => StatusLineItem::ContextUsed,
             StatusSurfacePreviewItem::FiveHourLimit => StatusLineItem::FiveHourLimit,
             StatusSurfacePreviewItem::WeeklyLimit => StatusLineItem::WeeklyLimit,
-            StatusSurfacePreviewItem::CodexVersion => StatusLineItem::CodexVersion,
+            StatusSurfacePreviewItem::AvaVersion => StatusLineItem::AvaVersion,
             StatusSurfacePreviewItem::ContextWindowSize => StatusLineItem::ContextWindowSize,
             StatusSurfacePreviewItem::UsedTokens => StatusLineItem::UsedTokens,
             StatusSurfacePreviewItem::TotalInputTokens => StatusLineItem::TotalInputTokens,
@@ -881,7 +881,7 @@ impl ChatWidget {
         now: Instant,
     ) -> Option<String> {
         match item {
-            TerminalTitleItem::AppName => Some("codex".to_string()),
+            TerminalTitleItem::AppName => Some("ava".to_string()),
             TerminalTitleItem::Project => self.terminal_title_project_name(),
             TerminalTitleItem::CurrentDir => Some(Self::truncate_terminal_title_part(
                 format_directory_display(self.status_line_cwd(), /*max_width*/ None),
@@ -915,8 +915,8 @@ impl ChatWidget {
             TerminalTitleItem::WeeklyLimit => self
                 .status_line_value_for_item(StatusLineItem::WeeklyLimit)
                 .map(|value| Self::truncate_terminal_title_part(value, /*max_chars*/ 32)),
-            TerminalTitleItem::CodexVersion => self
-                .status_line_value_for_item(StatusLineItem::CodexVersion)
+            TerminalTitleItem::AvaVersion => self
+                .status_line_value_for_item(StatusLineItem::AvaVersion)
                 .map(|value| Self::truncate_terminal_title_part(value, /*max_chars*/ 32)),
             TerminalTitleItem::UsedTokens => self
                 .status_line_value_for_item(StatusLineItem::UsedTokens)
@@ -1098,7 +1098,7 @@ impl ChatWidget {
 fn five_hour_status_window(
     snapshot: &RateLimitSnapshotDisplay,
 ) -> Option<(&RateLimitWindowDisplay, bool)> {
-    find_primary_codex_window(snapshot, "5h")
+    find_primary_ava_window(snapshot, "5h")
         .or_else(|| secondary_window_with_label_when_weekly_is_available(snapshot, "5h"))
         .or_else(|| non_weekly_primary_window(snapshot))
         .or_else(|| non_weekly_secondary_window_when_primary_is_weekly(snapshot))
@@ -1107,11 +1107,11 @@ fn five_hour_status_window(
 fn weekly_status_window(
     snapshot: &RateLimitSnapshotDisplay,
 ) -> Option<(&RateLimitWindowDisplay, bool)> {
-    find_codex_window(snapshot, "weekly")
+    find_ava_window(snapshot, "weekly")
         .or_else(|| snapshot.secondary.as_ref().map(|window| (window, true)))
 }
 
-fn find_codex_window<'a>(
+fn find_ava_window<'a>(
     snapshot: &'a RateLimitSnapshotDisplay,
     label: &str,
 ) -> Option<(&'a RateLimitWindowDisplay, bool)> {
@@ -1130,7 +1130,7 @@ fn find_codex_window<'a>(
     None
 }
 
-fn find_primary_codex_window<'a>(
+fn find_primary_ava_window<'a>(
     snapshot: &'a RateLimitSnapshotDisplay,
     label: &str,
 ) -> Option<(&'a RateLimitWindowDisplay, bool)> {
@@ -1146,7 +1146,7 @@ fn secondary_window_with_label_when_weekly_is_available<'a>(
     snapshot: &'a RateLimitSnapshotDisplay,
     label: &str,
 ) -> Option<(&'a RateLimitWindowDisplay, bool)> {
-    find_codex_window(snapshot, "weekly")?;
+    find_ava_window(snapshot, "weekly")?;
 
     let secondary = snapshot.secondary.as_ref()?;
     if matches_window_label(secondary, label) {

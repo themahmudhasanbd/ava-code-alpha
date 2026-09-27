@@ -11,7 +11,7 @@ import {
   isDelegationStartTool,
 } from "../src/lib/tool-display.ts";
 
-test("maps built-in tools to concise Codex-style actions", () => {
+test("maps built-in tools to concise Ava-style actions", () => {
   assert.equal(getToolAction("Read"), "read");
   assert.equal(getToolAction("list_files"), "list");
   assert.equal(getToolAction("Grep"), "search");

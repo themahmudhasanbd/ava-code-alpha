@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_http_client::HttpClientFactory;
+use ava_http_client::HttpClientFactory;
 use futures::future::BoxFuture;
 use http::HeaderMap;
 use tokio::sync::watch;

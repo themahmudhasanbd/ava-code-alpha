@@ -1,10 +1,10 @@
 use super::*;
 use crate::protocol::thread_history::build_turns_from_rollout_items;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandSource;
-use codex_protocol::protocol::GuardianAssessmentStatus;
-use codex_protocol::protocol::TurnStartedEvent;
-use codex_rollout::RolloutItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandSource;
+use ava_protocol::protocol::GuardianAssessmentStatus;
+use ava_protocol::protocol::TurnStartedEvent;
+use ava_rollout::RolloutItem;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 

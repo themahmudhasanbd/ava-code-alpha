@@ -1,13 +1,13 @@
 //! Shared Windows sandbox behavior over the real exec-server RPC connection.
 
 use super::*;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
 use pretty_assertions::assert_eq;
 
 #[cfg_attr(not(windows), ignore = "requires a native Windows sandbox")]
@@ -50,7 +50,7 @@ async fn mxc_tmpdir_uses_command_environment_over_rpc() -> Result<()> {
         PermissionProfile::from_runtime_permissions(&fs, NetworkSandboxPolicy::Restricted),
         cwd.clone(),
     );
-    sandbox.windows_sandbox_selection = codex_exec_server::WindowsSandboxSelection::Mxc;
+    sandbox.windows_sandbox_selection = ava_exec_server::WindowsSandboxSelection::Mxc;
     let command_temp = command_temp.to_string_lossy().into_owned();
     let started = environment
         .get_exec_backend()
@@ -86,7 +86,7 @@ async fn mxc_tmpdir_uses_command_environment_over_rpc() -> Result<()> {
         .await?;
     assert_eq!(
         started.sandbox_type,
-        Some(codex_sandboxing::SandboxType::WindowsMxc)
+        Some(ava_sandboxing::SandboxType::WindowsMxc)
     );
     assert_eq!(
         collect_process_output_from_events_with_timeout(

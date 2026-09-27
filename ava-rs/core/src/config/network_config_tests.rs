@@ -1,9 +1,9 @@
 //! Covers policy presence and the environment-only configuration projection.
 
 use super::*;
-use codex_config::RequirementSource;
-use codex_network_proxy::NetworkProxyConstraints;
-use codex_network_proxy::build_config_state;
+use ava_config::RequirementSource;
+use ava_network_proxy::NetworkProxyConstraints;
+use ava_network_proxy::build_config_state;
 use pretty_assertions::assert_eq;
 
 #[test]

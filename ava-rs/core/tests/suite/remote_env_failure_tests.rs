@@ -36,7 +36,7 @@ async fn provisioning_failure_reaches_model_and_turn_continues(
         ],
     )
     .await;
-    let mut builder = test_codex_with_wait_for_environment().with_config(|config| {
+    let mut builder = test_ava_with_wait_for_environment().with_config(|config| {
         assert!(config.features.enable(Feature::DeferredExecutor).is_ok());
     });
     let test = expect_startup(builder.build(&server)).await;
@@ -53,7 +53,7 @@ async fn provisioning_failure_reaches_model_and_turn_continues(
             provider.clone(),
         )?;
     }
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "inspect the repository".into(),
@@ -81,7 +81,7 @@ async fn provisioning_failure_reaches_model_and_turn_continues(
             provider,
         )?;
     }
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

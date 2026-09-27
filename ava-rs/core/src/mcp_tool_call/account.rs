@@ -2,8 +2,8 @@
 //! must be valid; optional catalog identities never block legacy calls.
 
 use super::MCP_TOOL_LINK_ID_META_KEY;
-use codex_mcp::MCP_TOOL_CODEX_APPS_META_KEY;
-use codex_mcp::ToolInfo;
+use ava_mcp::MCP_TOOL_AVA_APPS_META_KEY;
+use ava_mcp::ToolInfo;
 use serde_json::Value as JsonValue;
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
@@ -18,7 +18,7 @@ pub(super) fn resolve_account(
 ) -> Result<Option<String>, McpToolAccountError> {
     let tool_meta = tool_info.tool.meta.as_deref();
     let requires_explicit_link_id = tool_meta
-        .and_then(|meta| meta.get(MCP_TOOL_CODEX_APPS_META_KEY))
+        .and_then(|meta| meta.get(MCP_TOOL_AVA_APPS_META_KEY))
         .and_then(|meta| meta.get("requires_explicit_link_id"))
         .and_then(JsonValue::as_bool)
         == Some(true);

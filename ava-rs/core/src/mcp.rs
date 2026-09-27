@@ -2,39 +2,39 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::config::Config;
-use codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
-use codex_config::McpServerConfig;
-use codex_connectors::ConnectorRuntimeManager;
-use codex_connectors::PluginConnectorSource;
-use codex_core_plugins::PluginsManager;
-use codex_exec_server::ExecutorCapabilityDiscoverySnapshot;
-use codex_extension_api::ExtensionData;
-use codex_extension_api::ExtensionDataInit;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::SelectedPluginIdentity;
-use codex_extension_api::SelectedPluginSnapshot;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_mcp::EffectiveMcpServer;
-use codex_mcp::McpConfig;
-use codex_mcp::McpEnvironmentAuthority;
-use codex_mcp::McpPluginAttribution;
-use codex_mcp::McpServerRegistration;
-use codex_mcp::McpToolCatalogCache;
-use codex_mcp::ToolInfo;
-use codex_mcp::codex_apps_mcp_server_config;
-use codex_mcp::configured_mcp_servers;
-use codex_mcp::effective_mcp_servers;
-use codex_plugin::AppConnectorId;
-use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::TurnEnvironmentSelection;
+use ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID;
+use ava_config::McpServerConfig;
+use ava_connectors::ConnectorRuntimeManager;
+use ava_connectors::PluginConnectorSource;
+use ava_core_plugins::PluginsManager;
+use ava_exec_server::ExecutorCapabilityDiscoverySnapshot;
+use ava_extension_api::ExtensionData;
+use ava_extension_api::ExtensionDataInit;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::SelectedPluginIdentity;
+use ava_extension_api::SelectedPluginSnapshot;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_mcp::EffectiveMcpServer;
+use ava_mcp::McpConfig;
+use ava_mcp::McpEnvironmentAuthority;
+use ava_mcp::McpPluginAttribution;
+use ava_mcp::McpServerRegistration;
+use ava_mcp::McpToolCatalogCache;
+use ava_mcp::ToolInfo;
+use ava_mcp::ava_apps_mcp_server_config;
+use ava_mcp::configured_mcp_servers;
+use ava_mcp::effective_mcp_servers;
+use ava_plugin::AppConnectorId;
+use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::TurnEnvironmentSelection;
 
-const LEGACY_CODEX_APPS_REGISTRATION_ID: &str = "legacy_codex_apps";
+const LEGACY_AVA_APPS_REGISTRATION_ID: &str = "legacy_ava_apps";
 
 /// MCP configuration and capability availability derived from the same inputs.
 #[derive(Clone)]
@@ -102,7 +102,7 @@ enum OrderedMcpOverlay {
 pub struct McpManager {
     plugins_manager: Arc<PluginsManager>,
     extensions: Arc<ExtensionRegistry<Config>>,
-    codex_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
+    ava_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
     tool_catalog_cache: McpToolCatalogCache,
 }
 
@@ -110,7 +110,7 @@ impl McpManager {
     pub fn new(plugins_manager: Arc<PluginsManager>) -> Self {
         Self::new_with_extensions(
             plugins_manager,
-            codex_extension_api::empty_extension_registry(),
+            ava_extension_api::empty_extension_registry(),
             ConnectorRuntimeManager::default(),
         )
     }
@@ -119,18 +119,18 @@ impl McpManager {
     pub fn new_with_extensions(
         plugins_manager: Arc<PluginsManager>,
         extensions: Arc<ExtensionRegistry<Config>>,
-        codex_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
+        ava_apps_tools_cache: ConnectorRuntimeManager<ToolInfo>,
     ) -> Self {
         Self {
             plugins_manager,
             extensions,
-            codex_apps_tools_cache,
+            ava_apps_tools_cache,
             tool_catalog_cache: McpToolCatalogCache::default(),
         }
     }
 
-    pub fn codex_apps_tools_cache(&self) -> ConnectorRuntimeManager<ToolInfo> {
-        self.codex_apps_tools_cache.clone()
+    pub fn ava_apps_tools_cache(&self) -> ConnectorRuntimeManager<ToolInfo> {
+        self.ava_apps_tools_cache.clone()
     }
 
     pub fn tool_catalog_cache(&self) -> McpToolCatalogCache {
@@ -322,9 +322,9 @@ impl McpManager {
         let mut catalog = mcp_config.mcp_server_catalog.to_builder();
         if mcp_config.apps_enabled {
             catalog.register(McpServerRegistration::from_compatibility(
-                CODEX_APPS_MCP_SERVER_NAME.to_string(),
-                LEGACY_CODEX_APPS_REGISTRATION_ID,
-                codex_apps_mcp_server_config(
+                AVA_APPS_MCP_SERVER_NAME.to_string(),
+                LEGACY_AVA_APPS_REGISTRATION_ID,
+                ava_apps_mcp_server_config(
                     &mcp_config.chatgpt_base_url,
                     mcp_config.apps_mcp_product_sku.as_deref(),
                     originator,
@@ -332,8 +332,8 @@ impl McpManager {
             ));
         } else {
             catalog.remove_compatibility(
-                CODEX_APPS_MCP_SERVER_NAME.to_string(),
-                LEGACY_CODEX_APPS_REGISTRATION_ID,
+                AVA_APPS_MCP_SERVER_NAME.to_string(),
+                LEGACY_AVA_APPS_REGISTRATION_ID,
             );
         }
 
@@ -386,7 +386,7 @@ impl McpManager {
     pub async fn effective_servers(
         &self,
         config: &Config,
-        auth: Option<&CodexAuth>,
+        auth: Option<&AvaAuth>,
     ) -> HashMap<String, EffectiveMcpServer> {
         let mcp_config = self.runtime_config(config).await;
         effective_mcp_servers(&mcp_config, auth)

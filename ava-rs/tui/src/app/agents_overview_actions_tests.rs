@@ -1,11 +1,11 @@
 use super::*;
 use crate::app_event::AgentsOverviewAction;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadLoadedListParams;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_model_provider_info::ModelProviderInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadLoadedListParams;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_model_provider_info::ModelProviderInfo;
 use core_test_support::responses;
 use core_test_support::streaming_sse::StreamingSseChunk;
 use core_test_support::streaming_sse::start_streaming_sse_server;
@@ -305,7 +305,7 @@ async fn hidden_task_stays_hidden_through_activity_and_seed_until_explicit_resum
         },
     ));
     app.track_agents_overview_notification(&ServerNotification::ThreadStatusChanged(
-        codex_app_server_protocol::ThreadStatusChangedNotification {
+        ava_app_server_protocol::ThreadStatusChangedNotification {
             thread_id: id.to_string(),
             status: ThreadStatus::Active {
                 active_flags: Vec::new(),
@@ -427,12 +427,12 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
             .with_model("gpt-5.2")
             .with_model_provider("lifecycle-test")
             .with_provider_name("Lifecycle test")
-            .write(app.config.codex_home.as_path())?;
+            .write(app.config.ava_home.as_path())?;
         let mut app_server =
             Box::pin(crate::start_embedded_app_server_for_picker(&app.config)).await?;
         let id = ThreadId::from_string(
             &app_test_support::create_fake_rollout(
-                &app.config.codex_home,
+                &app.config.ava_home,
                 "2025-01-05T12-00-00",
                 "2025-01-05T12:00:00Z",
                 "Current task",
@@ -444,13 +444,13 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
         let primary = if attach_child {
             let child = ThreadId::from_string(
                 &app_test_support::create_fake_parented_rollout_with_source(
-                    &app.config.codex_home,
+                    &app.config.ava_home,
                     "2025-01-05T12-01-00",
                     "2025-01-05T12:01:00Z",
                     "Current child",
                     Some(&app.config.model_provider_id),
                     /*git_info*/ None,
-                    codex_protocol::protocol::SessionSource::SubAgent(
+                    ava_protocol::protocol::SessionSource::SubAgent(
                         SubAgentSource::ThreadSpawn {
                             parent_thread_id: id,
                             depth: 1,
@@ -459,13 +459,13 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
                             agent_role: None,
                         },
                     ),
-                    codex_protocol::SessionId::from(id),
+                    ava_protocol::SessionId::from(id),
                     id,
                 )
                 .expect("materialize child session"),
             )?;
-            let state_db = codex_state::StateRuntime::init(
-                codex_state::SqliteConfig::new_for_testing(app.config.codex_home.clone()),
+            let state_db = ava_state::StateRuntime::init(
+                ava_state::SqliteConfig::new_for_testing(app.config.ava_home.clone()),
                 app.config.model_provider_id.clone(),
             )
             .await
@@ -474,7 +474,7 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
                 .upsert_thread_spawn_edge(
                     id,
                     child,
-                    codex_state::DirectionalThreadSpawnEdgeStatus::Open,
+                    ava_state::DirectionalThreadSpawnEdgeStatus::Open,
                 )
                 .await
                 .expect("persist spawn edge");
@@ -526,7 +526,7 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
                 .expect("saved root history");
             let blocked_archive = app
                 .config
-                .codex_home
+                .ava_home
                 .join("archived_sessions")
                 .join(rollout.file_name().unwrap());
             std::fs::create_dir_all(&blocked_archive)?;
@@ -566,7 +566,7 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
         }
         let background = ThreadId::from_string(
             &app_test_support::create_fake_rollout(
-                &app.config.codex_home,
+                &app.config.ava_home,
                 "2025-01-05T13-00-00",
                 "2025-01-05T13:00:00Z",
                 "Background task",
@@ -642,7 +642,7 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
                 request_id: RequestId::String(Uuid::new_v4().to_string()),
                 params: TurnStartParams {
                     thread_id: primary.to_string(),
-                    input: vec![codex_app_server_protocol::UserInput::Text {
+                    input: vec![ava_app_server_protocol::UserInput::Text {
                         text: "Keep working".into(),
                         text_elements: Vec::new(),
                     }],

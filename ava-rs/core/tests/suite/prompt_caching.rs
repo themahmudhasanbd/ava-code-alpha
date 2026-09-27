@@ -4,27 +4,27 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
-use codex_core::TurnInputRequest;
-use codex_core::shell::default_user_shell;
-use codex_features::Feature;
-use codex_models_manager::bundled_models_response;
-use codex_models_manager::collaboration_mode_presets::builtin_collaboration_mode_presets;
-use codex_models_manager::manager::StaticModelsManager;
-use codex_prompts::render_model_instructions;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::Settings;
-use codex_protocol::config_types::WebSearchMode;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::openai_models::ModelsResponse;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::ENVIRONMENT_CONTEXT_OPEN_TAG;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::user_input::UserInput;
+use ava_core::TurnInputRequest;
+use ava_core::shell::default_user_shell;
+use ava_features::Feature;
+use ava_models_manager::bundled_models_response;
+use ava_models_manager::collaboration_mode_presets::builtin_collaboration_mode_presets;
+use ava_models_manager::manager::StaticModelsManager;
+use ava_prompts::render_model_instructions;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::Settings;
+use ava_protocol::config_types::WebSearchMode;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::openai_models::ModelsResponse;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::ENVIRONMENT_CONTEXT_OPEN_TAG;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::user_input::UserInput;
 use core_test_support::TempDirExt;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_response_created;
@@ -34,10 +34,10 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::responses::strip_metadata_from_json;
 use core_test_support::responses::strip_response_item_ids_from_json;
 use core_test_support::skip_if_no_network;
-use core_test_support::test_codex::TestCodex;
-use core_test_support::test_codex::local_selections;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TestAva;
+use core_test_support::test_ava::local_selections;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -172,14 +172,14 @@ async fn prompt_tools_are_consistent_across_requests(
     )
     .await;
 
-    let TestCodex {
+    let TestAva {
         // Keep the file-backed instructions alive across request-boundary refreshes.
         home: _home,
-        codex,
+        ava,
         config,
         thread_manager,
         ..
-    } = test_codex()
+    } = test_ava()
         .with_models_manager(models_manager)
         .with_pre_build_hook(write_global_instructions)
         .with_config(move |config| {
@@ -237,7 +237,7 @@ async fn prompt_tools_are_consistent_across_requests(
             .and_then(|preset| preset.developer_instructions.flatten())
             .expect("built-in Plan mode instructions")
     };
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello 1".into(),
@@ -256,15 +256,15 @@ async fn prompt_tools_are_consistent_across_requests(
             }),
         )
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let mut expected_tools_names = vec!["exec_command", "write_stdin"];
     if expected_update_plan_enabled {
@@ -328,9 +328,9 @@ async fn gpt_5_tools_without_apply_patch_append_apply_patch_instructions() -> an
     )
     .await;
 
-    let TestCodex {
-        home: _home, codex, ..
-    } = test_codex()
+    let TestAva {
+        home: _home, ava, ..
+    } = test_ava()
         .with_pre_build_hook(write_global_instructions)
         .with_config(|config| {
             config
@@ -342,22 +342,22 @@ async fn gpt_5_tools_without_apply_patch_append_apply_patch_instructions() -> an
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
-    codex
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let body0 = req1.single_request().body_json();
     let instructions0 = body0["instructions"]
@@ -398,12 +398,12 @@ async fn prefixes_context_and_instructions_once_and_consistently_across_requests
     )
     .await;
 
-    let TestCodex {
+    let TestAva {
         home: _home,
-        codex,
+        ava,
         config,
         ..
-    } = test_codex()
+    } = test_ava()
         .with_pre_build_hook(write_global_instructions)
         .with_config(|config| {
             config
@@ -414,21 +414,21 @@ async fn prefixes_context_and_instructions_once_and_consistently_across_requests
         .build(&server)
         .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let body1 = req1.single_request().body_json();
     let input1 = body1["input"].as_array().expect("input array");
@@ -492,12 +492,12 @@ async fn overrides_turn_context_but_keeps_cached_prefix_and_key_constant() -> an
     )
     .await;
 
-    let TestCodex {
+    let TestAva {
         home: _home,
-        codex,
+        ava,
         config,
         ..
-    } = test_codex()
+    } = test_ava()
         .with_pre_build_hook(write_global_instructions)
         .with_config(|config| {
             config
@@ -509,13 +509,13 @@ async fn overrides_turn_context_but_keeps_cached_prefix_and_key_constant() -> an
         .await?;
 
     // First turn
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let writable = TempDir::new().unwrap();
     let permission_profile = PermissionProfile::workspace_write_with(
@@ -528,7 +528,7 @@ async fn overrides_turn_context_but_keeps_cached_prefix_and_key_constant() -> an
         .to_legacy_sandbox_policy(config.cwd.as_path())
         .expect("workspace profile should have legacy projection");
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             sandbox_policy: Some(sandbox_policy),
@@ -541,13 +541,13 @@ async fn overrides_turn_context_but_keeps_cached_prefix_and_key_constant() -> an
     .await?;
 
     // Second turn after overrides
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request1 = req1.single_request();
     let request2 = req2.single_request();
@@ -612,7 +612,7 @@ async fn override_before_first_turn_emits_environment_context() -> anyhow::Resul
     )
     .await;
 
-    let TestCodex { codex, .. } = test_codex().build(&server).await?;
+    let TestAva { ava, .. } = test_ava().build(&server).await?;
 
     let collaboration_mode = CollaborationMode {
         mode: ModeKind::Default,
@@ -624,7 +624,7 @@ async fn override_before_first_turn_emits_environment_context() -> anyhow::Resul
     };
 
     core_test_support::submit_thread_settings(
-        &codex,
+        &ava,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             model: Some("gpt-5.4".to_string()),
@@ -635,14 +635,14 @@ async fn override_before_first_turn_emits_environment_context() -> anyhow::Resul
     )
     .await?;
 
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "first message".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let body = req.single_request().body_json();
     assert_eq!(body["model"].as_str(), Some("gpt-5.4"));
@@ -765,9 +765,9 @@ async fn per_turn_overrides_keep_cached_prefix_and_key_constant() -> anyhow::Res
     )
     .await;
 
-    let TestCodex {
-        home: _home, codex, ..
-    } = test_codex()
+    let TestAva {
+        home: _home, ava, ..
+    } = test_ava()
         .with_pre_build_hook(write_global_instructions)
         .with_config(|config| {
             config
@@ -779,13 +779,13 @@ async fn per_turn_overrides_keep_cached_prefix_and_key_constant() -> anyhow::Res
         .await?;
 
     // First turn
-    codex
+    ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Second turn using per-turn thread-settings overrides.
     let new_cwd = TempDir::new().unwrap();
@@ -798,7 +798,7 @@ async fn per_turn_overrides_keep_cached_prefix_and_key_constant() -> anyhow::Res
     );
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, new_cwd.path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello 2".into(),
@@ -816,7 +816,7 @@ async fn per_turn_overrides_keep_cached_prefix_and_key_constant() -> anyhow::Res
             }),
         )
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request1 = req1.single_request();
     let request2 = req2.single_request();
@@ -894,13 +894,13 @@ async fn send_user_turn_with_no_changes_does_not_send_environment_context() -> a
     )
     .await;
 
-    let TestCodex {
+    let TestAva {
         home: _home,
-        codex,
+        ava,
         config,
         session_configured,
         ..
-    } = test_codex()
+    } = test_ava()
         .with_pre_build_hook(write_global_instructions)
         .with_config(|config| {
             config
@@ -918,7 +918,7 @@ async fn send_user_turn_with_no_changes_does_not_send_environment_context() -> a
     let default_effort = config.model_reasoning_effort.clone();
     let default_summary = config.model_reasoning_summary;
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello 1".into(),
@@ -941,9 +941,9 @@ async fn send_user_turn_with_no_changes_does_not_send_environment_context() -> a
             }),
         )
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello 2".into(),
@@ -966,7 +966,7 @@ async fn send_user_turn_with_no_changes_does_not_send_environment_context() -> a
             }),
         )
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request1 = req1.single_request();
     let request2 = req2.single_request();
@@ -1028,13 +1028,13 @@ async fn send_user_turn_with_changes_sends_environment_context() -> anyhow::Resu
         sse(vec![ev_response_created("resp-2"), ev_completed("resp-2")]),
     )
     .await;
-    let TestCodex {
+    let TestAva {
         home: _home,
-        codex,
+        ava,
         config,
         session_configured,
         ..
-    } = test_codex()
+    } = test_ava()
         .with_pre_build_hook(write_global_instructions)
         .with_config(|config| {
             config
@@ -1052,7 +1052,7 @@ async fn send_user_turn_with_changes_sends_environment_context() -> anyhow::Resu
     let default_effort = config.model_reasoning_effort.clone();
     let default_summary = config.model_reasoning_summary;
 
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello 1".into(),
@@ -1075,11 +1075,11 @@ async fn send_user_turn_with_changes_sends_environment_context() -> anyhow::Resu
             }),
         )
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, default_cwd.as_path());
-    codex
+    ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello 2".into(),
@@ -1103,7 +1103,7 @@ async fn send_user_turn_with_changes_sends_environment_context() -> anyhow::Resu
             }),
         )
         .await?;
-    wait_for_event(&codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request1 = req1.single_request();
     let request2 = req2.single_request();

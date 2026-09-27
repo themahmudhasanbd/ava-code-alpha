@@ -7,11 +7,11 @@ use crate::auth_mode::auth_mode_to_api;
 use crate::external_auth::ExternalAuthBridge;
 use crate::outgoing_message::AccountNotification;
 use chrono::DateTime;
-use codex_app_server_protocol::DesktopOnboardingEntrypoint;
-use codex_app_server_protocol::GetAccountRateLimitsParams;
-use codex_login::LoginOnboardingEntrypoint;
-use codex_login::login_with_bedrock_access_keys;
-use codex_model_provider::is_supported_amazon_bedrock_region;
+use ava_app_server_protocol::DesktopOnboardingEntrypoint;
+use ava_app_server_protocol::GetAccountRateLimitsParams;
+use ava_login::LoginOnboardingEntrypoint;
+use ava_login::login_with_bedrock_access_keys;
+use ava_model_provider::is_supported_amazon_bedrock_region;
 
 mod bedrock_setup;
 mod rate_limit_resets;
@@ -24,10 +24,10 @@ const THREAD_USAGE_FETCH_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 60);
 const ACCOUNT_WORKSPACE_MESSAGES_FETCH_TIMEOUT: Duration =
     Duration::from_millis(/*millis*/ 1000);
 // Packaged clients use this together with the OAuth client ID override for staging login.
-const LOGIN_ISSUER_OVERRIDE_ENV_VAR: &str = "CODEX_APP_SERVER_LOGIN_ISSUER";
+const LOGIN_ISSUER_OVERRIDE_ENV_VAR: &str = "AVA_APP_SERVER_LOGIN_ISSUER";
 // The development success-page redirect remains debug-only.
 #[cfg(debug_assertions)]
-const LOGIN_OPEN_APP_URL_OVERRIDE_ENV_VAR: &str = "CODEX_APP_SERVER_DEV_OPEN_APP_URL";
+const LOGIN_OPEN_APP_URL_OVERRIDE_ENV_VAR: &str = "AVA_APP_SERVER_DEV_OPEN_APP_URL";
 
 enum ActiveLogin {
     Browser {
@@ -117,7 +117,7 @@ impl AccountRequestProcessor {
             workspace_routing_fetches: Arc::new(Mutex::new(HashMap::new())),
             workspace_routing_shutdown: CancellationToken::new(),
         });
-        let resolver: Arc<dyn codex_login::WorkspaceRoutingResolver> = processor.clone();
+        let resolver: Arc<dyn ava_login::WorkspaceRoutingResolver> = processor.clone();
         processor
             .auth_manager
             .set_workspace_routing_resolver(Arc::downgrade(&resolver));
@@ -213,9 +213,9 @@ impl AccountRequestProcessor {
         AccountUpdatedNotification {
             auth_mode: auth
                 .as_ref()
-                .map(CodexAuth::api_auth_mode)
+                .map(AvaAuth::api_auth_mode)
                 .map(auth_mode_to_api),
-            plan_type: auth.as_ref().and_then(CodexAuth::account_plan_type),
+            plan_type: auth.as_ref().and_then(AvaAuth::account_plan_type),
         }
     }
 
@@ -236,7 +236,7 @@ impl AccountRequestProcessor {
     async fn maybe_refresh_plugin_caches_for_current_config(
         config_manager: &ConfigManager,
         thread_manager: &Arc<ThreadManager>,
-        auth: Option<CodexAuth>,
+        auth: Option<AvaAuth>,
     ) {
         thread_manager
             .plugins_manager()
@@ -255,7 +255,7 @@ impl AccountRequestProcessor {
                 let refresh_thread_manager = Arc::clone(thread_manager);
                 let refresh_config_manager = config_manager.clone();
                 let on_effective_plugins_changed: Arc<
-                    dyn Fn(codex_core_plugins::EffectivePluginsChange) + Send + Sync,
+                    dyn Fn(ava_core_plugins::EffectivePluginsChange) + Send + Sync,
                 > = Arc::new(move |_change| {
                     Self::spawn_effective_plugins_changed_task(
                         Arc::clone(&refresh_thread_manager),
@@ -312,24 +312,24 @@ impl AccountRequestProcessor {
             }
             LoginAccountParams::Chatgpt {
                 app_brand,
-                codex_streamlined_login,
+                ava_streamlined_login,
                 use_hosted_login_success_page,
             } => {
                 let login_success_page = if use_hosted_login_success_page {
                     let app_brand = match app_brand.unwrap_or_default() {
-                        LoginAppBrand::Codex => LoginSuccessPageBrand::Codex,
+                        LoginAppBrand::Ava => LoginSuccessPageBrand::Ava,
                         LoginAppBrand::Chatgpt => LoginSuccessPageBrand::Chatgpt,
                     };
                     LoginSuccessPage::Hosted {
-                        url: CODEX_OPEN_APP_URL.parse().map_err(|err| {
-                            internal_error(format!("invalid Codex open app URL: {err}"))
+                        url: AVA_OPEN_APP_URL.parse().map_err(|err| {
+                            internal_error(format!("invalid Ava open app URL: {err}"))
                         })?,
                         app_brand,
                     }
                 } else {
                     LoginSuccessPage::default()
                 };
-                self.login_chatgpt_v2(request_id, codex_streamlined_login, login_success_page)
+                self.login_chatgpt_v2(request_id, ava_streamlined_login, login_success_page)
                     .await;
             }
             LoginAccountParams::ChatgptDeviceCode => {
@@ -433,7 +433,7 @@ impl AccountRequestProcessor {
         }
 
         match login_with_api_key(
-            &self.config.codex_home,
+            &self.config.ava_home,
             &params.api_key,
             self.config.cli_auth_credentials_store_mode,
             self.config.auth_keyring_backend_kind(),
@@ -509,7 +509,7 @@ impl AccountRequestProcessor {
 
             match credentials {
                 BedrockLoginCredentials::ApiKey(api_key) => login_with_bedrock_api_key(
-                    &self.config.codex_home,
+                    &self.config.ava_home,
                     api_key.trim(),
                     region,
                     self.config.cli_auth_credentials_store_mode,
@@ -525,7 +525,7 @@ impl AccountRequestProcessor {
                         .map(str::trim)
                         .filter(|token| !token.is_empty());
                     login_with_bedrock_access_keys(
-                        &self.config.codex_home,
+                        &self.config.ava_home,
                         access_key_id.trim(),
                         secret_access_key.trim(),
                         session_token,
@@ -552,7 +552,7 @@ impl AccountRequestProcessor {
     // Build options for a ChatGPT login attempt; performs validation.
     async fn login_chatgpt_common(
         &self,
-        codex_streamlined_login: bool,
+        ava_streamlined_login: bool,
         login_success_page: LoginSuccessPage,
     ) -> std::result::Result<LoginServerOptions, JSONRPCErrorError> {
         let config = self.config.as_ref();
@@ -572,10 +572,10 @@ impl AccountRequestProcessor {
 
         let mut opts = LoginServerOptions {
             open_browser: false,
-            codex_streamlined_login,
+            ava_streamlined_login,
             login_success_page,
             ..LoginServerOptions::new(
-                config.codex_home.to_path_buf(),
+                config.ava_home.to_path_buf(),
                 oauth_client_id(),
                 self.auth_manager.effective_chatgpt_workspaces(),
                 config.cli_auth_credentials_store_mode,
@@ -595,7 +595,7 @@ impl AccountRequestProcessor {
         {
             *url = open_app_url
                 .parse()
-                .map_err(|err| internal_error(format!("invalid Codex open app URL: {err}")))?;
+                .map_err(|err| internal_error(format!("invalid Ava open app URL: {err}")))?;
         }
 
         Ok(opts)
@@ -613,22 +613,22 @@ impl AccountRequestProcessor {
     async fn login_chatgpt_v2(
         &self,
         request_id: ConnectionRequestId,
-        codex_streamlined_login: bool,
+        ava_streamlined_login: bool,
         login_success_page: LoginSuccessPage,
     ) {
         let result = self
-            .login_chatgpt_response(codex_streamlined_login, login_success_page)
+            .login_chatgpt_response(ava_streamlined_login, login_success_page)
             .await;
         self.outgoing.send_result(request_id, result).await;
     }
 
     async fn login_chatgpt_response(
         &self,
-        codex_streamlined_login: bool,
+        ava_streamlined_login: bool,
         login_success_page: LoginSuccessPage,
     ) -> Result<LoginAccountResponse, JSONRPCErrorError> {
         let opts = self
-            .login_chatgpt_common(codex_streamlined_login, login_success_page)
+            .login_chatgpt_common(ava_streamlined_login, login_success_page)
             .await?;
         let server = run_login_server(opts)
             .map_err(|err| internal_error(format!("failed to start login server: {err}")))?;
@@ -705,7 +705,7 @@ impl AccountRequestProcessor {
     ) -> Result<LoginAccountResponse, JSONRPCErrorError> {
         let opts = self
             .login_chatgpt_common(
-                /*codex_streamlined_login*/ false,
+                /*ava_streamlined_login*/ false,
                 LoginSuccessPage::default(),
             )
             .await?;
@@ -845,7 +845,7 @@ impl AccountRequestProcessor {
             )));
         }
 
-        let auth = CodexAuth::from_external_chatgpt_tokens(
+        let auth = AvaAuth::from_external_chatgpt_tokens(
             &access_token,
             &chatgpt_account_id,
             chatgpt_plan_type.as_deref(),
@@ -988,7 +988,7 @@ impl AccountRequestProcessor {
             .auth_manager
             .auth_cached()
             .as_ref()
-            .map(CodexAuth::api_auth_mode)
+            .map(AvaAuth::api_auth_mode)
             .map(auth_mode_to_api))
     }
 
@@ -1066,9 +1066,9 @@ impl AccountRequestProcessor {
                         if self.auth_manager.is_workload_identity_selected()
                             || matches!(
                                 auth,
-                                CodexAuth::Headers(_)
-                                    | CodexAuth::AgentIdentity(_)
-                                    | CodexAuth::PersonalAccessToken(_)
+                                AvaAuth::Headers(_)
+                                    | AvaAuth::AgentIdentity(_)
+                                    | AvaAuth::PersonalAccessToken(_)
                             )
                             || include_token && permanent_refresh_failure
                         {
@@ -1110,11 +1110,11 @@ impl AccountRequestProcessor {
     ) -> Result<GetAccountRateLimitsResponse, JSONRPCErrorError> {
         let Some(auth) = self.auth_manager.auth().await else {
             return Err(invalid_request(
-                "codex account authentication required to read rate limits",
+                "ava account authentication required to read rate limits",
             ));
         };
 
-        if !auth.uses_codex_backend() {
+        if !auth.uses_ava_backend() {
             return Err(invalid_request(
                 "chatgpt authentication required to read rate limits",
             ));
@@ -1128,7 +1128,7 @@ impl AccountRequestProcessor {
 
         let usage_request = async {
             if params.supports_luna_reserve
-                && auth.auth_mode() == codex_protocol::auth::AuthMode::Chatgpt
+                && auth.auth_mode() == ava_protocol::auth::AuthMode::Chatgpt
                 && !auth.is_fedramp_account()
             {
                 client.get_rate_limits_with_luna_reserve().await
@@ -1144,10 +1144,10 @@ impl AccountRequestProcessor {
             }
         },);
         let response = response
-            .map_err(|err| internal_error(format!("failed to fetch codex rate limits: {err}")))?;
+            .map_err(|err| internal_error(format!("failed to fetch ava rate limits: {err}")))?;
         if response.rate_limits.is_empty() {
             return Err(internal_error(
-                "failed to fetch codex rate limits: no snapshots returned",
+                "failed to fetch ava rate limits: no snapshots returned",
             ));
         }
 
@@ -1159,14 +1159,14 @@ impl AccountRequestProcessor {
                 let limit_id = snapshot
                     .limit_id
                     .clone()
-                    .unwrap_or_else(|| "codex".to_string());
+                    .unwrap_or_else(|| "ava".to_string());
                 (limit_id, snapshot)
             })
             .collect();
         let rate_limits = response
             .rate_limits
             .iter()
-            .find(|snapshot| snapshot.limit_id.as_deref() == Some("codex"))
+            .find(|snapshot| snapshot.limit_id.as_deref() == Some("ava"))
             .cloned()
             .unwrap_or_else(|| response.rate_limits[0].clone());
 
@@ -1225,11 +1225,11 @@ impl AccountRequestProcessor {
 
         let Some(auth) = self.auth_manager.auth().await else {
             return Err(invalid_request(
-                "codex account authentication required to read token usage",
+                "ava account authentication required to read token usage",
             ));
         };
 
-        if !auth.uses_codex_backend() {
+        if !auth.uses_ava_backend() {
             return Err(invalid_request(
                 "chatgpt authentication required to read token usage",
             ));
@@ -1249,7 +1249,7 @@ impl AccountRequestProcessor {
             .await
             .map_err(|_| internal_error("thread usage fetch timed out"))?;
             let thread_usage = match usage {
-                Ok(usage) => Some(codex_app_server_protocol::ThreadUsage {
+                Ok(usage) => Some(ava_app_server_protocol::ThreadUsage {
                     thread_id: usage.thread_id,
                     estimated_usage_credits_micros: usage.estimated_usage_credits_micros,
                     estimated_usage_usd_micros: usage.estimated_usage_usd_micros,
@@ -1257,7 +1257,7 @@ impl AccountRequestProcessor {
                         .groups
                         .into_iter()
                         .map(
-                            |group| codex_app_server_protocol::ThreadUsageBreakdownGroup {
+                            |group| ava_app_server_protocol::ThreadUsageBreakdownGroup {
                                 model: group.model,
                                 reasoning_effort: group.reasoning_effort,
                                 speed: group.speed,
@@ -1310,11 +1310,11 @@ impl AccountRequestProcessor {
     ) -> Result<GetWorkspaceMessagesResponse, JSONRPCErrorError> {
         let Some(auth) = self.auth_manager.auth().await else {
             return Err(invalid_request(
-                "codex account authentication required to read workspace messages",
+                "ava account authentication required to read workspace messages",
             ));
         };
 
-        if !auth.uses_codex_backend() {
+        if !auth.uses_ava_backend() {
             return Err(invalid_request(
                 "chatgpt authentication required to read workspace messages",
             ));
@@ -1402,11 +1402,11 @@ impl AccountRequestProcessor {
     ) -> Result<AddCreditsNudgeEmailStatus, JSONRPCErrorError> {
         let Some(auth) = self.auth_manager.auth().await else {
             return Err(invalid_request(
-                "codex account authentication required to notify workspace owner",
+                "ava account authentication required to notify workspace owner",
             ));
         };
 
-        if !auth.uses_codex_backend() {
+        if !auth.uses_ava_backend() {
             return Err(invalid_request(
                 "chatgpt authentication required to notify workspace owner",
             ));
@@ -1485,8 +1485,8 @@ fn workspace_messages_feature_disabled(err: &BackendRequestError) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codex_backend_client::TokenUsageProfileDailyBucket;
-    use codex_backend_client::TokenUsageProfileStats;
+    use ava_backend_client::TokenUsageProfileDailyBucket;
+    use ava_backend_client::TokenUsageProfileStats;
     use http::StatusCode;
     use pretty_assertions::assert_eq;
 

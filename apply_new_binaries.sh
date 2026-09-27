@@ -18,19 +18,19 @@ echo "Listing extracted files:"
 ls -lh
 
 echo "[4/5] Installing binaries..."
-# Look for ava-app-server or codex-app-server
+# Look for ava-app-server or ava-app-server
 APP_SERVER_BIN=""
 if [ -f "ava-app-server" ]; then
     APP_SERVER_BIN="ava-app-server"
-elif [ -f "codex-app-server" ]; then
-    APP_SERVER_BIN="codex-app-server"
+elif [ -f "ava-app-server" ]; then
+    APP_SERVER_BIN="ava-app-server"
 fi
 
 if [ -n "$APP_SERVER_BIN" ]; then
     echo "Found app server binary: $APP_SERVER_BIN"
     chmod +x "$APP_SERVER_BIN"
-    cp -f "$APP_SERVER_BIN" /var/www/ava-code/ava-rs/target/debug/codex-app-server
-    cp -f "$APP_SERVER_BIN" /var/www/ava-code/ava-rs/target/release/codex-app-server
+    cp -f "$APP_SERVER_BIN" /var/www/ava-code/ava-rs/target/debug/ava-app-server
+    cp -f "$APP_SERVER_BIN" /var/www/ava-code/ava-rs/target/release/ava-app-server
     mkdir -p /var/www/ava-code/ava-rs/target/release
     cp -f "$APP_SERVER_BIN" /var/www/ava-code/ava-rs/target/release/ava-app-server
 fi

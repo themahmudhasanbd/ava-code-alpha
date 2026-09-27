@@ -1,17 +1,17 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codex_app_server_client::RemoteAppServerClient;
-use codex_app_server_client::RemoteAppServerConnectArgs;
-use codex_app_server_client::RemoteAppServerEndpoint;
-use codex_app_server_protocol::JSONRPCMessage;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_state::ThreadMetadataBuilder;
-use codex_utils_absolute_path::test_support::PathExt;
+use ava_app_server_client::RemoteAppServerClient;
+use ava_app_server_client::RemoteAppServerConnectArgs;
+use ava_app_server_client::RemoteAppServerEndpoint;
+use ava_app_server_protocol::JSONRPCMessage;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_state::ThreadMetadataBuilder;
+use ava_utils_absolute_path::test_support::PathExt;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -30,14 +30,14 @@ use crate::tests::start_test_embedded_app_server;
 
 async fn build_config(temp_dir: &TempDir) -> std::io::Result<Config> {
     ConfigBuilder::default()
-        .codex_home(temp_dir.path().to_path_buf())
+        .ava_home(temp_dir.path().to_path_buf())
         .build()
         .await
 }
 
-async fn state_runtime(config: &Config) -> std::io::Result<Arc<codex_state::StateRuntime>> {
-    let runtime = codex_state::StateRuntime::init(
-        codex_state::SqliteConfig::new_for_testing(config.codex_home.as_path().abs()),
+async fn state_runtime(config: &Config) -> std::io::Result<Arc<ava_state::StateRuntime>> {
+    let runtime = ava_state::StateRuntime::init(
+        ava_state::SqliteConfig::new_for_testing(config.ava_home.as_path().abs()),
         config.model_provider_id.clone(),
     )
     .await
@@ -55,16 +55,16 @@ async fn lookup_name(
     collections: &[SessionCollection],
     mode: ThreadParamsMode,
     model_provider: Option<&str>,
-) -> color_eyre::Result<Option<codex_app_server_protocol::Thread>> {
+) -> color_eyre::Result<Option<ava_app_server_protocol::Thread>> {
     let mut app_server = AppServerSession::new(
-        codex_app_server_client::AppServerClient::InProcess(
+        ava_app_server_client::AppServerClient::InProcess(
             start_test_embedded_app_server(config.clone()).await?,
         ),
         mode,
     );
     let target = lookup(
         &mut app_server,
-        config.codex_home.as_path(),
+        config.ava_home.as_path(),
         name,
         collections,
         &[resume_source_kinds(/*include_non_interactive*/ false)],
@@ -76,8 +76,8 @@ async fn lookup_name(
 }
 
 async fn upsert_thread(
-    runtime: &codex_state::StateRuntime,
-    metadata: codex_state::ThreadMetadata,
+    runtime: &ava_state::StateRuntime,
+    metadata: ava_state::ThreadMetadata,
 ) -> std::io::Result<()> {
     runtime
         .upsert_thread(&metadata)
@@ -90,7 +90,7 @@ fn thread_metadata(
     thread_id: ThreadId,
     rollout_path: PathBuf,
     title: &str,
-) -> codex_state::ThreadMetadata {
+) -> ava_state::ThreadMetadata {
     let created_at = chrono::DateTime::parse_from_rfc3339("2025-02-01T10:00:00Z")
         .expect("timestamp should parse")
         .with_timezone(&chrono::Utc);
@@ -101,7 +101,7 @@ fn thread_metadata(
         serde_json::from_value(serde_json::json!("cli"))
             .expect("cli session source should deserialize"),
     );
-    builder.cwd = config.codex_home.join("project").to_path_buf();
+    builder.cwd = config.ava_home.join("project").to_path_buf();
     let mut metadata = builder.build(config.model_provider_id.as_str());
     metadata.title = title.to_string();
     metadata.first_user_message = Some("preview text".to_string());
@@ -118,7 +118,7 @@ fn write_rollout(
     history_mode: ThreadHistoryMode,
 ) -> color_eyre::Result<PathBuf> {
     let rollout_path = config
-        .codex_home
+        .ava_home
         .join("sessions/2025/02/01")
         .join(format!("rollout-2025-02-01T10-00-00-{thread_id}.jsonl"));
     std::fs::create_dir_all(rollout_path.parent().expect("rollout parent"))?;
@@ -127,8 +127,8 @@ fn write_rollout(
             session_id: thread_id.into(),
             id: thread_id,
             timestamp: timestamp.to_string(),
-            cwd: config.codex_home.join("project").to_path_buf(),
-            originator: "codex".to_string(),
+            cwd: config.ava_home.join("project").to_path_buf(),
+            originator: "ava".to_string(),
             cli_version: "0.0.0".to_string(),
             source,
             model_provider: Some(config.model_provider_id.clone()),
@@ -304,14 +304,14 @@ async fn rejects_duplicate_labels_across_server_pages() -> color_eyre::Result<()
     }
 
     let mut app_server = AppServerSession::new(
-        codex_app_server_client::AppServerClient::InProcess(
+        ava_app_server_client::AppServerClient::InProcess(
             start_test_embedded_app_server(config.clone()).await?,
         ),
         ThreadParamsMode::Embedded,
     );
     let error = lookup(
         &mut app_server,
-        config.codex_home.as_path(),
+        config.ava_home.as_path(),
         "same-label",
         &[SessionCollection::Active],
         &[resume_source_kinds(/*include_non_interactive*/ false)],
@@ -321,7 +321,7 @@ async fn rejects_duplicate_labels_across_server_pages() -> color_eyre::Result<()
     .expect_err("duplicate labels should require an ID");
     let unverified = lookup(
         &mut app_server,
-        config.codex_home.as_path(),
+        config.ava_home.as_path(),
         "other-1",
         &[SessionCollection::Active],
         &[resume_source_kinds(/*include_non_interactive*/ false)],
@@ -437,7 +437,7 @@ async fn uses_listed_thread_when_older_server_cannot_read_it() -> color_eyre::Re
     )
     .await?;
     let mut embedded = AppServerSession::new(
-        codex_app_server_client::AppServerClient::InProcess(
+        ava_app_server_client::AppServerClient::InProcess(
             start_test_embedded_app_server(config.clone()).await?,
         ),
         ThreadParamsMode::Embedded,
@@ -498,12 +498,12 @@ async fn uses_listed_thread_when_older_server_cannot_read_it() -> color_eyre::Re
         })
         .await?;
         let mut remote = AppServerSession::new(
-            codex_app_server_client::AppServerClient::Remote(client),
+            ava_app_server_client::AppServerClient::Remote(client),
             mode,
         );
         let found = lookup(
             &mut remote,
-            config.codex_home.as_path(),
+            config.ava_home.as_path(),
             "saved-session",
             &[SessionCollection::Active],
             &[resume_source_kinds(/*include_non_interactive*/ false)],

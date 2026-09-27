@@ -4,11 +4,11 @@
 use super::SeatbeltAccessRoot;
 use super::SeatbeltPreparationError;
 use super::protected_metadata_names_for_writable_root;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::protocol::WritableRoot;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::protocol::WritableRoot;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use std::path::Path;
 
 pub(super) fn scratch_access_roots(

@@ -1,7 +1,7 @@
 """Local-only regression tests for the bundled plugin-creator scripts.
 
 Run with:
-    python3 -B -m unittest discover -s codex-rs/skills/tests -p 'test_*.py'
+    python3 -B -m unittest discover -s ava-rs/skills/tests -p 'test_*.py'
 """
 
 import json
@@ -50,7 +50,7 @@ class PluginCreatorSecurityTests(unittest.TestCase):
         )
 
     def write_plugin(self, name: object) -> Path:
-        manifest_path = self.plugin_root / ".codex-plugin" / "plugin.json"
+        manifest_path = self.plugin_root / ".ava-plugin" / "plugin.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(
             json.dumps({"name": name, "version": "1.0.0"}),
@@ -185,7 +185,7 @@ class PluginCreatorSecurityTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual(manifest["name"], "demo.tools")
-        self.assertEqual(manifest["version"], "1.0.0+codex.safe-token")
+        self.assertEqual(manifest["version"], "1.0.0+ava.safe-token")
 
     def test_scaffold_rejects_invalid_marketplace_before_creating_files(self) -> None:
         self.write_marketplace("team;id")

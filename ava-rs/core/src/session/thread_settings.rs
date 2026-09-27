@@ -5,15 +5,15 @@ use super::session::Session;
 use super::session::SessionSettingsUpdate;
 use super::step_settings::StepSettingsUpdate;
 use crate::config::ConstraintResult;
-use codex_history::RolloutItem;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::ErrorEvent;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ThreadSettingsAppliedEvent;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::ThreadSettingsSnapshot;
-use codex_thread_store::ThreadStoreResult;
+use ava_history::RolloutItem;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::ErrorEvent;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ThreadSettingsAppliedEvent;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::ThreadSettingsSnapshot;
+use ava_thread_store::ThreadStoreResult;
 use std::sync::Arc;
 use tokio::sync::SemaphorePermit;
 
@@ -46,7 +46,7 @@ pub(super) async fn update(
                 msg: EventMsg::Error(ErrorEvent {
                     misalignment: None,
                     message: format!("invalid thread settings override: {error}"),
-                    codex_error_info: Some(CodexErrorInfo::BadRequest),
+                    ava_error_info: Some(AvaErrorInfo::BadRequest),
                 }),
             })
             .await;

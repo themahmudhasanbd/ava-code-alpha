@@ -7,24 +7,24 @@ use axum::body::Bytes;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::routing::post;
-use codex_app_server_protocol::CapabilityRootLocation;
-use codex_app_server_protocol::ListMcpServerStatusParams;
-use codex_app_server_protocol::ListMcpServerStatusResponse;
-use codex_app_server_protocol::McpServerOauthLoginCompletedNotification;
-use codex_app_server_protocol::McpServerOauthLoginResponse;
-use codex_app_server_protocol::McpServerStatus;
-use codex_app_server_protocol::McpServerToolCallParams;
-use codex_app_server_protocol::McpServerToolCallResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::SelectedCapabilityRoot;
-use codex_app_server_protocol::ThreadStartParams;
-use codex_app_server_protocol::ThreadStartResponse;
-use codex_app_server_protocol::TurnStartParams;
-use codex_app_server_protocol::TurnStartResponse;
-use codex_app_server_protocol::UserInput;
-use codex_features::Feature;
-use codex_http_client::HttpClientBuilder;
-use codex_utils_path_uri::PathUri;
+use ava_app_server_protocol::CapabilityRootLocation;
+use ava_app_server_protocol::ListMcpServerStatusParams;
+use ava_app_server_protocol::ListMcpServerStatusResponse;
+use ava_app_server_protocol::McpServerOauthLoginCompletedNotification;
+use ava_app_server_protocol::McpServerOauthLoginResponse;
+use ava_app_server_protocol::McpServerStatus;
+use ava_app_server_protocol::McpServerToolCallParams;
+use ava_app_server_protocol::McpServerToolCallResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::SelectedCapabilityRoot;
+use ava_app_server_protocol::ThreadStartParams;
+use ava_app_server_protocol::ThreadStartResponse;
+use ava_app_server_protocol::TurnStartParams;
+use ava_app_server_protocol::TurnStartResponse;
+use ava_app_server_protocol::UserInput;
+use ava_features::Feature;
+use ava_http_client::HttpClientBuilder;
+use ava_utils_path_uri::PathUri;
 use core_test_support::responses;
 use core_test_support::stdio_server_bin;
 use futures::SinkExt;
@@ -123,13 +123,13 @@ async fn selected_executor_discovers_browser_mcp_with_executor_only_bearer_token
     let http_server_handle = tokio::spawn(async move {
         let _ = axum::serve(http_listener, http_router).await;
     });
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let executor_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_server.uri())
         .with_sandbox_mode("danger-full-access")
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     std::fs::write(
-        codex_home.path().join("requirements.toml"),
+        ava_home.path().join("requirements.toml"),
         format!(
             "[mcp_servers.{PROJECT_MCP_SERVER_NAME}.identity]\nurl = \"{EXECUTOR_HTTP_MCP_URL}\"\n"
         ),
@@ -142,11 +142,11 @@ async fn selected_executor_discovers_browser_mcp_with_executor_only_bearer_token
     )?;
     // Browser auth tokens are not inherited by spawned executors, so use the production
     // WebSocket connection and put the token directly in the executor's environment.
-    let mut executor = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+    let mut executor = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
         .args(["exec-server", "--listen", "ws://127.0.0.1:0"])
         .stdout(Stdio::piped())
         .kill_on_drop(true)
-        .env("CODEX_HOME", executor_home.path())
+        .env("AVA_HOME", executor_home.path())
         .env(PROJECT_MCP_BEARER_ENV_NAME, PROJECT_MCP_BEARER_TOKEN)
         .env("HTTP_PROXY", format!("http://{http_addr}"))
         .spawn()?;
@@ -156,14 +156,14 @@ async fn selected_executor_discovers_browser_mcp_with_executor_only_bearer_token
         .await??
         .expect("executor emits its websocket URL");
     std::fs::write(
-        codex_home.path().join("environments.toml"),
+        ava_home.path().join("environments.toml"),
         format!(
             "default = \"{EXECUTOR_ID}\"\ninclude_local = false\n\n[[environments]]\nid = \"{EXECUTOR_ID}\"\nurl = \"{executor_url}\"\n"
         ),
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -241,7 +241,7 @@ async fn selected_executor_discovers_browser_mcp_with_executor_only_bearer_token
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn legacy_executor_skips_required_browser_and_keeps_host_owned_mcp() -> Result<()> {
     let responses_server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let executor_home = TempDir::new()?;
 
     let http_listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -277,7 +277,7 @@ async fn legacy_executor_skips_required_browser_and_keeps_host_owned_mcp() -> Re
     MockResponsesConfig::new(&responses_server.uri())
         .with_sandbox_mode("danger-full-access")
         .with_extra_config(&root_config)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     std::fs::write(
         executor_home.path().join("config.toml"),
         format!(
@@ -285,11 +285,11 @@ async fn legacy_executor_skips_required_browser_and_keeps_host_owned_mcp() -> Re
         ),
     )?;
 
-    let mut executor = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+    let mut executor = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
         .args(["exec-server", "--listen", "ws://127.0.0.1:0"])
         .stdout(Stdio::piped())
         .kill_on_drop(true)
-        .env("CODEX_HOME", executor_home.path())
+        .env("AVA_HOME", executor_home.path())
         .spawn()?;
     let stdout = executor.stdout.take().expect("executor stdout is piped");
     let mut lines = BufReader::new(stdout).lines();
@@ -356,14 +356,14 @@ async fn legacy_executor_skips_required_browser_and_keeps_host_owned_mcp() -> Re
         }
     });
     std::fs::write(
-        codex_home.path().join("environments.toml"),
+        ava_home.path().join("environments.toml"),
         format!(
             "default = \"{EXECUTOR_ID}\"\ninclude_local = false\n\n[[environments]]\nid = \"{EXECUTOR_ID}\"\nurl = \"{proxy_url}\"\n"
         ),
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("HOST_MCP_TEST_TOKEN", Some("host-only-token"))])
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -419,29 +419,29 @@ async fn legacy_executor_skips_required_browser_and_keeps_host_owned_mcp() -> Re
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn guardian_review_does_not_discover_executor_mcp() -> Result<()> {
     let responses_server = responses::start_mock_server().await;
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let executor_home = TempDir::new()?;
     MockResponsesConfig::new(&responses_server.uri())
         .with_approval_policy("on-request")
         .with_root_config("approvals_reviewer = \"auto_review\"")
         .enable_feature(Feature::GuardianApproval)
-        .write(codex_home.path())?;
+        .write(ava_home.path())?;
     std::fs::write(executor_home.path().join("config.toml"), "")?;
-    let codex_bin = toml::Value::String(
-        codex_utils_cargo_bin::cargo_bin("codex")?
+    let ava_bin = toml::Value::String(
+        ava_utils_cargo_bin::cargo_bin("ava")?
             .to_string_lossy()
             .into_owned(),
     );
     let executor_home_value =
         toml::Value::String(executor_home.path().to_string_lossy().into_owned());
     std::fs::write(
-        codex_home.path().join("environments.toml"),
+        ava_home.path().join("environments.toml"),
         format!(
-            "default = \"{EXECUTOR_ID}\"\ninclude_local = false\n\n[[environments]]\nid = \"{EXECUTOR_ID}\"\nprogram = {codex_bin}\nargs = [\"exec-server\", \"--listen\", \"stdio\"]\n[environments.env]\nCODEX_HOME = {executor_home_value}\n"
+            "default = \"{EXECUTOR_ID}\"\ninclude_local = false\n\n[[environments]]\nid = \"{EXECUTOR_ID}\"\nprogram = {ava_bin}\nargs = [\"exec-server\", \"--listen\", \"stdio\"]\n[environments.env]\nAVA_HOME = {executor_home_value}\n"
         ),
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -635,7 +635,7 @@ async fn selected_executor_plugin_exposes_its_mcps_only_to_that_thread() -> Resu
     let global_callback_listener = TcpListener::bind("127.0.0.1:0").await?;
     let global_callback_port = global_callback_listener.local_addr()?.port();
     drop(plugin_callback_listener);
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let executor_home = TempDir::new()?;
     std::fs::write(
         executor_home.path().join("config.toml"),
@@ -649,8 +649,8 @@ async fn selected_executor_plugin_exposes_its_mcps_only_to_that_thread() -> Resu
     MockResponsesConfig::new(&responses_server.uri())
         .with_root_config(&root_config)
         .with_provider_config("supports_websockets = false")
-        .write(codex_home.path())?;
-    let executor_config: codex_config::types::McpServerConfig = serde_json::from_value(json!({
+        .write(ava_home.path())?;
+    let executor_config: ava_config::types::McpServerConfig = serde_json::from_value(json!({
         "url": EXECUTOR_OAUTH_MCP_URL,
         "environment_id": EXECUTOR_ID,
     }))?;
@@ -663,16 +663,16 @@ async fn selected_executor_plugin_exposes_its_mcps_only_to_that_thread() -> Resu
         "refresh_token": null,
         "scopes": [],
     });
-    let oauth_credentials_path = codex_home.path().join(".credentials.json");
+    let oauth_credentials_path = ava_home.path().join(".credentials.json");
     std::fs::write(
         &oauth_credentials_path,
         serde_json::to_vec(&json!({"host": host_oauth_credential.clone()}))?,
     )?;
-    let mut executor = Command::new(codex_utils_cargo_bin::cargo_bin("codex")?)
+    let mut executor = Command::new(ava_utils_cargo_bin::cargo_bin("ava")?)
         .args(["exec-server", "--listen", "ws://127.0.0.1:0"])
         .stdout(Stdio::piped())
         .kill_on_drop(true)
-        .env("CODEX_HOME", executor_home.path())
+        .env("AVA_HOME", executor_home.path())
         .env(EXECUTOR_ENV_NAME, EXECUTOR_ENV_VALUE)
         .env(EXECUTOR_HTTP_AUTH_ENV_NAME, EXECUTOR_HTTP_AUTH_ENV_VALUE)
         .env("HTTP_PROXY", format!("http://{http_addr}"))
@@ -683,7 +683,7 @@ async fn selected_executor_plugin_exposes_its_mcps_only_to_that_thread() -> Resu
         .await??
         .expect("executor emits its websocket URL");
     std::fs::write(
-        codex_home.path().join("environments.toml"),
+        ava_home.path().join("environments.toml"),
         format!(
             r#"
 include_local = true
@@ -696,9 +696,9 @@ url = "{executor_url}"
     )?;
 
     let plugin = TempDir::new()?;
-    std::fs::create_dir_all(plugin.path().join(".codex-plugin"))?;
+    std::fs::create_dir_all(plugin.path().join(".ava-plugin"))?;
     std::fs::write(
-        plugin.path().join(".codex-plugin/plugin.json"),
+        plugin.path().join(".ava-plugin/plugin.json"),
         r#"{"name":"executor-demo"}"#,
     )?;
     std::fs::write(
@@ -741,7 +741,7 @@ url = "{executor_url}"
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         // This suite owns environments.toml to exercise explicit executor selection.
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
@@ -759,7 +759,7 @@ url = "{executor_url}"
     )
     .await?;
 
-    let config_path = codex_home.path().join("config.toml");
+    let config_path = ava_home.path().join("config.toml");
     let mut config = std::fs::read_to_string(&config_path)?;
     config.push_str(&format!(
         r#"
@@ -863,7 +863,7 @@ startup_timeout_sec = 10
     let registration_request = timeout(DEFAULT_READ_TIMEOUT, registration_request_rx.recv())
         .await?
         .expect("executor registration endpoint should receive a request");
-    assert_eq!(registration_request["client_name"], json!("Codex"));
+    assert_eq!(registration_request["client_name"], json!("Ava"));
     assert_eq!(
         registration_request["redirect_uris"],
         json!([redirect_uri.clone()])

@@ -1,8 +1,8 @@
 use super::*;
 use assert_matches::assert_matches;
-use codex_config::types::ModelAvailabilityNuxConfig;
-use codex_protocol::config_types::ServiceTier;
-use codex_protocol::openai_models::ModelAvailabilityNux;
+use ava_config::types::ModelAvailabilityNuxConfig;
+use ava_protocol::config_types::ServiceTier;
+use ava_protocol::openai_models::ModelAvailabilityNux;
 use pretty_assertions::assert_eq;
 use tokio::sync::mpsc::unbounded_channel;
 
@@ -321,9 +321,9 @@ fn select_model_availability_nux_returns_none_when_all_models_are_exhausted() {
 
 #[tokio::test]
 async fn prepare_startup_tooltip_override_persists_model_availability_nux_count() {
-    let codex_home = tempdir().expect("temp codex home");
+    let ava_home = tempdir().expect("temp ava home");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("config");
@@ -354,7 +354,7 @@ async fn prepare_startup_tooltip_override_persists_model_availability_nux_count(
     );
 
     let reloaded = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("reloaded config");
@@ -372,13 +372,13 @@ async fn accepted_model_migration_persists_target_default_reasoning_effort() -> 
         ("gpt-5.4", "gpt-5.6-terra"),
         ("gpt-5.4-mini", "gpt-5.6-luna"),
     ] {
-        let codex_home = tempdir()?;
+        let ava_home = tempdir()?;
         std::fs::write(
-            codex_home.path().join("config.toml"),
+            ava_home.path().join("config.toml"),
             format!("model = \"{model}\"\nmodel_reasoning_effort = \"xhigh\"\n"),
         )?;
         let mut config = ConfigBuilder::default()
-            .codex_home(codex_home.path().to_path_buf())
+            .ava_home(ava_home.path().to_path_buf())
             .build()
             .await?;
         let current_model = config.model.clone().expect("saved model");
@@ -449,11 +449,11 @@ async fn accepted_model_migration_persists_target_default_reasoning_effort() -> 
     assert_snapshot!(migration_copies.join("\n"), @r"
     GPT-5.4 is no longer available
 
-    Codex now uses GPT-5.6 Terra in place of GPT-5.4. Switch to GPT-5.6 Terra to continue.
+    Ava now uses GPT-5.6 Terra in place of GPT-5.4. Switch to GPT-5.6 Terra to continue.
 
     GPT-5.4 Mini is no longer available
 
-    Codex now uses GPT-5.6 Luna in place of GPT-5.4 Mini. Switch to GPT-5.6 Luna to continue.
+    Ava now uses GPT-5.6 Luna in place of GPT-5.4 Mini. Switch to GPT-5.6 Luna to continue.
     ");
     Ok(())
 }
@@ -509,9 +509,9 @@ async fn model_migration_prompt_skips_when_target_missing_or_hidden() {
 
 #[tokio::test]
 async fn model_migration_prompt_shows_for_hidden_model() {
-    let codex_home = tempdir().expect("temp codex home");
+    let ava_home = tempdir().expect("temp ava home");
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
+        .ava_home(ava_home.path().to_path_buf())
         .build()
         .await
         .expect("config");

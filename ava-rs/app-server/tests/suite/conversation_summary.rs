@@ -3,31 +3,31 @@ use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_fake_rollout;
 use app_test_support::rollout_path;
-use codex_app_server::in_process;
-use codex_app_server::in_process::InProcessStartArgs;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ConversationSummary;
-use codex_app_server_protocol::GetConversationSummaryParams;
-use codex_app_server_protocol::GetConversationSummaryResponse;
-use codex_app_server_protocol::InitializeCapabilities;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::RequestId;
-use codex_arg0::Arg0DispatchPaths;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::LoaderOverrides;
-use codex_core::config::ConfigBuilder;
-use codex_exec_server::EnvironmentManager;
-use codex_feedback::CodexFeedback;
-use codex_protocol::ThreadId;
-use codex_protocol::models::BaseInstructions;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_thread_store::CreateThreadParams;
-use codex_thread_store::InMemoryThreadStore;
-use codex_thread_store::ThreadPersistenceMetadata;
-use codex_thread_store::ThreadStore;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_app_server::in_process;
+use ava_app_server::in_process::InProcessStartArgs;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ConversationSummary;
+use ava_app_server_protocol::GetConversationSummaryParams;
+use ava_app_server_protocol::GetConversationSummaryResponse;
+use ava_app_server_protocol::InitializeCapabilities;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::RequestId;
+use ava_arg0::Arg0DispatchPaths;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::LoaderOverrides;
+use ava_core::config::ConfigBuilder;
+use ava_exec_server::EnvironmentManager;
+use ava_feedback::AvaFeedback;
+use ava_protocol::ThreadId;
+use ava_protocol::models::BaseInstructions;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_thread_store::CreateThreadParams;
+use ava_thread_store::InMemoryThreadStore;
+use ava_thread_store::ThreadPersistenceMetadata;
+use ava_thread_store::ThreadStore;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use core_test_support::test_path_buf;
 use pretty_assertions::assert_eq;
 use std::path::Path;
@@ -74,9 +74,9 @@ fn normalized_summary_path(mut summary: ConversationSummary) -> Result<Conversat
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_conversation_summary_by_thread_id_reads_rollout() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         FILENAME_TS,
         META_RFC3339,
         PREVIEW,
@@ -87,14 +87,14 @@ async fn get_conversation_summary_by_thread_id_reads_rollout() -> Result<()> {
     let expected = expected_summary(
         thread_id,
         normalized_canonical_path(rollout_path(
-            codex_home.path(),
+            ava_home.path(),
             FILENAME_TS,
             &conversation_id,
         ))?,
     );
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -114,9 +114,9 @@ async fn get_conversation_summary_by_thread_id_reads_rollout() -> Result<()> {
 
 #[tokio::test]
 async fn get_conversation_summary_by_thread_id_reads_pathless_store_thread() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let store_id = Uuid::new_v4().to_string();
-    create_config_toml_with_in_memory_thread_store(codex_home.path(), &store_id)?;
+    create_config_toml_with_in_memory_thread_store(ava_home.path(), &store_id)?;
     let store = InMemoryThreadStore::for_id(store_id.clone());
     let _in_memory_store = InMemoryThreadStoreId { store_id };
     let thread_id = ThreadId::from_string("00000000-0000-4000-8000-000000000125")?;
@@ -149,8 +149,8 @@ async fn get_conversation_summary_by_thread_id_reads_pathless_store_thread() -> 
 
     let loader_overrides = LoaderOverrides::without_managed_config_for_tests();
     let config = ConfigBuilder::default()
-        .codex_home(codex_home.path().to_path_buf())
-        .fallback_cwd(Some(codex_home.path().to_path_buf()))
+        .ava_home(ava_home.path().to_path_buf())
+        .fallback_cwd(Some(ava_home.path().to_path_buf()))
         .loader_overrides(loader_overrides.clone())
         .build()
         .await?;
@@ -161,17 +161,17 @@ async fn get_conversation_summary_by_thread_id_reads_pathless_store_thread() -> 
         loader_overrides,
         strict_config: false,
         cloud_config_bundle: CloudConfigBundleLoader::default(),
-        thread_config_loader: Arc::new(codex_config::NoopThreadConfigLoader),
-        feedback: CodexFeedback::new(),
+        thread_config_loader: Arc::new(ava_config::NoopThreadConfigLoader),
+        feedback: AvaFeedback::new(),
         log_db: None,
         state_db: None,
         environment_manager: Arc::new(EnvironmentManager::default_for_tests()),
         config_warnings: Vec::new(),
         session_source: SessionSource::Cli,
-        enable_codex_api_key_env: false,
+        enable_ava_api_key_env: false,
         initialize: InitializeParams {
             client_info: ClientInfo {
-                name: "codex-app-server-tests".to_string(),
+                name: "ava-app-server-tests".to_string(),
                 title: None,
                 version: "0.1.0".to_string(),
             },
@@ -205,11 +205,11 @@ async fn get_conversation_summary_by_thread_id_reads_pathless_store_thread() -> 
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn get_conversation_summary_by_relative_rollout_path_resolves_from_codex_home() -> Result<()>
+async fn get_conversation_summary_by_relative_rollout_path_resolves_from_ava_home() -> Result<()>
 {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let conversation_id = create_fake_rollout(
-        codex_home.path(),
+        ava_home.path(),
         FILENAME_TS,
         META_RFC3339,
         PREVIEW,
@@ -217,12 +217,12 @@ async fn get_conversation_summary_by_relative_rollout_path_resolves_from_codex_h
         /*git_info*/ None,
     )?;
     let thread_id = ThreadId::from_string(&conversation_id)?;
-    let rollout_path = rollout_path(codex_home.path(), FILENAME_TS, &conversation_id);
-    let relative_path = rollout_path.strip_prefix(codex_home.path())?.to_path_buf();
+    let rollout_path = rollout_path(ava_home.path(), FILENAME_TS, &conversation_id);
+    let relative_path = rollout_path.strip_prefix(ava_home.path())?.to_path_buf();
     let expected = expected_summary(thread_id, normalized_canonical_path(rollout_path)?);
 
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized()
         .await?;
@@ -251,12 +251,12 @@ impl Drop for InMemoryThreadStoreId {
 }
 
 fn create_config_toml_with_in_memory_thread_store(
-    codex_home: &Path,
+    ava_home: &Path,
     store_id: &str,
 ) -> std::io::Result<()> {
     MockResponsesConfig::new("http://127.0.0.1:1")
         .with_root_config(&format!(
             "experimental_thread_store = {{ type = \"in_memory\", id = \"{store_id}\" }}"
         ))
-        .write(codex_home)
+        .write(ava_home)
 }

@@ -6,36 +6,36 @@ use std::sync::Arc;
 use std::time::Instant;
 use std::time::SystemTime;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_analytics::GuardianV2Event;
-use codex_analytics::GuardianV2EventKind;
-use codex_core::CodexThread;
-use codex_core::GuardianAuthorizationVersion;
-use codex_core::GuardianRootSnapshot;
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_core::context::ContextualUserFragment;
-use codex_core::context::GuardianContextMode;
-use codex_core::context::GuardianReviewEvidenceFragment;
-use codex_core::context::GuardianReviewEvidenceRecord;
-use codex_extension_api::ConversationHistorySnapshot;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionMetrics;
-use codex_extension_api::ExtensionWarning;
-use codex_extension_api::McpToolContext;
-use codex_extension_api::ResponseItem;
-use codex_guardian_context::ContextTarget;
-use codex_guardian_context::PlannedAction;
-use codex_guardian_context::PlannedActionKind;
-use codex_guardian_context::PreviousReviews;
-use codex_guardian_context::ReviewEvidence;
-use codex_guardian_context::render_review_evidence;
-use codex_history::RolloutItem;
-use codex_model_provider::create_model_provider;
-use codex_prompts::ResolvedModelMessages;
-use codex_protocol::models::ContentItem;
-use codex_protocol::openai_models::ModelInfo;
-use codex_protocol::security_risk::SecurityRiskScore;
+use ava_analytics::AnalyticsEventsClient;
+use ava_analytics::GuardianV2Event;
+use ava_analytics::GuardianV2EventKind;
+use ava_core::AvaThread;
+use ava_core::GuardianAuthorizationVersion;
+use ava_core::GuardianRootSnapshot;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_core::context::ContextualUserFragment;
+use ava_core::context::GuardianContextMode;
+use ava_core::context::GuardianReviewEvidenceFragment;
+use ava_core::context::GuardianReviewEvidenceRecord;
+use ava_extension_api::ConversationHistorySnapshot;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionMetrics;
+use ava_extension_api::ExtensionWarning;
+use ava_extension_api::McpToolContext;
+use ava_extension_api::ResponseItem;
+use ava_guardian_context::ContextTarget;
+use ava_guardian_context::PlannedAction;
+use ava_guardian_context::PlannedActionKind;
+use ava_guardian_context::PreviousReviews;
+use ava_guardian_context::ReviewEvidence;
+use ava_guardian_context::render_review_evidence;
+use ava_history::RolloutItem;
+use ava_model_provider::create_model_provider;
+use ava_prompts::ResolvedModelMessages;
+use ava_protocol::models::ContentItem;
+use ava_protocol::openai_models::ModelInfo;
+use ava_protocol::security_risk::SecurityRiskScore;
 
 use super::authorization::ScoreAuthorization;
 use super::config::GuardianV2Config;
@@ -67,7 +67,7 @@ pub(super) struct Classification {
     pub(super) root_turn_id: Option<String>,
     pub(super) parent_response_id: Option<String>,
     pub(super) manager: Arc<ThreadManager>,
-    pub(super) thread: Arc<CodexThread>,
+    pub(super) thread: Arc<AvaThread>,
     pub(super) config: Arc<Config>,
     pub(super) context_mode: GuardianContextMode,
     pub(super) parent_compaction: Option<ResponseItem>,
@@ -221,9 +221,9 @@ impl Classification {
             for (section, cost) in transcript.section_costs() {
                 for (measurement, value) in cost.measurements() {
                     metrics.histogram_with_boundaries(
-                        codex_guardian_context::SECTION_COST_METRIC,
+                        ava_guardian_context::SECTION_COST_METRIC,
                         i64::try_from(value).unwrap_or(i64::MAX),
-                        codex_guardian_context::SECTION_COST_BOUNDARIES,
+                        ava_guardian_context::SECTION_COST_BOUNDARIES,
                         &[
                             ("target", "async"),
                             ("section", section),
@@ -362,7 +362,7 @@ impl Classification {
                 turn_id: turn_id.clone(),
                 item_id: Some(call_id),
                 model: parent_model.as_ref().map(|model| model.slug.clone()),
-                occurred_at_ms: codex_analytics::now_unix_millis(),
+                occurred_at_ms: ava_analytics::now_unix_millis(),
                 kind: GuardianV2EventKind::Classification {
                     outcome,
                     risk_level: classification_risk,

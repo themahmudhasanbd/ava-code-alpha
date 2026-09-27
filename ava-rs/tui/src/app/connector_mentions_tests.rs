@@ -1,6 +1,6 @@
 use super::*;
-use codex_app_server_protocol::AppsListParams;
-use codex_app_server_protocol::JSONRPCMessage;
+use ava_app_server_protocol::AppsListParams;
+use ava_app_server_protocol::JSONRPCMessage;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -33,7 +33,7 @@ async fn load_mock_mentions(responses: MockResponses) -> Result<(ConnectorsSnaps
             let request_id = request.id.clone();
             let response = match request.method.as_str() {
                 "initialize" => {
-                    json!({ "id": request_id, "result": { "userAgent": "codex-tui-test" } })
+                    json!({ "id": request_id, "result": { "userAgent": "ava-tui-test" } })
                 }
                 "app/installed" => {
                     assert_eq!(
@@ -116,7 +116,7 @@ async fn load_mock_mentions(responses: MockResponses) -> Result<(ConnectorsSnaps
         Ok::<_, anyhow::Error>(read_batches)
     });
     let client = crate::connect_remote_app_server(
-        codex_app_server_client::RemoteAppServerEndpoint::WebSocket {
+        ava_app_server_client::RemoteAppServerEndpoint::WebSocket {
             websocket_url,
             auth_token: None,
         },

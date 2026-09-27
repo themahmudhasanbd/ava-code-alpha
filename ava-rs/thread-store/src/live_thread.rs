@@ -2,13 +2,13 @@ use std::future::Future;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_protocol::protocol::ThreadMemoryMode;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutPersistenceTelemetry;
-use codex_rollout::measure_and_filter_rollout_items;
-use codex_rollout::persisted_rollout_items;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_protocol::protocol::ThreadMemoryMode;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutPersistenceTelemetry;
+use ava_rollout::measure_and_filter_rollout_items;
+use ava_rollout::persisted_rollout_items;
 use tokio::sync::Mutex;
 use tracing::warn;
 

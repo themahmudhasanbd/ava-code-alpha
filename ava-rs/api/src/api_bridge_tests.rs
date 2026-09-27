@@ -1,13 +1,13 @@
 use super::*;
 use base64::Engine;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::RateLimitReachedType;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::RateLimitReachedType;
 use pretty_assertions::assert_eq;
 
 #[test]
 fn map_api_error_maps_server_overloaded() {
     let err = map_api_error(ApiError::ServerOverloaded);
-    assert!(matches!(err.details(), CodexErrorDetails::ServerOverloaded));
+    assert!(matches!(err.details(), AvaErrorDetails::ServerOverloaded));
 }
 
 #[test]
@@ -19,7 +19,7 @@ fn map_api_error_preserves_retry_delay() {
                 message: "retry later".to_string(),
                 delay: Some(retry_delay),
             },
-            CodexErrorInfo::Other,
+            AvaErrorInfo::Other,
             "stream disconnected before completion: retry later",
         ),
         (
@@ -27,14 +27,14 @@ fn map_api_error_preserves_retry_delay() {
                 message: "retry later".to_string(),
                 delay: Some(retry_delay),
             },
-            CodexErrorInfo::RateLimitExceeded,
+            AvaErrorInfo::RateLimitExceeded,
             "rate limit exceeded: retry later",
         ),
     ] {
         let err = map_api_error(error);
         assert_eq!(
             (
-                err.to_codex_protocol_error(),
+                err.to_ava_protocol_error(),
                 err.retry_delay(/*retry_count*/ 1),
                 err.server_retry_delay(),
                 err.http_status_code_value(),
@@ -56,11 +56,11 @@ fn map_api_error_distinguishes_capacity_from_slow_down() {
     for (code, expected, retryable) in [
         (
             "server_is_overloaded",
-            CodexErrorInfo::ServerOverloaded,
+            AvaErrorInfo::ServerOverloaded,
             false,
         ),
-        ("slow_down", CodexErrorInfo::RateLimitExceeded, true),
-        ("unknown_error", CodexErrorInfo::Other, true),
+        ("slow_down", AvaErrorInfo::RateLimitExceeded, true),
+        ("unknown_error", AvaErrorInfo::Other, true),
     ] {
         let err = map_api_error(ApiError::Transport(TransportError::Http {
             status: http::StatusCode::SERVICE_UNAVAILABLE,
@@ -72,7 +72,7 @@ fn map_api_error_distinguishes_capacity_from_slow_down() {
         }));
         assert_eq!(
             (
-                err.to_codex_protocol_error(),
+                err.to_ava_protocol_error(),
                 err.retry_delay(/*retry_count*/ 1).is_some()
             ),
             (expected, retryable)
@@ -93,8 +93,8 @@ fn map_api_error_maps_cloudflare_blocked_response_to_user_message() {
         ),
     }));
 
-    let CodexErrorDetails::UnexpectedStatus(err) = err.details() else {
-        panic!("expected CodexErrorDetails::UnexpectedStatus, got {err:?}");
+    let AvaErrorDetails::UnexpectedStatus(err) = err.details() else {
+        panic!("expected AvaErrorDetails::UnexpectedStatus, got {err:?}");
     };
     assert_eq!(
         err.user_message.as_deref(),
@@ -126,8 +126,8 @@ fn map_api_error_maps_cyber_policy_from_400_body() {
         body: Some(body),
     }));
 
-    let CodexErrorDetails::CyberPolicy { message } = err.details() else {
-        panic!("expected CodexErrorDetails::CyberPolicy, got {err:?}");
+    let AvaErrorDetails::CyberPolicy { message } = err.details() else {
+        panic!("expected AvaErrorDetails::CyberPolicy, got {err:?}");
     };
     assert_eq!(
         message,
@@ -154,8 +154,8 @@ fn map_api_error_maps_wrapped_websocket_cyber_policy_from_400_body() {
         body: Some(body),
     }));
 
-    let CodexErrorDetails::CyberPolicy { message } = err.details() else {
-        panic!("expected CodexErrorDetails::CyberPolicy, got {err:?}");
+    let AvaErrorDetails::CyberPolicy { message } = err.details() else {
+        panic!("expected AvaErrorDetails::CyberPolicy, got {err:?}");
     };
     assert_eq!(message, "This websocket request was flagged.");
 }
@@ -175,8 +175,8 @@ fn map_api_error_uses_cyber_policy_fallback_for_missing_message() {
         body: Some(body),
     }));
 
-    let CodexErrorDetails::CyberPolicy { message } = err.details() else {
-        panic!("expected CodexErrorDetails::CyberPolicy, got {err:?}");
+    let AvaErrorDetails::CyberPolicy { message } = err.details() else {
+        panic!("expected AvaErrorDetails::CyberPolicy, got {err:?}");
     };
     assert_eq!(
         message,
@@ -189,7 +189,7 @@ fn map_api_error_preserves_bio_policy() {
     let err = map_api_error(ApiError::BioPolicy {
         message: "This request was blocked by bio policy.".to_string(),
     });
-    assert_eq!(err.to_codex_protocol_error(), CodexErrorInfo::BioPolicy);
+    assert_eq!(err.to_ava_protocol_error(), AvaErrorInfo::BioPolicy);
     assert_eq!(err.to_string(), "This request was blocked by bio policy.");
     assert_eq!(err.retry_delay(/*retry_count*/ 1), None);
 }
@@ -221,11 +221,11 @@ fn map_api_error_maps_http_and_wrapped_websocket_bio_policy() {
             let expected = message
                 .filter(|message| !message.trim().is_empty())
                 .unwrap_or("This content was flagged for possible biological risk.");
-            let CodexErrorDetails::BioPolicy { message } = err.details() else {
-                panic!("expected CodexErrorDetails::BioPolicy, got {err:?}");
+            let AvaErrorDetails::BioPolicy { message } = err.details() else {
+                panic!("expected AvaErrorDetails::BioPolicy, got {err:?}");
             };
             assert_eq!(message, expected);
-            assert_eq!(err.to_codex_protocol_error(), CodexErrorInfo::BioPolicy);
+            assert_eq!(err.to_ava_protocol_error(), AvaErrorInfo::BioPolicy);
             assert_eq!(err.retry_delay(/*retry_count*/ 1), None);
         }
     }
@@ -257,12 +257,12 @@ fn assert_misalignment_policy_violation_from_http_body(status: http::StatusCode)
         body: Some(body),
     }));
 
-    let CodexErrorDetails::MisalignmentPolicyViolation {
+    let AvaErrorDetails::MisalignmentPolicyViolation {
         message,
         misalignment,
     } = err.details()
     else {
-        panic!("expected CodexErrorDetails::MisalignmentPolicyViolation, got {err:?}");
+        panic!("expected AvaErrorDetails::MisalignmentPolicyViolation, got {err:?}");
     };
     assert_eq!(message, "This request violated the misalignment policy.");
     assert_eq!(misalignment, &None);
@@ -290,12 +290,12 @@ fn map_api_error_preserves_misalignment_details_from_403_body() {
         body: Some(body),
     }));
 
-    let CodexErrorDetails::MisalignmentPolicyViolation {
+    let AvaErrorDetails::MisalignmentPolicyViolation {
         message,
         misalignment,
     } = err.details()
     else {
-        panic!("expected CodexErrorDetails::MisalignmentPolicyViolation, got {err:?}");
+        panic!("expected AvaErrorDetails::MisalignmentPolicyViolation, got {err:?}");
     };
     assert_eq!(message, "This request violated the misalignment policy.");
     assert_eq!(
@@ -303,7 +303,7 @@ fn map_api_error_preserves_misalignment_details_from_403_body() {
         &Some(MisalignmentErrorDetails {
             error_type: Some("unauthorized_data_transfer".to_string()),
             detailed_explanation: Some("The agent attempted an external transfer.".to_string()),
-            steer: Some(codex_protocol::protocol::MisalignmentSteer {
+            steer: Some(ava_protocol::protocol::MisalignmentSteer {
                 message: "Do not transfer the user's files.".to_string(),
             }),
         })
@@ -334,12 +334,12 @@ fn map_api_error_preserves_misalignment_details_from_wrapped_websocket_error() {
         body: Some(body),
     }));
 
-    let CodexErrorDetails::MisalignmentPolicyViolation {
+    let AvaErrorDetails::MisalignmentPolicyViolation {
         message,
         misalignment,
     } = err.details()
     else {
-        panic!("expected CodexErrorDetails::MisalignmentPolicyViolation, got {err:?}");
+        panic!("expected AvaErrorDetails::MisalignmentPolicyViolation, got {err:?}");
     };
     assert_eq!(
         message,
@@ -350,7 +350,7 @@ fn map_api_error_preserves_misalignment_details_from_wrapped_websocket_error() {
         &Some(MisalignmentErrorDetails {
             error_type: Some("future_safety_category".to_string()),
             detailed_explanation: Some("The agent attempted an external transfer.".to_string()),
-            steer: Some(codex_protocol::protocol::MisalignmentSteer {
+            steer: Some(ava_protocol::protocol::MisalignmentSteer {
                 message: "Do not transfer the user's files.".to_string(),
             }),
         })
@@ -374,8 +374,8 @@ fn map_api_error_keeps_unknown_400_errors_generic() {
         body: Some(body.clone()),
     }));
 
-    let CodexErrorDetails::InvalidRequest(message) = err.details() else {
-        panic!("expected CodexErrorDetails::InvalidRequest, got {err:?}");
+    let AvaErrorDetails::InvalidRequest(message) = err.details() else {
+        panic!("expected AvaErrorDetails::InvalidRequest, got {err:?}");
     };
     assert_eq!(message, &body);
 }
@@ -393,11 +393,11 @@ fn map_api_error_distinguishes_http_quota_errors_from_rate_limits() {
         serde_json::json!({"type": "rate_limit_error", "code": "slow_down"}),
     ] {
         let expected = if error["type"] == "rate_limit_error" {
-            CodexErrorInfo::ResponseTooManyFailedAttempts {
+            AvaErrorInfo::ResponseTooManyFailedAttempts {
                 http_status_code: Some(429),
             }
         } else {
-            CodexErrorInfo::UsageLimitExceeded
+            AvaErrorInfo::UsageLimitExceeded
         };
         let err = map_api_error(ApiError::Transport(TransportError::Http {
             status: http::StatusCode::TOO_MANY_REQUESTS,
@@ -406,7 +406,7 @@ fn map_api_error_distinguishes_http_quota_errors_from_rate_limits() {
             body: Some(serde_json::json!({"error": error}).to_string()),
         }));
 
-        assert_eq!(err.to_codex_protocol_error(), expected, "{error}");
+        assert_eq!(err.to_ava_protocol_error(), expected, "{error}");
     }
 }
 
@@ -415,11 +415,11 @@ fn map_api_error_maps_usage_limit_limit_name_header() {
     let mut headers = HeaderMap::new();
     headers.insert(
         ACTIVE_LIMIT_HEADER,
-        http::HeaderValue::from_static("codex_other"),
+        http::HeaderValue::from_static("ava_other"),
     );
     headers.insert(
-        "x-codex-other-limit-name",
-        http::HeaderValue::from_static("codex_other"),
+        "x-ava-other-limit-name",
+        http::HeaderValue::from_static("ava_other"),
     );
     let body = serde_json::json!({
         "error": {
@@ -435,15 +435,15 @@ fn map_api_error_maps_usage_limit_limit_name_header() {
         body: Some(body),
     }));
 
-    let CodexErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
-        panic!("expected CodexErrorDetails::UsageLimitReached, got {err:?}");
+    let AvaErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
+        panic!("expected AvaErrorDetails::UsageLimitReached, got {err:?}");
     };
     assert_eq!(
         usage_limit
             .rate_limits
             .as_ref()
             .and_then(|snapshot| snapshot.limit_name.as_deref()),
-        Some("codex_other")
+        Some("ava_other")
     );
 }
 
@@ -452,7 +452,7 @@ fn map_api_error_does_not_fallback_limit_name_to_limit_id() {
     let mut headers = HeaderMap::new();
     headers.insert(
         ACTIVE_LIMIT_HEADER,
-        http::HeaderValue::from_static("codex_other"),
+        http::HeaderValue::from_static("ava_other"),
     );
     let body = serde_json::json!({
         "error": {
@@ -468,8 +468,8 @@ fn map_api_error_does_not_fallback_limit_name_to_limit_id() {
         body: Some(body),
     }));
 
-    let CodexErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
-        panic!("expected CodexErrorDetails::UsageLimitReached, got {err:?}");
+    let AvaErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
+        panic!("expected AvaErrorDetails::UsageLimitReached, got {err:?}");
     };
     assert_eq!(
         usage_limit
@@ -482,7 +482,7 @@ fn map_api_error_does_not_fallback_limit_name_to_limit_id() {
 
 #[test]
 fn map_api_error_copies_rate_limit_reached_type_to_usage_limit_snapshot() {
-    for (active_limit, expected_limit_id) in [(None, "codex"), (Some("codex_other"), "codex_other")]
+    for (active_limit, expected_limit_id) in [(None, "ava"), (Some("ava_other"), "ava_other")]
     {
         let mut headers = HeaderMap::new();
         if let Some(active_limit) = active_limit {
@@ -492,11 +492,11 @@ fn map_api_error_copies_rate_limit_reached_type_to_usage_limit_snapshot() {
             );
         }
         for (name, value) in [
-            ("x-codex-credits-has-credits", "true"),
-            ("x-codex-credits-unlimited", "false"),
-            ("x-codex-credits-balance", ""),
+            ("x-ava-credits-has-credits", "true"),
+            ("x-ava-credits-unlimited", "false"),
+            ("x-ava-credits-balance", ""),
             (
-                "x-codex-rate-limit-reached-type",
+                "x-ava-rate-limit-reached-type",
                 "workspace_member_usage_limit_reached",
             ),
         ] {
@@ -517,8 +517,8 @@ fn map_api_error_copies_rate_limit_reached_type_to_usage_limit_snapshot() {
             body: Some(body),
         }));
 
-        let CodexErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
-            panic!("expected CodexErrorDetails::UsageLimitReached, got {err:?}");
+        let AvaErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
+            panic!("expected AvaErrorDetails::UsageLimitReached, got {err:?}");
         };
         assert_eq!(
             usage_limit.rate_limit_reached_type,
@@ -553,7 +553,7 @@ fn map_api_error_ignores_unparseable_rate_limit_reached_type_headers() {
 
     for value in values {
         let mut headers = HeaderMap::new();
-        headers.insert("x-codex-rate-limit-reached-type", value);
+        headers.insert("x-ava-rate-limit-reached-type", value);
         let body = serde_json::json!({
             "error": {
                 "type": "usage_limit_reached",
@@ -568,8 +568,8 @@ fn map_api_error_ignores_unparseable_rate_limit_reached_type_headers() {
             body: Some(body),
         }));
 
-        let CodexErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
-            panic!("expected CodexErrorDetails::UsageLimitReached, got {err:?}");
+        let AvaErrorDetails::UsageLimitReached(usage_limit) = err.details() else {
+            panic!("expected AvaErrorDetails::UsageLimitReached, got {err:?}");
         };
         assert_eq!(usage_limit.rate_limit_reached_type, None);
     }
@@ -598,8 +598,8 @@ fn map_api_error_extracts_identity_auth_details_from_headers() {
         body: Some(r#"{"detail":"Unauthorized"}"#.to_string()),
     }));
 
-    let CodexErrorDetails::UnexpectedStatus(err) = err.details() else {
-        panic!("expected CodexErrorDetails::UnexpectedStatus, got {err:?}");
+    let AvaErrorDetails::UnexpectedStatus(err) = err.details() else {
+        panic!("expected AvaErrorDetails::UnexpectedStatus, got {err:?}");
     };
     assert_eq!(err.request_id.as_deref(), Some("req-401"));
     assert_eq!(err.cf_ray.as_deref(), Some("ray-401"));

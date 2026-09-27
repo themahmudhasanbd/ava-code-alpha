@@ -4,9 +4,9 @@ pub(crate) mod login;
 
 use clap::Args;
 use clap::Parser;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_cli::CliConfigOverrides;
-use codex_utils_cli::ProfileV2Name;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_cli::CliConfigOverrides;
+use ava_utils_cli::ProfileV2Name;
 use std::path::PathBuf;
 
 pub use debug_sandbox::run_command_under_landlock;
@@ -24,7 +24,7 @@ pub use login::run_logout;
 
 #[derive(Debug, Default, Args)]
 pub struct SandboxStateArgs {
-    /// JSON value from `codex/sandbox-state-meta` to apply directly.
+    /// JSON value from `ava/sandbox-state-meta` to apply directly.
     #[arg(
         long = "sandbox-state-json",
         value_name = "JSON",
@@ -61,7 +61,7 @@ pub struct SeatbeltCommand {
     )]
     pub permissions_profile: Option<String>,
 
-    /// Layer $CODEX_HOME/<name>.config.toml on top of the base user config.
+    /// Layer $AVA_HOME/<name>.config.toml on top of the base user config.
     #[arg(long = "profile", short = 'p')]
     pub config_profile: Option<ProfileV2Name>,
 
@@ -117,7 +117,7 @@ pub struct LandlockCommand {
     )]
     pub permissions_profile: Option<String>,
 
-    /// Layer $CODEX_HOME/<name>.config.toml on top of the base user config.
+    /// Layer $AVA_HOME/<name>.config.toml on top of the base user config.
     #[arg(long = "profile", short = 'p')]
     pub config_profile: Option<ProfileV2Name>,
 
@@ -160,7 +160,7 @@ pub struct WindowsCommand {
     )]
     pub permissions_profile: Option<String>,
 
-    /// Layer $CODEX_HOME/<name>.config.toml on top of the base user config.
+    /// Layer $AVA_HOME/<name>.config.toml on top of the base user config.
     #[arg(long = "profile", short = 'p')]
     pub config_profile: Option<ProfileV2Name>,
 

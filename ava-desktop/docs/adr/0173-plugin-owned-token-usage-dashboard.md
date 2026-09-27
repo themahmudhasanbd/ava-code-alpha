@@ -11,7 +11,7 @@
 ADR 0171 added host-owned completed-turn token history and a Settings → Usage
 destination. The marketplace plugin `pi.token-insights` already ships a private
 local dashboard (heatmap, KPIs, filters, streaks, agent tool) across
-PI-Desktop, Claude Code, Codex, and OpenCode. Keeping both surfaces duplicated
+PI-Desktop, Claude Code, Ava, and OpenCode. Keeping both surfaces duplicated
 a weaker PI-Desktop-only matrix inside Preferences.
 
 Plugins cannot write `pi.sqlite` (D002). They already read appearance and

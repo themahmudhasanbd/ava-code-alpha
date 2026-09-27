@@ -6,12 +6,12 @@ use crate::ContextPresentation;
 use crate::ContextSection;
 use crate::RenderedTranscript;
 use crate::composition::user_message;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseItem;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseItem;
 use pretty_assertions::assert_eq;
 
 fn image(url: &str) -> ContentItem {

@@ -2,29 +2,29 @@ use anyhow::Context;
 use anyhow::Result;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use codex_config::test_support::CloudConfigBundleFixture;
-use codex_core::TurnInputRequest;
-use codex_protocol::config_types::ApprovalsReviewer;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::permissions::FileSystemAccessMode;
-use codex_protocol::permissions::FileSystemPath;
-use codex_protocol::permissions::FileSystemSandboxEntry;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
-use codex_protocol::permissions::FileSystemSpecialPath;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::ReviewDecision;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_config::test_support::CloudConfigBundleFixture;
+use ava_core::TurnInputRequest;
+use ava_protocol::config_types::ApprovalsReviewer;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::permissions::FileSystemAccessMode;
+use ava_protocol::permissions::FileSystemPath;
+use ava_protocol::permissions::FileSystemSandboxEntry;
+use ava_protocol::permissions::FileSystemSandboxPolicy;
+use ava_protocol::permissions::FileSystemSpecialPath;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::ReviewDecision;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::managed_network_requirements_loader;
 use core_test_support::responses::ev_apply_patch_custom_tool_call;
 use core_test_support::responses::ev_assistant_message;
@@ -36,8 +36,8 @@ use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
 use core_test_support::startup::STARTUP_TIMEOUT;
 use core_test_support::startup::expect_startup;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
@@ -643,7 +643,7 @@ async fn exec_command_consumes_pushed_remote_process_events(
     .await;
     let exec_server_url = format!("ws://{}", listener.local_addr()?);
     let exec_server = tokio::spawn(serve_exec_with_pushed_events(listener, scenario));
-    let mut builder = test_codex().with_exec_server_url(exec_server_url);
+    let mut builder = test_ava().with_exec_server_url(exec_server_url);
     if managed_network_configured {
         let cloud_config_bundle = match managed_network {
             ManagedNetworkScenario::Enabled {
@@ -736,7 +736,7 @@ timeout = 900
     };
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(turn_permission_profile, test.config.cwd.as_path());
-    test.codex
+    test.ava-code
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a one-shot remote command".into(),
@@ -748,7 +748,7 @@ timeout = 900
                     TurnEnvironmentSelections::new(
                         test.config.cwd.clone(),
                         vec![TurnEnvironmentSelection {
-                            environment_id: codex_exec_server::REMOTE_ENVIRONMENT_ID.to_string(),
+                            environment_id: ava_exec_server::REMOTE_ENVIRONMENT_ID.to_string(),
                             cwd: cwd.clone(),
                             workspace_roots: vec![
                                 cwd,
@@ -790,7 +790,7 @@ timeout = 900
     let mut saw_patch_denial_approval = false;
     if !managed_network_enabled {
         loop {
-            let event = timeout(Duration::from_secs(5), test.codex.next_event())
+            let event = timeout(Duration::from_secs(5), test.ava-code.next_event())
                 .await
                 .context("turn should complete")??
                 .msg;
@@ -806,7 +806,7 @@ timeout = 900
                     ) =>
                 {
                     saw_patch_denial_approval = true;
-                    test.codex
+                    test.ava-code
                         .submit(Op::PatchApproval {
                             id: approval.call_id,
                             decision: if matches!(

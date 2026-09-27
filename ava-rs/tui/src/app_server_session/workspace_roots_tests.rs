@@ -3,7 +3,7 @@
 use super::*;
 use crate::legacy_core::config::ConfigBuilder;
 use crate::legacy_core::config::ConfigOverrides;
-use codex_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ServerNotification;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 
@@ -45,7 +45,7 @@ stream_max_retries = 0
         ),
     )?;
     let server_config = ConfigBuilder::default()
-        .codex_home(server_home.path().to_path_buf())
+        .ava_home(server_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(remote_cwd.to_path_buf()),
             ..Default::default()
@@ -53,7 +53,7 @@ stream_max_retries = 0
         .build()
         .await?;
     let client_config = ConfigBuilder::default()
-        .codex_home(client_home.path().to_path_buf())
+        .ava_home(client_home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             cwd: Some(client_home.path().to_path_buf()),
             ..Default::default()
@@ -105,7 +105,7 @@ stream_max_retries = 0
             {
                 assert_eq!(
                     completed.turn.status,
-                    codex_app_server_protocol::TurnStatus::Completed
+                    ava_app_server_protocol::TurnStatus::Completed
                 );
                 return;
             }
@@ -167,7 +167,7 @@ stream_max_retries = 0
 async fn embedded_lifecycle_requests_preserve_explicit_workspace_roots() -> Result<()> {
     let home = tempfile::tempdir()?;
     let config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .harness_overrides(ConfigOverrides {
             additional_writable_roots: vec![home.path().to_path_buf()],
             ..Default::default()

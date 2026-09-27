@@ -5,15 +5,15 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_config::types::AppToolApproval;
-use codex_config::types::ApprovalsReviewer;
-use codex_config::types::McpServerConfig;
-use codex_config::types::McpServerTransportConfig;
-use codex_core::config::Config;
-use codex_features::Feature;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_utils_path_uri::LegacyAppPathString;
+use ava_config::types::AppToolApproval;
+use ava_config::types::ApprovalsReviewer;
+use ava_config::types::McpServerConfig;
+use ava_config::types::McpServerTransportConfig;
+use ava_core::config::Config;
+use ava_features::Feature;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_utils_path_uri::LegacyAppPathString;
 use core_test_support::hooks::trust_discovered_hooks;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -26,7 +26,7 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
 use core_test_support::stdio_server_bin;
-use core_test_support::test_codex::test_codex;
+use core_test_support::test_ava::test_ava;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -323,7 +323,7 @@ fn enable_hooks_and_rmcp_server(
         config,
         rmcp_test_server_bin,
         approval_mode,
-        codex_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
+        ava_config::DEFAULT_MCP_SERVER_ENVIRONMENT_ID.to_string(),
     );
 }
 
@@ -354,7 +354,7 @@ async fn run_mcp_permission_request_hook_test(outcome: PermissionRequestHookOutc
     };
     let arguments = json!({ "message": RMCP_ECHO_MESSAGE }).to_string();
     let rmcp_test_server_bin = remote_aware_stdio_server_bin()?;
-    let mut builder = test_codex()
+    let mut builder = test_ava()
         .with_pre_build_hook(move |home| {
             write_permission_request_hook(home, outcome)
                 .expect("failed to write MCP permission request hook fixture");
@@ -370,7 +370,7 @@ async fn run_mcp_permission_request_hook_test(outcome: PermissionRequestHookOutc
             );
         });
     let test = builder.build_with_remote_and_local_env(&server).await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
     let responses = mount_sse_sequence(
         &server,
@@ -428,7 +428,7 @@ async fn run_mcp_permission_request_hook_test(outcome: PermissionRequestHookOutc
     }
 
     let hook_inputs =
-        read_hook_inputs(test.codex_home_path(), "permission_request_hook_log.jsonl")?;
+        read_hook_inputs(test.ava_home_path(), "permission_request_hook_log.jsonl")?;
     assert_eq!(hook_inputs.len(), 1);
     assert_eq!(
         json!({
@@ -465,7 +465,7 @@ async fn mcp_tool_hook_interpolates_prompt_and_runs_without_tool_approval() -> R
     )
     .await;
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             write_mcp_tool_hook(
                 home,
@@ -486,7 +486,7 @@ async fn mcp_tool_hook_interpolates_prompt_and_runs_without_tool_approval() -> R
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
     tokio::time::timeout(
         Duration::from_secs(15),
@@ -520,7 +520,7 @@ async fn mcp_tool_hook_passes_thread_metadata_to_model_hidden_tools() -> Result<
     )
     .await;
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             let hooks = json!({
                 "hooks": {
@@ -548,7 +548,7 @@ async fn mcp_tool_hook_passes_thread_metadata_to_model_hidden_tools() -> Result<
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
     test.submit_turn("load thread context").await?;
 
@@ -587,7 +587,7 @@ async fn mcp_tool_hook_marks_thread_memory_mode_polluted_when_configured() -> Re
     )
     .await;
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             write_mcp_tool_hook(
                 home,
@@ -613,9 +613,9 @@ async fn mcp_tool_hook_marks_thread_memory_mode_polluted_when_configured() -> Re
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
-    let db = test.codex.state_db().expect("state db enabled");
+    let db = test.ava-code.state_db().expect("state db enabled");
     let thread_id = test.session_configured.thread_id;
     test.submit_turn("review checkout.rs").await?;
 
@@ -656,7 +656,7 @@ async fn mcp_tool_hook_blocks_model_tool_without_recursive_hooks_or_approval() -
     )
     .await;
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             write_mcp_tool_hook(
                 home,
@@ -677,7 +677,7 @@ async fn mcp_tool_hook_blocks_model_tool_without_recursive_hooks_or_approval() -
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
     tokio::time::timeout(
         Duration::from_secs(15),
@@ -711,7 +711,7 @@ async fn mcp_tool_hook_fails_open_when_server_is_unavailable() -> Result<()> {
         ]),
     )
     .await;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(|home| {
             write_mcp_tool_hook(
                 home,
@@ -787,7 +787,7 @@ async fn pre_tool_use_blocks_mcp_tool_before_execution(
 
     let block_reason = "blocked mcp pre hook";
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(move |home| {
             write_pre_tool_use_hook(home, block_reason)
                 .expect("failed to write MCP pre tool use hook fixture");
@@ -803,7 +803,7 @@ async fn pre_tool_use_blocks_mcp_tool_before_execution(
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
     test.submit_turn("call the rmcp echo tool with the MCP pre hook")
         .await?;
@@ -830,7 +830,7 @@ async fn pre_tool_use_blocks_mcp_tool_before_execution(
         "blocked MCP tool output should surface the hook reason and tool name",
     );
 
-    let hook_inputs = read_hook_inputs(test.codex_home_path(), "pre_tool_use_hook_log.jsonl")?;
+    let hook_inputs = read_hook_inputs(test.ava_home_path(), "pre_tool_use_hook_log.jsonl")?;
     assert_eq!(hook_inputs.len(), 1);
     assert_eq!(
         json!({
@@ -885,7 +885,7 @@ async fn pre_tool_use_rewrites_mcp_tool_before_execution() -> Result<()> {
     .await;
 
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(move |home| {
             write_updating_pre_tool_use_hook(home, rewritten_message)
                 .expect("failed to write MCP updating pre tool use hook fixture");
@@ -900,7 +900,7 @@ async fn pre_tool_use_rewrites_mcp_tool_before_execution() -> Result<()> {
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
     test.submit_turn("call the rmcp echo tool with the MCP pre hook rewrite")
         .await?;
@@ -920,7 +920,7 @@ async fn pre_tool_use_rewrites_mcp_tool_before_execution() -> Result<()> {
         "MCP tool should not execute the original input",
     );
 
-    let hook_inputs = read_hook_inputs(test.codex_home_path(), "pre_tool_use_hook_log.jsonl")?;
+    let hook_inputs = read_hook_inputs(test.ava_home_path(), "pre_tool_use_hook_log.jsonl")?;
     assert_eq!(hook_inputs.len(), 1);
     assert_eq!(
         hook_inputs[0]["tool_input"],
@@ -982,7 +982,7 @@ async fn post_tool_use_records_mcp_tool_payload_and_context(
 
     let post_context = "Remember the MCP post-tool note.";
     let rmcp_test_server_bin = stdio_server_bin()?;
-    let test = test_codex()
+    let test = test_ava()
         .with_pre_build_hook(move |home| {
             write_post_tool_use_hook(home, post_context)
                 .expect("failed to write MCP post tool use hook fixture");
@@ -997,7 +997,7 @@ async fn post_tool_use_records_mcp_tool_payload_and_context(
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, RMCP_SERVER).await?;
+    wait_for_mcp_server(&test.ava-code, RMCP_SERVER).await?;
 
     test.submit_turn("call the rmcp echo tool with the MCP post hook")
         .await?;
@@ -1019,7 +1019,7 @@ async fn post_tool_use_records_mcp_tool_payload_and_context(
         "MCP tool output should still reach the model",
     );
 
-    let hook_inputs = read_hook_inputs(test.codex_home_path(), "post_tool_use_hook_log.jsonl")?;
+    let hook_inputs = read_hook_inputs(test.ava_home_path(), "post_tool_use_hook_log.jsonl")?;
     assert_eq!(hook_inputs.len(), 1);
     assert_eq!(
         json!({

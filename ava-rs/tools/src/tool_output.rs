@@ -1,9 +1,9 @@
-use codex_protocol::models::DEFAULT_IMAGE_DETAIL;
-use codex_protocol::models::FunctionCallOutputBody;
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::FunctionCallOutputPayload;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseInputItem;
+use ava_protocol::models::DEFAULT_IMAGE_DETAIL;
+use ava_protocol::models::FunctionCallOutputBody;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::FunctionCallOutputPayload;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseInputItem;
 use serde_json::Value as JsonValue;
 
 use crate::ToolPayload;
@@ -188,7 +188,7 @@ impl ToolOutput for JsonToolOutput {
     }
 }
 
-impl ToolOutput for codex_protocol::mcp::CallToolResult {
+impl ToolOutput for ava_protocol::mcp::CallToolResult {
     fn log_output(&self) -> String {
         let output = self.as_function_call_output_payload();
         // Do not fall back to serializing media or encrypted content into logs.
@@ -224,17 +224,17 @@ fn response_input_to_code_mode_result(response: ResponseInputItem) -> JsonValue 
             &content
                 .into_iter()
                 .map(|item| match item {
-                    codex_protocol::models::ContentItem::InputText { text }
-                    | codex_protocol::models::ContentItem::OutputText { text } => {
+                    ava_protocol::models::ContentItem::InputText { text }
+                    | ava_protocol::models::ContentItem::OutputText { text } => {
                         FunctionCallOutputContentItem::InputText { text }
                     }
-                    codex_protocol::models::ContentItem::InputImage { image, detail } => {
+                    ava_protocol::models::ContentItem::InputImage { image, detail } => {
                         FunctionCallOutputContentItem::InputImage {
                             image,
                             detail: detail.or(Some(DEFAULT_IMAGE_DETAIL)),
                         }
                     }
-                    codex_protocol::models::ContentItem::InputAudio { audio_url } => {
+                    ava_protocol::models::ContentItem::InputAudio { audio_url } => {
                         FunctionCallOutputContentItem::InputAudio { audio_url }
                     }
                 })

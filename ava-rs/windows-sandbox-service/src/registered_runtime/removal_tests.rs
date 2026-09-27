@@ -91,16 +91,16 @@ fn finalizer_preserves_utf8_plan_and_requires_commit_and_stdin_eof() -> Result<(
         .find("    $finished = $false")
         .context("find cleanup boundary")?
         + start;
-    let home = r"C:\Users\Zoë-東京\.codex";
+    let home = r"C:\Users\Zoë-東京\.ava-code";
     let script = format!(
         "$ErrorActionPreference = 'Stop';
          [Console]::InputEncoding = [Text.Encoding]::GetEncoding(437);
          {input_setup}
-         if ($plan.record.codex_home -cne '{home}') {{ throw 'UTF-8 plan was corrupted' }}
+         if ($plan.record.ava_home -cne '{home}') {{ throw 'UTF-8 plan was corrupted' }}
          [Console]::Out.WriteLine('waiting');\n{}\n[Console]::Out.WriteLine('released')",
         &script[start..end]
     );
-    let mut plan = serde_json::to_vec(&serde_json::json!({ "record": { "codex_home": home } }))?;
+    let mut plan = serde_json::to_vec(&serde_json::json!({ "record": { "ava_home": home } }))?;
     plan.push(b'\n');
     for (input, expected) in [
         ("", ""),

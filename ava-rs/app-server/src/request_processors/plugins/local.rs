@@ -1,8 +1,8 @@
 use super::*;
-use codex_core::config::ConfigOverrides;
-use codex_core_plugins::PluginMarketplaceContext;
-use codex_core_plugins::PluginMarketplaceScope;
-use codex_core_plugins::marketplace::MarketplaceListError;
+use ava_core::config::ConfigOverrides;
+use ava_core_plugins::PluginMarketplaceContext;
+use ava_core_plugins::PluginMarketplaceScope;
+use ava_core_plugins::marketplace::MarketplaceListError;
 use futures::StreamExt;
 
 const CONFIG_LOAD_CONCURRENCY: usize = 5;

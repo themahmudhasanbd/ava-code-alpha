@@ -3,8 +3,8 @@
 
 use std::time::Duration;
 
-use codex_protocol::models::FunctionCallOutputContentItem;
-use codex_protocol::models::ResponseInputItem;
+use ava_protocol::models::FunctionCallOutputContentItem;
+use ava_protocol::models::ResponseInputItem;
 
 use crate::tools::context::FunctionToolOutput;
 use crate::tools::context::ToolOutput;

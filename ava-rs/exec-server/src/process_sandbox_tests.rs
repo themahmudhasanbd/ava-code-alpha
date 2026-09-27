@@ -3,29 +3,29 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use codex_exec_server_protocol::JSONRPCErrorError;
+use ava_exec_server_protocol::JSONRPCErrorError;
 #[cfg(unix)]
-use codex_file_system::WindowsSandboxSelection;
+use ava_file_system::WindowsSandboxSelection;
 #[cfg(target_os = "macos")]
-use codex_network_proxy::ManagedNetworkSandboxContext;
-use codex_network_proxy::NetworkPolicyAuditObserver;
-use codex_network_proxy::NetworkPolicyDecider;
-use codex_network_proxy::NetworkProxyConfig;
+use ava_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::NetworkPolicyAuditObserver;
+use ava_network_proxy::NetworkPolicyDecider;
+use ava_network_proxy::NetworkProxyConfig;
 #[cfg(target_os = "macos")]
-use codex_network_proxy::NetworkUnixSocketPermission;
+use ava_network_proxy::NetworkUnixSocketPermission;
 #[cfg(target_os = "macos")]
-use codex_network_proxy::NetworkUnixSocketPermissions;
-use codex_network_proxy::PROXY_ATTRIBUTION_TOKEN_ENV_KEY;
-use codex_network_proxy::RemoteNetworkProxyConfig;
-use codex_network_proxy::RemoteNetworkProxyLaunchConfig;
+use ava_network_proxy::NetworkUnixSocketPermissions;
+use ava_network_proxy::PROXY_ATTRIBUTION_TOKEN_ENV_KEY;
+use ava_network_proxy::RemoteNetworkProxyConfig;
+use ava_network_proxy::RemoteNetworkProxyLaunchConfig;
 #[cfg(windows)]
-use codex_protocol::config_types::WindowsSandboxLevel;
+use ava_protocol::config_types::WindowsSandboxLevel;
 #[cfg(any(unix, windows))]
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfile;
 #[cfg(target_os = "linux")]
-use codex_sandboxing::landlock::CODEX_LINUX_SANDBOX_ARG0;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::PathUri;
+use ava_sandboxing::landlock::AVA_LINUX_SANDBOX_ARG0;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::PathUri;
 use pretty_assertions::assert_eq;
 #[cfg(unix)]
 use tempfile::tempdir;
@@ -38,7 +38,7 @@ use tokio::time::timeout;
 use super::PreparedExecRequest;
 use super::prepare_exec_request_with_telemetry;
 #[cfg(unix)]
-use crate::CODEX_ARG0_EXEC_HELPER_ARG1;
+use crate::AVA_ARG0_EXEC_HELPER_ARG1;
 use crate::ExecParams;
 use crate::ExecServerRuntimePaths;
 #[cfg(any(unix, windows))]
@@ -114,7 +114,7 @@ async fn sandbox_request_wraps_native_argv_on_executor() {
     {
         assert_eq!(
             prepared.command.first(),
-            Some(&runtime_paths.codex_self_exe.to_string_lossy().into_owned())
+            Some(&runtime_paths.ava_self_exe.to_string_lossy().into_owned())
         );
         let permission_profile_json = prepared
             .command
@@ -226,13 +226,13 @@ async fn sandbox_request_routes_custom_arg0_to_inner_helper() {
     let helper_mode = prepared
         .command
         .iter()
-        .position(|arg| arg == CODEX_ARG0_EXEC_HELPER_ARG1)
+        .position(|arg| arg == AVA_ARG0_EXEC_HELPER_ARG1)
         .expect("sandboxed command should invoke arg0 helper");
 
     assert_eq!(
         prepared.command[helper_mode..],
         [
-            CODEX_ARG0_EXEC_HELPER_ARG1,
+            AVA_ARG0_EXEC_HELPER_ARG1,
             "custom-arg0",
             "/bin/sh",
             "-c",
@@ -240,7 +240,7 @@ async fn sandbox_request_routes_custom_arg0_to_inner_helper() {
         ]
     );
     #[cfg(target_os = "linux")]
-    assert_eq!(prepared.arg0, Some(CODEX_LINUX_SANDBOX_ARG0.to_string()));
+    assert_eq!(prepared.arg0, Some(AVA_LINUX_SANDBOX_ARG0.to_string()));
     #[cfg(target_os = "macos")]
     assert_eq!(prepared.arg0, None);
 }
@@ -652,7 +652,7 @@ async fn managed_network_honors_windows_sandbox_level(windows_sandbox_level: Win
         FileSystemSandboxContext::from_permission_profile(permissions.clone(), cwd_uri.clone());
     sandbox.windows_sandbox_selection = windows_sandbox_level.into();
     sandbox.windows_sandbox_proxy_settings_mode =
-        Some(codex_sandboxing::WindowsSandboxProxySettingsMode::Preserve);
+        Some(ava_sandboxing::WindowsSandboxProxySettingsMode::Preserve);
     let proxy_config = RemoteNetworkProxyConfig::from_effective_config(&NetworkProxyConfig {
         enabled: true,
         enable_socks5: false,

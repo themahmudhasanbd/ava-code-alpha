@@ -1,24 +1,24 @@
-use codex_arg0::Arg0DispatchPaths;
-use codex_cloud_config::cloud_config_bundle_loader;
-use codex_config::CloudConfigBundleLoader;
-use codex_config::ConfigLayerStack;
-use codex_config::LoaderOverrides;
-use codex_config::ThreadConfigLoader;
-use codex_config::loader::load_config_layers_state;
-use codex_config::loader::load_managed_requirements_state;
-use codex_core::config::Config;
-use codex_core::config::ConfigBuilder;
-use codex_core::config::ConfigOverrides;
-use codex_exec_server::LOCAL_FS;
-use codex_features::feature_for_key;
-use codex_login::AuthManager;
-use codex_login::default_client::set_default_client_residency_requirement;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
-use codex_model_provider_info::built_in_model_providers;
-use codex_model_provider_info::merge_configured_model_providers;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_json_to_toml::json_to_toml;
+use ava_arg0::Arg0DispatchPaths;
+use ava_cloud_config::cloud_config_bundle_loader;
+use ava_config::CloudConfigBundleLoader;
+use ava_config::ConfigLayerStack;
+use ava_config::LoaderOverrides;
+use ava_config::ThreadConfigLoader;
+use ava_config::loader::load_config_layers_state;
+use ava_config::loader::load_managed_requirements_state;
+use ava_core::config::Config;
+use ava_core::config::ConfigBuilder;
+use ava_core::config::ConfigOverrides;
+use ava_exec_server::LOCAL_FS;
+use ava_features::feature_for_key;
+use ava_login::AuthManager;
+use ava_login::default_client::set_default_client_residency_requirement;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
+use ava_model_provider_info::built_in_model_providers;
+use ava_model_provider_info::merge_configured_model_providers;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_json_to_toml::json_to_toml;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
@@ -32,14 +32,14 @@ use tracing::warn;
 
 #[derive(Debug, thiserror::Error)]
 #[error(
-    "Your organization's required model provider settings changed. Restart Codex to apply them; this request was not sent"
+    "Your organization's required model provider settings changed. Restart Ava to apply them; this request was not sent"
 )]
 pub(crate) struct ModelProviderRequirementsChanged;
 
-/// Shared app-server entry point for loading effective Codex configuration.
+/// Shared app-server entry point for loading effective Ava configuration.
 #[derive(Clone)]
 pub(crate) struct ConfigManager {
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     cli_overrides: Arc<RwLock<Vec<(String, TomlValue)>>>,
     runtime_feature_enablement: Arc<RwLock<BTreeMap<String, bool>>>,
     loader_overrides: LoaderOverrides,
@@ -51,7 +51,7 @@ pub(crate) struct ConfigManager {
 
 impl ConfigManager {
     pub(crate) fn new(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         cli_overrides: Vec<(String, TomlValue)>,
         loader_overrides: LoaderOverrides,
         strict_config: bool,
@@ -60,7 +60,7 @@ impl ConfigManager {
         thread_config_loader: Arc<dyn ThreadConfigLoader>,
     ) -> Self {
         Self {
-            codex_home,
+            ava_home,
             cli_overrides: Arc::new(RwLock::new(cli_overrides)),
             runtime_feature_enablement: Arc::new(RwLock::new(BTreeMap::new())),
             loader_overrides,
@@ -71,12 +71,12 @@ impl ConfigManager {
         }
     }
 
-    pub(crate) fn codex_home(&self) -> &Path {
-        self.codex_home.as_path()
+    pub(crate) fn ava_home(&self) -> &Path {
+        self.ava_home.as_path()
     }
 
     pub(crate) fn user_config_path(&self) -> std::io::Result<AbsolutePathBuf> {
-        self.loader_overrides.user_config_path(self.codex_home())
+        self.loader_overrides.user_config_path(self.ava_home())
     }
 
     pub(crate) fn current_cli_overrides(&self) -> Vec<(String, TomlValue)> {
@@ -107,12 +107,12 @@ impl ConfigManager {
         &self,
         auth_manager: Arc<AuthManager>,
         chatgpt_base_url: String,
-        http_client_factory: codex_http_client::HttpClientFactory,
+        http_client_factory: ava_http_client::HttpClientFactory,
     ) {
         let loader = cloud_config_bundle_loader(
             auth_manager,
             chatgpt_base_url,
-            self.codex_home.clone(),
+            self.ava_home.clone(),
             http_client_factory,
         );
         if let Ok(mut guard) = self.cloud_config_bundle.write() {
@@ -173,7 +173,7 @@ impl ConfigManager {
             session_layers,
             cwd.to_path_buf(),
             &refreshed_config.config_layer_stack,
-            refreshed_config.codex_home.clone(),
+            refreshed_config.ava_home.clone(),
             refreshed_config
                 .zsh_path
                 .clone()
@@ -193,7 +193,7 @@ impl ConfigManager {
         cwd: &Path,
     ) -> std::io::Result<Config> {
         let mut manager = self.clone();
-        manager.thread_config_loader = Arc::new(codex_config::NoopThreadConfigLoader);
+        manager.thread_config_loader = Arc::new(ava_config::NoopThreadConfigLoader);
         let refreshed_layers = manager
             .load_config_layers_for_cwd(AbsolutePathBuf::from_absolute_path(cwd)?)
             .await?;
@@ -202,7 +202,7 @@ impl ConfigManager {
             session_layers,
             cwd.to_path_buf(),
             &refreshed_layers,
-            AbsolutePathBuf::from_absolute_path(&self.codex_home)?,
+            AbsolutePathBuf::from_absolute_path(&self.ava_home)?,
             /*default_zsh_path*/ None,
         )
         .await?;
@@ -220,8 +220,8 @@ impl ConfigManager {
         // requirements can invalidate it.
         let requirements = load_managed_requirements_state(
             LOCAL_FS.as_ref(),
-            &self.codex_home,
-            codex_config::ConfigLoadOptions {
+            &self.ava_home,
+            ava_config::ConfigLoadOptions {
                 loader_overrides: self.loader_overrides.clone(),
                 strict_config: self.strict_config,
                 cloud_config_bundle: self.current_cloud_config_bundle(),
@@ -271,10 +271,10 @@ impl ConfigManager {
         let mut loader_overrides = self.loader_overrides.clone();
         loader_overrides.ignore_user_config = true;
         let mut config = ConfigBuilder::default()
-            .codex_home(self.codex_home.clone())
+            .ava_home(self.ava_home.clone())
             .cli_overrides(self.current_cli_overrides())
             .loader_overrides(loader_overrides)
-            .fallback_cwd(Some(self.codex_home.clone()))
+            .fallback_cwd(Some(self.ava_home.clone()))
             .cloud_config_bundle(CloudConfigBundleLoader::default())
             .build()
             .await?;
@@ -321,8 +321,8 @@ impl ConfigManager {
     ) -> std::io::Result<Config> {
         let mut session_flags = TomlValue::Table(Default::default());
         for layer in thread_config.config_layer_stack.layers_low_to_high() {
-            if matches!(layer.name, codex_config::ConfigLayerSource::SessionFlags) {
-                codex_config::merge_toml_values(&mut session_flags, &layer.config);
+            if matches!(layer.name, ava_config::ConfigLayerSource::SessionFlags) {
+                ava_config::merge_toml_values(&mut session_flags, &layer.config);
             }
         }
         let overrides = session_flags
@@ -342,7 +342,7 @@ impl ConfigManager {
             ConfigOverrides {
                 cwd: Some(cwd.to_path_buf()),
                 default_permissions: Some(permission_profile),
-                codex_linux_sandbox_exe: self.arg0_paths.codex_linux_sandbox_exe.clone(),
+                ava_linux_sandbox_exe: self.arg0_paths.ava_linux_sandbox_exe.clone(),
                 main_execve_wrapper_exe: self.arg0_paths.main_execve_wrapper_exe.clone(),
                 ..Default::default()
             },
@@ -377,8 +377,8 @@ impl ConfigManager {
                     .map(|(key, value)| (key, json_to_toml(value))),
             )
             .collect::<Vec<_>>();
-        let mut config = codex_core::config::ConfigBuilder::default()
-            .codex_home(self.codex_home.clone())
+        let mut config = ava_core::config::ConfigBuilder::default()
+            .ava_home(self.ava_home.clone())
             .cli_overrides(merged_cli_overrides)
             .loader_overrides(self.loader_overrides.clone())
             .strict_config(self.strict_config)
@@ -406,10 +406,10 @@ impl ConfigManager {
     ) -> std::io::Result<ConfigLayerStack> {
         load_config_layers_state(
             LOCAL_FS.as_ref(),
-            &self.codex_home,
+            &self.ava_home,
             cwd,
             &self.current_cli_overrides(),
-            codex_config::ConfigLoadOptions {
+            ava_config::ConfigLoadOptions {
                 loader_overrides: self.loader_overrides.clone(),
                 strict_config: self.strict_config,
                 cloud_config_bundle: self.current_cloud_config_bundle(),
@@ -431,33 +431,33 @@ impl ConfigManager {
     }
 
     fn apply_arg0_paths(&self, config: &mut Config) {
-        config.codex_self_exe = self.arg0_paths.codex_self_exe.clone();
-        config.codex_linux_sandbox_exe = self.arg0_paths.codex_linux_sandbox_exe.clone();
+        config.ava_self_exe = self.arg0_paths.ava_self_exe.clone();
+        config.ava_linux_sandbox_exe = self.arg0_paths.ava_linux_sandbox_exe.clone();
         config.main_execve_wrapper_exe = self.arg0_paths.main_execve_wrapper_exe.clone();
     }
 
     #[cfg(test)]
     pub(crate) fn new_for_tests(
-        codex_home: PathBuf,
+        ava_home: PathBuf,
         cli_overrides: Vec<(String, TomlValue)>,
         loader_overrides: LoaderOverrides,
         cloud_config_bundle: CloudConfigBundleLoader,
     ) -> Self {
         Self::new(
-            codex_home,
+            ava_home,
             cli_overrides,
             loader_overrides,
             /*strict_config*/ false,
             cloud_config_bundle,
             Arg0DispatchPaths::default(),
-            Arc::new(codex_config::NoopThreadConfigLoader),
+            Arc::new(ava_config::NoopThreadConfigLoader),
         )
     }
 
     #[cfg(test)]
-    pub(crate) fn without_managed_config_for_tests(codex_home: PathBuf) -> Self {
+    pub(crate) fn without_managed_config_for_tests(ava_home: PathBuf) -> Self {
         Self::new_for_tests(
-            codex_home,
+            ava_home,
             Vec::new(),
             LoaderOverrides::without_managed_config_for_tests(),
             CloudConfigBundleLoader::default(),

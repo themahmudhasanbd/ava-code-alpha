@@ -1,4 +1,4 @@
-//! Captures how this Codex process was launched.
+//! Captures how this Ava process was launched.
 //!
 //! Runtime diagnostics answer provenance questions that are hard to infer from
 //! user reports: which binary is running, which install channel it resembles,
@@ -7,8 +7,8 @@
 
 use std::env;
 
-use codex_install_context::InstallContext;
-use codex_install_context::InstallMethod;
+use ava_install_context::InstallContext;
+use ava_install_context::InstallMethod;
 
 use super::CheckStatus;
 use super::DoctorCheck;
@@ -16,7 +16,7 @@ use super::describe_install_context;
 use super::doctor_install_context;
 use super::push_path_detail;
 
-/// Builds the process provenance row for the current Codex executable.
+/// Builds the process provenance row for the current Ava executable.
 ///
 /// This check is informational and should not fail on its own; inconsistent
 /// install state is reported by the installation and update checks instead.
@@ -99,7 +99,7 @@ pub(super) fn search_check() -> DoctorCheck {
     };
     let mut check = DoctorCheck::new("runtime.search", "search", status, summary).details(details);
     if status != CheckStatus::Ok {
-        check = check.remediation("Install ripgrep or repair the bundled Codex package.");
+        check = check.remediation("Install ripgrep or repair the bundled Ava package.");
     }
     check
 }
@@ -139,7 +139,7 @@ fn search_provider(context: &InstallContext) -> &'static str {
 }
 
 fn build_commit() -> &'static str {
-    option_env!("CODEX_BUILD_COMMIT")
+    option_env!("AVA_BUILD_COMMIT")
         .or(option_env!("GIT_COMMIT"))
         .unwrap_or("unknown")
 }

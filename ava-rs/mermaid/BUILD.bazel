@@ -1,7 +1,7 @@
-load("//:defs.bzl", "codex_rust_crate")
+load("//:defs.bzl", "ava_rust_crate")
 
-codex_rust_crate(
+ava_rust_crate(
     name = "mermaid",
-    crate_name = "codex_mermaid",
+    crate_name = "ava_mermaid",
     test_data_extra = glob(["src/snapshots/**"]),
 )

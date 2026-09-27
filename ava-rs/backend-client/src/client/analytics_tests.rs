@@ -1,8 +1,8 @@
 //! HTTP contract coverage for account analytics report reads.
 
 use super::*;
-use codex_http_client::HttpClientFactory;
-use codex_http_client::OutboundProxyPolicy;
+use ava_http_client::HttpClientFactory;
+use ava_http_client::OutboundProxyPolicy;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -16,7 +16,7 @@ use wiremock::matchers::query_param;
 async fn account_analytics_uses_personal_daily_scope_and_plugin_contract() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
-        .and(path("/api/codex/analytics/daily-plugin-usage-metrics"))
+        .and(path("/api/ava/analytics/daily-plugin-usage-metrics"))
         .and(query_param("start_date", "2026-01-03"))
         .and(query_param("end_date", "2026-01-09"))
         .and(query_param("group_by", "day"))
@@ -99,7 +99,7 @@ async fn account_analytics_preserves_signed_credit_events() {
 async fn account_analytics_rejects_another_reports_shape_without_logging_the_body() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
-        .and(path("/api/codex/analytics/daily-workspace-usage-counts"))
+        .and(path("/api/ava/analytics/daily-workspace-usage-counts"))
         .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_json(json!({
             "data": [{"date": "2026-01-03", "product_surface": "sensitive-value", "credit_amount": 10}]
         })))
@@ -170,7 +170,7 @@ async fn account_analytics_decodes_each_endpoint_and_accepts_new_string_values()
     ] {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path(format!("/api/codex/{route}")))
+            .and(path(format!("/api/ava/{route}")))
             .respond_with(ResponseTemplate::new(/*s*/ 200).set_body_json(body))
             .expect(/*r*/ 1)
             .mount(&server)

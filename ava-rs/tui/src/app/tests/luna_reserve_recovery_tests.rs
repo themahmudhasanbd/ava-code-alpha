@@ -2,15 +2,15 @@
 
 use super::*;
 use crate::chatwidget::UserMessage;
-use codex_app_server_protocol::GetAccountRateLimitsResponse;
-use codex_app_server_protocol::ThreadSettingsUpdateParams;
+use ava_app_server_protocol::GetAccountRateLimitsResponse;
+use ava_app_server_protocol::ThreadSettingsUpdateParams;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
 pub(super) fn reserve_response() -> GetAccountRateLimitsResponse {
     serde_json::from_value(json!({
         "accountId": "workspace-a", "ordinaryUsageAllowed": false,
-        "rateLimits": {"limitId": "codex", "primary": {"usedPercent": 100}},
+        "rateLimits": {"limitId": "ava", "primary": {"usedPercent": 100}},
         "rateLimitsByLimitId": {"base_model_inference": {
             "limitId": "base_model_inference", "limitName": "gpt-reserve",
             "primary": {"usedPercent": 48, "windowDurationMins": 10080}
@@ -50,7 +50,7 @@ pub(super) fn configure_reserve_catalog(app: &mut App) {
         /*initial_user_message*/ None,
     );
     init.has_chatgpt_account = true;
-    init.has_codex_backend_auth = true;
+    init.has_ava_backend_auth = true;
     app.replace_chat_widget(ChatWidget::new_with_app_event(init));
     app.chat_widget
         .handle_thread_session(app.primary_session_configured.clone().unwrap());
@@ -77,7 +77,7 @@ async fn luna_reserve_recovery_survives_task_reconstruction() -> Result<()> {
         /*initial_user_message*/ None,
     );
     init.has_chatgpt_account = true;
-    init.has_codex_backend_auth = true;
+    init.has_ava_backend_auth = true;
     // No in-memory transition state is inherited: resume must recover the persisted target.
     app.replace_chat_widget(ChatWidget::new_with_app_event(init));
     app.chat_widget.handle_thread_session(resumed);
@@ -103,7 +103,7 @@ async fn luna_reserve_recovery_survives_task_reconstruction() -> Result<()> {
     );
     assert!(
         !app.config
-            .codex_home
+            .ava_home
             .join("tui-luna-reserve")
             .join(format!("{}.json", app.active_thread_id.unwrap()))
             .exists()
@@ -133,7 +133,7 @@ async fn luna_reserve_entry_dispatches_an_already_queued_turn_with_accepted_sett
         app.chat_widget
             .handle_key_event(KeyEvent::from(KeyCode::Enter));
         let pending = std::iter::from_fn(|| events.try_recv().ok())
-            .find(|event| matches!(event, AppEvent::CodexOp(AppCommand::UserTurn { .. })))
+            .find(|event| matches!(event, AppEvent::AvaOp(AppCommand::UserTurn { .. })))
             .expect("queued turn before the usage response");
         requests.lock().unwrap().clear();
         let mut tui = crate::tui::test_support::make_test_tui()?;
@@ -155,7 +155,7 @@ async fn luna_reserve_entry_dispatches_an_already_queued_turn_with_accepted_sett
         assert_eq!(methods, ["thread/settings/update", "turn/start"]);
         let settings: ThreadSettingsUpdateParams =
             serde_json::from_value(sent[0].params.clone().unwrap())?;
-        let turn: codex_app_server_protocol::TurnStartParams =
+        let turn: ava_app_server_protocol::TurnStartParams =
             serde_json::from_value(sent[1].params.clone().unwrap())?;
         assert_eq!(
             (
@@ -191,7 +191,7 @@ async fn luna_reserve_recovery_restores_task_and_pending_turn_after_fresh_backen
         app.chat_widget
             .set_reasoning_effort(Some(ReasoningEffortConfig::High));
         let original_mode = app.chat_widget.effective_collaboration_mode();
-        let config_path = app.config.codex_home.join("config.toml");
+        let config_path = app.config.ava_home.join("config.toml");
         let saved_config = std::fs::read(&config_path).ok();
         let mut tui = crate::tui::test_support::make_test_tui()?;
         requests.lock().unwrap().clear();
@@ -218,7 +218,7 @@ async fn luna_reserve_recovery_restores_task_and_pending_turn_after_fresh_backen
             .handle_key_event(KeyEvent::from(KeyCode::Enter));
         let mut pending = std::iter::from_fn(|| events.try_recv().ok())
             .find_map(|event| match event {
-                AppEvent::CodexOp(op @ AppCommand::UserTurn { .. }) => Some(op),
+                AppEvent::AvaOp(op @ AppCommand::UserTurn { .. }) => Some(op),
                 _ => None,
             })
             .expect("queued user turn");
@@ -227,7 +227,7 @@ async fn luna_reserve_recovery_restores_task_and_pending_turn_after_fresh_backen
 
         let mut recovered = reserve_response();
         recovered.ordinary_usage_allowed = Some(!has_credits);
-        recovered.rate_limits.credits = Some(codex_app_server_protocol::CreditsSnapshot {
+        recovered.rate_limits.credits = Some(ava_app_server_protocol::CreditsSnapshot {
             has_credits,
             unlimited: false,
             balance: None,
@@ -282,7 +282,7 @@ async fn luna_reserve_recovery_restores_task_and_pending_turn_after_fresh_backen
         assert!(
             !queued.iter().any(|event| matches!(
                 event,
-                AppEvent::CodexOp(_) | AppEvent::PersistModelSelection { .. }
+                AppEvent::AvaOp(_) | AppEvent::PersistModelSelection { .. }
             )),
             "recovery must not replay a turn or change global defaults"
         );

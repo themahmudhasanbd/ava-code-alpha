@@ -1,3 +1,3 @@
-# Codex CLI
+# Ava CLI
 
-[**Codex CLI Documentation**](https://developers.openai.com/codex/cli)
+[**Ava CLI Documentation**](https://developers.openai.com/codex/cli)

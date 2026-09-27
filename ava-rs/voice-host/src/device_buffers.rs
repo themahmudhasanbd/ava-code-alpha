@@ -109,11 +109,11 @@ pub(super) struct Buffers {
 }
 
 impl Buffers {
-    pub(super) fn take_state(&self) -> std::io::Result<codex_realtime_webrtc::AudioState> {
+    pub(super) fn take_state(&self) -> std::io::Result<ava_realtime_webrtc::AudioState> {
         if self.failed.load(Ordering::Acquire) {
             return Err(std::io::Error::other("audio device failed"));
         }
-        Ok(codex_realtime_webrtc::AudioState {
+        Ok(ava_realtime_webrtc::AudioState {
             microphone_peak: self.microphone_peak.swap(/*val*/ 0, Ordering::AcqRel),
             speaker_peak: self.speaker_peak.swap(/*val*/ 0, Ordering::AcqRel),
         })

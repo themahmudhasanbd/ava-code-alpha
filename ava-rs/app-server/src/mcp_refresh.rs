@@ -1,7 +1,7 @@
 use crate::config_manager::ConfigManager;
-use codex_core::CodexThread;
-use codex_core::ThreadManager;
-use codex_core::config::Config;
+use ava_core::AvaThread;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
 use std::io;
 use std::sync::Arc;
 use tracing::warn;
@@ -52,7 +52,7 @@ pub(crate) async fn reload_mcp_config_best_effort(
 }
 
 async fn load_refresh_config(
-    thread: &CodexThread,
+    thread: &AvaThread,
     config_manager: &ConfigManager,
 ) -> io::Result<Config> {
     let thread_config = thread.config().await;
@@ -69,26 +69,26 @@ mod tests {
     use super::*;
     use crate::extensions::ThreadExtensionDependencies;
     use crate::extensions::thread_extensions;
-    use codex_arg0::Arg0DispatchPaths;
-    use codex_config::CloudConfigBundleLoader;
-    use codex_config::LoaderOverrides;
-    use codex_config::ThreadConfigContext;
-    use codex_config::ThreadConfigLoadError;
-    use codex_config::ThreadConfigLoadErrorCode;
-    use codex_config::ThreadConfigLoader;
-    use codex_config::ThreadConfigSource;
-    use codex_config::types::AuthKeyringBackendKind;
-    use codex_config::types::McpServerConfig;
-    use codex_core::config::ConfigOverrides;
-    use codex_core::init_state_db;
-    use codex_core::thread_store_from_config;
-    use codex_exec_server::EnvironmentManager;
-    use codex_extension_api::NoopExtensionEventSink;
-    use codex_home::CodexHomeUserInstructionsProvider;
-    use codex_login::AuthManager;
-    use codex_login::CodexAuth;
-    use codex_protocol::protocol::SessionSource;
-    use codex_utils_absolute_path::AbsolutePathBuf;
+    use ava_arg0::Arg0DispatchPaths;
+    use ava_config::CloudConfigBundleLoader;
+    use ava_config::LoaderOverrides;
+    use ava_config::ThreadConfigContext;
+    use ava_config::ThreadConfigLoadError;
+    use ava_config::ThreadConfigLoadErrorCode;
+    use ava_config::ThreadConfigLoader;
+    use ava_config::ThreadConfigSource;
+    use ava_config::types::AuthKeyringBackendKind;
+    use ava_config::types::McpServerConfig;
+    use ava_core::config::ConfigOverrides;
+    use ava_core::init_state_db;
+    use ava_core::thread_store_from_config;
+    use ava_exec_server::EnvironmentManager;
+    use ava_extension_api::NoopExtensionEventSink;
+    use ava_home::AvaHomeUserInstructionsProvider;
+    use ava_login::AuthManager;
+    use ava_login::AvaAuth;
+    use ava_protocol::protocol::SessionSource;
+    use ava_utils_absolute_path::AbsolutePathBuf;
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use std::collections::HashMap;
@@ -100,7 +100,7 @@ mod tests {
     async fn strict_refresh_reports_thread_planning_failures() -> anyhow::Result<()> {
         let (temp_dir, thread_manager, config_manager, _loader) = refresh_test_state().await?;
         std::fs::write(
-            temp_dir.path().join(codex_config::CONFIG_TOML_FILE),
+            temp_dir.path().join(ava_config::CONFIG_TOML_FILE),
             "[features]\nsecret_auth_storage = true\n",
         )?;
 
@@ -127,7 +127,7 @@ mod tests {
     async fn best_effort_refresh_updates_healthy_threads() -> anyhow::Result<()> {
         let (temp_dir, thread_manager, config_manager, loader) = refresh_test_state().await?;
         std::fs::write(
-            temp_dir.path().join(codex_config::CONFIG_TOML_FILE),
+            temp_dir.path().join(ava_config::CONFIG_TOML_FILE),
             "[features]\nsecret_auth_storage = true\n",
         )?;
 
@@ -163,7 +163,7 @@ mod tests {
     async fn mcp_config_reload_only_applies_mcp_inputs() -> anyhow::Result<()> {
         let (temp_dir, thread_manager, config_manager, _loader) = refresh_test_state().await?;
         std::fs::write(
-            temp_dir.path().join(codex_config::CONFIG_TOML_FILE),
+            temp_dir.path().join(ava_config::CONFIG_TOML_FILE),
             "model = \"unrelated-model-change\"\n[features]\nsecret_auth_storage = true\n",
         )?;
 
@@ -209,11 +209,11 @@ mod tests {
             )
             .await?;
         let thread = thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(thread_config))
+            .start_thread(ava_core::StartThreadOptions::new(thread_config))
             .await?
             .thread;
         std::fs::write(
-            temp_dir.path().join(codex_config::CONFIG_TOML_FILE),
+            temp_dir.path().join(ava_config::CONFIG_TOML_FILE),
             r#"
 [mcp_servers.global]
 command = "global-mcp"
@@ -223,7 +223,7 @@ enabled = false
 
         let refresh_config = load_refresh_config(thread.as_ref(), &config_manager).await?;
         let mut actual = refresh_config.mcp_servers.get().clone();
-        actual.remove(codex_mcp::CODEX_APPS_MCP_SERVER_NAME);
+        actual.remove(ava_mcp::AVA_APPS_MCP_SERVER_NAME);
         let expected = serde_json::from_value::<HashMap<String, McpServerConfig>>(json!({
             "global": {
                 "command": "global-mcp",
@@ -254,7 +254,7 @@ enabled = false
         }
         let thread = good_thread.expect("good test thread should exist");
         std::fs::write(
-            temp_dir.path().join(codex_config::CONFIG_TOML_FILE),
+            temp_dir.path().join(ava_config::CONFIG_TOML_FILE),
             r#"
 [mcp_servers.refreshed]
 command = "refreshed-mcp"
@@ -287,7 +287,7 @@ enabled = false
         std::fs::create_dir_all(&good_cwd)?;
         std::fs::create_dir_all(&bad_cwd)?;
         std::fs::write(
-            temp_dir.path().join(codex_config::CONFIG_TOML_FILE),
+            temp_dir.path().join(ava_config::CONFIG_TOML_FILE),
             "[features]\nsecret_auth_storage = false\n",
         )?;
 
@@ -308,14 +308,14 @@ enabled = false
             )
             .await?;
 
-        let auth_manager = AuthManager::from_auth_for_testing(CodexAuth::from_api_key("dummy"));
+        let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::from_api_key("dummy"));
         let state_db = init_state_db(&good_config)
             .await
             .expect("refresh tests require state db");
         let thread_store = thread_store_from_config(&good_config, Some(state_db.clone()));
         let environment_manager = Arc::new(EnvironmentManager::default_for_tests());
-        let executor_skill_provider: Arc<dyn codex_skills_extension::SkillProvider> = Arc::new(
-            codex_skills_extension::ExecutorSkillProvider::new_with_restriction_product(
+        let executor_skill_provider: Arc<dyn ava_skills_extension::SkillProvider> = Arc::new(
+            ava_skills_extension::ExecutorSkillProvider::new_with_restriction_product(
                 Arc::clone(&environment_manager),
                 SessionSource::Exec.restriction_product(),
             ),
@@ -324,17 +324,17 @@ enabled = false
             ThreadManager::new(
                 &good_config,
                 auth_manager.clone(),
-                codex_core::build_models_manager(&good_config, auth_manager.clone()),
-                codex_core::CodexAppsToolsCache::default(),
+                ava_core::build_models_manager(&good_config, auth_manager.clone()),
+                ava_core::AvaAppsToolsCache::default(),
                 SessionSource::Exec,
                 Arc::clone(&environment_manager),
                 thread_extensions(ThreadExtensionDependencies {
                     event_sink: Arc::new(NoopExtensionEventSink),
                     auth_manager: auth_manager.clone(),
                     state_db: Some(state_db.clone()),
-                    analytics_events_client: codex_analytics::AnalyticsEventsClient::disabled(),
+                    analytics_events_client: ava_analytics::AnalyticsEventsClient::disabled(),
                     thread_manager: thread_manager.clone(),
-                    goal_service: Arc::new(codex_goal_extension::GoalService::new()),
+                    goal_service: Arc::new(ava_goal_extension::GoalService::new()),
                     environment_manager: Arc::clone(&environment_manager),
                     executor_skill_provider: Arc::clone(&executor_skill_provider),
                     git_attribution_base_url: good_config.chatgpt_base_url.clone(),
@@ -342,23 +342,23 @@ enabled = false
                     queue_service: None,
                     turn_start_admission: None,
                 }),
-                Arc::new(CodexHomeUserInstructionsProvider::new(
-                    good_config.codex_home.clone(),
+                Arc::new(AvaHomeUserInstructionsProvider::new(
+                    good_config.ava_home.clone(),
                 )),
                 /*analytics_events_client*/ None,
-                codex_core::passthrough_image_store(),
+                ava_core::passthrough_image_store(),
                 Arc::clone(&thread_store),
-                codex_core::local_agent_graph_store_from_state_db(Some(&state_db)),
+                ava_core::local_agent_graph_store_from_state_db(Some(&state_db)),
                 "11111111-1111-4111-8111-111111111111".to_string(),
                 /*attestation_provider*/ None,
                 /*external_time_provider*/ None,
             )
         });
         thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(good_config))
+            .start_thread(ava_core::StartThreadOptions::new(good_config))
             .await?;
         thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(bad_config))
+            .start_thread(ava_core::StartThreadOptions::new(bad_config))
             .await?;
 
         let loader = Arc::new(CountingThreadConfigLoader {
@@ -411,7 +411,7 @@ enabled = false
         fn load(
             &self,
             context: ThreadConfigContext,
-        ) -> codex_config::ThreadConfigLoaderFuture<'_, Vec<ThreadConfigSource>> {
+        ) -> ava_config::ThreadConfigLoaderFuture<'_, Vec<ThreadConfigSource>> {
             Box::pin(CountingThreadConfigLoader::load(self, context))
         }
     }

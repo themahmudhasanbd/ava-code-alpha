@@ -3,23 +3,23 @@
 
 use std::collections::HashMap;
 
-use codex_extension_api::AllowedTools;
-use codex_extension_api::ToolName;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::PermissionProfileSnapshot;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnStartOptions;
-use codex_protocol::user_input::UserInput;
+use ava_extension_api::AllowedTools;
+use ava_extension_api::ToolName;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfileSnapshot;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnStartOptions;
+use ava_protocol::user_input::UserInput;
 use serde_json::Value;
 
 /// Guardian's configuration function for the host's concrete config type.
@@ -43,7 +43,7 @@ pub fn reviewer_permission_profile(profile: &PermissionProfile) -> PermissionPro
     profile
         .intersect_with_read_only()
         .unwrap_or(PermissionProfile::External {
-            network: codex_protocol::permissions::NetworkSandboxPolicy::Restricted,
+            network: ava_protocol::permissions::NetworkSandboxPolicy::Restricted,
         })
 }
 

@@ -4,11 +4,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Instant;
 
-use codex_exec_server_protocol::JSONRPCError;
-use codex_exec_server_protocol::JSONRPCNotification;
-use codex_exec_server_protocol::JSONRPCRequest;
-use codex_exec_server_protocol::JSONRPCResponse;
-use codex_exec_server_protocol::RequestId;
+use ava_exec_server_protocol::JSONRPCError;
+use ava_exec_server_protocol::JSONRPCNotification;
+use ava_exec_server_protocol::JSONRPCRequest;
+use ava_exec_server_protocol::JSONRPCResponse;
+use ava_exec_server_protocol::RequestId;
 use tokio::sync::Semaphore;
 use tokio::sync::mpsc;
 use tokio::sync::watch;

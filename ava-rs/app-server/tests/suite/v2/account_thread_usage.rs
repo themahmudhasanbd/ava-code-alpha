@@ -4,14 +4,14 @@ use app_test_support::ChatGptIdTokenClaims;
 use app_test_support::TestAppServer;
 use app_test_support::encode_id_token;
 use app_test_support::write_chatgpt_auth;
-use codex_app_server_protocol::AccountTokenUsageSummary;
-use codex_app_server_protocol::GetAccountTokenUsageResponse;
-use codex_app_server_protocol::JSONRPCError;
-use codex_app_server_protocol::LoginAccountResponse;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::ThreadUsage;
-use codex_app_server_protocol::ThreadUsageBreakdownGroup;
-use codex_config::types::AuthCredentialsStoreMode;
+use ava_app_server_protocol::AccountTokenUsageSummary;
+use ava_app_server_protocol::GetAccountTokenUsageResponse;
+use ava_app_server_protocol::JSONRPCError;
+use ava_app_server_protocol::LoginAccountResponse;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::ThreadUsage;
+use ava_app_server_protocol::ThreadUsageBreakdownGroup;
+use ava_config::types::AuthCredentialsStoreMode;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -29,31 +29,31 @@ const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 #[tokio::test]
 async fn account_thread_usage_uses_active_workspace_and_canonical_thread_ids() -> Result<()> {
     let thread_id = "019fc8ab-1fb2-7000-8000-000000000123";
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!("chatgpt_base_url = \"{}\"\n", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("active-token").account_id("active-workspace"),
         AuthCredentialsStoreMode::File,
     )?;
 
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("different-token").account_id("different-workspace"),
         AuthCredentialsStoreMode::File,
     )?;
 
     Mock::given(method("POST"))
-        .and(path("/api/codex/usage/thread_usage/query"))
+        .and(path("/api/ava/usage/thread_usage/query"))
         .and(header("authorization", "Bearer active-token"))
         .and(header("chatgpt-account-id", "active-workspace"))
         .and(body_json(json!({ "thread_ids": [thread_id] })))
@@ -123,10 +123,10 @@ async fn account_thread_usage_uses_active_workspace_and_canonical_thread_ids() -
 #[tokio::test]
 async fn account_thread_usage_supports_externally_managed_authentication() -> Result<()> {
     let thread_id = "019fc8ab-1fb2-7000-8000-000000000456";
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!("chatgpt_base_url = \"{}\"\n", server.uri()),
     )?;
     let access_token = encode_id_token(
@@ -136,7 +136,7 @@ async fn account_thread_usage_supports_externally_managed_authentication() -> Re
             .chatgpt_account_id("external-workspace"),
     )?;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -152,7 +152,7 @@ async fn account_thread_usage_supports_externally_managed_authentication() -> Re
     assert_eq!(login, LoginAccountResponse::ChatgptAuthTokens {});
 
     Mock::given(method("POST"))
-        .and(path("/api/codex/usage/thread_usage/query"))
+        .and(path("/api/ava/usage/thread_usage/query"))
         .and(header("authorization", format!("Bearer {access_token}")))
         .and(header("chatgpt-account-id", "external-workspace"))
         .and(body_json(json!({ "thread_ids": [thread_id] })))
@@ -187,25 +187,25 @@ async fn account_thread_usage_supports_externally_managed_authentication() -> Re
 #[tokio::test]
 async fn account_thread_usage_hides_unavailable_billing_routes() -> Result<()> {
     let thread_id = "019fc8ab-1fb2-7000-8000-000000000789";
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!("chatgpt_base_url = \"{}\"\n", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("active-token").account_id("active-workspace"),
         AuthCredentialsStoreMode::File,
     )?;
     Mock::given(method("POST"))
-        .and(path("/api/codex/usage/thread_usage/query"))
+        .and(path("/api/ava/usage/thread_usage/query"))
         .respond_with(ResponseTemplate::new(/*s*/ 403))
         .expect(/*r*/ 1)
         .mount(&server)
         .await;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;
@@ -221,25 +221,25 @@ async fn account_thread_usage_hides_unavailable_billing_routes() -> Result<()> {
 
 #[tokio::test]
 async fn account_thread_usage_rejects_malformed_thread_ids_before_backend_requests() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         format!("chatgpt_base_url = \"{}\"\n", server.uri()),
     )?;
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("active-token").account_id("active-workspace"),
         AuthCredentialsStoreMode::File,
     )?;
     Mock::given(method("POST"))
-        .and(path("/api/codex/usage/thread_usage/query"))
+        .and(path("/api/ava/usage/thread_usage/query"))
         .respond_with(ResponseTemplate::new(/*s*/ 200))
         .expect(/*r*/ 0)
         .mount(&server)
         .await;
     let mut app_server = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .with_env_overrides(&[("OPENAI_API_KEY", None)])
         .build_initialized_with_timeout(DEFAULT_READ_TIMEOUT)
         .await?;

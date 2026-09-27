@@ -5,25 +5,25 @@ use std::time::Duration;
 
 use anyhow::Result;
 use bytes::Bytes;
-use codex_api::ApiError;
-use codex_api::AuthError;
-use codex_api::AuthProvider;
-use codex_api::Compression;
-use codex_api::Provider;
-use codex_api::ResponsesApiRequest;
-use codex_api::ResponsesClient;
-use codex_api::ResponsesOptions;
-use codex_client::HttpTransport;
-use codex_client::Request;
-use codex_client::RequestBody;
-use codex_client::Response;
-use codex_client::StreamResponse;
-use codex_client::TransportError;
-use codex_protocol::ResponseItemId;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_api::ApiError;
+use ava_api::AuthError;
+use ava_api::AuthProvider;
+use ava_api::Compression;
+use ava_api::Provider;
+use ava_api::ResponsesApiRequest;
+use ava_api::ResponsesClient;
+use ava_api::ResponsesOptions;
+use ava_client::HttpTransport;
+use ava_client::Request;
+use ava_client::RequestBody;
+use ava_client::Response;
+use ava_client::StreamResponse;
+use ava_client::TransportError;
+use ava_protocol::ResponseItemId;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::StatusCode;
@@ -141,7 +141,7 @@ fn provider(name: &str) -> Provider {
         base_url: "https://example.com/v1".to_string(),
         query_params: None,
         headers: HeaderMap::new(),
-        retry: codex_api::RetryConfig {
+        retry: ava_api::RetryConfig {
             max_attempts: 1,
             base_delay: Duration::from_millis(1),
             retry_429: false,
@@ -155,7 +155,7 @@ fn provider(name: &str) -> Provider {
 #[derive(Debug, Default)]
 struct FlakyTransportState {
     attempts: i64,
-    requests: Vec<(RequestBody, HeaderMap, codex_client::RequestCompression)>,
+    requests: Vec<(RequestBody, HeaderMap, ava_client::RequestCompression)>,
 }
 
 #[derive(Clone)]
@@ -183,7 +183,7 @@ impl FlakyTransport {
             .attempts
     }
 
-    fn requests(&self) -> Vec<(RequestBody, HeaderMap, codex_client::RequestCompression)> {
+    fn requests(&self) -> Vec<(RequestBody, HeaderMap, ava_client::RequestCompression)> {
         self.state
             .lock()
             .expect("flaky transport state mutex should not be poisoned")
@@ -243,7 +243,7 @@ impl FailsOnceAuth {
 impl AuthProvider for FailsOnceAuth {
     fn add_auth_headers(&self, _headers: &mut HeaderMap) {}
 
-    fn apply_auth(&self, request: Request) -> codex_api::AuthProviderFuture<'_> {
+    fn apply_auth(&self, request: Request) -> ava_api::AuthProviderFuture<'_> {
         Box::pin(FailsOnceAuth::apply_auth(self, request))
     }
 }
@@ -478,7 +478,7 @@ async fn streaming_client_retries_on_transport_error() -> Result<()> {
         requests[0].1.get(http::header::CONTENT_ENCODING),
         Some(&HeaderValue::from_static("zstd"))
     );
-    assert_eq!(requests[0].2, codex_client::RequestCompression::None);
+    assert_eq!(requests[0].2, ava_client::RequestCompression::None);
     Ok(())
 }
 

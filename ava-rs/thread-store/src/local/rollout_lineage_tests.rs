@@ -1,13 +1,13 @@
 use std::fs;
 use std::path::Path;
 
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::HistoryPosition;
-use codex_protocol::protocol::SessionMeta;
-use codex_protocol::protocol::SessionMetaLine;
-use codex_protocol::protocol::ThreadHistoryMode;
-use codex_rollout::RolloutItem;
-use codex_rollout::RolloutLine;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::HistoryPosition;
+use ava_protocol::protocol::SessionMeta;
+use ava_protocol::protocol::SessionMetaLine;
+use ava_protocol::protocol::ThreadHistoryMode;
+use ava_rollout::RolloutItem;
+use ava_rollout::RolloutLine;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -43,7 +43,7 @@ async fn rejects_reference_lineage_escaping_symlinked_sessions_root() {
         .await
         .expect_err("escaping reference lineage should be rejected");
 
-    assert!(error.to_string().contains("must be in Codex home"));
+    assert!(error.to_string().contains("must be in Ava home"));
 }
 
 #[tokio::test]
@@ -294,7 +294,7 @@ fn write_rollout_under(
             .expect("fixture ordinal");
         lines.push(rollout_line(
             ordinal,
-            RolloutItem::EventMsg(codex_protocol::protocol::EventMsg::ShutdownComplete),
+            RolloutItem::EventMsg(ava_protocol::protocol::EventMsg::ShutdownComplete),
         ));
     }
     fs::write(path.as_path(), format!("{}\n", lines.join("\n"))).expect("write rollout");
@@ -327,7 +327,7 @@ fn rollout_end_byte_offset(path: &Path, end_ordinal_exclusive: u64) -> u64 {
     let end_byte_offset = bytes
         .split_inclusive(|byte| *byte == b'\n')
         .take_while(|line| {
-            codex_rollout::parse_rollout_line_bytes(line)
+            ava_rollout::parse_rollout_line_bytes(line)
                 .expect("parse rollout fixture")
                 .ordinal
                 .expect("paginated rollout ordinal")

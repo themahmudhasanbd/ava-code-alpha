@@ -5,7 +5,7 @@ use super::*;
 
 fn exec_server_from_args(args: &[&str]) -> ExecServerCommand {
     let cli = MultitoolCli::try_parse_from(
-        ["codex", "exec-server"]
+        ["ava", "exec-server"]
             .into_iter()
             .chain(args.iter().copied()),
     )
@@ -24,7 +24,7 @@ fn exec_server_help_documents_remote_options() {
             command.mut_arg("exit_on_stdin_close", |arg| arg.hide_env_values(true))
         });
     let help = command
-        .try_get_matches_from(["codex", "exec-server", "--help"])
+        .try_get_matches_from(["ava", "exec-server", "--help"])
         .expect_err("help should exit before running the executor");
     assert_eq!(help.kind(), ErrorKind::DisplayHelp);
     let help_text = help
@@ -150,7 +150,7 @@ fn exec_server_rejects_missing_or_conflicting_remote_options() {
     ] {
         let error = MultitoolCli::try_parse_from(
             [
-                "codex",
+                "ava",
                 "exec-server",
                 "--remote",
                 "https://registry.example.com",
@@ -180,7 +180,7 @@ fn exec_server_transport_and_aws_options_require_registration_arguments() {
         ],
     ] {
         let error =
-            MultitoolCli::try_parse_from(["codex", "exec-server"].into_iter().chain(options))
+            MultitoolCli::try_parse_from(["ava", "exec-server"].into_iter().chain(options))
                 .expect_err("require remote URL and environment ID");
         assert_eq!(error.kind(), ErrorKind::MissingRequiredArgument);
     }

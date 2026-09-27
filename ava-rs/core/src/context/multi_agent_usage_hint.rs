@@ -1,5 +1,5 @@
 use super::ContextualUserFragment;
-use codex_protocol::models::ContentItemKind;
+use ava_protocol::models::ContentItemKind;
 
 /// Configured multi-agent instructions emitted as a standalone developer message.
 #[derive(Clone, Debug, PartialEq, Eq)]

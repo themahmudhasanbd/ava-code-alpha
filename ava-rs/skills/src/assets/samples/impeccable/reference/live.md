@@ -4,7 +4,7 @@ Interactive live variant mode: select elements in the browser, pick a design act
 
 A running dev server with hot module replacement (Vite, Next.js, Bun, etc.), OR a static HTML file open in the browser.
 
-Codex: run live helper commands, the app dev server, and any dependency-installing setup with `sandbox_permissions: "require_escalated"` from the start; live mode depends on localhost and package-manager network access that the sandbox blocks.
+Ava: run live helper commands, the app dev server, and any dependency-installing setup with `sandbox_permissions: "require_escalated"` from the start; live mode depends on localhost and package-manager network access that the sandbox blocks.
 
 ## The contract (read once)
 
@@ -24,7 +24,7 @@ The global bar **Impeccable mark** dims and shows a pulsing amber dot when no ag
 Harness policy:
 - **Claude Code**: run the poll as a **background task** (no short timeout). The harness notifies you when it completes, so the main conversation stays free. Do not block the shell.
 - **Cursor**: run **one-shot** poll in a **background terminal** with notify on `"type":"(steer|generate|accept|discard|exit)"`. After each event the poll exits; handle it, `--reply`, then start `live-poll.mjs` again. Do **not** use `--stream` on Cursor: incremental stdout notify is slower in practice than exit-based notify (~5s vs sub-second in testing).
-- **Codex**: run the poll in the **foreground** (blocking shell; not a background task, not a subagent). Codex background exec sessions do not reliably surface poll stdout back into the conversation at the moment events arrive, so a "fire-and-forget" background poll will stall live mode.
+- **Ava**: run the poll in the **foreground** (blocking shell; not a background task, not a subagent). Ava background exec sessions do not reliably surface poll stdout back into the conversation at the moment events arrive, so a "fire-and-forget" background poll will stall live mode.
 - **Other harnesses**: one-shot foreground unless you know stdout reliably returns to this session when a shell exits.
 
 Chat is overhead. No recap, no tutorial output, no pasting PRODUCT / DESIGN bodies. Spend tokens on tools and edits; on failure, one or two short sentences.

@@ -4,11 +4,11 @@ use crate::config::Config;
 use crate::config::TokenBudgetConfig;
 use crate::config::resolve_token_budget_config;
 use crate::context::ContextualUserFragment;
-use codex_features::Feature;
-use codex_login::CodexAuth;
-use codex_protocol::account::PlanType;
-use codex_protocol::auth::AuthMode;
-use codex_protocol::openai_models::ModelInfo;
+use ava_features::Feature;
+use ava_login::AvaAuth;
+use ava_protocol::account::PlanType;
+use ava_protocol::auth::AuthMode;
+use ava_protocol::openai_models::ModelInfo;
 
 fn experimental_context_is_eligible(auth_mode: AuthMode, plan_type: Option<PlanType>) -> bool {
     auth_mode == AuthMode::Chatgpt
@@ -20,13 +20,13 @@ fn experimental_context_is_eligible(auth_mode: AuthMode, plan_type: Option<PlanT
 
 pub(super) fn apply_experimental_context(
     config: &mut Config,
-    auth: Option<&CodexAuth>,
+    auth: Option<&AvaAuth>,
     starting_model: &ModelInfo,
 ) -> std::io::Result<()> {
     let provider = &config.model_provider;
     if !config.features.enabled(Feature::ContextManagement)
         || !starting_model.supports_experimental_context
-        || !provider.supports_codex_backend_routes()
+        || !provider.supports_ava_backend_routes()
         || !provider.requires_openai_auth
         || provider.env_key.is_some()
         || provider.experimental_bearer_token.is_some()
@@ -226,8 +226,8 @@ pub(super) async fn maybe_record(
 #[cfg(test)]
 mod tests {
     use super::experimental_context_is_eligible;
-    use codex_protocol::account::PlanType;
-    use codex_protocol::auth::AuthMode;
+    use ava_protocol::account::PlanType;
+    use ava_protocol::auth::AuthMode;
 
     #[test]
     fn experimental_context_requires_eligible_chatgpt_subscription() {

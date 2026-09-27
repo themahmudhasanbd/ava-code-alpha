@@ -1,11 +1,11 @@
 [package]
-name = "codex-app-server-daemon"
+name = "ava-app-server-daemon"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "codex_app_server_daemon"
+name = "ava_app_server_daemon"
 path = "src/lib.rs"
 doctest = false
 
@@ -14,12 +14,12 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-codex-app-server-protocol = { workspace = true }
-codex-app-server-transport = { workspace = true }
-codex-http-client = { workspace = true }
-codex-install-context = { workspace = true }
-codex-utils-home-dir = { workspace = true }
-codex-uds = { workspace = true }
+ava-app-server-protocol = { workspace = true }
+ava-app-server-transport = { workspace = true }
+ava-http-client = { workspace = true }
+ava-install-context = { workspace = true }
+ava-utils-home-dir = { workspace = true }
+ava-uds = { workspace = true }
 futures = { workspace = true }
 libc = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

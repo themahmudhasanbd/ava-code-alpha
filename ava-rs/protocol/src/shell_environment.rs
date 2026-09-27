@@ -3,16 +3,16 @@ use crate::config_types::ShellEnvironmentPolicy;
 use crate::config_types::ShellEnvironmentPolicyInherit;
 use std::collections::HashMap;
 
-pub const CODEX_SESSION_ID_ENV_VAR: &str = "CODEX_SESSION_ID";
-pub const CODEX_THREAD_ID_ENV_VAR: &str = "CODEX_THREAD_ID";
-pub const CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR: &str = "CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN";
+pub const AVA_SESSION_ID_ENV_VAR: &str = "AVA_SESSION_ID";
+pub const AVA_THREAD_ID_ENV_VAR: &str = "AVA_THREAD_ID";
+pub const AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR: &str = "AVA_EXEC_SERVER_NOISE_AUTH_TOKEN";
 pub const OPENAI_FEDERATION_RULE_ID_ENV_VAR: &str = "OPENAI_FEDERATION_RULE_ID";
 pub const OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR: &str = "OPENAI_IDENTITY_TOKEN_FILE";
 pub const OPENAI_WORKLOAD_IDENTITY_CONTEXT_ENV_VAR: &str = "OPENAI_WORKLOAD_IDENTITY_CONTEXT";
 
 /// Environment variables that model-reachable child processes must not inherit.
 pub const NON_INHERITABLE_ENV_VARS: &[&str] = &[
-    CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR,
+    AVA_EXEC_SERVER_NOISE_AUTH_TOKEN_ENV_VAR,
     "NODE_REPL_AUTH_TOKEN",
     OPENAI_FEDERATION_RULE_ID_ENV_VAR,
     OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR,
@@ -28,7 +28,7 @@ pub fn is_non_inheritable_env_var(name: &str) -> bool {
 /// Configures a child command to omit non-inheritable variables from the
 /// process environment and explicit command overrides.
 ///
-/// This prevents accidental propagation of Codex launch context; it is not a
+/// This prevents accidental propagation of Ava launch context; it is not a
 /// filesystem security boundary for the referenced identity-token file.
 pub fn scrub_non_inheritable_env_vars(command: &mut std::process::Command) {
     let configured_names = command
@@ -149,7 +149,7 @@ where
 
     // Step 6 - Populate the thread ID environment variable when provided.
     if let Some(thread_id) = thread_id {
-        env_map.insert(CODEX_THREAD_ID_ENV_VAR.to_string(), thread_id.to_string());
+        env_map.insert(AVA_THREAD_ID_ENV_VAR.to_string(), thread_id.to_string());
     }
 
     // Restricted launch context cannot be restored through user-provided shell
@@ -222,7 +222,7 @@ mod windows_tests {
             ("Shell", "C:\\Program Files\\Git\\bin\\bash.exe"),
             ("SystemRoot", "C:\\Windows"),
             ("WinDir", "C:\\Windows"),
-            ("AppData", "C:\\Users\\codex\\AppData\\Roaming"),
+            ("AppData", "C:\\Users\\ava\\AppData\\Roaming"),
             ("TmpDir", "C:\\Temp\\custom"),
             ("OPENAI_API_KEY", "secret"),
         ]);
@@ -244,7 +244,7 @@ mod windows_tests {
             ("WinDir".to_string(), "C:\\Windows".to_string()),
             (
                 "AppData".to_string(),
-                "C:\\Users\\codex\\AppData\\Roaming".to_string(),
+                "C:\\Users\\ava\\AppData\\Roaming".to_string(),
             ),
             ("TmpDir".to_string(), "C:\\Temp\\custom".to_string()),
         ]);
@@ -299,7 +299,7 @@ mod non_windows_tests {
     fn core_inherit_preserves_non_windows_core_vars_case_insensitively() {
         let vars = make_vars(&[
             ("path", "/usr/bin"),
-            ("home", "/home/codex"),
+            ("home", "/home/ava"),
             ("TmpDir", "/tmp/custom"),
             ("OPENAI_API_KEY", "secret"),
         ]);
@@ -313,7 +313,7 @@ mod non_windows_tests {
         let result = populate_env(vars, &policy, /*thread_id*/ None);
         let expected = HashMap::from([
             ("path".to_string(), "/usr/bin".to_string()),
-            ("home".to_string(), "/home/codex".to_string()),
+            ("home".to_string(), "/home/ava".to_string()),
             ("TmpDir".to_string(), "/tmp/custom".to_string()),
         ]);
 

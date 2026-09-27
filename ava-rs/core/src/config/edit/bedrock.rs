@@ -1,7 +1,7 @@
 use super::ConfigEditsBuilder;
 use crate::config::Config;
-use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
-use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
+use ava_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
 
 impl ConfigEditsBuilder {
     /// Return the user config paths to clear for the selected Bedrock provider.

@@ -16,20 +16,20 @@ use crate::tests::support::sample_turn_completed_notification;
 use crate::tests::support::sample_turn_resolved_config;
 use crate::tests::support::sample_turn_start_request;
 use crate::tests::support::sample_turn_start_response;
-use codex_app_server_protocol::ClientInfo;
-use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::ClientResponsePayload;
-use codex_app_server_protocol::CodexErrorInfo;
-use codex_app_server_protocol::InitializeParams;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_app_server_protocol::NonSteerableTurnKind;
-use codex_app_server_protocol::RequestId;
-use codex_app_server_protocol::TurnError as AppServerTurnError;
-use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::TurnStatus as AppServerTurnStatus;
-use codex_app_server_protocol::TurnSteerParams;
-use codex_app_server_protocol::TurnSteerResponse;
-use codex_app_server_protocol::UserInput;
+use ava_app_server_protocol::ClientInfo;
+use ava_app_server_protocol::ClientRequest;
+use ava_app_server_protocol::ClientResponsePayload;
+use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::InitializeParams;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_app_server_protocol::NonSteerableTurnKind;
+use ava_app_server_protocol::RequestId;
+use ava_app_server_protocol::TurnError as AppServerTurnError;
+use ava_app_server_protocol::TurnInterruptResponse;
+use ava_app_server_protocol::TurnStatus as AppServerTurnStatus;
+use ava_app_server_protocol::TurnSteerParams;
+use ava_app_server_protocol::TurnSteerResponse;
+use ava_app_server_protocol::UserInput;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -90,7 +90,7 @@ fn non_steerable_review_error() -> JSONRPCErrorError {
             serde_json::to_value(AppServerTurnError {
                 misalignment: None,
                 message: "cannot steer a review turn".to_string(),
-                codex_error_info: Some(CodexErrorInfo::ActiveTurnNotSteerable {
+                ava_error_info: Some(AvaErrorInfo::ActiveTurnNotSteerable {
                     turn_kind: NonSteerableTurnKind::Review,
                 }),
                 additional_details: None,
@@ -137,13 +137,13 @@ async fn ingest_rejected_turn_steer(
                 connection_id: 8,
                 params: InitializeParams {
                     client_info: ClientInfo {
-                        name: "codex-web".to_string(),
+                        name: "ava-web".to_string(),
                         title: None,
                         version: "1.0.0".to_string(),
                     },
                     capabilities: None,
                 },
-                product_client_id: "codex-web".to_string(),
+                product_client_id: "ava-web".to_string(),
                 runtime: sample_runtime_metadata(),
                 rpc_transport: AppServerRpcTransport::Stdio,
             },
@@ -232,7 +232,7 @@ async fn accepted_turn_steer_emits_expected_event() {
 
     assert_eq!(out.len(), 1);
     let payload = serde_json::to_value(&out[0]).expect("serialize turn steer event");
-    assert_eq!(payload["event_type"], json!("codex_turn_steer_event"));
+    assert_eq!(payload["event_type"], json!("ava_turn_steer_event"));
     assert_eq!(payload["event_params"]["thread_id"], json!("thread-2"));
     assert_eq!(
         payload["event_params"]["session_id"],
@@ -251,10 +251,10 @@ async fn accepted_turn_steer_emits_expected_event() {
     );
     assert_eq!(
         payload["event_params"]["app_server_client"]["product_client_id"],
-        json!("codex-tui")
+        json!("ava-tui")
     );
     assert_eq!(
-        payload["event_params"]["runtime"]["codex_rs_version"],
+        payload["event_params"]["runtime"]["ava_rs_version"],
         json!("0.1.0")
     );
     assert_eq!(payload["event_params"]["thread_source"], json!("user"));
@@ -275,17 +275,17 @@ async fn rejected_turn_steer_uses_request_connection_metadata() {
     )
     .await;
 
-    assert_eq!(payload["event_type"], json!("codex_turn_steer_event"));
+    assert_eq!(payload["event_type"], json!("ava_turn_steer_event"));
     assert_eq!(payload["event_params"]["thread_id"], json!("thread-2"));
     assert_eq!(payload["event_params"]["expected_turn_id"], json!("turn-2"));
     assert_eq!(payload["event_params"]["accepted_turn_id"], json!(null));
     assert_eq!(payload["event_params"]["num_input_images"], json!(1));
     assert_eq!(
         payload["event_params"]["app_server_client"]["product_client_id"],
-        json!("codex-tui")
+        json!("ava-tui")
     );
     assert_eq!(
-        payload["event_params"]["runtime"]["codex_rs_version"],
+        payload["event_params"]["runtime"]["ava_rs_version"],
         json!("0.1.0")
     );
     assert_eq!(payload["event_params"]["thread_source"], json!("user"));
@@ -417,7 +417,7 @@ async fn turn_start_error_response_discards_pending_start_request() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -519,7 +519,7 @@ async fn accepted_steers_increment_turn_steer_count() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Completed,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -575,7 +575,7 @@ async fn rejected_turn_interrupt_does_not_tag_interrupted_turn_event() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Interrupted,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -589,7 +589,7 @@ async fn rejected_turn_interrupt_does_not_tag_interrupted_turn_event() {
         json!(null)
     );
     assert_eq!(payload["event_params"]["turn_error"], json!(null));
-    assert_eq!(payload["event_params"]["codex_error_kind"], json!(null));
+    assert_eq!(payload["event_params"]["ava_error_kind"], json!(null));
 }
 
 #[tokio::test]
@@ -634,7 +634,7 @@ async fn accepted_turn_interrupt_records_requested_at_on_turn_event() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Interrupted,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )
@@ -712,7 +712,7 @@ async fn accepted_turn_interrupt_retries_preserve_earliest_requested_at() {
                 "thread-2",
                 "turn-2",
                 AppServerTurnStatus::Interrupted,
-                /*codex_error_info*/ None,
+                /*ava_error_info*/ None,
             ))),
             &mut out,
         )

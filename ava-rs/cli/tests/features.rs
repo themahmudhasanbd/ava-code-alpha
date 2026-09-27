@@ -4,10 +4,10 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use codex_config::ConfigLoadOptions;
-use codex_config::types::AuthCredentialsStoreMode;
-use codex_core::config::load_config_toml_with_layer_stack;
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_config::ConfigLoadOptions;
+use ava_config::types::AuthCredentialsStoreMode;
+use ava_core::config::load_config_toml_with_layer_stack;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use predicates::str::contains;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -19,17 +19,17 @@ use wiremock::matchers::header;
 use wiremock::matchers::method;
 use wiremock::matchers::path;
 
-fn codex_command(codex_home: &Path) -> Result<assert_cmd::Command> {
-    let mut cmd = assert_cmd::Command::new(codex_utils_cargo_bin::cargo_bin("codex")?);
-    cmd.env("CODEX_HOME", codex_home);
+fn ava_command(ava_home: &Path) -> Result<assert_cmd::Command> {
+    let mut cmd = assert_cmd::Command::new(ava_utils_cargo_bin::cargo_bin("ava")?);
+    cmd.env("AVA_HOME", ava_home);
     Ok(cmd)
 }
 
 #[test]
 fn strict_config_rejects_unknown_config_override() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["--strict-config", "-c", "foo=bar", "exec", "hello"])
         .assert()
         .failure()
@@ -70,12 +70,12 @@ fn interactive_validates_config_before_requiring_terminal() -> Result<()> {
     ];
 
     for &(args, config_file, contents, expected_error) in cases {
-        let codex_home = TempDir::new()?;
-        std::fs::write(codex_home.path().join(config_file), contents)?;
+        let ava_home = TempDir::new()?;
+        std::fs::write(ava_home.path().join(config_file), contents)?;
 
-        let mut cmd = codex_command(codex_home.path())?;
+        let mut cmd = ava_command(ava_home.path())?;
         cmd.env("TERM", "xterm-256color")
-            .current_dir(codex_home.path())
+            .current_dir(ava_home.path())
             .args(args)
             .assert()
             .failure()
@@ -88,10 +88,10 @@ fn interactive_validates_config_before_requiring_terminal() -> Result<()> {
 #[test]
 fn interactive_remote_default_preserves_remote_working_directory_before_requiring_terminal()
 -> Result<()> {
-    let codex_home = TempDir::new()?;
-    std::fs::write(codex_home.path().join("config.toml"), "")?;
+    let ava_home = TempDir::new()?;
+    std::fs::write(ava_home.path().join("config.toml"), "")?;
     std::fs::write(
-        codex_home.path().join("environments.toml"),
+        ava_home.path().join("environments.toml"),
         r#"default = "remote"
 include_local = false
 
@@ -100,11 +100,11 @@ id = "remote"
 url = "ws://127.0.0.1:4512"
 "#,
     )?;
-    let remote_only_cwd = codex_home.path().join("remote-only-working-directory");
+    let remote_only_cwd = ava_home.path().join("remote-only-working-directory");
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.env("TERM", "xterm-256color")
-        .current_dir(codex_home.path())
+        .current_dir(ava_home.path())
         .arg("--cd")
         .arg(remote_only_cwd)
         .assert()
@@ -116,14 +116,14 @@ url = "ws://127.0.0.1:4512"
 
 #[test]
 fn strict_config_is_not_supported_for_cloud_command() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["--strict-config", "-c", "foo=bar", "cloud", "list"])
         .assert()
         .failure()
         .stderr(contains(
-            "`--strict-config` is not supported for `codex cloud`",
+            "`--strict-config` is not supported for `ava cloud`",
         ));
 
     Ok(())
@@ -131,10 +131,10 @@ fn strict_config_is_not_supported_for_cloud_command() -> Result<()> {
 
 #[tokio::test]
 async fn features_enable_writes_feature_flag_to_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
     for feature in ["unified_exec", "transcript_v2"] {
-        let mut cmd = codex_command(codex_home.path())?;
+        let mut cmd = ava_command(ava_home.path())?;
         cmd.args(["features", "enable", feature])
             .assert()
             .success()
@@ -142,7 +142,7 @@ async fn features_enable_writes_feature_flag_to_config() -> Result<()> {
                 "Enabled feature `{feature}` in config.toml."
             )));
 
-        let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+        let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
         assert!(config.contains("[features]"));
         assert!(config.contains(&format!("{feature} = true")));
     }
@@ -152,15 +152,15 @@ async fn features_enable_writes_feature_flag_to_config() -> Result<()> {
 
 #[tokio::test]
 async fn features_disable_writes_feature_flag_to_config() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["features", "disable", "shell_tool"])
         .assert()
         .success()
         .stdout(contains("Disabled feature `shell_tool` in config.toml."));
 
-    let config = std::fs::read_to_string(codex_home.path().join("config.toml"))?;
+    let config = std::fs::read_to_string(ava_home.path().join("config.toml"))?;
     assert!(config.contains("[features]"));
     assert!(config.contains("shell_tool = false"));
 
@@ -169,9 +169,9 @@ async fn features_disable_writes_feature_flag_to_config() -> Result<()> {
 
 #[tokio::test]
 async fn features_enable_under_development_feature_prints_warning() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     cmd.args(["features", "enable", "runtime_metrics"])
         .assert()
         .success()
@@ -184,9 +184,9 @@ async fn features_enable_under_development_feature_prints_warning() -> Result<()
 
 #[tokio::test]
 async fn features_list_is_sorted_alphabetically_by_feature_name() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     let output = cmd
         .args(["features", "list"])
         .assert()
@@ -216,15 +216,15 @@ async fn features_list_is_sorted_alphabetically_by_feature_name() -> Result<()> 
 async fn features_list_honors_cloud_managed_feature_requirements() -> Result<()> {
     let server = MockServer::start().await;
     let chatgpt_base_url = format!("{}/backend-api", server.uri());
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let user_config = format!(
         "cli_auth_credentials_store = \"file\"\nchatgpt_base_url = \"{chatgpt_base_url}\"\n\n[features]\nfast_mode = true\n"
     );
-    std::fs::write(codex_home.path().join("config.toml"), &user_config)?;
+    std::fs::write(ava_home.path().join("config.toml"), &user_config)?;
 
     let bootstrap_config = load_config_toml_with_layer_stack(
-        codex_home.path(),
-        Some(&AbsolutePathBuf::from_absolute_path(codex_home.path())?),
+        ava_home.path(),
+        Some(&AbsolutePathBuf::from_absolute_path(ava_home.path())?),
         Vec::new(),
         ConfigLoadOptions::default(),
     )
@@ -241,7 +241,7 @@ async fn features_list_honors_cloud_managed_feature_requirements() -> Result<()>
     }
 
     write_chatgpt_auth(
-        codex_home.path(),
+        ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
             .account_id("workspace-123")
             .chatgpt_account_id("workspace-123")
@@ -266,13 +266,13 @@ async fn features_list_honors_cloud_managed_feature_requirements() -> Result<()>
         .mount(&server)
         .await;
 
-    let mut cmd = codex_command(codex_home.path())?;
+    let mut cmd = ava_command(ava_home.path())?;
     let output = cmd
-        .current_dir(codex_home.path())
+        .current_dir(ava_home.path())
         .env("NO_PROXY", "127.0.0.1,localhost")
         .env("no_proxy", "127.0.0.1,localhost")
-        .env_remove("CODEX_ACCESS_TOKEN")
-        .env_remove("CODEX_API_KEY")
+        .env_remove("AVA_ACCESS_TOKEN")
+        .env_remove("AVA_API_KEY")
         .env_remove("OPENAI_API_KEY")
         .args(["features", "list"])
         .assert()
@@ -291,7 +291,7 @@ async fn features_list_honors_cloud_managed_feature_requirements() -> Result<()>
         ["fast_mode", "stable", "false"]
     );
     assert_eq!(
-        std::fs::read_to_string(codex_home.path().join("config.toml"))?,
+        std::fs::read_to_string(ava_home.path().join("config.toml"))?,
         user_config
     );
     server.verify().await;
@@ -302,7 +302,7 @@ async fn features_list_honors_cloud_managed_feature_requirements() -> Result<()>
 #[test]
 fn remote_start_rejects_add_dir_before_connecting() -> Result<()> {
     let home = TempDir::new()?;
-    let output = codex_command(home.path())?
+    let output = ava_command(home.path())?
         .env("TERM", "xterm-256color")
         .args(["--remote", "ws://127.0.0.1:1", "--add-dir", "remote-extra"])
         .assert()
@@ -321,7 +321,7 @@ fn remote_start_rejects_writable_root_overrides_before_connecting() -> Result<()
         "sandbox_workspace_write={writable_roots=[\"./extra\"],network_access=true}",
     ] {
         let home = TempDir::new()?;
-        let output = codex_command(home.path())?
+        let output = ava_command(home.path())?
             .env("TERM", "xterm-256color")
             .args(["--remote", "ws://127.0.0.1:1", "-c", config_override])
             .assert()
@@ -344,7 +344,7 @@ fn remote_start_allows_network_access_overrides_before_requiring_terminal() -> R
         "sandbox_workspace_write={network_access=true}",
     ] {
         let home = TempDir::new()?;
-        codex_command(home.path())?
+        ava_command(home.path())?
             .env("TERM", "xterm-256color")
             .args(["--remote", "ws://127.0.0.1:1", "-c", config_override])
             .assert()
@@ -370,13 +370,13 @@ fn no_daemon_rejects_agents_and_explicit_remote_targets() -> Result<()> {
         let args = args.split_whitespace().collect::<Vec<_>>();
         let home = TempDir::new()?;
         let expected = if args.contains(&"agents") {
-            "--no-daemon cannot be used with codex agents."
+            "--no-daemon cannot be used with ava agents."
         } else if args.contains(&"queue") && !args.contains(&"--remote") {
-            "--no-daemon cannot be used with codex queue."
+            "--no-daemon cannot be used with ava queue."
         } else {
             "--no-daemon cannot be used with --remote."
         };
-        codex_command(home.path())?
+        ava_command(home.path())?
             .args(args)
             .assert()
             .failure()

@@ -10,10 +10,10 @@
 //! ## Usage
 //!
 //! ```no_run
-//! use codex_state::log_db;
+//! use ava_state::log_db;
 //! use tracing_subscriber::prelude::*;
 //!
-//! # async fn example(state_db: std::sync::Arc<codex_state::StateRuntime>) {
+//! # async fn example(state_db: std::sync::Arc<ava_state::StateRuntime>) {
 //! let layer = log_db::start(state_db);
 //! let _ = tracing_subscriber::registry()
 //!     .with(layer)
@@ -62,23 +62,23 @@ pub fn default_filter() -> Targets {
         .with_target("log", LevelFilter::OFF)
         // Avoid constructing backend diagnostics when no other layer needs them.
         .with_targets(SQLX_LOG_TARGETS.map(|target| (format!("{target}::"), LevelFilter::OFF)))
-        .with_target("codex_rmcp_client", LevelFilter::INFO)
+        .with_target("ava_rmcp_client", LevelFilter::INFO)
         .with_target("opentelemetry-otlp", LevelFilter::OFF)
         .with_target("opentelemetry-http", LevelFilter::OFF)
         .with_target("tonic::transport", LevelFilter::WARN)
         .with_target("tower::buffer", LevelFilter::WARN)
-        .with_target("codex_otel.log_only", LevelFilter::OFF)
-        .with_target("codex_otel.trace_safe", LevelFilter::OFF)
+        .with_target("ava_otel.log_only", LevelFilter::OFF)
+        .with_target("ava_otel.trace_safe", LevelFilter::OFF)
         .with_target("rmcp", LevelFilter::INFO)
-        .with_target("codex_api::responses_websocket_timing", LevelFilter::OFF)
-        .with_target("codex_core::post_sampling_token_estimate", LevelFilter::OFF)
+        .with_target("ava_api::responses_websocket_timing", LevelFilter::OFF)
+        .with_target("ava_core::post_sampling_token_estimate", LevelFilter::OFF)
         // Full model request bodies and streamed response payloads overwhelm the
         // SQLite log database, but remain available to explicit TRACE subscribers.
-        .with_target("codex_http_client::transport", LevelFilter::DEBUG)
-        .with_target("codex_api::sse", LevelFilter::DEBUG)
+        .with_target("ava_http_client::transport", LevelFilter::DEBUG)
+        .with_target("ava_api::sse", LevelFilter::DEBUG)
         // Per-chunk streaming traces otherwise flood the bounded SQLite log queue.
-        .with_target("codex_tui::streaming::controller", LevelFilter::DEBUG)
-        .with_target("codex_tui::streaming::table_holdback", LevelFilter::DEBUG)
+        .with_target("ava_tui::streaming::controller", LevelFilter::DEBUG)
+        .with_target("ava_tui::streaming::table_holdback", LevelFilter::DEBUG)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -250,7 +250,7 @@ where
         }
 
         // The SDK emits DEBUG timer meta-events every second per process; these
-        // were over 30% of retained logs in measured high-fanout Codex environments.
+        // were over 30% of retained logs in measured high-fanout Ava environments.
         if target == "opentelemetry_sdk"
             && matches!(
                 *metadata.level(),
@@ -551,7 +551,7 @@ mod tests {
     use std::sync::Arc;
     use std::sync::Mutex;
 
-    use codex_utils_absolute_path::test_support::PathExt;
+    use ava_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use tracing_subscriber::filter::Targets;
     use tracing_subscriber::fmt::writer::MakeWriter;
@@ -560,8 +560,8 @@ mod tests {
 
     use super::*;
 
-    fn temp_codex_home() -> std::path::PathBuf {
-        std::env::temp_dir().join(format!("codex-state-log-db-{}", Uuid::new_v4()))
+    fn temp_ava_home() -> std::path::PathBuf {
+        std::env::temp_dir().join(format!("ava-state-log-db-{}", Uuid::new_v4()))
     }
 
     async fn wait_for_log_count(runtime: &StateRuntime, expected: usize) -> Vec<crate::LogRow> {
@@ -641,9 +641,9 @@ mod tests {
 
     #[tokio::test]
     async fn sqlite_feedback_logs_match_feedback_formatter_shape() {
-        let codex_home = temp_codex_home();
+        let ava_home = temp_ava_home();
         let runtime = StateRuntime::init(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -697,14 +697,14 @@ mod tests {
             without_timestamps(&feedback_logs)
         );
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn flush_persists_logs_for_query() {
-        let codex_home = temp_codex_home();
+        let ava_home = temp_ava_home();
         let runtime = StateRuntime::init(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -731,14 +731,14 @@ mod tests {
         assert_eq!(after_flush.len(), 1);
         assert_eq!(after_flush[0].message.as_deref(), Some("buffered-log"));
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn configured_batch_size_flushes_without_explicit_flush() {
-        let codex_home = temp_codex_home();
+        let ava_home = temp_ava_home();
         let runtime = StateRuntime::init(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -783,14 +783,14 @@ mod tests {
             vec![Some("first-batch-log"), Some("second-batch-log")]
         );
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]
     async fn configured_flush_interval_persists_buffered_logs() {
-        let codex_home = temp_codex_home();
+        let ava_home = temp_ava_home();
         let runtime = StateRuntime::init(
-            crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
+            crate::SqliteConfig::new_for_testing(ava_home.as_path().abs()),
             "test-provider".to_string(),
         )
         .await
@@ -819,7 +819,7 @@ mod tests {
 
         assert_eq!(after_interval[0].message.as_deref(), Some("interval-log"));
 
-        let _ = tokio::fs::remove_dir_all(codex_home).await;
+        let _ = tokio::fs::remove_dir_all(ava_home).await;
     }
 
     #[tokio::test]

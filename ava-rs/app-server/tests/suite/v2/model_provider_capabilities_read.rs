@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use anyhow::Result;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::ModelProviderCapabilitiesReadParams;
-use codex_app_server_protocol::ModelProviderCapabilitiesReadResponse;
+use ava_app_server_protocol::ModelProviderCapabilitiesReadParams;
+use ava_app_server_protocol::ModelProviderCapabilitiesReadResponse;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use tokio::time::timeout;
@@ -12,9 +12,9 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[tokio::test]
 async fn read_default_provider_capabilities() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -36,14 +36,14 @@ async fn read_default_provider_capabilities() -> Result<()> {
 
 #[tokio::test]
 async fn read_amazon_bedrock_provider_capabilities() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"model_provider = "amazon-bedrock"
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .without_auto_env()
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
@@ -65,14 +65,14 @@ async fn read_amazon_bedrock_provider_capabilities() -> Result<()> {
 
 #[tokio::test]
 async fn read_amazon_bedrock_runtime_provider_capabilities() -> Result<()> {
-    let codex_home = TempDir::new()?;
+    let ava_home = TempDir::new()?;
     std::fs::write(
-        codex_home.path().join("config.toml"),
+        ava_home.path().join("config.toml"),
         r#"model_provider = "amazon-bedrock-runtime"
 "#,
     )?;
     let mut mcp = TestAppServer::builder()
-        .with_codex_home(codex_home.path())
+        .with_ava_home(ava_home.path())
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
 

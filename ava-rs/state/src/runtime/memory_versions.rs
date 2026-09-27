@@ -3,8 +3,8 @@
 
 use super::MemoryStore;
 use super::StateRuntime;
-use codex_protocol::MemoryVersion;
-use codex_protocol::ThreadId;
+use ava_protocol::MemoryVersion;
+use ava_protocol::ThreadId;
 use std::sync::Arc;
 
 impl StateRuntime {

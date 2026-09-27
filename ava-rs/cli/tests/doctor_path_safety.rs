@@ -8,7 +8,7 @@ use std::time::Duration;
 use anyhow::Context;
 use anyhow::Result;
 use app_test_support::TestAppServer;
-use codex_app_server_protocol::RequestId;
+use ava_app_server_protocol::RequestId;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -35,8 +35,8 @@ impl Fixture {
         // target/ so this fixture also exercises the packaged-install checks.
         let program = root
             .path()
-            .join(format!("codex{}", std::env::consts::EXE_SUFFIX));
-        let source = codex_utils_cargo_bin::cargo_bin("codex")?;
+            .join(format!("ava{}", std::env::consts::EXE_SUFFIX));
+        let source = ava_utils_cargo_bin::cargo_bin("ava")?;
         if std::fs::hard_link(&source, &program).is_err() {
             std::fs::copy(&source, &program)?;
         }
@@ -70,7 +70,7 @@ wire_api = "responses"
                 let executable = bin.join(name);
                 std::fs::write(
                     &executable,
-                    "#!/bin/sh\nprintf 'helper ran\\n' >> \"$CODEX_TEST_HELPER_MARKER\"\nexit 0\n",
+                    "#!/bin/sh\nprintf 'helper ran\\n' >> \"$AVA_TEST_HELPER_MARKER\"\nexit 0\n",
                 )?;
                 std::fs::set_permissions(
                     executable,
@@ -80,7 +80,7 @@ wire_api = "responses"
             #[cfg(windows)]
             std::fs::write(
                 bin.join(format!("{name}.cmd")),
-                "@echo helper ran>>\"%CODEX_TEST_HELPER_MARKER%\"\r\n@exit /b 0\r\n",
+                "@echo helper ran>>\"%AVA_TEST_HELPER_MARKER%\"\r\n@exit /b 0\r\n",
             )?;
         }
         // Windows selects rg.exe explicitly, so rg.cmd cannot satisfy discovery.
@@ -104,17 +104,17 @@ wire_api = "responses"
         let mut command = assert_cmd::Command::new(&self.program);
         command
             .current_dir(&self.workspace)
-            .env("CODEX_HOME", &self.home)
+            .env("AVA_HOME", &self.home)
             .env("HOME", self.root.path())
             .env("PATH", &self.path)
-            .env("CODEX_TEST_HELPER_MARKER", &self.marker)
-            .env("CODEX_MANAGED_BY_NPM", "1")
+            .env("AVA_TEST_HELPER_MARKER", &self.marker)
+            .env("AVA_MANAGED_BY_NPM", "1")
             .env(
-                "CODEX_MANAGED_PACKAGE_ROOT",
+                "AVA_MANAGED_PACKAGE_ROOT",
                 self.workspace.join("node_modules/@openai/codex"),
             )
             .env(
-                "CODEX_APP_SERVER_MANAGED_CONFIG_PATH",
+                "AVA_APP_SERVER_MANAGED_CONFIG_PATH",
                 self.home.join("managed_config.toml"),
             )
             .env("HTTPS_PROXY", "http://127.0.0.1:9")
@@ -289,20 +289,20 @@ async fn interactive_tmux_startup_does_not_execute_workspace_helpers() -> Result
     env.insert("TERM_PROGRAM".to_string(), "tmux".to_string());
     env.insert("TMUX".to_string(), "test-tmux".to_string());
     env.insert(
-        "CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT".to_string(),
+        "AVA_TUI_DISABLE_KEYBOARD_ENHANCEMENT".to_string(),
         "0".to_string(),
     );
     env.insert(
         "GHOSTTY_RESOURCES_DIR".to_string(),
         "/test/ghostty".to_string(),
     );
-    let spawned = codex_utils_pty::spawn_pty_process(
+    let spawned = ava_utils_pty::spawn_pty_process(
         fixture.program.to_str().unwrap(),
         &[],
         &fixture.workspace,
         &env,
         /*arg0*/ &None,
-        codex_utils_pty::TerminalSize {
+        ava_utils_pty::TerminalSize {
             rows: 40,
             cols: 120,
         },
@@ -398,7 +398,7 @@ async fn feedback_with_logs_does_not_execute_path_helpers() -> Result<()> {
     let package_root = package_root.to_string_lossy();
     let mut app_server = TestAppServer::builder()
         .with_program(&fixture.program)
-        .with_codex_home(&fixture.home)
+        .with_ava_home(&fixture.home)
         // The CLI does not accept the standalone app-server's test-only flag.
         // Disable plugins through real config; their safety test joins a full sync.
         .with_plugin_startup_tasks()
@@ -406,9 +406,9 @@ async fn feedback_with_logs_does_not_execute_path_helpers() -> Result<()> {
         .with_env_overrides(&[
             ("PATH", Some(path.as_ref())),
             ("HOME", Some(home.as_ref())),
-            ("CODEX_TEST_HELPER_MARKER", Some(marker.as_ref())),
-            ("CODEX_MANAGED_BY_NPM", Some("1")),
-            ("CODEX_MANAGED_PACKAGE_ROOT", Some(package_root.as_ref())),
+            ("AVA_TEST_HELPER_MARKER", Some(marker.as_ref())),
+            ("AVA_MANAGED_BY_NPM", Some("1")),
+            ("AVA_MANAGED_PACKAGE_ROOT", Some(package_root.as_ref())),
             ("ZELLIJ", Some("0")),
             ("ZELLIJ_VERSION", None),
             ("TMUX", None),

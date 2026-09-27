@@ -116,7 +116,7 @@ pub(super) fn history(
                 let values = breakdown(total, if report < 3 { group } else { 0 });
                 let pairs = if report == 0 && group == 0 {
                     vec![
-                        ("Codex", total * 65 / 100),
+                        ("Ava", total * 65 / 100),
                         ("Work", total - total * 65 / 100),
                     ]
                 } else {
@@ -140,8 +140,8 @@ pub(super) fn history(
 }
 
 pub(super) fn chats() -> super::chats::Chats {
-    use codex_backend_client::ThreadUsage;
-    use codex_backend_client::ThreadUsageBreakdownGroup;
+    use ava_backend_client::ThreadUsage;
+    use ava_backend_client::ThreadUsageBreakdownGroup;
     super::chats::Chats {
         rows: [
             ("Q3 planning analysis", 120),
@@ -201,12 +201,12 @@ pub(super) fn view(kind: super::models::AccountKind) -> super::AnalyticsView {
     let mut view = super::AnalyticsView::new(crate::keymap::RuntimeKeymap::defaults().list);
     view.end_date = END_DATE;
     view.account = super::data::Load::Ready(match kind {
-        super::models::AccountKind::Consumer => codex_protocol::account::PlanType::Plus,
-        super::models::AccountKind::Business => codex_protocol::account::PlanType::Team,
+        super::models::AccountKind::Consumer => ava_protocol::account::PlanType::Plus,
+        super::models::AccountKind::Business => ava_protocol::account::PlanType::Team,
         super::models::AccountKind::Enterprise => {
-            codex_protocol::account::PlanType::EnterpriseCbpUsageBased
+            ava_protocol::account::PlanType::EnterpriseCbpUsageBased
         }
-        super::models::AccountKind::Unknown => codex_protocol::account::PlanType::Unknown,
+        super::models::AccountKind::Unknown => ava_protocol::account::PlanType::Unknown,
     });
     view.section = if view.business() {
         super::sections::Section::Credits

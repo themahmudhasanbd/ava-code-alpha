@@ -2,29 +2,29 @@ use std::sync::Arc;
 use std::sync::Weak;
 use std::time::Duration;
 
-use codex_analytics::AnalyticsEventsClient;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadGoal;
-use codex_app_server_protocol::ThreadGoalUpdatedNotification;
-use codex_app_server_protocol::ThreadQueueChangedNotification;
-use codex_app_server_protocol::WarningNotification;
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_exec_server::EnvironmentManager;
-use codex_extension_api::ExtensionEventSink;
-use codex_extension_api::ExtensionRegistry;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::ExtensionWarning;
-use codex_extension_api::TurnStartAdmission;
-use codex_goal_extension::GoalExtensionConfig;
-use codex_goal_extension::GoalService;
-use codex_http_client::HttpClientFactory;
-use codex_login::AuthManager;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_queue_extension::QueuedItemService;
-use codex_rollout::state_db::StateDbHandle;
+use ava_analytics::AnalyticsEventsClient;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadGoal;
+use ava_app_server_protocol::ThreadGoalUpdatedNotification;
+use ava_app_server_protocol::ThreadQueueChangedNotification;
+use ava_app_server_protocol::WarningNotification;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_exec_server::EnvironmentManager;
+use ava_extension_api::ExtensionEventSink;
+use ava_extension_api::ExtensionRegistry;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::ExtensionWarning;
+use ava_extension_api::TurnStartAdmission;
+use ava_goal_extension::GoalExtensionConfig;
+use ava_goal_extension::GoalService;
+use ava_http_client::HttpClientFactory;
+use ava_login::AuthManager;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_queue_extension::QueuedItemService;
+use ava_rollout::state_db::StateDbHandle;
 
 use crate::outgoing_message::OutgoingMessageSender;
 use crate::outgoing_message::ThreadScopedOutgoingMessageSender;
@@ -39,7 +39,7 @@ pub(crate) struct ThreadExtensionDependencies {
     pub(crate) thread_manager: Weak<ThreadManager>,
     pub(crate) goal_service: Arc<GoalService>,
     pub(crate) environment_manager: Arc<EnvironmentManager>,
-    pub(crate) executor_skill_provider: Arc<dyn codex_skills_extension::SkillProvider>,
+    pub(crate) executor_skill_provider: Arc<dyn ava_skills_extension::SkillProvider>,
     pub(crate) git_attribution_base_url: String,
     pub(crate) http_client_factory: HttpClientFactory,
     /// Process-scoped queue shared by idle dispatch and app-server requests.
@@ -69,56 +69,56 @@ pub(crate) fn thread_extensions(
         builder.turn_start_admission(admission);
     }
     if let Some(queue_service) = queue_service {
-        codex_queue_extension::install(&mut builder, queue_service);
+        ava_queue_extension::install(&mut builder, queue_service);
     }
-    codex_history_notes_extension::install(&mut builder, auth_manager.clone());
+    ava_history_notes_extension::install(&mut builder, auth_manager.clone());
     if let Some(state_db) = state_db {
-        codex_goal_extension::install_with_backend(
+        ava_goal_extension::install_with_backend(
             &mut builder,
             state_db,
             analytics_events_client,
-            codex_otel::global(),
+            ava_otel::global(),
             thread_manager.clone(),
             goal_service,
             |config: &Config| GoalExtensionConfig {
-                enabled: config.features.enabled(codex_features::Feature::Goals),
+                enabled: config.features.enabled(ava_features::Feature::Goals),
                 max_goal_token_budget: config.max_goal_token_budget,
             },
         );
     }
-    codex_git_attribution::install(
+    ava_git_attribution::install(
         &mut builder,
         auth_manager.clone(),
         git_attribution_base_url,
         http_client_factory,
     );
-    codex_guardian_v2::install(&mut builder, auth_manager.clone(), thread_manager);
-    codex_memories_extension::install(&mut builder, codex_otel::global());
-    codex_browser_extension::install(&mut builder, codex_otel::global());
-    codex_mcp_extension::install(&mut builder);
-    codex_mcp_extension::install_plugins(&mut builder, environment_manager);
-    codex_web_search_extension::install(&mut builder, auth_manager.clone());
-    codex_image_generation_extension::install(&mut builder, auth_manager, |config: &Config| {
-        Some(config.codex_home.clone())
+    ava_guardian_v2::install(&mut builder, auth_manager.clone(), thread_manager);
+    ava_memories_extension::install(&mut builder, ava_otel::global());
+    ava_browser_extension::install(&mut builder, ava_otel::global());
+    ava_mcp_extension::install(&mut builder);
+    ava_mcp_extension::install_plugins(&mut builder, environment_manager);
+    ava_web_search_extension::install(&mut builder, auth_manager.clone());
+    ava_image_generation_extension::install(&mut builder, auth_manager, |config: &Config| {
+        Some(config.ava_home.clone())
     });
-    let skill_providers = codex_skills_extension::SkillProviders::new()
+    let skill_providers = ava_skills_extension::SkillProviders::new()
         .with_executor_provider(executor_skill_provider)
         .with_orchestrator_provider(Arc::new(
-            codex_skills_extension::OrchestratorSkillProvider::new(),
+            ava_skills_extension::OrchestratorSkillProvider::new(),
         ))
-        .with_host_provider(Arc::new(codex_skills_extension::HostSkillProvider::new()));
-    codex_skills_extension::install_with_providers_and_metrics(
+        .with_host_provider(Arc::new(ava_skills_extension::HostSkillProvider::new()));
+    ava_skills_extension::install_with_providers_and_metrics(
         &mut builder,
         skill_providers,
-        codex_otel::global(),
-        |config: &Config| codex_skills_extension::SkillsExtensionConfig {
+        ava_otel::global(),
+        |config: &Config| ava_skills_extension::SkillsExtensionConfig {
             include_instructions: config.include_skill_instructions,
             max_context_tokens: config.skill_max_context_tokens,
             bundled_skills_enabled: config.bundled_skills_enabled(),
             orchestrator_skills_enabled: config.orchestrator_skills_enabled,
             shadow_selection_enabled: config
                 .features
-                .enabled(codex_features::Feature::SkillSearch),
+                .enabled(ava_features::Feature::SkillSearch),
         },
     );
     Arc::new(builder.build())
@@ -298,9 +298,9 @@ impl ExtensionEventSink for AppServerExtensionEventSink {
 
 #[cfg(test)]
 mod tests {
-    use codex_protocol::protocol::ThreadGoal as CoreThreadGoal;
-    use codex_protocol::protocol::ThreadGoalStatus;
-    use codex_protocol::protocol::ThreadGoalUpdatedEvent;
+    use ava_protocol::protocol::ThreadGoal as CoreThreadGoal;
+    use ava_protocol::protocol::ThreadGoalStatus;
+    use ava_protocol::protocol::ThreadGoalUpdatedEvent;
     use pretty_assertions::assert_eq;
     use tokio::sync::mpsc;
     use tokio::time::timeout;

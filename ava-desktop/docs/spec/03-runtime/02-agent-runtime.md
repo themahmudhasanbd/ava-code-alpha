@@ -383,7 +383,7 @@ entries. The desktop runtime owns when they run and how the result crosses the
 Rust storage boundary; OpenCode DCP is an AGPL-3.0 behavioral reference only,
 not a linked or copied dependency.
 
-Compaction follows Codex's mechanism (ADR 0064): it always happens inline at a
+Compaction follows Ava's mechanism (ADR 0064): it always happens inline at a
 turn boundary, the model can request it through `new_context`, every compaction
 adds a transcript row and raises one warning toast, and there is no
 pre-computation anywhere.

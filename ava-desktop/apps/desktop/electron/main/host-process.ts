@@ -20,8 +20,8 @@ export type {
 } from "@pi-desktop/host-runtime";
 
 function resolveHostBinary(): string {
-  if (process.env.CODEX_APP_SERVER_BIN && existsSync(process.env.CODEX_APP_SERVER_BIN)) {
-    return process.env.CODEX_APP_SERVER_BIN;
+  if (process.env.AVA_APP_SERVER_BIN && existsSync(process.env.AVA_APP_SERVER_BIN)) {
+    return process.env.AVA_APP_SERVER_BIN;
   }
   if (process.env.PI_DESKTOP_HOST_BIN && existsSync(process.env.PI_DESKTOP_HOST_BIN)) {
     return process.env.PI_DESKTOP_HOST_BIN;
@@ -29,23 +29,23 @@ function resolveHostBinary(): string {
   const exe = process.platform === "win32" ? ".exe" : "";
   const candidates = [
     // packaged resources
-    join(process.resourcesPath || "", `bin/codex-app-server${exe}`),
+    join(process.resourcesPath || "", `bin/ava-app-server${exe}`),
     join(process.resourcesPath || "", `bin/pi-desktop-host-core${exe}`),
     // ava-rs builds
-    join(__dirname, `../../../../ava-rs/target/debug/codex-app-server${exe}`),
-    join(__dirname, `../../../../ava-rs/target/release/codex-app-server${exe}`),
-    join(__dirname, `../../../../../ava-rs/target/debug/codex-app-server${exe}`),
-    join(__dirname, `../../../../../ava-rs/target/release/codex-app-server${exe}`),
-    "/var/www/ava-code/ava-rs/target/debug/codex-app-server",
-    "/var/www/ava-code/ava-rs/target/release/codex-app-server",
-    "/root/.cargo/bin/codex-app-server",
-    "/usr/local/bin/codex-app-server",
+    join(__dirname, `../../../../ava-rs/target/debug/ava-app-server${exe}`),
+    join(__dirname, `../../../../ava-rs/target/release/ava-app-server${exe}`),
+    join(__dirname, `../../../../../ava-rs/target/debug/ava-app-server${exe}`),
+    join(__dirname, `../../../../../ava-rs/target/release/ava-app-server${exe}`),
+    "/var/www/ava-code/ava-rs/target/debug/ava-app-server",
+    "/var/www/ava-code/ava-rs/target/release/ava-app-server",
+    "/root/.cargo/bin/ava-app-server",
+    "/usr/local/bin/ava-app-server",
   ];
   for (const c of candidates) {
     if (c && existsSync(c)) return c;
   }
   throw new Error(
-    "codex-app-server binary not found. Please ensure ava-rs target/debug/codex-app-server exists.",
+    "ava-app-server binary not found. Please ensure ava-rs target/debug/ava-app-server exists.",
   );
 }
 

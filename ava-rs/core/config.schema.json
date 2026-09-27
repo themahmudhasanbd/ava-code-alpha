@@ -108,7 +108,7 @@
       "description": "Analytics settings loaded from config.toml. Fields are optional so we can apply defaults.",
       "properties": {
         "enabled": {
-          "description": "When `false`, disables analytics across Codex product surfaces in this profile.",
+          "description": "When `false`, disables analytics across Ava product surfaces in this profile.",
           "type": "boolean"
         }
       },
@@ -144,7 +144,7 @@
         },
         "enabled": {
           "default": true,
-          "description": "When `false`, Codex does not surface this app.",
+          "description": "When `false`, Ava does not surface this app.",
           "type": "boolean"
         },
         "links": {
@@ -305,7 +305,7 @@
       "type": "object"
     },
     "AskForApproval": {
-      "description": "Determines the conditions under which the user is consulted to approve running the command proposed by Codex.",
+      "description": "Determines the conditions under which the user is consulted to approve running the command proposed by Ava.",
       "oneOf": [
         {
           "description": "The model decides when to ask the user for approval.",
@@ -337,10 +337,10 @@
       ]
     },
     "AuthCredentialsStoreMode": {
-      "description": "Determine where Codex should store CLI auth credentials.",
+      "description": "Determine where Ava should store CLI auth credentials.",
       "oneOf": [
         {
-          "description": "Persist credentials in CODEX_HOME/auth.json.",
+          "description": "Persist credentials in AVA_HOME/auth.json.",
           "enum": [
             "file"
           ],
@@ -354,7 +354,7 @@
           "type": "string"
         },
         {
-          "description": "Use keyring when available; otherwise, fall back to a file in CODEX_HOME.",
+          "description": "Use keyring when available; otherwise, fall back to a file in AVA_HOME.",
           "enum": [
             "auto"
           ],
@@ -722,13 +722,13 @@
             "code_mode_prewarm": {
               "type": "boolean"
             },
-            "codex_apps_mcp_2026_07_28": {
+            "ava_apps_mcp_2026_07_28": {
               "type": "boolean"
             },
-            "codex_git_commit": {
+            "ava_git_commit": {
               "type": "boolean"
             },
-            "codex_hooks": {
+            "ava_hooks": {
               "type": "boolean"
             },
             "collab": {
@@ -1355,7 +1355,7 @@
     },
     "ExternalConfigMigrationPrompts": {
       "additionalProperties": false,
-      "description": "Settings for notices we display to users via the tui and app-server clients (primarily the Codex IDE extension). NOTE: these are different from notifications - notices are warnings, NUX screens, acknowledgements, etc.",
+      "description": "Settings for notices we display to users via the tui and app-server clients (primarily the Ava IDE extension). NOTE: these are different from notifications - notices are warnings, NUX screens, acknowledgements, etc.",
       "properties": {
         "home": {
           "description": "Tracks whether home-level external config migration prompts are hidden.",
@@ -1500,7 +1500,7 @@
       "additionalProperties": false,
       "properties": {
         "enabled": {
-          "description": "When `false`, disables the feedback flow across Codex product surfaces.",
+          "description": "When `false`, disables the feedback flow across Ava product surfaces.",
           "type": "boolean"
         }
       },
@@ -1857,7 +1857,7 @@
     },
     "History": {
       "additionalProperties": false,
-      "description": "Settings that govern if and what will be written to `~/.codex/history.jsonl`.",
+      "description": "Settings that govern if and what will be written to `~/.ava-code/history.jsonl`.",
       "properties": {
         "max_bytes": {
           "default": null,
@@ -2135,12 +2135,12 @@
       "properties": {
         "last_revision": {
           "default": null,
-          "description": "Git revision Codex last successfully activated for this marketplace.",
+          "description": "Git revision Ava last successfully activated for this marketplace.",
           "type": "string"
         },
         "last_updated": {
           "default": null,
-          "description": "Last time Codex successfully added or refreshed this marketplace.",
+          "description": "Last time Ava successfully added or refreshed this marketplace.",
           "type": "string"
         },
         "ref": {
@@ -2205,7 +2205,7 @@
               "$ref": "#/definitions/McpServerIdpOAuthConfig"
             }
           ],
-          "description": "Shared enterprise authorization, independent of Codex account credentials."
+          "description": "Shared enterprise authorization, independent of Ava account credentials."
         }
       },
       "required": [
@@ -2288,7 +2288,7 @@
           "type": "string"
         },
         "callback_port": {
-          "description": "Fixed callback port that takes precedence over Codex's global OAuth callback port.",
+          "description": "Fixed callback port that takes precedence over Ava's global OAuth callback port.",
           "format": "uint16",
           "minimum": 0.0,
           "type": "integer"
@@ -2386,7 +2386,7 @@
           "type": "integer"
         },
         "min_rate_limit_remaining_percent": {
-          "description": "Minimum remaining percentage required in Codex rate-limit windows before memory startup runs.",
+          "description": "Minimum remaining percentage required in Ava rate-limit windows before memory startup runs.",
           "format": "int64",
           "maximum": 100.0,
           "minimum": 0.0,
@@ -2631,7 +2631,7 @@
           "type": "object"
         },
         "model_catalog_url": {
-          "description": "Optional full URL for a Codex-native model catalog. When unset, OpenAI discovery uses the Codex backend unless `base_url` overrides the inference endpoint.",
+          "description": "Optional full URL for a Ava-native model catalog. When unset, OpenAI discovery uses the Ava backend unless `base_url` overrides the inference endpoint.",
           "type": "string"
         },
         "name": {
@@ -3067,15 +3067,15 @@
           "description": "Tracks scopes where external config migration prompts should be suppressed."
         },
         "fast_default_opt_out": {
-          "description": "Tracks whether the user opted out of Codex-managed fast defaults.",
+          "description": "Tracks whether the user opted out of Ava-managed fast defaults.",
           "type": "boolean"
         },
         "hide_full_access_warning": {
           "description": "Tracks whether the user has acknowledged the full access warning prompt.",
           "type": "boolean"
         },
-        "hide_gpt-5.1-codex-max_migration_prompt": {
-          "description": "Tracks whether the user has seen the gpt-5.1-codex-max migration prompt",
+        "hide_gpt-5.1-ava-max_migration_prompt": {
+          "description": "Tracks whether the user has seen the gpt-5.1-ava-max migration prompt",
           "type": "boolean"
         },
         "hide_gpt5_1_migration_prompt": {
@@ -3141,17 +3141,17 @@
       ]
     },
     "OAuthCredentialsStoreMode": {
-      "description": "Determine where Codex should store and read MCP credentials.",
+      "description": "Determine where Ava should store and read MCP credentials.",
       "oneOf": [
         {
-          "description": "Prefer `Keyring` and use `File` when keyring storage is unavailable. Once an MCP client loads credentials from one store, that client keeps the resolved store for its lifetime so refreshes cannot switch to a possibly stale credential source. Credentials stored in the keyring will only be readable by Codex unless the user explicitly grants access via OS-level keyring access.",
+          "description": "Prefer `Keyring` and use `File` when keyring storage is unavailable. Once an MCP client loads credentials from one store, that client keeps the resolved store for its lifetime so refreshes cannot switch to a possibly stale credential source. Credentials stored in the keyring will only be readable by Ava unless the user explicitly grants access via OS-level keyring access.",
           "enum": [
             "auto"
           ],
           "type": "string"
         },
         {
-          "description": "CODEX_HOME/.credentials.json This file will be readable to Codex and other applications running as the same user.",
+          "description": "AVA_HOME/.credentials.json This file will be readable to Ava and other applications running as the same user.",
           "enum": [
             "file"
           ],
@@ -3456,7 +3456,7 @@
         },
         "enabled": {
           "default": true,
-          "description": "When `false`, Codex skips initializing this plugin MCP server.",
+          "description": "When `false`, Ava skips initializing this plugin MCP server.",
           "type": "boolean"
         },
         "enabled_tools": {
@@ -3800,7 +3800,7 @@
       "description": "Working directory to use when resuming or forking a session.",
       "oneOf": [
         {
-          "description": "Use the directory where Codex was launched.",
+          "description": "Use the directory where Ava was launched.",
           "enum": [
             "current"
           ],
@@ -4162,7 +4162,7 @@
       "type": "object"
     },
     "ToolResultLogConfig": {
-      "description": "Limit for the text included in `codex.tool_result` log records. This does not affect model-visible output. Raising it can expose more tool data to logs.",
+      "description": "Limit for the text included in `ava.tool_result` log records. This does not affect model-visible output. Raising it can expose more tool data to logs.",
       "properties": {
         "max_bytes": {
           "default": 2048,
@@ -4514,7 +4514,7 @@
         },
         "pet": {
           "default": null,
-          "description": "Pet id to preselect in the terminal pet picker.\n\nCustom pet ids resolve against CODEX_HOME/pets/<pet-id>/pet.json.",
+          "description": "Pet id to preselect in the terminal pet picker.\n\nCustom pet ids resolve against AVA_HOME/pets/<pet-id>/pet.json.",
           "type": "string"
         },
         "pet_anchor": {
@@ -4583,7 +4583,7 @@
         },
         "terminal_resize_reflow_max_rows": {
           "default": null,
-          "description": "Trim terminal resize-reflow replay to the most recent rendered terminal rows when the transcript exceeds this cap. Omit to use Codex's terminal-specific default. Set to `0` to keep all rendered rows.",
+          "description": "Trim terminal resize-reflow replay to the most recent rendered terminal rows when the transcript exceeds this cap. Omit to use Ava's terminal-specific default. Set to `0` to keep all rendered rows.",
           "format": "uint",
           "minimum": 0.0,
           "type": "integer"
@@ -4598,7 +4598,7 @@
         },
         "theme": {
           "default": null,
-          "description": "Syntax highlighting theme name (kebab-case).\n\nWhen set, overrides automatic light/dark theme detection. Use `/theme` in the TUI or see `$CODEX_HOME/themes` for custom themes.",
+          "description": "Syntax highlighting theme name (kebab-case).\n\nWhen set, overrides automatic light/dark theme detection. Use `/theme` in the TUI or see `$AVA_HOME/themes` for custom themes.",
           "type": "string"
         },
         "vim_mode_default": {
@@ -6342,7 +6342,7 @@
       "type": "object"
     }
   },
-  "description": "Base config deserialized from ~/.codex/config.toml.",
+  "description": "Base config deserialized from ~/.ava-code/config.toml.",
   "properties": {
     "agents": {
       "allOf": [
@@ -6356,8 +6356,8 @@
       "description": "Whether the model may request a login shell for shell-based tools. Default to `true`\n\nIf `true`, the model may request a login shell (`login = true`), and omitting `login` defaults to using a login shell. If `false`, the model can never use a login shell: `login = true` requests are rejected, and omitting `login` defaults to a non-login shell.",
       "type": "boolean"
     },
-    "allow_symlinked_codex_home": {
-      "description": "Allow macOS sandbox writable roots at or beneath CODEX_HOME to traverse symlinks. Read only from the host's user config at startup; defaults to false. This grants no write access by itself, but trusts symlink targets even if they change between commands or lie outside CODEX_HOME. This setting has no effect on Linux or Windows.",
+    "allow_symlinked_ava_home": {
+      "description": "Allow macOS sandbox writable roots at or beneath AVA_HOME to traverse symlinks. Read only from the host's user config at startup; defaults to false. This grants no write access by itself, but trusts symlink targets even if they change between commands or lie outside AVA_HOME. This setting has no effect on Linux or Windows.",
       "type": "boolean"
     },
     "analytics": {
@@ -6366,7 +6366,7 @@
           "$ref": "#/definitions/AnalyticsConfigToml"
         }
       ],
-      "description": "When `false`, disables analytics across Codex product surfaces in this machine. Defaults to `true`."
+      "description": "When `false`, disables analytics across Ava product surfaces in this machine. Defaults to `true`."
     },
     "approval_policy": {
       "allOf": [
@@ -6394,7 +6394,7 @@
       "description": "Settings for app-specific controls."
     },
     "apps_mcp_product_sku": {
-      "description": "Optional product SKU forwarded on host-owned Codex Apps MCP requests.",
+      "description": "Optional product SKU forwarded on host-owned Ava Apps MCP requests.",
       "type": "string"
     },
     "audio": {
@@ -6429,7 +6429,7 @@
       "type": "string"
     },
     "check_for_update_on_startup": {
-      "description": "When `true`, checks for Codex updates on startup and surfaces update prompts. Set to `false` only if your Codex updates are centrally managed. Defaults to `true`.",
+      "description": "When `true`, checks for Ava updates on startup and surfaces update prompts. Set to `false` only if your Ava updates are centrally managed. Defaults to `true`.",
       "type": "boolean"
     },
     "cli_auth_credentials_store": {
@@ -6439,7 +6439,7 @@
         }
       ],
       "default": null,
-      "description": "Preferred backend for storing CLI auth credentials. file (default): Use a file in the Codex home directory. keyring: Use an OS-specific keyring service. auto: Use the keyring if available, otherwise use a file."
+      "description": "Preferred backend for storing CLI auth credentials. file (default): Use a file in the Ava home directory. keyring: Use an OS-specific keyring service. auto: Use the keyring if available, otherwise use a file."
     },
     "compact_prompt": {
       "description": "Compact prompt used for history compaction.",
@@ -6586,13 +6586,13 @@
         "code_mode_prewarm": {
           "type": "boolean"
         },
-        "codex_apps_mcp_2026_07_28": {
+        "ava_apps_mcp_2026_07_28": {
           "type": "boolean"
         },
-        "codex_git_commit": {
+        "ava_git_commit": {
           "type": "boolean"
         },
-        "codex_hooks": {
+        "ava_hooks": {
           "type": "boolean"
         },
         "collab": {
@@ -7006,7 +7006,7 @@
           "$ref": "#/definitions/FeedbackConfigToml"
         }
       ],
-      "description": "When `false`, disables feedback collection across Codex product surfaces. Defaults to `true`."
+      "description": "When `false`, disables feedback collection across Ava product surfaces. Defaults to `true`."
     },
     "file_opener": {
       "allOf": [
@@ -7066,7 +7066,7 @@
         "max_bytes": null,
         "persistence": "save-all"
       },
-      "description": "Settings that govern if and what will be written to `~/.codex/history.jsonl`."
+      "description": "Settings that govern if and what will be written to `~/.ava-code/history.jsonl`."
     },
     "hooks": {
       "allOf": [
@@ -7102,7 +7102,7 @@
           "$ref": "#/definitions/AbsolutePathBuf"
         }
       ],
-      "description": "Directory where Codex writes log files. Setting this value explicitly also enables the TUI text log in this directory. Defaults to `$CODEX_HOME/log`."
+      "description": "Directory where Ava writes log files. Setting this value explicitly also enables the TUI text log in this directory. Defaults to `$AVA_HOME/log`."
     },
     "marketplaces": {
       "additionalProperties": {
@@ -7122,7 +7122,7 @@
       "description": "Trusted enterprise IdP shared by EMA-enabled MCP servers and plugins."
     },
     "mcp_oauth_callback_port": {
-      "description": "Optional fixed port for the local HTTP callback server used during MCP OAuth login. When unset, Codex will bind to an ephemeral port chosen by the OS.",
+      "description": "Optional fixed port for the local HTTP callback server used during MCP OAuth login. When unset, Ava will bind to an ephemeral port chosen by the OS.",
       "format": "uint16",
       "minimum": 0.0,
       "type": "integer"
@@ -7138,7 +7138,7 @@
         }
       ],
       "default": null,
-      "description": "Preferred backend for storing MCP OAuth credentials. keyring: Use an OS-specific keyring service. https://github.com/openai/codex/blob/main/codex-rs/rmcp-client/src/oauth.rs#L2 file: Use a file in the Codex home directory. auto (default): Use the OS-specific keyring service if available, otherwise use a file."
+      "description": "Preferred backend for storing MCP OAuth credentials. keyring: Use an OS-specific keyring service. https://github.com/openai/codex/blob/main/codex-rs/rmcp-client/src/oauth.rs#L2 file: Use a file in the Ava home directory. auto (default): Use the OS-specific keyring service if available, otherwise use a file."
     },
     "mcp_optional_startup_grace_ms": {
       "description": "Milliseconds to wait for optional MCP servers while building the initial tool catalog.\n\nDefaults to 1000. Set to 0 to disable the shared grace and wait for each server's configured `startup_timeout_sec` instead.",
@@ -7151,7 +7151,7 @@
         "$ref": "#/definitions/RawMcpServerConfig"
       },
       "default": {},
-      "description": "Definition for MCP servers that Codex can reach out to for tool calls.",
+      "description": "Definition for MCP servers that Ava can reach out to for tool calls.",
       "type": "object"
     },
     "memories": {
@@ -7198,7 +7198,7 @@
           "$ref": "#/definitions/AbsolutePathBuf"
         }
       ],
-      "description": "Optional path to a file containing model instructions that will override the built-in instructions for the selected model. Users are STRONGLY DISCOURAGED from using this field, as deviating from the instructions sanctioned by Codex will likely degrade model performance."
+      "description": "Optional path to a file containing model instructions that will override the built-in instructions for the selected model. Users are STRONGLY DISCOURAGED from using this field, as deviating from the instructions sanctioned by Ava will likely degrade model performance."
     },
     "model_post_turn_compact_threshold_percent": {
       "description": "Percentage of the usable context window that triggers compaction after a final response. Existing auto-compaction limits still apply. Omitted or zero disables turn-end compaction; valid values are 0–100.",
@@ -7330,7 +7330,7 @@
     },
     "project_root_markers": {
       "default": null,
-      "description": "Markers used to detect the project root when searching parent directories for `.codex` folders. Defaults to [\".git\"] when unset.",
+      "description": "Markers used to detect the project root when searching parent directories for `.ava-code` folders. Defaults to [\".git\"] when unset.",
       "items": {
         "type": "string"
       },
@@ -7416,7 +7416,7 @@
           "$ref": "#/definitions/AbsolutePathBuf"
         }
       ],
-      "description": "Directory where Codex stores the SQLite state DB. Defaults to `$CODEX_SQLITE_HOME` when set. Otherwise uses `$CODEX_HOME`."
+      "description": "Directory where Ava stores the SQLite state DB. Defaults to `$AVA_SQLITE_HOME` when set. Otherwise uses `$AVA_HOME`."
     },
     "suppress_unstable_features_warning": {
       "description": "Suppress warnings about unstable (under development) features.",

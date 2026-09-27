@@ -2,20 +2,20 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_exec_server::REMOTE_ENVIRONMENT_ID;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::ModeKind;
-use codex_protocol::config_types::Settings;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::EnvironmentConfigState;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::ExecCommandStatus;
-use codex_protocol::protocol::ThreadSettingsOverrides;
-use codex_protocol::protocol::TurnEnvironmentSelection;
-use codex_protocol::protocol::TurnEnvironmentSelections;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_exec_server::REMOTE_ENVIRONMENT_ID;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::ModeKind;
+use ava_protocol::config_types::Settings;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::EnvironmentConfigState;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::ExecCommandStatus;
+use ava_protocol::protocol::ThreadSettingsOverrides;
+use ava_protocol::protocol::TurnEnvironmentSelection;
+use ava_protocol::protocol::TurnEnvironmentSelections;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;
@@ -23,9 +23,9 @@ use core_test_support::responses::ev_response_created;
 use core_test_support::responses::mount_sse_sequence;
 use core_test_support::responses::sse;
 use core_test_support::responses::start_mock_server;
-use core_test_support::test_codex::TurnInputRequest;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::turn_permission_fields;
+use core_test_support::test_ava::TurnInputRequest;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::turn_permission_fields;
 use core_test_support::wait_for_event;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -36,9 +36,9 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
     const CALL_ID: &str = "wine-cmd-smoke";
     const PATCH_CALL_ID: &str = "wine-apply-patch";
     const VERIFY_CALL_ID: &str = "wine-verify-patch";
-    const PATCH_FILE: &str = "codex-apply-patch-smoke.txt";
+    const PATCH_FILE: &str = "ava-apply-patch-smoke.txt";
     const COMMAND: &str = r#"if ((Get-Location).Path -ne 'C:\windows') { exit 1 }"#;
-    const VERIFY_COMMAND: &str = r#"$path = Join-Path (Get-Location) 'codex-apply-patch-smoke.txt'; if (-not (Test-Path $path)) { exit 1 }; if ([IO.File]::ReadAllText($path) -ne "patched through unified exec`n") { exit 2 }; Remove-Item $path"#;
+    const VERIFY_COMMAND: &str = r#"$path = Join-Path (Get-Location) 'ava-apply-patch-smoke.txt'; if (-not (Test-Path $path)) { exit 1 }; if ([IO.File]::ReadAllText($path) -ne "patched through unified exec`n") { exit 2 }; Remove-Item $path"#;
 
     WineExecServer
         .scope(|exec_server_url, _wine_prefix| async move {
@@ -94,7 +94,7 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
             )
             .await;
 
-            let mut builder = test_codex()
+            let mut builder = test_ava()
                 .with_model("gpt-5.2")
                 .with_exec_server_url(exec_server_url);
             let test = builder.build(&server).await?;
@@ -103,7 +103,7 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
             let environments = TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
                 vec![{
-                    let cwd = PathUri::parse("file:///C:/codex-home")?;
+                    let cwd = PathUri::parse("file:///C:/ava-home")?;
                     TurnEnvironmentSelection {
                         environment_id: REMOTE_ENVIRONMENT_ID.to_string(),
                         cwd: cwd.clone(),
@@ -113,7 +113,7 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
                 }],
             );
 
-            test.codex
+            test.ava-code
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                         text: "run the Windows smoke command".to_string(),
                         text_elements: Vec::new(),
@@ -139,7 +139,7 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
             let mut patch_end = None;
             let mut turn_complete = false;
             loop {
-                match wait_for_event(&test.codex, |_| true).await {
+                match wait_for_event(&test.ava-code, |_| true).await {
                     EventMsg::ExecCommandBegin(event) if event.call_id == CALL_ID => {
                         begin = Some(event)
                     }
@@ -182,7 +182,7 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
                 patch_end
                     .changes
                     .contains_key(&std::path::PathBuf::from(format!(
-                        r"C:\codex-home\apply-patch-smoke\nested\{PATCH_FILE}"
+                        r"C:\ava-home\apply-patch-smoke\nested\{PATCH_FILE}"
                     ))),
                 "apply_patch should retain the Windows cwd: {:?}",
                 patch_end.changes

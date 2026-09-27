@@ -20,37 +20,37 @@ use std::sync::Arc;
 #[cfg(test)]
 use std::time::Duration;
 
-use codex_analytics::GuardianReviewAnalyticsResult;
-use codex_analytics::GuardianReviewSessionAnalyticsParams;
-use codex_analytics::GuardianReviewSessionKind;
-use codex_extension_api::Instructions;
-use codex_guardian_reviewer::ConversationCheckpoint;
-use codex_guardian_reviewer::ConversationState;
-use codex_guardian_reviewer::ReviewModel;
-use codex_guardian_reviewer::ReviewSessionResult;
-use codex_guardian_reviewer::SessionDisposition;
-use codex_history::InitialHistory;
-use codex_history::RolloutItem;
-use codex_protocol::ThreadId;
-use codex_protocol::config_types::AutoCompactTokenLimitScope;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
-use codex_protocol::items::TurnItem;
-use codex_protocol::mcp::is_node_repl_backed_server;
-use codex_protocol::models::ContentItem;
-use codex_protocol::models::ImageDetail;
-use codex_protocol::models::ImageReference;
-use codex_protocol::models::ResponseInputItem;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::InputModality;
-use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
-use codex_protocol::protocol::CodexErrorInfo;
-use codex_protocol::protocol::Event;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::protocol::Op;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
-use codex_protocol::protocol::TokenUsage;
+use ava_analytics::GuardianReviewAnalyticsResult;
+use ava_analytics::GuardianReviewSessionAnalyticsParams;
+use ava_analytics::GuardianReviewSessionKind;
+use ava_extension_api::Instructions;
+use ava_guardian_reviewer::ConversationCheckpoint;
+use ava_guardian_reviewer::ConversationState;
+use ava_guardian_reviewer::ReviewModel;
+use ava_guardian_reviewer::ReviewSessionResult;
+use ava_guardian_reviewer::SessionDisposition;
+use ava_history::InitialHistory;
+use ava_history::RolloutItem;
+use ava_protocol::ThreadId;
+use ava_protocol::config_types::AutoCompactTokenLimitScope;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
+use ava_protocol::items::TurnItem;
+use ava_protocol::mcp::is_node_repl_backed_server;
+use ava_protocol::models::ContentItem;
+use ava_protocol::models::ImageDetail;
+use ava_protocol::models::ImageReference;
+use ava_protocol::models::ResponseInputItem;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::InputModality;
+use ava_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
+use ava_protocol::protocol::AvaErrorInfo;
+use ava_protocol::protocol::Event;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::protocol::Op;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
+use ava_protocol::protocol::TokenUsage;
 use futures::future::BoxFuture;
 use serde_json::Value;
 use tokio::sync::Mutex;
@@ -74,15 +74,15 @@ use crate::image_preparation::unified_image_budget_enabled;
 use crate::session::SessionIo;
 use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
-use codex_config::types::McpServerConfig;
-use codex_features::Feature;
-use codex_model_provider_info::ModelProviderInfo;
-use codex_protocol::turn_input::TurnInputMode;
-use codex_protocol::turn_input::TurnInputRequest;
-use codex_protocol::turn_input::TurnInputSubmission;
-use codex_thread_store::PersistContext;
-use codex_tools::normalize_output_image_detail;
-use codex_utils_path_uri::PathUri;
+use ava_config::types::McpServerConfig;
+use ava_features::Feature;
+use ava_model_provider_info::ModelProviderInfo;
+use ava_protocol::turn_input::TurnInputMode;
+use ava_protocol::turn_input::TurnInputRequest;
+use ava_protocol::turn_input::TurnInputSubmission;
+use ava_thread_store::PersistContext;
+use ava_tools::normalize_output_image_detail;
+use ava_utils_path_uri::PathUri;
 
 use super::ApprovalRequestReasons;
 use super::GUARDIAN_REVIEWER_NAME;
@@ -96,11 +96,11 @@ use super::prompt::GuardianTranscriptCursor;
 use super::prompt::build_guardian_prompt_items_with_parent_turn;
 use super::review::guardian_review_session_config;
 pub(crate) use super::reviewer_config::build_guardian_review_session_config;
-use codex_guardian_reviewer::run_before_review_deadline;
-use codex_guardian_reviewer::wait_for_guardian_review;
+use ava_guardian_reviewer::run_before_review_deadline;
+use ava_guardian_reviewer::wait_for_guardian_review;
 
 const GUARDIAN_MAX_IMAGE_ITEM_TOKENS: i64 = 10_000;
-pub(crate) use codex_guardian_reviewer::GuardianReviewSessionOutcome;
+pub(crate) use ava_guardian_reviewer::GuardianReviewSessionOutcome;
 
 pub(crate) struct GuardianReviewSessionParams {
     pub(crate) parent_session: Arc<Session>,
@@ -121,7 +121,7 @@ pub(crate) struct GuardianReviewSessionParams {
 }
 
 pub(crate) type GuardianReviewSessionManager =
-    codex_guardian_reviewer::ReviewerPool<GuardianReviewSession>;
+    ava_guardian_reviewer::ReviewerPool<GuardianReviewSession>;
 
 /// Opaque host session handle. Its state belongs to the existing context builder.
 pub struct GuardianReviewSession {
@@ -158,7 +158,7 @@ fn token_usage_delta(start: &TokenUsage, end: &TokenUsage) -> TokenUsage {
         reasoning_output_tokens: (end.reasoning_output_tokens - start.reasoning_output_tokens)
             .max(0),
         total_tokens: (end.total_tokens - start.total_tokens).max(0),
-        codex_rollout_budget_units: None,
+        ava_rollout_budget_units: None,
     }
 }
 
@@ -178,7 +178,7 @@ pub struct GuardianReviewSessionReuseKey {
     // history rewrites that invalidate existing reviewer context.
     parent_history_version: u64,
     parent_reset_version: u64,
-    root_authorization_version: Option<crate::codex_thread::GuardianAuthorizationVersion>,
+    root_authorization_version: Option<crate::ava_thread::GuardianAuthorizationVersion>,
     node_repl_auto_review_required: bool,
     node_repl_policy: String,
     model: Option<String>,
@@ -198,7 +198,7 @@ pub struct GuardianReviewSessionReuseKey {
     compact_prompt: Option<String>,
     cwd: PathUri,
     mcp_servers: Constrained<HashMap<String, McpServerConfig>>,
-    codex_linux_sandbox_exe: Option<PathBuf>,
+    ava_linux_sandbox_exe: Option<PathBuf>,
     main_execve_wrapper_exe: Option<PathBuf>,
     zsh_path: Option<PathBuf>,
     features: ManagedFeatures,
@@ -242,7 +242,7 @@ impl GuardianReviewSessionReuseKey {
             compact_prompt: spawn_config.compact_prompt.clone(),
             cwd: PathUri::from_abs_path(&spawn_config.cwd),
             mcp_servers: spawn_config.mcp_servers.clone(),
-            codex_linux_sandbox_exe: spawn_config.codex_linux_sandbox_exe.clone(),
+            ava_linux_sandbox_exe: spawn_config.ava_linux_sandbox_exe.clone(),
             main_execve_wrapper_exe: spawn_config.main_execve_wrapper_exe.clone(),
             zsh_path: spawn_config.zsh_path.clone(),
             features: spawn_config.features.clone(),
@@ -633,7 +633,7 @@ async fn run_review_on_session(
         .turn_environments()
         .map(|environment| {
             let mut selection = environment.selection();
-            selection.config = codex_protocol::protocol::EnvironmentConfigState::Ready(
+            selection.config = ava_protocol::protocol::EnvironmentConfigState::Ready(
                 environment.config().clone(),
             );
             selection
@@ -656,9 +656,9 @@ async fn run_review_on_session(
         .insert(super::input_budget::PendingReviewContext(
             prompt_items.context,
         ));
-    let request = codex_guardian_reviewer::ReviewerTurn {
+    let request = ava_guardian_reviewer::ReviewerTurn {
         items,
-        environments: codex_protocol::protocol::TurnEnvironmentSelections::new(
+        environments: ava_protocol::protocol::TurnEnvironmentSelections::new(
             parent_turn_legacy_fallback_cwd,
             parent_turn_environments,
         ),
@@ -673,7 +673,7 @@ async fn run_review_on_session(
         root_turn_id: parent_turn.turn_metadata_state.root_turn_id(),
     }
     .into_request();
-    let child_turn_id = match codex_guardian_reviewer::start_review_turn(
+    let child_turn_id = match ava_guardian_reviewer::start_review_turn(
         review_session,
         request,
         deadline,
@@ -738,7 +738,7 @@ async fn run_review_on_session(
         .remove::<super::request_budget::ExhaustedReviewBudget>();
     let result = match turn_result.outcome {
         GuardianReviewSessionOutcome::SessionFailed {
-            error_info: Some(CodexErrorInfo::ContextWindowExceeded),
+            error_info: Some(AvaErrorInfo::ContextWindowExceeded),
             ..
         } if matches!(
             budget_exhausted.as_deref(),
@@ -855,7 +855,7 @@ async fn ensure_guardian_node_repl_policy(
     Ok(())
 }
 
-impl codex_guardian_reviewer::ReviewerRuntime for GuardianReviewSession {
+impl ava_guardian_reviewer::ReviewerRuntime for GuardianReviewSession {
     async fn submit_turn(&self, request: TurnInputRequest) -> anyhow::Result<TurnInputSubmission> {
         Ok(self
             .io
@@ -890,7 +890,7 @@ impl codex_guardian_reviewer::ReviewerRuntime for GuardianReviewSession {
 #[path = "review_session_tests.rs"]
 mod tests;
 
-impl codex_guardian_reviewer::ReviewerSession for GuardianReviewSession {
+impl ava_guardian_reviewer::ReviewerSession for GuardianReviewSession {
     type Setup = PreparedGuardianContext;
     type Context = GuardianReviewSessionReuseKey;
     type Snapshot = GuardianReviewForkSnapshot;

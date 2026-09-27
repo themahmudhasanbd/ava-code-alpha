@@ -13,8 +13,8 @@ use std::time::Instant;
 
 use super::live_output::LiveCommandOutput;
 use crate::history_cell::ActivityGroup;
-use codex_app_server_protocol::CommandExecutionSource as ExecCommandSource;
-use codex_protocol::parse_command::ParsedCommand;
+use ava_app_server_protocol::CommandExecutionSource as ExecCommandSource;
+use ava_protocol::parse_command::ParsedCommand;
 use itertools::Either;
 
 #[derive(Debug, Default)]

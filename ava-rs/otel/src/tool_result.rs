@@ -3,9 +3,9 @@ use crate::events::shared::log_and_trace_event;
 use crate::events::shared::log_event;
 use crate::events::shared::tool_namespace;
 use crate::events::shared::trace_event;
-use codex_protocol::ToolName;
-use codex_protocol::config_types::ToolResultLogConfig;
-use codex_utils_string::take_bytes_at_char_boundary;
+use ava_protocol::ToolName;
+use ava_protocol::config_types::ToolResultLogConfig;
+use ava_utils_string::take_bytes_at_char_boundary;
 use std::borrow::Cow;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
@@ -54,7 +54,7 @@ pub(crate) fn emit_tool_result(
     log_and_trace_event!(
         telemetry,
         common: {
-            event.name = "codex.tool_result",
+            event.name = "ava.tool_result",
             tool_result_seq = tool_result_seq,
             tool_name = %tool_name.name,
             tool_namespace = %tool_namespace,

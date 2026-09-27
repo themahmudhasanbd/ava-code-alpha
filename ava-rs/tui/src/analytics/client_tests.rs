@@ -4,7 +4,7 @@ use super::*;
 use crate::analytics::sections::Section;
 use crate::legacy_core::config::ConfigBuilder;
 use base64::Engine;
-use codex_config::LoaderOverrides;
+use ava_config::LoaderOverrides;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -31,11 +31,11 @@ pub(super) fn sign_in(home: &std::path::Path, account: &str, user: &str, plan: &
         "last_refresh": chrono::Utc::now(),
     }))
     .unwrap();
-    codex_login::save_auth(
+    ava_login::save_auth(
         home,
         &auth,
-        codex_login::AuthCredentialsStoreMode::File,
-        codex_login::AuthKeyringBackendKind::default(),
+        ava_login::AuthCredentialsStoreMode::File,
+        ava_login::AuthKeyringBackendKind::default(),
     )
     .unwrap();
 }
@@ -46,13 +46,13 @@ pub(in crate::analytics) async fn live(
 ) -> (tempfile::TempDir, Live) {
     let home = tempfile::tempdir().unwrap();
     let mut config = ConfigBuilder::default()
-        .codex_home(home.path().to_path_buf())
+        .ava_home(home.path().to_path_buf())
         .loader_overrides(LoaderOverrides::without_managed_config_for_tests())
         .build()
         .await
         .unwrap();
     config.chatgpt_base_url = format!("{}/backend-api", server.uri());
-    config.cli_auth_credentials_store_mode = codex_login::AuthCredentialsStoreMode::File;
+    config.cli_auth_credentials_store_mode = ava_login::AuthCredentialsStoreMode::File;
     sign_in(home.path(), "account-a", "user-a", plan);
     Mock::given(method("GET"))
         .and(path("/backend-api/wham/accounts/check"))
@@ -166,7 +166,7 @@ async fn analytics_requests_use_reloaded_credentials_for_the_same_identity() {
         .request(|client| async move {
             client
                 .get_account_analytics(
-                    codex_backend_client::AnalyticsReport::Usage,
+                    ava_backend_client::AnalyticsReport::Usage,
                     "2026-09-01",
                     "2026-09-07",
                 )
@@ -176,8 +176,8 @@ async fn analytics_requests_use_reloaded_credentials_for_the_same_identity() {
         .unwrap();
     assert_eq!(
         result,
-        codex_backend_client::AnalyticsResponse::Usage(
-            codex_backend_client::analytics_models::DailyProductSurfaceUsageResponse::default()
+        ava_backend_client::AnalyticsResponse::Usage(
+            ava_backend_client::analytics_models::DailyProductSurfaceUsageResponse::default()
         )
     );
     server.verify().await;
@@ -215,7 +215,7 @@ async fn analytics_retries_unauthorized_requests_after_credentials_reload() {
         .request(|client| async move {
             client
                 .get_account_analytics(
-                    codex_backend_client::AnalyticsReport::Usage,
+                    ava_backend_client::AnalyticsReport::Usage,
                     "2026-09-01",
                     "2026-09-07",
                 )
@@ -225,8 +225,8 @@ async fn analytics_retries_unauthorized_requests_after_credentials_reload() {
         .unwrap();
     assert_eq!(
         result,
-        codex_backend_client::AnalyticsResponse::Usage(
-            codex_backend_client::analytics_models::DailyProductSurfaceUsageResponse::default()
+        ava_backend_client::AnalyticsResponse::Usage(
+            ava_backend_client::analytics_models::DailyProductSurfaceUsageResponse::default()
         )
     );
     server.verify().await;
@@ -264,7 +264,7 @@ async fn analytics_matches_app_account_routes_and_parameters() {
             vec![
                 ("group_by", "day"),
                 ("breakdown_by", "model"),
-                ("modes", "codex"),
+                ("modes", "ava"),
                 ("modes", "work"),
             ],
         ),

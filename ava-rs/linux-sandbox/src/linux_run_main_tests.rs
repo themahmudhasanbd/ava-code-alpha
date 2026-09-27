@@ -5,15 +5,15 @@ use crate::linux_run_main::install_bwrap_signal_forwarders;
 #[cfg(test)]
 use crate::linux_run_main::wait_for_bwrap_child;
 #[cfg(test)]
-use codex_network_proxy::ManagedNetworkSandboxContext;
+use ava_network_proxy::ManagedNetworkSandboxContext;
 #[cfg(test)]
-use codex_protocol::models::PermissionProfile;
+use ava_protocol::models::PermissionProfile;
 #[cfg(test)]
-use codex_protocol::protocol::FileSystemSandboxPolicy;
+use ava_protocol::protocol::FileSystemSandboxPolicy;
 #[cfg(test)]
-use codex_protocol::protocol::NetworkSandboxPolicy;
+use ava_protocol::protocol::NetworkSandboxPolicy;
 #[cfg(test)]
-use codex_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_absolute_path::AbsolutePathBuf;
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 #[cfg(test)]
@@ -70,9 +70,9 @@ fn inserts_bwrap_argv0_before_command_separator() {
     apply_inner_command_argv0_for_launcher(
         &mut argv,
         /*supports_argv0*/ true,
-        "/tmp/codex-arg0-session/codex-linux-sandbox".to_string(),
+        "/tmp/ava-arg0-session/ava-linux-sandbox".to_string(),
     );
-    let daemon_directory = codex_uds::shared_daemon_socket_directory()
+    let daemon_directory = ava_uds::shared_daemon_socket_directory()
         .unwrap()
         .display()
         .to_string();
@@ -101,7 +101,7 @@ fn inserts_bwrap_argv0_before_command_separator() {
             "--cap-drop".to_string(),
             "ALL".to_string(),
             "--argv0".to_string(),
-            "codex-linux-sandbox".to_string(),
+            "ava-linux-sandbox".to_string(),
             "--".to_string(),
             "/bin/true".to_string(),
         ]
@@ -127,13 +127,13 @@ fn rewrites_inner_command_path_when_bwrap_lacks_argv0() {
     apply_inner_command_argv0_for_launcher(
         &mut argv,
         /*supports_argv0*/ false,
-        "/tmp/codex-arg0-session/codex-linux-sandbox".to_string(),
+        "/tmp/ava-arg0-session/ava-linux-sandbox".to_string(),
     );
 
     assert!(!argv.iter().any(|arg| arg == "--argv0"));
     assert!(
         argv.windows(2)
-            .any(|window| { window == ["--", "/tmp/codex-arg0-session/codex-linux-sandbox"] })
+            .any(|window| { window == ["--", "/tmp/ava-arg0-session/ava-linux-sandbox"] })
     );
 }
 
@@ -151,7 +151,7 @@ fn rewrites_bwrap_helper_command_not_nested_user_command_when_current_exe_appear
         "/tmp/cwd".to_string(),
         "--".to_string(),
         nested_current_exe.clone(),
-        "--codex-run-as-apply-patch".to_string(),
+        "--ava-run-as-apply-patch".to_string(),
         "patch".to_string(),
     ];
 
@@ -171,7 +171,7 @@ fn rewrites_bwrap_helper_command_not_nested_user_command_when_current_exe_appear
             "/tmp/cwd".to_string(),
             "--".to_string(),
             nested_current_exe,
-            "--codex-run-as-apply-patch".to_string(),
+            "--ava-run-as-apply-patch".to_string(),
             "patch".to_string(),
         ]
     );
@@ -273,18 +273,18 @@ fn split_only_filesystem_policy_requires_direct_runtime_enforcement() {
     std::fs::create_dir_all(&docs).expect("create docs");
     let docs = AbsolutePathBuf::from_absolute_path(&docs).expect("absolute docs");
     let policy = FileSystemSandboxPolicy::restricted(vec![
-        codex_protocol::permissions::FileSystemSandboxEntry {
-            path: codex_protocol::permissions::FileSystemPath::Special {
-                value: codex_protocol::permissions::FileSystemSpecialPath::project_roots(
+        ava_protocol::permissions::FileSystemSandboxEntry {
+            path: ava_protocol::permissions::FileSystemPath::Special {
+                value: ava_protocol::permissions::FileSystemSpecialPath::project_roots(
                     /*subpath*/ None,
                 ),
             },
-            access: codex_protocol::permissions::FileSystemAccessMode::Write,
+            access: ava_protocol::permissions::FileSystemAccessMode::Write,
             missing_path_behavior: None,
         },
-        codex_protocol::permissions::FileSystemSandboxEntry {
+        ava_protocol::permissions::FileSystemSandboxEntry {
             path: docs.into(),
-            access: codex_protocol::permissions::FileSystemAccessMode::Read,
+            access: ava_protocol::permissions::FileSystemAccessMode::Read,
             missing_path_behavior: None,
         },
     ]);
@@ -301,16 +301,16 @@ fn root_write_read_only_carveout_requires_direct_runtime_enforcement() {
     std::fs::create_dir_all(&docs).expect("create docs");
     let docs = AbsolutePathBuf::from_absolute_path(&docs).expect("absolute docs");
     let policy = FileSystemSandboxPolicy::restricted(vec![
-        codex_protocol::permissions::FileSystemSandboxEntry {
-            path: codex_protocol::permissions::FileSystemPath::Special {
-                value: codex_protocol::permissions::FileSystemSpecialPath::Root,
+        ava_protocol::permissions::FileSystemSandboxEntry {
+            path: ava_protocol::permissions::FileSystemPath::Special {
+                value: ava_protocol::permissions::FileSystemSpecialPath::Root,
             },
-            access: codex_protocol::permissions::FileSystemAccessMode::Write,
+            access: ava_protocol::permissions::FileSystemAccessMode::Write,
             missing_path_behavior: None,
         },
-        codex_protocol::permissions::FileSystemSandboxEntry {
+        ava_protocol::permissions::FileSystemSandboxEntry {
             path: docs.into(),
-            access: codex_protocol::permissions::FileSystemAccessMode::Read,
+            access: ava_protocol::permissions::FileSystemAccessMode::Read,
             missing_path_behavior: None,
         },
     ]);
@@ -417,7 +417,7 @@ fn synthetic_mount_registry_root_is_unique_to_effective_user() {
             .canonicalize()
             .expect("resolve temp directory")
             .join(format!(
-                "codex-bwrap-synthetic-mount-targets-{effective_uid}"
+                "ava-bwrap-synthetic-mount-targets-{effective_uid}"
             ))
     );
 }
@@ -625,7 +625,7 @@ fn managed_proxy_inner_command_includes_route_spec() {
 #[test]
 fn managed_network_policy_alone_enables_proxy_mode() {
     let parsed = LandlockCommand::try_parse_from([
-        "codex-linux-sandbox",
+        "ava-linux-sandbox",
         "--sandbox-policy-cwd",
         "/tmp",
         "--managed-network",
@@ -643,7 +643,7 @@ fn managed_network_policy_alone_enables_proxy_mode() {
 #[test]
 fn malformed_managed_network_policy_is_rejected() {
     let error = LandlockCommand::try_parse_from([
-        "codex-linux-sandbox",
+        "ava-linux-sandbox",
         "--sandbox-policy-cwd",
         "/tmp",
         "--managed-network",
@@ -732,16 +732,16 @@ fn resolve_permission_profile_preserves_direct_runtime_profile() {
     std::fs::create_dir_all(&docs).expect("create docs");
     let docs = AbsolutePathBuf::from_absolute_path(&docs).expect("absolute docs");
     let file_system_sandbox_policy = FileSystemSandboxPolicy::restricted(vec![
-        codex_protocol::permissions::FileSystemSandboxEntry {
-            path: codex_protocol::permissions::FileSystemPath::Special {
-                value: codex_protocol::permissions::FileSystemSpecialPath::Root,
+        ava_protocol::permissions::FileSystemSandboxEntry {
+            path: ava_protocol::permissions::FileSystemPath::Special {
+                value: ava_protocol::permissions::FileSystemSpecialPath::Root,
             },
-            access: codex_protocol::permissions::FileSystemAccessMode::Read,
+            access: ava_protocol::permissions::FileSystemAccessMode::Read,
             missing_path_behavior: None,
         },
-        codex_protocol::permissions::FileSystemSandboxEntry {
+        ava_protocol::permissions::FileSystemSandboxEntry {
             path: docs.into(),
-            access: codex_protocol::permissions::FileSystemAccessMode::Write,
+            access: ava_protocol::permissions::FileSystemAccessMode::Write,
             missing_path_behavior: None,
         },
     ]);

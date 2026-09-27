@@ -10,8 +10,8 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use bytes::Bytes;
-use codex_http_client::HttpError;
-use codex_http_client::HttpResponse;
+use ava_http_client::HttpError;
+use ava_http_client::HttpResponse;
 use futures::StreamExt;
 use serde_json::Value;
 use serde_json::from_value;

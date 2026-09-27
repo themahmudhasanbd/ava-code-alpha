@@ -1,8 +1,8 @@
 //! Turn-start MCP reconciliation and cooperative discovery cancellation regressions.
 
 use super::*;
-use codex_mcp::McpResourceClient;
-use codex_mcp::McpResourceClientCacheKey;
+use ava_mcp::McpResourceClient;
+use ava_mcp::McpResourceClientCacheKey;
 use pretty_assertions::assert_eq;
 
 struct Recorder {
@@ -12,22 +12,22 @@ struct Recorder {
     discovered: tokio::sync::Notify,
 }
 
-impl codex_extension_api::TurnLifecycleContributor for Recorder {
+impl ava_extension_api::TurnLifecycleContributor for Recorder {
     fn turn_start_phase(
         &self,
-        _thread_store: &codex_extension_api::ExtensionData,
-    ) -> codex_extension_api::TurnStartPhase {
-        codex_extension_api::TurnStartPhase::RegularTaskStart
+        _thread_store: &ava_extension_api::ExtensionData,
+    ) -> ava_extension_api::TurnStartPhase {
+        ava_extension_api::TurnStartPhase::RegularTaskStart
     }
 
-    fn requires_mcp_runtime(&self, _thread_store: &codex_extension_api::ExtensionData) -> bool {
+    fn requires_mcp_runtime(&self, _thread_store: &ava_extension_api::ExtensionData) -> bool {
         self.requires_mcp.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     fn on_turn_start<'a>(
         &'a self,
-        _input: codex_extension_api::TurnStartInput<'a>,
-    ) -> codex_extension_api::ExtensionFuture<'a, ()> {
+        _input: ava_extension_api::TurnStartInput<'a>,
+    ) -> ava_extension_api::ExtensionFuture<'a, ()> {
         Box::pin(async move {
             self.keys
                 .lock()
@@ -49,7 +49,7 @@ async fn turn_start_refreshes_dirty_mcp_reuses_clean_runtime_and_cancels_discove
         discovered: Default::default(),
     });
     let initial_key = recorder.client.cache_key();
-    let mut builder = codex_extension_api::ExtensionRegistryBuilder::new();
+    let mut builder = ava_extension_api::ExtensionRegistryBuilder::new();
     builder.turn_lifecycle_contributor(recorder.clone());
     session.services.extensions = Arc::new(builder.build());
     let session = Arc::new(session);

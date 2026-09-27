@@ -6,15 +6,15 @@ use crate::tools::context::boxed_tool_output;
 use crate::tools::handlers::parse_arguments;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageDelivery;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::TurnItem;
-use codex_protocol::models::MessagePhase;
-use codex_tools::JsonSchema;
-use codex_tools::ResponsesApiTool;
-use codex_tools::ToolName;
-use codex_tools::ToolSpec;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageDelivery;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::TurnItem;
+use ava_protocol::models::MessagePhase;
+use ava_tools::JsonSchema;
+use ava_tools::ResponsesApiTool;
+use ava_tools::ToolName;
+use ava_tools::ToolSpec;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -56,7 +56,7 @@ impl ToolExecutor<ToolInvocation> for SendMessageToUserAsyncHandler {
         })
     }
 
-    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> ava_tools::ToolExecutorFuture<'a>
     where
         ToolInvocation: 'a,
     {

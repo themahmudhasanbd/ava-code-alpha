@@ -23,13 +23,13 @@ use crate::engine::dispatcher;
 use crate::engine::output_parser;
 use crate::schema::PermissionRequestCommandInput;
 use crate::schema::SubagentCommandInputFields;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::HookCompletedEvent;
-use codex_protocol::protocol::HookEventName;
-use codex_protocol::protocol::HookOutputEntry;
-use codex_protocol::protocol::HookOutputEntryKind;
-use codex_protocol::protocol::HookRunStatus;
-use codex_protocol::protocol::HookRunSummary;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::HookCompletedEvent;
+use ava_protocol::protocol::HookEventName;
+use ava_protocol::protocol::HookOutputEntry;
+use ava_protocol::protocol::HookOutputEntryKind;
+use ava_protocol::protocol::HookRunStatus;
+use ava_protocol::protocol::HookRunSummary;
 use serde_json::Value;
 
 #[derive(Debug, Clone)]

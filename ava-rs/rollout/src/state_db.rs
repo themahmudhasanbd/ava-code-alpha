@@ -9,13 +9,13 @@ use crate::sqlite_metrics;
 use anyhow::Context;
 use chrono::DateTime;
 use chrono::Utc;
-use codex_protocol::ThreadId;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::ThreadHistoryMode;
-pub use codex_state::LogEntry;
-use codex_state::SqliteConfig;
-use codex_state::ThreadMetadataBuilder;
-use codex_utils_path::normalize_for_path_comparison;
+use ava_protocol::ThreadId;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::ThreadHistoryMode;
+pub use ava_state::LogEntry;
+use ava_state::SqliteConfig;
+use ava_state::ThreadMetadataBuilder;
+use ava_utils_path::normalize_for_path_comparison;
 use serde_json::Value;
 use std::path::Path;
 use std::path::PathBuf;
@@ -26,7 +26,7 @@ use tracing::info;
 use tracing::warn;
 
 /// Core-facing handle to the SQLite-backed state runtime.
-pub type StateDbHandle = Arc<codex_state::StateRuntime>;
+pub type StateDbHandle = Arc<ava_state::StateRuntime>;
 
 #[cfg(not(test))]
 const STARTUP_BACKFILL_POLL_INTERVAL: Duration = Duration::from_secs(1);
@@ -44,7 +44,7 @@ const STARTUP_BACKFILL_WAIT_TIMEOUT: Duration = Duration::from_secs(2);
 /// initialized handle.
 pub async fn init(config: &impl RolloutConfigView) -> Option<StateDbHandle> {
     let config = RolloutConfig::from_view(config);
-    match try_init_with_roots(config.codex_home, config.sqlite, config.model_provider_id).await {
+    match try_init_with_roots(config.ava_home, config.sqlite, config.model_provider_id).await {
         Ok(runtime) => Some(runtime),
         Err(err) => {
             emit_startup_warning(&format!("failed to initialize state runtime: {err:#}"));
@@ -59,16 +59,16 @@ pub async fn init(config: &impl RolloutConfigView) -> Option<StateDbHandle> {
 /// tracing or UI setup has completed.
 pub async fn try_init(config: &impl RolloutConfigView) -> anyhow::Result<StateDbHandle> {
     let config = RolloutConfig::from_view(config);
-    try_init_with_roots(config.codex_home, config.sqlite, config.model_provider_id).await
+    try_init_with_roots(config.ava_home, config.sqlite, config.model_provider_id).await
 }
 
 async fn try_init_with_roots(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     sqlite: SqliteConfig,
     default_model_provider_id: String,
 ) -> anyhow::Result<StateDbHandle> {
     try_init_with_roots_inner(
-        codex_home,
+        ava_home,
         sqlite,
         default_model_provider_id,
         /*backfill_lease_seconds*/ None,
@@ -78,13 +78,13 @@ async fn try_init_with_roots(
 
 #[cfg(test)]
 async fn try_init_with_roots_and_backfill_lease(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     sqlite: SqliteConfig,
     default_model_provider_id: String,
     backfill_lease_seconds: i64,
 ) -> anyhow::Result<StateDbHandle> {
     try_init_with_roots_inner(
-        codex_home,
+        ava_home,
         sqlite,
         default_model_provider_id,
         Some(backfill_lease_seconds),
@@ -93,13 +93,13 @@ async fn try_init_with_roots_and_backfill_lease(
 }
 
 async fn try_init_with_roots_inner(
-    codex_home: PathBuf,
+    ava_home: PathBuf,
     sqlite: SqliteConfig,
     default_model_provider_id: String,
     backfill_lease_seconds: Option<i64>,
 ) -> anyhow::Result<StateDbHandle> {
     let runtime =
-        codex_state::StateRuntime::init(sqlite.clone(), default_model_provider_id.clone())
+        ava_state::StateRuntime::init(sqlite.clone(), default_model_provider_id.clone())
             .await
             .with_context(|| {
                 format!(
@@ -110,12 +110,12 @@ async fn try_init_with_roots_inner(
     let backfill_gate_started = Instant::now();
     let backfill_gate_result = wait_for_backfill_gate(
         runtime.as_ref(),
-        codex_home.as_path(),
+        ava_home.as_path(),
         default_model_provider_id.as_str(),
         backfill_lease_seconds,
     )
     .await;
-    codex_state::record_backfill_gate(
+    ava_state::record_backfill_gate(
         /*telemetry*/ None,
         backfill_gate_started.elapsed(),
         &backfill_gate_result,
@@ -128,8 +128,8 @@ async fn try_init_with_roots_inner(
 }
 
 async fn wait_for_backfill_gate(
-    runtime: &codex_state::StateRuntime,
-    codex_home: &Path,
+    runtime: &ava_state::StateRuntime,
+    ava_home: &Path,
     default_model_provider_id: &str,
     backfill_lease_seconds: Option<i64>,
 ) -> anyhow::Result<()> {
@@ -139,37 +139,37 @@ async fn wait_for_backfill_gate(
         let backfill_state = runtime.get_backfill_state().await.map_err(|err| {
             anyhow::anyhow!(
                 "failed to read backfill state at {}: {err}",
-                codex_home.display()
+                ava_home.display()
             )
         })?;
-        if backfill_state.status == codex_state::BackfillStatus::Complete {
+        if backfill_state.status == ava_state::BackfillStatus::Complete {
             return Ok(());
         }
 
         if let Some(backfill_lease_seconds) = backfill_lease_seconds {
             metadata::backfill_sessions_with_lease(
                 runtime,
-                codex_home,
+                ava_home,
                 default_model_provider_id,
                 backfill_lease_seconds,
             )
             .await;
         } else {
-            metadata::backfill_sessions(runtime, codex_home, default_model_provider_id).await;
+            metadata::backfill_sessions(runtime, ava_home, default_model_provider_id).await;
         }
         let backfill_state = runtime.get_backfill_state().await.map_err(|err| {
             anyhow::anyhow!(
                 "failed to read backfill state at {} after startup backfill: {err}",
-                codex_home.display()
+                ava_home.display()
             )
         })?;
-        if backfill_state.status == codex_state::BackfillStatus::Complete {
+        if backfill_state.status == ava_state::BackfillStatus::Complete {
             return Ok(());
         }
         if wait_started.elapsed() >= STARTUP_BACKFILL_WAIT_TIMEOUT {
             return Err(anyhow::anyhow!(
                 "timed out waiting for state db backfill at {} after {:?} (status: {})",
-                codex_home.display(),
+                ava_home.display(),
                 STARTUP_BACKFILL_WAIT_TIMEOUT,
                 backfill_state.status.as_str()
             ));
@@ -178,7 +178,7 @@ async fn wait_for_backfill_gate(
         let message = format!(
             "state db backfill is {} at {}; waiting up to {:?} before retrying startup initialization",
             backfill_state.status.as_str(),
-            codex_home.display(),
+            ava_home.display(),
             STARTUP_BACKFILL_WAIT_TIMEOUT,
         );
         if reported_wait {
@@ -208,14 +208,14 @@ fn emit_startup_warning(message: &str) {
 pub async fn get_state_db(config: &impl RolloutConfigView) -> Option<StateDbHandle> {
     let state_path = config.sqlite_config().state_db_path();
     if !tokio::fs::try_exists(&state_path).await.unwrap_or(false) {
-        codex_state::record_fallback(
+        ava_state::record_fallback(
             "get_state_db",
             "db_unavailable",
             /*telemetry_override*/ None,
         );
         return None;
     }
-    let runtime = match codex_state::StateRuntime::init(
+    let runtime = match ava_state::StateRuntime::init(
         config.sqlite_config().clone(),
         config.model_provider_id().to_string(),
     )
@@ -223,7 +223,7 @@ pub async fn get_state_db(config: &impl RolloutConfigView) -> Option<StateDbHand
     {
         Ok(runtime) => runtime,
         Err(_) => {
-            codex_state::record_fallback(
+            ava_state::record_fallback(
                 "get_state_db",
                 "db_error",
                 /*telemetry_override*/ None,
@@ -236,25 +236,25 @@ pub async fn get_state_db(config: &impl RolloutConfigView) -> Option<StateDbHand
 
 /// Build a SQLite telemetry recorder backed by an OTEL metrics client.
 pub fn sqlite_telemetry_recorder(
-    metrics: codex_otel::MetricsClient,
+    metrics: ava_otel::MetricsClient,
     originator: &str,
-) -> codex_state::DbTelemetryHandle {
+) -> ava_state::DbTelemetryHandle {
     sqlite_metrics::recorder(metrics, originator)
 }
 
 async fn require_backfill_complete(
     runtime: StateDbHandle,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> Option<StateDbHandle> {
     match runtime.get_backfill_state().await {
-        Ok(state) if state.status == codex_state::BackfillStatus::Complete => Some(runtime),
+        Ok(state) if state.status == ava_state::BackfillStatus::Complete => Some(runtime),
         Ok(state) => {
             warn!(
                 "state db backfill not complete at {} (status: {})",
-                codex_home.display(),
+                ava_home.display(),
                 state.status.as_str()
             );
-            codex_state::record_fallback(
+            ava_state::record_fallback(
                 "get_state_db",
                 "backfill_incomplete",
                 /*telemetry_override*/ None,
@@ -264,9 +264,9 @@ async fn require_backfill_complete(
         Err(err) => {
             warn!(
                 "failed to read backfill state at {}: {err}",
-                codex_home.display()
+                ava_home.display()
             );
-            codex_state::record_fallback(
+            ava_state::record_fallback(
                 "get_state_db",
                 "db_error",
                 /*telemetry_override*/ None,
@@ -276,12 +276,12 @@ async fn require_backfill_complete(
     }
 }
 
-fn cursor_to_anchor(cursor: Option<&Cursor>) -> Option<codex_state::Anchor> {
+fn cursor_to_anchor(cursor: Option<&Cursor>) -> Option<ava_state::Anchor> {
     let cursor = cursor?;
     let millis = cursor.timestamp().unix_timestamp_nanos() / 1_000_000;
     let millis = i64::try_from(millis).ok()?;
     let ts = chrono::DateTime::<Utc>::from_timestamp_millis(millis)?;
-    Some(codex_state::Anchor {
+    Some(ava_state::Anchor {
         ts,
         id: cursor.thread_id(),
     })
@@ -294,8 +294,8 @@ pub fn normalize_cwd_for_state_db(cwd: &Path) -> PathBuf {
 /// List thread ids from SQLite for parity checks without rollout scanning.
 #[allow(clippy::too_many_arguments)]
 pub async fn list_thread_ids_db(
-    context: Option<&codex_state::StateRuntime>,
-    sqlite: &codex_state::SqliteConfig,
+    context: Option<&ava_state::StateRuntime>,
+    sqlite: &ava_state::SqliteConfig,
     page_size: usize,
     cursor: Option<&Cursor>,
     sort_key: ThreadSortKey,
@@ -329,9 +329,9 @@ pub async fn list_thread_ids_db(
             page_size,
             anchor.as_ref(),
             match sort_key {
-                ThreadSortKey::CreatedAt => codex_state::SortKey::CreatedAt,
-                ThreadSortKey::UpdatedAt => codex_state::SortKey::UpdatedAt,
-                ThreadSortKey::RecencyAt => codex_state::SortKey::RecencyAt,
+                ThreadSortKey::CreatedAt => ava_state::SortKey::CreatedAt,
+                ThreadSortKey::UpdatedAt => ava_state::SortKey::UpdatedAt,
+                ThreadSortKey::RecencyAt => ava_state::SortKey::RecencyAt,
             },
             allowed_sources.as_slice(),
             model_providers.as_deref(),
@@ -350,8 +350,8 @@ pub async fn list_thread_ids_db(
 /// List thread metadata from SQLite without rollout directory traversal.
 #[allow(clippy::too_many_arguments)]
 pub async fn list_threads_db(
-    context: Option<&codex_state::StateRuntime>,
-    sqlite: &codex_state::SqliteConfig,
+    context: Option<&ava_state::StateRuntime>,
+    sqlite: &ava_state::SqliteConfig,
     page_size: usize,
     cursor: Option<&Cursor>,
     sort_key: ThreadSortKey,
@@ -359,12 +359,12 @@ pub async fn list_threads_db(
     allowed_sources: &[SessionSource],
     model_providers: Option<&[String]>,
     cwd_filters: Option<&[PathBuf]>,
-    relation_filter: Option<codex_state::ThreadRelationFilter>,
+    relation_filter: Option<ava_state::ThreadRelationFilter>,
     archived: bool,
     section: Option<Option<&str>>,
     project_id: Option<Option<&str>>,
     search_term: Option<&str>,
-) -> Option<codex_state::ThreadsPage> {
+) -> Option<ava_state::ThreadsPage> {
     let ctx = context?;
     if ctx.sqlite() != sqlite {
         warn!(
@@ -392,17 +392,17 @@ pub async fn list_threads_db(
             .collect::<Vec<_>>()
     });
     let state_sort_key = match sort_key {
-        ThreadSortKey::CreatedAt => codex_state::SortKey::CreatedAt,
-        ThreadSortKey::UpdatedAt => codex_state::SortKey::UpdatedAt,
-        ThreadSortKey::RecencyAt => codex_state::SortKey::RecencyAt,
+        ThreadSortKey::CreatedAt => ava_state::SortKey::CreatedAt,
+        ThreadSortKey::UpdatedAt => ava_state::SortKey::UpdatedAt,
+        ThreadSortKey::RecencyAt => ava_state::SortKey::RecencyAt,
     };
     let state_sort_direction = match sort_direction {
-        SortDirection::Asc => codex_state::SortDirection::Asc,
-        SortDirection::Desc => codex_state::SortDirection::Desc,
+        SortDirection::Asc => ava_state::SortDirection::Asc,
+        SortDirection::Desc => ava_state::SortDirection::Desc,
     };
 
     if let Some(relation_filter) = relation_filter {
-        let filters = codex_state::ThreadFilterOptions {
+        let filters = ava_state::ThreadFilterOptions {
             archived_only: archived,
             section,
             allowed_sources: allowed_sources.as_slice(),
@@ -430,7 +430,7 @@ pub async fn list_threads_db(
     let mut next_anchor = None;
     let mut num_scanned_rows = 0usize;
     while items.len() < page_size {
-        let filters = codex_state::ThreadFilterOptions {
+        let filters = ava_state::ThreadFilterOptions {
             archived_only: archived,
             section,
             allowed_sources: allowed_sources.as_slice(),
@@ -474,7 +474,7 @@ pub async fn list_threads_db(
         }
         anchor = next_anchor.clone();
     }
-    Some(codex_state::ThreadsPage {
+    Some(ava_state::ThreadsPage {
         items,
         parent_thread_ids: Default::default(),
         next_anchor,
@@ -484,7 +484,7 @@ pub async fn list_threads_db(
 
 /// Look up the rollout path for a thread id using SQLite.
 pub async fn find_rollout_path_by_id(
-    context: Option<&codex_state::StateRuntime>,
+    context: Option<&ava_state::StateRuntime>,
     thread_id: ThreadId,
     archived_only: Option<bool>,
     stage: &str,
@@ -499,7 +499,7 @@ pub async fn find_rollout_path_by_id(
 }
 
 pub async fn mark_thread_memory_mode_polluted(
-    context: Option<&codex_state::StateRuntime>,
+    context: Option<&ava_state::StateRuntime>,
     thread_id: ThreadId,
     stage: &str,
 ) {
@@ -517,7 +517,7 @@ pub async fn mark_thread_memory_mode_polluted(
 
 /// Reconcile rollout items into SQLite, falling back to scanning the rollout file.
 pub async fn reconcile_rollout(
-    context: Option<&codex_state::StateRuntime>,
+    context: Option<&ava_state::StateRuntime>,
     rollout_path: &Path,
     default_provider: &str,
     builder: Option<&ThreadMetadataBuilder>,
@@ -604,7 +604,7 @@ pub async fn reconcile_rollout(
 
 /// Repair a thread's rollout path after filesystem fallback succeeds.
 pub async fn read_repair_rollout_path(
-    context: Option<&codex_state::StateRuntime>,
+    context: Option<&ava_state::StateRuntime>,
     thread_id: Option<ThreadId>,
     archived_only: Option<bool>,
     rollout_path: &Path,
@@ -677,7 +677,7 @@ pub async fn read_repair_rollout_path(
 /// Apply rollout items incrementally to SQLite.
 #[allow(clippy::too_many_arguments)]
 pub async fn apply_rollout_items(
-    context: Option<&codex_state::StateRuntime>,
+    context: Option<&ava_state::StateRuntime>,
     rollout_path: &Path,
     default_provider: &str,
     builder: Option<&ThreadMetadataBuilder>,
@@ -720,7 +720,7 @@ pub async fn apply_rollout_items(
 }
 
 pub async fn touch_thread_updated_at(
-    context: Option<&codex_state::StateRuntime>,
+    context: Option<&ava_state::StateRuntime>,
     thread_id: Option<ThreadId>,
     updated_at: DateTime<Utc>,
     stage: &str,

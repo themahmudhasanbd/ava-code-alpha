@@ -2,13 +2,13 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use codex_config::types::AuthKeyringBackendKind;
-use codex_config::types::OAuthCredentialsStoreMode;
-use codex_exec_server::Environment;
-use codex_rmcp_client::ElicitationAction;
-use codex_rmcp_client::ElicitationResponse;
-use codex_rmcp_client::McpProtocolMode;
-use codex_rmcp_client::RmcpClient;
+use ava_config::types::AuthKeyringBackendKind;
+use ava_config::types::OAuthCredentialsStoreMode;
+use ava_exec_server::Environment;
+use ava_rmcp_client::ElicitationAction;
+use ava_rmcp_client::ElicitationResponse;
+use ava_rmcp_client::McpProtocolMode;
+use ava_rmcp_client::RmcpClient;
 use futures::FutureExt;
 use pretty_assertions::assert_eq;
 use rmcp::model::ClientCapabilities;
@@ -44,7 +44,7 @@ async fn initialize_modern_client(server: &MockServer) -> anyhow::Result<RmcpCli
 
     let params = InitializeRequestParams::new(
         ClientCapabilities::default(),
-        Implementation::new("codex-sse-discovery-test", "0.0.0"),
+        Implementation::new("ava-sse-discovery-test", "0.0.0"),
     )
     .with_protocol_version(ProtocolVersion::V_2025_06_18);
 

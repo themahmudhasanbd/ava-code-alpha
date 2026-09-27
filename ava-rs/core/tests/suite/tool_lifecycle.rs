@@ -6,26 +6,26 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use codex_core::TurnInputRequest;
-use codex_core::config::Config;
-use codex_extension_api::ExtensionFuture;
-use codex_extension_api::ExtensionRegistryBuilder;
-use codex_extension_api::McpServerContribution;
-use codex_extension_api::McpServerContributionContext;
-use codex_extension_api::McpServerContributor;
-use codex_extension_api::McpToolResultInput;
-use codex_extension_api::McpToolSource;
-use codex_extension_api::ResponseItem;
-use codex_extension_api::ToolLifecycleContributor;
-use codex_extension_api::ToolLifecycleFuture;
-use codex_extension_api::ToolStartInput;
-use codex_features::Feature;
-use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
-use codex_protocol::mcp::CallToolResult;
-use codex_protocol::models::ContentItem;
-use codex_protocol::protocol::EventMsg;
-use codex_protocol::user_input::UserInput;
-use codex_utils_path_uri::PathUri;
+use ava_core::TurnInputRequest;
+use ava_core::config::Config;
+use ava_extension_api::ExtensionFuture;
+use ava_extension_api::ExtensionRegistryBuilder;
+use ava_extension_api::McpServerContribution;
+use ava_extension_api::McpServerContributionContext;
+use ava_extension_api::McpServerContributor;
+use ava_extension_api::McpToolResultInput;
+use ava_extension_api::McpToolSource;
+use ava_extension_api::ResponseItem;
+use ava_extension_api::ToolLifecycleContributor;
+use ava_extension_api::ToolLifecycleFuture;
+use ava_extension_api::ToolStartInput;
+use ava_features::Feature;
+use ava_mcp::AVA_APPS_MCP_SERVER_NAME;
+use ava_protocol::mcp::CallToolResult;
+use ava_protocol::models::ContentItem;
+use ava_protocol::protocol::EventMsg;
+use ava_protocol::user_input::UserInput;
+use ava_utils_path_uri::PathUri;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_LIST_TOOL;
 use core_test_support::apps_test_server::SEARCH_CALENDAR_NAMESPACE;
@@ -35,8 +35,8 @@ use core_test_support::hooks::trust_discovered_hooks;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_wine_exec;
-use core_test_support::test_codex::test_codex;
-use core_test_support::test_codex::test_env;
+use core_test_support::test_ava::test_ava;
+use core_test_support::test_ava::test_env;
 use core_test_support::wait_for_event;
 use core_test_support::wait_for_mcp_server;
 use pretty_assertions::assert_eq;
@@ -89,7 +89,7 @@ impl McpServerContributor<Config> for ExtensionOwnedAppsServer {
             let config = serde_json::from_value(json!({ "url": self.url }))
                 .expect("test Apps MCP server config should be valid");
             vec![McpServerContribution::Set {
-                name: CODEX_APPS_MCP_SERVER_NAME.to_string(),
+                name: AVA_APPS_MCP_SERVER_NAME.to_string(),
                 config: Box::new(config),
             }]
         })
@@ -162,7 +162,7 @@ async fn tool_start_receives_conversation_history() -> Result<()> {
     let recorder = Arc::new(ConversationHistoryRecorder::default());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(recorder.clone());
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_config(|config| config.update_plan_enabled = true)
         .build_with_auto_env(&server)
@@ -265,14 +265,14 @@ async fn tool_start_receives_executed_mcp_call_for_connector(
     extensions.tool_lifecycle_contributor(recorder.clone());
     if matches!(owner, AppsServerOwner::Extension) {
         extensions.mcp_server_contributor(Arc::new(ExtensionOwnedAppsServer {
-            url: format!("{}/api/codex/ps/mcp", apps_server.chatgpt_base_url),
+            url: format!("{}/api/ava/ps/mcp", apps_server.chatgpt_base_url),
         }));
     }
     let test = apps_enabled_builder(apps_server.chatgpt_base_url)
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
 
     test.submit_text_turn("List my calendar events.").await?;
 
@@ -288,7 +288,7 @@ async fn tool_start_receives_executed_mcp_call_for_connector(
         assert_eq!(
             history.mcp_tool,
             Some((
-                CODEX_APPS_MCP_SERVER_NAME.to_string(),
+                AVA_APPS_MCP_SERVER_NAME.to_string(),
                 Some("calendar".to_string()),
                 expected_source,
             )),
@@ -409,7 +409,7 @@ async fn mcp_result_processing_precedes_completion(
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.codex, CODEX_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
 
     let call_id = "mcp-result-call";
     let call = match mode {
@@ -422,7 +422,7 @@ async fn mcp_result_processing_precedes_completion(
         McpCallMode::CodeMode => responses::ev_custom_tool_call(
             call_id,
             "exec",
-            r#"text(await tools.mcp__codex_apps__calendar_list_events({query: "callback test"}));"#,
+            r#"text(await tools.mcp__ava_apps__calendar_list_events({query: "callback test"}));"#,
         ),
     };
     responses::mount_sse_once(
@@ -435,7 +435,7 @@ async fn mcp_result_processing_precedes_completion(
         responses::sse(vec![responses::ev_completed("second-response")]),
     )
     .await;
-    test.codex
+    test.ava-code
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "List my calendar events.".to_string(),
             text_elements: Vec::new(),
@@ -449,7 +449,7 @@ async fn mcp_result_processing_precedes_completion(
     assert!(
         timeout(
             Duration::from_millis(100),
-            wait_for_event(&test.codex, |event| matches!(
+            wait_for_event(&test.ava-code, |event| matches!(
                 event,
                 EventMsg::McpToolCallEnd(_) | EventMsg::TurnComplete(_)
             )),
@@ -461,7 +461,7 @@ async fn mcp_result_processing_precedes_completion(
     assert!(follow_up.requests().is_empty());
 
     contributor.release.notify_one();
-    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.codex, |event| {
+    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await
@@ -472,7 +472,7 @@ async fn mcp_result_processing_precedes_completion(
         end.result.expect("MCP server returned a result"),
         expected_result
     );
-    wait_for_event(&test.codex, |event| {
+    wait_for_event(&test.ava-code, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -500,8 +500,8 @@ async fn tool_start_receives_frozen_host_plugin_root() -> Result<()> {
     skip_if_wine_exec!(Ok(()), "requires a native test_stdio_server");
 
     let server = responses::start_mock_server().await;
-    let codex_home = Arc::new(tempfile::tempdir()?);
-    let plugin_root = super::plugins::write_sample_plugin_manifest_and_config(codex_home.as_ref());
+    let ava_home = Arc::new(tempfile::tempdir()?);
+    let plugin_root = super::plugins::write_sample_plugin_manifest_and_config(ava_home.as_ref());
     let test_env = test_env().await?;
     let server_config = json!({
         "command": super::rmcp_client::remote_aware_stdio_server_bin()?,
@@ -516,13 +516,13 @@ async fn tool_start_receives_frozen_host_plugin_root() -> Result<()> {
     let recorder = Arc::new(ConversationHistoryRecorder::default());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(recorder.clone());
-    let test = test_codex()
-        .with_home(codex_home)
+    let test = test_ava()
+        .with_home(ava_home)
         .with_extensions(Arc::new(extensions.build()))
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .build_with_environment(&server, test_env)
         .await?;
-    wait_for_mcp_server(&test.codex, "sample").await?;
+    wait_for_mcp_server(&test.ava-code, "sample").await?;
     responses::mount_sse_sequence(
         &server,
         vec![
@@ -600,7 +600,7 @@ async fn tool_start_receives_rewritten_payload_and_post_hook_history() -> Result
     let recorder = Arc::new(ConversationHistoryRecorder::default());
     let mut extensions = ExtensionRegistryBuilder::<Config>::new();
     extensions.tool_lifecycle_contributor(recorder.clone());
-    let test = test_codex()
+    let test = test_ava()
         .with_extensions(Arc::new(extensions.build()))
         .with_pre_build_hook(move |home| {
             write_pre_tool_hook(home, "^update_plan$", &hook_output)
@@ -691,7 +691,7 @@ async fn tool_start_is_not_called_when_pre_tool_hook_prevents_execution() -> Res
         let recorder = Arc::new(ConversationHistoryRecorder::default());
         let mut extensions = ExtensionRegistryBuilder::<Config>::new();
         extensions.tool_lifecycle_contributor(recorder.clone());
-        let test = test_codex()
+        let test = test_ava()
             .with_extensions(Arc::new(extensions.build()))
             .with_pre_build_hook(move |home| {
                 write_pre_tool_hook(home, matcher, &hook_output)

@@ -12,15 +12,15 @@ use crate::session::turn_context::TurnEnvironment;
 use crate::tools::sandboxing::ApprovalAction;
 use crate::tools::sandboxing::ToolError;
 use crate::windows_sandbox::windows_sandbox_level_for_legacy_checks;
-use codex_features::Feature;
-use codex_file_system::FileSystemSandboxContext;
-use codex_network_proxy::EnvironmentNetworkPolicy;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::models::PermissionProfile;
-use codex_protocol::models::SandboxPermissions;
-use codex_protocol::permissions::NetworkSandboxPolicy;
-use codex_sandboxing::policy_transforms::effective_permission_profile;
-use codex_sandboxing::policy_transforms::merge_permission_profiles;
+use ava_features::Feature;
+use ava_file_system::FileSystemSandboxContext;
+use ava_network_proxy::EnvironmentNetworkPolicy;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::models::PermissionProfile;
+use ava_protocol::models::SandboxPermissions;
+use ava_protocol::permissions::NetworkSandboxPolicy;
+use ava_sandboxing::policy_transforms::effective_permission_profile;
+use ava_sandboxing::policy_transforms::merge_permission_profiles;
 
 #[derive(Clone, Copy)]
 pub(crate) enum TerminalSandboxSource {
@@ -57,12 +57,12 @@ impl TerminalPolicy {
             && windows_sandbox_level_for_legacy_checks(
                 environment.config().windows_sandbox_type,
                 environment.config().windows_sandbox_level,
-            ) == codex_protocol::config_types::WindowsSandboxLevel::Disabled
+            ) == ava_protocol::config_types::WindowsSandboxLevel::Disabled
         {
             // The filesystem helper applies executor defaults, but native process
             // launches honor Disabled. Preserve it so later enablement is detected.
             sandbox.windows_sandbox_selection =
-                codex_protocol::config_types::WindowsSandboxLevel::Disabled.into();
+                ava_protocol::config_types::WindowsSandboxLevel::Disabled.into();
         }
         Self {
             sandbox,

@@ -3,11 +3,11 @@
 
 use std::path::Path;
 
-use codex_core::ThreadManager;
-use codex_core::config::Config;
-use codex_extension_api::McpToolInfo;
-use codex_extension_api::McpToolSource;
-use codex_guardian_context::TrustedTool;
+use ava_core::ThreadManager;
+use ava_core::config::Config;
+use ava_extension_api::McpToolInfo;
+use ava_extension_api::McpToolSource;
+use ava_guardian_context::TrustedTool;
 
 #[derive(Clone, Copy)]
 enum PluginCapability {
@@ -21,7 +21,7 @@ pub(crate) async fn trusted_tool_context(
     manager: &ThreadManager,
     config: &Config,
 ) -> Option<TrustedTool> {
-    let codex_home = config.codex_home.as_path().canonicalize().ok()?;
+    let ava_home = config.ava_home.as_path().canonicalize().ok()?;
     let plugins = match source {
         McpToolSource::Connector => Some(
             manager
@@ -44,20 +44,20 @@ pub(crate) async fn trusted_tool_context(
                         .any(|app| app.connector_id.0 == connector_id)
                     && is_home_owned_plugin_capability(
                         plugin.root.as_path(),
-                        &codex_home,
+                        &ava_home,
                         PluginCapability::Connector,
                     )
             }) {
                 plugin.root.as_path().display().to_string()
             } else {
-                trusted_user_config_source(config, "apps", connector_id, &codex_home)?
+                trusted_user_config_source(config, "apps", connector_id, &ava_home)?
             }
         }
         McpToolSource::Plugin { root, .. } => {
             let plugin_root = root.to_abs_path().ok()?;
             if !is_home_owned_plugin_capability(
                 plugin_root.as_path(),
-                &codex_home,
+                &ava_home,
                 PluginCapability::Mcp,
             ) {
                 return None;
@@ -65,7 +65,7 @@ pub(crate) async fn trusted_tool_context(
             plugin_root.as_path().display().to_string()
         }
         McpToolSource::Config => {
-            trusted_user_config_source(config, "mcp_servers", &tool.server_name, &codex_home)?
+            trusted_user_config_source(config, "mcp_servers", &tool.server_name, &ava_home)?
         }
         McpToolSource::SelectedPlugin | McpToolSource::Other => return None,
     };
@@ -79,17 +79,17 @@ pub(crate) async fn trusted_tool_context(
 
 fn is_home_owned_plugin_capability(
     plugin_root: &Path,
-    codex_home: &Path,
+    ava_home: &Path,
     capability: PluginCapability,
 ) -> bool {
-    if !is_home_owned_path(plugin_root, codex_home) {
+    if !is_home_owned_path(plugin_root, ava_home) {
         return false;
     }
 
     let root_manifest = plugin_root.join("plugin.json");
     let manifest_path = [
         root_manifest.clone(),
-        plugin_root.join(".codex-plugin").join("plugin.json"),
+        plugin_root.join(".ava-plugin").join("plugin.json"),
         plugin_root.join(".claude-plugin").join("plugin.json"),
         plugin_root.join(".cursor-plugin").join("plugin.json"),
     ]
@@ -98,7 +98,7 @@ fn is_home_owned_plugin_capability(
     let Some(manifest_path) = manifest_path else {
         return false;
     };
-    if !is_home_owned_path(&manifest_path, codex_home) {
+    if !is_home_owned_path(&manifest_path, ava_home) {
         return false;
     }
 
@@ -125,17 +125,17 @@ fn is_home_owned_plugin_capability(
         },
     };
 
-    is_home_owned_path(&declaration_path, codex_home)
+    is_home_owned_path(&declaration_path, ava_home)
 }
 
 fn trusted_user_config_source(
     config: &Config,
     section: &str,
     name: &str,
-    codex_home: &Path,
+    ava_home: &Path,
 ) -> Option<String> {
     let user_config_file = config.config_layer_stack.get_user_config_file()?;
-    if !is_home_owned_path(user_config_file.as_path(), codex_home) {
+    if !is_home_owned_path(user_config_file.as_path(), ava_home) {
         return None;
     }
 
@@ -146,9 +146,9 @@ fn trusted_user_config_source(
     (user_entry == effective_entry).then(|| user_config_file.as_path().display().to_string())
 }
 
-fn is_home_owned_path(path: &Path, codex_home: &Path) -> bool {
+fn is_home_owned_path(path: &Path, ava_home: &Path) -> bool {
     path.canonicalize()
-        .is_ok_and(|canonical_path| canonical_path.starts_with(codex_home))
+        .is_ok_and(|canonical_path| canonical_path.starts_with(ava_home))
 }
 
 #[cfg(test)]

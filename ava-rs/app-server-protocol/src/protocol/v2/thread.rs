@@ -19,25 +19,25 @@ use super::UserInput;
 use super::shared::v2_enum_from_core;
 use crate::JsonSchema;
 use crate::TS;
-use codex_experimental_api_macros::ExperimentalApi;
-pub use codex_protocol::capabilities::CapabilityRootLocation;
-pub use codex_protocol::capabilities::SelectedCapabilityRoot;
-use codex_protocol::config_types::CollaborationMode;
-use codex_protocol::config_types::MultiAgentMode;
-use codex_protocol::config_types::Personality;
-use codex_protocol::config_types::ReasoningSummary;
-pub use codex_protocol::dynamic_tools::DynamicToolFunctionSpec;
-pub use codex_protocol::dynamic_tools::DynamicToolNamespaceSpec;
-pub use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
-pub use codex_protocol::dynamic_tools::DynamicToolSpec;
-use codex_protocol::models::ResponseItem;
-use codex_protocol::openai_models::ReasoningEffort;
-use codex_protocol::protocol::ThreadGoalStatus as CoreThreadGoalStatus;
-use codex_protocol::protocol::TokenUsage as CoreTokenUsage;
-use codex_protocol::protocol::TokenUsageInfo as CoreTokenUsageInfo;
-use codex_utils_absolute_path::AbsolutePathBuf;
-use codex_utils_path_uri::LegacyAppPathString;
-use codex_utils_path_uri::PathUri;
+use ava_experimental_api_macros::ExperimentalApi;
+pub use ava_protocol::capabilities::CapabilityRootLocation;
+pub use ava_protocol::capabilities::SelectedCapabilityRoot;
+use ava_protocol::config_types::CollaborationMode;
+use ava_protocol::config_types::MultiAgentMode;
+use ava_protocol::config_types::Personality;
+use ava_protocol::config_types::ReasoningSummary;
+pub use ava_protocol::dynamic_tools::DynamicToolFunctionSpec;
+pub use ava_protocol::dynamic_tools::DynamicToolNamespaceSpec;
+pub use ava_protocol::dynamic_tools::DynamicToolNamespaceTool;
+pub use ava_protocol::dynamic_tools::DynamicToolSpec;
+use ava_protocol::models::ResponseItem;
+use ava_protocol::openai_models::ReasoningEffort;
+use ava_protocol::protocol::ThreadGoalStatus as CoreThreadGoalStatus;
+use ava_protocol::protocol::TokenUsage as CoreTokenUsage;
+use ava_protocol::protocol::TokenUsageInfo as CoreTokenUsageInfo;
+use ava_utils_absolute_path::AbsolutePathBuf;
+use ava_utils_path_uri::LegacyAppPathString;
+use ava_utils_path_uri::PathUri;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -145,7 +145,7 @@ pub struct ThreadStartParams {
     #[experimental("thread/start.dynamicTools")]
     #[serde(
         default,
-        deserialize_with = "codex_protocol::dynamic_tools::deserialize_dynamic_tool_specs"
+        deserialize_with = "ava_protocol::dynamic_tools::deserialize_dynamic_tool_specs"
     )]
     #[ts(optional = nullable)]
     pub dynamic_tools: Option<Vec<DynamicToolSpec>>,
@@ -159,7 +159,7 @@ pub struct ThreadStartParams {
     #[ts(optional = nullable)]
     pub mock_experimental_field: Option<String>,
     /// If true, opt into emitting raw Responses API items on the event stream.
-    /// This is for internal use only (e.g. Codex Cloud).
+    /// This is for internal use only (e.g. Ava Cloud).
     #[experimental("thread/start.experimentalRawEvents")]
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub experimental_raw_events: bool,
@@ -354,7 +354,7 @@ pub struct ThreadSettingsUpdatedNotification {
 pub struct ThreadResumeParams {
     pub thread_id: String,
 
-    /// [UNSTABLE] FOR CODEX CLOUD - DO NOT USE.
+    /// [UNSTABLE] FOR AVA CLOUD - DO NOT USE.
     /// If specified, the thread will be resumed with the provided history
     /// instead of loaded from disk.
     #[experimental("thread/resume.history")]
@@ -826,8 +826,8 @@ pub struct ThreadGoal {
     pub updated_at: i64,
 }
 
-impl From<codex_protocol::protocol::ThreadGoal> for ThreadGoal {
-    fn from(value: codex_protocol::protocol::ThreadGoal) -> Self {
+impl From<ava_protocol::protocol::ThreadGoal> for ThreadGoal {
+    fn from(value: ava_protocol::protocol::ThreadGoal) -> Self {
         Self {
             thread_id: value.thread_id.to_string(),
             objective: value.objective,
@@ -1109,10 +1109,10 @@ impl ThreadMemoryMode {
         }
     }
 
-    pub fn to_core(self) -> codex_protocol::protocol::ThreadMemoryMode {
+    pub fn to_core(self) -> ava_protocol::protocol::ThreadMemoryMode {
         match self {
-            Self::Enabled => codex_protocol::protocol::ThreadMemoryMode::Enabled,
-            Self::Disabled => codex_protocol::protocol::ThreadMemoryMode::Disabled,
+            Self::Enabled => ava_protocol::protocol::ThreadMemoryMode::Enabled,
+            Self::Disabled => ava_protocol::protocol::ThreadMemoryMode::Disabled,
         }
     }
 }
@@ -1182,7 +1182,7 @@ pub struct ThreadShellCommandResponse {}
 #[ts(export_to = "v2/")]
 pub struct ThreadApproveGuardianDeniedActionParams {
     pub thread_id: String,
-    /// Serialized `codex_protocol::protocol::GuardianAssessmentEvent`.
+    /// Serialized `ava_protocol::protocol::GuardianAssessmentEvent`.
     pub event: JsonValue,
 }
 
@@ -1874,8 +1874,8 @@ pub struct ResponseUsageMetadata {
     pub metadata: Option<JsonValue>,
 }
 
-impl From<codex_protocol::ResponseUsageMetadata> for ResponseUsageMetadata {
-    fn from(value: codex_protocol::ResponseUsageMetadata) -> Self {
+impl From<ava_protocol::ResponseUsageMetadata> for ResponseUsageMetadata {
+    fn from(value: ava_protocol::ResponseUsageMetadata) -> Self {
         Self {
             amount: value.amount,
             metadata: value.metadata,

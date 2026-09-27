@@ -14,23 +14,23 @@ use crate::tools::sandboxing::ToolCtx;
 use crate::tools::sandboxing::ToolError;
 use crate::tools::sandboxing::ToolRuntime;
 use crate::tools::sandboxing::executor_windows_sandbox_selection;
-use codex_apply_patch::AppliedPatchDelta;
-use codex_apply_patch::ApplyPatchAction;
-use codex_apply_patch::ApplyPatchOptions;
-use codex_exec_server::FileSystemSandboxContext;
-use codex_protocol::error::CodexErr;
-use codex_protocol::error::SandboxErr;
-use codex_protocol::exec_output::ExecToolCallOutput;
-use codex_protocol::exec_output::StreamOutput;
-use codex_protocol::models::AdditionalPermissionProfile;
-use codex_protocol::protocol::AskForApproval;
-use codex_protocol::protocol::FileChange;
-use codex_sandboxing::SandboxType;
-use codex_sandboxing::SandboxablePreference;
-use codex_sandboxing::is_likely_executor_managed_sandbox_denied;
-use codex_sandboxing::policy_transforms::effective_permission_profile;
-use codex_sandboxing::record_filesystem_sandbox_violation;
-use codex_utils_path_uri::PathUri;
+use ava_apply_patch::AppliedPatchDelta;
+use ava_apply_patch::ApplyPatchAction;
+use ava_apply_patch::ApplyPatchOptions;
+use ava_exec_server::FileSystemSandboxContext;
+use ava_protocol::error::AvaErr;
+use ava_protocol::error::SandboxErr;
+use ava_protocol::exec_output::ExecToolCallOutput;
+use ava_protocol::exec_output::StreamOutput;
+use ava_protocol::models::AdditionalPermissionProfile;
+use ava_protocol::protocol::AskForApproval;
+use ava_protocol::protocol::FileChange;
+use ava_sandboxing::SandboxType;
+use ava_sandboxing::SandboxablePreference;
+use ava_sandboxing::is_likely_executor_managed_sandbox_denied;
+use ava_sandboxing::policy_transforms::effective_permission_profile;
+use ava_sandboxing::record_filesystem_sandbox_violation;
+use ava_utils_path_uri::PathUri;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
@@ -176,7 +176,7 @@ impl ToolRuntime<ApplyPatchRequest, ApplyPatchRuntimeOutput> for ApplyPatchRunti
         let sandbox = Self::file_system_sandbox_context_for_attempt(req, attempt);
         let mut stdout = Vec::new();
         let mut stderr = Vec::new();
-        let result = codex_apply_patch::apply_patch_with_options(
+        let result = ava_apply_patch::apply_patch_with_options(
             &req.action.patch,
             ApplyPatchOptions {
                 update_file_mode: req.action.update_file_mode(),
@@ -225,7 +225,7 @@ impl ToolRuntime<ApplyPatchRequest, ApplyPatchRuntimeOutput> for ApplyPatchRunti
             if attempt.sandbox != SandboxType::None {
                 record_filesystem_sandbox_violation(attempt.sandbox, &output);
             }
-            return Err(ToolError::Codex(CodexErr::Sandbox(SandboxErr::Denied {
+            return Err(ToolError::Ava(AvaErr::Sandbox(SandboxErr::Denied {
                 output: Box::new(output),
                 network_policy_decision: None,
             })));

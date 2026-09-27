@@ -1,25 +1,25 @@
 use super::*;
-use codex_protocol::AgentPath;
-use codex_protocol::ThreadId;
-use codex_protocol::items::AgentMessageContent;
-use codex_protocol::items::AgentMessageItem;
-use codex_protocol::items::DynamicToolCallItem;
-use codex_protocol::items::DynamicToolCallStatus;
-use codex_protocol::items::ImageGenerationItem;
-use codex_protocol::items::McpToolCallItem;
-use codex_protocol::items::McpToolCallStatus;
-use codex_protocol::items::SubAgentActivityItem;
-use codex_protocol::items::UserMessageItem;
-use codex_protocol::protocol::AgentMessageContentDeltaEvent;
-use codex_protocol::protocol::ItemCompletedEvent;
-use codex_protocol::protocol::ItemStartedEvent;
-use codex_protocol::protocol::RealtimeConversationClosedEvent;
-use codex_protocol::protocol::RealtimeConversationRealtimeEvent;
-use codex_protocol::protocol::RealtimeConversationStartedEvent;
-use codex_protocol::protocol::RealtimeConversationVersion;
-use codex_protocol::protocol::SubAgentActivityKind;
-use codex_protocol::protocol::TurnAbortReason;
-use codex_protocol::protocol::TurnAbortedEvent;
+use ava_protocol::AgentPath;
+use ava_protocol::ThreadId;
+use ava_protocol::items::AgentMessageContent;
+use ava_protocol::items::AgentMessageItem;
+use ava_protocol::items::DynamicToolCallItem;
+use ava_protocol::items::DynamicToolCallStatus;
+use ava_protocol::items::ImageGenerationItem;
+use ava_protocol::items::McpToolCallItem;
+use ava_protocol::items::McpToolCallStatus;
+use ava_protocol::items::SubAgentActivityItem;
+use ava_protocol::items::UserMessageItem;
+use ava_protocol::protocol::AgentMessageContentDeltaEvent;
+use ava_protocol::protocol::ItemCompletedEvent;
+use ava_protocol::protocol::ItemStartedEvent;
+use ava_protocol::protocol::RealtimeConversationClosedEvent;
+use ava_protocol::protocol::RealtimeConversationRealtimeEvent;
+use ava_protocol::protocol::RealtimeConversationStartedEvent;
+use ava_protocol::protocol::RealtimeConversationVersion;
+use ava_protocol::protocol::SubAgentActivityKind;
+use ava_protocol::protocol::TurnAbortReason;
+use ava_protocol::protocol::TurnAbortedEvent;
 use pretty_assertions::assert_eq;
 use test_case::test_case;
 use uuid::Uuid;
@@ -27,7 +27,7 @@ use uuid::Uuid;
 fn started_state() -> RealtimeHistoryState {
     let mut state = RealtimeHistoryState::default();
     state.observe(&EventMsg::TurnStarted(
-        codex_protocol::protocol::TurnStartedEvent {
+        ava_protocol::protocol::TurnStartedEvent {
             turn_id: "turn-1".to_string(),
             root_turn_id: None,
             trace_id: None,
@@ -128,7 +128,7 @@ fn interrupted_turn_is_not_associated_with_a_new_voice_session(
 ) {
     let mut state = RealtimeHistoryState::default();
     state.observe(&EventMsg::TurnStarted(
-        codex_protocol::protocol::TurnStartedEvent {
+        ava_protocol::protocol::TurnStartedEvent {
             turn_id: "turn-1".to_string(),
             root_turn_id: None,
             trace_id: None,
@@ -202,7 +202,7 @@ fn interrupted_turn_keeps_its_existing_voice_session_for_late_artifacts() {
 #[test]
 fn promotes_backing_agent_artifacts_once_without_a_client_request() {
     let mut state = started_state();
-    let first_delta = assistant_delta("message-1", "[analysis] ::codex-realtime-inline{}");
+    let first_delta = assistant_delta("message-1", "[analysis] ::ava-realtime-inline{}");
     assert!(state.observe(&first_delta).items.is_empty());
 
     let second_delta = assistant_delta("message-1", "\nVisible explanation");
@@ -220,7 +220,7 @@ fn promotes_backing_agent_artifacts_once_without_a_client_request() {
     let completed = completed_item(TurnItem::AgentMessage(AgentMessageItem {
         id: "message-1".to_string(),
         content: vec![AgentMessageContent::Text {
-            text: "[analysis] ::codex-realtime-inline{}\nVisible explanation".to_string(),
+            text: "[analysis] ::ava-realtime-inline{}\nVisible explanation".to_string(),
         }],
         phase: None,
         memory_citation: None,
@@ -229,7 +229,7 @@ fn promotes_backing_agent_artifacts_once_without_a_client_request() {
     }));
     assert!(state.observe(&completed).items.is_empty());
 
-    let next_message = assistant_delta("message-2", "::codex-realtime-inline{}\nNext message");
+    let next_message = assistant_delta("message-2", "::ava-realtime-inline{}\nNext message");
     assert_eq!(
         contents(state.observe(&next_message)),
         vec![RealtimeItemContent::BemItemPromoted {
@@ -272,7 +272,7 @@ fn promotes_backing_agent_artifacts_once_without_a_client_request() {
     ));
     let late = state.observe(&assistant_delta(
         "late-artifact",
-        "::codex-realtime-inline{}\npresent later",
+        "::ava-realtime-inline{}\npresent later",
     ));
     assert_eq!(late.items.len(), 1);
     assert_eq!(late.items[0].realtime_session_id, "voice-1");
@@ -281,7 +281,7 @@ fn promotes_backing_agent_artifacts_once_without_a_client_request() {
 #[test]
 fn promotes_distinct_visualizations_once_and_ignores_markdown_fences() {
     let mut state = started_state();
-    let text = "```\n::codex-inline-vis{file=hidden}\n```\n~~~\nvisualize{file=also-hidden}\n~~~\n::codex-inline-vis{file=first}\nvisualize{file=second}";
+    let text = "```\n::ava-inline-vis{file=hidden}\n```\n~~~\nvisualize{file=also-hidden}\n~~~\n::ava-inline-vis{file=first}\nvisualize{file=second}";
     let message = assistant_delta("message-1", text);
     assert_eq!(
         contents(state.observe(&message)),
@@ -478,7 +478,7 @@ fn generates_distinct_boundary_ids_for_reused_realtime_sessions() {
 }
 
 #[test]
-fn promotes_successful_codex_app_mcp_calls_and_splits_active_transcripts() {
+fn promotes_successful_ava_app_mcp_calls_and_splits_active_transcripts() {
     let mut state = started_state();
     observe_realtime(
         &mut state,
@@ -488,8 +488,8 @@ fn promotes_successful_codex_app_mcp_calls_and_splits_active_transcripts() {
     );
     for (server, status) in [
         ("other_server", McpToolCallStatus::Completed),
-        ("codex_app", McpToolCallStatus::InProgress),
-        ("codex_app", McpToolCallStatus::Failed),
+        ("ava_app", McpToolCallStatus::InProgress),
+        ("ava_app", McpToolCallStatus::Failed),
     ] {
         assert!(
             state
@@ -504,7 +504,7 @@ fn promotes_successful_codex_app_mcp_calls_and_splits_active_transcripts() {
     }
     let completed = completed_item(mcp_tool_call(
         "app-tool",
-        "codex_app",
+        "ava_app",
         McpToolCallStatus::Completed,
     ));
     assert_eq!(

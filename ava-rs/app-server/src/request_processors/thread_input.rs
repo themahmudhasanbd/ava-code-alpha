@@ -1,9 +1,9 @@
 use super::invalid_request;
-use codex_app_server_protocol::JSONRPCErrorError;
-use codex_core::CodexThread;
-use codex_protocol::protocol::MultiAgentVersion;
-use codex_protocol::protocol::SessionSource;
-use codex_protocol::protocol::SubAgentSource;
+use ava_app_server_protocol::JSONRPCErrorError;
+use ava_core::AvaThread;
+use ava_protocol::protocol::MultiAgentVersion;
+use ava_protocol::protocol::SessionSource;
+use ava_protocol::protocol::SubAgentSource;
 
 pub(super) const DIRECT_INPUT_TO_MULTI_AGENT_V2_SUBAGENT_ERROR: &str =
     "direct app-server input is not allowed for multi-agent v2 sub-agents";
@@ -21,7 +21,7 @@ pub(super) fn can_accept_direct_input(
 }
 
 pub(super) async fn ensure_direct_input_allowed(
-    thread: &CodexThread,
+    thread: &AvaThread,
 ) -> Result<(), JSONRPCErrorError> {
     let config_snapshot = thread.config_snapshot().await;
     if !can_accept_direct_input(

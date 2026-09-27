@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use codex_extension_api::ExtensionData;
-use codex_protocol::security_risk::SecurityRiskScore;
+use ava_extension_api::ExtensionData;
+use ava_protocol::security_risk::SecurityRiskScore;
 use pretty_assertions::assert_eq;
 
 use super::GuardianV2ScoreProgress;

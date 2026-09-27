@@ -1,7 +1,7 @@
-use codex_config::AppsRequirementsToml;
-use codex_config::ConfigLayerStack;
-use codex_config::types::AppToolApproval;
-use codex_config::types::AppsConfigToml;
+use ava_config::AppsRequirementsToml;
+use ava_config::ConfigLayerStack;
+use ava_config::types::AppToolApproval;
+use ava_config::types::AppsConfigToml;
 use serde::Deserialize;
 
 use crate::AppInfo;

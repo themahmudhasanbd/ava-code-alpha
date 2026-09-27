@@ -3,11 +3,11 @@ use crate::outgoing_message::OutgoingEnvelope;
 #[cfg(test)]
 use crate::outgoing_message::OutgoingMessage;
 use crate::outgoing_message::OutgoingMessageSender;
-use codex_app_server_protocol::ServerNotification;
-use codex_app_server_protocol::ThreadActiveFlag;
-use codex_app_server_protocol::ThreadStatus;
-use codex_app_server_protocol::ThreadStatusChangedNotification;
-use codex_protocol::ThreadId;
+use ava_app_server_protocol::ServerNotification;
+use ava_app_server_protocol::ThreadActiveFlag;
+use ava_app_server_protocol::ThreadStatus;
+use ava_app_server_protocol::ThreadStatusChangedNotification;
+use ava_protocol::ThreadId;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -727,7 +727,7 @@ mod tests {
         let (outgoing_tx, mut outgoing_rx) = mpsc::channel(8);
         let manager = ThreadWatchManager::new_with_outgoing(Arc::new(OutgoingMessageSender::new(
             outgoing_tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         )));
 
         manager.upsert_thread(INTERACTIVE_THREAD_ID).await;
@@ -765,7 +765,7 @@ mod tests {
         let (outgoing_tx, mut outgoing_rx) = mpsc::channel(8);
         let manager = ThreadWatchManager::new_with_outgoing(Arc::new(OutgoingMessageSender::new(
             outgoing_tx,
-            codex_analytics::AnalyticsEventsClient::disabled(),
+            ava_analytics::AnalyticsEventsClient::disabled(),
         )));
 
         manager.upsert_thread_silently(INTERACTIVE_THREAD_ID).await;
